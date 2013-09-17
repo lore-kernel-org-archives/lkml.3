@@ -1,178 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab3IQS6l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 14:58:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53353 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753632Ab3IQS6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 14:58:40 -0400
-Date: Tue, 17 Sep 2013 14:57:31 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Alex Thorlton <athorlton@sgi.com>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <1379444251-8ulan52g-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130917151851.09771E0090@blue.fi.intel.com>
-References: <1379117362-gwv3vrog-mutt-n-horiguchi@ah.jp.nec.com>
- <20130916104205.5605CE0090@blue.fi.intel.com>
- <1379366550-9vhj3y8s-mutt-n-horiguchi@ah.jp.nec.com>
- <20130917151851.09771E0090@blue.fi.intel.com>
-Subject: Re: [PATCH v4] hugetlbfs: support split page table lock
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1753688Ab3IQTEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 15:04:20 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:52020 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab3IQTET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 15:04:19 -0400
+MIME-Version: 1.0
+X-Originating-IP: [208.54.5.211]
+In-Reply-To: <5228913A.50807@kernel.dk>
+References: <26D762E250385C4D8E9D6EC3C8E47DC11E6FCF20@sambx4.stec-inc.ad>
+	<x49vc2nnwp5.fsf@segfault.boston.devel.redhat.com>
+	<26D762E250385C4D8E9D6EC3C8E47DC11E6FE729@sambx4.stec-inc.ad>
+	<x4938pjbhqk.fsf@segfault.boston.devel.redhat.com>
+	<5228913A.50807@kernel.dk>
+Date: Tue, 17 Sep 2013 12:04:18 -0700
+Message-ID: <CAOesGMhF42=qQLyMyF4-tsTjCxwX0bb10rTQv9sLooyzrEOpHA@mail.gmail.com>
+Subject: Re: [PATCH] block: Device driver for sTec's PCIe Kronos Card.
+From: Olof Johansson <olof@lixom.net>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jeff Moyer <jmoyer@redhat.com>,
+        OS Engineering <osengineering@stec-inc.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Akhil Bhansali <abhansali@stec-inc.com>,
+        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
+        Amit Phansalkar <aphansalkar@stec-inc.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 06:18:51PM +0300, Kirill A. Shutemov wrote:
-> Naoya Horiguchi wrote:
-> > On Mon, Sep 16, 2013 at 01:42:05PM +0300, Kirill A. Shutemov wrote:
-> > > Naoya Horiguchi wrote:
-> > > > Hi,
-> > > > 
-> > > > Kirill posted split_ptl patchset for thp today, so in this version
-> > > > I post only hugetlbfs part. I added Kconfig variables in following
-> > > > Kirill's patches (although without CONFIG_SPLIT_*_PTLOCK_CPUS.)
-> > > > 
-> > > > This patch changes many lines, but all are in hugetlbfs specific code,
-> > > > so I think we can apply this independent of thp patches.
-> > > > -----
-> > > > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > > > Date: Fri, 13 Sep 2013 18:12:30 -0400
-> > > > Subject: [PATCH v4] hugetlbfs: support split page table lock
-> > > > 
-> > > > Currently all of page table handling by hugetlbfs code are done under
-> > > > mm->page_table_lock. So when a process have many threads and they heavily
-> > > > access to the memory, lock contention happens and impacts the performance.
-> > > > 
-> > > > This patch makes hugepage support split page table lock so that we use
-> > > > page->ptl of the leaf node of page table tree which is pte for normal pages
-> > > > but can be pmd and/or pud for hugepages of some architectures.
-> > > > 
-> > > > ChangeLog v4:
-> > > >  - introduce arch dependent macro ARCH_ENABLE_SPLIT_HUGETLB_PTLOCK
-> > > >    (only defined for x86 for now)
-> > > >  - rename USE_SPLIT_PTLOCKS_HUGETLB to USE_SPLIT_HUGETLB_PTLOCKS
-> > > > 
-> > > > ChangeLog v3:
-> > > >  - disable split ptl for ppc with USE_SPLIT_PTLOCKS_HUGETLB.
-> > > >  - remove replacement in some architecture dependent code. This is justified
-> > > >    because an allocation of pgd/pud/pmd/pte entry can race with other
-> > > >    allocation, not with read/write access, so we can use different locks.
-> > > >    http://thread.gmane.org/gmane.linux.kernel.mm/106292/focus=106458
-> > > > 
-> > > > ChangeLog v2:
-> > > >  - add split ptl on other archs missed in v1
-> > > >  - drop changes on arch/{powerpc,tile}/mm/hugetlbpage.c
-> > > > 
-> > > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > > > ---
-> > > >  arch/x86/Kconfig         |  4 +++
-> > > >  include/linux/hugetlb.h  | 20 +++++++++++
-> > > >  include/linux/mm_types.h |  2 ++
-> > > >  mm/Kconfig               |  3 ++
-> > > >  mm/hugetlb.c             | 92 +++++++++++++++++++++++++++++-------------------
-> > > >  mm/mempolicy.c           |  5 +--
-> > > >  mm/migrate.c             |  4 +--
-> > > >  mm/rmap.c                |  2 +-
-> > > >  8 files changed, 91 insertions(+), 41 deletions(-)
-> > > > 
-> > > > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> > > > index 6a5cf6a..5b83d14 100644
-> > > > --- a/arch/x86/Kconfig
-> > > > +++ b/arch/x86/Kconfig
-> > > > @@ -1884,6 +1884,10 @@ config ARCH_ENABLE_SPLIT_PMD_PTLOCK
-> > > >  	def_bool y
-> > > >  	depends on X86_64 || X86_PAE
-> > > >  
-> > > > +config ARCH_ENABLE_SPLIT_HUGETLB_PTLOCK
-> > > > +	def_bool y
-> > > > +	depends on X86_64 || X86_PAE
-> > > > +
-> > > >  menu "Power management and ACPI options"
-> > > >  
-> > > >  config ARCH_HIBERNATION_HEADER
-> > > > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> > > > index 0393270..2cdac68 100644
-> > > > --- a/include/linux/hugetlb.h
-> > > > +++ b/include/linux/hugetlb.h
-> > > > @@ -80,6 +80,24 @@ extern const unsigned long hugetlb_zero, hugetlb_infinity;
-> > > >  extern int sysctl_hugetlb_shm_group;
-> > > >  extern struct list_head huge_boot_pages;
-> > > >  
-> > > > +#if USE_SPLIT_HUGETLB_PTLOCKS
-> > > > +#define huge_pte_lockptr(mm, ptep) ({__pte_lockptr(virt_to_page(ptep)); })
-> > > > +#else	/* !USE_SPLIT_HUGETLB_PTLOCKS */
-> > > > +#define huge_pte_lockptr(mm, ptep) ({&(mm)->page_table_lock; })
-> > > > +#endif	/* USE_SPLIT_HUGETLB_PTLOCKS */
-> > > > +
-> > > > +#define huge_pte_offset_lock(mm, address, ptlp)		\
-> > > > +({							\
-> > > > +	pte_t *__pte = huge_pte_offset(mm, address);	\
-> > > > +	spinlock_t *__ptl = NULL;			\
-> > > > +	if (__pte) {					\
-> > > > +		__ptl = huge_pte_lockptr(mm, __pte);	\
-> > > > +		*(ptlp) = __ptl;			\
-> > > > +		spin_lock(__ptl);			\
-> > > > +	}						\
-> > > > +	__pte;						\
-> > > > +})
-> > > > +
-> > > 
-> > > [ Disclaimer: I don't know much about hugetlb. ]
-> > > 
-> > > I don't think it's correct. Few points:
-> > > 
-> > >  - Hugetlb supports multiple page sizes: on x86_64 2M (PMD) and 1G (PUD).
-> > >    My patchset only implements it for PMD. We don't even initialize
-> > >    spinlock in struct page for PUD.
-> > 
-> > In hugetlbfs code, we use huge_pte_offset() to get leaf level entries
-> > which can be pud or pmd in x86. huge_pte_lockptr() uses this function,
-> > so we can always get the correct ptl regardless of hugepage sizes.
-> > As for spinlock initialization, you're right. I'll add it on huge_pte_alloc().
-> 
-> Please, don't.
-> If USE_SPLIT_PMD_PTLOCKS is true, pmd_alloc_one() will do it for you
-> already for PMD table.
+On Thu, Sep 5, 2013 at 7:12 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 09/05/2013 06:00 AM, Jeff Moyer wrote:
+>> OS Engineering <osengineering@stec-inc.com> writes:
+>>
+>>> Hi Jeff,
+>>>
+>>> Thank you for reviewing the patch.
+>>
+>> No problem.  Jens, any objection to queueing this up for 3.12?
+>
+> I'll give it a look-over, but usually I'm pretty lax when it comes to
+> new drivers. So no, I'd be surprised if we can't queue this up for 3.12.
 
-OK, sorry for my sloppy suggestion.
+I came across this driver because it was spewing a lot of really
+trivial and easy to fix compiler warnings. Silly stuff such as
+printing u32 with %lu.
 
-> For pud it should be done in pud_alloc_one(), not in hugetlb code.
+>From a quick look at the code, several things are immediately apparent:
 
-Right.
+First, checkpatch says, on the currently existing file in -next:
 
-> We already have too many special cases for hugetlb. Don't contribute to
-> the mess.
+total: 3 errors, 61 warnings, 5817 lines checked
 
-OK.
+Code like this looks _really_ confused:
 
-> > >  - If we enable split PMD lock we should use it *globally*. With you patch
-> > >    we can end up with different locks used by hugetlb and rest of kernel
-> > >    to protect the same PMD table if USE_SPLIT_HUGETLB_PTLOCKS !=
-> > >    USE_SPLIT_PMD_PTLOCKS. It's just broken.
-> > 
-> > I don't think so. Thp specific operations (like thp allocation, split,
-> > and collapse) are never called on the virtual address range covered by
-> > vma(VM_HUGETLB) by checking VM_HUGETLB. So no one tries to lock/unlock
-> > a ptl concurrently from thp context and hugetlbfs context.
-> 
-> Two vma's can be next to each other and share the same PMD table (not
-> entries) and in this case I don't see what will serialize pmd_alloc() if
-> USE_SPLIT_HUGETLB_PTLOCKS != USE_SPLIT_PMD_PTLOCKS.
+                barrier();
+                val = readl(skdev->mem_map[1] + offset);
+                barrier();
 
-OK, we can't split thp code and hugetlbfs code finally.
-USE_SPLIT_HUGETLB_PTLOCKS must depend on USE_SPLIT_PMD_PTLOCKS.
+There are also some crazy long functions that should be refactored,
+such as skd_request_fn().
 
-Thanks,
-Naoya
+So, it looks like this driver needs a bunch of work before it's ready
+to go in. Or, maybe it's better to submit it with a TODO list for the
+staging tree instead?
+
+
+-Olof
