@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab3IQKaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 06:30:06 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36297 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752207Ab3IQKaE (ORCPT
+	id S1752521Ab3IQKdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 06:33:07 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50732 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab3IQKdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 06:30:04 -0400
-Date: Tue, 17 Sep 2013 11:29:04 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>, acme@ghostprotocols.net
-Subject: Re: [PATCH 3/4] perf tools: Check libunwind for availability of
- dwarf parsing feature
-Message-ID: <20130917102904.GA27258@mudshark.cambridge.arm.com>
-References: <1379323053-11458-1-git-send-email-jean.pihet@linaro.org>
- <1379323053-11458-4-git-send-email-jean.pihet@linaro.org>
+	Tue, 17 Sep 2013 06:33:05 -0400
+Date: Tue, 17 Sep 2013 11:32:39 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20130917103238.GM21013@sirena.org.uk>
+References: <5237AB72.5020806@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OQhbRXNHSL5w/5po"
 Content-Disposition: inline
-In-Reply-To: <1379323053-11458-4-git-send-email-jean.pihet@linaro.org>
+In-Reply-To: <5237AB72.5020806@infradead.org>
+X-Cookie: Give him an evasive answer.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: fix fatal kernel-doc error
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo, Ingo,
 
-On Mon, Sep 16, 2013 at 10:17:32AM +0100, Jean Pihet wrote:
-> The newly added dwarf unwinding feature [1] requires:
-> . a recent version (>= 1.1) of libunwind,
-> . libunwind to be configured with --enable-debug-frame.
-> 
-> [1] http://www.spinics.net/lists/kernel/msg1598951.html
-> 
-> Add the corresponding API test in the feature check list.
-> 
-> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-> ---
->  tools/perf/config/Makefile          |  2 +-
->  tools/perf/config/feature-tests.mak | 11 ++++++++++-
->  2 files changed, 11 insertions(+), 2 deletions(-)
+--OQhbRXNHSL5w/5po
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Can I have an ack for this and the following patch please?
+On Mon, Sep 16, 2013 at 06:08:02PM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
+>=20
+> Fix fatal kernel-doc error in <linux/regulator/driver.h>:
+>=20
+> Error(include/linux/regulator/driver.h:52): cannot understand prototype: =
+'struct regulator_linear_range '
 
-(http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/198531.html)
+Applied with the first line redone, but this seems like really terrible
+quality of implementation for the kernel-doc stuff - it shouldn't
+explode over something readily copable with like this.  Should we also
+not pick this sort of thing up in -next?
 
-Then I can stick these into -next for some more exposure before I queue them
-for 3.13.
+--OQhbRXNHSL5w/5po
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Cheers,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-Will
+iQIcBAEBAgAGBQJSOC/DAAoJELSic+t+oim9UOUQAIQo1yvaHyPaipZZ+i/YLYAh
+37g4DwMw1cyqs/ABnVNgMAlu2FsboXOSVglWmPBUzZo7Udnd45cht78M0m4AbcfK
+EtrkA/BYB2fz2Fl6dP8zNvGOhODlkZNQjQPuH+UoxVwPkuZSahCIfROApRmt/Hzw
+YJgvyYSfAi1xG9DApLLIvaJLylZ4JngFqU/GM6LQT57+cRY0Ci2Q8Ch/OzBi2swB
+nGJHMm4Nz9A4qTEh2bFM6gfjaBJg+ElV4xenBbnDg3A8KdTK88y6RHOwcD1lN4Mh
+1sSb69zxSC4JpmIYaT85rIbwGniUyQwhNEWx12cysLJIDH0fnAK0dvgWXNURKMhV
+hvLndNnyA0NSq1VQtKKN8ZC0Pb3YvwLy7ysbDud6CTjAUt/+1cZp8KZDAujs1+7k
+p27na1RsP0F0648nNMtiApKhAYoJRYfgV77vshT+zt1unAShymNcGIi1QhG1s1ri
+dvYoqhivxGbOsxk+IgGpa3SwGUpmoOaUSkmxbhjutCXI8tWoX/aEKyup2GJFdkOP
+odjMK/QQJscyMSSEvCKc01wgtp5Ke/Vp9Dcp3DeEJNJHzFedy7FvkBS+1BNcMsRz
+AMI16rNrdWF6c2jz2NEkN+o8VMFQBxISXbAm3tJp7TOmt7omF2eAEZL/3hhheKFF
+S02gP0TtSeZNfiUw8rUc
+=edCG
+-----END PGP SIGNATURE-----
+
+--OQhbRXNHSL5w/5po--
