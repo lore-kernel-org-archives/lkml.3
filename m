@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417Ab3IQJP3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 05:15:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42956 "EHLO
+	id S1752457Ab3IQJPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 05:15:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42998 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab3IQJPZ (ORCPT
+	with ESMTP id S1752384Ab3IQJP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 05:15:25 -0400
-Message-Id: <20130917091143.876946012@infradead.org>
-Date: Tue, 17 Sep 2013 11:10:54 +0200
+	Tue, 17 Sep 2013 05:15:29 -0400
+Message-Id: <20130917091143.387880231@infradead.org>
+Date: Tue, 17 Sep 2013 11:10:47 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>
@@ -18,94 +18,313 @@ Cc: Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
         Arjan van de Ven <arjan@linux.intel.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 08/11] sched: Create more preempt_count accessors
+Subject: [PATCH 01/11] x86: Use asm goto to implement better modify_and_test() functions
 References: <20130917082838.218329307@infradead.org>
-Content-Disposition: inline; filename=peterz-task_preempt_count.patch
+Content-Disposition: inline; filename=peterz-rmwcc.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need a few special preempt_count accessors:
- - task_preempt_count() for when we're interested in the preemption
-   count of another (non-running) task.
- - init_task_preempt_count() for properly initializing the preemption
-   count.
- - init_idle_preempt_count() a special case of the above for the idle
-   threads.
+Linus suggested using asm goto to get rid of the typical SETcc + TEST
+instruction pair -- which also clobbers an extra register -- for our
+typical modify_and_test() functions.
 
-With these no generic code ever touches thread_info::preempt_count
-anymore and architectures could choose to remove it.
+Because asm goto doesn't allow output fields it has to include an
+unconditinal memory clobber when it changes a memory variable to force
+a reload.
 
+Luckily all atomic ops already imply a compiler barrier to go along
+with their memory barrier semantics.
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- include/asm-generic/preempt.h |   14 ++++++++++++++
- include/trace/events/sched.h  |    2 +-
- kernel/sched/core.c           |    7 +++----
- 3 files changed, 18 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/atomic.h      |   29 ++++----------------------
+ arch/x86/include/asm/atomic64_64.h |   28 +++----------------------
+ arch/x86/include/asm/bitops.h      |   24 +++------------------
+ arch/x86/include/asm/local.h       |   28 +++----------------------
+ arch/x86/include/asm/rmwcc.h       |   41 +++++++++++++++++++++++++++++++++++++
+ 5 files changed, 58 insertions(+), 92 deletions(-)
 
---- a/include/asm-generic/preempt.h
-+++ b/include/asm-generic/preempt.h
-@@ -18,6 +18,20 @@ static __always_inline int *preempt_coun
- }
+--- a/arch/x86/include/asm/atomic.h
++++ b/arch/x86/include/asm/atomic.h
+@@ -6,6 +6,7 @@
+ #include <asm/processor.h>
+ #include <asm/alternative.h>
+ #include <asm/cmpxchg.h>
++#include <asm/rmwcc.h>
  
  /*
-+ * must be macros to avoid header recursion hell
-+ */
-+#define task_preempt_count(p) \
-+	(task_thread_info(p)->preempt_count & ~PREEMPT_NEED_RESCHED)
+  * Atomic operations that C can't guarantee us.  Useful for
+@@ -76,12 +77,7 @@ static inline void atomic_sub(int i, ato
+  */
+ static inline int atomic_sub_and_test(int i, atomic_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "subl %2,%0; sete %1"
+-		     : "+m" (v->counter), "=qm" (c)
+-		     : "ir" (i) : "memory");
+-	return c;
++	GEN_BINARY_RMWcc(LOCK_PREFIX "subl", v->counter, i, "%0", "e");
+ }
+ 
+ /**
+@@ -118,12 +114,7 @@ static inline void atomic_dec(atomic_t *
+  */
+ static inline int atomic_dec_and_test(atomic_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "decl %0; sete %1"
+-		     : "+m" (v->counter), "=qm" (c)
+-		     : : "memory");
+-	return c != 0;
++	GEN_UNARY_RMWcc(LOCK_PREFIX "decl", v->counter, "%0", "e");
+ }
+ 
+ /**
+@@ -136,12 +127,7 @@ static inline int atomic_dec_and_test(at
+  */
+ static inline int atomic_inc_and_test(atomic_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "incl %0; sete %1"
+-		     : "+m" (v->counter), "=qm" (c)
+-		     : : "memory");
+-	return c != 0;
++	GEN_UNARY_RMWcc(LOCK_PREFIX "incl", v->counter, "%0", "e");
+ }
+ 
+ /**
+@@ -155,12 +141,7 @@ static inline int atomic_inc_and_test(at
+  */
+ static inline int atomic_add_negative(int i, atomic_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "addl %2,%0; sets %1"
+-		     : "+m" (v->counter), "=qm" (c)
+-		     : "ir" (i) : "memory");
+-	return c;
++	GEN_BINARY_RMWcc(LOCK_PREFIX "addl", v->counter, i, "%0", "s");
+ }
+ 
+ /**
+--- a/arch/x86/include/asm/atomic64_64.h
++++ b/arch/x86/include/asm/atomic64_64.h
+@@ -72,12 +72,7 @@ static inline void atomic64_sub(long i,
+  */
+ static inline int atomic64_sub_and_test(long i, atomic64_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "subq %2,%0; sete %1"
+-		     : "=m" (v->counter), "=qm" (c)
+-		     : "er" (i), "m" (v->counter) : "memory");
+-	return c;
++	GEN_BINARY_RMWcc(LOCK_PREFIX "subq", v->counter, i, "%0", "e");
+ }
+ 
+ /**
+@@ -116,12 +111,7 @@ static inline void atomic64_dec(atomic64
+  */
+ static inline int atomic64_dec_and_test(atomic64_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "decq %0; sete %1"
+-		     : "=m" (v->counter), "=qm" (c)
+-		     : "m" (v->counter) : "memory");
+-	return c != 0;
++	GEN_UNARY_RMWcc(LOCK_PREFIX "decq", v->counter, "%0", "e");
+ }
+ 
+ /**
+@@ -134,12 +124,7 @@ static inline int atomic64_dec_and_test(
+  */
+ static inline int atomic64_inc_and_test(atomic64_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "incq %0; sete %1"
+-		     : "=m" (v->counter), "=qm" (c)
+-		     : "m" (v->counter) : "memory");
+-	return c != 0;
++	GEN_UNARY_RMWcc(LOCK_PREFIX "incq", v->counter, "%0", "e");
+ }
+ 
+ /**
+@@ -153,12 +138,7 @@ static inline int atomic64_inc_and_test(
+  */
+ static inline int atomic64_add_negative(long i, atomic64_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "addq %2,%0; sets %1"
+-		     : "=m" (v->counter), "=qm" (c)
+-		     : "er" (i), "m" (v->counter) : "memory");
+-	return c;
++	GEN_BINARY_RMWcc(LOCK_PREFIX "addq", v->counter, i, "%0", "s");
+ }
+ 
+ /**
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -14,6 +14,7 @@
+ 
+ #include <linux/compiler.h>
+ #include <asm/alternative.h>
++#include <asm/rmwcc.h>
+ 
+ #if BITS_PER_LONG == 32
+ # define _BITOPS_LONG_SHIFT 5
+@@ -204,12 +205,7 @@ static inline void change_bit(long nr, v
+  */
+ static inline int test_and_set_bit(long nr, volatile unsigned long *addr)
+ {
+-	int oldbit;
+-
+-	asm volatile(LOCK_PREFIX "bts %2,%1\n\t"
+-		     "sbb %0,%0" : "=r" (oldbit), ADDR : "Ir" (nr) : "memory");
+-
+-	return oldbit;
++	GEN_BINARY_RMWcc(LOCK_PREFIX "bts", *addr, nr, "%0", "c");
+ }
+ 
+ /**
+@@ -255,13 +251,7 @@ static inline int __test_and_set_bit(lon
+  */
+ static inline int test_and_clear_bit(long nr, volatile unsigned long *addr)
+ {
+-	int oldbit;
+-
+-	asm volatile(LOCK_PREFIX "btr %2,%1\n\t"
+-		     "sbb %0,%0"
+-		     : "=r" (oldbit), ADDR : "Ir" (nr) : "memory");
+-
+-	return oldbit;
++	GEN_BINARY_RMWcc(LOCK_PREFIX "btr", *addr, nr, "%0", "c");
+ }
+ 
+ /**
+@@ -314,13 +304,7 @@ static inline int __test_and_change_bit(
+  */
+ static inline int test_and_change_bit(long nr, volatile unsigned long *addr)
+ {
+-	int oldbit;
+-
+-	asm volatile(LOCK_PREFIX "btc %2,%1\n\t"
+-		     "sbb %0,%0"
+-		     : "=r" (oldbit), ADDR : "Ir" (nr) : "memory");
+-
+-	return oldbit;
++	GEN_BINARY_RMWcc(LOCK_PREFIX "btc", *addr, nr, "%0", "c");
+ }
+ 
+ static __always_inline int constant_test_bit(long nr, const volatile unsigned long *addr)
+--- a/arch/x86/include/asm/local.h
++++ b/arch/x86/include/asm/local.h
+@@ -52,12 +52,7 @@ static inline void local_sub(long i, loc
+  */
+ static inline int local_sub_and_test(long i, local_t *l)
+ {
+-	unsigned char c;
+-
+-	asm volatile(_ASM_SUB "%2,%0; sete %1"
+-		     : "+m" (l->a.counter), "=qm" (c)
+-		     : "ir" (i) : "memory");
+-	return c;
++	GEN_BINARY_RMWcc(_ASM_SUB, l->a.counter, i, "%0", "e");
+ }
+ 
+ /**
+@@ -70,12 +65,7 @@ static inline int local_sub_and_test(lon
+  */
+ static inline int local_dec_and_test(local_t *l)
+ {
+-	unsigned char c;
+-
+-	asm volatile(_ASM_DEC "%0; sete %1"
+-		     : "+m" (l->a.counter), "=qm" (c)
+-		     : : "memory");
+-	return c != 0;
++	GEN_UNARY_RMWcc(_ASM_DEC, l->a.counter, "%0", "e");
+ }
+ 
+ /**
+@@ -88,12 +78,7 @@ static inline int local_dec_and_test(loc
+  */
+ static inline int local_inc_and_test(local_t *l)
+ {
+-	unsigned char c;
+-
+-	asm volatile(_ASM_INC "%0; sete %1"
+-		     : "+m" (l->a.counter), "=qm" (c)
+-		     : : "memory");
+-	return c != 0;
++	GEN_UNARY_RMWcc(_ASM_INC, l->a.counter, "%0", "e");
+ }
+ 
+ /**
+@@ -107,12 +92,7 @@ static inline int local_inc_and_test(loc
+  */
+ static inline int local_add_negative(long i, local_t *l)
+ {
+-	unsigned char c;
+-
+-	asm volatile(_ASM_ADD "%2,%0; sets %1"
+-		     : "+m" (l->a.counter), "=qm" (c)
+-		     : "ir" (i) : "memory");
+-	return c;
++	GEN_BINARY_RMWcc(_ASM_ADD, l->a.counter, i, "%0", "s");
+ }
+ 
+ /**
+--- /dev/null
++++ b/arch/x86/include/asm/rmwcc.h
+@@ -0,0 +1,41 @@
++#ifndef _ASM_X86_RMWcc
++#define _ASM_X86_RMWcc
 +
-+#define init_task_preempt_count(p) do { \
-+	task_thread_info(p)->preempt_count = 1 | PREEMPT_NEED_RESCHED; \
++#ifdef CC_HAVE_ASM_GOTO
++
++#define __GEN_RMWcc(fullop, var, cc, ...)				\
++do {									\
++	asm volatile goto (fullop "; j" cc " %l[cc_label]"		\
++			: : "m" (var), ## __VA_ARGS__ 			\
++			: "memory" : cc_label);				\
++	return 0;							\
++cc_label:								\
++	return 1;							\
 +} while (0)
 +
-+#define init_idle_preempt_count(p, cpu) do { \
-+	task_thread_info(p)->preempt_count = 0; \
++#define GEN_UNARY_RMWcc(op, var, arg0, cc) 				\
++	__GEN_RMWcc(op " " arg0, var, cc)
++
++#define GEN_BINARY_RMWcc(op, var, val, arg0, cc)			\
++	__GEN_RMWcc(op " %1, " arg0, var, cc, "er" (val))
++
++#else /* !CC_HAVE_ASM_GOTO */
++
++#define __GEN_RMWcc(fullop, var, cc, ...)				\
++do {									\
++	char c;								\
++	asm volatile (fullop "; set" cc " %1"				\
++			: "+m" (var), "=qm" (c)				\
++			: __VA_ARGS__ : "memory");			\
++	return c != 0;							\
 +} while (0)
 +
-+/*
-  * We fold the NEED_RESCHED bit into the preempt count such that
-  * preempt_enable() can decrement and test for needing to reschedule with a
-  * single instruction.
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -100,7 +100,7 @@ static inline long __trace_sched_switch_
- 	/*
- 	 * For all intents and purposes a preempted task is a running task.
- 	 */
--	if (task_thread_info(p)->preempt_count & PREEMPT_ACTIVE)
-+	if (task_preempt_count(p) & PREEMPT_ACTIVE)
- 		state = TASK_RUNNING | TASK_STATE_MAX;
- #endif
- 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -996,7 +996,7 @@ void set_task_cpu(struct task_struct *p,
- 	 * ttwu() will sort out the placement.
- 	 */
- 	WARN_ON_ONCE(p->state != TASK_RUNNING && p->state != TASK_WAKING &&
--			!(task_thread_info(p)->preempt_count & PREEMPT_ACTIVE));
-+			!(task_preempt_count(p) & PREEMPT_ACTIVE));
- 
- #ifdef CONFIG_LOCKDEP
- 	/*
-@@ -1743,8 +1743,7 @@ void sched_fork(struct task_struct *p)
- 	p->on_cpu = 0;
- #endif
- #ifdef CONFIG_PREEMPT_COUNT
--	/* Want to start with kernel preemption disabled. */
--	task_thread_info(p)->preempt_count = 1;
-+	init_task_preempt_count(p);
- #endif
- #ifdef CONFIG_SMP
- 	plist_node_init(&p->pushable_tasks, MAX_PRIO);
-@@ -4237,7 +4236,7 @@ void init_idle(struct task_struct *idle,
- 	raw_spin_unlock_irqrestore(&rq->lock, flags);
- 
- 	/* Set the preempt count _outside_ the spinlocks! */
--	task_thread_info(idle)->preempt_count = 0;
-+	init_idle_preempt_count(idle, cpu);
- 
- 	/*
- 	 * The idle tasks have their own, simple scheduling class:
++#define GEN_UNARY_RMWcc(op, var, arg0, cc)				\
++	__GEN_RMWcc(op " " arg0, var, cc)
++
++#define GEN_BINARY_RMWcc(op, var, val, arg0, cc)			\
++	__GEN_RMWcc(op " %2, " arg0, var, cc, "er" (val))
++
++#endif /* CC_HAVE_ASM_GOTO */
++
++#endif /* _ASM_X86_RMWcc */
 
 
