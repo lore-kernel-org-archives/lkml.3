@@ -1,117 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab3IQUSk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 16:18:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29288 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752828Ab3IQUSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 16:18:38 -0400
-Date: Tue, 17 Sep 2013 16:18:23 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Akira Hayakawa <ruby.wktk@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, cesarb@cesarb.net,
-        joe@perches.com, akpm@linux-foundation.org, agk@redhat.com,
-        m.chehab@samsung.com
-Subject: Re: staging: Add dm-writeboost
-Message-ID: <20130917201822.GA12001@redhat.com>
-References: <5223208D.4000008@gmail.com>
- <20130916215357.GA5015@redhat.com>
- <52384DEE.7050003@gmail.com>
+	id S1753759Ab3IQUVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 16:21:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56341 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921Ab3IQUVO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 16:21:14 -0400
+Message-ID: <5238B9A7.6040002@kernel.dk>
+Date: Tue, 17 Sep 2013 14:20:55 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52384DEE.7050003@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Olof Johansson <olof@lixom.net>
+CC: Jeff Moyer <jmoyer@redhat.com>,
+        OS Engineering <osengineering@stec-inc.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Akhil Bhansali <abhansali@stec-inc.com>,
+        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
+        Amit Phansalkar <aphansalkar@stec-inc.com>
+Subject: Re: [PATCH] block: Device driver for sTec's PCIe Kronos Card.
+References: <26D762E250385C4D8E9D6EC3C8E47DC11E6FCF20@sambx4.stec-inc.ad> <x49vc2nnwp5.fsf@segfault.boston.devel.redhat.com> <26D762E250385C4D8E9D6EC3C8E47DC11E6FE729@sambx4.stec-inc.ad> <x4938pjbhqk.fsf@segfault.boston.devel.redhat.com> <5228913A.50807@kernel.dk> <CAOesGMhF42=qQLyMyF4-tsTjCxwX0bb10rTQv9sLooyzrEOpHA@mail.gmail.com>
+In-Reply-To: <CAOesGMhF42=qQLyMyF4-tsTjCxwX0bb10rTQv9sLooyzrEOpHA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17 2013 at  8:41am -0400,
-Akira Hayakawa <ruby.wktk@gmail.com> wrote:
+On 09/17/2013 01:04 PM, Olof Johansson wrote:
+> On Thu, Sep 5, 2013 at 7:12 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>> On 09/05/2013 06:00 AM, Jeff Moyer wrote:
+>>> OS Engineering <osengineering@stec-inc.com> writes:
+>>>
+>>>> Hi Jeff,
+>>>>
+>>>> Thank you for reviewing the patch.
+>>>
+>>> No problem.  Jens, any objection to queueing this up for 3.12?
+>>
+>> I'll give it a look-over, but usually I'm pretty lax when it comes to
+>> new drivers. So no, I'd be surprised if we can't queue this up for 3.12.
+> 
+> I came across this driver because it was spewing a lot of really
+> trivial and easy to fix compiler warnings. Silly stuff such as
+> printing u32 with %lu.
+> 
+> From a quick look at the code, several things are immediately apparent:
+> 
+> First, checkpatch says, on the currently existing file in -next:
+> 
+> total: 3 errors, 61 warnings, 5817 lines checked
+> 
+> Code like this looks _really_ confused:
+> 
+>                 barrier();
+>                 val = readl(skdev->mem_map[1] + offset);
+>                 barrier();
+> 
+> There are also some crazy long functions that should be refactored,
+> such as skd_request_fn().
+> 
+> So, it looks like this driver needs a bunch of work before it's ready
+> to go in. Or, maybe it's better to submit it with a TODO list for the
+> staging tree instead?
 
-> Mike,
-> 
-> First, thank you for your commenting.
-> I was looking forward to your comments.
-> 
-> 
-> I suppose you are sensing some "smell" in my design.
-> You are worrying that dm-writeboost will not only confuse users
-> but also fall into worst situation of giving up backward-compatibility
-> after merging into tree.
-> 
-> That dm-writeboost's design is too eccentric as a DM target makes you so.
-> 
-> That you said
-> >   determines whether a device needs formatting, etc.  Otherwise I cannot
-> >   see how you can properly stack DM devices on writeboost devices
-> >   (suspend+resume become tediously different)
-> is a proof of smell.
-> 
-> Alasdair also said
-> > I read a statement like that as an indication of an interface or
-> > architectural problem.  The device-mapper approach is to 'design out'
-> > problems, rather than relying on users not doing bad things.
-> > Study the existing interfaces used by other targets to understand
-> > some approaches that proved successful, then decide which ones
-> > come closest to your needs.
-> 
-> and
-> 
-> Mikulas said
-> > Another idea:
-> > 
-> > Make the interface of dm-lc (the arguments to constructor, messages and 
-> > the status line) the same as dm-cache, so that they can be driven by the 
-> > same userspace code.
-> Though I guess this is going too far
-> since dm-writeboost and dm-cache are the different things
-> designing them similar definitely makes sense.
-> 
-> are also sensing of smell.
-> 
-> 
-> I am afraid so I am and
-> I am thinking of re-designing dm-writeboost
-> at the fundamental architectural level.
-> The interfaces will be similar to that of dm-cache as a result.
-> 
-> This will be a really a BIG change.
-> 
-> > Probably best for you to publish the dm-writeboost code a git repo on
-> > github.com or the like.  I just don't see what benefit there is to
-> > putting code like this in staging.  Users already need considerable
-> > userspace tools and infrastructure will also be changing in the
-> > near-term (e.g. the migration daemon).
-> Yes, I agree with that regarding the current implementation.
-> I withdraw from the proposal for staging.
-> I am really sorry for Greg and others caring about dm-writeboost.
-> But I will be back after re-designing.
+Not disagreeing with you, it definitely needs a bit of cleaning. And so
+far stec has not been very responsive in fixing those issues.
 
-OK, appreciate your willingness to rework this.  
+-- 
+Jens Axboe
 
-> staging means lot to get 3rd party users is for sure.
-
-We don't need to go through staging.  If the dm-writeboost target is
-designed well and provides a tangible benefit it doesn't need
-wide-spread users as justification for going in.  The users will come if
-it is implemented well.
-
-> Simplify the design and
-> make it more possible to maintain the target
-> for the future is what I fully agree with.
-> Being adhere to cache-sharing by
-> risking the future maintainability doesn't pay.
-> Re-designing the dm-writeboost resemble to dm-cache
-> is a leading candidate of course.
-
-Simplifying the code is certainly desirable.  So dropping the sharing
-sounds like a step in the right direction.  Plus you can share the cache
-by layering multiple linear devices ontop of the dm-writeboost device.
-
-Also managing dm-writeboost devices with lvm2 is a priority, so any
-interface similarities dm-writeboost has with dm-cache will be
-beneficial.
-
-Mike
