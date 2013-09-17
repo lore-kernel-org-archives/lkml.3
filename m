@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab3IQWEa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 18:04:30 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57310 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab3IQWE3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 18:04:29 -0400
-Date: Wed, 18 Sep 2013 00:04:27 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Felipe Balbi <balbi@ti.com>
-Cc: kernel list <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: Fix style in s3c-hsotg.c
-Message-ID: <20130917220427.GC23937@amd.pavel.ucw.cz>
-References: <20130902135832.GA22300@amd.pavel.ucw.cz>
- <20130917154229.GI15645@radagast>
+	id S1754064Ab3IQWFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 18:05:45 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:4443 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752689Ab3IQWFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 18:05:44 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <5238D206.9030701@broadcom.com>
+Date: Tue, 17 Sep 2013 15:04:54 -0700
+From: "Christian Daudt" <csd@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130917154229.GI15645@radagast>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+cc: "Olof Johansson" <olof@lixom.net>, "Stephen Warren" <swarren@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, "Chris Ball" <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org, bcm@fixthebug.org
+Subject: Re: [PATCH] ARM: bcm: Add DEBUG_LL console support
+References: <1379455187-5812-1-git-send-email-csd@broadcom.com>
+ <20130917220323.GS12758@n2100.arm.linux.org.uk>
+In-Reply-To: <20130917220323.GS12758@n2100.arm.linux.org.uk>
+X-WSS-ID: 7E260EC90UO8262147-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-09-17 10:42:30, Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, Sep 02, 2013 at 03:58:32PM +0200, Pavel Machek wrote:
-> > Hi!
-> > 
-> > checkpatch.pl has some valid complaints about style in s3c-hsotg.c :
-> > macro with if should be really enclosed in do {} while, and puts is
-> > going to be slightly faster.
-> > 
-> > Here's suggested patch. I don't have the hardware, so it is completely
-> > untested.
-> > 
-> > Signed-off-by: Pavel Machek, <pavel@denx.de>
-> 
-> this is not how you send a patch, please read
-> Documentation/SubmittingPatches
+On 13-09-17 03:03 PM, Russell King - ARM Linux wrote:
+> On Tue, Sep 17, 2013 at 02:59:47PM -0700, Christian Daudt wrote:
+>> This patch adds low level debug uart support to Broadcom
+>>   mobile based SOCs.
+>>
+>> Signed-off-by: Christian Daudt <csd@broadcom.com>
+>> Reviewed-by: James King <jamesk@broadcom.com>
+> Unfortunately, your patch is out of date.
+>
+> Please have a look at v3.12-rc1's debugging infrastructure.  You should
+> not need to add any .S file(s) for 8250 based ports, and in fact,
+> 8250_32.S is gone.  It's now all done through Kconfig for these ports.
+>
+> Thanks.
+>
+Oops. Ok, I last rebased it against -11-rc4. I'll rework it for 12-rc1 then.
 
-Have you considered possibility that this is how you nudge maintainer
-into fix their coding style?
+  Thanks,
+    csd
 
-Thanks,
-									Pavel
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
