@@ -1,43 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab3IQJSa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 05:18:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48750 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751736Ab3IQJSZ (ORCPT
+	id S1752750Ab3IQJR6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 05:17:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42977 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210Ab3IQJP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 05:18:25 -0400
-Date: Tue, 17 Sep 2013 10:18:23 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: arizona: Update volatile registers for WM5110 DSP
-Message-ID: <20130917091823.GF3635@opensource.wolfsonmicro.com>
-References: <1379345514-2998-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20130917072425.GP16984@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130917072425.GP16984@lee--X1>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Tue, 17 Sep 2013 05:15:26 -0400
+Message-Id: <20130917091144.096544204@infradead.org>
+Date: Tue, 17 Sep 2013 11:10:57 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 11/11] sched, x86: Optimize the preempt_schedule() call
+References: <20130917082838.218329307@infradead.org>
+Content-Disposition: inline; filename=peterz-x86-opt-call.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No problem sorry the commit message was a little vague there.
-Seems I accidentally generated the first version of this patch
-against the ASoC tree, but this got me thinking now you are
-looking after MFD patches which tree should I be generating them
-against?
+Remove the bloat of the C calling convention out of the
+preempt_enable() sites by creating an ASM wrapper which allows us to
+do an asm("call ___preempt_schedule") instead.
 
-Thanks,
-Charles
+calling.h bits by Andi Kleen
 
-On Tue, Sep 17, 2013 at 08:24:25AM +0100, Lee Jones wrote:
-> On Mon, 16 Sep 2013, Charles Keepax wrote:
-> 
-> Any chance of a little more information in the commit message?
-> 
-> What are scratch registers and why are they required now where they
-> weren't before? Why are the control and clocking regulators no longer
-> needed?
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/x86/include/asm/calling.h |   50 +++++++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/preempt.h |    8 ++++++
+ arch/x86/kernel/Makefile       |    2 +
+ arch/x86/kernel/preempt.S      |   25 ++++++++++++++++++++
+ include/asm-generic/preempt.h  |   10 ++++++++
+ include/linux/preempt.h        |   13 ++++------
+ 6 files changed, 100 insertions(+), 8 deletions(-)
+
+--- a/arch/x86/include/asm/calling.h
++++ b/arch/x86/include/asm/calling.h
+@@ -48,6 +48,8 @@ For 32-bit we have the following convent
+ 
+ #include <asm/dwarf2.h>
+ 
++#ifdef CONFIG_X86_64
++
+ /*
+  * 64-bit system call stack frame layout defines and helpers,
+  * for assembly code:
+@@ -192,3 +194,51 @@ For 32-bit we have the following convent
+ 	.macro icebp
+ 	.byte 0xf1
+ 	.endm
++
++#else /* CONFIG_X86_64 */
++
++/*
++ * For 32bit only simplified versions of SAVE_ALL/RESTORE_ALL. These
++ * are different from the entry_32.S versions in not changing the segment
++ * registers. So only suitable for in kernel use, not when transitioning
++ * from or to user space. The resulting stack frame is not a standard
++ * pt_regs frame. The main use case is calling C code from assembler
++ * when all the registers need to be preserved.
++ */
++
++	.macro SAVE_ALL
++	pushl_cfi %eax
++	CFI_REL_OFFSET eax, 0
++	pushl_cfi %ebp
++	CFI_REL_OFFSET ebp, 0
++	pushl_cfi %edi
++	CFI_REL_OFFSET edi, 0
++	pushl_cfi %esi
++	CFI_REL_OFFSET esi, 0
++	pushl_cfi %edx
++	CFI_REL_OFFSET edx, 0
++	pushl_cfi %ecx
++	CFI_REL_OFFSET ecx, 0
++	pushl_cfi %ebx
++	CFI_REL_OFFSET ebx, 0
++	.endm
++
++	.macro RESTORE_ALL
++	popl_cfi %ebx
++	CFI_RESTORE ebx
++	popl_cfi %ecx
++	CFI_RESTORE ecx
++	popl_cfi %edx
++	CFI_RESTORE edx
++	popl_cfi %esi
++	CFI_RESTORE esi
++	popl_cfi %edi
++	CFI_RESTORE edi
++	popl_cfi %ebp
++	CFI_RESTORE ebp
++	popl_cfi %eax
++	CFI_RESTORE eax
++	.endm
++
++#endif /* CONFIG_X86_64 */
++
+--- a/arch/x86/include/asm/preempt.h
++++ b/arch/x86/include/asm/preempt.h
+@@ -99,4 +99,12 @@ static __always_inline bool should_resch
+ 	return unlikely(!__this_cpu_read_4(__preempt_count));
+ }
+ 
++#ifdef CONFIG_PREEMPT
++#define __preempt_schedule() asm ("call ___preempt_schedule")
++
++#ifdef CONFIG_CONTEXT_TRACKING
++#define __preempt_schedule_context() asm ("call ___preempt_schedule_context")
++#endif
++#endif /* CONFIG_PREEMPT */
++
+ #endif /* __ASM_PREEMPT_H */
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -36,6 +36,8 @@ obj-y			+= tsc.o io_delay.o rtc.o
+ obj-y			+= pci-iommu_table.o
+ obj-y			+= resource.o
+ 
++obj-$(CONFIG_PREEMPT)	+= preempt.o
++
+ obj-y				+= process.o
+ obj-y				+= i387.o xsave.o
+ obj-y				+= ptrace.o
+--- /dev/null
++++ b/arch/x86/kernel/preempt.S
+@@ -0,0 +1,25 @@
++
++#include <linux/linkage.h>
++#include <asm/dwarf2.h>
++#include <asm/asm.h>
++#include <asm/calling.h>
++
++ENTRY(___preempt_schedule)
++	CFI_STARTPROC
++	SAVE_ALL
++	call preempt_schedule
++	RESTORE_ALL
++	ret
++	CFI_ENDPROC
++
++#ifdef CONFIG_CONTEXT_TRACKING
++
++ENTRY(___preempt_schedule_context)
++	CFI_STARTPROC
++	SAVE_ALL
++	call preempt_schedule_context
++	RESTORE_ALL
++	ret
++	CFI_ENDPROC
++
++#endif
+--- a/include/asm-generic/preempt.h
++++ b/include/asm-generic/preempt.h
+@@ -90,4 +90,14 @@ static __always_inline bool should_resch
+ 	return unlikely(!*preempt_count_ptr());
+ }
+ 
++#ifdef CONFIG_PREEMPT
++extern asmlinkage void preempt_schedule(void);
++#define __preempt_schedule() preempt_schedule()
++
++#ifdef CONFIG_CONTEXT_TRACKING
++extern asmlinkage void preempt_schedule_context(void);
++#define __preempt_schedule_context() preempt_schedule_context()
++#endif
++#endif /* CONFIG_PREEMPT */
++
+ #endif /* __ASM_PREEMPT_H */
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -50,18 +50,17 @@ do { \
+ #define preempt_enable_no_resched() sched_preempt_enable_no_resched()
+ 
+ #ifdef CONFIG_PREEMPT
+-asmlinkage void preempt_schedule(void);
+ #define preempt_enable() \
+ do { \
+ 	barrier(); \
+ 	if (unlikely(preempt_count_dec_and_test())) \
+-		preempt_schedule(); \
++		__preempt_schedule(); \
+ } while (0)
+ 
+ #define preempt_check_resched() \
+ do { \
+ 	if (should_resched()) \
+-		preempt_schedule(); \
++		__preempt_schedule(); \
+ } while (0)
+ 
+ #else
+@@ -83,17 +82,15 @@ do { \
+ 
+ #ifdef CONFIG_PREEMPT
+ 
+-#ifdef CONFIG_CONTEXT_TRACKING
+-asmlinkage void preempt_schedule_context(void);
+-#else
+-#define preempt_schedule_context() preempt_schedule()
++#ifndef CONFIG_CONTEXT_TRACKING
++#define __preempt_schedule_context() __preempt_schedule()
+ #endif
+ 
+ #define preempt_enable_notrace() \
+ do { \
+ 	barrier(); \
+ 	if (unlikely(__preempt_count_dec_and_test())) \
+-		preempt_schedule_context(); \
++		__preempt_schedule_context(); \
+ } while (0)
+ #else
+ #define preempt_enable_notrace() preempt_enable_no_resched_notrace()
+
+
