@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab3IQXLP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 19:11:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60566 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab3IQXLO (ORCPT
+	id S1754036Ab3IQXSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 19:18:07 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:13981 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752890Ab3IQXSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 19:11:14 -0400
-Date: Wed, 18 Sep 2013 09:11:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: old trees
-Message-Id: <20130918091104.e59e7f2e96b540bdc90f29fc@canb.auug.org.au>
-In-Reply-To: <CA+5PVA6YxDCFbYbBdds1P-k3TPQbcp=VOcKdzRrpfSSk8y3gmg@mail.gmail.com>
-References: <20130917170124.0afa2e103a9977355ad7c72c@canb.auug.org.au>
-	<CA+5PVA6YxDCFbYbBdds1P-k3TPQbcp=VOcKdzRrpfSSk8y3gmg@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__18_Sep_2013_09_11_04_+1000_SHsG1K1Cd.8ak/+E"
+	Tue, 17 Sep 2013 19:18:05 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/MMQcWAr9g+fV3Ty9PdU+V
+Date: Tue, 17 Sep 2013 16:17:44 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: Dave Martin <Dave.Martin@arm.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        "nm@ti.com" <nm@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "aaro.koskinen@iki.fi" <aaro.koskinen@iki.fi>,
+        "pdeschrijver@nvidia.com" <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 1/2] ARM: OMAP: Add secure function omap_smc3()
+ which calling instruction smc #1
+Message-ID: <20130917231744.GJ9994@atomide.com>
+References: <20130916171023.GA17477@localhost.localdomain>
+ <20130917154331.GA9994@atomide.com>
+ <201309171753.24433@pali>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201309171753.24433@pali>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__18_Sep_2013_09_11_04_+1000_SHsG1K1Cd.8ak/+E
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Pali Rohár <pali.rohar@gmail.com> [130917 09:01]:
+> On Tuesday 17 September 2013 17:43:31 Tony Lindgren wrote:
+> > Have you guys checked how this works with the recently posted
+> > "[PATCH v6 0/5] ARM: support for Trusted Foundations secure
+> > monitor" series?
+> 
+> this code looks like some Tegra and "Trusted Foundations" 
+> specific. There is Note: The API followed by Trusted Foundations 
+> does *not* follow the SMC calling conventions.  Also code calling 
+> smc #0 instruction, so in my opinion for rx51 it is useless.
 
-Hi Josh,
+OK, so still no generic SMC code then :( This patch is fine
+with me.
+ 
+> Tony, can you include this two rx51 secure patches (patch v4 1/2 
+> and patch v2 2/2)? Or is there some any other problem?
 
-On Tue, 17 Sep 2013 08:53:16 -0400 Josh Boyer <jwboyer@gmail.com> wrote:
->
-> > 4xx             1 year, 4 months ago
->=20
-> This is subarch is basically in maintenance mode.  There have only
-> been a handful of patches that have been submitted over the past year,
-> and I've ACKed them for Ben to bring in via his tree.  The arch isn't
-> dead, but it's certainly not going to have much in the way of new
-> changes.  The overall powerpc tree is probably sufficient for
-> linux-next.
+No other comments on this patch, I'll post some comments on the
+v2 2/2 patch considering we're moving to device tree based
+booting.
 
-Removed.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Regards,
 
---Signature=_Wed__18_Sep_2013_09_11_04_+1000_SHsG1K1Cd.8ak/+E
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSOOGQAAoJEECxmPOUX5FEqkoP/RbUgGfJoXtmSiUyF2m/Ab4k
-MmkHAp7rZ/65s6ongKzSNllJAKjOfMhAz3LdBChPxkp/jBepyQi+O7LtSZBlkcoy
-+sNZwpW2VXB4dyv+6XWpg7T9WXYit3lIF5YWvdZPgUY+GqrGEcY0mY3gzCg6Xtwi
-oK09bTgMYqwHN3UNL8BQlCkXAMa6N/luQbly20SZ1xsxoo3gi6pKRwtBjUL4UiJm
-1uo3tIY8xX1ntX93tL46L4kq7Xh4CwOard6So//hXI3Y/5WFbxf2VSA+F8nFq4/+
-yDYDpvY8zctsq5la4WILXkPlnbE1XMzXc/binKYyKh5JVED4vBgS/I3mdYXxWEzM
-e+uSJdADSvcDQMa/AziDeQfHVh+DUgj7SB5nsNTnxtP4aAMfjDZbHXgI12jvu9uu
-qIp8TVq/ESoCR8wcY4XF2/hh1tNIoOhh/fRbvZPBe1SYmd6jbHobMxcL/GF1mpBF
-xOtuZXhX9cugDjbgFJGRwQBDNaZMXBuC2Suy5rDE6XW1851tbHvlXMrRA+KJDZuS
-7M9nqTRj0Obysbg3ptjvkOzzXw3f1ixAs/cYhakCHHo2EdD0NfifYTrA6wHlx7i5
-PLlhvF+rJCM5iFJcy5FCKpsmII0gjanMWpPRmN3AORxL9g/Tm+fo6TjNe5BryTOu
-1cFRzeyK8TOsO7QAaW6L
-=DwuF
------END PGP SIGNATURE-----
-
---Signature=_Wed__18_Sep_2013_09_11_04_+1000_SHsG1K1Cd.8ak/+E--
+Tony
