@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab3IQJQo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 05:16:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42987 "EHLO
+	id S1752617Ab3IQJQm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 05:16:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42991 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab3IQJP2 (ORCPT
+	with ESMTP id S1752307Ab3IQJP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Sep 2013 05:15:28 -0400
-Message-Id: <20130917091143.449530904@infradead.org>
-Date: Tue, 17 Sep 2013 11:10:48 +0200
+Message-Id: <20130917091143.742972903@infradead.org>
+Date: Tue, 17 Sep 2013 11:10:52 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>
@@ -17,80 +17,234 @@ Cc: Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Arjan van de Ven <arjan@linux.intel.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 02/11] sched, rcu: Make RCU use resched_cpu()
+        linux-arch@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 06/11] sched: Add NEED_RESCHED to the preempt_count
 References: <20130917082838.218329307@infradead.org>
-Content-Disposition: inline; filename=peterz-rcu-resched_cpu.patch
+Content-Disposition: inline; filename=peterz-preempt_count-need_resched.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're going to deprecate and remove set_need_resched() for it will do
-the wrong thing. Make an exception for RCU and allow it to use
-resched_cpu() which will do the right thing.
+In order to combine the preemption and need_resched test we need to
+fold the need_resched information into the preempt_count value.
 
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Since the NEED_RESCHED flag is set across CPUs this needs to be an
+atomic operation, however we very much want to avoid making
+preempt_count atomic, therefore we keep the existing TIF_NEED_RESCHED
+infrastructure in place but at 3 sites test it and fold its value into
+preempt_count; namely:
+
+ - resched_task() when setting TIF_NEED_RESCHED on the current task
+ - scheduler_ipi() when resched_task() sets TIF_NEED_RESCHED on a
+                   remote task it follows it up with a reschedule IPI
+                   and we can modify the cpu local preempt_count from
+                   there.
+ - cpu_idle_loop() for when resched_task() found tsk_is_polling().
+
+We use an inverted bitmask to indicate need_resched so that a 0 means
+both need_resched and !atomic.
+
+Also remove the barrier() in preempt_enable() between
+preempt_enable_no_resched() and preempt_check_resched() to avoid
+having to reload the preemption value and allow the compiler to use
+the flags of the previuos decrement. I couldn't come up with any sane
+reason for this barrier() to be there as preempt_enable_no_resched()
+already has a barrier() before doing the decrement.
+
+Suggested-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- kernel/rcutree.c    |   15 ++++++++++++++-
- kernel/sched/core.c |    4 ++--
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ include/linux/preempt.h   |   42 +++++++++++++++++++++++++++++++++++++-----
+ include/linux/sched.h     |    2 +-
+ kernel/context_tracking.c |    2 +-
+ kernel/cpu/idle.c         |    7 +++++++
+ kernel/sched/core.c       |   18 ++++++++++++++----
+ 5 files changed, 60 insertions(+), 11 deletions(-)
 
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -898,6 +898,12 @@ static void print_other_cpu_stall(struct
- 	force_quiescent_state(rsp);  /* Kick them all. */
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -10,9 +10,19 @@
+ #include <linux/linkage.h>
+ #include <linux/list.h>
+ 
++/*
++ * We use the MSB mostly because its available; see <linux/hardirq.h> for
++ * the other bits.
++ */
++#define PREEMPT_NEED_RESCHED	0x80000000
++
++/*
++ * We mask the PREEMPT_NEED_RESCHED bit so as not to confuse all current users
++ * that think a non-zero value indicates we cannot preempt.
++ */
+ static __always_inline int preempt_count(void)
+ {
+-	return current_thread_info()->preempt_count;
++	return current_thread_info()->preempt_count & ~PREEMPT_NEED_RESCHED;
+ }
+ 
+ static __always_inline int *preempt_count_ptr(void)
+@@ -20,6 +30,30 @@ static __always_inline int *preempt_coun
+ 	return &current_thread_info()->preempt_count;
  }
  
 +/*
-+ * This function really isn't for public consumption, but RCU is special in
-+ * that context switches can allow the state machine to make progress.
++ * We fold the NEED_RESCHED bit into the preempt count such that
++ * preempt_enable() can decrement and test for needing to reschedule with a
++ * single instruction.
++ *
++ * We invert the actual bit, so that when the decrement hits 0 we know we both
++ * need to resched (the bit is cleared) and can resched (no preempt count).
 + */
-+extern void resched_cpu(int cpu);
 +
- static void print_cpu_stall(struct rcu_state *rsp)
- {
- 	int cpu;
-@@ -927,7 +933,14 @@ static void print_cpu_stall(struct rcu_s
- 				     3 * rcu_jiffies_till_stall_check() + 3;
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
++static __always_inline void set_preempt_need_resched(void)
++{
++	*preempt_count_ptr() &= ~PREEMPT_NEED_RESCHED;
++}
++
++static __always_inline void clear_preempt_need_resched(void)
++{
++	*preempt_count_ptr() |= PREEMPT_NEED_RESCHED;
++}
++
++static __always_inline bool test_preempt_need_resched(void)
++{
++	return !(*preempt_count_ptr() & PREEMPT_NEED_RESCHED);
++}
++
+ #if defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER)
+   extern void add_preempt_count(int val);
+   extern void sub_preempt_count(int val);
+@@ -37,7 +71,7 @@ asmlinkage void preempt_schedule(void);
  
--	set_need_resched();  /* kick ourselves to get things going. */
-+	/*
-+	 * Attempt to revive the RCU machinery by forcing a context switch.
-+	 *
-+	 * A context switch would normally allow the RCU state machine to make
-+	 * progress and it could be we're stuck in kernel space without context
-+	 * switches for an entirely unreasonable amount of time.
-+	 */
-+	resched_cpu(smp_processor_id());
+ #define preempt_check_resched() \
+ do { \
+-	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
++	if (unlikely(!*preempt_count_ptr())) \
+ 		preempt_schedule(); \
+ } while (0)
+ 
+@@ -47,7 +81,7 @@ void preempt_schedule_context(void);
+ 
+ #define preempt_check_resched_context() \
+ do { \
+-	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
++	if (unlikely(!*preempt_count_ptr())) \
+ 		preempt_schedule_context(); \
+ } while (0)
+ #else
+@@ -83,7 +117,6 @@ do { \
+ #define preempt_enable() \
+ do { \
+ 	preempt_enable_no_resched(); \
+-	barrier(); \
+ 	preempt_check_resched(); \
+ } while (0)
+ 
+@@ -111,7 +144,6 @@ do { \
+ #define preempt_enable_notrace() \
+ do { \
+ 	preempt_enable_no_resched_notrace(); \
+-	barrier(); \
+ 	preempt_check_resched_context(); \
+ } while (0)
+ 
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2408,7 +2408,7 @@ static inline int signal_pending_state(l
+ 
+ static inline int need_resched(void)
+ {
+-	return unlikely(test_thread_flag(TIF_NEED_RESCHED));
++	return unlikely(test_preempt_need_resched());
  }
  
- static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
+ /*
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -115,7 +115,7 @@ void __sched notrace preempt_schedule_co
+ {
+ 	enum ctx_state prev_ctx;
+ 
+-	if (likely(!preemptible()))
++	if (likely(preempt_count() || irqs_disabled()))
+ 		return;
+ 
+ 	/*
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -105,6 +105,13 @@ static void cpu_idle_loop(void)
+ 				__current_set_polling();
+ 			}
+ 			arch_cpu_idle_exit();
++			/*
++			 * We need to test and propagate the TIF_NEED_RESCHED
++			 * bit here because we might not have send the
++			 * reschedule IPI to idle tasks.
++			 */
++			if (tif_need_resched())
++				set_preempt_need_resched();
+ 		}
+ 		tick_nohz_idle_exit();
+ 		schedule_preempt_disabled();
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -513,12 +513,11 @@ static inline void init_hrtick(void)
-  * might also involve a cross-CPU call to trigger the scheduler on
-  * the target CPU.
-  */
--#ifdef CONFIG_SMP
- void resched_task(struct task_struct *p)
- {
- 	int cpu;
+@@ -525,8 +525,10 @@ void resched_task(struct task_struct *p)
+ 	set_tsk_need_resched(p);
  
--	assert_raw_spin_locked(&task_rq(p)->lock);
-+	lockdep_assert_held(&task_rq(p)->lock);
- 
- 	if (test_tsk_need_resched(p))
+ 	cpu = task_cpu(p);
+-	if (cpu == smp_processor_id())
++	if (cpu == smp_processor_id()) {
++		set_preempt_need_resched();
  		return;
-@@ -546,6 +545,7 @@ void resched_cpu(int cpu)
- 	raw_spin_unlock_irqrestore(&rq->lock, flags);
- }
++	}
  
-+#ifdef CONFIG_SMP
- #ifdef CONFIG_NO_HZ_COMMON
- /*
-  * In the semi idle case, use the nearest busy cpu for migrating timers
+ 	/* NEED_RESCHED must be visible before we test polling */
+ 	smp_mb();
+@@ -1397,6 +1399,14 @@ static void sched_ttwu_pending(void)
+ 
+ void scheduler_ipi(void)
+ {
++	/*
++	 * Fold TIF_NEED_RESCHED into the preempt_count; anybody setting
++	 * TIF_NEED_RESCHED remotely (for the first time) will also send
++	 * this IPI.
++	 */
++	if (tif_need_resched())
++		set_preempt_need_resched();
++
+ 	if (llist_empty(&this_rq()->wake_list)
+ 			&& !tick_nohz_full_cpu(smp_processor_id())
+ 			&& !got_nohz_idle_kick())
+@@ -2431,6 +2441,7 @@ static void __sched __schedule(void)
+ 	put_prev_task(rq, prev);
+ 	next = pick_next_task(rq);
+ 	clear_tsk_need_resched(prev);
++	clear_preempt_need_resched();
+ 	rq->skip_clock_update = 0;
+ 
+ 	if (likely(prev != next)) {
+@@ -2517,7 +2528,7 @@ asmlinkage void __sched notrace preempt_
+ 	 * If there is a non-zero preempt_count or interrupts are disabled,
+ 	 * we do not want to preempt the current task. Just return..
+ 	 */
+-	if (likely(!preemptible()))
++	if (likely(preempt_count() || irqs_disabled()))
+ 		return;
+ 
+ 	do {
+@@ -2542,11 +2553,10 @@ EXPORT_SYMBOL(preempt_schedule);
+  */
+ asmlinkage void __sched preempt_schedule_irq(void)
+ {
+-	struct thread_info *ti = current_thread_info();
+ 	enum ctx_state prev_state;
+ 
+ 	/* Catch callers which need to be fixed */
+-	BUG_ON(ti->preempt_count || !irqs_disabled());
++	BUG_ON(preempt_count() || !irqs_disabled());
+ 
+ 	prev_state = exception_enter();
+ 
 
 
