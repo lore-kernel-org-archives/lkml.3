@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab3IQFIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 01:08:47 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53424 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108Ab3IQFIn (ORCPT
+	id S1751608Ab3IQFZR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 01:25:17 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:56819 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab3IQFZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 01:08:43 -0400
-Date: Tue, 17 Sep 2013 15:08:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Julia Lawall <julia.lawall@lip6.fr>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: Re: Please add PTR_RET tree.
-Message-Id: <20130917150832.99e30b0d5f34697660b7e5a2@canb.auug.org.au>
-In-Reply-To: <87y56wz2xc.fsf@rustcorp.com.au>
-References: <8738rg30cw.fsf@rustcorp.com.au>
-	<20130715173826.f698f36373c6f701126b42d3@canb.auug.org.au>
-	<87y56wz2xc.fsf@rustcorp.com.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__17_Sep_2013_15_08_32_+1000_JKE94PIQ7cPN1l0/"
+	Tue, 17 Sep 2013 01:25:14 -0400
+Message-ID: <5237E7A9.5070703@synopsys.com>
+Date: Tue, 17 Sep 2013 10:54:57 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Rob Herring <rob.herring@calxeda.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 03/28] of: create unflatten_and_copy_device_tree
+References: <1379372965-22359-1-git-send-email-robherring2@gmail.com> <1379372965-22359-4-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1379372965-22359-4-git-send-email-robherring2@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Sep_2013_15_08_32_+1000_JKE94PIQ7cPN1l0/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/17/2013 04:38 AM, Rob Herring wrote:
+> From: Rob Herring <rob.herring-bsGFqQB8/DxBDgjK7y7TUQ@public.gmane.org>
+> 
+> Several architectures using DT support built-in dtb's in the init
+> section. These platforms need to copy the dtb from init since the
+> strings are referenced after unflattening. Every arch has their own
+> copying routine which do the same thing. Create a common function,
+> unflatten_and_copy_device_tree, to copy the dtb when unflattening the
+> dtb.
+> 
+> Signed-off-by: Rob Herring <rob.herring-bsGFqQB8/DxBDgjK7y7TUQ@public.gmane.org>
+> Cc: Grant Likely <grant.likely-QSEj5FYQhm4dnm+yROfE0A@public.gmane.org>
+> ---
+>  drivers/of/fdt.c       | 13 +++++++++++++
+>  include/linux/of_fdt.h |  2 ++
+>  2 files changed, 15 insertions(+)
+> 
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index 229dd9d..eca1810 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -802,6 +802,19 @@ void __init unflatten_device_tree(void)
+>  	of_alias_scan(early_init_dt_alloc_memory_arch);
+>  }
+>  
+> +void __init unflatten_and_copy_device_tree(void)
+> +{
 
-Hi Rusty,
+Can we add a comment here why exactly is the copy needed (unflattening doesn't
+copy strings which are referenced to by the DT APIs). Will help first time readers.
 
-On Tue, 17 Sep 2013 10:20:55 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
-ote:
->
-> Please remove PTR_RET tree, it's merged.
 
-OK, thanks for letting me know.
+> +	int size = __be32_to_cpu(initial_boot_params->totalsize);
+> +	void *dt = early_init_dt_alloc_memory_arch(size,
+> +		__alignof__(struct boot_param_header));
+> +
+> +	if (dt) {
+> +		memcpy(dt, initial_boot_params, size);
+> +		initial_boot_params = dt;
+> +	}
+> +	unflatten_device_tree();
+> +}
+> +
+>  #endif /* CONFIG_OF_EARLY_FLATTREE */
+>  
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__17_Sep_2013_15_08_32_+1000_JKE94PIQ7cPN1l0/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSN+PUAAoJEECxmPOUX5FEQREP/RD2VB1ajN4tKgZLMe24P6Sy
-wRZP/DwBgSc3qy4pQ6wsi3dWffu0DJMqv6N4MN61AkIMQaivWCYXmI532Bf4/4hY
-bxLJ6YYFrxcnO0s9zFFFhOntEIGWx1vRp00NaJtraCb/kXWxEK74x4Ha0pNjR0+7
-2VM+V7OlEpC7itUgLiKQPPSeqQWrJQd9jA2uTIgqqoAg9/SepH+vdWvy6nn/zssV
-uaCM9G6WYxROrpEACTeQK9KPXpnf8f9kJOhrVxT+Xx6cOtaB5zSEWzYzF1ndQR+S
-RQVdBgd+GODcY+yPDIsMthp5/0nPb5dzX4+ve5VW4rUmQ90OV0wcXMtyndS4Fppm
-zu5xjQKekESNNmQX4AXEqWlkECYs5RUfkvpzUBuy6Bcji9bofmURaFzbkaCRCdjm
-ycIl0bhOirc6IXJt9FvcYVBwvq0/psbjvskduJUOOVXKfZ3y8ztKCWhcDuLSQUZc
-jKWPSLXYPQ9nejFS+K/xY/u3bwxzTyIWvDpS64z/+zmI/F0iu8zPY14wqUjq5QKF
-K5das3FakShFbl5vTE1lL5T55oRiqmMd1nIYRRZPKE0TcP1g8BFNrfjd7eXYu+Tu
-cl+sKE/tPyPFYM1ihxWLEqjGhMMQDdvBFwAtsdGYwECklc7ZXWtA+OYVJL1/uRXs
-CR/v4+u83bUfV7e+oQn0
-=QhvM
------END PGP SIGNATURE-----
-
---Signature=_Tue__17_Sep_2013_15_08_32_+1000_JKE94PIQ7cPN1l0/--
