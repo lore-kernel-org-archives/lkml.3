@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab3IQOWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 10:22:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57463 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607Ab3IQOWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 10:22:49 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>,
-        =?UTF-8?q?J=C3=B6rn=20Engel?= <joern@logfs.org>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>
-Subject: [RFC PATCH RESEND] mm: munlock: Prevent walking off the end of a pagetable in no-pmd configuration
-Date: Tue, 17 Sep 2013 16:22:19 +0200
-Message-Id: <1379427739-31451-1-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <52385A59.2080304@suse.cz>
-References: <52385A59.2080304@suse.cz>
+	id S1753065Ab3IQOXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 10:23:53 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:52712 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab3IQOXv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 10:23:51 -0400
 MIME-Version: 1.0
+In-Reply-To: <1379421817-15759-5-git-send-email-Russ.Dill@ti.com>
+References: <1379421817-15759-1-git-send-email-Russ.Dill@ti.com>
+	<1379421817-15759-5-git-send-email-Russ.Dill@ti.com>
+Date: Tue, 17 Sep 2013 16:23:51 +0200
+X-Google-Sender-Auth: q7h0ap-hEsGTdq1x5EojukuTo4k
+Message-ID: <CAMuHMdVT-hhJnww64mFa6nubHrHk-ZHuoe9GwGgBCEA2G0B2Bg@mail.gmail.com>
+Subject: Re: [RFC PATCH 04/11] asm-generic: fncpy: Add function copying macros
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Russ Dill <Russ.Dill@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>, mans@mansr.com,
+        Shawn Guo <shawn.guo@linaro.org>, Dave Martin <Dave.Martin@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function __munlock_pagevec_fill() introduced in commit 7a8010cd3
-("mm: munlock: manual pte walk in fast path instead of follow_page_mask()")
-uses pmd_addr_end() for restricting its operation within current page table.
-This is insufficient on architectures/configurations where pmd is folded
-and pmd_addr_end() just returns the end of the full range to be walked. In
-this case, it allows pte++ to walk off the end of a page table resulting in
-unpredictable behaviour.
+On Tue, Sep 17, 2013 at 2:43 PM, Russ Dill <Russ.Dill@ti.com> wrote:
+> +++ b/arch/alpha/include/asm/fncpy.h
+> @@ -0,0 +1 @@
+> +#include <asm-generic/fncpy.h>
 
-This patch fixes the function by using pgd_addr_end() and pud_addr_end()
-before pmd_addr_end(), which will yield correct page table boundary on all
-configurations. This is similar to what existing page walkers do when walking
-each level of the page table.
+Please add
 
-Additionaly, the patch clarifies a comment for get_locked_pte() call in the
-function.
+    generic-y += fncpy.h
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jörn Engel <joern@logfs.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
----
- mm/mlock.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+to arch/<arch>/include/asm/Kbuild instead.
 
-diff --git a/mm/mlock.c b/mm/mlock.c
-index d638026..758c0fc 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -379,10 +379,14 @@ static unsigned long __munlock_pagevec_fill(struct pagevec *pvec,
- 
- 	/*
- 	 * Initialize pte walk starting at the already pinned page where we
--	 * are sure that there is a pte.
-+	 * are sure that there is a pte, as it was pinned under the same
-+	 * mmap_sem write op.
- 	 */
- 	pte = get_locked_pte(vma->vm_mm, start,	&ptl);
--	end = min(end, pmd_addr_end(start, end));
-+	/* Make sure we do not cross the page table boundary */
-+	end = pgd_addr_end(start, end);
-+	end = pud_addr_end(start, end);
-+	end = pmd_addr_end(start, end);
- 
- 	/* The page next to the pinned page is the first we will try to get */
- 	start += PAGE_SIZE;
--- 
-1.8.1.4
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
