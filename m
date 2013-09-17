@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab3IQXZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 19:25:12 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:65194 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299Ab3IQXZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 19:25:10 -0400
+	id S1754087Ab3IQXdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 19:33:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16800 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752890Ab3IQXdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 19:33:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,926,1371106800"; 
+   d="scan'208";a="397267234"
+Date: Wed, 18 Sep 2013 07:33:28 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: [PATCH] regulator: fix fatal kernel-doc error
+Message-ID: <20130917233328.GC11390@localhost>
+References: <5237AB72.5020806@infradead.org>
+ <20130917103238.GM21013@sirena.org.uk>
+ <52388CC4.7040101@infradead.org>
+ <20130917192355.GK21013@sirena.org.uk>
 MIME-Version: 1.0
-X-Originating-IP: [208.54.5.211]
-In-Reply-To: <1379459060.6148.10.camel@pasglop>
-References: <1379300274.4098.77.camel@pasglop>
-	<5238C4D1.6060500@gmail.com>
-	<CAOesGMh0F09OAR4bepGSCE5Z5OZ56fBmDPBSfwZ+NB9RgcE0Vw@mail.gmail.com>
-	<2179723.s3DLWi0P8b@flatron>
-	<CAOesGMjt6RsvYRjXxpB=v-Ro6iyUN=YzkDd1mfHqCDJJDRJvLg@mail.gmail.com>
-	<1379459060.6148.10.camel@pasglop>
-Date: Tue, 17 Sep 2013 16:25:08 -0700
-Message-ID: <CAOesGMhzc=BCDBYcidKHhFbwuD1r4R2ePbdYRCTgX2USdXPnRQ@mail.gmail.com>
-Subject: Re: "memory" binding issues
-From: Olof Johansson <olof@lixom.net>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, Frank Rowand <frowand.list@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130917192355.GK21013@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 4:04 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Tue, 2013-09-17 at 14:33 -0700, Olof Johansson wrote:
->> > I don't think it's broken, why do you think so? It's at least
->> consistent.
->> > Probably not perfect and not complete, but IMHO a reasonable base
->> for
->> > further work. (Also at least something written down that people can
->> learn
->> > from and/or refer to.)
->>
->> So, I stand corrected. It seems that at least one legacy system I'm
->> looking at always specifies unit address as well. I don't like it but
->> I'll stop arguing.
->>
->> Ben: The interesting part is that it does _not_ specify it on /memory
->> though. Nor, of course, on /cpus or /openprom. So assuming /memory@0
->> exists will break even on some powerpc platforms.
->
-> What system is that out of curiosity ? Also make sure it's not just
-> Linux being an idiot and stripping the @0 in /proc/device-tree ...
->
-> (I think some old versions of /proc code would strip it)
->
-> Or is that some insanely broken OF like Apple old world or Pegasos ?
->
-> If it's just embedded .dts files, yes, I fixed some, but we might still
-> have some bad ones.
+On Tue, Sep 17, 2013 at 08:23:55PM +0100, Mark Brown wrote:
+> On Tue, Sep 17, 2013 at 10:09:24AM -0700, Randy Dunlap wrote:
+> > On 09/17/13 03:32, Mark Brown wrote:
+ 
+> > /** means kernel-doc syntax and it was not in proper kernel-doc format,
+> > but maybe it could just be a Warning instead of a fatal Error.
+> 
+> Yes, that's what I'm saying - it really doesn't seem like something that
+> should be a fatal error, that's far too fragile.
+> 
+> > Ideally we should pick it up in -next, of course, but I doubt that anyone
+> > is running kernel-doc on linux-next.  I used to do that, but there are
+> > too many errors/warnings.  I suppose that I could just concentrate on
+> > (fatal) Errors in linux-next and ignore the Warnings.
+> 
+> Could these checks be added to Fengguang's tester?  If nobody's looking
+> at the output (I've never found the processed output useful myself) or
+> running the tool then it's a bit worrying...
 
-The only powerpc hardware I still have these days is PA Semi systems,
-so it's from one of them, with current -next kernel. Booted with OF
-client interface, no dts file that can be fixed.
+Yes, I'm running "make htmldocs" checks and send out all new warnings:
 
-> In any case, we all agree, the right thing to do first is to fix our
-> path parser to cope either way.
+ Sep 03 To Mark Brown   (  19:0) [regulator:topic/devm 5/15] Warning(drivers/regulator/core.c:3750): No description found for parameter 'dev'
+ Sep 06 To Miklos Szere (  20:0) [vfs:for-miklos 34/43] Warning(fs/dcache.c:1167): No description found for parameter 'data'
+ Sep 10 To Waiman Long  (  22:0) [vfs:for-next 9/10] Warning(fs/dcache.c:102): No description found for parameter 'lock'
+ Sep 11 To Lars-Peter C (  25:0) [xlnx:master-next 96/99] Warning(drivers/gpu/drm/drm_edid.c:1061): No description found for parameter 'data'    
+ Sep 12 To Brian Norris (  13:0) [l2-mtd:master 9/11] Warning(include/linux/mtd/nand.h:587): Excess struct/union/enum/typedef member 'ecclayout'
 
-Yep, I just wanted to alert you that there's powerpc systems out there
-with just /memory as well.
+Does that sound enough?
 
-
--Olof
+Thanks,
+Fengguang
