@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab3IQEmv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 00:42:51 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:49867 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab3IQEms convert rfc822-to-8bit (ORCPT
+	id S1751794Ab3IQEqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 00:46:45 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:57539 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3IQEqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 00:42:48 -0400
-Date: Mon, 16 Sep 2013 14:44:53 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [RFC] extending splice for copy offloading
-To: Eric Wong <normalperson@yhbt.net>
-Cc: Zach Brown <zab@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
-References: <1378919210-10372-1-git-send-email-zab@redhat.com>
-	<20130911211722.GA9725@dcvr.yhbt.net>
-In-Reply-To: <20130911211722.GA9725@dcvr.yhbt.net> (from
-	normalperson@yhbt.net on Wed Sep 11 16:17:23 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1379360693.1974.29@driftwood>
+	Tue, 17 Sep 2013 00:46:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1379356930.3422.71.camel@linaro1.home>
+References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
+	<1379348823.3422.42.camel@linaro1.home>
+	<CAKohpomEQsS-WHQpa=_07NQ1FXDB711inrmMgUguD529BA7g1A@mail.gmail.com>
+	<1379356930.3422.71.camel@linaro1.home>
+Date: Tue, 17 Sep 2013 10:16:42 +0530
+Message-ID: <CAKohpo=kgYoSKJVpQRPP-QVZXWYXgD4OXukPyzdgC-6n0DhsWA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: unlock correct rwsem while updating policy->cpu
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 04:17:23 PM, Eric Wong wrote:
-> Zach Brown <zab@redhat.com> wrote:
-> > Towards the end of that thread Eric Wong asked why we didn't just
-> > extend splice.  I immediately replied with some dumb dismissive
-> > answer.  Once I sat down and looked at it, though, it does make a
-> > lot of sense.  So good job, Eric.  +10 Dummie points for me.
-> 
-> Thanks for revisiting that :>
-> 
-> > Some things to talk about:
-> > - I really don't care about the naming here.  If you do, holler.
-> 
-> Exposing "DIRECT" to userspace now might confuse users into expecting
-> O_DIRECT behavior.  I say this as an easily-confused user.
-> 
-> In the future, perhaps O_DIRECT behavior can become per-splice  
-> (instead
-> of just per-open) and can save SPLICE_F_DIRECT for that.
-> 
-> > - We might want different flags for file-to-file splicing and  
-> acceleration
-> > - We might want flags to require or forbid acceleration
-> 
-> > - We might want to provide all these flags to sendfile, too
-> 
-> Another syscall?  I prefer not.  Better to just maintain the sendfile
-> API as-is for compatibility reasons and nudge users towards splice.
-> 
-> > Thoughts?  Objections?
-> 
-> I'll try to test/comment more in a week or two (not much time for
-> computing until then).
+On 17 September 2013 00:12, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
+> The commit log to that patch still mentions taking both locks.
 
-Just a vague note that I've wanted to use splice implementing cp and  
-patch and cat and so on in toybox, but couldn't because it needs a pipe.
+Yeah, it was sent in hurry to just give you a working solution and I forgot
+to see the log if it is still valid.
 
-So I'm quite interested in moves to lift this restriction...
+> The code itself fixes the lockdep errors I had, so
+>
+> Tested-by: Jon Medhurst <tixy@linaro.org>
 
-Rob
+Great!!
+
+> however, I still have concerns about the locking (below)...
+
+:(
+
+> But what about reads, like in cpufreq_frequency_table_update_policy_cpu
+> which is called immediately after the unlocking writes? Should that not
+> be covered by a reader lock?
+>
+> And after that call, policy is passed into blocking_notifier_call_chain,
+> do those callbacks not want to look at policy fields? Or are they going
+> to do there own locking?
+
+policy->cpu is used at multiple places outside of cpufreq.c and cpufreq
+core can't really put read locks for those accesses. Things will turn bad
+only if cpufreq core has got these races where we are trying to access
+a struct or pointer that belonged to the last policy->cpu, which is updated
+now.. For example the case of lock you reported.. And so lock is required
+only for those places..
+
+> Or is update_policy_cpu itself meant to be called with a read lock held?
+
+No.
+
+> This is the first time I've looked at this code, so feel free just to
+> say 'it's complicated, just trust me, I'm the expert, I know what I'm
+> doing'...
+
+We aren't that rude :)
+
+Now, that you have tested this patch let me resent it...
