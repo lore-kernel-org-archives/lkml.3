@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab3IQFo2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 01:44:28 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:55674 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab3IQFoZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 01:44:25 -0400
+	id S1751951Ab3IQFqG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 01:46:06 -0400
+Received: from mga14.intel.com ([143.182.124.37]:10488 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751445Ab3IQFqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 01:46:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,920,1371106800"; 
+   d="scan'208";a="361531767"
+Date: Tue, 17 Sep 2013 10:26:53 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Matt Porter <matt.porter@linaro.org>, Dan Williams <djbw@fb.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dma/Kconfig: Make TI_EDMA select TI_PRIV_EDMA
+Message-ID: <20130917045653.GO17188@intel.com>
+References: <20130904133203.GB12834@hansolo.jdub.homelinux.org>
+ <20130904161045.GG12834@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
-In-Reply-To: <52379fe8.c250e00a.63fd.ffff8ccdSMTPIN_ADDED_BROKEN@mx.google.com>
-References: <1379202342-23140-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1379202342-23140-3-git-send-email-liwanp@linux.vnet.ibm.com>
- <523776D4.4070402@jp.fujitsu.com> <52379fe8.c250e00a.63fd.ffff8ccdSMTPIN_ADDED_BROKEN@mx.google.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Tue, 17 Sep 2013 01:44:04 -0400
-X-Google-Sender-Auth: zirawOGDsKNb74Q9_kKtb3PFZSY
-Message-ID: <CAHGf_=oqB-WfYansyoGb3E+Rs9z4aK2N7+m8jTyobgRUoD=LpA@mail.gmail.com>
-Subject: Re: [RESEND PATCH v5 3/4] mm/vmalloc: revert "mm/vmalloc.c: check
- VM_UNINITIALIZED flag in s_show instead of show_numa_info"
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "iamjoonsoo.kim" <iamjoonsoo.kim@lge.com>,
-        David Rientjes <rientjes@google.com>, zhangyanfei@cn.fujitsu.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130904161045.GG12834@hansolo.jdub.homelinux.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 8:18 PM, Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
-> Hi KOSAKI,
-> On Mon, Sep 16, 2013 at 05:23:32PM -0400, KOSAKI Motohiro wrote:
->>On 9/14/2013 7:45 PM, Wanpeng Li wrote:
->>> Changelog:
->>>  *v2 -> v3: revert commit d157a558 directly
->>>
->>> The VM_UNINITIALIZED/VM_UNLIST flag introduced by commit f5252e00(mm: avoid
->>> null pointer access in vm_struct via /proc/vmallocinfo) is used to avoid
->>> accessing the pages field with unallocated page when show_numa_info() is
->>> called. This patch move the check just before show_numa_info in order that
->>> some messages still can be dumped via /proc/vmallocinfo. This patch revert
->>> commit d157a558 (mm/vmalloc.c: check VM_UNINITIALIZED flag in s_show instead
->>> of show_numa_info);
->>
->>Both d157a558 and your patch don't explain why your one is better. Yes, some
->>messages _can_ be dumped. But why should we do so?
->
-> More messages can be dumped and original commit f5252e00(mm: avoid null pointer
-> access in vm_struct via /proc/vmallocinfo) do that.
->
->>And No. __get_vm_area_node() doesn't use __GFP_ZERO for allocating vm_area_struct.
->>dumped partial dump is not only partial, but also may be garbage.
->
-> vm_struct is allocated by kzalloc_node.
+On Wed, Sep 04, 2013 at 12:10:45PM -0400, Josh Boyer wrote:
+> On Wed, Sep 04, 2013 at 09:32:03AM -0400, Josh Boyer wrote:
+> > The TI_EDMA driver unconditionally calls functions provided by the
+> > TI_PRIV_EDMA code, but it doesn't force that to be built-in.  If that isn't
+> > otherwise enabled somewhere, you can get build errors like:
+> > 
+> > linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:593: undefined reference to `edma_free_slot'
+> > drivers/built-in.o: In function `edma_terminate_all':
+> > linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:169: undefined reference to `edma_stop'
+> > drivers/built-in.o: In function `edma_execute':
+> > linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:122: undefined reference to `edma_write_slot'
+> > linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:149: undefined reference to `edma_link'
+> > linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:152: undefined reference to `edma_start'
+> > 
+> > Make TI_EDMA select TI_PRIV_EDMA to avoid this.
+> > 
+> > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Applied, thanks
 
-Oops, you are right. Then, your code _intentionally_ show amazing
-zero. Heh, nice.
-More message is pointless. zero is just zero. It doesn't have any information.
+~Vinod
+> 
+> Just replying to Matt's new email address as the TI one bounced when I
+> originally sent this.
+> 
+> > ---
+> >  drivers/dma/Kconfig | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> > index daa4da2..825374b 100644
+> > --- a/drivers/dma/Kconfig
+> > +++ b/drivers/dma/Kconfig
+> > @@ -198,6 +198,7 @@ config TI_EDMA
+> >  	depends on ARCH_DAVINCI || ARCH_OMAP
+> >  	select DMA_ENGINE
+> >  	select DMA_VIRTUAL_CHANNELS
+> > +	select TI_PRIV_EDMA
+> >  	default n
+> >  	help
+> >  	  Enable support for the TI EDMA controller. This DMA
+> > -- 
+> > 1.8.3.1
+> > 
 
-
->>I wonder why we need to call setup_vmalloc_vm() _after_ insert_vmap_area.
->
-> I think it's another topic.
-
-Why?
-
-
-> Fill vm_struct and set VM_VM_AREA flag. If I misunderstand your
-> question?
-
-VM_VM_AREA doesn't help. we have race between insert_vmap_area and
-setup_vmalloc_vm.
+-- 
