@@ -1,111 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab3IQOll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 10:41:41 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:55539 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752840Ab3IQOlk (ORCPT
+	id S1753167Ab3IQOom (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 10:44:42 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:52168 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab3IQOol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 10:41:40 -0400
-Message-ID: <52386A38.2050401@windriver.com>
-Date: Tue, 17 Sep 2013 10:42:00 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 17 Sep 2013 10:44:41 -0400
+Date: Tue, 17 Sep 2013 15:44:33 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mfd: arizona: Update registers for WM5110 DSP
+Message-ID: <20130917144433.GZ16984@lee--X1>
+References: <1379427784-7193-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>
-CC: Doug Ledford <dledford@redhat.com>,
-        linux-scsi list <linux-scsi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [PATCH] scsi: delete decade+ obsolete aic7xxx_old driver
-References: <y687fpks4kdsmfuadq4cykip.1379384036544@email.android.com> <52386730.4060508@suse.de>
-In-Reply-To: <52386730.4060508@suse.de>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [128.224.146.65]
+In-Reply-To: <1379427784-7193-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-09-17 10:29 AM, Hannes Reinecke wrote:
-> On 09/17/2013 04:13 AM, Doug Ledford wrote:
->> Yes, this driver is well past ready to be removed.
->>
->> Acked-by: Doug Ledford <dledford@redhat.com>
->>
->> Sent from my ASUS Pad
->>
->> Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
->>
->>> After getting warnings in an allyesconfig build[1] from this
->>> driver, I decided to remind myself just how old it was, and
->>> whether it warranted fixing.  In the Kconfig help text, I found:
->>>
->>>  "This driver will eventually be phased out entirely"
->>>
->>> Going back to the history archive, I see the line was added[2]
->>> in Feb 2002, when we moved from v2.4.2.1 ---> v2.4.2.2
->>>
->>> So, with over a decade of notification, and multiple major releases
->>> since then, I think we can justify removing this.  Currently we have
->>> people wasting time building it during routine testing, and then
->>> wasting more time re-researching the known reported warnings, only to
->>> find that nobody really is willing to integrate the fixes[3] for it.
->>>
->>> A quick search didn't seem to indicate any active user base for it.
->>> If someone happens to have a quirky _old_ card that the eleven year
->>> old "new" driver doesn't work with, then it is entirely reasonable
->>> that they stick with a kernel version that predates this removal.
->>>
->>> [1] drivers/scsi/aic7xxx_old.c: In function ‘aic7xxx_register’:
->>>    drivers/scsi/aic7xxx_old.c:7901:5: warning: case value ‘257’ not in enumerated type ‘ahc_chip’ [-Wswitch]
->>>    drivers/scsi/aic7xxx_old.c:7898:5: warning: case value ‘513’ not in enumerated type ‘ahc_chip’ [-Wswitch]
->>>    drivers/scsi/aic7xxx_old.c: In function ‘aic7xxx_load_seeprom’:
->>>    drivers/scsi/aic7xxx_old.c:8517:5: warning: case value ‘257’ not in enumerated type ‘ahc_chip’ [-Wswitch]
->>>    drivers/scsi/aic7xxx_old.c:8510:5: warning: case value ‘513’ not in enumerated type ‘ahc_chip’ [-Wswitch]
->>>
->>> [2] http://git.kernel.org/cgit/linux/kernel/git/tglx/history.git commit 44e8778c
->>>
->>> [3] https://lkml.org/lkml/2012/10/29/215
->>>
->>> Cc: Hannes Reinecke <hare@suse.de>
->>> Cc: Doug Ledford <dledford@redhat.com>
->>> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
->>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> 
-> However, if we do this we're removing support for any non-PCI based
-> adapters. I personally doubt that there are any installations left
-> running on (E)ISA or VLB. But we should be clear on this.
+On Tue, 17 Sep 2013, Charles Keepax wrote:
 
-Is the Kconfig text for the "new" driver wrong then?  It says:
-
- ---------------------
-config SCSI_AIC7XXX
-        tristate "Adaptec AIC7xxx Fast -> U160 support (New Driver)"
-        depends on (PCI || EISA) && SCSI
-        select SCSI_SPI_ATTRS
-        ---help---
-        This driver supports all of Adaptec's Fast through Ultra 160 PCI
-        based SCSI controllers as well as the aic7770 based EISA and VLB
-        SCSI controllers (the 274x and 284x series).
- ---------------------
-
-So, as long as you'd enabled either of PCI or EISA, a VLB card should
-work too.  (Of course you are correct in doubting that anyone is genuinely
-using a 486 VLB system with ~16MB RAM, so it is largely a moot point.)
-
-[I probably could delete that "(New Driver)" text as part of this commit too].
-
-Thanks,
-Paul.
---
-
+> DSPx_CONTROL_1 and DSPx_CLOCKING_1 are not volatile registers and are
+> incorrectly marked as such, fix this. Also add the DSP scratch
+> registers, which are frequently used to output debug info from the DSP
+> core.
 > 
-> In general I'm in favour removing obsolete drivers, so
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
 > 
-> Acked-by: Hannes Reinecke <hare@suse.de>
+> Version 2 of the patch, improved commit message and turns
+> out the scratch registers were missing from the readable
+> callback as well.
 > 
-> Cheers,
+> Based on Lee Jones's for-mfd-next branch.
 > 
-> Hannes
+> Thanks,
+> Charles
 > 
+>  drivers/mfd/wm5110-tables.c |   34 ++++++++++++++++++++++++++++++++--
+>  1 files changed, 32 insertions(+), 2 deletions(-)
+
+If you're sure this is the right configuration, the patch looks good to me.
+
+Applied, thanks.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
