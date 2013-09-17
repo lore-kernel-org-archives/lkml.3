@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab3IQNFy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 09:05:54 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:47609 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340Ab3IQNFx (ORCPT
+	id S1753283Ab3IQNHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 09:07:15 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:54039 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab3IQNHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 09:05:53 -0400
-Message-ID: <523853A6.3020202@monstr.eu>
-Date: Tue, 17 Sep 2013 15:05:42 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        microblaze-uclinux@itee.uq.edu.au
-Subject: Re: [PATCH 14/28] microblaze: use early_init_dt_scan
-References: <1379372965-22359-1-git-send-email-robherring2@gmail.com> <1379372965-22359-15-git-send-email-robherring2@gmail.com>
-In-Reply-To: <1379372965-22359-15-git-send-email-robherring2@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="Lpa0GQHp6MXus22vskxWhXXshSwM7PNTB"
+	Tue, 17 Sep 2013 09:07:13 -0400
+X-Nat-Received: from [202.181.97.72]:51599 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1379423166.25389
+To: keescook@chromium.org, geert@linux-m68k.org
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, linux@horizon.com,
+        dan.carpenter@oracle.com, viro@zeniv.linux.org.uk, JBeulich@suse.com,
+        kosaki.motohiro@gmail.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/2] remove all uses of printf's %n
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1379317437-28329-1-git-send-email-keescook@chromium.org>
+	<1379317437-28329-2-git-send-email-keescook@chromium.org>
+	<CAMuHMdUw7J6TmQ=13_zoC=rvGy0PZwd8VF5t3g8pjPQX5WaVUg@mail.gmail.com>
+	<CAGXu5j+f_vTknA0KCROUh3CY5spc8pE0_SxJ2uwqQhfFpuSmXQ@mail.gmail.com>
+In-Reply-To: <CAGXu5j+f_vTknA0KCROUh3CY5spc8pE0_SxJ2uwqQhfFpuSmXQ@mail.gmail.com>
+Message-Id: <201309172206.FGE12970.FQFtOSMJOVHOFL@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 17 Sep 2013 22:06:02 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 17092013 #11068910, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---Lpa0GQHp6MXus22vskxWhXXshSwM7PNTB
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Kees Cook wrote:
+> On Mon, Sep 16, 2013 at 1:09 AM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+> > On Mon, Sep 16, 2013 at 9:43 AM, Kees Cook <keescook@chromium.org> wrote:
+> >> All users of %n are calculating padding size when using seq_file, so
+> >> instead use the new last_len member for discovering the length of the
+> >> written strings.
+> >
+> > Would it make sense to provide a seq_pad(...) function instead, to avoid
+> > exposing more seq_file internals to its callers?
+> 
+> We'd still need to track how much to pad.
 
-On 09/17/2013 01:09 AM, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
->=20
-> Convert microblaze to use new early_init_dt_scan function.
->=20
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Michal Simek <monstr@monstr.eu>
-> Cc: microblaze-uclinux@itee.uq.edu.au
-> ---
->  arch/microblaze/kernel/prom.c  | 17 +++--------------
->  arch/microblaze/kernel/setup.c |  2 +-
->  2 files changed, 4 insertions(+), 15 deletions(-)
+If we add "size_t pad_until;" to "struct seq_file", we can do
 
-No problem on Microblaze with this change.
-Tested-by: Michal Simek <monstr@monstr.eu>
+void seq_setwidth(struct seq_file *m, size_t size)
+{
+	m->pad_until = m->count + size;
+}
 
-Thanks,
-Michal
+void seq_pad(struct seq_file *m, char c)
+{
+	int size = m->pad_until - m->count;
+	if (size > 0)
+		seq_printf(m, "%*s", size, "");
+	if (c)
+		seq_putc(m, c);
+}
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+and use like
 
+  seq_setwidth(m, 21);
+  seq_printf(m, "%s%d", con->name, con->index);
+  seq_pad(m, '\n');
 
-
---Lpa0GQHp6MXus22vskxWhXXshSwM7PNTB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlI4U6YACgkQykllyylKDCEs7ACgl0K7nqCqYVMAthBh6lMvoMJy
-bogAn3EYIg4OHxnJ32lAjm9V03IWdXya
-=RYSw
------END PGP SIGNATURE-----
-
---Lpa0GQHp6MXus22vskxWhXXshSwM7PNTB--
+.
