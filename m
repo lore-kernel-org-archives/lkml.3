@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640Ab3IQFxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 01:53:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39872 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab3IQFxK (ORCPT
+	id S1751793Ab3IQFy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 01:54:27 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:64279 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3IQFyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 01:53:10 -0400
-Date: Tue, 17 Sep 2013 07:53:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: eranian@google.com, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] uncore_pmu_event_init: using smp_processor_id() in
- preemptible core
-Message-ID: <20130917055302.GB12926@twins.programming.kicks-ass.net>
-References: <20130916092110.GA29018@twins.programming.kicks-ass.net>
- <5237E17A.80603@intel.com>
+	Tue, 17 Sep 2013 01:54:24 -0400
+X-AuditID: 9c93017d-b7c9eae0000024ac-51-5237ee8e59d9
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/4] perf tools: New comm infrastructure
+References: <1379017783-27032-1-git-send-email-fweisbec@gmail.com>
+	<20130912203658.GA3216@gmail.com> <20130913124354.GB4844@somewhere>
+	<20130914061148.GF364@gmail.com>
+Date: Tue, 17 Sep 2013 14:54:22 +0900
+In-Reply-To: <20130914061148.GF364@gmail.com> (Ingo Molnar's message of "Sat,
+	14 Sep 2013 08:11:49 +0200")
+Message-ID: <87li2wq9gx.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5237E17A.80603@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 12:58:34PM +0800, Yan, Zheng wrote:
-> ---
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> index fd8011e..a12a22f 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -2713,7 +2713,10 @@ struct intel_uncore_box *uncore_alloc_box(struct intel_uncore_type *type, int cp
->  
->  	size = sizeof(*box) + type->num_shared_regs * sizeof(struct intel_uncore_extra_reg);
->  
-> -	box = kzalloc_node(size, GFP_KERNEL, cpu_to_node(cpu));
-> +	if (cpu < 0)
-> +		box = kzalloc(size, GFP_KERNEL);
-> +	else
-> +		box = kzalloc_node(size, GFP_KERNEL, cpu_to_node(cpu));
->  	if (!box)
->  		return NULL;
+Hi Ingo,
 
-I believe -1 is a valid node number for all allocators, in which case
-they fall back to the current node.
+On Sat, 14 Sep 2013 08:11:49 +0200, Ingo Molnar wrote:
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> My patches and Namhyung's should improve the comm situation a lot but we 
+>> can't do much miracle. The only way would be perhaps to be able to limit 
+>> the deepness of the callchain branches.
+>> 
+>> Now may be we can find other big contention point in perf. It's possible 
+>> we also have some endless loop somewhere.
+>
+> Well, it was the 100,000+ step linear list walk that was causing 90% of 
+> the slowness here. Namhyung's patch should dramatically improve that. I 
+> guess time for someone to post a combined tree so that it can be tested 
+> all together?
 
->  
-> @@ -3031,7 +3034,7 @@ static int uncore_validate_group(struct intel_uncore_pmu *pmu,
->  	struct intel_uncore_box *fake_box;
->  	int ret = -EINVAL, n;
->  
-> -	fake_box = uncore_alloc_box(pmu->type, smp_processor_id());
-> +	fake_box = uncore_alloc_box(pmu->type, -1);
->  	if (!fake_box)
->  		return -ENOMEM;
->  
+I pushed combined tree to 'perf/callchain-v2' branch in my tree
 
-Yes, much better indeed.
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Please note that I also pushed other versions (v[1-3]).  The v1 is my
+previous rbtree conversion patch, v2 adds Frederic's new comm
+infrastructure series on top and v3 adds my revised patch to refer
+current comm [1] on top of v2.
+
+I did my own test again among them.  Test data is 400MB perf.data file
+created by parallel kernel build.
+
+  $ ls -lh perf.data.big
+  -rw-------. 1 namhyung namhyung 400M Sep  9 10:21 perf.data.big
+
+For more precise result, I changed cpufreq governor to 'performance'
+
+  # echo performance > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
+
+and run perf report on the cpu.
+
+  $ taskset -c 3 time -p perf --no-pager report --stdio -i perf.data.big > /dev/null
+
+I ran it multiple times for each case and the results did not vary much.
+
+        baseline	    v1            v2              v3
+  ----------------------------------------------------------
+  real    380.17	 12.63 	       10.02		9.03
+  user    378.86	 11.95 	        9.66		8.69
+  sys       0.70	  0.65 	        0.33		0.34
+
+
+I also tried to cache latest result and reuse it when adding a callchain
+(in callchain_append() function) but it only hits ~5% and did not help
+the performance.
+
+Thanks,
+Namhyung
+
+
+[1] https://lkml.org/lkml/2013/9/16/565
