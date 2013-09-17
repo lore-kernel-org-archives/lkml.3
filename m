@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab3IQIFa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 04:05:30 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:39308 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab3IQIFY (ORCPT
+	id S1752329Ab3IQIGj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 04:06:39 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:50466 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab3IQIGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 04:05:24 -0400
-Date: Tue, 17 Sep 2013 09:05:17 +0100
+	Tue, 17 Sep 2013 04:06:35 -0400
+Date: Tue, 17 Sep 2013 09:06:29 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, jic23@cam.ac.uk, arnd@arndb.de,
-        linus.walleij@linaro.org, denis.ciocca@st.com,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH 14/38] iio: accel: st: Append _accel to accelerator
- sensor device names
-Message-ID: <20130917080517.GS16984@lee--X1>
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
- <1378817379-8238-15-git-send-email-lee.jones@linaro.org>
- <52345330.4050707@kernel.org>
- <20130916133106.GI16984@lee--X1>
- <52370B08.3030709@metafoo.de>
- <5237593F.5010405@kernel.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Linus Walleij <linus.walleij@linaro.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wang Shilong <wangshilong1991@gmail.com>
+Subject: Re: [PATCH 1/4 v2] mfd: add STw481x driver
+Message-ID: <20130917080629.GT16984@lee--X1>
+References: <1379094851-26385-1-git-send-email-linus.walleij@linaro.org>
+ <20130916091956.GF3999@lee--X1>
+ <20130916104009.GA29403@sirena.org.uk>
+ <CACRpkdatiELF3WK9qE_Mgcq3iCgv5w3X22xp1=232JJq9sWggQ@mail.gmail.com>
+ <20130916135118.GD29403@sirena.org.uk>
+ <20130916152104.GA3909@katana>
+ <20130916153414.GN16984@lee--X1>
+ <20130916160001.GC3909@katana>
+ <20130916160537.GO16984@lee--X1>
+ <20130916162428.GE29403@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <5237593F.5010405@kernel.org>
+In-Reply-To: <20130916162428.GE29403@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Sep 2013, Jonathan Cameron wrote:
+On Mon, 16 Sep 2013, Mark Brown wrote:
 
-> On 09/16/13 14:43, Lars-Peter Clausen wrote:
-> > On 09/16/2013 03:31 PM, Lee Jones wrote:
-> >>> Honestly I don't care either way on these, but consistency would definitely
-> >>> be good so applied to the togreg branch of iio.git
-> >>
-> >> For clarification, is togreg due for the v3.12 merge window or will be
-> >> get a settling period in -next?
-> >>
-> > 
-> > Well everything up to the 'iio-for-3.12c' tag will be in v3.12, everything
-> > else not.
-> > 
-> > - Lars
-> > 
-> Yes.  At the moment IIO is routed through Greg KHs staging tree.  His merge
-> window closes 1 week before Linus opens the main one (when Greg can figure
-> out what Linus is intending!)  Hence I close the IIO one whenever I manage
-> to get a last pull request in before that.
+> On Mon, Sep 16, 2013 at 05:05:37PM +0100, Lee Jones wrote:
+> > > > So in the mean time are you happy with this "dummy" approach?
 > 
-> Hence all 3.13 for the current togreg branch.
+> > > No. "dummy" is reserved for a dummy device in case an i2c slave needs
+> > > more than one address. The proper solution would be if
+> > > i2c_sysfs_new_device() could recognize the of_device_ids.
+> 
+> > Okay, thanks for clarifying.
+> 
+> Or for now to use something like stw481x (even if it's never expected to
+> actually make a difference).
 
-Perfect, thanks both of you.
+If Linus wants to resubmit, I'm happy with that.
 
 -- 
 Lee Jones
