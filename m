@@ -1,128 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab3IQNEL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 09:04:11 -0400
-Received: from lmv.inov.pt ([146.193.64.2]:43369 "EHLO lmv.inov.pt"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752968Ab3IQNEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 09:04:08 -0400
-Message-ID: <52385327.9020706@inov.pt>
-Date: Tue, 17 Sep 2013 14:03:35 +0100
-From: =?ISO-8859-1?Q?Jos=E9_Miguel_Gon=E7alves?= <jose.goncalves@inov.pt>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753265Ab3IQNFy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 09:05:54 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:47609 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab3IQNFx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 09:05:53 -0400
+Message-ID: <523853A6.3020202@monstr.eu>
+Date: Tue, 17 Sep 2013 15:05:42 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>
-CC: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Subject: Re: [PATCH] serial: samsung: add support for manual RTS setting
-References: <1378894107-7904-1-git-send-email-jose.goncalves@inov.pt> <35383907.gKXZyKLrYq@amdc1227>
-In-Reply-To: <35383907.gKXZyKLrYq@amdc1227>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-INOV-EmailServer-Information: Please contact the Email service provider for more information
-X-INOV-EmailServer: Found to be clean
-X-INOV-EmailServer-From: jose.goncalves@inov.pt
+To: Rob Herring <robherring2@gmail.com>
+CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        microblaze-uclinux@itee.uq.edu.au
+Subject: Re: [PATCH 14/28] microblaze: use early_init_dt_scan
+References: <1379372965-22359-1-git-send-email-robherring2@gmail.com> <1379372965-22359-15-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1379372965-22359-15-git-send-email-robherring2@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="Lpa0GQHp6MXus22vskxWhXXshSwM7PNTB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--Lpa0GQHp6MXus22vskxWhXXshSwM7PNTB
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On 17-09-2013 11:18, Tomasz Figa wrote:
-> Hi José,
->
-> Please see my comments below.
->
-> On Wednesday 11 of September 2013 11:08:27 José Miguel Gonçalves wrote:
->> The Samsung serial driver currently does not support setting the
->> RTS pin with an ioctl(TIOCMSET) call. This patch adds this support.
->>
->> Signed-off-by: José Miguel Gonçalves <jose.goncalves@inov.pt>
->> ---
->>   drivers/tty/serial/samsung.c |   17 ++++++++++++++---
->>   1 file changed, 14 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
->> index f3dfa19..e5dd808 100644
->> --- a/drivers/tty/serial/samsung.c
->> +++ b/drivers/tty/serial/samsung.c
->> @@ -407,7 +407,14 @@ static unsigned int s3c24xx_serial_get_mctrl(struct
->> uart_port *port)
->>
->>   static void s3c24xx_serial_set_mctrl(struct uart_port *port, unsigned
->> int mctrl) {
->> -	/* todo - possibly remove AFC and do manual CTS */
->> +	unsigned int umcon = rd_regl(port, S3C2410_UMCON);
->> +
->> +	if (mctrl & TIOCM_RTS)
->> +		umcon |= S3C2410_UMCOM_RTS_LOW;
->> +	else
->> +		umcon &= ~S3C2410_UMCOM_RTS_LOW;
->> +
->> +	wr_regl(port, S3C2410_UMCON, umcon);
-> I wonder if port capability shouldn't be considered here. Depending on SoC,
-> only selected ports provide modem control capability.
->
-> For example on S3C64xx only ports 0 and 1 support modem control, while
-> ports 2 and 3 don't.
+On 09/17/2013 01:09 AM, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+>=20
+> Convert microblaze to use new early_init_dt_scan function.
+>=20
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Michal Simek <monstr@monstr.eu>
+> Cc: microblaze-uclinux@itee.uq.edu.au
+> ---
+>  arch/microblaze/kernel/prom.c  | 17 +++--------------
+>  arch/microblaze/kernel/setup.c |  2 +-
+>  2 files changed, 4 insertions(+), 15 deletions(-)
 
-Same for S3C2416. I also wondered that, but while I have information for 
-all S3C24xx chips and for those a simple test ( port->line < 2) would 
-validate this, I don't know about other SoCs this driver supports. 
-Bearing this in mind and also that the current implementation of 
-s3c24xx_serial_get_mctrl() does not check also for which port it 
-applies, I opted for this solution.
+No problem on Microblaze with this change.
+Tested-by: Michal Simek <monstr@monstr.eu>
 
->
->>   }
->>
->>   static void s3c24xx_serial_break_ctl(struct uart_port *port, int
->> break_state) @@ -774,8 +781,6 @@ static void
->> s3c24xx_serial_set_termios(struct uart_port *port, if (termios->c_cflag
->> & CSTOPB)
->>   		ulcon |= S3C2410_LCON_STOPB;
->>
->> -	umcon = (termios->c_cflag & CRTSCTS) ? S3C2410_UMCOM_AFC : 0;
->> -
->>   	if (termios->c_cflag & PARENB) {
->>   		if (termios->c_cflag & PARODD)
->>   			ulcon |= S3C2410_LCON_PODD;
->> @@ -792,6 +797,12 @@ static void s3c24xx_serial_set_termios(struct
->> uart_port *port,
->>
->>   	wr_regl(port, S3C2410_ULCON, ulcon);
->>   	wr_regl(port, S3C2410_UBRDIV, quot);
->> +
->> +	if (termios->c_cflag & CRTSCTS)
->> +		umcon = S3C2410_UMCOM_AFC;
-> Is it correct to override the last manual RTS value set to this register
-> when activating manual flow control?
->
-> Shouldn't the code be more like the following:
->
-> 	umcon = rd_regb(port, S3C2410_UMCON);
-> 	if (termios->c_cflag & CRTSCTS)
-> 		umcon |= S3C2410_UMCOM_AFC;
-> 	else
-> 		umcon &= ~S3C2410_UMCOM_AFC;
-> 	wr_regl(port, S3C2410_UMCON, umcon);
->
-> Probably port capability should be considered here as well.
->
+Thanks,
+Michal
 
-Looking at the S3C24xx user manuals I've seen that if you set the 
-automatic flow control (AFC) with the S3C2410_UMCOM_AFC mask, the UART 
-controller ignores the manual RTS setting value with the 
-S3C2410_UMCOM_RTS_LOW bitmask, so it is not necessary to do that. Also, 
-the upper bits of UMCON control the FIFO level to trigger the AFC and 
-you should initialize these bits when using AFC (I've set these to 0 to 
-use full FIFO, as it was previously).
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-Regarding port capability, if it's decided to validate it in 
-s3c24xx_serial_get_mctrl() and s3c24xx_serial_set_mctrl() it should also 
-be validated here. The question is how to validate for the full spectrum 
-of SoCs that this driver supports?
 
-Best regards,
-José Gonçalves
+
+--Lpa0GQHp6MXus22vskxWhXXshSwM7PNTB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlI4U6YACgkQykllyylKDCEs7ACgl0K7nqCqYVMAthBh6lMvoMJy
+bogAn3EYIg4OHxnJ32lAjm9V03IWdXya
+=RYSw
+-----END PGP SIGNATURE-----
+
+--Lpa0GQHp6MXus22vskxWhXXshSwM7PNTB--
