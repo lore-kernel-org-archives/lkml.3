@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab3IQTpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 15:45:05 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:54550 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753041Ab3IQTpE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 15:45:04 -0400
-X-Sasl-enc: ic//yCKifEHHcidWARvE/bvCMC8HT1qTg6oDYBYivKm2 1379447101
-From: Jon Bernard <jbernard@tuxion.com>
-To: gregkh@linuxfoundation.org, bergwolf@gmail.com, andreas.dilger@intel.com,
-        sachin.kamat@linaro.org, xuezhao.liu@emc.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Jon Bernard <jbernard@tuxion.com>
-Subject: [PATCH] Staging: lustre: fix switch case statement indenting
-Date: Tue, 17 Sep 2013 15:44:58 -0400
-Message-Id: <1379447098-25870-1-git-send-email-jbernard@tuxion.com>
-X-Mailer: git-send-email 1.8.4
+	id S1753736Ab3IQTtv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 15:49:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12767 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753180Ab3IQTtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 15:49:50 -0400
+Date: Tue, 17 Sep 2013 22:51:54 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: linux-kernel@vger.kernel.org, Dan Aloni <alonid@stratoscale.com>,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, nab@linux-iscsi.org,
+        Asias He <asias@redhat.com>
+Subject: Re: [PATCH] vhost/scsi: use vmalloc for order-10 allocation
+Message-ID: <20130917195154.GC21419@redhat.com>
+References: <1379401998-5131-1-git-send-email-mst@redhat.com>
+ <52389C0D.7070307@cogentembedded.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52389C0D.7070307@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to lvfs_linux.c that fixes incorrect switch case statement
-indenting found by checkpatch.pl.
+On Tue, Sep 17, 2013 at 10:14:37PM +0400, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 09/17/2013 11:21 AM, Michael S. Tsirkin wrote:
+> 
+> >As vhost scsi device struct is large, if the device is
+> >created on a busy system, kzalloc() might fail, so this patch does a
+> >fallback to vzalloc().
+> 
+> >As vmalloc() adds overhead on data-path, add __GFP_REPEAT
+> >to kzalloc() flags to do this fallback only when really needed.
+> 
+> >Reported-by: Dan Aloni <alonid@stratoscale.com>
+> >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >---
+> 
+> >I put this on my vhost fixes branch, intend to merge for 3.12.
+> >Dan, could you please confirm this works for you?
+> 
+> >  drivers/vhost/scsi.c | 41 +++++++++++++++++++++++++++--------------
+> >  1 file changed, 27 insertions(+), 14 deletions(-)
+> 
+> >diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+> >index 4b79a1f..2c30bb0 100644
+> >--- a/drivers/vhost/scsi.c
+> >+++ b/drivers/vhost/scsi.c
+> >@@ -1373,21 +1373,30 @@ static int vhost_scsi_set_features(struct vhost_scsi *vs, u64 features)
+> >  	return 0;
+> >  }
+> >
+> >+static void vhost_scsi_free(struct vhost_scsi *vs)
+> >+{
+> >+        if (is_vmalloc_addr(vs))
+> >+                vfree(vs);
+> >+        else
+> >+                kfree(vs);
+> 
+>    Indent with the tabs ISO spaces, please.
+> 
+> >+}
+> >+
+> >  static int vhost_scsi_open(struct inode *inode, struct file *f)
+> >  {
+> >  	struct vhost_scsi *vs;
+> >  	struct vhost_virtqueue **vqs;
+> >-	int r, i;
+> >+	int r = -ENOMEM, i;
+> >
+> >-	vs = kzalloc(sizeof(*vs), GFP_KERNEL);
+> >-	if (!vs)
+> >-		return -ENOMEM;
+> >+        vs = kzalloc(sizeof(*vs), GFP_KERNEL | __GFP_NOWARN | __GFP_REPEAT);
+> 
+>    Indent here with a tab, please.
+> 
+> >+	if (!vs) {
+> >+		vs = vzalloc(sizeof(*vs));
+> >+		if (!vs)
+> >+			goto err_vs;
+> >+	}
+> 
+> WBR, Sergei
 
-Signed-off-by: Jon Bernard <jbernard@tuxion.com>
----
- drivers/staging/lustre/lustre/lvfs/lvfs_linux.c | 50 ++++++++++++-------------
- 1 file changed, 25 insertions(+), 25 deletions(-)
-
-diff --git a/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c b/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
-index 18e1b47..9d79eee 100644
---- a/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
-+++ b/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
-@@ -253,31 +253,31 @@ __s64 lprocfs_read_helper(struct lprocfs_counter *lc,
- 		return 0;
- 
- 	switch (field) {
--		case LPROCFS_FIELDS_FLAGS_CONFIG:
--			ret = header->lc_config;
--			break;
--		case LPROCFS_FIELDS_FLAGS_SUM:
--			ret = lc->lc_sum;
--			if ((flags & LPROCFS_STATS_FLAG_IRQ_SAFE) != 0)
--				ret += lc->lc_sum_irq;
--			break;
--		case LPROCFS_FIELDS_FLAGS_MIN:
--			ret = lc->lc_min;
--			break;
--		case LPROCFS_FIELDS_FLAGS_MAX:
--			ret = lc->lc_max;
--			break;
--		case LPROCFS_FIELDS_FLAGS_AVG:
--			ret = (lc->lc_max - lc->lc_min) / 2;
--			break;
--		case LPROCFS_FIELDS_FLAGS_SUMSQUARE:
--			ret = lc->lc_sumsquare;
--			break;
--		case LPROCFS_FIELDS_FLAGS_COUNT:
--			ret = lc->lc_count;
--			break;
--		default:
--			break;
-+	case LPROCFS_FIELDS_FLAGS_CONFIG:
-+		ret = header->lc_config;
-+		break;
-+	case LPROCFS_FIELDS_FLAGS_SUM:
-+		ret = lc->lc_sum;
-+		if ((flags & LPROCFS_STATS_FLAG_IRQ_SAFE) != 0)
-+			ret += lc->lc_sum_irq;
-+		break;
-+	case LPROCFS_FIELDS_FLAGS_MIN:
-+		ret = lc->lc_min;
-+		break;
-+	case LPROCFS_FIELDS_FLAGS_MAX:
-+		ret = lc->lc_max;
-+		break;
-+	case LPROCFS_FIELDS_FLAGS_AVG:
-+		ret = (lc->lc_max - lc->lc_min) / 2;
-+		break;
-+	case LPROCFS_FIELDS_FLAGS_SUMSQUARE:
-+		ret = lc->lc_sumsquare;
-+		break;
-+	case LPROCFS_FIELDS_FLAGS_COUNT:
-+		ret = lc->lc_count;
-+		break;
-+	default:
-+		break;
- 	};
- 
- 	return ret;
--- 
-1.8.4
-
+Thanks, I'll fix this up.
