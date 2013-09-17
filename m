@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab3IQSOl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 14:14:41 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:65372 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753009Ab3IQSOk (ORCPT
+	id S1753399Ab3IQSTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 14:19:13 -0400
+Received: from mailout.micron.com ([137.201.242.129]:45357 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981Ab3IQSTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 14:14:40 -0400
-Message-ID: <52389C0D.7070307@cogentembedded.com>
-Date: Tue, 17 Sep 2013 22:14:37 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 17 Sep 2013 14:19:12 -0400
+Message-ID: <52389D12.4090109@micron.com>
+Date: Tue, 17 Sep 2013 11:18:58 -0700
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-kernel@vger.kernel.org, Dan Aloni <alonid@stratoscale.com>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, nab@linux-iscsi.org,
-        Asias He <asias@redhat.com>
-Subject: Re: [PATCH] vhost/scsi: use vmalloc for order-10 allocation
-References: <1379401998-5131-1-git-send-email-mst@redhat.com>
-In-Reply-To: <1379401998-5131-1-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Jens Axboe <axboe@kernel.dk>
+CC: David Milburn <dmilburn@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mtip32xx: dynamically allocate buffer in debugfs functions
+References: <1369344225-4110-1-git-send-email-dmilburn@redhat.com> <51E08A3C.5030001@micron.com>
+In-Reply-To: <51E08A3C.5030001@micron.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20154.005
+X-TM-AS-Result: No--11.260400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 09/17/2013 11:21 AM, Michael S. Tsirkin wrote:
-
-> As vhost scsi device struct is large, if the device is
-> created on a busy system, kzalloc() might fail, so this patch does a
-> fallback to vzalloc().
-
-> As vmalloc() adds overhead on data-path, add __GFP_REPEAT
-> to kzalloc() flags to do this fallback only when really needed.
-
-> Reported-by: Dan Aloni <alonid@stratoscale.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
-
-> I put this on my vhost fixes branch, intend to merge for 3.12.
-> Dan, could you please confirm this works for you?
-
->   drivers/vhost/scsi.c | 41 +++++++++++++++++++++++++++--------------
->   1 file changed, 27 insertions(+), 14 deletions(-)
-
-> diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-> index 4b79a1f..2c30bb0 100644
-> --- a/drivers/vhost/scsi.c
-> +++ b/drivers/vhost/scsi.c
-> @@ -1373,21 +1373,30 @@ static int vhost_scsi_set_features(struct vhost_scsi *vs, u64 features)
->   	return 0;
->   }
+On 07/12/2013 3:59 PM, Asai Thambi S P wrote:
+> On 5/23/2013 2:23 PM, David Milburn wrote:
 >
-> +static void vhost_scsi_free(struct vhost_scsi *vs)
-> +{
-> +        if (is_vmalloc_addr(vs))
-> +                vfree(vs);
-> +        else
-> +                kfree(vs);
-
-    Indent with the tabs ISO spaces, please.
-
-> +}
-> +
->   static int vhost_scsi_open(struct inode *inode, struct file *f)
->   {
->   	struct vhost_scsi *vs;
->   	struct vhost_virtqueue **vqs;
-> -	int r, i;
-> +	int r = -ENOMEM, i;
+>> Dynamically allocate buf to prevent warnings:
+>>
+>> drivers/block/mtip32xx/mtip32xx.c: In function ‘mtip_hw_read_device_status’:
+>> drivers/block/mtip32xx/mtip32xx.c:2823: warning: the frame size of 1056 bytes is larger than 1024 bytes
+>> drivers/block/mtip32xx/mtip32xx.c: In function ‘mtip_hw_read_registers’:
+>> drivers/block/mtip32xx/mtip32xx.c:2894: warning: the frame size of 1056 bytes is larger than 1024 bytes
+>> drivers/block/mtip32xx/mtip32xx.c: In function ‘mtip_hw_read_flags’:
+>> drivers/block/mtip32xx/mtip32xx.c:2917: warning: the frame size of 1056 bytes is larger than 1024 bytes
+>>
+>> Signed-off-by: David Milburn <dmilburn@redhat.com>
 >
-> -	vs = kzalloc(sizeof(*vs), GFP_KERNEL);
-> -	if (!vs)
-> -		return -ENOMEM;
-> +        vs = kzalloc(sizeof(*vs), GFP_KERNEL | __GFP_NOWARN | __GFP_REPEAT);
+> Acked-by: Asai Thambi S P <asamymuthupa@micron.com>
+>
+Jens,
 
-    Indent here with a tab, please.
+Please include this patch too for 3.12.
 
-> +	if (!vs) {
-> +		vs = vzalloc(sizeof(*vs));
-> +		if (!vs)
-> +			goto err_vs;
-> +	}
-
-WBR, Sergei
-
+--
+Regards,
+Asai
