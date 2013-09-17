@@ -1,140 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab3IQVNV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 17:13:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44283 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753297Ab3IQVNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 17:13:20 -0400
-Date: Tue, 17 Sep 2013 23:13:17 +0200
-From: Jan Kara <jack@suse.cz>
-To: Michal Suchanek <hramrach@gmail.com>
-Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: doing lots of disk writes causes oom killer to kill processes
-Message-ID: <20130917211317.GB6537@quack.suse.cz>
-References: <CAJd=RBBbJMWox5yJaNzW_jUdDfKfWe-Y7d1riYdN6huQStxzcA@mail.gmail.com>
- <CAOMqctQyS2SFraqJpzE0sRFcihFpMHRhT+3QuZhxft=SUXYVDw@mail.gmail.com>
- <CAOMqctQ+XchmXk_Xno6ViAoZF-tHFPpDWoy7LVW1nooa+ywbmg@mail.gmail.com>
- <CAOMqctT2u7E0kwpm052B9pkNo4D=sYHO+Vk=P_TziUb5KvTMKA@mail.gmail.com>
+	id S1753869Ab3IQVP0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 17:15:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54986 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753338Ab3IQVPZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 17:15:25 -0400
+Date: Tue, 17 Sep 2013 23:15:20 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ludovic Desroches <ludovic.desroches@atmel.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
+        LKML <linux-kernel@vger.kernel.org>, Marc Pignat <marc.pignat@hevs.ch>,
+        john.stultz@linaro.org, kernel@pengutronix.de,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [PATCH] clockevents: Sanitize ticks to nsec conversion
+In-Reply-To: <20130917130153.GL26819@ludovic.desroches@atmel.com>
+Message-ID: <alpine.DEB.2.02.1309172228400.4089@ionos.tec.linutronix.de>
+References: <1379077365-18458-1-git-send-email-mkl@pengutronix.de> <20130917095600.GJ26819@ludovic.desroches@atmel.com> <20130917100417.GQ12758@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1309171210450.4089@ionos.tec.linutronix.de>
+ <20130917130153.GL26819@ludovic.desroches@atmel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMqctT2u7E0kwpm052B9pkNo4D=sYHO+Vk=P_TziUb5KvTMKA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+Marc Kleine-Budde pointed out, that commit 77cc982 "clocksource: use
+clockevents_config_and_register() where possible" caused a regression
+for some of the converted subarchs.
 
-On Tue 17-09-13 15:31:31, Michal Suchanek wrote:
-> On 5 September 2013 12:12, Michal Suchanek <hramrach@gmail.com> wrote:
-> > On 26 August 2013 15:51, Michal Suchanek <hramrach@gmail.com> wrote:
-> >> On 12 March 2013 03:15, Hillf Danton <dhillf@gmail.com> wrote:
-> >>>>On 11 March 2013 13:15, Michal Suchanek <hramrach@gmail.com> wrote:
-> >>>>>On 8 February 2013 17:31, Michal Suchanek <hramrach@gmail.com> wrote:
-> >>>>> Hello,
-> >>>>>
-> >>>>> I am dealing with VM disk images and performing something like wiping
-> >>>>> free space to prepare image for compressing and storing on server or
-> >>>>> copying it to external USB disk causes
-> >>>>>
-> >>>>> 1) system lockup in order of a few tens of seconds when all CPU cores
-> >>>>> are 100% used by system and the machine is basicaly unusable
-> >>>>>
-> >>>>> 2) oom killer killing processes
-> >>>>>
-> >>>>> This all on system with 8G ram so there should be plenty space to work with.
-> >>>>>
-> >>>>> This happens with kernels 3.6.4 or 3.7.1
-> >>>>>
-> >>>>> With earlier kernel versions (some 3.0 or 3.2 kernels) this was not a
-> >>>>> problem even with less ram.
-> >>>>>
-> >>>>> I have  vm.swappiness = 0 set for a long  time already.
-> >>>>>
-> >>>>>
-> >>>>I did some testing with 3.7.1 and with swappiness as much as 75 the
-> >>>>kernel still causes all cores to loop somewhere in system when writing
-> >>>>lots of data to disk.
-> >>>>
-> >>>>With swappiness as much as 90 processes still get killed on large disk writes.
-> >>>>
-> >>>>Given that the max is 100 the interval in which mm works at all is
-> >>>>going to be very narrow, less than 10% of the paramater range. This is
-> >>>>a severe regression as is the cpu time consumed by the kernel.
-> >>>>
-> >>>>The io scheduler is the default cfq.
-> >>>>
-> >>>>If you have any idea what to try other than downgrading to an earlier
-> >>>>unaffected kernel I would like to hear.
-> >>>>
-> >>> Can you try commit 3cf23841b4b7(mm/vmscan.c: avoid possible
-> >>> deadlock caused by too_many_isolated())?
-> >>>
-> >>> Or try 3.8 and/or 3.9, additionally?
-> >>>
-> >>
-> >> Hello,
-> >>
-> >> with deadline IO scheduler I experience this issue less often but it
-> >> still happens.
-> >>
-> >> I am on 3.9.6 Debian kernel so 3.8 did not fix this problem.
-> >>
-> >> Do you have some idea what to log so that useful information about the
-> >> lockup is gathered?
-> >>
-> >
-> > This appears to be fixed in vanilla 3.11 kernel.
-> >
-> > I still get short intermittent lockups and cpu usage spikes up to 20%
-> > on a core but nowhere near the minute+ long lockups with all cores
-> > 100% on earlier kernels.
-> >
-> 
-> So I did more testing on the 3.11 kernel and while it works OK with
-> tar you can get severe lockups with mc or kvm. The difference is
-> probably the fact that sane tools do fsync() on files they close
-> forcing the file to write out and the kernel returning possible write
-> errors before they move on to next file.
-  Sorry for chiming in a bit late. But is this really writing to a normal
-disk? SATA drive or something else?
+The reason is, that the clockevents core code converts the minimal
+hardware tick delta to a nanosecond value for core internal
+usage. This conversion is affected by integer math rounding loss, so
+the backwards conversion to hardware ticks will likely result in a
+value which is less than the configured hardware limitation. The
+affected subarchs used their own workaround (SIGH!) which got lost in
+the conversion.
 
-> With kvm writing to a file used as virtual disk the system would stall
-> indefinitely until the disk driver in the emulated system would time
-> out, return disk IO error, and the emulated system would stop writing.
-> In top I see all CPU cores 90%+ in wait. System is unusable. With mc
-> the lockups would be indefinite, probably because there is no timeout
-> on writing a file in mc.
-> 
-> I tried tuning swappiness and eleveators but the the basic problem is
-> solved by neither: the dirty buffers fill up memory and system stalls
-> trying to resolve the situation.
-  This is really strange. There is /proc/sys/vm/dirty_ratio, which limits
-amount of dirty memory. By default it is set to 20% of memory which tends
-to be too much for 8 GB machine. Can you set it to something like 5% and
-/proc/sys/vm/dirty_background_ratio to 2%? That would be more appropriate
-sizing (assuming standard SATA drive). Does it change anything?
+Now instead of fixing the underlying core code problem, Marcs patch
+tried to work around the core code issue by increasing the minimal
+tick delta at clockevents registration time so the resulting limit in
+the core code backwards conversion did not violate the hardware
+limits. More SIGH!
 
-If the problem doesn't go away, can you install systemtap on your system
-and run attached script? It should report where exactly processes stall and
-for how long which should help us address the issue. Thanks.
+The solution for the issue at hand is simple: adding evt->mult - 1 to
+the shifted value before the integer divison in the core conversion
+function takes care of it.
 
-> Obviously the kernel puts off writing any dirty buffers until the
-> memory pressure is overwhelming and the vmm flops.
-> 
-> At least the OOM killer does not get invoked anymore since there is
-> lots of memory - just Linux does not know how to use it.
-> 
-> The solution to this problem is quite simple - use the ancient
-> userspace bdflushd or what it was called. I emulate it with
-> { while true ; do sleep 5; sync ; done } &
-> 
-> The system performance suddenly increases - to the awesome Debian stable levels.
+Though looking closer at the details of that function reveals another
+bogosity: The upper bounds check is broken as well. Checking for a
+resulting "clc" value greater than KTIME_MAX after the conversion is
+pointless. The conversion does:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+      u64 clc = (latch << evt->shift) / evt->mult;
+
+So there is no sanity check for (latch << evt->shift) exceeding the
+64bit boundary. The latch argument is "unsigned long", so on a 64bit
+arch the handed in argument could easily lead to an unnoticed shift
+overflow. With the above rounding fix applied the calculation before
+the divison is:
+
+       u64 clc = (latch << evt->shift) + evt->mult - 1;
+
+Now we can easily verify whether the whole equation fits into the
+64bit boundary. Shifting the "clc" result back by evt->shift MUST
+result in "latch". If that's not the case, we have a clear indicator
+for boundary violation and can limit "clc" to (1 << 63) - 1 before the
+divison by evt->mult. The resulting nsec * evt->mult in the
+programming path will therefor always be in the 64bit boundary.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 38959c8..4fc4826 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -49,13 +49,25 @@ u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
+ 		WARN_ON(1);
+ 	}
+ 
++	/*
++	 * Prevent integer rounding loss, otherwise the backward
++	 * conversion from nsec to ticks could result in a value less
++	 * than evt->min_delta_ticks.
++	 */
++	clc += evt->mult - 1;
++
++	/*
++	 * Upper bound sanity check. If the backwards conversion is
++	 * not equal latch, we know that the above (shift + rounding
++	 * correction) exceeded the 64 bit boundary.
++	 */
++	if ((clc >> evt->shift) != (u64)latch)
++		clc = ((u64)1 << 63) - 1;
++
+ 	do_div(clc, evt->mult);
+-	if (clc < 1000)
+-		clc = 1000;
+-	if (clc > KTIME_MAX)
+-		clc = KTIME_MAX;
+ 
+-	return clc;
++	/* Deltas less than 1usec are pointless noise */
++	return clc > 1000 ? clc : 1000;
+ }
+ EXPORT_SYMBOL_GPL(clockevent_delta2ns);
