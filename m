@@ -1,89 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab3IQLm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 07:42:26 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:16439 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340Ab3IQLmY (ORCPT
+	id S1752730Ab3IQLnB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 07:43:01 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:53895 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab3IQLnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 07:42:24 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 17 Sep 2013 04:39:05 -0700
-Message-ID: <5238450F.6090303@nvidia.com>
-Date: Tue, 17 Sep 2013 17:33:27 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 17 Sep 2013 07:43:00 -0400
+Date: Tue, 17 Sep 2013 13:42:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] perf bench sched: Add --threaded 0/1 option
+Message-ID: <20130917114256.GA31159@gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "florian.lobmaier@ams.com" <florian.lobmaier@ams.com>
-Subject: Re: [PATCH 1/4] mfd: add support for AMS AS3722 PMIC
-References: <1379400338-20704-1-git-send-email-ldewangan@nvidia.com> <1379400338-20704-2-git-send-email-ldewangan@nvidia.com> <20130917112444.GU21013@sirena.org.uk>
-In-Reply-To: <20130917112444.GU21013@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 September 2013 04:54 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Tue, Sep 17, 2013 at 12:15:35PM +0530, Laxman Dewangan wrote:
->
->> +MFD driver adds following mfd devices with their compatible values:
->> +as3722-gpio: The compatible value of this as3722 gpio driver is
->> +	     "ams,as3722-gpio";
->> +as3722-regulator: The compatible value of this as3722 regulator driver is
->> +	     "ams,as3722-regulator";
->> +as3722-rtc: The compatible value of this as3722 rtc driver is
->> +	     "ams,as3722-rtc";
->> +as3722-adc: The compatible value of this as3722 adc driver is
->> +	     "ams,as3722-adc";
->> +as3722-power-off: he compatible value of this as3722 power off driver is
->> +	     "ams,as3722-power-off".
-> Personally I find this to be exposing implementation details of Linux -
-> unless there is something reusable about the binding that'd allow it to
-> be used to describe the contents of the chip the subnodes really aren't
-> adding any information that wasn't present from just knowing the parent
-> chip.  If there were relocatable IPs it'd be a bit different.
 
-Ok, then can we fix the the sub node name and parse these when adding 
-mfd devices and set the pdev->dev.of_node of child devices.
-Like
-parent_node {
-     ...
-     child1_node {
-         ...
-     };
+Allow the measurement of thread versus process context switch performance.
 
-     child1_node {
-         ...
-     };
-};
+The default stays at 'process' based measurement, like lmbench's lat_ctx 
+benchmark.
 
+Sample output:
 
-and fix the node name of child1 and child2 and have this as part of 
-mfd-cell's of_node_name.
-So when we add the mfd devices, we look for these fixed name and if 
-matches then set the dev->of_node for that child sub device.
+ comet:~/tip/tools/perf> taskset 1 ./perf bench sched pipe --threaded 0
+ # Running sched/pipe benchmark...
+ # Executed 1000000 pipe operations between two processes
 
-This will avoid the code for getting child node pointer from parent node 
-in each driver. We fix the child node name in any case.
+     Total time: 4.138 [sec]
 
+       4.138729 usecs/op
+         241620 ops/sec
+ comet:~/tip/tools/perf> taskset 1 ./perf bench sched pipe --threaded 1
+ # Running sched/pipe benchmark...
+ # Executed 1000000 pipe operations between two threads
 
+     Total time: 3.667 [sec]
+
+       3.667667 usecs/op
+         272652 ops/sec
+
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+
+diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
+index 69cfba8..7630dc6 100644
+--- a/tools/perf/bench/sched-pipe.c
++++ b/tools/perf/bench/sched-pipe.c
+@@ -28,12 +28,25 @@
+ #include <sys/time.h>
+ #include <sys/types.h>
+ 
++#include <pthread.h>
++
++struct thread_data {
++	int			nr;
++	int			pipe_read;
++	int			pipe_write;
++	pthread_t		pthread;
++};
++
+ #define LOOPS_DEFAULT 1000000
+ static int loops = LOOPS_DEFAULT;
+ 
++static int threaded = 0;
++
+ static const struct option options[] = {
+ 	OPT_INTEGER('l', "loop", &loops,
+ 		    "Specify number of loops"),
++	OPT_INTEGER('T', "threaded", &threaded,
++		    "Specify threaded/process based task setup"),
+ 	OPT_END()
+ };
+ 
+@@ -42,13 +55,38 @@ static const char * const bench_sched_pipe_usage[] = {
+ 	NULL
+ };
+ 
++static void *worker_thread(void *__tdata)
++{
++        struct thread_data *td = __tdata;
++	int m = 0, i;
++	int ret;
++
++	for (i = 0; i < loops; i++) {
++		if (!td->nr) {
++			ret = read(td->pipe_read, &m, sizeof(int));
++			BUG_ON(ret != sizeof(int));
++			ret = write(td->pipe_write, &m, sizeof(int));
++			BUG_ON(ret != sizeof(int));
++		} else {
++			ret = write(td->pipe_write, &m, sizeof(int));
++			BUG_ON(ret != sizeof(int));
++			ret = read(td->pipe_read, &m, sizeof(int));
++			BUG_ON(ret != sizeof(int));
++		}
++	}
++
++	return NULL;
++}
++
+ int bench_sched_pipe(int argc, const char **argv,
+ 		     const char *prefix __maybe_unused)
+ {
++	struct thread_data threads[2], *td;
+ 	int pipe_1[2], pipe_2[2];
+-	int m = 0, i;
+ 	struct timeval start, stop, diff;
+ 	unsigned long long result_usec = 0;
++	int nr_threads = 2;
++	int t;
+ 
+ 	/*
+ 	 * why does "ret" exist?
+@@ -58,43 +96,66 @@ int bench_sched_pipe(int argc, const char **argv,
+ 	int __maybe_unused ret, wait_stat;
+ 	pid_t pid, retpid __maybe_unused;
+ 
+-	argc = parse_options(argc, argv, options,
+-			     bench_sched_pipe_usage, 0);
++	argc = parse_options(argc, argv, options, bench_sched_pipe_usage, 0);
+ 
+ 	BUG_ON(pipe(pipe_1));
+ 	BUG_ON(pipe(pipe_2));
+ 
+-	pid = fork();
+-	assert(pid >= 0);
+-
+ 	gettimeofday(&start, NULL);
+ 
+-	if (!pid) {
+-		for (i = 0; i < loops; i++) {
+-			ret = read(pipe_1[0], &m, sizeof(int));
+-			ret = write(pipe_2[1], &m, sizeof(int));
+-		}
+-	} else {
+-		for (i = 0; i < loops; i++) {
+-			ret = write(pipe_1[1], &m, sizeof(int));
+-			ret = read(pipe_2[0], &m, sizeof(int));
++	for (t = 0; t < nr_threads; t++) {
++		td = threads + t;
++
++		td->nr = t;
++
++		if (t == 0) {
++			td->pipe_read = pipe_1[0];
++			td->pipe_write = pipe_2[1];
++		} else {
++			td->pipe_write = pipe_1[1];
++			td->pipe_read = pipe_2[0];
+ 		}
+ 	}
+ 
+-	gettimeofday(&stop, NULL);
+-	timersub(&stop, &start, &diff);
+ 
+-	if (pid) {
++	if (threaded) {
++
++		for (t = 0; t < nr_threads; t++) {
++			td = threads + t;
++
++			ret = pthread_create(&td->pthread, NULL, worker_thread, td);
++			BUG_ON(ret);
++		}
++
++		for (t = 0; t < nr_threads; t++) {
++			td = threads + t;
++
++			ret = pthread_join(td->pthread, NULL);
++			BUG_ON(ret);
++		}
++
++	} else {
++		pid = fork();
++		assert(pid >= 0);
++
++		if (!pid) {
++			worker_thread(threads + 0);
++			exit(0);
++		} else {
++			worker_thread(threads + 1);
++		}
++
+ 		retpid = waitpid(pid, &wait_stat, 0);
+ 		assert((retpid == pid) && WIFEXITED(wait_stat));
+-	} else {
+-		exit(0);
+ 	}
+ 
++	gettimeofday(&stop, NULL);
++	timersub(&stop, &start, &diff);
++
+ 	switch (bench_format) {
+ 	case BENCH_FORMAT_DEFAULT:
+-		printf("# Executed %d pipe operations between two tasks\n\n",
+-			loops);
++		printf("# Executed %d pipe operations between two %s\n\n",
++			loops, threaded ? "threads" : "processes");
+ 
+ 		result_usec = diff.tv_sec * 1000000;
+ 		result_usec += diff.tv_usec;
