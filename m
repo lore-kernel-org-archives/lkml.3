@@ -1,159 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab3IQFIk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 01:08:40 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54687 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751349Ab3IQFIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 01:08:37 -0400
-Message-ID: <5237E3C3.8050602@ti.com>
-Date: Tue, 17 Sep 2013 10:38:19 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Russell King <linux@arm.linux.org.uk>, Jyri Sarah <jsarha@ti.com>,
-        Koen Kooi <koen@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Pantel Antoniou <panto@antoniou-consulting.com>
-Subject: Re: [PATCH v3] ARM: EDMA: Fix clearing of unused list for DT DMA
- resources
-References: <1378839171-14455-1-git-send-email-joelf@ti.com> <5231903F.7080301@ti.com> <5233B471.40603@ti.com> <5236F00B.5040605@ti.com> <5237314D.7080102@ti.com>
-In-Reply-To: <5237314D.7080102@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1752160Ab3IQFIr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 01:08:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53424 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab3IQFIn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 01:08:43 -0400
+Date: Tue, 17 Sep 2013 15:08:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>
+Subject: Re: Please add PTR_RET tree.
+Message-Id: <20130917150832.99e30b0d5f34697660b7e5a2@canb.auug.org.au>
+In-Reply-To: <87y56wz2xc.fsf@rustcorp.com.au>
+References: <8738rg30cw.fsf@rustcorp.com.au>
+	<20130715173826.f698f36373c6f701126b42d3@canb.auug.org.au>
+	<87y56wz2xc.fsf@rustcorp.com.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__17_Sep_2013_15_08_32_+1000_JKE94PIQ7cPN1l0/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 September 2013 09:56 PM, Joel Fernandes wrote:
-> On 09/16/2013 06:48 AM, Sekhar Nori wrote:
->> Hi Joel,
->>
->> On Saturday 14 September 2013 06:27 AM, Joel Fernandes wrote:
->>> From: Joel Fernandes <joelf@ti.com>
->>> Subject: [PATCH v4] ARM: EDMA: Fix clearing of unused list for DT DMA resources
->>>
->>> HWMOD removal for MMC is breaking edma_start as the events are being manually
->>> triggered due to unused channel list not being clear.
->>>
->>> This patch fixes the issue, by reading the "dmas" property from the DT node if
->>> it exists and clearing the bits in the unused channel list. For this purpose
->>> we use the of_* helpers to parse the arguments in the dmas phandle list.
->>>
->>> Reviewed-by: Sekhar Nori <nsekhar@ti.com>
->>> Reported-by: Balaji T K <balajitk@ti.com>
->>> Cc: Pantel Antoniou <panto@antoniou-consulting.com>
->>> Signed-off-by: Joel Fernandes <joelf@ti.com>
->>> ---
->>> Changes since v1, in v2 and v3:
->>> - Reduced indentation of non-of case by returning from of-case
->>> - Using of_* helpers for parsing
->>>
->>> Note:
->>> This patch should go into the merge window as it is a critical bug fix.
->>
->> I still cannot find any users of edma in the device tree sources either
->> in linux-next or linus/master. Why cannot this wait until v3.13?
-> 
-> I understand this affects only DT users of EDMA. But I get so many private
-> reports of breakage due to this patch not being there that I think it will save
-> everyone a lot of pain, specially folks creating integration trees to have this
-> patch available by default.
+--Signature=_Tue__17_Sep_2013_15_08_32_+1000_JKE94PIQ7cPN1l0/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well, I do agree that the current DT support for EDMA is incomplete
-without this patch even if there are no in-kernel users of it. I will
-try sending this for the next -rc if we get to the final version in time
-and after that its upto the upstreams to take it.
+Hi Rusty,
 
->>>  arch/arm/common/edma.c | 23 +++++++++++++++++++++--
->>>  1 file changed, 21 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
->>> index 39ad030..43c7b22 100644
->>> --- a/arch/arm/common/edma.c
->>> +++ b/arch/arm/common/edma.c
->>> @@ -560,14 +560,33 @@ static int reserve_contiguous_slots(int ctlr, unsigned int
->>> id,
->>>  static int prepare_unused_channel_list(struct device *dev, void *data)
->>>  {
->>>  	struct platform_device *pdev = to_platform_device(dev);
->>> -	int i, ctlr;
->>> +	int i, count, ctlr;
->>> +	struct of_phandle_args  dma_spec;
->>>
->>> +	if (dev->of_node) {
->>> +		count = of_property_count_strings(dev->of_node, "dma-names");
->>> +		if (count < 0)
->>> +			return 0;
->>> +		for (i = 0; i < count; i++) {
->>> +			if (of_parse_phandle_with_args(dev->of_node, "dmas",
->>> +						       "#dma-cells", i,
->>> +						       &dma_spec))
->>> +				continue;
->>
->> This will break for the case where devices on platform bus use non-EDMA
->> dma controllers like SDMA or CPPI (DRA7x has both EDMA and SDMA on the
->> same chip). You need to do an additional check to make sure the dma
->> controller is indeed EDMA. Something like.
-> 
-> Ok, edma is probed earlier so I could never see any problem.
+On Tue, 17 Sep 2013 10:20:55 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
+ote:
+>
+> Please remove PTR_RET tree, it's merged.
 
-This has got nothing to do with edma probe order.
+OK, thanks for letting me know.
 
-> Thanks for pointing this out,
-> 
-> Using the below method is more future-proof than using compatible literal
-> strings directly. The only problem is the matches table has to be defined
-> earlier in the sources. What do you think?
-> 
->                         if (!of_match_node(edma_of_ids, dma_spec.np) {
->                                 of_node_put(dma_spec.np);
->                                 continue;
->                         }
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Looks fine to me.
+--Signature=_Tue__17_Sep_2013_15_08_32_+1000_JKE94PIQ7cPN1l0/
+Content-Type: application/pgp-signature
 
->> 	if(!of_device_is_compatible(dma_spec.np, "ti,edma3"))
->> 		continue;
->>
->> Don forget to call of_node_put() on dma_spec.np (something that needs to
->> be done even with your current code).
-> 
-> Ok, will do.
-> 
-> 
->>> +
->>> +			ctlr = EDMA_CTLR(dma_spec.args[0]);
->>> +			clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]),
->>> +				  edma_cc[ctlr]->edma_unused);
->>
->> We don't support the second controller when using DT and the controller
->> number is not really encoded in the argument to edma phandle. So just
->> simplify this to:
->>
->> 	clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]), 	
->> 		  edma_cc[0]->edma_unused);
-> 
-> I think let's not make that assumption just incase in the future we support more
-> than one EDMA controller for DT-based boot. Is that ok?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-We don't write future proof code in that _hope_ that it will get used
-someday.  In fact this will confuse the reader into wondering if support
-for second channel controller is present or not as the code will send
-mixed messages. In short, we aim for consistency with situation today,
-not tomorrow.
+iQIcBAEBCAAGBQJSN+PUAAoJEECxmPOUX5FEQREP/RD2VB1ajN4tKgZLMe24P6Sy
+wRZP/DwBgSc3qy4pQ6wsi3dWffu0DJMqv6N4MN61AkIMQaivWCYXmI532Bf4/4hY
+bxLJ6YYFrxcnO0s9zFFFhOntEIGWx1vRp00NaJtraCb/kXWxEK74x4Ha0pNjR0+7
+2VM+V7OlEpC7itUgLiKQPPSeqQWrJQd9jA2uTIgqqoAg9/SepH+vdWvy6nn/zssV
+uaCM9G6WYxROrpEACTeQK9KPXpnf8f9kJOhrVxT+Xx6cOtaB5zSEWzYzF1ndQR+S
+RQVdBgd+GODcY+yPDIsMthp5/0nPb5dzX4+ve5VW4rUmQ90OV0wcXMtyndS4Fppm
+zu5xjQKekESNNmQX4AXEqWlkECYs5RUfkvpzUBuy6Bcji9bofmURaFzbkaCRCdjm
+ycIl0bhOirc6IXJt9FvcYVBwvq0/psbjvskduJUOOVXKfZ3y8ztKCWhcDuLSQUZc
+jKWPSLXYPQ9nejFS+K/xY/u3bwxzTyIWvDpS64z/+zmI/F0iu8zPY14wqUjq5QKF
+K5das3FakShFbl5vTE1lL5T55oRiqmMd1nIYRRZPKE0TcP1g8BFNrfjd7eXYu+Tu
+cl+sKE/tPyPFYM1ihxWLEqjGhMMQDdvBFwAtsdGYwECklc7ZXWtA+OYVJL1/uRXs
+CR/v4+u83bUfV7e+oQn0
+=QhvM
+-----END PGP SIGNATURE-----
 
-Besides, I can bet that when second CC support does get added, it is
-very unlikely that the CC number is get encoded into channel number when
-using DT.
-
-Thanks,
-Sekhar
-
+--Signature=_Tue__17_Sep_2013_15_08_32_+1000_JKE94PIQ7cPN1l0/--
