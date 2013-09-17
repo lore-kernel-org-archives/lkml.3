@@ -1,96 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab3IQHMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 03:12:54 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:42341 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab3IQHMs (ORCPT
+	id S1751967Ab3IQHQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 03:16:48 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:46201 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab3IQHQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 03:12:48 -0400
-From: Shalin Mehta <shalinmehta85@gmail.com>
-To: gregkh@linuxfoundation.org, klmckinney1@gmail.com,
-        devel@driverdev.osuosl.org
-Cc: shalinmehta85@gmail.com, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: bcm: PHSModule.c: Matching the function definition with function declaration
-Date: Tue, 17 Sep 2013 00:12:42 -0700
-Message-Id: <1379401962-10208-1-git-send-email-shalinmehta85@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 17 Sep 2013 03:16:45 -0400
+Date: Tue, 17 Sep 2013 09:16:41 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/4] perf tools: New comm infrastructure
+Message-ID: <20130917071641.GD20661@gmail.com>
+References: <1379017783-27032-1-git-send-email-fweisbec@gmail.com>
+ <20130912203658.GA3216@gmail.com>
+ <20130913124354.GB4844@somewhere>
+ <20130914061148.GF364@gmail.com>
+ <87li2wq9gx.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87li2wq9gx.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shalin Mehta <shalinmehta85@gmail.com>
 
-NOTE: Sending it again. I got mail delivery failure due to typo in emai ID gregkh@linuxfoundation.org
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
+> Hi Ingo,
+> 
+> On Sat, 14 Sep 2013 08:11:49 +0200, Ingo Molnar wrote:
+> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> >> My patches and Namhyung's should improve the comm situation a lot but we 
+> >> can't do much miracle. The only way would be perhaps to be able to limit 
+> >> the deepness of the callchain branches.
+> >> 
+> >> Now may be we can find other big contention point in perf. It's possible 
+> >> we also have some endless loop somewhere.
+> >
+> > Well, it was the 100,000+ step linear list walk that was causing 90% of 
+> > the slowness here. Namhyung's patch should dramatically improve that. I 
+> > guess time for someone to post a combined tree so that it can be tested 
+> > all together?
+> 
+> I pushed combined tree to 'perf/callchain-v2' branch in my tree
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> 
+> 
+> Please note that I also pushed other versions (v[1-3]).  The v1 is my
+> previous rbtree conversion patch, v2 adds Frederic's new comm
+> infrastructure series on top and v3 adds my revised patch to refer
+> current comm [1] on top of v2.
+> 
+> I did my own test again among them.  Test data is 400MB perf.data file
+> created by parallel kernel build.
+> 
+>   $ ls -lh perf.data.big
+>   -rw-------. 1 namhyung namhyung 400M Sep  9 10:21 perf.data.big
+> 
+> For more precise result, I changed cpufreq governor to 'performance'
 
-The function implementations of the PHSModule didn't match with the declaration. The functions are static
-in the declaration but in the implemntation they are non-static
+Btw., 
 
-Signed-off-by: Shalin Mehta <shalinmehta85@gmail.com>
----
- drivers/staging/bcm/PHSModule.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+>   # echo performance > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
+> 
+> and run perf report on the cpu.
+> 
+>   $ taskset -c 3 time -p perf --no-pager report --stdio -i perf.data.big > /dev/null
 
-diff --git a/drivers/staging/bcm/PHSModule.c b/drivers/staging/bcm/PHSModule.c
-index af5d22f..56c5bee 100644
---- a/drivers/staging/bcm/PHSModule.c
-+++ b/drivers/staging/bcm/PHSModule.c
-@@ -596,7 +596,7 @@ ULONG PhsDeleteSFRules(IN void *pvContext, IN B_UINT16 uiVcid)
-  * 0 if successful,
-  * >0 Error.
-  */
--ULONG PhsCompress(IN void *pvContext,
-+static ULONG PhsCompress(IN void *pvContext,
- 		IN B_UINT16 uiVcid,
- 		IN B_UINT16 uiClsId,
- 		IN void *pvInputBuffer,
-@@ -677,7 +677,7 @@ ULONG PhsCompress(IN void *pvContext,
-  * 0 if successful,
-  * >0 Error.
-  */
--ULONG PhsDeCompress(IN void *pvContext,
-+static ULONG PhsDeCompress(IN void *pvContext,
- 		IN B_UINT16 uiVcid,
- 		IN void *pvInputBuffer,
- 		OUT void *pvOutputBuffer,
-@@ -829,7 +829,7 @@ UINT GetServiceFlowEntry(IN struct bcm_phs_table *psServiceFlowTable,
- 	return PHS_INVALID_TABLE_INDEX;
- }
- 
--UINT GetClassifierEntry(IN struct bcm_phs_classifier_table *pstClassifierTable,
-+static UINT GetClassifierEntry(IN struct bcm_phs_classifier_table *pstClassifierTable,
- 			IN B_UINT32 uiClsid, enum bcm_phs_classifier_context eClsContext,
- 			OUT struct bcm_phs_classifier_entry **ppstClassifierEntry)
- {
-@@ -880,7 +880,7 @@ static UINT GetPhsRuleEntry(IN struct bcm_phs_classifier_table *pstClassifierTab
- 	return PHS_INVALID_TABLE_INDEX;
- }
- 
--UINT CreateSFToClassifierRuleMapping(IN B_UINT16 uiVcid, IN B_UINT16  uiClsId,
-+static UINT CreateSFToClassifierRuleMapping(IN B_UINT16 uiVcid, IN B_UINT16  uiClsId,
- 				IN struct bcm_phs_table *psServiceFlowTable,
- 				struct bcm_phs_rule *psPhsRule,
- 				B_UINT8 u8AssociatedPHSI)
-@@ -913,7 +913,7 @@ UINT CreateSFToClassifierRuleMapping(IN B_UINT16 uiVcid, IN B_UINT16  uiClsId,
- 	return uiStatus;
- }
- 
--UINT CreateClassiferToPHSRuleMapping(IN B_UINT16 uiVcid,
-+static UINT CreateClassiferToPHSRuleMapping(IN B_UINT16 uiVcid,
- 				IN B_UINT16 uiClsId,
- 				IN struct bcm_phs_entry *pstServiceFlowEntry,
- 				struct bcm_phs_rule *psPhsRule,
-@@ -1239,7 +1239,7 @@ void DumpPhsRules(struct bcm_phs_extension *pDeviceExtension)
-  *			header.
-  *	0	-If PHS rule is NULL.If PHSI is 0 indicateing packet as uncompressed.
-  */
--int phs_decompress(unsigned char *in_buf,
-+static int phs_decompress(unsigned char *in_buf,
- 		unsigned char *out_buf,
- 		struct bcm_phs_rule *decomp_phs_rules,
- 		UINT *header_size)
--- 
-1.8.1.2
+Btw., for such things you could use 'perf stat --null --sync --repeat 3', 
+which will not use the PMU or even perf events, it only uses precise 
+timers to measure execution time:
 
+   $ taskset -c 3 perf stat --null --sync --repeat 3 -p perf --no-pager report --stdio -i perf.data.big > /dev/null
+
+> I ran it multiple times for each case and the results did not vary much.
+
+(perf stat --repeat will print a nice stddev as well.)
+
+>         baseline	    v1            v2              v3
+>   ----------------------------------------------------------
+>   real    380.17	 12.63 	       10.02		9.03
+>   user    378.86	 11.95 	        9.66		8.69
+>   sys       0.70	  0.65 	        0.33		0.34
+
+(Alas perf stat --null does not print a system/user time split. Might be 
+nice to implement that.)
+
+The numbers look pretty nice, a 40x speedup. Especially with the progress 
+bar displayed this should be within a human-tolerable runtime.
+
+Still it would be nice to look at some stats: number of records, number of 
+call chain entries, average call chain depth, tree size, max tree depth, 
+etc. - so that we get a processing cost estimation of how much we spend on 
+a single call chain entry, on average.
+
+If any of those values is suspiciously high then maybe we could cull the 
+callchain depth by default, people rarely look beyond a couple of entries: 
+but this gets tricky when people sort in the reverse direction though - in 
+that case the deepest entries are just as valuable as well to the end 
+result.
+
+Thanks,
+
+	Ingo
