@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab3IQXIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 19:08:31 -0400
-Received: from nm6-vm6.access.bullet.mail.gq1.yahoo.com ([216.39.63.154]:35126
-	"EHLO nm6-vm6.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754231Ab3IQXI3 (ORCPT
+	id S1754312Ab3IQXIh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 19:08:37 -0400
+Received: from nm27-vm1.access.bullet.mail.gq1.yahoo.com ([216.39.63.25]:20187
+	"EHLO nm27-vm1.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754287Ab3IQXIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 19:08:29 -0400
-X-Yahoo-Newman-Id: 697273.3357.bm@smtp117.sbc.mail.gq1.yahoo.com
+	Tue, 17 Sep 2013 19:08:35 -0400
+X-Yahoo-Newman-Id: 144451.3357.bm@smtp117.sbc.mail.gq1.yahoo.com
 X-Rocket-Received: from localhost.localdomain (danielfsantos@99.70.244.137 with )
-        by smtp117.sbc.mail.gq1.yahoo.com with SMTP; 17 Sep 2013 23:08:28 +0000 UTC
+        by smtp117.sbc.mail.gq1.yahoo.com with SMTP; 17 Sep 2013 23:08:34 +0000 UTC
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: sOTvZyEVM1mwWjCWgYzqeyf6.DBxU9mHDwSapnCkvpvMq68
- t60QXGcCIwRX.l5oFuLlQ06oP4Ld65dV8fu5xHJ7gU5cZN_wsx3P58B0mTH6
- .R7xD0t6tQp_lh.feEv1mMprn_zZ7a8HQPoNY6Dq_0KVLRJeLgn3Bdm3ZGOJ
- RBI.Ur6sk6iK4UOUGvrsPihQa1Ce0_KZAkJ184ipOWcAwXHh96ITEfMmtuF1
- kUd_w31VJRk_q8fN2QXGatWSWM3RYyjWad.aJJsq_2tO08Yau1cmZ23Dwn0l
- bHYvao6pEH2i7Ekb.YtCexjgqD0KtH1MrUmNBi5F1yyuagnaBy027EvaTGNH
- g92i.Oto69rRo8iGaCxYbXjfkrKOliu6PfjaEFad7BoDhPRYGu9StqXp5J7z
- nln5rbG8nMtvxZh4P72Y6FgmT_HP5K58ebluZ8iqlUw6lX81hzAJ0iiQUo1e
- lD4o5eNgpeJTNNgPzQ7Fuz1bRcrU2.voonX3Y.6FsuQoi2kYH5SsqGjvDIt.
- 1mg4nMWsV2rHi8hGbUvWe84qGchNgUVx4lXu3qqxw7yJj.Ch4p5PxbB4lxWv
- OQo5bZu9S5weKmb94dukMqTUlPWMny4E900RhTao-
+X-YMail-OSG: P2Fj1fEVM1lYNAtxAZFPEEJJ97xlJnSwBgi4N5sTFsx.Qzo
+ gbVkIcFkFaQ2tFfmuRGknMT7RD3Hj8JixWnO49HCjW5BYeiAKtTqNO2lH5Sh
+ r8xEtI2BJtI0mxgPBLUuj954HyFfuJxPQfbtQsliip4SZj_EgQ3v9w8WgDzM
+ Q_rAzIGakdtdcoM8vO9ikE3.lGk6LjBWPYZew2IDMswHR4PoDqWKRRywHdMD
+ IeMa9n1QHhLFy14YOysuoSgh1GdR67UGFY1bD5OzCxSMKDk9kHgzO7Ny31uy
+ bFpu2qSuwCJr8cvivW7zVjOl_F.9NJD6ejwH01nQ6hVwtuluocjd6nmUb3JE
+ MojG9RVbA1uc6kJF8Rq.4On8sAShxI9sqFFYzVkLTnXL.1q3m20TnoUs0lGr
+ patUo_jrVYGxMZGZxOa5GrdXIWvShE1Z4J.BGj12UBgFSzTi5w80bmK.5l6u
+ CAF23hdl9rlWWFkLwH4PB.Fuz3RjYZ_E9GMDE5f7OpRD_h3NHrEncfkV7FJH
+ NKferxi6LXNzdawR1YNgqGwn5._p1JIjhtgImcA8-
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: linux-kbuild <linux-kbuild@vger.kernel.org>,
@@ -34,9 +33,9 @@ To: linux-kbuild <linux-kbuild@vger.kernel.org>,
         Dave Hansen <dave.hansen@linux.intel.com>,
         George Spelvin <linux@horizon.com>
 Cc: Daniel Santos <daniel.santos@pobox.com>
-Subject: [PATCH 3/5] Makefile: Generate error_strings.h
-Date: Tue, 17 Sep 2013 18:08:35 -0500
-Message-Id: <1379459317-13046-4-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH 5/5] lib: Add error string support to printks
+Date: Tue, 17 Sep 2013 18:08:37 -0500
+Message-Id: <1379459317-13046-6-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1379459317-13046-1-git-send-email-daniel.santos@pobox.com>
 References: <1379459317-13046-1-git-send-email-daniel.santos@pobox.com>
@@ -45,45 +44,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an initial attempt and needs improvement.  Ideally,
-error_strings.h should only be generated when STRERROR or STRERROR_NAME
-are enabled. This implementation also fails to remake error_strings.h
-when arch-specific dependencies change.  Also, I've noticed that this
-implementation fails to output a message when it's running, so help with
-this would be appreciated.
+This adds an extension for the integral format specifier suffix of 'e',
+so that the format %[duxXo]e will result in printing an number (as
+before) in addition to a name and descrption for an error code, if such
+support is enabled and a name and descrption is found.
+
+My initial thought was to use the glibc extension of '%m', but this
+format specifier uses the value of libc's errno and adding a value
+breaks gcc's printf parsing.  I'm not convinced that the 'e' extension
+is optimal, although there are only four instances of this pattern in
+the kernel that would need to be changed.
+
+    git grep -E '".*%[#0\ +\-]*[0-9]*[hljzt]*[idoxXu]e'
+
+Alternatively, 'E' was another thought for a suffix as well.
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- Makefile | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ lib/vsprintf.c | 92 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 92 insertions(+)
 
-diff --git a/Makefile b/Makefile
-index 8243a23..38049ca 100644
---- a/Makefile
-+++ b/Makefile
-@@ -835,7 +835,7 @@ endif
- prepare2: prepare3 outputmakefile asm-generic
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 26559bd..d96d675 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -345,6 +345,12 @@ int num_to_str(char *buf, int size, unsigned long long num)
+ #define SMALL	32		/* use lowercase in hex (must be 32 == 0x20) */
+ #define SPECIAL	64		/* prefix hex with "0x", octal with "0" */
  
- prepare1: prepare2 $(version_h) include/generated/utsrelease.h \
--                   include/config/auto.conf
-+                   include/config/auto.conf include/generated/error_strings.h
- 	$(cmd_crmodverdir)
- 
- archprepare: archheaders archscripts prepare1 scripts_basic
-@@ -873,6 +873,13 @@ $(version_h): $(srctree)/Makefile FORCE
- include/generated/utsrelease.h: include/config/kernel.release FORCE
- 	$(call filechk,utsrelease.h)
- 
-+include/generated/error_strings.h: include/uapi/asm-generic/errno-base.h \
-+				   include/uapi/asm-generic/errno.h \
-+				   include/uapi/linux/errno.h \
-+				   include/linux/errno.h
-+	$(shell ARCH=$(ARCH) $(srctree)/scripts/mkstrerror.sh \
-+			> $(srctree)/include/generated/error_strings.h)
++#if defined(CONFIG_PRINTK_ERROR_NAMES) || defined(CONFIG_PRINTK_ERROR_DESCS)
++# define ERROR	128		/* error name and/or descrption */
++#else
++# define ERROR	0
++#endif
 +
- PHONY += headerdep
- headerdep:
- 	$(Q)find $(srctree)/include/ -name '*.h' | xargs --max-args 1 \
+ enum format_type {
+ 	FORMAT_TYPE_NONE, /* Just a string part */
+ 	FORMAT_TYPE_WIDTH,
+@@ -1346,6 +1352,75 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 	return number(buf, end, (unsigned long) ptr, spec);
+ }
+ 
++/**
++ * error - format an error code into a descrption
++ *
++ * Basically, we print the number, name and descrption, but only if enabled.
++ * If there is no string for an error number, it's printed as if the option is
++ * disabled.  The format is basically equivalent to:
++ *
++ * printk("%d (%s: %s)", num, name, descrption);
++ *
++ * If there's no descrption, it would end up like:
++ *
++ * printk("%d (%s)", num, name);
++ *
++ * etc.
++ *
++ * Note that we ignore width and precision here, although they are applied to
++ * the numerical portion of the output in number().
++ *
++ * Since we're initializing desc to NULL and then only setting it based upon
++ * a pre-compiler constant value, all code expecting it to be non-zero should
++ * compile-out when CONFIG_PRINTK_ERROR_DESCS is not enabled.
++ */
++#if defined(CONFIG_PRINTK_ERROR_NAMES) || defined(CONFIG_PRINTK_ERROR_DESCS)
++static noinline_for_stack
++char *error(char *buf, char *end, int err, struct printf_spec spec)
++{
++	const char *name = strerror_name(err);
++	const char *desc = NULL;
++
++#if defined(CONFIG_PRINTK_ERROR_DESCS)
++	desc = strerror(err);
++#endif
++
++	if (!(name || desc))
++		return buf;
++
++	if (&buf[1] < end) {
++		*buf++ = ' ';
++		*buf++ = '(';
++	}
++
++	if (name)
++		while (buf < end && *name)
++			*buf++ = *name++;
++
++	if (desc) {
++		if (name && &buf[1] < end) {
++			*buf++ = ':';
++			*buf++ = ' ';
++		}
++
++		while (buf < end && *desc)
++			*buf++ = *desc++;
++	}
++
++	if (buf < end)
++		*buf++ = ')';
++
++	return buf;
++}
++#else
++static inline
++char *error(char *buf, char *end, int err, struct printf_spec spec)
++{
++	return buf;
++}
++#endif /* CONFIG_PRINTK_ERROR_NAMES || CONFIG_PRINTK_ERROR_DESCS */
++
++
+ /*
+  * Helper function to decode printf style format.
+  * Each call decode a token from the format and return the
+@@ -1501,12 +1576,20 @@ qualifier:
+ 
+ 	case 'X':
+ 		spec->base = 16;
++		if (fmt[1] == 'e') {
++			spec->flags |= ERROR;
++			++fmt;
++		}
+ 		break;
+ 
+ 	case 'd':
+ 	case 'i':
+ 		spec->flags |= SIGN;
+ 	case 'u':
++		if (fmt[1] == 'e') {
++			spec->flags |= ERROR;
++			++fmt;
++		}
+ 		break;
+ 
+ 	default:
+@@ -1577,6 +1660,9 @@ qualifier:
+  * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
+  *           bytes of the input)
+  * %n is ignored
++ * %[idxXu]e will print the name of error code, if one exists.  If the number
++ *   doesn't match a known error code, it is printed as a normal signed int.
++ *   TODO: explain CONFIG_PRINTK_ERROR*
+  *
+  * ** Please update Documentation/printk-formats.txt when making changes **
+  *
+@@ -1738,6 +1824,9 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
+ 			}
+ 
+ 			str = number(str, end, num, spec);
++
++			if (spec.flags & ERROR)
++				str = error(str, end, num, spec);
+ 		}
+ 	}
+ 
+@@ -2185,6 +2274,9 @@ int bstr_printf(char *buf, size_t size, const char *fmt, const u32 *bin_buf)
+ 			}
+ 
+ 			str = number(str, end, num, spec);
++
++			if (spec.flags & ERROR)
++				str = error(str, end, num, spec);
+ 		} /* default: */
+ 		} /* switch(spec.type) */
+ 	} /* while(*fmt) */
 -- 
 1.8.1.5
 
