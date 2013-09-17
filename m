@@ -1,108 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab3IQP3u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 11:29:50 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52068 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752759Ab3IQP3t (ORCPT
+	id S1753335Ab3IQPar (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 11:30:47 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51717 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab3IQPap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 11:29:49 -0400
-Date: Tue, 17 Sep 2013 16:28:30 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        James Hogan <james.hogan@imgtec.com>, Michal Simek <monstr@monstr.eu>,
-        Jonas Bonn <jonas@southpole.se>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "microblaze-uclinux@itee.uq.edu.au" 
-	<microblaze-uclinux@itee.uq.edu.au>,
-        "linux@openrisc.net" <linux@openrisc.net>
-Subject: Re: [PATCH 18/28] of: create default early_init_dt_add_memory_arch
-Message-ID: <20130917152829.GH16750@arm.com>
-References: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
- <1379372965-22359-19-git-send-email-robherring2@gmail.com>
- <DDB72C85-45A3-40FC-9108-7B56F6C5BC5B@arm.com>
- <CAL_Jsq+Tt7N-sMPTBKLU565YezK81mN0KcqdtNTQFU5vhBeOUQ@mail.gmail.com>
+	Tue, 17 Sep 2013 11:30:45 -0400
+Message-ID: <52387343.7040007@wwwdotorg.org>
+Date: Tue, 17 Sep 2013 09:20:35 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_Jsq+Tt7N-sMPTBKLU565YezK81mN0KcqdtNTQFU5vhBeOUQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@sisk.pl, srivatsa.bhat@linux.vnet.ibm.com,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] cpufreq: use correct values of cpus in __cpufreq_remove_dev_finish()
+References: <cover.1378963070.git.viresh.kumar@linaro.org> <8f777cc6b41b2fed4bf71ce2adc36800353d5738.1378963070.git.viresh.kumar@linaro.org>
+In-Reply-To: <8f777cc6b41b2fed4bf71ce2adc36800353d5738.1378963070.git.viresh.kumar@linaro.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 02:01:36PM +0100, Rob Herring wrote:
-> On Tue, Sep 17, 2013 at 3:46 AM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > On 17 Sep 2013, at 00:09, Rob Herring <robherring2@gmail.com> wrote:
-> >> --- a/arch/arm64/kernel/setup.c
-> >> +++ b/arch/arm64/kernel/setup.c
-> >> @@ -147,24 +147,6 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
-> >>       pr_info("Machine: %s\n", machine_name);
-> >> }
-> >>
-> >> -void __init early_init_dt_add_memory_arch(u64 base, u64 size)
-> >> -{
-> >> -     base &= PAGE_MASK;
-> >> -     size &= PAGE_MASK;
-> >> -     if (base + size < PHYS_OFFSET) {
-> >> -             pr_warning("Ignoring memory block 0x%llx - 0x%llx\n",
-> >> -                        base, base + size);
-> >> -             return;
-> >> -     }
-> >> -     if (base < PHYS_OFFSET) {
-> >> -             pr_warning("Ignoring memory range 0x%llx - 0x%llx\n",
-> >> -                        base, PHYS_OFFSET);
-> >> -             size -= PHYS_OFFSET - base;
-> >> -             base = PHYS_OFFSET;
-> >> -     }
-> >> -     memblock_add(base, size);
-> >> -}
-> >> -
-> >> /*
-> >>  * Limit the memory size that was specified via FDT.
-> >>  */
-> >
-> > ...
-> >
-> >> --- a/drivers/of/fdt.c
-> >> +++ b/drivers/of/fdt.c
-> >> @@ -688,6 +688,17 @@ u64 __init dt_mem_next_cell(int s, __be32 **cellp)
-> >>       return of_read_number(p, s);
-> >> }
-> >>
-> >> +void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
-> >> +{
-> >> +#ifdef CONFIG_HAVE_MEMBLOCK
-> >> +     base &= PAGE_MASK;
-> >> +     size &= PAGE_MASK;
-> >> +     memblock_add(base, size);
-> >> +#else
-> >> +     pr_err("%s: ignoring memory (%llx, %llx)\n", __func__, base, size);
-> >> +#endif
-> >> +}
-> >
-> > Are the arm64 changes equivalent here?  There are some safety checks to
-> > cope with the kernel being loaded at a higher offset than the
-> > recommended one (PHYS_OFFSET calculated automatically).
+On 09/11/2013 11:25 PM, Viresh Kumar wrote:
+> This broke after a recent change "cedb70a cpufreq: Split __cpufreq_remove_dev()
+> into two parts" from Srivatsa..
 > 
-> I tried to keep that, but PHYS_OFFSET is not universally defined. My
-> reasoning is this range checking is hardly specific to an
-> architecture. Perhaps if memory always starts at 0 you don't need it.
-> If arm64 really needs these checks, then all architectures do.
+> Consider a scenario where we have two CPUs in a policy (0 & 1) and we are
+> removing cpu 1. On the call to __cpufreq_remove_dev_prepare() we have cleared 1
+> from policy->cpus and now on a call to __cpufreq_remove_dev_finish() we read
+> cpumask_weight of policy->cpus, which will come as 1 and this code will behave
+> as if we are removing the last cpu from policy :)
 > 
-> Perhaps "__virt_to_phys(PAGE_OFFSET)" instead of PHYS_OFFSET would work for all?
+> Fix it by clearing cpu mask in __cpufreq_remove_dev_finish() instead of
+> __cpufreq_remove_dev_prepare().
 
-I think virt_to_phys() or __pa() should work, the __virt_to_phys() is
-only defined by a few architectures.
-
--- 
-Catalin
+I see this patch isn't in linux-next yet, nor did it make 3.12-rc1. I
+assume it'll make 3.12-rc2? It solves various CPU hotplug and
+suspend/resume issues for me.
