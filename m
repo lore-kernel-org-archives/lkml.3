@@ -1,139 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab3IQTuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 15:50:46 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:36096 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753288Ab3IQTuo (ORCPT
+	id S1753823Ab3IQTxm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 15:53:42 -0400
+Received: from mail-bn1lp0155.outbound.protection.outlook.com ([207.46.163.155]:33312
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753336Ab3IQTxl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 15:50:44 -0400
-Message-ID: <5238B288.3000704@hurleysoftware.com>
-Date: Tue, 17 Sep 2013 15:50:32 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 17 Sep 2013 15:53:41 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Gleb Natapov <gleb@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: RE: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+ from the hypervisor
+Thread-Topic: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer
+ frequency from the hypervisor
+Thread-Index: AQHOqM30I+mkPB2b1kKq/5YqjRysqJnC17CggAAG+ACAABQ5UIAAikAAgABK5hCABkKSgIAAYOzQ
+Date: Tue, 17 Sep 2013 19:53:36 +0000
+Message-ID: <2b4a9a0cff5143c59a0802a2e425c4db@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+ <dd29077371564a14b2d317d2291db8a9@SN2PR03MB061.namprd03.prod.outlook.com>
+ <52325C1E.90101@zytor.com>
+ <50f92d9c16a54e5bb6fa14ef72e5fdfb@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130913095526.GE18381@redhat.com>
+ <7737cb643a664b6fb39021b4d364b5cf@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130917135918.GY17294@redhat.com>
+In-Reply-To: <20130917135918.GY17294@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e0:ee43::3]
+x-forefront-prvs: 0972DEC1D9
+x-forefront-antispam-report: SFV:NSPM;SFS:(479174003)(24454002)(51704005)(377454003)(13464003)(199002)(189002)(74366001)(79102001)(65816001)(76786001)(81686001)(81816001)(80976001)(77096001)(56816003)(54356001)(59766001)(74316001)(76482001)(76796001)(63696002)(50986001)(77982001)(76576001)(83072001)(31966008)(19580395003)(83322001)(47446002)(19580405001)(74502001)(74662001)(51856001)(69226001)(74706001)(81342001)(81542001)(80022001)(53806001)(74876001)(46102001)(54316002)(15975445006)(4396001)(56776001)(47736001)(49866001)(15202345003)(47976001)(33646001)(3826001)(15583001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:2001:4898:80e0:ee43::3;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
-        Dave Airlie <airlied@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        intel-gfx@lists.freedesktop.org
-Subject: Re: BUG: sleeping function called from invalid context on 3.10.10-rt7
-References: <20130911102809.GA31663@uudg.org> <20130911092623.42efd930@gandalf.local.home> <5230895B.5070400@hurleysoftware.com> <20130911113845.6d56a556@gandalf.local.home> <5230C52E.3050801@hurleysoftware.com>
-In-Reply-To: <5230C52E.3050801@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-Spam-Report: score=0.2 tests=ALL_TRUSTED, KHOP_BIG_TO_CC, TVD_RCVD_IP version=3.3.2
-	cmae=v=2.1 cv=XLMJF2RE c=1 sm=0 tr=0 a=fi+bEUf2jW8nBMmSb+pBTg==:17
-	a=HewVDi6x77QA:10 a=97xDsDEfeIUA:10 a=lF0tP7JmhmIA:10 a=IkcTkHD0fZMA:10
-	a=xGRsDScCAAAA:8 a=zFmFt3I4AAAA:8 a=IIQeXsxtAAAA:8 a=kSsn7R9otuIA:10
-	a=BL0x6LJHIDm3DCsy2kAA:9 a=QEXdDO2ut3YA:10 a=A4LuvFU5fKoA:10
-X-Spam-Score: 0
+X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 03:31 PM, Peter Hurley wrote:
-> [+cc dri-devel]
->
-> On 09/11/2013 11:38 AM, Steven Rostedt wrote:
->> On Wed, 11 Sep 2013 11:16:43 -0400
->> Peter Hurley <peter@hurleysoftware.com> wrote:
->>
->>>> The funny part is, there's a comment there that shows that this was
->>>> done even for "PREEMPT_RT". Unfortunately, the call to
->>>> "get_scanout_position()" can call functions that use the rt-mutex
->>>> "sleeping spin locks" and it breaks there.
->>>>
->>>> I guess we need to ask the authors of the mainline patch exactly why
->>>> that preempt_disable() is needed?
->>>
->>> The drm core associates a timestamp with each vertical blank frame #.
->>> Drm drivers can optionally support a 'high resolution' hw timestamp.
->>> The vblank frame #/timestamp tuple is user-space visible.
->>>
->>> The i915 drm driver supports a hw timestamp via this drm helper function
->>> which computes the timestamp from the crtc scan position (based on the
->>> pixel clock).
->>>
->>> For mainline, the preempt_disable/_enable() isn't actually necessary
->>> because every call tree that leads here already has preemption disabled.
->>>
->>> For -RT, the maybe i915 register spinlock (uncore.lock) should be raw?
->>>
->>
->> No, it should not. Note, any other lock that can be held when it is
->> held would also need to be raw.
->
-> By that, you mean "any other lock" that might be claimed "would also need
-> to be raw"?  Hopefully not "any other lock" already held?
->
->> And by taking a quick audit of the code, I see this:
->>
->>     spin_lock_irqsave(&dev_priv->uncore.lock, irqflags);
->>
->>     /* Reset the chip */
->>
->>     /* GEN6_GDRST is not in the gt power well, no need to check
->>      * for fifo space for the write or forcewake the chip for
->>      * the read
->>      */
->>     __raw_i915_write32(dev_priv, GEN6_GDRST, GEN6_GRDOM_FULL);
->>
->>     /* Spin waiting for the device to ack the reset request */
->>     ret = wait_for((__raw_i915_read32(dev_priv, GEN6_GDRST) & GEN6_GRDOM_FULL) == 0, 500);
->>
->> That spin is unacceptable in RT with preemption and interrupts disabled.
->
-> Yep. That would be bad.
->
-> AFAICT the registers read in i915_get_crtc_scanoutpos() aren't included
-> in the force-wake set, so raw reads of the registers would
-> probably be acceptable (thus obviating the need for claiming the uncore.lock).
->
-> Except that _ALL_ register access is disabled with the uncore.lock
-> during a gpu reset. Not sure if that's meant to include crtc registers
-> or not, or what other synchronization/serialization issues are being
-> handled/hidden by forcing all register accesses to wait during a gpu reset.
->
-> Hopefully an i915 expert can weigh in here?
 
 
-Daniel,
+> -----Original Message-----
+> From: Gleb Natapov [mailto:gleb@redhat.com]
+> Sent: Tuesday, September 17, 2013 6:59 AM
+> To: KY Srinivasan
+> Cc: H. Peter Anvin; x86@kernel.org; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de;
+> JBeulich@suse.com; bp@alien8.de
+> Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+> from the hypervisor
+> 
+> On Fri, Sep 13, 2013 at 02:28:35PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Gleb Natapov [mailto:gleb@redhat.com]
+> > > Sent: Friday, September 13, 2013 2:55 AM
+> > > To: KY Srinivasan
+> > > Cc: H. Peter Anvin; x86@kernel.org; gregkh@linuxfoundation.org; linux-
+> > > kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> > > apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de;
+> > > JBeulich@suse.com; bp@alien8.de
+> > > Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+> > > from the hypervisor
+> > >
+> > > On Fri, Sep 13, 2013 at 01:43:09AM +0000, KY Srinivasan wrote:
+> > > >
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: H. Peter Anvin [mailto:hpa@zytor.com]
+> > > > > Sent: Thursday, September 12, 2013 5:28 PM
+> > > > > To: KY Srinivasan
+> > > > > Cc: x86@kernel.org; gregkh@linuxfoundation.org; linux-
+> > > kernel@vger.kernel.org;
+> > > > > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > > > > jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com;
+> > > bp@alien8.de
+> > > > > Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer
+> frequency
+> > > > > from the hypervisor
+> > > > >
+> > > > > On 09/12/2013 05:06 PM, KY Srinivasan wrote:
+> > > > > >
+> > > > > > Peter,
+> > > > > >
+> > > > > > Let me know if you want me to address any additional issues in this
+> patch.
+> > > > > >
+> > > > >
+> > > > > Please address Jan and Gleb's feedback.
+> > > >
+> > > > Gleb's feedback was a question and I answered that as I did Jan's feedback
+> as
+> > > well.
+> > > > Gleb, Jan, please let me know if there is something else you want
+> addressed
+> > > here.
+> > > >
+> > > No, I am just interesting to know some details about the interface since
+> > > I cannot find it documented in Hyper-V spec.
+> >
+> > Thanks Gleb. Here is the link for the latest Hyper-V specification:
+> > http://www.microsoft.com/en-us/download/details.aspx?id=39289
+> >
+> > This spec talks about how migration is handled with regards to TSC.
+> >
+> All I can see is "15.4.3 Partition Reference TSC Mechanism". I see
+> nothing about HV_X64_MSR_TSC_FREQUENCY specifically. To access this MSR
+> a partition needs AccessFrequencyMsrs privilege, may be partition that
+> cab be migrated does not have this privilege?
 
-Can you shed some light on whether the i915+ crtc registers (specifically
-those in i915_get_crtc_scanoutpos() and i915_/gm45_get_vblank_counter())
-read as part of the vblank counter/timestamp handling need to
-be prevented during gpu reset?
-
-The implied wait with preemption and interrupts disabled is causing grief
-in -RT, but also a 4ms wait inside an irq handler seems like a bad idea.
+If you use the MSR to read the TSC frequency, then indeed when you migrate then there
+is no guarantee that the TSC frequency won't change when you migrate. The approach
+described in section 15.4.3 is the preferred approach that can accommodate migration.
 
 Regards,
-Peter Hurley
 
-
->> What's the real issue here?
->
-> That the vblank timestamp needs to be an accurate measurement of a
-> realtime event. Sleeping/servicing interrupts while reading
-> the registers necessary to compute the timestamp would be bad too.
->
-> (edit: which hopefully Mario Kleiner clarified in his reply)
->
-> My point earlier was three-fold:
-> 1. Don't need the preempt_disable() for mainline: all callers are already
->     holding interrupt-disabling spinlocks.
-> 2. -RT still needs to prevent scheduling there.
-> 3. the problem is i915-specific.
->
-> [update: the radeon driver should also BUG like the i915 driver but probably
-> should have mmio_idx_lock spinlock as raw]
-
-
+K. Y 
+> 
+> --
+> 			Gleb.
