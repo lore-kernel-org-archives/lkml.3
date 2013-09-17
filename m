@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab3IQDUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 23:20:49 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:54695 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab3IQDUr (ORCPT
+	id S1752196Ab3IQDVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 23:21:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58902 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751749Ab3IQDVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 23:20:47 -0400
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: nick.dyer@itdev.co.uk, dmitry.torokhov@gmail.com, josh.wu@atmel.com
-Subject: [PATCH V2] Input: atmel_mxt_ts - update to devm_* API
-Date: Tue, 17 Sep 2013 08:50:49 +0530
-Message-Id: <1379388049-4641-1-git-send-email-badarkhe.manish@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 16 Sep 2013 23:21:46 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: msalter@redhat.com, a-jacquiot@ti.com
+Cc: linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH][RESEND] c6x: remove unused parameter in Kconfig
+Date: Tue, 17 Sep 2013 05:21:29 +0200
+Message-Id: <1379388089-4384-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the code to use devm_* API so that driver core will manage
-resources.
+This patch proposes to remove the TMS320C6X_CACHES_ON kernel configuration
+parameter defined in arch/c6x/Kconfig, but used nowhere
+in the makefiles and source code.
 
-Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Acked by: Mark Salter <msalter@redhat.com>
 ---
-Changes since V1:
-As per Dmitry's comment, avoid "devm_" operation on irq as it may cause
-kernel crash while device is getting unbound and CCing Nick dryer.
+ arch/c6x/Kconfig | 4 ----
+ 1 file changed, 4 deletions(-)
 
-:100644 100644 59aa240... d04dbed... M	drivers/input/touchscreen/atmel_mxt_ts.c
- drivers/input/touchscreen/atmel_mxt_ts.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 59aa240..d04dbed 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -1139,12 +1139,12 @@ static int mxt_probe(struct i2c_client *client,
- 	if (!pdata)
- 		return -EINVAL;
+diff --git a/arch/c6x/Kconfig b/arch/c6x/Kconfig
+index 957dd00..b4f7725 100644
+--- a/arch/c6x/Kconfig
++++ b/arch/c6x/Kconfig
+@@ -105,10 +105,6 @@ menu "Processor type and features"
  
--	data = kzalloc(sizeof(struct mxt_data), GFP_KERNEL);
--	input_dev = input_allocate_device();
-+	data = devm_kzalloc(&client->dev, sizeof(struct mxt_data), GFP_KERNEL);
-+	input_dev = devm_input_allocate_device(&client->dev);
- 	if (!data || !input_dev) {
- 		dev_err(&client->dev, "Failed to allocate memory\n");
- 		error = -ENOMEM;
--		goto err_free_mem;
-+		goto err_out;
- 	}
+ source "arch/c6x/platforms/Kconfig"
  
- 	data->is_tp = pdata && pdata->is_tp;
-@@ -1170,7 +1170,7 @@ static int mxt_probe(struct i2c_client *client,
- 
- 	error = mxt_initialize(data);
- 	if (error)
--		goto err_free_mem;
-+		goto err_out;
- 
- 	__set_bit(EV_ABS, input_dev->evbit);
- 	__set_bit(EV_KEY, input_dev->evbit);
-@@ -1253,9 +1253,7 @@ err_free_irq:
- 	free_irq(client->irq, data);
- err_free_object:
- 	kfree(data->object_table);
--err_free_mem:
--	input_free_device(input_dev);
--	kfree(data);
-+err_out:
- 	return error;
- }
- 
-@@ -1267,7 +1265,6 @@ static int mxt_remove(struct i2c_client *client)
- 	free_irq(data->irq, data);
- 	input_unregister_device(data->input_dev);
- 	kfree(data->object_table);
--	kfree(data);
- 
- 	return 0;
- }
+-config TMS320C6X_CACHES_ON
+-	bool "L2 cache support"
+-	default y
+-
+ config KERNEL_RAM_BASE_ADDRESS
+ 	hex "Virtual address of memory base"
+ 	default 0xe0000000 if SOC_TMS320C6455
 -- 
-1.7.10.4
+1.8.1.2
 
