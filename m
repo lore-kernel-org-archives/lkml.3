@@ -1,166 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab3IQLlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 07:41:42 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43167 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340Ab3IQLlj (ORCPT
+	id S1752714Ab3IQLm0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 07:42:26 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:16439 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab3IQLmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 07:41:39 -0400
-Date: Tue, 17 Sep 2013 12:41:33 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com, linus.walleij@linaro.org,
-        akpm@linux-foundation.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org, rtc-linux@googlegroups.com,
-        rob.herring@calxeda.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        swarren@wwwdotorg.org, rob@landley.net, ijc+devicetree@hellion.org.uk,
-        grant.likely@linaro.org, florian.lobmaier@ams.com
-Message-ID: <20130917114133.GV21013@sirena.org.uk>
-References: <1379400338-20704-1-git-send-email-ldewangan@nvidia.com>
- <1379400338-20704-4-git-send-email-ldewangan@nvidia.com>
+	Tue, 17 Sep 2013 07:42:24 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 17 Sep 2013 04:39:05 -0700
+Message-ID: <5238450F.6090303@nvidia.com>
+Date: Tue, 17 Sep 2013 17:33:27 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ipiAXJWFVZGVDOzf"
-Content-Disposition: inline
-In-Reply-To: <1379400338-20704-4-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/4] regulator: as3722: add regulator driver for AMS
- AS3722
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Mark Brown <broonie@kernel.org>
+CC: "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "florian.lobmaier@ams.com" <florian.lobmaier@ams.com>
+Subject: Re: [PATCH 1/4] mfd: add support for AMS AS3722 PMIC
+References: <1379400338-20704-1-git-send-email-ldewangan@nvidia.com> <1379400338-20704-2-git-send-email-ldewangan@nvidia.com> <20130917112444.GU21013@sirena.org.uk>
+In-Reply-To: <20130917112444.GU21013@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 17 September 2013 04:54 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Tue, Sep 17, 2013 at 12:15:35PM +0530, Laxman Dewangan wrote:
+>
+>> +MFD driver adds following mfd devices with their compatible values:
+>> +as3722-gpio: The compatible value of this as3722 gpio driver is
+>> +	     "ams,as3722-gpio";
+>> +as3722-regulator: The compatible value of this as3722 regulator driver is
+>> +	     "ams,as3722-regulator";
+>> +as3722-rtc: The compatible value of this as3722 rtc driver is
+>> +	     "ams,as3722-rtc";
+>> +as3722-adc: The compatible value of this as3722 adc driver is
+>> +	     "ams,as3722-adc";
+>> +as3722-power-off: he compatible value of this as3722 power off driver is
+>> +	     "ams,as3722-power-off".
+> Personally I find this to be exposing implementation details of Linux -
+> unless there is something reusable about the binding that'd allow it to
+> be used to describe the contents of the chip the subnodes really aren't
+> adding any information that wasn't present from just knowing the parent
+> chip.  If there were relocatable IPs it'd be a bit different.
 
---ipiAXJWFVZGVDOzf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, then can we fix the the sub node name and parse these when adding 
+mfd devices and set the pdev->dev.of_node of child devices.
+Like
+parent_node {
+     ...
+     child1_node {
+         ...
+     };
 
-On Tue, Sep 17, 2013 at 12:15:37PM +0530, Laxman Dewangan wrote:
+     child1_node {
+         ...
+     };
+};
 
-> +               ams,enable-oc-config: Enable overcurrent configuration of the
-> +               ams,oc-trip-threshold-perphase: Overcurrent trip threshold
-> +               ams,oc-alarm-threshold-perphase: Overcurrent alarm threshold
 
-These look like you should be implementing the current setting
-operations in the framework, probably mapping to the alarm limit if
-nothing else.
+and fix the node name of child1 and child2 and have this as part of 
+mfd-cell's of_node_name.
+So when we add the mfd devices, we look for these fixed name and if 
+matches then set the dev->of_node for that child sub device.
 
-> +static int as3722_ldo_get_voltage_sel(struct regulator_dev *rdev)
-> +{
-> +	int ret;
-> +
-> +	ret = regulator_get_voltage_sel_regmap(rdev);
-> +	if (ret >= 0x40)
-> +		ret -= 0x1B;
-> +	return ret;
-> +}
+This will avoid the code for getting child node pointer from parent node 
+in each driver. We fix the child node name in any case.
 
-This looks very strange.  What's going on here?  A gap in the selectors?
-If that's the case you probably want to be using linear ranges.
 
-> +static struct regulator_ops as3722_ldo_extcntrl_ops = {
-> +	.get_voltage_sel = as3722_ldo_get_voltage_sel,
-> +	.set_voltage_sel = as3722_ldo_set_voltage_sel,
-> +	.list_voltage = regulator_list_voltage_linear,
-> +};
-
-You ought to be providing map_voltage() too, same for some if not all of
-the other regulators.
-
-> +static unsigned int as3722_sd_get_mode(struct regulator_dev *dev)
-> +{
-> +	struct as3722_regulators *as3722_regs = rdev_get_drvdata(dev);
-> +	struct as3722 *as3722 = as3722_regs->as3722;
-> +	int id = rdev_get_id(dev);
-> +	u32 val;
-> +	int ret;
-> +
-> +	if (!as3722_reg_lookup[id].control_reg)
-> +		return -ERANGE;
-
-That seems a bit of a random error code.  -ENOTSUPP?
-
-> +static int as3722_sd_list_voltage(struct regulator_dev *rdev, unsigned selector)
-> +{
-> +	if (selector >= AS3722_SD2_VSEL_MAX)
-> +		return -EINVAL;
-> +
-> +	selector++;
-> +	if (selector <= 0x40)
-> +		return 600000 + selector * 12500;
-> +	if (selector <= 0x70)
-> +		return 1400000 + (selector - 0x40) * 25000;
-> +	if (selector <= 0x7F)
-> +		return 2600000 + (selector - 0x70) * 50000;
-> +	return -EINVAL;
-> +}
-
-Use linear ranges.
-
-> +static struct of_regulator_match as3722_regulator_matches[] = {
-> +	{.name = "sd0", },
-
-	{ .name = "sd0", },
-
-> +		config.of_node = as3722_regulator_matches[id].of_node;
-> +		rdev = regulator_register(&as3722_regs->desc[id], &config);
-> +		if (IS_ERR(rdev)) {
-
-devm_regualtor_register().
-
-> +		if (reg_config->ext_control) {
-> +			ret = regulator_enable_regmap(rdev);
-> +			if (ret < 0) {
-> +				dev_err(&pdev->dev,
-> +					"Regulator %d enable failed: %d\n",
-> +					id, ret);
-> +				goto scrub;
-> +			}
-
-This looks wrong...  why is the regualtor being enabled by something
-other than the core?
-
-> +static int __init as3722_regulator_init(void)
-> +{
-> +	return platform_driver_register(&as3722_regulator_driver);
-> +}
-> +subsys_initcall(as3722_regulator_init);
-> +
-> +static void __exit as3722_regulator_exit(void)
-> +{
-> +	platform_driver_unregister(&as3722_regulator_driver);
-> +}
-> +module_exit(as3722_regulator_exit);
-
-module_platform_driver().
-
---ipiAXJWFVZGVDOzf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSOD/qAAoJELSic+t+oim9DqcQAIBbKCBKPeK8AlIDAhHLT89S
-yn6317kv6wFizBhyDwBOFAX2S92Cyniyuhk8859QdXag4fAh0kVTDmz+qZuwxr1e
-7hwUmh25DhnPniwHkSwNRKx+DOWCq1/ZQ5L0suwgqNbGb67/uWjzETtLWDrvbVOf
-Xt/q6ZRtgc0JaWIHI4oMkZh4n/n+NRzzCgVDIiHiHFEsNdsxL6IgAeS0otWOpajN
-YvDbkym7fespZPUij3wRGGExbpRzNgRh489MjbDJI/IJrzMggHvRSPDaOXMyYVOi
-9yQL6RDCjF0tNqTK+vWQ5jPYcv60/TjclDEVLoKWTrcSHbwNVLNKNXVzMUdvZkFo
-ETaqBrb7Inih8sxqJp+r5LsJYye97Mnc92cNFS9+z/hwbNeGOxEtidJee/0pLFFj
-x9LMbXQpmV52KoRsbqlxbWwOzGGr+OeIhvBC7LPqrPqcZ3NXzQ8jbOWZaAtrzzh5
-FJbyGVNOQti/MZ7gMcF2e4bG5pT/SWWzo1G7ilauclDT67ctg9JC3noGzXifh4iy
-1W9e2XNBpXzQ1kCXwCv87uNFvKVv3oILLRxHwSyA0paWU+wxg9AsD6+V1TnBkruJ
-FamdR0Ev6/2qWZQHj3krG6bkycJZxdkX23egp3M5dc58ROCViVmFcIh7NuJ0KMl6
-NiGJD7iXahNKD/86JLRV
-=cozY
------END PGP SIGNATURE-----
-
---ipiAXJWFVZGVDOzf--
