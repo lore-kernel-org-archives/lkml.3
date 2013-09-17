@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab3IQW4B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 18:56:01 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:43917 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab3IQWz4 (ORCPT
+	id S1754184Ab3IQW4T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 18:56:19 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:48809 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371Ab3IQW4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 18:55:56 -0400
-From: Ryan Mallon <rmallon@gmail.com>
-To: dmitry.torokhov@gmail.com, rydberg@euromail.se
-Cc: carl@ok-labs.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ryan Mallon <rmallon@gmail.com>
-Subject: [PATCH 2/2] uinput: Support injecting multiple events in one write() call
-Date: Wed, 18 Sep 2013 08:55:44 +1000
-Message-Id: <1379458544-6508-2-git-send-email-rmallon@gmail.com>
-X-Mailer: git-send-email 1.7.9.7
-In-Reply-To: <1379458544-6508-1-git-send-email-rmallon@gmail.com>
-References: <1379458544-6508-1-git-send-email-rmallon@gmail.com>
+	Tue, 17 Sep 2013 18:56:17 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: George Cherian <george.cherian@ti.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Nikolay Balandin <n.a.balandin@gmail.com>
+Subject: Re: [PATCH v4 0/3] cleanup of gpio_pcf857x.c
+Date: Wed, 18 Sep 2013 00:56:19 +0200
+Message-ID: <1695077.V4sgFrjTJR@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CACRpkdYc4UTbpa5W-KY_D7hRUYi9N3Ny1+CPJ-aixeEk3WGHCw@mail.gmail.com>
+References: <1378278183-26596-1-git-send-email-george.cherian@ti.com> <CACRpkdYc4UTbpa5W-KY_D7hRUYi9N3Ny1+CPJ-aixeEk3WGHCw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rework the code in uinput_inject_event so that it matches the code in
-evdev_write and allows injecting more than one event, or zero events.
+Hi Linus,
 
-Signed-off-by: Ryan Mallon <rmallon@gmail.com>
----
- drivers/input/misc/uinput.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+On Tuesday 17 September 2013 14:51:48 Linus Walleij wrote:
+> On Wed, Sep 4, 2013 at 9:03 AM, George Cherian wrote:
+> > This patch series
+> > 
+> >         - removes the irq_demux_work
+> >         - Uses devm_request_threaded_irq
+> >         - Call the user handler iff gpio_to_irq is done.
+> > 
+> > v1 --> v2
+> > 
+> >         Split v1 to 3 patches
+> > 
+> > v2 --> v3
+> > 
+> >         Remove the unnecessary dts patches.
+> > 
+> > v3 --> v4
+> > 
+> >         Remove gpio->irq (in patch 2)
+> 
+> Applied all three patches with Kuninoro's ACK.
+> 
+> However your last iteration was still labeled "v3" in the subject
+> so I was a bit confused, but I took all those sent on sep 4.
+> 
+> Please check the result in my GPIO tree or linux-next and
+> make sure it works.
+> 
+> > Note: these patches were made after applying [1].
+> > [1] - [PATCH v5] gpio: pcf857x: Add OF support -
+> > https://lkml.org/lkml/2013/8/27/70
+>
+> Well that patch is not finished, but by rebasing patch 2 with
+> patch -p1 < patch2.patch it applied anyway.
+> 
+> Now Laurent has to finalize his DT bindings on top of your patches instead.
 
-diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
-index a0a4bba..0247a8a 100644
---- a/drivers/input/misc/uinput.c
-+++ b/drivers/input/misc/uinput.c
-@@ -434,16 +434,24 @@ static ssize_t uinput_inject_event(struct uinput_device *udev,
- 				   const char __user *buffer, size_t count)
- {
- 	struct input_event ev;
-+	size_t bytes = 0;
- 
--	if (count < input_event_size())
-+	if (count != 0 && count < input_event_size())
- 		return -EINVAL;
- 
--	if (input_event_from_user(buffer, &ev))
--		return -EFAULT;
-+	while (bytes + input_event_size() <= count) {
-+		if (input_event_from_user(buffer + bytes, &ev)) {
-+			if (!bytes)
-+				bytes = -EFAULT;
-+			goto out;
-+		}
- 
--	input_event(udev->dev, ev.type, ev.code, ev.value);
-+		input_event(udev->dev, ev.type, ev.code, ev.value);
-+		bytes += input_event_size();
-+	}
- 
--	return input_event_size();
-+ out:
-+	return bytes;
- }
- 
- static ssize_t uinput_write(struct file *file, const char __user *buffer,
+I will do so. At first sight I don't see any conflict issue.
+
 -- 
-1.7.9.7
+Regards,
+
+Laurent Pinchart
 
