@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3IQM0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 08:26:25 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:54296 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab3IQM0W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 08:26:22 -0400
+	id S1752644Ab3IQMfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 08:35:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53300 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752124Ab3IQMfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 08:35:03 -0400
+Message-ID: <52384C72.4040403@suse.cz>
+Date: Tue, 17 Sep 2013 14:34:58 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1309131142540.4089@ionos.tec.linutronix.de>
-References: <1379000351-15672-1-git-send-email-r.sricharan@ti.com>
-	<1379000351-15672-2-git-send-email-r.sricharan@ti.com>
-	<alpine.DEB.2.02.1309122201530.4089@ionos.tec.linutronix.de>
-	<523228B5.5070507@ti.com>
-	<alpine.DEB.2.02.1309122335440.4089@ionos.tec.linutronix.de>
-	<5232457A.8080709@ti.com>
-	<alpine.DEB.2.02.1309130138550.4089@ionos.tec.linutronix.de>
-	<52326D6B.2010003@ti.com>
-	<alpine.DEB.2.02.1309131142540.4089@ionos.tec.linutronix.de>
-Date: Tue, 17 Sep 2013 14:26:22 +0200
-Message-ID: <CACRpkdYzaoZUunoNDNirV5Bt-G6p-avFV8A=iznDKjK2biqwrw@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/4] DRIVERS: IRQCHIP: Add crossbar irqchip driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Rajendra Nayak <rnayak@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] modpost: Fix secondary errors seen if a single module
+ build fails
+References: <1379219942-31545-1-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1379219942-31545-1-git-send-email-linux@roeck-us.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 4:24 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+Dne 15.9.2013 06:39, Guenter Roeck napsal(a):
+> Commit ea4054a23 (modpost: handle huge numbers of modules) added
+> support for building a large number of modules.
+> 
+> Unfortunately, the commit changed the semantics of the makefile: Instead of
+> passing only existing object files to modpost, make now passes all expected
+> object files. If make was started with option -i, this results in a modpost
+> error if a single file failed to build.
+> 
+> Example with the current btrfs build falure on m68k:
+> 
+> fs/btrfs/btrfs.o: No such file or directory
+> make[1]: [__modpost] Error 1 (ignored)
+> 
+> This error is followed by lots of errors such as:
+> 
+> m68k-linux-gcc: error: arch/m68k/emu/nfcon.mod.c: No such file or directory
+> m68k-linux-gcc: fatal error: no input files
+> compilation terminated.
+> make[1]: [arch/m68k/emu/nfcon.mod.o] Error 1 (ignored)
+> 
+> This doesn't matter much for normal builds, but it is annoying for builds
+> started with "make -i" due to the large number of secondary errors.
+> Those errors unnececessarily clog any error log and make it difficult
+> to find the real errors in the build.
+> 
+> Fix the problem by only passing existing object files to modpost.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  scripts/Makefile.modpost |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
+> index 8dcdca2..387c806 100644
+> --- a/scripts/Makefile.modpost
+> +++ b/scripts/Makefile.modpost
+> @@ -81,7 +81,8 @@ modpost = scripts/mod/modpost                    \
+>  
+>  # We can go over command line length here, so be careful.
+>  quiet_cmd_modpost = MODPOST $(words $(filter-out vmlinux FORCE, $^)) modules
+> -      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$$/.o/' | $(modpost) -s -T -
+> +      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$$/.o/' | \
+> +	while read a; do [ -f $$a ] && echo $$a; done | $(modpost) -s -T -
 
-> So why can't you make use of irq domains and have the whole routing
-> business implemented sanely?
->
-> What's needed is in gic_init_bases():
->
->        if (of_property_read(node, "routable_irqs", &nr_routable_irqs) {
->           irq_domain_add_legacy(nr_gic_irqs);
->        } else {
->           irq_domain_add_legacy(nr_per_cpu_irqs);
->           irq_domain_add_linear(nr_routable_irqs);
->        }
->
-> Now that separate domain has an xlate function which grabs a free GIC
-> irq from a bitmap and returns the hardware irq number in the gic
-> space. The map/unmap callbacks take care of setting up / tearing down
-> the route in the crossbar.
+Can you do this filtering only if make -i is used ('i' is present in
+$(MAKEFLAGS)), to not hide potential buildsystem bugs? Regarding shell
+loop vs. ls, maybe the cleanest way would be to add an option to modpost
+to ignore missing files.
 
-This is obviously the right approach, it's exactly what .map should do
-the only special thing here being that we have hardware to perform
-the mapping ... bah why didn't I realize this :-(
-
-Yours,
-Linus Walleij
+Thanks,
+Michal
