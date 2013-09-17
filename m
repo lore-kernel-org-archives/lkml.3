@@ -1,55 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab3IQROR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 13:14:17 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:40272 "EHLO mail.kapsi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752884Ab3IQROQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 13:14:16 -0400
-Message-ID: <52388DB9.9020406@iki.fi>
-Date: Tue, 17 Sep 2013 20:13:29 +0300
-From: Antti Palosaari <crope@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753405Ab3IQRVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 13:21:55 -0400
+Received: from constellation.longcap.com ([199.68.203.254]:41025 "EHLO
+	constellation.longcap.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868Ab3IQRVy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 13:21:54 -0400
+X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Sep 2013 13:21:54 EDT
+Message-ID: <52388E10.6080806@foxbatcapital.com>
+Date: Tue, 17 Sep 2013 12:14:56 -0500
+From: Michael Chen <michael@foxbatcapital.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Jim Davis <jim.epost@gmail.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: randconfig build error with next-20130917, in drivers/staging/media/msi3101
-References: <CA+r1Zhig6Xc_-jw=nGqd18j0MfTbpLRZoVYYtFZ2wY5LUp6J5w@mail.gmail.com>
-In-Reply-To: <CA+r1Zhig6Xc_-jw=nGqd18j0MfTbpLRZoVYYtFZ2wY5LUp6J5w@mail.gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: 48 core server...
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 82.128.186.45
-X-SA-Exim-Mail-From: crope@iki.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jim,
+I'm considering bidding on this 48-core box:
 
-That is maybe 5th times I got that same bug report :-] It is already 
-fixed. Mauro tends to handle pending patches once per release candidate, 
-so I think fix will be in next very soon (during this week).
+http://www.ebay.com/itm/Supermicro-A-Server-1042G-TF-1U-H8QG6-4-CPUS-48-cores-2-2Ghz-128GB-RAM-/151119828428?pt=COMP_EN_Servers&hash=item232f7195cc
 
-https://patchwork.kernel.org/patch/2856771/
-https://lkml.org/lkml/2013/9/12/824
+Does anyone have experience with it and can I use all the cores?
 
-regards
-Antti
-
-
-On 09/17/2013 08:05 PM, Jim Davis wrote:
-> Building with the attached random configuration file,
->
->    LD      init/built-in.o
-> drivers/built-in.o: In function `msi3101_probe':
-> /home/jim/linux-randbuild/2/drivers/staging/media/msi3101/sdr-msi3101.c:1847:
-> undefined reference to `vb2_vmalloc_memops'
-> make: *** [vmlinux] Error 1
->
-
-
--- 
-http://palosaari.fi/
+Thanks!
