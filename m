@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab3IQTbj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 15:31:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43813 "EHLO arroyo.ext.ti.com"
+	id S1753872Ab3IQTbm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 15:31:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43818 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753706Ab3IQTbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 15:31:36 -0400
+	id S1753706Ab3IQTbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 15:31:39 -0400
 From: Suman Anna <s-anna@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
+To: Benoit Cousson <bcousson@baylibre.com>
+CC: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Kumar Gala <galak@codeaurora.org>, Paul Walmsley <paul@pwsan.com>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <devicetree@vger.kernel.org>, Suman Anna <s-anna@ti.com>
-Subject: [PATCHv2 4/9] ARM: OMAP5: hwmod data: Add spinlock data
-Date: Tue, 17 Sep 2013 14:31:03 -0500
-Message-ID: <9812d9a19f9a52021dcae4b4fef50f10f2c21202.1379445653.git.s-anna@ti.com>
+Subject: [PATCHv2 5/9] ARM: dts: OMAP5: Add hwspinlock node
+Date: Tue, 17 Sep 2013 14:31:06 -0500
+Message-ID: <4ee33d847bd5fbf4e164cddbb69d15292f2ed3c3.1379445653.git.s-anna@ti.com>
 X-Mailer: git-send-email 1.8.3.3
 In-Reply-To: <cover.1379445653.git.s-anna@ti.com>
 References: <cover.1379445653.git.s-anna@ti.com>
@@ -24,84 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the hwmod data for the spinlock IP in OMAP5 SoC.
-This is needed to be able to enable the OMAP spinlock
-support for OMAP5.
+Add the hwspinlock device tree node for OMAP5 SoCs.
 
 Signed-off-by: Suman Anna <s-anna@ti.com>
 ---
- arch/arm/mach-omap2/omap_hwmod_54xx_data.c | 44 ++++++++++++++++++++++++++++++
- 1 file changed, 44 insertions(+)
+ arch/arm/boot/dts/omap5.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-index cde4155..84712e4 100644
---- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-@@ -1146,6 +1146,41 @@ static struct omap_hwmod omap54xx_mpu_hwmod = {
- };
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index 07be2cd..449be92 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -276,6 +276,12 @@
+ 			ti,hwmods = "i2c5";
+ 		};
  
- /*
-+ * 'spinlock' class
-+ * spinlock provides hardware assistance for synchronizing the processes
-+ * running on multiple processors
-+ */
++		hwspinlock: spinlock@4a0f6000 {
++			compatible = "ti,omap4-hwspinlock";
++			reg = <0x4a0f6000 0x1000>;
++			ti,hwmods = "spinlock";
++		};
 +
-+static struct omap_hwmod_class_sysconfig omap54xx_spinlock_sysc = {
-+	.rev_offs	= 0x0000,
-+	.sysc_offs	= 0x0010,
-+	.syss_offs	= 0x0014,
-+	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_CLOCKACTIVITY |
-+			   SYSC_HAS_ENAWAKEUP | SYSC_HAS_SIDLEMODE |
-+			   SYSC_HAS_SOFTRESET | SYSS_HAS_RESET_STATUS),
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
-+	.sysc_fields	= &omap_hwmod_sysc_type1,
-+};
-+
-+static struct omap_hwmod_class omap54xx_spinlock_hwmod_class = {
-+	.name	= "spinlock",
-+	.sysc	= &omap54xx_spinlock_sysc,
-+};
-+
-+/* spinlock */
-+static struct omap_hwmod omap54xx_spinlock_hwmod = {
-+	.name		= "spinlock",
-+	.class		= &omap54xx_spinlock_hwmod_class,
-+	.clkdm_name	= "l4cfg_clkdm",
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_offs = OMAP54XX_CM_L4CFG_SPINLOCK_CLKCTRL_OFFSET,
-+			.context_offs = OMAP54XX_RM_L4CFG_SPINLOCK_CONTEXT_OFFSET,
-+		},
-+	},
-+};
-+
-+/*
-  * 'timer' class
-  * general purpose timer module with accurate 1ms tick
-  * This class contains several variants: ['timer_1ms', 'timer']
-@@ -1960,6 +1995,14 @@ static struct omap_hwmod_ocp_if omap54xx_l4_cfg__mpu = {
- 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
- };
- 
-+/* l4_cfg -> spinlock */
-+static struct omap_hwmod_ocp_if omap54xx_l4_cfg__spinlock = {
-+	.master		= &omap54xx_l4_cfg_hwmod,
-+	.slave		= &omap54xx_spinlock_hwmod,
-+	.clk		= "l4_root_clk_div",
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
- /* l4_wkup -> timer1 */
- static struct omap_hwmod_ocp_if omap54xx_l4_wkup__timer1 = {
- 	.master		= &omap54xx_l4_wkup_hwmod,
-@@ -2163,6 +2206,7 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
- 	&omap54xx_l4_per__mmc4,
- 	&omap54xx_l4_per__mmc5,
- 	&omap54xx_l4_cfg__mpu,
-+	&omap54xx_l4_cfg__spinlock,
- 	&omap54xx_l4_wkup__timer1,
- 	&omap54xx_l4_per__timer2,
- 	&omap54xx_l4_per__timer3,
+ 		mcspi1: spi@48098000 {
+ 			compatible = "ti,omap4-mcspi";
+ 			reg = <0x48098000 0x200>;
 -- 
 1.8.3.3
 
