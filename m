@@ -1,75 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab3IQKdH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 06:33:07 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50732 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab3IQKdF (ORCPT
+	id S1752602Ab3IQKdc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 06:33:32 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55626 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab3IQKdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 06:33:05 -0400
-Date: Tue, 17 Sep 2013 11:32:39 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20130917103238.GM21013@sirena.org.uk>
-References: <5237AB72.5020806@infradead.org>
+	Tue, 17 Sep 2013 06:33:31 -0400
+Date: Tue, 17 Sep 2013 12:33:01 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: r65073@freescale.com, thierry.reding@gmail.com, swarren@wwwdotorg.org,
+        t.figa@samsung.com, grant.likely@linaro.org, linux@arm.linux.org.uk,
+        rob@landley.net, ian.campbell@citrix.com, mark.rutland@arm.com,
+        pawel.moll@arm.com, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCHv4 4/4] Documentation: Add device tree bindings for
+ Freescale FTM PWM.
+Message-ID: <20130917103301.GC30088@pengutronix.de>
+Mail-Followup-To: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
+	thierry.reding@gmail.com, swarren@wwwdotorg.org, t.figa@samsung.com,
+	grant.likely@linaro.org, linux@arm.linux.org.uk, rob@landley.net,
+	ian.campbell@citrix.com, mark.rutland@arm.com, pawel.moll@arm.com,
+	rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
+	linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+References: <1379051922-4930-1-git-send-email-Li.Xiubo@freescale.com>
+ <1379051922-4930-5-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OQhbRXNHSL5w/5po"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5237AB72.5020806@infradead.org>
-X-Cookie: Give him an evasive answer.
+In-Reply-To: <1379051922-4930-5-git-send-email-Li.Xiubo@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:45:43 up 23 days, 19:16, 49 users,  load average: 0.02, 0.08,
+ 0.13
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: fix fatal kernel-doc error
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 13, 2013 at 01:58:42PM +0800, Xiubo Li wrote:
+> This adds the Document for Freescale FTM PWM driver under
+> Documentation/devicetree/bindings/pwm/.
+> 
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  .../devicetree/bindings/pwm/pwm-fsl-ftm.txt        | 36 ++++++++++++++++++++++
+>  1 file changed, 36 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt b/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> new file mode 100644
+> index 0000000..e736806
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> @@ -0,0 +1,36 @@
+> +Freescale FTM PWM controller
+> +
+> +Required properties:
+> +- compatible: Should be "fsl,vf610-ftm-pwm"
+> +- reg: Physical base address and length of the controller's registers
+> +- #pwm-cells: Should be 3. See pwm.txt in this directory for a description of
+> +  the cells format.
+> +- clock-names : Includes the following module clock source entries:
+> +    "ftm0" (system clock),
+> +    "ftm0_fix_sel" (fixed frequency clock),
+> +    "ftm0_ext_sel" (external clock)
+> +- clocks : Must contain an entry list for entries in clock-names.
+> +- fsl,pwm-counter-clk: The FTM PWM counter clock source, should be one of the
+> +  entries in clock-names.
+> +- For each channel's pinctrl, the "chN-active" and "chN-idle" states should be
+> +  implemented at the same time.
 
---OQhbRXNHSL5w/5po
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I thought about this active/idle pinctrl stuff again. It should be
+removed from the PWM driver. The above is used to control the PWM output
+state when the PWM is disabled, so that for example a backlight stays
+disabled after a call to pwm_disable.
 
-On Mon, Sep 16, 2013 at 06:08:02PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
->=20
-> Fix fatal kernel-doc error in <linux/regulator/driver.h>:
->=20
-> Error(include/linux/regulator/driver.h:52): cannot understand prototype: =
-'struct regulator_linear_range '
+IMO this is wrong. Instead, the pwm client drivers (pwm_backlight)
+shouldn't assume a particular output state of the PWM after a pwm
+disable. Instead they should simply set the PWM to a duty cycle of 0%
+(or 100% for inverted) to effectively disable it. If then a PWM driver
+can optimize this to actually disabling the PWM completely, then fine,
+but that's an optimization.
 
-Applied with the first line redone, but this seems like really terrible
-quality of implementation for the kernel-doc stuff - it shouldn't
-explode over something readily copable with like this.  Should we also
-not pick this sort of thing up in -next?
+If the handoff of PWM pins from bootloader state to regular state causes
+problems like flashing backlights or LEDs due to the pinctrl framework
+configuring the iomux before the PWM driver takes over, then the pinctrl
+should be done from the client drivers (pwm_backlight, pwm_led), not
+from the pwm driver and not from the pinctrl framework before
+initializing the clients.
 
---OQhbRXNHSL5w/5po
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So NACK to this complex pinctrl setup in this pwm driver.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+Sascha
 
-iQIcBAEBAgAGBQJSOC/DAAoJELSic+t+oim9UOUQAIQo1yvaHyPaipZZ+i/YLYAh
-37g4DwMw1cyqs/ABnVNgMAlu2FsboXOSVglWmPBUzZo7Udnd45cht78M0m4AbcfK
-EtrkA/BYB2fz2Fl6dP8zNvGOhODlkZNQjQPuH+UoxVwPkuZSahCIfROApRmt/Hzw
-YJgvyYSfAi1xG9DApLLIvaJLylZ4JngFqU/GM6LQT57+cRY0Ci2Q8Ch/OzBi2swB
-nGJHMm4Nz9A4qTEh2bFM6gfjaBJg+ElV4xenBbnDg3A8KdTK88y6RHOwcD1lN4Mh
-1sSb69zxSC4JpmIYaT85rIbwGniUyQwhNEWx12cysLJIDH0fnAK0dvgWXNURKMhV
-hvLndNnyA0NSq1VQtKKN8ZC0Pb3YvwLy7ysbDud6CTjAUt/+1cZp8KZDAujs1+7k
-p27na1RsP0F0648nNMtiApKhAYoJRYfgV77vshT+zt1unAShymNcGIi1QhG1s1ri
-dvYoqhivxGbOsxk+IgGpa3SwGUpmoOaUSkmxbhjutCXI8tWoX/aEKyup2GJFdkOP
-odjMK/QQJscyMSSEvCKc01wgtp5Ke/Vp9Dcp3DeEJNJHzFedy7FvkBS+1BNcMsRz
-AMI16rNrdWF6c2jz2NEkN+o8VMFQBxISXbAm3tJp7TOmt7omF2eAEZL/3hhheKFF
-S02gP0TtSeZNfiUw8rUc
-=edCG
------END PGP SIGNATURE-----
-
---OQhbRXNHSL5w/5po--
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
