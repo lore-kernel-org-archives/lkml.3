@@ -1,140 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab3IQOct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 10:32:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49098 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab3IQOcs (ORCPT
+	id S1753328Ab3IQOdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 10:33:53 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52136 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752270Ab3IQOdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 10:32:48 -0400
-Date: Tue, 17 Sep 2013 16:32:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 37/50] sched: Introduce migrate_swap()
-Message-ID: <20130917143235.GB29354@twins.programming.kicks-ass.net>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
- <1378805550-29949-38-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378805550-29949-38-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 17 Sep 2013 10:33:52 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH v2] mfd: arizona: Update registers for WM5110 DSP
+Date: Tue, 17 Sep 2013 15:23:04 +0100
+Message-Id: <1379427784-7193-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 10:32:17AM +0100, Mel Gorman wrote:
-> TODO: I'm fairly sure we can get rid of the wake_cpu != -1 test by keeping
-> wake_cpu to the actual task cpu; just couldn't be bothered to think through
-> all the cases.
+DSPx_CONTROL_1 and DSPx_CLOCKING_1 are not volatile registers and are
+incorrectly marked as such, fix this. Also add the DSP scratch
+registers, which are frequently used to output debug info from the DSP
+core.
 
-> + * XXX worry about hotplug
-
-Combined with the {get,put}_online_cpus() optimization patch, the below
-should address the two outstanding issues.
-
-Completely untested for now.. will try and get it some runtime later.
-
-Not-yet-signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- kernel/sched/core.c  |   37 ++++++++++++++++++++-----------------
- kernel/sched/sched.h |    1 +
- 2 files changed, 21 insertions(+), 17 deletions(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1035,7 +1035,7 @@ static void __migrate_swap_task(struct t
- 		/*
- 		 * Task isn't running anymore; make it appear like we migrated
- 		 * it before it went to sleep. This means on wakeup we make the
--		 * previous cpu or targer instead of where it really is.
-+		 * previous cpu our target instead of where it really is.
- 		 */
- 		p->wake_cpu = cpu;
- 	}
-@@ -1080,11 +1080,16 @@ static int migrate_swap_stop(void *data)
- }
- 
- /*
-- * XXX worry about hotplug
-+ * Cross migrate two tasks
-  */
- int migrate_swap(struct task_struct *cur, struct task_struct *p)
- {
--	struct migration_swap_arg arg = {
-+	struct migration_swap_arg arg;
-+	int ret = -EINVAL;
-+
-+	get_online_cpus();
-+
-+       	arg = (struct migration_swap_arg){
- 		.src_task = cur,
- 		.src_cpu = task_cpu(cur),
- 		.dst_task = p,
-@@ -1092,15 +1097,22 @@ int migrate_swap(struct task_struct *cur
- 	};
- 
- 	if (arg.src_cpu == arg.dst_cpu)
--		return -EINVAL;
-+		goto out;
-+
-+	if (!cpu_active(arg.src_cpu) || !cpu_active(arg.dst_cpu))
-+		goto out;
- 
- 	if (!cpumask_test_cpu(arg.dst_cpu, tsk_cpus_allowed(arg.src_task)))
--		return -EINVAL;
-+		goto out;
- 
- 	if (!cpumask_test_cpu(arg.src_cpu, tsk_cpus_allowed(arg.dst_task)))
--		return -EINVAL;
-+		goto out;
-+
-+	ret = stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
- 
--	return stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
-+out:
-+	put_online_cpus();
-+	return ret;
- }
- 
- struct migration_arg {
-@@ -1608,12 +1620,7 @@ try_to_wake_up(struct task_struct *p, un
- 	if (p->sched_class->task_waking)
- 		p->sched_class->task_waking(p);
- 
--	if (p->wake_cpu != -1) {	/* XXX make this condition go away */
--		cpu = p->wake_cpu;
--		p->wake_cpu = -1;
--	}
--
--	cpu = select_task_rq(p, cpu, SD_BALANCE_WAKE, wake_flags);
-+	cpu = select_task_rq(p, p->wake_cpu, SD_BALANCE_WAKE, wake_flags);
- 	if (task_cpu(p) != cpu) {
- 		wake_flags |= WF_MIGRATED;
- 		set_task_cpu(p, cpu);
-@@ -1699,10 +1706,6 @@ static void __sched_fork(struct task_str
- {
- 	p->on_rq			= 0;
- 
--#ifdef CONFIG_SMP
--	p->wake_cpu			= -1;
--#endif
--
- 	p->se.on_rq			= 0;
- 	p->se.exec_start		= 0;
- 	p->se.sum_exec_runtime		= 0;
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -737,6 +737,7 @@ static inline void __set_task_cpu(struct
- 	 */
- 	smp_wmb();
- 	task_thread_info(p)->cpu = cpu;
-+	p->wake_cpu = cpu;
- #endif
- }
- 
+Version 2 of the patch, improved commit message and turns
+out the scratch registers were missing from the readable
+callback as well.
+
+Based on Lee Jones's for-mfd-next branch.
+
+Thanks,
+Charles
+
+ drivers/mfd/wm5110-tables.c |   34 ++++++++++++++++++++++++++++++++--
+ 1 files changed, 32 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
+index 2a79723..37463f3 100644
+--- a/drivers/mfd/wm5110-tables.c
++++ b/drivers/mfd/wm5110-tables.c
+@@ -2274,21 +2274,37 @@ static bool wm5110_readable_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_DSP1_STATUS_1:
+ 	case ARIZONA_DSP1_STATUS_2:
+ 	case ARIZONA_DSP1_STATUS_3:
++	case ARIZONA_DSP1_SCRATCH_0:
++	case ARIZONA_DSP1_SCRATCH_1:
++	case ARIZONA_DSP1_SCRATCH_2:
++	case ARIZONA_DSP1_SCRATCH_3:
+ 	case ARIZONA_DSP2_CONTROL_1:
+ 	case ARIZONA_DSP2_CLOCKING_1:
+ 	case ARIZONA_DSP2_STATUS_1:
+ 	case ARIZONA_DSP2_STATUS_2:
+ 	case ARIZONA_DSP2_STATUS_3:
++	case ARIZONA_DSP2_SCRATCH_0:
++	case ARIZONA_DSP2_SCRATCH_1:
++	case ARIZONA_DSP2_SCRATCH_2:
++	case ARIZONA_DSP2_SCRATCH_3:
+ 	case ARIZONA_DSP3_CONTROL_1:
+ 	case ARIZONA_DSP3_CLOCKING_1:
+ 	case ARIZONA_DSP3_STATUS_1:
+ 	case ARIZONA_DSP3_STATUS_2:
+ 	case ARIZONA_DSP3_STATUS_3:
++	case ARIZONA_DSP3_SCRATCH_0:
++	case ARIZONA_DSP3_SCRATCH_1:
++	case ARIZONA_DSP3_SCRATCH_2:
++	case ARIZONA_DSP3_SCRATCH_3:
+ 	case ARIZONA_DSP4_CONTROL_1:
+ 	case ARIZONA_DSP4_CLOCKING_1:
+ 	case ARIZONA_DSP4_STATUS_1:
+ 	case ARIZONA_DSP4_STATUS_2:
+ 	case ARIZONA_DSP4_STATUS_3:
++	case ARIZONA_DSP4_SCRATCH_0:
++	case ARIZONA_DSP4_SCRATCH_1:
++	case ARIZONA_DSP4_SCRATCH_2:
++	case ARIZONA_DSP4_SCRATCH_3:
+ 		return true;
+ 	default:
+ 		return false;
+@@ -2334,20 +2350,34 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_AOD_IRQ2:
+ 	case ARIZONA_ASRC_STATUS:
+ 	case ARIZONA_DSP_STATUS:
+-	case ARIZONA_DSP1_CONTROL_1:
+-	case ARIZONA_DSP1_CLOCKING_1:
+ 	case ARIZONA_DSP1_STATUS_1:
+ 	case ARIZONA_DSP1_STATUS_2:
+ 	case ARIZONA_DSP1_STATUS_3:
++	case ARIZONA_DSP1_SCRATCH_0:
++	case ARIZONA_DSP1_SCRATCH_1:
++	case ARIZONA_DSP1_SCRATCH_2:
++	case ARIZONA_DSP1_SCRATCH_3:
+ 	case ARIZONA_DSP2_STATUS_1:
+ 	case ARIZONA_DSP2_STATUS_2:
+ 	case ARIZONA_DSP2_STATUS_3:
++	case ARIZONA_DSP2_SCRATCH_0:
++	case ARIZONA_DSP2_SCRATCH_1:
++	case ARIZONA_DSP2_SCRATCH_2:
++	case ARIZONA_DSP2_SCRATCH_3:
+ 	case ARIZONA_DSP3_STATUS_1:
+ 	case ARIZONA_DSP3_STATUS_2:
+ 	case ARIZONA_DSP3_STATUS_3:
++	case ARIZONA_DSP3_SCRATCH_0:
++	case ARIZONA_DSP3_SCRATCH_1:
++	case ARIZONA_DSP3_SCRATCH_2:
++	case ARIZONA_DSP3_SCRATCH_3:
+ 	case ARIZONA_DSP4_STATUS_1:
+ 	case ARIZONA_DSP4_STATUS_2:
+ 	case ARIZONA_DSP4_STATUS_3:
++	case ARIZONA_DSP4_SCRATCH_0:
++	case ARIZONA_DSP4_SCRATCH_1:
++	case ARIZONA_DSP4_SCRATCH_2:
++	case ARIZONA_DSP4_SCRATCH_3:
+ 		return true;
+ 	default:
+ 		return false;
+-- 
+1.7.2.5
+
