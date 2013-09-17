@@ -1,84 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab3IQLUV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 07:20:21 -0400
-Received: from gmmr7.centrum.cz ([46.255.225.249]:54087 "EHLO gmmr7.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab3IQLUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 07:20:20 -0400
-To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
-Date: Tue, 17 Sep 2013 13:20:17 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
-        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
-        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <20130911200426.GO856@cmpxchg.org>, <20130914124831.4DD20346@pobox.sk>, <20130916134014.GA3674@dhcp22.suse.cz>, <20130916160119.2E76C2A1@pobox.sk>, <20130916140607.GC3674@dhcp22.suse.cz>, <20130916161316.5113F6E7@pobox.sk>, <20130916145744.GE3674@dhcp22.suse.cz>, <20130916170543.77F1ECB4@pobox.sk>, <20130916152548.GF3674@dhcp22.suse.cz>, <20130916225246.A633145B@pobox.sk> <20130917000244.GD3278@cmpxchg.org>
-In-Reply-To: <20130917000244.GD3278@cmpxchg.org>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1752743Ab3IQLUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 07:20:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60229 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752478Ab3IQLUn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 07:20:43 -0400
+Message-ID: <52383B07.5030806@free-electrons.com>
+Date: Tue, 17 Sep 2013 13:20:39 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Message-Id: <20130917132017.5B266A87@pobox.sk>
-X-Maser: brud
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-i2c@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 0/9] of/irq: Defer interrupt reference resolution
+References: <1379320326-13241-1-git-send-email-treding@nvidia.com>
+In-Reply-To: <1379320326-13241-1-git-send-email-treding@nvidia.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> CC: "Michal Hocko" <mhocko@suse.cz>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
->On Mon, Sep 16, 2013 at 10:52:46PM +0200, azurIt wrote:
->> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
->> >On Mon 16-09-13 17:05:43, azurIt wrote:
->> >> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
->> >> >On Mon 16-09-13 16:13:16, azurIt wrote:
->> >> >[...]
->> >> >> >You can use sysrq+l via serial console to see tasks hogging the CPU or
->> >> >> >sysrq+t to see all the existing tasks.
->> >> >> 
->> >> >> 
->> >> >> Doesn't work here, it just prints 'l' resp. 't'.
->> >> >
->> >> >I am using telnet for accessing my serial consoles exported by
->> >> >the multiplicator or KVM and it can send sysrq via ctrl+t (Send
->> >> >Break). Check your serial console setup.
->> >> 
->> >> 
->> >> 
->> >> I'm using Raritan KVM and i created keyboard macro 'sysrq + l' resp.
->> >> 'sysrq + t'. I'm also unable to use it on my local PC. Maybe it needs
->> >> to be enabled somehow?
->> >
->> >Probably yes. echo 1 > /proc/sys/kernel/sysrq should enable all sysrq
->> >commands. You can select also some of them (have a look at
->> >Documentation/sysrq.txt for more information)
->> 
->> 
->> Now it happens again and i was just looking on the server's
->> htop. I'm sure that this time it was only one process (apache)
->> running under user account (not root). It was taking about 100% CPU
->> (about 100% of one core). I was able to kill it by hand inside htop
->> but everything was very slow, server load was immediately on
->> 500. I'm sure it must be related to that Johannes kernel patches
->> because i'm also using i/o throttling in cgroups via Block IO
->> controller so users are unable to create such a huge I/O. I will try
->> to take stacks of processes but i'm not able to identify the
->> problematic process so i will have to take them from *all* apache
->> processes while killing them.
+Hi Thierry,
+
+On 16/09/2013 10:31, Thierry Reding wrote:
+> Hi,
 >
->It would be fantastic if you could capture those stacks.  sysrq+t
->captures ALL of them in one go and drops them into your syslog.
+> This small series allows interrupt references from the device tree to be
+> resolved at driver probe time, rather than at device creation time. The
+> current implementation resolves such references while devices are added
+> during the call to of_platform_populate(), which happens very early in
+> the boot process. This causes probe ordering issues, because all devices
+> that are an interrupt parent for other devices need to have been probed
+> by that time. This is worked around for primary interrupt controllers by
+> initializing them using a device tree specific way (of_irq_init()), but
+> it doesn't work for something like a GPIO controller that is itself a
+> platform device and an interrupt parent for other devices at the same
+> time.
 >
->/proc/<pid>/stack for individual tasks works too.
+> Currently such drivers use explicit initcall ordering to force these
+> chips to be probed earlier than other devices, but that only fixes a
+> subset of the problematic cases. It doesn't work if the interrupt user
+> is itself a platform device on the same bus. There are possibly other
+> cases where it doesn't work either.
+>
+> This patch series attempts to fix this by not resolving the interrupt
+> references at device creation time. Instead, some functionality is added
+> to the driver core to resolve them for each device immediately before it
+> is probed. Often this is a lot later than the point at which the device
+> was created, which gives interrupt parents more time and therefore a
+> better chance of being probed. More importantly, however, it allows the
+> driver core to detect when an interrupt parent isn't there yet and cause
+> the device to be queued for deferred probing. After all, resolving probe
+> ordering issues is one of the primary reason for the introduction of
+> deferred probing.
+>
+> Unfortunately the interrupt core code isn't prepared to handle this very
+> well, so some preparatory work is required.
+>
+> Patch 1 is a bit of a cleanup. It modifies of_irq_count() to not use the
+> heavyweight of_irq_to_resource(), which will actually try to create a
+> mapping. While not usually harmful, it causes a warning during boot if
+> the interrupt parent hasn't registered an IRQ domain yet. Furthermore it
+> is much more than the stated intention of the function, which is to
+> return the number of interrupts that a device node uses.
+>
+> Patches 2 and 3 introduce two new functions: __irq_create_mapping() and
+> __irq_create_of_mapping(), which are both equivalent to the non-__ parts
+> except that they return a negative error code on failure and therefore
+> allow propagation of a precise error code instead of 0 for all errors.
+> This is an important prerequisite for subsequent patches. I think that
+> it would've been nice to not introduced underscore-prefixed variants but
+> but there are about 130 callers and updating them all would've been
+> rather messy.
+>
+> Patch 4 adds an of_irq_get() function, which is irq_of_parse_and_map()
+> but returns a negative error code on failure instead of 0.
+>
+> Similarly, __of_irq_to_resource() as introduced in patch 5 is equivalent
+> to of_irq_to_resource() but returns a negative error code on failure
+> instead of 0.
+>
+> Patch 6 uses __of_irq_to_resource() to propagate error code to callers
+> of the of_irq_to_resource_table() function.
+>
+> Patch 7 adds functionality to the platform driver code to resolve
+> interrupt references at probe time. It uses the negative error code of
+> the of_irq_to_resource_table() function to trigger deferred probing.
+>
+> Patch 8 implements similar functionality for I2C devices.
+>
+> Patch 9 serves as an example of the kind of cleanup that can be done
+> after this series. Obviously this will require quite a bit of retesting
+> of working setups, but I think that in the long run we're better off
+> without the kind of explicit probe ordering employed by the gpio-tegra
+> driver and many others.
+>
+> Note that I've only implemented this for platform and I2C devices, but
+> the same can be done for SPI and possibly other subsystems as well.
+>
+> There is another use-case that I'm aware of for which a similar solution
+> could be implemented. IOMMUs on SoCs generally need to hook themselves
+> up to new platform devices. This causes a similar issues as interrupt
+> resolution and should be fixable by extending the of_platform_probe()
+> function introduced in patch 7 of this series.
+
+I believe this will solve the issue I was hitting back in June where
+of_i2c_register_devices() failed to get the IRQ while doing it at probe
+time was working fine:
+
+http://www.spinics.net/lists/linux-i2c/msg12523.html
+
+I couldn't test your patches yet though. I'll try to test as soon as I
+get some free time.
 
 
 
-Btw, this is how it looked like:
-http://watchdog.sk/lkml/htop2.jpg
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-azur
