@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab3IQTlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 15:41:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46299 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753301Ab3IQTls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 15:41:48 -0400
-Message-ID: <5238B070.8060803@redhat.com>
-Date: Tue, 17 Sep 2013 15:41:36 -0400
-From: "Carlos O'Donell" <carlos@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        codonell <codonell@redhat.com>, Eduard Benes <ebenes@redhat.com>,
-        Karel Srot <ksrot@redhat.com>, Matt Newsome <mnewsome@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tty: disassociate_ctty() sends the extra SIGCONT
-References: <20130915155006.GA11913@redhat.com> <20130915155026.GA11917@redhat.com> <52378345.50306@hurleysoftware.com>
-In-Reply-To: <52378345.50306@hurleysoftware.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753609Ab3IQTpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 15:45:05 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:54550 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753041Ab3IQTpE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 15:45:04 -0400
+X-Sasl-enc: ic//yCKifEHHcidWARvE/bvCMC8HT1qTg6oDYBYivKm2 1379447101
+From: Jon Bernard <jbernard@tuxion.com>
+To: gregkh@linuxfoundation.org, bergwolf@gmail.com, andreas.dilger@intel.com,
+        sachin.kamat@linaro.org, xuezhao.liu@emc.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Jon Bernard <jbernard@tuxion.com>
+Subject: [PATCH] Staging: lustre: fix switch case statement indenting
+Date: Tue, 17 Sep 2013 15:44:58 -0400
+Message-Id: <1379447098-25870-1-git-send-email-jbernard@tuxion.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2013 06:16 PM, Peter Hurley wrote:
-> On 09/15/2013 11:50 AM, Oleg Nesterov wrote:
->> Starting from v3.10 (probably f91e2590 "tty: Signal foreground
->> group processes in hangup") disassociate_ctty() sends SIGCONT
->> if tty && on_exit. This breaks LSB test-suite, in particular
->> test8 in _exit.c and test40 in sigcon5.c.
->>
->> Put the "!on_exit" check back to restore the old behaviour.
->>
->> Cc: stable@vger.kernel.org # v3.10+
->> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
->> Reported-by: Karel Srot <ksrot@redhat.com>
-> 
-> Although I confirmed your results with a new unit test,
-> I'd like to review the source code for the reported tests.
-> Where can grab the source for the LSB tests, _exit.c and sigcon5.c?
-> Direct links would be appreciated.
+This is a patch to lvfs_linux.c that fixes incorrect switch case statement
+indenting found by checkpatch.pl.
 
-wget ftp://ftp.linuxfoundation.org/pub/lsb/test_suites/released-4.1/source/runtime/lsb-test-core-4.1.15-1.src.rpm
-rpm2cpio lsb-test-core-4.1.15-1.src.rpm | cpio -idmv
-tar zxvf lsb-test-core-4.1.15.tar.gz
-tar zxvf lts_vsx-pcts-4.1.15.tgz
+Signed-off-by: Jon Bernard <jbernard@tuxion.com>
+---
+ drivers/staging/lustre/lustre/lvfs/lvfs_linux.c | 50 ++++++++++++-------------
+ 1 file changed, 25 insertions(+), 25 deletions(-)
 
-Source is at:
-./tset/POSIX.os/procprim/_exit/_exit.c
-./tset/POSIX.os/procprim/sigconcept/sigcon5.c
+diff --git a/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c b/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
+index 18e1b47..9d79eee 100644
+--- a/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
++++ b/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
+@@ -253,31 +253,31 @@ __s64 lprocfs_read_helper(struct lprocfs_counter *lc,
+ 		return 0;
+ 
+ 	switch (field) {
+-		case LPROCFS_FIELDS_FLAGS_CONFIG:
+-			ret = header->lc_config;
+-			break;
+-		case LPROCFS_FIELDS_FLAGS_SUM:
+-			ret = lc->lc_sum;
+-			if ((flags & LPROCFS_STATS_FLAG_IRQ_SAFE) != 0)
+-				ret += lc->lc_sum_irq;
+-			break;
+-		case LPROCFS_FIELDS_FLAGS_MIN:
+-			ret = lc->lc_min;
+-			break;
+-		case LPROCFS_FIELDS_FLAGS_MAX:
+-			ret = lc->lc_max;
+-			break;
+-		case LPROCFS_FIELDS_FLAGS_AVG:
+-			ret = (lc->lc_max - lc->lc_min) / 2;
+-			break;
+-		case LPROCFS_FIELDS_FLAGS_SUMSQUARE:
+-			ret = lc->lc_sumsquare;
+-			break;
+-		case LPROCFS_FIELDS_FLAGS_COUNT:
+-			ret = lc->lc_count;
+-			break;
+-		default:
+-			break;
++	case LPROCFS_FIELDS_FLAGS_CONFIG:
++		ret = header->lc_config;
++		break;
++	case LPROCFS_FIELDS_FLAGS_SUM:
++		ret = lc->lc_sum;
++		if ((flags & LPROCFS_STATS_FLAG_IRQ_SAFE) != 0)
++			ret += lc->lc_sum_irq;
++		break;
++	case LPROCFS_FIELDS_FLAGS_MIN:
++		ret = lc->lc_min;
++		break;
++	case LPROCFS_FIELDS_FLAGS_MAX:
++		ret = lc->lc_max;
++		break;
++	case LPROCFS_FIELDS_FLAGS_AVG:
++		ret = (lc->lc_max - lc->lc_min) / 2;
++		break;
++	case LPROCFS_FIELDS_FLAGS_SUMSQUARE:
++		ret = lc->lc_sumsquare;
++		break;
++	case LPROCFS_FIELDS_FLAGS_COUNT:
++		ret = lc->lc_count;
++		break;
++	default:
++		break;
+ 	};
+ 
+ 	return ret;
+-- 
+1.8.4
 
-In all failures the tests are checking for SIGHUP to be sent
-to a foreground process. It would appear that the additional
-signal confuses the test.
-
-Exactly what semantics should be followed do not seem to be
-clearly covered by any standards. 
-
-Therefore it is likely just as valid to say that the LSB tests
-need to be more robust in the face of the additional signal.
-
-I have little experience when it comes this particular area
-of the kernel or expected behaviour from other OSs.
-
-Cheers,
-Carlos.
