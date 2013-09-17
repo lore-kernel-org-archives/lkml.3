@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab3IQEOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 00:14:48 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:42817 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab3IQEMB (ORCPT
+	id S1752516Ab3IQEPB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 00:15:01 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:62526 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab3IQEL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 00:12:01 -0400
+	Tue, 17 Sep 2013 00:11:58 -0400
 From: Roy Franz <roy.franz@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
         matt.fleming@intel.com
 Cc: leif.lindholm@linaro.org, msalter@redhat.com,
         Roy Franz <roy.franz@linaro.org>
-Subject: [PATCH 11/17] generalize efi_get_memory_map()
-Date: Mon, 16 Sep 2013 21:11:27 -0700
-Message-Id: <1379391093-27948-12-git-send-email-roy.franz@linaro.org>
+Subject: [PATCH 09/17] Move unicode to ASCII conversion to shared function.
+Date: Mon, 16 Sep 2013 21:11:25 -0700
+Message-Id: <1379391093-27948-10-git-send-email-roy.franz@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1379391093-27948-1-git-send-email-roy.franz@linaro.org>
 References: <1379391093-27948-1-git-send-email-roy.franz@linaro.org>
@@ -22,61 +22,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add arguments for returning the descriptor version and also
-the memory map key.  The key is required for calling
-exit_boot_services().
+Move the open-coded conversion to a shared function for
+use by all architectures.  Change the allocation to prefer
+a high address for ARM, as this is required to avoid conflicts
+with reserved regions in low memory.  We don't know the specifics
+of these regions until after we process the command line and
+device tree.
 
 Signed-off-by: Roy Franz <roy.franz@linaro.org>
 ---
- drivers/firmware/efi/efi-stub-helper.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ arch/x86/boot/compressed/eboot.c       |   43 ++++-------------------
+ drivers/firmware/efi/efi-stub-helper.c |   58 ++++++++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+), 37 deletions(-)
 
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 7fe2754..a0e8a2c 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -435,11 +435,10 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
+ 	struct efi_info *efi;
+ 	efi_loaded_image_t *image;
+ 	void *options;
+-	u32 load_options_size;
+ 	efi_guid_t proto = LOADED_IMAGE_PROTOCOL_GUID;
+ 	int options_size = 0;
+ 	efi_status_t status;
+-	unsigned long cmdline;
++	char *cmdline_ptr;
+ 	u16 *s2;
+ 	u8 *s1;
+ 	int i;
+@@ -487,41 +486,11 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
+ 	hdr->type_of_loader = 0x21;
+ 
+ 	/* Convert unicode cmdline to ascii */
+-	options = image->load_options;
+-	load_options_size = image->load_options_size / 2; /* ASCII */
+-	cmdline = 0;
+-	s2 = (u16 *)options;
+-
+-	if (s2) {
+-		while (*s2 && *s2 != '\n' && options_size < load_options_size) {
+-			s2++;
+-			options_size++;
+-		}
+-
+-		if (options_size) {
+-			if (options_size > hdr->cmdline_size)
+-				options_size = hdr->cmdline_size;
+-
+-			options_size++;	/* NUL termination */
+-
+-			status = efi_low_alloc(sys_table, options_size, 1,
+-					   &cmdline);
+-			if (status != EFI_SUCCESS) {
+-				efi_printk(sys_table, "Failed to alloc mem for cmdline\n");
+-				goto fail;
+-			}
+-
+-			s1 = (u8 *)(unsigned long)cmdline;
+-			s2 = (u16 *)options;
+-
+-			for (i = 0; i < options_size - 1; i++)
+-				*s1++ = *s2++;
+-
+-			*s1 = '\0';
+-		}
+-	}
+-
+-	hdr->cmd_line_ptr = cmdline;
++	cmdline_ptr = efi_convert_cmdline_to_ascii(sys_table, image,
++						   &options_size);
++	if (!cmdline_ptr)
++		goto fail;
++	hdr->cmd_line_ptr = (unsigned long)cmdline_ptr;
+ 
+ 	hdr->ramdisk_image = 0;
+ 	hdr->ramdisk_size = 0;
 diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-index 7c158cb..ca1592b 100644
+index e34040e..4f88e38 100644
 --- a/drivers/firmware/efi/efi-stub-helper.c
 +++ b/drivers/firmware/efi/efi-stub-helper.c
-@@ -49,7 +49,9 @@ static void efi_printk(efi_system_table_t *sys_table_arg, char *str)
- static efi_status_t efi_get_memory_map(efi_system_table_t *sys_table_arg,
- 				       efi_memory_desc_t **map,
- 				       unsigned long *map_size,
--				       unsigned long *desc_size)
-+				       unsigned long *desc_size,
-+				       u32 *desc_ver,
-+				       unsigned long *key_ptr)
- {
- 	efi_memory_desc_t *m = NULL;
- 	efi_status_t status;
-@@ -77,6 +79,10 @@ again:
+@@ -546,3 +546,61 @@ static efi_status_t efi_relocate_kernel(efi_system_table_t *sys_table_arg,
  
- 	if (status != EFI_SUCCESS)
- 		efi_call_phys1(sys_table_arg->boottime->free_pool, m);
-+	if (key_ptr && status == EFI_SUCCESS)
-+		*key_ptr = key;
-+	if (desc_ver && status == EFI_SUCCESS)
-+		*desc_ver = desc_version;
- 
- fail:
- 	*map = m;
-@@ -97,7 +103,8 @@ static efi_status_t efi_high_alloc(efi_system_table_t *sys_table_arg,
- 	u64 max_addr = 0;
- 	int i;
- 
--	status = efi_get_memory_map(sys_table_arg, &map, &map_size, &desc_size);
-+	status = efi_get_memory_map(sys_table_arg, &map, &map_size, &desc_size,
-+				    NULL, NULL);
- 	if (status != EFI_SUCCESS)
- 		goto fail;
- 
-@@ -182,7 +189,8 @@ static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
- 	unsigned long nr_pages;
- 	int i;
- 
--	status = efi_get_memory_map(sys_table_arg, &map, &map_size, &desc_size);
-+	status = efi_get_memory_map(sys_table_arg, &map, &map_size, &desc_size,
-+				    NULL, NULL);
- 	if (status != EFI_SUCCESS)
- 		goto fail;
- 
+ 	return status;
+ }
++/* Convert the unicode UEFI command line to ASCII to pass to kernel.
++ * Size of memory allocated return in *cmd_line_len.
++ * Returns NULL on error.
++ */
++static char *efi_convert_cmdline_to_ascii(efi_system_table_t *sys_table_arg,
++				      efi_loaded_image_t *image,
++				      int *cmd_line_len)
++{
++	u16 *s2;
++	u8 *s1 = NULL;
++	unsigned long cmdline_addr = 0;
++	int load_options_size = image->load_options_size / 2; /* ASCII */
++	void *options = image->load_options;
++	int options_size = 0;
++	efi_status_t status;
++	int i;
++	u16 zero = 0;
++
++	if (options) {
++		s2 = options;
++		while (*s2 && *s2 != '\n' && options_size < load_options_size) {
++			s2++;
++			options_size++;
++		}
++	}
++
++	if (options_size == 0) {
++		/* No command line options, so return empty string*/
++		options_size = 1;
++		options = &zero;
++	}
++
++	options_size++;  /* NUL termination */
++#ifdef CONFIG_ARM
++	/* For ARM, allocate at a high address to avoid reserved
++	 * regions at low addresses that we don't know the specfics of
++	 * at the time we are processing the command line.
++	 */
++	status = efi_high_alloc(sys_table_arg, options_size, 0,
++			    &cmdline_addr, 0xfffff000);
++#else
++	status = efi_low_alloc(sys_table_arg, options_size, 0,
++			    &cmdline_addr);
++#endif
++	if (status != EFI_SUCCESS)
++		return NULL;
++
++	s1 = (u8 *)cmdline_addr;
++	s2 = (u16 *)options;
++
++	for (i = 0; i < options_size - 1; i++)
++		*s1++ = *s2++;
++
++	*s1 = '\0';
++
++	*cmd_line_len = options_size;
++	return (char *)cmdline_addr;
++}
 -- 
 1.7.10.4
 
