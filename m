@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902Ab3IQGxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 02:53:30 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:43223 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab3IQGx2 (ORCPT
+	id S1751721Ab3IQG7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 02:59:48 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46531 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab3IQG7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 02:53:28 -0400
-Date: Tue, 17 Sep 2013 08:53:24 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Josef Bacik <jbacik@fusionio.com>, linux-btrfs@vger.kernel.org,
-        walken@google.com, mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rwsem: add rwsem_is_contended
-Message-ID: <20130917065324.GA20661@gmail.com>
-References: <1377872041-390-1-git-send-email-jbacik@fusionio.com>
- <20130916160547.371b74f91511a42ac263449e@linux-foundation.org>
+	Tue, 17 Sep 2013 02:59:47 -0400
+Message-ID: <5237FDCC.5010109@oracle.com>
+Date: Tue, 17 Sep 2013 14:59:24 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130916160547.371b74f91511a42ac263449e@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v2 0/5] mm: migrate zbud pages
+References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Krzysztof,
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Fri, 30 Aug 2013 10:14:01 -0400 Josef Bacik <jbacik@fusionio.com> wrote:
+On 09/11/2013 04:58 PM, Krzysztof Kozlowski wrote:
+> Hi,
 > 
-> > Btrfs uses an rwsem to control access to its extent tree.  Threads 
-> > will hold a read lock on this rwsem while they scan the extent tree, 
-> > and if need_resched() they will drop the lock and schedule.  The 
-> > transaction commit needs to take a write lock for this rwsem for a 
-> > very short period to switch out the commit roots.  If there are a lot 
-> > of threads doing this caching operation we can starve out the 
-> > committers which slows everybody out.  To address this we want to add 
-> > this functionality to see if our rwsem has anybody waiting to take a 
-> > write lock so we can drop it and schedule for a bit to allow the 
-> > commit to continue. Thanks,
+> Currently zbud pages are not movable and they cannot be allocated from CMA
+> (Contiguous Memory Allocator) region. These patches add migration of zbud pages.
 > 
-> This sounds rather nasty and hacky.  Rather then working around a 
-> locking shortcoming in a caller it would be better to fix/enhance the 
-> core locking code.  What would such a change need to do?
-> 
-> Presently rwsem waiters are fifo-queued, are they not?  So the commit 
-> thread will eventually get that lock.  Apparently that's not working 
-> adequately for you but I don't fully understand what it is about these 
-> dynamics which is causing observable problems.
 
-It would be nice to see the whole solution, together with the btrfs patch.
+I agree that the migration of zbud pages is important so that system
+will not enter order-0 page fragmentation and can be helpful for page
+compaction/huge pages etc..
 
-The problem I have is that this new primitive is only superficially like 
-spin_is_contended(): in the spinlock case dropping the lock will guarantee 
-some sort of progress, because another CPU will almost certainly pick up 
-the lock if we cpu_relax().
+But after I looked at the [patch 4/5], I found it will make zbud very
+complicated.
+I'd prefer to add this migration feature later until current version
+zswap/zbud becomes better enough and more stable.
 
-In the rwsem case there's no such guarantee of progress, especially if a 
-read-lock is dropped. So I'd like to see how it's implemented in practice.
+Mel mentioned several problems about zswap/zbud in thread "[PATCH v6
+0/5] zram/zsmalloc promotion".
 
-Thanks,
+Like "it's clunky as hell and the layering between zswap and zbud is
+twisty" and "I think I brought up its stalling behaviour during review
+when it was being merged. It would have been preferable if writeback
+could be initiated in batches and then waited on at the very least..
+ It's worse that it uses _swap_writepage directly instead of going
+through a writepage ops.  It would have been better if zbud pages
+existed on the LRU and written back with an address space ops and
+properly handled asynchonous writeback."
 
-	Ingo
+So I think it would be better if we can address those issues at first
+and it would be easier to address these issues before adding more new
+features. Welcome any ideas.
+
+-- 
+Regards,
+-Bob
