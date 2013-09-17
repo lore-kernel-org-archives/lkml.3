@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab3IQTGU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 15:06:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57021 "EHLO mx1.redhat.com"
+	id S1753690Ab3IQTIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 15:08:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60489 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752888Ab3IQTGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 15:06:19 -0400
-Date: Tue, 17 Sep 2013 16:06:06 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <srostedt@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Full syscall argument decode in "perf trace"
-Message-ID: <20130917190606.GB3918@infradead.org>
+	id S1753223Ab3IQTIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 15:08:31 -0400
+Date: Tue, 17 Sep 2013 14:07:32 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: <linus.walleij@linaro.org>, <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Subject: PCF857x and 16-bit GPIO expanders
+Message-ID: <20130917190732.GD15645@radagast>
+Reply-To: <balbi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="27KoNqt0fmcl1zj/"
 Content-Disposition: inline
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Sep 17, 2013 at 05:10:55PM +0200, Denys Vlasenko escreveu:
-> I'm trying to figure out how to extend "perf trace".
- 
-> Currently, it shows syscall names and arguments, and only them.
-> Meaning that syscalls such as open(2) are shown as:
- 
->     open(filename: 140736118412184, flags: 0, mode: 140736118403776) = 3
- 
-> The problem is, of course, that user wants to see the filename
-> per se, not the address of its first byte.
- 
-> To improve that, we need to fetch the pointed-to data.
-> There are two approaches to this: extending
-> "raw_syscalls:sys_{enter,exit}" tracepoint so that it returns this data,
-> or selectively stopping the traced process when it reaches the thacepoint.
+--27KoNqt0fmcl1zj/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We don't want to stop the process at all, this is one of the major
-advantages of 'perf trace' over 'strace'.
+Hi,
 
-Look at the tmp.perf/trace2 branch in my git repo, tglx and Ingo added a
-tracepoint to vfs_getname to use that.
- 
-> First solution is attractive performance-wise, but requires a lot
-> of new code: *ALL* syscalls will need to know which arguments are pointers,
-> how large their pointed-to data structures are, and (remember
-> readv and friends!) some of pointed-to structures themselves
-> contain pointers which reference even more data.
+has anyone ever successfully using gpio-pcf857x.c driver with 16-bit
+gpio expanders ? We're having some issues here where toggling the last
+gpio pin (gpio 15) on a PCF8575 device causes platform to hang and I
+can't come up with any explanation of why would it hang...
 
-Well, we can look at DWARF to get the function signatures, types,
-librarize 'perf probe' and insert probes in the syscalls we want
-decoding.
+Any hints ?
 
-That for the cases where we don't have a tracepoint or when adding a new
-tracepoint is not an option.
+cheers
 
-And this all with what we have in the kernel right now.
+--=20
+balbi
 
-Also for 'perf trace' look at my perf/core branch, where we have more
-syscall arg beautifiers and the machinery that is getting in place to
-allow that.
+--27KoNqt0fmcl1zj/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Longer term we could have something like dtrace's CTF to have a more
-compact type only ELF section that always go with the kernel, like we
-have CFI in binaries these days.
- 
-- Arnaldo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
------ End forwarded message -----
+iQIcBAEBAgAGBQJSOKh0AAoJEIaOsuA1yqREFPQP+gKwfBNTzmxv3avpe6HwkPdP
+WE2RIXnJ+S4iaM8yeCD5Y9AyfaPn9VUlq+WiHPgeGB2xbs4N2hKo3BjRemWqh8qr
+HKBPeyQ7sg2zfawAkDsnp4hgIiAR6p5s34TtGN9kcWQ2TEuUnooDu6BQl+V81QIs
+m047GVXPOAOShBk8sbDT2TZfMEtoB+6uzcRVKZPupX0VGerYb6xcTzCuPEcNk2vn
+YZCG0Fh9S8SbtiOio3nx7V92d0NCvrN0Xe0HGhXUT6bkImsXsiaIUaJfdd3frXYU
+GiEWKjefCyAYkrmml6btNTnnhukJhqNjWVUP5yUlAuXIYhCES5kLIm7auVo+E9yw
+btI+dIQRdH+f1pNh+s1tLrw1wXVUm9VZvb9D6vM2rlPvpruVH3BMydOOWQetiVvw
+LhhnNjFeX7UX6PhhAhhOAbZ8W4hAIoJcfQgowoOra/hRaXuH9dVphpGBVugZY12Z
+uuiUIRd7XuWcMoElvecUaWnU7+ckf8psuYFHkPmxNCdlq+1I4pt00aBqI9A/N+pv
+dc296mOTlpeC2IuwHVHn8+uNfEunFCPYo9Tm3IVVqqxWF5caw5nqJcTNCcBxPQNt
+QEnKc9s3C4oXqa89QXby0nR9RClTG+BF71tx/CXCU96w9yBVocMTeIBhy5JQiCZ/
+TbSQIHJXefP13erBinOP
+=LRSi
+-----END PGP SIGNATURE-----
+
+--27KoNqt0fmcl1zj/--
