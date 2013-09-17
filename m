@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab3IQBcF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 21:32:05 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:44038 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025Ab3IQBcC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 21:32:02 -0400
-From: Brian Norris <computersforpeace@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH] mtd: nand: fix memory leak in ONFI extended parameter page
-Date: Mon, 16 Sep 2013 18:31:52 -0700
-Message-Id: <1379381512-2007-1-git-send-email-computersforpeace@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	id S1751927Ab3IQBhn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 21:37:43 -0400
+Received: from gate.crashing.org ([63.228.1.57]:49408 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751822Ab3IQBhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 21:37:41 -0400
+Message-ID: <1379381834.3721.63.camel@pasglop>
+Subject: Re: "memory" binding issues
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 17 Sep 2013 11:37:14 +1000
+In-Reply-To: <CAOesGMjDFOThCYPgPq5mS8-Uk5Ye=omye329EKRsb-q_akTP4Q@mail.gmail.com>
+References: <1379300274.4098.77.camel@pasglop>
+	 <52372F2A.2050003@wwwdotorg.org> <1379371567.3721.46.camel@pasglop>
+	 <CAOesGMgE1jiF5OHsmPQz2z66Bcqu0HeAj=taE1vmFK-0-0s2TQ@mail.gmail.com>
+	 <1379375239.3721.51.camel@pasglop>
+	 <CAOesGMjDFOThCYPgPq5mS8-Uk5Ye=omye329EKRsb-q_akTP4Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a memory leak in the ONFI support code for detecting the
-required ECC levels from this commit:
+On Mon, 2013-09-16 at 16:48 -0700, Olof Johansson wrote:
+> On Mon, Sep 16, 2013 at 4:47 PM, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org> wrote:
+> > On Mon, 2013-09-16 at 15:48 -0700, Olof Johansson wrote:
+> >> > A node that has a "reg" property should have the corresponding unit
+> >> > address.
+> >>
+> >> No, absolutely _NOT_ a requirement. Unit address is only required if
+> >> needed to disambiguate two properties with the same name.
+> >>
+> >> If there are no ambiguities, then leaving off the unit address is much
+> >> preferred.
+> >
+> > I disagree :-)
+> 
+> Well, good thing you've got your own arch to litter the device trees
+> with unit specifiers in then. :)
 
-  commit 6dcbe0cdd83fb5f77be4f44c9e06c535281c375a
-  Author: Huang Shijie <b32955@freescale.com>
-  Date:   Wed May 22 10:28:27 2013 +0800
+Right :-) We tend to have multiple memory nodes on server anyway so it's
+not a big deal.
 
-      mtd: get the ECC info from the Extended Parameter Page
+> > Also this would be only true of our find_node_by_path was capable of
+> > handling it, which it isn't. Thus you end up with generic code looking
+> > for /memory and finding nothing ...
+> 
+> Yes, this should be fixed.
 
-In the success case, we never freed the 'ep' buffer.
+Right, the whole thing becomes mostly a non-issue once that's fixed. My
+main objection isn't that ARM doesn't use unit address specifiers. My
+objection is that the binding documents no unit address :-) It should
+instead document the unit address with a note indicating that it can be
+omitted if there is no ambiguity.
 
-Also, this fixes an oversight in the same commit where we (harmlessly)
-freed the NULL pointer.
+But first, do we have a volunteer to fix the path parsing code ? Also do
+we *really* need to keep the path parsing code for fdt ? IE. It would be
+annoying to have to duplicate that code for before and after
+expansion...
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Cc: Huang Shijie <b32955@freescale.com>
----
-David, if there are no objections, can you send this to Linus for 3.12?
+Cheers,
+Ben.
 
-If this doesn't make it into 3.12, then it will be -stable material.
+> -Olof
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
- drivers/mtd/nand/nand_base.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index d4578a1..00022b4 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2869,10 +2869,8 @@ static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
- 
- 	len = le16_to_cpu(p->ext_param_page_length) * 16;
- 	ep = kmalloc(len, GFP_KERNEL);
--	if (!ep) {
--		ret = -ENOMEM;
--		goto ext_out;
--	}
-+	if (!ep)
-+		return -ENOMEM;
- 
- 	/* Send our own NAND_CMD_PARAM. */
- 	chip->cmdfunc(mtd, NAND_CMD_PARAM, 0, -1);
-@@ -2920,7 +2918,7 @@ static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
- 	}
- 
- 	pr_info("ONFI extended param page detected.\n");
--	return 0;
-+	ret = 0;
- 
- ext_out:
- 	kfree(ep);
--- 
-1.8.4
 
