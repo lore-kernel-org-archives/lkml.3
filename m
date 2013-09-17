@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747Ab3IQADF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 20:03:05 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:55180 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204Ab3IQADA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 20:03:00 -0400
-Date: Mon, 16 Sep 2013 20:02:44 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: azurIt <azurit@pobox.sk>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
-Message-ID: <20130917000244.GD3278@cmpxchg.org>
-References: <20130911200426.GO856@cmpxchg.org>
- <20130914124831.4DD20346@pobox.sk>
- <20130916134014.GA3674@dhcp22.suse.cz>
- <20130916160119.2E76C2A1@pobox.sk>
- <20130916140607.GC3674@dhcp22.suse.cz>
- <20130916161316.5113F6E7@pobox.sk>
- <20130916145744.GE3674@dhcp22.suse.cz>
- <20130916170543.77F1ECB4@pobox.sk>
- <20130916152548.GF3674@dhcp22.suse.cz>
- <20130916225246.A633145B@pobox.sk>
+	id S1751862Ab3IQAFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 20:05:22 -0400
+Received: from dkim1.fusionio.com ([66.114.96.53]:36369 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab3IQAFT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 20:05:19 -0400
+X-ASG-Debug-ID: 1379376318-0421b502223dbb80001-xx1T2L
+X-Barracuda-Envelope-From: JBacik@fusionio.com
+Date: Mon, 16 Sep 2013 20:05:16 -0400
+From: Josef Bacik <jbacik@fusionio.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Josef Bacik <jbacik@fusionio.com>, <linux-btrfs@vger.kernel.org>,
+        <walken@google.com>, <mingo@elte.hu>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rwsem: add rwsem_is_contended
+Message-ID: <20130917000516.GJ2446@localhost.localdomain>
+X-ASG-Orig-Subj: Re: [PATCH] rwsem: add rwsem_is_contended
+References: <1377872041-390-1-git-send-email-jbacik@fusionio.com>
+ <20130916160547.371b74f91511a42ac263449e@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20130916225246.A633145B@pobox.sk>
+In-Reply-To: <20130916160547.371b74f91511a42ac263449e@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
+X-Barracuda-Start-Time: 1379376318
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140674
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 10:52:46PM +0200, azurIt wrote:
-> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-> >On Mon 16-09-13 17:05:43, azurIt wrote:
-> >> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-> >> >On Mon 16-09-13 16:13:16, azurIt wrote:
-> >> >[...]
-> >> >> >You can use sysrq+l via serial console to see tasks hogging the CPU or
-> >> >> >sysrq+t to see all the existing tasks.
-> >> >> 
-> >> >> 
-> >> >> Doesn't work here, it just prints 'l' resp. 't'.
-> >> >
-> >> >I am using telnet for accessing my serial consoles exported by
-> >> >the multiplicator or KVM and it can send sysrq via ctrl+t (Send
-> >> >Break). Check your serial console setup.
-> >> 
-> >> 
-> >> 
-> >> I'm using Raritan KVM and i created keyboard macro 'sysrq + l' resp.
-> >> 'sysrq + t'. I'm also unable to use it on my local PC. Maybe it needs
-> >> to be enabled somehow?
-> >
-> >Probably yes. echo 1 > /proc/sys/kernel/sysrq should enable all sysrq
-> >commands. You can select also some of them (have a look at
-> >Documentation/sysrq.txt for more information)
+On Mon, Sep 16, 2013 at 04:05:47PM -0700, Andrew Morton wrote:
+> On Fri, 30 Aug 2013 10:14:01 -0400 Josef Bacik <jbacik@fusionio.com> wrote:
 > 
+> > Btrfs uses an rwsem to control access to its extent tree.  Threads will hold a
+> > read lock on this rwsem while they scan the extent tree, and if need_resched()
+> > they will drop the lock and schedule.  The transaction commit needs to take a
+> > write lock for this rwsem for a very short period to switch out the commit
+> > roots.  If there are a lot of threads doing this caching operation we can starve
+> > out the committers which slows everybody out.  To address this we want to add
+> > this functionality to see if our rwsem has anybody waiting to take a write lock
+> > so we can drop it and schedule for a bit to allow the commit to continue.
+> > Thanks,
+> > 
 > 
-> Now it happens again and i was just looking on the server's
-> htop. I'm sure that this time it was only one process (apache)
-> running under user account (not root). It was taking about 100% CPU
-> (about 100% of one core). I was able to kill it by hand inside htop
-> but everything was very slow, server load was immediately on
-> 500. I'm sure it must be related to that Johannes kernel patches
-> because i'm also using i/o throttling in cgroups via Block IO
-> controller so users are unable to create such a huge I/O. I will try
-> to take stacks of processes but i'm not able to identify the
-> problematic process so i will have to take them from *all* apache
-> processes while killing them.
+> This sounds rather nasty and hacky.  Rather then working around a
+> locking shortcoming in a caller it would be better to fix/enhance the
+> core locking code.  What would such a change need to do?
+> 
+> Presently rwsem waiters are fifo-queued, are they not?  So the commit
+> thread will eventually get that lock.  Apparently that's not working
+> adequately for you but I don't fully understand what it is about these
+> dynamics which is causing observable problems.
+> 
 
-It would be fantastic if you could capture those stacks.  sysrq+t
-captures ALL of them in one go and drops them into your syslog.
+So the problem is not that its normal lock starvation, it's more our particular
+use case that is causing the starvation.  We can have lots of people holding
+readers and simply never give them up for long periods of time, which is why we
+need this is_contended helper so we know to drop things and let the committer
+through.  Thanks,
 
-/proc/<pid>/stack for individual tasks works too.
+Josef
