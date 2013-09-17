@@ -1,52 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab3IQO3c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 10:29:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48939 "EHLO
+	id S1753203Ab3IQOaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 10:30:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48990 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab3IQO3X (ORCPT
+	with ESMTP id S1752790Ab3IQOaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 10:29:23 -0400
-Message-ID: <52386733.4010801@kernel.dk>
-Date: Tue, 17 Sep 2013 08:29:07 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 17 Sep 2013 10:30:24 -0400
+Date: Tue, 17 Sep 2013 16:30:03 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130917143003.GA29354@twins.programming.kicks-ass.net>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-38-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BLK_TN_PROCESS events not delivered for all devices
-References: <20130916092347.GB19027@quack.suse.cz>
-In-Reply-To: <20130916092347.GB19027@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378805550-29949-38-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2013 03:23 AM, Jan Kara wrote:
->   Hi,
-> 
->   I've been looking into a problem where BLK_TN_PROCESS events are not
-> delivered to all devices which are being traced. This results in process
-> name being (null) when trace for a single device is parsed.
-> 
-> The reason for this problem is that trace_note_tsk() is called only if
-> tsk->btrace_seq != blktrace_seq and it updates tsk->btrace_seq to
-> blktrace_seq. Thus after a trace for another device is started
-> BLK_TN_PROCESS event is sent only on behalf of the first device with which
-> the task interacts. That isn't necessarily the new device thus traces for
-> some devices accumulate several BLK_TN_PROCESS events for one task while
-> other have none. Is this a known problem and is this intended to work
-> better?
-> 
-> I was thinking how to fix that for a while and it doesn't seem to be
-> possible without tracking with each block trace which tasks it has been
-> notified about. And that is relatively expensive...
+Subject: hotplug: Optimize {get,put}_online_cpus()
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Tue Sep 17 16:17:11 CEST 2013
 
-It is unfortunately a known issue... I have not come up with a good way
-to fix it either, while keeping it cheap. So if you think of something,
-do let me know.
+The cpu hotplug lock is a purely reader biased read-write lock.
 
--- 
-Jens Axboe
+The current implementation uses global state, change it so the reader
+side uses per-cpu state in the uncontended fast-path.
 
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ include/linux/cpu.h |   33 ++++++++++++++-
+ kernel/cpu.c        |  108 ++++++++++++++++++++++++++--------------------------
+ 2 files changed, 87 insertions(+), 54 deletions(-)
+
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -16,6 +16,7 @@
+ #include <linux/node.h>
+ #include <linux/compiler.h>
+ #include <linux/cpumask.h>
++#include <linux/percpu.h>
+ 
+ struct device;
+ 
+@@ -175,8 +176,36 @@ extern struct bus_type cpu_subsys;
+ 
+ extern void cpu_hotplug_begin(void);
+ extern void cpu_hotplug_done(void);
+-extern void get_online_cpus(void);
+-extern void put_online_cpus(void);
++
++extern struct task_struct *__cpuhp_writer;
++DECLARE_PER_CPU(unsigned int, __cpuhp_refcount);
++
++extern void __get_online_cpus(void);
++
++static inline void get_online_cpus(void)
++{
++	might_sleep();
++
++	this_cpu_inc(__cpuhp_refcount);
++	/*
++	 * Order the refcount inc against the writer read; pairs with the full
++	 * barrier in cpu_hotplug_begin().
++	 */
++	smp_mb();
++	if (unlikely(__cpuhp_writer))
++		__get_online_cpus();
++}
++
++extern void __put_online_cpus(void);
++
++static inline void put_online_cpus(void)
++{
++	barrier();
++	this_cpu_dec(__cpuhp_refcount);
++	if (unlikely(__cpuhp_writer))
++		__put_online_cpus();
++}
++
+ extern void cpu_hotplug_disable(void);
+ extern void cpu_hotplug_enable(void);
+ #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -49,88 +49,92 @@ static int cpu_hotplug_disabled;
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+ 
+-static struct {
+-	struct task_struct *active_writer;
+-	struct mutex lock; /* Synchronizes accesses to refcount, */
+-	/*
+-	 * Also blocks the new readers during
+-	 * an ongoing cpu hotplug operation.
+-	 */
+-	int refcount;
+-} cpu_hotplug = {
+-	.active_writer = NULL,
+-	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
+-	.refcount = 0,
+-};
++struct task_struct *__cpuhp_writer = NULL;
++EXPORT_SYMBOL_GPL(__cpuhp_writer);
++
++DEFINE_PER_CPU(unsigned int, __cpuhp_refcount);
++EXPORT_PER_CPU_SYMBOL_GPL(__cpuhp_refcount);
+ 
+-void get_online_cpus(void)
++static DECLARE_WAIT_QUEUE_HEAD(cpuhp_wq);
++
++void __get_online_cpus(void)
+ {
+-	might_sleep();
+-	if (cpu_hotplug.active_writer == current)
++	if (__cpuhp_writer == current)
+ 		return;
+-	mutex_lock(&cpu_hotplug.lock);
+-	cpu_hotplug.refcount++;
+-	mutex_unlock(&cpu_hotplug.lock);
+ 
++again:
++	/*
++	 * Ensure a pending reading has a 0 refcount.
++	 *
++	 * Without this a new reader that comes in before cpu_hotplug_begin()
++	 * reads the refcount will deadlock.
++	 */
++	this_cpu_dec(__cpuhp_refcount);
++	wait_event(cpuhp_wq, !__cpuhp_writer);
++
++	this_cpu_inc(__cpuhp_refcount);
++	/*
++	 * See get_online_cpu().
++	 */
++	smp_mb();
++	if (unlikely(__cpuhp_writer))
++		goto again;
+ }
+-EXPORT_SYMBOL_GPL(get_online_cpus);
++EXPORT_SYMBOL_GPL(__get_online_cpus);
+ 
+-void put_online_cpus(void)
++void __put_online_cpus(void)
+ {
+-	if (cpu_hotplug.active_writer == current)
+-		return;
+-	mutex_lock(&cpu_hotplug.lock);
++	unsigned int refcnt = 0;
++	int cpu;
+ 
+-	if (WARN_ON(!cpu_hotplug.refcount))
+-		cpu_hotplug.refcount++; /* try to fix things up */
++	if (__cpuhp_writer == current)
++		return;
+ 
+-	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
+-		wake_up_process(cpu_hotplug.active_writer);
+-	mutex_unlock(&cpu_hotplug.lock);
++	for_each_possible_cpu(cpu)
++		refcnt += per_cpu(__cpuhp_refcount, cpu);
+ 
++	if (!refcnt)
++		wake_up_process(__cpuhp_writer);
+ }
+-EXPORT_SYMBOL_GPL(put_online_cpus);
++EXPORT_SYMBOL_GPL(__put_online_cpus);
+ 
+ /*
+  * This ensures that the hotplug operation can begin only when the
+  * refcount goes to zero.
+  *
+- * Note that during a cpu-hotplug operation, the new readers, if any,
+- * will be blocked by the cpu_hotplug.lock
+- *
+  * Since cpu_hotplug_begin() is always called after invoking
+  * cpu_maps_update_begin(), we can be sure that only one writer is active.
+- *
+- * Note that theoretically, there is a possibility of a livelock:
+- * - Refcount goes to zero, last reader wakes up the sleeping
+- *   writer.
+- * - Last reader unlocks the cpu_hotplug.lock.
+- * - A new reader arrives at this moment, bumps up the refcount.
+- * - The writer acquires the cpu_hotplug.lock finds the refcount
+- *   non zero and goes to sleep again.
+- *
+- * However, this is very difficult to achieve in practice since
+- * get_online_cpus() not an api which is called all that often.
+- *
+  */
+ void cpu_hotplug_begin(void)
+ {
+-	cpu_hotplug.active_writer = current;
++	__cpuhp_writer = current;
+ 
+ 	for (;;) {
+-		mutex_lock(&cpu_hotplug.lock);
+-		if (likely(!cpu_hotplug.refcount))
++		unsigned int refcnt = 0;
++		int cpu;
++
++		/*
++		 * Order the setting of writer against the reading of refcount;
++		 * pairs with the full barrier in get_online_cpus().
++		 */
++
++		set_current_state(TASK_UNINTERRUPTIBLE);
++
++		for_each_possible_cpu(cpu)
++			refcnt += per_cpu(__cpuhp_refcount, cpu);
++
++		if (!refcnt)
+ 			break;
+-		__set_current_state(TASK_UNINTERRUPTIBLE);
+-		mutex_unlock(&cpu_hotplug.lock);
++
+ 		schedule();
+ 	}
++	__set_current_state(TASK_RUNNING);
+ }
+ 
+ void cpu_hotplug_done(void)
+ {
+-	cpu_hotplug.active_writer = NULL;
+-	mutex_unlock(&cpu_hotplug.lock);
++	__cpuhp_writer = NULL;
++	wake_up_all(&cpuhp_wq);
+ }
+ 
+ /*
