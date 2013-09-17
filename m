@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab3IQJnm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 05:43:42 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:33212 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab3IQJnk (ORCPT
+	id S1752105Ab3IQJyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 05:54:15 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:58481 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab3IQJyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 05:43:40 -0400
-Date: Tue, 17 Sep 2013 12:43:26 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Adil Mujeeb <mujeeb.adil@gmail.com>
-Cc: Iker Pedrosa <ikerpedrosam@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg KH <gregkh@linuxfoundation.org>, harsh1kumar@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 15/24] Staging: winbond: reg: seventh of the patches
- that fixes lines over 80 characters
-Message-ID: <20130917094326.GO19256@mwanda>
-References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
- <1379339024-12157-16-git-send-email-ikerpedrosam@gmail.com>
- <CANBXnMm7QCab3cU4NMzmA3OjXckcUx5dakyD_TRwfj3j2_02MA@mail.gmail.com>
+	Tue, 17 Sep 2013 05:54:14 -0400
+Date: Tue, 17 Sep 2013 10:54:07 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: arizona: Update volatile registers for WM5110 DSP
+Message-ID: <20130917095407.GV16984@lee--X1>
+References: <1379345514-2998-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20130917072425.GP16984@lee--X1>
+ <20130917091823.GF3635@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CANBXnMm7QCab3cU4NMzmA3OjXckcUx5dakyD_TRwfj3j2_02MA@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130917091823.GF3635@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 02:29:22PM +0530, Adil Mujeeb wrote:
-> Hi,
-> 
-> 
-> >-       PowerData = (1 << 31) | (0 << 30) | (24 << 24) |
-> BitReverse(w89rf242_txvga_data[i][0], 24);
-> >+       PowerData = (1 << 31) | (0 << 30) | (24 << 24)
-> >+                           | BitReverse(w89rf242_txvga_data[i][0], 24);
-> .....
-> .....
-> 
-> >-       reg->M38_MacControl = (DEFAULT_RATE_RETRY_LIMIT << 8) |
-> (DEFAULT_LONG_RETRY_LIMIT << 4) | DEFAULT_SHORT_RETRY_LIMIT;
-> >+       reg->M38_MacControl = (DEFAULT_RATE_RETRY_LIMIT << 8) |
-> >+                                      (DEFAULT_LONG_RETRY_LIMIT << 4) |
-> >+                                      DEFAULT_SHORT_RETRY_LIMIT;
-> 
-> I think consistency is needed. Either break the lines putting the OR
-> operator ( | ) at the start of new line or at the end of each line. People
-> has its own preference but here you have used both style in single file.
-> Just a suggestion.
-> 
+> No problem sorry the commit message was a little vague there.
+> Seems I accidentally generated the first version of this patch
+> against the ASoC tree, but this got me thinking now you are
+> looking after MFD patches which tree should I be generating them
+> against?
 
-Put the '|' character at the end of the line.  That's the New Unwritten
-Style Guidelines.  Most of the kernel does it this way and it's easier
-to read.
+That depends. If you are submitting MFD only patches and you base them
+on either Sam's [1] or my tree [2], you probably won't go too far
+wrong.
 
-But this could be fixed in a later patch instead of redoing the whole
-series.
+However, if your patch or patch-set touches other subsystems then the
+latest -rc is usually appropriate.
 
-regards,
-dan carpenter
+> On Tue, Sep 17, 2013 at 08:24:25AM +0100, Lee Jones wrote:
+> > On Mon, 16 Sep 2013, Charles Keepax wrote:
+> > 
+> > Any chance of a little more information in the commit message?
+> > 
+> > What are scratch registers and why are they required now where they
+> > weren't before? Why are the control and clocking regulators no longer
+> > needed?
 
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-next.git - master
+[2] git://git.linaro.org/people/ljones/mfd.git - for-mfd-next
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
