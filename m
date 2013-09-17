@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753688Ab3IQTEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 15:04:20 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:52020 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490Ab3IQTET (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 15:04:19 -0400
+	id S1753372Ab3IQTGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 15:06:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57021 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752888Ab3IQTGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 15:06:19 -0400
+Date: Tue, 17 Sep 2013 16:06:06 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <srostedt@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Full syscall argument decode in "perf trace"
+Message-ID: <20130917190606.GB3918@infradead.org>
 MIME-Version: 1.0
-X-Originating-IP: [208.54.5.211]
-In-Reply-To: <5228913A.50807@kernel.dk>
-References: <26D762E250385C4D8E9D6EC3C8E47DC11E6FCF20@sambx4.stec-inc.ad>
-	<x49vc2nnwp5.fsf@segfault.boston.devel.redhat.com>
-	<26D762E250385C4D8E9D6EC3C8E47DC11E6FE729@sambx4.stec-inc.ad>
-	<x4938pjbhqk.fsf@segfault.boston.devel.redhat.com>
-	<5228913A.50807@kernel.dk>
-Date: Tue, 17 Sep 2013 12:04:18 -0700
-Message-ID: <CAOesGMhF42=qQLyMyF4-tsTjCxwX0bb10rTQv9sLooyzrEOpHA@mail.gmail.com>
-Subject: Re: [PATCH] block: Device driver for sTec's PCIe Kronos Card.
-From: Olof Johansson <olof@lixom.net>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jeff Moyer <jmoyer@redhat.com>,
-        OS Engineering <osengineering@stec-inc.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Akhil Bhansali <abhansali@stec-inc.com>,
-        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
-        Amit Phansalkar <aphansalkar@stec-inc.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 5, 2013 at 7:12 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 09/05/2013 06:00 AM, Jeff Moyer wrote:
->> OS Engineering <osengineering@stec-inc.com> writes:
->>
->>> Hi Jeff,
->>>
->>> Thank you for reviewing the patch.
->>
->> No problem.  Jens, any objection to queueing this up for 3.12?
->
-> I'll give it a look-over, but usually I'm pretty lax when it comes to
-> new drivers. So no, I'd be surprised if we can't queue this up for 3.12.
+Em Tue, Sep 17, 2013 at 05:10:55PM +0200, Denys Vlasenko escreveu:
+> I'm trying to figure out how to extend "perf trace".
+ 
+> Currently, it shows syscall names and arguments, and only them.
+> Meaning that syscalls such as open(2) are shown as:
+ 
+>     open(filename: 140736118412184, flags: 0, mode: 140736118403776) = 3
+ 
+> The problem is, of course, that user wants to see the filename
+> per se, not the address of its first byte.
+ 
+> To improve that, we need to fetch the pointed-to data.
+> There are two approaches to this: extending
+> "raw_syscalls:sys_{enter,exit}" tracepoint so that it returns this data,
+> or selectively stopping the traced process when it reaches the thacepoint.
 
-I came across this driver because it was spewing a lot of really
-trivial and easy to fix compiler warnings. Silly stuff such as
-printing u32 with %lu.
+We don't want to stop the process at all, this is one of the major
+advantages of 'perf trace' over 'strace'.
 
->From a quick look at the code, several things are immediately apparent:
+Look at the tmp.perf/trace2 branch in my git repo, tglx and Ingo added a
+tracepoint to vfs_getname to use that.
+ 
+> First solution is attractive performance-wise, but requires a lot
+> of new code: *ALL* syscalls will need to know which arguments are pointers,
+> how large their pointed-to data structures are, and (remember
+> readv and friends!) some of pointed-to structures themselves
+> contain pointers which reference even more data.
 
-First, checkpatch says, on the currently existing file in -next:
+Well, we can look at DWARF to get the function signatures, types,
+librarize 'perf probe' and insert probes in the syscalls we want
+decoding.
 
-total: 3 errors, 61 warnings, 5817 lines checked
+That for the cases where we don't have a tracepoint or when adding a new
+tracepoint is not an option.
 
-Code like this looks _really_ confused:
+And this all with what we have in the kernel right now.
 
-                barrier();
-                val = readl(skdev->mem_map[1] + offset);
-                barrier();
+Also for 'perf trace' look at my perf/core branch, where we have more
+syscall arg beautifiers and the machinery that is getting in place to
+allow that.
 
-There are also some crazy long functions that should be refactored,
-such as skd_request_fn().
+Longer term we could have something like dtrace's CTF to have a more
+compact type only ELF section that always go with the kernel, like we
+have CFI in binaries these days.
+ 
+- Arnaldo
 
-So, it looks like this driver needs a bunch of work before it's ready
-to go in. Or, maybe it's better to submit it with a TODO list for the
-staging tree instead?
-
-
--Olof
+----- End forwarded message -----
