@@ -1,117 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab3IQIfg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 04:35:36 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:55827
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751456Ab3IQIfe (ORCPT
+	id S1752217Ab3IQIh4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 04:37:56 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:28406 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab3IQIhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 04:35:34 -0400
-X-IronPort-AV: E=Sophos;i="4.90,921,1371074400"; 
-   d="scan'208";a="27103041"
-Date: Tue, 17 Sep 2013 10:35:26 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Shalin Mehta <shalinmehta85@gmail.com>
-cc: gregkh@linuxfoundation.org, klmckinney1@gmail.com,
-        devel@driverdev.osuosl.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: bcm: PHSModule.c: Matching the function definition
- with function declaration
-In-Reply-To: <1379401962-10208-1-git-send-email-shalinmehta85@gmail.com>
-Message-ID: <alpine.DEB.2.02.1309171035000.2252@hadrien>
-References: <1379401962-10208-1-git-send-email-shalinmehta85@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 17 Sep 2013 04:37:53 -0400
+Message-ID: <52381505.4010701@hp.com>
+Date: Tue, 17 Sep 2013 16:38:29 +0800
+From: ZhenHua <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>, David Woodhouse <dwmw2@infradead.org>,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Donald Dutile <ddutile@redhat.com>
+Subject: Re: [PATCH 1/1] x86/iommu: correct ICS register offset
+References: <1379053652-29206-1-git-send-email-zhen-hual@hp.com>
+In-Reply-To: <1379053652-29206-1-git-send-email-zhen-hual@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Sep 2013, Shalin Mehta wrote:
+Hi Guys,
+     Though  DMAR_ICS_REG is not used yet, I think this patch is 
+necessary. So please take a look at it.
 
-> From: Shalin Mehta <shalinmehta85@gmail.com>
->
-> NOTE: Sending it again. I got mail delivery failure due to typo in emai ID gregkh@linuxfoundation.org
+Thanks
+ZhenHua
 
-I think that such a comment should go below the ---, since it doesn't have
-to be preserved in git.
-
-julia
-
+On 09/13/2013 02:27 PM, Li, Zhen-Hua wrote:
+> According to Intel Vt-D specs, the offset of Invalidation complete
+> status register should be 0x9C, not 0x98.
 >
+> See Intel's VT-d spec, Revision 1.3, Chapter 10.4, Page 98;
 >
-> The function implementations of the PHSModule didn't match with the declaration. The functions are static
-> in the declaration but in the implemntation they are non-static
->
-> Signed-off-by: Shalin Mehta <shalinmehta85@gmail.com>
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
 > ---
->  drivers/staging/bcm/PHSModule.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+>   include/linux/intel-iommu.h | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> diff --git a/drivers/staging/bcm/PHSModule.c b/drivers/staging/bcm/PHSModule.c
-> index af5d22f..56c5bee 100644
-> --- a/drivers/staging/bcm/PHSModule.c
-> +++ b/drivers/staging/bcm/PHSModule.c
-> @@ -596,7 +596,7 @@ ULONG PhsDeleteSFRules(IN void *pvContext, IN B_UINT16 uiVcid)
->   * 0 if successful,
->   * >0 Error.
->   */
-> -ULONG PhsCompress(IN void *pvContext,
-> +static ULONG PhsCompress(IN void *pvContext,
->  		IN B_UINT16 uiVcid,
->  		IN B_UINT16 uiClsId,
->  		IN void *pvInputBuffer,
-> @@ -677,7 +677,7 @@ ULONG PhsCompress(IN void *pvContext,
->   * 0 if successful,
->   * >0 Error.
->   */
-> -ULONG PhsDeCompress(IN void *pvContext,
-> +static ULONG PhsDeCompress(IN void *pvContext,
->  		IN B_UINT16 uiVcid,
->  		IN void *pvInputBuffer,
->  		OUT void *pvOutputBuffer,
-> @@ -829,7 +829,7 @@ UINT GetServiceFlowEntry(IN struct bcm_phs_table *psServiceFlowTable,
->  	return PHS_INVALID_TABLE_INDEX;
->  }
+> diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
+> index 78e2ada..d380c5e 100644
+> --- a/include/linux/intel-iommu.h
+> +++ b/include/linux/intel-iommu.h
+> @@ -55,7 +55,7 @@
+>   #define DMAR_IQT_REG	0x88	/* Invalidation queue tail register */
+>   #define DMAR_IQ_SHIFT	4	/* Invalidation queue head/tail shift */
+>   #define DMAR_IQA_REG	0x90	/* Invalidation queue addr register */
+> -#define DMAR_ICS_REG	0x98	/* Invalidation complete status register */
+> +#define DMAR_ICS_REG	0x9c	/* Invalidation complete status register */
+>   #define DMAR_IRTA_REG	0xb8    /* Interrupt remapping table addr register */
 >
-> -UINT GetClassifierEntry(IN struct bcm_phs_classifier_table *pstClassifierTable,
-> +static UINT GetClassifierEntry(IN struct bcm_phs_classifier_table *pstClassifierTable,
->  			IN B_UINT32 uiClsid, enum bcm_phs_classifier_context eClsContext,
->  			OUT struct bcm_phs_classifier_entry **ppstClassifierEntry)
->  {
-> @@ -880,7 +880,7 @@ static UINT GetPhsRuleEntry(IN struct bcm_phs_classifier_table *pstClassifierTab
->  	return PHS_INVALID_TABLE_INDEX;
->  }
+>   #define OFFSET_STRIDE		(9)
 >
-> -UINT CreateSFToClassifierRuleMapping(IN B_UINT16 uiVcid, IN B_UINT16  uiClsId,
-> +static UINT CreateSFToClassifierRuleMapping(IN B_UINT16 uiVcid, IN B_UINT16  uiClsId,
->  				IN struct bcm_phs_table *psServiceFlowTable,
->  				struct bcm_phs_rule *psPhsRule,
->  				B_UINT8 u8AssociatedPHSI)
-> @@ -913,7 +913,7 @@ UINT CreateSFToClassifierRuleMapping(IN B_UINT16 uiVcid, IN B_UINT16  uiClsId,
->  	return uiStatus;
->  }
->
-> -UINT CreateClassiferToPHSRuleMapping(IN B_UINT16 uiVcid,
-> +static UINT CreateClassiferToPHSRuleMapping(IN B_UINT16 uiVcid,
->  				IN B_UINT16 uiClsId,
->  				IN struct bcm_phs_entry *pstServiceFlowEntry,
->  				struct bcm_phs_rule *psPhsRule,
-> @@ -1239,7 +1239,7 @@ void DumpPhsRules(struct bcm_phs_extension *pDeviceExtension)
->   *			header.
->   *	0	-If PHS rule is NULL.If PHSI is 0 indicateing packet as uncompressed.
->   */
-> -int phs_decompress(unsigned char *in_buf,
-> +static int phs_decompress(unsigned char *in_buf,
->  		unsigned char *out_buf,
->  		struct bcm_phs_rule *decomp_phs_rules,
->  		UINT *header_size)
-> --
-> 1.8.1.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+
