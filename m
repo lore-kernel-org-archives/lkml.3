@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab3IRN0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:26:54 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:41768 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924Ab3IRN0e (ORCPT
+	id S1751929Ab3IRN0d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:26:33 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:36571 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab3IRN0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:26:34 -0400
+	Wed, 18 Sep 2013 09:26:30 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Rob Herring <rob.herring@calxeda.com>,
         Grant Likely <grant.likely@linaro.org>,
@@ -18,9 +18,9 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
         linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 09/10] of/i2c: Resolve interrupt references at probe time
-Date: Wed, 18 Sep 2013 15:24:51 +0200
-Message-Id: <1379510692-32435-10-git-send-email-treding@nvidia.com>
+Subject: [PATCH v2 07/10] of/irq: Propagate errors in of_irq_to_resource_table()
+Date: Wed, 18 Sep 2013 15:24:49 +0200
+Message-Id: <1379510692-32435-8-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1379510692-32435-1-git-send-email-treding@nvidia.com>
 References: <1379510692-32435-1-git-send-email-treding@nvidia.com>
@@ -28,83 +28,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of resolving interrupt references at device creation time, delay
-resolution until probe time. At device creation time, there is nothing
-that can be done if an interrupt parent isn't ready yet, and the device
-will end up with an invalid interrupt number (0).
-
-If the interrupt reference is resolved at probe time, the device's probe
-can be deferred, so that it's interrupt resolution can be retried after
-more devices (possibly including its interrupt parent) have been probed.
-
-However, individual drivers shouldn't be required to do that themselves,
-over and over again, so this commit implements this functionality within
-the I2C core.
+Now that all helpers return precise error codes, this function can
+propagate these errors to the caller properly.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
 Changes in v2:
-- use __irq_of_parse_and_map() instead of of_irq_get()
+- return 0 on success or a negative error code on failure
+- convert callers to new calling convention
 
- drivers/i2c/i2c-core.c | 24 ++++++++++++++++++++++--
- 1 file changed, 22 insertions(+), 2 deletions(-)
+ arch/mips/lantiq/irq.c       |  2 +-
+ arch/mips/lantiq/xway/gptu.c |  6 ++++--
+ drivers/of/irq.c             | 14 ++++++++------
+ drivers/tty/serial/lantiq.c  |  2 +-
+ 4 files changed, 14 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 29d3f04..5b4f289 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -236,6 +236,22 @@ int i2c_recover_bus(struct i2c_adapter *adap)
- 	return adap->bus_recovery_info->recover_bus(adap);
- }
+diff --git a/arch/mips/lantiq/irq.c b/arch/mips/lantiq/irq.c
+index eb3e186..5bb7ee6 100644
+--- a/arch/mips/lantiq/irq.c
++++ b/arch/mips/lantiq/irq.c
+@@ -389,7 +389,7 @@ int __init icu_of_init(struct device_node *node, struct device_node *parent)
  
-+static int of_i2c_probe(struct i2c_client *client)
-+{
-+	struct device_node *np = client->dev.of_node;
+ 		ret = of_irq_to_resource_table(eiu_node,
+ 						ltq_eiu_irq, exin_avail);
+-		if (ret != exin_avail)
++		if (ret < 0)
+ 			panic("failed to load external irq resources\n");
+ 
+ 		if (request_mem_region(res.start, resource_size(&res),
+diff --git a/arch/mips/lantiq/xway/gptu.c b/arch/mips/lantiq/xway/gptu.c
+index 850821d..0c4b134 100644
+--- a/arch/mips/lantiq/xway/gptu.c
++++ b/arch/mips/lantiq/xway/gptu.c
+@@ -137,10 +137,12 @@ static int gptu_probe(struct platform_device *pdev)
+ {
+ 	struct clk *clk;
+ 	struct resource *res;
 +	int ret;
-+
-+	/* skip if the device node specifies no interrupts */
-+	if (of_get_property(np, "interrupts", NULL)) {
-+		ret = __irq_of_parse_and_map(client->dev.of_node, 0,
-+					     &client->irq);
-+		if (ret)
+ 
+-	if (of_irq_to_resource_table(pdev->dev.of_node, irqres, 6) != 6) {
++	ret = of_irq_to_resource_table(pdev->dev.of_node, irqres, 6);
++	if (ret < 0) {
+ 		dev_err(&pdev->dev, "Failed to get IRQ list\n");
+-		return -EINVAL;
++		return ret;
+ 	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+index e4f38c0..6d7f824 100644
+--- a/drivers/of/irq.c
++++ b/drivers/of/irq.c
+@@ -397,18 +397,20 @@ int of_irq_count(struct device_node *dev)
+  * @res: array of resources to fill in
+  * @nr_irqs: the number of IRQs (and upper bound for num of @res elements)
+  *
+- * Returns the size of the filled in table (up to @nr_irqs).
++ * Returns 0 on success or a negative error code on failure.
+  */
+ int of_irq_to_resource_table(struct device_node *dev, struct resource *res,
+ 		int nr_irqs)
+ {
+-	int i;
++	int i, ret;
+ 
+-	for (i = 0; i < nr_irqs; i++, res++)
+-		if (!of_irq_to_resource(dev, i, res))
+-			break;
++	for (i = 0; i < nr_irqs; i++, res++) {
++		ret = of_irq_to_resource(dev, i, res);
++		if (ret < 0)
 +			return ret;
 +	}
-+
+ 
+-	return i;
 +	return 0;
-+}
-+
- static int i2c_device_probe(struct device *dev)
- {
- 	struct i2c_client	*client = i2c_verify_client(dev);
-@@ -254,6 +270,12 @@ static int i2c_device_probe(struct device *dev)
- 					client->flags & I2C_CLIENT_WAKE);
- 	dev_dbg(dev, "probe\n");
+ }
+ EXPORT_SYMBOL_GPL(of_irq_to_resource_table);
  
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node) {
-+		status = of_i2c_probe(client);
-+		if (status)
-+			return status;
-+	}
-+
- 	status = driver->probe(client, i2c_match_id(driver->id_table, client));
- 	if (status) {
- 		client->driver = NULL;
-@@ -1002,7 +1024,6 @@ static void of_i2c_register_devices(struct i2c_adapter *adap)
- 			continue;
- 		}
+diff --git a/drivers/tty/serial/lantiq.c b/drivers/tty/serial/lantiq.c
+index 88d01e0..e59efdc 100644
+--- a/drivers/tty/serial/lantiq.c
++++ b/drivers/tty/serial/lantiq.c
+@@ -686,7 +686,7 @@ lqasc_probe(struct platform_device *pdev)
  
--		info.irq = irq_of_parse_and_map(node, 0);
- 		info.of_node = of_node_get(node);
- 		info.archdata = &dev_ad;
- 
-@@ -1016,7 +1037,6 @@ static void of_i2c_register_devices(struct i2c_adapter *adap)
- 			dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
- 				node->full_name);
- 			of_node_put(node);
--			irq_dispose_mapping(info.irq);
- 			continue;
- 		}
- 	}
+ 	mmres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	ret = of_irq_to_resource_table(node, irqres, 3);
+-	if (!mmres || (ret != 3)) {
++	if (!mmres || (ret < 0)) {
+ 		dev_err(&pdev->dev,
+ 			"failed to get memory/irq for serial port\n");
+ 		return -ENODEV;
 -- 
 1.8.4
 
