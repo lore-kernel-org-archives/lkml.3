@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab3IRGP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 02:15:57 -0400
-Received: from mail-ye0-f181.google.com ([209.85.213.181]:43443 "EHLO
-	mail-ye0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760Ab3IRGNc (ORCPT
+	id S1751917Ab3IRGVD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 02:21:03 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:57320 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab3IRGVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 02:13:32 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 03/28] of: create unflatten_and_copy_device_tree
-To: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>
-In-Reply-To: <1379372965-22359-4-git-send-email-robherring2@gmail.com>
-References: <1379372965-22359-1-git-send-email-robherring2@gmail.com> <1379372965-22359-4-git-send-email-robherring2@gmail.com>
-Date: Tue, 17 Sep 2013 22:15:51 -0500
-Message-Id: <20130918031551.B301FC42C99@trevor.secretlab.ca>
+	Wed, 18 Sep 2013 02:21:01 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: "memory" binding issues
+To: Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>
+In-Reply-To: <1815499.tpfeUKmP6V@flatron>
+References: <1379300274.4098.77.camel@pasglop> <1379371567.3721.46.camel@pasglop> <CAOesGMgE1jiF5OHsmPQz2z66Bcqu0HeAj=taE1vmFK-0-0s2TQ@mail.gmail.com> <1815499.tpfeUKmP6V@flatron>
+Date: Tue, 17 Sep 2013 18:31:12 -0700
+Message-Id: <20130918013112.1104CC42BDB@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Sep 2013 18:08:59 -0500, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+On Tue, 17 Sep 2013 09:56:39 +0200, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> On Monday 16 of September 2013 15:48:22 Olof Johansson wrote:
+> > On Mon, Sep 16, 2013 at 3:46 PM, Benjamin Herrenschmidt
+> > > On Mon, 2013-09-16 at 10:17 -0600, Stephen Warren wrote:
+> > >> On 09/15/2013 08:57 PM, Benjamin Herrenschmidt wrote:
+> > >> > It should be "/memory@unit-address, this is important because the
+> > >> > Linux
+> > >> > kernel of_find_device_by_path() isn't smart enough to do partial
+> > >> > searches (unlike the real OFW one) and thus to ignore the unit
+> > >> > address
+> > >> > for search purposes, and you *need* the unit address if you have
+> > >> > multiple memory nodes (which you typically do on NUMA machines).
+> > >> 
+> > >> Perhaps /memory should have had a unit-address, but it never has had
+> > >> on
+> > > 
+> > >> ARM; see arch/arm/boot/dts/skeleton.dtsi which says:
+> > > Well, this is a mistake ARM folks might have done from day one but it
+> > > should still be fixed :-)
+> > > 
+> > > A node that has a "reg" property should have the corresponding unit
+> > > address.
+> > 
+> > No, absolutely _NOT_ a requirement. Unit address is only required if
+> > needed to disambiguate two properties with the same name.
+> > 
+> > If there are no ambiguities, then leaving off the unit address is much
+> > preferred.
 > 
-> Several architectures using DT support built-in dtb's in the init
-> section. These platforms need to copy the dtb from init since the
-> strings are referenced after unflattening. Every arch has their own
-> copying routine which do the same thing. Create a common function,
-> unflatten_and_copy_device_tree, to copy the dtb when unflattening the
-> dtb.
+> I'm afraid that I must disagree. For consistency I'd rather go with what 
+> Ben said. Please see ePAPR chapter 2.2.1.1, which clearly defines how 
+> nodes should be named.
 
-This set of changes looks fine by me, but it does raise a question:
-For the platforms using memblock; would it work to use memblock_reserve
-on the region containing the device tree? That would avoid an
-unnecessary copy of the data. Can anyone tell me if it is legal to do a
-memblock_reserve on an __init section?
+Regardless of the ePAPR spec, there is loads of precidence of having a
+single memory node without the unit address, and we have to continue to
+support those device trees. Just do a "git grep 'memory ' arch/*/boot/dts/*"
+to get a big list. You'll note that there are a lot of powerpc matches
+in that list.
 
-Also, I think the patch needs to add documentation for the function that
-states when it is appropriate to use the function, and that it shouldn't
-be used when DT memory has been reserved.
+Similarly, if the kernel chokes on memory node(s) that have the unit
+address then that is a bug and needs to be fixed.
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
-
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> ---
->  drivers/of/fdt.c       | 13 +++++++++++++
->  include/linux/of_fdt.h |  2 ++
->  2 files changed, 15 insertions(+)
-> 
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index 229dd9d..eca1810 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -802,6 +802,19 @@ void __init unflatten_device_tree(void)
->  	of_alias_scan(early_init_dt_alloc_memory_arch);
->  }
->  
-> +void __init unflatten_and_copy_device_tree(void)
-> +{
-> +	int size = __be32_to_cpu(initial_boot_params->totalsize);
-> +	void *dt = early_init_dt_alloc_memory_arch(size,
-> +		__alignof__(struct boot_param_header));
-> +
-> +	if (dt) {
-> +		memcpy(dt, initial_boot_params, size);
-> +		initial_boot_params = dt;
-> +	}
-> +	unflatten_device_tree();
-> +}
-> +
->  #endif /* CONFIG_OF_EARLY_FLATTREE */
->  
->  /* Feed entire flattened device tree into the random pool */
-> diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
-> index a478c62..58c28a8 100644
-> --- a/include/linux/of_fdt.h
-> +++ b/include/linux/of_fdt.h
-> @@ -118,9 +118,11 @@ extern int early_init_dt_scan_root(unsigned long node, const char *uname,
->  
->  /* Other Prototypes */
->  extern void unflatten_device_tree(void);
-> +extern void unflatten_and_copy_device_tree(void);
->  extern void early_init_devtree(void *);
->  #else /* CONFIG_OF_FLATTREE */
->  static inline void unflatten_device_tree(void) {}
-> +static inline void unflatten_and_copy_device_tree(void) {}
->  #endif /* CONFIG_OF_FLATTREE */
->  
->  #endif /* __ASSEMBLY__ */
-> -- 
-> 1.8.1.2
-> 
-
+g.
