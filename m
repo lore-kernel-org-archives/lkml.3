@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635Ab3IRPXx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:23:53 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:32852 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab3IRPXw (ORCPT
+	id S1752602Ab3IRPZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 11:25:27 -0400
+Received: from smtprelay0161.hostedemail.com ([216.40.44.161]:56059 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751613Ab3IRPZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:23:52 -0400
-Message-ID: <1379517828.1522.10.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH 001/007] WAN Drivers: Update farsync driver and
+	Wed, 18 Sep 2013 11:25:25 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3351:3622:3865:4321:4384:5007:7652:8957:10004:10400:10848:11232:11473:11657:11658:11914:12043:12438:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: body65_8643c991c8e2e
+X-Filterd-Recvd-Size: 1772
+Message-ID: <1379517921.1787.24.camel@joe-AO722>
+Subject: Re: [PATCH 002/007] WAN Drivers: Update farsync driver and
  introduce fsflex driver
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Joe Perches <joe@perches.com>
 To: Kevin Curtis <Kevin.Curtis@farsite.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "Dermot Smith" <dermot.smith@farsite.com>
-Date: Wed, 18 Sep 2013 16:23:48 +0100
-In-Reply-To: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA0@SOLO.hq.farsitecommunications.com>
-References: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA0@SOLO.hq.farsitecommunications.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-MIME-Version: 1.0
+        Dermot Smith <dermot.smith@farsite.com>
+Date: Wed, 18 Sep 2013 08:25:21 -0700
+In-Reply-To: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA1@SOLO.hq.farsitecommunications.com>
+References: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA1@SOLO.hq.farsitecommunications.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20158.002
-X-TM-AS-Result: No--19.034500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't use the same subject line for all your patches.  This will be the
-summary of the change in git and it needs to say what the individual
-change does.
-
 On Wed, 2013-09-18 at 11:11 +0100, Kevin Curtis wrote:
 > Farsite Communications FarSync driver update
-> 
-> Patch 1 of 7
->
-> Add new FarSite PCI ID's to the pci_ids.h file
+[]
+> diff -uprN -X linux-3.10.1/Documentation/dontdiff linux-3.10.1/drivers/net/wan/uss_cmn.h linux-3.10.1_new/drivers/net/wan/uss_cmn.h
 
-This is unnecessary unless they will be used in multiple drivers.
+> +typedef enum _USS_COMMANDS {
 
-Ben.
+I think this code would be more linux style
+without all the typedefs
 
-> Signed-off-by: Kevin Curtis <kevin.curtis@farsite.com>
-> 
-> ---
-> 
-> diff -uprN -X linux-3.10.1/Documentation/dontdiff linux-3.10.1/include/linux/pci_ids.h linux-3.10.1_new/include/linux/pci_ids.h
-> --- linux-3.10.1/include/linux/pci_ids.h	2013-07-13 19:42:41.000000000 +0100
-> +++ linux-3.10.1_new/include/linux/pci_ids.h	2013-07-26 11:18:39.821065185 +0100
-> @@ -2284,6 +2284,14 @@
->  #define PCI_DEVICE_ID_FARSITE_T4U       0x0640
->  #define PCI_DEVICE_ID_FARSITE_TE1       0x1610
->  #define PCI_DEVICE_ID_FARSITE_TE1C      0x1612
-> +#define PCI_DEVICE_ID_FARSITE_DSL_S1    0x2610
-> +#define PCI_DEVICE_ID_FARSITE_T4E       0x3640
-> +#define PCI_DEVICE_ID_FARSITE_T4UE      0x4640
-> +#define PCI_DEVICE_ID_FARSITE_T2UE      0x4620
-> +#define PCI_DEVICE_ID_FARSITE_T2U_PMC   0x6620
-> +#define PCI_DEVICE_ID_FARSITE_T2Ee      0x5621
-> +#define PCI_DEVICE_ID_FARSITE_T4Ee      0x5641
-> +
->  
->  #define PCI_VENDOR_ID_ARIMA		0x161f
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +typedef struct {
+[]
+> +} FLEX_SERCONF, *PFLEX_SERCONF;
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+> +typedef struct {
+[]
+> +} FLEX_CARD_INFO, *PFLEX_CARD_INFO;    /* sizeof(FLEX_CARD_INFO) = 128 */
+
+> +typedef struct {
+[]
+> +} FLEX_USB_STATS, *PFLEX_USB_STATS;
+
+> +typedef struct _INTERFACE_RECORD {
+[]
+> +} IR, *PIR;
+
+> +typedef struct _INTERFACE_RECORD_EX {
+[]
+> +} IREX, *PIREX;
+
 
