@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab3IRP5u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:57:50 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:50677 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834Ab3IRP5s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:57:48 -0400
-Message-ID: <1379519865.1522.37.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH 007/007] WAN Drivers: Update farsync driver and
- introduce fsflex driver
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Kevin Curtis <Kevin.Curtis@farsite.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "Dermot Smith" <dermot.smith@farsite.com>
-Date: Wed, 18 Sep 2013 16:57:45 +0100
-In-Reply-To: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA6@SOLO.hq.farsitecommunications.com>
-References: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA6@SOLO.hq.farsitecommunications.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	id S1752327Ab3IRP7T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 11:59:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50577 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751218Ab3IRP7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 11:59:18 -0400
+Date: Wed, 18 Sep 2013 12:58:55 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/4] perf tools: New comm infrastructure
+Message-ID: <20130918155855.GD3891@infradead.org>
+References: <1379017783-27032-1-git-send-email-fweisbec@gmail.com>
+ <20130912203658.GA3216@gmail.com>
+ <20130913124354.GB4844@somewhere>
+ <20130914061148.GF364@gmail.com>
+ <87li2wq9gx.fsf@sejong.aot.lge.com>
+ <20130918142038.GA3891@infradead.org>
+ <20130918151253.GC3891@infradead.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20158.002
-X-TM-AS-Result: No--17.938800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130918151253.GC3891@infradead.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-18 at 11:12 +0100, Kevin Curtis wrote:
-> Farsite Communications FarSync driver update
+Em Wed, Sep 18, 2013 at 12:12:53PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Wed, Sep 18, 2013 at 11:20:38AM -0300, Arnaldo Carvalho de Melo escreveu:
+> > Em Tue, Sep 17, 2013 at 02:54:22PM +0900, Namhyung Kim escreveu:
+> > > On Sat, 14 Sep 2013 08:11:49 +0200, Ingo Molnar wrote:
+> > > > Well, it was the 100,000+ step linear list walk that was causing 90% of 
+> > > > the slowness here. Namhyung's patch should dramatically improve that. I 
+> > > > guess time for someone to post a combined tree so that it can be tested 
+> > > > all together?
+ 
+> Cherry picking just:
 > 
-> Patch 7 of 7
+>     perf callchain: Convert children list to rbtree
 > 
-> Update the help text and description for farsync configuration in the Kernel.
-> Build farsync and fsflex when the farsync driver is selected.
-
-fsflex seems to be an entirely independent module and should have its
-own config option.
-
-Ben.
-
-> Signed-off-by: Kevin Curtis <kevin.curtis@farsite.com>
+> I go from too-long-to-wait to:
 > 
-> ---
-> 
-> diff -uprN -X linux-3.10.1/Documentation/dontdiff linux-3.10.1/drivers/net/wan/Kconfig linux-3.10.1_new/drivers/net/wan/Kconfig
-> --- linux-3.10.1/drivers/net/wan/Kconfig	2013-07-13 19:42:41.000000000 +0100
-> +++ linux-3.10.1_new/drivers/net/wan/Kconfig	2013-07-31 14:11:05.792775800 +0100
-> @@ -248,11 +248,11 @@ config C101
->  	  If unsure, say N.
->  
->  config FARSYNC
-> -	tristate "FarSync T-Series support"
-> +	tristate "FarSync T-Series and Flex support"
->  	depends on HDLC && PCI
->  	---help---
-> -	  Support for the FarSync T-Series X.21 (and V.35/V.24) cards by
-> -	  FarSite Communications Ltd.
-> +	  Support for the FarSync T-Series and FarSync Flex X.21 (and
-> +          V.35/V.24) ports by FarSite Communications Ltd.
->  
->  	  Synchronous communication is supported on all ports at speeds up to
->  	  8Mb/s (128K on V.24) using synchronous PPP, Cisco HDLC, raw HDLC,
-> diff -uprN -X linux-3.10.1/Documentation/dontdiff linux-3.10.1/drivers/net/wan/Makefile linux-3.10.1_new/drivers/net/wan/Makefile
-> --- linux-3.10.1/drivers/net/wan/Makefile	2013-07-13 19:42:41.000000000 +0100
-> +++ linux-3.10.1_new/drivers/net/wan/Makefile	2013-07-26 09:14:15.345354002 +0100
-> @@ -16,7 +16,7 @@ obj-$(CONFIG_HDLC_X25)		+= hdlc_x25.o
->  obj-$(CONFIG_HOSTESS_SV11)	+= z85230.o	hostess_sv11.o
->  obj-$(CONFIG_SEALEVEL_4021)	+= z85230.o	sealevel.o
->  obj-$(CONFIG_COSA)		+= cosa.o
-> -obj-$(CONFIG_FARSYNC)		+= farsync.o
-> +obj-$(CONFIG_FARSYNC)		+= farsync.o fsflex.o
->  obj-$(CONFIG_DSCC4)             += dscc4.o
->  obj-$(CONFIG_X25_ASY)		+= x25_asy.o
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> [root@sandy ~]# echo performance > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
+> [acme@sandy linux]$ taskset -c 3 perf stat --null --sync --repeat 3 perf report -i perf.data.make-j8-kernel > /dev/null
+ 
+>  Performance counter stats for 'perf report -i perf.data.make-j8-kernel' (3 runs):
+>       79.158464654 seconds time elapsed                                          ( +-  0.15% )
+ 
+> [acme@sandy linux]$
+> [acme@sandy linux]$ ls -lah perf.data.make-j8-kernel 
+> -rw-------. 1 acme acme 2.3G Sep 16 11:56 perf.data.make-j8-kernel
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+And with the others, fixed up to cope with PERF_RECORD_MMAP2, except the
+progress bar updating:
 
+[acme@sandy linux]$ taskset -c 3 perf stat --null --sync --repeat 3 perf report -i perf.data.make-j8-kernel > /dev/null
+
+ Performance counter stats for 'perf report -i perf.data.make-j8-kernel' (3 runs):
+
+      55.697701530 seconds time elapsed                                          ( +-  0.13% )
+
+[acme@sandy linux]$
+
+Branch perf/callchain-v4 on my tree.
+
+- Arnaldo
