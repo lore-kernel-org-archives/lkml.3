@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545Ab3IRODK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 10:03:10 -0400
-Received: from gmmr8.centrum.cz ([46.255.227.254]:48300 "EHLO gmmr8.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab3IRODH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 10:03:07 -0400
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
-Date: Wed, 18 Sep 2013 16:03:04 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
-        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
-        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <20130916134014.GA3674@dhcp22.suse.cz>, <20130916160119.2E76C2A1@pobox.sk>, <20130916140607.GC3674@dhcp22.suse.cz>, <20130916161316.5113F6E7@pobox.sk>, <20130916145744.GE3674@dhcp22.suse.cz>, <20130916170543.77F1ECB4@pobox.sk>, <20130916152548.GF3674@dhcp22.suse.cz>, <20130916225246.A633145B@pobox.sk>, <20130917000244.GD3278@cmpxchg.org>, <20130917131535.94E0A843@pobox.sk> <20130917141013.GA30838@dhcp22.suse.cz>
-In-Reply-To: <20130917141013.GA30838@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1751869Ab3IROF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 10:05:57 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:53932 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab3IROFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 10:05:55 -0400
+Date: Wed, 18 Sep 2013 07:05:49 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] modpost: Fix secondary errors seen if a single module
+ build fails
+Message-ID: <20130918140549.GA15490@roeck-us.net>
+References: <1379219942-31545-1-git-send-email-linux@roeck-us.net>
+ <52384C72.4040403@suse.cz>
 MIME-Version: 1.0
-Message-Id: <20130918160304.6EDF2729@pobox.sk>
-X-Maser: oho
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52384C72.4040403@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
->On Tue 17-09-13 13:15:35, azurIt wrote:
->[...]
->> Is something unusual on this stack?
->> 
->> 
->> [<ffffffff810d1a5e>] dump_header+0x7e/0x1e0
->> [<ffffffff810d195f>] ? find_lock_task_mm+0x2f/0x70
->> [<ffffffff810d1f25>] oom_kill_process+0x85/0x2a0
->> [<ffffffff810d24a8>] mem_cgroup_out_of_memory+0xa8/0xf0
->> [<ffffffff8110fb76>] mem_cgroup_oom_synchronize+0x2e6/0x310
->> [<ffffffff8110efc0>] ? mem_cgroup_uncharge_page+0x40/0x40
->> [<ffffffff810d2703>] pagefault_out_of_memory+0x13/0x130
->> [<ffffffff81026f6e>] mm_fault_error+0x9e/0x150
->> [<ffffffff81027424>] do_page_fault+0x404/0x490
->> [<ffffffff810f952c>] ? do_mmap_pgoff+0x3dc/0x430
->> [<ffffffff815cb87f>] page_fault+0x1f/0x30
->
->This is a regular memcg OOM killer. Which dumps messages about what is
->going to do. So no, nothing unusual, except if it was like that for ever
->which would mean that oom_kill_process is in the endless loop. But a
->single stack doesn't tell us much.
->
->Just a note. When you see something hogging a cpu and you are not sure
->whether it might be in an endless loop inside the kernel it makes sense
->to take several snaphosts of the stack trace and see if it changes. If
->not and the process is not sleeping (there is no schedule on the trace)
->then it might be looping somewhere waiting for Godot. If it is sleeping
->then it is slightly harder because you would have to identify what it is
->waiting for which requires to know a deeper context.
->-- 
->Michal Hocko
->SUSE Labs
+On Tue, Sep 17, 2013 at 02:34:58PM +0200, Michal Marek wrote:
+> Dne 15.9.2013 06:39, Guenter Roeck napsal(a):
+> > Commit ea4054a23 (modpost: handle huge numbers of modules) added
+> > support for building a large number of modules.
+> > 
+> > Unfortunately, the commit changed the semantics of the makefile: Instead of
+> > passing only existing object files to modpost, make now passes all expected
+> > object files. If make was started with option -i, this results in a modpost
+> > error if a single file failed to build.
+> > 
+> > Example with the current btrfs build falure on m68k:
+> > 
+> > fs/btrfs/btrfs.o: No such file or directory
+> > make[1]: [__modpost] Error 1 (ignored)
+> > 
+> > This error is followed by lots of errors such as:
+> > 
+> > m68k-linux-gcc: error: arch/m68k/emu/nfcon.mod.c: No such file or directory
+> > m68k-linux-gcc: fatal error: no input files
+> > compilation terminated.
+> > make[1]: [arch/m68k/emu/nfcon.mod.o] Error 1 (ignored)
+> > 
+> > This doesn't matter much for normal builds, but it is annoying for builds
+> > started with "make -i" due to the large number of secondary errors.
+> > Those errors unnececessarily clog any error log and make it difficult
+> > to find the real errors in the build.
+> > 
+> > Fix the problem by only passing existing object files to modpost.
+> > 
+> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > ---
+> >  scripts/Makefile.modpost |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
+> > index 8dcdca2..387c806 100644
+> > --- a/scripts/Makefile.modpost
+> > +++ b/scripts/Makefile.modpost
+> > @@ -81,7 +81,8 @@ modpost = scripts/mod/modpost                    \
+> >  
+> >  # We can go over command line length here, so be careful.
+> >  quiet_cmd_modpost = MODPOST $(words $(filter-out vmlinux FORCE, $^)) modules
+> > -      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$$/.o/' | $(modpost) -s -T -
+> > +      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$$/.o/' | \
+> > +	while read a; do [ -f $$a ] && echo $$a; done | $(modpost) -s -T -
+> 
+> Can you do this filtering only if make -i is used ('i' is present in
+> $(MAKEFLAGS)), to not hide potential buildsystem bugs? Regarding shell
+> loop vs. ls, maybe the cleanest way would be to add an option to modpost
+> to ignore missing files.
+> 
+To follow up on this - are you at the Linux Plumbers conference ?
+If yes maybe we can meet briefly and discuss how to proceed.
+I'd volunteer to create a patch to add the above functionality if
+people think it is valuable, but I would like to keep it as
+separate patch.
 
-
-
-I was finally able to get stack of problematic process :) I saved it two times from the same process, as Michal suggested (i wasn't able to take more). Here it is:
-
-First (doesn't look very helpfull):
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-
-Second:
-[<ffffffff810e17d1>] shrink_zone+0x481/0x650
-[<ffffffff810e2ade>] do_try_to_free_pages+0xde/0x550
-[<ffffffff810e310b>] try_to_free_pages+0x9b/0x120
-[<ffffffff81148ccd>] free_more_memory+0x5d/0x60
-[<ffffffff8114931d>] __getblk+0x14d/0x2c0
-[<ffffffff8114c973>] __bread+0x13/0xc0
-[<ffffffff811968a8>] ext3_get_branch+0x98/0x140
-[<ffffffff81197497>] ext3_get_blocks_handle+0xd7/0xdc0
-[<ffffffff81198244>] ext3_get_block+0xc4/0x120
-[<ffffffff81155b8a>] do_mpage_readpage+0x38a/0x690
-[<ffffffff81155ffb>] mpage_readpages+0xfb/0x160
-[<ffffffff811972bd>] ext3_readpages+0x1d/0x20
-[<ffffffff810d9345>] __do_page_cache_readahead+0x1c5/0x270
-[<ffffffff810d9411>] ra_submit+0x21/0x30
-[<ffffffff810cfb90>] filemap_fault+0x380/0x4f0
-[<ffffffff810ef908>] __do_fault+0x78/0x5a0
-[<ffffffff810f2b24>] handle_pte_fault+0x84/0x940
-[<ffffffff810f354a>] handle_mm_fault+0x16a/0x320
-[<ffffffff8102715b>] do_page_fault+0x13b/0x490
-[<ffffffff815cb87f>] page_fault+0x1f/0x30
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-
-What do you think about it?
-
-azur
+Thanks,
+Guenter
