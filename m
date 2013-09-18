@@ -1,81 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab3IRXJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 19:09:29 -0400
-Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:27295
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751607Ab3IRXJ1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 19:09:27 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dIc89bh936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh906i1155h192ch)
-Date: Wed, 18 Sep 2013 16:09:14 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Joe Perches <joe@perches.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Hyun Kwon <hyunk@xilinx.com>
-Subject: Re: [PATCH v2] clk: si570: Add a driver for SI570 oscillators
-References: <1379544219-23579-1-git-send-email-soren.brinkmann@xilinx.com>
- <1379545361.1787.87.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1379545361.1787.87.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <0da25c5c-660c-4836-8179-6e7c51fd0d9f@CO9EHSMHS005.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1752125Ab3IRXOW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 19:14:22 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:49655 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681Ab3IRXOU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 19:14:20 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>
+Subject: [PATCH 2/2] x86_64: Add safe check in a.out loaders and some coding style
+Date: Wed, 18 Sep 2013 20:12:27 -0300
+Message-Id: <1379545947-9377-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 04:02:41PM -0700, Joe Perches wrote:
-> On Wed, 2013-09-18 at 15:43 -0700, Soren Brinkmann wrote:
-> > Add a driver for SILabs 570, 571, 598, 599 programmable oscillators.
-> > The devices generate low-jitter clock signals and are reprogrammable via
-> > an I2C interface.
-> []
-> > v2:
-> []
-> >  - use 10000 as MIN and MAX value in usleep_range
-> []
-> > diff --git a/drivers/clk/clk-si570.c b/drivers/clk/clk-si570.c
-> []
-> > +static int si570_set_frequency(struct clk_si570 *data, unsigned long frequency)
-> > +{
-> []
-> > +	/* Applying a new frequency can take up to 10ms */
-> > +	usleep_range(10000, 10000);
-> 
-> Generally it's nicer to have an actual range for usleep_range.
-Well, as I said in the discussion with Guenther. I'm flexible and nobody
-objected when I said to make both equal. A real range doesn't make sense
-here though, but I don't know what's common practice for cases like
-this.
+ia32_aout had no safe checks concerning the mmap and f_op in this module.
+It's not necessary to verify f_op in the load_aout_library, since the
+prior kernel_read/vfs_read function already does.
+Coding style and printks fixes.
 
-> 
-> Is there a bit you could periodically poll to see
-> if the new frequency has been set or is stable so
-> that a 10ms delay isn't always used?
+Tested using qemu, a handcrafted a.out binary and a a.out linked with a
+cross-compiled ld.
 
-Unfortunately not. The data sheet describes one bit which is cleared
-when the new frequency configuration is applied, but it seems to be
-cleared before the output is actually stable/enabled. At least our
-testing failed when some driver changed the frequency and continued
-operation w/o this additional delay.
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ arch/x86/ia32/ia32_aout.c | 51 +++++++++++++++++++++++------------------------
+ 1 file changed, 25 insertions(+), 26 deletions(-)
 
-	Sören
-
+diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
+index bae3aba..a5f3e66 100644
+--- a/arch/x86/ia32/ia32_aout.c
++++ b/arch/x86/ia32/ia32_aout.c
+@@ -24,7 +24,7 @@
+ #include <linux/binfmts.h>
+ #include <linux/personality.h>
+ #include <linux/init.h>
+-#include <linux/jiffies.h>
++#include <linux/ratelimit.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/pgalloc.h>
+@@ -271,10 +271,17 @@ static int load_aout_binary(struct linux_binprm *bprm)
+ 	     N_MAGIC(ex) != QMAGIC && N_MAGIC(ex) != NMAGIC) ||
+ 	    N_TRSIZE(ex) || N_DRSIZE(ex) ||
+ 	    i_size_read(file_inode(bprm->file)) <
+-	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
++	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+ 		return -ENOEXEC;
+ 	}
+ 
++	/*
++	 * Requires a mmap handler. This prevents people from using a.out
++	 * as part of an exploit attack against /proc-related vulnerabilities.
++	 */
++	if (!bprm->file->f_op || !bprm->file->f_op->mmap)
++		return -ENOEXEC;
++
+ 	fd_offset = N_TXTOFF(ex);
+ 
+ 	/* Check initial limits. This avoids letting people circumvent
+@@ -339,25 +346,16 @@ static int load_aout_binary(struct linux_binprm *bprm)
+ 		}
+ 	} else {
+ #ifdef WARN_OLD
+-		static unsigned long error_time, error_time2;
+ 		if ((ex.a_text & 0xfff || ex.a_data & 0xfff) &&
+-		    (N_MAGIC(ex) != NMAGIC) &&
+-				time_after(jiffies, error_time2 + 5*HZ)) {
+-			printk(KERN_NOTICE "executable not page aligned\n");
+-			error_time2 = jiffies;
+-		}
++		    (N_MAGIC(ex) != NMAGIC))
++			pr_notice_ratelimited("executable not page aligned\n");
+ 
+-		if ((fd_offset & ~PAGE_MASK) != 0 &&
+-			    time_after(jiffies, error_time + 5*HZ)) {
+-			printk(KERN_WARNING
+-			       "fd_offset is not page aligned. Please convert "
+-			       "program: %s\n",
+-			       bprm->file->f_path.dentry->d_name.name);
+-			error_time = jiffies;
+-		}
++		if ((fd_offset & ~PAGE_MASK) != 0)
++			pr_warn_ratelimited("fd_offset is not page aligned. Please convert program: %s\n",
++					    bprm->file->f_path.dentry->d_name.name);
+ #endif
+ 
+-		if (!bprm->file->f_op->mmap || (fd_offset & ~PAGE_MASK) != 0) {
++		if ((fd_offset & ~PAGE_MASK) != 0) {
+ 			vm_brk(N_TXTADDR(ex), ex.a_text+ex.a_data);
+ 			read_code(bprm->file, N_TXTADDR(ex), fd_offset,
+ 					ex.a_text+ex.a_data);
+@@ -424,10 +422,17 @@ static int load_aout_library(struct file *file)
+ 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != QMAGIC) || N_TRSIZE(ex) ||
+ 	    N_DRSIZE(ex) || ((ex.a_entry & 0xfff) && N_MAGIC(ex) == ZMAGIC) ||
+ 	    i_size_read(file_inode(file)) <
+-	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
++	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+ 		goto out;
+ 	}
+ 
++	/*
++	 * Requires a mmap handler. This prevents people from using a.out
++	 * as part of an exploit attack against /proc-related vulnerabilities.
++	 */
++	if (!file->f_op->mmap)
++		goto out;
++
+ 	if (N_FLAGS(ex))
+ 		goto out;
+ 
+@@ -438,14 +443,8 @@ static int load_aout_library(struct file *file)
+ 
+ 	if ((N_TXTOFF(ex) & ~PAGE_MASK) != 0) {
+ #ifdef WARN_OLD
+-		static unsigned long error_time;
+-		if (time_after(jiffies, error_time + 5*HZ)) {
+-			printk(KERN_WARNING
+-			       "N_TXTOFF is not page aligned. Please convert "
+-			       "library: %s\n",
+-			       file->f_path.dentry->d_name.name);
+-			error_time = jiffies;
+-		}
++		pr_warn_ratelimited("N_TXTOFF is not page aligned. Please convert library: %s\n",
++				    file->f_path.dentry->d_name.name);
+ #endif
+ 		vm_brk(start_addr, ex.a_text + ex.a_data + ex.a_bss);
+ 
+-- 
+1.8.4
 
