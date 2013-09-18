@@ -1,184 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab3IRO4H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 10:56:07 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:6063 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab3IRO4E (ORCPT
+	id S1752985Ab3IRO4u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 10:56:50 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:51643 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab3IRO4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 10:56:04 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 18 Sep 2013 07:52:42 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: [PATCH 10/12] clk: tegra: move fixed clocks to common file
-Date: Wed, 18 Sep 2013 17:41:02 +0300
-Message-ID: <1379515331-19427-11-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	Wed, 18 Sep 2013 10:56:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130917211317.GB6537@quack.suse.cz>
+References: <CAJd=RBBbJMWox5yJaNzW_jUdDfKfWe-Y7d1riYdN6huQStxzcA@mail.gmail.com>
+ <CAOMqctQyS2SFraqJpzE0sRFcihFpMHRhT+3QuZhxft=SUXYVDw@mail.gmail.com>
+ <CAOMqctQ+XchmXk_Xno6ViAoZF-tHFPpDWoy7LVW1nooa+ywbmg@mail.gmail.com>
+ <CAOMqctT2u7E0kwpm052B9pkNo4D=sYHO+Vk=P_TziUb5KvTMKA@mail.gmail.com> <20130917211317.GB6537@quack.suse.cz>
+From: Michal Suchanek <hramrach@gmail.com>
+Date: Wed, 18 Sep 2013 16:56:08 +0200
+Message-ID: <CAOMqctT5Wi_Y9ODAnoG-RQiO1oJ+yKR=LnF21swuupyLShL=+w@mail.gmail.com>
+Subject: Re: doing lots of disk writes causes oom killer to kill processes
+To: Jan Kara <jack@suse.cz>
+Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new file for fixed clocks common between several Tegra
-SoCs and move Tegra114 to this new infrastructure.
+On 17 September 2013 23:13, Jan Kara <jack@suse.cz> wrote:
+>   Hello,
+>
+> On Tue 17-09-13 15:31:31, Michal Suchanek wrote:
+>> On 5 September 2013 12:12, Michal Suchanek <hramrach@gmail.com> wrote:
+>> > On 26 August 2013 15:51, Michal Suchanek <hramrach@gmail.com> wrote:
+>> >> On 12 March 2013 03:15, Hillf Danton <dhillf@gmail.com> wrote:
+>> >>>>On 11 March 2013 13:15, Michal Suchanek <hramrach@gmail.com> wrote:
+>> >>>>>On 8 February 2013 17:31, Michal Suchanek <hramrach@gmail.com> wrote:
+>> >>>>> Hello,
+>> >>>>>
+>> >>>>> I am dealing with VM disk images and performing something like wiping
+>> >>>>> free space to prepare image for compressing and storing on server or
+>> >>>>> copying it to external USB disk causes
+>> >>>>>
+>> >>>>> 1) system lockup in order of a few tens of seconds when all CPU cores
+>> >>>>> are 100% used by system and the machine is basicaly unusable
+>> >>>>>
+>> >>>>> 2) oom killer killing processes
+>> >>>>>
+>> >>>>> This all on system with 8G ram so there should be plenty space to work with.
+>> >>>>>
+>> >>>>> This happens with kernels 3.6.4 or 3.7.1
+>> >>>>>
+>> >>>>> With earlier kernel versions (some 3.0 or 3.2 kernels) this was not a
+>> >>>>> problem even with less ram.
+>> >>>>>
+>> >>>>> I have  vm.swappiness = 0 set for a long  time already.
+>> >>>>>
+>> >>>>>
+>> >>>>I did some testing with 3.7.1 and with swappiness as much as 75 the
+>> >>>>kernel still causes all cores to loop somewhere in system when writing
+>> >>>>lots of data to disk.
+>> >>>>
+>> >>>>With swappiness as much as 90 processes still get killed on large disk writes.
+>> >>>>
+>> >>>>Given that the max is 100 the interval in which mm works at all is
+>> >>>>going to be very narrow, less than 10% of the paramater range. This is
+>> >>>>a severe regression as is the cpu time consumed by the kernel.
+>> >>>>
+>> >>>>The io scheduler is the default cfq.
+>> >>>>
+>> >>>>If you have any idea what to try other than downgrading to an earlier
+>> >>>>unaffected kernel I would like to hear.
+>> >>>>
+>> >>> Can you try commit 3cf23841b4b7(mm/vmscan.c: avoid possible
+>> >>> deadlock caused by too_many_isolated())?
+>> >>>
+>> >>> Or try 3.8 and/or 3.9, additionally?
+>> >>>
+>> >>
+>> >> Hello,
+>> >>
+>> >> with deadline IO scheduler I experience this issue less often but it
+>> >> still happens.
+>> >>
+>> >> I am on 3.9.6 Debian kernel so 3.8 did not fix this problem.
+>> >>
+>> >> Do you have some idea what to log so that useful information about the
+>> >> lockup is gathered?
+>> >>
+>> >
+>> > This appears to be fixed in vanilla 3.11 kernel.
+>> >
+>> > I still get short intermittent lockups and cpu usage spikes up to 20%
+>> > on a core but nowhere near the minute+ long lockups with all cores
+>> > 100% on earlier kernels.
+>> >
+>>
+>> So I did more testing on the 3.11 kernel and while it works OK with
+>> tar you can get severe lockups with mc or kvm. The difference is
+>> probably the fact that sane tools do fsync() on files they close
+>> forcing the file to write out and the kernel returning possible write
+>> errors before they move on to next file.
+>   Sorry for chiming in a bit late. But is this really writing to a normal
+> disk? SATA drive or something else?
+>
+>> With kvm writing to a file used as virtual disk the system would stall
+>> indefinitely until the disk driver in the emulated system would time
+>> out, return disk IO error, and the emulated system would stop writing.
+>> In top I see all CPU cores 90%+ in wait. System is unusable. With mc
+>> the lockups would be indefinite, probably because there is no timeout
+>> on writing a file in mc.
+>>
+>> I tried tuning swappiness and eleveators but the the basic problem is
+>> solved by neither: the dirty buffers fill up memory and system stalls
+>> trying to resolve the situation.
+>   This is really strange. There is /proc/sys/vm/dirty_ratio, which limits
+> amount of dirty memory. By default it is set to 20% of memory which tends
+> to be too much for 8 GB machine. Can you set it to something like 5% and
+> /proc/sys/vm/dirty_background_ratio to 2%? That would be more appropriate
+> sizing (assuming standard SATA drive). Does it change anything?
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/Makefile          |    1 +
- drivers/clk/tegra/clk-tegra-fixed.c |   62 +++++++++++++++++++++++++++++++++++
- drivers/clk/tegra/clk-tegra114.c    |   26 +--------------
- drivers/clk/tegra/clk.h             |    1 +
- 4 files changed, 65 insertions(+), 25 deletions(-)
- create mode 100644 drivers/clk/tegra/clk-tegra-fixed.c
+The default for dirty_ratio/dirty_background_ratio is 60/40. Setting
+these to 5/2 gives about the same result as running the script that
+syncs every 5s. Setting to 30/10 gives larger data chunks and
+intermittent lockup before every chunk is written.
 
-diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
-index f415246..a02e9a9 100644
---- a/drivers/clk/tegra/Makefile
-+++ b/drivers/clk/tegra/Makefile
-@@ -9,6 +9,7 @@ obj-y					+= clk-super.o
- obj-y					+= clk-tegra-audio.o
- obj-y					+= clk-tegra-periph.o
- obj-y					+= clk-tegra-pmc.o
-+obj-y					+= clk-tegra-fixed.o
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clk-tegra20.o
- obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += clk-tegra30.o
- obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= clk-tegra114.o
-diff --git a/drivers/clk/tegra/clk-tegra-fixed.c b/drivers/clk/tegra/clk-tegra-fixed.c
-new file mode 100644
-index 0000000..252d710
---- /dev/null
-+++ b/drivers/clk/tegra/clk-tegra-fixed.c
-@@ -0,0 +1,62 @@
-+/*
-+ * Copyright (c) 2012, 2013, NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/delay.h>
-+#include <linux/export.h>
-+#include <linux/clk/tegra.h>
-+
-+#include "clk.h"
-+#include "clk-id.h"
-+
-+void __init tegra_fixed_clk_init(struct tegra_clk *tegra_clks)
-+{
-+	struct clk *clk;
-+	struct clk **dt_clk;
-+
-+	/* clk_32k */
-+	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_32k, tegra_clks);
-+	if (dt_clk) {
-+		clk = clk_register_fixed_rate(NULL, "clk_32k", NULL,
-+					CLK_IS_ROOT, 32768);
-+		clk_register_clkdev(clk, "clk_32k", NULL);
-+		*dt_clk = clk;
-+	}
-+
-+	/* clk_m_div2 */
-+	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_m_div2, tegra_clks);
-+	if (dt_clk) {
-+		clk = clk_register_fixed_factor(NULL, "clk_m_div2", "clk_m",
-+					CLK_SET_RATE_PARENT, 1, 2);
-+		clk_register_clkdev(clk, "clk_m_div2", NULL);
-+		*dt_clk = clk;
-+	}
-+
-+	/* clk_m_div4 */
-+	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_m_div4, tegra_clks);
-+	if (dt_clk) {
-+		clk = clk_register_fixed_factor(NULL, "clk_m_div4", "clk_m",
-+					CLK_SET_RATE_PARENT, 1, 4);
-+		clk_register_clkdev(clk, "clk_m_div4", NULL);
-+		*dt_clk = clk;
-+	}
-+}
-+
-diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index 19cd57b..2598477 100644
---- a/drivers/clk/tegra/clk-tegra114.c
-+++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -827,30 +827,6 @@ static int __init tegra114_osc_clk_init(void __iomem *clk_base)
- 	return 0;
- }
- 
--static void __init tegra114_fixed_clk_init(void __iomem *clk_base)
--{
--	struct clk *clk;
--
--	/* clk_32k */
--	clk = clk_register_fixed_rate(NULL, "clk_32k", NULL, CLK_IS_ROOT,
--				      32768);
--	clk_register_clkdev(clk, "clk_32k", NULL);
--	clks[TEGRA114_CLK_CLK_32K] = clk;
--
--	/* clk_m_div2 */
--	clk = clk_register_fixed_factor(NULL, "clk_m_div2", "clk_m",
--					CLK_SET_RATE_PARENT, 1, 2);
--	clk_register_clkdev(clk, "clk_m_div2", NULL);
--	clks[TEGRA114_CLK_CLK_M_DIV2] = clk;
--
--	/* clk_m_div4 */
--	clk = clk_register_fixed_factor(NULL, "clk_m_div4", "clk_m",
--					CLK_SET_RATE_PARENT, 1, 4);
--	clk_register_clkdev(clk, "clk_m_div4", NULL);
--	clks[TEGRA114_CLK_CLK_M_DIV4] = clk;
--
--}
--
- static __init void tegra114_utmi_param_configure(void __iomem *clk_base)
- {
- 	u32 reg;
-@@ -1434,7 +1410,7 @@ static void __init tegra114_clock_init(struct device_node *np)
- 	if (tegra114_osc_clk_init(clk_base) < 0)
- 		return;
- 
--	tegra114_fixed_clk_init(clk_base);
-+	tegra_fixed_clk_init(tegra114_clks);
- 	tegra114_pll_init(clk_base, pmc_base);
- 	tegra114_periph_clk_init(clk_base, pmc_base);
- 	tegra_audio_clk_init(clk_base, pmc_base, tegra114_clks, NULL);
-diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index 3ce60c2..1f24f2a 100644
---- a/drivers/clk/tegra/clk.h
-+++ b/drivers/clk/tegra/clk.h
-@@ -609,6 +609,7 @@ void tegra_audio_clk_init(void __iomem *clk_base,
- void tegra_periph_clk_init(void __iomem *clk_base, void __iomem *pmc_base,
- 			struct tegra_clk *tegra_clks);
- void tegra_pmc_clk_init(void __iomem *pmc_base, struct tegra_clk *tegra_clks);
-+void tegra_fixed_clk_init(struct tegra_clk *tegra_clks);
- 
- void tegra114_clock_tune_cpu_trimmers_high(void);
- void tegra114_clock_tune_cpu_trimmers_low(void);
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+It is quite possible to set kernel parameters that kill the kernel but
 
+1) this is the default
+2) the parameter is set in units that do not prevent the issue in
+general (% RAM vs #blocks)
+3) WTH is the system doing? It's 4core 3GHz cpu so it can handle
+traversing a structure holding 800M data in the background. Something
+is seriously rotten somewhere.
+
+Thanks
+
+Michal
