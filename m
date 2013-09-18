@@ -1,173 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab3IRIV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 04:21:57 -0400
-Received: from gate.crashing.org ([63.228.1.57]:58749 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751676Ab3IRIVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 04:21:52 -0400
-Message-ID: <1379492496.6148.35.camel@pasglop>
-Subject: Re: "memory" binding issues
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        m.szyprowski@samsung.com, swarren@nvidia.com, rob.herring@calxeda.com
-Date: Wed, 18 Sep 2013 18:21:36 +1000
-In-Reply-To: <20130918025714.A69D8C42C8F@trevor.secretlab.ca>
-References: <1379300274.4098.77.camel@pasglop>
-	 <20130918025714.A69D8C42C8F@trevor.secretlab.ca>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752068Ab3IRIcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 04:32:04 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42725 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab3IRIcB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 04:32:01 -0400
+Date: Wed, 18 Sep 2013 10:31:55 +0200
+From: Markus Pargmann <mpa@pengutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: dev->of_node overwrite can cause device loading with different
+ driver
+Message-ID: <20130918083155.GB10126@pengutronix.de>
+References: <20130913155331.GC14456@pengutronix.de>
+ <20130913171046.GA26207@kroah.com>
+ <20130914071653.GA26512@pengutronix.de>
+ <20130914121729.GA7823@kroah.com>
+ <20130914122809.GI12758@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130914122809.GI12758@n2100.arm.linux.org.uk>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:49:53 up 23 days, 18:20, 49 users,  load average: 0.01, 0.04,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: mpa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-17 at 21:57 -0500, Grant Likely wrote:
-
-> >  - It provides no indication of what a given region is used for (or used
-> > by). In the example, "display_region" is a label (thus information that
-> > is lost) and unless it's referenced by another node there is no good way
-> > to know what this region is about which is quite annoying.
+On Sat, Sep 14, 2013 at 01:28:09PM +0100, Russell King - ARM Linux wrote:
+> On Sat, Sep 14, 2013 at 05:17:29AM -0700, Greg Kroah-Hartman wrote:
+> > On Sat, Sep 14, 2013 at 09:16:53AM +0200, Markus Pargmann wrote:
+> > > 3. We could fix up all drivers that change the of_node. But there are
+> > >    ARM DT frameworks that require a device struct as parameter instead
+> > >    of a device_node parameter (e.g. soc-generic-dmaengine-pcm). So a
+> > >    driver core, initialized by a glue driver with DT bindings, has to
+> > >    set dev->of_node to use those frameworks. I think it is strange to
+> > >    have such DT framework interfaces if a driver is not supposed to
+> > >    overwrite dev->of_node permanently.
+> > 
+> > How about any driver that does muck with this structure, restore it
+> > properly if their probe() function fails?  Yes, you show that this is
+> > going to be tricky in some places (i.e. musb), but it makes sense that
+> > the burden of fixing this issue would rest on them, as they are the ones
+> > causing this problem, right?
 > 
-> Does this actually matter? In most cases the regions are completely
-> anonymous until referenced by a specific device and by default the
-> kernel should not use until it knows what the region is for.
+> It's not about overwriting at all.
 
-First it's handy for the developer to know for
-debug/diagnostic/you-name-it purposes. You don't always know what the
-heck the firmware is doing and there are some cases where such regions
-exist independently of any specific device.
+musb does not overwrite of_node, but other drivers do, e.g. USB chipidea
+core driver which uses its parent of_node. When probe fails in this
+case, we could end up with similar issues.
 
-The ability of the node of the driver to have a phandle pointing to a is
-indeed a nice feature and that's a good point in favor of making them
-nodes. But I would be against *requiring* it.
+Regards,
 
-I might have some architecture code that knows that this region is for
-use by some internal DMA translation cache or god knows what without
-having a clear device node as the "owner" of the region, there are going
-to be a few special cases like that and we still want to be able to
-identify it.
+Markus
 
-So I would definitely want them named. Guess what ? They are all
-children of /reserved-memory right ? So their individual name doesn't
-matter one bit, thus the node name can perfectly well serve that
-purpose.
-
-> We can however add properties to give the kernel hints on the usage. For
-> instance, if a regions isn't in use at boot time, then it would be fine
-> for the kernel to use it for movable pages up until the time a device
-> asks for the region (ie. CMA regions can be used this way).
-
-Let's not get into something overly Linux-centric though...
-
-> >  - The "memory-region" property is a phandle to a "reserved-memory"
-> > region, this is not intuitive. If anything, the property should have
-> > been called "reserved-memory-region".
 > 
-> Sure. I don't see the problem, but I have no problem changing it if you
-> feel strongly about it.
-
-Well it all boils down to whether we turn that whole thing into a way to
-describe arbitrary memory regions (and not just reserved ones), for
-example, CMA stuff as mentioned above doesn't strictly need to be
-reserved, in which case, we would call the whole thing /memory-regions
-and the property could be named the same. In that case we do want a
-specific property however in each region node to indicate whether it
-should be strictly reserved or not.
-
-But I would argue against that unless we have a very clear use case,
-because it's starting to smell a lot like trying to solve world hunger
-with over engineering :-)
- 
-> >  - The way the "compatible" property is documented breaks a basic
-> > premise that the device-tree is a hardware description and not some
-> > convenient way to pass linux specific kernel parameters accross. It is
-> > *ok* to pass some linux specific stuff and to make compromise based on
-> > what a driver generally might expect but the whole business of using
-> > that to describe what to put in CMA is pushing it pretty far ...
+> It's quite simple:
 > 
-> I disagree. Originally I had the same reaction, but I've been swayed to
-> the point of view that setting aside regions is actually a pretty
-> hardware-centric thing because it describes how the hardware needs to be
-> used.
-
-I would still not use the "compatible" property for that. Maybe
-recommended-usage ? Or simply "usage" property with well defined
-semantics ? "reserved" would be one, "consistent-memory" would be
-another (not strictly reserved but thrown into the CMA pool at first
-notice) etc... ?
-
->  I've already used the example of a framebuffer. It may not stricly
-> be hardware, but it is a description of how the hardware is setup that
-> the kernel should respect. Similarly, the size and placement of CMA
-> regions are more than merely a software parameter because they are
-> defined specifically to support the hardware devices.
-
-Right and the advantage of using a node with a "reg" property here is
-that a region can actually be made of separate ranges.
-
-> >  - The implementation of early_init_dt_scan_reserved_mem() will not work
-> > on a setup whose /memory node has a unit address (typically /memory@0)
+> 1. OF creates a platform device and attaches an of_node to it.
+> 2. This platform device is matched using the data in the of_node structure
+>    against one of the MUSB stub drivers.
+> 3. The MUSB stub driver creates a new platform device, and copies the
+>    of_node to it, and registers it.
+> 4. This new platform device _can_ itself be matched against the stub
+>    driver using the of_node structure.  When this happens, go to step
+>    2 and repeat 2-4.
 > 
-> Agreed, that should be fixed. It should work regardless of whether or
-> not the memory node(s) have a unit address.
+> That's where the problem is - it's not about overwriting an existing
+> platform device's of_node pointer with something that the driver has
+> dreamt up at all.
 > 
-> > Now, I'd like to understand why not use the simpler binding originally
-> > proposed by Jeremy, which had the advantage of proposing a unique name
-> > per region in the traditional form "vendor,name", which then allows
-> > drivers to pick up the region directly if they wish to query, remove or
-> > update it in the tree for example (because they changed the framebuffer
-> > address for example and want kexec to continue working).
+> If we're lucky, step 3.5 would be "match against the 'musb-hdrc' driver
+> and successfully probe it" which is the only thing that would break
+> the above loop.
 > 
-> Hmmm... I don't follow. How is query/remove/update any more or less
-> difficult between the two approaches? Updating the reg property should
-> be doable in-place with both methods, but finding a specific region
-> associated with a device is explicit in the nodes-and-phandles approach.
-> (unless the 'name' part of vendor,name is an instance name and the
-> device node has a property containing the name; ie "acme,framebuffer1",
-> "acme,framebuffer2", and then in the device node something like:
-> framebuffer-region = "acme,framebuffer2";)
-> 
-> > I don't object to having a node per region, though it seemed unnecessary
-> > at the time, but in any case, the current binding is crap and need to be
-> > fixed urgently before its use spreads.
-> 
-> It seems to me that the 'top-level' objection is the creation of a new
-> binding using a node per region. I think it is warrented. If you
-> disagree strongly then we'll revert the whole series and try again for
-> v3.13. Otherwise I think the other objections are fixable in this cycle.
 
-No. I don't fundamentally object to using a node per region, it does
-have some advantages indeed as I have mentioned in a few places.
-
-My main issues are:
-
- - Documentation of the "memory" binding. This is a separate thing that
-shouldn't have been there and should not document the node without the
-unit address (it's ok to specify I suppose that it can be ommitted
-though I don't like it).
-
- - Location. I don't want that under /memory. I have to deal with
-machines with multiple /memory nodes and regions potentially straddling
-them.
-
- - The choice of properties for describing, naming and defining their
-usage. I think we can come to an agreement here.
-
-In fact the use of a node per region is the *least* of my worries :-)
-
-Cheers,
-Ben.
-
-
-> g.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
