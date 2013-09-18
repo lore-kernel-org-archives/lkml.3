@@ -1,761 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab3IRXp7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 19:45:59 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:61236 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab3IRXp5 (ORCPT
+	id S1752129Ab3IRXwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 19:52:33 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:61665 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751661Ab3IRXwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 19:45:57 -0400
-Message-ID: <523A3B2C.4010704@gmail.com>
-Date: Thu, 19 Sep 2013 09:45:48 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>
-CC: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        Alan Tull <atull@altera.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+	Wed, 18 Sep 2013 19:52:32 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlQGAMk7OlJ5Lapl/2dsb2JhbABbgwfCN4EgF3SCJQEBBAEnCwEjIwULCAMYCSUPBSUDIROHfQW6RhaPUQeEHgOXepF1gWaBUCo
+Date: Thu, 19 Sep 2013 09:52:28 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Linux MM <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Glauber Costa <glommer@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-References: <cover.1379519753.git.michal.simek@xilinx.com> <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
-In-Reply-To: <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] [PATCH] [RFC] mm/shrinker: Add a shrinker flag to
+ always shrink a bit
+Message-ID: <20130918235228.GG9901@dastard>
+References: <1379495401-18279-1-git-send-email-daniel.vetter@ffwll.ch>
+ <5239829F.4080601@t-online.de>
+ <20130918203822.GA4330@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130918203822.GA4330@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/09/13 01:56, Michal Simek wrote:
-> This new subsystem should unify all fpga drivers which
-> do the same things. Load configuration data to fpga
-> or another programmable logic through common interface.
-> It doesn't matter if it is MMIO device, gpio bitbanging,
-> etc. connection. The point is to have the same
-> inteface for these drivers.
+[my keyboard my be on the fritz - it's not typing what I'm thinking...]
+
+On Thu, Sep 19, 2013 at 06:38:22AM +1000, Dave Chinner wrote:
+> On Wed, Sep 18, 2013 at 12:38:23PM +0200, Knut Petersen wrote:
+> > On 18.09.2013 11:10, Daniel Vetter wrote:
+> > 
+> > Just now I prepared a patch changing the same function in vmscan.c
+> > >Also, this needs to be rebased to the new shrinker api in 3.12, I
+> > >simply haven't rolled my trees forward yet.
+> > 
+> > Well, you should. Since commit 81e49f  shrinker->count_objects might be
+> > set to SHRINK_STOP, causing shrink_slab_node() to complain loud and often:
+> > 
+> > [ 1908.234595] shrink_slab: i915_gem_inactive_scan+0x0/0x9c negative objects to delete nr=-xxxxxxxxx
+> > 
+> > The kernel emitted a few thousand log lines like the one quoted above during the
+> > last few days on my system.
+> > 
+> > >diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > >index 2cff0d4..d81f6e0 100644
+> > >--- a/mm/vmscan.c
+> > >+++ b/mm/vmscan.c
+> > >@@ -254,6 +254,10 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+> > >  			total_scan = max_pass;
+> > >  		}
+> > >+		/* Always try to shrink a bit to make forward progress. */
+> > >+		if (shrinker->evicts_to_page_lru)
+> > >+			total_scan = max_t(long, total_scan, batch_size);
+> > >+
+> > At that place the error message is already emitted.
+> > >  		/*
+> > >  		 * We need to avoid excessive windup on filesystem shrinkers
+> > >  		 * due to large numbers of GFP_NOFS allocations causing the
+> > 
+> > Have a look at the attached patch. It fixes my problem with the erroneous/misleading
+> > error messages, and I think it´s right to just bail out early if SHRINK_STOP is found.
+> > 
+> > Do you agree ?
 > 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> No, that's wrong. ->count_objects should never ass SHRINK_STOP.
 
-Hi Michal,
+						*pass
 
-Some comments below.
-
-~Ryan
-
+> Indeed, it should always return a count of objects in the cache,
+> regardless of the context. 
 > 
-> ---
->  MAINTAINERS             |   7 +
->  drivers/Kconfig         |   2 +
->  drivers/Makefile        |   1 +
->  drivers/fpga/Kconfig    |  18 ++
->  drivers/fpga/Makefile   |   5 +
->  drivers/fpga/fpga-mgr.c | 433 ++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/fpga.h    | 105 ++++++++++++
->  7 files changed, 571 insertions(+)
->  create mode 100644 drivers/fpga/Kconfig
->  create mode 100644 drivers/fpga/Makefile
->  create mode 100644 drivers/fpga/fpga-mgr.c
->  create mode 100644 include/linux/fpga.h
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index e61c2e8..5c7597b 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -3427,6 +3427,13 @@ F:	include/linux/fmc*.h
->  F:	include/linux/ipmi-fru.h
->  K:	fmc_d.*register
-> 
-> +FPGA SUBSYSTEM
-> +M:	Michal Simek <michal.simek@xilinx.com>
-> +T:	git git://git.xilinx.com/linux-xlnx.git
-> +S:	Supported
-> +F:	drivers/fpga/
-> +F:	include/linux/fpga.h
-> +
->  FPU EMULATOR
->  M:	Bill Metzenthen <billm@melbpc.org.au>
->  W:	http://floatingpoint.sourceforge.net/emulator/index.html
-> diff --git a/drivers/Kconfig b/drivers/Kconfig
-> index aa43b91..17f3caa 100644
-> --- a/drivers/Kconfig
-> +++ b/drivers/Kconfig
-> @@ -166,4 +166,6 @@ source "drivers/reset/Kconfig"
-> 
->  source "drivers/fmc/Kconfig"
-> 
-> +source "drivers/fpga/Kconfig"
-> +
->  endmenu
-> diff --git a/drivers/Makefile b/drivers/Makefile
-> index ab93de8..2b5e73b 100644
-> --- a/drivers/Makefile
-> +++ b/drivers/Makefile
-> @@ -152,3 +152,4 @@ obj-$(CONFIG_VME_BUS)		+= vme/
->  obj-$(CONFIG_IPACK_BUS)		+= ipack/
->  obj-$(CONFIG_NTB)		+= ntb/
->  obj-$(CONFIG_FMC)		+= fmc/
-> +obj-$(CONFIG_FPGA)		+= fpga/
-> diff --git a/drivers/fpga/Kconfig b/drivers/fpga/Kconfig
-> new file mode 100644
-> index 0000000..5357645
-> --- /dev/null
-> +++ b/drivers/fpga/Kconfig
-> @@ -0,0 +1,18 @@
-> +#
-> +# FPGA framework configuration
-> +#
-> +
-> +menu "FPGA devices"
-> +
-> +config FPGA
-> +	tristate "FPGA Framework"
-> +	help
-> +	  Say Y here if you want support for configuring FPGAs from the
-> +	  kernel.  The FPGA framework adds a FPGA manager class and FPGA
-> +	  manager drivers.
-> +
-> +if FPGA
-> +
-> +endif
-> +
-> +endmenu
-> diff --git a/drivers/fpga/Makefile b/drivers/fpga/Makefile
-> new file mode 100644
-> index 0000000..3c7f29b
-> --- /dev/null
-> +++ b/drivers/fpga/Makefile
-> @@ -0,0 +1,5 @@
-> +#
-> +# Makefile for the fpga framework and fpga manager drivers.
-> +#
-> +
-> +obj-$(CONFIG_FPGA)			+= fpga-mgr.o
-> diff --git a/drivers/fpga/fpga-mgr.c b/drivers/fpga/fpga-mgr.c
-> new file mode 100644
-> index 0000000..7312efd
-> --- /dev/null
-> +++ b/drivers/fpga/fpga-mgr.c
-> @@ -0,0 +1,433 @@
-> +/*
-> + * FPGA Framework
-> + *
-> + * Copyright (C) 2013 Xilinx, Inc.
-> + *
-> + * based on origin code from
-> + * Copyright (C) 2013 Altera Corporation
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/firmware.h>
-> +#include <linux/fpga.h>
-> +#include <linux/fs.h>
-> +#include <linux/idr.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +
-> +static struct idr fpga_mgr_idr;
-> +static spinlock_t fpga_mgr_idr_lock;
-> +static struct class *fpga_mgr_class;
+> SHRINK_STOP is for ->scan_objects to tell the shrinker it can make
 
-Use the initialisers where available:
+							*can't
 
-  static DEFINE_IDR(fpga_mgr_idr);
-  static DEFINE_SPINLOCK(fpga_mgr_idr_lock);
+> any progress due to the context it is called in. This allows the
+> shirnker to defer the work to another call in a different context.
+> However, if ->count-objects doesn't return a count, the work that
+> was supposed to be done cannot be deferred, and that is what
 
-> +/**
-> + * fpga_mgr_name_show - Show fpga manager name
-> + * @dev: Pointer to the device structure
-> + * @attr: Pointer to the device attribute structure
-> + * @buf: Pointer to the buffer location
-> + *
-> + * Returns the number of bytes copied to @buf, a negative error number otherwise
-> + */
-> +static ssize_t fpga_mgr_name_show(struct device *dev,
-> +				  struct device_attribute *attr, char *buf)
-> +{
-> +	struct fpga_manager *mgr = dev_get_drvdata(dev);
-> +
-> +	if (!mgr)
-> +		return -ENODEV;
-> +
-> +	return snprintf(buf, sizeof(mgr->name), "%s\n", mgr->name);
-> +}
-> +
-> +/**
-> + * fpga_mgr_status_show - Show fpga manager status
-> + * @dev: Pointer to the device structure
-> + * @attr: Pointer to the device attribute structure
-> + * @buf: Pointer to the buffer location
-> + *
-> + * Returns the number of bytes copied to @buf, a negative error number otherwise
-> + */
-> +static ssize_t fpga_mgr_status_show(struct device *dev,
-> +				    struct device_attribute *attr, char *buf)
-> +{
-> +	struct fpga_manager *mgr = dev_get_drvdata(dev);
-> +
-> +	if (!mgr || !mgr->mops || !mgr->mops->status)
-> +		return -ENODEV;
-> +
-> +	return mgr->mops->status(mgr, buf);
-> +}
-> +
-> +/**
-> + * fpga_mgr_read - Read data from fpga
-> + * @mgr: Pointer to the fpga manager structure
-> + * @buf: Pointer to the buffer location
-> + * @count: Pointer to the number of copied bytes
-> + *
-> + * Function reads fpga bitstream and copy them to output buffer.
-> + *
-> + * Returns the number of bytes copied to @buf, a negative error number otherwise
-> + */
-> +static int fpga_mgr_read(struct fpga_manager *mgr, char *buf, ssize_t *count)
-> +{
-> +	int ret;
-> +
-> +	if (test_and_set_bit_lock(FPGA_MGR_DEV_BUSY, &mgr->flags))
-> +		return -EBUSY;
-> +
-> +	if (!mgr->mops || !mgr->mops->read) {
-> +		dev_err(mgr->dev,
-> +			"Controller doesn't support read operations!\n");
-> +		return -EPERM;
+							 *why
 
-This error path leaves the FPGA_MGR_DEV_BUSY locked. Same on the error
-paths below.
+> ->count_objects should always return the number of objects in the
+> cache.
 
-> +	}
-> +
-> +	if (mgr->mops->read_init) {
-> +		ret = mgr->mops->read_init(mgr);
-> +		if (ret) {
-> +			dev_err(mgr->dev, "Failed in read-init!\n");
+Cheers,
 
-Error messages like this can be useful for debugging, but can also be
-used to spam the system log if the user can easily trigger the failure
-condition (e.g. by passing deliberately incorrect arguments). Consider
-dropping these, and other messages, to dev_dbg.
-
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	if (mgr->mops->read) {
-> +		ret = mgr->mops->read(mgr, buf, count);
-> +		if (ret) {
-> +			dev_err(mgr->dev, "Failed to read firmware!\n");
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	if (mgr->mops->read_complete) {
-> +		ret = mgr->mops->read_complete(mgr);
-> +		if (ret) {
-> +			dev_err(mgr->dev, "Failed in read-complete!\n");
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	clear_bit_unlock(FPGA_MGR_DEV_BUSY, &mgr->flags);
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * fpga_mgr_attr_read - Read data from fpga
-> + * @dev: Pointer to the device structure
-> + * @attr: Pointer to the device attribute structure
-> + * @buf: Pointer to the buffer location
-> + *
-> + * Function reads fpga bitstream and copy them to output buffer
-> + *
-> + * Returns the number of bytes copied to @buf, a negative error number otherwise
-> + */
-> +static ssize_t fpga_mgr_attr_read(struct device *dev,
-> +				   struct device_attribute *attr, char *buf)
-> +{
-> +	struct fpga_manager *mgr = dev_get_drvdata(dev);
-> +	ssize_t count;
-> +	int ret;
-> +
-> +	if (mgr && mgr->fpga_read)
-> +		ret = mgr->fpga_read(mgr, buf, &count);
-> +
-> +	return ret == 0 ? count : -EPERM;
-
-Why doesn't this return the value of ret from mgr->fpga_read if there is
-an error?
-
-> +}
-> +
-> +/**
-> + * fpga_mgr_write - Write data to fpga
-> + * @mgr: Pointer to the fpga manager structure
-> + * @fw_name: Pointer to the buffer location with bistream firmware filename
-> + *
-> + * @buf contains firmware filename which is loading through firmware
-> + * interface and passed to the fpga driver.
-> + *
-> + * Returns string lenght added to @fw_name, a negative error number otherwise
-
-Typo: "length"
-
-> + */
-> +static int fpga_mgr_write(struct fpga_manager *mgr, const char *fw_name)
-> +{
-> +	int ret = 0;
-> +	const struct firmware *fw;
-> +
-> +	if (!fw_name || !strlen(fw_name)) {
-> +		dev_err(mgr->dev, "Firmware name is not specified!\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (!mgr->mops || !mgr->mops->write) {
-> +		dev_err(mgr->dev,
-> +			"Controller doesn't support write operations!\n");
-> +		return -EPERM;
-> +	}
-> +
-> +	ret = request_firmware(&fw, fw_name, mgr->dev);
-> +	if (ret) {
-> +		dev_err(mgr->dev, "Failed to load firmware %s!\n", fw_name);
-> +		return ret;
-> +	}
-> +
-> +	if (test_and_set_bit_lock(FPGA_MGR_DEV_BUSY, &mgr->flags))
-> +		return -EBUSY;
-> +
-> +	/* Init controller */
-> +	if (mgr->mops->write_init) {
-> +		ret = mgr->mops->write_init(mgr);
-> +		if (ret) {
-> +			dev_err(mgr->dev, "Failed to write_init!\n");
-> +			return ret;
-
-Missing lock and firmware release. Same on error paths below.
-
-> +		}
-> +	}
-> +
-> +	/* Do write */
-> +	ret = mgr->mops->write(mgr, (void *)fw->data, fw->size);
-
-It might be better to change the second argument of the write callback
-to take const u8 * so that you don't need to cast.
-
-> +	if (ret) {
-> +		dev_err(mgr->dev, "Failed to write data!\n");
-> +		return ret;
-> +	}
-> +
-> +	if (mgr->mops->write_complete) {
-> +		ret = mgr->mops->write_complete(mgr);
-> +		if (ret) {
-> +			dev_err(mgr->dev, "Failed to write_init!\n");
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	release_firmware(fw);
-> +
-> +	clear_bit_unlock(FPGA_MGR_DEV_BUSY, &mgr->flags);
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * fpga_mgr_attr_write - Write data to fpga
-> + * @dev: Pointer to the device structure
-> + * @attr: Pointer to the device attribute structure
-> + * @buf: Pointer to the buffer location with bistream firmware filename
-> + * @count: Number of characters in @buf
-> + *
-> + * @buf contains firmware filename which is loading through firmware
-> + * interface and passed to the fpga driver.
-> + *
-> + * Returns string lenght added to @buf, a negative error number otherwise
-
-Typo: "length". Check elsewhere.
-
-> + */
-> +static ssize_t fpga_mgr_attr_write(struct device *dev,
-> +				   struct device_attribute *attr,
-> +				   const char *buf, size_t count)
-> +{
-> +	struct fpga_manager *mgr = dev_get_drvdata(dev);
-> +	int ret;
-> +
-> +	if (mgr && mgr->fpga_write)
-> +		ret = mgr->fpga_write(mgr, buf);
-> +
-> +	return ret == 0 ? strlen(buf) : -EPERM;
-
-Again, this should return the error code from mgr->fpga_write.
-
-> +}
-> +
-> +static struct device_attribute fpga_mgr_attrs[] = {
-> +	__ATTR(name, S_IRUGO, fpga_mgr_name_show, NULL),
-> +	__ATTR(status, S_IRUGO, fpga_mgr_status_show, NULL),
-> +	__ATTR(fpga, S_IRUGO | S_IWUGO, fpga_mgr_attr_read,
-> +	       fpga_mgr_attr_write),
-> +	__ATTR_NULL
-> +};
-> +
-> +/**
-> + * fpga_mgr_register: Register new fpga manager
-> + * @pdev: Pointer to the platform device of fpga manager
-> + * @mops: Pointer to the fpga manager operations
-> + * @name: Name of fpga manager
-> + * @priv: Pointer to the fpga manager private data
-> + *
-> + * Function register fpga manager with uniq ID and create device
-> + * for accessing the device.
-> + *
-> + * Returns 0 on success, a negative error number otherwise
-> + */
-> +int fpga_mgr_register(struct platform_device *pdev,
-> +		      struct fpga_manager_ops *mops, char *name, void *priv)
-> +{
-> +	struct fpga_manager *mgr;
-> +	int ret;
-> +
-> +	if (!mops) {
-> +		dev_err(&pdev->dev, "Register failed: NO fpga_manager_ops!\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (!name || !strlen(name)) {
-> +		dev_err(&pdev->dev, "Register failed: NO name specific!\n");
-> +		return -EINVAL;
-> +	}
-
-You could probably omit these checks, since this is an in-kernel
-interface. Callers are expected to follow the documentation correctly.
-
-> +
-> +	mgr = devm_kzalloc(&pdev->dev, sizeof(*mgr), GFP_KERNEL);
-> +	if (!mgr) {
-> +		dev_err(&pdev->dev, "Failed to alloc mgr struct!\n");
-
-kmalloc and friends already print a warning and stack trace if
-__GFP_NOWARN is not passed, so this error message is not required.
-
-> +		return -ENOMEM;
-> +	}
-> +
-> +	/* Get unique number */
-> +	idr_preload(GFP_KERNEL);
-> +	spin_lock(&fpga_mgr_idr_lock);
-> +	ret = idr_alloc(&fpga_mgr_idr, mgr, 0, 0, GFP_NOWAIT);
-> +	if (ret >= 0)
-> +		mgr->nr = ret;
-> +	spin_unlock(&fpga_mgr_idr_lock);
-> +	idr_preload_end();
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/* Setup all necessary information */
-> +	mgr->dev = &pdev->dev;
-> +	mgr->mops = mops;
-> +	mgr->priv = priv;
-> +	mgr->fpga_read = fpga_mgr_read;
-> +	mgr->fpga_write = fpga_mgr_write;
-> +	strlcpy(mgr->name, name, sizeof(mgr->name));
-> +
-> +	mgr->dev = device_create(fpga_mgr_class, get_device(&pdev->dev),
-> +				 MKDEV(0, 0), mgr, "fpga%d", mgr->nr);
-> +	if (IS_ERR(mgr->dev)) {
-> +		spin_lock(&fpga_mgr_idr_lock);
-> +		idr_remove(&fpga_mgr_idr, mgr->nr);
-> +		spin_unlock(&fpga_mgr_idr_lock);
-> +
-> +		dev_err(&pdev->dev, "Failed to create device!\n");
-> +		return PTR_ERR(mgr->dev);
-
-put_device or kfree to release the devm_kzalloc above?
-
-> +	}
-> +
-> +	platform_set_drvdata(pdev, mgr);
-> +
-> +	dev_info(&pdev->dev, "Fpga manager [%s] registered as minor %d\n",
-> +		 mgr->name, mgr->nr);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_register);
-> +
-> +/**
-> + * fpga_mgr_unregister: Remove fpga manager
-> + * @pdev: Pointer to the platform device of fpga manager
-> + *
-> + * Function unregister fpga manager and release all temporary structures
-> + *
-> + * Returns 0 for all cases
-> + */
-> +int fpga_mgr_unregister(struct platform_device *pdev)
-> +{
-> +	struct fpga_manager *mgr = platform_get_drvdata(pdev);
-> +
-> +	if (mgr && mgr->mops && mgr->mops->fpga_remove)
-> +		mgr->mops->fpga_remove(mgr);
-> +
-> +	device_unregister(mgr->dev);
-> +
-> +	spin_lock(&fpga_mgr_idr_lock);
-> +	idr_remove(&fpga_mgr_idr, mgr->nr);
-> +	spin_unlock(&fpga_mgr_idr_lock);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_unregister);
-> +
-> +/**
-> + * of_dev_node_match: Compare associated device tree node with
-> + * @dev: Pointer to the device
-> + * @data: Pointer to the device tree node
-> + *
-> + * Returns 1 on success
-> + */
-> +static int of_dev_node_match(struct device *dev, void *data)
-> +{
-> +	return dev->of_node == data;
-> +}
-> +
-> +/**
-> + * of_find_fpga_mgr_by_node - Find the fpga_manager associated with a node
-> + * @node: Pointer to the device tree node
-> + *
-> + * Returns fpga_manager pointer, or NULL if not found
-> + */
-> +struct fpga_manager *of_find_fpga_mgr_by_node(struct device_node *node)
-> +{
-> +	struct device *dev;
-> +	struct fpga_manager *mgr;
-> +
-> +	dev = bus_find_device(&platform_bus_type, NULL, node,
-> +			      of_dev_node_match);
-> +	if (!dev)
-> +		return NULL;
-> +
-> +	mgr = dev_get_drvdata(dev);
-> +
-> +	return mgr ? mgr : NULL;
-
-Umm,
-
-	return dev_get_drvdata(dev);
-
-?
-
-> +}
-> +EXPORT_SYMBOL(of_find_fpga_mgr_by_node);
-> +
-> +/**
-> + * of_find_fpga_mgr_by_phandle - Find the fpga_manager associated with a node
-> + * @node: Pointer to the device tree node
-> + * @phandle_name: Pointer to the phandle_name
-> + *
-> + * Returns fpga_manager pointer, or NULL if not found
-> + */
-> +struct fpga_manager *of_find_fpga_mgr_by_phandle(struct device_node *node,
-> +						 const char *phandle_name)
-> +{
-> +	struct device_node *fpga_node;
-> +
-> +	fpga_node = of_parse_phandle(node, phandle_name, 0);
-> +	if (!fpga_node) {
-> +		pr_err("Phandle not found\n");
-> +		return ERR_PTR(-ENODEV);
-> +	}
-> +
-> +	return of_find_fpga_mgr_by_node(fpga_node);
-> +}
-> +EXPORT_SYMBOL(of_find_fpga_mgr_by_phandle);
-> +
-> +/**
-> + * fpga_mgr_init: Create fpga class
-> + */
-> +static int __init fpga_mgr_init(void)
-> +{
-> +	pr_info("FPGA Manager framework driver\n");
-> +
-> +	fpga_mgr_class = class_create(THIS_MODULE, "fpga");
-
-Maybe "fpga_manager" since these are manager devices, rather than the
-fpga itself.
-
-> +	if (IS_ERR(fpga_mgr_class))
-> +		return PTR_ERR(fpga_mgr_class);
-> +
-> +	idr_init(&fpga_mgr_idr);
-> +	spin_lock_init(&fpga_mgr_idr_lock);
-
-Remove. This can be done statically as suggested above.
-
-> +
-> +	fpga_mgr_class->dev_attrs = fpga_mgr_attrs;
-> +
-> +	return 0;
-> +}
-> +subsys_initcall(fpga_mgr_init);
-> +
-> +/**
-> + * fpga_mgr_exit: Destroy fpga class
-> + */
-> +static void __exit fpga_mgr_exit(void)
-> +{
-> +	class_destroy(fpga_mgr_class);
-> +	idr_destroy(&fpga_mgr_idr);
-> +}
-> +module_exit(fpga_mgr_exit);
-> +
-> +MODULE_AUTHOR("Xilinx, Inc.");
-> +MODULE_DESCRIPTION("FPGA Manager framework driver");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/linux/fpga.h b/include/linux/fpga.h
-> new file mode 100644
-> index 0000000..970c42e
-> --- /dev/null
-> +++ b/include/linux/fpga.h
-> @@ -0,0 +1,105 @@
-> +/*
-> + * FPGA Framework
-> + *
-> + * Copyright (C) 2013 Xilinx, Inc.
-> + *
-> + * based on origin code from
-> + * Copyright (C) 2013 Altera Corporation
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/device.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/of.h>
-> +
-> +#ifndef _LINUX_FPGA_H
-> +#define _LINUX_FPGA_H
-> +
-> +struct fpga_manager;
-> +
-> +/**
-> + * struct fpga_manager_ops - FPGA manager driver operations
-> + *
-> + * @status: The function to call for getting fpga manager status.
-> + *	    Returns number of characters written to the @buf and
-> + *	    a string of the FPGA's status in @bug.
-> + * @read_init: The function to call for preparing the FPGA for reading
-> + *	       its confuration data. Returns 0 on success, a negative error
-> + *	       number otherwise.
-> + * @read: Read configuration data from the FPGA. Return 0 on success,
-> + *	  a negative error number otherwise.
-> + * @read_complete: Return FPGA to a default state after reading is done.
-> + *		   Return 0 on success, a negative error number otherwise.
-> + * @write_init: Prepare the FPGA to receive configuration data.
-> + *		Return 0 on success, a negative error number otherwise.
-> + * @write: Write count bytes of configuration data to the FPGA placed in @buf.
-> + *	   Return 0 on success, a negative error number otherwise.
-> + * @write_complete: Return FPGA to default state after writing is done.
-> + *		    Return 0 on success, a negative error number otherwise.
-> + * @fpga_remove: Set FPGA into a specific state during driver remove.
-> + *
-> + * fpga_manager_ops are the low level functions implemented by a specific
-> + * fpga manager driver. Leaving any of these out that aren't needed is fine
-> + * as they are all tested for NULL before being called.
-> + */
-> +struct fpga_manager_ops {
-> +	int (*status)(struct fpga_manager *mgr, char *buf);
-> +	int (*read_init)(struct fpga_manager *mgr);
-> +	int (*read)(struct fpga_manager *mgr, char *buf, ssize_t *count);
-> +	int (*read_complete)(struct fpga_manager *mgr);
-> +	int (*write_init)(struct fpga_manager *mgr);
-> +	int (*write)(struct fpga_manager *mgr, char *buf, ssize_t count);
-> +	int (*write_complete)(struct fpga_manager *mgr);
-> +	void (*fpga_remove)(struct fpga_manager *mgr);
-> +};
-> +
-> +/* flag bits */
-> +#define FPGA_MGR_DEV_BUSY 0
-> +
-> +/**
-> + * struct fpga_manager - FPGA manager driver structure
-> + *
-> + * @name: Name of fpga manager
-> + * @dev: Pointer to the device structure
-> + * @mops: Pointer to the fpga manager operations
-> + * @priv: Pointer to fpga manager private data
-> + * @nr: Unique manager number in the system
-> + * @flags: For saving temporary
-> + * @fpga_read: The function to call for reading configuration data from
-> + *	       the FPGA.
-> + * @fpga_write: The function to call for writing configuration data to the FPGA.
-> + */
-> +struct fpga_manager {
-> +	char name[48];
-
-Why this limit? It could just be char *, and allocate the string as
-necessary.
-
-Also, can this structure be made opaque, so that its definition is in
-fpga_mgr.c, and callers only ever access it via the api?
-
-> +	struct device *dev;
-> +	struct fpga_manager_ops *mops;
-> +	void *priv;
-> +	unsigned int nr;
-> +	unsigned long flags;
-> +	int (*fpga_read)(struct fpga_manager *mgr, char *buf,
-> +			 ssize_t *count);
-> +	int (*fpga_write)(struct fpga_manager *mgr, const char *fw_name);
-> +};
-> +
-> +int fpga_mgr_register(struct platform_device *pdev,
-> +		      struct fpga_manager_ops *mops, char *name, void *priv);
-> +
-> +int fpga_mgr_unregister(struct platform_device *pdev);
-> +
-> +struct fpga_manager *of_find_fpga_mgr_by_node(struct device_node *node);
-> +struct fpga_manager *of_find_fpga_mgr_by_phandle(struct device_node *node,
-> +						 const char *phandle_name);
-> +
-> +#endif /*_LINUX_FPGA_H */
-> --
-> 1.8.2.3
-> 
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
