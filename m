@@ -1,42 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab3IRMYb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 08:24:31 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:44281 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588Ab3IRMY3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 08:24:29 -0400
+	id S1753575Ab3IRMYi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 08:24:38 -0400
+Received: from mail.une.net.co ([200.13.249.108]:27512 "EHLO
+	une-avas-int03.une.net.co" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752844Ab3IRMYf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 08:24:35 -0400
+X-Greylist: delayed 882 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Sep 2013 08:24:35 EDT
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-In-Reply-To: <1379506478-16625-3-git-send-email-lee.jones@linaro.org>
-References: <1379506478-16625-1-git-send-email-lee.jones@linaro.org>
-	<1379506478-16625-3-git-send-email-lee.jones@linaro.org>
-Date: Wed, 18 Sep 2013 14:24:28 +0200
-Message-ID: <CACRpkdYEByC3vBegbziibY2R63S3zSWxW=OOj0=TaeGP4igROQ@mail.gmail.com>
-Subject: Re: [PATCH 02/41] mfd: dbx500-prcmu: Move PRCMU numerical clock
- identifiers into DT include file
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Sie wurden ausgezeichnet ($ 1.000.000,00 US-Dollar)
+To: Recipients <infoqatar@gmail.com>
+From: "Qatar Foundation" <infoqatar@gmail.com>
+Date: Wed, 18 Sep 2013 14:07:47 +0200
+Reply-To: qatarfoundation322@yahoo.com.hk
+Message-Id: <20130918120848.592613B815C@unevm-pmta09.une.net.co>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 2:13 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Lieber Begünstigten,
 
-> These are required to request DBx500 PRCMU clocks from Device Tree. The
-> numbers used are taken directly from the Hardware Specification document.
-> We're moving them from the DBx500 PRCMU include file into the DT include
-> directory and referencing them from the former via a #include.
->
-> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Hiermit möchten wir Sie informieren, dass Sie unter den glücklichen Empfänger ausgewählt, um diese Spenden award Summe von ($ 1.000.000,00 US-Dollar), die jeweils als wohltätige Spenden / Hilfe von der Qatar Foundation in Doha, Katar, 17. September 2013 erhalten wurden, zur Förderung Ihrer Geschäfts-und persönlichen Interessen. Bitte zurück zu bekommen, um weitere Informationen, wie man behauptet, Ihre Auszeichnung per E-Mail: qatarfoundation322@yahoo.com.hk
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Im Namen der Stiftung, sagen wir herzlichen Glückwunsch an Sie.
 
-Yours,
-Linus Walleij
+Mit freundlichen Grüßen,
+Dr. Mohammad Fathy Saoud.
+Antwort an: qatarfoundation322@yahoo.com.hk
+
+Präsident der Qatar Foundation.
