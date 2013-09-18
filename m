@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab3IRRmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 13:42:18 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:22178 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218Ab3IRRmR (ORCPT
+	id S1752783Ab3IRRp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 13:45:26 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24025 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751807Ab3IRRpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 13:42:17 -0400
+	Wed, 18 Sep 2013 13:45:24 -0400
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 50.131.214.131
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18nYct4ZQ1GrkWDEPtLn2pX
-Date: Wed, 18 Sep 2013 10:42:12 -0700
+X-MHO-User: U2FsdGVkX18+4TrnD8FsubCjXsH/kXMT
+Date: Wed, 18 Sep 2013 10:45:21 -0700
 From: Tony Lindgren <tony@atomide.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Javier Martinez Canillas <martinez.javier@gmail.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH v2] ADP1653 board code for Nokia RX-51
-Message-ID: <20130918174211.GU9994@atomide.com>
+Message-ID: <20130918174520.GV9994@atomide.com>
 References: <201302171616.50152@pali>
+ <20130217190303.GC2317@blackmetal.musicnaut.iki.fi>
+ <201303062112.06417@pali>
+ <201309062234.05878@pali>
  <20130907230252.GA10700@blackmetal.musicnaut.iki.fi>
- <20130918131644.GA2953@amd.pavel.ucw.cz>
- <201309181800.10486@pali>
+ <20130917235028.GR9994@atomide.com>
+ <CAAwP0s3MBd58Q9wijQP9Nd_DB4GdicE-b427cHS-UXYS4HW-Jg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201309181800.10486@pali>
+In-Reply-To: <CAAwP0s3MBd58Q9wijQP9Nd_DB4GdicE-b427cHS-UXYS4HW-Jg@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pali Rohár <pali.rohar@gmail.com> [130918 09:08]:
-> On Wednesday 18 September 2013 15:16:44 Pavel Machek wrote:
-> > On Sun 2013-09-08 02:02:52, Aaro Koskinen wrote:
-> > > Hi,
-> > > 
-> > > On Fri, Sep 06, 2013 at 10:34:05PM +0200, Pali Rohár wrote:
-> > > > > --- /dev/null
-> > > > > +++ b/arch/arm/mach-omap2/board-rx51-camera.c
-> > > 
-> > > [...]
-> > > 
-> > > > Ping, can you review this patch v2?
-> > > 
-> > > I don't think Tony will accept any new board stuff for
-> > > RX-51/N900. See for example:
-> > > http://marc.info/?l=linux-kernel&m=137629626213187&w=2
-> > > 
-> > > There should be initial Nokia N900 DTS file in 3.12-rc1, and
-> > > we should continue converting this board fully to DT.
-> > 
-> > That's not reasonable. N900 is pretty far away from working
-> > with device tree. Yes, I was able to get some bits merged,
-> > but that should not be excuse to halt other N900 development.
-> > 									Pavel
+* Javier Martinez Canillas <martinez.javier@gmail.com> [130918 07:20]:
 > 
-> Right. So Tony, will you accept future patches for board files?
+> Hi Tony,
+> 
+> I don't know if OMAP2+ DT will happen soon as you said. At least I
+> know about a big issue we had with GPIO pins not being auto-requested
+> when are mapped as IRQ. You can refer to [1] for the latest approach
+> and how this discussion have been going.
+> 
+> This is something that we have been trying to solve for a couple of
+> kernel releases by now so it would be great if you can join the
+> discussion.
 
-Only fixes to board-*.c files please unless there's a _really_
-good reason to make things more complex with the platform data.
-Let's not make the DT conversion any more complex than it
-already is.
-
-Getting things working with DT for the devices is pretty trivial
-in most cases. And we can also still initialize the legacy devices
-using platform data the same way as earlier.
+Yes I'm painfully aware of that mess too, that needs to be
+sorted out for sure.
 
 Regards,
 
 Tony
-
+ 
+> [1]: https://lkml.org/lkml/2013/8/26/260
