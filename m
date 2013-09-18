@@ -1,127 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926Ab3IRKiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 06:38:50 -0400
-Received: from mailout06.t-online.de ([194.25.134.19]:59140 "EHLO
-	mailout06.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab3IRKit (ORCPT
+	id S1751889Ab3IRKow (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 06:44:52 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61895 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab3IRKos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 06:38:49 -0400
-Message-ID: <5239829F.4080601@t-online.de>
-Date: Wed, 18 Sep 2013 12:38:23 +0200
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 18 Sep 2013 06:44:48 -0400
+Date: Wed, 18 Sep 2013 12:43:36 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: "Strashko, Grygorii" <grygorii.strashko@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 7/9] of/platform: Resolve interrupt references at probe
+ time
+Message-ID: <20130918104335.GA8256@ulmo>
+References: <1379320326-13241-1-git-send-email-treding@nvidia.com>
+ <1379320326-13241-8-git-send-email-treding@nvidia.com>
+ <902E09E6452B0E43903E4F2D568737AB363BD3@DNCE04.ent.ti.com>
 MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: Linux MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Intel-gfx] [PATCH] [RFC] mm/shrinker: Add a shrinker flag to
- always shrink a bit
-References: <1379495401-18279-1-git-send-email-daniel.vetter@ffwll.ch>
-In-Reply-To: <1379495401-18279-1-git-send-email-daniel.vetter@ffwll.ch>
-Content-Type: multipart/mixed;
- boundary="------------090302000909020209030900"
-X-ID: ZwzG0EZBghBvsKTel6CDd2fioKYMrrtYyO7Ds+00uV56lUokoKNGMs8OE5eOCHWZMy
-X-TOI-MSGID: 690e4553-acc6-4a21-8436-a436aeea2f72
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
+Content-Disposition: inline
+In-Reply-To: <902E09E6452B0E43903E4F2D568737AB363BD3@DNCE04.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090302000909020209030900
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
 
-On 18.09.2013 11:10, Daniel Vetter wrote:
+--EeQfGwPcQSOJBaQU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Just now I prepared a patch changing the same function in vmscan.c
-> Also, this needs to be rebased to the new shrinker api in 3.12, I
-> simply haven't rolled my trees forward yet.
+On Tue, Sep 17, 2013 at 01:04:06PM +0000, Strashko, Grygorii wrote:
+> Hi Thierry,
+>=20
+> On 09/16/2013 11:32 AM, Thierry Reding wrote:> Interrupt references are c=
+urrently resolved very early (when a device is
+> > created). This has the disadvantage that it will fail in cases where the
+> > interrupt parent hasn't been probed and no IRQ domain for it has been
+> > registered yet. To work around that various drivers use explicit
+> > initcall ordering to force interrupt parents to be probed before devices
+> > that need them are created. That's error prone and doesn't always work.
+> > If a platform device uses an interrupt line connected to a different
+> > platform device (such as a GPIO controller), both will be created in the
+> > same batch, and the GPIO controller won't have been probed by its driver
+> > when the depending platform device is created. Interrupt resolution will
+> > fail in that case.
+> >=20
+> > Another common workaround is for drivers to explicitly resolve interrupt
+> > references at probe time. This is suboptimal, however, because it will
+> > require every driver to duplicate the code.
+> >=20
+> > This patch adds support for late interrupt resolution to the platform
+> > driver core, by resolving the references right before a device driver's
+> > .probe() function will be called. This not only delays the resolution
+> > until a much later time (giving interrupt parents a better chance of
+> > being probed in the meantime), but it also allows the platform driver
+> > core to queue the device for deferred probing if the interrupt parent
+> > hasn't registered its IRQ domain yet.
+> >=20
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > ---
+> >   drivers/base/platform.c     |  4 ++++
+> >   drivers/of/platform.c       | 43 ++++++++++++++++++++++++++++++++++++=
++------
+> >   include/linux/of_platform.h |  7 +++++++
+> >   3 files changed, 48 insertions(+), 6 deletions(-)
+> >=20
+> > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> > index 4f8bef3..8dcf835 100644
+> > --- a/drivers/base/platform.c
+> > +++ b/drivers/base/platform.c
+> > @@ -481,6 +481,10 @@ static int platform_drv_probe(struct device *_dev)
+>=20
+> Should it be the part of really_probe()? Isn't it?
 
-Well, you should. Since commit 81e49f  shrinker->count_objects might be
-set to SHRINK_STOP, causing shrink_slab_node() to complain loud and often:
+really_probe() takes a struct device and is in fact called by all types
+of devices. This code, however, is highly platform_device specific, so I
+don't think we can do it in really_probe().
 
-[ 1908.234595] shrink_slab: i915_gem_inactive_scan+0x0/0x9c negative objects to delete nr=-xxxxxxxxx
+Unfortunately every device type has its own way of storing interrupts.
+Platform devices store them as resources, I2C clients store them as a
+separate field in struct i2c_client, etc.
 
-The kernel emitted a few thousand log lines like the one quoted above during the
-last few days on my system.
+> > +int of_platform_probe(struct platform_device *pdev)
+> > +{
+> > +	struct device_node *np =3D pdev->dev.of_node;
+> > +	int num_irq, ret =3D 0;
+> > +
+> > +	if (!pdev->dev.of_node)
+> > +		return 0;
+> > +
+> > +	num_irq =3D of_irq_count(pdev->dev.of_node);
+> > +	if (num_irq > 0) {
+> > +		struct resource *res =3D pdev->resource;
+> > +		int num_reg =3D pdev->num_resources;
+> > +		int num =3D num_reg + num_irq;
+> > +
+> > +		res =3D krealloc(res, num * sizeof(*res), GFP_KERNEL);
+> > +		if (!res)
+> > +			return -ENOMEM;
+> > +
+> > +		pdev->num_resources =3D num;
+> > +		pdev->resource =3D res;
+> > +		res +=3D num_reg;
+>=20
+> What will happen if Driver probe is failed or deferred?
+> Seems resource table size will grow each time the Driver probe is
+> deferred or failed.
 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 2cff0d4..d81f6e0 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -254,6 +254,10 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->   			total_scan = max_pass;
->   		}
->   
-> +		/* Always try to shrink a bit to make forward progress. */
-> +		if (shrinker->evicts_to_page_lru)
-> +			total_scan = max_t(long, total_scan, batch_size);
-> +
-At that place the error message is already emitted.
->   		/*
->   		 * We need to avoid excessive windup on filesystem shrinkers
->   		 * due to large numbers of GFP_NOFS allocations causing the
+That's a very good point. I think what we can do is check whether the
+total number of resources that the device has (pdev->num_resources)
+corresponds to num_reg + num_irq and skip in that case. That and...
 
-Have a look at the attached patch. It fixes my problem with the erroneous/misleading
-error messages, and I think it´s right to just bail out early if SHRINK_STOP is found.
+> > +		ret =3D of_irq_to_resource_table(np, res, num_irq);
+> > +		if (ret < 0)
+> > +			return ret;
 
-Do you agree ?
+=2E.. updating pdev->num_resources after this point should cover all
+cases. Do you see any other potential problems?
 
-cu,
-  Knut
+Thierry
 
+--EeQfGwPcQSOJBaQU
+Content-Type: application/pgp-signature
 
---------------090302000909020209030900
-Content-Type: text/x-patch;
- name="0001-mm-respect-SHRINK_STOP-in-shrink_slab_node.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-mm-respect-SHRINK_STOP-in-shrink_slab_node.patch"
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
->From 75ae570ce7b0bb6b40c76beb18fc075e9af3127a Mon Sep 17 00:00:00 2001
-From: Knut Petersen <Knut_Petersen@t-online.de>
-Date: Wed, 18 Sep 2013 12:06:33 +0200
-Subject: [PATCH] mm: respect SHRINK_STOP in shrink_slab_node()
+iQIcBAEBAgAGBQJSOYPXAAoJEN0jrNd/PrOhm8sP/1+E0NleY5/Ys4U7+yA5qzXg
+DO7FbP9HEW6PXSif+yezB1lVV/aQ+ot9Ftqy470yi05pe/Spg/7ZKMnWGPAQoNWO
+/P7KkE//ckcPaGKr+DWNa4k8MN4BrmLP2enbLZI5XV5Xjz8CBIFe1q5e0Uz6wwGu
+tEgU0pNZnpcX5yTYwa8a/Pk7MkoeDH8xn6wjUzUgQW41x0Nz3+u4NKncewT4ykBO
+N8etJ98CnzsPv9bS6CZUvq4JTvvKGn7sXnWPc+EfZvWCBuQRjZJEHILAMWBDeLia
+e1vv6oBUz6himHcWFMI5xh9BtshB6240wTPDQgIkcTDNnbQz3b//VYUaT/M0ArBm
+8FX9UadaY/b8altwFq/JcfkM+YSDEcKXSwdeNs1oEVVUo7UeCjFBRPf8mqc42vx7
+Eaqt+gNfvGjPCNuXAT24rNkcz4++YX9Wn4ZqKRM5kdE/Y9Kc3uspHrn3FkVJtecg
+qGePbOpWndysAwXlzMVYHvdqFoLD9Slpwk9T/5ZlWK1knTMjU0T4HknJdXelAp60
+3JUeL73iS5JvCLUklXo9iiBSe1qEdnNit+6JjvY1BX8XLaXMrloMjRDRhb8fK+cb
+bNYKCYojY4UeAEjCFiTT2oDTtLoP28tgJodK01v0gzXR/MQ4hKGiasV9kTOM7cuI
+YoypuRCIojTA8q8ZNJQW
+=Plej
+-----END PGP SIGNATURE-----
 
-Since commit 81e49f811404f428a9d9a63295a0c267e802fa12
-i915_gem_inactive_count() might return SHRINK_STOP.
-
-Unfortunately SHRINK_STOP is not handled propperly in
-shrink_slab_node(), causing a system log cluttered with
-kernel error messages complaining about "negative objects
-to delete".
-
-I think the proper way of handling SHRINK_STOP is obvious,
-we should obey ;-)
-
-Signed-off-by: Knut Petersen <Knut_Petersen@t-online.de>
----
- mm/vmscan.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 8ed1b77..b1e6f0d 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -244,6 +244,8 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
- 	max_pass = shrinker->count_objects(shrinker, shrinkctl);
- 	if (max_pass == 0)
- 		return 0;
-+	if (max_pass == SHRINK_STOP)
-+		return 0;
- 
- 	/*
- 	 * copy the current shrinker scan count into a local variable
--- 
-1.8.1.4
-
-
---------------090302000909020209030900--
+--EeQfGwPcQSOJBaQU--
