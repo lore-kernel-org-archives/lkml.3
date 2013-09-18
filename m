@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab3IRN0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:26:11 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:59794 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab3IRN0I (ORCPT
+	id S1752112Ab3IRN02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:26:28 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:36890 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932Ab3IRN0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:26:08 -0400
+	Wed, 18 Sep 2013 09:26:24 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Rob Herring <rob.herring@calxeda.com>,
         Grant Likely <grant.likely@linaro.org>,
@@ -18,9 +18,9 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
         linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 02/10] of/irq: Use irq_of_parse_and_map()
-Date: Wed, 18 Sep 2013 15:24:44 +0200
-Message-Id: <1379510692-32435-3-git-send-email-treding@nvidia.com>
+Subject: [PATCH v2 04/10] irqdomain: Return errors from irq_create_of_mapping()
+Date: Wed, 18 Sep 2013 15:24:46 +0200
+Message-Id: <1379510692-32435-5-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1379510692-32435-1-git-send-email-treding@nvidia.com>
 References: <1379510692-32435-1-git-send-email-treding@nvidia.com>
@@ -28,362 +28,385 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace some instances of of_irq_map_one()/irq_create_of_mapping() and
-of_irq_to_resource() by the simpler equivalent irq_of_parse_and_map().
+Instead of returning 0 for all errors, allow the precise error code to
+be propagated. This will be used in subsequent patches to allow further
+propagation of error codes.
+
+The interrupt number corresponding to the new mapping is returned in an
+output parameter so that the return value is reserved to signal success
+(== 0) or failure (< 0).
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- arch/arm/mach-u300/timer.c                       |  9 ++++-----
- arch/powerpc/platforms/cell/celleb_scc_pciex.c   |  8 +++-----
- arch/powerpc/platforms/cell/spider-pic.c         |  7 ++-----
- arch/powerpc/sysdev/fsl_gtm.c                    |  9 ++++-----
- arch/powerpc/sysdev/mpic_msgr.c                  |  6 ++----
- drivers/crypto/caam/ctrl.c                       |  2 +-
- drivers/crypto/caam/jr.c                         |  2 +-
- drivers/crypto/omap-sham.c                       |  2 +-
- drivers/i2c/busses/i2c-cpm.c                     |  2 +-
- drivers/input/serio/xilinx_ps2.c                 |  7 ++++---
- drivers/net/ethernet/arc/emac_main.c             | 10 +++++-----
- drivers/net/ethernet/freescale/fs_enet/mac-fcc.c |  2 +-
- drivers/net/ethernet/freescale/fs_enet/mac-fec.c |  2 +-
- drivers/net/ethernet/freescale/fs_enet/mac-scc.c |  2 +-
- drivers/spi/spi-fsl-espi.c                       |  6 +++---
- drivers/tty/serial/cpm_uart/cpm_uart_core.c      |  2 +-
- 16 files changed, 35 insertions(+), 43 deletions(-)
+Changes in v2:
+- convert existing callers instead of using compatible wrapper
 
-diff --git a/arch/arm/mach-u300/timer.c b/arch/arm/mach-u300/timer.c
-index b5db207..9a5f9fb 100644
---- a/arch/arm/mach-u300/timer.c
-+++ b/arch/arm/mach-u300/timer.c
-@@ -358,8 +358,7 @@ static struct delay_timer u300_delay_timer;
-  */
- static void __init u300_timer_init_of(struct device_node *np)
- {
--	struct resource irq_res;
--	int irq;
-+	unsigned int irq;
- 	struct clk *clk;
- 	unsigned long rate;
- 
-@@ -368,11 +367,11 @@ static void __init u300_timer_init_of(struct device_node *np)
- 		panic("could not ioremap system timer\n");
- 
- 	/* Get the IRQ for the GP1 timer */
--	irq = of_irq_to_resource(np, 2, &irq_res);
--	if (irq <= 0)
-+	irq = irq_of_parse_and_map(np, 2);
-+	if (!irq)
- 		panic("no IRQ for system timer\n");
- 
--	pr_info("U300 GP1 timer @ base: %p, IRQ: %d\n", u300_timer_base, irq);
-+	pr_info("U300 GP1 timer @ base: %p, IRQ: %u\n", u300_timer_base, irq);
- 
- 	/* Clock the interrupt controller */
- 	clk = of_clk_get(np, 0);
-diff --git a/arch/powerpc/platforms/cell/celleb_scc_pciex.c b/arch/powerpc/platforms/cell/celleb_scc_pciex.c
-index 14be2bd..856ad64 100644
---- a/arch/powerpc/platforms/cell/celleb_scc_pciex.c
-+++ b/arch/powerpc/platforms/cell/celleb_scc_pciex.c
-@@ -486,8 +486,7 @@ static __init int celleb_setup_pciex(struct device_node *node,
- 				     struct pci_controller *phb)
- {
- 	struct resource	r;
--	struct of_irq oirq;
--	int virq;
-+	unsigned int virq;
- 
- 	/* SMMIO registers; used inside this file */
- 	if (of_address_to_resource(node, 0, &r)) {
-@@ -507,12 +506,11 @@ static __init int celleb_setup_pciex(struct device_node *node,
- 	phb->ops = &scc_pciex_pci_ops;
- 
- 	/* internal interrupt handler */
--	if (of_irq_map_one(node, 1, &oirq)) {
-+	virq = irq_of_parse_and_map(node, 1);
-+	if (!virq) {
- 		pr_err("PCIEXC:Failed to map irq\n");
- 		goto error;
+ arch/arm/mach-integrator/pci_v3.c              |  8 ++++++--
+ arch/microblaze/pci/pci-common.c               |  6 ++++--
+ arch/mips/pci/fixup-lantiq.c                   | 12 +++++++----
+ arch/mips/pci/pci-rt3883.c                     |  9 +++++----
+ arch/powerpc/kernel/pci-common.c               |  7 +++++--
+ arch/powerpc/platforms/cell/celleb_scc_sio.c   |  8 +++++---
+ arch/powerpc/platforms/cell/spu_manage.c       |  6 +++---
+ arch/powerpc/platforms/fsl_uli1575.c           |  7 +++----
+ arch/powerpc/platforms/pseries/event_sources.c | 12 ++++++-----
+ arch/x86/kernel/devicetree.c                   | 11 +++++-----
+ drivers/pci/host/pci-mvebu.c                   |  9 +++++++--
+ include/linux/of_irq.h                         |  6 +++---
+ kernel/irq/irqdomain.c                         | 28 ++++++++++++++++----------
+ 13 files changed, 78 insertions(+), 51 deletions(-)
+
+diff --git a/arch/arm/mach-integrator/pci_v3.c b/arch/arm/mach-integrator/pci_v3.c
+index bef1005..aa0f867 100644
+--- a/arch/arm/mach-integrator/pci_v3.c
++++ b/arch/arm/mach-integrator/pci_v3.c
+@@ -847,8 +847,12 @@ static int __init pci_v3_map_irq_dt(const struct pci_dev *dev, u8 slot, u8 pin)
+ 		return 0;
  	}
--	virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
+ 
+-	return irq_create_of_mapping(oirq.controller, oirq.specifier,
 -				     oirq.size);
- 	if (request_irq(virq, pciex_handle_internal_irq,
- 			0, "pciex", (void *)phb)) {
- 		pr_err("PCIEXC:Failed to request irq\n");
-diff --git a/arch/powerpc/platforms/cell/spider-pic.c b/arch/powerpc/platforms/cell/spider-pic.c
-index 8e29944..1f72f4a 100644
---- a/arch/powerpc/platforms/cell/spider-pic.c
-+++ b/arch/powerpc/platforms/cell/spider-pic.c
-@@ -235,12 +235,9 @@ static unsigned int __init spider_find_cascade_and_node(struct spider_pic *pic)
- 	/* First, we check whether we have a real "interrupts" in the device
- 	 * tree in case the device-tree is ever fixed
- 	 */
--	struct of_irq oirq;
--	if (of_irq_map_one(pic->host->of_node, 0, &oirq) == 0) {
++	ret = irq_create_of_mapping(oirq.controller, oirq.specifier,
++				    oirq.size, &virq);
++	if (ret)
++		return 0;
++
++	return virq;
+ }
+ 
+ static int __init pci_v3_dtprobe(struct platform_device *pdev,
+diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
+index 1b93bf0..80b6e0f 100644
+--- a/arch/microblaze/pci/pci-common.c
++++ b/arch/microblaze/pci/pci-common.c
+@@ -246,8 +246,10 @@ int pci_read_irq_line(struct pci_dev *pci_dev)
+ 			 oirq.size, oirq.specifier[0], oirq.specifier[1],
+ 			 of_node_full_name(oirq.controller));
+ 
 -		virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
 -					     oirq.size);
-+	virq = irq_of_parse_and_map(pic->host->of_node, 0);
-+	if (virq)
- 		return virq;
--	}
- 
- 	/* Now do the horrible hacks */
- 	tmp = of_get_property(pic->host->of_node, "#interrupt-cells", NULL);
-diff --git a/arch/powerpc/sysdev/fsl_gtm.c b/arch/powerpc/sysdev/fsl_gtm.c
-index 0eb871c..dd0d5be 100644
---- a/arch/powerpc/sysdev/fsl_gtm.c
-+++ b/arch/powerpc/sysdev/fsl_gtm.c
-@@ -401,16 +401,15 @@ static int __init fsl_gtm_init(void)
- 		gtm->clock = *clock;
- 
- 		for (i = 0; i < ARRAY_SIZE(gtm->timers); i++) {
--			int ret;
--			struct resource irq;
-+			unsigned int irq;
- 
--			ret = of_irq_to_resource(np, i, &irq);
--			if (ret == NO_IRQ) {
-+			irq = irq_of_parse_and_map(np, i);
-+			if (irq == NO_IRQ) {
- 				pr_err("%s: not enough interrupts specified\n",
- 				       np->full_name);
- 				goto err;
- 			}
--			gtm->timers[i].irq = irq.start;
-+			gtm->timers[i].irq = irq;
- 			gtm->timers[i].gtm = gtm;
- 		}
- 
-diff --git a/arch/powerpc/sysdev/mpic_msgr.c b/arch/powerpc/sysdev/mpic_msgr.c
-index c753258..2c9b52a 100644
---- a/arch/powerpc/sysdev/mpic_msgr.c
-+++ b/arch/powerpc/sysdev/mpic_msgr.c
-@@ -237,15 +237,13 @@ static int mpic_msgr_probe(struct platform_device *dev)
- 		raw_spin_lock_init(&msgr->lock);
- 
- 		if (receive_mask & (1 << i)) {
--			struct resource irq;
--
--			if (of_irq_to_resource(np, irq_index, &irq) == NO_IRQ) {
-+			msgr->irq = irq_of_parse_and_map(np, irq_index);
-+			if (msgr->irq == NO_IRQ) {
- 				dev_err(&dev->dev,
- 						"Missing interrupt specifier");
- 				kfree(msgr);
- 				return -EFAULT;
- 			}
--			msgr->irq = irq.start;
- 			irq_index += 1;
- 		} else {
- 			msgr->irq = NO_IRQ;
-diff --git a/drivers/crypto/caam/ctrl.c b/drivers/crypto/caam/ctrl.c
-index 26438cd..c8224da 100644
---- a/drivers/crypto/caam/ctrl.c
-+++ b/drivers/crypto/caam/ctrl.c
-@@ -419,7 +419,7 @@ static int caam_probe(struct platform_device *pdev)
- 	topregs = (struct caam_full __iomem *)ctrl;
- 
- 	/* Get the IRQ of the controller (for security violations only) */
--	ctrlpriv->secvio_irq = of_irq_to_resource(nprop, 0, NULL);
-+	ctrlpriv->secvio_irq = irq_of_parse_and_map(nprop, 0);
- 
- 	/*
- 	 * Enable DECO watchdogs and, if this is a PHYS_ADDR_T_64BIT kernel,
-diff --git a/drivers/crypto/caam/jr.c b/drivers/crypto/caam/jr.c
-index 105ba4d..517a16d 100644
---- a/drivers/crypto/caam/jr.c
-+++ b/drivers/crypto/caam/jr.c
-@@ -403,7 +403,7 @@ int caam_jr_probe(struct platform_device *pdev, struct device_node *np,
- 		dma_set_mask(jrdev, DMA_BIT_MASK(32));
- 
- 	/* Identify the interrupt */
--	jrpriv->irq = of_irq_to_resource(np, 0, NULL);
-+	jrpriv->irq = irq_of_parse_and_map(np, 0);
- 
- 	/* Now do the platform independent part */
- 	error = caam_jr_init(jrdev); /* now turn on hardware */
-diff --git a/drivers/crypto/omap-sham.c b/drivers/crypto/omap-sham.c
-index 8bdde57..e28104b 100644
---- a/drivers/crypto/omap-sham.c
-+++ b/drivers/crypto/omap-sham.c
-@@ -1818,7 +1818,7 @@ static int omap_sham_get_res_of(struct omap_sham_dev *dd,
- 		goto err;
++		ret = irq_create_of_mapping(oirq.controller, oirq.specifier,
++					    oirq.size, &virq);
++		if (ret)
++			virq = 0;
  	}
- 
--	dd->irq = of_irq_to_resource(node, 0, NULL);
-+	dd->irq = irq_of_parse_and_map(node, 0);
- 	if (!dd->irq) {
- 		dev_err(dev, "can't translate OF irq value\n");
- 		err = -EINVAL;
-diff --git a/drivers/i2c/busses/i2c-cpm.c b/drivers/i2c/busses/i2c-cpm.c
-index b2b8aa9..3e5ea2c 100644
---- a/drivers/i2c/busses/i2c-cpm.c
-+++ b/drivers/i2c/busses/i2c-cpm.c
-@@ -447,7 +447,7 @@ static int cpm_i2c_setup(struct cpm_i2c *cpm)
- 
- 	init_waitqueue_head(&cpm->i2c_wait);
- 
--	cpm->irq = of_irq_to_resource(ofdev->dev.of_node, 0, NULL);
-+	cpm->irq = irq_of_parse_and_map(ofdev->dev.of_node, 0);
- 	if (!cpm->irq)
- 		return -EINVAL;
- 
-diff --git a/drivers/input/serio/xilinx_ps2.c b/drivers/input/serio/xilinx_ps2.c
-index 4b7662a..36f7b95 100644
---- a/drivers/input/serio/xilinx_ps2.c
-+++ b/drivers/input/serio/xilinx_ps2.c
-@@ -235,12 +235,12 @@ static void sxps2_close(struct serio *pserio)
-  */
- static int xps2_of_probe(struct platform_device *ofdev)
+ 	if (!virq) {
+ 		pr_debug(" Failed to map !\n");
+diff --git a/arch/mips/pci/fixup-lantiq.c b/arch/mips/pci/fixup-lantiq.c
+index 6c829df..dfe7bf1 100644
+--- a/arch/mips/pci/fixup-lantiq.c
++++ b/arch/mips/pci/fixup-lantiq.c
+@@ -26,15 +26,19 @@ int pcibios_plat_dev_init(struct pci_dev *dev)
+ int __init pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
  {
--	struct resource r_irq; /* Interrupt resources */
- 	struct resource r_mem; /* IO mem resources */
- 	struct xps2data *drvdata;
- 	struct serio *serio;
- 	struct device *dev = &ofdev->dev;
- 	resource_size_t remap_size, phys_addr;
+ 	struct of_irq dev_irq;
+-	int irq;
 +	unsigned int irq;
- 	int error;
++	int err;
  
- 	dev_info(dev, "Device Tree Probing \'%s\'\n",
-@@ -254,7 +254,8 @@ static int xps2_of_probe(struct platform_device *ofdev)
+ 	if (of_irq_map_pci(dev, &dev_irq)) {
+ 		dev_err(&dev->dev, "trying to map irq for unknown slot:%d pin:%d\n",
+ 			slot, pin);
+ 		return 0;
  	}
- 
- 	/* Get IRQ for the device */
--	if (!of_irq_to_resource(ofdev->dev.of_node, 0, &r_irq)) {
-+	irq = irq_of_parse_and_map(ofdev->dev.of_node, 0);
-+	if (!irq) {
- 		dev_err(dev, "no IRQ found\n");
- 		return -ENODEV;
- 	}
-@@ -267,7 +268,7 @@ static int xps2_of_probe(struct platform_device *ofdev)
- 	}
- 
- 	spin_lock_init(&drvdata->lock);
--	drvdata->irq = r_irq.start;
-+	drvdata->irq = irq;
- 	drvdata->serio = serio;
- 	drvdata->dev = dev;
- 
-diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
-index 9e16014..d087852 100644
---- a/drivers/net/ethernet/arc/emac_main.c
-+++ b/drivers/net/ethernet/arc/emac_main.c
-@@ -628,12 +628,12 @@ static const struct net_device_ops arc_emac_netdev_ops = {
- 
- static int arc_emac_probe(struct platform_device *pdev)
+-	irq = irq_create_of_mapping(dev_irq.controller, dev_irq.specifier,
+-					dev_irq.size);
+-	dev_info(&dev->dev, "SLOT:%d PIN:%d IRQ:%d\n", slot, pin, irq);
++	err = irq_create_of_mapping(dev_irq.controller, dev_irq.specifier,
++				    dev_irq.size, &irq);
++	if (err)
++		return 0;
++
++	dev_info(&dev->dev, "SLOT:%d PIN:%d IRQ:%u\n", slot, pin, irq);
+ 	return irq;
+ }
+diff --git a/arch/mips/pci/pci-rt3883.c b/arch/mips/pci/pci-rt3883.c
+index 95c9d41..79b49b5 100644
+--- a/arch/mips/pci/pci-rt3883.c
++++ b/arch/mips/pci/pci-rt3883.c
+@@ -584,8 +584,8 @@ err_put_intc_node:
+ int __init pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
  {
--	struct resource res_regs, res_irq;
-+	struct resource res_regs;
- 	struct device_node *phy_node;
- 	struct arc_emac_priv *priv;
- 	struct net_device *ndev;
- 	const char *mac_addr;
--	unsigned int id, clock_frequency;
-+	unsigned int id, clock_frequency, irq;
+ 	struct of_irq dev_irq;
++	unsigned int irq = 0;
  	int err;
+-	int irq;
  
- 	if (!pdev->dev.of_node)
-@@ -661,8 +661,8 @@ static int arc_emac_probe(struct platform_device *pdev)
+ 	err = of_irq_map_pci(dev, &dev_irq);
+ 	if (err) {
+@@ -594,11 +594,12 @@ int __init pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+ 		return 0;
  	}
  
- 	/* Get IRQ from device tree */
--	err = of_irq_to_resource(pdev->dev.of_node, 0, &res_irq);
--	if (!err) {
-+	irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
-+	if (!irq) {
- 		dev_err(&pdev->dev, "failed to retrieve <irq> value from device tree\n");
- 		return -ENODEV;
- 	}
-@@ -711,7 +711,7 @@ static int arc_emac_probe(struct platform_device *pdev)
- 		goto out;
- 	}
+-	irq = irq_create_of_mapping(dev_irq.controller,
++	err = irq_create_of_mapping(dev_irq.controller,
+ 				    dev_irq.specifier,
+-				    dev_irq.size);
++				    dev_irq.size,
++				    &irq);
  
--	ndev->irq = res_irq.start;
-+	ndev->irq = irq;
- 	dev_info(&pdev->dev, "IRQ is %d\n", ndev->irq);
- 
- 	/* Register interrupt handler for device */
-diff --git a/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c b/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c
-index 7583a95..10f781d 100644
---- a/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c
-+++ b/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c
-@@ -88,7 +88,7 @@ static int do_pd_setup(struct fs_enet_private *fep)
- 	struct fs_platform_info *fpi = fep->fpi;
- 	int ret = -EINVAL;
- 
--	fep->interrupt = of_irq_to_resource(ofdev->dev.of_node, 0, NULL);
-+	fep->interrupt = irq_of_parse_and_map(ofdev->dev.of_node, 0);
- 	if (fep->interrupt == NO_IRQ)
- 		goto out;
- 
-diff --git a/drivers/net/ethernet/freescale/fs_enet/mac-fec.c b/drivers/net/ethernet/freescale/fs_enet/mac-fec.c
-index 9ae6cdb..53a0c23 100644
---- a/drivers/net/ethernet/freescale/fs_enet/mac-fec.c
-+++ b/drivers/net/ethernet/freescale/fs_enet/mac-fec.c
-@@ -98,7 +98,7 @@ static int do_pd_setup(struct fs_enet_private *fep)
+-	if (irq == 0)
++	if (err)
+ 		pr_crit("pci %s: no irq found for pin %u\n",
+ 			pci_name((struct pci_dev *) dev), pin);
+ 	else
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index 905a24b..ae71b14 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -230,6 +230,7 @@ static int pci_read_irq_line(struct pci_dev *pci_dev)
  {
- 	struct platform_device *ofdev = to_platform_device(fep->dev);
+ 	struct of_irq oirq;
+ 	unsigned int virq;
++	int ret;
  
--	fep->interrupt = of_irq_to_resource(ofdev->dev.of_node, 0, NULL);
-+	fep->interrupt = irq_of_parse_and_map(ofdev->dev.of_node, 0);
- 	if (fep->interrupt == NO_IRQ)
- 		return -EINVAL;
+ 	pr_debug("PCI: Try to map irq for %s...\n", pci_name(pci_dev));
  
-diff --git a/drivers/net/ethernet/freescale/fs_enet/mac-scc.c b/drivers/net/ethernet/freescale/fs_enet/mac-scc.c
-index 22a02a7..631f098 100644
---- a/drivers/net/ethernet/freescale/fs_enet/mac-scc.c
-+++ b/drivers/net/ethernet/freescale/fs_enet/mac-scc.c
-@@ -98,7 +98,7 @@ static int do_pd_setup(struct fs_enet_private *fep)
+@@ -266,8 +267,10 @@ static int pci_read_irq_line(struct pci_dev *pci_dev)
+ 			 oirq.size, oirq.specifier[0], oirq.specifier[1],
+ 			 of_node_full_name(oirq.controller));
+ 
+-		virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
+-					     oirq.size);
++		ret = irq_create_of_mapping(oirq.controller, oirq.specifier,
++					    oirq.size, &virq);
++		if (ret)
++			virq = NO_IRQ;
+ 	}
+ 	if(virq == NO_IRQ) {
+ 		pr_debug(" Failed to map !\n");
+diff --git a/arch/powerpc/platforms/cell/celleb_scc_sio.c b/arch/powerpc/platforms/cell/celleb_scc_sio.c
+index 9c339ec..94b771e 100644
+--- a/arch/powerpc/platforms/cell/celleb_scc_sio.c
++++ b/arch/powerpc/platforms/cell/celleb_scc_sio.c
+@@ -43,7 +43,7 @@ static int __init txx9_serial_init(void)
  {
- 	struct platform_device *ofdev = to_platform_device(fep->dev);
+ 	extern int early_serial_txx9_setup(struct uart_port *port);
+ 	struct device_node *node;
+-	int i;
++	int i, err;
+ 	struct uart_port req;
+ 	struct of_irq irq;
+ 	struct resource res;
+@@ -66,8 +66,10 @@ static int __init txx9_serial_init(void)
+ #ifdef CONFIG_SERIAL_TXX9_CONSOLE
+ 			req.membase = ioremap(req.mapbase, 0x24);
+ #endif
+-			req.irq = irq_create_of_mapping(irq.controller,
+-				irq.specifier, irq.size);
++			err = irq_create_of_mapping(irq.controller,
++				irq.specifier, irq.size, &req.irq);
++			if (err)
++				req.irq = 0;
+ 			req.flags |= UPF_IOREMAP | UPF_BUGGY_UART
+ 				/*HAVE_CTS_LINE*/;
+ 			req.uartclk = 83300000;
+diff --git a/arch/powerpc/platforms/cell/spu_manage.c b/arch/powerpc/platforms/cell/spu_manage.c
+index 2bb6977..b78c7a4 100644
+--- a/arch/powerpc/platforms/cell/spu_manage.c
++++ b/arch/powerpc/platforms/cell/spu_manage.c
+@@ -190,9 +190,9 @@ static int __init spu_map_interrupts(struct spu *spu, struct device_node *np)
+ 		ret = -EINVAL;
+ 		pr_debug("  irq %d no 0x%x on %s\n", i, oirq.specifier[0],
+ 			 oirq.controller->full_name);
+-		spu->irqs[i] = irq_create_of_mapping(oirq.controller,
+-					oirq.specifier, oirq.size);
+-		if (spu->irqs[i] == NO_IRQ) {
++		ret = irq_create_of_mapping(oirq.controller, oirq.specifier,
++					    oirq.size, &spu->irqs[i]);
++		if (ret) {
+ 			pr_debug("spu_new: failed to map it !\n");
+ 			goto err;
+ 		}
+diff --git a/arch/powerpc/platforms/fsl_uli1575.c b/arch/powerpc/platforms/fsl_uli1575.c
+index 92ac9b5..575b215 100644
+--- a/arch/powerpc/platforms/fsl_uli1575.c
++++ b/arch/powerpc/platforms/fsl_uli1575.c
+@@ -322,7 +322,7 @@ static void hpcd_final_uli5288(struct pci_dev *dev)
+ 	struct pci_controller *hose = pci_bus_to_host(dev->bus);
+ 	struct device_node *hosenode = hose ? hose->dn : NULL;
+ 	struct of_irq oirq;
+-	int virq, pin = 2;
++	int pin = 2;
+ 	u32 laddr[3];
  
--	fep->interrupt = of_irq_to_resource(ofdev->dev.of_node, 0, NULL);
-+	fep->interrupt = irq_of_parse_and_map(ofdev->dev.of_node, 0);
- 	if (fep->interrupt == NO_IRQ)
- 		return -EINVAL;
+ 	if (!machine_is(mpc86xx_hpcd))
+@@ -334,9 +334,8 @@ static void hpcd_final_uli5288(struct pci_dev *dev)
+ 	laddr[0] = (hose->first_busno << 16) | (PCI_DEVFN(31, 0) << 8);
+ 	laddr[1] = laddr[2] = 0;
+ 	of_irq_map_raw(hosenode, &pin, 1, laddr, &oirq);
+-	virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
+-				     oirq.size);
+-	dev->irq = virq;
++	irq_create_of_mapping(oirq.controller, oirq.specifier, oirq.size,
++			      &dev->irq);
+ }
  
-diff --git a/drivers/spi/spi-fsl-espi.c b/drivers/spi/spi-fsl-espi.c
-index b8f1103..3197d55 100644
---- a/drivers/spi/spi-fsl-espi.c
-+++ b/drivers/spi/spi-fsl-espi.c
-@@ -687,7 +687,7 @@ static int of_fsl_espi_probe(struct platform_device *ofdev)
- 	struct device_node *np = ofdev->dev.of_node;
- 	struct spi_master *master;
- 	struct resource mem;
--	struct resource irq;
-+	unsigned int irq;
- 	int ret = -ENOMEM;
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AL, 0x1575, hpcd_quirk_uli1575);
+diff --git a/arch/powerpc/platforms/pseries/event_sources.c b/arch/powerpc/platforms/pseries/event_sources.c
+index 2605c31..4367fdd 100644
+--- a/arch/powerpc/platforms/pseries/event_sources.c
++++ b/arch/powerpc/platforms/pseries/event_sources.c
+@@ -24,7 +24,7 @@ void request_event_sources_irqs(struct device_node *np,
+ 				irq_handler_t handler,
+ 				const char *name)
+ {
+-	int i, index, count = 0;
++	int i, index, err, count = 0;
+ 	struct of_irq oirq;
+ 	const u32 *opicprop;
+ 	unsigned int opicplen;
+@@ -59,10 +59,12 @@ void request_event_sources_irqs(struct device_node *np,
+ 		     index++) {
+ 			if (count > 15)
+ 				break;
+-			virqs[count] = irq_create_of_mapping(oirq.controller,
+-							    oirq.specifier,
+-							    oirq.size);
+-			if (virqs[count] == NO_IRQ) {
++
++			err = irq_create_of_mapping(oirq.controller,
++						    oirq.specifier,
++						    oirq.size,
++						    &virqs[count]);
++			if (err) {
+ 				pr_err("event-sources: Unable to allocate "
+ 				       "interrupt number for %s\n",
+ 				       np->full_name);
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index 376dc78..7adede6 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -106,7 +106,6 @@ struct device_node *pcibios_get_phb_of_node(struct pci_bus *bus)
+ static int x86_of_pci_irq_enable(struct pci_dev *dev)
+ {
+ 	struct of_irq oirq;
+-	u32 virq;
+ 	int ret;
+ 	u8 pin;
  
- 	ret = of_mpc8xxx_spi_probe(ofdev);
-@@ -702,13 +702,13 @@ static int of_fsl_espi_probe(struct platform_device *ofdev)
+@@ -120,11 +119,11 @@ static int x86_of_pci_irq_enable(struct pci_dev *dev)
  	if (ret)
- 		goto err;
+ 		return ret;
  
--	ret = of_irq_to_resource(np, 0, &irq);
-+	irq = irq_of_parse_and_map(np, 0);
- 	if (!ret) {
- 		ret = -EINVAL;
- 		goto err;
+-	virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
+-			oirq.size);
+-	if (virq == 0)
+-		return -EINVAL;
+-	dev->irq = virq;
++	ret = irq_create_of_mapping(oirq.controller, oirq.specifier, oirq.size,
++				    &dev->irq);
++	if (ret)
++		return ret;
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
+index 77f8a7c..7773a17 100644
+--- a/drivers/pci/host/pci-mvebu.c
++++ b/drivers/pci/host/pci-mvebu.c
+@@ -656,14 +656,19 @@ static int mvebu_pcie_setup(int nr, struct pci_sys_data *sys)
+ static int mvebu_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+ {
+ 	struct of_irq oirq;
++	unsigned int virq;
+ 	int ret;
+ 
+ 	ret = of_irq_map_pci(dev, &oirq);
+ 	if (ret)
+ 		return ret;
+ 
+-	return irq_create_of_mapping(oirq.controller, oirq.specifier,
+-				     oirq.size);
++	ret = irq_create_of_mapping(oirq.controller, oirq.specifier, oirq.size,
++				    &virq);
++	if (ret)
++		return 0;
++
++	return virq;
+ }
+ 
+ static struct pci_bus *mvebu_pcie_scan_bus(int nr, struct pci_sys_data *sys)
+diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
+index 535cecf..138266d 100644
+--- a/include/linux/of_irq.h
++++ b/include/linux/of_irq.h
+@@ -63,9 +63,9 @@ extern int of_irq_map_raw(struct device_node *parent, const __be32 *intspec,
+ 			  struct of_irq *out_irq);
+ extern int of_irq_map_one(struct device_node *device, int index,
+ 			  struct of_irq *out_irq);
+-extern unsigned int irq_create_of_mapping(struct device_node *controller,
+-					  const u32 *intspec,
+-					  unsigned int intsize);
++extern int irq_create_of_mapping(struct device_node *controller,
++				 const u32 *intspec, unsigned int intsize,
++				 unsigned int *virqp);
+ extern int of_irq_to_resource(struct device_node *dev, int index,
+ 			      struct resource *r);
+ extern int of_irq_count(struct device_node *dev);
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index d2a3b01..5f8401c 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -484,40 +484,46 @@ int irq_create_strict_mappings(struct irq_domain *domain, unsigned int irq_base,
+ }
+ EXPORT_SYMBOL_GPL(irq_create_strict_mappings);
+ 
+-unsigned int irq_create_of_mapping(struct device_node *controller,
+-				   const u32 *intspec, unsigned int intsize)
++int irq_create_of_mapping(struct device_node *controller, const u32 *intspec,
++			  unsigned int intsize, unsigned int *virqp)
+ {
++	unsigned int type = IRQ_TYPE_NONE;
+ 	struct irq_domain *domain;
+ 	irq_hw_number_t hwirq;
+-	unsigned int type = IRQ_TYPE_NONE;
+ 	unsigned int virq;
++	int ret;
+ 
+ 	domain = controller ? irq_find_host(controller) : irq_default_domain;
+ 	if (!domain) {
+ 		pr_warn("no irq domain found for %s !\n",
+ 			of_node_full_name(controller));
+-		return 0;
++		return -EPROBE_DEFER;
  	}
  
--	master = fsl_espi_probe(dev, &mem, irq.start);
-+	master = fsl_espi_probe(dev, &mem, irq);
- 	if (IS_ERR(master)) {
- 		ret = PTR_ERR(master);
- 		goto err;
-diff --git a/drivers/tty/serial/cpm_uart/cpm_uart_core.c b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-index 1a535f7..6957f445 100644
---- a/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-+++ b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-@@ -1207,7 +1207,7 @@ static int cpm_uart_init_port(struct device_node *np,
- 	pinfo->port.fifosize = pinfo->tx_nrfifos * pinfo->tx_fifosize;
- 	spin_lock_init(&pinfo->port.lock);
+ 	/* If domain has no translation, then we assume interrupt line */
+ 	if (domain->ops->xlate == NULL)
+ 		hwirq = intspec[0];
+ 	else {
+-		if (domain->ops->xlate(domain, controller, intspec, intsize,
+-				     &hwirq, &type))
+-			return 0;
++		ret = domain->ops->xlate(domain, controller, intspec, intsize,
++					 &hwirq, &type);
++		if (ret)
++			return ret;
+ 	}
  
--	pinfo->port.irq = of_irq_to_resource(np, 0, NULL);
-+	pinfo->port.irq = irq_of_parse_and_map(np, 0);
- 	if (pinfo->port.irq == NO_IRQ) {
- 		ret = -EINVAL;
- 		goto out_pram;
+ 	/* Create mapping */
+-	virq = irq_create_mapping(domain, hwirq);
+-	if (!virq)
+-		return virq;
++	ret = __irq_create_mapping(domain, hwirq, &virq);
++	if (ret)
++		return ret;
+ 
+ 	/* Set type if specified and different than the current one */
+ 	if (type != IRQ_TYPE_NONE &&
+ 	    type != irq_get_trigger_type(virq))
+ 		irq_set_irq_type(virq, type);
+-	return virq;
++
++	if (virqp)
++		*virqp = virq;
++
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(irq_create_of_mapping);
+ 
 -- 
 1.8.4
 
