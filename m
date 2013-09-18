@@ -1,138 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab3IRRyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 13:54:16 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:44805 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab3IRRyL (ORCPT
+	id S1753153Ab3IRRyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 13:54:14 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:51192 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab3IRRyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Sep 2013 13:54:11 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Barry Song <baohua.song@csr.com>,
-        Russell King <linux@arm.linux.org.uk>,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
         Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/26] clk: prima2: declare OF clock provider
-Date: Wed, 18 Sep 2013 19:53:37 +0200
-Message-Id: <1379526839-14798-5-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 02/26] clk: nomadik: move src init out of nomadik_clk_init
+Date: Wed, 18 Sep 2013 19:53:35 +0200
+Message-Id: <1379526839-14798-3-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Common clock framework allows to register clock providers to get called
-on of_clk_init() by using CLK_OF_DECLARE. This converts prima2 clock
-provider to make use of it and get rid of the mach specific clk init
-call.
+nomadik_clk_init currently also maps system reset controller base address
+used by clocks and registers a reboot notifier. To allow further cleanup of
+nomadik clk setup, this moves system reset controller setup from
+nomadik_clk_init to its own function.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Cc: Olof Johansson <olof@lixom.net>
 Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Barry Song <baohua.song@csr.com>
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Alessandro Rubini <rubini@unipv.it>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
 Cc: Mike Turquette <mturquette@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/mach-prima2/common.c |    4 ++--
- arch/arm/mach-prima2/common.h |    1 -
- drivers/clk/clk-prima2.c      |   29 ++++++-----------------------
- 3 files changed, 8 insertions(+), 26 deletions(-)
+ drivers/clk/clk-nomadik.c |  117 +++++++++++++++++++++++----------------------
+ 1 file changed, 61 insertions(+), 56 deletions(-)
 
-diff --git a/arch/arm/mach-prima2/common.c b/arch/arm/mach-prima2/common.c
-index e110b6d..9b7663d 100644
---- a/arch/arm/mach-prima2/common.c
-+++ b/arch/arm/mach-prima2/common.c
-@@ -6,6 +6,7 @@
-  * Licensed under GPLv2 or later.
-  */
+diff --git a/drivers/clk/clk-nomadik.c b/drivers/clk/clk-nomadik.c
+index 51410c2..7849086 100644
+--- a/drivers/clk/clk-nomadik.c
++++ b/drivers/clk/clk-nomadik.c
+@@ -54,6 +54,66 @@ static DEFINE_SPINLOCK(src_lock);
+ /* Base address of the SRC */
+ static void __iomem *src_base;
  
-+#include <linux/clk-provider.h>
- #include <linux/clocksource.h>
- #include <linux/init.h>
- #include <linux/kernel.h>
-@@ -23,8 +24,7 @@ void __init sirfsoc_init_late(void)
- 
- static __init void sirfsoc_init_time(void)
- {
--	/* initialize clocking early, we want to set the OS timer */
--	sirfsoc_of_clk_init();
-+	of_clk_init(NULL);
- 	clocksource_of_init();
++static int nomadik_clk_reboot_handler(struct notifier_block *this,
++				unsigned long code,
++				void *unused)
++{
++	u32 val;
++
++	/* The main chrystal need to be enabled for reboot to work */
++	val = readl(src_base + SRC_XTALCR);
++	val &= ~SRC_XTALCR_MXTALOVER;
++	val |= SRC_XTALCR_MXTALEN;
++	pr_crit("force-enabling MXTALO\n");
++	writel(val, src_base + SRC_XTALCR);
++	return NOTIFY_OK;
++}
++
++static struct notifier_block nomadik_clk_reboot_notifier = {
++	.notifier_call = nomadik_clk_reboot_handler,
++};
++
++static const struct of_device_id nomadik_src_match[] __initconst = {
++	{ .compatible = "stericsson,nomadik-src" },
++	{ /* sentinel */ }
++};
++
++static void __init nomadik_src_init(void)
++{
++	struct device_node *np;
++	u32 val;
++
++	np = of_find_matching_node(NULL, nomadik_src_match);
++	if (!np) {
++		pr_crit("no matching node for SRC, aborting clock init\n");
++		return;
++	}
++	src_base = of_iomap(np, 0);
++	if (!src_base) {
++		pr_err("%s: must have src parent node with REGS (%s)\n",
++		       __func__, np->name);
++		return;
++	}
++	val = readl(src_base + SRC_XTALCR);
++	pr_info("SXTALO is %s\n",
++		(val & SRC_XTALCR_SXTALDIS) ? "disabled" : "enabled");
++	pr_info("MXTAL is %s\n",
++		(val & SRC_XTALCR_MXTALSTAT) ? "enabled" : "disabled");
++	if (of_property_read_bool(np, "disable-sxtalo")) {
++		/* The machine uses an external oscillator circuit */
++		val |= SRC_XTALCR_SXTALDIS;
++		pr_info("disabling SXTALO\n");
++	}
++	if (of_property_read_bool(np, "disable-mxtalo")) {
++		/* Disable this too: also run by external oscillator */
++		val |= SRC_XTALCR_MXTALOVER;
++		val &= ~SRC_XTALCR_MXTALEN;
++		pr_info("disabling MXTALO\n");
++	}
++	writel(val, src_base + SRC_XTALCR);
++	register_reboot_notifier(&nomadik_clk_reboot_notifier);
++}
++
+ /**
+  * struct clk_pll1 - Nomadik PLL1 clock
+  * @hw: corresponding clock hardware entry
+@@ -479,11 +539,6 @@ static void __init of_nomadik_src_clk_setup(struct device_node *np)
+ 		of_clk_add_provider(np, of_clk_src_simple_get, clk);
  }
  
-diff --git a/arch/arm/mach-prima2/common.h b/arch/arm/mach-prima2/common.h
-index a630485..4b76806 100644
---- a/arch/arm/mach-prima2/common.h
-+++ b/arch/arm/mach-prima2/common.h
-@@ -23,7 +23,6 @@ extern void sirfsoc_secondary_startup(void);
- extern void sirfsoc_cpu_die(unsigned int cpu);
- 
- extern void __init sirfsoc_of_irq_init(void);
--extern void __init sirfsoc_of_clk_init(void);
- extern void sirfsoc_restart(enum reboot_mode, const char *);
- extern asmlinkage void __exception_irq_entry sirfsoc_handle_irq(struct pt_regs *regs);
- 
-diff --git a/drivers/clk/clk-prima2.c b/drivers/clk/clk-prima2.c
-index 5ab95f1..6c15e33 100644
---- a/drivers/clk/clk-prima2.c
-+++ b/drivers/clk/clk-prima2.c
-@@ -1015,16 +1015,6 @@ static struct clk_std clk_usb1 = {
- 	},
+-static const struct of_device_id nomadik_src_match[] __initconst = {
+-	{ .compatible = "stericsson,nomadik-src" },
+-	{ /* sentinel */ }
+-};
+-
+ static const struct of_device_id nomadik_src_clk_match[] __initconst = {
+ 	{
+ 		.compatible = "fixed-clock",
+@@ -508,59 +563,9 @@ static const struct of_device_id nomadik_src_clk_match[] __initconst = {
+ 	{ /* sentinel */ }
  };
  
--static struct of_device_id clkc_ids[] = {
--	{ .compatible = "sirf,prima2-clkc" },
--	{},
--};
+-static int nomadik_clk_reboot_handler(struct notifier_block *this,
+-				unsigned long code,
+-				void *unused)
+-{
+-	u32 val;
 -
--static struct of_device_id rsc_ids[] = {
--	{ .compatible = "sirf,prima2-rsc" },
--	{},
--};
+-	/* The main chrystal need to be enabled for reboot to work */
+-	val = readl(src_base + SRC_XTALCR);
+-	val &= ~SRC_XTALCR_MXTALOVER;
+-	val |= SRC_XTALCR_MXTALEN;
+-	pr_crit("force-enabling MXTALO\n");
+-	writel(val, src_base + SRC_XTALCR);
+-	return NOTIFY_OK;
+-}
 -
- enum prima2_clk_index {
- 	/* 0    1     2      3      4      5      6       7         8      9 */
- 	rtc,    osc,   pll1,  pll2,  pll3,  mem,   sys,   security, dsp,   gps,
-@@ -1082,24 +1072,16 @@ static struct clk_hw *prima2_clk_hw_array[maxclk] __initdata = {
- static struct clk *prima2_clks[maxclk];
- static struct clk_onecell_data clk_data;
+-static struct notifier_block nomadik_clk_reboot_notifier = {
+-	.notifier_call = nomadik_clk_reboot_handler,
+-};
  
--void __init sirfsoc_of_clk_init(void)
-+static void __init sirfsoc_clk_init(struct device_node *np)
+ void __init nomadik_clk_init(void)
  {
 -	struct device_node *np;
-+	struct device_node *rscnp;
- 	int i;
- 
--	np = of_find_matching_node(NULL, rsc_ids);
--	if (!np)
--		panic("unable to find compatible rsc node in dtb\n");
+-	u32 val;
 -
--	sirfsoc_rsc_vbase = of_iomap(np, 0);
-+	rscnp = of_find_compatible_node(NULL, NULL, "sirf,prima2-rsc");
-+	sirfsoc_rsc_vbase = of_iomap(rscnp, 0);
- 	if (!sirfsoc_rsc_vbase)
- 		panic("unable to map rsc registers\n");
--
--	of_node_put(np);
--
--	np = of_find_matching_node(NULL, clkc_ids);
--	if (!np)
+-	np = of_find_matching_node(NULL, nomadik_src_match);
+-	if (!np) {
+-		pr_crit("no matching node for SRC, aborting clock init\n");
 -		return;
-+	of_node_put(rscnp);
- 
- 	sirfsoc_clk_vbase = of_iomap(np, 0);
- 	if (!sirfsoc_clk_vbase)
-@@ -1124,3 +1106,4 @@ void __init sirfsoc_of_clk_init(void)
- 
- 	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
+-	}
+-	src_base = of_iomap(np, 0);
+-	if (!src_base) {
+-		pr_err("%s: must have src parent node with REGS (%s)\n",
+-		       __func__, np->name);
+-		return;
+-	}
+-	val = readl(src_base + SRC_XTALCR);
+-	pr_info("SXTALO is %s\n",
+-		(val & SRC_XTALCR_SXTALDIS) ? "disabled" : "enabled");
+-	pr_info("MXTAL is %s\n",
+-		(val & SRC_XTALCR_MXTALSTAT) ? "enabled" : "disabled");
+-	if (of_property_read_bool(np, "disable-sxtalo")) {
+-		/* The machine uses an external oscillator circuit */
+-		val |= SRC_XTALCR_SXTALDIS;
+-		pr_info("disabling SXTALO\n");
+-	}
+-	if (of_property_read_bool(np, "disable-mxtalo")) {
+-		/* Disable this too: also run by external oscillator */
+-		val |= SRC_XTALCR_MXTALOVER;
+-		val &= ~SRC_XTALCR_MXTALEN;
+-		pr_info("disabling MXTALO\n");
+-	}
+-	writel(val, src_base + SRC_XTALCR);
+-	register_reboot_notifier(&nomadik_clk_reboot_notifier);
+-
++	nomadik_src_init();
+ 	of_clk_init(nomadik_src_clk_match);
  }
-+CLK_OF_DECLARE(sirfsoc_clk, "sirf,prima2-clkc", sirfsoc_clk_init);
 -- 
 1.7.10.4
 
