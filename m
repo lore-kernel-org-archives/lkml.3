@@ -1,1529 +1,1426 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab3IRRIs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 13:08:48 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:40191 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab3IRRIp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 13:08:45 -0400
-Date: Wed, 18 Sep 2013 10:08:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: swarren@wwwdotorg.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ian.campbell@citrix.com, rob.herring@calxeda.com, rui.zhang@intel.com,
-        wni@nvidia.com, grant.likely@linaro.org, durgadoss.r@intel.com,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 02/16] drivers: thermal: introduce device tree parser
-Message-ID: <20130918170840.GA14830@roeck-us.net>
-References: <1379282563-14650-3-git-send-email-eduardo.valentin@ti.com>
- <1379520189-11328-1-git-send-email-eduardo.valentin@ti.com>
+	id S1752552Ab3IRRRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 13:17:25 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40769 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751553Ab3IRRRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 13:17:22 -0400
+Date: Wed, 18 Sep 2013 12:15:06 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Andreas Larsson <andreas@gaisler.com>
+CC: <linux-usb@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <software@gaisler.com>
+Subject: Re: [PATCH] usb: gadget: Add UDC driver for Aeroflex Gaisler GRUSBDC
+Message-ID: <20130918171506.GQ21559@radagast>
+Reply-To: <balbi@ti.com>
+References: <1376316310-27989-1-git-send-email-andreas@gaisler.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="90KBcPA0h13nTGdQ"
 Content-Disposition: inline
-In-Reply-To: <1379520189-11328-1-git-send-email-eduardo.valentin@ti.com>
+In-Reply-To: <1376316310-27989-1-git-send-email-andreas@gaisler.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 12:03:09PM -0400, Eduardo Valentin wrote:
-> This patch introduces a device tree bindings for
-> describing the hardware thermal behavior and limits.
-> Also a parser to read and interpret the data and feed
-> it in the thermal framework is presented.
-> 
-> This patch introduces a thermal data parser for device
-> tree. The parsed data is used to build thermal zones
-> and thermal binding parameters. The output data
-> can then be used to deploy thermal policies.
-> 
-> This patch adds also documentation regarding this
-> API and how to define tree nodes to use
-> this infrastructure.
-> 
-> Note that, in order to be able to have control
-> on the sensor registration on the DT thermal zone,
-> it was required to allow changing the thermal zone
-> .get_temp callback. For this reason, this patch
-> also removes the 'const' modifier from the .ops
-> field of thermal zone devices.
-> 
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->  .../devicetree/bindings/thermal/thermal.txt        | 498 ++++++++++++++
->  drivers/thermal/Kconfig                            |  13 +
->  drivers/thermal/Makefile                           |   1 +
->  drivers/thermal/of-thermal.c                       | 753 +++++++++++++++++++++
->  drivers/thermal/thermal_core.c                     |   9 +-
->  drivers/thermal/thermal_core.h                     |   9 +
->  include/dt-bindings/thermal/thermal.h              |  27 +
->  include/linux/thermal.h                            |  28 +-
->  8 files changed, 1335 insertions(+), 3 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/thermal/thermal.txt
->  create mode 100644 drivers/thermal/of-thermal.c
->  create mode 100644 include/dt-bindings/thermal/thermal.h
-> ---
-> 
-> Hi all,
-> 
-> As per Guenter's request, I changed this code to fail silently while
-> registering sensor drivers.
-> 
-> Cheers,
-> 
-> Eduardo
-> 
-> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
+--90KBcPA0h13nTGdQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Mon, Aug 12, 2013 at 04:05:10PM +0200, Andreas Larsson wrote:
+> diff --git a/drivers/usb/gadget/gr_udc.c b/drivers/usb/gadget/gr_udc.c
 > new file mode 100644
-> index 0000000..6664533
+> index 0000000..37a6c08
 > --- /dev/null
-> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
-> @@ -0,0 +1,498 @@
-> +* Thermal Framework Device Tree descriptor
-> +
-> +Generic binding to provide a way of defining hardware thermal
-> +structure using device tree. A thermal structure includes thermal
-> +zones and their components, such as trip points, polling intervals,
-> +sensors and cooling devices binding descriptors.
-> +
-> +The target of device tree thermal descriptors is to describe only
-> +the hardware thermal aspects, not how the system must control or which
-> +algorithm or policy must be taken in place.
-> +
-> +There are five types of nodes involved to describe thermal bindings:
-> +- sensors: used to describe the device source of temperature sensing;
-> +- cooling devices: used to describe devices source of power dissipation control;
-> +- trip points: used to describe points in temperature domain defined to
-> +make the system aware of hardware limits;
-> +- cooling attachments: used to describe links between trip points and
-> +cooling devices;
-> +- thermal zones: used to describe thermal data within the hardware;
-> +
-> +It follows a description of each type of these device tree nodes.
-> +
-> +* Sensor devices
-> +
-> +Sensor devices are nodes providing temperature sensing capabilities on thermal
-> +zones. Typical devices are I2C ADC converters and bandgaps. Theses are nodes
-> +providing temperature data to thermal zones. Temperature sensor devices may
-> +control one or more internal sensors.
-> +
-> +Required property:
-> +- #sensor-cells:	Used to provide sensor device specific information
-> +			while referring to it. Must be at least 1, in order
-> +			to identify uniquely the sensor instances within
-> +			the IC. See thermal zone binding for more details
-> +			on how consumers refer to sensor devices.
-> +
-> +* Cooling device nodes
-> +
-> +Cooling devices are nodes providing control on power dissipation. There
-> +are essentially two ways to provide control on power dissipation. First
-> +is by means of regulating device performance, which is known as passive
-> +cooling. Second is by means of activating devices in order to remove
-> +the dissipated heat, which is known as active cooling, e.g. regulating
-> +fan speeds. In both cases, cooling devices shall have a way to determine
-> +the level of cooling.
-> +
-> +Required property:
-> +- cooling-min-level:	A unsigned integer indicating the smallest
-> +			cooling level accepted. Typically 0.
-> +- cooling-max-level:	An unsigned integer indicating the largest
-> +			cooling level accepted.
-> +- #cooling-cells:	Used to provide cooling device specific information
-> +			while referring to it. Must be at least 2, in order
-> +			to specify minimum and maximum cooling level used
-> +			in the reference. See Cooling device attachments section
-> +			below for more details on how consumers refer to
-> +			cooling devices.
-> +
-> +* Trip points
-> +
-> +The trip node is a node to describe a point in the temperature domain
-> +in which the system takes an action. This node describes just the point,
-> +not the action.
-> +
-> +Required properties:
-> +- temperature:		the trip temperature level, in milliCelsius.
-> +- hysteresis:		a (low) hysteresis value on 'temperature'. This is a
-> +			relative value, in milliCelsius.
-> +- type:			the trip type. Here is the type mapping:
-> +	THERMAL_TRIP_ACTIVE	0:	A trip point to enable active cooling
-> +	THERMAL_TRIP_PASSIVE	1:	A trip point to enable passive cooling
-> +	THERMAL_TRIP_HOT	2:	A trip point to notify emergency
-> +	THERMAL_TRIP_CRITICAL	3:	Hardware not reliable.
-> +
-> +Refer to include/dt-bindings/thermal/thermal.h for definition of these consts.
-> +
-> +* Cooling device attachments
-> +
-> +The cooling device attachments node is a node to describe how cooling devices
-> +get assigned to trip points of the zone. The cooling devices are expected
-> +to be loaded in the target system.
-> +
-> +Required properties:
-> +- cooling-device:	A phandle of a cooling device with its parameters,
-> +			referring to which cooling device is used in this
-> +			binding. The required parameters are: the minimum
-> +			cooling level and the maximum cooling level used
-> +			in this attach.
-> +- trip:			A phandle of a trip point node within the same thermal
-> +			zone.
-> +
-> +Optional property:
-> +- contribution:		The cooling contribution to the thermal zone of the
-> +			referred cooling device at the referred trip point.
-> +			The contribution is a value from 0 to 100. The sum
-> +			of all cooling contributions within a thermal zone
-> +			must never exceed 100.
-> +
-> +Note: Using the THERMAL_NO_LIMIT (-1L) constant in the cooling-device phandle
-> +limit parameters means:
-> +(i)   - minimum level allowed for minimum cooling level used in the reference.
-> +(ii)  - maximum level allowed for maximum cooling level used in the reference.
-> +Refer to include/dt-bindings/thermal/thermal.h for definition of this constant.
-> +
-> +* Thermal zones
-> +
-> +The thermal-zone node is the node containing all the required info
-> +for describing a thermal zone, including its cdev bindings. The thermal_zone
-> +node must contain, apart from its own properties, one node containing
-> +trip nodes and one node containing all the zone cooling attachments.
-> +
-> +Required properties:
-> +- passive-delay:	The maximum number of milliseconds to wait between polls
-> +			when performing passive cooling.
-> +- polling-delay:	The maximum number of milliseconds to wait between polls
-> +			when checking this thermal zone.
-> +- sensors:		A list of sensor phandles and their parameters. The
-> +			required parameter is the sensor id, in order to
-> +			identify internal sensors when the sensor IC features
-> +			several sensing units.
-> +- trips:		A sub-node containing several trip point nodes required
-> +			to describe the thermal zone.
-> +- cooling-attachments	A sub-node containing several cooling device attaches
-> +			nodes, used to describe the relation between trips
-> +			and cooling devices.
-> +
-> +Optional property:
-> +- coefficients:		An array of integers (one signed cell) containing
-> +			coefficients to compose a linear relation between
-> +			the sensors described in the sensors property.
-> +			Coefficients defaults to 1, in case this property
-> +			is not specified. A simple linear polynomial is used:
-> +			Z = c0 * x0 + c1 + x1 + ... + c(n-1) * x(n-1) + cn.
-> +
-> +			The coefficients are ordered and they match with sensors
-> +			by means of sensor ID. Additional coefficients are
-> +			interpreted as constant offsets.
-> +
-> +Note: The delay properties are bound to the maximum dT/dt (temperature
-> +derivative over time) in two situations for a thermal zone:
-> +(i)  - when active cooling is activated (passive-delay); and
-> +(ii) - when the zone just needs to be monitored (polling-delay).
-> +The maximum dT/dt is highly bound to hardware power consumption and dissipation
-> +capability.
-> +
-> +* Examples
-> +
-> +Below are several examples on how to use thermal data descriptors
-> +using device tree bindings:
-> +
-> +(a) - CPU thermal zone
-> +
-> +The CPU thermal zone example below describes how to setup one thermal zone
-> +using one single sensor as temperature source and many cooling devices and
-> +power dissipation control sources.
-> +
-> +#include <dt-bindings/thermal/thermal.h>
-> +
-> +cpus {
-> +	cpu0: cpu@0 {
-> +		...
-> +		cooling-min-level = <0>;
-> +		cooling-max-level = <3>;
-> +		#cooling-cells = <2>; /* min followed by max */
-> +	};
-> +	...
-> +};
-> +
-> +&i2c1 {
-> +	...
-> +	fan0: fan@0x48 {
-> +		...
-> +		cooling-min-level = <0>;
-> +		cooling-max-level = <9>;
-> +		#cooling-cells = <2>; /* min followed by max */
-> +	};
-> +};
-> +
-> +bandgap0: bandgap@0x0000ED00 {
-> +	...
-> +	#sensor-cells = <1>;
-> +};
-> +
-> +cpu-thermal: cpu-thermal {
-> +	passive-delay = <250>; /* milliseconds */
-> +	polling-delay = <1000>; /* milliseconds */
-> +
-> +		/* sensor       ID */
-> +        sensors = <&bandgap0     0>;
-> +
-> +        trips {
-> +                cpu-alert0: cpu-alert {
-> +                        temperature = <90000>; /* milliCelsius */
-> +                        hysteresis = <2000>; /* milliCelsius */
-> +                        type = <THERMAL_TRIP_ACTIVE>;
-> +                };
-> +                cpu-alert1: cpu-alert {
-> +                        temperature = <100000>; /* milliCelsius */
-> +                        hysteresis = <2000>; /* milliCelsius */
-> +                        type = <THERMAL_TRIP_PASSIVE>;
-> +                };
-> +                cpu-crit: cpu-crit {
-> +                        temperature = <125000>; /* milliCelsius */
-> +                        hysteresis = <2000>; /* milliCelsius */
-> +                        type = <THERMAL_TRIP_CRITICAL>;
-> +                };
-> +        };
-> +
-> +	cooling-attachments {
-> +		attach0 {
-> +			trip = <&cpu-alert0>;
-> +			cooling-device = <&fan0 THERMAL_NO_LIMITS 4>;
-> +		};
-> +		attach1 {
-> +			trip = <&cpu-alert1>;
-> +			cooling-device = <&fan0 5 THERMAL_NO_LIMITS>;
-> +		};
-> +		attach2 {
-> +			trip = <&cpu-alert1>;
-> +			cooling-device =
-> +				<&cpu0 THERMAL_NO_LIMITS THERMAL_NO_LIMITS>;
-> +		};
-> +	};
-> +};
-> +
-> +In the example above, the ADC sensor at address 0x0000ED00 is used to monitor
-> +the zone 'cpu-thermal' using its the sensor 0. The fan0, a fan device controlled
-> +via I2C bus 1, at adress 0x48, is used to remove the heat out of the thermal
-> +zone 'cpu-thermal' using its cooling levels from its minimum to 4, when it
-> +reaches trip point 'cpu-alert0' at 90C, as an example of active cooling. The
-> +same cooling device is used at 'cpu-alert1', but from 5 to its maximum level.
-> +The cpu@0 device is also linked to the same thermal zone, 'cpu-thermal', as a
-> +passive cooling device, using all its cooling levels at trip point 'cpu-alert1',
-> +which is a trip point at 100C.
-> +
-> +(b) - IC with several internal sensors
-> +
-> +The example below describes how to deploy several thermal zones based off a
-> +single sensor IC, assuming it has several internal sensors. This is a common
-> +case on SoC designs with several internal IPs that may need different thermal
-> +requirements, and thus may have their own sensor to monitor or detect internal
-> +hotspots in their silicon.
-> +
-> +#include <dt-bindings/thermal/thermal.h>
-> +
-> +bandgap0: bandgap@0x0000ED00 {
-> +	...
-> +	#sensor-cells = <1>;
-> +};
-> +
-> +cpu-thermal: cpu-thermal {
-> +	passive-delay = <250>; /* milliseconds */
-> +	polling-delay = <1000>; /* milliseconds */
-> +
-> +		/* sensor       ID */
-> +        sensors = <&bandgap0     0>;
-> +
-> +        trips {
-> +		/* each zone within the SoC may have its own trips */
-> +                cpu-alert: cpu-alert {
-> +                        temperature = <100000>; /* milliCelsius */
-> +                        hysteresis = <2000>; /* milliCelsius */
-> +                        type = <THERMAL_TRIP_PASSIVE>;
-> +                };
-> +                cpu-crit: cpu-crit {
-> +                        temperature = <125000>; /* milliCelsius */
-> +                        hysteresis = <2000>; /* milliCelsius */
-> +                        type = <THERMAL_TRIP_CRITICAL>;
-> +                };
-> +        };
-> +
-> +	cooling-attachments {
-> +		/* each zone within the SoC may have its own cooling */
-> +		...
-> +	};
-> +};
-> +
-> +gpu-thermal: gpu-thermal {
-> +	passive-delay = <120>; /* milliseconds */
-> +	polling-delay = <1000>; /* milliseconds */
-> +
-> +		/* sensor       ID */
-> +        sensors = <&bandgap0     1>;
-> +
-> +        trips {
-> +		/* each zone within the SoC may have its own trips */
-> +                gpu-alert: gpu-alert {
-> +                        temperature = <90000>; /* milliCelsius */
-> +                        hysteresis = <2000>; /* milliCelsius */
-> +                        type = <THERMAL_TRIP_PASSIVE>;
-> +                };
-> +                gpu-crit: gpu-crit {
-> +                        temperature = <105000>; /* milliCelsius */
-> +                        hysteresis = <2000>; /* milliCelsius */
-> +                        type = <THERMAL_TRIP_CRITICAL>;
-> +                };
-> +        };
-> +
-> +	cooling-attachments {
-> +		/* each zone within the SoC may have its own cooling */
-> +		...
-> +	};
-> +};
-> +
-> +dsp-thermal: dsp-thermal {
-> +	passive-delay = <50>; /* milliseconds */
-> +	polling-delay = <1000>; /* milliseconds */
-> +
-> +		/* sensor       ID */
-> +        sensors = <&bandgap0     2>;
-> +
-> +        trips {
-> +		/* each zone within the SoC may have its own trips */
-> +                dsp-alert: gpu-alert {
-> +                        temperature = <90000>; /* milliCelsius */
-> +                        hysteresis = <2000>; /* milliCelsius */
-> +                        type = <THERMAL_TRIP_PASSIVE>;
-> +                };
-> +                dsp-crit: gpu-crit {
-> +                        temperature = <135000>; /* milliCelsius */
-> +                        hysteresis = <2000>; /* milliCelsius */
-> +                        type = <THERMAL_TRIP_CRITICAL>;
-> +                };
-> +        };
-> +
-> +	cooling-attachments {
-> +		/* each zone within the SoC may have its own cooling */
-> +		...
-> +	};
-> +};
-> +
-> +In the example above there is one bandgap IC which has the capability to
-> +monitor three sensors. The hardware has been designed so that sensors are
-> +placed on different places in the DIE to monitor different temperature
-> +hotspots: one for CPU thermal zone, one for GPU thermal zone and the
-> +other to monitor a DSP thermal zone.
-> +
-> +Thus, there is a need to assign each sensor provided by the bandgap IC
-> +to different thermal zones. This is achieved by means of using the
-> +#sensor-cells property and using the first parameter as sensor ID.
-> +In the example, then, bandgap.sensor0 is used to monitor CPU thermal zone,
-> +bandgap.sensor1 is used to monitor GPU thermal zone and bandgap.sensor2
-> +is used to monitor DSP thermal zone. Each zone may be uncorrelated,
-> +having its own dT/dt requirements, trips and cooling attachments.
-> +
-> +
-> +(c) - Several sensors within one single thermal zone
-> +
-> +The example below illustrates how to use more than one sensor within
-> +one thermal zone.
-> +
-> +#include <dt-bindings/thermal/thermal.h>
-> +
-> +&i2c1 {
-> +	...
-> +	adc: sensor@0x49 {
-> +		...
-> +		#sensor-cells = <1>;
-> +	};
-> +};
-> +
-> +bandgap0: bandgap@0x0000ED00 {
-> +	...
-> +	#sensor-cells = <1>;
-> +};
-> +
-> +cpu-thermal: cpu-thermal {
-> +	passive-delay = <250>; /* milliseconds */
-> +	polling-delay = <1000>; /* milliseconds */
-> +
-> +		/* sensor       ID */
-> +        sensors = <&bandgap0	0>,
-> +		  <&adc		0>;
-> +
-> +		/* hotspot = 100 * bandgap - 120 * adc + 484 */
-> +	coefficients = 		<100	-120	484>;
-> +
-> +        trips {
-> +		...
-> +        };
-> +
-> +	cooling-attachments {
-> +		...
-> +	};
-> +};
-> +
-> +In some cases, there is a need to use more than one sensor to extrapolate
-> +a thermal hotspot in the silicon. The above example illustrate this situation.
-> +For instance, it may be the case that a sensor external to CPU IP may be place
-> +close to CPU hotspot and together with internal CPU sensor, it is used
-> +to determine the hotspot. The hyppotetical extrapolation rule would be:
-> +		hotspot = 100 * bandgap - 120 * adc + 484
-> +
-> +The same idea can be used to add fixed offset:
-> +	passive-delay = <1000>; /* milliseconds */
-> +	polling-delay = <2500>; /* milliseconds */
-> +		hotspot = 1 * adc + 6000
-> +
-> +In the above equation, the hotspot is always 6C higher than what is read
-> +from the sensor ADC. The binding would be then:
-> +		/* sensor       ID */
-> +        sensors =  <&adc	0>;
-> +
-> +		/* hotspot = 1 * adc + 6000 */
-> +	coefficients = 		<1	6000>;
-> +
-> +(d) - Board thermal
-> +
-> +The board thermal example below illustrates how to setup one thermal zone
-> +with many sensors and many cooling devices.
-> +
-> +#include <dt-bindings/thermal/thermal.h>
-> +
-> +&i2c1 {
-> +	...
-> +	adc-dummy: sensor@0x50 {
-> +		...
-> +		#sensor-cells = <1>; /* sensor internal ID */
-> +	};
-> +};
-> +
-> +batt-thermal {
-> +	passive-delay = <500>; /* milliseconds */
-> +	polling-delay = <2500>; /* milliseconds */
-> +
-> +	/* sensor       ID */
-> +	sensors = <&adc-dummy     4>;
-> +
-> +	trips {
-> +		...
-> +	};
-> +
-> +	cooling-attachments {
-> +		...
-> +	};
-> +};
-> +
-> +board-thermal: board-thermal {
-> +	passive-delay = <1000>; /* milliseconds */
-> +	polling-delay = <2500>; /* milliseconds */
-> +
-> +		/* sensor       ID */
-> +	sensors = <&adc-dummy     0>,
-> +		  <&adc-dummy     1>,
-> +		  <&adc-dymmy     2>;
-> +			/*
-> +			 * An array of coefficients describing the sensor
-> +			 * linear relation. E.g.:
-> +			 * z = c1*x1 + c2*x2 + c3*x3
-> +			 */
-> +	coefficients =		<1200	-345	890>;
-> +
-> +	trips {
-> +		/* Trips are based on resulting linear equation */
-> +		cpu-trip: cpu-trip {
-> +			temperature = <60000>; /* milliCelsius */
-> +			hysteresis = <2000>; /* milliCelsius */
-> +			type = <THERMAL_TRIP_PASSIVE>;
-> +		};
-> +		gpu-trip: gpu-trip {
-> +			temperature = <55000>; /* milliCelsius */
-> +			hysteresis = <2000>; /* milliCelsius */
-> +			type = <THERMAL_TRIP_PASSIVE>;
-> +		}
-> +		lcd-trip: lcp-trip {
-> +			temperature = <53000>; /* milliCelsius */
-> +			hysteresis = <2000>; /* milliCelsius */
-> +			type = <THERMAL_TRIP_PASSIVE>;
-> +		};
-> +		crit-trip: crit-trip {
-> +			temperature = <68000>; /* milliCelsius */
-> +			hysteresis = <2000>; /* milliCelsius */
-> +			type = <THERMAL_TRIP_CRITICAL>;
-> +		};
-> +	};
-> +
-> +	cooling-attachments {
-> +		attach0 {
-> +			trip = <&cpu-trip>;
-> +			cooling-device = <&cpu0 0 2>;
-> +			contribution = <55>;
-> +		};
-> +		attach1 {
-> +			trip = <&gpu-trip>;
-> +			cooling-device = <&gpu0 0 2>;
-> +			contribution = <20>;
-> +		};
-> +		attach2 {
-> +			trip = <&lcd-trip>;
-> +			cooling-device = <&lcd0 5 10>;
-> +			contribution = <15>;
-> +		};
-> +	};
-> +};
-> +
-> +The above example is a mix of previous examples, a sensor IP with several internal
-> +sensors used to monitor different zones, one of them is composed by several sensors and
-> +with different cooling devices.
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index dbfc390..dd81eb8 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -29,6 +29,19 @@ config THERMAL_HWMON
->  	  Say 'Y' here if you want all thermal sensors to
->  	  have hwmon sysfs interface too.
->  
-> +config THERMAL_OF
-> +	bool
-> +	prompt "APIs to parse thermal data out of device tree"
-> +	depends on OF
-> +	default y
-> +	help
-> +	  This options provides helpers to add the support to
-> +	  read and parse thermal data definitions out of the
-> +	  device tree blob.
-> +
-> +	  Say 'Y' here if you need to build thermal infrastructure
-> +	  based on device tree.
-> +
->  choice
->  	prompt "Default Thermal governor"
->  	default THERMAL_DEFAULT_GOV_STEP_WISE
-> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-> index 584b363..4b03956 100644
-> --- a/drivers/thermal/Makefile
-> +++ b/drivers/thermal/Makefile
-> @@ -7,6 +7,7 @@ thermal_sys-y			+= thermal_core.o
->  
->  # interface to/from other layers providing sensors
->  thermal_sys-$(CONFIG_THERMAL_HWMON)		+= thermal_hwmon.o
-> +thermal_sys-$(CONFIG_THERMAL_OF)		+= of-thermal.o
->  
->  # governors
->  thermal_sys-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
-> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
-> new file mode 100644
-> index 0000000..857d40c
-> --- /dev/null
-> +++ b/drivers/thermal/of-thermal.c
-> @@ -0,0 +1,753 @@
+> +++ b/drivers/usb/gadget/gr_udc.c
+> @@ -0,0 +1,2268 @@
 > +/*
-> + *  of-thermal.c - Generic Thermal Management device tree support.
+> + * USB Peripheral Controller driver for Aeroflex Gaisler GRUSBDC.
 > + *
-> + *  Copyright (C) 2013 Texas Instruments
-> + *  Copyright (C) 2013 Eduardo Valentin <eduardo.valentin@ti.com>
+> + * 2013 (c) Aeroflex Gaisler AB
 > + *
+> + * This driver supports GRUSBDC USB Device Controller cores available in=
+ the
+> + * GRLIB VHDL IP core library.
 > + *
-> + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + * Full documentation of the GRUSBDC core can be found here:
+> + * http://www.gaisler.com/products/grlib/grip.pdf
 > + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; version 2 of the License.
+> + * This program is free software; you can redistribute it and/or modify =
+it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; either version 2 of the License, or (at your
+> + * option) any later version.
 > + *
-> + *  This program is distributed in the hope that it will be useful, but
-> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + *  General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License along
-> + *  with this program; if not, write to the Free Software Foundation, Inc.,
-> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + * Contributors:
+> + * - Andreas Larsson <andreas@gaisler.com>
+> + * - Marko Isomaki
 > + */
-> +#include <linux/thermal.h>
+> +
+> +/*
+> + * A GRUSBDC core can have up to 16 IN endpoints and 16 OUT endpoints ea=
+ch
+> + * individually configurable to any of the four USB transfer types. This=
+ driver
+> + * only supports cores in DMA mode.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
 > +#include <linux/slab.h>
-> +#include <linux/types.h>
-> +#include <linux/of_device.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/errno.h>
+> +#include <linux/init.h>
+> +#include <linux/list.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/device.h>
+> +#include <linux/usb/ch9.h>
+> +#include <linux/usb/gadget.h>
+> +#include <linux/dma-mapping.h>
+> +#include <linux/dmapool.h>
+> +#include <linux/debugfs.h>
+> +#include <linux/seq_file.h>
+> +
+> +#include <asm/byteorder.h>
+> +#include <asm/irq.h>
+
+<linux/irq.h>
+
 > +#include <linux/of_platform.h>
-> +#include <linux/err.h>
-> +#include <linux/export.h>
-> +#include <linux/string.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/of_address.h>
 > +
-> +/***   Private data structures to represent thermal device tree data ***/
+> +/* #define VERBOSE_DEBUG */
+
+we don't want this, we want verbose debug to be selectable on Kconfig,
+which already is ;-)
+
+> +#include "gr_udc.h"
 > +
-> +/**
-> + * struct __thermal_trip - representation of a point in temperature domain
-> + * @np: pointer to struct device_node that this trip point was created from
-> + * @temperature: temperature value in miliCelsius
-> + * @hysteresis: relative hysteresis in miliCelsius
-> + * @type: trip point type
-> + */
+> +#define	DRIVER_NAME	"gr_udc"
+> +#define	DRIVER_DESC	"Aeroflex Gaisler GRUSBDC USB Peripheral Controller"
 > +
-> +struct __thermal_trip {
-> +	struct device_node *np;
-> +	unsigned long int temperature;
-> +	unsigned long int hysteresis;
-> +	enum thermal_trip_type type;
-> +};
+> +static const char driver_name[] =3D DRIVER_NAME;
+> +static const char driver_desc[] =3D DRIVER_DESC;
 > +
-> +/**
-> + * struct __thermal_bind_param - a match between trip and cooling device
-> + * @cooling_device: a pointer to identify the referred cooling device
-> + * @trip_id: the trip point index
-> + * @usage: the percentage (from 0 to 100) of cooling contribution
-> + * @min: minimum cooling level used at this trip point
-> + * @max: maximum cooling level used at this trip point
-> + */
+> +#define gr_read32(x) (ioread32be((x)))
+> +#define gr_write32(x, v) (iowrite32be((v), (x)))
 > +
-> +struct __thermal_bind_params {
-> +	struct device_node *cooling_device;
-> +	unsigned int trip_id;
-> +	unsigned int usage;
-> +	unsigned long min;
-> +	unsigned long max;
-> +};
+> +/* USB speed and corresponding string calculated from status register va=
+lue */
+> +#define GR_SPEED(status) \
+> +	((status & GR_STATUS_SP) ? USB_SPEED_FULL : USB_SPEED_HIGH)
+> +#define GR_SPEED_STR(status) usb_speed_string(GR_SPEED(status))
 > +
-> +/**
-> + * struct __thermal_zone - internal representation of a thermal zone
-> + * @mode: current thermal zone device mode (enabled/disabled)
-> + * @passive_delay: polling interval while passive cooling is activated
-> + * @polling_delay: zone polling interval
-> + * @ntrips: number of trip points
-> + * @trips: an array of trip points (0..ntrips - 1)
-> + * @num_tbps: number of thermal bind params
-> + * @tbps: an array of thermal bind params (0..num_tbps - 1)
-> + * @sensor_data: sensor private data used while reading temperature and trend
-> + * @get_temp: sensor callback to read temperature
-> + * @get_trend: sensor callback to read temperature trend
-> + */
+> +/* Size of hardware buffer calculated from epctrl register value */
+> +#define GR_BUFFER_SIZE(epctrl)					      \
+> +	((((epctrl) & GR_EPCTRL_BUFSZ_MASK) >> GR_EPCTRL_BUFSZ_POS) * \
+> +	 GR_EPCTRL_BUFSZ_SCALER)
 > +
-> +struct __thermal_zone {
-> +	enum thermal_device_mode mode;
-> +	int passive_delay;
-> +	int polling_delay;
+> +/* ---------------------------------------------------------------------=
+- */
+> +/* Debug printout functionality */
 > +
-> +	/* trip data */
-> +	int ntrips;
-> +	struct __thermal_trip *trips;
+> +static const char * const gr_modestring[] =3D {"control", "iso", "bulk",=
+ "int"};
 > +
-> +	/* cooling binding data */
-> +	int num_tbps;
-> +	struct __thermal_bind_params *tbps;
-> +
-> +	/* sensor interface */
-> +	void *sensor_data;
-> +	int (*get_temp)(void *, long *);
-> +	int (*get_trend)(void *, long *);
-> +};
-> +
-> +/***   DT thermal zone device callbacks   ***/
-> +
-> +static int of_thermal_get_temp(struct thermal_zone_device *tz,
-> +			       unsigned long *temp)
+> +static const char *gr_ep0state_string(enum gr_ep0state state)
 > +{
-> +	struct __thermal_zone *data = tz->devdata;
+> +	static const char *const names[] =3D {
+> +		[GR_EP0_DISCONNECT] =3D "disconnect",
+> +		[GR_EP0_SETUP] =3D "setup",
+> +		[GR_EP0_IDATA] =3D "idata",
+> +		[GR_EP0_ODATA] =3D "odata",
+> +		[GR_EP0_ISTATUS] =3D "istatus",
+> +		[GR_EP0_OSTATUS] =3D "ostatus",
+> +		[GR_EP0_STALL] =3D "stall",
+> +		[GR_EP0_SUSPEND] =3D "suspend",
+> +	};
 > +
-> +	if (!data->get_temp)
-> +		return -EINVAL;
+> +	if (state < 0 || state >=3D ARRAY_SIZE(names))
+> +		return "UNKNOWN";
 > +
-> +	return data->get_temp(data->sensor_data, temp);
+> +	return names[state];
 > +}
 > +
-> +static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
-> +				enum thermal_trend *trend)
+> +#ifdef VERBOSE_DEBUG
+> +
+> +#define BPRINTF(buf, left, fmt, args...)			\
+> +	do {							\
+> +		int ret =3D snprintf(buf, left, fmt, ## args);	\
+> +		buf +=3D ret;					\
+> +		left -=3D ret;					\
+> +	} while (0)
+
+nack, use dev_vdbg() instead.
+
+> +static void gr_dbgprint_request(const char *str, struct gr_ep *ep,
+> +				struct gr_request *req)
 > +{
-> +	struct __thermal_zone *data = tz->devdata;
-> +	long dev_trend;
-> +	int r;
+> +	char buffer[100];
+
+NAK^10000000
+
+use kernel facilities instead. printk() and all its friends already
+print to a ring buffer.
+
+> +	u8 *data =3D (u8 *)req->req.buf;
+
+you don't need to cast void pointers
+
+> +static void gr_finish_request(struct gr_ep *ep, struct gr_request *req,
+> +			      int status)
+> +{
+> +	struct gr_udc *dev;
 > +
-> +	if (!data->get_trend)
-> +		return -EINVAL;
+> +	list_del_init(&req->queue);
 > +
-> +	r = data->get_trend(data->sensor_data, &dev_trend);
-> +	if (r)
-> +		return r;
-> +
-> +	if (dev_trend > 0)
-> +		*trend = THERMAL_TREND_RAISING;
-> +	else if (dev_trend < 0)
-> +		*trend = THERMAL_TREND_DROPPING;
+> +	if (likely(req->req.status =3D=3D -EINPROGRESS))
+> +		req->req.status =3D status;
 > +	else
-> +		*trend = THERMAL_TREND_STABLE;
+> +		status =3D req->req.status;
 > +
-> +	return 0;
-> +}
+> +	dev =3D ep->dev;
+> +	usb_gadget_unmap_request(&dev->gadget, &req->req, ep->is_in);
+> +	gr_free_dma_desc_chain(dev, req);
 > +
-> +static int of_thermal_bind(struct thermal_zone_device *thermal,
-> +			   struct thermal_cooling_device *cdev)
-> +{
-> +	struct __thermal_zone *data = thermal->devdata;
-> +	int i;
+> +	if (ep->is_in) /* For OUT, actual gets updated by the work handler */
+> +		req->req.actual =3D req->req.length;
 > +
-> +	if (!data || IS_ERR(data))
-> +		return -ENODEV;
-> +
-> +	/* find where to bind */
-> +	for (i = 0; i < data->num_tbps; i++) {
-> +		struct __thermal_bind_params *tbp = data->tbps + i;
-> +
-> +		if (tbp->cooling_device == cdev->np) {
-> +			int ret;
-> +
-> +			ret = thermal_zone_bind_cooling_device(thermal,
-> +						tbp->trip_id, cdev,
-> +						tbp->min,
-> +						tbp->max);
-> +			if (ret)
-> +				return ret;
-> +		}
+> +	if (!status) {
+> +		if (ep->is_in)
+> +			gr_dbgprint_request("SENT", ep, req);
+> +		else
+> +			gr_dbgprint_request("RECV", ep, req);
 > +	}
 > +
-> +	return 0;
-> +}
+> +	/* Prevent changes to ep->queue during callback */
+> +	ep->callback =3D 1;
+> +	if (req =3D=3D dev->ep0reqo && !status) {
+> +		if (req->setup)
+> +			gr_ep0_setup(dev, req);
+> +		else
+> +			dev_err(dev->dev,
+> +				"Unexpected non setup packet on ep0in\n");
+> +	} else if (req->req.complete) {
+> +		unsigned long flags;
 > +
-> +static int of_thermal_unbind(struct thermal_zone_device *thermal,
-> +			     struct thermal_cooling_device *cdev)
-> +{
-> +	struct __thermal_zone *data = thermal->devdata;
-> +	int i;
+> +		/* Complete should be called with irqs disabled */
+> +		local_irq_save(flags);
+
+I guess it'd be better if you called this with spin_lock_irqsave()
+called before, then you can remove local_irq_save from here.
+
+> +		spin_unlock(&dev->lock);
 > +
-> +	if (!data || IS_ERR(data))
-> +		return -ENODEV;
+> +		req->req.complete(&ep->ep, &req->req);
 > +
-> +	/* find where to unbind */
-> +	for (i = 0; i < data->num_tbps; i++) {
-> +		struct __thermal_bind_params *tbp = data->tbps + i;
-> +
-> +		if (tbp->cooling_device == cdev->np) {
-> +			int ret;
-> +
-> +			ret = thermal_zone_unbind_cooling_device(thermal,
-> +						tbp->trip_id, cdev);
-> +			if (ret)
-> +				return ret;
-> +		}
+> +		spin_lock(&dev->lock);
+> +		local_irq_restore(flags);
 > +	}
+> +	ep->callback =3D 0;
 > +
-> +	return 0;
-> +}
-> +
-> +static int of_thermal_get_mode(struct thermal_zone_device *tz,
-> +			       enum thermal_device_mode *mode)
+> +	/* Catch up possible prevented ep handling during completion callback */
+> +	if (!ep->stopped)
+> +		schedule_work(&dev->work);
+
+this workqueue is awkward, what's up with that ?
+
+> +/* Call with non-NULL dev to do a devm-allocation */
+> +static struct usb_request *__gr_alloc_request(struct device *dev,
+> +					      struct usb_ep *_ep,
+> +					      gfp_t gfp_flags)
 > +{
-> +	struct __thermal_zone *data = tz->devdata;
+> +	struct gr_request *req;
 > +
-> +	*mode = data->mode;
-> +
-> +	return 0;
-> +}
-> +
-> +static int of_thermal_set_mode(struct thermal_zone_device *tz,
-> +			       enum thermal_device_mode mode)
-> +{
-> +	struct __thermal_zone *data = tz->devdata;
-> +
-> +	mutex_lock(&tz->lock);
-> +
-> +	if (mode == THERMAL_DEVICE_ENABLED)
-> +		tz->polling_delay = data->polling_delay;
+> +	if (dev)
+> +		req =3D devm_kzalloc(dev, sizeof(*req), gfp_flags);
 > +	else
-> +		tz->polling_delay = 0;
+> +		req =3D kzalloc(sizeof(*req), gfp_flags);
+
+why would "dev" ever be NULL ?
+
+> +	if (!req)
+> +		return NULL;
 > +
-> +	mutex_unlock(&tz->lock);
+> +	INIT_LIST_HEAD(&req->queue);
 > +
-> +	data->mode = mode;
-> +	thermal_zone_device_update(tz);
-> +
-> +	return 0;
+> +	return &req->req;
 > +}
 > +
-> +static int of_thermal_get_trip_type(struct thermal_zone_device *tz, int trip,
-> +				    enum thermal_trip_type *type)
-> +{
-> +	struct __thermal_zone *data = tz->devdata;
+> +#define gr_devm_alloc_request __gr_alloc_request
 > +
-> +	if (trip >= data->ntrips || trip < 0)
-> +		return -EDOM;
-> +
-> +	*type = data->trips[trip].type;
-> +
-> +	return 0;
-> +}
-> +
-> +static int of_thermal_get_trip_temp(struct thermal_zone_device *tz, int trip,
-> +				    unsigned long *temp)
-> +{
-> +	struct __thermal_zone *data = tz->devdata;
-> +
-> +	if (trip >= data->ntrips || trip < 0)
-> +		return -EDOM;
-> +
-> +	*temp = data->trips[trip].temperature;
-> +
-> +	return 0;
-> +}
-> +
-> +static int of_thermal_set_trip_temp(struct thermal_zone_device *tz, int trip,
-> +				    unsigned long temp)
-> +{
-> +	struct __thermal_zone *data = tz->devdata;
-> +
-> +	if (trip >= data->ntrips || trip < 0)
-> +		return -EDOM;
-> +
-> +	/* thermal fw should take care of data->mask & (1 << trip) */
-> +	data->trips[trip].temperature = temp;
-> +
-> +	return 0;
-> +}
-> +
-> +static int of_thermal_get_trip_hyst(struct thermal_zone_device *tz, int trip,
-> +				    unsigned long *hyst)
-> +{
-> +	struct __thermal_zone *data = tz->devdata;
-> +
-> +	if (trip >= data->ntrips || trip < 0)
-> +		return -EDOM;
-> +
-> +	*hyst = data->trips[trip].hysteresis;
-> +
-> +	return 0;
-> +}
-> +
-> +static int of_thermal_set_trip_hyst(struct thermal_zone_device *tz, int trip,
-> +				    unsigned long hyst)
-> +{
-> +	struct __thermal_zone *data = tz->devdata;
-> +
-> +	if (trip >= data->ntrips || trip < 0)
-> +		return -EDOM;
-> +
-> +	/* thermal fw should take care of data->mask & (1 << trip) */
-> +	data->trips[trip].hysteresis = hyst;
-> +
-> +	return 0;
-> +}
-> +
-> +static int of_thermal_get_crit_temp(struct thermal_zone_device *tz,
-> +				    unsigned long *temp)
-> +{
-> +	struct __thermal_zone *data = tz->devdata;
-> +	int i;
-> +
-> +	for (i = 0; i < data->ntrips; i++)
-> +		if (data->trips[i].type == THERMAL_TRIP_CRITICAL) {
-> +			*temp = data->trips[i].temperature;
-> +			return 0;
-> +		}
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static struct thermal_zone_device_ops of_thermal_ops = {
-> +	.get_mode = of_thermal_get_mode,
-> +	.set_mode = of_thermal_set_mode,
-> +
-> +	.get_trip_type = of_thermal_get_trip_type,
-> +	.get_trip_temp = of_thermal_get_trip_temp,
-> +	.set_trip_temp = of_thermal_set_trip_temp,
-> +	.get_trip_hyst = of_thermal_get_trip_hyst,
-> +	.set_trip_hyst = of_thermal_set_trip_hyst,
-> +	.get_crit_temp = of_thermal_get_crit_temp,
-> +
-> +	.bind = of_thermal_bind,
-> +	.unbind = of_thermal_unbind,
-> +};
-> +
-> +/***   sensor API   ***/
-> +
-> +static struct thermal_zone_device *
-> +thermal_zone_of_add_sensor(struct device_node *zone,
-> +			   struct device_node *sensor, void *data,
-> +			   int (*get_temp)(void *, long *),
-> +			   int (*get_trend)(void *, long *))
-> +{
-> +	struct thermal_zone_device *tzd;
-> +	struct __thermal_zone *tz;
-> +
-> +	tzd = thermal_zone_get_zone_by_name(zone->name);
-> +	if (IS_ERR(tzd))
-> +		return ERR_PTR(-EPROBE_DEFER);
-> +
-> +	tz = tzd->devdata;
-> +
-> +	mutex_lock(&tzd->lock);
-> +	tz->get_temp = get_temp;
-> +	tz->get_trend = get_trend;
-> +	tz->sensor_data = data;
-> +
-> +	tzd->ops->get_temp = of_thermal_get_temp;
-> +	tzd->ops->get_trend = of_thermal_get_trend;
-> +	mutex_unlock(&tzd->lock);
-> +
-> +	return tzd;
-> +}
-> +
-> +/**
-> + * thermal_zone_of_sensor_register - registers a sensor to a DT thermal zone
-> + * @dev: a valid struct device pointer of a sensor device. Must contain
-> + *       a valid .of_node, for the sensor node.
-> + * @sensor_id: a sensor identifier, in case the sensor IP has more
-> + *             than one sensors
-> + * @data: a private pointer (owned by the caller) that will be passed
-> + *        back, when a temperature reading is needed.
-> + * @get_temp: a pointer to a function that reads the sensor temperature.
-> + * @get_trend: a pointer to a function that reads the sensor temperature trend.
+> +/*
+> + * Starts DMA for endpoint ep if there are requests in the queue.
 > + *
-> + * This function will search the list of thermal zones described in device
-> + * tree and look for the zone that refer to the sensor device pointed by
-> + * @dev->of_node as temperature providers. For the zone pointing to the
-> + * sensor node, the sensor will be added to the DT thermal zone device.
-> + *
-> + * The thermal zone temperature is provided by the @get_temp function
-> + * pointer. When called, it will have the private pointer @data back.
-> + *
-> + * The thermal zone temperature trend is provided by the @get_trend function
-> + * pointer. When called, it will have the private pointer @data back.
-> + *
-> + * TODO:
-> + * 01 - This function must enqueue the new sensor instead of using
-> + * it as the only source of temperature values.
-> + *
-> + * 02 - There must be a way to match the sensor with all thermal zones
-> + * that refer to it.
-> + *
-> + * Return: On success returns a valid struct thermal_zone_device,
-> + * otherwise, it returns a corresponding ERR_PTR(). Caller must
-> + * check the return value with help of IS_ERR() helper.
+> + * Must be called with dev->lock held and with !ep->stopped.
 > + */
-> +struct thermal_zone_device *
-> +thermal_zone_of_sensor_register(struct device *dev, int sensor_id,
-> +				void *data, int (*get_temp)(void *, long *),
-> +				int (*get_trend)(void *, long *))
+> +static void gr_start_dma(struct gr_ep *ep)
 > +{
-> +	struct device_node *np, *child, *sensor_np;
+> +	struct gr_request *req;
+> +	u32 dmactrl;
 > +
-> +	np = of_find_node_by_name(NULL, "thermal-zones");
-> +	if (!np)
-> +		return ERR_PTR(-ENODEV);
-> +
-> +	if (!dev || !dev->of_node)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	sensor_np = dev->of_node;
-> +
-> +	for_each_child_of_node(np, child) {
-> +		struct of_phandle_args sensor_specs;
-> +		int ret;
-> +
-> +		/* For now, thermal framework supports only 1 sensor per zone */
-> +		ret = of_parse_phandle_with_args(child, "sensors",
-> +						 "#sensor-cells",
-> +						 0, &sensor_specs);
-> +		if (ret)
-> +			continue;
-> +
-> +		if (sensor_specs.args_count < 1)
-> +			continue;
-> +
-> +		if (sensor_specs.np == sensor_np &&
-> +		    sensor_specs.args[0] == sensor_id) {
-> +			of_node_put(np);
-> +			return thermal_zone_of_add_sensor(child, sensor_np,
-> +							  data,
-> +							  get_temp,
-> +							  get_trend);
-> +		}
-> +	}
-> +	of_node_put(np);
-> +
-> +	return ERR_PTR(-ENODEV);
-> +}
-> +EXPORT_SYMBOL_GPL(thermal_zone_of_sensor_register);
-> +
-> +/**
-> + * thermal_zone_of_sensor_unregister - unregisters a sensor from a DT thermal zone
-> + * @dev: a valid struct device pointer of a sensor device. Must contain
-> + *       a valid .of_node, for the sensor node.
-> + * @tzd: a pointer to struct thermal_zone_device where the sensor is registered.
-> + *
-> + * This function removes the sensor callbacks and private data from the
-> + * thermal zone device registered with thermal_zone_of_sensor_register()
-> + * API. It will also silent the zone by remove the .get_temp() and .get_trend()
-> + * thermal zone device callbacks.
-> + *
-> + * TODO: When the support to several sensors per zone is added, this
-> + * function must search the sensor list based on @dev parameter.
-> + *
-> + */
-> +void thermal_zone_of_sensor_unregister(struct device *dev,
-> +				       struct thermal_zone_device *tzd)
-> +{
-> +	struct __thermal_zone *tz = tzd->devdata;
-> +
-
-You might want to check for a NULL thermal zone device before dereferencing it.
-
-Guenter
-
-> +	/* no __thermal_zone, nothing to be done */
-> +	if (!tz)
+> +	if (list_empty(&ep->queue)) {
+> +		ep->dma_start =3D 0;
 > +		return;
+> +	}
 > +
-> +	mutex_lock(&tzd->lock);
-> +	tzd->ops->get_temp = NULL;
-> +	tzd->ops->get_trend = NULL;
+> +	req =3D list_first_entry(&ep->queue, struct gr_request, queue);
 > +
-> +	tz->get_temp = NULL;
-> +	tz->get_trend = NULL;
-> +	tz->sensor_data = NULL;
-> +	mutex_unlock(&tzd->lock);
+> +	/* A descriptor should already have been allocated */
+> +	BUG_ON(!req->curr_desc);
+> +
+> +	wmb(); /* Make sure all is settled before handing it over to DMA */
+> +
+> +	/* Set the descriptor pointer in the hardware */
+> +	gr_write32(&ep->regs->dmaaddr, req->curr_desc->paddr);
+> +
+> +	/* Announce available descriptors */
+> +	dmactrl =3D gr_read32(&ep->regs->dmactrl);
+> +	gr_write32(&ep->regs->dmactrl, dmactrl | GR_DMACTRL_DA);
+> +
+> +	ep->dma_start =3D 1;
 > +}
-> +EXPORT_SYMBOL_GPL(thermal_zone_of_sensor_unregister);
 > +
-> +/***   functions parsing device tree nodes   ***/
-> +
-> +/**
-> + * thermal_of_populate_bind_params - parse and fill cooling attachment data
-> + * @np: DT node containing a cooling-attachment node
-> + * @__tbp: data structure to be filled with cooling attachment info
-> + * @trips: array of thermal zone trip points
-> + * @ntrips: number of trip points inside trips.
+> +/*
+> + * Finishes the first request in the ep's queue and, if available, start=
+s the
+> + * next request in queue.
 > + *
-> + * This function parses a cooling-attachment type of node represented by
-> + * @np parameter and fills the read data into @__tbp data structure.
-> + * It needs the already parsed array of trip points of the thermal zone
-> + * in consideration.
-> + *
-> + * Return: 0 on success, proper error code otherwise
+> + * Must be called with dev->lock held and with !ep->stopped.
 > + */
-> +static int thermal_of_populate_bind_params(struct device_node *np,
-> +					   struct __thermal_bind_params *__tbp,
-> +					   struct __thermal_trip *trips,
-> +					   int ntrips)
+> +static void gr_dma_advance(struct gr_ep *ep, int status)
 > +{
-> +	struct of_phandle_args cooling_spec;
-> +	struct device_node *trip;
-> +	int ret, i;
-> +	u32 prop;
+> +	struct gr_request *req;
 > +
-> +	/* Default weight. Usage is optional */
-> +	__tbp->usage = 0;
-> +	ret = of_property_read_u32(np, "usage", &prop);
-> +	if (ret == 0)
-> +		__tbp->usage = prop;
+> +	req =3D list_first_entry(&ep->queue, struct gr_request, queue);
+> +	gr_finish_request(ep, req, status);
+> +	gr_start_dma(ep); /* Regardless of ep->dma_start */
+> +}
 > +
-> +	trip = of_parse_phandle(np, "trip", 0);
-> +	if (!trip) {
-> +		pr_err("missing trip property\n");
-> +		return -ENODEV;
-> +	}
+> +/*
+> + * Abort DMA for an endpoint. Sets the abort DMA bit which causes an ong=
+oing DMA
+> + * transfer to be canceled and clears GR_DMACTRL_DA.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static void gr_abort_dma(struct gr_ep *ep)
+> +{
+> +	u32 dmactrl;
 > +
-> +	/* match using device_node */
-> +	for (i = 0; i < ntrips; i++)
-> +		if (trip == trips[i].np) {
-> +			__tbp->trip_id = i;
-> +			break;
-> +		}
+> +	dmactrl =3D gr_read32(&ep->regs->dmactrl);
+> +	gr_write32(&ep->regs->dmactrl, dmactrl | GR_DMACTRL_AD);
+> +}
 > +
-> +	if (i == ntrips) {
-> +		ret = -ENODEV;
-> +		goto end;
-> +	}
+> +/*
+> + * Allocates and sets up a struct gr_dma_desc and putting it on the desc=
+riptor
+> + * chain.
+> + *
+> + * Size is not used for OUT endpoints. Hardware can not be instructed to=
+ handle
+> + * smaller buffer than MAXPL in the OUT direction.
+> + */
+> +static int gr_add_dma_desc(struct gr_ep *ep, struct gr_request *req,
+> +			   dma_addr_t data, unsigned size, gfp_t gfp_flags)
+> +{
+> +	struct gr_dma_desc *desc;
 > +
-> +	ret = of_parse_phandle_with_args(np, "cooling-device", "#cooling-cells",
-> +					 0, &cooling_spec);
-> +	if (ret < 0) {
-> +		pr_err("missing cooling_device property\n");
-> +		goto end;
-> +	}
-> +	__tbp->cooling_device = cooling_spec.np;
-> +	if (cooling_spec.args_count >= 2) { /* at least min and max */
-> +		__tbp->min = cooling_spec.args[0];
-> +		__tbp->max = cooling_spec.args[1];
+> +	desc =3D gr_alloc_dma_desc(ep, gfp_flags);
+> +	if (!desc)
+> +		return -ENOMEM;
+> +
+> +	desc->data =3D data;
+> +	if (ep->is_in)
+> +		desc->ctrl =3D
+> +			(GR_DESC_IN_CTRL_LEN_MASK & size) | GR_DESC_IN_CTRL_EN;
+> +	else
+> +		desc->ctrl =3D GR_DESC_OUT_CTRL_IE;
+> +
+> +	if (!req->first_desc) {
+> +		req->first_desc =3D desc;
+> +		req->curr_desc =3D desc;
 > +	} else {
-> +		pr_err("wrong reference to cooling device, missing limits\n");
+> +		req->last_desc->next_desc =3D desc;
+> +		req->last_desc->next =3D desc->paddr;
+> +		req->last_desc->ctrl |=3D GR_DESC_OUT_CTRL_NX;
+> +	}
+> +	req->last_desc =3D desc;
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Sets up a chain of struct gr_dma_descriptors pointing to buffers that
+> + * together covers req->req.length bytes of the buffer at DMA address
+> + * req->req.dma for the OUT direction.
+> + *
+> + * The first descriptor in the chain is enabled, the rest disabled. The =
+work
+> + * handler will later enable them one by one when needed so we can find =
+out when
+> + * the transfer is finished. For OUT endpoints, all descriptors therefore
+> + * generate interrutps.
+> + */
+> +static int gr_setup_out_desc_list(struct gr_ep *ep, struct gr_request *r=
+eq,
+> +				  gfp_t gfp_flags)
+> +{
+> +	u16 bytes_left; /* Bytes left to provide descriptors for */
+> +	u16 bytes_used; /* Bytes accommodated for */
+> +	int ret =3D 0;
+> +
+> +	req->first_desc =3D NULL; /* Signals that no allocation is done yet */
+> +	bytes_left =3D req->req.length;
+> +	bytes_used =3D 0;
+> +	while (bytes_left > 0) {
+> +		dma_addr_t start =3D req->req.dma + bytes_used;
+> +		u16 size =3D min(bytes_left, ep->bytes_per_buffer);
+> +
+> +		/* Should not happen however - gr_queue stops such lengths */
+> +		if (size < ep->bytes_per_buffer)
+> +			dev_warn(ep->dev->dev,
+> +				 "Buffer overrun risk: %u < %u bytes/buffer\n",
+> +				 size, ep->bytes_per_buffer);
+> +
+> +		ret =3D gr_add_dma_desc(ep, req, start, size, gfp_flags);
+> +		if (ret)
+> +			goto alloc_err;
+> +
+> +		bytes_left -=3D size;
+> +		bytes_used +=3D size;
 > +	}
 > +
-> +end:
-> +	of_node_put(trip);
+> +	req->first_desc->ctrl |=3D GR_DESC_OUT_CTRL_EN;
+> +
+> +	return 0;
+> +
+> +alloc_err:
+> +	gr_free_dma_desc_chain(ep->dev, req);
 > +
 > +	return ret;
 > +}
 > +
-> +/**
-> + * thermal_of_populate_trip - parse and fill one trip point data
-> + * @np: DT node containing a trip point node
-> + * @trip: trip point data structure to be filled up
+> +/*
+> + * Sets up a chain of struct gr_dma_descriptors pointing to buffers that
+> + * together covers req->req.length bytes of the buffer at DMA address
+> + * req->req.dma for the IN direction.
 > + *
-> + * This function parses a trip point type of node represented by
-> + * @np parameter and fills the read data into @trip data structure.
+> + * When more data is provided than the maximum payload size, the hardwar=
+e splits
+> + * this up into several payloads automatically. Moreover, ep->bytes_per_=
+buffer
+> + * is always set to a multiple of the maximum payload (restricted to the=
+ valid
+> + * number of maximum payloads during high bandwidth isochronous or inter=
+rupt
+> + * transfers)
 > + *
-> + * Return: 0 on success, proper error code otherwise
+> + * All descriptors are enabled from the beginning and we only generate an
+> + * interrupt for the last one indicating that the entire request has bee=
+n pushed
+> + * to hardware.
 > + */
-> +static int thermal_of_populate_trip(struct device_node *np,
-> +				    struct __thermal_trip *trip)
+> +static int gr_setup_in_desc_list(struct gr_ep *ep, struct gr_request *re=
+q,
+> +				 gfp_t gfp_flags)
 > +{
-> +	int prop;
+> +	u16 bytes_left; /* Bytes left in req to provide descriptors for */
+> +	u16 bytes_used; /* Bytes in req accommodated for */
+> +	int ret =3D 0;
+> +
+> +	req->first_desc =3D NULL; /* Signals that no allocation is done yet */
+> +	bytes_left =3D req->req.length;
+> +	bytes_used =3D 0;
+> +	do { /* Allow for zero length packets */
+> +		dma_addr_t start =3D req->req.dma + bytes_used;
+> +		u16 size =3D min(bytes_left, ep->bytes_per_buffer);
+> +
+> +		ret =3D gr_add_dma_desc(ep, req, start, size, gfp_flags);
+> +		if (ret)
+> +			goto alloc_err;
+> +
+> +		bytes_left -=3D size;
+> +		bytes_used +=3D size;
+> +	} while (bytes_left > 0);
+> +
+> +	/*
+> +	 * Send an extra zero length packet to indicate that no more data is
+> +	 * available when req->req.zero is set and the data length is even
+> +	 * multiples of ep->ep.maxpacket.
+> +	 */
+> +	if (req->req.zero && (req->req.length % ep->ep.maxpacket =3D=3D 0)) {
+> +		ret =3D gr_add_dma_desc(ep, req, 0, 0, gfp_flags);
+> +		if (ret)
+> +			goto alloc_err;
+> +	}
+> +
+> +	/*
+> +	 * For IN packets we only want to know when the last packet has been
+> +	 * transmitted (not just put into internal buffers).
+> +	 */
+> +	req->last_desc->ctrl |=3D GR_DESC_IN_CTRL_PI;
+> +
+> +	return 0;
+> +
+> +alloc_err:
+> +	gr_free_dma_desc_chain(ep->dev, req);
+> +
+> +	return ret;
+> +}
+> +
+> +/* Must be called with dev->lock held */
+> +static int gr_queue(struct gr_ep *ep, struct gr_request *req, gfp_t gfp_=
+flags)
+> +{
+> +	struct gr_udc *dev =3D ep->dev;
 > +	int ret;
 > +
-> +	ret = of_property_read_u32(np, "temperature", &prop);
-> +	if (ret < 0) {
-> +		pr_err("missing temperature property\n");
+> +	if (unlikely(!ep->ep.desc && ep->num !=3D 0)) {
+> +		dev_err(dev->dev, "No ep descriptor for %s\n", ep->ep.name);
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (unlikely(!req->req.buf || !list_empty(&req->queue))) {
+> +		dev_err(dev->dev,
+> +			"Invalid request for %s: buf=3D%p list_empty=3D%d\n",
+> +			ep->ep.name, req->req.buf, list_empty(&req->queue));
+> +		return -EINVAL;
+> +	}
+> +
+> +	/*
+> +	 * The DMA controller can not handle smaller OUT buffers than
+> +	 * maxpacket. It could lead to buffer overruns if unexpectedly long
+> +	 * packet are received.
+> +	 */
+> +	if (!ep->is_in && (req->req.length % ep->ep.maxpacket) !=3D 0) {
+> +		dev_err(dev->dev,
+> +			"OUT request length %d is not multiple of maxpacket\n",
+> +			req->req.length);
+> +		return -EMSGSIZE;
+> +	}
+> +
+> +	if (unlikely(!dev->driver || dev->gadget.speed =3D=3D USB_SPEED_UNKNOWN=
+)) {
+> +		dev_err(dev->dev, "-ESHUTDOWN");
+> +		return -ESHUTDOWN;
+> +	}
+> +
+> +	/* Can't touch registers when suspended */
+> +	if (dev->ep0state =3D=3D GR_EP0_SUSPEND) {
+> +		dev_err(dev->dev, "-EBUSY");
+> +		return -EBUSY;
+> +	}
+> +
+> +	/* Set up DMA mapping in case the caller didn't */
+> +	ret =3D usb_gadget_map_request(&dev->gadget, &req->req, ep->is_in);
+> +	if (ret) {
+> +		dev_err(dev->dev, "usb_gadget_map_request");
 > +		return ret;
 > +	}
-> +	trip->temperature = prop;
 > +
-> +	ret = of_property_read_u32(np, "hysteresis", &prop);
-> +	if (ret < 0) {
-> +		pr_err("missing hysteresis property\n");
+> +	if (ep->is_in)
+> +		ret =3D gr_setup_in_desc_list(ep, req, gfp_flags);
+> +	else
+> +		ret =3D gr_setup_out_desc_list(ep, req, gfp_flags);
+> +	if (ret)
 > +		return ret;
-> +	}
-> +	trip->hysteresis = prop;
 > +
-> +	ret = of_property_read_u32(np, "type", &prop);
-> +	if (ret < 0) {
-> +		pr_err("missing type property\n");
-> +		return ret;
-> +	}
-> +	trip->type = prop;
+> +	req->req.status =3D -EINPROGRESS;
+> +	req->req.actual =3D 0;
+> +	list_add_tail(&req->queue, &ep->queue);
 > +
-> +	/* Required for cooling attachment matching */
-> +	trip->np = np;
+> +	/* Start DMA if not started, otherwise work handler handles it */
+> +	if (!ep->dma_start && likely(!ep->stopped))
+> +		gr_start_dma(ep);
 > +
 > +	return 0;
 > +}
 > +
-> +/**
-> + * thermal_of_build_thermal_zone - parse and fill one thermal zone data
-> + * @np: DT node containing a thermal zone node
+> +/*
+> + * Queue a request from within the driver.
 > + *
-> + * This function parses a thermal zone type of node represented by
-> + * @np parameter and fills the read data into a __thermal_zone data structure
-> + * and return this pointer.
-> + *
-> + * Return: On success returns a valid struct __thermal_zone,
-> + * otherwise, it returns a corresponding ERR_PTR(). Caller must
-> + * check the return value with help of IS_ERR() helper.
+> + * Must be called with dev->lock held.
 > + */
-> +static struct __thermal_zone *
-> +thermal_of_build_thermal_zone(struct device_node *np)
+> +static inline int gr_queue_int(struct gr_ep *ep, struct gr_request *req,
+> +			       gfp_t gfp_flags)
 > +{
-> +	struct device_node *child, *gchild;
-> +	struct __thermal_zone *tz;
-> +	int ret, i;
-> +	u32 prop;
+> +	if (ep->is_in)
+> +		gr_dbgprint_request("RESP", ep, req);
 > +
-> +	if (!np) {
-> +		pr_err("no thermal zone np\n");
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +
-> +	tz = kzalloc(sizeof(*tz), GFP_KERNEL);
-> +	if (!tz) {
-> +		pr_err("not enough memory for thermal of zone\n");
-> +		return ERR_PTR(-ENOMEM);
-> +	}
-> +
-> +	ret = of_property_read_u32(np, "passive-delay", &prop);
-> +	if (ret < 0) {
-> +		pr_err("missing passive_delay property\n");
-> +		return ERR_PTR(ret);
-> +	}
-> +	tz->passive_delay = prop;
-> +
-> +	ret = of_property_read_u32(np, "polling-delay", &prop);
-> +	if (ret < 0) {
-> +		pr_err("missing polling_delay property\n");
-> +		return ERR_PTR(ret);
-> +	}
-> +	tz->polling_delay = prop;
-> +
-> +	/* trips */
-> +	child = of_get_child_by_name(np, "trips");
-> +
-> +	/* No trips provided */
-> +	if (!child)
-> +		goto finish;
-> +
-> +	tz->ntrips = of_get_child_count(child);
-> +	tz->trips = kzalloc(tz->ntrips * sizeof(*tz->trips), GFP_KERNEL);
-> +	if (!tz->trips)
-> +		return ERR_PTR(-ENOMEM);
-> +	i = 0;
-> +	for_each_child_of_node(child, gchild)
-> +		thermal_of_populate_trip(gchild, &tz->trips[i++]);
-> +
-> +	of_node_put(child);
-> +
-> +	/* cooling-attachments */
-> +	child = of_get_child_by_name(np, "cooling-attachments");
-> +
-> +	/* cooling-attachments provided */
-> +	if (!child)
-> +		goto finish;
-> +
-> +	tz->num_tbps = of_get_child_count(child);
-> +	tz->tbps = kzalloc(tz->num_tbps * sizeof(*tz->tbps), GFP_KERNEL);
-> +	if (!tz->tbps)
-> +		return ERR_PTR(-ENOMEM);
-> +	i = 0;
-> +	for_each_child_of_node(child, gchild)
-> +		thermal_of_populate_bind_params(gchild, &tz->tbps[i++],
-> +						tz->trips, tz->ntrips);
-> +
-> +finish:
-> +	tz->mode = THERMAL_DEVICE_DISABLED;
-> +
-> +	return tz;
+> +	return gr_queue(ep, req, gfp_flags);
 > +}
 > +
-> +/**
-> + * of_parse_thermal_zones - parse device tree thermal data
-> + *
-> + * Initialization function that can be called by machine initialization
-> + * code to parse thermal data and populate the thermal framework
-> + * with hardware thermal zones info. This function only parses thermal zones.
-> + * Cooling devices and sensor devices nodes are supposed to be parsed
-> + * by their respective drivers.
-> + *
-> + * Return: 0 on success, proper error code otherwise
-> + *
-> + */
-> +int __init of_parse_thermal_zones(void)
-> +{
-> +	struct device_node *np, *child;
-> +	struct __thermal_zone *tz;
-> +	struct thermal_zone_device_ops *ops;
+> +/* ---------------------------------------------------------------------=
+- */
+> +/* General helper functions */
 > +
-> +	np = of_find_node_by_name(NULL, "thermal-zones");
-> +	if (!np) {
-> +		pr_err("unable to find thermal zones\n");
+> +/*
+> + * Dequeue ALL requests.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static void gr_ep_nuke(struct gr_ep *ep)
+> +{
+> +	struct gr_request *req;
+> +	struct gr_udc *dev;
+> +
+> +	dev =3D ep->dev;
+> +
+> +	ep->stopped =3D 1;
+> +	ep->dma_start =3D 0;
+> +	gr_abort_dma(ep);
+> +
+> +	while (!list_empty(&ep->queue)) {
+> +		req =3D list_first_entry(&ep->queue, struct gr_request, queue);
+> +		gr_finish_request(ep, req, -ESHUTDOWN);
+> +	}
+> +}
+> +
+> +/*
+> + * Reset the hardware state of this endpoint.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static void gr_ep_reset(struct gr_ep *ep)
+> +{
+> +	gr_write32(&ep->regs->epctrl, 0);
+> +	gr_write32(&ep->regs->dmactrl, 0);
+> +
+> +	ep->ep.maxpacket =3D MAX_CTRL_PL_SIZE;
+> +	ep->ep.desc =3D NULL;
+> +	ep->stopped =3D 1;
+> +	ep->dma_start =3D 0;
+> +}
+> +
+> +/*
+> + * Generate STALL on ep0in/out.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static void gr_control_stall(struct gr_udc *dev)
+> +{
+> +	u32 epctrl;
+> +
+> +	epctrl =3D gr_read32(&dev->epo[0].regs->epctrl);
+> +	gr_write32(&dev->epo[0].regs->epctrl, epctrl | GR_EPCTRL_CS);
+> +	epctrl =3D gr_read32(&dev->epi[0].regs->epctrl);
+> +	gr_write32(&dev->epi[0].regs->epctrl, epctrl | GR_EPCTRL_CS);
+> +
+> +	dev->ep0state =3D GR_EP0_STALL;
+> +}
+> +
+> +/*
+> + * Halts, halts and wedges, or clears halt for an endpoint.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static int gr_ep_halt_wedge(struct gr_ep *ep, int halt, int wedge, int f=
+romhost)
+> +{
+> +	u32 epctrl;
+> +	int retval =3D 0;
+> +
+> +	if (ep->num && !ep->ep.desc)
+> +		return -EINVAL;
+> +
+> +	if (ep->num && ep->ep.desc->bmAttributes =3D=3D USB_ENDPOINT_XFER_ISOC)
+> +		return -EOPNOTSUPP;
+> +
+> +	/* Never actually halt ep0, and therefore never clear halt for ep0 */
+> +	if (!ep->num) {
+> +		if (halt && !fromhost) {
+> +			/* ep0 halt from gadget - generate protocol stall */
+> +			gr_control_stall(ep->dev);
+> +			DBG("EP: stall ep0\n");
+> +			return 0;
+> +		}
+> +		return -EINVAL;
+> +	}
+> +
+> +	DBG("EP: %s halt %s\n", (halt ? (wedge ? "wedge" : "set") : "clear"),
+> +	    ep->ep.name);
+
+dev_dbg()
+
+> +	epctrl =3D gr_read32(&ep->regs->epctrl);
+> +	if (halt) {
+> +		/* Set HALT */
+> +		gr_write32(&ep->regs->epctrl, epctrl | GR_EPCTRL_EH);
+> +		ep->stopped =3D 1;
+> +		if (wedge)
+> +			ep->wedged =3D 1;
+> +	} else {
+> +		gr_write32(&ep->regs->epctrl, epctrl & ~GR_EPCTRL_EH);
+> +		ep->stopped =3D 0;
+> +		ep->wedged =3D 0;
+> +
+> +		/* Things might have been queued up in the meantime */
+> +		if (!ep->dma_start)
+> +			gr_start_dma(ep);
+> +
+> +		/* Ep handling might have been hindered during halt */
+> +		schedule_work(&ep->dev->work);
+> +	}
+> +
+> +	return retval;
+> +}
+> +
+> +/* Must be called with dev->lock held */
+> +static inline void gr_set_ep0state(struct gr_udc *dev, enum gr_ep0state =
+value)
+> +{
+> +	if (dev->ep0state !=3D value)
+> +		VDBG("STATE:  ep0state=3D%s\n",
+> +		     gr_ep0state_string(value));
+
+dev_vdbg()
+
+> +	dev->ep0state =3D value;
+> +}
+> +
+> +/*
+> + * Should only be called when endpoints can not generate interrupts.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static void gr_disable_interrupts_and_pullup(struct gr_udc *dev)
+> +{
+> +	gr_write32(&dev->regs->control, 0);
+> +	wmb(); /* Make sure that we do not deny one of our interrupts */
+> +	dev->irq_enabled =3D 0;
+> +}
+> +
+> +/*
+> + * Stop all device activity and disable data line pullup.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static void gr_stop_activity(struct gr_udc *dev)
+> +{
+> +	struct gr_ep *ep;
+> +
+> +	list_for_each_entry(ep, &dev->ep_list, ep_list)
+> +		gr_ep_nuke(ep);
+> +
+> +	gr_disable_interrupts_and_pullup(dev);
+> +
+> +	gr_set_ep0state(dev, GR_EP0_DISCONNECT);
+> +	usb_gadget_set_state(&dev->gadget, USB_STATE_ATTACHED);
+
+ATTACHED ??
+
+> +}
+> +
+> +/* ---------------------------------------------------------------------=
+- */
+> +/* ep0 setup packet handling */
+> +
+> +static void gr_ep0_testmode_complete(struct usb_ep *_ep,
+> +				     struct usb_request *_req)
+> +{
+> +	struct gr_ep *ep;
+> +	struct gr_udc *dev;
+> +	u32 control;
+> +
+> +	ep =3D container_of(_ep, struct gr_ep, ep);
+> +	dev =3D ep->dev;
+> +
+> +	spin_lock(&dev->lock);
+> +
+> +	control =3D gr_read32(&dev->regs->control);
+> +	control |=3D GR_CONTROL_TM | (dev->test_mode << GR_CONTROL_TS_POS);
+> +	gr_write32(&dev->regs->control, control);
+> +
+> +	spin_unlock(&dev->lock);
+> +}
+> +
+> +static void gr_ep0_dummy_complete(struct usb_ep *_ep, struct usb_request=
+ *_req)
+> +{
+> +	/* Nothing needs to be done here */
+> +}
+> +
+> +/*
+> + * Queue a response on ep0in.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static int gr_ep0_respond(struct gr_udc *dev, u8 *buf, int length,
+> +			  void (*complete)(struct usb_ep *ep,
+> +					   struct usb_request *req))
+> +{
+> +	u8 *reqbuf =3D dev->ep0reqi->req.buf;
+> +	int status;
+> +	int i;
+> +
+> +	for (i =3D 0; i < length; i++)
+> +		reqbuf[i] =3D buf[i];
+> +	dev->ep0reqi->req.length =3D length;
+> +	dev->ep0reqi->req.complete =3D complete;
+> +
+> +	status =3D gr_queue_int(&dev->epi[0], dev->ep0reqi, GFP_ATOMIC);
+> +	if (status < 0)
+> +		dev_err(dev->dev,
+> +			"Could not queue ep0in setup response: %d\n", status);
+> +
+> +	return status;
+> +}
+> +
+> +/*
+> + * Queue a 2 byte response on ep0in.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static inline int gr_ep0_respond_u16(struct gr_udc *dev, u16 response)
+> +{
+> +	__le16 le_response =3D cpu_to_le16(response);
+> +
+> +	return gr_ep0_respond(dev, (u8 *)&le_response, 2,
+> +			      gr_ep0_dummy_complete);
+> +}
+> +
+> +/*
+> + * Queue a ZLP response on ep0in.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static inline int gr_ep0_respond_empty(struct gr_udc *dev)
+> +{
+> +	return gr_ep0_respond(dev, NULL, 0, gr_ep0_dummy_complete);
+> +}
+> +
+> +/*
+> + * This is run when a SET_ADDRESS request is received. First writes
+> + * the new address to the control register which is updated internally
+> + * when the next IN packet is ACKED.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static void gr_set_address(struct gr_udc *dev, u8 address)
+> +{
+> +	u32 control;
+> +
+> +	control =3D gr_read32(&dev->regs->control) & ~GR_CONTROL_UA_MASK;
+> +	control |=3D (address << GR_CONTROL_UA_POS) & GR_CONTROL_UA_MASK;
+> +	control |=3D GR_CONTROL_SU;
+> +	gr_write32(&dev->regs->control, control);
+> +}
+> +
+> +/*
+> + * Returns negative for STALL, 0 for successful handling and positive for
+> + * delegation.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static int gr_device_request(struct gr_udc *dev, u8 type, u8 request,
+> +			     u16 value, u16 index)
+> +{
+> +	u16 response;
+> +	u8 test;
+> +
+> +	switch (request) {
+> +	case USB_REQ_SET_ADDRESS:
+> +		DBG("STATUS: address %d\n", value & 0xff);
+> +		gr_set_address(dev, value & 0xff);
+> +		if (value)
+> +			usb_gadget_set_state(&dev->gadget, USB_STATE_ADDRESS);
+> +		else
+> +			usb_gadget_set_state(&dev->gadget, USB_STATE_DEFAULT);
+> +		return gr_ep0_respond_empty(dev);
+> +
+> +	case USB_REQ_GET_STATUS:
+> +		/* Self powered | remote wakeup */
+> +		response =3D 0x0001 | (dev->remote_wakeup ? 0x0002 : 0);
+> +		return gr_ep0_respond_u16(dev, response);
+> +
+> +	case USB_REQ_SET_FEATURE:
+> +		switch (value) {
+> +		case USB_DEVICE_REMOTE_WAKEUP:
+> +			/* Allow remote wakeup */
+> +			dev->remote_wakeup =3D 1;
+> +			return gr_ep0_respond_empty(dev);
+> +
+> +		case USB_DEVICE_TEST_MODE:
+> +			/* The hardware does not support TEST_FORCE_EN */
+> +			test =3D index >> 8;
+> +			if (test >=3D TEST_J && test <=3D TEST_PACKET) {
+> +				dev->test_mode =3D test;
+> +				return gr_ep0_respond(dev, NULL, 0,
+> +						      gr_ep0_testmode_complete);
+> +			}
+> +		}
+> +		break;
+> +
+> +	case USB_REQ_CLEAR_FEATURE:
+> +		switch (value) {
+> +		case USB_DEVICE_REMOTE_WAKEUP:
+> +			/* Disallow remote wakeup */
+> +			dev->remote_wakeup =3D 0;
+> +			return gr_ep0_respond_empty(dev);
+> +		}
+> +		break;
+> +	}
+> +
+> +	return 1; /* Delegate the rest */
+> +}
+> +
+> +/*
+> + * Returns negative for STALL, 0 for successful handling and positive for
+> + * delegation.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static int gr_interface_request(struct gr_udc *dev, u8 type, u8 request,
+> +				u16 value, u16 index)
+> +{
+> +	if (dev->gadget.state !=3D USB_STATE_CONFIGURED)
+> +		return -1;
+> +
+> +	/*
+> +	 * Should return STALL for invalid interfaces, but udc driver does not
+> +	 * know anything about that. However, many gadget drivers do not handle
+> +	 * GET_STATUS so we need to take care of that.
+> +	 */
+> +
+> +	switch (request) {
+> +	case USB_REQ_GET_STATUS:
+> +		return gr_ep0_respond_u16(dev, 0x0000);
+> +
+> +	case USB_REQ_SET_FEATURE:
+> +	case USB_REQ_CLEAR_FEATURE:
+> +		/*
+> +		 * No possible valid standard requests. Still let gadget drivers
+> +		 * have a go at it.
+> +		 */
+> +		break;
+> +	}
+> +
+> +	return 1; /* Delegate the rest */
+> +}
+> +
+> +/*
+> + * Returns negative for STALL, 0 for successful handling and positive for
+> + * delegation.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static int gr_endpoint_request(struct gr_udc *dev, u8 type, u8 request,
+> +			       u16 value, u16 index)
+> +{
+> +	struct gr_ep *ep;
+> +	int status;
+> +	int halted;
+> +	u8 epnum =3D index & USB_ENDPOINT_NUMBER_MASK;
+> +	u8 is_in =3D index & USB_ENDPOINT_DIR_MASK;
+> +
+> +	if ((is_in && epnum >=3D dev->nepi) || (!is_in && epnum >=3D dev->nepo))
+> +		return -1;
+> +
+> +	if (dev->gadget.state !=3D USB_STATE_CONFIGURED && epnum !=3D 0)
+> +		return -1;
+> +
+> +	ep =3D (is_in ? &dev->epi[epnum] : &dev->epo[epnum]);
+> +
+> +	switch (request) {
+> +	case USB_REQ_GET_STATUS:
+> +		halted =3D gr_read32(&ep->regs->epctrl) & GR_EPCTRL_EH;
+> +		return gr_ep0_respond_u16(dev, halted ? 0x0001 : 0);
+> +
+> +	case USB_REQ_SET_FEATURE:
+> +		switch (value) {
+> +		case USB_ENDPOINT_HALT:
+> +			status =3D gr_ep_halt_wedge(ep, 1, 0, 1);
+> +			if (status >=3D 0)
+> +				status =3D gr_ep0_respond_empty(dev);
+> +			return status;
+> +		}
+> +		break;
+> +
+> +	case USB_REQ_CLEAR_FEATURE:
+> +		switch (value) {
+> +		case USB_ENDPOINT_HALT:
+> +			if (ep->wedged)
+> +				return -1;
+> +			status =3D gr_ep_halt_wedge(ep, 0, 0, 1);
+> +			if (status >=3D 0)
+> +				status =3D gr_ep0_respond_empty(dev);
+> +			return status;
+> +		}
+> +		break;
+> +	}
+> +
+> +	return 1; /* Delegate the rest */
+> +}
+> +
+> +/* Must be called with dev->lock held */
+> +static void gr_ep0out_requeue(struct gr_udc *dev)
+> +{
+> +	int ret =3D gr_queue_int(&dev->epo[0], dev->ep0reqo, GFP_ATOMIC);
+> +
+> +	if (ret)
+> +		dev_err(dev->dev, "Could not queue ep0out setup request: %d\n",
+> +			ret);
+> +}
+> +
+> +/*
+> + * The main function dealing with setup requests on ep0.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static void gr_ep0_setup(struct gr_udc *dev, struct gr_request *req)
+> +{
+> +	union {
+> +		struct usb_ctrlrequest ctrl;
+> +		u8 raw[8];
+> +		u32 word[2];
+> +	} u;
+> +	u8 type;
+> +	u8 request;
+> +	u16 value;
+> +	u16 index;
+> +	u16 length;
+> +	int i;
+> +	int status;
+> +
+> +	/* Restore from ep0 halt */
+> +	if (dev->ep0state =3D=3D GR_EP0_STALL) {
+> +		gr_set_ep0state(dev, GR_EP0_SETUP);
+> +		if (!req->req.actual)
+> +			goto out;
+> +	}
+> +
+> +	if (dev->ep0state =3D=3D GR_EP0_ISTATUS) {
+> +		gr_set_ep0state(dev, GR_EP0_SETUP);
+> +		if (req->req.actual > 0)
+> +			DBG("Unexpected setup packet at state %s\n",
+> +			    gr_ep0state_string(GR_EP0_ISTATUS));
+> +		else
+> +			goto out; /* Got expected ZLP */
+> +	} else if (dev->ep0state !=3D GR_EP0_SETUP) {
+> +		INFO("Unexpected ep0out request at state %s - stalling\n",
+> +		     gr_ep0state_string(dev->ep0state));
+
+dev_info
+
+> +		gr_control_stall(dev);
+> +		gr_set_ep0state(dev, GR_EP0_SETUP);
+> +		goto out;
+> +	} else if (!req->req.actual) {
+> +		DBG("Unexpected ZLP at state %s\n",
+> +		    gr_ep0state_string(dev->ep0state));
+
+dev_dbg()
+
+> +		goto out;
+> +	}
+> +
+> +	/* Handle SETUP packet */
+> +	for (i =3D 0; i < req->req.actual; i++)
+> +		u.raw[i] =3D ((u8 *)req->req.buf)[i];
+> +
+> +	type =3D u.ctrl.bRequestType;
+> +	request =3D u.ctrl.bRequest;
+> +	value =3D le16_to_cpu(u.ctrl.wValue);
+> +	index =3D le16_to_cpu(u.ctrl.wIndex);
+> +	length =3D le16_to_cpu(u.ctrl.wLength);
+> +
+> +	gr_dbgprint_devreq(type, request, value, index, length);
+> +
+> +	/* Check for data stage */
+> +	if (length) {
+> +		if (type & USB_DIR_IN)
+> +			gr_set_ep0state(dev, GR_EP0_IDATA);
+> +		else
+> +			gr_set_ep0state(dev, GR_EP0_ODATA);
+> +	}
+> +
+> +	status =3D 1; /* Positive status flags delegation */
+> +	if ((type & USB_TYPE_MASK) =3D=3D USB_TYPE_STANDARD) {
+> +		switch (type & USB_RECIP_MASK) {
+> +		case USB_RECIP_DEVICE:
+> +			status =3D gr_device_request(dev, type, request,
+> +						   value, index);
+> +			break;
+> +		case USB_RECIP_ENDPOINT:
+> +			status =3D  gr_endpoint_request(dev, type, request,
+> +						      value, index);
+> +			break;
+> +		case USB_RECIP_INTERFACE:
+> +			status =3D gr_interface_request(dev, type, request,
+> +						      value, index);
+> +			break;
+> +		}
+> +	}
+> +
+> +	if (status > 0) {
+> +		/* Delegate the rest to the gadget driver */
+> +		spin_unlock(&dev->lock);
+> +
+> +		VDBG("DELEGATE\n");
+> +		status =3D dev->driver->setup(&dev->gadget, &u.ctrl);
+> +
+> +		spin_lock(&dev->lock);
+> +	}
+> +
+> +	/* Generate STALL on both ep0out and ep0in if requested */
+> +	if (unlikely(status < 0)) {
+> +		VDBG("STALL\n");
+> +		gr_control_stall(dev);
+> +	}
+> +
+> +	if ((type & USB_TYPE_MASK) =3D=3D USB_TYPE_STANDARD &&
+> +	    request =3D=3D USB_REQ_SET_CONFIGURATION) {
+> +		if (!value) {
+> +			DBG("STATUS: deconfigured\n");
+> +			usb_gadget_set_state(&dev->gadget, USB_STATE_ADDRESS);
+> +		} else if (status >=3D 0) {
+> +			/* Not configured unless gadget OK:s it */
+> +			DBG("STATUS: configured: %d\n", value);
+> +			usb_gadget_set_state(&dev->gadget,
+> +					     USB_STATE_CONFIGURED);
+> +		}
+> +	}
+> +
+> +	/* Get ready for next stage */
+> +	if (dev->ep0state =3D=3D GR_EP0_ODATA)
+> +		gr_set_ep0state(dev, GR_EP0_OSTATUS);
+> +	else if (dev->ep0state =3D=3D GR_EP0_IDATA)
+> +		gr_set_ep0state(dev, GR_EP0_ISTATUS);
+> +	else
+> +		gr_set_ep0state(dev, GR_EP0_SETUP);
+> +
+> +out:
+> +	gr_ep0out_requeue(dev);
+> +}
+> +
+> +/* ---------------------------------------------------------------------=
+- */
+> +/* VBUS and USB reset handling */
+> +
+> +/* Must be called with dev->lock held */
+> +static void gr_vbus_connected(struct gr_udc *dev, u32 status)
+> +{
+> +	u32 control;
+> +
+> +	dev->gadget.speed =3D GR_SPEED(status);
+> +	usb_gadget_set_state(&dev->gadget, USB_STATE_POWERED);
+> +
+> +	/* Turn on full interrupts and pullup */
+> +	control =3D (GR_CONTROL_SI | GR_CONTROL_UI | GR_CONTROL_VI |
+> +		   GR_CONTROL_SP | GR_CONTROL_EP);
+> +	gr_write32(&dev->regs->control, control);
+> +}
+> +
+> +/* Must be called with dev->lock held */
+> +static void gr_enable_vbus_detect(struct gr_udc *dev)
+> +{
+> +	u32 status;
+> +
+> +	dev->irq_enabled =3D 1;
+> +	wmb(); /* Make sure we do not ignore an interrupt */
+> +	gr_write32(&dev->regs->control, GR_CONTROL_VI);
+> +
+> +	/* Take care of the case we are already plugged in at this point */
+> +	status =3D gr_read32(&dev->regs->status);
+> +	if (status & GR_STATUS_VB)
+> +		gr_vbus_connected(dev, status);
+> +}
+> +
+> +/* Must be called with dev->lock held */
+> +static void gr_vbus_disconnected(struct gr_udc *dev)
+> +{
+> +	gr_stop_activity(dev);
+> +
+> +	/* Report disconnect */
+> +	if (dev->driver && dev->driver->disconnect) {
+> +		spin_unlock(&dev->lock);
+> +
+> +		dev->driver->disconnect(&dev->gadget);
+> +
+> +		spin_lock(&dev->lock);
+> +	}
+> +
+> +	gr_enable_vbus_detect(dev);
+> +}
+> +
+> +/* Must be called with dev->lock held */
+> +static void gr_udc_usbreset(struct gr_udc *dev, u32 status)
+> +{
+> +	gr_set_address(dev, 0);
+> +	gr_set_ep0state(dev, GR_EP0_SETUP);
+> +	usb_gadget_set_state(&dev->gadget, USB_STATE_DEFAULT);
+> +	dev->gadget.speed =3D GR_SPEED(status);
+> +
+> +	gr_ep_nuke(&dev->epo[0]);
+> +	gr_ep_nuke(&dev->epi[0]);
+> +	dev->epo[0].stopped =3D 0;
+> +	dev->epi[0].stopped =3D 0;
+> +	gr_ep0out_requeue(dev);
+> +}
+> +
+> +/* ---------------------------------------------------------------------=
+- */
+> +/* Irq and work handling */
+> +
+> +/*
+> + * Handles wq work for in endpoints. Returns whether work was handled.
+> + *
+> + * Must be called with dev->lock held and with !ep->stopped.
+> + */
+> +static int gr_handle_in_ep_work(struct gr_ep *ep)
+> +{
+> +	struct gr_request *req;
+> +
+> +	req =3D list_first_entry(&ep->queue, struct gr_request, queue);
+> +	if (!req->last_desc)
 > +		return 0;
-> +	}
 > +
-> +	for_each_child_of_node(np, child) {
-> +		struct thermal_zone_device *zone;
-> +		struct thermal_zone_params *tzp;
+> +	if (gr_read32(&req->last_desc->ctrl) & GR_DESC_IN_CTRL_EN)
+> +		return 0; /* Not put in hardware buffers yet */
 > +
-> +		tz = thermal_of_build_thermal_zone(child);
-> +		if (IS_ERR(tz)) {
-> +			pr_err("failed to build thermal zone %ld\n",
-> +			       PTR_ERR(tz));
-> +			return 0;
-> +		}
+> +	if (gr_read32(&ep->regs->epstat) & (GR_EPSTAT_B1 | GR_EPSTAT_B0))
+> +		return 0; /* Not transmitted yet, still in hardware buffers */
 > +
-> +		ops = kzalloc(sizeof(*ops), GFP_KERNEL);
-> +		if (!ops) {
-> +			pr_err("no memory available for thermal ops\n");
-> +			return 0;
-> +		}
-> +		memcpy(ops, &of_thermal_ops, sizeof(*ops));
+> +	/* Write complete */
+> +	gr_dma_advance(ep, 0);
 > +
-> +		tzp = kzalloc(sizeof(*tzp), GFP_KERNEL);
-> +		if (!ops) {
-> +			pr_err("no memory available for thermal zone params\n");
-> +			return 0;
-> +		}
-> +		/* No hwmon because there might be hwmon drivers registering */
-> +		tzp->no_hwmon = true;
-> +
-> +		zone = thermal_zone_device_register(child->name, tz->ntrips,
-> +						    0, tz,
-> +						    ops, tzp,
-> +						    tz->passive_delay,
-> +						    tz->polling_delay);
-> +		if (IS_ERR(zone))
-> +			pr_err("Failed to build %s zone %ld\n", child->name,
-> +			       PTR_ERR(zone));
-> +	}
-> +	return 0;
+> +	return 1;
 > +}
-> +
-> +/**
-> + * of_thermal_destroy_zones - remove all zones parsed and allocated resources
-> + *
-> + * Finds all zones parsed and added to the thermal framework and remove them
-> + * from the system, together with their resources.
-> + *
-> + */
-> +void __exit of_thermal_destroy_zones(void)
-> +{
-> +	struct device_node *np, *child;
-> +	struct __thermal_zone *tz;
-> +
-> +	np = of_find_node_by_name(NULL, "thermal-zones");
-> +	if (!np) {
-> +		pr_err("unable to find thermal zones\n");
-> +		return;
-> +	}
-> +
-> +	for_each_child_of_node(np, child) {
-> +		struct thermal_zone_device *zone;
-> +
-> +		zone = thermal_zone_get_zone_by_name(child->name);
-> +		if (IS_ERR(zone))
-> +			continue;
-> +
-> +		thermal_zone_device_unregister(zone);
-> +		kfree(zone->tzp);
-> +		kfree(zone->ops);
-> +		tz = zone->devdata;
-> +		kfree(tz->tbps);
-> +		kfree(tz->trips);
-> +		kfree(tz);
-> +	}
-> +}
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> index 8a94300..a733241 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -1371,7 +1371,7 @@ static void remove_trip_attrs(struct thermal_zone_device *tz)
->   */
->  struct thermal_zone_device *thermal_zone_device_register(const char *type,
->  	int trips, int mask, void *devdata,
-> -	const struct thermal_zone_device_ops *ops,
-> +	struct thermal_zone_device_ops *ops,
->  	const struct thermal_zone_params *tzp,
->  	int passive_delay, int polling_delay)
->  {
-> @@ -1751,8 +1751,14 @@ static int __init thermal_init(void)
->  	if (result)
->  		goto unregister_class;
->  
-> +	result = of_parse_thermal_zones();
-> +	if (result)
-> +		goto exit_netlink;
-> +
->  	return 0;
->  
-> +exit_netlink:
-> +	genetlink_exit();
->  unregister_governors:
->  	thermal_unregister_governors();
->  unregister_class:
-> @@ -1768,6 +1774,7 @@ error:
->  
->  static void __exit thermal_exit(void)
->  {
-> +	of_thermal_destroy_zones();
->  	genetlink_exit();
->  	class_unregister(&thermal_class);
->  	thermal_unregister_governors();
-> diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_core.h
-> index 7cf2f66..3db339f 100644
-> --- a/drivers/thermal/thermal_core.h
-> +++ b/drivers/thermal/thermal_core.h
-> @@ -77,4 +77,13 @@ static inline int thermal_gov_user_space_register(void) { return 0; }
->  static inline void thermal_gov_user_space_unregister(void) {}
->  #endif /* CONFIG_THERMAL_GOV_USER_SPACE */
->  
-> +/* device tree support */
-> +#ifdef CONFIG_THERMAL_OF
-> +int of_parse_thermal_zones(void);
-> +void of_thermal_destroy_zones(void);
-> +#else
-> +static inline int of_parse_thermal_zones(void) { return 0; }
-> +static inline void of_thermal_destroy_zones(void) { }
-> +#endif
-> +
->  #endif /* __THERMAL_CORE_H__ */
-> diff --git a/include/dt-bindings/thermal/thermal.h b/include/dt-bindings/thermal/thermal.h
-> new file mode 100644
-> index 0000000..6dd6ccd
-> --- /dev/null
-> +++ b/include/dt-bindings/thermal/thermal.h
-> @@ -0,0 +1,27 @@
-> +/*
-> + * This header provides constants for most thermal bindings.
-> + *
-> + * Copyright (C) 2013 Texas Instruments
-> + *	Eduardo Valentin <eduardo.valentin@ti.com>
-> + *
-> + * GPLv2 only
-> + */
-> +
-> +#ifndef _DT_BINDINGS_THERMAL_THERMAL_H
-> +#define _DT_BINDINGS_THERMAL_THERMAL_H
 > +
 > +/*
-> + * Here are the thermal trip types. This must
-> + * match with enum thermal_trip_type at
-> + * include/linux/thermal.h
+> + * Handles wq work for out endpoints. Returns whether work was handled.
+> + *
+> + * Must be called with dev->lock held and with !ep->stopped.
 > + */
-> +#define THERMAL_TRIP_ACTIVE		0
-> +#define THERMAL_TRIP_PASSIVE		1
-> +#define THERMAL_TRIP_HOT		2
-> +#define THERMAL_TRIP_CRITICAL		3
-> +
-> +/* On cooling devices upper and lower limits */
-> +#define THERMAL_NO_LIMIT		(-1UL)
-> +
-> +#endif
-> +
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index b268d3c..b780c5b 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -143,6 +143,7 @@ struct thermal_cooling_device {
->  	int id;
->  	char type[THERMAL_NAME_LENGTH];
->  	struct device device;
-> +	struct device_node *np;
->  	void *devdata;
->  	const struct thermal_cooling_device_ops *ops;
->  	bool updated; /* true if the cooling device does not need update */
-> @@ -172,7 +173,7 @@ struct thermal_zone_device {
->  	int emul_temperature;
->  	int passive;
->  	unsigned int forced_passive;
-> -	const struct thermal_zone_device_ops *ops;
-> +	struct thermal_zone_device_ops *ops;
->  	const struct thermal_zone_params *tzp;
->  	struct thermal_governor *governor;
->  	struct list_head thermal_instances;
-> @@ -242,8 +243,31 @@ struct thermal_genl_event {
->  };
->  
->  /* Function declarations */
-> +#ifdef CONFIG_THERMAL_OF
-> +struct thermal_zone_device *
-> +thermal_zone_of_sensor_register(struct device *dev, int id,
-> +				void *data, int (*get_temp)(void *, long *),
-> +				int (*get_trend)(void *, long *));
-> +void thermal_zone_of_sensor_unregister(struct device *dev,
-> +				       struct thermal_zone_device *tz);
-> +#else
-> +static inline struct thermal_zone_device *
-> +thermal_zone_of_sensor_register(struct device *dev, int id,
-> +				void *data, int (*get_temp)(void *, long *),
-> +				int (*get_trend)(void *, long *))
+> +static int gr_handle_out_ep_work(struct gr_ep *ep)
 > +{
-> +	return NULL;
+> +	u32 ep_dmactrl;
+> +	u32 ctrl;
+> +	u16 len;
+> +	struct gr_request *req;
+> +	struct gr_udc *dev =3D ep->dev;
+> +
+> +	req =3D list_first_entry(&ep->queue, struct gr_request, queue);
+> +	if (!req->curr_desc)
+> +		return 0;
+> +
+> +	ctrl =3D gr_read32(&req->curr_desc->ctrl);
+> +	if (ctrl & GR_DESC_OUT_CTRL_EN)
+> +		return 0; /* Not received yet */
+> +
+> +	/* Read complete */
+> +	len =3D ctrl & GR_DESC_OUT_CTRL_LEN_MASK;
+> +	req->req.actual +=3D len;
+> +	if (ctrl & GR_DESC_OUT_CTRL_SE)
+> +		req->setup =3D 1;
+> +
+> +	if (len < ep->ep.maxpacket || req->req.actual =3D=3D req->req.length) {
+> +		/* Short packet or the expected size - we are done */
+> +
+> +		if ((ep =3D=3D &dev->epo[0]) && (dev->ep0state =3D=3D GR_EP0_OSTATUS))=
+ {
+> +			/*
+> +			 * Send a status stage ZLP to ack the DATA stage in the
+> +			 * OUT direction. This needs to be done before
+> +			 * gr_dma_advance as that can lead to a call to
+> +			 * ep0_setup that can change dev->ep0state.
+> +			 */
+> +			gr_ep0_respond_empty(dev);
+> +			gr_set_ep0state(dev, GR_EP0_SETUP);
+> +		}
+> +
+> +		gr_dma_advance(ep, 0);
+> +	} else {
+> +		/* Not done yet. Enable the next descriptor to receive more. */
+> +		req->curr_desc =3D req->curr_desc->next_desc;
+> +		req->curr_desc->ctrl |=3D GR_DESC_OUT_CTRL_EN;
+> +
+> +		ep_dmactrl =3D gr_read32(&ep->regs->dmactrl);
+> +		gr_write32(&ep->regs->dmactrl, ep_dmactrl | GR_DMACTRL_DA);
+> +	}
+> +
+> +	return 1;
 > +}
 > +
-> +static inline
-> +void thermal_zone_of_sensor_unregister(struct device *dev,
-> +				       struct thermal_zone_device *tz)
+> +/*
+> + * Handle state changes. Returns whether work was handled.
+> + *
+> + * Must be called with dev->lock held.
+> + */
+> +static int gr_handle_state_work(struct gr_udc *dev)
 > +{
+> +	u32 status =3D gr_read32(&dev->regs->status);
+> +	int handled =3D 0;
+> +	int powstate =3D !(dev->gadget.state =3D=3D USB_STATE_NOTATTACHED ||
+> +			 dev->gadget.state =3D=3D USB_STATE_ATTACHED);
+> +
+> +	/* VBUS valid detected */
+> +	if (!powstate && (status & GR_STATUS_VB)) {
+> +		DBG("STATUS: vbus valid detected\n");
+> +		gr_vbus_connected(dev, status);
+> +		handled =3D 1;
+> +	}
+> +
+> +	/* Disconnect */
+> +	if (powstate && !(status & GR_STATUS_VB)) {
+> +		DBG("STATUS: vbus invalid detected\n");
+> +		gr_vbus_disconnected(dev);
+> +		handled =3D 1;
+> +	}
+> +
+> +	/* USB reset detected */
+> +	if (status & GR_STATUS_UR) {
+> +		DBG("STATUS: USB reset - speed is %s\n", GR_SPEED_STR(status));
+> +		gr_write32(&dev->regs->status, GR_STATUS_UR);
+> +		gr_udc_usbreset(dev, status);
+> +		handled =3D 1;
+> +	}
+> +
+> +	/* Speed change */
+> +	if (dev->gadget.speed !=3D GR_SPEED(status)) {
+> +		DBG("STATUS: USB Speed change to %s\n", GR_SPEED_STR(status));
+> +		dev->gadget.speed =3D GR_SPEED(status);
+> +		handled =3D 1;
+> +	}
+> +
+> +	/* Going into suspend */
+> +	if ((dev->ep0state !=3D GR_EP0_SUSPEND) && !(status & GR_STATUS_SU)) {
+> +		DBG("STATUS: USB suspend\n");
+> +		gr_set_ep0state(dev, GR_EP0_SUSPEND);
+> +		dev->suspended_from =3D dev->gadget.state;
+> +		usb_gadget_set_state(&dev->gadget, USB_STATE_SUSPENDED);
+> +
+> +		if ((dev->gadget.speed !=3D USB_SPEED_UNKNOWN) &&
+> +		    dev->driver && dev->driver->suspend) {
+> +			spin_unlock(&dev->lock);
+> +
+> +			dev->driver->suspend(&dev->gadget);
+> +
+> +			spin_lock(&dev->lock);
+> +		}
+> +		handled =3D 1;
+> +	}
+> +
+> +	/* Coming out of suspend */
+> +	if ((dev->ep0state =3D=3D GR_EP0_SUSPEND) && (status & GR_STATUS_SU)) {
+> +		DBG("STATUS: USB resume\n");
+> +		if (dev->suspended_from =3D=3D USB_STATE_POWERED)
+> +			gr_set_ep0state(dev, GR_EP0_DISCONNECT);
+> +		else
+> +			gr_set_ep0state(dev, GR_EP0_SETUP);
+> +		usb_gadget_set_state(&dev->gadget, dev->suspended_from);
+> +
+> +		if ((dev->gadget.speed !=3D USB_SPEED_UNKNOWN) &&
+> +		    dev->driver && dev->driver->resume) {
+> +			spin_unlock(&dev->lock);
+> +
+> +			dev->driver->resume(&dev->gadget);
+> +
+> +			spin_lock(&dev->lock);
+> +		}
+> +		handled =3D 1;
+> +	}
+> +
+> +	return handled;
 > +}
 > +
-> +#endif
->  struct thermal_zone_device *thermal_zone_device_register(const char *, int, int,
-> -		void *, const struct thermal_zone_device_ops *,
-> +		void *, struct thermal_zone_device_ops *,
->  		const struct thermal_zone_params *, int, int);
->  void thermal_zone_device_unregister(struct thermal_zone_device *);
->  
-> -- 
-> 1.8.2.1.342.gfa7285d
-> 
-> 
+> +static void gr_work(struct work_struct *work)
+> +{
+> +	struct gr_udc *dev =3D container_of(work, struct gr_udc, work);
+> +	struct gr_ep *ep;
+> +	int handled =3D 0;
+> +	int i;
+> +
+> +	spin_lock(&dev->lock);
+> +
+> +	if (!dev->irq_enabled)
+> +		goto out;
+> +
+> +	/*
+> +	 * Check IN ep interrupts. We check these before the OUT eps because
+> +	 * some gadgets reuse the request that might already be currently
+> +	 * outstanding and needs to be completed (mainly setup requests).
+> +	 */
+> +	for (i =3D 0; i < dev->nepi; i++) {
+> +		ep =3D &dev->epi[i];
+> +		if (!ep->stopped && !ep->callback && !list_empty(&ep->queue))
+> +			handled =3D gr_handle_in_ep_work(ep) || handled;
+> +	}
+> +
+> +	/* Check OUT ep interrupts */
+> +	for (i =3D 0; i < dev->nepo; i++) {
+> +		ep =3D &dev->epo[i];
+> +		if (!ep->stopped && !ep->callback && !list_empty(&ep->queue))
+> +			handled =3D gr_handle_out_ep_work(ep) || handled;
+> +	}
+> +
+> +	/* Check status interrupts */
+> +	handled =3D gr_handle_state_work(dev) || handled;
+> +
+> +
+> +	/*
+> +	 * Check AMBA DMA errors. Only check if we didn't find anything else to
+> +	 * handle because this shouldn't happen if we did everything right.
+> +	 */
+> +	if (!handled) {
+> +		list_for_each_entry(ep, &dev->ep_list, ep_list) {
+> +			if (gr_read32(&ep->regs->dmactrl) & GR_DMACTRL_AE) {
+> +				dev_err(dev->dev, "AMBA Error occurred for %s\n",
+> +					ep->ep.name);
+> +				handled =3D 1;
+> +			}
+> +		}
+> +	}
+> +
+> +out:
+> +	spin_unlock(&dev->lock);
+> +}
+> +
+> +/* The interrupt handler just triggers the work handler */
+> +static irqreturn_t gr_irq(int irq, void *_dev)
+> +{
+> +	struct gr_udc *dev =3D _dev;
+> +
+> +	if (!dev->irq_enabled)
+> +		return IRQ_NONE;
+> +
+> +	schedule_work(&dev->work);
+
+why do you need this ? We have threaded IRQ handlers. Why a workqueue ?
+
+--=20
+balbi
+
+--90KBcPA0h13nTGdQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSOd+aAAoJEIaOsuA1yqREO+YP/2H0sHg4P3D2x8HSxFT1JfIs
+fs87Jhxi4CyMfi+iBWqlIcVTp8GxrOe+wbGyaYtGXb0O9sObRPsICHQJbtUQjESn
+d2yuYB/B9HkiYQfqfCLnXqNBDYHlJCbfICIKm0Bo4l+SBDetdC5fQD2NFTHRpRho
+1PxpMBBNr/qn3wt0IpG6F/opj9FtzqLfVK58SGcMQdIjZel2lJ9wTN4+4u3wtSsh
+3PaoTvD2ZTnUXin9SbaTpt+njPVWpb1MWn1yUKKgqNBWW0pbwk6s77xPCU5CNrAH
+TZjLMUZHjznGfH0GHsyIl2N2zCsb4X1YbKL4tKZ+63Z9C38bsWNqjR3t/kFG+Kfe
+h8fSAY+rjZ8QTm3rt5xX/D04MJOQlpjHjs1+lL8sMYQzYbze1Wc+qd56wLoPI1vC
+8NXTNkUotzXyy8fd9SQe4OXd+Js3CcIVLUgcsOK8LZ7aggrntVMHRYkV+KOWARPS
+oq2chC9iHuEKUrlB4z5UFtY0Um6qEy/+UiuRmYYiyZltM9RucQQu+H37K63om5qa
+G9MA7LPrDUoNlJONR2RzqMlKbsGV1TdFuqXyMguaP9aRgoe0BvnFObvR41F2yh8+
+xWNPi9WbJjki+AHNrWg9DXNfTLgmUKgcj0goAStlEBZPrVz3pOlME7W5W28BURB8
+d/29vhqCMt6XEeaxdR0d
+=mCW3
+-----END PGP SIGNATURE-----
+
+--90KBcPA0h13nTGdQ--
