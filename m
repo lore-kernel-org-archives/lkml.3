@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab3IRWoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 18:44:14 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:38471 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab3IRWoL (ORCPT
+	id S1752206Ab3IRWoo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 18:44:44 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:49231 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab3IRWom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 18:44:11 -0400
+	Wed, 18 Sep 2013 18:44:42 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -21,9 +21,11 @@ Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         Hyun Kwon <hyunk@xilinx.com>,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
 Subject: [PATCH v2] clk: si570: Add a driver for SI570 oscillators
-Date: Wed, 18 Sep 2013 15:43:38 -0700
-Message-Id: <1379544219-23579-1-git-send-email-soren.brinkmann@xilinx.com>
+Date: Wed, 18 Sep 2013 15:43:39 -0700
+Message-Id: <1379544219-23579-2-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1379544219-23579-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1379544219-23579-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
