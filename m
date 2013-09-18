@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab3IROVB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 10:21:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16576 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751647Ab3IROU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 10:20:59 -0400
-Date: Wed, 18 Sep 2013 11:20:38 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 0/4] perf tools: New comm infrastructure
-Message-ID: <20130918142038.GA3891@infradead.org>
-References: <1379017783-27032-1-git-send-email-fweisbec@gmail.com>
- <20130912203658.GA3216@gmail.com>
- <20130913124354.GB4844@somewhere>
- <20130914061148.GF364@gmail.com>
- <87li2wq9gx.fsf@sejong.aot.lge.com>
+	id S1752705Ab3IROWI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 10:22:08 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59146 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511Ab3IROWG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 10:22:06 -0400
+Date: Wed, 18 Sep 2013 16:22:03 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Javier Martinez Canillas <martinez.javier@gmail.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, freemangordon@abv.bg,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/4] usb: musb: Call atomic_notifier_call_chain when
+ status is changed
+Message-ID: <20130918142203.GD3748@amd.pavel.ucw.cz>
+References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
+ <201309172128.42514@pali>
+ <20130918014942.GD19817@radagast>
+ <201309181020.15245@pali>
+ <CAAwP0s1Ou7Nrq7GhnHX71TFCrTFg=nqUh+GsAJhN8DjZGsF4QQ@mail.gmail.com>
+ <20130918133025.GB2953@amd.pavel.ucw.cz>
+ <CAAwP0s0nGthkm9Bp1ug23Rtz6-sbR60FFTSfd-Cj9wKMU0RBEA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87li2wq9gx.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <CAAwP0s0nGthkm9Bp1ug23Rtz6-sbR60FFTSfd-Cj9wKMU0RBEA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Sep 17, 2013 at 02:54:22PM +0900, Namhyung Kim escreveu:
-> Hi Ingo,
-> 
-> On Sat, 14 Sep 2013 08:11:49 +0200, Ingo Molnar wrote:
-> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> My patches and Namhyung's should improve the comm situation a lot but we 
-> >> can't do much miracle. The only way would be perhaps to be able to limit 
-> >> the deepness of the callchain branches.
-> >> 
-> >> Now may be we can find other big contention point in perf. It's possible 
-> >> we also have some endless loop somewhere.
-> >
-> > Well, it was the 100,000+ step linear list walk that was causing 90% of 
-> > the slowness here. Namhyung's patch should dramatically improve that. I 
-> > guess time for someone to post a combined tree so that it can be tested 
-> > all together?
-> 
-> I pushed combined tree to 'perf/callchain-v2' branch in my tree
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+Hi!
 
-But you did it for some old tree, as I tried running it now and since my
-big perf.data file has PERF_RECORD_MMAP2 records, I can't try it with
-your branch, working on cherry picking those changesets, since a plain
-rebase didn't work.
+> >> >> > So will you do that? Or it is needed to resend this one line
+> >> >> > hunk again in new email again?
+> >> >>
+> >> >> new patch, new email
+> >> >
+> >> > Guys, WHY ARE YOU SO STUPID AND ARROGANT?
+> >> >
+> >> > Sorry but, need to copy full isolated patch/hunk from one mail to
+> >> > another is hassling. So what you want from me? Do all those non
+> >> > sense working only because yesterday you had bad day? Or what?
+...
+> > Actually, there is need to be rude, because Felipe fails to act as
+> > maintainer. Instead of fixing bugs in his code, he bounces bugfix
+> > patches, points people to random READMEs and wastes everyones time.
+> 
+> I don't know what are you talking about (if that happened in another
+> thread then I need more context). Felipe is not bouncing any bugfix
 
-- Arnaldo
- 
+Take a look here:
+
+https://lkml.org/lkml/2013/9/17/286
+
+I clearly state that patch can not be tested as required for "proper"
+submission, but offer patch anyway. I get irrelevant boilerplate on
+patch format.
+
+> but just asked to split the patch in two since the patch was solving
+> two separate issues so is way better to have it in two separate
+> patches for the reasons I explained before.
 > 
-> Please note that I also pushed other versions (v[1-3]).  The v1 is my
-> previous rbtree conversion patch, v2 adds Frederic's new comm
-> infrastructure series on top and v3 adds my revised patch to refer
-> current comm [1] on top of v2.
-> 
-> I did my own test again among them.  Test data is 400MB perf.data file
-> created by parallel kernel build.
-> 
->   $ ls -lh perf.data.big
->   -rw-------. 1 namhyung namhyung 400M Sep  9 10:21 perf.data.big
-> 
-> For more precise result, I changed cpufreq governor to 'performance'
-> 
->   # echo performance > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
-> 
-> and run perf report on the cpu.
-> 
->   $ taskset -c 3 time -p perf --no-pager report --stdio -i perf.data.big > /dev/null
-> 
-> I ran it multiple times for each case and the results did not vary much.
-> 
->         baseline	    v1            v2              v3
->   ----------------------------------------------------------
->   real    380.17	 12.63 	       10.02		9.03
->   user    378.86	 11.95 	        9.66		8.69
->   sys       0.70	  0.65 	        0.33		0.34
-> 
-> 
-> I also tried to cache latest result and reuse it when adding a callchain
-> (in callchain_append() function) but it only hits ~5% and did not help
-> the performance.
-> 
-> Thanks,
-> Namhyung
-> 
-> 
-> [1] https://lkml.org/lkml/2013/9/16/565
+> So, as far as I can tell Felipe did exactly what I would expect from a
+> maintainer. He took the time to review the patches sent to him and
+
+I'd expect maintainer to, well, maintain code. It means actually
+fixing bugs in his code, when he's pointed at them.
+
+> gave feedback. If the sender doesn't want to take his feedback into
+> account and prefer to send pretty insulting emails instead that is his
+> choice but I would say that is this not the greatest approach to get
+> your code merged (to say the least).
+
+Clearly not. But Pali found bug in code Felipe should
+maintain. Instead of "thank you for bug report, I applied this one
+line of your code to fix it", Pali got "new patch, new email" for his
+efforts. That is how you train dogs, not how you should treat kernel
+contributors.
+
+Now, it is possible that Felipe just has problems with english, as he
+called me piece of wood in https://lkml.org/lkml/2013/9/17/476 , but
+he appears more arogant than usual over email.
+
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
