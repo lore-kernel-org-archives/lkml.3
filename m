@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab3IRSQv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 14:16:51 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:9511 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab3IRSQt (ORCPT
+	id S1753326Ab3IRSRY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:17:24 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:3881 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab3IRSRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 14:16:49 -0400
+	Wed, 18 Sep 2013 14:17:23 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 18 Sep 2013 11:16:48 -0700
+	by hqnvupgp08.nvidia.com on Wed, 18 Sep 2013 11:14:01 -0700
 From: Rhyland Klein <rklein@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         Laxman Dewangan <ldewangan@nvidia.com>
 CC: <spi-devel-general@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>, Simon Glass <sjg@chromium.org>,
         Olof Johansson <olof@lixom.net>, Rhyland Klein <rklein@nvidia.com>
-Subject: [IP REVIEW] spi/tegra114: Correct support for cs_change
-Date: Wed, 18 Sep 2013 14:13:39 -0400
-Message-ID: <1379528019-6042-1-git-send-email-rklein@nvidia.com>
+Subject: [RESEND] spi/tegra114: Correct support for cs_change
+Date: Wed, 18 Sep 2013 14:17:25 -0400
+Message-ID: <1379528245-6283-1-git-send-email-rklein@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 X-NVConfidentiality: public
 MIME-Version: 1.0
@@ -42,6 +42,9 @@ This work was based on the spi-atmel driver.
 
 Signed-off-by: Rhyland Klein <rklein@nvidia.com>
 ---
+
+RESEND WITH CORRECT PATCH ANNOTATION IN SUBJECT
+
  drivers/spi/spi-tegra114.c |   59 ++++++++++++++++++++++++++++++++++++++------
  1 file changed, 52 insertions(+), 7 deletions(-)
 
