@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab3IRW0j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 18:26:39 -0400
-Received: from nm4-vm8.access.bullet.mail.gq1.yahoo.com ([216.39.63.212]:32759
-	"EHLO nm4-vm8.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751558Ab3IRW0h (ORCPT
+	id S1751947Ab3IRW1A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 18:27:00 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:21861 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab3IRW0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 18:26:37 -0400
-X-Yahoo-Newman-Id: 669504.63770.bm@smtp115.sbc.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: qrQt7fEVM1la4tns01beRAaNVm3mdj.Rn2uZie2XV.yynQ4
- Z0ZZtQUpbTEqVXVvDuJGLPZE85bKVA9zbjMSYpHMqLU2O7jcl9hGWPg_Pkb2
- Ubzz_OKhQOMolkgwBkLBC.JVTNu9YVFuakWf7MU5K6u_wiwOmw.SqjfrQ6WH
- CA47zUaTm25LlFu53MC7xUhBgosbtRgkKOiJunyyrXExL0gtXIcLGfyIlnPT
- 1axbhGxsWjAC1ta59JRaEBHcQJ.sPl44rdh29a1Z10yfNirBWLkm1nrbMrl_
- hOuxx9Q3DA4AjXGIzyesxFTguOTZ012Q9mFeVkUHtMRAtOp_uY2waIKwtiNL
- UkNSZuZa1wwIy7tWFL73CukSeJwZ0dAnSjMYq6oYo.alOA6oJytsL4HULMVa
- uRHqU8DhhgPbEh0aRSt5CKyEag0JVblDUwWFyzbp6siRk7OaNzHogG1Ro1LP
- XCwUdl1B51QNWd6hTHlAn3f1.0FY.K7OpXybVIoctGiA8RQNEFPrdtX1i1pw
- M9h2g4hlZjyxjHB0KqFJk9MPxdgnVWy2oW1TWQNmgcEbhcRwm1bwtnl.yWjC
- ISkDv8VFq6QZXdRDo6QTu.N.OrNHyg4.fVgxBfQ1HudrErpPjptZNP1PhfEE
- HpkBI1hNkS3g-
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with )
-        by smtp115.sbc.mail.gq1.yahoo.com with SMTP; 18 Sep 2013 15:26:36 -0700 PDT
-Message-ID: <523A28B7.10703@att.net>
-Date: Wed, 18 Sep 2013 17:27:03 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130730 Thunderbird/17.0.7
+	Wed, 18 Sep 2013 18:26:48 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19m23JFj2XK0lbcmc7L8yri
+Date: Wed, 18 Sep 2013 15:26:43 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] RX-51: Add missing max_current to
+ rx51_lp5523_led_config
+Message-ID: <20130918222642.GK9994@atomide.com>
+References: <1379541145-25934-1-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Daniel Santos <daniel.santos@pobox.com>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        George Spelvin <linux@horizon.com>
-Subject: Re: [PATCH 1/5] scripts: Add mkstrerror.sh
-References: <29168.1379504300@warthog.procyon.org.uk> <1379459317-13046-2-git-send-email-daniel.santos@pobox.com> <1379459317-13046-1-git-send-email-daniel.santos@pobox.com> <1352.1379505310@warthog.procyon.org.uk>
-In-Reply-To: <1352.1379505310@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1379541145-25934-1-git-send-email-pali.rohar@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Pali Rohár <pali.rohar@gmail.com> [130918 15:02]:
+> Without max_current data in board file lp5523 driver does not change current.
 
-On 09/18/2013 06:55 AM, David Howells wrote:
-> David Howells <dhowells@redhat.com> wrote:
->
->>   (1) Why are you double-NUL'ing all your strings?  (see the \0 in the strings)
-> Ah...  I see what you're doing.  I missed the fact that you don't have a comma
-> after each string.
+Hmm is this a regression or are there other reasons to merge
+this during the -rc cycle?
 
-Yeah, I was trying to format the code so that it's efficient and still 
-easy to read, but then there's no comma where we normally expect one.  
-It's the best middle ground solution I could come up with.
+Regards,
 
+Tony
+ 
+> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> ---
+>  arch/arm/mach-omap2/board-rx51-peripherals.c |    9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
+> index 9326890..d0f857c 100644
+> --- a/arch/arm/mach-omap2/board-rx51-peripherals.c
+> +++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+> @@ -180,38 +180,47 @@ static struct lp55xx_led_config rx51_lp5523_led_config[] = {
+>  		.name		= "lp5523:kb1",
+>  		.chan_nr	= 0,
+>  		.led_current	= 50,
+> +		.max_current	= 255,
+>  	}, {
+>  		.name		= "lp5523:kb2",
+>  		.chan_nr	= 1,
+>  		.led_current	= 50,
+> +		.max_current	= 255,
+>  	}, {
+>  		.name		= "lp5523:kb3",
+>  		.chan_nr	= 2,
+>  		.led_current	= 50,
+> +		.max_current	= 255,
+>  	}, {
+>  		.name		= "lp5523:kb4",
+>  		.chan_nr	= 3,
+>  		.led_current	= 50,
+> +		.max_current	= 255,
+>  	}, {
+>  		.name		= "lp5523:b",
+>  		.chan_nr	= 4,
+>  		.led_current	= 50,
+> +		.max_current	= 255,
+>  	}, {
+>  		.name		= "lp5523:g",
+>  		.chan_nr	= 5,
+>  		.led_current	= 50,
+> +		.max_current	= 255,
+>  	}, {
+>  		.name		= "lp5523:r",
+>  		.chan_nr	= 6,
+>  		.led_current	= 50,
+> +		.max_current	= 255,
+>  	}, {
+>  		.name		= "lp5523:kb5",
+>  		.chan_nr	= 7,
+>  		.led_current	= 50,
+> +		.max_current	= 255,
+>  	}, {
+>  		.name		= "lp5523:kb6",
+>  		.chan_nr	= 8,
+>  		.led_current	= 50,
+> +		.max_current	= 255,
+>  	}
+>  };
+>  
+> -- 
+> 1.7.10.4
+> 
