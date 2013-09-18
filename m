@@ -1,216 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab3IRSkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 14:40:13 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37916 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab3IRSkL (ORCPT
+	id S1752455Ab3IRSlG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:41:06 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:36949 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab3IRSlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 14:40:11 -0400
-Date: Wed, 18 Sep 2013 11:40:07 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mark Fasheh <mfasheh@suse.de>
-Cc: Chris Mason <chris.mason@fusionio.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>, Zach Brown <zab@redhat.com>
-Subject: Re: Build failures due to commit 416161db (btrfs: offline dedupe)
-Message-ID: <20130918184007.GA12206@roeck-us.net>
-References: <20130913133314.GA20461@roeck-us.net>
- <CAMuHMdWoNo9U0DCRoXt8V2d1SiSxX5Sku9rNvg+9MiX++XjVRg@mail.gmail.com>
- <20130913163535.GA5681@roeck-us.net>
- <20130913170022.18785.82013@localhost.localdomain>
- <20130913175801.GL31381@wotan.suse.de>
- <20130913193334.18785.8623@localhost.localdomain>
- <20130917224354.GP31381@wotan.suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130917224354.GP31381@wotan.suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 18 Sep 2013 14:41:03 -0400
+Date: Wed, 18 Sep 2013 22:40:32 +0400
+From: Andrew Savchenko <bircoph@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        suspend-devel@lists.sourceforge.net
+Subject: Re: [BUG] 3.7-rc regression bisected: s2disk fails to resume image:
+ Processes could not be frozen, cannot continue resuming
+Message-Id: <20130918224032.84e09e0c1372dbc51c86ab1e@gmail.com>
+In-Reply-To: <20130918135239.GL13318@ZenIV.linux.org.uk>
+References: <20130812234415.7db639bb0d664e56b6ab2ab2@gmail.com>
+	<20130827074843.ba1b6f62cc0a6dca8e47c06c@gmail.com>
+	<20130918135239.GL13318@ZenIV.linux.org.uk>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__18_Sep_2013_22_40_32_+0400_EUO8pyOdwr8660Ag"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 03:43:54PM -0700, Mark Fasheh wrote:
-> On Fri, Sep 13, 2013 at 03:33:34PM -0400, Chris Mason wrote:
-> > Mark, could you please send a patch for the whole-struct option until
-> > the unaligned put is upstreamed?
-> > 
-> > -chris
-> 
-> Here you go. It's been lightly tested and needs review.
-> 
-At the very least it does fix the build error on the affected platforms.
+--Signature=_Wed__18_Sep_2013_22_40_32_+0400_EUO8pyOdwr8660Ag
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Guenter
+Hello,
 
-> Thanks,
-> 	--Mark
-> 
-> --
-> Mark Fasheh
-> 
-> From: Mark Fasheh <mfasheh@suse.de>
-> 
-> [PATCH] btrfs: change extent-same to copy entire argument struct
-> 
-> btrfs_ioctl_file_extent_same() uses __put_user_unaligned() to copy some data
-> back to it's argument struct. Unfortunately, not all architectures provide
-> __put_user_unaligned(), so compiles break on them if btrfs is selected.
-> 
-> Instead, just copy the whole struct in / out at the start and end of
-> operations, respectively.
-> 
-> Signed-off-by: Mark Fasheh <mfasheh@suse.de>
-> ---
->  fs/btrfs/ioctl.c | 76 +++++++++++++++++++++++++++++++++-----------------------
->  1 file changed, 45 insertions(+), 31 deletions(-)
-> 
-> diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-> index 1a5b946..25d6920 100644
-> --- a/fs/btrfs/ioctl.c
-> +++ b/fs/btrfs/ioctl.c
-> @@ -2696,9 +2696,9 @@ out_unlock:
->  static long btrfs_ioctl_file_extent_same(struct file *file,
->  					 void __user *argp)
->  {
-> -	struct btrfs_ioctl_same_args *args = argp;
-> -	struct btrfs_ioctl_same_args same;
-> -	struct btrfs_ioctl_same_extent_info info;
-> +	struct btrfs_ioctl_same_args tmp;
-> +	struct btrfs_ioctl_same_args *same;
-> +	struct btrfs_ioctl_same_extent_info *info;
->  	struct inode *src = file->f_dentry->d_inode;
->  	struct file *dst_file = NULL;
->  	struct inode *dst;
-> @@ -2706,6 +2706,7 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
->  	u64 len;
->  	int i;
->  	int ret;
-> +	unsigned long size;
->  	u64 bs = BTRFS_I(src)->root->fs_info->sb->s_blocksize;
->  	bool is_admin = capable(CAP_SYS_ADMIN);
->  
-> @@ -2716,15 +2717,30 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
->  	if (ret)
->  		return ret;
->  
-> -	if (copy_from_user(&same,
-> +	if (copy_from_user(&tmp,
->  			   (struct btrfs_ioctl_same_args __user *)argp,
-> -			   sizeof(same))) {
-> +			   sizeof(tmp))) {
->  		ret = -EFAULT;
->  		goto out;
->  	}
->  
-> -	off = same.logical_offset;
-> -	len = same.length;
-> +	size = sizeof(tmp) +
-> +		tmp.dest_count * sizeof(struct btrfs_ioctl_same_extent_info);
-> +
-> +	same = kmalloc(size, GFP_NOFS);
-> +	if (!same) {
-> +		ret = -EFAULT;
-> +		goto out;
-> +	}
-> +
-> +	if (copy_from_user(same,
-> +			   (struct btrfs_ioctl_same_args __user *)argp, size)) {
-> +		ret = -EFAULT;
-> +		goto out;
-> +	}
-> +
-> +	off = same->logical_offset;
-> +	len = same->length;
->  
->  	/*
->  	 * Limit the total length we will dedupe for each operation.
-> @@ -2752,27 +2768,28 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
->  	if (!S_ISREG(src->i_mode))
->  		goto out;
->  
-> -	ret = 0;
-> -	for (i = 0; i < same.dest_count; i++) {
-> -		if (copy_from_user(&info, &args->info[i], sizeof(info))) {
-> -			ret = -EFAULT;
-> -			goto out;
-> -		}
-> +	/* pre-format output fields to sane values */
-> +	for (i = 0; i < same->dest_count; i++) {
-> +		same->info[i].bytes_deduped = 0ULL;
-> +		same->info[i].status = 0;
-> +	}
->  
-> -		info.bytes_deduped = 0;
-> +	ret = 0;
-> +	for (i = 0; i < same->dest_count; i++) {
-> +		info = &same->info[i];
->  
-> -		dst_file = fget(info.fd);
-> +		dst_file = fget(info->fd);
->  		if (!dst_file) {
-> -			info.status = -EBADF;
-> +			info->status = -EBADF;
->  			goto next;
->  		}
->  
->  		if (!(is_admin || (dst_file->f_mode & FMODE_WRITE))) {
-> -			info.status = -EINVAL;
-> +			info->status = -EINVAL;
->  			goto next;
->  		}
->  
-> -		info.status = -EXDEV;
-> +		info->status = -EXDEV;
->  		if (file->f_path.mnt != dst_file->f_path.mnt)
->  			goto next;
->  
-> @@ -2781,32 +2798,29 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
->  			goto next;
->  
->  		if (S_ISDIR(dst->i_mode)) {
-> -			info.status = -EISDIR;
-> +			info->status = -EISDIR;
->  			goto next;
->  		}
->  
->  		if (!S_ISREG(dst->i_mode)) {
-> -			info.status = -EACCES;
-> +			info->status = -EACCES;
->  			goto next;
->  		}
->  
-> -		info.status = btrfs_extent_same(src, off, len, dst,
-> -						info.logical_offset);
-> -		if (info.status == 0)
-> -			info.bytes_deduped += len;
-> +		info->status = btrfs_extent_same(src, off, len, dst,
-> +						info->logical_offset);
-> +		if (info->status == 0)
-> +			info->bytes_deduped += len;
->  
->  next:
->  		if (dst_file)
->  			fput(dst_file);
-> -
-> -		if (__put_user_unaligned(info.status, &args->info[i].status) ||
-> -		    __put_user_unaligned(info.bytes_deduped,
-> -					 &args->info[i].bytes_deduped)) {
-> -			ret = -EFAULT;
-> -			goto out;
-> -		}                                                               
->  	}
->  
-> +	ret = copy_to_user(argp, same, size);
-> +	if (ret)
-> +		ret = -EFAULT;
-> +
->  out:
->  	mnt_drop_write_file(file);
->  	return ret;
-> -- 
-> 1.8.1.4
-> 
-> 
+On Wed, 18 Sep 2013 14:52:39 +0100 Al Viro wrote:
+> On Tue, Aug 27, 2013 at 07:48:43AM +0400, Andrew Savchenko wrote:
+> > > Additional (but probably useless) information on this bug may be found
+> > > here: https://forums.gentoo.org/viewtopic-p-7371120.html
+>=20
+> Something's very fishy there:
+>=20
+> [quote]
+> Digging into suspend-utils code shows that the following ioctl fails on  =
+   =20
+> "/dev/snapshot":                                                         =
+   =20
+>                                                                          =
+      =20
+>                                     Code:                                =
+      =20
+>                           ioctl(dev, _IO(3, 1), 0);                      =
+   =20
+> [end quote]
+>=20
+> but that's _not_ anything freeze-related - that's HDIO_GETGEO, and with z=
+ero
+> as last argument it will fail, no matter what.  With EFAULT, if nothing
+> else...
+>=20
+> Which ioctl() it really is?  A bit further down you write "I modified sus=
+pend
+> code to see errno, so freeze on /dev/snapshot fails [with EAGAIN]", so you
+> have isolated the call in question.  Could you quote the actual code?
+
+Actual code is from suspend-utils tree, swsusp.h:
+
+static inline int freeze(int dev)
+{
+        return ioctl(dev, SNAPSHOT_FREEZE, 0);
+}
+
+And from suspend_ioctls.h:
+#define SNAPSHOT_IOC_MAGIC      '3'
+#define SNAPSHOT_FREEZE                 _IO(SNAPSHOT_IOC_MAGIC, 1)
+
+My mistake, should be '3' instead of 3.
+
+Best regards,
+Andrew Savchenko
+
+--Signature=_Wed__18_Sep_2013_22_40_32_+0400_EUO8pyOdwr8660Ag
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSOfO2AAoJEFZZU7lTcnVsyzMQAIzMhDwGCYPbW8lQ+GgS42pX
+34YBITNd4rKvt0+YQYYqIPB5kD+WsVlgsfcEGCE7bXw3BvbdEeBJaKd1ftUr5ctY
+iaRROrYIoYyqvv/ebUusrqc0E7z+R55UfYTb8qzOo9Ctnnv6RXsLlBPEv8/TZ2ZV
+suM8yv9/H3gr4NDRDCIL3WbqyK1cSfNx++sPH6anf2leJH1tCFt2UKXrnv0zlcg4
+vCk+4ThGqDX3KGkKF2h6ow1lABbjWrUXJ0JL76aEiUIN/I/QZsozgpL67MTXrj3r
+WUc1oE0wt0B9ucg+UOAAg5uwAdeRufnUuVKP8ODPXGD3Bw0CfHhnvEiaKvVfrJNx
+f02HnXWVv3rr8NKC5lTXGBaS3ss0tk0cnMZf80ZBirIUav2p9keExm4R1wzJ2xsk
+kZK4cXj6bMIVS5hUQ2cKQ35WAyMdrNNxGihc1wo6mlevozh6/AIJ/9gdxSjjCXMF
+gs+R9DQBGgUNL0HBCcHULHz4wBLdL1gh5pgKRgThAY4ugLqpza6lcEJfGzNi64+5
++56O6Kl6C1S1glOr8JlrXCd0J6jjs4FepUAjvHB6qUvZNzXyLwEBc0DIbJ+oXsKT
+wl8aadaRZ5EYecf36xQNr71HYuPBQu8cjSTqpsdTqyTN24yYu1TSVV+G1ZsLQ+MP
+EFaOdHt4eeVWoZg58Mp1
+=6Kga
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__18_Sep_2013_22_40_32_+0400_EUO8pyOdwr8660Ag--
