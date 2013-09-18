@@ -1,85 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab3IRR7s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 13:59:48 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:44829 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab3IRRyN (ORCPT
+	id S1752804Ab3IRRyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 13:54:12 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:46103 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647Ab3IRRyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 13:54:13 -0400
+	Wed, 18 Sep 2013 13:54:11 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Dinh Nguyen <dinguyen@altera.com>,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
         Russell King <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 05/26] ARM: socfgpa: prepare for arch-wide .init_time callback
-Date: Wed, 18 Sep 2013 19:53:38 +0200
-Message-Id: <1379526839-14798-6-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 01/26] ARM: nomadik: move mtu setup to clocksource init
+Date: Wed, 18 Sep 2013 19:53:34 +0200
+Message-Id: <1379526839-14798-2-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current socfpga board init calls of_clk_init() from .machine_init. To
-allow consolidation of DT driven .time_init, move of_clock_init() to
-a temporary .time_init that will be removed when arch-wide callback is
-available.
+MTU timer initialization is stuffed into .init_time callback, while
+cpu8815_timer_init_of again maps addresses from the same device node.
+Therefore, this patch moves mtu setup from to clocksource init.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Cc: Olof Johansson <olof@lixom.net>
 Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Dinh Nguyen <dinguyen@altera.com>
+Cc: Alessandro Rubini <rubini@unipv.it>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
 Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/mach-socfpga/socfpga.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ arch/arm/mach-nomadik/cpu-8815.c  |   26 --------------------------
+ drivers/clocksource/nomadik-mtu.c |   11 +++++++++++
+ 2 files changed, 11 insertions(+), 26 deletions(-)
 
-diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
-index bfce964..6df7bb9 100644
---- a/arch/arm/mach-socfpga/socfpga.c
-+++ b/arch/arm/mach-socfpga/socfpga.c
-@@ -15,6 +15,7 @@
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
- #include <linux/clk-provider.h>
-+#include <linux/clocksource.h>
- #include <linux/irqchip.h>
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
-@@ -90,6 +91,12 @@ static void __init socfpga_init_irq(void)
- 	socfpga_sysmgr_init();
+diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
+index 13e0df9..0fcb149 100644
+--- a/arch/arm/mach-nomadik/cpu-8815.c
++++ b/arch/arm/mach-nomadik/cpu-8815.c
+@@ -113,36 +113,10 @@ static void cpu8815_restart(enum reboot_mode mode, const char *cmd)
+ 	writel(1, srcbase + 0x18);
  }
  
-+static void __init socfpga_init_time(void)
-+{
-+	of_clk_init(NULL);
-+	clocksource_of_init();
-+}
+-/* Initial value for SRC control register: all timers use MXTAL/8 source */
+-#define SRC_CR_INIT_MASK	0x00007fff
+-#define SRC_CR_INIT_VAL		0x2aaa8000
+-
+ static void __init cpu8815_timer_init_of(void)
+ {
+-	struct device_node *mtu;
+-	void __iomem *base;
+-	int irq;
+-	u32 src_cr;
+-
+ 	/* We need this to be up now */
+ 	nomadik_clk_init();
+-
+-	mtu = of_find_node_by_path("/mtu@101e2000");
+-	if (!mtu)
+-		return;
+-	base = of_iomap(mtu, 0);
+-	if (WARN_ON(!base))
+-		return;
+-	irq = irq_of_parse_and_map(mtu, 0);
+-
+-	pr_info("Remapped MTU @ %p, irq: %d\n", base, irq);
+-
+-	/* Configure timer sources in "system reset controller" ctrl reg */
+-	src_cr = readl(base);
+-	src_cr &= SRC_CR_INIT_MASK;
+-	src_cr |= SRC_CR_INIT_VAL;
+-	writel(src_cr, base);
+-
+ 	clocksource_of_init();
+ }
+ 
+diff --git a/drivers/clocksource/nomadik-mtu.c b/drivers/clocksource/nomadik-mtu.c
+index 1b74bea..b9f97ba 100644
+--- a/drivers/clocksource/nomadik-mtu.c
++++ b/drivers/clocksource/nomadik-mtu.c
+@@ -257,12 +257,17 @@ void __init nmdk_timer_init(void __iomem *base, int irq)
+ 	__nmdk_timer_init(base, irq, pclk0, clk0);
+ }
+ 
++/* Initial value for SRC control register: all timers use MXTAL/8 source */
++#define SRC_CR_INIT_MASK	0x00007fff
++#define SRC_CR_INIT_VAL		0x2aaa8000
 +
- static void socfpga_cyclone5_restart(enum reboot_mode mode, const char *cmd)
+ static void __init nmdk_timer_of_init(struct device_node *node)
  {
- 	u32 temp;
-@@ -107,7 +114,6 @@ static void __init socfpga_cyclone5_init(void)
- {
- 	l2x0_of_init(0, ~0UL);
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
--	of_clk_init(NULL);
- 	socfpga_init_clocks();
- }
+ 	struct clk *pclk;
+ 	struct clk *clk;
+ 	void __iomem *base;
+ 	int irq;
++	u32 src_cr;
  
-@@ -120,6 +126,7 @@ DT_MACHINE_START(SOCFPGA, "Altera SOCFPGA")
- 	.smp		= smp_ops(socfpga_smp_ops),
- 	.map_io		= socfpga_map_io,
- 	.init_irq	= socfpga_init_irq,
-+	.init_time	= socfpga_init_time,
- 	.init_machine	= socfpga_cyclone5_init,
- 	.restart	= socfpga_cyclone5_restart,
- 	.dt_compat	= altera_dt_match,
+ 	base = of_iomap(node, 0);
+ 	if (!base)
+@@ -280,6 +285,12 @@ static void __init nmdk_timer_of_init(struct device_node *node)
+ 	if (irq <= 0)
+ 		panic("Can't parse IRQ");
+ 
++	/* Configure timer sources in "system reset controller" ctrl reg */
++	src_cr = readl(base);
++	src_cr &= SRC_CR_INIT_MASK;
++	src_cr |= SRC_CR_INIT_VAL;
++	writel(src_cr, base);
++
+ 	__nmdk_timer_init(base, irq, pclk, clk);
+ }
+ CLOCKSOURCE_OF_DECLARE(nomadik_mtu, "st,nomadik-mtu",
 -- 
 1.7.10.4
 
