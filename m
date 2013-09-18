@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab3IRTIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 15:08:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22738 "EHLO mx1.redhat.com"
+	id S1753361Ab3IRTId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 15:08:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25390 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753024Ab3IRTID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753035Ab3IRTID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Sep 2013 15:08:03 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
@@ -15,65 +15,54 @@ Cc: Richard Guy Briggs <rgb@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
         Dan Duval <dan.duval@oracle.com>,
         Chuck Anderson <chuck.anderson@oracle.com>,
         Guy Streeter <streeter@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 3/8] audit: make use of remaining sleep time from wait_for_auditd
-Date: Wed, 18 Sep 2013 15:06:48 -0400
-Message-Id: <7bc5797ceea17efeaa7fe5a161519260d112af87.1379530867.git.rgb@redhat.com>
+Subject: [PATCH 0/8] Audit backlog queue fixes related to soft lockup
+Date: Wed, 18 Sep 2013 15:06:45 -0400
+Message-Id: <cover.1379530867.git.rgb@redhat.com>
 In-Reply-To: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
 References: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
-In-Reply-To: <cover.1379530867.git.rgb@redhat.com>
-References: <cover.1379530867.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If wait_for_auditd() times out, go immediately to the error function rather
-than retesting the loop conditions.
+This patchset covers a number of issues surrounding the audit backlog queue.
+The original trigger was a bug in a patch to fix code that produced negative
+sleep times (commit 82919919).  This bug caused soft lockups.  There were a
+number of other issues raised surrounding this bug which have been attempted
+to be addressed in this patchset.
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- kernel/audit.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
+The first patch fixes this obvious bug.
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 772725e..42c68db 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1054,18 +1054,21 @@ static inline void audit_get_stamp(struct audit_context *ctx,
- /*
-  * Wait for auditd to drain the queue a little
-  */
--static void wait_for_auditd(unsigned long sleep_time)
-+static unsigned long wait_for_auditd(unsigned long sleep_time)
- {
-+	unsigned long timeout = sleep_time;
- 	DECLARE_WAITQUEUE(wait, current);
- 	set_current_state(TASK_UNINTERRUPTIBLE);
- 	add_wait_queue(&audit_backlog_wait, &wait);
- 
- 	if (audit_backlog_limit &&
- 	    skb_queue_len(&audit_skb_queue) > audit_backlog_limit)
--		schedule_timeout(sleep_time);
-+		timeout = schedule_timeout(sleep_time);
- 
- 	__set_current_state(TASK_RUNNING);
- 	remove_wait_queue(&audit_backlog_wait, &wait);
-+
-+	return timeout;
- }
- 
- /* Obtain an audit buffer.  This routine does locking to obtain the
-@@ -1119,8 +1122,9 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 			sleep_time = timeout_start + audit_backlog_wait_time -
- 					jiffies;
- 			if ((long)sleep_time > 0) {
--				wait_for_auditd(sleep_time);
--				continue;
-+				sleep_time = wait_for_auditd(sleep_time);
-+				if ((long)sleep_time > 0)
-+					continue;
- 			}
- 		}
- 		if (audit_rate_check() && printk_ratelimit())
--- 
-1.7.1
+The 2nd fixes the lack of reset to the original wait time that was set to
+zero under error conditions should the system recover from the conditions that
+tickled the first bug.
+
+The 3rd makes use of the remaining timeout to avoid re-checking the loop
+conditions on error.
+
+The 4th and 5th are efficiency fixes for waking up waiting processes only when
+necessary.
+
+The 6th adds a boot parameter to temporarily override the backlog queue length
+in case more buffers are needed before auditd is available.
+
+The 7th and 8th are to add a config option to make the backlog wait time
+configurable from the hard-coded default.
+
+
+Richard Guy Briggs (8):
+  audit: avoid soft lockup due to audit_log_start() incorrect loop
+    termination
+  audit: reset audit backlog wait time after error recovery
+  audit: make use of remaining sleep time from wait_for_auditd
+  audit: efficiency fix 1: only wake up if queue shorter than backlog
+    limit
+  audit: efficiency fix 2: request exclusive wait since all need same
+    resource
+  audit: add boot option to override default backlog limit
+  audit: clean up AUDIT_GET/SET local variables and future-proof API
+  audit: add audit_backlog_wait_time configuration option
+
+ include/uapi/linux/audit.h |    2 +
+ kernel/audit.c             |  111 +++++++++++++++++++++++++++++++-------------
+ 2 files changed, 80 insertions(+), 33 deletions(-)
 
