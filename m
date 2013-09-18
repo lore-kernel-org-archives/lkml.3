@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab3IRMAh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 08:00:37 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:59138 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177Ab3IRMAe (ORCPT
+	id S1752457Ab3IRMDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 08:03:54 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:54808 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab3IRMDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 08:00:34 -0400
-Date: Wed, 18 Sep 2013 13:00:12 +0100
+	Wed, 18 Sep 2013 08:03:52 -0400
+Date: Wed, 18 Sep 2013 13:03:40 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Maxime COQUELIN <maxime.coquelin@st.com>
 Cc: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
@@ -21,36 +21,40 @@ Cc: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
         linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
         stephen.gallimore@st.com, stuart.menefy@st.com,
         gabriel.fernandez@st.com, olivier.clergeaud@st.com
-Subject: Re: [PATCH 3/4] ARM: STi: Supply I2C configuration to STiH415 SoC
-Message-ID: <20130918120012.GE16984@lee--X1>
+Subject: Re: [PATCH 2/4] ARM: STi: Supply I2C configuration to STiH416 SoC
+Message-ID: <20130918120340.GF16984@lee--X1>
 References: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com>
- <1379498483-4236-4-git-send-email-maxime.coquelin@st.com>
+ <1379498483-4236-3-git-send-email-maxime.coquelin@st.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1379498483-4236-4-git-send-email-maxime.coquelin@st.com>
+In-Reply-To: <1379498483-4236-3-git-send-email-maxime.coquelin@st.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Sep 2013, Maxime COQUELIN wrote:
-
-> This patch supplies I2C configuration to STiH415 SoC.
+> This patch supplies I2C configuration to STiH416 SoC.
 > 
 > Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 > Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
 > ---
->  arch/arm/boot/dts/stih415-pinctrl.dtsi |   36 ++++++++++++++++++++
->  arch/arm/boot/dts/stih415.dtsi         |   57 ++++++++++++++++++++++++++++++++
->  2 files changed, 93 insertions(+)
+>  arch/arm/boot/dts/stih416-pinctrl.dtsi |   35 ++++++++++++++++++++
+>  arch/arm/boot/dts/stih416.dtsi         |   57 ++++++++++++++++++++++++++++++++
+>  2 files changed, 92 insertions(+)
 > 
-> diff --git a/arch/arm/boot/dts/stih415-pinctrl.dtsi b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-> index 1d322b2..e56449d 100644
-> --- a/arch/arm/boot/dts/stih415-pinctrl.dtsi
-> +++ b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-> @@ -86,6 +86,24 @@
+> diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+
+I genuinely don't know the answer to this question, but are these
+nodes identical to the ones you've just put in the stih415 DTSI file?
+If so, I think it will be worth creating a stih41x DTSI rather than
+duplicating lots of stuff unnecessarily.
+
+> index 0f246c9..b29ff4b 100644
+> --- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
+> +++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+> @@ -97,6 +97,24 @@
 >  					};
 >  				};
 >  			};
@@ -75,11 +79,10 @@ On Wed, 18 Sep 2013, Maxime COQUELIN wrote:
 >  		};
 >  
 >  		pin-controller-front {
-> @@ -143,6 +161,24 @@
->  				reg		= <0x7000 0x100>;
->  				st,bank-name	= "PIO12";
+> @@ -175,6 +193,23 @@
+>  				};
 >  			};
-> +
+>  
 > +			i2c0 {
 > +				pinctrl_i2c0_default: i2c0-default {
 > +					st,pins {
@@ -100,35 +103,32 @@ On Wed, 18 Sep 2013, Maxime COQUELIN wrote:
 >  		};
 >  
 >  		pin-controller-rear {
-> diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
-> index 74ab8de..643ae1c 100644
-> --- a/arch/arm/boot/dts/stih415.dtsi
-> +++ b/arch/arm/boot/dts/stih415.dtsi
+> diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+> index 1a0326e..8856470 100644
+> --- a/arch/arm/boot/dts/stih416.dtsi
+> +++ b/arch/arm/boot/dts/stih416.dtsi
 > @@ -9,6 +9,7 @@
 >  #include "stih41x.dtsi"
->  #include "stih415-clock.dtsi"
->  #include "stih415-pinctrl.dtsi"
+>  #include "stih416-clock.dtsi"
+>  #include "stih416-pinctrl.dtsi"
 > +#include <dt-bindings/interrupt-controller/arm-gic.h>
 >  / {
->  
 >  	L2: cache-controller {
-> @@ -83,5 +84,61 @@
->  			pinctrl-names 	= "default";
->  			pinctrl-0	= <&pinctrl_sbc_serial1>;
+>  		compatible = "arm,pl310-cache";
+> @@ -92,5 +93,61 @@
+>  			pinctrl-0 	= <&pinctrl_sbc_serial1>;
+>  			clocks          = <&CLK_SYSIN>;
 >  		};
 > +
 > +		i2c0: i2c@fed40000{
 
-Space before the '{'.
+Same issues here. I assume most of this is copy paste.
 
 > +			compatible	= "st,comms-i2c";
 > +			status		= "disabled";
-
-Consider putting the node status at the bottom.
-
 > +			reg		= <0xfed40000 0x110>;
 > +			interrupts	=  <GIC_SPI 187 IRQ_TYPE_EDGE_RISING>;
-> +			clocks		= <&CLKS_ICN_REG_0>;
+> +			clocks		= <&CLK_S_ICN_REG_0>;
 > +			clock-frequency = <400000>;
 > +			pinctrl-names	= "default";
 > +			pinctrl-0	= <&pinctrl_i2c0_default>;
@@ -138,17 +138,11 @@ Consider putting the node status at the bottom.
 > +		};
 > +
 > +		i2c1: i2c@fed41000{
-
-Same here and throughout.
-
 > +			compatible	= "st,comms-i2c";
 > +			status		= "disabled";
-
-Same here and throughout.
-
 > +			reg		= <0xfed41000 0x110>;
 > +			interrupts	=  <GIC_SPI 188 IRQ_TYPE_EDGE_RISING>;
-> +			clocks		= <&CLKS_ICN_REG_0>;
+> +			clocks		= <&CLK_S_ICN_REG_0>;
 > +			clock-frequency = <400000>;
 > +			pinctrl-names	= "default";
 > +			pinctrl-0	= <&pinctrl_i2c1_default>;
@@ -186,8 +180,6 @@ Same here and throughout.
 > +		};
 >  	};
 >  };
-
-Is this odd tabbing just the result of the patch format?
 
 -- 
 Lee Jones
