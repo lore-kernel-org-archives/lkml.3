@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab3IRTHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 15:07:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60624 "EHLO mx1.redhat.com"
+	id S1752941Ab3IRTH6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 15:07:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60810 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815Ab3IRTHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 15:07:53 -0400
+	id S1751815Ab3IRTHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 15:07:55 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
 Cc: Richard Guy Briggs <rgb@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
@@ -15,9 +15,9 @@ Cc: Richard Guy Briggs <rgb@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
         Dan Duval <dan.duval@oracle.com>,
         Chuck Anderson <chuck.anderson@oracle.com>,
         Guy Streeter <streeter@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 4/8] audit: efficiency fix 1: only wake up if queue shorter than backlog limit
-Date: Wed, 18 Sep 2013 15:06:49 -0400
-Message-Id: <9257f2c7a9926b85c485e1c0c0c52667df455ddf.1379530867.git.rgb@redhat.com>
+Subject: [PATCH 8/8] audit: add audit_backlog_wait_time configuration option
+Date: Wed, 18 Sep 2013 15:06:53 -0400
+Message-Id: <863f1daf3a84b52ae5054f5d232b205ae5caab83.1379530867.git.rgb@redhat.com>
 In-Reply-To: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
 References: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
 In-Reply-To: <cover.1379530867.git.rgb@redhat.com>
@@ -26,62 +26,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-author: Dan Duval <dan.duval@oracle.com>
+reaahead-collector abuses the audit logging facility to discover which files
+are accessed at boot time to make a pre-load list
 
-These and similar errors were seen on a patched 3.8 kernel when the
-audit subsystem was overrun during boot:
+Add a tuning option to audit_backlog_wait_time so that if auditd can't keep up,
+or gets blocked, the callers won't be blocked.
 
-  udevd[876]: worker [887] unexpectedly returned with status 0x0100
-  udevd[876]: worker [887] failed while handling
-'/devices/pci0000:00/0000:00:03.0/0000:40:00.0'
-  udevd[876]: worker [880] unexpectedly returned with status 0x0100
-  udevd[876]: worker [880] failed while handling
-'/devices/LNXSYSTM:00/LNXPWRBN:00/input/input1/event1'
-
-  udevadm settle - timeout of 180 seconds reached, the event queue
-contains:
-    /sys/devices/LNXSYSTM:00/LNXPWRBN:00/input/input1/event1 (3995)
-    /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/INT3F0D:00 (4034)
-
-  audit: audit_backlog=258 > audit_backlog_limit=256
-  audit: audit_lost=1 audit_rate_limit=0 audit_backlog_limit=256
-
-The change below increases the efficiency of the audit code and prevents it
-from being overrun:
-
-Only issue a wake_up in kauditd if the length of the skb queue is less than the
-backlog limit.  Otherwise, threads waiting in wait_for_auditd() will simply
-wake up, discover that the queue is still too long for them to proceed, and go
-back to sleep.  This results in wasted context switches and machine cycles.
-kauditd_thread() is the only function that removes buffers from audit_skb_queue
-so we can't race.  If we did, the timeout in wait_for_auditd() would expire and
-the waiting thread would continue.
-
-See: https://lkml.org/lkml/2013/9/2/479
-
-Signed-off-by: Dan Duval <dan.duval@oracle.com>
-Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
 Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- kernel/audit.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ include/uapi/linux/audit.h |    2 ++
+ kernel/audit.c             |   22 +++++++++++++++++++++-
+ 2 files changed, 23 insertions(+), 1 deletions(-)
 
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 75cef3f..493a66e 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -316,6 +316,7 @@ enum {
+ #define AUDIT_STATUS_PID		0x0004
+ #define AUDIT_STATUS_RATE_LIMIT		0x0008
+ #define AUDIT_STATUS_BACKLOG_LIMIT	0x0010
++#define AUDIT_STATUS_BACKLOG_WAIT_TIME	0x0020
+ 				/* Failure-to-log actions */
+ #define AUDIT_FAIL_SILENT	0
+ #define AUDIT_FAIL_PRINTK	1
+@@ -367,6 +368,7 @@ struct audit_status {
+ 	__u32		backlog_limit;	/* waiting messages limit */
+ 	__u32		lost;		/* messages lost */
+ 	__u32		backlog;	/* messages waiting in queue */
++	__u32		backlog_wait_time;/* message queue wait timeout */
+ };
+ 
+ struct audit_tty_status {
 diff --git a/kernel/audit.c b/kernel/audit.c
-index 42c68db..25fab2d 100644
+index 3d17670..fc535b6 100644
 --- a/kernel/audit.c
 +++ b/kernel/audit.c
-@@ -448,8 +448,10 @@ static int kauditd_thread(void *dummy)
- 		flush_hold_queue();
+@@ -321,6 +321,12 @@ static int audit_set_backlog_limit(int limit)
+ 	return audit_do_config_change("audit_backlog_limit", &audit_backlog_limit, limit);
+ }
  
- 		skb = skb_dequeue(&audit_skb_queue);
--		wake_up(&audit_backlog_wait);
++static int audit_set_backlog_wait_time(int timeout)
++{
++	return audit_do_config_change("audit_backlog_wait_time",
++				      &audit_backlog_wait_time, timeout);
++}
 +
- 		if (skb) {
-+			if(skb_queue_len(&audit_skb_queue) <= audit_backlog_limit)
-+				wake_up(&audit_backlog_wait);
- 			if (audit_pid)
- 				kauditd_send_skb(skb);
- 			else
+ static int audit_set_enabled(int state)
+ {
+ 	int rc;
+@@ -669,6 +675,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 		s.backlog_limit = audit_backlog_limit;
+ 		s.lost		 = atomic_read(&audit_lost);
+ 		s.backlog	 = skb_queue_len(&audit_skb_queue);
++		s.backlog_wait_time = audit_backlog_wait_time;
+ 		audit_send_reply(NETLINK_CB(skb).portid, seq, AUDIT_GET, 0, 0,
+ 				 &s, sizeof(s));
+ 		break;
+@@ -701,8 +708,21 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 			if (err < 0)
+ 				return err;
+ 		}
+-		if (s.mask & AUDIT_STATUS_BACKLOG_LIMIT)
++		if (s.mask & AUDIT_STATUS_BACKLOG_LIMIT) {
+ 			err = audit_set_backlog_limit(s.backlog_limit);
++			if (err < 0)
++				return err;
++		}
++		if (s.mask & AUDIT_STATUS_BACKLOG_WAIT_TIME) {
++			if (sizeof(s) > (size_t)nlh->nlmsg_len)
++				break;
++			if (s.backlog_wait_time < 0 ||
++			    s.backlog_wait_time > 10*AUDIT_BACKLOG_WAIT_TIME)
++				return -EINVAL;
++			err = audit_set_backlog_wait_time(s.backlog_wait_time);
++			if (err < 0)
++				return err;
++		}
+ 		break;
+ 	}
+ 	case AUDIT_USER:
 -- 
 1.7.1
 
