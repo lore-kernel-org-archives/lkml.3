@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505Ab3IRDD4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 23:03:56 -0400
-Received: from ozlabs.org ([203.10.76.45]:34879 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054Ab3IRDDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 23:03:55 -0400
-Date: Wed, 18 Sep 2013 11:25:57 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Frank Rowand <frowand.list@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: "memory" binding issues
-Message-ID: <20130918012557.GA22725@voom.fritz.box>
-References: <1379300274.4098.77.camel@pasglop>
- <1379371567.3721.46.camel@pasglop>
- <CAOesGMgE1jiF5OHsmPQz2z66Bcqu0HeAj=taE1vmFK-0-0s2TQ@mail.gmail.com>
- <1815499.tpfeUKmP6V@flatron>
- <20130917164307.GA31327@quad.lixom.net>
- <5238C4D1.6060500@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jI8keyz6grp/JLjh"
-Content-Disposition: inline
-In-Reply-To: <5238C4D1.6060500@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751460Ab3IRDMt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 23:12:49 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53139 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab3IRDMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 23:12:48 -0400
+Date: Wed, 18 Sep 2013 13:12:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        George Cherian <george.cherian@ti.com>
+Subject: linux-next: build failure after merge of the gpio tree
+Message-Id: <20130918131237.b8272e45ec6c4ebf360cb4e5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__18_Sep_2013_13_12_37_+1000_cp0aiI_vM2ahoyCN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---jI8keyz6grp/JLjh
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Wed__18_Sep_2013_13_12_37_+1000_cp0aiI_vM2ahoyCN
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Sep 17, 2013 at 02:08:33PM -0700, Frank Rowand wrote:
-> On 9/17/2013 9:43 AM, Olof Johansson wrote:
-> > On Tue, Sep 17, 2013 at 09:56:39AM +0200, Tomasz Figa wrote:
-> >> I'm afraid that I must disagree. For consistency I'd rather go with wh=
-at=20
-> >> Ben said. Please see ePAPR chapter 2.2.1.1, which clearly defines how=
-=20
-> >> nodes should be named.
-> >=20
-> > 2.2.1.1 is there to point out that unit address _has_ to reflect reg.
-> >=20
-> > 2.2.3 says that unit addresses can be omitted.
->=20
-> 2.2.3 is talking about path names.
->=20
-> 2.2.1.1 is talking about node names.
->=20
-> 2.2.1.1 _does_ require the unit address in the node name, 2.2.3 does not
-> remove that requirement.
+Hi Linus,
 
-Certainly the recommendation I've been giving from the early days of
-ePAPR has been that a node should have a unit address if and only if
-it has a 'reg' property.
+After merging the gpio tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
+drivers/gpio/gpio-pcf857x.c: In function 'pcf857x_irq_domain_map':
+drivers/gpio/gpio-pcf857x.c:206:2: error: implicit declaration of function =
+'set_irq_flags' [-Werror=3Dimplicit-function-declaration]
+  set_irq_flags(virq, IRQF_VALID);
+  ^
+drivers/gpio/gpio-pcf857x.c:206:22: error: 'IRQF_VALID' undeclared (first u=
+se in this function)
+  set_irq_flags(virq, IRQF_VALID);
+                      ^
+
+Caused by commit 21fd3cd1874a ("gpio: pcf857x: call the gpio user handler
+iff gpio_to_irq is done").
+
+set_irq_flags() only exists on arm (and arm64).
+
+I have used the gpio tree from next-20130917 for today.
 --=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---jI8keyz6grp/JLjh
+--Signature=_Wed__18_Sep_2013_13_12_37_+1000_cp0aiI_vM2ahoyCN
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSOQElAAoJEGw4ysog2bOS0wQQALnP5TvQEcyHQQE8hC5yTQPp
-FoXt750ascj1bEI598dNXsCCQ4IvOHaaVYQld/DPNozLFORvF4noUq9riFw5Zbtz
-JbpCgjSOmrrrhT8OGTkTFgaIrSvIv9ZR5zKFgmO4Yf7msg8O8K9g1NmlokoXny/r
-1iNBdPL7o+YeiZaNKWSxjy1VQicZwz/NWYIbudUkfe2Wz7Em+EM3hKCmIYgGUFKB
-aeNjwdLnlLJ9+QRK0fNw0o4HNfsuGYInIPTp1zha1r8PPVBl/QEt0IJCWiYXrtiB
-mUgXroYG3mplkMEotQ94ny5MHSZ3lU3k0RvH+jrpn890qPukZxNHf6u+ScG/zXjs
-HcuUi77ORFqKsmCP4JtLVndG2zuP2Mi+msFfaol+3k2HxYxeDhlUHhPC/gOkl278
-DFATo2jSO2SjVlM4dDyP7c9JsqxEAzeTrNazcTMelDUEOSir8FHKbN+U1ZegBnEj
-DToWhcAV/DlleUV4g4zx+sei2wWZLQrq+BtxxBC9BnoSI6w2+F9876abs0XF4G44
-WYyaUMbXVisY2x+ZoXNzt8a+mNOBNWM7t4ejhRoBbbhn4fU8WszbN9gW4Ip6HfI8
-UQ1L6XuSs6tPKAYlyt8KE+9CEH7WfsF4UkKojMGeUPir4x7xNqz+Ek1XVE5uU7XN
-wFDEyOrG/DplJ2Yl+O13
-=7HU7
+iQIcBAEBCAAGBQJSORopAAoJEECxmPOUX5FEyYoP/jN80s8NHyODtL37dsKff8uf
+7kquFFDquOkyecp42OCIZnj9nS9ZAhJrtyfMg/XChHu8jpgQUeOpuVlZ4Db1yC7O
+PSlpik/gJGJdMWJvoovWTpIu9CLLh4hHgDESNXS/btc+IRsl4D7OFoAZDDJj4L+y
+HnA+wA20WdQQeVXSN8XCGj4O5Pk595B5NOaGC106aGSDNp9ClhJCv5bFQSk7vSTl
+mAEF0bhlQRojrNQ5eNfFXd+650P/vSvE36lEvSWsUzY/cNPe758f6P6yqdpoJ4xo
+Hbwef1fYFsHHPI+9xrrPZXY1krCTI7T0SFSJ44QM9fFTTuZbj7j9HaBozG9qrTY1
+mQn6pH0TQWWAobus2Z4o4BmQjAjB6iKMsYeocCxel1/AWr/M/VfhYMnU+RbmC7N3
+aa1kyzrg6bCop64xhuAwp4D/swYLShDMnJUCJZuT4dXOpI9BJ/FsAM4m+Aaq4RjG
+JBskOp6t5sfPmlnnFKV4yLtKbG3vw/c4uO45AGm45fLcx3xhVshzUk6HHErTLXHL
++TjiZ1+feZQSXqKNdXSkKKb+ymNl9jhy3gRk2ANjANJ1wuaKgV2MqYefdDR73Sfe
+pxaMyT6daTaJh89jyCSho2ZcQ0cNldeqPECL3sPdpldarTnqr2rlmqNbGwlEp7WB
+zgyPpI9lYgqMOZ6Fi9HE
+=0GWJ
 -----END PGP SIGNATURE-----
 
---jI8keyz6grp/JLjh--
+--Signature=_Wed__18_Sep_2013_13_12_37_+1000_cp0aiI_vM2ahoyCN--
