@@ -1,48 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab3IRL5I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 07:57:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41658 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab3IRL5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 07:57:06 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <29168.1379504300@warthog.procyon.org.uk>
-References: <29168.1379504300@warthog.procyon.org.uk> <1379459317-13046-2-git-send-email-daniel.santos@pobox.com> <1379459317-13046-1-git-send-email-daniel.santos@pobox.com>
-Cc: dhowells@redhat.com, Daniel Santos <daniel.santos@pobox.com>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        George Spelvin <linux@horizon.com>
-Subject: Re: [PATCH 1/5] scripts: Add mkstrerror.sh
-Date: Wed, 18 Sep 2013 12:55:10 +0100
-Message-ID: <1352.1379505310@warthog.procyon.org.uk>
-To: unlisted-recipients:; (no To-header on input)
+	id S1752452Ab3IRMAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 08:00:37 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:59138 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177Ab3IRMAe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 08:00:34 -0400
+Date: Wed, 18 Sep 2013 13:00:12 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
+        stephen.gallimore@st.com, stuart.menefy@st.com,
+        gabriel.fernandez@st.com, olivier.clergeaud@st.com
+Subject: Re: [PATCH 3/4] ARM: STi: Supply I2C configuration to STiH415 SoC
+Message-ID: <20130918120012.GE16984@lee--X1>
+References: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com>
+ <1379498483-4236-4-git-send-email-maxime.coquelin@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1379498483-4236-4-git-send-email-maxime.coquelin@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+On Wed, 18 Sep 2013, Maxime COQUELIN wrote:
 
->  (1) Why are you double-NUL'ing all your strings?  (see the \0 in the strings)
+> This patch supplies I2C configuration to STiH415 SoC.
+> 
+> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+> ---
+>  arch/arm/boot/dts/stih415-pinctrl.dtsi |   36 ++++++++++++++++++++
+>  arch/arm/boot/dts/stih415.dtsi         |   57 ++++++++++++++++++++++++++++++++
+>  2 files changed, 93 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/stih415-pinctrl.dtsi b/arch/arm/boot/dts/stih415-pinctrl.dtsi
+> index 1d322b2..e56449d 100644
+> --- a/arch/arm/boot/dts/stih415-pinctrl.dtsi
+> +++ b/arch/arm/boot/dts/stih415-pinctrl.dtsi
+> @@ -86,6 +86,24 @@
+>  					};
+>  				};
+>  			};
+> +
+> +			sbc_i2c0 {
+> +				pinctrl_sbc_i2c0_default: sbc_i2c0-default {
+> +					st,pins {
+> +						sda = <&PIO4 6 ALT1 BIDIR>;
+> +						scl = <&PIO4 5 ALT1 BIDIR>;
+> +					};
+> +				};
+> +			};
+> +
+> +			sbc_i2c1 {
+> +				pinctrl_sbc_i2c1_default: sbc_i2c1-default {
+> +					st,pins {
+> +						sda = <&PIO3 2 ALT2 BIDIR>;
+> +						scl = <&PIO3 1 ALT2 BIDIR>;
+> +					};
+> +				};
+> +			};
+>  		};
+>  
+>  		pin-controller-front {
+> @@ -143,6 +161,24 @@
+>  				reg		= <0x7000 0x100>;
+>  				st,bank-name	= "PIO12";
+>  			};
+> +
+> +			i2c0 {
+> +				pinctrl_i2c0_default: i2c0-default {
+> +					st,pins {
+> +						sda = <&PIO9 3 ALT1 BIDIR>;
+> +						scl = <&PIO9 2 ALT1 BIDIR>;
+> +					};
+> +				};
+> +			};
+> +
+> +			i2c1 {
+> +				pinctrl_i2c1_default: i2c1-default {
+> +					st,pins {
+> +						sda = <&PIO12 1 ALT1 BIDIR>;
+> +						scl = <&PIO12 0 ALT1 BIDIR>;
+> +					};
+> +				};
+> +			};
+>  		};
+>  
+>  		pin-controller-rear {
+> diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
+> index 74ab8de..643ae1c 100644
+> --- a/arch/arm/boot/dts/stih415.dtsi
+> +++ b/arch/arm/boot/dts/stih415.dtsi
+> @@ -9,6 +9,7 @@
+>  #include "stih41x.dtsi"
+>  #include "stih415-clock.dtsi"
+>  #include "stih415-pinctrl.dtsi"
+> +#include <dt-bindings/interrupt-controller/arm-gic.h>
+>  / {
+>  
+>  	L2: cache-controller {
+> @@ -83,5 +84,61 @@
+>  			pinctrl-names 	= "default";
+>  			pinctrl-0	= <&pinctrl_sbc_serial1>;
+>  		};
+> +
+> +		i2c0: i2c@fed40000{
 
-Ah...  I see what you're doing.  I missed the fact that you don't have a comma
-after each string.
+Space before the '{'.
 
->  (3) You are storing a pointer to the symbolic name for each error.  On a
->      64-bit machine, that's 8 bytes.  If you drop the leading 'E' and the
->      trailing NUL, most symbols will fit into an 8 character slot saving you
->      the cost of a pointer.
->      ...
+> +			compatible	= "st,comms-i2c";
+> +			status		= "disabled";
 
-In which case, you can ignore this too.
+Consider putting the node status at the bottom.
 
-David
+> +			reg		= <0xfed40000 0x110>;
+> +			interrupts	=  <GIC_SPI 187 IRQ_TYPE_EDGE_RISING>;
+> +			clocks		= <&CLKS_ICN_REG_0>;
+> +			clock-frequency = <400000>;
+> +			pinctrl-names	= "default";
+> +			pinctrl-0	= <&pinctrl_i2c0_default>;
+> +			st,glitches;
+> +			st,glitch-clk	= <500>;
+> +			st,glitch-dat	= <500>;
+> +		};
+> +
+> +		i2c1: i2c@fed41000{
+
+Same here and throughout.
+
+> +			compatible	= "st,comms-i2c";
+> +			status		= "disabled";
+
+Same here and throughout.
+
+> +			reg		= <0xfed41000 0x110>;
+> +			interrupts	=  <GIC_SPI 188 IRQ_TYPE_EDGE_RISING>;
+> +			clocks		= <&CLKS_ICN_REG_0>;
+> +			clock-frequency = <400000>;
+> +			pinctrl-names	= "default";
+> +			pinctrl-0	= <&pinctrl_i2c1_default>;
+> +			st,glitches;
+> +			st,glitch-clk	= <500>;
+> +			st,glitch-dat	= <500>;
+> +		};
+> +
+> +		sbc_i2c0: i2c@fe540000{
+> +			compatible	= "st,comms-i2c";
+> +			status		= "disabled";
+> +			reg		= <0xfe540000 0x110>;
+> +			interrupts	=  <GIC_SPI 206 IRQ_TYPE_EDGE_RISING>;
+> +			clocks		= <&CLK_SYSIN>;
+> +			clock-frequency = <400000>;
+> +			pinctrl-names	= "default";
+> +			pinctrl-0	= <&pinctrl_sbc_i2c0_default>;
+> +			st,glitches;
+> +			st,glitch-clk	= <500>;
+> +			st,glitch-dat	= <500>;
+> +		};
+> +
+> +		sbc_i2c1: i2c@fe541000{
+> +			compatible	= "st,comms-i2c";
+> +			status		= "disabled";
+> +			reg		= <0xfe541000 0x110>;
+> +			interrupts	=  <GIC_SPI 207 IRQ_TYPE_EDGE_RISING>;
+> +			clocks		= <&CLK_SYSIN>;
+> +			clock-frequency = <400000>;
+> +			pinctrl-names	= "default";
+> +			pinctrl-0	= <&pinctrl_sbc_i2c1_default>;
+> +			st,glitches;
+> +			st,glitch-clk	= <500>;
+> +			st,glitch-dat	= <500>;
+> +		};
+>  	};
+>  };
+
+Is this odd tabbing just the result of the patch format?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
