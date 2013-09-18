@@ -1,140 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab3IRTYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 15:24:35 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:45413 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab3IRTYd (ORCPT
+	id S1753328Ab3IRT1m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 15:27:42 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:36947 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712Ab3IRT1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 15:24:33 -0400
-Date: Wed, 18 Sep 2013 13:24:14 -0600
-From: jerry.hoemann@hp.com
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Andrew Fish <afish@apple.com>, Laszlo Ersek <lersek@redhat.com>,
-        linux-efi@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Brian Richardson <brian.richardson@intel.com>,
-        Colin Ian King <colin.king@canonical.com>,
-        Randy Wright <rwright@hp.com>, Linn Crosetto <linn.crosetto@hp.com>,
-        terry.lee@hp.com, samer.el-haj-mahmoud@hp.com, randy.pawell@hp.com,
-        chrisp@hp.com, linda.knippers@hp.com, dong.wei@hp.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Josh Triplett <josh@joshtriplett.org>,
-        kexec <kexec@lists.infradead.org>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130918192414.GB3345@anatevka.fc.hp.com>
-Reply-To: jerry.hoemann@hp.com
-References: <20130805220808.GC14067@pd.tnic>
- <20130806141036.GD14891@pd.tnic>
- <520116D1.2010000@redhat.com>
- <20130807151935.GJ17920@pd.tnic>
- <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com>
- <20130807201908.GG2515@console-pimps.org>
- <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
- <20130808101730.GJ2515@console-pimps.org>
- <20130913203812.GA312@anatevka.fc.hp.com>
- <20130916105920.GB2697@console-pimps.org>
+	Wed, 18 Sep 2013 15:27:41 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+XsceTJN7ysA+TK+ciHXoH
+Date: Wed, 18 Sep 2013 12:27:31 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, Nishanth Menon <nm@ti.com>,
+        Pavel Machek <pavel@ucw.cz>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Ivaylo Dimitrov <freemangordon@abv.bg>
+Subject: Re: [PATCH v3 2/2] RX-51: ARM errata 430973 workaround
+Message-ID: <20130918192731.GE9994@atomide.com>
+References: <1362044548-5398-1-git-send-email-pali.rohar@gmail.com>
+ <1373461145-9812-3-git-send-email-pali.rohar@gmail.com>
+ <20130917232417.GK9994@atomide.com>
+ <201309182122.01570@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130916105920.GB2697@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201309182122.01570@pali>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 11:59:20AM +0100, Matt Fleming wrote:
-> On Fri, 13 Sep, at 02:38:12PM, jerry.hoemann@hp.com wrote:
-> > Matt,
-> > 
-> > We have hit an issue on our new platform in development related to the
-> > call of efi_reserve_boot_services() from setup_arch().
-> > 
-> > The reservation can interfere with allocation of the crash kernel.
+* Pali Rohár <pali.rohar@gmail.com> [130918 12:29]:
+> Hello Tony,
+> 
+> here is new v3 patch. I just only moved functions rx51_secure_dispatcher and
+> rx51_secure_update_aux_cr to omap-secure.c and added header to omap-secure.h
+> Because I only moved two functions to other source file I tested only compilation.
+> It is OK now?
+
+Yes looks OK to me for v3.13 for the patch.
+
+For the patch description, maybe also add something saying
+that the rx51_secure_dispatcher() is different from the existing
+smc function as that may be easy to miss while glancing over
+the code?
+
+Regards,
+
+Tony
+ 
+> diff --git a/arch/arm/mach-omap2/board-rx51.c b/arch/arm/mach-omap2/board-rx51.c
+> index 773510556..db168c9 100644
+> --- a/arch/arm/mach-omap2/board-rx51.c
+> +++ b/arch/arm/mach-omap2/board-rx51.c
+> @@ -2,6 +2,8 @@
+>   * Board support file for Nokia N900 (aka RX-51).
+>   *
+>   * Copyright (C) 2007, 2008 Nokia
+> + * Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
+> + * Copyright (C) 2013 Pali Rohár <pali.rohar@gmail.com>
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+> @@ -31,7 +33,9 @@
+>  #include "mux.h"
+>  #include "gpmc.h"
+>  #include "pm.h"
+> +#include "soc.h"
+>  #include "sdram-nokia.h"
+> +#include "omap-secure.h"
 >  
-> Jerry, thanks for bringing this up.
+>  #define RX51_GPIO_SLEEP_IND 162
+>  
+> @@ -103,6 +107,14 @@ static void __init rx51_init(void)
+>  	usb_musb_init(&musb_board_data);
+>  	rx51_peripherals_init();
+>  
+> +	if (omap_type() == OMAP2_DEVICE_TYPE_SEC) {
+> +#ifdef CONFIG_ARM_ERRATA_430973
+> +		pr_info("RX-51: Enabling ARM errata 430973 workaround\n");
+> +		/* set IBE to 1 */
+> +		rx51_secure_update_aux_cr(BIT(6), 0);
+> +#endif
+> +	}
+> +
+>  	/* Ensure SDRC pins are mux'd for self-refresh */
+>  	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
+>  	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
+> diff --git a/arch/arm/mach-omap2/omap-secure.c b/arch/arm/mach-omap2/omap-secure.c
+> index b970440..eba74cf 100644
+> --- a/arch/arm/mach-omap2/omap-secure.c
+> +++ b/arch/arm/mach-omap2/omap-secure.c
+> @@ -3,6 +3,8 @@
+>   *
+>   * Copyright (C) 2011 Texas Instruments, Inc.
+>   *	Santosh Shilimkar <santosh.shilimkar@ti.com>
+> + * Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
+> + * Copyright (C) 2013 Pali Rohár <pali.rohar@gmail.com>
+>   *
+>   *
+>   * This program is free software,you can redistribute it and/or modify
+> @@ -70,3 +72,63 @@ phys_addr_t omap_secure_ram_mempool_base(void)
+>  {
+>  	return omap_secure_memblock_base;
+>  }
+> +
+> +/**
+> + * rx51_secure_dispatcher: Routine to dispatch secure PPA API calls
+> + * @idx: The PPA API index
+> + * @process: Process ID
+> + * @flag: The flag indicating criticality of operation
+> + * @nargs: Number of valid arguments out of four.
+> + * @arg1, arg2, arg3 args4: Parameters passed to secure API
+> + *
+> + * Return the non-zero error value on failure.
+> + */
+> +u32 rx51_secure_dispatcher(u32 idx, u32 process, u32 flag, u32 nargs,
+> +			   u32 arg1, u32 arg2, u32 arg3, u32 arg4)
+> +{
+> +	u32 ret;
+> +	u32 param[5];
+> +
+> +	param[0] = nargs+1; /* RX-51 needs number of arguments + 1 */
+> +	param[1] = arg1;
+> +	param[2] = arg2;
+> +	param[3] = arg3;
+> +	param[4] = arg4;
+> +
+> +	/*
+> +	 * Secure API needs physical address
+> +	 * pointer for the parameters
+> +	 */
+> +	local_irq_disable();
+> +	local_fiq_disable();
+> +	flush_cache_all();
+> +	outer_clean_range(__pa(param), __pa(param + 5));
+> +	ret = omap_smc3(idx, process, flag, __pa(param));
+> +	flush_cache_all();
+> +	local_fiq_enable();
+> +	local_irq_enable();
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+> + * rx51_secure_update_aux_cr: Routine to modify the contents of Auxiliary Control Register
+> + *  @set_bits: bits to set in ACR
+> + *  @clr_bits: bits to clear in ACR
+> + *
+> + * Return the non-zero error value on failure.
+> +*/
+> +u32 rx51_secure_update_aux_cr(u32 set_bits, u32 clear_bits)
+> +{
+> +	u32 acr;
+> +
+> +	/* Read ACR */
+> +	asm volatile ("mrc p15, 0, %0, c1, c0, 1" : "=r" (acr));
+> +	acr &= ~clear_bits;
+> +	acr |= set_bits;
+> +
+> +	return rx51_secure_dispatcher(RX51_PPA_WRITE_ACR,
+> +				      0,
+> +				      FLAG_START_CRITICAL,
+> +				      1, acr, 0, 0, 0);
+> +}
+> diff --git a/arch/arm/mach-omap2/omap-secure.h b/arch/arm/mach-omap2/omap-secure.h
+> index c4586f4..51b59c6 100644
+> --- a/arch/arm/mach-omap2/omap-secure.h
+> +++ b/arch/arm/mach-omap2/omap-secure.h
+> @@ -3,6 +3,8 @@
+>   *
+>   * Copyright (C) 2011 Texas Instruments, Inc.
+>   *	Santosh Shilimkar <santosh.shilimkar@ti.com>
+> + * Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
+> + * Copyright (C) 2013 Pali Rohár <pali.rohar@gmail.com>
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+> @@ -46,6 +48,11 @@
+>  #define OMAP4_PPA_L2_POR_INDEX		0x23
+>  #define OMAP4_PPA_CPU_ACTRL_SMP_INDEX	0x25
+>  
+> +/* Secure RX-51 PPA (Primary Protected Application) APIs */
+> +#define RX51_PPA_HWRNG			29
+> +#define RX51_PPA_L2_INVAL		40
+> +#define RX51_PPA_WRITE_ACR		42
+> +
+>  #ifndef __ASSEMBLER__
+>  
+>  extern u32 omap_secure_dispatcher(u32 idx, u32 flag, u32 nargs,
+> @@ -55,6 +62,10 @@ extern u32 omap_smc3(u32 id, u32 process, u32 flag, u32 pargs);
+>  extern phys_addr_t omap_secure_ram_mempool_base(void);
+>  extern int omap_secure_ram_reserve_memblock(void);
+>  
+> +extern u32 rx51_secure_dispatcher(u32 idx, u32 process, u32 flag, u32 nargs,
+> +				  u32 arg1, u32 arg2, u32 arg3, u32 arg4);
+> +extern u32 rx51_secure_update_aux_cr(u32 set_bits, u32 clear_bits);
+> +
+>  #ifdef CONFIG_OMAP4_ERRATA_I688
+>  extern int omap_barrier_reserve_memblock(void);
+>  #else
 > 
-> > In pre 3.9(?) kernels,  the crash kernel is required to be allocated from
-> > physically contiguous memory below 896 MB.
-> > 
-> > Our new platforms are large in both the amount of memory and the amount
-> > of IO. This requires large crash kernels for kdump to work.  This is even
-> > after the work done for makedumpfile v 1.5 to allow it to work with a
-> > smaller foot print.
-> > 
-> > 
-> > One of the problems is that drivers will allocate memory as boot code and/or
-> > data in the region < 896 that effectively fragments this memory.
-> > With the reservation, we can't reuse the memory when needed for the
-> > crash kernels.   If we remove the reservation and allow the kernel
-> > to reuse the memory,  we the reservation of the crash kernel succeeds.
-> > 
-> > This is definitely a problem for distros that are pre 3.9.  Probably less
-> > so for top of tree, but i haven't been focused there.
-> > 
-> > So we are definitely interested in finding a mechanism to not
-> > do this reservation on platforms that don't have the issues described
-> > earlier in this thread.
-> 
-> OK, in an ideal world we'd move the crash kernel reservation after
-> efi_free_boot_services(), because at that point the boot regions are
-> available again. But it seems that we reserve the boot regions really
-> early during startup and release them relatively late. The reason is
-> that the Boot Graphics Resource Table (BGRT) data, if present, is
-> located in the Boot Services Data regions but we can't extract the
-> address of the region from the ACPI tables until we've setup the ACPI
-> subsystem, which happens quite late.
-> 
-> I wonder whether performing the reservation of the crash kernel memory
-> first, before efi_reserve_boot_services(), would help. That way we'd
-> only need to reserve remaining regions in efi_reserve_boot_services().
-> This scheme would rely on nothing writing into the crash kernel area
-> before we've extracted the BGRT data, however.
 > 
 > -- 
-> Matt Fleming, Intel Open Source Technology Center
+> Pali Rohár
+> pali.rohar@gmail.com
 
-
-Matt,
-
-I conducted the following experiments on a 3.11 kernel:
-
-1)  Moved the call of reserve_crashkernel to after efi_free_boot_services.
-    Booted with crashkernel=512M
-
-    a)  when memory below 896M was *not* fragmented by BootCode segments
-	reserve_crashkernel succeeded.
-
-    b)  when memory below 896M *was* fragmented by BootCode segments
-	reserve_crashkernel failed.
-
-2)  Moved the call to reserve_crashkernel to before call to efi_reserve_boot_services.
-    Booted with crashkernel=512M
-
-    reserve_crashkernel succeeded irrespective of whether the memory below 896M was
-    fragmented by BootCode segments.
-
-
-I haven't determined why reserve_crashkernel failed in 1b) above.
-
-I don't see the memory reserved for the crash kernel being accessed
-before call to efi_free_boot_services.
-
-CC'ing kexec list for their input as I may have missed something.
-
-
-Jerry
-
-
--- 
-
-----------------------------------------------------------------------------
-Jerry Hoemann            Software Engineer              Hewlett-Packard/MODL
-
-3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
-Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
-                                                email:  jerry.hoemann@hp.com
-----------------------------------------------------------------------------
 
