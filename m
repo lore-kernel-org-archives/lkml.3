@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab3IRQnz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 12:43:55 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:59516 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab3IRQnx (ORCPT
+	id S1752646Ab3IRQpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 12:45:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39037 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751627Ab3IRQpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 12:43:53 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: balbi@ti.com
-Subject: Re: [PATCH 1/4] usb: musb: Call atomic_notifier_call_chain when status is changed
-Date: Wed, 18 Sep 2013 18:43:49 +0200
-User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
-Cc: Javier Martinez Canillas <martinez.javier@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>, Tony Lindgren <tony@atomide.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        freemangordon@abv.bg, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com> <201309181756.12782@pali> <20130918163649.GL21559@radagast>
-In-Reply-To: <20130918163649.GL21559@radagast>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4274049.RbU57Pnz8g";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	Wed, 18 Sep 2013 12:45:12 -0400
+Date: Wed, 18 Sep 2013 18:45:09 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jason Cooper <jason@lakedaemon.net>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        patches@linaro.org,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: Re: [PATCH] arm: mvebu: use the main timer as clock source from DT
+Message-ID: <20130918184509.0ad0a5be@skate>
+In-Reply-To: <1379519624-4267-1-git-send-email-jean.pihet@linaro.org>
+References: <1379519624-4267-1-git-send-email-jean.pihet@linaro.org>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201309181843.49850@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4274049.RbU57Pnz8g
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Dear Jean Pihet,
 
-On Wednesday 18 September 2013 18:36:49 Felipe Balbi wrote:
-> On Wed, Sep 18, 2013 at 05:56:12PM +0200, Pali Roh=C3=A1r wrote:
-> > On Wednesday 18 September 2013 15:57:13 Javier Martinez
-> > Canillas
-> >=20
-> > wrote:
-> > > to split the patch in two since the patch was solving
-> > > two separate issues
-> >=20
-> > My patch does not solving *two* issues. It is *one*
-> > regression and both parts of patch are needed for fixing
-> > it. Read commit message again. It does not make sense to
-> > split patch fixing kernel regression into more one line
-> > patches - or please clarify why.
->=20
-> issue 1) twl4030-usb.c doesn't initialize atomic notifier head
-> issue 2) musb doesn't call notifier chain
->=20
-> do you need a drawing ?
+On Wed, 18 Sep 2013 17:53:44 +0200, Jean Pihet wrote:
+> This commit:
+>   573145f08c2b92c45498468afbbba909f6ce6135
+>   clocksource: armada-370-xp: Use CLOCKSOURCE_OF_DECLARE
+> 
+> replaced a call to the driver's timer initialization by a call to
+> clocksource_of_init(). However, it failed to select CONFIG_CLKSRC_OF.
+> 
+> Fix this by selecting CONFIG_CLKSRC_OF for Armada370/XP machines.
+> Without this change the kernel is stuck at: 'Calibrating delay
+> loop...'.
+> 
+> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> ---
+>  arch/arm/mach-mvebu/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/mach-mvebu/Kconfig b/arch/arm/mach-mvebu/Kconfig
+> index 9eb63d7..25e6c00 100644
+> --- a/arch/arm/mach-mvebu/Kconfig
+> +++ b/arch/arm/mach-mvebu/Kconfig
+> @@ -26,6 +26,7 @@ config MACH_ARMADA_370_XP
+>  	select HAVE_SMP
+>  	select CACHE_L2X0
+>  	select CPU_PJ4B
+> +	select CLKSRC_OF
 
-Regression 1) power supply drivers not working since v3.5
+I disagree. This should go to drivers/clocksource/Kconfig, because it's
+the clocksource driver that uses CLOCKSOURCE_OF_DECLARE. See what is
+already done in drivers/clocksource/Kconfig for other drivers.
 
-Look at firsts emails.
+Thanks,
 
-
-Do you really have problem to do what *you* need with 1 line=20
-patch which I sent? Or what what you want?
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart4274049.RbU57Pnz8g
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlI52EUACgkQi/DJPQPkQ1IgdwCgnGUMAxGx9VQ/j8Ha5XzPFmiM
-Q7gAnRl+2/1B+8eCuCgPQ3qMaHz1mtqf
-=4hO2
------END PGP SIGNATURE-----
-
---nextPart4274049.RbU57Pnz8g--
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
