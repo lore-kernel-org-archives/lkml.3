@@ -1,175 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3IRSAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 14:00:35 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:46231 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948Ab3IRRyL (ORCPT
+	id S1753889Ab3IRSAd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:00:33 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:55930 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab3IRRyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Sep 2013 13:54:11 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        STEricsson <STEricsson_nomadik_linux@list.st.com>,
-        Mike Turquette <mturquette@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
+        linux-tegra@vger.kernel.org, linux-rpi-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kernel@stlinux.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/26] clk: nomadik: declare OF clock provider
-Date: Wed, 18 Sep 2013 19:53:36 +0200
-Message-Id: <1379526839-14798-4-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 00/26] ARM: provide common arch init for DT clocks
+Date: Wed, 18 Sep 2013 19:53:33 +0200
+Message-Id: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Common clock framework allows to register clock providers to get called
-on of_clk_init() by using CLK_OF_DECLARE. This converts nomadik clock
-provider to make use of it and get rid of the mach specific clk init
-call. As clocks require system reset controller base address to be
-initialized each clock driver checks src_base and calls new
-nomadik_src_init if required.
+This is a patch set based on an RFC [1][2] sent earlier to provide a common
+arch/arm init for DT clock providers. Currently, the call to of_clk_init(NULL)
+to initialize DT clock providers is spread among several mach-dirs. Since most
+machs require DT clocks initialized before timers, no initcall can be used.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+By adding of_clk_init(NULL) to arch/arm time_init(), we can remove all
+mach-specific .init_time hooks that basically called of_clk_init and
+clocksource_of_init.
+
+In contrast to the RFC version, of_clk_init(NULL) is now only called if no
+custom .init_time callback is set. This allows some machs to still call clock
+init themselves, as not all can be converted now. Therefore, this patch sets
+drops conversion of mach-mvebu and mach-zynq. New machs that were introduced
+with v3.12-rc1 are also converted, except mach-u300 that requires clocks
+before irqs.
+
+The patch set is based on v3.12-rc1 and further depends on a topic branch
+created by Stephen Warren for mach-tegra [3]. It is now split into preparation
+and removal patches to not break bisectability. I added all Acked-by/Tested-by's
+where applicable or dropped them, if the patch was separated into two.
+It has been compile tested for all machs involved with the following defconfigs
+(multi_v7, bcm2835, dove, exynos, kirkwood, mxs, nhk8815) and nspire selected
+on multi_v4_v5.
+
+Patches 1-8 comprise preparation patches that convert machs nomadik, prima2,
+socfpga, sunxi, tegra, and vt8500 to usual .init_time callbacks calling only
+of_clk_init and clocksource_of_init.
+
+Patch 9 then introduces of_clk_init(NULL) to the arch-wide default .init_time
+callback.
+
+Patches 10-26 finally remove custom .init_time callbacks from the machs involved.
+
+The patches have been pushed to a topic branch based on v3.12-rc1 with tegra's
+tegra-for-3.13-deps-for-arm-init-time-cleanup branch merged in to
+
+https://github.com/shesselba/linux-dove.git clk-of-init-v1_for-3.13
+
+[1] http://www.spinics.net/lists/arm-kernel/msg268260.html
+[2] http://www.spinics.net/lists/arm-kernel/msg270173.html
+[3] http://www.spinics.net/lists/arm-kernel/msg273957.html
+    git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git tegra-for-3.13-deps-for-arm-init-time-cleanup
+
+Sebastian Hesselbarth (26):
+  ARM: nomadik: move mtu setup to clocksource init
+  clk: nomadik: move src init out of nomadik_clk_init
+  clk: nomadik: declare OF clock provider
+  clk: prima2: declare OF clock provider
+  ARM: socfgpa: prepare for arch-wide .init_time callback
+  clk: sunxi: declare OF clock provider
+  clk: vt8500: parse pmc_base from clock driver
+  ARM: vt8500: prepare for arch-wide .init_time callback
+  ARM: call of_clk_init from default time_init handler
+  ARM: bcm2835: remove custom .init_time hook
+  ARM: dove: remove custom .init_time hook
+  ARM: exynos: remove custom .init_time hook
+  ARM: highbank: remove custom .init_time hook
+  ARM: imx: remove custom .init_time hook
+  ARM: kirkwood: remove custom .init_time hook
+  ARM: mxs: remove custom .init_time hook
+  ARM: nomadik: remove custom .init_time hook
+  ARM: nspire: remove custom .init_time hook
+  ARM: prima2: remove custom .init_time hook
+  ARM: rockchip: remove custom .init_time hook
+  ARM: socfpga: remove custom .init_time hook
+  ARM: sti: remove custom .init_time hook
+  ARM: sunxi: remove custom .init_time hook
+  ARM: tegra: remove custom .init_time hook
+  ARM: vexpress: remove custom .init_time hook
+  ARM: vt8500: remove custom .init_time hook
+
+ arch/arm/kernel/time.c                    |   27 ++---
+ arch/arm/mach-bcm2835/bcm2835.c           |    2 -
+ arch/arm/mach-dove/board-dt.c             |   11 --
+ arch/arm/mach-exynos/common.c             |    8 --
+ arch/arm/mach-exynos/common.h             |    1 -
+ arch/arm/mach-exynos/mach-exynos4-dt.c    |    2 -
+ arch/arm/mach-exynos/mach-exynos5-dt.c    |    2 -
+ arch/arm/mach-highbank/highbank.c         |   23 ++---
+ arch/arm/mach-imx/clk-imx51-imx53.c       |   29 ++----
+ arch/arm/mach-imx/common.h                |    4 -
+ arch/arm/mach-imx/imx51-dt.c              |    6 --
+ arch/arm/mach-imx/mach-imx53.c            |    6 --
+ arch/arm/mach-imx/mach-imx6q.c            |   14 +--
+ arch/arm/mach-imx/mach-imx6sl.c           |    7 --
+ arch/arm/mach-imx/mach-vf610.c            |    9 --
+ arch/arm/mach-kirkwood/board-dt.c         |    8 --
+ arch/arm/mach-mxs/mach-mxs.c              |   13 ---
+ arch/arm/mach-nomadik/cpu-8815.c          |   36 -------
+ arch/arm/mach-nspire/nspire.c             |    9 --
+ arch/arm/mach-prima2/common.c             |   11 --
+ arch/arm/mach-prima2/common.h             |    1 -
+ arch/arm/mach-rockchip/rockchip.c         |    9 --
+ arch/arm/mach-socfpga/socfpga.c           |    2 -
+ arch/arm/mach-sti/board-dt.c              |   10 +-
+ arch/arm/mach-sunxi/sunxi.c               |   10 --
+ arch/arm/mach-tegra/tegra.c               |    9 --
+ arch/arm/mach-vexpress/v2m.c              |   14 +--
+ arch/arm/mach-vt8500/common.h             |   24 -----
+ arch/arm/mach-vt8500/vt8500.c             |    6 --
+ drivers/clk/clk-bcm2835.c                 |    8 --
+ drivers/clk/clk-highbank.c                |   10 +-
+ drivers/clk/clk-nomadik.c                 |  161 ++++++++++++++---------------
+ drivers/clk/clk-prima2.c                  |   29 ++----
+ drivers/clk/clk-vt8500.c                  |   31 ++++--
+ drivers/clk/mxs/clk-imx23.c               |   15 +--
+ drivers/clk/mxs/clk-imx28.c               |   16 +--
+ drivers/clk/sunxi/clk-sunxi.c             |   11 +-
+ drivers/clocksource/nomadik-mtu.c         |   11 ++
+ include/linux/clk/mxs.h                   |    2 -
+ include/linux/clk/sunxi.h                 |   22 ----
+ include/linux/platform_data/clk-nomadik.h |    2 -
+ 41 files changed, 182 insertions(+), 449 deletions(-)
+ delete mode 100644 arch/arm/mach-vt8500/common.h
+ delete mode 100644 include/linux/clk/sunxi.h
+ delete mode 100644 include/linux/platform_data/clk-nomadik.h
+
 ---
 Cc: Olof Johansson <olof@lixom.net>
 Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Alessandro Rubini <rubini@unipv.it>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
-Cc: Mike Turquette <mturquette@linaro.org>
 Cc: Russell King <linux@arm.linux.org.uk>
+Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
+Cc: linux-tegra@vger.kernel.org
+Cc: linux-rpi-kernel@lists.infradead.org
+Cc: linux-samsung-soc@vger.kernel.org
+Cc: kernel@stlinux.com
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-nomadik/cpu-8815.c          |    5 ++--
- drivers/clk/clk-nomadik.c                 |   46 ++++++++++-------------------
- include/linux/platform_data/clk-nomadik.h |    2 --
- 3 files changed, 17 insertions(+), 36 deletions(-)
- delete mode 100644 include/linux/platform_data/clk-nomadik.h
-
-diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
-index 0fcb149..2be38a0 100644
---- a/arch/arm/mach-nomadik/cpu-8815.c
-+++ b/arch/arm/mach-nomadik/cpu-8815.c
-@@ -25,7 +25,7 @@
- #include <linux/slab.h>
- #include <linux/irq.h>
- #include <linux/dma-mapping.h>
--#include <linux/platform_data/clk-nomadik.h>
-+#include <linux/clk-provider.h>
- #include <linux/clocksource.h>
- #include <linux/of_irq.h>
- #include <linux/of_gpio.h>
-@@ -115,8 +115,7 @@ static void cpu8815_restart(enum reboot_mode mode, const char *cmd)
- 
- static void __init cpu8815_timer_init_of(void)
- {
--	/* We need this to be up now */
--	nomadik_clk_init();
-+	of_clk_init(NULL);
- 	clocksource_of_init();
- }
- 
-diff --git a/drivers/clk/clk-nomadik.c b/drivers/clk/clk-nomadik.c
-index 7849086..74978f0 100644
---- a/drivers/clk/clk-nomadik.c
-+++ b/drivers/clk/clk-nomadik.c
-@@ -491,6 +491,9 @@ static void __init of_nomadik_pll_setup(struct device_node *np)
- 	const char *parent_name;
- 	u32 pll_id;
- 
-+	if (!src_base)
-+		nomadik_src_init();
-+
- 	if (of_property_read_u32(np, "pll-id", &pll_id)) {
- 		pr_err("%s: PLL \"%s\" missing pll-id property\n",
- 			__func__, clk_name);
-@@ -501,6 +504,8 @@ static void __init of_nomadik_pll_setup(struct device_node *np)
- 	if (!IS_ERR(clk))
- 		of_clk_add_provider(np, of_clk_src_simple_get, clk);
- }
-+CLK_OF_DECLARE(nomadik_pll_clk,
-+	"st,nomadik-pll-clock", of_nomadik_pll_setup);
- 
- static void __init of_nomadik_hclk_setup(struct device_node *np)
- {
-@@ -508,6 +513,9 @@ static void __init of_nomadik_hclk_setup(struct device_node *np)
- 	const char *clk_name = np->name;
- 	const char *parent_name;
- 
-+	if (!src_base)
-+		nomadik_src_init();
-+
- 	parent_name = of_clk_get_parent_name(np, 0);
- 	/*
- 	 * The HCLK divides PLL1 with 1 (passthru), 2, 3 or 4.
-@@ -520,6 +528,8 @@ static void __init of_nomadik_hclk_setup(struct device_node *np)
- 	if (!IS_ERR(clk))
- 		of_clk_add_provider(np, of_clk_src_simple_get, clk);
- }
-+CLK_OF_DECLARE(nomadik_hclk_clk,
-+	"st,nomadik-hclk-clock", of_nomadik_hclk_setup);
- 
- static void __init of_nomadik_src_clk_setup(struct device_node *np)
- {
-@@ -528,6 +538,9 @@ static void __init of_nomadik_src_clk_setup(struct device_node *np)
- 	const char *parent_name;
- 	u32 clk_id;
- 
-+	if (!src_base)
-+		nomadik_src_init();
-+
- 	if (of_property_read_u32(np, "clock-id", &clk_id)) {
- 		pr_err("%s: SRC clock \"%s\" missing clock-id property\n",
- 			__func__, clk_name);
-@@ -538,34 +551,5 @@ static void __init of_nomadik_src_clk_setup(struct device_node *np)
- 	if (!IS_ERR(clk))
- 		of_clk_add_provider(np, of_clk_src_simple_get, clk);
- }
--
--static const struct of_device_id nomadik_src_clk_match[] __initconst = {
--	{
--		.compatible = "fixed-clock",
--		.data = of_fixed_clk_setup,
--	},
--	{
--		.compatible = "fixed-factor-clock",
--		.data = of_fixed_factor_clk_setup,
--	},
--	{
--		.compatible = "st,nomadik-pll-clock",
--		.data = of_nomadik_pll_setup,
--	},
--	{
--		.compatible = "st,nomadik-hclk-clock",
--		.data = of_nomadik_hclk_setup,
--	},
--	{
--		.compatible = "st,nomadik-src-clock",
--		.data = of_nomadik_src_clk_setup,
--	},
--	{ /* sentinel */ }
--};
--
--
--void __init nomadik_clk_init(void)
--{
--	nomadik_src_init();
--	of_clk_init(nomadik_src_clk_match);
--}
-+CLK_OF_DECLARE(nomadik_src_clk,
-+	"st,nomadik-src-clock", of_nomadik_src_clk_setup);
-diff --git a/include/linux/platform_data/clk-nomadik.h b/include/linux/platform_data/clk-nomadik.h
-deleted file mode 100644
-index 5713c87..0000000
---- a/include/linux/platform_data/clk-nomadik.h
-+++ /dev/null
-@@ -1,2 +0,0 @@
--/* Minimal platform data header */
--void nomadik_clk_init(void);
 -- 
 1.7.10.4
 
