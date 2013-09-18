@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab3IRIwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 04:52:05 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:59070 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab3IRIwE (ORCPT
+	id S1752102Ab3IRIzO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 04:55:14 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:52728 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854Ab3IRIzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 04:52:04 -0400
-Message-ID: <21049.26895.978512.36292@ipc1.ka-ro>
-Date: Wed, 18 Sep 2013 10:49:19 +0200
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Markus Pargmann <mpa@pengutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: dev->of_node overwrite can cause device loading with different
- driver
-In-Reply-To: <20130918083155.GB10126@pengutronix.de>
-References: <20130913155331.GC14456@pengutronix.de>
-	<20130913171046.GA26207@kroah.com>
-	<20130914071653.GA26512@pengutronix.de>
-	<20130914121729.GA7823@kroah.com>
-	<20130914122809.GI12758@n2100.arm.linux.org.uk>
-	<20130918083155.GB10126@pengutronix.de>
-X-Mailer: VM 8.1.0 under 23.2.1 (x86_64-pc-linux-gnu)
+	Wed, 18 Sep 2013 04:55:11 -0400
+MIME-Version: 1.0
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <20130917212359.GJ13318@ZenIV.linux.org.uk>
+References: <1379335925-30858-3-git-send-email-miklos@szeredi.hu>
+	<20130916181938.GD13318@ZenIV.linux.org.uk>
+	<CAJfpegt3mAKVE7ToZbvPpFQCY1EAZ3tKfn__kfpGz4HeXWr8fw@mail.gmail.com>
+	<20130916195003.GE13318@ZenIV.linux.org.uk>
+	<CAJfpegsLeuw55Diw0yDmiFR+7qkSkOrW2fUbjmzFC9OxVsrAkQ@mail.gmail.com>
+	<20130916220241.GF13318@ZenIV.linux.org.uk>
+	<20130916232810.GG13318@ZenIV.linux.org.uk>
+	<CAJfpegtJwgFNNQQB3AX9umsK+RacpQFSoakAMs++w6TT9x0yGw@mail.gmail.com>
+	<20130917114404.GI13318@ZenIV.linux.org.uk>
+	<CAJfpegtSVYStQQuJvd6CWAy-ZM6v8tmTcL5uz=iA1aHM72TeQQ@mail.gmail.com>
+	<20130917212359.GJ13318@ZenIV.linux.org.uk>
+Date: Wed, 18 Sep 2013 10:55:09 +0200
+Message-ID: <CAJfpegvi-97o5c5MAjHFW=i5OZV7vpqF_cG5xTfFGfvSwZ8u9A@mail.gmail.com>
+Subject: Re: [PATCH 02/11] 9p: fix dentry leak in v9fs_vfs_atomic_open_dotl()
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        "M. Mohan Kumar" <mohan@in.ibm.com>, stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Sep 17, 2013 at 11:23 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Tue, Sep 17, 2013 at 05:36:49PM +0200, Miklos Szeredi wrote:
+>> On Tue, Sep 17, 2013 at 1:44 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> > On Tue, Sep 17, 2013 at 12:16:56PM +0200, Miklos Szeredi wrote:
+>> >
+>> >> Just one. This needs to be removed, since this condition is now
+>> >> explicitly allowed and later checked for:
+>> >>
+>> >>     if (WARN_ON(excl && !(*opened & FILE_CREATED)))
+>> >>         *opened |= FILE_CREATED;
+>> >
+>> > D'oh...  Fixed and pushed.
+>>
+>> Okay, but moving the fsnotify_create()  to after the no-open section
+>> is wrong, I think,  It's needed for the case of ->atomic_open() doing
+>> lookup/create/no_open too.
+>
+> What a mess...  It's actually even uglier than that - which dentry should
+> we pass to fsnotify_create() in case where finish_no_open() has been given
+> a non-NULL dentry other than one we had passed to ->atomic_open()?  I think
+> that version in mainline is actually broken in that respect as far as fuse
+> is concerned, not that anybody sane could expect ...notify to work on fuse.
 
-Markus Pargmann writes:
-> On Sat, Sep 14, 2013 at 01:28:09PM +0100, Russell King - ARM Linux wrote:
-> > On Sat, Sep 14, 2013 at 05:17:29AM -0700, Greg Kroah-Hartman wrote:
-> > > On Sat, Sep 14, 2013 at 09:16:53AM +0200, Markus Pargmann wrote:
-> > > > 3. We could fix up all drivers that change the of_node. But there are
-> > > >    ARM DT frameworks that require a device struct as parameter instead
-> > > >    of a device_node parameter (e.g. soc-generic-dmaengine-pcm). So a
-> > > >    driver core, initialized by a glue driver with DT bindings, has to
-> > > >    set dev->of_node to use those frameworks. I think it is strange to
-> > > >    have such DT framework interfaces if a driver is not supposed to
-> > > >    overwrite dev->of_node permanently.
-> > > 
-> > > How about any driver that does muck with this structure, restore it
-> > > properly if their probe() function fails?  Yes, you show that this is
-> > > going to be tricky in some places (i.e. musb), but it makes sense that
-> > > the burden of fixing this issue would rest on them, as they are the ones
-> > > causing this problem, right?
-> > 
-> > It's not about overwriting at all.
-> 
-> musb does not overwrite of_node, but other drivers do, e.g. USB chipidea
-> core driver which uses its parent of_node. When probe fails in this
-> case, we could end up with similar issues.
-> 
-This has already been fixed in commit:
-e98b44e9 usb: chipidea: prevent endless loop registering platform_devices when probe fails
-in linux-next
+Yeah, your version is definitely nicer.  The correctness of the old
+version could be argued thus:  if FILE_CREATED was set, then the file
+didn't exist before, so there's no sense in reusing or allocating
+another dentry.  But yes, the API allows it.
 
-
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Thanks,
+Miklos
