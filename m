@@ -1,38 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab3IRMXv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 08:23:51 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:59834 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab3IRMXt (ORCPT
+	id S1752616Ab3IRMO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 08:14:58 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:49193 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578Ab3IRMO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 08:23:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <1379506478-16625-2-git-send-email-lee.jones@linaro.org>
+	Wed, 18 Sep 2013 08:14:56 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 06/41] ARM: ux500: Add PRCC Peripheral clock node to DBx500 Device Tree
+Date: Wed, 18 Sep 2013 13:14:03 +0100
+Message-Id: <1379506478-16625-7-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1379506478-16625-1-git-send-email-lee.jones@linaro.org>
 References: <1379506478-16625-1-git-send-email-lee.jones@linaro.org>
-	<1379506478-16625-2-git-send-email-lee.jones@linaro.org>
-Date: Wed, 18 Sep 2013 14:23:48 +0200
-Message-ID: <CACRpkdazh7QP+d43s1NDyiQtL3GS5fPRnF=V2XFqr-Saz0CxTg@mail.gmail.com>
-Subject: Re: [PATCH 01/41] mfd: dbx500-prcmu: Correctly reorder PRCMU clock identifiers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 2:13 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/boot/dts/dbx5x0.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-> ... as stipulated by the Hardware Specification document.
->
-> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+index 0bb8ed7..8a80eb4 100644
+--- a/arch/arm/boot/dts/dbx5x0.dtsi
++++ b/arch/arm/boot/dts/dbx5x0.dtsi
+@@ -49,6 +49,10 @@
+ 			prcmu_clk: prcmu-clock {
+ 				#clock-cells = <1>;
+ 			};
++
++			prcc_pclk: prcc-periph-clock {
++				#clock-cells = <2>;
++			};
+ 		};
+ 
+ 		timer@a0410600 {
+-- 
+1.8.1.2
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
