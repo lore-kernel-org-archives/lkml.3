@@ -1,113 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112Ab3IRGPD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 02:15:03 -0400
-Received: from mail-ye0-f175.google.com ([209.85.213.175]:40796 "EHLO
-	mail-ye0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab3IRGNf (ORCPT
+	id S1752132Ab3IRGPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 02:15:39 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:50603 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab3IRGNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 02:13:35 -0400
+	Wed, 18 Sep 2013 02:13:33 -0400
 From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 01/28] c6x: use boot_command_line instead of private c6x_command_line
-To: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
-In-Reply-To: <1379372965-22359-2-git-send-email-robherring2@gmail.com>
-References: <1379372965-22359-1-git-send-email-robherring2@gmail.com> <1379372965-22359-2-git-send-email-robherring2@gmail.com>
-Date: Tue, 17 Sep 2013 22:07:29 -0500
-Message-Id: <20130918030729.DEB1BC42C91@trevor.secretlab.ca>
+Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
+To: Alexander Holler <holler@ahsoftware.de>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+In-Reply-To: <5231E44C.9070800@ahsoftware.de>
+References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <344239800.bDEkDg48ZQ@avalon> <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com> <52308C91.2000105@ahsoftware.de> <523096FE.8080901@collabora.co.uk> <5230AB6E.1070807@ahsoftware.de> <5231817F.8000901@ahsoftware.de> <5231934D.4060706@collabora.co.uk> <52319741.5050407@ahsoftware.de> <5231A0F8.1070505@ahsoftware.de> <5231A4FE.1070704@ahsoftware.de> <5231A791.9080600@ahsoftware.de> <5231DB88.90605@wwwdotorg.org> <5231E44C.9070800@ahsoftware.de>
+Date: Tue, 17 Sep 2013 17:36:32 -0700
+Message-Id: <20130918003632.CBF48C42BC5@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Sep 2013 18:08:57 -0500, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+On Thu, 12 Sep 2013 17:57:00 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
+> Am 12.09.2013 17:19, schrieb Stephen Warren:
+> >
+> > IRQs, DMA channels, and GPIOs are all different things. Their bindings
+> > are defined independently. While it's good to define new types of
+> > bindings consistently with other bindings, this hasn't always happened,
+> > so you can make zero assumptions about the IRQ bindings by reading the
+> > documentation for any other kind of binding.
+> >
+> > Multiple interrupts are defined as follows:
+> >
+> > 	// Optional; otherwise inherited from parent/grand-parent/...
+> > 	interrupt-parent = <&gpio6>;
+> > 	// Must be in a fixed order, unless binding defines that the
+> > 	// optional interrupt-names property is to be used.
+> > 	interrupts = <1 IRQF_TRIGGER_HIGH> <2 IRQF_TRIGGER_LOW>;
+> > 	// Optional; binding for device defines whether it must
+> > 	// be present
+> > 	interrupt-names = "foo", "bar";
+> >
+> > If you need multiple interrupts, each with a different parent, you need
+> > to use an interrupt-map property (Google it for a more complete
+> > explanation I guess). Unlike "interrupts", "interrupt-map" has a phandle
+> > in each entry, and hence each entry can refer to a different IRQ
+> > controller. You end up defining a dummy interrupt controller node (which
+> > may be the leaf node with multiple IRQ outputs, which then points at
+> > itself as the interrupt parent), pointing the leaf node's
+> > interrupt-parent at that node, and then having interrupt-map "demux" the
+> > N interrupt outputs to the various interrupt controllers.
 > 
-> Save some pointless copying of the kernel command line and just use
-> boot_command_line instead.
+> What a mess. I assume that is the price that bindings don't have to change.
 > 
-> Also remove default_command_line as it is not referenced anywhere, and
-> the DT code already handles the default command line.
+> Thanks for clarifying that,
 > 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Mark Salter <msalter@redhat.com>
-> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
-> Cc: linux-c6x-dev@linux-c6x.org
+> Alexander Holler
 
-This and the next patch look good to me.
+Actually, I think it is solveable but doing so requires a new binding
+for interrupts. I took a shot at implementing it earlier this week and
+I've got working patches that I'll be posting soon. I created a new
+"interrupts-extended" property that uses a phandle+args type of
+binding like this:
 
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
+intc1: intc@1000 {
+	interrupt-controller;
+	#interrupt-cells = <1>;
+};
 
-> ---
->  arch/c6x/include/asm/setup.h |  2 --
->  arch/c6x/kernel/devicetree.c |  2 +-
->  arch/c6x/kernel/setup.c      | 11 +----------
->  3 files changed, 2 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/c6x/include/asm/setup.h b/arch/c6x/include/asm/setup.h
-> index ecead15..6968044 100644
-> --- a/arch/c6x/include/asm/setup.h
-> +++ b/arch/c6x/include/asm/setup.h
-> @@ -14,8 +14,6 @@
->  #include <uapi/asm/setup.h>
->  
->  #ifndef __ASSEMBLY__
-> -extern char c6x_command_line[COMMAND_LINE_SIZE];
-> -
->  extern int c6x_add_memory(phys_addr_t start, unsigned long size);
->  
->  extern unsigned long ram_start;
-> diff --git a/arch/c6x/kernel/devicetree.c b/arch/c6x/kernel/devicetree.c
-> index 9e15ab9..5e8c838 100644
-> --- a/arch/c6x/kernel/devicetree.c
-> +++ b/arch/c6x/kernel/devicetree.c
-> @@ -24,7 +24,7 @@ void __init early_init_devtree(void *params)
->  	 * device-tree, including the platform type, initrd location and
->  	 * size and more ...
->  	 */
-> -	of_scan_flat_dt(early_init_dt_scan_chosen, c6x_command_line);
-> +	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
->  
->  	/* Scan memory nodes and rebuild MEMBLOCKs */
->  	of_scan_flat_dt(early_init_dt_scan_root, NULL);
-> diff --git a/arch/c6x/kernel/setup.c b/arch/c6x/kernel/setup.c
-> index f4e72bd..0e5a812 100644
-> --- a/arch/c6x/kernel/setup.c
-> +++ b/arch/c6x/kernel/setup.c
-> @@ -68,13 +68,6 @@ unsigned long ram_end;
->  static unsigned long dma_start __initdata;
->  static unsigned long dma_size __initdata;
->  
-> -char c6x_command_line[COMMAND_LINE_SIZE];
-> -
-> -#if defined(CONFIG_CMDLINE_BOOL)
-> -static const char default_command_line[COMMAND_LINE_SIZE] __section(.cmdline) =
-> -	CONFIG_CMDLINE;
-> -#endif
-> -
->  struct cpuinfo_c6x {
->  	const char *cpu_name;
->  	const char *cpu_voltage;
-> @@ -296,8 +289,6 @@ notrace void __init machine_init(unsigned long dt_ptr)
->  	/* Do some early initialization based on the flat device tree */
->  	early_init_devtree(fdt);
->  
-> -	/* parse_early_param needs a boot_command_line */
-> -	strlcpy(boot_command_line, c6x_command_line, COMMAND_LINE_SIZE);
->  	parse_early_param();
->  }
->  
-> @@ -309,7 +300,7 @@ void __init setup_arch(char **cmdline_p)
->  	printk(KERN_INFO "Initializing kernel\n");
->  
->  	/* Initialize command line */
-> -	*cmdline_p = c6x_command_line;
-> +	*cmdline_p = boot_command_line;
->  
->  	memory_end = ram_end;
->  	memory_end &= ~(PAGE_SIZE - 1);
-> -- 
-> 1.8.1.2
-> 
+intc2: intc@2000 {
+	interrupt-controller;
+	#interrupt-cells = <2>;
+};
 
+device@3000 {
+	interrupts-extended = <&intc1 5> <&intc2 3 4> <&intc1 6>;
+};
+
+'interrupts-extended' will be proposed as a directly replacement of the
+'interrupts' property and it will eliminate the need for an
+interrupt-map property. A node will be allowed to have one or the other,
+but not both.
+
+I'll write up a proper binding document and post for review.
+
+g.
