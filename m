@@ -1,131 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab3IRLim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 07:38:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5605 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab3IRLik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 07:38:40 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1379459317-13046-2-git-send-email-daniel.santos@pobox.com>
-References: <1379459317-13046-2-git-send-email-daniel.santos@pobox.com> <1379459317-13046-1-git-send-email-daniel.santos@pobox.com>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: dhowells@redhat.com, linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        George Spelvin <linux@horizon.com>
-Subject: Re: [PATCH 1/5] scripts: Add mkstrerror.sh
-Date: Wed, 18 Sep 2013 12:38:20 +0100
-Message-ID: <29168.1379504300@warthog.procyon.org.uk>
+	id S1752355Ab3IRLko (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 07:40:44 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:61551 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab3IRLkm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 07:40:42 -0400
+Date: Wed, 18 Sep 2013 12:40:32 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
+        stephen.gallimore@st.com, stuart.menefy@st.com,
+        gabriel.fernandez@st.com, olivier.clergeaud@st.com
+Subject: Re: [PATCH 4/4] ARM: STi: Add I2C config to B2000 and B2020 boards
+Message-ID: <20130918114032.GD16984@lee--X1>
+References: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com>
+ <1379498483-4236-5-git-send-email-maxime.coquelin@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1379498483-4236-5-git-send-email-maxime.coquelin@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-danielfsantos@att.net wrote:
+On Wed, 18 Sep 2013, Maxime COQUELIN wrote:
 
-> This is a simple bash script that parses our errno*.h files and formats
-> them into the error_strings.h header that our strerror and strerror_name
-> functions will use later.
+> This patch supplies I2C configuration to B2000 and B2020
+> based on either STiH415 or STiH416 SoCs.
+> 
+> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+> ---
+>  arch/arm/boot/dts/stih41x-b2000.dtsi |    7 +++++++
+>  arch/arm/boot/dts/stih41x-b2020.dtsi |   20 ++++++++++++++++++++
+>  2 files changed, 27 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/stih41x-b2000.dtsi b/arch/arm/boot/dts/stih41x-b2000.dtsi
+> index 8e694d2..346cc4bc 100644
+> --- a/arch/arm/boot/dts/stih41x-b2000.dtsi
+> +++ b/arch/arm/boot/dts/stih41x-b2000.dtsi
+> @@ -37,5 +37,12 @@
+>  			};
+>  		};
+>  
+> +		/* HDMI Tx I2C */
+> +		i2c1: i2c@fed41000{
 
-I presume you haven't tried building with a "make O=foo" build directory?  I
-see:
+nit: Space before the '{'
 
-      /bin/sh: /data/fs/linux-2.6-fscache/include/generated/error_strings.h: No such file or directory
+> +			status = "okay";
 
-when I try it.
+Consider enabling the node at the bottom.
 
-Looking in your generated error_strings.h file, I see:
+> +
+> +			/* HDMI V1.3a supports Standard mode only */
+> +			clock-frequency = <100000>;
+> +		};
+>  	};
+>  };
+> diff --git a/arch/arm/boot/dts/stih41x-b2020.dtsi b/arch/arm/boot/dts/stih41x-b2020.dtsi
+> index 133e181..10b98da 100644
+> --- a/arch/arm/boot/dts/stih41x-b2020.dtsi
+> +++ b/arch/arm/boot/dts/stih41x-b2020.dtsi
+> @@ -38,5 +38,25 @@
+>  				default-state = "off";
+>  			};
+>  		};
+> +
+> +		i2c0: i2c@fed40000{
 
-	static const struct error_strings {
-		const unsigned first;
-		const unsigned last;
-		const unsigned count;
-		const char * const desc[2];
-	} error_strings[2] = {
-		{
-			.first = 0,
-			.last  = 133,
-			.count = 134,
-			.desc  = {
-	#ifdef CONFIG_STRERROR_NAME
-		"\0"                            /* 0 */
-		"EPERM\0"                       /* 1 */
-		"ENOENT\0"                      /* 2 */
-		"ESRCH\0"                       /* 3 */
-		"EINTR\0"                       /* 4 */
-	...
-		"ERFKILL\0"                     /* 132 */
-		"EHWPOISON\0"                   /* 133 */,
-	#else
-		NULL,
-	#endif /* CONFIG_STRERROR_NAME */
+As above.
 
-	#ifdef CONFIG_STRERROR
-		"\0"                                                    /* 0 */
-		"Operation not permitted\0"                             /* 1 */
-		"No such file or directory\0"                           /* 2 */
-		"No such process\0"                                     /* 3 */
-	...
-	        "State not recoverable\0"                               /* 131 */
-		"Operation not possible due to RF-kill\0"               /* 132 */
-		"Memory page has hardware error\0"                      /* 133 */,
-	#else
-		NULL,
-	#endif /* CONFIG_STRERROR */
-			},
-		}, {
-			.first = 512,
-			.last  = 529,
-			.count = 18,
-			.desc  = {
-	#ifdef CONFIG_STRERROR_NAME
-		"ERESTARTSYS\0"                 /* 512 */
-		"ERESTARTNOINTR\0"              /* 513 */
-	...
-		"Request initiated, but will not complete before timeout\0"/* 528 */
-		"iocb queued, will get completion event\0"              /* 529 */,
-	#else
-		NULL,
-	#endif /* CONFIG_STRERROR */
-			},
-		}
-	};
+> +			status = "okay";
+> +		};
+> +
+> +		/* HDMI Tx I2C */
+> +		i2c1: i2c@fed41000{
 
+As above.
 
-Some thoughts for you:
+> +			status = "okay";
 
- (1) Why are you double-NUL'ing all your strings?  (see the \0 in the strings)
+As above.
 
- (2) Storing the leading 'E' for each symbol is redundant as you can add that
-     later so you might want to discard it.
+> +			/* HDMI V1.3a supports Standard mode only */
+> +			clock-frequency = <100000>;
+> +		};
+> +
+> +		sbc_i2c0: i2c@fe540000{
 
- (3) You are storing a pointer to the symbolic name for each error.  On a
-     64-bit machine, that's 8 bytes.  If you drop the leading 'E' and the
-     trailing NUL, most symbols will fit into an 8 character slot saving you
-     the cost of a pointer.
+As above.
 
-     Okay, you'll have to truncate some of the names (ERESTARTNOINTR ->
-     RESNOINT for example) but probably not that many.  Run this:
+> +			status = "okay";
+> +		};
+> +
+> +		sbc_i2c1: i2c@fe541000{
 
-	grep '["]E[A-Z0-9]' include/generated/error_strings.h |
-           cut '-d\' -f1 | cut -dE -f2- | cut -c1-8
+Are these nodes referenced by phandle at all?
 
-     and you'll see what I mean.  Most of them are still recognisable,
-     particularly once you stick the 'E' back on the front.  Piping the output
-     of that through "wc -l", I get:
+If not, consider dropping the <lable>:s
 
-	147
+> +			status = "okay";
+> +		};
+>  	};
+>  };
 
-     which means the entire string table could be squeezed into 8 * 147 or
-     1176 bytes with only one pointer and one count required for each segment
-     of the table (you generate two segments).
+Odd tabbing here.
 
-David
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
