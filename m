@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab3IRFgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 01:36:55 -0400
-Received: from smtprelay0040.hostedemail.com ([216.40.44.40]:47540 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751645Ab3IRFgy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 01:36:54 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12663:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0
-X-HE-Tag: map74_5901db2133b0e
-X-Filterd-Recvd-Size: 2172
-Message-ID: <1379482610.1787.7.camel@joe-AO722>
-Subject: Re: [PATCH 5/5] lib: Add error string support to printks
-From: Joe Perches <joe@perches.com>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        George Spelvin <linux@horizon.com>
-Date: Tue, 17 Sep 2013 22:36:50 -0700
-In-Reply-To: <1379459317-13046-6-git-send-email-daniel.santos@pobox.com>
-References: <1379459317-13046-1-git-send-email-daniel.santos@pobox.com>
-	 <1379459317-13046-6-git-send-email-daniel.santos@pobox.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751700Ab3IRFoH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 01:44:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59329 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751256Ab3IRFoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 01:44:05 -0400
+Date: Wed, 18 Sep 2013 08:43:35 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+ from the hypervisor
+Message-ID: <20130918054335.GE5657@redhat.com>
+References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+ <dd29077371564a14b2d317d2291db8a9@SN2PR03MB061.namprd03.prod.outlook.com>
+ <52325C1E.90101@zytor.com>
+ <50f92d9c16a54e5bb6fa14ef72e5fdfb@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130913095526.GE18381@redhat.com>
+ <7737cb643a664b6fb39021b4d364b5cf@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130917135918.GY17294@redhat.com>
+ <2b4a9a0cff5143c59a0802a2e425c4db@SN2PR03MB061.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2b4a9a0cff5143c59a0802a2e425c4db@SN2PR03MB061.namprd03.prod.outlook.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-17 at 18:08 -0500, danielfsantos@att.net wrote:
-> This adds an extension for the integral format specifier suffix of 'e',
-> so that the format %[duxXo]e will result in printing an number (as
-> before) in addition to a name and descrption for an error code, if such
-> support is enabled and a name and descrption is found.
+On Tue, Sep 17, 2013 at 07:53:36PM +0000, KY Srinivasan wrote:
+> > > Thanks Gleb. Here is the link for the latest Hyper-V specification:
+> > > http://www.microsoft.com/en-us/download/details.aspx?id=39289
+> > >
+> > > This spec talks about how migration is handled with regards to TSC.
+> > >
+> > All I can see is "15.4.3 Partition Reference TSC Mechanism". I see
+> > nothing about HV_X64_MSR_TSC_FREQUENCY specifically. To access this MSR
+> > a partition needs AccessFrequencyMsrs privilege, may be partition that
+> > cab be migrated does not have this privilege?
 > 
-> My initial thought was to use the glibc extension of '%m', but this
-> format specifier uses the value of libc's errno and adding a value
-> breaks gcc's printf parsing.  I'm not convinced that the 'e' extension
-> is optimal, although there are only four instances of this pattern in
-> the kernel that would need to be changed.
+> If you use the MSR to read the TSC frequency, then indeed when you migrate then there
+> is no guarantee that the TSC frequency won't change when you migrate. The approach
+> described in section 15.4.3 is the preferred approach that can accommodate migration.
 > 
->     git grep -E '".*%[#0\ +\-]*[0-9]*[hljzt]*[idoxXu]e'
-> 
-> Alternatively, 'E' was another thought for a suffix as well.
+Thanks.
 
-I'd much rather see another %p extension used instead
-of generating odd output given normal printf formats.
-
-%pE might work
-
-
+--
+			Gleb.
