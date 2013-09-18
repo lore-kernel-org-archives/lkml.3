@@ -1,108 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab3IRVQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 17:16:34 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:43782 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655Ab3IRVPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 17:15:46 -0400
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/4] kobject: grab an extra reference on kobject->sd to allow duplicate deletes
-Date: Wed, 18 Sep 2013 17:15:36 -0400
-Message-Id: <1379538938-5032-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1379538938-5032-1-git-send-email-tj@kernel.org>
-References: <1379538938-5032-1-git-send-email-tj@kernel.org>
+	id S1753936Ab3IRVRx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 17:17:53 -0400
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:38317
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751873Ab3IRVRw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 17:17:52 -0400
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zz98dI936eI1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h177df4h17326ah1de097h186068h8275dhz2fh2a8h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h1155h)
+Message-ID: <1379539063.31417.23.camel@atx-linux-37>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+From: Alan Tull <atull@altera.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        <monstr@monstr.eu>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Date: Wed, 18 Sep 2013 16:17:43 -0500
+In-Reply-To: <20130918203247.GA11181@obsidianresearch.com>
+References: <cover.1379519753.git.michal.simek@xilinx.com>
+	 <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
+	 <20130918191517.GQ19937@titan.lakedaemon.net>
+	 <20130918203247.GA11181@obsidianresearch.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+MIME-Version: 1.0
+X-OriginatorOrg: altera.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysfs currently has a rather weird behavior regarding removals.  A
-directory removal would delete all files directly under it but
-wouldn't recurse into subdirectories, which, while a bit inconsistent,
-seems to make sense at the first glance as each directory is
-supposedly associated with a kobject and each kobject can take care of
-the directory deletion; however, this doesn't really hold as we have
-groups which can be directories without a kobject associated with it
-and require explicit deletions.
+On Wed, 2013-09-18 at 14:32 -0600, Jason Gunthorpe wrote:
+> On Wed, Sep 18, 2013 at 03:15:17PM -0400, Jason Cooper wrote:
+> 
+> > + Jason Gunthorpe
+> 
+> Thanks, looks interesting, we could possibly use this interface if it 
+> met our needs..
+>  
+> > On Wed, Sep 18, 2013 at 05:56:39PM +0200, Michal Simek wrote:
+> > > This new subsystem should unify all fpga drivers which
+> > > do the same things. Load configuration data to fpga
+> > > or another programmable logic through common interface.
+> > > It doesn't matter if it is MMIO device, gpio bitbanging,
+> > > etc. connection. The point is to have the same
+> > > inteface for these drivers.
+> 
+> So, we have many years of in-field experience with this and this API
+> doesn't really match what we do.
+> 
+> Here are the steps we perform, from userspace:
+>  - Ask kernel to place FPGA into reset and prepare for programming
+>    * Kernel can return an error (eg FPGA failed to erase, etc)
+>    * this is the PROG_N low -> DONE high, PROG_N high -> INIT_N high
+>      sequencing on Xilinx chips
+>  - Ask kernel to load a bitstream.
+>    * Userspace locats the bitstream file to load, and the mmaps it.
+>    * Userspace passes the entire file in a single write() call to the
+>      kernel which streams it over the configuration bus
+>    * The kernel can report an erro rhere (eg Xilinx can report CRC
+>    error)
+>  - Ask the kernel to verify that configuration is complete. 
+>    * On Xilinx this wait for done to go high
+>  - Ask the kernel to release the configuration bus (tristate
+>    all drivers) (or sometimes we have to drive the bus low,
+>    it depends on the bitfile, user space knows what to do)
+> 
+> It is very important that userspace know exactly which step fails
+> because the resolution is different. We use this in a manufacturing
+> setting, so failures are expected and need quick root cause
+> determination.
+> 
+> You could probably address that need by very clearly defining a
+> variety of errno values for the various cases. However, it would be a
+> disaster if every driver did something a little different :|
+> 
+> Using request_firmware exclusively is not useful for us. We
+> format the bitfile with a header that contains our internal tracking
+> information. Sometimes we need to bitswap the bitfile. Our userspace
+> handles all of this and can pass a bitfile in memory to write().
+> 
+> request_firmware would be horrible to use :)
+> 
+> Our API uses a binary sysfs attribute to stream the FPGA data, you
+> might want to consider that.
+> 
+> Regards,
+> Jason
 
-We're in the process of separating out sysfs from kboject / driver
-core and want a consistent behavior.  A removal should delete either
-only the specified node or everything under it.  I think it is helpful
-to support recursive atomic removal and later patches will implement
-it.
+The firmware approach is interesting.  It might be less flexible
+compared with my original code (see link to git below) that this is
+based on.  The original code created a devnode like /dev/fpga0 and a raw
+bitstream could be loaded by doing 'cat bitstream > /dev/fpga0'.  Or
+some other userspace app could write the /dev/fpga0 to handle any
+headers that needed to be added to the bitstream.
 
-Such change means that a sysfs_dirent associated with kobject may be
-deleted before the kobject itself is removed if one of its ancestor
-gets removed before it.  As sysfs_remove_dir() puts the base ref, we
-may end up with dangling pointer on descendants.  This can be solved
-by holding an extra reference on the sd from kobject.
+This code also creates a set of files under /sys for each separate fpga.
+I.e. checking status by looking at /sys/class/fpga/fpag0/status.  It
+would be pretty small changes to control reseting the fpga by adding a
+'reset' file there also (added first to the framework, and an interface
+into the low level fpga manager driver).
 
-Acquire an extra reference on the associated sysfs_dirent on directory
-creation and put it after removal.
+I am trying this out with my low level fpga manager driver.  I'm very
+curious about your approach and I am wondering whether the firmware
+approach will work for us or not.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/sysfs/dir.c |  7 ++++++-
- lib/kobject.c  | 12 ++++++++++++
- 2 files changed, 18 insertions(+), 1 deletion(-)
+Will this framework handle more than one fpga at a time?
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 6718689..105a7e2 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -549,7 +549,12 @@ void sysfs_remove_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
- {
- 	struct sysfs_inode_attrs *ps_iattr;
- 
--	BUG_ON(sd->s_flags & SYSFS_FLAG_REMOVED);
-+	/*
-+	 * Removal can be called multiple times on the same node.  Only the
-+	 * first invocation is effective and puts the base ref.
-+	 */
-+	if (sd->s_flags & SYSFS_FLAG_REMOVED)
-+		return;
- 
- 	sysfs_unlink_sibling(sd);
- 
-diff --git a/lib/kobject.c b/lib/kobject.c
-index e769ee3..aa42d7d 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -75,6 +75,13 @@ static int create_dir(struct kobject *kobj)
- 		if (error)
- 			sysfs_remove_dir(kobj);
- 	}
-+
-+	/*
-+	 * @kobj->sd may be deleted by an ancestor going away.  Hold an
-+	 * extra reference so that it stays until @kobj is gone.
-+	 */
-+	sysfs_get(kobj->sd);
-+
- 	return error;
- }
- 
-@@ -531,10 +538,15 @@ out:
-  */
- void kobject_del(struct kobject *kobj)
- {
-+	struct sysfs_dirent *sd;
-+
- 	if (!kobj)
- 		return;
- 
-+	sd = kobj->sd;
- 	sysfs_remove_dir(kobj);
-+	sysfs_put(sd);
-+
- 	kobj->state_in_sysfs = 0;
- 	kobj_kset_leave(kobj);
- 	kobject_put(kobj->parent);
--- 
-1.8.3.1
+Is there some way a per-device userspace helper can be added that can
+handle adding the headers?  Such that different fpga types get different
+helpers?
+
+My fpga framework code is in git at:
+http://rocketboards.org/gitweb/?p=linux-socfpga.git;a=commit;h=7b7c04ef3f8589349211bdfe884e42d6b7554b27
+
+and
+
+http://rocketboards.org/gitweb/?p=linux-socfpga.git;a=commit;h=57ee6197d65015620cd6aad435a695ce00a48a8c
+
+Best Regards,
+Alan
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
 
