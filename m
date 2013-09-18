@@ -1,99 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab3IROWI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 10:22:08 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59146 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab3IROWG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 10:22:06 -0400
-Date: Wed, 18 Sep 2013 16:22:03 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, freemangordon@abv.bg,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/4] usb: musb: Call atomic_notifier_call_chain when
- status is changed
-Message-ID: <20130918142203.GD3748@amd.pavel.ucw.cz>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <201309172128.42514@pali>
- <20130918014942.GD19817@radagast>
- <201309181020.15245@pali>
- <CAAwP0s1Ou7Nrq7GhnHX71TFCrTFg=nqUh+GsAJhN8DjZGsF4QQ@mail.gmail.com>
- <20130918133025.GB2953@amd.pavel.ucw.cz>
- <CAAwP0s0nGthkm9Bp1ug23Rtz6-sbR60FFTSfd-Cj9wKMU0RBEA@mail.gmail.com>
+	id S1752743Ab3IROWZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 10:22:25 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42772 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462Ab3IROWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 10:22:22 -0400
+Date: Wed, 18 Sep 2013 09:21:18 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Felipe Balbi <balbi@ti.com>, Kumar Gala <galak@codeaurora.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: core: clarify usb-phy array binding
+Message-ID: <20130918142118.GJ21559@radagast>
+Reply-To: <balbi@ti.com>
+References: <1376062832-23288-1-git-send-email-galak@codeaurora.org>
+ <20130809162848.GW27325@e106331-lin.cambridge.arm.com>
+ <1A03353A-9299-4D73-9786-4ECBC1DD4E05@codeaurora.org>
+ <20130812180553.GD27954@radagast>
+ <20130813133410.GO27165@e106331-lin.cambridge.arm.com>
+ <20130827185329.GT3005@radagast>
+ <20130828160151.GA17229@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZG+WKzXzVby2T9Ro"
 Content-Disposition: inline
-In-Reply-To: <CAAwP0s0nGthkm9Bp1ug23Rtz6-sbR60FFTSfd-Cj9wKMU0RBEA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130828160151.GA17229@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+--ZG+WKzXzVby2T9Ro
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> >> >> > So will you do that? Or it is needed to resend this one line
-> >> >> > hunk again in new email again?
-> >> >>
-> >> >> new patch, new email
-> >> >
-> >> > Guys, WHY ARE YOU SO STUPID AND ARROGANT?
-> >> >
-> >> > Sorry but, need to copy full isolated patch/hunk from one mail to
-> >> > another is hassling. So what you want from me? Do all those non
-> >> > sense working only because yesterday you had bad day? Or what?
-...
-> > Actually, there is need to be rude, because Felipe fails to act as
-> > maintainer. Instead of fixing bugs in his code, he bounces bugfix
-> > patches, points people to random READMEs and wastes everyones time.
-> 
-> I don't know what are you talking about (if that happened in another
-> thread then I need more context). Felipe is not bouncing any bugfix
+Hi,
 
-Take a look here:
+On Wed, Aug 28, 2013 at 05:01:51PM +0100, Mark Rutland wrote:
+> > > So it's not physically possible for someone to just wire up a single =
+phy
+> > > to the device, either USB2-only or USB3?
+> >=20
+> > of course it is :-) In fact, TI has done it. But it causes a whole bunch
+> > of other problems to support that sort of model. For one, in some
+> > systems, a clock generated by the USB3 PHY is backfed into the IP and if
+> > USB3 PHY isn't running, the dwc3 IP won't start.
+>=20
+> That sounds like a mess. But unless I've misunderstood, that doesn't
 
-https://lkml.org/lkml/2013/9/17/286
+well, it is :-)
 
-I clearly state that patch can not be tested as required for "proper"
-submission, but offer patch anyway. I get irrelevant boilerplate on
-patch format.
+> sound like a general problem with having one phy, but rather an
+> integration issue on a specific system? Presumably in that case as long
+> as the phy was brought up before poking the rest of the IP, the unit
+> would function correctly.
 
-> but just asked to split the patch in two since the patch was solving
-> two separate issues so is way better to have it in two separate
-> patches for the reasons I explained before.
-> 
-> So, as far as I can tell Felipe did exactly what I would expect from a
-> maintainer. He took the time to review the patches sent to him and
+right, but what 'brings up' the PHY is usb_phy_init(). If we don't add
+usb3phy to DTS or skip usb3phy in case maximum-speed < superspeed, then
+we're screwed :-)
 
-I'd expect maintainer to, well, maintain code. It means actually
-fixing bugs in his code, when he's pointed at them.
+> > I even wrote a patch making USB3 PHY optional, but didn't push it
+> > exactly because it broke some other systems and I can't guarantee users
+> > won't mess up their DTS/pdata.
+>=20
+> Does that mean that their dts or pdata are wrong at the moment, but
+> they're spared because the driver bails out due to a missing phy? If
+> their pdata's wrong, that should be fixable relatively easily, but if
+> the dt is wrong then I'm not sure how we can support those systems
+> sensibly. That sounds like an ideal candidate for a dt quirks
+> mechanism...
 
-> gave feedback. If the sender doesn't want to take his feedback into
-> account and prefer to send pretty insulting emails instead that is his
-> choice but I would say that is this not the greatest approach to get
-> your code merged (to say the least).
+hmm, the idea of the patch was:
 
-Clearly not. But Pali found bug in code Felipe should
-maintain. Instead of "thank you for bug report, I applied this one
-line of your code to fix it", Pali got "new patch, new email" for his
-efforts. That is how you train dogs, not how you should treat kernel
-contributors.
+	switch (maximum-speed) {
+	case SUPER:
+		grab_and_initialize_usb3_phy();
+		grab_and_initialize_usb2_phy();
+		break;
+	case HIGH:
+	case FULL:
+	case LOW:
+		grab_and_initialize_usb2_phy();
+		break;
+	}
 
-Now, it is possible that Felipe just has problems with english, as he
-called me piece of wood in https://lkml.org/lkml/2013/9/17/476 , but
-he appears more arogant than usual over email.
+now, imagine someone wants to run his dwc3 in highspeed mode, we
+wouldn't initialize USB3 PHY which could cause the whole IP to break.
 
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I tried poking around on device's registers to see if there was any way
+to detect that the IP needs somethin back from USB3 PHY, but couldn't
+find anything.
+
+Since we can't know how the IP was integrated, it's best to leave it
+alone and require NOP xceiv to be used.
+
+> > > You can describe the USB2-only case in the dt by only listing the fir=
+st
+> > > phy (though the driver won't support it as it expects both to be
+> > > present), but it's impossible to describe that you've wired up a sing=
+le
+> > > phy that's USB3 capable.
+> >=20
+> > you might be right there...
+>=20
+> Would it be possible to have something like (an optional) usb-phy-names?
+> If not present, we assume the current situation, if present then we use
+> it to figure out which phys are present. Maybe I'm missing something
+> that makes that impossible?
+
+you're missing the point regarding the IP possibly needing something
+back from the PHY (e.g. a clock which PHY generates).
+
+--=20
+balbi
+
+--ZG+WKzXzVby2T9Ro
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSObbdAAoJEIaOsuA1yqRE6IYQAKF8C18dLDvC69UJMAwoKC9S
+lyQO39Xra/UeqjFCPjrsO651v3nSR+7w9gAy6p5Yal1VANBqkUigTtjPCNLPkQ68
+7pj+rSKt3FXX5gTLLx8G9TNRLADcVvRzdVTQJlh1pVj+wXoeQ4hQUdV1LdS5QTJX
+x1oo+mMVF3ahdflnyEcRchAsctm7iO4WdlwxFo2tW3XbyHVkZhgq8CbPQn+PZIfg
+LQNlDMSSc8lCge2dCoIhYgS8/avNmckeTq/rG2Cpy7jF525eMUqJNI9SwUWzByAT
+7Yho+Z9O5wmrRpQuOacm5BdmuFGe70P3o5XKnmLbIMXnC90g9Hr/1RyA9gfqq5Vn
+2xvL4rMK09rN9k0SMNn4/ZYyVODQVIxz6kxmNJju4fVob/3Ao/yo2DRVGdTG53TU
+YwrB9jsl1I8+4AGTlj1d0528YHorqRhwNn/l3znqh651nT7IoKvyvyCniw1nNrYF
+pFcOJZcwM6kgqdsZxK4cp08FHHjRtNH5pwGhiat65KcEaMJvQh0MgnizHrzmhrpN
+hirRE/AN8DuQVXDXvEuK9iDEx418j6xN4+UN+Yk+pGYyqptBs+ewrApHVDQnNd7t
+GJKfB6ZBcidmo/5b9qb/iST/0FnMmqvycYppYGclEgTfhhwfuyou3F8Dt0QmErwe
+9ota4HKfY+LVKg2o3u5L
+=7jUi
+-----END PGP SIGNATURE-----
+
+--ZG+WKzXzVby2T9Ro--
