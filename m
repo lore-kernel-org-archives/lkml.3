@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab3IRRya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 13:54:30 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:51384 "EHLO
+	id S1753290Ab3IRRy2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 13:54:28 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:38189 "EHLO
 	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893Ab3IRRyO (ORCPT
+	with ESMTP id S1752393Ab3IRRyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 13:54:14 -0400
+	Wed, 18 Sep 2013 13:54:12 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
+        Tony Prisk <linux@prisktech.co.nz>,
         Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rpi-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/26] ARM: bcm2835: remove custom .init_time hook
-Date: Wed, 18 Sep 2013 19:53:43 +0200
-Message-Id: <1379526839-14798-11-git-send-email-sebastian.hesselbarth@gmail.com>
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 07/26] clk: vt8500: parse pmc_base from clock driver
+Date: Wed, 18 Sep 2013 19:53:40 +0200
+Message-Id: <1379526839-14798-8-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-remove custom .init_time hooks. Also remove call to of_clk_init from
-clk-bcm2835 with core fixed_clock match, as this has already been
-registered now.
+Currently, clock providers for vt8500 depend on machine_init providing
+pmc_base address before calling of_clk_init. With upcoming arch-wide
+.time_init calling of_clk_init, we should make clock providers independent
+of mach code. This adds a pmc_base parsing helper to current clock provider
+that gets called if there is no pmc_base set, yet.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Cc: Olof Johansson <olof@lixom.net>
 Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Tony Prisk <linux@prisktech.co.nz>
 Cc: Mike Turquette <mturquette@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-rpi-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/mach-bcm2835/bcm2835.c |    2 --
- drivers/clk/clk-bcm2835.c       |    8 --------
- 2 files changed, 10 deletions(-)
+ drivers/clk/clk-vt8500.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/arch/arm/mach-bcm2835/bcm2835.c b/arch/arm/mach-bcm2835/bcm2835.c
-index 40686d7..d50135b 100644
---- a/arch/arm/mach-bcm2835/bcm2835.c
-+++ b/arch/arm/mach-bcm2835/bcm2835.c
-@@ -18,7 +18,6 @@
- #include <linux/of_address.h>
- #include <linux/of_platform.h>
- #include <linux/clk/bcm2835.h>
--#include <linux/clocksource.h>
+diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
+index 82306f5..a5ee01c 100644
+--- a/drivers/clk/clk-vt8500.c
++++ b/drivers/clk/clk-vt8500.c
+@@ -15,11 +15,14 @@
  
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-@@ -134,7 +133,6 @@ DT_MACHINE_START(BCM2835, "BCM2835")
- 	.init_irq = bcm2835_init_irq,
- 	.handle_irq = bcm2835_handle_irq,
- 	.init_machine = bcm2835_init,
--	.init_time = clocksource_of_init,
- 	.restart = bcm2835_restart,
- 	.dt_compat = bcm2835_compat
- MACHINE_END
-diff --git a/drivers/clk/clk-bcm2835.c b/drivers/clk/clk-bcm2835.c
-index 5fb4ff5..6b950ca 100644
---- a/drivers/clk/clk-bcm2835.c
-+++ b/drivers/clk/clk-bcm2835.c
-@@ -20,14 +20,8 @@
- #include <linux/clk-provider.h>
- #include <linux/clkdev.h>
- #include <linux/clk/bcm2835.h>
--#include <linux/clk-provider.h>
+ #include <linux/io.h>
  #include <linux/of.h>
++#include <linux/of_address.h>
+ #include <linux/slab.h>
+ #include <linux/bitops.h>
+ #include <linux/clkdev.h>
+ #include <linux/clk-provider.h>
  
--static const struct of_device_id clk_match[] __initconst = {
--	{ .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
--	{ }
--};
--
- /*
-  * These are fixed clocks. They're probably not all root clocks and it may
-  * be possible to turn them on and off but until this is mapped out better
-@@ -63,6 +57,4 @@ void __init bcm2835_init_clocks(void)
- 	ret = clk_register_clkdev(clk, NULL, "20215000.uart");
- 	if (ret)
- 		pr_err("uart1_pclk alias not registered\n");
--
--	of_clk_init(clk_match);
- }
++#define LEGACY_PMC_BASE		0xD8130000
++
+ /* All clocks share the same lock as none can be changed concurrently */
+ static DEFINE_SPINLOCK(_lock);
+ 
+@@ -626,6 +629,21 @@ const struct clk_ops vtwm_pll_ops = {
+ 	.recalc_rate = vtwm_pll_recalc_rate,
+ };
+ 
++static __init void vtwm_set_pmc_base(void)
++{
++	struct device_node *np =
++		of_find_compatible_node(NULL, NULL, "via,vt8500-pmc");
++
++	if (np)
++		pmc_base = of_iomap(np, 0);
++	else
++		pmc_base = ioremap(LEGACY_PMC_BASE, 0x1000);
++	of_node_put(np);
++
++	if (!pmc_base)
++		pr_err("%s:of_iomap(pmc) failed\n", __func__);
++}
++
+ static __init void vtwm_pll_clk_init(struct device_node *node, int pll_type)
+ {
+ 	u32 reg;
+@@ -636,6 +654,9 @@ static __init void vtwm_pll_clk_init(struct device_node *node, int pll_type)
+ 	struct clk_init_data init;
+ 	int rc;
+ 
++	if (!pmc_base)
++		vtwm_set_pmc_base();
++
+ 	rc = of_property_read_u32(node, "reg", &reg);
+ 	if (WARN_ON(rc))
+ 		return;
 -- 
 1.7.10.4
 
