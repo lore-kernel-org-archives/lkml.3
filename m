@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945Ab3IRHdu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 03:33:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58393 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab3IRHdp (ORCPT
+	id S1751775Ab3IRIB3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 04:01:29 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:43797 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab3IRIB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 03:33:45 -0400
-Date: Wed, 18 Sep 2013 09:33:08 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-kernel@vger.kernel.org
-cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] DMA: ste_dma40: use a power of 2 check
-Message-ID: <Pine.LNX.4.64.1309180919470.30215@axis700.grange>
+	Wed, 18 Sep 2013 04:01:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:yraSnf0W9zYtNbEjtqG2EiUYHctzyHsbIPBkfKYQ0c/
- +JtHPU1UnpQvM4y3FBgvTp1zKQJmvh6LLCqBUTFi2NsVII0OsZ
- DxP38xfwEqeUskhUxouyefSzqyaqMBJX424/wAd1SRSpvnjBWY
- P3GkNN3d875ixLpCwDzer+utqwE/zJBahVun72/3vRrkCn1ANX
- OJnjPnw8SP4O8x0TWMQ3eqWNDyiW42eP55+ggzVRfV6GNPt948
- A6r+gE6FR1u0RHKVaobJDsY/BGIr9SHJtvWggeoLu8r3mpd7hl
- qfcdN6pz+pdo3Tc9yhu/5km5E0x90i/g1G+bnK1t2fkMYk+tna
- o3ibO/VHoKYI3dXm8kLUjUjYQ4KIVEHaR2j9Tm0MKwKo8y+Ejy
- tfrgeYSX8lEzg==
+In-Reply-To: <523951B4.5090601@linux.vnet.ibm.com>
+References: <141ec437a203e4384459abb22e393d83136f732d.1379432906.git.viresh.kumar@linaro.org>
+	<523951B4.5090601@linux.vnet.ibm.com>
+Date: Wed, 18 Sep 2013 13:31:26 +0530
+Message-ID: <CAKohpokZyxhwVqagTM4OfOGgHxPGKPQkFTHRfAo53OxCP77cEQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: create per policy rwsem instead of per cpu cpu_policy_rwsem
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dst_addr_width and src_addr_width should be a power of 2. Currently the 
-driver checks, that they both lie between 1 and 8 and that they are eqal 
-to 1 or even. This however leaves an invalid value of 6 uncaught. Use an 
-explicit power of 2 check instead.
+On 18 September 2013 12:39, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 09/17/2013 09:20 PM, Viresh Kumar wrote:
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
----
+> The code looks good, but the patch doesn't apply properly, because of the code
+> change that went in in your patch "cpufreq: Clear policy->cpus bits in
+> __cpufreq_remove_dev_finish()".
 
-Compile tested only. I think 6 is an invalid value in this case, and since 
-you check for odd calues, it seems to me that any value can be supplied 
-here, so, looks like a power of 2 test is a better match for this.
+Hmm.. Because of the number of patches floating now a days, it is getting more
+and more complex..
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 82d2b97..3d5e4ee 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -14,6 +14,7 @@
- #include <linux/platform_device.h>
- #include <linux/clk.h>
- #include <linux/delay.h>
-+#include <linux/log2.h>
- #include <linux/pm.h>
- #include <linux/pm_runtime.h>
- #include <linux/err.h>
-@@ -2796,8 +2797,8 @@ static int d40_set_runtime_config(struct dma_chan *chan,
- 	    src_addr_width >  DMA_SLAVE_BUSWIDTH_8_BYTES   ||
- 	    dst_addr_width <= DMA_SLAVE_BUSWIDTH_UNDEFINED ||
- 	    dst_addr_width >  DMA_SLAVE_BUSWIDTH_8_BYTES   ||
--	    ((src_addr_width > 1) && (src_addr_width & 1)) ||
--	    ((dst_addr_width > 1) && (dst_addr_width & 1)))
-+	    !is_power_of_2(src_addr_width) ||
-+	    !is_power_of_2(dst_addr_width))
- 		return -EINVAL;
- 
- 	cfg->src_info.data_width = src_addr_width;
+I will sort things out once Rafael starts picking stuff for 3.13..
+
+>> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+
+>> +     /*
+>> +      * The rules for this semaphore:
+>> +      * - Any routine that wants to read from the policy structure will
+>> +      *   do a down_read on this semaphore.
+>> +      * - Any routine that will write to the policy structure and/or may take away
+>> +      *   the policy altogether (eg. CPU hotplug), will hold this lock in write
+>> +      *   mode before doing so.
+>> +      *
+>> +      * Additional rules:
+>> +      * - Governor routines that can be called in cpufreq hotplug path should not
+>> +      *   take this sem as top level hotplug notifier handler takes this.
+>
+> I think this comment is obsolete. I don't see the top-level hotplug notifier handler
+> (cpufreq_cpu_callback) acquiring the rwsem. Good to fix this comment while we are
+> at it, perhaps in a separate patch. (The comment above __cpufreq_remove_dev about
+> the policy-rwsem appears to be similarly out of date).
+
+Yeah.. Will get that done, but will send these again only once Rafael is picking
+stuff for 3.13..
