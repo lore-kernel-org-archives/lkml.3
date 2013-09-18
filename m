@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab3IRN5f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:57:35 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:50526 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab3IRN5d (ORCPT
+	id S1752158Ab3IRN6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:58:30 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:39768 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462Ab3IRN63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:57:33 -0400
+	Wed, 18 Sep 2013 09:58:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130918133025.GB2953@amd.pavel.ucw.cz>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <201309172128.42514@pali> <20130918014942.GD19817@radagast>
- <201309181020.15245@pali> <CAAwP0s1Ou7Nrq7GhnHX71TFCrTFg=nqUh+GsAJhN8DjZGsF4QQ@mail.gmail.com>
- <20130918133025.GB2953@amd.pavel.ucw.cz>
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-Date: Wed, 18 Sep 2013 15:57:13 +0200
-Message-ID: <CAAwP0s0nGthkm9Bp1ug23Rtz6-sbR60FFTSfd-Cj9wKMU0RBEA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] usb: musb: Call atomic_notifier_call_chain when
- status is changed
-To: Pavel Machek <pavel@ucw.cz>
-Cc: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, freemangordon@abv.bg,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130918132903.GA4071@gmail.com>
+References: <1379493790-9554-1-git-send-email-ricardo.ribalda@gmail.com>
+ <20130918092444.GA2778@gmail.com> <CAPybu_2GBymhgxHmtJu63pT2t8ge84EA9Ww54r9mGOA5KH7Hww@mail.gmail.com>
+ <CAPybu_2Wf_p-jo2X4VzSBXrfy3DnHY4PeOvNVLfeoGRFfbDwRA@mail.gmail.com>
+ <20130918101801.GO12926@twins.programming.kicks-ass.net> <20130918130735.GC2240@ghostprotocols.net>
+ <20130918132903.GA4071@gmail.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Wed, 18 Sep 2013 15:58:08 +0200
+Message-ID: <CAPybu_0CECKhPqpCpQoVvkUoWH-U6NqWfbVc3HjSvP_j6L_V3A@mail.gmail.com>
+Subject: Re: [PATCH] perf: Support for Openembedded/Yocto -dbg packages
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 3:30 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->> >> > So will you do that? Or it is needed to resend this one line
->> >> > hunk again in new email again?
->> >>
->> >> new patch, new email
->> >
->> > Guys, WHY ARE YOU SO STUPID AND ARROGANT?
->> >
->> > Sorry but, need to copy full isolated patch/hunk from one mail to
->> > another is hassling. So what you want from me? Do all those non
->> > sense working only because yesterday you had bad day? Or what?
-> ...
->>
->> Hi Pali,
->>
->> There is no need to be rude.
->>
->> Felipe asked you to do the split since he believes that the notifier
->> chain call for musb xceiv and the twl->phy notifier head init should
->> be done in two separate patches.
->
-> Actually, there is need to be rude, because Felipe fails to act as
-> maintainer. Instead of fixing bugs in his code, he bounces bugfix
-> patches, points people to random READMEs and wastes everyones time.
->                                                                         Pavel
->
+Hello Ingo Arnaldo and Peter
 
-I don't know what are you talking about (if that happened in another
-thread then I need more context). Felipe is not bouncing any bugfix
-but just asked to split the patch in two since the patch was solving
-two separate issues so is way better to have it in two separate
-patches for the reasons I explained before.
+I have just posted v3,
 
-So, as far as I can tell Felipe did exactly what I would expect from a
-maintainer. He took the time to review the patches sent to him and
-gave feedback. If the sender doesn't want to take his feedback into
-account and prefer to send pretty insulting emails instead that is his
-choice but I would say that is this not the greatest approach to get
-your code merged (to say the least).
+Thanks for your comments!
 
-Best regards,
-Javier
+On Wed, Sep 18, 2013 at 3:29 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+>
+>> Em Wed, Sep 18, 2013 at 12:18:01PM +0200, Peter Zijlstra escreveu:
+>> > On Wed, Sep 18, 2013 at 12:02:12PM +0200, Ricardo Ribalda Delgado wrote:
+>> > > Perhaps this is even more clear than v2:
+>>
+>> > > len = snprintf(file, size, "%s", symbol_conf.symfs);
+>> > > size -= len;
+>> > > file += len;
+>> > > len = snprintf(file, MIN(size,(last_slash - dso->long_name) + 2),
+>> > > "%s",  dso->long_name);
+>> > > size -= len;
+>> > > file += len;
+>> > > len = snprintf(file, size, ".debug%s",  last_slash);
+>>
+>> > len = 0;
+>>
+>> > len += snprintf(str + len, size - len, ...);
+>> > len += snprintf(str + len, size - len, ...);
+>>
+>> And avoid snprintf like the plague, use scnprintf instead...  See
+>> e7f01d1e3d8d501deb8abeaa269d5d48a703b8b0 for details :-)
+>
+> Hm, could we do:
+>
+>         #define snprintf scnprintf
+>
+> or:
+>
+>         #define snprintf(x...) BUILD_BUG()
+>
+> ?
+>
+> I don't think there's any valid code, except printf wrappers (which we
+> don't have in perf), where the semantics of snprintf() would be needed.
+>
+> Thanks,
+>
+>         Ingo
+
+
+
+-- 
+Ricardo Ribalda
