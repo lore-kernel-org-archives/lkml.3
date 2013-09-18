@@ -1,91 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab3IRLfx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 07:35:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63602 "EHLO mx1.redhat.com"
+	id S1752391Ab3IRLim (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 07:38:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5605 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752007Ab3IRLfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 07:35:52 -0400
-Message-ID: <52398FF1.5020502@redhat.com>
-Date: Wed, 18 Sep 2013 13:35:13 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <srostedt@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Denys Vlasenko <vda.linux@googlemail.com>
-Subject: Re: [RFC] Full syscall argument decode in "perf trace"
-References: <20130917190606.GB3918@infradead.org>
-In-Reply-To: <20130917190606.GB3918@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751556Ab3IRLik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 07:38:40 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1379459317-13046-2-git-send-email-daniel.santos@pobox.com>
+References: <1379459317-13046-2-git-send-email-daniel.santos@pobox.com> <1379459317-13046-1-git-send-email-daniel.santos@pobox.com>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: dhowells@redhat.com, linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        George Spelvin <linux@horizon.com>
+Subject: Re: [PATCH 1/5] scripts: Add mkstrerror.sh
+Date: Wed, 18 Sep 2013 12:38:20 +0100
+Message-ID: <29168.1379504300@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2013 09:06 PM, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Sep 17, 2013 at 05:10:55PM +0200, Denys Vlasenko escreveu:
->> I'm trying to figure out how to extend "perf trace".
->  
->> Currently, it shows syscall names and arguments, and only them.
->> Meaning that syscalls such as open(2) are shown as:
->  
->>     open(filename: 140736118412184, flags: 0, mode: 140736118403776) = 3
->  
->> The problem is, of course, that user wants to see the filename
->> per se, not the address of its first byte.
->  
->> To improve that, we need to fetch the pointed-to data.
->> There are two approaches to this: extending
->> "raw_syscalls:sys_{enter,exit}" tracepoint so that it returns this data,
->> or selectively stopping the traced process when it reaches the thacepoint.
-> 
-> We don't want to stop the process at all, this is one of the major
-> advantages of 'perf trace' over 'strace'.
+danielfsantos@att.net wrote:
 
-This is a worthy goal. strace is so slow exactly because it stops
-traced process so often. strace developers do want to avoid
-as many of these stops as possible.
+> This is a simple bash script that parses our errno*.h files and formats
+> them into the error_strings.h header that our strerror and strerror_name
+> functions will use later.
 
-I'm not sure that "not stopping ever" is achievable, though.
-There are cases where stopping is necessary.
+I presume you haven't tried building with a "make O=foo" build directory?  I
+see:
 
-For example, after clone() call, depending on the tracer needs,
-there may be operations which must be done on the new child
-before it is allowed to run.
+      /bin/sh: /data/fs/linux-2.6-fscache/include/generated/error_strings.h: No such file or directory
 
-strace used to use hideous, unsafe workarounds to catch children,
-until ptrace was augmented with features which made children stop
-immediately.
+when I try it.
 
-Do you think you can work around that? I just don't see how.
+Looking in your generated error_strings.h file, I see:
 
-> Look at the tmp.perf/trace2 branch in my git repo, tglx and Ingo added a
-> tracepoint to vfs_getname to use that.
+	static const struct error_strings {
+		const unsigned first;
+		const unsigned last;
+		const unsigned count;
+		const char * const desc[2];
+	} error_strings[2] = {
+		{
+			.first = 0,
+			.last  = 133,
+			.count = 134,
+			.desc  = {
+	#ifdef CONFIG_STRERROR_NAME
+		"\0"                            /* 0 */
+		"EPERM\0"                       /* 1 */
+		"ENOENT\0"                      /* 2 */
+		"ESRCH\0"                       /* 3 */
+		"EINTR\0"                       /* 4 */
+	...
+		"ERFKILL\0"                     /* 132 */
+		"EHWPOISON\0"                   /* 133 */,
+	#else
+		NULL,
+	#endif /* CONFIG_STRERROR_NAME */
 
-I know that this is the way how to fetch syscall args without stopping,
-yes.
+	#ifdef CONFIG_STRERROR
+		"\0"                                                    /* 0 */
+		"Operation not permitted\0"                             /* 1 */
+		"No such file or directory\0"                           /* 2 */
+		"No such process\0"                                     /* 3 */
+	...
+	        "State not recoverable\0"                               /* 131 */
+		"Operation not possible due to RF-kill\0"               /* 132 */
+		"Memory page has hardware error\0"                      /* 133 */,
+	#else
+		NULL,
+	#endif /* CONFIG_STRERROR */
+			},
+		}, {
+			.first = 512,
+			.last  = 529,
+			.count = 18,
+			.desc  = {
+	#ifdef CONFIG_STRERROR_NAME
+		"ERESTARTSYS\0"                 /* 512 */
+		"ERESTARTNOINTR\0"              /* 513 */
+	...
+		"Request initiated, but will not complete before timeout\0"/* 528 */
+		"iocb queued, will get completion event\0"              /* 529 */,
+	#else
+		NULL,
+	#endif /* CONFIG_STRERROR */
+			},
+		}
+	};
 
-The problem: ~100 more tracepoints need to be added merely to get
-to the point where strace already is, wrt quality of syscall decoding.
-strace has nearly 300 separate custom syscall formatting functions,
-some of them quite complex.
 
-If we need to add syscall stopping feature (which, as I said above,
-will be necessary anyway IMO), then syscall decoding can be as good
-as strace *already*. Then, gradually more tracepoints are added
-to make it faster.
+Some thoughts for you:
 
-I am thinking about going into this direction.
+ (1) Why are you double-NUL'ing all your strings?  (see the \0 in the strings)
 
-Therefore my question should be restated as:
+ (2) Storing the leading 'E' for each symbol is redundant as you can add that
+     later so you might want to discard it.
 
-Would perf developers accept the "syscall pausing" feature,
-or it won't be accepted?
+ (3) You are storing a pointer to the symbolic name for each error.  On a
+     64-bit machine, that's 8 bytes.  If you drop the leading 'E' and the
+     trailing NUL, most symbols will fit into an 8 character slot saving you
+     the cost of a pointer.
 
--- 
-vda
+     Okay, you'll have to truncate some of the names (ERESTARTNOINTR ->
+     RESNOINT for example) but probably not that many.  Run this:
 
+	grep '["]E[A-Z0-9]' include/generated/error_strings.h |
+           cut '-d\' -f1 | cut -dE -f2- | cut -c1-8
+
+     and you'll see what I mean.  Most of them are still recognisable,
+     particularly once you stick the 'E' back on the front.  Piping the output
+     of that through "wc -l", I get:
+
+	147
+
+     which means the entire string table could be squeezed into 8 * 147 or
+     1176 bytes with only one pointer and one count required for each segment
+     of the table (you generate two segments).
+
+David
