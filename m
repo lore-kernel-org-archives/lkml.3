@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747Ab3IRNfi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:35:38 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:56925 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab3IRNfh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:35:37 -0400
-Date: Wed, 18 Sep 2013 15:35:25 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <srostedt@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Denys Vlasenko <vda.linux@googlemail.com>
-Subject: Re: [RFC] Full syscall argument decode in "perf trace"
-Message-ID: <20130918133525.GB8141@gmail.com>
-References: <20130917190606.GB3918@infradead.org>
- <52398FF1.5020502@redhat.com>
- <5239A0BE.7050203@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5239A0BE.7050203@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752324Ab3IRNfl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:35:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23929 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042Ab3IRNfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 09:35:39 -0400
+Message-ID: <1379511332.1817.45.camel@deneb.redhat.com>
+Subject: Re: [PATCH 01/28] c6x: use boot_command_line instead of private
+ c6x_command_line
+From: Mark Salter <msalter@redhat.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
+Date: Wed, 18 Sep 2013 09:35:32 -0400
+In-Reply-To: <1379372965-22359-2-git-send-email-robherring2@gmail.com>
+References: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
+	 <1379372965-22359-2-git-send-email-robherring2@gmail.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Ahern <dsahern@gmail.com> wrote:
-
-> On 9/18/13 5:35 AM, Denys Vlasenko wrote:
-> >Therefore my question should be restated as:
-> >
-> >Would perf developers accept the "syscall pausing" feature,
-> >or it won't be accepted?
+On Mon, 2013-09-16 at 18:08 -0500, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
 > 
-> I have been using perf-trace a lot lately specifically because it is 
-> effectively a 'passive' observer of the task (e.g., time-sensitive tasks 
-> can be traced with perf but not with strace).
+> Save some pointless copying of the kernel command line and just use
+> boot_command_line instead.
+> 
+> Also remove default_command_line as it is not referenced anywhere, and
+> the DT code already handles the default command line.
+> 
 
-Yes, this is not just an important but a primary design goal for all perf 
-utilities: if the tracing buffers used are large enough then it should be 
-a nearly zero-overhead observer that preserves all previous patterns of 
-behavior as much as possible.
+The default_command_line is leftover cruft from the kernel before it was
+upstreamed. It was a mechanism to place the commandline at a known fixed
+offset in the Image. It was needed for simple (serial eeprom based)
+loaders which didn't know about DT. Anyway, bits of that support are
+missing, so I don't see a reason to keep it around. If anyone complains
+we can add it back in as a completely functional patch. There is also
+a fragment of arch/c6x/kernel/vmlinux.lds.S which should also be
+removed:
 
-Thanks,
+diff --git a/arch/c6x/kernel/vmlinux.lds.S b/arch/c6x/kernel/vmlinux.lds.S
+index 279d807..5a6e141 100644
+--- a/arch/c6x/kernel/vmlinux.lds.S
++++ b/arch/c6x/kernel/vmlinux.lds.S
+@@ -37,12 +37,6 @@ SECTIONS
+ 		_vectors_end = .;
+ 	}
+ 
+-	. = ALIGN(0x1000);
+-	.cmdline :
+-	{
+-		*(.cmdline)
+-	}
+-
+ 	/*
+ 	 * This section contains data which may be shared with other
+ 	 * cores. It needs to be a fixed offset from PAGE_OFFSET
 
-	Ingo
+
