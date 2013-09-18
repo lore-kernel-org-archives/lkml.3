@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab3IRTIL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 15:08:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30812 "EHLO mx1.redhat.com"
+	id S1753150Ab3IRTIE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 15:08:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37491 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab3IRTIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 15:08:07 -0400
+	id S1751815Ab3IRTIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 15:08:00 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
 Cc: Richard Guy Briggs <rgb@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
@@ -14,10 +14,11 @@ Cc: Richard Guy Briggs <rgb@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Dan Duval <dan.duval@oracle.com>,
         Chuck Anderson <chuck.anderson@oracle.com>,
-        Guy Streeter <streeter@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 5/8] audit: efficiency fix 2: request exclusive wait since all need same resource
-Date: Wed, 18 Sep 2013 15:06:50 -0400
-Message-Id: <5c2035525f6bf06dcaa24a5922071d2f4e4e495e.1379530867.git.rgb@redhat.com>
+        Guy Streeter <streeter@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>
+Subject: [PATCH 1/8] audit: avoid soft lockup due to audit_log_start() incorrect loop termination
+Date: Wed, 18 Sep 2013 15:06:46 -0400
+Message-Id: <e172e2536b18223179fde70879a589e1ff9a74c5.1379530867.git.rgb@redhat.com>
 In-Reply-To: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
 References: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
 In-Reply-To: <cover.1379530867.git.rgb@redhat.com>
@@ -26,57 +27,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-author: Dan Duval <dan.duval@oracle.com>
+Commit 82919919 caused the wait for auditd timeout condition to loop endlessly
+rather than fall through to the error recovery code.
 
-These and similar errors were seen on a patched 3.8 kernel when the
-audit subsystem was overrun during boot:
+ BUG: soft lockup - CPU#0 stuck for 22s! [preload:785]
+ RIP: 0010:[<ffffffff810fb240>]  [<ffffffff810fb240>] audit_log_start+0xf0/0x460
+ Call Trace:
+  [<ffffffff810aca40>] ? try_to_wake_up+0x310/0x310
+  [<ffffffff81100fd1>] audit_log_exit+0x51/0xcb0
+  [<ffffffff811020b5>] __audit_syscall_exit+0x275/0x2d0
+  [<ffffffff816ec540>] sysret_audit+0x17/0x21
 
-  udevd[876]: worker [887] unexpectedly returned with status 0x0100
-  udevd[876]: worker [887] failed while handling
-'/devices/pci0000:00/0000:00:03.0/0000:40:00.0'
-  udevd[876]: worker [880] unexpectedly returned with status 0x0100
-  udevd[876]: worker [880] failed while handling
-'/devices/LNXSYSTM:00/LNXPWRBN:00/input/input1/event1'
+If the timeout condition goes negative, the loop continues endlessly instead of
+breaking out and going to the failure code and allow other processes to run
+when auditd is unable to drain the queue fast enough.
 
-  udevadm settle - timeout of 180 seconds reached, the event queue
-contains:
-    /sys/devices/LNXSYSTM:00/LNXPWRBN:00/input/input1/event1 (3995)
-    /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/INT3F0D:00 (4034)
+This can easily be triggered by readahead-collector, in particular during
+installations.  The readahead-collector (ab)uses the audit interface and
+sometimes gets stuck in a 'stopped' state.
 
-  audit: audit_backlog=258 > audit_backlog_limit=256
-  audit: audit_lost=1 audit_rate_limit=0 audit_backlog_limit=256
+To trigger:
+	readahead-collector -f &
+	pkill -SIGSTOP readahead-collector
+	top
 
-The change below increases the efficiency of the audit code and prevents it
-from being overrun:
+See:
+	https://lkml.org/lkml/2013/8/28/626
+	https://lkml.org/lkml/2013/9/2/471
+	https://lkml.org/lkml/2013/9/3/4
 
-Use add_wait_queue_exclusive() in wait_for_auditd() to put the
-thread on the wait queue.  When kauditd dequeues an skb, all
-of the waiting threads are waiting for the same resource, but
-only one is going to get it, so there's no need to wake up
-more than one waiter.
-
-See: https://lkml.org/lkml/2013/9/2/479
-
+Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Signed-off-by: Dan Duval <dan.duval@oracle.com>
 Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
 Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- kernel/audit.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/audit.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/audit.c b/kernel/audit.c
-index 25fab2d..990d02f 100644
+index 91e53d0..7b0e23a 100644
 --- a/kernel/audit.c
 +++ b/kernel/audit.c
-@@ -1061,7 +1061,7 @@ static unsigned long wait_for_auditd(unsigned long sleep_time)
- 	unsigned long timeout = sleep_time;
- 	DECLARE_WAITQUEUE(wait, current);
- 	set_current_state(TASK_UNINTERRUPTIBLE);
--	add_wait_queue(&audit_backlog_wait, &wait);
-+	add_wait_queue_exclusive(&audit_backlog_wait, &wait);
+@@ -1117,9 +1117,10 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
  
- 	if (audit_backlog_limit &&
- 	    skb_queue_len(&audit_skb_queue) > audit_backlog_limit)
+ 			sleep_time = timeout_start + audit_backlog_wait_time -
+ 					jiffies;
+-			if ((long)sleep_time > 0)
++			if ((long)sleep_time > 0) {
+ 				wait_for_auditd(sleep_time);
+-			continue;
++				continue;
++			}
+ 		}
+ 		if (audit_rate_check() && printk_ratelimit())
+ 			printk(KERN_WARNING
 -- 
 1.7.1
 
