@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510Ab3IRBVG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 21:21:06 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37201 "EHLO
+	id S1751527Ab3IRBZj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 21:25:39 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43611 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab3IRBVD (ORCPT
+	with ESMTP id S1750942Ab3IRBZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 21:21:03 -0400
-Date: Wed, 18 Sep 2013 11:20:54 +1000
+	Tue, 17 Sep 2013 21:25:37 -0400
+Date: Wed, 18 Sep 2013 11:25:30 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
         <dri-devel@lists.freedesktop.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+        =?UTF-8?B?IlZpbGxlIFN5cmrDpGzDpCI=?= 
+	<ville.syrjala@linux.intel.com>
 Subject: linux-next: manual merge of the drm-intel tree with Linus' tree
-Message-Id: <20130918112054.1f8f983461cc9ead5b9a635f@canb.auug.org.au>
+Message-Id: <20130918112530.4595070b1c7f4ec72e0ea8b6@canb.auug.org.au>
 X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Wed__18_Sep_2013_11_20_54_+1000_LlF4iHQGUOGViQX4"
+ boundary="Signature=_Wed__18_Sep_2013_11_25_30_+1000_Z5yerY9ArOcnP5/I"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__18_Sep_2013_11_20_54_+1000_LlF4iHQGUOGViQX4
+--Signature=_Wed__18_Sep_2013_11_25_30_+1000_Z5yerY9ArOcnP5/I
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -32,10 +33,10 @@ Content-Transfer-Encoding: quoted-printable
 Hi all,
 
 Today's linux-next merge of the drm-intel tree got a conflict in
-drivers/gpu/drm/i915/i915_gem.c between commit 7dc19d5affd7 ("drivers:
-convert shrinkers to new count/scan API") from the  tree and commit
-e656a6cba0fe ("drm/i915: inline vma_create into lookup_or_create_vma")
-from the drm-intel tree.
+drivers/gpu/drm/i915/intel_drv.h between commit 6e1b4fdad515 ("drm/i915:
+Delay disabling of VGA memory until vgacon->fbcon handoff is done") from
+Linus' tree and commit eb14cb747bc5 ("drm/i915: Add state readout and
+checking for has_dp_encoder and dp_m_n") from the drm-intel tree.
 
 I fixed it up (see below) and can carry the fix as necessary (no action
 is required).
@@ -44,93 +45,48 @@ is required).
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/gpu/drm/i915/i915_gem.c
-index df9253d,d00d24f..0000000
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@@ -4886,61 -4912,3 +4940,37 @@@ unsigned long i915_gem_obj_size(struct=20
+diff --cc drivers/gpu/drm/i915/intel_drv.h
+index 28cae80,b85354f..0000000
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@@ -793,6 -814,13 +815,14 @@@ extern void hsw_pc8_disable_interrupts(
+  extern void hsw_pc8_restore_interrupts(struct drm_device *dev);
+  extern void intel_aux_display_runtime_get(struct drm_i915_private *dev_pr=
+iv);
+  extern void intel_aux_display_runtime_put(struct drm_i915_private *dev_pr=
+iv);
+ +extern void i915_disable_vga_mem(struct drm_device *dev);
++ extern void intel_dp_get_m_n(struct intel_crtc *crtc,
++ 			     struct intel_crtc_config *pipe_config);
++ extern int intel_dotclock_calculate(int link_freq,
++ 				    const struct intel_link_m_n *m_n);
++ extern void ironlake_check_encoder_dotclock(const struct intel_crtc_confi=
+g *pipe_config,
++ 					    int dotclock);
++=20
++ extern bool intel_crtc_active(struct drm_crtc *crtc);
  =20
-  	return 0;
-  }
- +
- +static unsigned long
- +i915_gem_inactive_scan(struct shrinker *shrinker, struct shrink_control *=
-sc)
- +{
- +	struct drm_i915_private *dev_priv =3D
- +		container_of(shrinker,
- +			     struct drm_i915_private,
- +			     mm.inactive_shrinker);
- +	struct drm_device *dev =3D dev_priv->dev;
- +	int nr_to_scan =3D sc->nr_to_scan;
- +	unsigned long freed;
- +	bool unlock =3D true;
- +
- +	if (!mutex_trylock(&dev->struct_mutex)) {
- +		if (!mutex_is_locked_by(&dev->struct_mutex, current))
- +			return 0;
- +
- +		if (dev_priv->mm.shrinker_no_lock_stealing)
- +			return 0;
- +
- +		unlock =3D false;
- +	}
- +
- +	freed =3D i915_gem_purge(dev_priv, nr_to_scan);
- +	if (freed < nr_to_scan)
- +		freed +=3D __i915_gem_shrink(dev_priv, nr_to_scan,
- +							false);
- +	if (freed < nr_to_scan)
- +		freed +=3D i915_gem_shrink_all(dev_priv);
- +
- +	if (unlock)
- +		mutex_unlock(&dev->struct_mutex);
- +	return freed;
- +}
--=20
-- struct i915_vma *i915_gem_obj_to_vma(struct drm_i915_gem_object *obj,
-- 				     struct i915_address_space *vm)
-- {
-- 	struct i915_vma *vma;
-- 	list_for_each_entry(vma, &obj->vma_list, vma_link)
-- 		if (vma->vm =3D=3D vm)
-- 			return vma;
--=20
-- 	return NULL;
-- }
--=20
-- struct i915_vma *
-- i915_gem_obj_lookup_or_create_vma(struct drm_i915_gem_object *obj,
-- 				  struct i915_address_space *vm)
-- {
-- 	struct i915_vma *vma;
--=20
-- 	vma =3D i915_gem_obj_to_vma(obj, vm);
-- 	if (!vma)
-- 		vma =3D i915_gem_vma_create(obj, vm);
--=20
-- 	return vma;
-- }
+  #endif /* __INTEL_DRV_H__ */
 
---Signature=_Wed__18_Sep_2013_11_20_54_+1000_LlF4iHQGUOGViQX4
+--Signature=_Wed__18_Sep_2013_11_25_30_+1000_Z5yerY9ArOcnP5/I
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.21 (GNU/Linux)
 
-iQIcBAEBCAAGBQJSOP/6AAoJEECxmPOUX5FEz8YP/jc8u9YpbnZV4xNzBFl3Q5+D
-yXx+rpanXAsZSWEIOheJMWDknMQ2DZfqI7Zyrk/1HAZ3a87bdOo2N8O8dp75pHRk
-wctc+LFhs7fLGrtM2qgoNnJWW8W4vubA8PFxFynMEGR8URJOHIPJxAa8nyLyx8+/
-HW1p3JxipwImurMZY6E69kUFk7qxNTQ2RZxi+NKQA3h2+z50BVsiz7bpghssuZCN
-qvahgLrsgGJ5OPinjE+YPXMwwgZTq/8Bs/EI1CfJIFznC5uSNN/drFQxUG1j+2Ml
-CrKr1U5wydy9yDPPvUn4AWSsdapy32TqiSMwITIXvN1YE0WQGgTLuGJYWmcZX6bg
-9kyvgxRSYsi1zDNKYM0hp9ZQBnYCypFu9TcwDJEpMa3jnVuc2lyZKfQTf5eiIu+Y
-sLyJtpFuMC589YOqkeVlY3hSUW510YW4qoxHu/jC2Y2oZQlCeMcGKuERiF7q8cR8
-R0AgPRIG8mkl7ucZDxEWRjoN7SZp70pZhSm9WA1ANxJ7dbLDdhOXG9Qjlb+6dBuc
-Ujvs1cjDx4xZkjBzuNV3USOoEaphChkgoZFyPQRZ70MBCdxnRSO3dGQviOKmuxsP
-GwXsm+Tpvh14H69didG3djnxxoXrJl/CoZwuBHp/gdW/N5uHtj7X7X+m7CNDXxcj
-00MgPUYYPRdgS3m3kmHj
-=BPq6
+iQIcBAEBCAAGBQJSOQEOAAoJEECxmPOUX5FEn1QP/2cgamnYcf1ONAiEnHEn742j
+oMPMxuRvSf5WuAD4lN+XVwp2N8M/3u1cFIqSiRLgFmscC8Q+qxRIX4dCDseeZ63J
+5f74hD1i1ua0ac2Rk5dmQ2GySbY8ZVE/qOkoIZF3aLkKA4AU+DRZNTJPjgN5X7re
+HdCsCxkYoOfdqHoxm/bt6REsW9pRl7Z4R5xd7Ev179/QLnhv1hZlC0mh7u0N9OD6
+Ux8dpkHZf7/Li1bquwfWQcCaBJzLXK/wUrK/YuGo9H3zRZvf8cs2hpUMK0+am/e9
+bix19GRGLFI/rkchz9z1+30LX578gbzK5+joUX24nnllwqekFrcC7B5qLwhQVQZt
+PS+eyd2yoEufNQGalA4JnFe/9Iq75FdKSu80LNSeL4/scNjHp5DbA0BhlZBYOoHp
+Ss5hbxWv5hx3b6fqJYokM0ExWUY5jYsiM5UziuncRMBH7giGSt8273+JbwIkvNE5
+tAycTZzK30li1OuiDXQk2hNGmR4oAHjNg718yaRvfshPsywfrjGSnbsw7CE2qdnQ
+Z1n7WzNazlDIO6ibOVfipVKAqqhBEvyUla+3zonHyQ4rLm8JgnwPZJJr2JdSxlr+
+WeRpusUmrvpvslszvqOUpWzz+368oDfbEpS/330ihsZXk2LNPsn2P8R2IaDVz1Sq
+OazJfUjC8dxNYwQU3NV4
+=ky7I
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__18_Sep_2013_11_20_54_+1000_LlF4iHQGUOGViQX4--
+--Signature=_Wed__18_Sep_2013_11_25_30_+1000_Z5yerY9ArOcnP5/I--
