@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab3IRKDQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 06:03:16 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:58843 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751872Ab3IRKDL (ORCPT
+	id S1751965Ab3IRKDO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 06:03:14 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:47797 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751869Ab3IRKDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 06:03:11 -0400
+	Wed, 18 Sep 2013 06:03:10 -0400
 From: Maxime COQUELIN <maxime.coquelin@st.com>
 To: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
         Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
@@ -20,9 +20,9 @@ To: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
 Cc: stephen.gallimore@st.com, stuart.menefy@st.com,
         Lee Jones <lee.jones@linaro.org>, gabriel.fernandez@st.com,
         olivier.clergeaud@st.com, Maxime Coquelin <maxime.coquelin@st.com>
-Subject: [PATCH 3/4] ARM: STi: Supply I2C configuration to STiH415 SoC
-Date: Wed, 18 Sep 2013 12:01:22 +0200
-Message-Id: <1379498483-4236-4-git-send-email-maxime.coquelin@st.com>
+Subject: [PATCH 2/4] ARM: STi: Supply I2C configuration to STiH416 SoC
+Date: Wed, 18 Sep 2013 12:01:21 +0200
+Message-Id: <1379498483-4236-3-git-send-email-maxime.coquelin@st.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com>
 References: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com>
@@ -30,20 +30,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch supplies I2C configuration to STiH415 SoC.
+This patch supplies I2C configuration to STiH416 SoC.
 
 Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
 ---
- arch/arm/boot/dts/stih415-pinctrl.dtsi |   36 ++++++++++++++++++++
- arch/arm/boot/dts/stih415.dtsi         |   57 ++++++++++++++++++++++++++++++++
- 2 files changed, 93 insertions(+)
+ arch/arm/boot/dts/stih416-pinctrl.dtsi |   35 ++++++++++++++++++++
+ arch/arm/boot/dts/stih416.dtsi         |   57 ++++++++++++++++++++++++++++++++
+ 2 files changed, 92 insertions(+)
 
-diff --git a/arch/arm/boot/dts/stih415-pinctrl.dtsi b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-index 1d322b2..e56449d 100644
---- a/arch/arm/boot/dts/stih415-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-@@ -86,6 +86,24 @@
+diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+index 0f246c9..b29ff4b 100644
+--- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
++++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+@@ -97,6 +97,24 @@
  					};
  				};
  			};
@@ -68,11 +68,10 @@ index 1d322b2..e56449d 100644
  		};
  
  		pin-controller-front {
-@@ -143,6 +161,24 @@
- 				reg		= <0x7000 0x100>;
- 				st,bank-name	= "PIO12";
+@@ -175,6 +193,23 @@
+ 				};
  			};
-+
+ 
 +			i2c0 {
 +				pinctrl_i2c0_default: i2c0-default {
 +					st,pins {
@@ -93,21 +92,21 @@ index 1d322b2..e56449d 100644
  		};
  
  		pin-controller-rear {
-diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
-index 74ab8de..643ae1c 100644
---- a/arch/arm/boot/dts/stih415.dtsi
-+++ b/arch/arm/boot/dts/stih415.dtsi
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index 1a0326e..8856470 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
 @@ -9,6 +9,7 @@
  #include "stih41x.dtsi"
- #include "stih415-clock.dtsi"
- #include "stih415-pinctrl.dtsi"
+ #include "stih416-clock.dtsi"
+ #include "stih416-pinctrl.dtsi"
 +#include <dt-bindings/interrupt-controller/arm-gic.h>
  / {
- 
  	L2: cache-controller {
-@@ -83,5 +84,61 @@
- 			pinctrl-names 	= "default";
- 			pinctrl-0	= <&pinctrl_sbc_serial1>;
+ 		compatible = "arm,pl310-cache";
+@@ -92,5 +93,61 @@
+ 			pinctrl-0 	= <&pinctrl_sbc_serial1>;
+ 			clocks          = <&CLK_SYSIN>;
  		};
 +
 +		i2c0: i2c@fed40000{
@@ -115,7 +114,7 @@ index 74ab8de..643ae1c 100644
 +			status		= "disabled";
 +			reg		= <0xfed40000 0x110>;
 +			interrupts	=  <GIC_SPI 187 IRQ_TYPE_EDGE_RISING>;
-+			clocks		= <&CLKS_ICN_REG_0>;
++			clocks		= <&CLK_S_ICN_REG_0>;
 +			clock-frequency = <400000>;
 +			pinctrl-names	= "default";
 +			pinctrl-0	= <&pinctrl_i2c0_default>;
@@ -129,7 +128,7 @@ index 74ab8de..643ae1c 100644
 +			status		= "disabled";
 +			reg		= <0xfed41000 0x110>;
 +			interrupts	=  <GIC_SPI 188 IRQ_TYPE_EDGE_RISING>;
-+			clocks		= <&CLKS_ICN_REG_0>;
++			clocks		= <&CLK_S_ICN_REG_0>;
 +			clock-frequency = <400000>;
 +			pinctrl-names	= "default";
 +			pinctrl-0	= <&pinctrl_i2c1_default>;
