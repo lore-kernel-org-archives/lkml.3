@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614Ab3IRE1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 00:27:34 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:46099 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020Ab3IRE1c (ORCPT
+	id S1751741Ab3IREbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 00:31:16 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:54790 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab3IREbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 00:27:32 -0400
-Date: Tue, 17 Sep 2013 21:27:27 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Cc: jic23@cam.ac.uk, linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH 2/2] iio: ti_am335x_adc: Add continuous sampling support
-Message-ID: <20130918042726.GB13196@core.coreip.homeip.net>
-References: <1379393047-11772-1-git-send-email-zubair.lutfullah@gmail.com>
- <1379393047-11772-3-git-send-email-zubair.lutfullah@gmail.com>
+	Wed, 18 Sep 2013 00:31:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379393047-11772-3-git-send-email-zubair.lutfullah@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpo=_bhaws44_XEf=DEjbVtiRfYHeMm-cK=bHo1Sed14kAg@mail.gmail.com>
+References: <cover.1378963070.git.viresh.kumar@linaro.org>
+	<8f777cc6b41b2fed4bf71ce2adc36800353d5738.1378963070.git.viresh.kumar@linaro.org>
+	<52387343.7040007@wwwdotorg.org>
+	<CAKohpo=_bhaws44_XEf=DEjbVtiRfYHeMm-cK=bHo1Sed14kAg@mail.gmail.com>
+Date: Wed, 18 Sep 2013 10:01:13 +0530
+Message-ID: <CAKohpon7PSd3Q1q8=UeRer7LY4Sgx22WLArYtK9zFj1WYgoodg@mail.gmail.com>
+Subject: Re: [PATCH 5/5] cpufreq: use correct values of cpus in __cpufreq_remove_dev_finish()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zubair,
+On 17 September 2013 21:48, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 17 September 2013 20:50, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-On Tue, Sep 17, 2013 at 09:44:07AM +0500, Zubair Lutfullah wrote:
-> +
-> +	ret = devm_request_threaded_irq(indio_dev->dev.parent,
-> +				irq,
-> +				pollfunc_th, pollfunc_bh,
-> +				flags, indio_dev->name,
-> +				indio_dev);
-> +	if (ret)
-> +		goto error_kfifo_free;
-> +
-> +	indio_dev->setup_ops = setup_ops;
-> +	indio_dev->modes |= INDIO_BUFFER_HARDWARE;
-> +
-> +	ret = iio_buffer_register(indio_dev,
-> +				  indio_dev->channels,
-> +				  indio_dev->num_channels);
-> +	if (ret)
-> +		goto error_free_irq;
-> +
-> +	return 0;
-> +
-> +error_free_irq:
-> +	devm_free_irq(indio_dev->dev.parent, irq, indio_dev);
+> Yes, I have asked Rafael to get this in for rc2 and few others too..
+> Waiting for his reply though..
 
-What is the point of using devm_* here if you are doing explicit
-management of the resource anyway (you explicitly release it in all code
-paths)?
-
-Thanks.
-
--- 
-Dmitry
+Its applied now by Rafael..
