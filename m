@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646Ab3IRNpj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:45:39 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57149 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab3IRNph (ORCPT
+	id S1751689Ab3IRNvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:51:10 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:36851 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218Ab3IRNvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:45:37 -0400
-Date: Wed, 18 Sep 2013 15:45:35 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
-        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Lee, Chun-Yi" <jlee@suse.com>
-Subject: Re: [PATCH V4 13/15] Hibernate: introduced SNAPSHOT_SIG_HASH
- config for select hash algorithm
-Message-ID: <20130918134535.GA3748@amd.pavel.ucw.cz>
-References: <1379206621-18639-1-git-send-email-jlee@suse.com>
- <1379206621-18639-14-git-send-email-jlee@suse.com>
+	Wed, 18 Sep 2013 09:51:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379206621-18639-14-git-send-email-jlee@suse.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130918102701.GJ14246@waldemar-brodkorb.de>
+References: <20130918102701.GJ14246@waldemar-brodkorb.de>
+Date: Wed, 18 Sep 2013 15:51:03 +0200
+Message-ID: <CAAQYJAv+rUiv5=qnL74WR9gFzv84SCwPcTNRcJcMcR8+pf75BQ@mail.gmail.com>
+Subject: Re: problem booting linux with qemu-system-arm -M spitz
+From: Andrea Adami <andrea.adami@gmail.com>
+To: Waldemar Brodkorb <wbx@openadk.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2013-09-15 08:56:59, Lee, Chun-Yi wrote:
-> This patch introduced SNAPSHOT_SIG_HASH config for user to select which
-> hash algorithm will be used during signature generation of snapshot.
+On Wed, Sep 18, 2013 at 12:27 PM, Waldemar Brodkorb <wbx@openadk.org> wrote:
+> Hi Kernel hackers,
+>
+> I am trying to run Linux on Qemu/arm emulator with machine type
+> spitz. In the past this worked fine.
+> Now with Linux version 3.9.11 it does not boot anymore.
+> (blank screen, no kernel messages)
+>
+> I used git bisect to find the commit, which breaks the boot:
+> commit 4e8ee7de227e3ab9a72040b448ad728c5428a042
+> Author: Will Deacon <will.deacon@arm.com>
+> Date:   Wed Nov 23 12:26:25 2011 +0000
+>
+> I am using Qemu 1.6.0 on a Debian/x86_64 host.
+>
+> Any help would be appreciated.
+>
+> Thanks in advance
+>  Waldemar
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-This series is big enough already... and who is going to test it?
-There's no need to make hash configurable. Just select one that works.
-	
-									Pavel
+On real hardware I see the same breakage after 3.2.
+Marko diagnosed it and there is a pending patch:
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/198444.html
+
+There is indeed some MMU-related issue.
+Probably the function could be called elsewhere during machine init
+but I'm not so high in the food chain to dare to touch arm boot code
+;)
+
+Regards
+
+Andrea
