@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab3IRVVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 17:21:47 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:58116 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab3IRVVq convert rfc822-to-8bit (ORCPT
+	id S1753883Ab3IRVXC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 17:23:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46589 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157Ab3IRVXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 17:21:46 -0400
-MIME-Version: 1.0
-Date: Wed, 18 Sep 2013 23:21:45 +0200
-Message-ID: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
-Subject: Regression on cpufreq in v3.12-rc1
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>
+	Wed, 18 Sep 2013 17:23:01 -0400
+Date: Wed, 18 Sep 2013 14:22:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Frantisek Hrbata <fhrbata@redhat.com>
+Cc: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
+        peter.oberparleiter@de.ibm.com, rusty@rustcorp.com.au,
+        linux-arch@vger.kernel.org, arnd@arndb.de, mgahagan@redhat.com,
+        agospoda@redhat.com
+Subject: Re: [PATCH v2 2/4] gcov: add support for gcc 4.7 gcov format
+Message-Id: <20130918142259.8c504e7cfbc8318a0550a891@linux-foundation.org>
+In-Reply-To: <1378305776-3644-3-git-send-email-fhrbata@redhat.com>
+References: <1378305776-3644-1-git-send-email-fhrbata@redhat.com>
+	<1378305776-3644-3-git-send-email-fhrbata@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael, Viresh,
+On Wed,  4 Sep 2013 16:42:54 +0200 Frantisek Hrbata <fhrbata@redhat.com> wrote:
 
-I'm seeing this problem and maybe you can help me out fixing it
-properly:
+> The gcov in-memory format changed in gcc 4.7. The biggest change, which
+> requires this special implementation, is that gcov_info no longer contains
+> array of counters for each counter type for all functions and gcov_fn_info is
+> not used for mapping of function's counters to these arrays(offset). Now each
+> gcov_fn_info contans it's counters, which makes things a little bit easier.
+> 
+> This is heavily based on the previous gcc_3_4.c implementation and patches
+> provided by Peter Oberparleiter. Specially the buffer gcda implementation for
+> iterator.
 
-On some machines like the StrongARM SA1100 it seems that
-cpufreq_get() can be called before the cpufreq driver and thus the
-policy is set, resulting in a crash like this:
+A couple of little tweaks:
 
-------------[ cut here ]------------
-kernel BUG at /home/linus/linux/drivers/cpufreq/cpufreq.c:80!
-Internal error: Oops - BUG: 0 [#1] ARM
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-rc1-00001-g1266dae-dirty #17
-task: c1830000 ti: c1832000 task.ti: c1832000
-(...)
-Backtrace:
-[<c01ea1a4>] (lock_policy_rwsem_read+0x0/0x48) from [<c01eb5c8>]
-(cpufreq_get+0x34/0x68)
-[<c01eb594>] (cpufreq_get+0x0/0x68) from [<c0185908>]
-(sa1100fb_activate_var+0xdc/0x3ac)
- r5:00000003 r4:0000000a
-[<c018582c>] (sa1100fb_activate_var+0x0/0x3ac) from [<c0185c78>]
-(sa1100fb_set_par+0xa0/0xa8)
-[<c0185bd8>] (sa1100fb_set_par+0x0/0xa8) from [<c0180418>]
-(fbcon_init+0x444/0x4a8)
- r4:c1803200
-[<c017ffd4>] (fbcon_init+0x0/0x4a8) from [<c019a8b4>] (visual_init+0x78/0xc8)
-[<c019a83c>] (visual_init+0x0/0xc8) from [<c01a0010>]
-(do_bind_con_driver+0x160/0x310)
+--- a/kernel/gcov/gcc_4_7.c~gcov-add-support-for-gcc-47-gcov-format-fix
++++ a/kernel/gcov/gcc_4_7.c
+@@ -254,11 +254,10 @@ struct gcov_info *gcov_info_dup(struct g
+ 	size_t fi_size; /* function info size */
+ 	size_t cv_size; /* counter values size */
+ 
+-	dup = kmalloc(sizeof(struct gcov_info), GFP_KERNEL);
++	dup = kmemdup(info, sizeof(*dup), GFP_KERNEL);
+ 	if (!dup)
+ 		return NULL;
+ 
+-	*dup = *info;
+ 	dup->next = NULL;
+ 	dup->filename = NULL;
+ 	dup->functions = NULL;
+@@ -267,8 +266,8 @@ struct gcov_info *gcov_info_dup(struct g
+ 	if (!dup->filename)
+ 		goto err_free;
+ 
+-	dup->functions = kzalloc(sizeof(struct gcov_fn_info *) *
+-			info->n_functions, GFP_KERNEL);
++	dup->functions = kcalloc(sizeof(struct gcov_fn_info *),
++				 info->n_functions, GFP_KERNEL);
+ 	if (!dup->functions)
+ 		goto err_free;
+ 
+_
 
-This bug comes from the framebuffer but I first encountered it
-in the PCMCIA driver, and both seem to cause the bug.
-
-In the past I think things worked smoothly: the consumers
-calling cpufreq_get() too early would just get 0 back.
-(Or so it seems to me.)
-
-The BUG() statement causing it is in the lock_policy_rwsem_##mode(int cpu)
-macro.
-
-Applying a patch like this seems to fix the issue:
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 43c24aa..4977b4b 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -70,7 +70,8 @@ static DEFINE_PER_CPU(struct rw_semaphore, cpu_policy_rwsem);
- static int lock_policy_rwsem_##mode(int cpu)                           \
- {                                                                      \
-        struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu); \
--       BUG_ON(!policy);                                                \
-+       if(!policy)                                                     \
-+               return 0;                                               \
-        down_##mode(&per_cpu(cpu_policy_rwsem, policy->cpu));           \
-                                                                        \
-        return 0;                                                       \
-@@ -83,7 +84,8 @@ lock_policy_rwsem(write, cpu);
- static void unlock_policy_rwsem_##mode(int cpu)
-         \
- {                                                                      \
-        struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu); \
--       BUG_ON(!policy);                                                \
-+       if(!policy)                                                     \
-+               return;                                                 \
-        up_##mode(&per_cpu(cpu_policy_rwsem, policy->cpu));             \
- }
-
-@@ -1423,6 +1425,9 @@ static unsigned int __cpufreq_get(unsigned int cpu)
-        struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);
-        unsigned int ret_freq = 0;
-
-+       if (!policy)
-+               return ret_freq;
-+
-        if (!cpufreq_driver->get)
-                return ret_freq;
-
-I don't really know if this is the right solution at all, so please
-help me out here... if you want that patch I can send it once
-I understand this properly.
-
-Yours,
-Linus Walleij
