@@ -1,137 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab3IRQYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 12:24:45 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:62014 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3IRQYo (ORCPT
+	id S1753256Ab3IRQYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 12:24:52 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:41562 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab3IRQYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 12:24:44 -0400
-Date: Wed, 18 Sep 2013 18:24:39 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes
-Message-ID: <20130918162439.GA11190@gmail.com>
+	Wed, 18 Sep 2013 12:24:47 -0400
+Date: Wed, 18 Sep 2013 09:24:42 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 2/2] iio: ti_am335x_adc: Add continuous sampling support
+Message-ID: <20130918162442.GA14803@core.coreip.homeip.net>
+References: <1379393047-11772-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1379393047-11772-3-git-send-email-zubair.lutfullah@gmail.com>
+ <20130918042726.GB13196@core.coreip.homeip.net>
+ <20130918065406.GA13451@gmail.com>
+ <53771776-0d33-436d-9687-995ed0d6345d@email.android.com>
+ <20130918141533.GA16424@core.coreip.homeip.net>
+ <b37c9a0e-36ed-49bf-bb68-453c7b07b437@email.android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <b37c9a0e-36ed-49bf-bb68-453c7b07b437@email.android.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, Sep 18, 2013 at 05:12:02PM +0100, Jonathan Cameron wrote:
+> 
+> 
+> Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> >On Wed, Sep 18, 2013 at 10:39:42AM +0100, Jonathan Cameron wrote:
+> >> 
+> >> 
+> >> "Zubair Lutfullah :" <zubair.lutfullah@gmail.com> wrote:
+> >> >On Tue, Sep 17, 2013 at 09:27:27PM -0700, Dmitry Torokhov wrote:
+> >> >> Hi Zubair,
+> >> >> 
+> >> >> On Tue, Sep 17, 2013 at 09:44:07AM +0500, Zubair Lutfullah wrote:
+> >> >> > +
+> >> >> > +	ret = devm_request_threaded_irq(indio_dev->dev.parent,
+> >> >> > +				irq,
+> >> >> > +				pollfunc_th, pollfunc_bh,
+> >> >> > +				flags, indio_dev->name,
+> >> >> > +				indio_dev);
+> >> >> > +	if (ret)
+> >> >> > +		goto error_kfifo_free;
+> >> >> > +
+> >> >> > +	indio_dev->setup_ops = setup_ops;
+> >> >> > +	indio_dev->modes |= INDIO_BUFFER_HARDWARE;
+> >> >> > +
+> >> >> > +	ret = iio_buffer_register(indio_dev,
+> >> >> > +				  indio_dev->channels,
+> >> >> > +				  indio_dev->num_channels);
+> >> >> > +	if (ret)
+> >> >> > +		goto error_free_irq;
+> >> >> > +
+> >> >> > +	return 0;
+> >> >> > +
+> >> >> > +error_free_irq:
+> >> >> > +	devm_free_irq(indio_dev->dev.parent, irq, indio_dev);
+> >> >> 
+> >> >> What is the point of using devm_* here if you are doing explicit
+> >> >> management of the resource anyway (you explicitly release it in
+> >all
+> >> >code
+> >> >> paths)?
+> >> >> 
+> >> >> Thanks.
+> >> >> 
+> >> >> -- 
+> >> >> Dmitry
+> >> >
+> >> >I admit I am unaware at the moment about how it works.
+> >> >
+> >> >I use devm and simply ignore the error path?
+> >> >
+> >> >The devm function header description said something about using
+> >> >devm_free when freeing. And this is the way I am used to seeing 
+> >> >error handling.
+> >> 
+> >
+> >> The devm interfaces ensure this is all cleaned when the device is
+> >> removed thus avoiding the need to free the stuff explicitly.  Device
+> >> will get freed on deliberate remove and on an error from probe. Hence
+> >> you can drop all calls to devm free. The devm free functions are only
+> >> needed if you wish to free in order to reallocate. This might happen
+> >> if you want to change a buffer size for instance.
+> >
+> >However in this case such conversion us dangerous. With all but IRQ
+> >resource managed by the traditional methods they will be released first
+> >with IRQ handler deregistered very last. Therefore if device is not
+> >properly quiesced IRQ raised during driver unbinding is likely to
+> >result
+> >in kernel oops.
+> >
+> >IOW devm_request_irq() is very often evil (it is still useful if _all_
+> >your resources are managed by devm_*).
+> >
+> >In case of your driver I'd recommend switching to
+> >request_irq()/free_irq() instead.
+> >
+> >Thanks.
+> 
+> Pretty much all resources are devm managed in here
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/jic23/iio.git/tree/drivers/iio/adc/ti_am335x_adc.c?h=togreg&id=7a1aeba7ed0d5a1e83fd5a8ee2a2869430d40347
 
-Please pull the latest x86-urgent-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+So we are guaranteed that that new kfifo that is being allocated just
+before we requesting IRQ and will be freed way before we free the IRQ
+will not be used by the IOTQ handler?
 
-   HEAD: 0f531431d3de88efb4234d6c0ce22089ec035a38 x86/intel/lpss: Add pin control support to Intel low power subsystem
+Thanks.
 
-Misc fixes.
-
- Thanks,
-
-	Ingo
-
------------------->
-Borislav Petkov (1):
-      x86: Remove now-unused save_rest()
-
-Libin (1):
-      x86/smpboot: Fix announce_cpu() to printk() the last "OK" properly
-
-Mathias Nyman (1):
-      x86/intel/lpss: Add pin control support to Intel low power subsystem
-
-Stephane Eranian (1):
-      perf/x86/intel: Mark MEM_LOAD_UOPS_MISS_RETIRED as precise on SNB
-
-
- arch/x86/Kconfig                          |  5 +++--
- arch/x86/kernel/cpu/perf_event_intel_ds.c |  1 +
- arch/x86/kernel/entry_64.S                | 15 ---------------
- arch/x86/kernel/smpboot.c                 |  3 ++-
- 4 files changed, 6 insertions(+), 18 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b32ebf9..4d5843d 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -482,11 +482,12 @@ config X86_INTEL_LPSS
- 	bool "Intel Low Power Subsystem Support"
- 	depends on ACPI
- 	select COMMON_CLK
-+	select PINCTRL
- 	---help---
- 	  Select to build support for Intel Low Power Subsystem such as
- 	  found on Intel Lynxpoint PCH. Selecting this option enables
--	  things like clock tree (common clock framework) which are needed
--	  by the LPSS peripheral drivers.
-+	  things like clock tree (common clock framework) and pincontrol
-+	  which are needed by the LPSS peripheral drivers.
- 
- config X86_RDC321X
- 	bool "RDC R-321x SoC"
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 3065c57..4ab70ac 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -558,6 +558,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
- 	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
- 	INTEL_UEVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
- 	EVENT_CONSTRAINT_END
- };
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 1b69951..b077f4c 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -487,21 +487,6 @@ ENDPROC(native_usergs_sysret64)
- 	TRACE_IRQS_OFF
- 	.endm
- 
--ENTRY(save_rest)
--	PARTIAL_FRAME 1 (REST_SKIP+8)
--	movq 5*8+16(%rsp), %r11	/* save return address */
--	movq_cfi rbx, RBX+16
--	movq_cfi rbp, RBP+16
--	movq_cfi r12, R12+16
--	movq_cfi r13, R13+16
--	movq_cfi r14, R14+16
--	movq_cfi r15, R15+16
--	movq %r11, 8(%rsp)	/* return address */
--	FIXUP_TOP_OF_STACK %r11, 16
--	ret
--	CFI_ENDPROC
--END(save_rest)
--
- /* save complete stack frame */
- 	.pushsection .kprobes.text, "ax"
- ENTRY(save_paranoid)
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index aecc98a..6cacab6 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -653,6 +653,7 @@ static void announce_cpu(int cpu, int apicid)
- {
- 	static int current_node = -1;
- 	int node = early_cpu_to_node(cpu);
-+	int max_cpu_present = find_last_bit(cpumask_bits(cpu_present_mask), NR_CPUS);
- 
- 	if (system_state == SYSTEM_BOOTING) {
- 		if (node != current_node) {
-@@ -661,7 +662,7 @@ static void announce_cpu(int cpu, int apicid)
- 			current_node = node;
- 			pr_info("Booting Node %3d, Processors ", node);
- 		}
--		pr_cont(" #%d%s", cpu, cpu == (nr_cpu_ids - 1) ? " OK\n" : "");
-+		pr_cont(" #%4d%s", cpu, cpu == max_cpu_present ? " OK\n" : "");
- 		return;
- 	} else
- 		pr_info("Booting Node %d Processor %d APIC 0x%x\n",
+-- 
+Dmitry
