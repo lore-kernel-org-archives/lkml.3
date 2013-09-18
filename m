@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab3IRKWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 06:22:19 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:27565 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752636Ab3IRKWP (ORCPT
+	id S1752680Ab3IRKWN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 06:22:13 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:16364 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752636Ab3IRKWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 06:22:15 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-ec-52397ed5aea9
+	Wed, 18 Sep 2013 06:22:10 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-29-52397ed1aabe
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
         m.szyprowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH v2 6/6] USB: gadget: s3c-hsotg: fix clear feature ENDPOINT_HALT
-Date: Wed, 18 Sep 2013 12:21:35 +0200
-Message-id: <1379499695-5279-7-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH v2 5/6] USB: gadget: s3c-hsotg: fix "halted" property updating
+Date: Wed, 18 Sep 2013 12:21:34 +0200
+Message-id: <1379499695-5279-6-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1379499695-5279-1-git-send-email-r.baldyga@samsung.com>
 References: <1379499695-5279-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t9jAd2rdZZBBstviFlsnLGe1eLg/XqL
-	5sXr2SzONr1ht7i8aw6bxaJlrcwWa4/cZbd4cHgnuwOHx/65a9g9+rasYvQ4fmM7k8fnTXIB
-	LFFcNimpOZllqUX6dglcGQ/O7GYveMtd8fhfB1sD4zbOLkZODgkBE4kT52exQ9hiEhfurWfr
-	YuTiEBJYxCix4uFDZginnUli+4xZLCBVbAI6Elu+T2AEsUUEBCTWv7jEDlLELPCEUWLqkVdg
-	o4QF/CUW39nCCmKzCKhK/Hp3GKyZV8BF4ufeZiCbA2idgsScSTYgYU4BV4ldf+6AlQsBlczs
-	n8c6gZF3ASPDKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgoHomvYNxVYPFIUYBDkYlHt4L
-	5RZBQqyJZcWVuYcYJTiYlUR4Xcosg4R4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQSSE8s
-	Sc1OTS1ILYLJMnFwSjUwBjanqRtkbzCe7aPJ4fVR937nBEkXlTrxRGbDn6sTpz5cbm61bNvd
-	2MpV9yuk/vkYV0tm7Uyf82iCS0fXlMb7F9v6tmgmOPeLiITLsQeu8Xo75/bx1EvLXOJMq5fP
-	St+w+Sm3Y9RSfeElM3lOZBdXxf713bxxcjHzzIX7mEVv22VcF9nbPpVViaU4I9FQi7moOBEA
-	/Ch09SYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t9jAd2LdZZBBq2LLSw2zljPanHwfr1F
+	8+L1bBZnm96wW1zeNYfNYtGyVmaLtUfusls8OLyT3YHDY//cNewefVtWMXocv7GdyePzJrkA
+	ligum5TUnMyy1CJ9uwSujIXvtrMV7GevuPDoKGMD4yy2LkZODgkBE4mOUxuYIWwxiQv31gPF
+	uTiEBBYxSjz7cp0Jwmlnkrj9YBM7SBWbgI7Elu8TGEFsEQEBifUvLrGDFDELPGGUmHrkFZDD
+	wSEs4CexsU0HxGQRUJW4+jgYpJxXwEVi+s1uZpCwhICCxJxJNiBhTgFXiV1/7rCC2EJAJTP7
+	57FOYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4oJ5J7WBc2WBxiFGAg1GJh/dC
+	uUWQEGtiWXFl7iFGCQ5mJRFelzLLICHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1qtA4UE0hNL
+	UrNTUwtSi2CyTBycUg2MQpciHxwInJB0Ye/FQ8tvOiw/o8I4uZJBXpIl+77LPQkJVcaoQ2kB
+	SrGlOxqX6104MEv82qr6stn1/w8c9fhb0vjx45umeXNN1hSKZW5x0+MI2vCuUG9FS+DWV3un
+	/TVY1n+s9menJff/iDwBiQ08dzuWHVvhn/1/uZHy9ogF4g8Ezcqc1fZGKLEUZyQaajEXFScC
+	APe1tVYkAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All requests for endpoint are completed when it was halted and the halt was
-cleared by CLEAR_FEATURE, but not when new state is same as previous.
+Property "halted" of s3c_hsotg_ep structure is actually initialised when ep
+enabled, and changed when halt is set/cleared.
 
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/usb/gadget/s3c-hsotg.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/usb/gadget/s3c-hsotg.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 23eec8f..84c302a 100644
+index e32f868..23eec8f 100644
 --- a/drivers/usb/gadget/s3c-hsotg.c
 +++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -1097,6 +1097,7 @@ static int s3c_hsotg_process_req_feature(struct s3c_hsotg *hsotg,
- 	bool set = (ctrl->bRequest == USB_REQ_SET_FEATURE);
- 	struct s3c_hsotg_ep *ep;
- 	int ret;
-+	bool halted;
+@@ -2605,6 +2605,7 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
  
- 	dev_dbg(hsotg->dev, "%s: %s_FEATURE\n",
- 		__func__, set ? "SET" : "CLEAR");
-@@ -1111,6 +1112,8 @@ static int s3c_hsotg_process_req_feature(struct s3c_hsotg *hsotg,
+ 	/* default, set to non-periodic */
+ 	hs_ep->periodic = 0;
++	hs_ep->halted = 0;
  
- 		switch (le16_to_cpu(ctrl->wValue)) {
- 		case USB_ENDPOINT_HALT:
-+			halted = ep->halted;
+ 	switch (desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) {
+ 	case USB_ENDPOINT_XFER_ISOC:
+@@ -2800,6 +2801,8 @@ static int s3c_hsotg_ep_sethalt(struct usb_ep *ep, int value)
+ 
+ 	writel(epctl, hs->regs + epreg);
+ 
++	hs_ep->halted = value;
 +
- 			s3c_hsotg_ep_sethalt(&ep->ep, set);
+ 	return 0;
+ }
  
- 			ret = s3c_hsotg_send_reply(hsotg, ep0, NULL, 0);
-@@ -1120,7 +1123,12 @@ static int s3c_hsotg_process_req_feature(struct s3c_hsotg *hsotg,
- 				return ret;
- 			}
- 
--			if (!set) {
-+			/*
-+			 * we have to complete all requests for ep if it was
-+			 * halted, and the halt was cleared by CLEAR_FEATURE
-+			 */
-+
-+			if (!set || halted) {
- 				/*
- 				 * If we have request in progress,
- 				 * then complete it
 -- 
 1.7.9.5
 
