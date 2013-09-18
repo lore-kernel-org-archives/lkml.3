@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab3IRSto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 14:49:44 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:37088 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793Ab3IRStk (ORCPT
+	id S1753403Ab3IRSuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:50:05 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:55134 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab3IRStI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 14:49:40 -0400
-From: Jean Pihet <jean.pihet@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jason Cooper <jason@lakedaemon.net>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: patches@linaro.org, Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH] arm: mvebu: use the main timer as clock source from DT
-Date: Wed, 18 Sep 2013 20:49:28 +0200
-Message-Id: <1379530168-9359-1-git-send-email-jean.pihet@linaro.org>
-X-Mailer: git-send-email 1.7.11.7
+	Wed, 18 Sep 2013 14:49:08 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Preeti Murthy <preeti.lkml@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 1/4] clockchips: Add FEAT_PERCPU clockevent flag
+Date: Wed, 18 Sep 2013 11:48:35 -0700
+Message-Id: <1379530118-22813-2-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit:
-  573145f08c2b92c45498468afbbba909f6ce6135
-  clocksource: armada-370-xp: Use CLOCKSOURCE_OF_DECLARE
+Add the flag CLOCK_EVT_FEAT_PERCPU which is supposed to be set for per
+cpu clockevent devices.
 
-replaced a call to the driver's timer initialization by a call to
-clocksource_of_init(). However, it failed to select CONFIG_CLKSRC_OF.
-
-Fix this by selecting CONFIG_CLKSRC_OF for Armada370/XP machines.
-Without this change the kernel is stuck at: 'Calibrating delay loop...'.
-
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- drivers/clocksource/Kconfig | 1 +
+ include/linux/clockchips.h | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 41c6946..971d796 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -26,6 +26,7 @@ config DW_APB_TIMER_OF
+diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+index 0857922..493aa02 100644
+--- a/include/linux/clockchips.h
++++ b/include/linux/clockchips.h
+@@ -60,6 +60,7 @@ enum clock_event_mode {
+  * Core shall set the interrupt affinity dynamically in broadcast mode
+  */
+ #define CLOCK_EVT_FEAT_DYNIRQ		0x000020
++#define CLOCK_EVT_FEAT_PERCPU		0x000040
  
- config ARMADA_370_XP_TIMER
- 	bool
-+	select CLKSRC_OF
- 
- config ORION_TIMER
- 	select CLKSRC_OF
+ /**
+  * struct clock_event_device - clock event device descriptor
 -- 
-1.7.11.7
+1.8.4
 
