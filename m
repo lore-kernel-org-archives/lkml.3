@@ -1,61 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab3IRLGk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 07:06:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41737 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383Ab3IRLGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 07:06:38 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1379482610.1787.7.camel@joe-AO722>
-References: <1379482610.1787.7.camel@joe-AO722> <1379459317-13046-1-git-send-email-daniel.santos@pobox.com> <1379459317-13046-6-git-send-email-daniel.santos@pobox.com>
-To: Joe Perches <joe@perches.com>
-Cc: dhowells@redhat.com, Daniel Santos <daniel.santos@pobox.com>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        George Spelvin <linux@horizon.com>
-Subject: Re: [PATCH 5/5] lib: Add error string support to printks
-Date: Wed, 18 Sep 2013 12:04:55 +0100
-Message-ID: <22238.1379502295@warthog.procyon.org.uk>
+	id S1752510Ab3IRLG4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 07:06:56 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:39739 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab3IRLGx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 07:06:53 -0400
+Date: Wed, 18 Sep 2013 04:06:49 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: swarren@wwwdotorg.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ian.campbell@citrix.com, rob.herring@calxeda.com, khali@linux-fr.org,
+        rui.zhang@intel.com, wni@nvidia.com, grant.likely@linaro.org,
+        durgadoss.r@intel.com, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 06/16] hwmon: tmp102: expose to thermal fw via DT nodes
+Message-ID: <20130918110649.GA9050@roeck-us.net>
+References: <523643D4.30208@roeck-us.net>
+ <1379457245-17810-1-git-send-email-eduardo.valentin@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379457245-17810-1-git-send-email-eduardo.valentin@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> wrote:
-
-> On Tue, 2013-09-17 at 18:08 -0500, danielfsantos@att.net wrote:
-> > This adds an extension for the integral format specifier suffix of 'e',
-> > so that the format %[duxXo]e will result in printing an number (as
-> > before) in addition to a name and descrption for an error code, if such
-> > support is enabled and a name and descrption is found.
-> > 
-> > My initial thought was to use the glibc extension of '%m', but this
-> > format specifier uses the value of libc's errno and adding a value
-> > breaks gcc's printf parsing.  I'm not convinced that the 'e' extension
-> > is optimal, although there are only four instances of this pattern in
-> > the kernel that would need to be changed.
-> > 
-> >     git grep -E '".*%[#0\ +\-]*[0-9]*[hljzt]*[idoxXu]e'
-> > 
-> > Alternatively, 'E' was another thought for a suffix as well.
+On Tue, Sep 17, 2013 at 06:34:05PM -0400, Eduardo Valentin wrote:
+> This patch adds to tmp102 temperature sensor the possibility
+> to expose itself as thermal zone device, registered on the
+> thermal framework.
 > 
-> I'd much rather see another %p extension used instead
-> of generating odd output given normal printf formats.
+> The thermal zone is built only if a device tree node
+> describing a thermal zone for this sensor is present
+> inside the tmp102 DT node. Otherwise, the driver behavior
+> will be the same.
 > 
-> %pE might work
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> Cc: lm-sensors@lm-sensors.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  drivers/hwmon/tmp102.c | 20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+> 
+> ---
+> 
+> Guenter,
+> 
+> Here is a version without the warnings, as requested.
+> 
+> Eduardo
+> 
+> diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
+> index d7b47ab..dc96598 100644
+> --- a/drivers/hwmon/tmp102.c
+> +++ b/drivers/hwmon/tmp102.c
+> @@ -27,6 +27,8 @@
+>  #include <linux/mutex.h>
+>  #include <linux/device.h>
+>  #include <linux/jiffies.h>
+> +#include <linux/thermal.h>
+> +#include <linux/of.h>
+>  
+>  #define	DRIVER_NAME "tmp102"
+>  
+> @@ -50,6 +52,7 @@
+>  
+>  struct tmp102 {
+>  	struct device *hwmon_dev;
+> +	struct thermal_zone_device *tz;
+>  	struct mutex lock;
+>  	u16 config_orig;
+>  	unsigned long last_update;
+> @@ -93,6 +96,15 @@ static struct tmp102 *tmp102_update_device(struct i2c_client *client)
+>  	return tmp102;
+>  }
+>  
+> +static int tmp102_read_temp(void *dev, long *temp)
+> +{
+> +	struct tmp102 *tmp102 = tmp102_update_device(to_i2c_client(dev));
+> +
+> +	*temp = tmp102->temp[0];
+> +
+> +	return 0;
+> +}
+> +
+>  static ssize_t tmp102_show_temp(struct device *dev,
+>  				struct device_attribute *attr,
+>  				char *buf)
+> @@ -204,6 +216,12 @@ static int tmp102_probe(struct i2c_client *client,
+>  		goto fail_remove_sysfs;
+>  	}
+>  
+> +	tmp102->tz = thermal_zone_of_sensor_register(&client->dev, 0,
+> +						     &client->dev,
+> +						     tmp102_read_temp, NULL);
+> +	if (IS_ERR(tmp102->tz))
+> +		tmp102->tz = NULL;
+> +
+>  	dev_info(&client->dev, "initialized\n");
+>  
+>  	return 0;
+> @@ -220,6 +238,8 @@ static int tmp102_remove(struct i2c_client *client)
+>  {
+>  	struct tmp102 *tmp102 = i2c_get_clientdata(client);
+>  
+> +	/* thermal zone life cycle is not our responsibility */
 
-I guess you'd use that with ERR_PTR().  On one hand, it would look decidedly
-odd, but on the other hand, we have errors in pointers in a lot of places
-already which wouldn't then need converting back - so it doesn't seem entirely
-unreasonable.
+This comment does not provide any value. Please drop it from both drivers.
+Sorry I missed that earlier.
 
-David
+> +	thermal_zone_of_sensor_unregister(&client->dev, tmp102->tz);
+>  	hwmon_device_unregister(tmp102->hwmon_dev);
+>  	sysfs_remove_group(&client->dev.kobj, &tmp102_attr_group);
+>  
+> -- 
+> 1.8.2.1.342.gfa7285d
+> 
+> 
