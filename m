@@ -1,39 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab3IRNK5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:10:57 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55264 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab3IRNK4 (ORCPT
+	id S1752501Ab3IRNPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:15:34 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:54170 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab3IRNPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:10:56 -0400
-Date: Wed, 18 Sep 2013 15:10:55 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] uio: Simplify uio error path by using devres functions
-Message-ID: <20130918131055.GA2764@amd.pavel.ucw.cz>
-References: <c0afb787f4d36e0f4cfb055ce8c566acbe39beca.1378964390.git.michal.simek@xilinx.com>
-MIME-Version: 1.0
+	Wed, 18 Sep 2013 09:15:33 -0400
+X-Nat-Received: from [202.181.97.72]:54497 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1379510064.24142
+To: keescook@chromium.org, viro@zeniv.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, linux@horizon.com,
+        dan.carpenter@oracle.com, JBeulich@suse.com, kosaki.motohiro@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 0/2] vsprintf: ignore %n again
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1379317437-28329-1-git-send-email-keescook@chromium.org>
+	<20130916155504.GC13318@ZenIV.linux.org.uk>
+	<CAGXu5jK2d+9m0uA84nGbZ5E=s974NRn+Sxz3iRcTsFWqWFTGNQ@mail.gmail.com>
+In-Reply-To: <CAGXu5jK2d+9m0uA84nGbZ5E=s974NRn+Sxz3iRcTsFWqWFTGNQ@mail.gmail.com>
+Message-Id: <201309182214.IDD13060.FFOVJOLOFQtHSM@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 18 Sep 2013 22:14:24 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c0afb787f4d36e0f4cfb055ce8c566acbe39beca.1378964390.git.michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 18092013 #11083473, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2013-09-12 07:39:59, Michal Simek wrote:
-> Using devres functions simplify driver error path.
-> - Use devm_kzalloc
-> - Use devm_request_irq
+Kees Cook wrote:
+> > Consider, e.g. introducing __vsnprint(), with vsnprintf(s, n, fmt, ...)
+> > expanding to __vsnprintf(1, s, n, fmt, ...) if fmt is a string literal
+> > and __vsnprintf(0, s, n, fmt, ...) otherwise.  Now,
+> > int __sprintf(int safe, char *buf, const char *fmt, ...)
+> > {
+> >         va_list args;
+> >         int i;
+> >
+> >         va_start(args, fmt);
+> >         i = __vsnprintf(safe, buf, INT_MAX, fmt, args);
+> >         va_end(args);
+> >
+> >         return i;
+> > }
 > 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> Unless I've misunderstood, I think we'd already get very close to this
+> with the gcc options instead. This patch set is what I've been using
+> to generate the format string fixes over the last few months, with 7
+> sent this last round:
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Can we utilize __builtin_constant_p() ?
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+---------- source start ----------
+#include <stdio.h>
+
+#define func(fmt)                                       \
+        if (__builtin_constant_p(fmt))                  \
+                printf("const : %s\n", fmt);            \
+        else                                            \
+                printf("not const : %s\n", fmt);        \
+
+
+int main(int argc, char *argv[])
+{
+        const char *fmt1 = "const char *";
+        const char fmt2[] = "const char []";
+        const char * const fmt3 = "const char * const";
+        func("literal");
+        func(fmt1);
+        func(fmt2);
+        func(fmt3);
+        return 0;
+}
+---------- source end ----------
+
+---------- output start ----------
+const : literal
+not const : const char *
+not const : const char []
+const : const char * const
+---------- output end ----------
+
+__builtin_constant_p() seems to enforce use of either "literal" or "* const".
+
+An example change
+
+---------- patch start ----------
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -120,8 +120,9 @@ asmlinkage int printk_emit(int facility, int level,
+                           const char *dict, size_t dictlen,
+                           const char *fmt, ...);
+ 
+-asmlinkage __printf(1, 2) __cold
+-int printk(const char *fmt, ...);
++//asmlinkage __printf(1, 2) __cold
++//int printk(const char *fmt, ...);
++#define printk(fmt, ...) compiletime_assert(__builtin_constant_p(fmt), "Non-c  onstant format string")
+ 
+ /*
+  * Special printk facility for scheduler use only, _DO_NOT_USE_ !
+---------- patch end ----------
+
+caught errors like below.
+
+  CC [M]  drivers/scsi/esas2r/esas2r_log.o
+drivers/scsi/esas2r/esas2r_log.c: In function 'esas2r_log_master':
+drivers/scsi/esas2r/esas2r_log.c:174: error: call to '__compiletime_assert_174' declared with attribute error: Non-constant format string
