@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab3IRRDR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 13:03:17 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:36978 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab3IRRDO (ORCPT
+	id S1753131Ab3IRRDm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 13:03:42 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44803 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab3IRRDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 13:03:14 -0400
+	Wed, 18 Sep 2013 13:03:37 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: balbi@ti.com
+Subject: [PATCH usb 1/2] usb: musb: Add missing ATOMIC_INIT_NOTIFIER_HEAD
+Date: Wed, 18 Sep 2013 19:03:33 +0200
+User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
+Cc: Javier Martinez Canillas <martinez.javier@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, Tony Lindgren <tony@atomide.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        freemangordon@abv.bg, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com> <201309181843.49850@pali> <20130918164816.GN21559@radagast>
+In-Reply-To: <20130918164816.GN21559@radagast>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <5239DA37.6090504@hurleysoftware.com>
-References: <20130911102809.GA31663@uudg.org>
-	<20130911092623.42efd930@gandalf.local.home>
-	<5230895B.5070400@hurleysoftware.com>
-	<20130911113845.6d56a556@gandalf.local.home>
-	<5230C52E.3050801@hurleysoftware.com>
-	<5238B288.3000704@hurleysoftware.com>
-	<CAKMK7uG9s8W6yebkmuJe0XHGsoru4_9FzGqfmKWtMFyCAfQZqA@mail.gmail.com>
-	<5239DA37.6090504@hurleysoftware.com>
-Date: Wed, 18 Sep 2013 19:03:14 +0200
-Message-ID: <CAKMK7uFDuPvAWZCi6=DYY_f27AjXsGKhn_i7Vh09MY9wBX2yvA@mail.gmail.com>
-Subject: Re: BUG: sleeping function called from invalid context on 3.10.10-rt7
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Clark Williams <williams@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
-        Dave Airlie <airlied@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart4760060.bcDtOaWoxX";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201309181903.33243@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 6:52 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> Ouch. But thanks for clarifying that.
->
-> Ok, so register access needs to be serialized. And a separate but
-> related concern is that gen6+ resets also need to hold-off register
-> access where forcewake is required.
->
->
-> While I was reviewing the registers that require forcewake handling,
-> I saw this:
->
-> from i915_reg.h:
-> #define _DPLL_A (dev_priv->info->display_mmio_offset + 0x6014)
-> #define _DPLL_B (dev_priv->info->display_mmio_offset + 0x6018)
->
-> from i915_drv.c:
-> static const struct intel_device_info intel_valleyview_m_info = {
->         GEN7_FEATURES,
->         .is_mobile = 1,
->         .num_pipes = 2,
->         .is_valleyview = 1,
->         .display_mmio_offset = VLV_DISPLAY_BASE,     <<<-------
->         .has_llc = 0, /* legal, last one wins */
-> };
->
-> from intel_uncore.c:
-> #define NEEDS_FORCE_WAKE(dev_priv, reg) \
->         ((HAS_FORCE_WAKE((dev_priv)->dev)) && \
->          ((reg) < 0x40000) &&            \
->          ((reg) != FORCEWAKE))
->
-> Is this is a mistake or do the valleyview PLLs not require the
-> same forcewake handling as the other intel gpus?
+--nextPart4760060.bcDtOaWoxX
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-The DPLL offset from the macro at 0x6000 is from older platforms which
-lacked forcewake and where the display block started already on
-0x6000.
+&twl->phy.notifier is not initalized
 
-On recent big core platforms we have the north display block at
-0x40000 (i.e. forcewake is only used for the rendering side of
-things). For those platforms the DPLL macro is called PCH_DPLL (and
-it's in the south display range starting at 0xc0000. VLV itself
-inherited the old display register blocks (mostly) but moved them all
-by the vlv display base offset.
+Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
 
-We have quite a bit of fun with hw engineers moving display blocks around ;-)
+diff --git a/drivers/usb/phy/phy-twl4030-usb.c b/drivers/usb/phy/phy-twl403=
+0-usb.c
+index 8f78d2d..efe6155 100644
+=2D-- a/drivers/usb/phy/phy-twl4030-usb.c
++++ b/drivers/usb/phy/phy-twl4030-usb.c
+@@ -705,6 +705,8 @@ static int twl4030_usb_probe(struct platform_device *pd=
+ev)
+ 	if (device_create_file(&pdev->dev, &dev_attr_vbus))
+ 		dev_warn(&pdev->dev, "could not create sysfs file\n");
+=20
++	ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
++
+ 	/* Our job is to use irqs and status from the power module
+ 	 * to keep the transceiver disabled when nothing's connected.
+ 	 *
 
-Cheers, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+--nextPart4760060.bcDtOaWoxX
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlI53OUACgkQi/DJPQPkQ1KFmQCgi/3vMmkDbDiB9qqmHP2+QuCe
+xNYAoIPUJF9y0IMoObc0rvYuOqYLfOeD
+=4r1s
+-----END PGP SIGNATURE-----
+
+--nextPart4760060.bcDtOaWoxX--
