@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab3IRNa2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:30:28 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56167 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab3IRNa0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:30:26 -0400
-Date: Wed, 18 Sep 2013 15:30:25 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, freemangordon@abv.bg,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/4] usb: musb: Call atomic_notifier_call_chain when
- status is changed
-Message-ID: <20130918133025.GB2953@amd.pavel.ucw.cz>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <201309172128.42514@pali>
- <20130918014942.GD19817@radagast>
- <201309181020.15245@pali>
- <CAAwP0s1Ou7Nrq7GhnHX71TFCrTFg=nqUh+GsAJhN8DjZGsF4QQ@mail.gmail.com>
+	id S1752601Ab3IRNb7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:31:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44781 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751566Ab3IRNb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 09:31:57 -0400
+Date: Wed, 18 Sep 2013 09:31:48 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Dan Duval <dan.duval@oracle.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Chuck Anderson <chuck.anderson@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] audit: fix endless wait in audit_log_start()
+Message-ID: <20130918133148.GB13968@madcap2.tricolour.ca>
+References: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
+ <20130918094817.18754.8847.stgit@zurg>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAwP0s1Ou7Nrq7GhnHX71TFCrTFg=nqUh+GsAJhN8DjZGsF4QQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130918094817.18754.8847.stgit@zurg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wed, Sep 18, 2013 at 01:48:17PM +0400, Konstantin Khlebnikov wrote:
+> After commit 829199197a430dade2519d54f5545c4a094393b8 audit emiters will block
+> forever if userspace daemon cannot handle backlog. After the timeout waiting
+> loop turns into busy loop and runs until daemon dies or returns back to work.
+> This is minimal patch for that bug.
 
-> >> > So will you do that? Or it is needed to resend this one line
-> >> > hunk again in new email again?
-> >>
-> >> new patch, new email
-> >
-> > Guys, WHY ARE YOU SO STUPID AND ARROGANT?
-> >
-> > Sorry but, need to copy full isolated patch/hunk from one mail to
-> > another is hassling. So what you want from me? Do all those non
-> > sense working only because yesterday you had bad day? Or what?
-...
-> 
-> Hi Pali,
-> 
-> There is no need to be rude.
-> 
-> Felipe asked you to do the split since he believes that the notifier
-> chain call for musb xceiv and the twl->phy notifier head init should
-> be done in two separate patches.
+Thanks Konstantin,
 
-Actually, there is need to be rude, because Felipe fails to act as
-maintainer. Instead of fixing bugs in his code, he bounces bugfix
-patches, points people to random READMEs and wastes everyones time.
-									Pavel
+This patch is in my patchset...
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Luiz Capitulino <lcapitulino@redhat.com>
+> Cc: Richard Guy Briggs <rgb@redhat.com>
+> Cc: Eric Paris <eparis@redhat.com>
+> Cc: Chuck Anderson <chuck.anderson@oracle.com>
+> Cc: Dan Duval <dan.duval@oracle.com>
+> Cc: Dave Kleikamp <dave.kleikamp@oracle.com>
+> ---
+>  kernel/audit.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index 91e53d0..7b0e23a 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -1117,9 +1117,10 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+>  
+>  			sleep_time = timeout_start + audit_backlog_wait_time -
+>  					jiffies;
+> -			if ((long)sleep_time > 0)
+> +			if ((long)sleep_time > 0) {
+>  				wait_for_auditd(sleep_time);
+> -			continue;
+> +				continue;
+> +			}
+>  		}
+>  		if (audit_rate_check() && printk_ratelimit())
+>  			printk(KERN_WARNING
+> 
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer
+Kernel Security
+AMER ENG Base Operating Systems
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635
+Internal: (81) 32635
+Alt: +1.613.693.0684x3545
