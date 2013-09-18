@@ -1,83 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab3IRGNk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 02:13:40 -0400
-Received: from mail-ye0-f173.google.com ([209.85.213.173]:59668 "EHLO
-	mail-ye0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933Ab3IRGNh (ORCPT
+	id S1751971Ab3IRGNi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 02:13:38 -0400
+Received: from mail-ye0-f179.google.com ([209.85.213.179]:34241 "EHLO
+	mail-ye0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab3IRGNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 02:13:37 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 18/28] of: create default early_init_dt_add_memory_arch
-To: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        James Hogan <james.hogan@imgtec.com>, Michal Simek <monstr@monstr.eu>,
-        Jonas Bonn <jonas@southpole.se>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        microblaze-uclinux@itee.uq.edu.au, linux@openrisc.net
-In-Reply-To: <1379372965-22359-19-git-send-email-robherring2@gmail.com>
-References: <1379372965-22359-1-git-send-email-robherring2@gmail.com> <1379372965-22359-19-git-send-email-robherring2@gmail.com>
-Date: Tue, 17 Sep 2013 22:33:58 -0500
-Message-Id: <20130918033358.51CA1C42C9E@trevor.secretlab.ca>
+	Wed, 18 Sep 2013 02:13:34 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: "memory" binding issues
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: devicetree@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        m.szyprowski@samsung.com, swarren@nvidia.com, rob.herring@calxeda.com
+In-Reply-To: <1379371567.3721.46.camel@pasglop>
+References: <1379300274.4098.77.camel@pasglop> <52372F2A.2050003@wwwdotorg.org> <1379371567.3721.46.camel@pasglop>
+Date: Tue, 17 Sep 2013 18:38:23 -0700
+Message-Id: <20130918013823.D617CC42C81@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Sep 2013 18:09:14 -0500, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> Create a weak version of early_init_dt_add_memory_arch which uses
-> memblock or is an empty function when memblock is not enabled. This
-> will unify all architectures except ones with custom memory bank
-> structs.
+On Tue, 17 Sep 2013 08:46:07 +1000, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+> In anycase, just "/memory" will break on at least powerpc.
 
-Two comments below, but otherwise:
+Ummm, really?
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
-
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index 0714dd4..a9dce7a 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -688,6 +688,17 @@ u64 __init dt_mem_next_cell(int s, __be32 **cellp)
->  	return of_read_number(p, s);
->  }
->  
-> +void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
-> +{
-> +#ifdef CONFIG_HAVE_MEMBLOCK
-> +	base &= PAGE_MASK;
-> +	size &= PAGE_MASK;
-> +	memblock_add(base, size);
-> +#else
-> +	pr_err("%s: ignoring memory (%llx, %llx)\n", __func__, base, size);
-> +#endif
-> +}
-> +
-
-Can you do it this way instead:
-
-#ifdef CONFIG_HAVE_MEMBLOCK
-void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
-{
-	base &= PAGE_MASK;
-	size &= PAGE_MASK;
-	memblock_add(base, size);
-}
-#endif
-
-If the platform doesn't provide an early_init_dt_add_memory_arch()
-function and it doesn't have a memblock implementation, then the build
-should outright fail. I don't see a scenario where we would want to
-successfully build the kernel without a working add memory function.
-
-Also, can you group this function with the common __weak
-early_init_dt_alloc_memory_arch() implementation? It would be good to
-group all the memblock specific functions together.
+~/hacking/linux$ git grep 'memory {' arch/powerpc/boot/dts/* | wc -l
+159
+~/hacking/linux$ git grep 'memory@' arch/powerpc/boot/dts/* | wc -l
+4
 
 g.
-
