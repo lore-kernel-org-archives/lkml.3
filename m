@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab3IRAIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 20:08:18 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:47086 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890Ab3IRAIR (ORCPT
+	id S1754220Ab3IRALH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 20:11:07 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:35513 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752890Ab3IRALF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 20:08:17 -0400
+	Tue, 17 Sep 2013 20:11:05 -0400
+Date: Tue, 17 Sep 2013 20:11:30 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Doug Ledford <dledford@redhat.com>
+CC: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Hannes Reinecke <hare@suse.de>,
+        linux-scsi list <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] scsi: delete decade+ obsolete aic7xxx_old driver
+Message-ID: <20130918001130.GA16331@windriver.com>
+References: <y687fpks4kdsmfuadq4cykip.1379384036544@email.android.com>
+ <52386730.4060508@suse.de>
+ <1379448641.2213.18.camel@dabdike>
+ <5238BB4A.8000309@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1379366394.3828.10.camel@localhost.localdomain>
-References: <1379366394.3828.10.camel@localhost.localdomain>
-Date: Tue, 17 Sep 2013 20:08:15 -0400
-Message-ID: <CAF6AEGt28s5vDAxoZ9U6ibm7zVZWrFfH_sBe+w3RczCr_kYaBg@mail.gmail.com>
-Subject: Re: [PATCH] drm/msm: Odd PTR_ERR usage
-From: Rob Clark <robdclark@gmail.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5238BB4A.8000309@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 5:19 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
-> The variable priv->kms is not initialized yet.
->
-> Found by "scripts/coccinelle/tests/odd_ptr_err.cocci".
-> PTR_ERR should access the value just tested by IS_ERR.
->
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+[Re: [PATCH] scsi: delete decade+ obsolete aic7xxx_old driver] On 17/09/2013 (Tue 16:27) Doug Ledford wrote:
 
-thanks, I've got it queued up
+> On 09/17/13 16:10, James Bottomley wrote:
+> 
+> > OK, so do we have any real evidence that no-one uses this driver?  Does
+> > any distro actually compile it, for instance?
+> 
+> Red Hat doesn't use it in any of their products (and it hasn't been the
+> preferred driver since about the old Red Hat Linux 7.0 days).
 
-BR,
--R
+The oldest ubuntu machine I could find was running a 2.6.32 kernel and
+even back then, they weren't building/enabling this driver either.
 
-> ---
->
-> diff -u -p a/drivers/gpu/drm/msm/msm_drv.c b/drivers/gpu/drm/msm/msm_drv.c
-> --- a/drivers/gpu/drm/msm/msm_drv.c
-> +++ b/drivers/gpu/drm/msm/msm_drv.c
-> @@ -199,7 +199,7 @@ static int msm_load(struct drm_device *d
->                  * imx drm driver on iMX5
->                  */
->                 dev_err(dev->dev, "failed to load kms\n");
-> -               ret = PTR_ERR(priv->kms);
-> +               ret = PTR_ERR(kms);
->                 goto fail;
->         }
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Paul.
+--
+
+> 
+> 
+> -- 
+> Doug Ledford <dledford@redhat.com>
+>               GPG KeyID: 0E572FDD
+> 	      http://people.redhat.com/dledford
+> 
