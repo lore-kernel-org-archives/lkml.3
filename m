@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab3IRRyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 13:54:12 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:46103 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab3IRRyL (ORCPT
+	id S1753911Ab3IRSAf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:00:35 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:46231 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948Ab3IRRyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Sep 2013 13:54:11 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -13,22 +13,24 @@ Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
         Alessandro Rubini <rubini@unipv.it>,
         Linus Walleij <linus.walleij@linaro.org>,
         STEricsson <STEricsson_nomadik_linux@list.st.com>,
+        Mike Turquette <mturquette@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/26] ARM: nomadik: move mtu setup to clocksource init
-Date: Wed, 18 Sep 2013 19:53:34 +0200
-Message-Id: <1379526839-14798-2-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 03/26] clk: nomadik: declare OF clock provider
+Date: Wed, 18 Sep 2013 19:53:36 +0200
+Message-Id: <1379526839-14798-4-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MTU timer initialization is stuffed into .init_time callback, while
-cpu8815_timer_init_of again maps addresses from the same device node.
-Therefore, this patch moves mtu setup from to clocksource init.
+Common clock framework allows to register clock providers to get called
+on of_clk_init() by using CLK_OF_DECLARE. This converts nomadik clock
+provider to make use of it and get rid of the mach specific clk init
+call. As clocks require system reset controller base address to be
+initialized each clock driver checks src_base and calls new
+nomadik_src_init if required.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -37,92 +39,137 @@ Cc: Arnd Bergmann <arnd@arndb.de>
 Cc: Alessandro Rubini <rubini@unipv.it>
 Cc: Linus Walleij <linus.walleij@linaro.org>
 Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
+Cc: Mike Turquette <mturquette@linaro.org>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/mach-nomadik/cpu-8815.c  |   26 --------------------------
- drivers/clocksource/nomadik-mtu.c |   11 +++++++++++
- 2 files changed, 11 insertions(+), 26 deletions(-)
+ arch/arm/mach-nomadik/cpu-8815.c          |    5 ++--
+ drivers/clk/clk-nomadik.c                 |   46 ++++++++++-------------------
+ include/linux/platform_data/clk-nomadik.h |    2 --
+ 3 files changed, 17 insertions(+), 36 deletions(-)
+ delete mode 100644 include/linux/platform_data/clk-nomadik.h
 
 diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
-index 13e0df9..0fcb149 100644
+index 0fcb149..2be38a0 100644
 --- a/arch/arm/mach-nomadik/cpu-8815.c
 +++ b/arch/arm/mach-nomadik/cpu-8815.c
-@@ -113,36 +113,10 @@ static void cpu8815_restart(enum reboot_mode mode, const char *cmd)
- 	writel(1, srcbase + 0x18);
- }
+@@ -25,7 +25,7 @@
+ #include <linux/slab.h>
+ #include <linux/irq.h>
+ #include <linux/dma-mapping.h>
+-#include <linux/platform_data/clk-nomadik.h>
++#include <linux/clk-provider.h>
+ #include <linux/clocksource.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_gpio.h>
+@@ -115,8 +115,7 @@ static void cpu8815_restart(enum reboot_mode mode, const char *cmd)
  
--/* Initial value for SRC control register: all timers use MXTAL/8 source */
--#define SRC_CR_INIT_MASK	0x00007fff
--#define SRC_CR_INIT_VAL		0x2aaa8000
--
  static void __init cpu8815_timer_init_of(void)
  {
--	struct device_node *mtu;
--	void __iomem *base;
--	int irq;
--	u32 src_cr;
--
- 	/* We need this to be up now */
- 	nomadik_clk_init();
--
--	mtu = of_find_node_by_path("/mtu@101e2000");
--	if (!mtu)
--		return;
--	base = of_iomap(mtu, 0);
--	if (WARN_ON(!base))
--		return;
--	irq = irq_of_parse_and_map(mtu, 0);
--
--	pr_info("Remapped MTU @ %p, irq: %d\n", base, irq);
--
--	/* Configure timer sources in "system reset controller" ctrl reg */
--	src_cr = readl(base);
--	src_cr &= SRC_CR_INIT_MASK;
--	src_cr |= SRC_CR_INIT_VAL;
--	writel(src_cr, base);
--
+-	/* We need this to be up now */
+-	nomadik_clk_init();
++	of_clk_init(NULL);
  	clocksource_of_init();
  }
  
-diff --git a/drivers/clocksource/nomadik-mtu.c b/drivers/clocksource/nomadik-mtu.c
-index 1b74bea..b9f97ba 100644
---- a/drivers/clocksource/nomadik-mtu.c
-+++ b/drivers/clocksource/nomadik-mtu.c
-@@ -257,12 +257,17 @@ void __init nmdk_timer_init(void __iomem *base, int irq)
- 	__nmdk_timer_init(base, irq, pclk0, clk0);
- }
+diff --git a/drivers/clk/clk-nomadik.c b/drivers/clk/clk-nomadik.c
+index 7849086..74978f0 100644
+--- a/drivers/clk/clk-nomadik.c
++++ b/drivers/clk/clk-nomadik.c
+@@ -491,6 +491,9 @@ static void __init of_nomadik_pll_setup(struct device_node *np)
+ 	const char *parent_name;
+ 	u32 pll_id;
  
-+/* Initial value for SRC control register: all timers use MXTAL/8 source */
-+#define SRC_CR_INIT_MASK	0x00007fff
-+#define SRC_CR_INIT_VAL		0x2aaa8000
++	if (!src_base)
++		nomadik_src_init();
 +
- static void __init nmdk_timer_of_init(struct device_node *node)
+ 	if (of_property_read_u32(np, "pll-id", &pll_id)) {
+ 		pr_err("%s: PLL \"%s\" missing pll-id property\n",
+ 			__func__, clk_name);
+@@ -501,6 +504,8 @@ static void __init of_nomadik_pll_setup(struct device_node *np)
+ 	if (!IS_ERR(clk))
+ 		of_clk_add_provider(np, of_clk_src_simple_get, clk);
+ }
++CLK_OF_DECLARE(nomadik_pll_clk,
++	"st,nomadik-pll-clock", of_nomadik_pll_setup);
+ 
+ static void __init of_nomadik_hclk_setup(struct device_node *np)
  {
- 	struct clk *pclk;
- 	struct clk *clk;
- 	void __iomem *base;
- 	int irq;
-+	u32 src_cr;
+@@ -508,6 +513,9 @@ static void __init of_nomadik_hclk_setup(struct device_node *np)
+ 	const char *clk_name = np->name;
+ 	const char *parent_name;
  
- 	base = of_iomap(node, 0);
- 	if (!base)
-@@ -280,6 +285,12 @@ static void __init nmdk_timer_of_init(struct device_node *node)
- 	if (irq <= 0)
- 		panic("Can't parse IRQ");
- 
-+	/* Configure timer sources in "system reset controller" ctrl reg */
-+	src_cr = readl(base);
-+	src_cr &= SRC_CR_INIT_MASK;
-+	src_cr |= SRC_CR_INIT_VAL;
-+	writel(src_cr, base);
++	if (!src_base)
++		nomadik_src_init();
 +
- 	__nmdk_timer_init(base, irq, pclk, clk);
+ 	parent_name = of_clk_get_parent_name(np, 0);
+ 	/*
+ 	 * The HCLK divides PLL1 with 1 (passthru), 2, 3 or 4.
+@@ -520,6 +528,8 @@ static void __init of_nomadik_hclk_setup(struct device_node *np)
+ 	if (!IS_ERR(clk))
+ 		of_clk_add_provider(np, of_clk_src_simple_get, clk);
  }
- CLOCKSOURCE_OF_DECLARE(nomadik_mtu, "st,nomadik-mtu",
++CLK_OF_DECLARE(nomadik_hclk_clk,
++	"st,nomadik-hclk-clock", of_nomadik_hclk_setup);
+ 
+ static void __init of_nomadik_src_clk_setup(struct device_node *np)
+ {
+@@ -528,6 +538,9 @@ static void __init of_nomadik_src_clk_setup(struct device_node *np)
+ 	const char *parent_name;
+ 	u32 clk_id;
+ 
++	if (!src_base)
++		nomadik_src_init();
++
+ 	if (of_property_read_u32(np, "clock-id", &clk_id)) {
+ 		pr_err("%s: SRC clock \"%s\" missing clock-id property\n",
+ 			__func__, clk_name);
+@@ -538,34 +551,5 @@ static void __init of_nomadik_src_clk_setup(struct device_node *np)
+ 	if (!IS_ERR(clk))
+ 		of_clk_add_provider(np, of_clk_src_simple_get, clk);
+ }
+-
+-static const struct of_device_id nomadik_src_clk_match[] __initconst = {
+-	{
+-		.compatible = "fixed-clock",
+-		.data = of_fixed_clk_setup,
+-	},
+-	{
+-		.compatible = "fixed-factor-clock",
+-		.data = of_fixed_factor_clk_setup,
+-	},
+-	{
+-		.compatible = "st,nomadik-pll-clock",
+-		.data = of_nomadik_pll_setup,
+-	},
+-	{
+-		.compatible = "st,nomadik-hclk-clock",
+-		.data = of_nomadik_hclk_setup,
+-	},
+-	{
+-		.compatible = "st,nomadik-src-clock",
+-		.data = of_nomadik_src_clk_setup,
+-	},
+-	{ /* sentinel */ }
+-};
+-
+-
+-void __init nomadik_clk_init(void)
+-{
+-	nomadik_src_init();
+-	of_clk_init(nomadik_src_clk_match);
+-}
++CLK_OF_DECLARE(nomadik_src_clk,
++	"st,nomadik-src-clock", of_nomadik_src_clk_setup);
+diff --git a/include/linux/platform_data/clk-nomadik.h b/include/linux/platform_data/clk-nomadik.h
+deleted file mode 100644
+index 5713c87..0000000
+--- a/include/linux/platform_data/clk-nomadik.h
++++ /dev/null
+@@ -1,2 +0,0 @@
+-/* Minimal platform data header */
+-void nomadik_clk_init(void);
 -- 
 1.7.10.4
 
