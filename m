@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab3IRLau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 07:30:50 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63914 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab3IRLat (ORCPT
+	id S1752480Ab3IRLbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 07:31:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40572 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab3IRLbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 07:30:49 -0400
+	Wed, 18 Sep 2013 07:31:32 -0400
+Date: Wed, 18 Sep 2013 13:31:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: eranian@google.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] perf/x86/intel/uncore: don't use smp_processor_id() in
+ validate_group()
+Message-ID: <20130918113124.GI9326@twins.programming.kicks-ass.net>
+References: <1379400493-11505-1-git-send-email-zheng.z.yan@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1379442550-24860-1-git-send-email-john.stultz@linaro.org>
-References: <1379442550-24860-1-git-send-email-john.stultz@linaro.org>
-Date: Wed, 18 Sep 2013 13:30:49 +0200
-Message-ID: <CACRpkdY-6eUWG6CWpBMi=yy2m158xwsF4h48yqZNzvBe_LW14Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH] rtc: rtc-pl031: Set wakeup flag prior to registering rtcdev
-From: Linus Walleij <linus.walleij@linaro.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379400493-11505-1-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 8:29 PM, John Stultz <john.stultz@linaro.org> wrote:
+On Tue, Sep 17, 2013 at 02:48:13PM +0800, Yan, Zheng wrote:
+> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+> 
+> uncore_validate_group() can't call smp_processor_id() because it is
+> in preemptible context. Pass NUMA_NO_NODE to the allocator instead.
+> 
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> index fd8011e..11b1582 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> @@ -3031,7 +3031,7 @@ static int uncore_validate_group(struct intel_uncore_pmu *pmu,
+>  	struct intel_uncore_box *fake_box;
+>  	int ret = -EINVAL, n;
+>  
+> -	fake_box = uncore_alloc_box(pmu->type, smp_processor_id());
+> +	fake_box = uncore_alloc_box(pmu->type, NUMA_NO_NODE);
 
-> In some recent testing, I noticed the CLOCK_REALTIME_ALARM clockid
-> wasn't functioning on my vexpress qemu environment. Looking into it
-> I noticed the pl031 rtc driver doesn't set the wakeup flag on the
-> device until after registering the device with the RTC subsystem.
->
-> This causes the alarmtimer subsystem to not see the pl031 driver
-> as a valid backing device, and that resuls in alarm clockids
-> getting ENOTSUPP errors.
->
-> Thus be sure to set the wakeup flag on the device prior to
-> registering the rtcdev so the pl031 rtc driver can be used as
-> the backing alarmtimer device.
->
-> Let me know if you have any feedback or objections to this.
-> If it looks ok, I'll queue it for 3.13. I suspect there
-> may be other RTC drivers with the same problem.
->
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Alessandro Zummo <a.zummo@towertech.it>
-> Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
+Doesn't work since you're passing cpu, not node.
 
-Makes perfect sense. I have only tested the driver from regular
-userspace using ioctl()s. Is these a simple way to test
-an alarmtimer on a barebones system?
+I changed it to the below. However upon doing so I noticed you
+hard coded PCI devices live on Node0, this is not true in general
+(although likely true for tiny systems).
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+I've absolutely no clue about the entire PCI layer, but it would be nice
+if there's a method to extract the local node of a pci device.
 
-Are you sure this should not be for -rc:s and stable?
+Bjorn is there such a thing?
 
-Yours,
-Linus Walleij
+---
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2706,14 +2706,14 @@ static void uncore_pmu_init_hrtimer(stru
+ 	box->hrtimer.function = uncore_pmu_hrtimer;
+ }
+ 
+-struct intel_uncore_box *uncore_alloc_box(struct intel_uncore_type *type, int cpu)
++static struct intel_uncore_box *uncore_alloc_box(struct intel_uncore_type *type, int node)
+ {
+ 	struct intel_uncore_box *box;
+ 	int i, size;
+ 
+ 	size = sizeof(*box) + type->num_shared_regs * sizeof(struct intel_uncore_extra_reg);
+ 
+-	box = kzalloc_node(size, GFP_KERNEL, cpu_to_node(cpu));
++	box = kzalloc_node(size, GFP_KERNEL, node);
+ 	if (!box)
+ 		return NULL;
+ 
+@@ -3031,7 +3031,7 @@ static int uncore_validate_group(struct
+ 	struct intel_uncore_box *fake_box;
+ 	int ret = -EINVAL, n;
+ 
+-	fake_box = uncore_alloc_box(pmu->type, smp_processor_id());
++	fake_box = uncore_alloc_box(pmu->type, NUMA_NO_NODE);
+ 	if (!fake_box)
+ 		return -ENOMEM;
+ 
+@@ -3294,7 +3294,7 @@ static int uncore_pci_probe(struct pci_d
+ 	}
+ 
+ 	type = pci_uncores[UNCORE_PCI_DEV_TYPE(id->driver_data)];
+-	box = uncore_alloc_box(type, 0);
++	box = uncore_alloc_box(type, NUMA_NO_NODE);
+ 	if (!box)
+ 		return -ENOMEM;
+ 
+@@ -3499,7 +3499,7 @@ static int uncore_cpu_prepare(int cpu, i
+ 			if (pmu->func_id < 0)
+ 				pmu->func_id = j;
+ 
+-			box = uncore_alloc_box(type, cpu);
++			box = uncore_alloc_box(type, cpu_to_node(cpu));
+ 			if (!box)
+ 				return -ENOMEM;
+ 
