@@ -1,133 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870Ab3IRGJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 02:09:21 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49732 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab3IRGJU (ORCPT
+	id S1752015Ab3IRGNk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 02:13:40 -0400
+Received: from mail-ye0-f173.google.com ([209.85.213.173]:59668 "EHLO
+	mail-ye0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab3IRGNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 02:09:20 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-To: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        dwmw2@infradead.org, joro@8bytes.org
-Cc: kexec@lists.infradead.org, alex.williamson@redhat.com, bhe@redhat.com
-Subject: [PATCH v2] intel-iommu: Quiesce devices before disabling IOMMU
-Date: Wed, 18 Sep 2013 15:09:01 +0900
-Message-Id: <1379484541-4496-1-git-send-email-indou.takao@jp.fujitsu.com>
-X-Mailer: git-send-email 1.7.9
+	Wed, 18 Sep 2013 02:13:37 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 18/28] of: create default early_init_dt_add_memory_arch
+To: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        James Hogan <james.hogan@imgtec.com>, Michal Simek <monstr@monstr.eu>,
+        Jonas Bonn <jonas@southpole.se>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        microblaze-uclinux@itee.uq.edu.au, linux@openrisc.net
+In-Reply-To: <1379372965-22359-19-git-send-email-robherring2@gmail.com>
+References: <1379372965-22359-1-git-send-email-robherring2@gmail.com> <1379372965-22359-19-git-send-email-robherring2@gmail.com>
+Date: Tue, 17 Sep 2013 22:33:58 -0500
+Message-Id: <20130918033358.51CA1C42C9E@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch quiesces devices before disabling IOMMU on boot to stop
-ongoing DMA. In intel_iommu_init(), check context entries and if there
-is entry whose present bit is set then reset corresponding device.
+On Mon, 16 Sep 2013 18:09:14 -0500, Rob Herring <robherring2@gmail.com> wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> Create a weak version of early_init_dt_add_memory_arch which uses
+> memblock or is an empty function when memblock is not enabled. This
+> will unify all architectures except ones with custom memory bank
+> structs.
 
-When IOMMU is already enabled on boot, it is disabled and new DMAR table
-is created and then re-enabled in intel_iommu_init(). This causes DMAR
-faults if there are in-flight DMAs.
+Two comments below, but otherwise:
 
-This causes problem on kdump. Devices are working in first kernel, and
-after switching to second kernel and initializing IOMMU, many DMAR
-faults occur and it causes problems like driver error or PCI SERR, at
-last kdump fails. This patch fixes this problem.
+Acked-by: Grant Likely <grant.likely@linaro.org>
 
-Changelog:
-v2:
-- Add CONTEXT_ENTRY_NR
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index 0714dd4..a9dce7a 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -688,6 +688,17 @@ u64 __init dt_mem_next_cell(int s, __be32 **cellp)
+>  	return of_read_number(p, s);
+>  }
+>  
+> +void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
+> +{
+> +#ifdef CONFIG_HAVE_MEMBLOCK
+> +	base &= PAGE_MASK;
+> +	size &= PAGE_MASK;
+> +	memblock_add(base, size);
+> +#else
+> +	pr_err("%s: ignoring memory (%llx, %llx)\n", __func__, base, size);
+> +#endif
+> +}
+> +
 
-v1:
-https://lkml.org/lkml/2013/8/21/71
+Can you do it this way instead:
 
-Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
----
- drivers/iommu/intel-iommu.c |   56 ++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 55 insertions(+), 1 deletions(-)
+#ifdef CONFIG_HAVE_MEMBLOCK
+void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
+{
+	base &= PAGE_MASK;
+	size &= PAGE_MASK;
+	memblock_add(base, size);
+}
+#endif
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index eec0d3e..d0e8aff 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -224,6 +224,7 @@ struct context_entry {
- 	u64 lo;
- 	u64 hi;
- };
-+#define CONTEXT_ENTRY_NR (VTD_PAGE_SIZE/sizeof(struct context_entry))
- 
- static inline bool context_present(struct context_entry *context)
- {
-@@ -3663,6 +3664,56 @@ static struct notifier_block device_nb = {
- 	.notifier_call = device_notifier,
- };
- 
-+/* Reset PCI devices if its entry exists in DMAR table */
-+static void __init iommu_reset_devices(struct intel_iommu *iommu, u16 segment)
-+{
-+	u64 addr;
-+	struct root_entry *root;
-+	struct context_entry *context;
-+	int bus, devfn;
-+	struct pci_dev *dev;
-+
-+	addr = dmar_readq(iommu->reg + DMAR_RTADDR_REG);
-+	if (!addr)
-+		return;
-+
-+	/*
-+	 *  In the case of kdump, ioremap is needed because root-entry table
-+	 *  exists in first kernel's memory area which is not mapped in second
-+	 *  kernel
-+	 */
-+	root = (struct root_entry *)ioremap(addr, PAGE_SIZE);
-+	if (!root)
-+		return;
-+
-+	for (bus = 0; bus < ROOT_ENTRY_NR; bus++) {
-+		if (!root_present(&root[bus]))
-+			continue;
-+
-+		context = (struct context_entry *)ioremap(
-+			root[bus].val & VTD_PAGE_MASK, PAGE_SIZE);
-+		if (!context)
-+			continue;
-+
-+		for (devfn = 0; devfn < CONTEXT_ENTRY_NR; devfn++) {
-+			if (!context_present(&context[devfn]))
-+				continue;
-+
-+			dev = pci_get_domain_bus_and_slot(segment, bus, devfn);
-+			if (!dev)
-+				continue;
-+
-+			if (!pci_reset_bus(dev->bus)) /* go to next bus */
-+				break;
-+			else /* Try per-function reset */
-+				pci_reset_function(dev);
-+
-+		}
-+		iounmap(context);
-+	}
-+	iounmap(root);
-+}
-+
- int __init intel_iommu_init(void)
- {
- 	int ret = 0;
-@@ -3687,8 +3738,11 @@ int __init intel_iommu_init(void)
- 			continue;
- 
- 		iommu = drhd->iommu;
--		if (iommu->gcmd & DMA_GCMD_TE)
-+		if (iommu->gcmd & DMA_GCMD_TE) {
-+			if (reset_devices)
-+				iommu_reset_devices(iommu, drhd->segment);
- 			iommu_disable_translation(iommu);
-+		}
- 	}
- 
- 	if (dmar_dev_scope_init() < 0) {
--- 
-1.7.1
+If the platform doesn't provide an early_init_dt_add_memory_arch()
+function and it doesn't have a memblock implementation, then the build
+should outright fail. I don't see a scenario where we would want to
+successfully build the kernel without a working add memory function.
 
+Also, can you group this function with the common __weak
+early_init_dt_alloc_memory_arch() implementation? It would be good to
+group all the memblock specific functions together.
+
+g.
 
