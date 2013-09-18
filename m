@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435Ab3IRNBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:01:04 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54912 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698Ab3IRNBC (ORCPT
+	id S1752632Ab3IRNB2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:01:28 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:16392 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562Ab3IRNB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:01:02 -0400
-Date: Wed, 18 Sep 2013 15:01:00 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, linaro-dev@lists.linaro.org,
-        len.brown@intel.com
-Subject: Re: [PATCH RFC 1/2] PM / Hibernate: use name_to_dev_t to parse
- resume
-Message-ID: <20130918130100.GB2467@amd.pavel.ucw.cz>
-References: <1377114413-8521-1-git-send-email-sebastian.capella@linaro.org>
- <1377114413-8521-2-git-send-email-sebastian.capella@linaro.org>
- <20130825153811.GA4795@amd.pavel.ucw.cz>
- <20130826174050.16429.7419@capellas-linux>
- <20130830113533.GA7226@amd.pavel.ucw.cz>
- <20130830184230.28518.71814@capellas-linux>
- <20130917205021.20736.5257@capellas-linux>
+	Wed, 18 Sep 2013 09:01:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 18 Sep 2013 06:01:26 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@nvidia.com>
+CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH REPOST] ARM: tegra: use dt-binding header for key code
+Date: Wed, 18 Sep 2013 18:52:32 +0530
+Message-ID: <1379510552-23401-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130917205021.20736.5257@capellas-linux>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-09-17 13:50:21, Sebastian Capella wrote:
-> Quoting Sebastian Capella (2013-08-30 11:42:30)
-> > Quoting Pavel Machek (2013-08-30 04:35:33)
-> > > On Mon 2013-08-26 10:40:50, Sebastian Capella wrote:
-> > > > Quoting Pavel Machek (2013-08-25 08:38:11)
-> > > > > Is the allocation actually neccessary? At the very least this should
-> > > > > test for NULL...
-> > > > 
-> > > > name_to_dev_t expects a non-const name, but the buffer passed in
-> > > > is const.  I also am removing the '\n' if found at the end of the
-> > > > string which would violate the const.
-> > > 
-> > > Fix name_to_dev_t, then. No need to do memory allocation just to work
-> > > around const.
-> > > 
-> > Hi Pavel,
-> > 
-> > The issue is really Removing the \n from the user space input.  The
-> > flow is:
-> > const input buf -> copy to work buffer, remove newline -> name_to_dev_t
-> > 
-> >   ssize_t resume_store(..., const char *buf, size_t n)
-> >   // copy buf, strip off trailing newline, pass to name_to_dev_t
-> >   dev_t name_to_dev_t(char *name)
-> > 
-> > The const in the restore_store buffer comes from the function type of the
-> > store member of the kobj_attribute.  I don't believe this should be changed.
-> > 
-> > Currently, name_to_dev_t will fail in some cases if a trailing \n is present.
-> > Is it more appropriate to handle stripping the newline in the store
-> > function rather than modifying name_to_dev_t to clean it up?
-> > 
-> > It seems logical for name_to_dev_t to take a const name parameter as
-> > there should be no reason to modify the name buffer passed to it.
-> > I'll be happy to make a patch to do this, but without hardening
-> > name_to_dev_t against trailing newlines, it would not be neccesary for
-> > this problem.
-> > 
-> > Thanks for your time and comments!
-> > 
-> 
-> Hi Pavel,
-> 
-> Do you have any more feedback regarding leaving the strndup?
+In place of hardcoding the key code in DTS file and comment the
+key code as side notes, use the key code macro defines in the
+dt-bindings/input/input.h directly.
 
-I think you should modify name_to_dev_t, then. Doing memory allocation
-just to work around \n limitation is ugly.
-									Pavel
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Reposting this patch as it was sent earlier when merge window was closed.
+
+ arch/arm/boot/dts/tegra114-dalmore.dts |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+index 6023028..05a3aae 100644
+--- a/arch/arm/boot/dts/tegra114-dalmore.dts
++++ b/arch/arm/boot/dts/tegra114-dalmore.dts
+@@ -1,5 +1,6 @@
+ /dts-v1/;
+ 
++#include <dt-bindings/input/input.h>
+ #include "tegra114.dtsi"
+ 
+ / {
+@@ -1081,26 +1082,26 @@
+ 		home {
+ 			label = "Home";
+ 			gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>;
+-			linux,code = <102>; /* KEY_HOME */
++			linux,code = <KEY_HOME>;
+ 		};
+ 
+ 		power {
+ 			label = "Power";
+ 			gpios = <&gpio TEGRA_GPIO(Q, 0) GPIO_ACTIVE_LOW>;
+-			linux,code = <116>; /* KEY_POWER */
++			linux,code = <KEY_POWER>;
+ 			gpio-key,wakeup;
+ 		};
+ 
+ 		volume_down {
+ 			label = "Volume Down";
+ 			gpios = <&gpio TEGRA_GPIO(R, 1) GPIO_ACTIVE_LOW>;
+-			linux,code = <114>; /* KEY_VOLUMEDOWN */
++			linux,code = <KEY_VOLUMEDOWN>;
+ 		};
+ 
+ 		volume_up {
+ 			label = "Volume Up";
+ 			gpios = <&gpio TEGRA_GPIO(R, 2) GPIO_ACTIVE_LOW>;
+-			linux,code = <115>; /* KEY_VOLUMEUP */
++			linux,code = <KEY_VOLUMEUP>;
+ 		};
+ 	};
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.1.1
+
