@@ -1,110 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742Ab3IRJqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 05:46:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39804 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388Ab3IRJqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 05:46:11 -0400
-Date: Wed, 18 Sep 2013 11:48:00 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
-References: <20130905154041.GD30984@dhcp-26-207.brq.redhat.com>
- <20130905154436.GC24148@htj.dyndns.org>
- <20130905185440.GA13175@dhcp-26-207.brq.redhat.com>
- <20130905200608.GA3846@htj.dyndns.org>
- <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
- <20130906160621.GF22763@mtj.dyndns.org>
- <20130906233205.GF12956@google.com>
- <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
- <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
- <20130917143022.GA7707@concordia>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130917143022.GA7707@concordia>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751915Ab3IRJqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 05:46:23 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:47434 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab3IRJqU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 05:46:20 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Namhyung Kim <namhyung@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH v2] perf: Support for Openembedded/Yocto -dbg packages
+Date: Wed, 18 Sep 2013 11:46:11 +0200
+Message-Id: <1379497571-14208-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 12:30:23AM +1000, Michael Ellerman wrote:
-> How about no?
-> 
-> We have a small number of MSIs available, limited by hardware &
-> firmware, if we don't impose a quota then the first device that probes
-> will get most/all of the MSIs and other devices miss out.
+On OpenEmbedded the symbol files are located under a .debug folder on
+the same folder as the binary file.
 
-Out of curiosity - how pSeries has had done it without quotas before
-448e2ca ("powerpc/pseries: Implement a quota system for MSIs")?
+This patch adds support for such files.
 
-> Anyway I don't see what problem you're trying to solve? I agree the
-> -ve/0/+ve return value pattern is ugly, but it's hardly the end of the
-> world.
+Without this patch on perf top you can see:
 
-Well, the interface recently has been re-classified from "ugly" to
-"unnecessarily complex and actively harmful" in Tejun's words ;)
+no symbols found in /usr/lib/gstreamer-1.0/libtheoraenc.so.1.1.2, maybe install
+a debug package?
 
-Indeed, I checked most of the drivers and it is incredible how people
-are creative in misusing the interface: from innocent pci_disable_msix()
-calls when if pci_enable_msix() failed to assuming MSI-Xs were enabled
-if pci_enable_msix() returned a positive value (apparently untested).
+84.56%  libtheoraenc.so.1.1.2       [.] 0x000000000000b346
 
-Roughly third of the drivers just do not care and bail out once
-pci_enable_msix() has not succeeded. Not sure how many of these are
-mandated by the hardware.
+With this patch symbols are shown:
 
-Another quite common pattern is a call to pci_enable_msix() to figure out
-the number of MSI-Xs available and a repeated call of pci_enable_msix()
-to enable those MSI-Xs, this time.
+19.06%  libtheoraenc.so.1.1.2       [.] oc_int_frag_satd_thresh_mmxext
+9.76%   libtheoraenc.so.1.1.2       [.] oc_analyze_mb_mode_luma
+5.58%   libtheoraenc.so.1.1.2       [.] oc_qii_state_advance
+4.84%   libtheoraenc.so.1.1.2       [.] oc_enc_tokenize_ac
+...
 
-The last pattern makes most of sense to me and could be updated with a more
-clear sequence - a call to (bit modified) pci_msix_table_size() followed
-by a call to pci_enable_msix(). I think this pattern can effectively
-supersede the currently recommended "loop" practice.
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
 
-But as pSeries quota is still required I propose to introduce a new interface
-pci_get_msix_limit() that combines pci_msix_table_size() and (also new)
-arch_get_msix_limit(). The latter would check the quota thing in case of
-pSeries and none in case of all other architectures.
+v2: Changes proposed by Ingo Molnar
 
-The recommended practice would be:
+-Improve changeset
+-Improve multi-snprintf readability
+-Code Style
 
-	/*
-	 * Retrieving 'nvec' by means other than pci_msix_table_size()
-	 */
+ tools/perf/util/dso.c    | 42 +++++++++++++++++++++++++++++-------------
+ tools/perf/util/dso.h    |  1 +
+ tools/perf/util/symbol.c |  1 +
+ 3 files changed, 31 insertions(+), 13 deletions(-)
 
-	rc = pci_get_msix_limit(pdev);
-	if (rc < 0)
-		return rc;
-
-	/*
-	 * nvec = min(rc, nvec);
-	 */
-
-	for (i = 0; i < nvec; i++)
-		msix_entry[i].entry = i;
-
-	rc = pci_enable_msix(pdev, msix_entry, nvec);
-	if (rc)
-		return rc;
-
-Thoughts?
-
-> cheers
-
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index e3c1ff8..43481e5 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -7,19 +7,20 @@
+ char dso__symtab_origin(const struct dso *dso)
+ {
+ 	static const char origin[] = {
+-		[DSO_BINARY_TYPE__KALLSYMS]		= 'k',
+-		[DSO_BINARY_TYPE__VMLINUX]		= 'v',
+-		[DSO_BINARY_TYPE__JAVA_JIT]		= 'j',
+-		[DSO_BINARY_TYPE__DEBUGLINK]		= 'l',
+-		[DSO_BINARY_TYPE__BUILD_ID_CACHE]	= 'B',
+-		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]	= 'f',
+-		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]	= 'u',
+-		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]	= 'b',
+-		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]	= 'd',
+-		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]	= 'K',
+-		[DSO_BINARY_TYPE__GUEST_KALLSYMS]	= 'g',
+-		[DSO_BINARY_TYPE__GUEST_KMODULE]	= 'G',
+-		[DSO_BINARY_TYPE__GUEST_VMLINUX]	= 'V',
++		[DSO_BINARY_TYPE__KALLSYMS]			= 'k',
++		[DSO_BINARY_TYPE__VMLINUX]			= 'v',
++		[DSO_BINARY_TYPE__JAVA_JIT]			= 'j',
++		[DSO_BINARY_TYPE__DEBUGLINK]			= 'l',
++		[DSO_BINARY_TYPE__BUILD_ID_CACHE]		= 'B',
++		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]		= 'f',
++		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]		= 'u',
++		[DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO]	= 'o',
++		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]		= 'b',
++		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]		= 'd',
++		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]		= 'K',
++		[DSO_BINARY_TYPE__GUEST_KALLSYMS]		= 'g',
++		[DSO_BINARY_TYPE__GUEST_KMODULE]		= 'G',
++		[DSO_BINARY_TYPE__GUEST_VMLINUX]		= 'V',
+ 	};
+ 
+ 	if (dso == NULL || dso->symtab_type == DSO_BINARY_TYPE__NOT_FOUND)
+@@ -64,6 +65,21 @@ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
+ 			 symbol_conf.symfs, dso->long_name);
+ 		break;
+ 
++	case DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO:{
++		char *last_slash;
++
++		last_slash = dso->long_name + dso->long_name_len;
++		while (last_slash != dso->long_name && *last_slash != '/')
++			last_slash--;
++
++		size -= snprintf(file, MIN(size, strlen(symbol_conf.symfs) +
++				(last_slash - dso->long_name) + 2), "%s%s",
++				symbol_conf.symfs, dso->long_name);
++		snprintf(file + strlen(file), size, ".debug%s",
++				last_slash);
++		break;
++	}
++
+ 	case DSO_BINARY_TYPE__BUILDID_DEBUGINFO:
+ 		if (!dso->has_build_id) {
+ 			ret = -1;
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index b793053..dbd9241 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -23,6 +23,7 @@ enum dso_binary_type {
+ 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
+ 	DSO_BINARY_TYPE__KCORE,
+ 	DSO_BINARY_TYPE__GUEST_KCORE,
++	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
+ 	DSO_BINARY_TYPE__NOT_FOUND,
+ };
+ 
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 7eb0362..cd1dcc4 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -51,6 +51,7 @@ static enum dso_binary_type binary_type_symtab[] = {
+ 	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
+ 	DSO_BINARY_TYPE__GUEST_KMODULE,
+ 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
++	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
+ 	DSO_BINARY_TYPE__NOT_FOUND,
+ };
+ 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.8.4.rc3
+
