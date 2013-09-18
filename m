@@ -1,92 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab3IRPo6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:44:58 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:13457 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab3IRPo5 (ORCPT
+	id S1752002Ab3IRPuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 11:50:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48018 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218Ab3IRPuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:44:57 -0400
-Message-ID: <1379519092.1522.27.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH 005/007] WAN Drivers: Update farsync driver and
- introduce fsflex driver
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Kevin Curtis <Kevin.Curtis@farsite.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "Dermot Smith" <dermot.smith@farsite.com>
-Date: Wed, 18 Sep 2013 16:44:52 +0100
-In-Reply-To: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA4@SOLO.hq.farsitecommunications.com>
-References: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA4@SOLO.hq.farsitecommunications.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Wed, 18 Sep 2013 11:50:02 -0400
+Date: Wed, 18 Sep 2013 17:49:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130918154939.GZ26785@twins.programming.kicks-ass.net>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-38-git-send-email-mgorman@suse.de>
+ <20130917143003.GA29354@twins.programming.kicks-ass.net>
+ <20130917162050.GK22421@suse.de>
+ <20130917164505.GG12926@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20158.002
-X-TM-AS-Result: No--18.304500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130917164505.GG12926@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-18 at 11:12 +0100, Kevin Curtis wrote:
-> Farsite Communications FarSync driver update
-> 
-> Patch 5 of 7
-> Note that this patch must be applied with patch 4 (farsync_include_patch)
-> 
-> Update the current farsync driver to support all of the PCI and PCI X
-> cards manufactured by Farsite Communications.
-> 
-> Add a tty interface so that the ports can also be used by the ppp daemon.
-> 
-> Add support for big endian systems (the FarSite cards have a little endian
-> processor on board).
-[...]
+New version, now with excessive comments.
 
-Should all be separate patches.  This is just doing way too much in one
-go.
+I found a deadlock (where both reader and writer would go to sleep);
+identified below as case 1b.
 
-And there are regressions in here like:
+The implementation without patch is reader biased, this implementation,
+as Mel pointed out, is writer biased. I should try and fix this but I'm
+stepping away from the computer now as I have the feeling I'll only
+wreck stuff from now on.
 
->  static struct pci_driver fst_driver = {
-> -        .name          = FST_NAME,
-> -        .id_table      = fst_pci_dev_id,
-> -        .probe         = fst_add_one,
-> -        .remove        = fst_remove_one,
-> -        .suspend       = NULL,
-> -        .resume        = NULL,
-> +name: FST_NAME,
-> +id_table : fst_pci_dev_id,
-> +probe : fst_add_one,
-> +remove : fst_remove_one,
-> +suspend : NULL,
-> +resume : NULL,
-> +};
+---
+Subject: hotplug: Optimize {get,put}_online_cpus()
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Tue Sep 17 16:17:11 CEST 2013
 
-And the addition of a file in procfs (at the top level, even!) as if
-it's still 2001 and sysfs doesn't exist:
+The current implementation uses global state, change it so the reader
+side uses per-cpu state in the contended fast path.
 
-> +static int farsync_proc_open(struct inode *inode, struct file *file)
-> +{
-> +       return single_open(file, fst_proc_info, NULL);
-> +}
-> +
-> +static const struct file_operations farsync_proc_fops = {
-> +       .open = farsync_proc_open,
-> +       .read = seq_read,
-> +       .llseek = seq_lseek,
-> +       .release = single_release,
->  };
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ include/linux/cpu.h |   29 ++++++++-
+ kernel/cpu.c        |  159 ++++++++++++++++++++++++++++++++++------------------
+ 2 files changed, 134 insertions(+), 54 deletions(-)
 
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -16,6 +16,7 @@
+ #include <linux/node.h>
+ #include <linux/compiler.h>
+ #include <linux/cpumask.h>
++#include <linux/percpu.h>
+ 
+ struct device;
+ 
+@@ -175,8 +176,32 @@ extern struct bus_type cpu_subsys;
+ 
+ extern void cpu_hotplug_begin(void);
+ extern void cpu_hotplug_done(void);
+-extern void get_online_cpus(void);
+-extern void put_online_cpus(void);
++
++extern struct task_struct *__cpuhp_writer;
++DECLARE_PER_CPU(unsigned int, __cpuhp_refcount);
++
++extern void __get_online_cpus(void);
++
++static inline void get_online_cpus(void)
++{
++	might_sleep();
++
++	this_cpu_inc(__cpuhp_refcount);
++	smp_mb(); /* see comment near __get_online_cpus() */
++	if (unlikely(__cpuhp_writer))
++		__get_online_cpus();
++}
++
++extern void __put_online_cpus(void);
++
++static inline void put_online_cpus(void)
++{
++	this_cpu_dec(__cpuhp_refcount);
++	smp_mb(); /* see comment near __get_online_cpus() */
++	if (unlikely(__cpuhp_writer))
++		__put_online_cpus();
++}
++
+ extern void cpu_hotplug_disable(void);
+ extern void cpu_hotplug_enable(void);
+ #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -49,88 +49,143 @@ static int cpu_hotplug_disabled;
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+ 
+-static struct {
+-	struct task_struct *active_writer;
+-	struct mutex lock; /* Synchronizes accesses to refcount, */
+-	/*
+-	 * Also blocks the new readers during
+-	 * an ongoing cpu hotplug operation.
+-	 */
+-	int refcount;
+-} cpu_hotplug = {
+-	.active_writer = NULL,
+-	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
+-	.refcount = 0,
+-};
++struct task_struct *__cpuhp_writer = NULL;
++EXPORT_SYMBOL_GPL(__cpuhp_writer);
++
++DEFINE_PER_CPU(unsigned int, __cpuhp_refcount);
++EXPORT_PER_CPU_SYMBOL_GPL(__cpuhp_refcount);
++
++static DECLARE_WAIT_QUEUE_HEAD(cpuhp_wq);
++
++/*
++ * We must order things like:
++ *
++ *  CPU0 -- read-lock		CPU1 -- write-lock
++ *
++ *  STORE __cpuhp_refcount	STORE __cpuhp_writer
++ *  MB				MB
++ *  LOAD __cpuhp_writer		LOAD __cpuhp_refcount
++ *
++ *
++ * This gives rise to the following permutations:
++ *
++ * a) all of R happend before W
++ * b) R starts but sees the W store -- therefore W must see the R store
++ *    W starts but sees the R store -- therefore R must see the W store
++ * c) all of W happens before R
++ *
++ * 1) RL vs WL:
++ *
++ * 1a) RL proceeds; WL observes refcount and goes wait for !refcount.
++ * 1b) RL drops into the slow path; WL waits for !refcount.
++ * 1c) WL proceeds; RL drops into the slow path.
++ *
++ * 2) RL vs WU:
++ *
++ * 2a) RL drops into the slow path; WU clears writer and wakes RL
++ * 2b) RL proceeds; WU continues to wake others
++ * 2d) RL proceeds.
++ *
++ * 3) RU vs WL:
++ *
++ * 3a) RU proceeds; WL proceeds.
++ * 3b) RU drops to slow path; WL proceeds
++ * 3c) WL waits for !refcount; RL drops to slow path
++ *
++ * 4) RU vs WU:
++ *
++ * Impossible since R and W state are mutually exclusive.
++ *
++ * This leaves us to consider the R slow paths:
++ *
++ * RL
++ *
++ * 1b) we must wake W
++ * 2a) nothing of importance
++ *
++ * RU
++ *
++ * 3b) nothing of importance
++ * 3c) we must wake W
++ *
++ */
+ 
+-void get_online_cpus(void)
++void __get_online_cpus(void)
+ {
+-	might_sleep();
+-	if (cpu_hotplug.active_writer == current)
++	if (__cpuhp_writer == current)
+ 		return;
+-	mutex_lock(&cpu_hotplug.lock);
+-	cpu_hotplug.refcount++;
+-	mutex_unlock(&cpu_hotplug.lock);
+ 
++again:
++	/*
++	 * Case 1b; we must decrement our refcount again otherwise WL will
++	 * never observe !refcount and stay blocked forever. Not good since
++	 * we're going to sleep too. Someone must be awake and do something.
++	 *
++	 * Skip recomputing the refcount, just wake the pending writer and
++	 * have him check it -- writers are rare.
++	 */
++	this_cpu_dec(__cpuhp_refcount);
++	wake_up_process(__cpuhp_writer); /* implies MB */
++
++	wait_event(cpuhp_wq, !__cpuhp_writer);
++
++	/* Basically re-do the fast-path. Excep we can never be the writer. */
++	this_cpu_inc(__cpuhp_refcount);
++	smp_mb();
++	if (unlikely(__cpuhp_writer))
++		goto again;
+ }
+-EXPORT_SYMBOL_GPL(get_online_cpus);
++EXPORT_SYMBOL_GPL(__get_online_cpus);
+ 
+-void put_online_cpus(void)
++void __put_online_cpus(void)
+ {
+-	if (cpu_hotplug.active_writer == current)
+-		return;
+-	mutex_lock(&cpu_hotplug.lock);
++	unsigned int refcnt = 0;
++	int cpu;
+ 
+-	if (WARN_ON(!cpu_hotplug.refcount))
+-		cpu_hotplug.refcount++; /* try to fix things up */
++	if (__cpuhp_writer == current)
++		return;
+ 
+-	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
+-		wake_up_process(cpu_hotplug.active_writer);
+-	mutex_unlock(&cpu_hotplug.lock);
++	/* 3c */
++	for_each_possible_cpu(cpu)
++		refcnt += per_cpu(__cpuhp_refcount, cpu);
+ 
++	if (!refcnt)
++		wake_up_process(__cpuhp_writer);
+ }
+-EXPORT_SYMBOL_GPL(put_online_cpus);
++EXPORT_SYMBOL_GPL(__put_online_cpus);
+ 
+ /*
+  * This ensures that the hotplug operation can begin only when the
+  * refcount goes to zero.
+  *
+- * Note that during a cpu-hotplug operation, the new readers, if any,
+- * will be blocked by the cpu_hotplug.lock
+- *
+  * Since cpu_hotplug_begin() is always called after invoking
+  * cpu_maps_update_begin(), we can be sure that only one writer is active.
+- *
+- * Note that theoretically, there is a possibility of a livelock:
+- * - Refcount goes to zero, last reader wakes up the sleeping
+- *   writer.
+- * - Last reader unlocks the cpu_hotplug.lock.
+- * - A new reader arrives at this moment, bumps up the refcount.
+- * - The writer acquires the cpu_hotplug.lock finds the refcount
+- *   non zero and goes to sleep again.
+- *
+- * However, this is very difficult to achieve in practice since
+- * get_online_cpus() not an api which is called all that often.
+- *
+  */
+ void cpu_hotplug_begin(void)
+ {
+-	cpu_hotplug.active_writer = current;
++	__cpuhp_writer = current;
+ 
+ 	for (;;) {
+-		mutex_lock(&cpu_hotplug.lock);
+-		if (likely(!cpu_hotplug.refcount))
++		unsigned int refcnt = 0;
++		int cpu;
++
++		set_current_state(TASK_UNINTERRUPTIBLE); /* implies MB */
++
++		for_each_possible_cpu(cpu)
++			refcnt += per_cpu(__cpuhp_refcount, cpu);
++
++		if (!refcnt)
+ 			break;
+-		__set_current_state(TASK_UNINTERRUPTIBLE);
+-		mutex_unlock(&cpu_hotplug.lock);
++
+ 		schedule();
+ 	}
++	__set_current_state(TASK_RUNNING);
+ }
+ 
+ void cpu_hotplug_done(void)
+ {
+-	cpu_hotplug.active_writer = NULL;
+-	mutex_unlock(&cpu_hotplug.lock);
++	__cpuhp_writer = NULL;
++	wake_up_all(&cpuhp_wq); /* implies MB */
+ }
+ 
+ /*
 
