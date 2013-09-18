@@ -1,59 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545Ab3IRC4D (ORCPT <rfc822;w@1wt.eu>);
+	id S1751632Ab3IRC4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 22:56:05 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:32885 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab3IRC4D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Sep 2013 22:56:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49186 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751359Ab3IRC4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 22:56:01 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
-        Eric Paris <eparis@redhat.com>,
-        Justin Stephenson <jstephen@redhat.com>,
-        LC Bruzenak <lenny@magitekltd.com>
-Subject: [PATCH] audit: format user messages to size of MAX_AUDIT_MESSAGE_LENGTH
-Date: Tue, 17 Sep 2013 22:55:16 -0400
-Message-Id: <7e230309c0814b0d79ab6bcff51ed3dfd23703e1.1379472716.git.rgb@redhat.com>
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>
+Subject: [PATCH 1/2] x86_64: Add safe check in a.out loaders and some coding style
+Date: Tue, 17 Sep 2013 23:54:16 -0300
+Message-Id: <1379472857-6473-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Messages of type AUDIT_USER_TTY were being formatted to 1024 octets,
-truncating messages approaching MAX_AUDIT_MESSAGE_LENGTH (8970 octets).
+ia32_aout had no safe checks concerning the mmap and f_op in this module.
+It's not necessary to verify f_op in the load_aout_library, since the
+prior kernel_read/vfs_read function already does.
+Coding style and printk strings fixes.
 
-Set the formatting to 8560 characters, given maximum estimates for prefix and
-suffix budgets.
+Tested using qemu, a handcrafted a.out binary and a a.out linked with a
+cross-compiled ld.
 
-See the problem discussion:
-https://www.redhat.com/archives/linux-audit/2009-January/msg00030.html
-
-And the new size rationale:
-https://www.redhat.com/archives/linux-audit/2013-September/msg00016.html
-
-Test ~8k messages with:
-auditctl -m "$(for i in $(seq -w 001 820);do echo -n "${i}0______";done)"
-
-Reported-by: LC Bruzenak <lenny@magitekltd.com>
-Reported-by: Justin Stephenson <jstephen@redhat.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
 ---
- kernel/audit.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/ia32/ia32_aout.c | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 91e53d0..939cff1 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -715,7 +715,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 			}
- 			audit_log_common_recv_msg(&ab, msg_type);
- 			if (msg_type != AUDIT_USER_TTY)
--				audit_log_format(ab, " msg='%.1024s'",
-+				audit_log_format(ab, " msg='%.8560s'",
- 						 (char *)data);
- 			else {
- 				int size;
+diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
+index bae3aba..15a8319 100644
+--- a/arch/x86/ia32/ia32_aout.c
++++ b/arch/x86/ia32/ia32_aout.c
+@@ -271,10 +271,17 @@ static int load_aout_binary(struct linux_binprm *bprm)
+ 	     N_MAGIC(ex) != QMAGIC && N_MAGIC(ex) != NMAGIC) ||
+ 	    N_TRSIZE(ex) || N_DRSIZE(ex) ||
+ 	    i_size_read(file_inode(bprm->file)) <
+-	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
++	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+ 		return -ENOEXEC;
+ 	}
+ 
++	/*
++	 * Requires a mmap handler. This prevents people from using a.out
++	 * as part of an exploit attack against /proc-related vulnerabilities.
++	 */
++	if (!bprm->file->f_op || !bprm->file->f_op->mmap)
++		return -ENOEXEC;
++
+ 	fd_offset = N_TXTOFF(ex);
+ 
+ 	/* Check initial limits. This avoids letting people circumvent
+@@ -350,14 +357,13 @@ static int load_aout_binary(struct linux_binprm *bprm)
+ 		if ((fd_offset & ~PAGE_MASK) != 0 &&
+ 			    time_after(jiffies, error_time + 5*HZ)) {
+ 			printk(KERN_WARNING
+-			       "fd_offset is not page aligned. Please convert "
+-			       "program: %s\n",
++			       "fd_offset is not page aligned. Please convert program: %s\n",
+ 			       bprm->file->f_path.dentry->d_name.name);
+ 			error_time = jiffies;
+ 		}
+ #endif
+ 
+-		if (!bprm->file->f_op->mmap || (fd_offset & ~PAGE_MASK) != 0) {
++		if ((fd_offset & ~PAGE_MASK) != 0) {
+ 			vm_brk(N_TXTADDR(ex), ex.a_text+ex.a_data);
+ 			read_code(bprm->file, N_TXTADDR(ex), fd_offset,
+ 					ex.a_text+ex.a_data);
+@@ -424,10 +430,17 @@ static int load_aout_library(struct file *file)
+ 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != QMAGIC) || N_TRSIZE(ex) ||
+ 	    N_DRSIZE(ex) || ((ex.a_entry & 0xfff) && N_MAGIC(ex) == ZMAGIC) ||
+ 	    i_size_read(file_inode(file)) <
+-	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
++	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+ 		goto out;
+ 	}
+ 
++	/*
++	 * Requires a mmap handler. This prevents people from using a.out
++	 * as part of an exploit attack against /proc-related vulnerabilities.
++	 */
++	if (!file->f_op->mmap)
++		goto out;
++
+ 	if (N_FLAGS(ex))
+ 		goto out;
+ 
+@@ -441,8 +454,7 @@ static int load_aout_library(struct file *file)
+ 		static unsigned long error_time;
+ 		if (time_after(jiffies, error_time + 5*HZ)) {
+ 			printk(KERN_WARNING
+-			       "N_TXTOFF is not page aligned. Please convert "
+-			       "library: %s\n",
++			       "N_TXTOFF is not page aligned. Please convert library: %s\n",
+ 			       file->f_path.dentry->d_name.name);
+ 			error_time = jiffies;
+ 		}
 -- 
-1.7.1
+1.8.4
 
