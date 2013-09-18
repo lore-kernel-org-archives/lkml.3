@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3IRSuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 14:50:05 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:55134 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab3IRStI (ORCPT
+	id S1753348Ab3IRSuD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:50:03 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:53442 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712Ab3IRStN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 14:49:08 -0400
+	Wed, 18 Sep 2013 14:49:13 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -22,9 +22,9 @@ To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v2 1/4] clockchips: Add FEAT_PERCPU clockevent flag
-Date: Wed, 18 Sep 2013 11:48:35 -0700
-Message-Id: <1379530118-22813-2-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 3/4] tick: broadcast: Deny per-cpu clockevents from being broadcast sources
+Date: Wed, 18 Sep 2013 11:48:37 -0700
+Message-Id: <1379530118-22813-4-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -32,26 +32,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the flag CLOCK_EVT_FEAT_PERCPU which is supposed to be set for per
-cpu clockevent devices.
+On most ARM systems the per-cpu clockevents are truly per-cpu in
+the sense that they can't be controlled on any other CPU besides
+the CPU that they interrupt. If one of these clockevents were to
+become a broadcast source we will run into a lot of trouble
+because the broadcast source is enabled on the first CPU to go
+into deep idle (if that CPU suffers from FEAT_C3_STOP) and that
+could be a different CPU than what the clockevent is interrupting
+(or even worse the CPU that the clockevent interrupts could be
+offline).
+
+Theoretically it's possible to support per-cpu clockevents as the
+broadcast source but so far we haven't needed this and supporting
+it is rather complicated. Let's just deny the possibility for now
+until this becomes a reality (let's hope it never does!).
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- include/linux/clockchips.h | 1 +
+ kernel/time/tick-broadcast.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-index 0857922..493aa02 100644
---- a/include/linux/clockchips.h
-+++ b/include/linux/clockchips.h
-@@ -60,6 +60,7 @@ enum clock_event_mode {
-  * Core shall set the interrupt affinity dynamically in broadcast mode
-  */
- #define CLOCK_EVT_FEAT_DYNIRQ		0x000020
-+#define CLOCK_EVT_FEAT_PERCPU		0x000040
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 218bcb5..9532690 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -70,6 +70,7 @@ static bool tick_check_broadcast_device(struct clock_event_device *curdev,
+ 					struct clock_event_device *newdev)
+ {
+ 	if ((newdev->features & CLOCK_EVT_FEAT_DUMMY) ||
++	    (newdev->features & CLOCK_EVT_FEAT_PERCPU) ||
+ 	    (newdev->features & CLOCK_EVT_FEAT_C3STOP))
+ 		return false;
  
- /**
-  * struct clock_event_device - clock event device descriptor
 -- 
 1.8.4
 
