@@ -1,36 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab3IRPXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:23:19 -0400
-Received: from science.horizon.com ([71.41.210.146]:54890 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751497Ab3IRPXR (ORCPT
+	id S1752635Ab3IRPXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 11:23:53 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:32852 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab3IRPXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:23:17 -0400
-Date: 18 Sep 2013 11:22:09 -0400
-Message-ID: <20130918152209.16302.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: dan.carpenter@oracle.com, penguin-kernel@I-love.SAKURA.ne.jp
-Subject: Re: [PATCH 0/2] vsprintf: ignore %n again
-Cc: akpm@linux-foundation.org, JBeulich@suse.com, joe@perches.com,
-        keescook@chromium.org, kosaki.motohiro@gmail.com,
-        linux-kernel@vger.kernel.org, linux@horizon.com,
-        viro@zeniv.linux.org.uk
-In-Reply-To: <20130918141104.GT19256@mwanda>
+	Wed, 18 Sep 2013 11:23:52 -0400
+Message-ID: <1379517828.1522.10.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH 001/007] WAN Drivers: Update farsync driver and
+ introduce fsflex driver
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Kevin Curtis <Kevin.Curtis@farsite.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "Dermot Smith" <dermot.smith@farsite.com>
+Date: Wed, 18 Sep 2013 16:23:48 +0100
+In-Reply-To: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA0@SOLO.hq.farsitecommunications.com>
+References: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA0@SOLO.hq.farsitecommunications.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20158.002
+X-TM-AS-Result: No--19.034500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +#define printk(fmt, ...) do {				  \
-> +	compiletime_assert(__builtin_constant_p(fmt),     \
-> +			   "Non-constant format string"); \
-> +	printk(fmt, ##__VA_ARGS__);			  \
-> +} while (0)
+Don't use the same subject line for all your patches.  This will be the
+summary of the change in git and it needs to say what the individual
+change does.
 
-May I recommend __builtin_constant_p(*fmt).  Since:
+On Wed, 2013-09-18 at 11:11 +0100, Kevin Curtis wrote:
+> Farsite Communications FarSync driver update
+> 
+> Patch 1 of 7
+>
+> Add new FarSite PCI ID's to the pci_ids.h file
 
-char buf[OVERFLOW_VULNERABILITY];
-strcpy(buf, malicious_format);
-printk(buf, args)
+This is unnecessary unless they will be used in multiple drivers.
 
-has __builtin_constant_p(buf), but it's not a constant format string.
+Ben.
+
+> Signed-off-by: Kevin Curtis <kevin.curtis@farsite.com>
+> 
+> ---
+> 
+> diff -uprN -X linux-3.10.1/Documentation/dontdiff linux-3.10.1/include/linux/pci_ids.h linux-3.10.1_new/include/linux/pci_ids.h
+> --- linux-3.10.1/include/linux/pci_ids.h	2013-07-13 19:42:41.000000000 +0100
+> +++ linux-3.10.1_new/include/linux/pci_ids.h	2013-07-26 11:18:39.821065185 +0100
+> @@ -2284,6 +2284,14 @@
+>  #define PCI_DEVICE_ID_FARSITE_T4U       0x0640
+>  #define PCI_DEVICE_ID_FARSITE_TE1       0x1610
+>  #define PCI_DEVICE_ID_FARSITE_TE1C      0x1612
+> +#define PCI_DEVICE_ID_FARSITE_DSL_S1    0x2610
+> +#define PCI_DEVICE_ID_FARSITE_T4E       0x3640
+> +#define PCI_DEVICE_ID_FARSITE_T4UE      0x4640
+> +#define PCI_DEVICE_ID_FARSITE_T2UE      0x4620
+> +#define PCI_DEVICE_ID_FARSITE_T2U_PMC   0x6620
+> +#define PCI_DEVICE_ID_FARSITE_T2Ee      0x5621
+> +#define PCI_DEVICE_ID_FARSITE_T4Ee      0x5641
+> +
+>  
+>  #define PCI_VENDOR_ID_ARIMA		0x161f
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
