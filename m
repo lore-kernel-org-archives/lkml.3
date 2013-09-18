@@ -1,93 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab3IRKsx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 06:48:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39786 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab3IRKsv (ORCPT
+	id S1751902Ab3IRK4V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 06:56:21 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:57550 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab3IRK4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 06:48:51 -0400
-Date: Wed, 18 Sep 2013 12:48:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [patch 6/6] preempt: Make PREEMPT_ACTIVE generic
-Message-ID: <20130918104835.GH9326@twins.programming.kicks-ass.net>
-References: <20130917082838.218329307@infradead.org>
- <20130917182350.449685712@linutronix.de>
- <20130917183629.090698799@linutronix.de>
+	Wed, 18 Sep 2013 06:56:19 -0400
+Date: Wed, 18 Sep 2013 12:56:31 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Linux MM <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] [PATCH] [RFC] mm/shrinker: Add a shrinker flag to
+ always shrink a bit
+Message-ID: <20130918105631.GS32145@phenom.ffwll.local>
+Mail-Followup-To: Knut Petersen <Knut_Petersen@t-online.de>,
+	Linux MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	Johannes Weiner <hannes@cmpxchg.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+	Glauber Costa <glommer@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <1379495401-18279-1-git-send-email-daniel.vetter@ffwll.ch>
+ <5239829F.4080601@t-online.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130917183629.090698799@linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <5239829F.4080601@t-online.de>
+X-Operating-System: Linux phenom 3.10-2-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 06:53:09PM -0000, Thomas Gleixner wrote:
-> No point in having this bit defined by architecture.
+On Wed, Sep 18, 2013 at 12:38:23PM +0200, Knut Petersen wrote:
+> On 18.09.2013 11:10, Daniel Vetter wrote:
 > 
-> Index: linux-2.6/include/linux/preempt_mask.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/preempt_mask.h
-> +++ linux-2.6/include/linux/preempt_mask.h
-> @@ -17,10 +17,11 @@
->   * there are a few palaeontologic drivers which reenable interrupts in
->   * the handler, so we need more than one bit here.
->   *
-> - * PREEMPT_MASK: 0x000000ff
-> - * SOFTIRQ_MASK: 0x0000ff00
-> - * HARDIRQ_MASK: 0x000f0000
-> - *     NMI_MASK: 0x00100000
-> + * PREEMPT_MASK:	0x000000ff
-> + * SOFTIRQ_MASK:	0x0000ff00
-> + * HARDIRQ_MASK:	0x000f0000
-> + *     NMI_MASK:	0x00100000
-> + * PREEMPT_ACTIVE:	0x00200000
->   */
->  #define PREEMPT_BITS	8
->  #define SOFTIRQ_BITS	8
-> @@ -46,15 +47,9 @@
+> Just now I prepared a patch changing the same function in vmscan.c
+> >Also, this needs to be rebased to the new shrinker api in 3.12, I
+> >simply haven't rolled my trees forward yet.
+> 
+> Well, you should. Since commit 81e49f  shrinker->count_objects might be
+> set to SHRINK_STOP, causing shrink_slab_node() to complain loud and often:
+> 
+> [ 1908.234595] shrink_slab: i915_gem_inactive_scan+0x0/0x9c negative objects to delete nr=-xxxxxxxxx
+> 
+> The kernel emitted a few thousand log lines like the one quoted above during the
+> last few days on my system.
+> 
+> >diff --git a/mm/vmscan.c b/mm/vmscan.c
+> >index 2cff0d4..d81f6e0 100644
+> >--- a/mm/vmscan.c
+> >+++ b/mm/vmscan.c
+> >@@ -254,6 +254,10 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+> >  			total_scan = max_pass;
+> >  		}
+> >+		/* Always try to shrink a bit to make forward progress. */
+> >+		if (shrinker->evicts_to_page_lru)
+> >+			total_scan = max_t(long, total_scan, batch_size);
+> >+
+> At that place the error message is already emitted.
+> >  		/*
+> >  		 * We need to avoid excessive windup on filesystem shrinkers
+> >  		 * due to large numbers of GFP_NOFS allocations causing the
+> 
+> Have a look at the attached patch. It fixes my problem with the erroneous/misleading
+> error messages, and I think it�s right to just bail out early if SHRINK_STOP is found.
+> 
+> Do you agree ?
+
+Looking at the patch which introduced these error message for you, which
+changed the ->count_objects return value from 0 to SHRINK_STOP your patch
+below to treat 0 and SHRINK_STOP equally simply reverts the functional
+change.
+
+I don't think that's the intention behind SHRINK_STOP. But if it's the
+right think to do we better revert the offending commit directly. And
+since I lack clue I think that's a call for core mm guys to make.
+-Daniel
+> 
+> cu,
+>  Knut
+> 
+
+> From 75ae570ce7b0bb6b40c76beb18fc075e9af3127a Mon Sep 17 00:00:00 2001
+> From: Knut Petersen <Knut_Petersen@t-online.de>
+> Date: Wed, 18 Sep 2013 12:06:33 +0200
+> Subject: [PATCH] mm: respect SHRINK_STOP in shrink_slab_node()
+> 
+> Since commit 81e49f811404f428a9d9a63295a0c267e802fa12
+> i915_gem_inactive_count() might return SHRINK_STOP.
+> 
+> Unfortunately SHRINK_STOP is not handled propperly in
+> shrink_slab_node(), causing a system log cluttered with
+> kernel error messages complaining about "negative objects
+> to delete".
+> 
+> I think the proper way of handling SHRINK_STOP is obvious,
+> we should obey ;-)
+> 
+> Signed-off-by: Knut Petersen <Knut_Petersen@t-online.de>
+> ---
+>  mm/vmscan.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 8ed1b77..b1e6f0d 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -244,6 +244,8 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+>  	max_pass = shrinker->count_objects(shrinker, shrinkctl);
+>  	if (max_pass == 0)
+>  		return 0;
+> +	if (max_pass == SHRINK_STOP)
+> +		return 0;
 >  
->  #define SOFTIRQ_DISABLE_OFFSET	(2 * SOFTIRQ_OFFSET)
->  
-> -#ifndef PREEMPT_ACTIVE
->  #define PREEMPT_ACTIVE_BITS	1
->  #define PREEMPT_ACTIVE_SHIFT	(NMI_SHIFT + NMI_BITS)
->  #define PREEMPT_ACTIVE	(__IRQ_MASK(PREEMPT_ACTIVE_BITS) << PREEMPT_ACTIVE_SHIFT)
-> -#endif
-> -
-> -#if PREEMPT_ACTIVE < (1 << (NMI_SHIFT + NMI_BITS))
-> -#error PREEMPT_ACTIVE is too low!
-> -#endif
->  
->  #define hardirq_count()	(preempt_count() & HARDIRQ_MASK)
->  #define softirq_count()	(preempt_count() & SOFTIRQ_MASK)
+>  	/*
+>  	 * copy the current shrinker scan count into a local variable
+> -- 
+> 1.8.1.4
+> 
 
-I get:
 
- init/init_task.c:26:4: error: ‘PREEMPT_ACTIVE’ undeclared here (not in a function)
-
-Because for some obscure reason sched.h doesn't actually include enough.
-
-The below cures things:
-
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -22,6 +22,7 @@ struct sched_param {
- #include <linux/errno.h>
- #include <linux/nodemask.h>
- #include <linux/mm_types.h>
-+#include <linux/preempt_mask.h>
- 
- #include <asm/page.h>
- #include <asm/ptrace.h>
-
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
