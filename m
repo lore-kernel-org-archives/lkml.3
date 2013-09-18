@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab3IROYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 10:24:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47845 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab3IROYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 10:24:04 -0400
-Date: Wed, 18 Sep 2013 16:24:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
-Message-ID: <20130918142400.GA3421@dhcp22.suse.cz>
-References: <20130916140607.GC3674@dhcp22.suse.cz>
- <20130916161316.5113F6E7@pobox.sk>
- <20130916145744.GE3674@dhcp22.suse.cz>
- <20130916170543.77F1ECB4@pobox.sk>
- <20130916152548.GF3674@dhcp22.suse.cz>
- <20130916225246.A633145B@pobox.sk>
- <20130917000244.GD3278@cmpxchg.org>
- <20130917131535.94E0A843@pobox.sk>
- <20130917141013.GA30838@dhcp22.suse.cz>
- <20130918160304.6EDF2729@pobox.sk>
+	id S1751614Ab3IRO26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 10:28:58 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18699 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab3IRO25 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 10:28:57 -0400
+Date: Wed, 18 Sep 2013 17:28:37 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: keescook@chromium.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, joe@perches.com, linux@horizon.com,
+        JBeulich@suse.com, kosaki.motohiro@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 0/2] vsprintf: ignore %n again
+Message-ID: <20130918142837.GU19256@mwanda>
+References: <1379317437-28329-1-git-send-email-keescook@chromium.org>
+ <20130916155504.GC13318@ZenIV.linux.org.uk>
+ <CAGXu5jK2d+9m0uA84nGbZ5E=s974NRn+Sxz3iRcTsFWqWFTGNQ@mail.gmail.com>
+ <201309182214.IDD13060.FFOVJOLOFQtHSM@I-love.SAKURA.ne.jp>
+ <20130918141104.GT19256@mwanda>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130918160304.6EDF2729@pobox.sk>
+In-Reply-To: <20130918141104.GT19256@mwanda>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 18-09-13 16:03:04, azurIt wrote:
-[..]
-> I was finally able to get stack of problematic process :) I saved it
-> two times from the same process, as Michal suggested (i wasn't able to
-> take more). Here it is:
-> 
-> First (doesn't look very helpfull):
-> [<ffffffffffffffff>] 0xffffffffffffffff
+On Wed, Sep 18, 2013 at 05:11:04PM +0300, Dan Carpenter wrote:
+>  asmlinkage __printf(1, 2) __cold
+>  int printk(const char *fmt, ...);
+> +#define printk(fmt, ...) do {				  \
+> +	compiletime_assert(__builtin_constant_p(fmt),     \
+> +			   "Non-constant format string"); \
+> +	printk(fmt, ##__VA_ARGS__);			  \
+> +} while (0)
 
-No it is not.
- 
-> Second:
-> [<ffffffff810e17d1>] shrink_zone+0x481/0x650
-> [<ffffffff810e2ade>] do_try_to_free_pages+0xde/0x550
-> [<ffffffff810e310b>] try_to_free_pages+0x9b/0x120
-> [<ffffffff81148ccd>] free_more_memory+0x5d/0x60
-> [<ffffffff8114931d>] __getblk+0x14d/0x2c0
-> [<ffffffff8114c973>] __bread+0x13/0xc0
-> [<ffffffff811968a8>] ext3_get_branch+0x98/0x140
-> [<ffffffff81197497>] ext3_get_blocks_handle+0xd7/0xdc0
-> [<ffffffff81198244>] ext3_get_block+0xc4/0x120
-> [<ffffffff81155b8a>] do_mpage_readpage+0x38a/0x690
-> [<ffffffff81155ffb>] mpage_readpages+0xfb/0x160
-> [<ffffffff811972bd>] ext3_readpages+0x1d/0x20
-> [<ffffffff810d9345>] __do_page_cache_readahead+0x1c5/0x270
-> [<ffffffff810d9411>] ra_submit+0x21/0x30
-> [<ffffffff810cfb90>] filemap_fault+0x380/0x4f0
-> [<ffffffff810ef908>] __do_fault+0x78/0x5a0
-> [<ffffffff810f2b24>] handle_pte_fault+0x84/0x940
-> [<ffffffff810f354a>] handle_mm_fault+0x16a/0x320
-> [<ffffffff8102715b>] do_page_fault+0x13b/0x490
-> [<ffffffff815cb87f>] page_fault+0x1f/0x30
-> [<ffffffffffffffff>] 0xffffffffffffffff
+Oops...  That breaks the compile for printk.c.
 
-This is the direct reclaim path. You are simply running out of memory
-globaly. There is no memcg specific code in that trace.
--- 
-Michal Hocko
-SUSE Labs
+Also don't we want 'const char fmt[] = "foo %s";' to be a valid format
+string?
+
+regards,
+dan carpenter
