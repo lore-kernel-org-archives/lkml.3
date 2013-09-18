@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab3IRNb7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:31:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44781 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751566Ab3IRNb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:31:57 -0400
-Date: Wed, 18 Sep 2013 09:31:48 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Dan Duval <dan.duval@oracle.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Chuck Anderson <chuck.anderson@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] audit: fix endless wait in audit_log_start()
-Message-ID: <20130918133148.GB13968@madcap2.tricolour.ca>
-References: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
- <20130918094817.18754.8847.stgit@zurg>
+	id S1751759Ab3IRNeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:34:06 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:48001 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab3IRNeD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 09:34:03 -0400
+Date: Wed, 18 Sep 2013 15:34:00 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Namhyung Kim <namhyung@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] perf: Support for Openembedded/Yocto -dbg packages
+Message-ID: <20130918133400.GA8141@gmail.com>
+References: <1379497571-14208-1-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130918094817.18754.8847.stgit@zurg>
+In-Reply-To: <1379497571-14208-1-git-send-email-ricardo.ribalda@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 01:48:17PM +0400, Konstantin Khlebnikov wrote:
-> After commit 829199197a430dade2519d54f5545c4a094393b8 audit emiters will block
-> forever if userspace daemon cannot handle backlog. After the timeout waiting
-> loop turns into busy loop and runs until daemon dies or returns back to work.
-> This is minimal patch for that bug.
 
-Thanks Konstantin,
+* Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com> wrote:
 
-This patch is in my patchset...
-
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Luiz Capitulino <lcapitulino@redhat.com>
-> Cc: Richard Guy Briggs <rgb@redhat.com>
-> Cc: Eric Paris <eparis@redhat.com>
-> Cc: Chuck Anderson <chuck.anderson@oracle.com>
-> Cc: Dan Duval <dan.duval@oracle.com>
-> Cc: Dave Kleikamp <dave.kleikamp@oracle.com>
-> ---
->  kernel/audit.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+> On OpenEmbedded the symbol files are located under a .debug folder on
+> the same folder as the binary file.
 > 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 91e53d0..7b0e23a 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -1117,9 +1117,10 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+> This patch adds support for such files.
+> 
+> Without this patch on perf top you can see:
+> 
+> no symbols found in /usr/lib/gstreamer-1.0/libtheoraenc.so.1.1.2, maybe install
+> a debug package?
+> 
+> 84.56%  libtheoraenc.so.1.1.2       [.] 0x000000000000b346
+> 
+> With this patch symbols are shown:
+> 
+> 19.06%  libtheoraenc.so.1.1.2       [.] oc_int_frag_satd_thresh_mmxext
+> 9.76%   libtheoraenc.so.1.1.2       [.] oc_analyze_mb_mode_luma
+> 5.58%   libtheoraenc.so.1.1.2       [.] oc_qii_state_advance
+> 4.84%   libtheoraenc.so.1.1.2       [.] oc_enc_tokenize_ac
+> ...
+
+Nice! Two nits are remaining:
+
+> @@ -64,6 +65,21 @@ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
+>  			 symbol_conf.symfs, dso->long_name);
+>  		break;
 >  
->  			sleep_time = timeout_start + audit_backlog_wait_time -
->  					jiffies;
-> -			if ((long)sleep_time > 0)
-> +			if ((long)sleep_time > 0) {
->  				wait_for_auditd(sleep_time);
-> -			continue;
-> +				continue;
-> +			}
->  		}
->  		if (audit_rate_check() && printk_ratelimit())
->  			printk(KERN_WARNING
-> 
+> +	case DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO:{
 
-- RGB
+I think you missed the review feedback I gave for this line in the 
+previous mail.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer
-Kernel Security
-AMER ENG Base Operating Systems
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635
-Internal: (81) 32635
-Alt: +1.613.693.0684x3545
+> +		char *last_slash;
+> +
+> +		last_slash = dso->long_name + dso->long_name_len;
+> +		while (last_slash != dso->long_name && *last_slash != '/')
+> +			last_slash--;
+> +
+> +		size -= snprintf(file, MIN(size, strlen(symbol_conf.symfs) +
+> +				(last_slash - dso->long_name) + 2), "%s%s",
+> +				symbol_conf.symfs, dso->long_name);
+> +		snprintf(file + strlen(file), size, ".debug%s",
+> +				last_slash);
+> +		break;
+> +	}
+
+The 'MIN' still looks superfluous (btw., we use min()) - why not simply 
+set 'size' to the correct value when you set and iterate last_slash?
+
+(and scnprintf() should be used, as Arnaldo suggested.)
+
+Thanks,
+
+	Ingo
