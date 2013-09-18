@@ -1,123 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab3IROMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 10:12:09 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58565 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab3IROMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 10:12:07 -0400
-Date: Wed, 18 Sep 2013 09:11:06 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Pavel Machek <pavel@ucw.cz>
-CC: Felipe Balbi <balbi@ti.com>, kernel list <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: Fix style in s3c-hsotg.c
-Message-ID: <20130918141106.GH21559@radagast>
-Reply-To: <balbi@ti.com>
-References: <20130902135832.GA22300@amd.pavel.ucw.cz>
- <20130917154229.GI15645@radagast>
- <20130917220427.GC23937@amd.pavel.ucw.cz>
- <20130918014539.GB19817@radagast>
- <20130918092027.GA8325@amd.pavel.ucw.cz>
+	id S1752587Ab3IROM3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 10:12:29 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:55636 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505Ab3IROM0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 10:12:26 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="U3BNvdZEnlJXqmh+"
-Content-Disposition: inline
-In-Reply-To: <20130918092027.GA8325@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130917235028.GR9994@atomide.com>
+References: <201302171616.50152@pali> <20130217190303.GC2317@blackmetal.musicnaut.iki.fi>
+ <201303062112.06417@pali> <201309062234.05878@pali> <20130907230252.GA10700@blackmetal.musicnaut.iki.fi>
+ <20130917235028.GR9994@atomide.com>
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Wed, 18 Sep 2013 16:12:06 +0200
+Message-ID: <CAAwP0s3MBd58Q9wijQP9Nd_DB4GdicE-b427cHS-UXYS4HW-Jg@mail.gmail.com>
+Subject: Re: [PATCH v2] ADP1653 board code for Nokia RX-51
+To: Tony Lindgren <tony@atomide.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---U3BNvdZEnlJXqmh+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 18, 2013 at 1:50 AM, Tony Lindgren <tony@atomide.com> wrote:
+> * Aaro Koskinen <aaro.koskinen@iki.fi> [130907 16:10]:
+>> Hi,
+>>
+>> On Fri, Sep 06, 2013 at 10:34:05PM +0200, Pali Rohár wrote:
+>> > > --- /dev/null
+>> > > +++ b/arch/arm/mach-omap2/board-rx51-camera.c
+>> [...]
+>> > Ping, can you review this patch v2?
+>>
+>> I don't think Tony will accept any new board stuff for RX-51/N900.
+>> See for example: http://marc.info/?l=linux-kernel&m=137629626213187&w=2
+>>
+>> There should be initial Nokia N900 DTS file in 3.12-rc1, and we should
+>> continue converting this board fully to DT.
+>
+> Yes let's plan on making mach-omap2 to be DT only soonish.
+> AFAIK the only stopper right now for omap3 are the pending
+> pinctrl changes for the wake-up events as otherwise we would
+> have sever PM regressions with off-idle.
+>
 
-Hi,
+Hi Tony,
 
-On Wed, Sep 18, 2013 at 11:20:27AM +0200, Pavel Machek wrote:
-> On Tue 2013-09-17 20:45:39, Felipe Balbi wrote:
-> > On Wed, Sep 18, 2013 at 12:04:27AM +0200, Pavel Machek wrote:
-> > > On Tue 2013-09-17 10:42:30, Felipe Balbi wrote:
-> > > > Hi,
-> > > >=20
-> > > > On Mon, Sep 02, 2013 at 03:58:32PM +0200, Pavel Machek wrote:
-> > > > > Hi!
-> > > > >=20
-> > > > > checkpatch.pl has some valid complaints about style in s3c-hsotg.=
-c :
-> > > > > macro with if should be really enclosed in do {} while, and puts =
-is
-> > > > > going to be slightly faster.
-> > > > >=20
-> > > > > Here's suggested patch. I don't have the hardware, so it is compl=
-etely
-> > > > > untested.
-> > > > >=20
-> > > > > Signed-off-by: Pavel Machek, <pavel@denx.de>
-> > > >=20
-> > > > this is not how you send a patch, please read
-> > > > Documentation/SubmittingPatches
-> > >=20
-> > > Have you considered possibility that this is how you nudge maintainer
-> > > into fix their coding style?
-> >=20
-> > cute...
-> >=20
-> > Seriously though, read that file, you're commit log has garbage in it
-> > which shouldn't go to git history.
->=20
-> Run git log on SubmittingPatches.
->=20
-> Then, instead of telling me what to read, run checkpatch on your
-> files. You can either fix them yourself, or use my patch as a
-> basis. Note there's missing } or something, so it probably will not
-> compile, see the other mail. So you actually will have to modify that
-> patch. Stripping "Hi!" from it should not be that hard, neither should
-> be stripping note that patch is untested when you actually test
-> it. And as you are the maintainer, it is your job.
+I don't know if OMAP2+ DT will happen soon as you said. At least I
+know about a big issue we had with GPIO pins not being auto-requested
+when are mapped as IRQ. You can refer to [1] for the latest approach
+and how this discussion have been going.
 
-you misunderstand the work of maintainers. Our work is not to fix you
-crappy patches. If we start allowing crappy patches, we'd be fixing your
-nonsense forever and linux wouldn't move.
+This is something that we have been trying to solve for a couple of
+kernel releases by now so it would be great if you can join the
+discussion.
 
-> No, I'll not polish patch for hardware I don't have and have little
-> interest in.  wanted to help you, but according to your first reply,
-> you do not really want help.
+> Regards,
+>
+> Tony
 
-that's your call. Now how about you stop being such a baby and go fix
-your mistakes to start with ? Just because I'm the maintainer of the
-gadget framework, doesn't mean I'm the maintainer of s3c-hsotc.c file.
-Maintainer !=3D author too, btw.
+Thanks a lot and best regards,
+Javier
 
-Anyway, I got much better stuff to do than babysitting grown ups.
-
-cheers
-
---=20
-balbi
-
---U3BNvdZEnlJXqmh+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSObR5AAoJEIaOsuA1yqREytcP/1SbXUsWAqQNc7u70By58AzX
-YWQA7A/fv4wCcXDRXnXyN11jZR12dZJQlrQMNdRzuK5sO2EqpJO0gIl0KDa6VbhV
-T0tydLPy8x0DNfMt5JiAPBdfch6EzofUwNuVn+i1fEoZ4AZC2Za6mt6VI6IFhFpu
-XOgVhCJAoF97MBkveEqVauJUGmHQfqDPz+gEAyXB0ZM8XWLJKI6QaissHFdWWYU7
-PtR0fW05H80uaE4ygywcO64ufIK4p1eClv3RKabZKoFQ1nFFcZpziqdgC65ljynY
-MBZms127CrN6JvY8+gBwy2fU3aBbe/iil2Rxpo9eiwpGSfFDGP39ztseiK0PcbH3
-0+xvUoXkcAwC1K1eRvztaZyRbPqwshKFsJ5kLhBQyTfhtCLM5zexXJVtdfauCmCA
-B6hvsrgHw5hek2lqr2UrK7632jq6FypyUkM9azqJ/sHJazdhhhT5uqjjB3DmqB38
-Gt62BzRUmqntNUn/mnBrHp63GBpVRJPCYxKkMCcda/rYIwIgnwY9MeRDsqNPTAbb
-JY9bHbqo+jAewlJIXSPchhpLx/9yBwwOeMhF8+qAFBAK7AMS2GYKPKNY8Ppn4oKc
-E2R910NnTzQx87t3mlisK1Baa3x65ELhRYsWIHvlBx2ZhM4QdtxEDvi0xsAbgYvE
-EhV8sh3wuoaeEzLVrJ6C
-=2ZW7
------END PGP SIGNATURE-----
-
---U3BNvdZEnlJXqmh+--
+[1]: https://lkml.org/lkml/2013/8/26/260
