@@ -1,110 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab3IRIIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 04:08:36 -0400
-Received: from gate.crashing.org ([63.228.1.57]:49916 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751551Ab3IRIId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 04:08:33 -0400
-Message-ID: <1379491693.6148.25.camel@pasglop>
-Subject: Re: "memory" binding issues
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, devicetree@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        m.szyprowski@samsung.com, swarren@nvidia.com, rob.herring@calxeda.com
-Date: Wed, 18 Sep 2013 18:08:13 +1000
-In-Reply-To: <20130918013823.D617CC42C81@trevor.secretlab.ca>
-References: <1379300274.4098.77.camel@pasglop>
-	 <52372F2A.2050003@wwwdotorg.org> <1379371567.3721.46.camel@pasglop>
-	 <20130918013823.D617CC42C81@trevor.secretlab.ca>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1751951Ab3IRILh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 04:11:37 -0400
+Received: from forward10.mail.yandex.net ([77.88.61.49]:57020 "EHLO
+	forward10.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab3IRILf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 04:11:35 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Sep 2013 04:11:35 EDT
+From: DimanNe <dimanne@ya.ru>
+Envelope-From: Dimanne@yandex.ru
+To: linux-kernel@vger.kernel.org
+Subject: nfs mount fails on startup
+MIME-Version: 1.0
+Message-Id: <342091379491489@web28m.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 18 Sep 2013 12:04:49 +0400
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-17 at 18:38 -0700, Grant Likely wrote:
-> On Tue, 17 Sep 2013 08:46:07 +1000, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
-> > In anycase, just "/memory" will break on at least powerpc.
-> 
-> Ummm, really?
+Hello!
 
-I meant the search for just '/memory' will break with the current path
-searching algorithm on all powerpc machines that have the unit address.
-We might have been also omitting it from some of our device-trees but
-most of our real OF based machines will break and the stuff I'm
-currently working on that does exploit the reserved stuff will.
+After updating to Kubuntu 13.10 beta (kernel version is 3.11.0-7-generic) my nfs share stopped auto-mounting during boot.
 
-Anything that supports multiple memory nodes will break for example.
+Here is my fstab:
+dimanne@Impedance:~$ cat /etc/fstab
+# <file system>                           <mount point>   <type>  <options>       <dump>  <pass>
+# / was on /dev/sda1 during installation
+UUID=328a9124-e5ff-4c13-a7e2-559ee6a20292 /               ext4    errors=remount-ro 0       1
+# swap was on /dev/sda5 during installation
+UUID=b3a4a4a4-c563-45c1-9d6b-602b07d66c70 none            swap    sw              0       0
+# was on /dev/sdb1
+UUID=9383ee42-aea8-4098-9533-08d1b9b04e59 /mnt/backup    ext4   defaults        0       2
+# was on /dev/sdc1
+UUID=4ad4e84a-1e0e-4cb6-a63a-753d3ffc9ff2 /mnt/freedata ext4    defaults        0       2
 
-It's a separate argument as to whether omitting the unit address is the
-right thing to do in the dts. I don't like it but it's indeed a common
-practice so we shouldn't make it not work anymore. However we shouldn't
-*document* the memory node binding as having no unit address.
-
-But as we have agreed, fixing the path searching  would go a long way
-toward fixing the issue kernel-side while retaining the compatibility
-with both type of device-trees.
-
-Now regarding the specific issue of reserved memory, I still maintain
-that this shouldn't be a child of the memory nodes since that's simply
-not practical the minute you have multiple memory nodes.
-
-I also think we are mixing up two very different concepts here and we
-might be better off just handling them separately:
-
- - Marking areas of memory as reserved via the device-tree in order to
-prevent SW (Linux, bootloader, ...) from stomping over them because they
-are in use typically by some kind of driver or contain other information
-that should be preserved. This is basically a better form of the
-existing reserve map. The two main feature we are after here as far as
-I'm concerned are
-    
-       1) be explicit in the device-tree instead of the header
-          which means they are visible in /proc/device-tree,
-          can potentially survive kexec, etc....
-
-       2) be "named" (using vendor,function) so that the user can
-          have a rough idea of what this is about *and* the driver
-          can take ownership of them if needed. For example, if the
-          firmware has configured an in-memory framebuffer, it can
-          be reserved that way. Later, when the Linux DRM driver
-          loads, it might decide to move that region around and can
-          thus find and update or remove that property so it remains
-          consistent for kexec.
-
-Both of these are covered by the original binding I proposed (and
-implemented on powerpc) of having a /reserved-ranges and /reserved-names
-in the device-tree. But I'm not married to that binding and if the
-general consensus is that we should make them nodes, then so be it,
-but I disagree with having them as children of the /memory node.
-
- - "Segmenting" the physical memory into regions for use either by CMA
-or by devices to indicate, possibly, the preferred areas for use by
-those drivers. Fundamentally that memory is perfectly good to use by
-Linux, and in fact this is arguably not HW description (though it's
-acceptable as a "hint" to the operating system of what a good memory
-usage would be for the platform).
-
-Whether it makes sense to collate both into the same representation,
-I am very unsure of.
-
-Cheers,
-Ben.
-
-> ~/hacking/linux$ git grep 'memory {' arch/powerpc/boot/dts/* | wc -l
-> 159
-> ~/hacking/linux$ git grep 'memory@' arch/powerpc/boot/dts/* | wc -l
-> 4
-> 
-> g.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+server:/mnt/media                       /mnt/media      nfs4    defaults
 
 
+Also I noticed suspicious messages in dmesg:
+dimanne@Impedance:~$ dmesg | grep killed
+[   23.436063] init: idmapd-mounting (/mnt/media) main process (455) killed by TERM signal
+[   26.828198] init: failsafe main process (1119) killed by TERM signal
+[   28.352642] init: kdm main process (1757) killed by TERM signal
+
+However if I mount nfs share manually (sudo mount -vvv server:/mnt/media /mnt/media) all works perfectly, but at this time I get these messages in dmesg
+[  458.804009] NFS: Registering the id_resolver key type
+[  458.804024] Key type id_resolver registered
+[  458.804026] Key type id_legacy registered
+[  473.827828] RPC: AUTH_GSS upcall timed out.
+[  473.827828] Please check user daemon is running.
+
+
+What is the problem, how can I fix it?
