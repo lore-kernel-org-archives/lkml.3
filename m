@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327Ab3IRP7T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:59:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50577 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218Ab3IRP7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:59:18 -0400
-Date: Wed, 18 Sep 2013 12:58:55 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 0/4] perf tools: New comm infrastructure
-Message-ID: <20130918155855.GD3891@infradead.org>
-References: <1379017783-27032-1-git-send-email-fweisbec@gmail.com>
- <20130912203658.GA3216@gmail.com>
- <20130913124354.GB4844@somewhere>
- <20130914061148.GF364@gmail.com>
- <87li2wq9gx.fsf@sejong.aot.lge.com>
- <20130918142038.GA3891@infradead.org>
- <20130918151253.GC3891@infradead.org>
+	id S1752963Ab3IRQAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 12:00:16 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:39665 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab3IRQAO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 12:00:14 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v2] ADP1653 board code for Nokia RX-51
+Date: Wed, 18 Sep 2013 18:00:10 +0200
+User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201302171616.50152@pali> <20130907230252.GA10700@blackmetal.musicnaut.iki.fi> <20130918131644.GA2953@amd.pavel.ucw.cz>
+In-Reply-To: <20130918131644.GA2953@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130918151253.GC3891@infradead.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: multipart/signed;
+  boundary="nextPart1859771.ydYO4886rX";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201309181800.10486@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Sep 18, 2013 at 12:12:53PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Wed, Sep 18, 2013 at 11:20:38AM -0300, Arnaldo Carvalho de Melo escreveu:
-> > Em Tue, Sep 17, 2013 at 02:54:22PM +0900, Namhyung Kim escreveu:
-> > > On Sat, 14 Sep 2013 08:11:49 +0200, Ingo Molnar wrote:
-> > > > Well, it was the 100,000+ step linear list walk that was causing 90% of 
-> > > > the slowness here. Namhyung's patch should dramatically improve that. I 
-> > > > guess time for someone to post a combined tree so that it can be tested 
-> > > > all together?
- 
-> Cherry picking just:
-> 
->     perf callchain: Convert children list to rbtree
-> 
-> I go from too-long-to-wait to:
-> 
-> [root@sandy ~]# echo performance > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
-> [acme@sandy linux]$ taskset -c 3 perf stat --null --sync --repeat 3 perf report -i perf.data.make-j8-kernel > /dev/null
- 
->  Performance counter stats for 'perf report -i perf.data.make-j8-kernel' (3 runs):
->       79.158464654 seconds time elapsed                                          ( +-  0.15% )
- 
-> [acme@sandy linux]$
-> [acme@sandy linux]$ ls -lah perf.data.make-j8-kernel 
-> -rw-------. 1 acme acme 2.3G Sep 16 11:56 perf.data.make-j8-kernel
+--nextPart1859771.ydYO4886rX
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-And with the others, fixed up to cope with PERF_RECORD_MMAP2, except the
-progress bar updating:
+On Wednesday 18 September 2013 15:16:44 Pavel Machek wrote:
+> On Sun 2013-09-08 02:02:52, Aaro Koskinen wrote:
+> > Hi,
+> >=20
+> > On Fri, Sep 06, 2013 at 10:34:05PM +0200, Pali Roh=C3=A1r wrote:
+> > > > --- /dev/null
+> > > > +++ b/arch/arm/mach-omap2/board-rx51-camera.c
+> >=20
+> > [...]
+> >=20
+> > > Ping, can you review this patch v2?
+> >=20
+> > I don't think Tony will accept any new board stuff for
+> > RX-51/N900. See for example:
+> > http://marc.info/?l=3Dlinux-kernel&m=3D137629626213187&w=3D2
+> >=20
+> > There should be initial Nokia N900 DTS file in 3.12-rc1, and
+> > we should continue converting this board fully to DT.
+>=20
+> That's not reasonable. N900 is pretty far away from working
+> with device tree. Yes, I was able to get some bits merged,
+> but that should not be excuse to halt other N900 development.
+> 									Pavel
 
-[acme@sandy linux]$ taskset -c 3 perf stat --null --sync --repeat 3 perf report -i perf.data.make-j8-kernel > /dev/null
+Right. So Tony, will you accept future patches for board files?
 
- Performance counter stats for 'perf report -i perf.data.make-j8-kernel' (3 runs):
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-      55.697701530 seconds time elapsed                                          ( +-  0.13% )
+--nextPart1859771.ydYO4886rX
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-[acme@sandy linux]$
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Branch perf/callchain-v4 on my tree.
+iEYEABECAAYFAlI5zgoACgkQi/DJPQPkQ1Lq9ACeLMmRTKno+B3H7GgIdfBp7mck
+nuoAoMe62pNUEO9GUu3bMCb3MnmDvn9q
+=t9qH
+-----END PGP SIGNATURE-----
 
-- Arnaldo
+--nextPart1859771.ydYO4886rX--
