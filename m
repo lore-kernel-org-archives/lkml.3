@@ -1,128 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab3IRP44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:56:56 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:50661 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab3IRP4y (ORCPT
+	id S1752744Ab3IRP5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 11:57:00 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:50832 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab3IRP46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:56:54 -0400
-Message-ID: <1379519810.1522.36.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH 006/007] WAN Drivers: Update farsync driver and
- introduce fsflex driver
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Kevin Curtis <Kevin.Curtis@farsite.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "Dermot Smith" <dermot.smith@farsite.com>
-Date: Wed, 18 Sep 2013 16:56:50 +0100
-In-Reply-To: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA5@SOLO.hq.farsitecommunications.com>
-References: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA5@SOLO.hq.farsitecommunications.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20158.002
-X-TM-AS-Result: No--20.296100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Wed, 18 Sep 2013 11:56:58 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Alan Tull <atull@altera.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Dom Cobley <popcornmix@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [RFC PATCH 0/1] FPGA subsystem core
+Date: Wed, 18 Sep 2013 17:56:38 +0200
+Message-Id: <cover.1379519753.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-22748-1379519800-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-18 at 11:12 +0100, Kevin Curtis wrote:
-> Farsite Communications FarSync driver update
-> 
-> Patch 6 of 7
-> 
-> Introduce the fsflex driver.
-> This driver is functionally equivalent to the farsync driver, and so
-> can be used with the Generic HDLC, and ppp daemon.
-> 
-> Signed-off-by: Kevin Curtis <kevin.curtis@farsite.com>
-> 
-> ---
-> diff -uprN -X linux-3.10.1/Documentation/dontdiff linux-3.10.1/drivers/net/wan/fsflex.c linux-3.10.1_new/drivers/net/wan/fsflex.c
-> --- linux-3.10.1/drivers/net/wan/fsflex.c       1970-01-01 01:00:00.000000000 +0100
-> +++ linux-3.10.1_new/drivers/net/wan/fsflex.c   2013-09-16 16:30:06.651104873 +0100
-> @@ -0,0 +1,5693 @@
-> +/*
-> + *      FarSync Flex driver for Linux (2.6.x kernel version)
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Not exactly...
+--=_mimegpg-monstr-desktop-22748-1379519800-0001
 
-[...]
-> +#define FST_MAX_CARDS           32
+Hi All,
 
-I don't think it's acceptable to set a static limit on number of devices
-in a new driver.
+this is the first attempt to introduce new Linux FPGA subsystem which
+can help us to unify all fpga drivers which in general do the same
+things.
+Xilinx has hwicap in the kernel as char driver (drivers/char/xilinx_hwicap/)
+and I would like to base Zynq devcfg driver based on this interface
+because make no sense to push the Linux kernel another char driver
+(I am testing this interface on this driver).
 
-[...]
-> +int fst_txq_low = FST_LOW_WATER_MARK;
-> +int fst_txq_high = FST_HIGH_WATER_MARK;
-> +int fst_min_dma_len = FST_MIN_DMA_LEN;
-> +int fst_dmathr = 0xdd00dd00;
-> +int fst_iocinfo_version = FST_VERSION_CURRENT;
-> +int fst_max_reads = 7;
-> +int fst_excluded_cards;
-> +int fst_excluded_list[FST_MAX_CARDS];
-> +int fst_num_serials;
-> +char *fst_serials[FST_MAX_CARDS];
+Based on my discussion at ELC with Greg KH the new driver
+should support firmware interface for loading bitstream.
 
-All of which should be declared static, not implicitly extern.  As
-should all static variables and functions in this source file, as it's a
-self-contained driver.
+FPGA manager/driver just define set of functions and
+call fpga_mgr_register().
 
-> +module_param(fst_txq_low, int, S_IRUGO);
-> +module_param(fst_txq_high, int, S_IRUGO);
-> +module_param(fst_min_dma_len, int, S_IRUGO);
-> +module_param(fst_dmathr, int, S_IRUGO);
-> +module_param(fst_iocinfo_version, int, S_IRUGO);
-> +module_param(fst_max_reads, int, S_IRUGO);
-> +module_param(fst_excluded_cards, int, S_IRUGO);
-> +module_param_array(fst_excluded_list, int, NULL, S_IRUGO);
-> +module_param_array(fst_serials, charp, &fst_num_serials, S_IRUGO);
+struct fpga_manager_ops zynq_fpga_mgr_ops = {
+	.status = zynq_fpga_status,
+	.read_init = zynq_init,
+	.write_init = zynq_init,
+	.read = zynq_read,
+	.write = zynq_write,
+	.read_complete = zynq_complete,
+	.write_complete = zynq_complete,
+};
 
-Device configuration should be exposed through sysfs or ioctls, not
-through module parameters.
+fpga_mgr_register(pdev, &zynq_fpga_mgr_ops, "Zynq FPGA Manager", priv);
 
-[...]
-> +#ifdef ARPHRD_RAWHDLC
-> +#define ARPHRD_MYTYPE   ARPHRD_RAWHDLC /* Raw frames */
-> +#else
-> +#define ARPHRD_MYTYPE   ARPHRD_HDLC    /* Cisco-HDLC (keepalives etc) */
-> +#endif
+For unregistration it is enough to call:
+fpga_mgr_unregister(pdev);
 
-#ifdef is not necessary in-tree.
+Subsystem supports working with phandles for cases where you want to load
+bitstreams for particular device though defined device.
+For example:
+mngr@0 {
+	compatible = "whatever";
+	fpga-mgr = <&ps7_dev_cfg_0>;
+	...
+} ;
 
-[...]
-> +#define usb_buffer_alloc usb_alloc_coherent
-> +#define usb_buffer_free usb_free_coherent
+With these lines you can get easily load bitstream to the device.
 
-Don't make up your own names for USB functions.
+struct fpga_manager *mgr;
+mgr = of_find_fpga_mgr_by_phandle(pdev->dev.of_node, "fpga-mgr");
+if (mgr)
+	mgr->fpga_write(mgr, "filename");
 
-[...]
-> +static int __init fst_init(void)
-> +{
-[...]
-> +       /* Create the /proc entry for /proc/fsflex
-> +        */
-> +       proc_create("fsflex", 0, NULL, &farsync_proc_fops);
-[...]
+NOTE: I have added there of_find_fpga_mgr_by_node()
+and of_find_fpga_mgr_by_phandle() but maybe they should be added
+separately to drivers/of/of_fpga.c.
 
-Drivers should not be adding to the top level of /proc, and generally
-should be adding any magic files under sysfs (per-device) or debugfs.
+Alessandro: I haven't looked at your FMC cases but maybe this
+could be also worth for your cases.
 
-There is a /proc/driver directory if this information really doesn't fit
-into either of those filesystems.
+TODO:
+- Probably make sense to create doc in Documentation folder too.
+- When interface is fine also send zynq devcfg driver
 
-Ben.
+Thanks for your comments,
+Michal
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
 
+Michal Simek (1):
+  fpga: Introduce new fpga subsystem
+
+ MAINTAINERS             |   7 +
+ drivers/Kconfig         |   2 +
+ drivers/Makefile        |   1 +
+ drivers/fpga/Kconfig    |  18 ++
+ drivers/fpga/Makefile   |   5 +
+ drivers/fpga/fpga-mgr.c | 433 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fpga.h    | 105 ++++++++++++
+ 7 files changed, 571 insertions(+)
+ create mode 100644 drivers/fpga/Kconfig
+ create mode 100644 drivers/fpga/Makefile
+ create mode 100644 drivers/fpga/fpga-mgr.c
+ create mode 100644 include/linux/fpga.h
+
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-22748-1379519800-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlI5zTgACgkQykllyylKDCEHVACfaub9O3/RZAywlh1TAdiMDiGZ
+wgMAn2RC25UnUXpGYSWR9ZEJSV5frEFg
+=hg5y
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-22748-1379519800-0001--
