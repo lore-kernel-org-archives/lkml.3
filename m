@@ -1,69 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab3IRP4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:56:18 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:55817 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab3IRP4R (ORCPT
+	id S1752665Ab3IRP44 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 11:56:56 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:50661 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab3IRP4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:56:17 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-Subject: Re: [PATCH 1/4] usb: musb: Call atomic_notifier_call_chain when status is changed
-Date: Wed, 18 Sep 2013 17:56:12 +0200
-User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Anton Vorontsov <anton@enomsg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        freemangordon@abv.bg, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com> <20130918133025.GB2953@amd.pavel.ucw.cz> <CAAwP0s0nGthkm9Bp1ug23Rtz6-sbR60FFTSfd-Cj9wKMU0RBEA@mail.gmail.com>
-In-Reply-To: <CAAwP0s0nGthkm9Bp1ug23Rtz6-sbR60FFTSfd-Cj9wKMU0RBEA@mail.gmail.com>
+	Wed, 18 Sep 2013 11:56:54 -0400
+Message-ID: <1379519810.1522.36.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH 006/007] WAN Drivers: Update farsync driver and
+ introduce fsflex driver
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Kevin Curtis <Kevin.Curtis@farsite.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "Dermot Smith" <dermot.smith@farsite.com>
+Date: Wed, 18 Sep 2013 16:56:50 +0100
+In-Reply-To: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA5@SOLO.hq.farsitecommunications.com>
+References: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA5@SOLO.hq.farsitecommunications.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart8313442.1feUBW3l9A";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201309181756.12782@pali>
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20158.002
+X-TM-AS-Result: No--20.296100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart8313442.1feUBW3l9A
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2013-09-18 at 11:12 +0100, Kevin Curtis wrote:
+> Farsite Communications FarSync driver update
+> 
+> Patch 6 of 7
+> 
+> Introduce the fsflex driver.
+> This driver is functionally equivalent to the farsync driver, and so
+> can be used with the Generic HDLC, and ppp daemon.
+> 
+> Signed-off-by: Kevin Curtis <kevin.curtis@farsite.com>
+> 
+> ---
+> diff -uprN -X linux-3.10.1/Documentation/dontdiff linux-3.10.1/drivers/net/wan/fsflex.c linux-3.10.1_new/drivers/net/wan/fsflex.c
+> --- linux-3.10.1/drivers/net/wan/fsflex.c       1970-01-01 01:00:00.000000000 +0100
+> +++ linux-3.10.1_new/drivers/net/wan/fsflex.c   2013-09-16 16:30:06.651104873 +0100
+> @@ -0,0 +1,5693 @@
+> +/*
+> + *      FarSync Flex driver for Linux (2.6.x kernel version)
 
-On Wednesday 18 September 2013 15:57:13 Javier Martinez Canillas=20
-wrote:
-> to split the patch in two since the patch was solving
-> two separate issues
+Not exactly...
 
-My patch does not solving *two* issues. It is *one* regression=20
-and both parts of patch are needed for fixing it. Read commit=20
-message again. It does not make sense to split patch fixing kernel=20
-regression into more one line patches - or please clarify why.
+[...]
+> +#define FST_MAX_CARDS           32
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+I don't think it's acceptable to set a static limit on number of devices
+in a new driver.
 
---nextPart8313442.1feUBW3l9A
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+[...]
+> +int fst_txq_low = FST_LOW_WATER_MARK;
+> +int fst_txq_high = FST_HIGH_WATER_MARK;
+> +int fst_min_dma_len = FST_MIN_DMA_LEN;
+> +int fst_dmathr = 0xdd00dd00;
+> +int fst_iocinfo_version = FST_VERSION_CURRENT;
+> +int fst_max_reads = 7;
+> +int fst_excluded_cards;
+> +int fst_excluded_list[FST_MAX_CARDS];
+> +int fst_num_serials;
+> +char *fst_serials[FST_MAX_CARDS];
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+All of which should be declared static, not implicitly extern.  As
+should all static variables and functions in this source file, as it's a
+self-contained driver.
 
-iEYEABECAAYFAlI5zRwACgkQi/DJPQPkQ1J/2QCgtFQe8mTu4aIHC5OhRIbOy+ai
-j+kAoLhlbffqZMhNXyb2DrhOLlJaNZof
-=G+Io
------END PGP SIGNATURE-----
+> +module_param(fst_txq_low, int, S_IRUGO);
+> +module_param(fst_txq_high, int, S_IRUGO);
+> +module_param(fst_min_dma_len, int, S_IRUGO);
+> +module_param(fst_dmathr, int, S_IRUGO);
+> +module_param(fst_iocinfo_version, int, S_IRUGO);
+> +module_param(fst_max_reads, int, S_IRUGO);
+> +module_param(fst_excluded_cards, int, S_IRUGO);
+> +module_param_array(fst_excluded_list, int, NULL, S_IRUGO);
+> +module_param_array(fst_serials, charp, &fst_num_serials, S_IRUGO);
 
---nextPart8313442.1feUBW3l9A--
+Device configuration should be exposed through sysfs or ioctls, not
+through module parameters.
+
+[...]
+> +#ifdef ARPHRD_RAWHDLC
+> +#define ARPHRD_MYTYPE   ARPHRD_RAWHDLC /* Raw frames */
+> +#else
+> +#define ARPHRD_MYTYPE   ARPHRD_HDLC    /* Cisco-HDLC (keepalives etc) */
+> +#endif
+
+#ifdef is not necessary in-tree.
+
+[...]
+> +#define usb_buffer_alloc usb_alloc_coherent
+> +#define usb_buffer_free usb_free_coherent
+
+Don't make up your own names for USB functions.
+
+[...]
+> +static int __init fst_init(void)
+> +{
+[...]
+> +       /* Create the /proc entry for /proc/fsflex
+> +        */
+> +       proc_create("fsflex", 0, NULL, &farsync_proc_fops);
+[...]
+
+Drivers should not be adding to the top level of /proc, and generally
+should be adding any magic files under sysfs (per-device) or debugfs.
+
+There is a /proc/driver directory if this information really doesn't fit
+into either of those filesystems.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
