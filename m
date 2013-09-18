@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab3IRSdz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 14:33:55 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:58011 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab3IRSdy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 14:33:54 -0400
+	id S1752228Ab3IRSg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:36:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56382 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751529Ab3IRSgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 14:36:24 -0400
+Date: Wed, 18 Sep 2013 20:36:17 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130918183617.GD3421@dhcp22.suse.cz>
+References: <20130916152548.GF3674@dhcp22.suse.cz>
+ <20130916225246.A633145B@pobox.sk>
+ <20130917000244.GD3278@cmpxchg.org>
+ <20130917131535.94E0A843@pobox.sk>
+ <20130917141013.GA30838@dhcp22.suse.cz>
+ <20130918160304.6EDF2729@pobox.sk>
+ <20130918142400.GA3421@dhcp22.suse.cz>
+ <20130918163306.3620C973@pobox.sk>
+ <20130918144245.GC3421@dhcp22.suse.cz>
+ <20130918200239.DDA96791@pobox.sk>
 MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <20130918154224.GK9326@twins.programming.kicks-ass.net>
-References: <1372425741-1676-2-git-send-email-adrian.hunter@intel.com>
-	<tip-860f085b74e9f0075de8140ed3a1e5b5e3e39aa8@git.kernel.org>
-	<alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy>
-	<20130918085722.GL12926@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.02.1309181013100.23210@pianoman.cluster.toy>
-	<20130918154224.GK9326@twins.programming.kicks-ass.net>
-Date: Wed, 18 Sep 2013 20:33:53 +0200
-Message-ID: <CAMsRxfKRp5DRzCL54fzxLf02pNbBsA_61-LUBFTmbuL=L8QqzQ@mail.gmail.com>
-Subject: Re: [tip:perf/core] perf: Fix broken union in ' struct perf_event_mmap_page'
-From: Stephane Eranian <eranian@googlemail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vince@deater.net>, Ingo Molnar <mingo@kernel.org>,
-        Peter Anvin <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        adrian.hunter@intel.com, Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130918200239.DDA96791@pobox.sk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 5:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Sep 18, 2013 at 10:19:32AM -0400, Vince Weaver wrote:
->> Can you point to any code that is fixed by the commit?
->
-> I have some, but I don't think a lot of people use it.
->
-> Would you be ok with something like the below? It should preserve
-> functionality for code that only cares about cap_usr_rdpmc (PAPI).
->
-> Stephane, does libpfm use any of these?
->
-Yes, there is an example using this. Need to verify it is not broken
-currently (self_count.c).
+On Wed 18-09-13 20:02:39, azurIt wrote:
+> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+> >On Wed 18-09-13 16:33:06, azurIt wrote:
+> >> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+> >> >On Wed 18-09-13 16:03:04, azurIt wrote:
+> >> >[..]
+> >> >> I was finally able to get stack of problematic process :) I saved it
+> >> >> two times from the same process, as Michal suggested (i wasn't able to
+> >> >> take more). Here it is:
+> >> >> 
+> >> >> First (doesn't look very helpfull):
+> >> >> [<ffffffffffffffff>] 0xffffffffffffffff
+> >> >
+> >> >No it is not.
+> >> > 
+> >> >> Second:
+> >> >> [<ffffffff810e17d1>] shrink_zone+0x481/0x650
+> >> >> [<ffffffff810e2ade>] do_try_to_free_pages+0xde/0x550
+> >> >> [<ffffffff810e310b>] try_to_free_pages+0x9b/0x120
+> >> >> [<ffffffff81148ccd>] free_more_memory+0x5d/0x60
+> >> >> [<ffffffff8114931d>] __getblk+0x14d/0x2c0
+> >> >> [<ffffffff8114c973>] __bread+0x13/0xc0
+> >> >> [<ffffffff811968a8>] ext3_get_branch+0x98/0x140
+> >> >> [<ffffffff81197497>] ext3_get_blocks_handle+0xd7/0xdc0
+> >> >> [<ffffffff81198244>] ext3_get_block+0xc4/0x120
+> >> >> [<ffffffff81155b8a>] do_mpage_readpage+0x38a/0x690
+> >> >> [<ffffffff81155ffb>] mpage_readpages+0xfb/0x160
+> >> >> [<ffffffff811972bd>] ext3_readpages+0x1d/0x20
+> >> >> [<ffffffff810d9345>] __do_page_cache_readahead+0x1c5/0x270
+> >> >> [<ffffffff810d9411>] ra_submit+0x21/0x30
+> >> >> [<ffffffff810cfb90>] filemap_fault+0x380/0x4f0
+> >> >> [<ffffffff810ef908>] __do_fault+0x78/0x5a0
+> >> >> [<ffffffff810f2b24>] handle_pte_fault+0x84/0x940
+> >> >> [<ffffffff810f354a>] handle_mm_fault+0x16a/0x320
+> >> >> [<ffffffff8102715b>] do_page_fault+0x13b/0x490
+> >> >> [<ffffffff815cb87f>] page_fault+0x1f/0x30
+> >> >> [<ffffffffffffffff>] 0xffffffffffffffff
+> >> >
+> >> >This is the direct reclaim path. You are simply running out of memory
+> >> >globaly. There is no memcg specific code in that trace.
+> >> 
+> >> 
+> >> No, i'm not. Here is htop and server graphs from this case:
+> >
+> >Bahh, right you are. I didn't look at the trace carefully. It is
+> >free_more_memory which calls the direct reclaim shrinking.
+> >
+> >Sorry about the confusion
+> 
+> 
+> Happens again and this time i got 5x this:
+> [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> :( it's probably looping very fast so i need to have some luck
 
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -380,8 +380,8 @@ struct perf_event_mmap_page {
->         union {
->                 __u64   capabilities;
->                 struct {
-> -                       __u64   cap_usr_time            : 1,
-> -                               cap_usr_rdpmc           : 1,
-> +                       __u64   cap_usr_rdpmc           : 1,
-> +                               cap_usr_time            : 1,
->                                 cap_usr_time_zero       : 1,
->                                 cap_____res             : 61;
->                 };
+Or it is looping in the userspace.
+-- 
+Michal Hocko
+SUSE Labs
