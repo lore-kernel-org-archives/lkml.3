@@ -1,112 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab3IROGx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 10:06:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58841 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3IROGv (ORCPT
+	id S1752132Ab3IROIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 10:08:49 -0400
+Received: from smtpauth02.mfg.siteprotect.com ([64.26.60.136]:56604 "EHLO
+	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751494Ab3IROIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 10:06:51 -0400
-Date: Wed, 18 Sep 2013 16:06:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Linux-Arch <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: [patch 1/6] hardirq: Make hardirq bits generic
-In-Reply-To: <alpine.DEB.2.02.1309172315550.4089@ionos.tec.linutronix.de>
-Message-ID: <alpine.DEB.2.02.1309181159520.4089@ionos.tec.linutronix.de>
-References: <20130917082838.218329307@infradead.org> <20130917182350.449685712@linutronix.de> <20130917183628.534494408@linutronix.de> <CAMuHMdWgrQf+ULDrZyY5R+vT3GtiWEgpsWxmfk0b5pivN7wBmg@mail.gmail.com>
- <alpine.DEB.2.02.1309172315550.4089@ionos.tec.linutronix.de>
+	Wed, 18 Sep 2013 10:08:48 -0400
+Date: Wed, 18 Sep 2013 10:10:22 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Adrian Hunter <adrian.hunter@intel.com>
+cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf: Fix broken union in ' struct
+ perf_event_mmap_page'
+In-Reply-To: <52396EB5.6050104@intel.com>
+Message-ID: <alpine.DEB.2.02.1309180950420.22814@pianoman.cluster.toy>
+References: <1372425741-1676-2-git-send-email-adrian.hunter@intel.com> <tip-860f085b74e9f0075de8140ed3a1e5b5e3e39aa8@git.kernel.org> <alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy> <52396EB5.6050104@intel.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020202.5239B3F0.0037,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Sep 2013, Thomas Gleixner wrote:
+On Wed, 18 Sep 2013, Adrian Hunter wrote:
 
-> On Tue, 17 Sep 2013, Geert Uytterhoeven wrote:
+> On 17/09/13 23:23, Vince Weaver wrote:
+> > 
+> > This patch somehow breaks the perf-ABI.
+> > 
+> > If I take a program that reads "mmap->cap_usr_rdpmc" and compile it
+> > against the new header with this change (say from 3.12-rc1)
+> > and then run it on an old kernel (say 3.11) then I get "0" for
+> > cap_usr_rdpmc.
+> > 
+> > If I take the same program and recompile against the old (without this 
+> > patch) header and run it on 3.11, I get the expected "1" value.
+> > 
+> > So something about this changed the bit pattern in an incompatible 
+> > fashion.
 > 
-> > On Tue, Sep 17, 2013 at 8:53 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > --- linux-2.6.orig/arch/m68k/include/asm/hardirq.h
-> > > +++ linux-2.6/arch/m68k/include/asm/hardirq.h
-> > > @@ -5,17 +5,6 @@
-> > >  #include <linux/cache.h>
-> > >  #include <asm/irq.h>
-> > >
-> > > -#define HARDIRQ_BITS   8
-> > 
-> > > --- linux-2.6.orig/include/linux/preempt_mask.h
-> > > +++ linux-2.6/include/linux/preempt_mask.h
-> > > @@ -11,36 +11,22 @@
-> > >   * - bits 0-7 are the preemption count (max preemption depth: 256)
-> > >   * - bits 8-15 are the softirq count (max # of softirqs: 256)
-> > >   *
-> > > - * The hardirq count can in theory reach the same as NR_IRQS.
-> > > - * In reality, the number of nested IRQS is limited to the stack
-> > > - * size as well. For archs with over 1000 IRQS it is not practical
-> > > - * to expect that they will all nest. We give a max of 10 bits for
-> > > - * hardirq nesting. An arch may choose to give less than 10 bits.
-> > > - * m68k expects it to be 8.
-> > 
-> > m68k needs some changes in arch/m68k/kernel/entry.S, cfr. this check
-> > in arch/m68k/kernel/ints.c:
-> > 
-> >         /* assembly irq entry code relies on this... */
-> >         if (HARDIRQ_MASK != 0x00ff0000) {
-> >                 extern void hardirq_mask_is_broken(void);
-> >                 hardirq_mask_is_broken();
-> >         }
-> > 
-> > Haven't looked into the details yet...
 > 
-> Whee. Did not notice that one. Though I can't find anything
-> interesting in the low level entry code... Looks like some more
-> histerical left overs.
+> cap_usr_time and cap_usr_rdpmc were occupying the same bit position i.e. bit 0
+> 
+> That means that cap_usr_time and cap_usr_rdpmc were both unreliable.
 
-Duh. With brain awake I can see it.
+well then I have to say this patch wins today's award for "least 
+useful commit message".  Why wasn't this important info there?
+>From what it originally sounded like this was just some shuffling of
+low-level C minutia, not a hard-to-resolve break in the perf ABI.
 
-The low level entry code is fiddling with preempt_count by adding
-HARDIRQ_OFFSET to it to keep track of nested interrupts. If the count
-goes to 0, it invokes do_softirq(). And you have another safety guard:
+> Possible improvements are one or both of:
+> 1. Add cap_usr_fixed to identify kernels that have the capabilities bits fixed
+> 2. Swap the positions of cap_usr_time and cap_usr_rdpmc so that
+> cap_usr_rdpmc remains in bit 0
 
-ret_from_last_interrupt:
-        moveq   #(~ALLOWINT>>8)&0xff,%d0
-	andb    %sp@(PT_OFF_SR),%d0
-	jne     2b
+Or just create two new fields and mark the old ones as obsolete somehow.
 
-That's due to the irq priority level stuff, which results in nested
-interrupts depending on the level of the serviced interrupt, right?
-And that's why you fiddle yourself with the HARDIRQ bits in the
-preempt count to prevent the core code from calling do_softirq().
+The problem with just making this change silently is now tools like PAPI 
+that care about cap_usr_rdpmc will behave in hard-to-debug ways.
 
-Though this scheme also prevents that other parts of irq_exit() are
-working correctly, because they depend on the hardirq count being
-zero, e.g. the nohz code.
+For example, code compiled against new headers but run with old kernels 
+won't detect rdpmc properly
 
-Needs more thoughts how to fix that w/o wasting precious bits for the
-HARDIRQ count.
+Code compiled against old headers but run with new kernels won't detect 
+rdpmc properly.
 
-Thanks,
+It's true existing code could have problems if you ran on a machine with 
+conflicting rdpmc/usr_time, but my tests never noticed that, presumably 
+because rdpmc and usr_time were added at the same time (in 3.4), x86 
+always enables rdpmc, and none of my code uses usr_time so I never see 
+wrong time results.
 
-	tglx
-
-
-
-
-
-
-
-
-
+Vince
 
