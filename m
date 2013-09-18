@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab3IRMRx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 08:17:53 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:47283 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904Ab3IRMPU (ORCPT
+	id S1753349Ab3IRMSQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 08:18:16 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:43561 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752863Ab3IRMPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 08:15:20 -0400
+	Wed, 18 Sep 2013 08:15:17 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 33/41] ARM: ux500: Remove AUXDATA relating to UART clock-name bindings
-Date: Wed, 18 Sep 2013 13:14:30 +0100
-Message-Id: <1379506478-16625-34-git-send-email-lee.jones@linaro.org>
+Cc: arnd@arndb.de, linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 30/41] usb: musb: ux500: Don't supply a con_id when requesting the clock
+Date: Wed, 18 Sep 2013 13:14:27 +0100
+Message-Id: <1379506478-16625-31-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379506478-16625-1-git-send-email-lee.jones@linaro.org>
 References: <1379506478-16625-1-git-send-email-lee.jones@linaro.org>
@@ -20,25 +21,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If we supply a con_id then the clock framework will search for that name
+in MUSB's Device Tree node for the 'clock-names' property. If it's absent
+the clock request will fail. However, if we don't supply the con_id then
+clk_get() will call into clk_sys() which will use the device name to
+search for the appropriate clock, which is much more natural than forcing
+'usb'.
+
+Cc: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/cpu-db8500.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/usb/musb/ux500.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index a5e89af..44e656d 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -219,9 +219,6 @@ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
- 	/* Requires call-back bindings. */
- 	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
- 	/* Requires DMA bindings. */
--	OF_DEV_AUXDATA("arm,pl011", 0x80120000, "uart0", NULL),
--	OF_DEV_AUXDATA("arm,pl011", 0x80121000, "uart1", NULL),
--	OF_DEV_AUXDATA("arm,pl011", 0x80007000, "uart2", NULL),
- 	OF_DEV_AUXDATA("arm,pl022", 0x80002000, "ssp0",  &ssp0_plat),
- 	OF_DEV_AUXDATA("arm,pl18x", 0x80126000, "sdi0",  &mop500_sdi0_data),
- 	OF_DEV_AUXDATA("arm,pl18x", 0x80118000, "sdi1",  &mop500_sdi1_data),
+diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
+index fce71b6..5543b89 100644
+--- a/drivers/usb/musb/ux500.c
++++ b/drivers/usb/musb/ux500.c
+@@ -259,7 +259,7 @@ static int ux500_probe(struct platform_device *pdev)
+ 		goto err1;
+ 	}
+ 
+-	clk = clk_get(&pdev->dev, "usb");
++	clk = clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(clk)) {
+ 		dev_err(&pdev->dev, "failed to get clock\n");
+ 		ret = PTR_ERR(clk);
 -- 
 1.8.1.2
 
