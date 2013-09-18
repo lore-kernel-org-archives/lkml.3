@@ -1,87 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab3IRR6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 13:58:19 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:52983 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab3IRRyO (ORCPT
+	id S1753811Ab3IRR6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 13:58:17 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:38097 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874Ab3IRRyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Sep 2013 13:54:14 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Russell King <linux@arm.linux.org.uk>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
+        linux-tegra@vger.kernel.org, linux-rpi-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kernel@stlinux.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 11/26] ARM: dove: remove custom .init_time hook
-Date: Wed, 18 Sep 2013 19:53:44 +0200
-Message-Id: <1379526839-14798-12-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 09/26] ARM: call of_clk_init from default time_init handler
+Date: Wed, 18 Sep 2013 19:53:42 +0200
+Message-Id: <1379526839-14798-10-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-remove custom .init_time hooks. While at it, also remove some obsolete
-includes.
+Most DT ARM machs require common clock providers initialized before timers.
+Currently, arch/arm machs use .init_time to call of_clk_init right before
+clocksource_of_init. This prevents to remove that callback and use the default
+one instead.
+
+This patch adds a call to of_clk_init() to the default .init_time callback
+to allow to remove custom callbacks where applicable. While at it, also
+reorder includes alphabetically.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
+Changelog:
+RFCv2->v1:
+- only call of_clk_init(NULL) when no custom .init_time is set
+  (Suggested by Soeren Brinkmann)
+RFCv1->RFCv2:
+- reorder includes alphabetically
+
 Cc: Olof Johansson <olof@lixom.net>
 Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
 Cc: Russell King <linux@arm.linux.org.uk>
+Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
+Cc: linux-tegra@vger.kernel.org
+Cc: linux-rpi-kernel@lists.infradead.org
+Cc: linux-samsung-soc@vger.kernel.org
+Cc: kernel@stlinux.com
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/mach-dove/board-dt.c |   11 -----------
- 1 file changed, 11 deletions(-)
+ arch/arm/kernel/time.c |   27 +++++++++++++++------------
+ 1 file changed, 15 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/mach-dove/board-dt.c b/arch/arm/mach-dove/board-dt.c
-index 49f72a8..ddb8663 100644
---- a/arch/arm/mach-dove/board-dt.c
-+++ b/arch/arm/mach-dove/board-dt.c
-@@ -10,17 +10,13 @@
- 
+diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
+index 98aee32..bc0468b 100644
+--- a/arch/arm/kernel/time.c
++++ b/arch/arm/kernel/time.c
+@@ -11,25 +11,26 @@
+  *  This file contains the ARM-specific time handling details:
+  *  reading the RTC at bootup, etc...
+  */
++#include <linux/clk-provider.h>
++#include <linux/clocksource.h>
++#include <linux/errno.h>
+ #include <linux/export.h>
+-#include <linux/kernel.h>
+-#include <linux/interrupt.h>
+-#include <linux/time.h>
  #include <linux/init.h>
- #include <linux/clk-provider.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/kernel.h>
++#include <linux/profile.h>
+ #include <linux/sched.h>
++#include <linux/sched_clock.h>
+ #include <linux/smp.h>
++#include <linux/time.h>
+ #include <linux/timex.h>
+-#include <linux/errno.h>
+-#include <linux/profile.h>
+ #include <linux/timer.h>
 -#include <linux/clocksource.h>
--#include <linux/irqchip.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
--#include <linux/platform_data/usb-ehci-orion.h>
- #include <asm/hardware/cache-tauros2.h>
+-#include <linux/irq.h>
+-#include <linux/sched_clock.h>
+ 
+-#include <asm/thread_info.h>
+-#include <asm/stacktrace.h>
  #include <asm/mach/arch.h>
- #include <mach/dove.h>
- #include <mach/pm.h>
- #include <plat/common.h>
--#include <plat/irq.h>
- #include "common.h"
+ #include <asm/mach/time.h>
++#include <asm/stacktrace.h>
++#include <asm/thread_info.h>
  
- /*
-@@ -45,12 +41,6 @@ static void __init dove_legacy_clk_init(void)
- 			 of_clk_get_from_provider(&clkspec));
- }
+ #if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE) || \
+     defined(CONFIG_NVRAM) || defined(CONFIG_NVRAM_MODULE)
+@@ -116,8 +117,10 @@ int __init register_persistent_clock(clock_access_fn read_boot,
  
--static void __init dove_dt_time_init(void)
--{
--	of_clk_init(NULL);
--	clocksource_of_init();
--}
--
- static void __init dove_dt_init_early(void)
+ void __init time_init(void)
  {
- 	mvebu_mbus_init("marvell,dove-mbus",
-@@ -84,7 +74,6 @@ static const char * const dove_dt_board_compat[] = {
- DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
- 	.map_io		= dove_map_io,
- 	.init_early	= dove_dt_init_early,
--	.init_time	= dove_dt_time_init,
- 	.init_machine	= dove_dt_init,
- 	.restart	= dove_restart,
- 	.dt_compat	= dove_dt_board_compat,
+-	if (machine_desc->init_time)
++	if (machine_desc->init_time) {
+ 		machine_desc->init_time();
+-	else
++	} else {
++		of_clk_init(NULL);
+ 		clocksource_of_init();
++	}
+ }
 -- 
 1.7.10.4
 
