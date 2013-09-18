@@ -1,184 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab3IRSRY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 14:17:24 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:3881 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab3IRSRX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 14:17:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 18 Sep 2013 11:14:01 -0700
-From: Rhyland Klein <rklein@nvidia.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-CC: <spi-devel-general@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Simon Glass <sjg@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Rhyland Klein <rklein@nvidia.com>
-Subject: [RESEND] spi/tegra114: Correct support for cs_change
-Date: Wed, 18 Sep 2013 14:17:25 -0400
-Message-ID: <1379528245-6283-1-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	id S1753248Ab3IRSUF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:20:05 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:55302 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751712Ab3IRSUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 14:20:01 -0400
+Date: Wed, 18 Sep 2013 14:19:46 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: azurIt <azurit@pobox.sk>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130918181946.GE856@cmpxchg.org>
+References: <20130916161316.5113F6E7@pobox.sk>
+ <20130916145744.GE3674@dhcp22.suse.cz>
+ <20130916170543.77F1ECB4@pobox.sk>
+ <20130916152548.GF3674@dhcp22.suse.cz>
+ <20130916225246.A633145B@pobox.sk>
+ <20130917000244.GD3278@cmpxchg.org>
+ <20130917131535.94E0A843@pobox.sk>
+ <20130917141013.GA30838@dhcp22.suse.cz>
+ <20130918160304.6EDF2729@pobox.sk>
+ <20130918180455.GD856@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130918180455.GD856@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tegra114 driver wasn't currently handling the cs_change functionality.
-It is meant to invert normal behavior, and we were only using it to possibly
-delay at the end of a transfer.
+On Wed, Sep 18, 2013 at 02:04:55PM -0400, Johannes Weiner wrote:
+> On Wed, Sep 18, 2013 at 04:03:04PM +0200, azurIt wrote:
+> > > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+> > >On Tue 17-09-13 13:15:35, azurIt wrote:
+> > >[...]
+> > >> Is something unusual on this stack?
+> > >> 
+> > >> 
+> > >> [<ffffffff810d1a5e>] dump_header+0x7e/0x1e0
+> > >> [<ffffffff810d195f>] ? find_lock_task_mm+0x2f/0x70
+> > >> [<ffffffff810d1f25>] oom_kill_process+0x85/0x2a0
+> > >> [<ffffffff810d24a8>] mem_cgroup_out_of_memory+0xa8/0xf0
+> > >> [<ffffffff8110fb76>] mem_cgroup_oom_synchronize+0x2e6/0x310
+> > >> [<ffffffff8110efc0>] ? mem_cgroup_uncharge_page+0x40/0x40
+> > >> [<ffffffff810d2703>] pagefault_out_of_memory+0x13/0x130
+> > >> [<ffffffff81026f6e>] mm_fault_error+0x9e/0x150
+> > >> [<ffffffff81027424>] do_page_fault+0x404/0x490
+> > >> [<ffffffff810f952c>] ? do_mmap_pgoff+0x3dc/0x430
+> > >> [<ffffffff815cb87f>] page_fault+0x1f/0x30
+> > >
+> > >This is a regular memcg OOM killer. Which dumps messages about what is
+> > >going to do. So no, nothing unusual, except if it was like that for ever
+> > >which would mean that oom_kill_process is in the endless loop. But a
+> > >single stack doesn't tell us much.
+> > >
+> > >Just a note. When you see something hogging a cpu and you are not sure
+> > >whether it might be in an endless loop inside the kernel it makes sense
+> > >to take several snaphosts of the stack trace and see if it changes. If
+> > >not and the process is not sleeping (there is no schedule on the trace)
+> > >then it might be looping somewhere waiting for Godot. If it is sleeping
+> > >then it is slightly harder because you would have to identify what it is
+> > >waiting for which requires to know a deeper context.
+> > >-- 
+> > >Michal Hocko
+> > >SUSE Labs
+> > 
+> > 
+> > 
+> > I was finally able to get stack of problematic process :) I saved it two times from the same process, as Michal suggested (i wasn't able to take more). Here it is:
+> > 
+> > First (doesn't look very helpfull):
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> > 
+> > 
+> > Second:
+> > [<ffffffff810e17d1>] shrink_zone+0x481/0x650
+> > [<ffffffff810e2ade>] do_try_to_free_pages+0xde/0x550
+> > [<ffffffff810e310b>] try_to_free_pages+0x9b/0x120
+> > [<ffffffff81148ccd>] free_more_memory+0x5d/0x60
+> > [<ffffffff8114931d>] __getblk+0x14d/0x2c0
+> > [<ffffffff8114c973>] __bread+0x13/0xc0
+> > [<ffffffff811968a8>] ext3_get_branch+0x98/0x140
+> > [<ffffffff81197497>] ext3_get_blocks_handle+0xd7/0xdc0
+> > [<ffffffff81198244>] ext3_get_block+0xc4/0x120
+> > [<ffffffff81155b8a>] do_mpage_readpage+0x38a/0x690
+> > [<ffffffff81155ffb>] mpage_readpages+0xfb/0x160
+> > [<ffffffff811972bd>] ext3_readpages+0x1d/0x20
+> > [<ffffffff810d9345>] __do_page_cache_readahead+0x1c5/0x270
+> > [<ffffffff810d9411>] ra_submit+0x21/0x30
+> > [<ffffffff810cfb90>] filemap_fault+0x380/0x4f0
+> > [<ffffffff810ef908>] __do_fault+0x78/0x5a0
+> > [<ffffffff810f2b24>] handle_pte_fault+0x84/0x940
+> > [<ffffffff810f354a>] handle_mm_fault+0x16a/0x320
+> > [<ffffffff8102715b>] do_page_fault+0x13b/0x490
+> > [<ffffffff815cb87f>] page_fault+0x1f/0x30
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> Ah, crap.  I'm sorry.  You even showed us this exact trace before in
+> another context, but I did not fully realize what __getblk() is doing.
+> 
+> My subsequent patches made a charge attempt return -ENOMEM without
+> reclaim if the memcg is under OOM.  And so the reason you have these
+> reclaim livelocks is because __getblk never fails on -ENOMEM.  When
+> the allocation returns -ENOMEM, it invokes GLOBAL DIRECT RECLAIM and
+> tries again in an endless loop.  The memcg code would previously just
+> loop inside the charge, reclaiming and killing, until the allocation
+> succeeded.  But the new code relies on the fault stack being unwound
+> to complete the OOM kill.  And since the stack is not unwound with
+> __getblk() looping around the allocation there is no more memcg
+> reclaim AND no memcg OOM kill, thus no chance of exiting.
+> 
+> That code is weird but really old, so it may take a while to evaluate
+> all the callers as to whether this can be changed.
+> 
+> In the meantime, I would just allow __getblk to bypass the memcg limit
+> when it still can't charge after reclaim.  Does the below get your
+> machine back on track?
 
-This patch modifies the logic so that the cs state will be toggled after
-every individual transfer or NOT toggled at the end of the last transfer
-if cs_change is set in that transfer struct.
-
-Also, this builds in logic so that if a different device tries to start
-a transfer while CS is active from a different device, it will abort the
-previous transfer and start a new one for the new device.
-
-This work was based on the spi-atmel driver.
-
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
-
-RESEND WITH CORRECT PATCH ANNOTATION IN SUBJECT
-
- drivers/spi/spi-tegra114.c |   59 ++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 52 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/spi/spi-tegra114.c b/drivers/spi/spi-tegra114.c
-index 145dd43..a9973de 100644
---- a/drivers/spi/spi-tegra114.c
-+++ b/drivers/spi/spi-tegra114.c
-@@ -182,6 +182,7 @@ struct tegra_spi_data {
- 	u32					cur_speed;
- 
- 	struct spi_device			*cur_spi;
-+	struct spi_device			*cs_control;
- 	unsigned				cur_pos;
- 	unsigned				cur_len;
- 	unsigned				words_per_32bit;
-@@ -717,7 +718,12 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
- 		else if (req_mode == SPI_MODE_3)
- 			command1 |= SPI_CONTROL_MODE_3;
- 
--		tegra_spi_writel(tspi, command1, SPI_COMMAND1);
-+		if (tspi->cs_control) {
-+			if (tspi->cs_control != spi)
-+				tegra_spi_writel(tspi, command1, SPI_COMMAND1);
-+			tspi->cs_control = NULL;
-+		} else
-+			tegra_spi_writel(tspi, command1, SPI_COMMAND1);
- 
- 		command1 |= SPI_CS_SW_HW;
- 		if (spi->mode & SPI_CS_HIGH)
-@@ -732,6 +738,9 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
- 		command1 |= SPI_BIT_LENGTH(bits_per_word - 1);
- 	}
- 
-+	if (t->len == 0 && !t->tx_buf && !t->rx_buf)
-+		return 0;
-+
- 	if (tspi->is_packed)
- 		command1 |= SPI_PACKED;
- 
-@@ -803,6 +812,17 @@ static int tegra_spi_setup(struct spi_device *spi)
- 	return 0;
- }
- 
-+static void tegra_spi_transfer_delay(int delay)
-+{
-+	if (!delay)
-+		return;
-+
-+	if (delay >= 1000)
-+		mdelay(delay / 1000);
-+
-+	udelay(delay % 1000);
-+}
-+
- static int tegra_spi_transfer_one_message(struct spi_master *master,
- 			struct spi_message *msg)
- {
-@@ -812,6 +832,7 @@ static int tegra_spi_transfer_one_message(struct spi_master *master,
- 	struct spi_transfer *xfer;
- 	struct spi_device *spi = msg->spi;
- 	int ret;
-+	bool skip = false;
- 
- 	msg->status = 0;
- 	msg->actual_length = 0;
-@@ -819,13 +840,20 @@ static int tegra_spi_transfer_one_message(struct spi_master *master,
- 	single_xfer = list_is_singular(&msg->transfers);
- 	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
- 		INIT_COMPLETION(tspi->xfer_completion);
-+
- 		ret = tegra_spi_start_transfer_one(spi, xfer,
- 					is_first_msg, single_xfer);
- 		if (ret < 0) {
- 			dev_err(tspi->dev,
- 				"spi can not start transfer, err %d\n", ret);
--			goto exit;
-+			goto complete_xfer;
-+		}
-+
-+		if (xfer->len == 0 && !xfer->tx_buf && !xfer->rx_buf) {
-+			skip = true;
-+			goto complete_xfer;
- 		}
-+
- 		is_first_msg = false;
- 		ret = wait_for_completion_timeout(&tspi->xfer_completion,
- 						SPI_DMA_TIMEOUT);
-@@ -833,24 +861,41 @@ static int tegra_spi_transfer_one_message(struct spi_master *master,
- 			dev_err(tspi->dev,
- 				"spi trasfer timeout, err %d\n", ret);
- 			ret = -EIO;
--			goto exit;
-+			goto complete_xfer;
- 		}
- 
- 		if (tspi->tx_status ||  tspi->rx_status) {
- 			dev_err(tspi->dev, "Error in Transfer\n");
- 			ret = -EIO;
--			goto exit;
-+			goto complete_xfer;
- 		}
- 		msg->actual_length += xfer->len;
--		if (xfer->cs_change && xfer->delay_usecs) {
-+
-+complete_xfer:
-+		if (ret < 0 || skip) {
- 			tegra_spi_writel(tspi, tspi->def_command1_reg,
- 					SPI_COMMAND1);
--			udelay(xfer->delay_usecs);
-+			tegra_spi_transfer_delay(xfer->delay_usecs);
-+			goto exit;
-+		} else if (msg->transfers.prev == &xfer->transfer_list) {
-+			/* This is the last transfer in message */
-+			if (xfer->cs_change)
-+				tspi->cs_control = spi;
-+			else {
-+				tegra_spi_writel(tspi, tspi->def_command1_reg,
-+						SPI_COMMAND1);
-+				tegra_spi_transfer_delay(xfer->delay_usecs);
-+			}
-+		} else if (xfer->cs_change) {
-+			tegra_spi_writel(tspi, tspi->def_command1_reg,
-+					SPI_COMMAND1);
-+			tegra_spi_transfer_delay(xfer->delay_usecs);
- 		}
-+
- 	}
- 	ret = 0;
- exit:
--	tegra_spi_writel(tspi, tspi->def_command1_reg, SPI_COMMAND1);
-+
- 	msg->status = ret;
- 	spi_finalize_current_message(master);
- 	return ret;
--- 
-1.7.9.5
-
+Scratch that.  The idea is reasonable but the implementation is not
+fully cooked yet.  I'll send you an update.
