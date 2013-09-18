@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436Ab3IRNXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:23:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55747 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab3IRNXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:23:38 -0400
-Date: Wed, 18 Sep 2013 09:22:49 -0400
-From: Dave Jones <davej@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: trinity finds ftrace/perf bug. Film at 11.
-Message-ID: <20130918132249.GA13402@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>
-References: <20130911135434.GA678@redhat.com>
- <20130912141913.2ffc7077@gandalf.local.home>
- <20130913105637.GM31370@twins.programming.kicks-ass.net>
- <20130913141638.GA6799@redhat.com>
- <20130916093719.GR21832@twins.programming.kicks-ass.net>
- <20130916164421.GA17568@redhat.com>
- <20130918113410.GJ9326@twins.programming.kicks-ass.net>
+	id S1751558Ab3IRNZD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:25:03 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:39606 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460Ab3IRNZB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 09:25:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130918113410.GJ9326@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdY-6eUWG6CWpBMi=yy2m158xwsF4h48yqZNzvBe_LW14Q@mail.gmail.com>
+References: <1379442550-24860-1-git-send-email-john.stultz@linaro.org>
+	<CACRpkdY-6eUWG6CWpBMi=yy2m158xwsF4h48yqZNzvBe_LW14Q@mail.gmail.com>
+Date: Wed, 18 Sep 2013 08:25:00 -0500
+Message-ID: <CALAqxLXtBj_DhiDr=BcU__E8g+FyeDGP+ZJjh0Mp+rrFZ6cJUw@mail.gmail.com>
+Subject: Re: [RFC][PATCH] rtc: rtc-pl031: Set wakeup flag prior to registering rtcdev
+From: John Stultz <john.stultz@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 01:34:11PM +0200, Peter Zijlstra wrote:
- > On Mon, Sep 16, 2013 at 12:44:21PM -0400, Dave Jones wrote:
- > > 
- > > may be some other option.. Try http://www.codemonkey.org.uk/junk/haswell-config
- > > 
- > >  > What kind of hardware are you running this on?
- > > 
- > > model name	: Intel(R) Core(TM) i5-4670T CPU @ 2.30GHz
- > 
- > Humpf,.. of course I don't have a hsw system :/
- > 
- > I'll try raising the -C count to 4*nr_cpus for the next few runs.
- > 
- > OK, seems I need to edit trinity for that, someone thought 64 was a big
- > number.
+On Wed, Sep 18, 2013 at 6:30 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>
+> On Tue, Sep 17, 2013 at 8:29 PM, John Stultz <john.stultz@linaro.org> wrote:
+>
+> > In some recent testing, I noticed the CLOCK_REALTIME_ALARM clockid
+> > wasn't functioning on my vexpress qemu environment. Looking into it
+> > I noticed the pl031 rtc driver doesn't set the wakeup flag on the
+> > device until after registering the device with the RTC subsystem.
+> >
+> > This causes the alarmtimer subsystem to not see the pl031 driver
+> > as a valid backing device, and that resuls in alarm clockids
+> > getting ENOTSUPP errors.
+> >
+> > Thus be sure to set the wakeup flag on the device prior to
+> > registering the rtcdev so the pl031 rtc driver can be used as
+> > the backing alarmtimer device.
+> >
+> > Let me know if you have any feedback or objections to this.
+> > If it looks ok, I'll queue it for 3.13. I suspect there
+> > may be other RTC drivers with the same problem.
+> >
+> > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > Cc: Alessandro Zummo <a.zummo@towertech.it>
+> > Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+> > Cc: linux-arm-kernel@lists.infradead.org
+> > Signed-off-by: John Stultz <john.stultz@linaro.org>
+>
+> Makes perfect sense. I have only tested the driver from regular
+> userspace using ioctl()s. Is these a simple way to test
+> an alarmtimer on a barebones system?
 
-heh, at one time, the walk through the list of child processes in watchdog.c was
-taking so long that it considered children that hadn't been scheduled for
-a while as stuck. I'm not sure that's any better right now, so you might have
-to modify that code too.
+The easiest way is to try to read CLOCK_REALTIME_ALARM which will only
+function if there's a backing rtc.
 
-	Dave
+I've got some further timekeeping tests here that will test timers etc
+on the _ALARM clockids:
+https://github.com/johnstultz-work/timetests
 
+
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> Are you sure this should not be for -rc:s and stable?
+
+Its not a regression (never worked before), so I don't think so,
+unless someone finds the functionality critical for long-term kernels.
+
+thanks
+-john
