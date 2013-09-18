@@ -1,72 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab3IRMgX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 08:36:23 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:59485 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752569Ab3IRMgU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 08:36:20 -0400
-Message-ID: <1379507774.2294.21.camel@ThinkPad-X230.localdomain>
-Subject: Re: [PATCH v2 0/3] Fix Win8 backlight issue
-From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-Date: Wed, 18 Sep 2013 16:36:14 +0400
-In-Reply-To: <52399D0B.3010909@intel.com>
-References: <1379409796-29350-1-git-send-email-aaron.lu@intel.com>
-	  <1379424853.3348.1.camel@ThinkPad-X230.localdomain>
-	  <5238FBF5.8080405@intel.com>
-	 <1379485819.2294.1.camel@ThinkPad-X230.localdomain>
-	 <52399D0B.3010909@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.9.91 (3.9.91-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752715Ab3IRMhB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 08:37:01 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:34534 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752495Ab3IRMg7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 08:36:59 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Stephen GALLIMORE <stephen.gallimore@st.com>,
+        Stuart MENEFY <stuart.menefy@st.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Olivier CLERGEAUD <olivier.clergeaud@st.com>
+Date: Wed, 18 Sep 2013 14:36:18 +0200
+Subject: Re: [PATCH 4/4] ARM: STi: Add I2C config to B2000 and B2020 boards
+Thread-Topic: [PATCH 4/4] ARM: STi: Add I2C config to B2000 and B2020 boards
+Thread-Index: AQHOtGus0azG6iQMtUWKqhz0jWkKZg==
+Message-ID: <84625B87D65BCF478CC1E9C886A4C314DEF1BD9576@SAFEX1MAIL4.st.com>
+References: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com>
+ <1379498483-4236-5-git-send-email-maxime.coquelin@st.com>
+ <20130918114032.GD16984@lee--X1>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-18 at 20:31 +0800, Aaron Lu wrote:
-> On 09/18/2013 02:30 PM, Igor Gnatenko wrote:
-> > On Wed, 2013-09-18 at 09:03 +0800, Aaron Lu wrote:
-> >> On 09/17/2013 09:34 PM, Igor Gnatenko wrote:
-> >>>
-> >>> Aaron, how about fix indicator on ThinkPads ?
-> >>
-> >> Can you please describe the problem in detail, is it that when you
-> >> adjust brightness level through hotkey, there is no GUI indication?
-> >> Thanks.
-> >>
-> >> -Aaron
-> > 
-> > Yes. On my ThinkPad X230 I pressing backlight hotkeys. Actually
-> > brightnes changing, but have no indicator in GUI.
-> 
-> Oh, that's still the problem of _BCL not getting executed once for
-> Lenovo thinkpad laptops. I borrowed a Thinkpad X1 this afternoon and can
-> reproduce this, I'll take a look at this issue. The thinkpad-acpi module
-> already has a call to _BCL but somehow that doesn't happen.
-> 
-> Since it's national holidays here, I'll check this issue when I got back
-> to work on this Saturday. Thanks for the quick test :-)
-Thanks. No problem ;-)
-> 
-> -Aaron
+Hi Lee,
 
-
--- 
-Igor Gnatenko
-Fedora release 20 (Heisenbug)
-Linux 3.11.1-300.fc20.x86_64
-
+On 09/18/2013 01:40 PM, Lee Jones wrote:
+> On Wed, 18 Sep 2013, Maxime COQUELIN wrote:
+>
+>> This patch supplies I2C configuration to B2000 and B2020
+>> based on either STiH415 or STiH416 SoCs.
+>>
+>> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+>> ---
+>>  arch/arm/boot/dts/stih41x-b2000.dtsi |    7 +++++++
+>>  arch/arm/boot/dts/stih41x-b2020.dtsi |   20 ++++++++++++++++++++
+>>  2 files changed, 27 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/stih41x-b2000.dtsi b/arch/arm/boot/dts/stih41x-b2000.dtsi
+>> index 8e694d2..346cc4bc 100644
+>> --- a/arch/arm/boot/dts/stih41x-b2000.dtsi
+>> +++ b/arch/arm/boot/dts/stih41x-b2000.dtsi
+>> @@ -37,5 +37,12 @@
+>>  			};
+>>  		};
+>>  
+>> +		/* HDMI Tx I2C */
+>> +		i2c1: i2c@fed41000{
+> nit: Space before the '{'
+Ok. It will be fixed for all nodes in next series.
+>
+>> +			status = "okay";
+> Consider enabling the node at the bottom.
+>
+>> +
+>> +			/* HDMI V1.3a supports Standard mode only */
+>> +			clock-frequency = <100000>;
+>> +		};
+>>  	};
+>>  };
+>> diff --git a/arch/arm/boot/dts/stih41x-b2020.dtsi b/arch/arm/boot/dts/stih41x-b2020.dtsi
+>> index 133e181..10b98da 100644
+>> --- a/arch/arm/boot/dts/stih41x-b2020.dtsi
+>> +++ b/arch/arm/boot/dts/stih41x-b2020.dtsi
+>> @@ -38,5 +38,25 @@
+>>  				default-state = "off";
+>>  			};
+>>  		};
+>> +
+>> +		i2c0: i2c@fed40000{
+> As above.
+>
+>> +			status = "okay";
+>> +		};
+>> +
+>> +		/* HDMI Tx I2C */
+>> +		i2c1: i2c@fed41000{
+> As above.
+>
+>> +			status = "okay";
+> As above.
+>
+>> +			/* HDMI V1.3a supports Standard mode only */
+>> +			clock-frequency = <100000>;
+>> +		};
+>> +
+>> +		sbc_i2c0: i2c@fe540000{
+> As above.
+>
+>> +			status = "okay";
+>> +		};
+>> +
+>> +		sbc_i2c1: i2c@fe541000{
+> Are these nodes referenced by phandle at all?
+>
+> If not, consider dropping the <lable>:s
+It was references in an previous internal version of this series.
+This is no more the case, so I will drop the labels.
+>
+>> +			status = "okay";
+>> +		};
+>>  	};
+>>  };
+> Odd tabbing here.
+>
+Thanks,
+Maxime
