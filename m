@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab3IRJUb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 05:20:31 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45173 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab3IRJU3 (ORCPT
+	id S1752070Ab3IRJY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 05:24:56 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:38076 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab3IRJYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 05:20:29 -0400
-Date: Wed, 18 Sep 2013 11:20:27 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Felipe Balbi <balbi@ti.com>
-Cc: kernel list <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: Fix style in s3c-hsotg.c
-Message-ID: <20130918092027.GA8325@amd.pavel.ucw.cz>
-References: <20130902135832.GA22300@amd.pavel.ucw.cz>
- <20130917154229.GI15645@radagast>
- <20130917220427.GC23937@amd.pavel.ucw.cz>
- <20130918014539.GB19817@radagast>
+	Wed, 18 Sep 2013 05:24:54 -0400
+Date: Wed, 18 Sep 2013 11:24:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Namhyung Kim <namhyung@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: Support for Openembedded/Yocto -dbg packages
+Message-ID: <20130918092444.GA2778@gmail.com>
+References: <1379493790-9554-1-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130918014539.GB19817@radagast>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1379493790-9554-1-git-send-email-ricardo.ribalda@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-09-17 20:45:39, Felipe Balbi wrote:
-> On Wed, Sep 18, 2013 at 12:04:27AM +0200, Pavel Machek wrote:
-> > On Tue 2013-09-17 10:42:30, Felipe Balbi wrote:
-> > > Hi,
-> > > 
-> > > On Mon, Sep 02, 2013 at 03:58:32PM +0200, Pavel Machek wrote:
-> > > > Hi!
-> > > > 
-> > > > checkpatch.pl has some valid complaints about style in s3c-hsotg.c :
-> > > > macro with if should be really enclosed in do {} while, and puts is
-> > > > going to be slightly faster.
-> > > > 
-> > > > Here's suggested patch. I don't have the hardware, so it is completely
-> > > > untested.
-> > > > 
-> > > > Signed-off-by: Pavel Machek, <pavel@denx.de>
-> > > 
-> > > this is not how you send a patch, please read
-> > > Documentation/SubmittingPatches
-> > 
-> > Have you considered possibility that this is how you nudge maintainer
-> > into fix their coding style?
+
+* Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com> wrote:
+
+> On OpenEmbedded the symbol files are located under a .debug folder on
+> the same folder as the binary file.
 > 
-> cute...
+> This patch adds support for such files.
+
+It would be nice to cite before/after perf report output, to see how this 
+improved things and to see the output format you picked.
+
 > 
-> Seriously though, read that file, you're commit log has garbage in it
-> which shouldn't go to git history.
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  tools/perf/util/dso.c    | 16 ++++++++++++++++
+>  tools/perf/util/dso.h    |  1 +
+>  tools/perf/util/symbol.c |  1 +
+>  3 files changed, 18 insertions(+)
+> 
+> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+> index c4374f0..bab18b7 100644
+> --- a/tools/perf/util/dso.c
+> +++ b/tools/perf/util/dso.c
+> @@ -14,6 +14,7 @@ char dso__symtab_origin(const struct dso *dso)
+>  		[DSO_BINARY_TYPE__BUILD_ID_CACHE]	= 'B',
+>  		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]	= 'f',
+>  		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]	= 'u',
+> +		[DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO] = 'o',
+>  		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]	= 'b',
+>  		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]	= 'd',
+>  		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]	= 'K',
 
-Run git log on SubmittingPatches.
+Stylistic nit: if a new entry breaks vertical alignment then re-align the 
+other entries as well so that it still looks nice after your change ...
 
-Then, instead of telling me what to read, run checkpatch on your
-files. You can either fix them yourself, or use my patch as a
-basis. Note there's missing } or something, so it probably will not
-compile, see the other mail. So you actually will have to modify that
-patch. Stripping "Hi!" from it should not be that hard, neither should
-be stripping note that patch is untested when you actually test
-it. And as you are the maintainer, it is your job.
+> @@ -64,6 +65,21 @@ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
+>  			 symbol_conf.symfs, dso->long_name);
+>  		break;
+>  
+> +	case DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO:{
 
-No, I'll not polish patch for hardware I don't have and have little
-interest in.  wanted to help you, but according to your first reply,
-you do not really want help.
+/: {
 
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> +		char *last_slash;
+> +
+> +		last_slash = dso->long_name + dso->long_name_len;
+> +		while (last_slash != dso->long_name && *last_slash != '/')
+> +			last_slash--;
+> +
+> +		snprintf(file, MIN(size, strlen(symbol_conf.symfs) +
+> +				(last_slash - dso->long_name) + 2), "%s%s",
+> +				symbol_conf.symfs, dso->long_name);
+> +		snprintf(file + strlen(file), size-strlen(file), ".debug%s",
+> +				last_slash);
+
+So the way such multi-snprintf() sequences are implemented in the kernel 
+is not this unreadable, fragile, repetitive concatenation of length 
+calculations, but an adjustment of 'size':
+
+		size -= snprintf(..., size, ...);
+
+that way 'size' always tracks the remaining limit of the output string, 
+each snprintf consumes from it.
+
+> +		}
+> +		break;
+
+Small nit: we generally put the final break inside the block.
+
+Besides the details it looks like a useful patch.
+
+Thanks,
+
+	Ingo
