@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab3IRI5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 04:57:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37893 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab3IRI5w (ORCPT
+	id S1752187Ab3IRJAu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 05:00:50 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:63083 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab3IRJAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 04:57:52 -0400
-Date: Wed, 18 Sep 2013 10:57:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vince@deater.net>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf: Fix broken union in ' struct
- perf_event_mmap_page'
-Message-ID: <20130918085722.GL12926@twins.programming.kicks-ass.net>
-References: <1372425741-1676-2-git-send-email-adrian.hunter@intel.com>
- <tip-860f085b74e9f0075de8140ed3a1e5b5e3e39aa8@git.kernel.org>
- <alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 18 Sep 2013 05:00:48 -0400
+Message-ID: <1379494844.2294.12.camel@ThinkPad-X230.localdomain>
+Subject: [REGRESSION][BISECTED] skge: add dma_mapping check
+From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+To: Mirko Lindner <mlindner@marvell.com>
+Cc: linux-kernel@vger.kernel.org,
+        Stephen Hemminger <stephen@networkplumber.org>, netdev@vger.kernel.org
+Date: Wed, 18 Sep 2013 13:00:44 +0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.9.91 (3.9.91-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 04:23:25PM -0400, Vince Weaver wrote:
-> >  include/uapi/linux/perf_event.h | 8 +++++---
-> >  1 file changed, 5 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> > index 00d8274..0041aed 100644
-> > --- a/include/uapi/linux/perf_event.h
-> > +++ b/include/uapi/linux/perf_event.h
-> > @@ -375,9 +375,11 @@ struct perf_event_mmap_page {
-> >  	__u64	time_running;		/* time event on cpu */
-> >  	union {
-> >  		__u64	capabilities;
-> > -		__u64	cap_usr_time  : 1,
-> > -			cap_usr_rdpmc : 1,
-> > -			cap_____res   : 62;
-> > +		struct {
-> > +			__u64	cap_usr_time		: 1,
-> > +				cap_usr_rdpmc		: 1,
-> > +				cap_____res		: 62;
-> > +		};
-> >  	};
+Since 136d8f377e1575463b47840bc5f1b22d94bf8f63 commit we have kernel
+panic on:
+01:05.0 Ethernet controller [0200]: Marvell Technology Group Ltd.
 
-> This patch somehow breaks the perf-ABI.
+Screen: https://www.dropbox.com/s/mu3t3wxpxbn4ou5/IMAG0507.jpg
 
-Difficult call that..
+RHBZ: https://bugzilla.redhat.com/show_bug.cgi?id=1008323
 
-> If I take a program that reads "mmap->cap_usr_rdpmc" and compile it
-> against the new header with this change (say from 3.12-rc1)
-> and then run it on an old kernel (say 3.11) then I get "0" for
-> cap_usr_rdpmc.
-> 
-> If I take the same program and recompile against the old (without this 
-> patch) header and run it on 3.11, I get the expected "1" value.
-> 
-> So something about this changed the bit pattern in an incompatible 
-> fashion.
 
-Which was the entire point of the change. Previously cap_usr_time and
-cap_usr_rdpmc were the same bit which clearly cannot be right.
+01:05.0 Ethernet controller [0200]: Marvell Technology Group Ltd.
+88E8001 Gigabit Ethernet Controller [11ab:4320] (rev 13)
+        Subsystem: ASUSTeK Computer Inc. Marvell 88E8001 Gigabit
+Ethernet Controller (Asus) [1043:811a]
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 64 (5750ns min, 7750ns max), Cache Line Size: 16 bytes
+        Interrupt: pin A routed to IRQ 21
+        Region 0: Memory at ddcfc000 (32-bit, non-prefetchable)
+[size=16K]
+        Region 1: I/O ports at a800 [size=256]
+        Expansion ROM at ddcc0000 [disabled] [size=128K]
+        Capabilities: [48] Power Management version 2
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1
++,D2+,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=7 DScale=1 PME-
+        Capabilities: [50] Vital Product Data
+                Product Name: Yukon Gigabit Ethernet 10/100/1000Base-T
+Adapter
+                Read-only fields:
+                        [PN] Part number: Yukon 88E8001
+                        [EC] Engineering changes: Rev. 1.3
+                        [MN] Manufacture ID: 4d 61 72 76 65 6c 6c
+                        [SN] Serial number: AbCdEfG000002
+                        [CP] Extended capability: 01 10 cc 03
+                        [RV] Reserved: checksum good, 10 byte(s)
+reserved
+                Read/write fields:
+                        [RW] Read-write area: 121 byte(s) free
+                End
+        Kernel driver in use: skge
 
-With the change they're consecutive bits in the capabilities word.
+-- 
+Igor Gnatenko
+Fedora release 20 (Heisenbug)
+Linux 3.11.1-300.fc20.x86_64
 
-Should we preserve completely broken things that don't work?
