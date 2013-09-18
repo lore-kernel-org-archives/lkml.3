@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab3IRN0H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:26:07 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:49952 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424Ab3IRN0E (ORCPT
+	id S1751893Ab3IRN0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:26:11 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:59794 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab3IRN0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:26:04 -0400
+	Wed, 18 Sep 2013 09:26:08 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Rob Herring <rob.herring@calxeda.com>,
         Grant Likely <grant.likely@linaro.org>,
@@ -18,166 +18,372 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
         linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 00/10] of/irq: Defer interrupt reference resolution
-Date: Wed, 18 Sep 2013 15:24:42 +0200
-Message-Id: <1379510692-32435-1-git-send-email-treding@nvidia.com>
+Subject: [PATCH v2 02/10] of/irq: Use irq_of_parse_and_map()
+Date: Wed, 18 Sep 2013 15:24:44 +0200
+Message-Id: <1379510692-32435-3-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1379510692-32435-1-git-send-email-treding@nvidia.com>
+References: <1379510692-32435-1-git-send-email-treding@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Replace some instances of of_irq_map_one()/irq_create_of_mapping() and
+of_irq_to_resource() by the simpler equivalent irq_of_parse_and_map().
 
-This small series allows interrupt references from the device tree to be
-resolved at driver probe time, rather than at device creation time. The
-current implementation resolves such references while devices are added
-during the call to of_platform_populate(), which happens very early in
-the boot process. This causes probe ordering issues, because all devices
-that are an interrupt parent for other devices need to have been probed
-by that time. This is worked around for primary interrupt controllers by
-initializing them using a device tree specific way (of_irq_init()), but
-it doesn't work for something like a GPIO controller that is itself a
-platform device and an interrupt parent for other devices at the same
-time.
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ arch/arm/mach-u300/timer.c                       |  9 ++++-----
+ arch/powerpc/platforms/cell/celleb_scc_pciex.c   |  8 +++-----
+ arch/powerpc/platforms/cell/spider-pic.c         |  7 ++-----
+ arch/powerpc/sysdev/fsl_gtm.c                    |  9 ++++-----
+ arch/powerpc/sysdev/mpic_msgr.c                  |  6 ++----
+ drivers/crypto/caam/ctrl.c                       |  2 +-
+ drivers/crypto/caam/jr.c                         |  2 +-
+ drivers/crypto/omap-sham.c                       |  2 +-
+ drivers/i2c/busses/i2c-cpm.c                     |  2 +-
+ drivers/input/serio/xilinx_ps2.c                 |  7 ++++---
+ drivers/net/ethernet/arc/emac_main.c             | 10 +++++-----
+ drivers/net/ethernet/freescale/fs_enet/mac-fcc.c |  2 +-
+ drivers/net/ethernet/freescale/fs_enet/mac-fec.c |  2 +-
+ drivers/net/ethernet/freescale/fs_enet/mac-scc.c |  2 +-
+ drivers/spi/spi-fsl-espi.c                       |  6 +++---
+ drivers/tty/serial/cpm_uart/cpm_uart_core.c      |  2 +-
+ 16 files changed, 35 insertions(+), 43 deletions(-)
 
-Currently such drivers use explicit initcall ordering to force these
-chips to be probed earlier than other devices, but that only fixes a
-subset of the problematic cases. It doesn't work if the interrupt user
-is itself a platform device on the same bus. There are possibly other
-cases where it doesn't work either.
-
-This patch series attempts to fix this by not resolving the interrupt
-references at device creation time. Instead, some functionality is added
-to the driver core to resolve them for each device immediately before it
-is probed. Often this is a lot later than the point at which the device
-was created, which gives interrupt parents more time and therefore a
-better chance of being probed. More importantly, however, it allows the
-driver core to detect when an interrupt parent isn't there yet and cause
-the device to be queued for deferred probing. After all, resolving probe
-ordering issues is one of the primary reason for the introduction of
-deferred probing.
-
-Unfortunately the interrupt core code isn't prepared to handle this very
-well, so some preparatory work is required.
-
-Patches 1 and 2 are cleanup. Patch 1 modifies of_irq_count() to not use
-the heavyweight of_irq_to_resource(), which will actually try to create
-a mapping. While not usually harmful, it causes a warning during boot if
-the interrupt parent hasn't registered an IRQ domain yet. Furthermore it
-is much more than the stated intention of the function, which is to
-return the number of interrupts that a device node uses. Various uses of
-the of_irq_to_resource() function are replaced by more simpler versions
-using irq_of_parse_and_map() in patch 2.
-
-Patches 3 introduces the __irq_create_mapping() function, equivalent to
-its non-__ counterpart except that it returns a negative error code on
-failure and therefore allows propagation of a precise error code instead
-of 0 for all errors. This is an important prerequisite for subsequent
-patches. I would've preferred not to introduce an underscore-prefixed
-variant but there are about 114 callers and updating them all would've
-been rather messy.
-
-Patch 4 updates irq_create_of_mapping() to return a negative error code
-on failure instead of 0. The number of the mapped interrupt is returned
-in an output parameter. All callers of this function are updated.
-
-Patch 5 adds an __-prefixed variant of irq_of_parse_and_map() which
-returns a negative error code on failure instead of 0. The number of
-the mapped interrupt is returned in an output parameter.
-
-Patch 6 modifies of_irq_to_resource() to return a negative error code on
-failure (so that error can be propagated) and updates all callers.
-
-Patch 7 propagates errors from of_irq_to_resource() to users of the
-of_irq_to_resource_table() function.
-
-Patch 8 adds functionality to the platform driver code to resolve
-interrupt references at probe time. It uses the negative error code of
-the of_irq_to_resource_table() function to trigger deferred probing.
-
-Patch 9 implements similar functionality for I2C devices.
-
-Patch 10 serves as an example of the kind of cleanup that can be done
-after this series. Obviously this will require quite a bit of retesting
-of working setups, but I think that in the long run we're better off
-without the kind of explicit probe ordering employed by the gpio-tegra
-driver and many others.
-
-Note that I've only implemented this for platform and I2C devices, but
-the same can be done for SPI and possibly other subsystems as well.
-
-There is another use-case that I'm aware of for which a similar solution
-could be implemented. IOMMUs on SoCs generally need to hook themselves
-up to new platform devices. This causes a similar issues as interrupt
-resolution and should be fixable by extending the of_platform_probe()
-function introduced in patch 7 of this series.
-
-Changes in v2:
-- use more consistent naming and calling conventions
-- use less wrappers, update more callers
-- make of_platform_probe() idempotent
-
-The initial version of this patch series can be found here:
-
-	https://lkml.org/lkml/2013/9/16/111
-
-Thierry
-
-Thierry Reding (10):
-  of/irq: Rework of_irq_count()
-  of/irq: Use irq_of_parse_and_map()
-  irqdomain: Introduce __irq_create_mapping()
-  irqdomain: Return errors from irq_create_of_mapping()
-  of/irq: Introduce __irq_of_parse_and_map()
-  of/irq: Return errors from of_irq_to_resource()
-  of/irq: Propagate errors in of_irq_to_resource_table()
-  of/platform: Resolve interrupt references at probe time
-  of/i2c: Resolve interrupt references at probe time
-  gpio: tegra: Use module_platform_driver()
-
- arch/arm/mach-integrator/pci_v3.c                |   8 +-
- arch/arm/mach-u300/timer.c                       |   9 +-
- arch/microblaze/pci/pci-common.c                 |   6 +-
- arch/mips/lantiq/irq.c                           |   2 +-
- arch/mips/lantiq/xway/gptu.c                     |   6 +-
- arch/mips/pci/fixup-lantiq.c                     |  12 ++-
- arch/mips/pci/pci-rt3883.c                       |   9 +-
- arch/powerpc/kernel/pci-common.c                 |   7 +-
- arch/powerpc/platforms/83xx/mpc832x_rdb.c        |   2 +-
- arch/powerpc/platforms/cell/celleb_scc_pciex.c   |   8 +-
- arch/powerpc/platforms/cell/celleb_scc_sio.c     |   8 +-
- arch/powerpc/platforms/cell/spider-pic.c         |   7 +-
- arch/powerpc/platforms/cell/spu_manage.c         |   6 +-
- arch/powerpc/platforms/fsl_uli1575.c             |   7 +-
- arch/powerpc/platforms/pseries/event_sources.c   |  12 +--
- arch/powerpc/sysdev/fsl_gtm.c                    |   9 +-
- arch/powerpc/sysdev/mpic_msgr.c                  |   6 +-
- arch/sparc/kernel/of_device_common.c             |  12 ++-
- arch/x86/kernel/devicetree.c                     |  11 ++-
- drivers/base/platform.c                          |   4 +
- drivers/crypto/caam/ctrl.c                       |   2 +-
- drivers/crypto/caam/jr.c                         |   2 +-
- drivers/crypto/omap-sham.c                       |   2 +-
- drivers/gpio/gpio-tegra.c                        |   7 +-
- drivers/i2c/busses/i2c-cpm.c                     |   2 +-
- drivers/i2c/i2c-core.c                           |  24 ++++-
- drivers/input/serio/xilinx_ps2.c                 |   7 +-
- drivers/net/ethernet/arc/emac_main.c             |  10 +--
- drivers/net/ethernet/freescale/fs_enet/mac-fcc.c |   2 +-
- drivers/net/ethernet/freescale/fs_enet/mac-fec.c |   2 +-
- drivers/net/ethernet/freescale/fs_enet/mac-scc.c |   2 +-
- drivers/net/ethernet/marvell/mv643xx_eth.c       |   5 +-
- drivers/of/irq.c                                 |  49 +++++++----
- drivers/of/platform.c                            | 107 +++++++++++++++++++++--
- drivers/pci/host/pci-mvebu.c                     |   9 +-
- drivers/spi/spi-fsl-espi.c                       |   6 +-
- drivers/tty/serial/cpm_uart/cpm_uart_core.c      |   2 +-
- drivers/tty/serial/lantiq.c                      |   2 +-
- include/linux/of_irq.h                           |  27 ++++--
- include/linux/of_platform.h                      |   7 ++
- kernel/irq/irqdomain.c                           |  87 +++++++++++-------
- 41 files changed, 353 insertions(+), 161 deletions(-)
-
+diff --git a/arch/arm/mach-u300/timer.c b/arch/arm/mach-u300/timer.c
+index b5db207..9a5f9fb 100644
+--- a/arch/arm/mach-u300/timer.c
++++ b/arch/arm/mach-u300/timer.c
+@@ -358,8 +358,7 @@ static struct delay_timer u300_delay_timer;
+  */
+ static void __init u300_timer_init_of(struct device_node *np)
+ {
+-	struct resource irq_res;
+-	int irq;
++	unsigned int irq;
+ 	struct clk *clk;
+ 	unsigned long rate;
+ 
+@@ -368,11 +367,11 @@ static void __init u300_timer_init_of(struct device_node *np)
+ 		panic("could not ioremap system timer\n");
+ 
+ 	/* Get the IRQ for the GP1 timer */
+-	irq = of_irq_to_resource(np, 2, &irq_res);
+-	if (irq <= 0)
++	irq = irq_of_parse_and_map(np, 2);
++	if (!irq)
+ 		panic("no IRQ for system timer\n");
+ 
+-	pr_info("U300 GP1 timer @ base: %p, IRQ: %d\n", u300_timer_base, irq);
++	pr_info("U300 GP1 timer @ base: %p, IRQ: %u\n", u300_timer_base, irq);
+ 
+ 	/* Clock the interrupt controller */
+ 	clk = of_clk_get(np, 0);
+diff --git a/arch/powerpc/platforms/cell/celleb_scc_pciex.c b/arch/powerpc/platforms/cell/celleb_scc_pciex.c
+index 14be2bd..856ad64 100644
+--- a/arch/powerpc/platforms/cell/celleb_scc_pciex.c
++++ b/arch/powerpc/platforms/cell/celleb_scc_pciex.c
+@@ -486,8 +486,7 @@ static __init int celleb_setup_pciex(struct device_node *node,
+ 				     struct pci_controller *phb)
+ {
+ 	struct resource	r;
+-	struct of_irq oirq;
+-	int virq;
++	unsigned int virq;
+ 
+ 	/* SMMIO registers; used inside this file */
+ 	if (of_address_to_resource(node, 0, &r)) {
+@@ -507,12 +506,11 @@ static __init int celleb_setup_pciex(struct device_node *node,
+ 	phb->ops = &scc_pciex_pci_ops;
+ 
+ 	/* internal interrupt handler */
+-	if (of_irq_map_one(node, 1, &oirq)) {
++	virq = irq_of_parse_and_map(node, 1);
++	if (!virq) {
+ 		pr_err("PCIEXC:Failed to map irq\n");
+ 		goto error;
+ 	}
+-	virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
+-				     oirq.size);
+ 	if (request_irq(virq, pciex_handle_internal_irq,
+ 			0, "pciex", (void *)phb)) {
+ 		pr_err("PCIEXC:Failed to request irq\n");
+diff --git a/arch/powerpc/platforms/cell/spider-pic.c b/arch/powerpc/platforms/cell/spider-pic.c
+index 8e29944..1f72f4a 100644
+--- a/arch/powerpc/platforms/cell/spider-pic.c
++++ b/arch/powerpc/platforms/cell/spider-pic.c
+@@ -235,12 +235,9 @@ static unsigned int __init spider_find_cascade_and_node(struct spider_pic *pic)
+ 	/* First, we check whether we have a real "interrupts" in the device
+ 	 * tree in case the device-tree is ever fixed
+ 	 */
+-	struct of_irq oirq;
+-	if (of_irq_map_one(pic->host->of_node, 0, &oirq) == 0) {
+-		virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
+-					     oirq.size);
++	virq = irq_of_parse_and_map(pic->host->of_node, 0);
++	if (virq)
+ 		return virq;
+-	}
+ 
+ 	/* Now do the horrible hacks */
+ 	tmp = of_get_property(pic->host->of_node, "#interrupt-cells", NULL);
+diff --git a/arch/powerpc/sysdev/fsl_gtm.c b/arch/powerpc/sysdev/fsl_gtm.c
+index 0eb871c..dd0d5be 100644
+--- a/arch/powerpc/sysdev/fsl_gtm.c
++++ b/arch/powerpc/sysdev/fsl_gtm.c
+@@ -401,16 +401,15 @@ static int __init fsl_gtm_init(void)
+ 		gtm->clock = *clock;
+ 
+ 		for (i = 0; i < ARRAY_SIZE(gtm->timers); i++) {
+-			int ret;
+-			struct resource irq;
++			unsigned int irq;
+ 
+-			ret = of_irq_to_resource(np, i, &irq);
+-			if (ret == NO_IRQ) {
++			irq = irq_of_parse_and_map(np, i);
++			if (irq == NO_IRQ) {
+ 				pr_err("%s: not enough interrupts specified\n",
+ 				       np->full_name);
+ 				goto err;
+ 			}
+-			gtm->timers[i].irq = irq.start;
++			gtm->timers[i].irq = irq;
+ 			gtm->timers[i].gtm = gtm;
+ 		}
+ 
+diff --git a/arch/powerpc/sysdev/mpic_msgr.c b/arch/powerpc/sysdev/mpic_msgr.c
+index c753258..2c9b52a 100644
+--- a/arch/powerpc/sysdev/mpic_msgr.c
++++ b/arch/powerpc/sysdev/mpic_msgr.c
+@@ -237,15 +237,13 @@ static int mpic_msgr_probe(struct platform_device *dev)
+ 		raw_spin_lock_init(&msgr->lock);
+ 
+ 		if (receive_mask & (1 << i)) {
+-			struct resource irq;
+-
+-			if (of_irq_to_resource(np, irq_index, &irq) == NO_IRQ) {
++			msgr->irq = irq_of_parse_and_map(np, irq_index);
++			if (msgr->irq == NO_IRQ) {
+ 				dev_err(&dev->dev,
+ 						"Missing interrupt specifier");
+ 				kfree(msgr);
+ 				return -EFAULT;
+ 			}
+-			msgr->irq = irq.start;
+ 			irq_index += 1;
+ 		} else {
+ 			msgr->irq = NO_IRQ;
+diff --git a/drivers/crypto/caam/ctrl.c b/drivers/crypto/caam/ctrl.c
+index 26438cd..c8224da 100644
+--- a/drivers/crypto/caam/ctrl.c
++++ b/drivers/crypto/caam/ctrl.c
+@@ -419,7 +419,7 @@ static int caam_probe(struct platform_device *pdev)
+ 	topregs = (struct caam_full __iomem *)ctrl;
+ 
+ 	/* Get the IRQ of the controller (for security violations only) */
+-	ctrlpriv->secvio_irq = of_irq_to_resource(nprop, 0, NULL);
++	ctrlpriv->secvio_irq = irq_of_parse_and_map(nprop, 0);
+ 
+ 	/*
+ 	 * Enable DECO watchdogs and, if this is a PHYS_ADDR_T_64BIT kernel,
+diff --git a/drivers/crypto/caam/jr.c b/drivers/crypto/caam/jr.c
+index 105ba4d..517a16d 100644
+--- a/drivers/crypto/caam/jr.c
++++ b/drivers/crypto/caam/jr.c
+@@ -403,7 +403,7 @@ int caam_jr_probe(struct platform_device *pdev, struct device_node *np,
+ 		dma_set_mask(jrdev, DMA_BIT_MASK(32));
+ 
+ 	/* Identify the interrupt */
+-	jrpriv->irq = of_irq_to_resource(np, 0, NULL);
++	jrpriv->irq = irq_of_parse_and_map(np, 0);
+ 
+ 	/* Now do the platform independent part */
+ 	error = caam_jr_init(jrdev); /* now turn on hardware */
+diff --git a/drivers/crypto/omap-sham.c b/drivers/crypto/omap-sham.c
+index 8bdde57..e28104b 100644
+--- a/drivers/crypto/omap-sham.c
++++ b/drivers/crypto/omap-sham.c
+@@ -1818,7 +1818,7 @@ static int omap_sham_get_res_of(struct omap_sham_dev *dd,
+ 		goto err;
+ 	}
+ 
+-	dd->irq = of_irq_to_resource(node, 0, NULL);
++	dd->irq = irq_of_parse_and_map(node, 0);
+ 	if (!dd->irq) {
+ 		dev_err(dev, "can't translate OF irq value\n");
+ 		err = -EINVAL;
+diff --git a/drivers/i2c/busses/i2c-cpm.c b/drivers/i2c/busses/i2c-cpm.c
+index b2b8aa9..3e5ea2c 100644
+--- a/drivers/i2c/busses/i2c-cpm.c
++++ b/drivers/i2c/busses/i2c-cpm.c
+@@ -447,7 +447,7 @@ static int cpm_i2c_setup(struct cpm_i2c *cpm)
+ 
+ 	init_waitqueue_head(&cpm->i2c_wait);
+ 
+-	cpm->irq = of_irq_to_resource(ofdev->dev.of_node, 0, NULL);
++	cpm->irq = irq_of_parse_and_map(ofdev->dev.of_node, 0);
+ 	if (!cpm->irq)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/input/serio/xilinx_ps2.c b/drivers/input/serio/xilinx_ps2.c
+index 4b7662a..36f7b95 100644
+--- a/drivers/input/serio/xilinx_ps2.c
++++ b/drivers/input/serio/xilinx_ps2.c
+@@ -235,12 +235,12 @@ static void sxps2_close(struct serio *pserio)
+  */
+ static int xps2_of_probe(struct platform_device *ofdev)
+ {
+-	struct resource r_irq; /* Interrupt resources */
+ 	struct resource r_mem; /* IO mem resources */
+ 	struct xps2data *drvdata;
+ 	struct serio *serio;
+ 	struct device *dev = &ofdev->dev;
+ 	resource_size_t remap_size, phys_addr;
++	unsigned int irq;
+ 	int error;
+ 
+ 	dev_info(dev, "Device Tree Probing \'%s\'\n",
+@@ -254,7 +254,8 @@ static int xps2_of_probe(struct platform_device *ofdev)
+ 	}
+ 
+ 	/* Get IRQ for the device */
+-	if (!of_irq_to_resource(ofdev->dev.of_node, 0, &r_irq)) {
++	irq = irq_of_parse_and_map(ofdev->dev.of_node, 0);
++	if (!irq) {
+ 		dev_err(dev, "no IRQ found\n");
+ 		return -ENODEV;
+ 	}
+@@ -267,7 +268,7 @@ static int xps2_of_probe(struct platform_device *ofdev)
+ 	}
+ 
+ 	spin_lock_init(&drvdata->lock);
+-	drvdata->irq = r_irq.start;
++	drvdata->irq = irq;
+ 	drvdata->serio = serio;
+ 	drvdata->dev = dev;
+ 
+diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
+index 9e16014..d087852 100644
+--- a/drivers/net/ethernet/arc/emac_main.c
++++ b/drivers/net/ethernet/arc/emac_main.c
+@@ -628,12 +628,12 @@ static const struct net_device_ops arc_emac_netdev_ops = {
+ 
+ static int arc_emac_probe(struct platform_device *pdev)
+ {
+-	struct resource res_regs, res_irq;
++	struct resource res_regs;
+ 	struct device_node *phy_node;
+ 	struct arc_emac_priv *priv;
+ 	struct net_device *ndev;
+ 	const char *mac_addr;
+-	unsigned int id, clock_frequency;
++	unsigned int id, clock_frequency, irq;
+ 	int err;
+ 
+ 	if (!pdev->dev.of_node)
+@@ -661,8 +661,8 @@ static int arc_emac_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* Get IRQ from device tree */
+-	err = of_irq_to_resource(pdev->dev.of_node, 0, &res_irq);
+-	if (!err) {
++	irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
++	if (!irq) {
+ 		dev_err(&pdev->dev, "failed to retrieve <irq> value from device tree\n");
+ 		return -ENODEV;
+ 	}
+@@ -711,7 +711,7 @@ static int arc_emac_probe(struct platform_device *pdev)
+ 		goto out;
+ 	}
+ 
+-	ndev->irq = res_irq.start;
++	ndev->irq = irq;
+ 	dev_info(&pdev->dev, "IRQ is %d\n", ndev->irq);
+ 
+ 	/* Register interrupt handler for device */
+diff --git a/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c b/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c
+index 7583a95..10f781d 100644
+--- a/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c
++++ b/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c
+@@ -88,7 +88,7 @@ static int do_pd_setup(struct fs_enet_private *fep)
+ 	struct fs_platform_info *fpi = fep->fpi;
+ 	int ret = -EINVAL;
+ 
+-	fep->interrupt = of_irq_to_resource(ofdev->dev.of_node, 0, NULL);
++	fep->interrupt = irq_of_parse_and_map(ofdev->dev.of_node, 0);
+ 	if (fep->interrupt == NO_IRQ)
+ 		goto out;
+ 
+diff --git a/drivers/net/ethernet/freescale/fs_enet/mac-fec.c b/drivers/net/ethernet/freescale/fs_enet/mac-fec.c
+index 9ae6cdb..53a0c23 100644
+--- a/drivers/net/ethernet/freescale/fs_enet/mac-fec.c
++++ b/drivers/net/ethernet/freescale/fs_enet/mac-fec.c
+@@ -98,7 +98,7 @@ static int do_pd_setup(struct fs_enet_private *fep)
+ {
+ 	struct platform_device *ofdev = to_platform_device(fep->dev);
+ 
+-	fep->interrupt = of_irq_to_resource(ofdev->dev.of_node, 0, NULL);
++	fep->interrupt = irq_of_parse_and_map(ofdev->dev.of_node, 0);
+ 	if (fep->interrupt == NO_IRQ)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/net/ethernet/freescale/fs_enet/mac-scc.c b/drivers/net/ethernet/freescale/fs_enet/mac-scc.c
+index 22a02a7..631f098 100644
+--- a/drivers/net/ethernet/freescale/fs_enet/mac-scc.c
++++ b/drivers/net/ethernet/freescale/fs_enet/mac-scc.c
+@@ -98,7 +98,7 @@ static int do_pd_setup(struct fs_enet_private *fep)
+ {
+ 	struct platform_device *ofdev = to_platform_device(fep->dev);
+ 
+-	fep->interrupt = of_irq_to_resource(ofdev->dev.of_node, 0, NULL);
++	fep->interrupt = irq_of_parse_and_map(ofdev->dev.of_node, 0);
+ 	if (fep->interrupt == NO_IRQ)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/spi/spi-fsl-espi.c b/drivers/spi/spi-fsl-espi.c
+index b8f1103..3197d55 100644
+--- a/drivers/spi/spi-fsl-espi.c
++++ b/drivers/spi/spi-fsl-espi.c
+@@ -687,7 +687,7 @@ static int of_fsl_espi_probe(struct platform_device *ofdev)
+ 	struct device_node *np = ofdev->dev.of_node;
+ 	struct spi_master *master;
+ 	struct resource mem;
+-	struct resource irq;
++	unsigned int irq;
+ 	int ret = -ENOMEM;
+ 
+ 	ret = of_mpc8xxx_spi_probe(ofdev);
+@@ -702,13 +702,13 @@ static int of_fsl_espi_probe(struct platform_device *ofdev)
+ 	if (ret)
+ 		goto err;
+ 
+-	ret = of_irq_to_resource(np, 0, &irq);
++	irq = irq_of_parse_and_map(np, 0);
+ 	if (!ret) {
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+ 
+-	master = fsl_espi_probe(dev, &mem, irq.start);
++	master = fsl_espi_probe(dev, &mem, irq);
+ 	if (IS_ERR(master)) {
+ 		ret = PTR_ERR(master);
+ 		goto err;
+diff --git a/drivers/tty/serial/cpm_uart/cpm_uart_core.c b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+index 1a535f7..6957f445 100644
+--- a/drivers/tty/serial/cpm_uart/cpm_uart_core.c
++++ b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+@@ -1207,7 +1207,7 @@ static int cpm_uart_init_port(struct device_node *np,
+ 	pinfo->port.fifosize = pinfo->tx_nrfifos * pinfo->tx_fifosize;
+ 	spin_lock_init(&pinfo->port.lock);
+ 
+-	pinfo->port.irq = of_irq_to_resource(np, 0, NULL);
++	pinfo->port.irq = irq_of_parse_and_map(np, 0);
+ 	if (pinfo->port.irq == NO_IRQ) {
+ 		ret = -EINVAL;
+ 		goto out_pram;
 -- 
 1.8.4
 
