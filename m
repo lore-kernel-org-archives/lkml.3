@@ -1,225 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab3IRJFW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 05:05:22 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:33655 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab3IRJFT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 05:05:19 -0400
+	id S1752363Ab3IRJHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 05:07:09 -0400
+Received: from mga14.intel.com ([143.182.124.37]:65024 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752060Ab3IRJHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 05:07:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,929,1371106800"; 
+   d="scan'208";a="296306896"
+Message-ID: <52396EB5.6050104@intel.com>
+Date: Wed, 18 Sep 2013 12:13:25 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <201309181020.15245@pali>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <201309172128.42514@pali> <20130918014942.GD19817@radagast> <201309181020.15245@pali>
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-Date: Wed, 18 Sep 2013 11:04:58 +0200
-Message-ID: <CAAwP0s1Ou7Nrq7GhnHX71TFCrTFg=nqUh+GsAJhN8DjZGsF4QQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] usb: musb: Call atomic_notifier_call_chain when
- status is changed
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, freemangordon@abv.bg,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Vince Weaver <vince@deater.net>
+CC: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf: Fix broken union in ' struct perf_event_mmap_page'
+References: <1372425741-1676-2-git-send-email-adrian.hunter@intel.com> <tip-860f085b74e9f0075de8140ed3a1e5b5e3e39aa8@git.kernel.org> <alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy>
+In-Reply-To: <alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 10:20 AM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> On Wednesday 18 September 2013 03:49:42 Felipe Balbi wrote:
->> On Tue, Sep 17, 2013 at 09:28:42PM +0200, Pali Rohár wrote:
->> > On Tuesday 17 September 2013 18:08:35 Felipe Balbi wrote:
->> > > On Tue, Sep 17, 2013 at 06:05:15PM +0200, Pali Rohár wrote:
->> > > > On Tuesday 17 September 2013 17:48:59 you wrote:
->> > > > > On Sun, Sep 08, 2013 at 10:50:36AM +0200, Pali Rohár wrote:
->> > > > > > More power supply drivers depends on vbus events and
->> > > > > > without it they not working. Power supply drivers
->> > > > > > using usb_register_notifier, so to deliver events
->> > > > > > it is needed to call atomic_notifier_call_chain.
->> > > > > >
->> > > > > > So without atomic notifier power supply driver
->> > > > > > isp1704 not retrieving vbus status and reporting
->> > > > > > bogus values to userspace and also to board
->> > > > > > platform data functions. Without proper data
->> > > > > > charger drivers trying to charge battery also when
->> > > > > > charger is disconnected or do not start charging
->> > > > > > when wallcharger connects.
->> > > > > >
->> > > > > > Atomic notifier in musb driver was used before v3.5
->> > > > > > and was replaced with omap mailbox. This patch
->> > > > > > adding atomic_notifier_call_chain call from
->> > > > > > function omap_musb_set_mailbox.
->> > > > > >
->> > > > > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->> > > > > > ---
->> > > > > >
->> > > > > >  drivers/usb/musb/omap2430.c       |    3 +++
->> > > > > >  drivers/usb/phy/phy-twl4030-usb.c |    2 ++
->> > > > > >  2 files changed, 5 insertions(+)
->> > > > > >
->> > > > > > diff --git a/drivers/usb/musb/omap2430.c
->> > > > > > b/drivers/usb/musb/omap2430.c index f44e8b5..5c40252
->> > > > > > 100644 --- a/drivers/usb/musb/omap2430.c
->> > > > > > +++ b/drivers/usb/musb/omap2430.c
->> > > > > > @@ -305,6 +305,9 @@ static void
->> > > > > > omap_musb_set_mailbox(struct omap2430_glue *glue)
->> > > > > >
->> > > > > >     default:
->> > > > > >             dev_dbg(dev, "ID float\n");
->> > > > > >
->> > > > > >     }
->> > > > > >
->> > > > > > +
->> > > > > > +   atomic_notifier_call_chain(&musb->xceiv->notifier,
->> > > > > > +                   musb->xceiv->last_event, NULL);
->> > > > >
->> > > > > let's add a wrapper for this:
->> > > > >
->> > > > > static inline int usb_phy_notify(struct usb phy *x,
->> > > > > unsigned val, void *v) {
->> > > > >
->> > > > >       return atomic_notifier_call_chain(&x->notifier, val,
->> > > > >       v);
->> > > > >
->> > > > > }
->> > > >
->> > > > Where to add this wrapper? To omap2430.c? or some
->> > > > include file?
->> > >
->> > > <linux/usb/phy.h>
->> > >
->> > > > On Tuesday 17 September 2013 17:49:17 Felipe Balbi wrote:
->> > > > > On Sun, Sep 08, 2013 at 10:50:36AM +0200, Pali Rohár wrote:
->> > > > > > diff --git a/drivers/usb/phy/phy-twl4030-usb.c
->> > > > > > b/drivers/usb/phy/phy-twl4030-usb.c index
->> > > > > > 8f78d2d..efe6155 100644
->> > > > > > --- a/drivers/usb/phy/phy-twl4030-usb.c
->> > > > > > +++ b/drivers/usb/phy/phy-twl4030-usb.c
->> > > > > > @@ -705,6 +705,8 @@ static int
->> > > > > > twl4030_usb_probe(struct platform_device *pdev)
->> > > > > >
->> > > > > >     if (device_create_file(&pdev->dev,
->> > > > > >     &dev_attr_vbus))
->> > > > > >
->> > > > > >             dev_warn(&pdev->dev, "could not create sysfs
->> > > > > >             file\n");
->> > > > > >
->> > > > > > +   ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
->> > > > >
->> > > > > BTW, this is a bugfix, send separately.
->> > > >
->> > > > What to send separately?
->> > > >
->> > > > This full patch 1/4 is bugfix. And I did not understand
->> > > > what you want. Maybe it could be easier for you to
->> > > > apply this small 3+2 lines patch how you need.
->> > >
->> > > This hunk here (initializaing notifier head) is a separate
->> > > bug fix and needs its own patch.
->> >
->> > So will you do that? Or it is needed to resend this one line
->> > hunk again in new email again?
+On 17/09/13 23:23, Vince Weaver wrote:
+> 
+> This patch somehow breaks the perf-ABI.
+> 
+> If I take a program that reads "mmap->cap_usr_rdpmc" and compile it
+> against the new header with this change (say from 3.12-rc1)
+> and then run it on an old kernel (say 3.11) then I get "0" for
+> cap_usr_rdpmc.
+> 
+> If I take the same program and recompile against the old (without this 
+> patch) header and run it on 3.11, I get the expected "1" value.
+> 
+> So something about this changed the bit pattern in an incompatible 
+> fashion.
+
+
+cap_usr_time and cap_usr_rdpmc were occupying the same bit position i.e. bit 0
+
+That means that cap_usr_time and cap_usr_rdpmc were both unreliable.
+
+If you look at the logic:
+
+void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
+{
+    userpg->cap_usr_time = 0;
+    userpg->cap_usr_time_zero = 0;
+    userpg->cap_usr_rdpmc = x86_pmu.attr_rdpmc;
+    userpg->pmc_width = x86_pmu.cntval_bits;
+
+    if (!boot_cpu_has(X86_FEATURE_CONSTANT_TSC))
+        return;
+
+    if (!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
+        return;
+
+    userpg->cap_usr_time = 1;
+    userpg->time_mult = this_cpu_read(cyc2ns);
+    userpg->time_shift = CYC2NS_SCALE_FACTOR;
+    userpg->time_offset = this_cpu_read(cyc2ns_offset) - now;
+
+    if (sched_clock_stable && !check_tsc_disabled()) {
+        userpg->cap_usr_time_zero = 1;
+        userpg->time_zero = this_cpu_read(cyc2ns_offset);
+    }
+}
+
+The incorrect union caused 2 bugs:
+
+1. On hardware with constant, non-stop TSC cap_usr_rdpmc was always 1.
+
+2. On hardware without constant, non-stop TSC cap_usr_time was still 1 if
+rdpmc was allowed in userspace.
+
+
+Possible improvements are one or both of:
+1. Add cap_usr_fixed to identify kernels that have the capabilities bits fixed
+2. Swap the positions of cap_usr_time and cap_usr_rdpmc so that
+cap_usr_rdpmc remains in bit 0
+
+
+
+
+
+
+> 
+> Vince
+> 
+> 
+> 
+> 
+> On Tue, 23 Jul 2013, tip-bot for Adrian Hunter wrote:
+> 
+>> Commit-ID:  860f085b74e9f0075de8140ed3a1e5b5e3e39aa8
+>> Gitweb:     http://git.kernel.org/tip/860f085b74e9f0075de8140ed3a1e5b5e3e39aa8
+>> Author:     Adrian Hunter <adrian.hunter@intel.com>
+>> AuthorDate: Fri, 28 Jun 2013 16:22:17 +0300
+>> Committer:  Ingo Molnar <mingo@kernel.org>
+>> CommitDate: Tue, 23 Jul 2013 12:17:10 +0200
 >>
->> new patch, new email
->
-> Guys, WHY ARE YOU SO STUPID AND ARROGANT?
->
-> Sorry but, need to copy full isolated patch/hunk from one mail to
-> another is hassling. So what you want from me? Do all those non
-> sense working only because yesterday you had bad day? Or what?
->
-> Everything needed with described information was in first mail.
-> Also second hunk has full isolated "git diff" output, so it is for
-> you really big problem to copy it? Or you did not see that patch?
->
-> I really did not understand what you wanted from me.
->
-> ============================
-> ==== BEGINNING OF PATCH ====
-> ============================
->
-> This is bugfix and sending this patch separately from all other patches.
-> This patch is visibly isolated from all others and could be readable also
-> by disabled people. For other handicapped people I suggest to increase
-> font size and other text settings in program which view this patch.
-> For visually impaired people I suggest to use some text-to-speech software.
->
-> This is small 2 lines patch, diff starting after next visible break.
->
-> This patch initializing notifier head in tw4030 usb code which is missing.
-> Initialization code is needed for using any atomic_notifier_* functions.
->
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->
-> ===========================
-> ==== BEGINNING OF DIFF ====
-> ===========================
->
-> diff --git a/drivers/usb/phy/phy-twl4030-usb.c b/drivers/usb/phy/phy-twl4030-usb.c
-> index 8f78d2d..efe6155 100644
-> --- a/drivers/usb/phy/phy-twl4030-usb.c
-> +++ b/drivers/usb/phy/phy-twl4030-usb.c
-> @@ -705,6 +705,8 @@ static int twl4030_usb_probe(struct platform_device *pdev)
->         if (device_create_file(&pdev->dev, &dev_attr_vbus))
->                 dev_warn(&pdev->dev, "could not create sysfs file\n");
->
-> +       ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
-> +
->         /* Our job is to use irqs and status from the power module
->          * to keep the transceiver disabled when nothing's connected.
->          *
->
-> ======================
-> ==== END OF PATCH ====
-> ======================
->
-> PS: This is end of email and patch is above ^^^^
->
+>> perf: Fix broken union in 'struct perf_event_mmap_page'
+>>
+>> The capabilities bits must not be "union'ed" together.
+>> Put them in a separate struct.
+>>
+>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> Link: http://lkml.kernel.org/r/1372425741-1676-2-git-send-email-adrian.hunter@intel.com
+>> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+>> ---
+>>  include/uapi/linux/perf_event.h | 8 +++++---
+>>  1 file changed, 5 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+>> index 00d8274..0041aed 100644
+>> --- a/include/uapi/linux/perf_event.h
+>> +++ b/include/uapi/linux/perf_event.h
+>> @@ -375,9 +375,11 @@ struct perf_event_mmap_page {
+>>  	__u64	time_running;		/* time event on cpu */
+>>  	union {
+>>  		__u64	capabilities;
+>> -		__u64	cap_usr_time  : 1,
+>> -			cap_usr_rdpmc : 1,
+>> -			cap_____res   : 62;
+>> +		struct {
+>> +			__u64	cap_usr_time		: 1,
+>> +				cap_usr_rdpmc		: 1,
+>> +				cap_____res		: 62;
+>> +		};
+>>  	};
+>>  
+>>  	/*
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> k
+> 
+> 
 
-Hi Pali,
-
-There is no need to be rude.
-
-Felipe asked you to do the split since he believes that the notifier
-chain call for musb xceiv and the twl->phy notifier head init should
-be done in two separate patches.
-
-I agree with him since is better to separate bugfixs from new features
-for different reasons. For example if is found that a feature has to
-be reverted, then this won't revert a bugfix causing a regression.
-Also, it is easier to review and the bugfix patch can be cherry-picked
-by stable kernels.
-
-You said that to copy isolated patch/hunk from one mail to another is
-hassling so why do you want Felipe to do that? He like most most
-sub-system maintainers is very busy so if we want the kernel to scale
-we have to help them to make their live easier.
-
-So,  I don't understand from where your anger comes for just the need
-to split your patch in two and send correct patches with git
-send-email so Felipe can apply easily with git am mbox or whatever
-worfklow he has.
-
-This is not the first time you contribute to the kernel so you know
-that the above patch s not only not in the correct format to be
-applied but also has a very offensive commit changelog that is not
-suitable for the kernel.
-
-Take a deep breath, grab a mug of coffee and then just split your
-patches and repost as v2, I'm sure you spent more time writing that
-angry email that what it would have taken to do it properly ;-)
-
-> --
-> Pali Rohár
-> pali.rohar@gmail.com
-
-Best regards,
-Javier
