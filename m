@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab3IRRiT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 13:38:19 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:56997 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab3IRRiR (ORCPT
+	id S1753132Ab3IRRjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 13:39:24 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:38595 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752669Ab3IRRjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 13:38:17 -0400
-Date: Thu, 19 Sep 2013 02:38:01 +0900
-Message-ID: <8738p2hvye.wl%mitake.hitoshi@gmail.com>
+	Wed, 18 Sep 2013 13:39:22 -0400
+Date: Thu, 19 Sep 2013 02:39:05 +0900
+Message-ID: <871u4mhvwm.wl%mitake.hitoshi@gmail.com>
 From: Hitoshi Mitake <mitake.hitoshi@gmail.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] perf lock: do not cut lock name
-In-Reply-To: <1378693159-8747-6-git-send-email-davidlohr@hp.com>
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] perf lock: plug some memleaks
+In-Reply-To: <CALkWK0=MXws8DQKyynRwi02P3Hb83iJGzE16UmJ3rPzWqGS3UQ@mail.gmail.com>
 References: <1378693159-8747-1-git-send-email-davidlohr@hp.com>
-	<1378693159-8747-6-git-send-email-davidlohr@hp.com>
+	<1378693159-8747-4-git-send-email-davidlohr@hp.com>
+	<CALkWK0=MXws8DQKyynRwi02P3Hb83iJGzE16UmJ3rPzWqGS3UQ@mail.gmail.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?ISO-2022-JP-2?B?R29qGyQoRCtXGyhC?=) APEL/10.8 Emacs/23.4
  (x86_64-pc-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -29,73 +32,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Davidlohr, thanks for your enhancements and cleanings!
-
-At Sun,  8 Sep 2013 19:19:17 -0700,
- Bueso wrote:
+At Mon, 9 Sep 2013 08:31:38 +0530,
+Ramkumar Ramachandra wrote:
 > 
-> While this could be seen as personal taste, there really isn't any
-> reason for being so stingy printing the lock name. Furthermore, some
-> symbol names are really just too long, and cutting them at 16 characters
-> doesn't help at all.
+> Davidlohr Bueso wrote:
+> > diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+> > index d318862..7784347 100644
+> > --- a/tools/perf/builtin-lock.c
+> > +++ b/tools/perf/builtin-lock.c
+> > @@ -321,10 +321,12 @@ static struct lock_stat *lock_stat_findnew(void *addr, const char *name)
+> >
+> >         new->addr = addr;
+> >         new->name = zalloc(sizeof(char) * strlen(name) + 1);
+> > -       if (!new->name)
+> > +       if (!new->name) {
+> > +               free(new);
+> >                 goto alloc_failed;
+> > -       strcpy(new->name, name);
+> > +       }
+> 
+> Why is the strcpy() missing indent?
 
-I agree with your opinion that 16 chars are too short for lock names,
-but I think if we should print "..." for indicating the abbreviation.
+The strcpy() is removed. It doesn't miss indantation.
 
 Thanks,
 Hitoshi
-
-> 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> ---
->  tools/perf/builtin-lock.c | 18 ++----------------
->  1 file changed, 2 insertions(+), 16 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-> index 780484f..2674a42 100644
-> --- a/tools/perf/builtin-lock.c
-> +++ b/tools/perf/builtin-lock.c
-> @@ -696,10 +696,9 @@ static void print_bad_events(int bad, int total)
->  static void print_result(void)
->  {
->  	struct lock_stat *st;
-> -	char cut_name[20];
->  	int bad, total;
->  
-> -	pr_info("%20s ", "Name");
-> +	pr_info("%40s ", "Name");
->  	pr_info("%10s ", "acquired");
->  	pr_info("%10s ", "contended");
->  
-> @@ -716,21 +715,8 @@ static void print_result(void)
->  			bad++;
->  			continue;
->  		}
-> -		bzero(cut_name, 20);
-> -
-> -		if (strlen(st->name) < 16) {
-> -			/* output raw name */
-> -			pr_info("%20s ", st->name);
-> -		} else {
-> -			strncpy(cut_name, st->name, 16);
-> -			cut_name[16] = '.';
-> -			cut_name[17] = '.';
-> -			cut_name[18] = '.';
-> -			cut_name[19] = '\0';
-> -			/* cut off name for saving output style */
-> -			pr_info("%20s ", cut_name);
-> -		}
->  
-> +		pr_info("%40s ", st->name);
->  		pr_info("%10u ", st->nr_acquired);
->  		pr_info("%10u ", st->nr_contended);
->  
-> -- 
-> 1.7.11.7
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
