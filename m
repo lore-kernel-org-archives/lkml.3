@@ -1,136 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab3IROru (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 10:47:50 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:45375 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab3IROrs convert rfc822-to-8bit (ORCPT
+	id S1752886Ab3IROr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 10:47:58 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:5903 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022Ab3IROrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 10:47:48 -0400
+	Wed, 18 Sep 2013 10:47:55 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 18 Sep 2013 07:44:34 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: [PATCH 03/12] clk: tegra: Add TEGRA_PERIPH_NO_DIV flag
+Date: Wed, 18 Sep 2013 17:40:55 +0300
+Message-ID: <1379515331-19427-4-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <201309182214.IDD13060.FFOVJOLOFQtHSM@I-love.SAKURA.ne.jp>
-References: <1379317437-28329-1-git-send-email-keescook@chromium.org>
-	<20130916155504.GC13318@ZenIV.linux.org.uk>
-	<CAGXu5jK2d+9m0uA84nGbZ5E=s974NRn+Sxz3iRcTsFWqWFTGNQ@mail.gmail.com>
-	<201309182214.IDD13060.FFOVJOLOFQtHSM@I-love.SAKURA.ne.jp>
-Date: Wed, 18 Sep 2013 07:47:48 -0700
-X-Google-Sender-Auth: rEyqUrCnFCYSCGGz_LGwmoHZCjM
-Message-ID: <CAGXu5j+rwWPyeEFbCNzK6dnTafZfM3hT1sj9=_2hyOhWCkU5Dg@mail.gmail.com>
-Subject: Re: [PATCH 0/2] vsprintf: ignore %n again
-From: Kees Cook <keescook@chromium.org>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>, George Spelvin <linux@horizon.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Motohiro KOSAKI <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 6:14 AM, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
-> Kees Cook wrote:
->> > Consider, e.g. introducing __vsnprint(), with vsnprintf(s, n, fmt, ...)
->> > expanding to __vsnprintf(1, s, n, fmt, ...) if fmt is a string literal
->> > and __vsnprintf(0, s, n, fmt, ...) otherwise.  Now,
->> > int __sprintf(int safe, char *buf, const char *fmt, ...)
->> > {
->> >         va_list args;
->> >         int i;
->> >
->> >         va_start(args, fmt);
->> >         i = __vsnprintf(safe, buf, INT_MAX, fmt, args);
->> >         va_end(args);
->> >
->> >         return i;
->> > }
->>
->> Unless I've misunderstood, I think we'd already get very close to this
->> with the gcc options instead. This patch set is what I've been using
->> to generate the format string fixes over the last few months, with 7
->> sent this last round:
->
-> Can we utilize __builtin_constant_p() ?
->
-> ---------- source start ----------
-> #include <stdio.h>
->
-> #define func(fmt)                                       \
->         if (__builtin_constant_p(fmt))                  \
->                 printf("const : %s\n", fmt);            \
->         else                                            \
->                 printf("not const : %s\n", fmt);        \
->
->
-> int main(int argc, char *argv[])
-> {
->         const char *fmt1 = "const char *";
->         const char fmt2[] = "const char []";
->         const char * const fmt3 = "const char * const";
->         func("literal");
->         func(fmt1);
->         func(fmt2);
->         func(fmt3);
+This flag indicates the peripheral clock does not have a divider. It will
+simply the initialization tables and avoids some very similar code.
 
-I wonder if we can get at the read-only knowledge. Doing this shows
-that gcc knows they're read-only:
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk-periph.c |    8 +++++---
+ drivers/clk/tegra/clk.h        |    1 +
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-fmt1[2] = 'A';
-fmt2[2] = 'A';
-fmt3[2] = 'A';
-
-/tmp/const.c:27:5: error: assignment of read-only location ‘*(fmt1 + 2u)’
-/tmp/const.c:29:5: error: assignment of read-only location ‘fmt2[2]’
-/tmp/const.c:31:5: error: assignment of read-only location ‘*(fmt3 + 2u)’
-
-I didn't see a builtin for this in the gcc documentation I've been reading.
-
--Kees
-
->         return 0;
-> }
-> ---------- source end ----------
->
-> ---------- output start ----------
-> const : literal
-> not const : const char *
-> not const : const char []
-> const : const char * const
-> ---------- output end ----------
->
-> __builtin_constant_p() seems to enforce use of either "literal" or "* const".
->
-> An example change
->
-> ---------- patch start ----------
-> --- a/include/linux/printk.h
-> +++ b/include/linux/printk.h
-> @@ -120,8 +120,9 @@ asmlinkage int printk_emit(int facility, int level,
->                            const char *dict, size_t dictlen,
->                            const char *fmt, ...);
->
-> -asmlinkage __printf(1, 2) __cold
-> -int printk(const char *fmt, ...);
-> +//asmlinkage __printf(1, 2) __cold
-> +//int printk(const char *fmt, ...);
-> +#define printk(fmt, ...) compiletime_assert(__builtin_constant_p(fmt), "Non-c  onstant format string")
->
->  /*
->   * Special printk facility for scheduler use only, _DO_NOT_USE_ !
-> ---------- patch end ----------
->
-> caught errors like below.
->
->   CC [M]  drivers/scsi/esas2r/esas2r_log.o
-> drivers/scsi/esas2r/esas2r_log.c: In function 'esas2r_log_master':
-> drivers/scsi/esas2r/esas2r_log.c:174: error: call to '__compiletime_assert_174' declared with attribute error: Non-constant format string
-
-
-
+diff --git a/drivers/clk/tegra/clk-periph.c b/drivers/clk/tegra/clk-periph.c
+index 55ab4b1..becbeee 100644
+--- a/drivers/clk/tegra/clk-periph.c
++++ b/drivers/clk/tegra/clk-periph.c
+@@ -173,11 +173,12 @@ const struct clk_ops tegra_clk_periph_nodiv_ops = {
+ static struct clk *_tegra_clk_register_periph(const char *name,
+ 			const char **parent_names, int num_parents,
+ 			struct tegra_clk_periph *periph,
+-			void __iomem *clk_base, u32 offset, bool div,
++			void __iomem *clk_base, u32 offset,
+ 			unsigned long flags)
+ {
+ 	struct clk *clk;
+ 	struct clk_init_data init;
++	bool div = !(periph->gate.flags & TEGRA_PERIPH_NO_DIV);
+ 
+ 	init.name = name;
+ 	init.ops = div ? &tegra_clk_periph_ops : &tegra_clk_periph_nodiv_ops;
+@@ -210,7 +211,7 @@ struct clk *tegra_clk_register_periph(const char *name,
+ 		u32 offset, unsigned long flags)
+ {
+ 	return _tegra_clk_register_periph(name, parent_names, num_parents,
+-			periph, clk_base, offset, true, flags);
++			periph, clk_base, offset, flags);
+ }
+ 
+ struct clk *tegra_clk_register_periph_nodiv(const char *name,
+@@ -218,6 +219,7 @@ struct clk *tegra_clk_register_periph_nodiv(const char *name,
+ 		struct tegra_clk_periph *periph, void __iomem *clk_base,
+ 		u32 offset)
+ {
++	periph->gate.flags |= TEGRA_PERIPH_NO_DIV;
+ 	return _tegra_clk_register_periph(name, parent_names, num_parents,
+-			periph, clk_base, offset, false, CLK_SET_RATE_PARENT);
++			periph, clk_base, offset, CLK_SET_RATE_PARENT);
+ }
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index a133279..1b951a1 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -397,6 +397,7 @@ struct tegra_clk_periph_gate {
+ #define TEGRA_PERIPH_MANUAL_RESET BIT(1)
+ #define TEGRA_PERIPH_ON_APB BIT(2)
+ #define TEGRA_PERIPH_WAR_1005168 BIT(3)
++#define TEGRA_PERIPH_NO_DIV BIT(4)
+ 
+ void tegra_periph_reset(struct tegra_clk_periph_gate *gate, bool assert);
+ extern const struct clk_ops tegra_clk_periph_gate_ops;
 -- 
-Kees Cook
-Chrome OS Security
+1.7.7.rc0.72.g4b5ea.dirty
+
