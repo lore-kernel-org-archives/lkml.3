@@ -1,159 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694Ab3IRN42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 09:56:28 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:47264 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab3IRN41 (ORCPT
+	id S1752111Ab3IRN5f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:57:35 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:50526 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab3IRN5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 09:56:27 -0400
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCHv3] perf: Support for Openembedded/Yocto -dbg packages
-Date: Wed, 18 Sep 2013 15:56:14 +0200
-Message-Id: <1379512574-25912-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.8.4.rc3
+	Wed, 18 Sep 2013 09:57:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130918133025.GB2953@amd.pavel.ucw.cz>
+References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
+ <201309172128.42514@pali> <20130918014942.GD19817@radagast>
+ <201309181020.15245@pali> <CAAwP0s1Ou7Nrq7GhnHX71TFCrTFg=nqUh+GsAJhN8DjZGsF4QQ@mail.gmail.com>
+ <20130918133025.GB2953@amd.pavel.ucw.cz>
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Wed, 18 Sep 2013 15:57:13 +0200
+Message-ID: <CAAwP0s0nGthkm9Bp1ug23Rtz6-sbR60FFTSfd-Cj9wKMU0RBEA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] usb: musb: Call atomic_notifier_call_chain when
+ status is changed
+To: Pavel Machek <pavel@ucw.cz>
+Cc: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, freemangordon@abv.bg,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On OpenEmbedded the symbol files are located under a .debug folder on
-the same folder as the binary file.
+On Wed, Sep 18, 2013 at 3:30 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> >> > So will you do that? Or it is needed to resend this one line
+>> >> > hunk again in new email again?
+>> >>
+>> >> new patch, new email
+>> >
+>> > Guys, WHY ARE YOU SO STUPID AND ARROGANT?
+>> >
+>> > Sorry but, need to copy full isolated patch/hunk from one mail to
+>> > another is hassling. So what you want from me? Do all those non
+>> > sense working only because yesterday you had bad day? Or what?
+> ...
+>>
+>> Hi Pali,
+>>
+>> There is no need to be rude.
+>>
+>> Felipe asked you to do the split since he believes that the notifier
+>> chain call for musb xceiv and the twl->phy notifier head init should
+>> be done in two separate patches.
+>
+> Actually, there is need to be rude, because Felipe fails to act as
+> maintainer. Instead of fixing bugs in his code, he bounces bugfix
+> patches, points people to random READMEs and wastes everyones time.
+>                                                                         Pavel
+>
 
-This patch adds support for such files.
+I don't know what are you talking about (if that happened in another
+thread then I need more context). Felipe is not bouncing any bugfix
+but just asked to split the patch in two since the patch was solving
+two separate issues so is way better to have it in two separate
+patches for the reasons I explained before.
 
-Without this patch on perf top you can see:
+So, as far as I can tell Felipe did exactly what I would expect from a
+maintainer. He took the time to review the patches sent to him and
+gave feedback. If the sender doesn't want to take his feedback into
+account and prefer to send pretty insulting emails instead that is his
+choice but I would say that is this not the greatest approach to get
+your code merged (to say the least).
 
-no symbols found in /usr/lib/gstreamer-1.0/libtheoraenc.so.1.1.2, maybe install
-a debug package?
-
-84.56%  libtheoraenc.so.1.1.2       [.] 0x000000000000b346
-
-With this patch symbols are shown:
-
-19.06%  libtheoraenc.so.1.1.2       [.] oc_int_frag_satd_thresh_mmxext
-9.76%   libtheoraenc.so.1.1.2       [.] oc_analyze_mb_mode_luma
-5.58%   libtheoraenc.so.1.1.2       [.] oc_qii_state_advance
-4.84%   libtheoraenc.so.1.1.2       [.] oc_enc_tokenize_ac
-...
-
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
-
-v2: Changes proposed by Ingo Molnar
-
--Improve changeset
--Improve multi-snprintf readability
--Code Style
-
-v3: Changes proposed by Ingo Molnar, Arnaldo Carvalho de Melo and Peter Zijlstra
-
--Code Style
--Use scnprintf
-
-
- tools/perf/util/dso.c    | 49 +++++++++++++++++++++++++++++++++++-------------
- tools/perf/util/dso.h    |  1 +
- tools/perf/util/symbol.c |  1 +
- 3 files changed, 38 insertions(+), 13 deletions(-)
-
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index e3c1ff8..6bfc8aa 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -7,19 +7,20 @@
- char dso__symtab_origin(const struct dso *dso)
- {
- 	static const char origin[] = {
--		[DSO_BINARY_TYPE__KALLSYMS]		= 'k',
--		[DSO_BINARY_TYPE__VMLINUX]		= 'v',
--		[DSO_BINARY_TYPE__JAVA_JIT]		= 'j',
--		[DSO_BINARY_TYPE__DEBUGLINK]		= 'l',
--		[DSO_BINARY_TYPE__BUILD_ID_CACHE]	= 'B',
--		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]	= 'f',
--		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]	= 'u',
--		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]	= 'b',
--		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]	= 'd',
--		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]	= 'K',
--		[DSO_BINARY_TYPE__GUEST_KALLSYMS]	= 'g',
--		[DSO_BINARY_TYPE__GUEST_KMODULE]	= 'G',
--		[DSO_BINARY_TYPE__GUEST_VMLINUX]	= 'V',
-+		[DSO_BINARY_TYPE__KALLSYMS]			= 'k',
-+		[DSO_BINARY_TYPE__VMLINUX]			= 'v',
-+		[DSO_BINARY_TYPE__JAVA_JIT]			= 'j',
-+		[DSO_BINARY_TYPE__DEBUGLINK]			= 'l',
-+		[DSO_BINARY_TYPE__BUILD_ID_CACHE]		= 'B',
-+		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]		= 'f',
-+		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]		= 'u',
-+		[DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO]	= 'o',
-+		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]		= 'b',
-+		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]		= 'd',
-+		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]		= 'K',
-+		[DSO_BINARY_TYPE__GUEST_KALLSYMS]		= 'g',
-+		[DSO_BINARY_TYPE__GUEST_KMODULE]		= 'G',
-+		[DSO_BINARY_TYPE__GUEST_VMLINUX]		= 'V',
- 	};
- 
- 	if (dso == NULL || dso->symtab_type == DSO_BINARY_TYPE__NOT_FOUND)
-@@ -64,6 +65,28 @@ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
- 			 symbol_conf.symfs, dso->long_name);
- 		break;
- 
-+	case DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO:
-+	{
-+		char *last_slash;
-+		size_t len;
-+		size_t dir_size;
-+
-+		last_slash = dso->long_name + dso->long_name_len;
-+		while (last_slash != dso->long_name && *last_slash != '/')
-+			last_slash--;
-+
-+		len = scnprintf(file, size, "%s", symbol_conf.symfs);
-+		dir_size = last_slash - dso->long_name + 2;
-+		if (dir_size > (size - len)) {
-+			ret = -1;
-+			break;
-+		}
-+		len += scnprintf(file + len, dir_size, "%s",  dso->long_name);
-+		len += scnprintf(file + len , size - len, ".debug%s",
-+								last_slash);
-+		break;
-+	}
-+
- 	case DSO_BINARY_TYPE__BUILDID_DEBUGINFO:
- 		if (!dso->has_build_id) {
- 			ret = -1;
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index b793053..dbd9241 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -23,6 +23,7 @@ enum dso_binary_type {
- 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
- 	DSO_BINARY_TYPE__KCORE,
- 	DSO_BINARY_TYPE__GUEST_KCORE,
-+	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
- 	DSO_BINARY_TYPE__NOT_FOUND,
- };
- 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 7eb0362..cd1dcc4 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -51,6 +51,7 @@ static enum dso_binary_type binary_type_symtab[] = {
- 	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
- 	DSO_BINARY_TYPE__GUEST_KMODULE,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
- 	DSO_BINARY_TYPE__NOT_FOUND,
- };
- 
--- 
-1.8.4.rc3
-
+Best regards,
+Javier
