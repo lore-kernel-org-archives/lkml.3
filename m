@@ -1,115 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab3IRR6R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 13:58:17 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:38097 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab3IRRyO (ORCPT
+	id S1753789Ab3IRR6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 13:58:15 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:39354 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab3IRRyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Sep 2013 13:54:14 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <rob.herring@calxeda.com>,
         Russell King <linux@arm.linux.org.uk>,
-        STEricsson <STEricsson_nomadik_linux@list.st.com>,
-        linux-tegra@vger.kernel.org, linux-rpi-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, kernel@stlinux.com,
+        Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 09/26] ARM: call of_clk_init from default time_init handler
-Date: Wed, 18 Sep 2013 19:53:42 +0200
-Message-Id: <1379526839-14798-10-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 13/26] ARM: highbank: remove custom .init_time hook
+Date: Wed, 18 Sep 2013 19:53:46 +0200
+Message-Id: <1379526839-14798-14-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most DT ARM machs require common clock providers initialized before timers.
-Currently, arch/arm machs use .init_time to call of_clk_init right before
-clocksource_of_init. This prevents to remove that callback and use the default
-one instead.
-
-This patch adds a call to of_clk_init() to the default .init_time callback
-to allow to remove custom callbacks where applicable. While at it, also
-reorder includes alphabetically.
+With arch/arm calling of_clk_init(NULL) from time_init(), we can now
+remove custom .init_time hooks. Highbank clock provider need a reference
+to system registers, as a workaround current clk driver maps those
+independent of arch code now.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+Acked-by: Mike Turquette <mturquette@linaro.org>
 ---
-Changelog:
-RFCv2->v1:
-- only call of_clk_init(NULL) when no custom .init_time is set
-  (Suggested by Soeren Brinkmann)
-RFCv1->RFCv2:
-- reorder includes alphabetically
-
 Cc: Olof Johansson <olof@lixom.net>
 Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Rob Herring <rob.herring@calxeda.com>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
-Cc: linux-tegra@vger.kernel.org
-Cc: linux-rpi-kernel@lists.infradead.org
-Cc: linux-samsung-soc@vger.kernel.org
-Cc: kernel@stlinux.com
+Cc: Mike Turquette <mturquette@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/kernel/time.c |   27 +++++++++++++++------------
- 1 file changed, 15 insertions(+), 12 deletions(-)
+ arch/arm/mach-highbank/highbank.c |   23 +++++++----------------
+ drivers/clk/clk-highbank.c        |   10 +++++++---
+ 2 files changed, 14 insertions(+), 19 deletions(-)
 
-diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
-index 98aee32..bc0468b 100644
---- a/arch/arm/kernel/time.c
-+++ b/arch/arm/kernel/time.c
-@@ -11,25 +11,26 @@
-  *  This file contains the ARM-specific time handling details:
-  *  reading the RTC at bootup, etc...
-  */
-+#include <linux/clk-provider.h>
-+#include <linux/clocksource.h>
-+#include <linux/errno.h>
- #include <linux/export.h>
--#include <linux/kernel.h>
--#include <linux/interrupt.h>
--#include <linux/time.h>
- #include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/kernel.h>
-+#include <linux/profile.h>
- #include <linux/sched.h>
-+#include <linux/sched_clock.h>
- #include <linux/smp.h>
-+#include <linux/time.h>
- #include <linux/timex.h>
--#include <linux/errno.h>
--#include <linux/profile.h>
- #include <linux/timer.h>
--#include <linux/clocksource.h>
--#include <linux/irq.h>
--#include <linux/sched_clock.h>
+diff --git a/arch/arm/mach-highbank/highbank.c b/arch/arm/mach-highbank/highbank.c
+index 8e63ccd..e6d6eac 100644
+--- a/arch/arm/mach-highbank/highbank.c
++++ b/arch/arm/mach-highbank/highbank.c
+@@ -24,7 +24,6 @@
+ #include <linux/of_platform.h>
+ #include <linux/of_address.h>
+ #include <linux/amba/bus.h>
+-#include <linux/clk-provider.h>
  
--#include <asm/thread_info.h>
--#include <asm/stacktrace.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/time.h>
-+#include <asm/stacktrace.h>
-+#include <asm/thread_info.h>
- 
- #if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE) || \
-     defined(CONFIG_NVRAM) || defined(CONFIG_NVRAM_MODULE)
-@@ -116,8 +117,10 @@ int __init register_persistent_clock(clock_access_fn read_boot,
- 
- void __init time_init(void)
- {
--	if (machine_desc->init_time)
-+	if (machine_desc->init_time) {
- 		machine_desc->init_time();
--	else
-+	} else {
-+		of_clk_init(NULL);
- 		clocksource_of_init();
-+	}
+ #include <asm/cacheflush.h>
+ #include <asm/cputype.h>
+@@ -83,20 +82,6 @@ static void __init highbank_init_irq(void)
+ 	}
  }
+ 
+-static void __init highbank_timer_init(void)
+-{
+-	struct device_node *np;
+-
+-	/* Map system registers */
+-	np = of_find_compatible_node(NULL, NULL, "calxeda,hb-sregs");
+-	sregs_base = of_iomap(np, 0);
+-	WARN_ON(!sregs_base);
+-
+-	of_clk_init(NULL);
+-
+-	clocksource_of_init();
+-}
+-
+ static void highbank_power_off(void)
+ {
+ 	highbank_set_pwr_shutdown();
+@@ -155,6 +140,13 @@ static struct notifier_block highbank_platform_nb = {
+ 
+ static void __init highbank_init(void)
+ {
++	struct device_node *np;
++
++	/* Map system registers */
++	np = of_find_compatible_node(NULL, NULL, "calxeda,hb-sregs");
++	sregs_base = of_iomap(np, 0);
++	WARN_ON(!sregs_base);
++
+ 	pm_power_off = highbank_power_off;
+ 	highbank_pm_init();
+ 
+@@ -176,7 +168,6 @@ DT_MACHINE_START(HIGHBANK, "Highbank")
+ #endif
+ 	.smp		= smp_ops(highbank_smp_ops),
+ 	.init_irq	= highbank_init_irq,
+-	.init_time	= highbank_timer_init,
+ 	.init_machine	= highbank_init,
+ 	.dt_compat	= highbank_match,
+ 	.restart	= highbank_restart,
+diff --git a/drivers/clk/clk-highbank.c b/drivers/clk/clk-highbank.c
+index 2e08cb0..2e7e9d9 100644
+--- a/drivers/clk/clk-highbank.c
++++ b/drivers/clk/clk-highbank.c
+@@ -20,8 +20,7 @@
+ #include <linux/clk-provider.h>
+ #include <linux/io.h>
+ #include <linux/of.h>
+-
+-extern void __iomem *sregs_base;
++#include <linux/of_address.h>
+ 
+ #define HB_PLL_LOCK_500		0x20000000
+ #define HB_PLL_LOCK		0x10000000
+@@ -280,6 +279,7 @@ static __init struct clk *hb_clk_init(struct device_node *node, const struct clk
+ 	const char *clk_name = node->name;
+ 	const char *parent_name;
+ 	struct clk_init_data init;
++	struct device_node *srnp;
+ 	int rc;
+ 
+ 	rc = of_property_read_u32(node, "reg", &reg);
+@@ -290,7 +290,11 @@ static __init struct clk *hb_clk_init(struct device_node *node, const struct clk
+ 	if (WARN_ON(!hb_clk))
+ 		return NULL;
+ 
+-	hb_clk->reg = sregs_base + reg;
++	/* Map system registers */
++	srnp = of_find_compatible_node(NULL, NULL, "calxeda,hb-sregs");
++	hb_clk->reg = of_iomap(srnp, 0);
++	BUG_ON(!hb_clk->reg);
++	hb_clk->reg += reg;
+ 
+ 	of_property_read_string(node, "clock-output-names", &clk_name);
+ 
 -- 
 1.7.10.4
 
