@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373Ab3IRCwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 22:52:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43365 "EHLO mga11.intel.com"
+	id S1751545Ab3IRC4D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 22:56:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49186 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab3IRCwF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 22:52:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,928,1371106800"; 
-   d="scan'208";a="403362111"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Joe Perches <joe@perches.com>
-CC: "tj@kernel.org" <tj@kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ahci: Changing two module params with static and
- __read_mostly
-Thread-Topic: [PATCH] ahci: Changing two module params with static and
- __read_mostly
-Thread-Index: AQHOs8J4tuxHxXRAl0KxL5LNL5P9PZnKzHXg
-Date: Wed, 18 Sep 2013 02:52:00 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01B2CAC5@SHSMSX101.ccr.corp.intel.com>
-References: <1379436518.26153.31.camel@cliu38-desktop-build>
- <1379435064.2012.8.camel@joe-AO722>
-In-Reply-To: <1379435064.2012.8.camel@joe-AO722>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751359Ab3IRC4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 22:56:01 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
+        Eric Paris <eparis@redhat.com>,
+        Justin Stephenson <jstephen@redhat.com>,
+        LC Bruzenak <lenny@magitekltd.com>
+Subject: [PATCH] audit: format user messages to size of MAX_AUDIT_MESSAGE_LENGTH
+Date: Tue, 17 Sep 2013 22:55:16 -0400
+Message-Id: <7e230309c0814b0d79ab6bcff51ed3dfd23703e1.1379472716.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Messages of type AUDIT_USER_TTY were being formatted to 1024 octets,
+truncating messages approaching MAX_AUDIT_MESSAGE_LENGTH (8970 octets).
 
+Set the formatting to 8560 characters, given maximum estimates for prefix and
+suffix budgets.
 
-> -----Original Message-----
-> From: Joe Perches [mailto:joe@perches.com]
-> Sent: Wednesday, September 18, 2013 12:24 AM
-> To: Liu, Chuansheng
-> Cc: tj@kernel.org; linux-ide@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] ahci: Changing two module params with static and
-> __read_mostly
-> 
-> On Wed, 2013-09-18 at 00:48 +0800, Chuansheng Liu wrote:
-> > Here module parameters ahci_em_messages and devslp_idle_timeout can
-> > be set as static and __read_mostly.
-> >
-> > Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
-> > ---
-> >  drivers/ata/libahci.c |    5 +++--
-> >  1 file changed, 3 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-> []
-> > @@ -189,14 +189,15 @@ struct ata_port_operations
-> ahci_pmp_retry_srst_ops = {
-> >  };
-> >  EXPORT_SYMBOL_GPL(ahci_pmp_retry_srst_ops);
-> >
-> > -int ahci_em_messages = 1;
-> > +static int ahci_em_messages __read_mostly = 1;
-> 
-> This one could also be converted to
-> static bool ahci_em_messages __read_mostly = true;
-> 
-Thanks, will update one new patch.
+See the problem discussion:
+https://www.redhat.com/archives/linux-audit/2009-January/msg00030.html
+
+And the new size rationale:
+https://www.redhat.com/archives/linux-audit/2013-September/msg00016.html
+
+Test ~8k messages with:
+auditctl -m "$(for i in $(seq -w 001 820);do echo -n "${i}0______";done)"
+
+Reported-by: LC Bruzenak <lenny@magitekltd.com>
+Reported-by: Justin Stephenson <jstephen@redhat.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ kernel/audit.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 91e53d0..939cff1 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -715,7 +715,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 			}
+ 			audit_log_common_recv_msg(&ab, msg_type);
+ 			if (msg_type != AUDIT_USER_TTY)
+-				audit_log_format(ab, " msg='%.1024s'",
++				audit_log_format(ab, " msg='%.8560s'",
+ 						 (char *)data);
+ 			else {
+ 				int size;
+-- 
+1.7.1
+
