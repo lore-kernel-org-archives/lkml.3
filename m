@@ -1,120 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab3IRUeT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 16:34:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61207 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753258Ab3IRUeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 16:34:16 -0400
-Message-ID: <1379536405.3032.61.camel@localhost>
-Subject: Re: [PATCH 8/8] audit: add audit_backlog_wait_time configuration
- option
-From: Eric Paris <eparis@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Steve Grubb <sgrubb@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	id S1753462Ab3IRUil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 16:38:41 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:2105 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751873Ab3IRUik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 16:38:40 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlQGAAAPOlJ5Lapl/2dsb2JhbABbgwfCN4EcF3SCJQEBBScLASMjEAgDGAklDwUlAyETiAK6ExaPUQeDHoEAA5d6kXWBZoFQKg
+Date: Thu, 19 Sep 2013 06:38:22 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Linux MM <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Glauber Costa <glommer@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dan Duval <dan.duval@oracle.com>,
-        Chuck Anderson <chuck.anderson@oracle.com>,
-        Guy Streeter <streeter@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Date: Wed, 18 Sep 2013 16:33:25 -0400
-In-Reply-To: <863f1daf3a84b52ae5054f5d232b205ae5caab83.1379530867.git.rgb@redhat.com>
-References: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
-	 <863f1daf3a84b52ae5054f5d232b205ae5caab83.1379530867.git.rgb@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] [PATCH] [RFC] mm/shrinker: Add a shrinker flag to
+ always shrink a bit
+Message-ID: <20130918203822.GA4330@dastard>
+References: <1379495401-18279-1-git-send-email-daniel.vetter@ffwll.ch>
+ <5239829F.4080601@t-online.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5239829F.4080601@t-online.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-18 at 15:06 -0400, Richard Guy Briggs wrote:
-> reaahead-collector abuses the audit logging facility to discover which files
-> are accessed at boot time to make a pre-load list
+On Wed, Sep 18, 2013 at 12:38:23PM +0200, Knut Petersen wrote:
+> On 18.09.2013 11:10, Daniel Vetter wrote:
 > 
-> Add a tuning option to audit_backlog_wait_time so that if auditd can't keep up,
-> or gets blocked, the callers won't be blocked.
+> Just now I prepared a patch changing the same function in vmscan.c
+> >Also, this needs to be rebased to the new shrinker api in 3.12, I
+> >simply haven't rolled my trees forward yet.
 > 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  include/uapi/linux/audit.h |    2 ++
->  kernel/audit.c             |   22 +++++++++++++++++++++-
->  2 files changed, 23 insertions(+), 1 deletions(-)
+> Well, you should. Since commit 81e49f  shrinker->count_objects might be
+> set to SHRINK_STOP, causing shrink_slab_node() to complain loud and often:
 > 
-> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-> index 75cef3f..493a66e 100644
-> --- a/include/uapi/linux/audit.h
-> +++ b/include/uapi/linux/audit.h
-> @@ -316,6 +316,7 @@ enum {
->  #define AUDIT_STATUS_PID		0x0004
->  #define AUDIT_STATUS_RATE_LIMIT		0x0008
->  #define AUDIT_STATUS_BACKLOG_LIMIT	0x0010
-> +#define AUDIT_STATUS_BACKLOG_WAIT_TIME	0x0020
->  				/* Failure-to-log actions */
->  #define AUDIT_FAIL_SILENT	0
->  #define AUDIT_FAIL_PRINTK	1
-> @@ -367,6 +368,7 @@ struct audit_status {
->  	__u32		backlog_limit;	/* waiting messages limit */
->  	__u32		lost;		/* messages lost */
->  	__u32		backlog;	/* messages waiting in queue */
-> +	__u32		backlog_wait_time;/* message queue wait timeout */
->  };
->  
->  struct audit_tty_status {
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 3d17670..fc535b6 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -321,6 +321,12 @@ static int audit_set_backlog_limit(int limit)
->  	return audit_do_config_change("audit_backlog_limit", &audit_backlog_limit, limit);
->  }
->  
-> +static int audit_set_backlog_wait_time(int timeout)
-> +{
-> +	return audit_do_config_change("audit_backlog_wait_time",
-> +				      &audit_backlog_wait_time, timeout);
-> +}
-> +
->  static int audit_set_enabled(int state)
->  {
->  	int rc;
-> @@ -669,6 +675,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  		s.backlog_limit = audit_backlog_limit;
->  		s.lost		 = atomic_read(&audit_lost);
->  		s.backlog	 = skb_queue_len(&audit_skb_queue);
-> +		s.backlog_wait_time = audit_backlog_wait_time;
->  		audit_send_reply(NETLINK_CB(skb).portid, seq, AUDIT_GET, 0, 0,
->  				 &s, sizeof(s));
->  		break;
-> @@ -701,8 +708,21 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  			if (err < 0)
->  				return err;
->  		}
-> -		if (s.mask & AUDIT_STATUS_BACKLOG_LIMIT)
-> +		if (s.mask & AUDIT_STATUS_BACKLOG_LIMIT) {
->  			err = audit_set_backlog_limit(s.backlog_limit);
-> +			if (err < 0)
-> +				return err;
-> +		}
-> +		if (s.mask & AUDIT_STATUS_BACKLOG_WAIT_TIME) {
-> +			if (sizeof(s) > (size_t)nlh->nlmsg_len)
-> +				break;
+> [ 1908.234595] shrink_slab: i915_gem_inactive_scan+0x0/0x9c negative objects to delete nr=-xxxxxxxxx
+> 
+> The kernel emitted a few thousand log lines like the one quoted above during the
+> last few days on my system.
+> 
+> >diff --git a/mm/vmscan.c b/mm/vmscan.c
+> >index 2cff0d4..d81f6e0 100644
+> >--- a/mm/vmscan.c
+> >+++ b/mm/vmscan.c
+> >@@ -254,6 +254,10 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+> >  			total_scan = max_pass;
+> >  		}
+> >+		/* Always try to shrink a bit to make forward progress. */
+> >+		if (shrinker->evicts_to_page_lru)
+> >+			total_scan = max_t(long, total_scan, batch_size);
+> >+
+> At that place the error message is already emitted.
+> >  		/*
+> >  		 * We need to avoid excessive windup on filesystem shrinkers
+> >  		 * due to large numbers of GFP_NOFS allocations causing the
+> 
+> Have a look at the attached patch. It fixes my problem with the erroneous/misleading
+> error messages, and I think it´s right to just bail out early if SHRINK_STOP is found.
+> 
+> Do you agree ?
 
-What gets returned here?  I think err has a value of 0, but it doesn't
-seem to have been clearly intentional.  If they know about the
-AUDIT_STATUS_BACKLOG_WAIT_TIME flag, but they didn't send a long enough
-skb?  That seems like an error condition....
+No, that's wrong. ->count_objects should never ass SHRINK_STOP.
+Indeed, it should always return a count of objects in the cache,
+regardless of the context. 
 
-> +			if (s.backlog_wait_time < 0 ||
-> +			    s.backlog_wait_time > 10*AUDIT_BACKLOG_WAIT_TIME)
-> +				return -EINVAL;
-> +			err = audit_set_backlog_wait_time(s.backlog_wait_time);
-> +			if (err < 0)
-> +				return err;
-> +		}
->  		break;
->  	}
->  	case AUDIT_USER:
+SHRINK_STOP is for ->scan_objects to tell the shrinker it can make
+any progress due to the context it is called in. This allows the
+shirnker to defer the work to another call in a different context.
+However, if ->count-objects doesn't return a count, the work that
+was supposed to be done cannot be deferred, and that is what
+->count_objects should always return the number of objects in the
+cache.
 
+Cheers,
 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
