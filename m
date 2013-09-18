@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab3IRKEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 06:04:05 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:35683 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751882Ab3IRKEB (ORCPT
+	id S1751862Ab3IRKQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 06:16:10 -0400
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:14841
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751609Ab3IRKQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 06:04:01 -0400
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-To: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
-Cc: stephen.gallimore@st.com, stuart.menefy@st.com,
-        Lee Jones <lee.jones@linaro.org>, gabriel.fernandez@st.com,
-        olivier.clergeaud@st.com, Maxime Coquelin <maxime.coquelin@st.com>
-Subject: [PATCH 0/4] Add I2C support to ST SoCs
-Date: Wed, 18 Sep 2013 12:01:19 +0200
-Message-Id: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com>
+	Wed, 18 Sep 2013 06:16:08 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
+        <vinod.koul@intel.com>, <djbw@fb.com>
+CC: <devicetree@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH v10 0/3] DMA: Freescale: Add support for 8-channel DMA engine
+Date: Wed, 18 Sep 2013 18:15:30 +0800
+Message-ID: <1379499333-4745-1-git-send-email-hongbo.zhang@freescale.com>
 X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal of this series is to add I2C support to ST SoCs.
-The DT definition is added for STiH415 and STiH416 SoCs on
-B2000 and B2020 boards.
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+Hi DMA and DT maintainers, please have a look at these V10 patches.
 
-Maxime Coquelin (4):
-  i2c: busses: i2c-st: Add ST I2C controller
-  ARM: STi: Supply I2C configuration to STiH416 SoC
-  ARM: STi: Supply I2C configuration to STiH415 SoC
-  ARM: STi: Add I2C config to B2000 and B2020 boards
+Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
+adds support this DMA engine.
 
- Documentation/devicetree/bindings/i2c/i2c-st.txt |   35 ++
- arch/arm/boot/dts/stih415-pinctrl.dtsi           |   36 ++
- arch/arm/boot/dts/stih415.dtsi                   |   57 ++
- arch/arm/boot/dts/stih416-pinctrl.dtsi           |   35 ++
- arch/arm/boot/dts/stih416.dtsi                   |   57 ++
- arch/arm/boot/dts/stih41x-b2000.dtsi             |    7 +
- arch/arm/boot/dts/stih41x-b2020.dtsi             |   20 +
- drivers/i2c/busses/Kconfig                       |   10 +
- drivers/i2c/busses/Makefile                      |    1 +
- drivers/i2c/busses/i2c-st.c                      |  713 ++++++++++++++++++++++
- drivers/i2c/busses/i2c-st.h                      |  216 +++++++
- 11 files changed, 1187 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-st.txt
- create mode 100644 drivers/i2c/busses/i2c-st.c
- create mode 100644 drivers/i2c/busses/i2c-st.h
+V9->V10 changes:
+- update binding description text, mainly about the reg property and also Elo3
+  DMA controller specification
+
+V8->V9 changes:
+- add "Acked-by: Mark Rutland <mark.rutland@arm.com>" into patch [1/3]
+- update reg entry <0x100300 0x4 0x100600 0x4> to two seperate ones
+  <0x100300 0x4>, <0x100600 0x4> in patch [2/3]
+- and also use "QorIQ Elo3 DMA" to mention previous "QorIQ DMA" in [2/3]
+
+V7->V8 changes:
+- change the word "mapping" to "specifier" for reg and interrupts description
+
+V6->V7 changes:
+- only remove unnecessary "CHIP-dma" explanations in [1/3]
+
+V5->V6 changes:
+- minor updates of descriptions in binding document and Kconfig
+- remove [4/4], that should be another patch in future
+
+V4->V5 changes:
+- update description in the dt binding document, to make it more resonable
+- add new patch [4/4] to eliminate a compiling warning which already exists
+  for a long time
+
+V3->V4 changes:
+- introduce new patch [1/3] to revise the legacy dma binding document
+- and then add new paragraph to describe new dt node binding in [2/3]
+- rebase to latest kernel v3.11-rc1
+
+V2->V3 changes:
+- edit Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+- edit text string in Kconfig and the driver files, using "elo series" to
+  mention all the current "elo*"
+
+V1->V2 changes:
+- removed the codes handling the register dgsr1, since it isn't used currently
+- renamed the DMA DT compatible to "fsl,elo3-dma"
+- renamed the new dts files to "elo3-dma-<n>.dtsi"
+
+Hongbo Zhang (3):
+  DMA: Freescale: revise device tree binding document
+  DMA: Freescale: Add new 8-channel DMA engine device tree nodes
+  DMA: Freescale: update driver to support 8-channel DMA engine
+
+ .../devicetree/bindings/powerpc/fsl/dma.txt        |  137 ++++++++++++++------
+ arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+ arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   82 ++++++++++++
+ arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   82 ++++++++++++
+ arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+ drivers/dma/Kconfig                                |    9 +-
+ drivers/dma/fsldma.c                               |    9 +-
+ drivers/dma/fsldma.h                               |    2 +-
+ 8 files changed, 280 insertions(+), 49 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
 
 -- 
 1.7.9.5
+
+
 
