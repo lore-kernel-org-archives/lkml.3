@@ -1,73 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424Ab3IRAt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 20:49:58 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59563 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750846Ab3IRAt4 (ORCPT
+	id S1751324Ab3IRA4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 20:56:49 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33509 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab3IRA4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 20:49:56 -0400
-Message-ID: <5238F8AF.4050309@hurleysoftware.com>
-Date: Tue, 17 Sep 2013 20:49:51 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org, Tejun Heo <tj@kernel.org>
-Subject: Re: increased vmap_area_lock contentions on "n_tty: Move buffers
- into n_tty_data"
-References: <20130913005133.GA32479@localhost> <20130913010936.GA1291@localhost>
-In-Reply-To: <20130913010936.GA1291@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+	Tue, 17 Sep 2013 20:56:47 -0400
+Date: Wed, 18 Sep 2013 10:56:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: linux-next: manual merge of the vfs tree with the aio-direct tree
+Message-Id: <20130918105638.6fa7c29605c14b408b7f5a7e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__18_Sep_2013_10_56_38_+1000_5IZ2ZzozJRguP6_K"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 09:09 PM, Fengguang Wu wrote:
-> On Fri, Sep 13, 2013 at 08:51:33AM +0800, Fengguang Wu wrote:
->> Hi Peter,
->>
->> FYI, we noticed much increased vmap_area_lock contentions since this
->> commit:
->>
->> commit 20bafb3d23d108bc0a896eb8b7c1501f4f649b77
->> Author: Peter Hurley <peter@hurleysoftware.com>
->> Date:   Sat Jun 15 10:21:19 2013 -0400
->>
->>      n_tty: Move buffers into n_tty_data
->>
->>      Reduce pointer reloading and improve locality-of-reference;
->>      allocate read_buf and echo_buf within struct n_tty_data.
->
-> Here are some comparison between this commit [o] with its parent commit [*].
+--Signature=_Wed__18_Sep_2013_10_56_38_+1000_5IZ2ZzozJRguP6_K
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[...]
+Hi Al,
 
->      8cb06c983822103da1cf      20bafb3d23d108bc0a89
-> ------------------------  ------------------------
->                    976.67      +108.3%      2034.67  lkp-a04/micro/netperf/120s-200%-TCP_STREAM
->                   8971.36       +11.4%      9997.05  nhm-white/micro/aim7/exec_test
->                   9948.03       +20.9%     12031.72  TOTAL slabinfo.kmalloc-128.active_objs
->
->      8cb06c983822103da1cf      20bafb3d23d108bc0a89
-> ------------------------  ------------------------
->                    976.67      +108.3%      2034.67  lkp-a04/micro/netperf/120s-200%-TCP_STREAM
->                   9127.64       +11.4%     10164.15  nhm-white/micro/aim7/exec_test
->                  10104.31       +20.7%     12198.82  TOTAL slabinfo.kmalloc-128.num_objs
+Today's linux-next merge of the vfs tree got conflicts in fs/nfs/direct.c
+and fs/nfs/file.c between commits b9517433d65d ("dio: Convert direct_IO
+to use iov_iter"), a8431c667ae8 ("nfs: add support for read_iter,
+write_iter") and a1b8ec384b73 ("nfs: simplify swap") from the aio-direct
+tree and commit c18d1ec44f7a ("nfs: use %p[dD] instead of open-coded (and
+often racy) equivalents") from the vfs tree.
 
-The dramatic increase in 128-byte kmalloc blocks is from vmalloc overhead
-with associated with each allocation. On a x86_64, struct vmap_area is 104 bytes,
-rounded to 128, allocated with every vmalloc allocation. This is approx 1% overhead
-(which seems high to me).
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-The reason this is still visible after the test completes is the vmap area is
-lazily reclaimed (see mm/vmalloc.c:__purge_vmap_area_lazy()).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-1% memory overhead coupled with the unwanted vmap_area_lock contention (even though it is
-test-induced) -- I might revert this anyway.
+diff --cc fs/nfs/direct.c
+index 239c2fe,d71d66c..0000000
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@@ -118,18 -117,26 +118,17 @@@ static inline int put_dreq(struct nfs_d
+   * @nr_segs: size of iovec array
+   *
+   * The presence of this routine in the address space ops vector means
+ - * the NFS client supports direct I/O. However, for most direct IO, we
+ - * shunt off direct read and write requests before the VFS gets them,
+ - * so this method is only ever called for swap.
+ + * the NFS client supports direct I/O. However, we shunt off direct
+ + * read and write requests before the VFS gets them, so this method
+ + * should never be called.
+   */
+ -ssize_t nfs_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov=
+, loff_t pos, unsigned long nr_segs)
+ +ssize_t nfs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
+ +		      loff_t pos)
+  {
+- 	dprintk("NFS: nfs_direct_IO (%s) off/no(%Ld/%lu) EINVAL\n",
+- 			iocb->ki_filp->f_path.dentry->d_name.name,
+- 			(long long) pos, iter->nr_segs);
+ -#ifndef CONFIG_NFS_SWAP
++ 	dprintk("NFS: nfs_direct_IO (%pD) off/no(%Ld/%lu) EINVAL\n",
+ -			iocb->ki_filp, (long long) pos, nr_segs);
+++			iocb->ki_filp, (long long) pos, iter->nr_segs);
+ =20
+  	return -EINVAL;
+ -#else
+ -	VM_BUG_ON(iocb->ki_nbytes !=3D PAGE_SIZE);
+ -
+ -	if (rw =3D=3D READ || rw =3D=3D KERNEL_READ)
+ -		return nfs_file_direct_read(iocb, iov, nr_segs, pos,
+ -				rw =3D=3D READ ? true : false);
+ -	return nfs_file_direct_write(iocb, iov, nr_segs, pos,
+ -				rw =3D=3D WRITE ? true : false);
+ -#endif /* CONFIG_NFS_SWAP */
+  }
+ =20
+  static void nfs_direct_release_pages(struct page **pages, unsigned int np=
+ages)
+@@@ -1010,13 -905,11 +1009,11 @@@ ssize_t nfs_file_direct_read(struct kio
+  	struct address_space *mapping =3D file->f_mapping;
+  	size_t count;
+ =20
+ -	count =3D iov_length(iov, nr_segs);
+ +	count =3D iov_iter_count(iter);
+  	nfs_add_stats(mapping->host, NFSIOS_DIRECTREADBYTES, count);
+ =20
+- 	dfprintk(FILE, "NFS: direct read(%s/%s, %zd@%Ld)\n",
+- 		file->f_path.dentry->d_parent->d_name.name,
+- 		file->f_path.dentry->d_name.name,
+- 		count, (long long) pos);
++ 	dfprintk(FILE, "NFS: direct read(%pD2, %zd@%Ld)\n",
++ 		file, count, (long long) pos);
+ =20
+  	retval =3D 0;
+  	if (!count)
+@@@ -1065,13 -959,11 +1062,11 @@@ ssize_t nfs_file_direct_write(struct ki
+  	struct address_space *mapping =3D file->f_mapping;
+  	size_t count;
+ =20
+ -	count =3D iov_length(iov, nr_segs);
+ +	count =3D iov_iter_count(iter);
+  	nfs_add_stats(mapping->host, NFSIOS_DIRECTWRITTENBYTES, count);
+ =20
+- 	dfprintk(FILE, "NFS: direct write(%s/%s, %zd@%Ld)\n",
+- 		file->f_path.dentry->d_parent->d_name.name,
+- 		file->f_path.dentry->d_name.name,
+- 		count, (long long) pos);
++ 	dfprintk(FILE, "NFS: direct write(%pD2, %zd@%Ld)\n",
++ 		file, count, (long long) pos);
+ =20
+  	retval =3D generic_write_checks(file, &pos, &count, 0);
+  	if (retval)
+diff --cc fs/nfs/file.c
+index 19ac4fd,e2fcacf..0000000
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@@ -174,18 -165,18 +165,17 @@@ nfs_file_flush(struct file *file, fl_ow
+  EXPORT_SYMBOL_GPL(nfs_file_flush);
+ =20
+  ssize_t
+ -nfs_file_read(struct kiocb *iocb, const struct iovec *iov,
+ -		unsigned long nr_segs, loff_t pos)
+ +nfs_file_read_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+  {
+- 	struct dentry * dentry =3D iocb->ki_filp->f_path.dentry;
+- 	struct inode * inode =3D dentry->d_inode;
++ 	struct inode *inode =3D file_inode(iocb->ki_filp);
+  	ssize_t result;
+ =20
+  	if (iocb->ki_filp->f_flags & O_DIRECT)
+ -		return nfs_file_direct_read(iocb, iov, nr_segs, pos, true);
+ +		return nfs_file_direct_read(iocb, iter, pos);
+ =20
+- 	dprintk("NFS: read_iter(%s/%s, %lu@%lu)\n",
+- 		dentry->d_parent->d_name.name, dentry->d_name.name,
+ -	dprintk("NFS: read(%pD2, %lu@%lu)\n",
+++	dprintk("NFS: read_iter(%pD2, %lu@%lu)\n",
++ 		iocb->ki_filp,
+ -		(unsigned long) iov_length(iov, nr_segs), (unsigned long) pos);
+ +		(unsigned long) iov_iter_count(iter), (unsigned long) pos);
+ =20
+  	result =3D nfs_revalidate_mapping(inode, iocb->ki_filp->f_mapping);
+  	if (!result) {
+@@@ -655,25 -634,24 +633,24 @@@ static int nfs_need_sync_write(struct f
+  	return 0;
+  }
+ =20
+ -ssize_t nfs_file_write(struct kiocb *iocb, const struct iovec *iov,
+ -		       unsigned long nr_segs, loff_t pos)
+ +ssize_t nfs_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
+ +			    loff_t pos)
+  {
+- 	struct dentry * dentry =3D iocb->ki_filp->f_path.dentry;
+- 	struct inode * inode =3D dentry->d_inode;
++ 	struct file *file =3D iocb->ki_filp;
++ 	struct inode *inode =3D file_inode(file);
+  	unsigned long written =3D 0;
+  	ssize_t result;
+ -	size_t count =3D iov_length(iov, nr_segs);
+ +	size_t count =3D iov_iter_count(iter);
+ =20
+- 	result =3D nfs_key_timeout_notify(iocb->ki_filp, inode);
++ 	result =3D nfs_key_timeout_notify(file, inode);
+  	if (result)
+  		return result;
+ =20
+- 	if (iocb->ki_filp->f_flags & O_DIRECT)
++ 	if (file->f_flags & O_DIRECT)
+ -		return nfs_file_direct_write(iocb, iov, nr_segs, pos, true);
+ +		return nfs_file_direct_write(iocb, iter, pos);
+ =20
+- 	dprintk("NFS: write_iter(%s/%s, %lu@%lld)\n",
+- 		dentry->d_parent->d_name.name, dentry->d_name.name,
+- 		(unsigned long) count, (long long) pos);
+ -	dprintk("NFS: write(%pD2, %lu@%Ld)\n",
+++	dprintk("NFS: write_iter(%pD2, %lu@%Ld)\n",
++ 		file, (unsigned long) count, (long long) pos);
+ =20
+  	result =3D -EBUSY;
+  	if (IS_SWAPFILE(inode))
 
-Regards,
-Peter Hurley
+--Signature=_Wed__18_Sep_2013_10_56_38_+1000_5IZ2ZzozJRguP6_K
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSOPpLAAoJEECxmPOUX5FEQQcQAJPC34Ph2FthDeUeNz8Ti8Xh
+Lf4z0/guGEPNLFllPQKj5gf5+NpC14d9M6DS7+QvEZO97UlqstsxCRLEBEuJc2Z2
+zX3WVVNfM/YyijQ4BIORgIZI+t7PDF+dTpugeQNJ1Lh7xQ8ML+Q2Lug/Bf1ezAp/
+G806jgeEkdgeJgb6cFMJcHknxEG5LdV0QJRx4YpEVWz1N0uvvAgQRDYLvg11atEA
+p5xpeHNv3rBl4XVQax9bR47EMqoboVzeXDZATIFHrBik1Kjkiwdji3CbjggOf86C
+E6CEOQNHEm+wIR3aQqqo0T72/ByiyY9Psga5L0UWwygN4wznG/kqPeqxeGNcTMi2
+D9gng2/bcAfWnqx/+HYttDQJ1XxntzucnQqBF+RTPSyogYCgy5ZDZ7V6fO8CPsBz
+gze1SF2uBcskt4eCXxGcuETrUra+OXoYT6zaotXca5hxhXEkULEuKJcg/ujvsft3
+yIC0JdX6w77dJrR2kYIz+Nc8ioQIZrJuWdVC7L/3IZmpOryWDsBe0VlOpF6nAYiY
+4x7NF4i/gmH9UmFICV1FtkJiTFsT8Vzd60O/TzeboF/G+yuExxyBLoyzY1rKaf7g
+ni5+sBXK+Na4k2QtvIKLhZ58gd5YL+w3B4K4DvgebYaeGm43VWG2i3F/IwwMazGD
++e00LsXi13KBPXDQV9Kk
+=srLD
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__18_Sep_2013_10_56_38_+1000_5IZ2ZzozJRguP6_K--
