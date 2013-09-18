@@ -1,48 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630Ab3IRCAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 22:00:39 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60896 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3IRCAi (ORCPT
+	id S1751487Ab3IRCXG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 22:23:06 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:37421 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab3IRCXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 22:00:38 -0400
-Date: Wed, 18 Sep 2013 03:00:35 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>
-Subject: Re: linux-next: manual merge of the vfs tree with the aio-direct tree
-Message-ID: <20130918020035.GK13318@ZenIV.linux.org.uk>
-References: <20130918105638.6fa7c29605c14b408b7f5a7e@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130918105638.6fa7c29605c14b408b7f5a7e@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Sep 2013 22:23:05 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>
+Subject: [PATCH 1/2] x86_64: Add safe check in a.out loaders and some coding style
+Date: Tue, 17 Sep 2013 23:21:23 -0300
+Message-Id: <1379470883-3972-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 10:56:38AM +1000, Stephen Rothwell wrote:
-> Hi Al,
-> 
-> Today's linux-next merge of the vfs tree got conflicts in fs/nfs/direct.c
-> and fs/nfs/file.c between commits b9517433d65d ("dio: Convert direct_IO
-> to use iov_iter"), a8431c667ae8 ("nfs: add support for read_iter,
-> write_iter") and a1b8ec384b73 ("nfs: simplify swap") from the aio-direct
-> tree and commit c18d1ec44f7a ("nfs: use %p[dD] instead of open-coded (and
-> often racy) equivalents") from the vfs tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+ia32_aout had no safe checks concerning the mmap and f_op in this module.
+It's not necessary to verify f_op in the load_aout_library, since the
+prior kernel_read/vfs_read function already does.
+Coding style and printk strings fixes.
 
-Hrm...  FWIW, I would greatly prefer to offload these printk patches to
-NFS and NFSD trees.  Didn't get around to that yet, but...
+Tested using qemu, a handcrafted a.out binary and a a.out linked with a
+cross-compiled ld.
 
-As for aio-direct...  Two questions:
-	* had anybody tried to measure the effect on branch predictor from
-introducing that method vector?  Commit d6afd4c4 ("iov_iter: hide iovec
-details behind ops function pointers")
-	* WTF does aforementioned commit lack its author's s-o-b?  The same
-goes for a lot of zab's commits in there...
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ arch/x86/ia32/ia32_aout.c | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
+index bae3aba..15a8319 100644
+--- a/arch/x86/ia32/ia32_aout.c
++++ b/arch/x86/ia32/ia32_aout.c
+@@ -271,10 +271,17 @@ static int load_aout_binary(struct linux_binprm *bprm)
+ 	     N_MAGIC(ex) != QMAGIC && N_MAGIC(ex) != NMAGIC) ||
+ 	    N_TRSIZE(ex) || N_DRSIZE(ex) ||
+ 	    i_size_read(file_inode(bprm->file)) <
+-	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
++	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+ 		return -ENOEXEC;
+ 	}
+ 
++	/*
++	 * Requires a mmap handler. This prevents people from using a.out
++	 * as part of an exploit attack against /proc-related vulnerabilities.
++	 */
++	if (!bprm->file->f_op || !bprm->file->f_op->mmap)
++		return -ENOEXEC;
++
+ 	fd_offset = N_TXTOFF(ex);
+ 
+ 	/* Check initial limits. This avoids letting people circumvent
+@@ -350,14 +357,13 @@ static int load_aout_binary(struct linux_binprm *bprm)
+ 		if ((fd_offset & ~PAGE_MASK) != 0 &&
+ 			    time_after(jiffies, error_time + 5*HZ)) {
+ 			printk(KERN_WARNING
+-			       "fd_offset is not page aligned. Please convert "
+-			       "program: %s\n",
++			       "fd_offset is not page aligned. Please convert program: %s\n",
+ 			       bprm->file->f_path.dentry->d_name.name);
+ 			error_time = jiffies;
+ 		}
+ #endif
+ 
+-		if (!bprm->file->f_op->mmap || (fd_offset & ~PAGE_MASK) != 0) {
++		if ((fd_offset & ~PAGE_MASK) != 0) {
+ 			vm_brk(N_TXTADDR(ex), ex.a_text+ex.a_data);
+ 			read_code(bprm->file, N_TXTADDR(ex), fd_offset,
+ 					ex.a_text+ex.a_data);
+@@ -424,10 +430,17 @@ static int load_aout_library(struct file *file)
+ 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != QMAGIC) || N_TRSIZE(ex) ||
+ 	    N_DRSIZE(ex) || ((ex.a_entry & 0xfff) && N_MAGIC(ex) == ZMAGIC) ||
+ 	    i_size_read(file_inode(file)) <
+-	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
++	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+ 		goto out;
+ 	}
+ 
++	/*
++	 * Requires a mmap handler. This prevents people from using a.out
++	 * as part of an exploit attack against /proc-related vulnerabilities.
++	 */
++	if (!file->f_op->mmap)
++		goto out;
++
+ 	if (N_FLAGS(ex))
+ 		goto out;
+ 
+@@ -441,8 +454,7 @@ static int load_aout_library(struct file *file)
+ 		static unsigned long error_time;
+ 		if (time_after(jiffies, error_time + 5*HZ)) {
+ 			printk(KERN_WARNING
+-			       "N_TXTOFF is not page aligned. Please convert "
+-			       "library: %s\n",
++			       "N_TXTOFF is not page aligned. Please convert library: %s\n",
+ 			       file->f_path.dentry->d_name.name);
+ 			error_time = jiffies;
+ 		}
+-- 
+1.8.4
+
