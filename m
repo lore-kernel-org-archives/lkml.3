@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab3IRStR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 14:49:17 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:41181 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625Ab3IRStP (ORCPT
+	id S1753239Ab3IRSto (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:49:44 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:37088 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793Ab3IRStk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 14:49:15 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Preeti Murthy <preeti.lkml@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v2 4/4] arm: zynq: Enable arm_global_timer
-Date: Wed, 18 Sep 2013 11:48:38 -0700
-Message-Id: <1379530118-22813-5-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com>
+	Wed, 18 Sep 2013 14:49:40 -0400
+From: Jean Pihet <jean.pihet@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jason Cooper <jason@lakedaemon.net>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: patches@linaro.org, Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH] arm: mvebu: use the main timer as clock source from DT
+Date: Wed, 18 Sep 2013 20:49:28 +0200
+Message-Id: <1379530168-9359-1-git-send-email-jean.pihet@linaro.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zynq is based on an ARM Cortex-A9 MPCore, which features the
-arm_global_timer in its SCU. Therefore enable the timer for Zynq.
+This commit:
+  573145f08c2b92c45498468afbbba909f6ce6135
+  clocksource: armada-370-xp: Use CLOCKSOURCE_OF_DECLARE
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
----
-v2:
- - rename DT node: global_timer@... => timer@...
- - add Daniel's ACK
----
- arch/arm/boot/dts/zynq-7000.dtsi | 8 ++++++++
- arch/arm/mach-zynq/Kconfig       | 1 +
- 2 files changed, 9 insertions(+)
+replaced a call to the driver's timer initialization by a call to
+clocksource_of_init(). However, it failed to select CONFIG_CLKSRC_OF.
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index e32b92b..e7f73b2 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -92,6 +92,14 @@
- 			};
- 		};
+Fix this by selecting CONFIG_CLKSRC_OF for Armada370/XP machines.
+Without this change the kernel is stuck at: 'Calibrating delay loop...'.
+
+Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+---
+ drivers/clocksource/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index 41c6946..971d796 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -26,6 +26,7 @@ config DW_APB_TIMER_OF
  
-+		global_timer: timer@f8f00200 {
-+			compatible = "arm,cortex-a9-global-timer";
-+			reg = <0xf8f00200 0x20>;
-+			interrupts = <1 11 0x301>;
-+			interrupt-parent = <&intc>;
-+			clocks = <&clkc 4>;
-+		};
-+
- 		ttc0: ttc0@f8001000 {
- 			interrupt-parent = <&intc>;
- 			interrupts = < 0 10 4 0 11 4 0 12 4 >;
-diff --git a/arch/arm/mach-zynq/Kconfig b/arch/arm/mach-zynq/Kconfig
-index 04f8a4a..6b04260 100644
---- a/arch/arm/mach-zynq/Kconfig
-+++ b/arch/arm/mach-zynq/Kconfig
-@@ -13,5 +13,6 @@ config ARCH_ZYNQ
- 	select HAVE_SMP
- 	select SPARSE_IRQ
- 	select CADENCE_TTC_TIMER
-+	select ARM_GLOBAL_TIMER
- 	help
- 	  Support for Xilinx Zynq ARM Cortex A9 Platform
+ config ARMADA_370_XP_TIMER
+ 	bool
++	select CLKSRC_OF
+ 
+ config ORION_TIMER
+ 	select CLKSRC_OF
 -- 
-1.8.4
+1.7.11.7
 
