@@ -1,99 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078Ab3IRPJn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:09:43 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:45798 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab3IRPJl (ORCPT
+	id S1752429Ab3IRPKN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 11:10:13 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55868 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab3IRPKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:09:41 -0400
+	Wed, 18 Sep 2013 11:10:11 -0400
+Date: Wed, 18 Sep 2013 17:09:58 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
+        LKML <linux-kernel@vger.kernel.org>, Marc Pignat <marc.pignat@hevs.ch>,
+        john.stultz@linaro.org, kernel@pengutronix.de,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clockevents: Sanitize ticks to nsec conversion
+Message-ID: <20130918150958.GO24802@pengutronix.de>
+References: <1379077365-18458-1-git-send-email-mkl@pengutronix.de>
+ <20130917095600.GJ26819@ludovic.desroches@atmel.com>
+ <20130917100417.GQ12758@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.02.1309171210450.4089@ionos.tec.linutronix.de>
+ <20130917130153.GL26819@ludovic.desroches@atmel.com>
+ <alpine.DEB.2.02.1309172228400.4089@ionos.tec.linutronix.de>
+ <20130918085627.GN24802@pengutronix.de>
+ <alpine.DEB.2.02.1309181058470.4089@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <20130918033358.51CA1C42C9E@trevor.secretlab.ca>
-References: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
-	<1379372965-22359-19-git-send-email-robherring2@gmail.com>
-	<20130918033358.51CA1C42C9E@trevor.secretlab.ca>
-Date: Wed, 18 Sep 2013 10:09:40 -0500
-Message-ID: <CAL_JsqKkhPt0hMKvdh+71WN9ERTRvzJKXO9ZV076ks-XGxbn4A@mail.gmail.com>
-Subject: Re: [PATCH 18/28] of: create default early_init_dt_add_memory_arch
-From: Rob Herring <robherring2@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        James Hogan <james.hogan@imgtec.com>, Michal Simek <monstr@monstr.eu>,
-        Jonas Bonn <jonas@southpole.se>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "microblaze-uclinux@itee.uq.edu.au" 
-	<microblaze-uclinux@itee.uq.edu.au>,
-        linux@openrisc.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.02.1309181058470.4089@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 10:33 PM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Mon, 16 Sep 2013 18:09:14 -0500, Rob Herring <robherring2@gmail.com> wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> Create a weak version of early_init_dt_add_memory_arch which uses
->> memblock or is an empty function when memblock is not enabled. This
->> will unify all architectures except ones with custom memory bank
->> structs.
->
-> Two comments below, but otherwise:
->
-> Acked-by: Grant Likely <grant.likely@linaro.org>
->
->> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
->> index 0714dd4..a9dce7a 100644
->> --- a/drivers/of/fdt.c
->> +++ b/drivers/of/fdt.c
->> @@ -688,6 +688,17 @@ u64 __init dt_mem_next_cell(int s, __be32 **cellp)
->>       return of_read_number(p, s);
->>  }
->>
->> +void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
->> +{
->> +#ifdef CONFIG_HAVE_MEMBLOCK
->> +     base &= PAGE_MASK;
->> +     size &= PAGE_MASK;
->> +     memblock_add(base, size);
->> +#else
->> +     pr_err("%s: ignoring memory (%llx, %llx)\n", __func__, base, size);
->> +#endif
->> +}
->> +
->
-> Can you do it this way instead:
->
-> #ifdef CONFIG_HAVE_MEMBLOCK
-> void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
-> {
->         base &= PAGE_MASK;
->         size &= PAGE_MASK;
->         memblock_add(base, size);
-> }
-> #endif
->
-> If the platform doesn't provide an early_init_dt_add_memory_arch()
-> function and it doesn't have a memblock implementation, then the build
-> should outright fail. I don't see a scenario where we would want to
-> successfully build the kernel without a working add memory function.
+Hello Thomas,
 
-metag and x86 both have empty functions. I guess they get memory from
-a different boot interface.
+On Wed, Sep 18, 2013 at 11:38:07AM +0200, Thomas Gleixner wrote:
+> On Wed, 18 Sep 2013, Uwe Kleine-König wrote:
+> > > Now we can easily verify whether the whole equation fits into the
+> > > 64bit boundary. Shifting the "clc" result back by evt->shift MUST
+> > > result in "latch". If that's not the case, we have a clear indicator
+> > But this is only the case if evt->mult is <= (1 << evt->shift). Is this
+> > always given?
+> 
+> Crap, no. It's only true for device frequency <= 1GHz. Good catch!
+> 
+> > Is it more sensible to adjust dev->max_delta_ns once at register time
+> > and so save the often recurrent overflow check in
+> > clockevents_program_event?
+> 
+> Which overflow check are you talking about?
+> 
+> There is only the boundary check:
+> 
+>         delta = min(delta, (int64_t) dev->max_delta_ns);
+>         delta = max(delta, (int64_t) dev->min_delta_ns);
+> 
+> Which sensible adjustment at register time is going to remove that?
+My idea was that wouldn't need to add
 
-Rob
+	if ((clc >> evt->shift) != (u64)latch)
+		...
 
->
-> Also, can you group this function with the common __weak
-> early_init_dt_alloc_memory_arch() implementation? It would be good to
-> group all the memblock specific functions together.
->
-> g.
->
+to clockevent_delta2ns (not clockevents_program_event as I wrote) if
+dev->max_delta_ns was small enough. So max_delta_ns would be the minimum
+of the hardware limit and the value to prevent an overflow. Not sure any
+more that this works though.
+
+> > Another doubt I have is: You changed clockevent_delta2ns to round up now
+> > unconditionally. For the numbers on at91 that doesn't matter, but I
+> > wonder if there are situations that make the timer core violate the
+> > max_delta_ticks condition now.
+> 
+> And how so? The + (mult - 1) ensures, that the conversion back to
+> ticks results in the same value as latch. So how should it violate
+> the max boundary?
+That is wrong:
+With max_delta_ticks << shift = n * mult - k for k in [0 .. mult-1] and
+an integer n:
+
+	  (max_delta_ns * mult) >> shift
+	= ((((max_delta_ticks << shift) + mult - 1) / mult) * mult) >> shift
+	= (((n * mult - k + mult - 1) / mult) * mult) >> shift
+	= n * mult >> shift
+	= ((max_delta_ticks << shift) + k) >> shift
+	= max_delta_ticks + (k >> shift)
+
+k >> shift is only known to be zero if mult <= 1 << shift (i.e. the same
+condition as above where your 64bit overflow detection is wrong). So
+this can result in values > max_delta_ticks.
+
+> Math is hard, right?
+Yes, if it involves integer division and overflow handling it's hard to
+come up with correct solutions during shopping. ;-)
+ 
+> > > for boundary violation and can limit "clc" to (1 << 63) - 1 before the
+> > Where does this magic constant come from?
+> 
+> Rolling my magic hex dice gave me that.
+Wow, how many sides does your dice have? Couldn't it have choosen
+(u64)-1 for improved results?
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
