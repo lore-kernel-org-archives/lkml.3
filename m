@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab3IRMsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 08:48:07 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:54062 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751759Ab3IRMsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 08:48:03 -0400
-Message-ID: <1379508476.8819.40.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [GIT PULL] Keyrings patches
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, James Morris <jmorris@namei.org>,
-        simo@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 18 Sep 2013 08:47:56 -0400
-In-Reply-To: <1320.1379505186@warthog.procyon.org.uk>
-References: <20130918115000.b78a5e79d65aa23ced0ac8e4@canb.auug.org.au>
-	 <alpine.LRH.2.02.1309120141280.4317@tundra.namei.org>
-	 <alpine.LRH.2.02.1309071426400.29124@tundra.namei.org>
-	 <alpine.LRH.2.02.1309070309360.24160@tundra.namei.org>
-	 <12075.1378340063@warthog.procyon.org.uk>
-	 <17000.1378488989@warthog.procyon.org.uk>
-	 <10114.1378806359@warthog.procyon.org.uk>
-	 <19686.1379426149@warthog.procyon.org.uk>
-	 <1320.1379505186@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091812-7182-0000-0000-00000871D19E
+	id S1752685Ab3IRMtp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 08:49:45 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:51763 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab3IRMtn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 08:49:43 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] radeon: Conditionally compile PM code
+Date: Wed, 18 Sep 2013 14:48:32 +0200
+Message-Id: <1379508512-30155-1-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-18 at 12:53 +0100, David Howells wrote:
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> > Is there some reason that those fixups cannot be done in a merge commit?
-> > i.e. are they more than simple text updates?
+The power management code is only used on X86 and PowerMac. To prevent
+the compiler from warning about unused code, only build when PM and one
+of X86 or PowerMac is selected.
 
-Hi Stephen, the issue is that the patches were created against a newer
-kernel (eg. next, akpm, Linus' branch), not the earlier one.  So it
-isn't a merge issue per se.  Now that -rc1 is out, James will rebase
-soon.
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/video/aty/radeon_pm.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Mimi
-
-> That's somewhat up to James.  *He* would be the person doing the merge, not
-> me.  I'm changing the lines in my patches also.
-> 
-> > /me thinks that most rebases people do can be better done (and
-> > documented) as merges.
-> 
-> That depends on how you define "better".  Better for what?  I think it's
-> better to absorb the changes into my patch series.  StGIT is very good for
-> handling this, since my patches are currently maintained as an StGIT set.
-> That way, there ends up one fewer commit in the history, assuming no other
-> collisions with what James merges.
-> 
-> David
-
-
+diff --git a/drivers/video/aty/radeon_pm.c b/drivers/video/aty/radeon_pm.c
+index f7091ec..f4317f1 100644
+--- a/drivers/video/aty/radeon_pm.c
++++ b/drivers/video/aty/radeon_pm.c
+@@ -1427,6 +1427,8 @@ static void radeon_pm_full_reset_sdram(struct radeonfb_info *rinfo)
+ 	mdelay( 15);
+ }
+ 
++#if defined(CONFIG_PM)
++#if defined(CONFIG_X86) || defined(CONFIG_PPC_PMAC)
+ static void radeon_pm_reset_pad_ctlr_strength(struct radeonfb_info *rinfo)
+ {
+ 	u32 tmp, tmp2;
+@@ -1939,9 +1941,10 @@ static void radeon_reinitialize_M10(struct radeonfb_info *rinfo)
+ 	 */
+ 	radeon_pm_m10_enable_lvds_spread_spectrum(rinfo);
+ }
++#endif
+ 
+ #ifdef CONFIG_PPC_OF
+-
++#ifdef CONFIG_PPC_PMAC
+ static void radeon_pm_m9p_reconfigure_mc(struct radeonfb_info *rinfo)
+ {
+ 	OUTREG(MC_CNTL, rinfo->save_regs[46]);
+@@ -2202,6 +2205,8 @@ static void radeon_reinitialize_M9P(struct radeonfb_info *rinfo)
+ 	radeon_pm_restore_pixel_pll(rinfo);
+ 	radeon_pm_m10_enable_lvds_spread_spectrum(rinfo);
+ }
++#endif
++#endif
+ 
+ #if 0 /* Not ready yet */
+ static void radeon_reinitialize_QW(struct radeonfb_info *rinfo)
+-- 
+1.8.4
 
