@@ -1,124 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620Ab3IRCYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 22:24:17 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:34916 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545Ab3IRCYQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 22:24:16 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>
-Subject: [PATCH 2/2] x86: Useless inode var and Coding style fixes
-Date: Tue, 17 Sep 2013 23:22:22 -0300
-Message-Id: <1379470942-4084-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	id S1751529Ab3IRC3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 22:29:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45340 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751197Ab3IRC3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 22:29:39 -0400
+Message-ID: <52390FF8.4080202@zytor.com>
+Date: Tue, 17 Sep 2013 19:29:12 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Geyslan G. Bem" <geyslan@gmail.com>
+CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86: Useless inode var and Coding style fixes
+References: <1379470942-4084-1-git-send-email-geyslan@gmail.com>
+In-Reply-To: <1379470942-4084-1-git-send-email-geyslan@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-file size read only one time: useless prior value allocation.
-It's not necessary to verify f_op in the load_aout_library, since the
-prior kernel_read/vfs_read function already does.
-Coding style and printk strings fixes.
+On 09/17/2013 07:22 PM, Geyslan G. Bem wrote:
+> file size read only one time: useless prior value allocation.
+> It's not necessary to verify f_op in the load_aout_library, since the
+> prior kernel_read/vfs_read function already does.
+> Coding style and printk strings fixes.
+> 
+> Tested using qemu, a handcrafted a.out binary and a a.out linked with a
+> cross-compiled ld.
+> 
+> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+> ---
+>  fs/binfmt_aout.c | 22 +++++++++++-----------
+>  1 file changed, 11 insertions(+), 11 deletions(-)
 
-Tested using qemu, a handcrafted a.out binary and a a.out linked with a
-cross-compiled ld.
+This is not an x86 patch.
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
----
- fs/binfmt_aout.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+The other one is only because we effectively have a copy of the a.out
+code in the ia32 directory, but it too can go through the generic route
+with my ack.
 
-diff --git a/fs/binfmt_aout.c b/fs/binfmt_aout.c
-index 89dec7f..a4af504 100644
---- a/fs/binfmt_aout.c
-+++ b/fs/binfmt_aout.c
-@@ -142,7 +142,8 @@ static int set_brk(unsigned long start, unsigned long end)
-  * memory and creates the pointer tables from them, and puts their
-  * addresses on the "stack", returning the new stack pointer value.
-  */
--static unsigned long __user *create_aout_tables(char __user *p, struct linux_binprm * bprm)
-+static unsigned long __user *create_aout_tables(char __user *p,
-+						struct linux_binprm *bprm)
- {
- 	char __user * __user *argv;
- 	char __user * __user *envp;
-@@ -213,7 +214,8 @@ static int load_aout_binary(struct linux_binprm * bprm)
- 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != OMAGIC &&
- 	     N_MAGIC(ex) != QMAGIC && N_MAGIC(ex) != NMAGIC) ||
- 	    N_TRSIZE(ex) || N_DRSIZE(ex) ||
--	    i_size_read(file_inode(bprm->file)) < ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
-+	    i_size_read(file_inode(bprm->file)) <
-+	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
- 		return -ENOEXEC;
- 	}
- 
-@@ -299,12 +301,12 @@ static int load_aout_binary(struct linux_binprm * bprm)
- 
- 		if ((fd_offset & ~PAGE_MASK) != 0 && printk_ratelimit())
- 		{
--			printk(KERN_WARNING 
-+			printk(KERN_WARNING
- 			       "fd_offset is not page aligned. Please convert program: %s\n",
- 			       bprm->file->f_path.dentry->d_name.name);
- 		}
- 
--		if (!bprm->file->f_op->mmap||((fd_offset & ~PAGE_MASK) != 0)) {
-+		if ((fd_offset & ~PAGE_MASK) != 0) {
- 			vm_brk(N_TXTADDR(ex), ex.a_text+ex.a_data);
- 			read_code(bprm->file, N_TXTADDR(ex), fd_offset,
- 				  ex.a_text + ex.a_data);
-@@ -350,14 +352,11 @@ beyond_if:
- 
- static int load_aout_library(struct file *file)
- {
--	struct inode * inode;
- 	unsigned long bss, start_addr, len;
- 	unsigned long error;
- 	int retval;
- 	struct exec ex;
- 
--	inode = file_inode(file);
--
- 	retval = -ENOEXEC;
- 	error = kernel_read(file, 0, (char *) &ex, sizeof(ex));
- 	if (error != sizeof(ex))
-@@ -366,7 +365,8 @@ static int load_aout_library(struct file *file)
- 	/* We come in here for the regular a.out style of shared libraries */
- 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != QMAGIC) || N_TRSIZE(ex) ||
- 	    N_DRSIZE(ex) || ((ex.a_entry & 0xfff) && N_MAGIC(ex) == ZMAGIC) ||
--	    i_size_read(inode) < ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
-+	    i_size_read(file_inode(file)) <
-+	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
- 		goto out;
- 	}
- 
-@@ -374,7 +374,7 @@ static int load_aout_library(struct file *file)
- 	 * Requires a mmap handler. This prevents people from using a.out
- 	 * as part of an exploit attack against /proc-related vulnerabilities.
- 	 */
--	if (!file->f_op || !file->f_op->mmap)
-+	if (!file->f_op->mmap)
- 		goto out;
- 
- 	if (N_FLAGS(ex))
-@@ -388,12 +388,12 @@ static int load_aout_library(struct file *file)
- 	if ((N_TXTOFF(ex) & ~PAGE_MASK) != 0) {
- 		if (printk_ratelimit())
- 		{
--			printk(KERN_WARNING 
-+			printk(KERN_WARNING
- 			       "N_TXTOFF is not page aligned. Please convert library: %s\n",
- 			       file->f_path.dentry->d_name.name);
- 		}
- 		vm_brk(start_addr, ex.a_text + ex.a_data + ex.a_bss);
--		
-+
- 		read_code(file, start_addr, N_TXTOFF(ex),
- 			  ex.a_text + ex.a_data);
- 		retval = 0;
--- 
-1.8.4
+	-hpa
+
 
