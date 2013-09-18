@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab3IRW5o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 18:57:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33454 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab3IRW5n (ORCPT
+	id S1752104Ab3IRXC1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 19:02:27 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55573 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533Ab3IRXCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 18:57:43 -0400
-Date: Thu, 19 Sep 2013 00:57:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Christoph Lameter <cl@linux.com>, Gilad Ben-Yossef <gilad@benyossef.com>,
-        Tejun Heo <tj@kernel.org>, John Stultz <johnstul@us.ibm.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: RFC vmstat: On demand vmstat threads
-In-Reply-To: <20130918150659.5091a2c3ca94b99304427ec5@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1309190033440.4089@ionos.tec.linutronix.de>
-References: <00000140e9dfd6bd-40db3d4f-c1be-434f-8132-7820f81bb586-000000@email.amazonses.com> <CAOtvUMdfqyg80_9J8AnOaAdahuRYGC-bpemdo_oucDBPguXbVA@mail.gmail.com> <0000014109b8e5db-4b0f577e-c3b4-47fe-b7f2-0e5febbcc948-000000@email.amazonses.com>
- <20130918150659.5091a2c3ca94b99304427ec5@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 18 Sep 2013 19:02:25 -0400
+Message-ID: <523A30FC.3060309@wwwdotorg.org>
+Date: Wed, 18 Sep 2013 17:02:20 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Olof Johansson <olof@lixom.net>
+CC: Jon Loeliger <jdl@jdl.com>, David Gibson <david@gibson.dropbear.id.au>,
+        Frank Rowand <frowand.list@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [dtc RFC PATCH] Enforce node name unit-address presence/absence
+References: <1379535836-12726-1-git-send-email-swarren@wwwdotorg.org> <CAOesGMg0Rrmew0iK-Gtrx_UiODhpro_S2xUxQi0gZ+7PJmBHnw@mail.gmail.com>
+In-Reply-To: <CAOesGMg0Rrmew0iK-Gtrx_UiODhpro_S2xUxQi0gZ+7PJmBHnw@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Sep 2013, Andrew Morton wrote:
-> On Tue, 10 Sep 2013 21:13:34 +0000 Christoph Lameter <cl@linux.com> wrote:
-> > +	cpumask_copy(monitored_cpus, cpu_online_mask);
-> > +	cpumask_clear_cpu(tick_do_timer_cpu, monitored_cpus);
-> 
-> What on earth are we using tick_do_timer_cpu for anyway? 
-> tick_do_timer_cpu is cheerfully undocumented, as is this code's use of
-> it.
+On 09/18/2013 02:41 PM, Olof Johansson wrote:
+> On Wed, Sep 18, 2013 at 1:23 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> From: Stephen Warren <swarren@nvidia.com>
+>>
+>> ePAPR 1.1 section 2.2.1.1 "Node Name Requirements" specifies that any
+>> node that has a reg property must include a unit address in its name
+>> with value matching the first entry in its reg property. Conversely, if
+>> a node does not have a reg property, the node name must not include a
+>> unit address.
+>>
+>> Implement a check for this. The code doesn't validate the format of the
+>> unit address; ePAPR implies this may vary from binding to binding, so
+>> I'm not sure that it's possible to validate the value itself.
+...
+> Anyway, I think it'd be better to produce warnings than errors for
+> this. That way we could also merge it now while the trees are fixed
+> up.
 
-tick_do_timer_cpu is a timer core internal variable, which holds the
-CPU NR which is responsible for calling do_timer(), i.e. the
-timekeeping stuff. This variable has two functions:
+Yes, that makes sense.
 
-1) Prevent a thundering herd issue of a gazillion of CPUs trying to
-   grab the timekeeping lock all at once. Only the CPU which is
-   assigned to do the update is handling it.
+> Also, maybe warn for @0x<foo>, which is another unpreferred syntax, it
+> should just be @<foo> (with foo being in hex).
 
-2) Hand off the duty in the NOHZ idle case by setting the value to
-   TICK_DO_TIMER_NONE, i.e. a non existing CPU. So the next cpu which
-   looks at it will take over and keep the time keeping alive.
-   The hand over procedure also covers cpu hotplug.
-
-(Ab)Using it for anything else outside the timers core code is just
-broken.
-
-It's working for Christophs use case as his setup will not change the
-assignment away from the boot cpu, but that's really not a brilliant
-design to start with.
-
-The vmstat accounting is not the only thing which we want to delegate
-to dedicated core(s) for the full NOHZ mode.
-
-So instead of playing broken games with explicitly not exposed core
-code variables, we should implement a core code facility which is
-aware of the NOHZ details and provides a sane way to delegate stuff to
-a certain subset of CPUs.
-
-Thanks,
-
-	tglx
+ePAPR doesn't seem to disallow that; it explicitly says that the
+unit-address consists of the characters from table 2-1, which is the
+same table of characters used for the node name itself. However, it does
+state that the binding for a particular bus may impose additional
+restrictions; should I implement such a check but limit it to the root
+node or specific known bus types? That would require explicitly
+whitelisting the check for a lot of bus types, given that each I2C/...
+controller binding is a bus type...
