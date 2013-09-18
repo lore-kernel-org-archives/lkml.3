@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab3IRPZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:25:27 -0400
-Received: from smtprelay0161.hostedemail.com ([216.40.44.161]:56059 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751613Ab3IRPZZ (ORCPT
+	id S1752677Ab3IRP0r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 11:26:47 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49982 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab3IRP0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:25:25 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3351:3622:3865:4321:4384:5007:7652:8957:10004:10400:10848:11232:11473:11657:11658:11914:12043:12438:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: body65_8643c991c8e2e
-X-Filterd-Recvd-Size: 1772
-Message-ID: <1379517921.1787.24.camel@joe-AO722>
-Subject: Re: [PATCH 002/007] WAN Drivers: Update farsync driver and
- introduce fsflex driver
-From: Joe Perches <joe@perches.com>
-To: Kevin Curtis <Kevin.Curtis@farsite.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Dermot Smith <dermot.smith@farsite.com>
-Date: Wed, 18 Sep 2013 08:25:21 -0700
-In-Reply-To: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA1@SOLO.hq.farsitecommunications.com>
-References: <E603DC592C92B54A89CEF6B0919A0B1CAAAA787DA1@SOLO.hq.farsitecommunications.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 18 Sep 2013 11:26:46 -0400
+Message-ID: <5239C634.5020102@nvidia.com>
+Date: Wed, 18 Sep 2013 09:26:44 -0600
+From: Stephen Warren <swarren@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: broonie@kernel.org, rob.herring@calxeda.com, mark.rutland@arm.com,
+        rob@landley.net, devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lgirdwood@gmail.com
+Subject: Re: [PATCH V4] regulator: core: add support for configuring turn-on
+ time through constraints
+References: <1379508482-10550-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1379508482-10550-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-18 at 11:11 +0100, Kevin Curtis wrote:
-> Farsite Communications FarSync driver update
-[]
-> diff -uprN -X linux-3.10.1/Documentation/dontdiff linux-3.10.1/drivers/net/wan/uss_cmn.h linux-3.10.1_new/drivers/net/wan/uss_cmn.h
+On 09/18/2013 06:48 AM, Laxman Dewangan wrote:
+> The turn-on time of the regulator depends on the regulator device's
+> electrical characteristics. Sometimes regulator turn-on time also
+> depends on the capacitive load on the given platform and it can be
+> more than the datasheet value.
+> 
+> The driver provides the enable-time as per datasheet.
+> 
+> Add support for configure the enable ramp time through regulator
+> constraints so that regulator core can take this value for enable
+> time for that regulator.
 
-> +typedef enum _USS_COMMANDS {
-
-I think this code would be more linux style
-without all the typedefs
-
-> +typedef struct {
-[]
-> +} FLEX_SERCONF, *PFLEX_SERCONF;
-
-> +typedef struct {
-[]
-> +} FLEX_CARD_INFO, *PFLEX_CARD_INFO;    /* sizeof(FLEX_CARD_INFO) = 128 */
-
-> +typedef struct {
-[]
-> +} FLEX_USB_STATS, *PFLEX_USB_STATS;
-
-> +typedef struct _INTERFACE_RECORD {
-[]
-> +} IR, *PIR;
-
-> +typedef struct _INTERFACE_RECORD_EX {
-[]
-> +} IREX, *PIREX;
-
-
+The binding,
+Acked-by: Stephen Warren <swarren@nvidia.com>
