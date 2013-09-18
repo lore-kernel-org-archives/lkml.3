@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab3IRGVD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 02:21:03 -0400
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:57320 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733Ab3IRGVB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 02:21:01 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: "memory" binding issues
-To: Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>
-In-Reply-To: <1815499.tpfeUKmP6V@flatron>
-References: <1379300274.4098.77.camel@pasglop> <1379371567.3721.46.camel@pasglop> <CAOesGMgE1jiF5OHsmPQz2z66Bcqu0HeAj=taE1vmFK-0-0s2TQ@mail.gmail.com> <1815499.tpfeUKmP6V@flatron>
-Date: Tue, 17 Sep 2013 18:31:12 -0700
-Message-Id: <20130918013112.1104CC42BDB@trevor.secretlab.ca>
+	id S1751929Ab3IRGWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 02:22:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36449 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292Ab3IRGWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 02:22:48 -0400
+Date: Wed, 18 Sep 2013 09:21:55 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Christoffer Dall <christoffer.dall@linaro.org>
+Cc: Andrew Jones <drjones@redhat.com>, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, catalin.marinas@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        marc.zyngier@arm.com, pbonzini@redhat.com, linux@arm.linux.org.uk,
+        will.deacon@arm.com
+Subject: Re: [PATCH 3/3] aarch64: kvm: introduce CONFIG_KVM_MAX_VCPUS
+Message-ID: <20130918062155.GF5657@redhat.com>
+References: <1379160656-28050-1-git-send-email-drjones@redhat.com>
+ <1379160656-28050-4-git-send-email-drjones@redhat.com>
+ <20130917213428.GJ7623@lvm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130917213428.GJ7623@lvm>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Sep 2013 09:56:39 +0200, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> On Monday 16 of September 2013 15:48:22 Olof Johansson wrote:
-> > On Mon, Sep 16, 2013 at 3:46 PM, Benjamin Herrenschmidt
-> > > On Mon, 2013-09-16 at 10:17 -0600, Stephen Warren wrote:
-> > >> On 09/15/2013 08:57 PM, Benjamin Herrenschmidt wrote:
-> > >> > It should be "/memory@unit-address, this is important because the
-> > >> > Linux
-> > >> > kernel of_find_device_by_path() isn't smart enough to do partial
-> > >> > searches (unlike the real OFW one) and thus to ignore the unit
-> > >> > address
-> > >> > for search purposes, and you *need* the unit address if you have
-> > >> > multiple memory nodes (which you typically do on NUMA machines).
-> > >> 
-> > >> Perhaps /memory should have had a unit-address, but it never has had
-> > >> on
-> > > 
-> > >> ARM; see arch/arm/boot/dts/skeleton.dtsi which says:
-> > > Well, this is a mistake ARM folks might have done from day one but it
-> > > should still be fixed :-)
-> > > 
-> > > A node that has a "reg" property should have the corresponding unit
-> > > address.
+On Tue, Sep 17, 2013 at 10:34:28PM +0100, Christoffer Dall wrote:
+> On Sat, Sep 14, 2013 at 02:10:56PM +0200, Andrew Jones wrote:
+> > Take CONFIG_KVM_MAX_VCPUS from arm32, but set the default to 8.
 > > 
-> > No, absolutely _NOT_ a requirement. Unit address is only required if
-> > needed to disambiguate two properties with the same name.
+> > Signed-off-by: Andrew Jones <drjones@redhat.com>
+> > ---
+> >  arch/arm64/include/asm/kvm_host.h |  7 ++++++-
+> >  arch/arm64/kvm/Kconfig            | 11 +++++++++++
+> >  2 files changed, 17 insertions(+), 1 deletion(-)
 > > 
-> > If there are no ambiguities, then leaving off the unit address is much
-> > preferred.
+> > diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
+> > index 0859a4ddd1e7d..d1af8c49a5ca4 100644
+> > --- a/arch/arm64/include/asm/kvm_host.h
+> > +++ b/arch/arm64/include/asm/kvm_host.h
+> > @@ -26,7 +26,12 @@
+> >  #include <asm/kvm_asm.h>
+> >  #include <asm/kvm_mmio.h>
+> >  
+> > -#define KVM_MAX_VCPUS 4
+> > +#if defined(CONFIG_KVM_MAX_VCPUS)
+> > +#define KVM_MAX_VCPUS CONFIG_KVM_MAX_VCPUS
+> > +#else
+> > +#define KVM_MAX_VCPUS 0
+> > +#endif
+> > +
+> >  #define KVM_USER_MEM_SLOTS 32
+> >  #define KVM_PRIVATE_MEM_SLOTS 4
+> >  #define KVM_COALESCED_MMIO_PAGE_OFFSET 1
+> > diff --git a/arch/arm64/kvm/Kconfig b/arch/arm64/kvm/Kconfig
+> > index 21e90820bd23c..c9924b02e84f7 100644
+> > --- a/arch/arm64/kvm/Kconfig
+> > +++ b/arch/arm64/kvm/Kconfig
+> > @@ -35,6 +35,17 @@ config KVM_ARM_HOST
+> >  	---help---
+> >  	  Provides host support for ARM processors.
+> >  
+> > +config KVM_MAX_VCPUS
+> > +	int "Number maximum supported virtual CPUs per VM"
+> > +	depends on KVM_ARM_HOST
+> > +	default 8
 > 
-> I'm afraid that I must disagree. For consistency I'd rather go with what 
-> Ben said. Please see ePAPR chapter 2.2.1.1, which clearly defines how 
-> nodes should be named.
+> That data structure gets really big with 8 max vcpus.  I think we should
+> keep this at 4 for now, a quad-core VM is quite reasonable for now.
+> 
+Which data structure? vgic? IIRC with 8 vcpus it will be something like
+500 bytes bigger then it is now.
 
-Regardless of the ePAPR spec, there is loads of precidence of having a
-single memory node without the unit address, and we have to continue to
-support those device trees. Just do a "git grep 'memory ' arch/*/boot/dts/*"
-to get a big list. You'll note that there are a lot of powerpc matches
-in that list.
-
-Similarly, if the kernel chokes on memory node(s) that have the unit
-address then that is a bug and needs to be fixed.
-
-g.
+--
+			Gleb.
