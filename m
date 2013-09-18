@@ -1,88 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab3IRUyJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 16:54:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17369 "EHLO mx1.redhat.com"
+	id S1753863Ab3IRUyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 16:54:21 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36908 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753552Ab3IRUyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 16:54:07 -0400
-Message-ID: <1379537642.3032.62.camel@localhost>
-Subject: Re: [PATCH 8/8] audit: add audit_backlog_wait_time configuration
- option
-From: Eric Paris <eparis@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Steve Grubb <sgrubb@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Duval <dan.duval@oracle.com>,
-        Chuck Anderson <chuck.anderson@oracle.com>,
-        Guy Streeter <streeter@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Date: Wed, 18 Sep 2013 16:54:02 -0400
-In-Reply-To: <20130918204949.GI13968@madcap2.tricolour.ca>
-References: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
-	 <863f1daf3a84b52ae5054f5d232b205ae5caab83.1379530867.git.rgb@redhat.com>
-	 <1379536405.3032.61.camel@localhost>
-	 <20130918204949.GI13968@madcap2.tricolour.ca>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753834Ab3IRUyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 16:54:18 -0400
+Message-ID: <523A129C.3060606@ti.com>
+Date: Wed, 18 Sep 2013 16:52:44 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>, <wni@nvidia.com>,
+        <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [PATCHv4 02/16] drivers: thermal: introduce device tree parser
+References: <1379530923-29268-1-git-send-email-eduardo.valentin@ti.com>  <1379536310-30000-1-git-send-email-eduardo.valentin@ti.com> <1379537090.1787.67.camel@joe-AO722>
+In-Reply-To: <1379537090.1787.67.camel@joe-AO722>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="gg09oXHOWKRLA7S5pXwa5qIrHfjGgpUvH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-18 at 16:49 -0400, Richard Guy Briggs wrote:
-> On Wed, Sep 18, 2013 at 04:33:25PM -0400, Eric Paris wrote:
-> > On Wed, 2013-09-18 at 15:06 -0400, Richard Guy Briggs wrote:
-> > > reaahead-collector abuses the audit logging facility to discover which files
-> > > are accessed at boot time to make a pre-load list
-> > > 
-> > > Add a tuning option to audit_backlog_wait_time so that if auditd can't keep up,
-> > > or gets blocked, the callers won't be blocked.
-> 
-> > > diff --git a/kernel/audit.c b/kernel/audit.c
-> > > index 3d17670..fc535b6 100644
-> > > --- a/kernel/audit.c
-> > > +++ b/kernel/audit.c
-> > > @@ -701,8 +708,21 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
-> > >  			if (err < 0)
-> > >  				return err;
-> > >  		}
-> > > -		if (s.mask & AUDIT_STATUS_BACKLOG_LIMIT)
-> > > +		if (s.mask & AUDIT_STATUS_BACKLOG_LIMIT) {
-> > >  			err = audit_set_backlog_limit(s.backlog_limit);
-> > > +			if (err < 0)
-> > > +				return err;
-> > > +		}
-> > > +		if (s.mask & AUDIT_STATUS_BACKLOG_WAIT_TIME) {
-> > > +			if (sizeof(s) > (size_t)nlh->nlmsg_len)
-> > > +				break;
-> > 
-> > What gets returned here?  I think err has a value of 0, but it doesn't
-> > seem to have been clearly intentional.  If they know about the
-> > AUDIT_STATUS_BACKLOG_WAIT_TIME flag, but they didn't send a long enough
-> > skb?  That seems like an error condition....
-> 
-> The intent was that it is a NOP, since err would have a value of zero,
-> but I see your point, that if that flag is present, the struct member
-> should be too.  My original intent was that if the structure member
-> wasn't present, it would default to zero, unintentionally setting the
-> wait time to zero.  It was part of my paranoia in the absence of an API
-> version indicator.  No harm done, but I agree it should return an error.
-> 
-> Thanks for the catch.
-> 
-> > > +			if (s.backlog_wait_time < 0 ||
-> > > +			    s.backlog_wait_time > 10*AUDIT_BACKLOG_WAIT_TIME)
-> > > +				return -EINVAL;
-> 
-> I assume values less than zero or larger than 10 times the current
-> default of one minute are errors or unreasonable.
-> 
-> Any argument for more than 10 minutes?
+--gg09oXHOWKRLA7S5pXwa5qIrHfjGgpUvH
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-10 Minutes already seems nuts.  If someone has a reason to go higher, we
-can change this sanity check then.
+On 18-09-2013 16:44, Joe Perches wrote:
+> On Wed, 2013-09-18 at 16:31 -0400, Eduardo Valentin wrote:
+>=20
+>> +/**
+>> + * of_parse_thermal_zones - parse device tree thermal data
+>> + *
+>> + * Initialization function that can be called by machine initializati=
+on
+>> + * code to parse thermal data and populate the thermal framework
+>> + * with hardware thermal zones info. This function only parses therma=
+l zones.
+>> + * Cooling devices and sensor devices nodes are supposed to be parsed=
 
--Eric
+>> + * by their respective drivers.
+>> + *
+>> + * Return: 0 on success, proper error code otherwise
+>> + *
+>> + */
+>> +int __init of_parse_thermal_zones(void)
+>> +{
+>> +	struct device_node *np, *child;
+>> +	struct __thermal_zone *tz;
+>> +	struct thermal_zone_device_ops *ops;
+>> +
+>> +	np =3D of_find_node_by_name(NULL, "thermal-zones");
+>> +	if (!np) {
+>> +		pr_err("unable to find thermal zones\n");
+>> +		return 0;
+>=20
+> return 0? This is success?
 
+This case is success because there should be systems without thermal DT
+entries.
+
+>=20
+>> +	}
+>> +
+>> +	for_each_child_of_node(np, child) {
+>> +		struct thermal_zone_device *zone;
+>> +		struct thermal_zone_params *tzp;
+>> +
+>> +		tz =3D thermal_of_build_thermal_zone(child);
+>> +		if (IS_ERR(tz)) {
+>> +			pr_err("failed to build thermal zone %ld\n",
+>> +			       PTR_ERR(tz));
+>> +			return 0;
+>> +		}
+>> +
+>> +		ops =3D kzalloc(sizeof(*ops), GFP_KERNEL);
+>> +		if (!ops)
+>> +			return 0;
+>> +
+>> +		memcpy(ops, &of_thermal_ops, sizeof(*ops));
+>=20
+> kmemdup instead of alloc/memcpy
+>=20
+
+OK.
+
+>> +		tzp =3D kzalloc(sizeof(*tzp), GFP_KERNEL);
+>> +		if (!ops)
+>> +			return 0;
+>> +
+
+These should not be 0 though.
+
+>> +		/* No hwmon because there might be hwmon drivers registering */
+>> +		tzp->no_hwmon =3D true;
+>> +
+>> +		zone =3D thermal_zone_device_register(child->name, tz->ntrips,
+>> +						    0, tz,
+>> +						    ops, tzp,
+>> +						    tz->passive_delay,
+>> +						    tz->polling_delay);
+>> +		if (IS_ERR(zone))
+>> +			pr_err("Failed to build %s zone %ld\n", child->name,
+>> +			       PTR_ERR(zone));
+>> +	}
+>> +	return 0;
+
+This one is correct.
+
+>> +}
+>=20
+> All returns are 0, always successful?
+
+hmmm.. I am sending after reworking the return code of this function.
+
+>=20
+>=20
+>=20
+>=20
+
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+--gg09oXHOWKRLA7S5pXwa5qIrHfjGgpUvH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlI6Ep4ACgkQCXcVR3XQvP2jXwEAlW3m5OVr+n9hxxrBJGUgE8S/
+LrGREcClF6FW1kLGde0A/jnbrA89xrw6Lz1OzFubwNac8ogYiudSPkloHBDNsWvL
+=VgXM
+-----END PGP SIGNATURE-----
+
+--gg09oXHOWKRLA7S5pXwa5qIrHfjGgpUvH--
