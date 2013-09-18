@@ -1,98 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab3IRSg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 14:36:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56382 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab3IRSgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 14:36:24 -0400
-Date: Wed, 18 Sep 2013 20:36:17 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
-Message-ID: <20130918183617.GD3421@dhcp22.suse.cz>
-References: <20130916152548.GF3674@dhcp22.suse.cz>
- <20130916225246.A633145B@pobox.sk>
- <20130917000244.GD3278@cmpxchg.org>
- <20130917131535.94E0A843@pobox.sk>
- <20130917141013.GA30838@dhcp22.suse.cz>
- <20130918160304.6EDF2729@pobox.sk>
- <20130918142400.GA3421@dhcp22.suse.cz>
- <20130918163306.3620C973@pobox.sk>
- <20130918144245.GC3421@dhcp22.suse.cz>
- <20130918200239.DDA96791@pobox.sk>
+	id S1752141Ab3IRSkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:40:13 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37916 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab3IRSkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 14:40:11 -0400
+Date: Wed, 18 Sep 2013 11:40:07 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Fasheh <mfasheh@suse.de>
+Cc: Chris Mason <chris.mason@fusionio.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>, Zach Brown <zab@redhat.com>
+Subject: Re: Build failures due to commit 416161db (btrfs: offline dedupe)
+Message-ID: <20130918184007.GA12206@roeck-us.net>
+References: <20130913133314.GA20461@roeck-us.net>
+ <CAMuHMdWoNo9U0DCRoXt8V2d1SiSxX5Sku9rNvg+9MiX++XjVRg@mail.gmail.com>
+ <20130913163535.GA5681@roeck-us.net>
+ <20130913170022.18785.82013@localhost.localdomain>
+ <20130913175801.GL31381@wotan.suse.de>
+ <20130913193334.18785.8623@localhost.localdomain>
+ <20130917224354.GP31381@wotan.suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130918200239.DDA96791@pobox.sk>
+In-Reply-To: <20130917224354.GP31381@wotan.suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 18-09-13 20:02:39, azurIt wrote:
-> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-> >On Wed 18-09-13 16:33:06, azurIt wrote:
-> >> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-> >> >On Wed 18-09-13 16:03:04, azurIt wrote:
-> >> >[..]
-> >> >> I was finally able to get stack of problematic process :) I saved it
-> >> >> two times from the same process, as Michal suggested (i wasn't able to
-> >> >> take more). Here it is:
-> >> >> 
-> >> >> First (doesn't look very helpfull):
-> >> >> [<ffffffffffffffff>] 0xffffffffffffffff
-> >> >
-> >> >No it is not.
-> >> > 
-> >> >> Second:
-> >> >> [<ffffffff810e17d1>] shrink_zone+0x481/0x650
-> >> >> [<ffffffff810e2ade>] do_try_to_free_pages+0xde/0x550
-> >> >> [<ffffffff810e310b>] try_to_free_pages+0x9b/0x120
-> >> >> [<ffffffff81148ccd>] free_more_memory+0x5d/0x60
-> >> >> [<ffffffff8114931d>] __getblk+0x14d/0x2c0
-> >> >> [<ffffffff8114c973>] __bread+0x13/0xc0
-> >> >> [<ffffffff811968a8>] ext3_get_branch+0x98/0x140
-> >> >> [<ffffffff81197497>] ext3_get_blocks_handle+0xd7/0xdc0
-> >> >> [<ffffffff81198244>] ext3_get_block+0xc4/0x120
-> >> >> [<ffffffff81155b8a>] do_mpage_readpage+0x38a/0x690
-> >> >> [<ffffffff81155ffb>] mpage_readpages+0xfb/0x160
-> >> >> [<ffffffff811972bd>] ext3_readpages+0x1d/0x20
-> >> >> [<ffffffff810d9345>] __do_page_cache_readahead+0x1c5/0x270
-> >> >> [<ffffffff810d9411>] ra_submit+0x21/0x30
-> >> >> [<ffffffff810cfb90>] filemap_fault+0x380/0x4f0
-> >> >> [<ffffffff810ef908>] __do_fault+0x78/0x5a0
-> >> >> [<ffffffff810f2b24>] handle_pte_fault+0x84/0x940
-> >> >> [<ffffffff810f354a>] handle_mm_fault+0x16a/0x320
-> >> >> [<ffffffff8102715b>] do_page_fault+0x13b/0x490
-> >> >> [<ffffffff815cb87f>] page_fault+0x1f/0x30
-> >> >> [<ffffffffffffffff>] 0xffffffffffffffff
-> >> >
-> >> >This is the direct reclaim path. You are simply running out of memory
-> >> >globaly. There is no memcg specific code in that trace.
-> >> 
-> >> 
-> >> No, i'm not. Here is htop and server graphs from this case:
-> >
-> >Bahh, right you are. I didn't look at the trace carefully. It is
-> >free_more_memory which calls the direct reclaim shrinking.
-> >
-> >Sorry about the confusion
+On Tue, Sep 17, 2013 at 03:43:54PM -0700, Mark Fasheh wrote:
+> On Fri, Sep 13, 2013 at 03:33:34PM -0400, Chris Mason wrote:
+> > Mark, could you please send a patch for the whole-struct option until
+> > the unaligned put is upstreamed?
+> > 
+> > -chris
 > 
+> Here you go. It's been lightly tested and needs review.
 > 
-> Happens again and this time i got 5x this:
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 
-> :( it's probably looping very fast so i need to have some luck
+At the very least it does fix the build error on the affected platforms.
 
-Or it is looping in the userspace.
--- 
-Michal Hocko
-SUSE Labs
+Guenter
+
+> Thanks,
+> 	--Mark
+> 
+> --
+> Mark Fasheh
+> 
+> From: Mark Fasheh <mfasheh@suse.de>
+> 
+> [PATCH] btrfs: change extent-same to copy entire argument struct
+> 
+> btrfs_ioctl_file_extent_same() uses __put_user_unaligned() to copy some data
+> back to it's argument struct. Unfortunately, not all architectures provide
+> __put_user_unaligned(), so compiles break on them if btrfs is selected.
+> 
+> Instead, just copy the whole struct in / out at the start and end of
+> operations, respectively.
+> 
+> Signed-off-by: Mark Fasheh <mfasheh@suse.de>
+> ---
+>  fs/btrfs/ioctl.c | 76 +++++++++++++++++++++++++++++++++-----------------------
+>  1 file changed, 45 insertions(+), 31 deletions(-)
+> 
+> diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+> index 1a5b946..25d6920 100644
+> --- a/fs/btrfs/ioctl.c
+> +++ b/fs/btrfs/ioctl.c
+> @@ -2696,9 +2696,9 @@ out_unlock:
+>  static long btrfs_ioctl_file_extent_same(struct file *file,
+>  					 void __user *argp)
+>  {
+> -	struct btrfs_ioctl_same_args *args = argp;
+> -	struct btrfs_ioctl_same_args same;
+> -	struct btrfs_ioctl_same_extent_info info;
+> +	struct btrfs_ioctl_same_args tmp;
+> +	struct btrfs_ioctl_same_args *same;
+> +	struct btrfs_ioctl_same_extent_info *info;
+>  	struct inode *src = file->f_dentry->d_inode;
+>  	struct file *dst_file = NULL;
+>  	struct inode *dst;
+> @@ -2706,6 +2706,7 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
+>  	u64 len;
+>  	int i;
+>  	int ret;
+> +	unsigned long size;
+>  	u64 bs = BTRFS_I(src)->root->fs_info->sb->s_blocksize;
+>  	bool is_admin = capable(CAP_SYS_ADMIN);
+>  
+> @@ -2716,15 +2717,30 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
+>  	if (ret)
+>  		return ret;
+>  
+> -	if (copy_from_user(&same,
+> +	if (copy_from_user(&tmp,
+>  			   (struct btrfs_ioctl_same_args __user *)argp,
+> -			   sizeof(same))) {
+> +			   sizeof(tmp))) {
+>  		ret = -EFAULT;
+>  		goto out;
+>  	}
+>  
+> -	off = same.logical_offset;
+> -	len = same.length;
+> +	size = sizeof(tmp) +
+> +		tmp.dest_count * sizeof(struct btrfs_ioctl_same_extent_info);
+> +
+> +	same = kmalloc(size, GFP_NOFS);
+> +	if (!same) {
+> +		ret = -EFAULT;
+> +		goto out;
+> +	}
+> +
+> +	if (copy_from_user(same,
+> +			   (struct btrfs_ioctl_same_args __user *)argp, size)) {
+> +		ret = -EFAULT;
+> +		goto out;
+> +	}
+> +
+> +	off = same->logical_offset;
+> +	len = same->length;
+>  
+>  	/*
+>  	 * Limit the total length we will dedupe for each operation.
+> @@ -2752,27 +2768,28 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
+>  	if (!S_ISREG(src->i_mode))
+>  		goto out;
+>  
+> -	ret = 0;
+> -	for (i = 0; i < same.dest_count; i++) {
+> -		if (copy_from_user(&info, &args->info[i], sizeof(info))) {
+> -			ret = -EFAULT;
+> -			goto out;
+> -		}
+> +	/* pre-format output fields to sane values */
+> +	for (i = 0; i < same->dest_count; i++) {
+> +		same->info[i].bytes_deduped = 0ULL;
+> +		same->info[i].status = 0;
+> +	}
+>  
+> -		info.bytes_deduped = 0;
+> +	ret = 0;
+> +	for (i = 0; i < same->dest_count; i++) {
+> +		info = &same->info[i];
+>  
+> -		dst_file = fget(info.fd);
+> +		dst_file = fget(info->fd);
+>  		if (!dst_file) {
+> -			info.status = -EBADF;
+> +			info->status = -EBADF;
+>  			goto next;
+>  		}
+>  
+>  		if (!(is_admin || (dst_file->f_mode & FMODE_WRITE))) {
+> -			info.status = -EINVAL;
+> +			info->status = -EINVAL;
+>  			goto next;
+>  		}
+>  
+> -		info.status = -EXDEV;
+> +		info->status = -EXDEV;
+>  		if (file->f_path.mnt != dst_file->f_path.mnt)
+>  			goto next;
+>  
+> @@ -2781,32 +2798,29 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
+>  			goto next;
+>  
+>  		if (S_ISDIR(dst->i_mode)) {
+> -			info.status = -EISDIR;
+> +			info->status = -EISDIR;
+>  			goto next;
+>  		}
+>  
+>  		if (!S_ISREG(dst->i_mode)) {
+> -			info.status = -EACCES;
+> +			info->status = -EACCES;
+>  			goto next;
+>  		}
+>  
+> -		info.status = btrfs_extent_same(src, off, len, dst,
+> -						info.logical_offset);
+> -		if (info.status == 0)
+> -			info.bytes_deduped += len;
+> +		info->status = btrfs_extent_same(src, off, len, dst,
+> +						info->logical_offset);
+> +		if (info->status == 0)
+> +			info->bytes_deduped += len;
+>  
+>  next:
+>  		if (dst_file)
+>  			fput(dst_file);
+> -
+> -		if (__put_user_unaligned(info.status, &args->info[i].status) ||
+> -		    __put_user_unaligned(info.bytes_deduped,
+> -					 &args->info[i].bytes_deduped)) {
+> -			ret = -EFAULT;
+> -			goto out;
+> -		}                                                               
+>  	}
+>  
+> +	ret = copy_to_user(argp, same, size);
+> +	if (ret)
+> +		ret = -EFAULT;
+> +
+>  out:
+>  	mnt_drop_write_file(file);
+>  	return ret;
+> -- 
+> 1.8.1.4
+> 
+> 
