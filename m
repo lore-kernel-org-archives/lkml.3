@@ -1,100 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab3IRQsx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 12:48:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15832 "EHLO mx1.redhat.com"
+	id S1752617Ab3IRQuN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 12:50:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51617 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218Ab3IRQsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 12:48:51 -0400
-Date: Wed, 18 Sep 2013 18:50:45 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20130918165045.GB2353@dhcp-26-207.brq.redhat.com>
-References: <20130905185440.GA13175@dhcp-26-207.brq.redhat.com>
- <20130905200608.GA3846@htj.dyndns.org>
- <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
- <20130906160621.GF22763@mtj.dyndns.org>
- <20130906233205.GF12956@google.com>
- <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
- <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
- <20130917143022.GA7707@concordia>
- <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
- <20130918142231.GA21650@mtj.dyndns.org>
+	id S1751355Ab3IRQuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 12:50:11 -0400
+Date: Wed, 18 Sep 2013 11:48:17 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+CC: <balbi@ti.com>, Javier Martinez Canillas <martinez.javier@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, Tony Lindgren <tony@atomide.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <freemangordon@abv.bg>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 1/4] usb: musb: Call atomic_notifier_call_chain when
+ status is changed
+Message-ID: <20130918164816.GN21559@radagast>
+Reply-To: <balbi@ti.com>
+References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
+ <201309181756.12782@pali>
+ <20130918163649.GL21559@radagast>
+ <201309181843.49850@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8MZM6zh5Bb05FW+3"
 Content-Disposition: inline
-In-Reply-To: <20130918142231.GA21650@mtj.dyndns.org>
+In-Reply-To: <201309181843.49850@pali>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 09:22:31AM -0500, Tejun Heo wrote:
-> > > We have a small number of MSIs available, limited by hardware &
-> > > firmware, if we don't impose a quota then the first device that probes
-> > > will get most/all of the MSIs and other devices miss out.
-> > 
-> > Out of curiosity - how pSeries has had done it without quotas before
-> > 448e2ca ("powerpc/pseries: Implement a quota system for MSIs")?
-> 
-> Hmmm... do we need to treat this any differently?  If the platform
-> can't allocate full range of requested MSIs, just failing should be
-> enough regardless of why such allocation can't be met, no?
+--8MZM6zh5Bb05FW+3
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That depends from what "full range of requested MSIs" is. If that is
-a maximum number of MSIs the controller advertised, then no. As MSI
-design essentially allows devices to operate in lower-than-maximum
-modes it is responsibility of a caller to decide how many vectors to
-request. So in case of pSeries I think it is completely legitimate to
-request lessers to overcome the platform limitation and let all devices
-work.
+On Wed, Sep 18, 2013 at 06:43:49PM +0200, Pali Roh=E1r wrote:
+> On Wednesday 18 September 2013 18:36:49 Felipe Balbi wrote:
+> > On Wed, Sep 18, 2013 at 05:56:12PM +0200, Pali Roh=E1r wrote:
+> > > On Wednesday 18 September 2013 15:57:13 Javier Martinez
+> > > Canillas
+> > >=20
+> > > wrote:
+> > > > to split the patch in two since the patch was solving
+> > > > two separate issues
+> > >=20
+> > > My patch does not solving *two* issues. It is *one*
+> > > regression and both parts of patch are needed for fixing
+> > > it. Read commit message again. It does not make sense to
+> > > split patch fixing kernel regression into more one line
+> > > patches - or please clarify why.
+> >=20
+> > issue 1) twl4030-usb.c doesn't initialize atomic notifier head
+> > issue 2) musb doesn't call notifier chain
+> >=20
+> > do you need a drawing ?
+>=20
+> Regression 1) power supply drivers not working since v3.5
+>=20
+> Look at firsts emails.
+>=20
+>=20
+> Do you really have problem to do what *you* need with 1 line=20
+> patch which I sent? Or what what you want?
 
-> I really think what we should do is
-> 
-> * Determine the number of MSIs the controller wants.  Don't worry
->   about quotas or limits or anything.  Just determine the number
->   necessary to enable enhanced interrupt handling.
+if you had already resent patches the way I requested, they'd already be
+applied. Instead you chose to troll the people who are trying to helping
+out.
 
-Actually, I do not see much contradiction with what I proposed. The
-key words here "determine the number of MSIs the controller wants".
+You have two issues being fixed in the same patch and that's not
+acceptable.
 
-In general case it is not what pci_msix_table_size() returns (or at
-least we should not limit ourselves to it) - there could be non-
-standard means to report number of MSIs: hardcoded, version-dependant,
-device-specific registers etc.
+--=20
+balbi
 
-Next, if we opt to determine the number of MSIs by non-MSI standard
-means then there is no reason not to call pci_get_msix_limit() (or
-whatever) at this step.
+--8MZM6zh5Bb05FW+3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The question how I see it - do we want pci_get_msix_limit() interface
-as part of the MSI framework or do we want it pSeries-specific?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> * Try allocating that number of MSIs.  If it fails, then just revert
->   to single interrupt mode.  It's not the end of the world and mostly
->   guaranteed to work.  Let's please not even try to do partial
->   multiple interrupts.  I really don't think it's worth the risk or
->   complexity.
+iQIcBAEBAgAGBQJSOdlQAAoJEIaOsuA1yqREBoYP/jr6CZf3RUxBSdKk6C7PYJ1m
+p9dlSJNRmxSJnKePIZotLIXIHR3xz/Ut7omIv+9h2aUrKUQ571ljAR6IEmHG+KCz
+D1ZJSMEC8OU/1Mx8Xdr3RgGS2NqeEbv6WjmRHHRjg5y1XLuTpmMK0kNnhgLSvGfK
+WA/2CIeS1nSPpS2HRPW0RPOuSOaXWkq+ZIrCQDZezyLX+ev2k+b0vv0PvH6jhlVP
+hdPSQm8ZOxb1Q22mEtddLZYBVtEWoeJhCp/NludJjkHdYk2BIM7801p6Qy331BIG
+SodctAb/pGm+RfePzoygUVv4eenSRKPFEG8/xq3q+n2jTLMuJ4hq2tfMnppafxdh
+lGxbfAoj6vuNhSO1vEeLzADVlneldBjQkIsnlOcSe7BtBECIZvQ2MkklhY7P6RzY
+RsBFQy+EvlfVgUajQm6Asiz5jkC+u3eZE3uKv8oMdWz0ugrTTeDijwH9Bze4zJ0s
+h/CdtF5GfTKMp3aozbXxc5Kxvtq9oq9Hfe7V9IXrJnUTmpfU2Vcqhl1E0ekhc9e/
+1sVePt+7wr5cHcXCrZkexJhnqIUZaAgASTPNXupCBk9FXisoEaME6jnHYSBSukMJ
+9c3QMhaCnXkOja10ktPaRs87xEktwVfNDOkv3TYCcrxFlEgxbvKYIRO1FjY6NVYg
+lcUHY5ZohMxuOB2C3NEZ
+=xsEM
+-----END PGP SIGNATURE-----
 
-Being Captain Obvious here, but it is up to the device driver to handle
-a failure. There could be no such option as single MSI mode after all :)
-
-> Thanks.
-> 
-> -- 
-> tejun
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+--8MZM6zh5Bb05FW+3--
