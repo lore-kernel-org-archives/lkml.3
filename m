@@ -1,212 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab3IRIU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 04:20:26 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:44392 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab3IRIUT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 04:20:19 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: balbi@ti.com, Tony Lindgren <tony@atomide.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
-Subject: Re: [PATCH 1/4] usb: musb: Call atomic_notifier_call_chain when status is changed
-Date: Wed, 18 Sep 2013 10:20:14 +0200
-User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com> <201309172128.42514@pali> <20130918014942.GD19817@radagast>
-In-Reply-To: <20130918014942.GD19817@radagast>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart17918567.OB607qoQaA";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1752029Ab3IRIV5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 04:21:57 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58749 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751676Ab3IRIVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 04:21:52 -0400
+Message-ID: <1379492496.6148.35.camel@pasglop>
+Subject: Re: "memory" binding issues
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        m.szyprowski@samsung.com, swarren@nvidia.com, rob.herring@calxeda.com
+Date: Wed, 18 Sep 2013 18:21:36 +1000
+In-Reply-To: <20130918025714.A69D8C42C8F@trevor.secretlab.ca>
+References: <1379300274.4098.77.camel@pasglop>
+	 <20130918025714.A69D8C42C8F@trevor.secretlab.ca>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201309181020.15245@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart17918567.OB607qoQaA
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2013-09-17 at 21:57 -0500, Grant Likely wrote:
 
-On Wednesday 18 September 2013 03:49:42 Felipe Balbi wrote:
-> On Tue, Sep 17, 2013 at 09:28:42PM +0200, Pali Roh=C3=A1r wrote:
-> > On Tuesday 17 September 2013 18:08:35 Felipe Balbi wrote:
-> > > On Tue, Sep 17, 2013 at 06:05:15PM +0200, Pali Roh=C3=A1r wrote:
-> > > > On Tuesday 17 September 2013 17:48:59 you wrote:
-> > > > > On Sun, Sep 08, 2013 at 10:50:36AM +0200, Pali Roh=C3=A1r wrote:
-> > > > > > More power supply drivers depends on vbus events and
-> > > > > > without it they not working. Power supply drivers
-> > > > > > using usb_register_notifier, so to deliver events
-> > > > > > it is needed to call atomic_notifier_call_chain.
-> > > > > >=20
-> > > > > > So without atomic notifier power supply driver
-> > > > > > isp1704 not retrieving vbus status and reporting
-> > > > > > bogus values to userspace and also to board
-> > > > > > platform data functions. Without proper data
-> > > > > > charger drivers trying to charge battery also when
-> > > > > > charger is disconnected or do not start charging
-> > > > > > when wallcharger connects.
-> > > > > >=20
-> > > > > > Atomic notifier in musb driver was used before v3.5
-> > > > > > and was replaced with omap mailbox. This patch
-> > > > > > adding atomic_notifier_call_chain call from
-> > > > > > function omap_musb_set_mailbox.
-> > > > > >=20
-> > > > > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > > > > > ---
-> > > > > >=20
-> > > > > >  drivers/usb/musb/omap2430.c       |    3 +++
-> > > > > >  drivers/usb/phy/phy-twl4030-usb.c |    2 ++
-> > > > > >  2 files changed, 5 insertions(+)
-> > > > > >=20
-> > > > > > diff --git a/drivers/usb/musb/omap2430.c
-> > > > > > b/drivers/usb/musb/omap2430.c index f44e8b5..5c40252
-> > > > > > 100644 --- a/drivers/usb/musb/omap2430.c
-> > > > > > +++ b/drivers/usb/musb/omap2430.c
-> > > > > > @@ -305,6 +305,9 @@ static void
-> > > > > > omap_musb_set_mailbox(struct omap2430_glue *glue)
-> > > > > >=20
-> > > > > >  	default:
-> > > > > >  		dev_dbg(dev, "ID float\n");
-> > > > > >  =09
-> > > > > >  	}
-> > > > > >=20
-> > > > > > +
-> > > > > > +	atomic_notifier_call_chain(&musb->xceiv->notifier,
-> > > > > > +			musb->xceiv->last_event, NULL);
-> > > > >=20
-> > > > > let's add a wrapper for this:
-> > > > >=20
-> > > > > static inline int usb_phy_notify(struct usb phy *x,
-> > > > > unsigned val, void *v) {
-> > > > >=20
-> > > > > 	return atomic_notifier_call_chain(&x->notifier, val,
-> > > > > 	v);
-> > > > >=20
-> > > > > }
-> > > >=20
-> > > > Where to add this wrapper? To omap2430.c? or some
-> > > > include file?
-> > >=20
-> > > <linux/usb/phy.h>
-> > >=20
-> > > > On Tuesday 17 September 2013 17:49:17 Felipe Balbi wrote:
-> > > > > On Sun, Sep 08, 2013 at 10:50:36AM +0200, Pali Roh=C3=A1r wrote:
-> > > > > > diff --git a/drivers/usb/phy/phy-twl4030-usb.c
-> > > > > > b/drivers/usb/phy/phy-twl4030-usb.c index
-> > > > > > 8f78d2d..efe6155 100644
-> > > > > > --- a/drivers/usb/phy/phy-twl4030-usb.c
-> > > > > > +++ b/drivers/usb/phy/phy-twl4030-usb.c
-> > > > > > @@ -705,6 +705,8 @@ static int
-> > > > > > twl4030_usb_probe(struct platform_device *pdev)
-> > > > > >=20
-> > > > > >  	if (device_create_file(&pdev->dev,
-> > > > > >  	&dev_attr_vbus))
-> > > > > >  =09
-> > > > > >  		dev_warn(&pdev->dev, "could not create sysfs
-> > > > > >  		file\n");
-> > > > > >=20
-> > > > > > +	ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
-> > > > >=20
-> > > > > BTW, this is a bugfix, send separately.
-> > > >=20
-> > > > What to send separately?
-> > > >=20
-> > > > This full patch 1/4 is bugfix. And I did not understand
-> > > > what you want. Maybe it could be easier for you to
-> > > > apply this small 3+2 lines patch how you need.
-> > >=20
-> > > This hunk here (initializaing notifier head) is a separate
-> > > bug fix and needs its own patch.
-> >=20
-> > So will you do that? Or it is needed to resend this one line
-> > hunk again in new email again?
->=20
-> new patch, new email
+> >  - It provides no indication of what a given region is used for (or used
+> > by). In the example, "display_region" is a label (thus information that
+> > is lost) and unless it's referenced by another node there is no good way
+> > to know what this region is about which is quite annoying.
+> 
+> Does this actually matter? In most cases the regions are completely
+> anonymous until referenced by a specific device and by default the
+> kernel should not use until it knows what the region is for.
 
-Guys, WHY ARE YOU SO STUPID AND ARROGANT?
+First it's handy for the developer to know for
+debug/diagnostic/you-name-it purposes. You don't always know what the
+heck the firmware is doing and there are some cases where such regions
+exist independently of any specific device.
 
-Sorry but, need to copy full isolated patch/hunk from one mail to
-another is hassling. So what you want from me? Do all those non
-sense working only because yesterday you had bad day? Or what?
+The ability of the node of the driver to have a phandle pointing to a is
+indeed a nice feature and that's a good point in favor of making them
+nodes. But I would be against *requiring* it.
 
-Everything needed with described information was in first mail.
-Also second hunk has full isolated "git diff" output, so it is for
-you really big problem to copy it? Or you did not see that patch?
+I might have some architecture code that knows that this region is for
+use by some internal DMA translation cache or god knows what without
+having a clear device node as the "owner" of the region, there are going
+to be a few special cases like that and we still want to be able to
+identify it.
 
-I really did not understand what you wanted from me.
+So I would definitely want them named. Guess what ? They are all
+children of /reserved-memory right ? So their individual name doesn't
+matter one bit, thus the node name can perfectly well serve that
+purpose.
 
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D
-=3D=3D=3D=3D BEGINNING OF PATCH =3D=3D=3D=3D
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D
+> We can however add properties to give the kernel hints on the usage. For
+> instance, if a regions isn't in use at boot time, then it would be fine
+> for the kernel to use it for movable pages up until the time a device
+> asks for the region (ie. CMA regions can be used this way).
 
-This is bugfix and sending this patch separately from all other patches.
-This patch is visibly isolated from all others and could be readable also
-by disabled people. For other handicapped people I suggest to increase
-font size and other text settings in program which view this patch.
-=46or visually impaired people I suggest to use some text-to-speech softwar=
-e.
+Let's not get into something overly Linux-centric though...
 
-This is small 2 lines patch, diff starting after next visible break.
+> >  - The "memory-region" property is a phandle to a "reserved-memory"
+> > region, this is not intuitive. If anything, the property should have
+> > been called "reserved-memory-region".
+> 
+> Sure. I don't see the problem, but I have no problem changing it if you
+> feel strongly about it.
 
-This patch initializing notifier head in tw4030 usb code which is missing.
-Initialization code is needed for using any atomic_notifier_* functions.
+Well it all boils down to whether we turn that whole thing into a way to
+describe arbitrary memory regions (and not just reserved ones), for
+example, CMA stuff as mentioned above doesn't strictly need to be
+reserved, in which case, we would call the whole thing /memory-regions
+and the property could be named the same. In that case we do want a
+specific property however in each region node to indicate whether it
+should be strictly reserved or not.
 
-Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+But I would argue against that unless we have a very clear use case,
+because it's starting to smell a lot like trying to solve world hunger
+with over engineering :-)
+ 
+> >  - The way the "compatible" property is documented breaks a basic
+> > premise that the device-tree is a hardware description and not some
+> > convenient way to pass linux specific kernel parameters accross. It is
+> > *ok* to pass some linux specific stuff and to make compromise based on
+> > what a driver generally might expect but the whole business of using
+> > that to describe what to put in CMA is pushing it pretty far ...
+> 
+> I disagree. Originally I had the same reaction, but I've been swayed to
+> the point of view that setting aside regions is actually a pretty
+> hardware-centric thing because it describes how the hardware needs to be
+> used.
 
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D
-=3D=3D=3D=3D BEGINNING OF DIFF =3D=3D=3D=3D
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D
+I would still not use the "compatible" property for that. Maybe
+recommended-usage ? Or simply "usage" property with well defined
+semantics ? "reserved" would be one, "consistent-memory" would be
+another (not strictly reserved but thrown into the CMA pool at first
+notice) etc... ?
 
-diff --git a/drivers/usb/phy/phy-twl4030-usb.c b/drivers/usb/phy/phy-twl403=
-0-usb.c
-index 8f78d2d..efe6155 100644
-=2D-- a/drivers/usb/phy/phy-twl4030-usb.c
-+++ b/drivers/usb/phy/phy-twl4030-usb.c
-@@ -705,6 +705,8 @@ static int twl4030_usb_probe(struct platform_device *pd=
-ev)
- 	if (device_create_file(&pdev->dev, &dev_attr_vbus))
- 		dev_warn(&pdev->dev, "could not create sysfs file\n");
-=20
-+	ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
-+
- 	/* Our job is to use irqs and status from the power module
- 	 * to keep the transceiver disabled when nothing's connected.
- 	 *
+>  I've already used the example of a framebuffer. It may not stricly
+> be hardware, but it is a description of how the hardware is setup that
+> the kernel should respect. Similarly, the size and placement of CMA
+> regions are more than merely a software parameter because they are
+> defined specifically to support the hardware devices.
 
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-=3D=3D=3D=3D END OF PATCH =3D=3D=3D=3D
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+Right and the advantage of using a node with a "reg" property here is
+that a region can actually be made of separate ranges.
 
-PS: This is end of email and patch is above ^^^^
+> >  - The implementation of early_init_dt_scan_reserved_mem() will not work
+> > on a setup whose /memory node has a unit address (typically /memory@0)
+> 
+> Agreed, that should be fixed. It should work regardless of whether or
+> not the memory node(s) have a unit address.
+> 
+> > Now, I'd like to understand why not use the simpler binding originally
+> > proposed by Jeremy, which had the advantage of proposing a unique name
+> > per region in the traditional form "vendor,name", which then allows
+> > drivers to pick up the region directly if they wish to query, remove or
+> > update it in the tree for example (because they changed the framebuffer
+> > address for example and want kexec to continue working).
+> 
+> Hmmm... I don't follow. How is query/remove/update any more or less
+> difficult between the two approaches? Updating the reg property should
+> be doable in-place with both methods, but finding a specific region
+> associated with a device is explicit in the nodes-and-phandles approach.
+> (unless the 'name' part of vendor,name is an instance name and the
+> device node has a property containing the name; ie "acme,framebuffer1",
+> "acme,framebuffer2", and then in the device node something like:
+> framebuffer-region = "acme,framebuffer2";)
+> 
+> > I don't object to having a node per region, though it seemed unnecessary
+> > at the time, but in any case, the current binding is crap and need to be
+> > fixed urgently before its use spreads.
+> 
+> It seems to me that the 'top-level' objection is the creation of a new
+> binding using a node per region. I think it is warrented. If you
+> disagree strongly then we'll revert the whole series and try again for
+> v3.13. Otherwise I think the other objections are fixable in this cycle.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+No. I don't fundamentally object to using a node per region, it does
+have some advantages indeed as I have mentioned in a few places.
 
---nextPart17918567.OB607qoQaA
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+My main issues are:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ - Documentation of the "memory" binding. This is a separate thing that
+shouldn't have been there and should not document the node without the
+unit address (it's ok to specify I suppose that it can be ommitted
+though I don't like it).
 
-iEYEABECAAYFAlI5Yj8ACgkQi/DJPQPkQ1KizwCguHYQSYcRpZG3a85BR/wH0G7k
-52QAn0BsfDgpnUwa3WaorrYtzfD1JkFg
-=A+Mk
------END PGP SIGNATURE-----
+ - Location. I don't want that under /memory. I have to deal with
+machines with multiple /memory nodes and regions potentially straddling
+them.
 
---nextPart17918567.OB607qoQaA--
+ - The choice of properties for describing, naming and defining their
+usage. I think we can come to an agreement here.
+
+In fact the use of a node per region is the *least* of my worries :-)
+
+Cheers,
+Ben.
+
+
+> g.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
