@@ -1,71 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab3IRUGV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 16:06:21 -0400
-Received: from smtpauth05h.mfg.siteprotect.com ([64.26.60.146]:38780 "EHLO
-	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751675Ab3IRUGU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 16:06:20 -0400
-Date: Wed, 18 Sep 2013 16:07:52 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Peter Zijlstra <peterz@infradead.org>
-cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org, eranian@googlemail.com
-Subject: Re: [tip:perf/core] perf: Fix broken union in ' struct
- perf_event_mmap_page'
-In-Reply-To: <20130918154224.GK9326@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.02.1309181556370.26402@pianoman.cluster.toy>
-References: <1372425741-1676-2-git-send-email-adrian.hunter@intel.com> <tip-860f085b74e9f0075de8140ed3a1e5b5e3e39aa8@git.kernel.org> <alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy> <20130918085722.GL12926@twins.programming.kicks-ass.net>
- <alpine.DEB.2.02.1309181013100.23210@pianoman.cluster.toy> <20130918154224.GK9326@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753574Ab3IRUGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 16:06:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57928 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751767Ab3IRUGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 16:06:34 -0400
+Message-ID: <523A0757.3050309@ti.com>
+Date: Wed, 18 Sep 2013 16:04:39 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020201.523A07BB.0172,ss=1,re=0.000,fgs=0
+To: Joe Perches <joe@perches.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>, <wni@nvidia.com>,
+        <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 02/16] drivers: thermal: introduce device tree parser
+References: <5239F6D8.1020907@ti.com>  <1379530923-29268-1-git-send-email-eduardo.valentin@ti.com>  <1379531483.1787.55.camel@joe-AO722> <523A0290.8050502@ti.com> <1379534377.1787.59.camel@joe-AO722>
+In-Reply-To: <1379534377.1787.59.camel@joe-AO722>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="aUHUqJqa3wsmMclmn1uuxnMCAIDgD6bk8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Sep 2013, Peter Zijlstra wrote:
+--aUHUqJqa3wsmMclmn1uuxnMCAIDgD6bk8
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, Sep 18, 2013 at 10:19:32AM -0400, Vince Weaver wrote:
-> > Can you point to any code that is fixed by the commit?
-> 
-> I have some, but I don't think a lot of people use it.
-> 
-> Would you be ok with something like the below? It should preserve
-> functionality for code that only cares about cap_usr_rdpmc (PAPI).
-> 
-> Stephane, does libpfm use any of these?
-> 
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -380,8 +380,8 @@ struct perf_event_mmap_page {
->  	union {
->  		__u64	capabilities;
->  		struct {
-> -			__u64	cap_usr_time		: 1,
-> -				cap_usr_rdpmc		: 1,
-> +			__u64	cap_usr_rdpmc		: 1,
-> +				cap_usr_time		: 1,
->  				cap_usr_time_zero	: 1,
->  				cap_____res		: 61;
->  		};
-> 
+On 18-09-2013 15:59, Joe Perches wrote:
+> On Wed, 2013-09-18 at 15:44 -0400, Eduardo Valentin wrote:
+>> Hello Joe,
+>=20
+> Hello Eduardo.
+>=20
+>>  18-09-2013 15:11, Joe Perches wrote:
+>>> On Wed, 2013-09-18 at 15:02 -0400, Eduardo Valentin wrote:
+>>>> This patch introduces a device tree bindings for
+>>>> describing the hardware thermal behavior and limits.
+>>>> Also a parser to read and interpret the data and feed
+>>>> it in the thermal framework is presented.
+>>>
+>>> trivial notes:
+> []
+>>> If readings are within some non zero noise level,
+>>> perhaps stable should be returned.
+>>
+>> Yes, there should be some sort of threshold for temperature trend. But=
+ I
+>> am not sure this is the right place to implement this. This type of
+>> feature is in my TODO list, but I am planing to get it done within the=
 
-It would be nice if there was some way to detect this change; I liked the 
-idea of a "cap_usr_fixed" bit.
+>> core code of the thermal framework.
+>=20
+> No worries, one day...  Just wanted to bring it to attention.
 
-Even with your change you can't have code that can reliably detect both 
-cap_usr_time and cap_usr_rdpmc unless you can guarantee that both 
-perf_event.h and the kernel are 3.12 or newer, and it gets more 
-complicated if distros backport this patch.
+Thanks, no worries, I should be working on it at some point in near
+future. It does not hurt to add a TODO mark above this code though.
 
-Tools like PAPI often carry around their own copy of perf_event.h and 
-people like to move around binaries between machines with different kernel 
-versions so things get complicated quickly.
+>=20
+>>>> +static struct __thermal_zone *
+>>>> +thermal_of_build_thermal_zone(struct device_node *np)
+>>>> +{
+> []
+>>>> +	tz =3D kzalloc(sizeof(*tz), GFP_KERNEL);
+>>>> +	if (!tz) {
+>>>> +		pr_err("not enough memory for thermal of zone\n");
+>>>
+>>> Unnecessary OOM message.
+>>> All allocs without GFP_NOWARN get a dump_stack()
+>=20
+> []
+>=20
+>> Hmmm.. I am pretty sure you have a good point. But to me seams to be
+>> still a common practice to have drivers outputing error messages when
+>> allocation fails. A simple git grep -A 4 kzalloc for instance, shows
+>> that there are still quite a considerable amount of occurrences of suc=
+h
+>> practice.
+>=20
+> True though a considerable number have been removed.
+> I think these should all be deleted eventually and
+> there's no good reason to add more.
 
-Vince
+
+I see.  I will repost with your suggestion. Thanks.
+
+>=20
+>=20
+>=20
+>=20
+
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+--aUHUqJqa3wsmMclmn1uuxnMCAIDgD6bk8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlI6B1cACgkQCXcVR3XQvP1LtAD/dq6y3m7A8RG/Thj6Q6YYKAUp
+JUBf+LUjzbggBpG5usMBANlePSOdQFa0W6IjiQUm3MnUxLjNVu9wIzdoWSkwGY/3
+=MqAX
+-----END PGP SIGNATURE-----
+
+--aUHUqJqa3wsmMclmn1uuxnMCAIDgD6bk8--
