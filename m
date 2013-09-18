@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751675Ab3IREEz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 00:04:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35274 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751586Ab3IREEy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 00:04:54 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [TRIVIAL] treewide: fix "usefull" typo
-Date: Wed, 18 Sep 2013 06:04:48 +0200
-Message-Id: <1379477088-5283-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751646Ab3IREKP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 00:10:15 -0400
+Received: from ozlabs.org ([203.10.76.45]:42069 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751256Ab3IREKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 00:10:13 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Andreas Robinson <andr345@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhao Hongjiang <zhaohongjiang@huawei.com>,
+        David Miller <davem@davemloft.net>, tim.c.chen@linux.intel.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        linux-crypto@vger.kernel.org,
+        linux-modules <linux-modules@vger.kernel.org>,
+        Tom Gundersen <teg@jklm.no>
+Subject: Re: [PATCH] modules: add support for soft module dependencies
+In-Reply-To: <CAKi4VALAu0ek6tYhb_Ls34hNU1Omjhv=QJDaACAp_0gpRy98HA@mail.gmail.com>
+References: <20130724071757.GA30970@gondor.apana.org.au> <87siz38q2t.fsf@rustcorp.com.au> <20130725020329.GA14625@gondor.apana.org.au> <CAKi4VA+=1vOOt0BqdQHQaeF1hP3DrRtCL_ObXY0cPeO7S_MtYw@mail.gmail.com> <87ob7x37p6.fsf@rustcorp.com.au> <CAKi4VALAu0ek6tYhb_Ls34hNU1Omjhv=QJDaACAp_0gpRy98HA@mail.gmail.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Wed, 18 Sep 2013 11:40:51 +0930
+Message-ID: <878uyuzxp0.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/base/dma-contiguous.c        | 2 +-
- drivers/net/wireless/ath/ath5k/dma.c | 2 +-
- sound/soc/codecs/alc5632.c           | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+Lucas De Marchi <lucas.de.marchi@gmail.com> writes:
+> On Thu, Sep 12, 2013 at 9:07 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> Lucas De Marchi <lucas.de.marchi@gmail.com> writes:
+>>> On Wed, Jul 24, 2013 at 11:03 PM, Herbert Xu
+>>> <herbert@gondor.apana.org.au> wrote:
+>>>> On Thu, Jul 25, 2013 at 09:32:02AM +0930, Rusty Russell wrote:
+>>>>> Herbert Xu <herbert@gondor.apana.org.au> writes:
+>>>>> > Hi Rusty:
+>>>>> >
+>>>>> > I don't know why this patch never went into the kernel, even
+>>>>> > though the corresponding features have been added to modprobe
+>>>>> > in most if not all distros.
+>>>>>
+>>>>> Because Andreas never sent me the patch?  This is the first I've *heard*
+>>>>> of this feature.  Looks like it didn't hit lkml either.  And what was
+>>>>> 2/2?
+>>>>
+>>>> 2/2 was the patch to actually use this in crc32c.
+>>>>
+>>>>> It's not how I would have done this: post-deps are more flexibly done at
+>>>>> runtime, because the module may have to do work to figure out what to
+>>>>> pull in.  But since it already exists, I'll apply this patch: it doesn't
+>>>>> cost the kernel anything.
+>>>
+>>> But it did cause boot failures. The file modules.softdep file was
+>>> supposed to be informational until now. That's why depmod put a
+>>> comment saying to "copy on user's discretion to /etc/modules.d"
+>>> instead of parsing it directly.
+>>
+>> I'm happy to change this macro to create a modinfo line like
+>> "softdep:<modname>"
+>
+> how is that solving the issue that this macro can be used to designate
+> a mandatory or optional dependency
+> (https://lkml.org/lkml/2013/9/10/371)? If we decide the dependency is
+> mandatory we can very well let modprobe use that dependency during
+> module load
 
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index 99802d6f..165c2c2 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -49,7 +49,7 @@ struct cma *dma_contiguous_default_area;
- 
- /*
-  * Default global CMA area size can be defined in kernel's .config.
-- * This is usefull mainly for distro maintainers to create a kernel
-+ * This is useful mainly for distro maintainers to create a kernel
-  * that works correctly for most supported systems.
-  * The size can be set in bytes or as a percentage of the total memory
-  * in the system.
-diff --git a/drivers/net/wireless/ath/ath5k/dma.c b/drivers/net/wireless/ath/ath5k/dma.c
-index ce86f15..ba200b2 100644
---- a/drivers/net/wireless/ath/ath5k/dma.c
-+++ b/drivers/net/wireless/ath/ath5k/dma.c
-@@ -661,7 +661,7 @@ ath5k_hw_get_isr(struct ath5k_hw *ah, enum ath5k_int *interrupt_mask)
- 			ah->ah_txq_isr_txok_all |= AR5K_REG_MS(sisr1,
- 						AR5K_SISR1_QCU_TXEOL);
- 
--		/* Currently this is not much usefull since we treat
-+		/* Currently this is not much useful since we treat
- 		 * all queues the same way if we get a TXURN (update
- 		 * tx trigger level) but we might need it later on*/
- 		if (pisr & AR5K_ISR_TXURN)
-diff --git a/sound/soc/codecs/alc5632.c b/sound/soc/codecs/alc5632.c
-index f2e62e4..19e9f22 100644
---- a/sound/soc/codecs/alc5632.c
-+++ b/sound/soc/codecs/alc5632.c
-@@ -614,7 +614,7 @@ struct _pll_div {
- };
- 
- /* Note : pll code from original alc5632 driver. Not sure of how good it is */
--/* usefull only for master mode */
-+/* useful only for master mode */
- static const struct _pll_div codec_master_pll_div[] = {
- 
- 	{  2048000,  8192000,	0x0ea0},
--- 
-1.8.1.2
+I'm very close to sending Linus a revert commit at this point, since
+there's no consensus on what it's for.
 
+*Clearly* softdep shouldn't indicate a mandatory dependency.  We already
+have a way (several) to make mandatory dependencies!
+
+And the "pre:" vs "post:" thing is just weird.  If a module wants a post
+dependency, you can request_module() it from a workqueue.
+
+>> ie. tools like mkinitrd could pick it up and try to find a matching
+>> module, but depmod would ignore it.
+>
+> Some mkinitrd-like use whatever depmod/modprobe tells them it's
+> needed. So kmod still needs to know about it.
+
+It sounds like we should create a separate tool, which takes a list of
+modules and spits out the full pathname of all dependencies.  *That*
+tool should include soft dependencies.
+
+>> It's really up to Lucas, since this affects him.
+>
+> IMO  saying "this is an optional dependency and we can work without"
+> doesn't buy us much. Distros will end up putting the soft dep in
+> /etc/modules.d, kmod will always use them anyway and failing to load
+> the soft dep will fail the module load. I'd like to have no distro
+> files in /etc/modules.d in future.
+
+I assumed modprobe would handle soft dependencies in modules and try to
+pull them in, but *not* fail if they don't work.
+
+The previous way of doing this was:
+        install foo modprobe foo_softdep 2>/dev/null; modprobe --ignore-install foo $CMDLINE_OPTS
+
+I agree this logic belongs in the kernel, we just have to figure out
+exactly how.
+
+Cheers,
+Rusty.
