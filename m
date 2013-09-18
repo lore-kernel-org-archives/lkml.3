@@ -1,188 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab3IRMDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 08:03:54 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:54808 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab3IRMDw (ORCPT
+	id S1752341Ab3IRMLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 08:11:35 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:62583 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab3IRMLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 08:03:52 -0400
-Date: Wed, 18 Sep 2013 13:03:40 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
-        stephen.gallimore@st.com, stuart.menefy@st.com,
-        gabriel.fernandez@st.com, olivier.clergeaud@st.com
-Subject: Re: [PATCH 2/4] ARM: STi: Supply I2C configuration to STiH416 SoC
-Message-ID: <20130918120340.GF16984@lee--X1>
-References: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com>
- <1379498483-4236-3-git-send-email-maxime.coquelin@st.com>
+	Wed, 18 Sep 2013 08:11:33 -0400
+Date: Wed, 18 Sep 2013 14:12:04 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] vfs: introduce d_instantiate_no_diralias()
+Message-ID: <20130918121204.GC31733@tucsk.piliscsaba.szeredi.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1379498483-4236-3-git-send-email-maxime.coquelin@st.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch supplies I2C configuration to STiH416 SoC.
-> 
-> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
-> ---
->  arch/arm/boot/dts/stih416-pinctrl.dtsi |   35 ++++++++++++++++++++
->  arch/arm/boot/dts/stih416.dtsi         |   57 ++++++++++++++++++++++++++++++++
->  2 files changed, 92 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+Al,
 
-I genuinely don't know the answer to this question, but are these
-nodes identical to the ones you've just put in the stih415 DTSI file?
-If so, I think it will be worth creating a stih41x DTSI rather than
-duplicating lots of stuff unnecessarily.
+This is for next (3.13), could you please ack it or take it through your tree?
 
-> index 0f246c9..b29ff4b 100644
-> --- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
-> +++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-> @@ -97,6 +97,24 @@
->  					};
->  				};
->  			};
-> +
-> +			sbc_i2c0 {
-> +				pinctrl_sbc_i2c0_default: sbc_i2c0-default {
-> +					st,pins {
-> +						sda = <&PIO4 6 ALT1 BIDIR>;
-> +						scl = <&PIO4 5 ALT1 BIDIR>;
-> +					};
-> +				};
-> +			};
-> +
-> +			sbc_i2c1 {
-> +				pinctrl_sbc_i2c1_default: sbc_i2c1-default {
-> +					st,pins {
-> +						sda = <&PIO3 2 ALT2 BIDIR>;
-> +						scl = <&PIO3 1 ALT2 BIDIR>;
-> +					};
-> +				};
-> +			};
->  		};
->  
->  		pin-controller-front {
-> @@ -175,6 +193,23 @@
->  				};
->  			};
->  
-> +			i2c0 {
-> +				pinctrl_i2c0_default: i2c0-default {
-> +					st,pins {
-> +						sda = <&PIO9 3 ALT1 BIDIR>;
-> +						scl = <&PIO9 2 ALT1 BIDIR>;
-> +					};
-> +				};
-> +			};
-> +
-> +			i2c1 {
-> +				pinctrl_i2c1_default: i2c1-default {
-> +					st,pins {
-> +						sda = <&PIO12 1 ALT1 BIDIR>;
-> +						scl = <&PIO12 0 ALT1 BIDIR>;
-> +					};
-> +				};
-> +			};
->  		};
->  
->  		pin-controller-rear {
-> diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-> index 1a0326e..8856470 100644
-> --- a/arch/arm/boot/dts/stih416.dtsi
-> +++ b/arch/arm/boot/dts/stih416.dtsi
-> @@ -9,6 +9,7 @@
->  #include "stih41x.dtsi"
->  #include "stih416-clock.dtsi"
->  #include "stih416-pinctrl.dtsi"
-> +#include <dt-bindings/interrupt-controller/arm-gic.h>
->  / {
->  	L2: cache-controller {
->  		compatible = "arm,pl310-cache";
-> @@ -92,5 +93,61 @@
->  			pinctrl-0 	= <&pinctrl_sbc_serial1>;
->  			clocks          = <&CLK_SYSIN>;
->  		};
-> +
-> +		i2c0: i2c@fed40000{
+Thanks,
+Miklos
 
-Same issues here. I assume most of this is copy paste.
+----
+Subject: vfs: introduce d_instantiate_no_diralias()
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-> +			compatible	= "st,comms-i2c";
-> +			status		= "disabled";
-> +			reg		= <0xfed40000 0x110>;
-> +			interrupts	=  <GIC_SPI 187 IRQ_TYPE_EDGE_RISING>;
-> +			clocks		= <&CLK_S_ICN_REG_0>;
-> +			clock-frequency = <400000>;
-> +			pinctrl-names	= "default";
-> +			pinctrl-0	= <&pinctrl_i2c0_default>;
-> +			st,glitches;
-> +			st,glitch-clk	= <500>;
-> +			st,glitch-dat	= <500>;
-> +		};
-> +
-> +		i2c1: i2c@fed41000{
-> +			compatible	= "st,comms-i2c";
-> +			status		= "disabled";
-> +			reg		= <0xfed41000 0x110>;
-> +			interrupts	=  <GIC_SPI 188 IRQ_TYPE_EDGE_RISING>;
-> +			clocks		= <&CLK_S_ICN_REG_0>;
-> +			clock-frequency = <400000>;
-> +			pinctrl-names	= "default";
-> +			pinctrl-0	= <&pinctrl_i2c1_default>;
-> +			st,glitches;
-> +			st,glitch-clk	= <500>;
-> +			st,glitch-dat	= <500>;
-> +		};
-> +
-> +		sbc_i2c0: i2c@fe540000{
-> +			compatible	= "st,comms-i2c";
-> +			status		= "disabled";
-> +			reg		= <0xfe540000 0x110>;
-> +			interrupts	=  <GIC_SPI 206 IRQ_TYPE_EDGE_RISING>;
-> +			clocks		= <&CLK_SYSIN>;
-> +			clock-frequency = <400000>;
-> +			pinctrl-names	= "default";
-> +			pinctrl-0	= <&pinctrl_sbc_i2c0_default>;
-> +			st,glitches;
-> +			st,glitch-clk	= <500>;
-> +			st,glitch-dat	= <500>;
-> +		};
-> +
-> +		sbc_i2c1: i2c@fe541000{
-> +			compatible	= "st,comms-i2c";
-> +			status		= "disabled";
-> +			reg		= <0xfe541000 0x110>;
-> +			interrupts	=  <GIC_SPI 207 IRQ_TYPE_EDGE_RISING>;
-> +			clocks		= <&CLK_SYSIN>;
-> +			clock-frequency = <400000>;
-> +			pinctrl-names	= "default";
-> +			pinctrl-0	= <&pinctrl_sbc_i2c1_default>;
-> +			st,glitches;
-> +			st,glitch-clk	= <500>;
-> +			st,glitch-dat	= <500>;
-> +		};
->  	};
->  };
+...which just returns -EBUSY if a directory alias would be created.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+This is to be used by fuse mkdir to make sure that a buggy or malicious
+userspace filesystem doesn't do anything nasty.  Previously fuse used a
+private mutex for this purpose, which can now go away.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/dcache.c            |   26 ++++++++++++++++++++++++++
+ fs/fuse/dir.c          |   42 +++++++-----------------------------------
+ fs/fuse/fuse_i.h       |    3 ---
+ fs/fuse/inode.c        |    2 --
+ include/linux/dcache.h |    1 +
+ 5 files changed, 34 insertions(+), 40 deletions(-)
+
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1801,6 +1801,32 @@ struct dentry *d_instantiate_unique(stru
+ 
+ EXPORT_SYMBOL(d_instantiate_unique);
+ 
++/**
++ * d_instantiate_no_diralias - instantiate a non-aliased dentry
++ * @entry: dentry to complete
++ * @inode: inode to attach to this dentry
++ *
++ * Fill in inode information in the entry.  If a directory alias is found, then
++ * return an error.  Together with d_materialise_unique() this guarantees that a
++ * directory inode may never have more than one alias.
++ */
++int d_instantiate_no_diralias(struct dentry *entry, struct inode *inode)
++{
++	BUG_ON(!hlist_unhashed(&entry->d_alias));
++
++	spin_lock(&inode->i_lock);
++	if (S_ISDIR(inode->i_mode) && !hlist_empty(&inode->i_dentry)) {
++		spin_unlock(&inode->i_lock);
++		return -EBUSY;
++	}
++	__d_instantiate(entry, inode);
++	spin_unlock(&inode->i_lock);
++	security_d_instantiate(entry, inode);
++
++	return 0;
++}
++EXPORT_SYMBOL(d_instantiate_no_diralias);
++
+ struct dentry *d_make_root(struct inode *root_inode)
+ {
+ 	struct dentry *res = NULL;
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -337,24 +337,6 @@ int fuse_lookup_name(struct super_block
+ 	return err;
+ }
+ 
+-static struct dentry *fuse_materialise_dentry(struct dentry *dentry,
+-					      struct inode *inode)
+-{
+-	struct dentry *newent;
+-
+-	if (inode && S_ISDIR(inode->i_mode)) {
+-		struct fuse_conn *fc = get_fuse_conn(inode);
+-
+-		mutex_lock(&fc->inst_mutex);
+-		newent = d_materialise_unique(dentry, inode);
+-		mutex_unlock(&fc->inst_mutex);
+-	} else {
+-		newent = d_materialise_unique(dentry, inode);
+-	}
+-
+-	return newent;
+-}
+-
+ static struct dentry *fuse_lookup(struct inode *dir, struct dentry *entry,
+ 				  unsigned int flags)
+ {
+@@ -377,7 +359,7 @@ static struct dentry *fuse_lookup(struct
+ 	if (inode && get_node_id(inode) == FUSE_ROOT_ID)
+ 		goto out_iput;
+ 
+-	newent = fuse_materialise_dentry(entry, inode);
++	newent = d_materialise_unique(entry, inode);
+ 	err = PTR_ERR(newent);
+ 	if (IS_ERR(newent))
+ 		goto out_err;
+@@ -596,21 +578,11 @@ static int create_new_entry(struct fuse_
+ 	}
+ 	kfree(forget);
+ 
+-	if (S_ISDIR(inode->i_mode)) {
+-		struct dentry *alias;
+-		mutex_lock(&fc->inst_mutex);
+-		alias = d_find_alias(inode);
+-		if (alias) {
+-			/* New directory must have moved since mkdir */
+-			mutex_unlock(&fc->inst_mutex);
+-			dput(alias);
+-			iput(inode);
+-			return -EBUSY;
+-		}
+-		d_instantiate(entry, inode);
+-		mutex_unlock(&fc->inst_mutex);
+-	} else
+-		d_instantiate(entry, inode);
++	err = d_instantiate_no_diralias(entry, inode);
++	if (err) {
++		iput(inode);
++		return err;
++	}
+ 
+ 	fuse_change_entry_timeout(entry, &outarg);
+ 	fuse_invalidate_attr(dir);
+@@ -1280,7 +1252,7 @@ static int fuse_direntplus_link(struct f
+ 	if (!inode)
+ 		goto out;
+ 
+-	alias = fuse_materialise_dentry(dentry, inode);
++	alias = d_materialise_unique(dentry, inode);
+ 	err = PTR_ERR(alias);
+ 	if (IS_ERR(alias))
+ 		goto out;
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -372,9 +372,6 @@ struct fuse_conn {
+ 	/** Lock protecting accessess to  members of this structure */
+ 	spinlock_t lock;
+ 
+-	/** Mutex protecting against directory alias creation */
+-	struct mutex inst_mutex;
+-
+ 	/** Refcount */
+ 	atomic_t count;
+ 
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -565,7 +565,6 @@ void fuse_conn_init(struct fuse_conn *fc
+ {
+ 	memset(fc, 0, sizeof(*fc));
+ 	spin_lock_init(&fc->lock);
+-	mutex_init(&fc->inst_mutex);
+ 	init_rwsem(&fc->killsb);
+ 	atomic_set(&fc->count, 1);
+ 	init_waitqueue_head(&fc->waitq);
+@@ -596,7 +595,6 @@ void fuse_conn_put(struct fuse_conn *fc)
+ 	if (atomic_dec_and_test(&fc->count)) {
+ 		if (fc->destroy_req)
+ 			fuse_request_free(fc->destroy_req);
+-		mutex_destroy(&fc->inst_mutex);
+ 		fc->release(fc);
+ 	}
+ }
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -224,6 +224,7 @@ static inline int dname_external(const s
+ extern void d_instantiate(struct dentry *, struct inode *);
+ extern struct dentry * d_instantiate_unique(struct dentry *, struct inode *);
+ extern struct dentry * d_materialise_unique(struct dentry *, struct inode *);
++extern int d_instantiate_no_diralias(struct dentry *, struct inode *);
+ extern void __d_drop(struct dentry *dentry);
+ extern void d_drop(struct dentry *dentry);
+ extern void d_delete(struct dentry *);
