@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab3IRJsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 05:48:22 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:61847 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab3IRJsU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 05:48:20 -0400
-Subject: [PATCH] audit: fix endless wait in audit_log_start()
-To: linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Dan Duval <dan.duval@oracle.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Chuck Anderson <chuck.anderson@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 18 Sep 2013 13:48:17 +0400
-Message-ID: <20130918094817.18754.8847.stgit@zurg>
-In-Reply-To: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
-References: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org>
-User-Agent: StGit/0.15
+	id S1752134Ab3IRJsn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 05:48:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53363 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751731Ab3IRJsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 05:48:41 -0400
+Date: Wed, 18 Sep 2013 12:49:44 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alonid@stratoscale.com, mst@redhat.com, qinchuanyu@huawei.com
+Subject: [PULL] vhost: minor changes on top of 3.12-rc1
+Message-ID: <20130918094944.GA1053@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 829199197a430dade2519d54f5545c4a094393b8 audit emiters will block
-forever if userspace daemon cannot handle backlog. After the timeout waiting
-loop turns into busy loop and runs until daemon dies or returns back to work.
-This is minimal patch for that bug.
+The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: Richard Guy Briggs <rgb@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Chuck Anderson <chuck.anderson@oracle.com>
-Cc: Dan Duval <dan.duval@oracle.com>
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>
----
- kernel/audit.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+  Linux 3.12-rc1 (2013-09-16 16:17:51 -0400)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 91e53d0..7b0e23a 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1117,9 +1117,10 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 
- 			sleep_time = timeout_start + audit_backlog_wait_time -
- 					jiffies;
--			if ((long)sleep_time > 0)
-+			if ((long)sleep_time > 0) {
- 				wait_for_auditd(sleep_time);
--			continue;
-+				continue;
-+			}
- 		}
- 		if (audit_rate_check() && printk_ratelimit())
- 			printk(KERN_WARNING
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_linus
+
+for you to fetch changes up to d3d665a654a35c47463d2aa6353bac3ce293f4f5:
+
+  vhost-scsi: whitespace tweak (2013-09-17 22:56:09 +0300)
+
+----------------------------------------------------------------
+vhost: minor changes on top of 3.12-rc1
+
+This fixes module loading for vhost-scsi, and tweaks locking in vhost core
+a bit. Both of these are not exactly release blockers but it's early
+in the cycle so I think it's a good idea to apply them now.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+----------------------------------------------------------------
+Michael S. Tsirkin (2):
+      vhost/scsi: use vmalloc for order-10 allocation
+      vhost-scsi: whitespace tweak
+
+Qin Chuanyu (1):
+      vhost: wake up worker outside spin_lock
+
+ drivers/vhost/scsi.c  | 43 ++++++++++++++++++++++++++++---------------
+ drivers/vhost/vhost.c |  4 +++-
+ 2 files changed, 31 insertions(+), 16 deletions(-)
