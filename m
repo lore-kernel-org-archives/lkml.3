@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab3IRMO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 08:14:58 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:49193 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578Ab3IRMO4 (ORCPT
+	id S1753345Ab3IRMYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 08:24:25 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:61701 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752588Ab3IRMO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 08:14:56 -0400
+	Wed, 18 Sep 2013 08:14:58 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 06/41] ARM: ux500: Add PRCC Peripheral clock node to DBx500 Device Tree
-Date: Wed, 18 Sep 2013 13:14:03 +0100
-Message-Id: <1379506478-16625-7-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 08/41] ARM: ux500: Supply the USB clock lookup to the DBX500 DT
+Date: Wed, 18 Sep 2013 13:14:05 +0100
+Message-Id: <1379506478-16625-9-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379506478-16625-1-git-send-email-lee.jones@linaro.org>
 References: <1379506478-16625-1-git-send-email-lee.jones@linaro.org>
@@ -22,24 +22,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/dbx5x0.dtsi | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/boot/dts/dbx5x0.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index 0bb8ed7..8a80eb4 100644
+index 089b446..2c1051d 100644
 --- a/arch/arm/boot/dts/dbx5x0.dtsi
 +++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -49,6 +49,10 @@
- 			prcmu_clk: prcmu-clock {
- 				#clock-cells = <1>;
- 			};
+@@ -241,6 +241,8 @@
+ 				    "iep_6_14", "oep_6_14",
+ 				    "iep_7_15", "oep_7_15",
+ 				    "iep_8",    "oep_8";
 +
-+			prcc_pclk: prcc-periph-clock {
-+				#clock-cells = <2>;
-+			};
++			clocks = <&prcc_pclk 5 0>;
  		};
  
- 		timer@a0410600 {
+ 		dma: dma-controller@801C0000 {
 -- 
 1.8.1.2
 
