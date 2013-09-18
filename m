@@ -1,75 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab3IRPRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:17:33 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:62080 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab3IRPRc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:17:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAH2r5mvyZmjihgy4hqnbf+w9xgfMU_DOGLrnDL1CX3Z5PzkJkQ@mail.gmail.com>
-References: <12400.1379338480@warthog.procyon.org.uk>
-	<CAH2r5mvyZmjihgy4hqnbf+w9xgfMU_DOGLrnDL1CX3Z5PzkJkQ@mail.gmail.com>
-Date: Wed, 18 Sep 2013 10:17:31 -0500
-Message-ID: <CAH2r5msugEVeh6vzSkriHRcTZu2sxxRO63xc_pAVwU8AoD0ycw@mail.gmail.com>
-Subject: Re: [GIT PULL] CIFS FS-Cache bugfix
-From: Steve French <smfrench@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Jeff Layton <jlayton@redhat.com>, Sachin Prabhu <sprabhu@redhat.com>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        linux-cachefs@redhat.com, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752258Ab3IRPSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 11:18:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12848 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751958Ab3IRPSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 11:18:17 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
+        Eric Paris <eparis@redhat.com>
+Subject: [PATCH] audit: remove newline accidentally added during session id helper refactor
+Date: Wed, 18 Sep 2013 11:17:43 -0400
+Message-Id: <0c842120dc69b8dadc143ee70c29094e1f9d5110.1379517385.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merged into cifs-2.6.git
+A newline was accidentally added during session ID helper refactorization in
+commit 4d3fb709.  This needlessly uses up buffer space, messes up syslog
+formatting and makes userspace processing less efficient.  Remove it.
 
-On Mon, Sep 16, 2013 at 12:56 PM, Steve French <smfrench@gmail.com> wrote:
-> On Mon, Sep 16, 2013 at 8:34 AM, David Howells <dhowells@redhat.com> wrote:
->>
->> Hi Steve,
->>
->> Could you pull a CIFS bugfix from my fscache branch?
->>
->> David
->
-> Sounds fine.  May have to wait a day or so though due to pending merge
-> request (to upstream).
->
->> ---
->> The following changes since commit 5a6f282a2052bb13171b53f03b34501cf72c33f1:
->>
->>   fscache: Netfs function for cleanup post readpages (2013-09-06 09:17:30 +0100)
->>
->> are available in the git repository at:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git fscache
->>
->> for you to fetch changes up to 19ce0a7c9e94ae975e1c029b65b332cbf77b41ec:
->>
->>   CIFS: FS-Cache: Uncache unread pages in cifs_readpages() before freeing them (2013-09-06 09:17:30 +0100)
->>
->> ----------------------------------------------------------------
->> David Howells (1):
->>       CIFS: FS-Cache: Uncache unread pages in cifs_readpages() before freeing them
->>
->>  fs/cifs/file.c    |  8 ++++++++
->>  fs/cifs/fscache.c |  7 +++++++
->>  fs/cifs/fscache.h | 13 +++++++++++++
->>  3 files changed, 28 insertions(+)
->
->
->
-> --
-> Thanks,
->
-> Steve
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ kernel/audit.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 3d17670..ac16540 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1413,7 +1413,7 @@ void audit_log_session_info(struct audit_buffer *ab)
+ 	u32 sessionid = audit_get_sessionid(current);
+ 	uid_t auid = from_kuid(&init_user_ns, audit_get_loginuid(current));
+ 
+-	audit_log_format(ab, " auid=%u ses=%u\n", auid, sessionid);
++	audit_log_format(ab, " auid=%u ses=%u", auid, sessionid);
+ }
+ 
+ void audit_log_key(struct audit_buffer *ab, char *key)
 -- 
-Thanks,
+1.7.1
 
-Steve
