@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab3IRStP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 14:49:15 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:36192 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab3IRStK (ORCPT
+	id S1752973Ab3IRStR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:49:17 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:41181 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625Ab3IRStP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 14:49:10 -0400
+	Wed, 18 Sep 2013 14:49:15 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -22,9 +22,9 @@ To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v2 2/4] clocksource/arm_global_timer: Set FEAT_PERCPU flag
-Date: Wed, 18 Sep 2013 11:48:36 -0700
-Message-Id: <1379530118-22813-3-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 4/4] arm: zynq: Enable arm_global_timer
+Date: Wed, 18 Sep 2013 11:48:38 -0700
+Message-Id: <1379530118-22813-5-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -32,27 +32,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The arm_global_timer is a per cpu device. Set the appropriate flag.
+Zynq is based on an ARM Cortex-A9 MPCore, which features the
+arm_global_timer in its SCU. Therefore enable the timer for Zynq.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/arm_global_timer.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+v2:
+ - rename DT node: global_timer@... => timer@...
+ - add Daniel's ACK
+---
+ arch/arm/boot/dts/zynq-7000.dtsi | 8 ++++++++
+ arch/arm/mach-zynq/Kconfig       | 1 +
+ 2 files changed, 9 insertions(+)
 
-diff --git a/drivers/clocksource/arm_global_timer.c b/drivers/clocksource/arm_global_timer.c
-index b66c1f3..c639b1a 100644
---- a/drivers/clocksource/arm_global_timer.c
-+++ b/drivers/clocksource/arm_global_timer.c
-@@ -169,7 +169,8 @@ static int gt_clockevents_init(struct clock_event_device *clk)
- 	int cpu = smp_processor_id();
+diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+index e32b92b..e7f73b2 100644
+--- a/arch/arm/boot/dts/zynq-7000.dtsi
++++ b/arch/arm/boot/dts/zynq-7000.dtsi
+@@ -92,6 +92,14 @@
+ 			};
+ 		};
  
- 	clk->name = "arm_global_timer";
--	clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
-+	clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT |
-+		CLOCK_EVT_FEAT_PERCPU;
- 	clk->set_mode = gt_clockevent_set_mode;
- 	clk->set_next_event = gt_clockevent_set_next_event;
- 	clk->cpumask = cpumask_of(cpu);
++		global_timer: timer@f8f00200 {
++			compatible = "arm,cortex-a9-global-timer";
++			reg = <0xf8f00200 0x20>;
++			interrupts = <1 11 0x301>;
++			interrupt-parent = <&intc>;
++			clocks = <&clkc 4>;
++		};
++
+ 		ttc0: ttc0@f8001000 {
+ 			interrupt-parent = <&intc>;
+ 			interrupts = < 0 10 4 0 11 4 0 12 4 >;
+diff --git a/arch/arm/mach-zynq/Kconfig b/arch/arm/mach-zynq/Kconfig
+index 04f8a4a..6b04260 100644
+--- a/arch/arm/mach-zynq/Kconfig
++++ b/arch/arm/mach-zynq/Kconfig
+@@ -13,5 +13,6 @@ config ARCH_ZYNQ
+ 	select HAVE_SMP
+ 	select SPARSE_IRQ
+ 	select CADENCE_TTC_TIMER
++	select ARM_GLOBAL_TIMER
+ 	help
+ 	  Support for Xilinx Zynq ARM Cortex A9 Platform
 -- 
 1.8.4
 
