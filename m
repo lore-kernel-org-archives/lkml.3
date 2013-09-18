@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab3IRM7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 08:59:25 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:51873 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab3IRM7X (ORCPT
+	id S1752435Ab3IRNBE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 09:01:04 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54912 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab3IRNBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 08:59:23 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] i2c: mv64xxx: Fix some build warnings
-Date: Wed, 18 Sep 2013 14:50:52 +0200
-Message-Id: <1379508652-30348-1-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4
+	Wed, 18 Sep 2013 09:01:02 -0400
+Date: Wed, 18 Sep 2013 15:01:00 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org, linaro-dev@lists.linaro.org,
+        len.brown@intel.com
+Subject: Re: [PATCH RFC 1/2] PM / Hibernate: use name_to_dev_t to parse
+ resume
+Message-ID: <20130918130100.GB2467@amd.pavel.ucw.cz>
+References: <1377114413-8521-1-git-send-email-sebastian.capella@linaro.org>
+ <1377114413-8521-2-git-send-email-sebastian.capella@linaro.org>
+ <20130825153811.GA4795@amd.pavel.ucw.cz>
+ <20130826174050.16429.7419@capellas-linux>
+ <20130830113533.GA7226@amd.pavel.ucw.cz>
+ <20130830184230.28518.71814@capellas-linux>
+ <20130917205021.20736.5257@capellas-linux>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130917205021.20736.5257@capellas-linux>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some functions and variables are only used if the configuration selects
-HAVE_CLK. Protect them with a corresponding #ifdef CONFIG_HAVE_CLK block
-to avoid compiler warnings.
+On Tue 2013-09-17 13:50:21, Sebastian Capella wrote:
+> Quoting Sebastian Capella (2013-08-30 11:42:30)
+> > Quoting Pavel Machek (2013-08-30 04:35:33)
+> > > On Mon 2013-08-26 10:40:50, Sebastian Capella wrote:
+> > > > Quoting Pavel Machek (2013-08-25 08:38:11)
+> > > > > Is the allocation actually neccessary? At the very least this should
+> > > > > test for NULL...
+> > > > 
+> > > > name_to_dev_t expects a non-const name, but the buffer passed in
+> > > > is const.  I also am removing the '\n' if found at the end of the
+> > > > string which would violate the const.
+> > > 
+> > > Fix name_to_dev_t, then. No need to do memory allocation just to work
+> > > around const.
+> > > 
+> > Hi Pavel,
+> > 
+> > The issue is really Removing the \n from the user space input.  The
+> > flow is:
+> > const input buf -> copy to work buffer, remove newline -> name_to_dev_t
+> > 
+> >   ssize_t resume_store(..., const char *buf, size_t n)
+> >   // copy buf, strip off trailing newline, pass to name_to_dev_t
+> >   dev_t name_to_dev_t(char *name)
+> > 
+> > The const in the restore_store buffer comes from the function type of the
+> > store member of the kobj_attribute.  I don't believe this should be changed.
+> > 
+> > Currently, name_to_dev_t will fail in some cases if a trailing \n is present.
+> > Is it more appropriate to handle stripping the newline in the store
+> > function rather than modifying name_to_dev_t to clean it up?
+> > 
+> > It seems logical for name_to_dev_t to take a const name parameter as
+> > there should be no reason to modify the name buffer passed to it.
+> > I'll be happy to make a patch to do this, but without hardening
+> > name_to_dev_t against trailing newlines, it would not be neccesary for
+> > this problem.
+> > 
+> > Thanks for your time and comments!
+> > 
+> 
+> Hi Pavel,
+> 
+> Do you have any more feedback regarding leaving the strndup?
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- drivers/i2c/busses/i2c-mv64xxx.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
-index 5aead74..bfd870c 100644
---- a/drivers/i2c/busses/i2c-mv64xxx.c
-+++ b/drivers/i2c/busses/i2c-mv64xxx.c
-@@ -697,6 +697,7 @@ static const struct of_device_id mv64xxx_i2c_of_match_table[] = {
- MODULE_DEVICE_TABLE(of, mv64xxx_i2c_of_match_table);
- 
- #ifdef CONFIG_OF
-+#ifdef CONFIG_HAVE_CLK
- static int
- mv64xxx_calc_freq(const int tclk, const int n, const int m)
- {
-@@ -726,16 +727,12 @@ mv64xxx_find_baud_factors(const u32 req_freq, const u32 tclk, u32 *best_n,
- 		return false;
- 	return true;
- }
-+#endif
- 
- static int
- mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
- 		  struct device *dev)
- {
--	const struct of_device_id *device;
--	struct device_node *np = dev->of_node;
--	u32 bus_freq, tclk;
--	int rc = 0;
--
- 	/* CLK is mandatory when using DT to describe the i2c bus. We
- 	 * need to know tclk in order to calculate bus clock
- 	 * factors.
-@@ -744,6 +741,11 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
- 	/* Have OF but no CLK */
- 	return -ENODEV;
- #else
-+	const struct of_device_id *device;
-+	struct device_node *np = dev->of_node;
-+	u32 bus_freq, tclk;
-+	int rc = 0;
-+
- 	if (IS_ERR(drv_data->clk)) {
- 		rc = -ENODEV;
- 		goto out;
+I think you should modify name_to_dev_t, then. Doing memory allocation
+just to work around \n limitation is ugly.
+									Pavel
 -- 
-1.8.4
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
