@@ -1,114 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab3IRQY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 12:24:27 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50256 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752670Ab3IRQYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 12:24:25 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
-        <linux@roeck-us.net>, <rui.zhang@intel.com>, <wni@nvidia.com>
-CC: <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH 06/16] hwmon: tmp102: expose to thermal fw via DT nodes
-Date: Wed, 18 Sep 2013 12:23:10 -0400
-Message-ID: <1379521390-17404-1-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <1379457245-17810-1-git-send-email-eduardo.valentin@ti.com>
-References: <1379457245-17810-1-git-send-email-eduardo.valentin@ti.com>
+	id S1753207Ab3IRQYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 12:24:45 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:62014 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab3IRQYo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 12:24:44 -0400
+Date: Wed, 18 Sep 2013 18:24:39 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20130918162439.GA11190@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds to tmp102 temperature sensor the possibility
-to expose itself as thermal zone device, registered on the
-thermal framework.
+Linus,
 
-The thermal zone is built only if a device tree node
-describing a thermal zone for this sensor is present
-inside the tmp102 DT node. Otherwise, the driver behavior
-will be the same.
+Please pull the latest x86-urgent-for-linus git tree from:
 
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: lm-sensors@lm-sensors.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- drivers/hwmon/tmp102.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
----
-Hi Guenter,
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-Very minor change, removing comment, as requested.
+   HEAD: 0f531431d3de88efb4234d6c0ce22089ec035a38 x86/intel/lpss: Add pin control support to Intel low power subsystem
 
-Eduardo
+Misc fixes.
 
-diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
-index d7b47ab..6748b45 100644
---- a/drivers/hwmon/tmp102.c
-+++ b/drivers/hwmon/tmp102.c
-@@ -27,6 +27,8 @@
- #include <linux/mutex.h>
- #include <linux/device.h>
- #include <linux/jiffies.h>
-+#include <linux/thermal.h>
-+#include <linux/of.h>
+ Thanks,
+
+	Ingo
+
+------------------>
+Borislav Petkov (1):
+      x86: Remove now-unused save_rest()
+
+Libin (1):
+      x86/smpboot: Fix announce_cpu() to printk() the last "OK" properly
+
+Mathias Nyman (1):
+      x86/intel/lpss: Add pin control support to Intel low power subsystem
+
+Stephane Eranian (1):
+      perf/x86/intel: Mark MEM_LOAD_UOPS_MISS_RETIRED as precise on SNB
+
+
+ arch/x86/Kconfig                          |  5 +++--
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |  1 +
+ arch/x86/kernel/entry_64.S                | 15 ---------------
+ arch/x86/kernel/smpboot.c                 |  3 ++-
+ 4 files changed, 6 insertions(+), 18 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b32ebf9..4d5843d 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -482,11 +482,12 @@ config X86_INTEL_LPSS
+ 	bool "Intel Low Power Subsystem Support"
+ 	depends on ACPI
+ 	select COMMON_CLK
++	select PINCTRL
+ 	---help---
+ 	  Select to build support for Intel Low Power Subsystem such as
+ 	  found on Intel Lynxpoint PCH. Selecting this option enables
+-	  things like clock tree (common clock framework) which are needed
+-	  by the LPSS peripheral drivers.
++	  things like clock tree (common clock framework) and pincontrol
++	  which are needed by the LPSS peripheral drivers.
  
- #define	DRIVER_NAME "tmp102"
+ config X86_RDC321X
+ 	bool "RDC R-321x SoC"
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 3065c57..4ab70ac 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -558,6 +558,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
+ 	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+ 	INTEL_UEVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
+ 	EVENT_CONSTRAINT_END
+ };
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1b69951..b077f4c 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -487,21 +487,6 @@ ENDPROC(native_usergs_sysret64)
+ 	TRACE_IRQS_OFF
+ 	.endm
  
-@@ -50,6 +52,7 @@
- 
- struct tmp102 {
- 	struct device *hwmon_dev;
-+	struct thermal_zone_device *tz;
- 	struct mutex lock;
- 	u16 config_orig;
- 	unsigned long last_update;
-@@ -93,6 +96,15 @@ static struct tmp102 *tmp102_update_device(struct i2c_client *client)
- 	return tmp102;
- }
- 
-+static int tmp102_read_temp(void *dev, long *temp)
-+{
-+	struct tmp102 *tmp102 = tmp102_update_device(to_i2c_client(dev));
-+
-+	*temp = tmp102->temp[0];
-+
-+	return 0;
-+}
-+
- static ssize_t tmp102_show_temp(struct device *dev,
- 				struct device_attribute *attr,
- 				char *buf)
-@@ -204,6 +216,12 @@ static int tmp102_probe(struct i2c_client *client,
- 		goto fail_remove_sysfs;
- 	}
- 
-+	tmp102->tz = thermal_zone_of_sensor_register(&client->dev, 0,
-+						     &client->dev,
-+						     tmp102_read_temp, NULL);
-+	if (IS_ERR(tmp102->tz))
-+		tmp102->tz = NULL;
-+
- 	dev_info(&client->dev, "initialized\n");
- 
- 	return 0;
-@@ -220,6 +238,7 @@ static int tmp102_remove(struct i2c_client *client)
+-ENTRY(save_rest)
+-	PARTIAL_FRAME 1 (REST_SKIP+8)
+-	movq 5*8+16(%rsp), %r11	/* save return address */
+-	movq_cfi rbx, RBX+16
+-	movq_cfi rbp, RBP+16
+-	movq_cfi r12, R12+16
+-	movq_cfi r13, R13+16
+-	movq_cfi r14, R14+16
+-	movq_cfi r15, R15+16
+-	movq %r11, 8(%rsp)	/* return address */
+-	FIXUP_TOP_OF_STACK %r11, 16
+-	ret
+-	CFI_ENDPROC
+-END(save_rest)
+-
+ /* save complete stack frame */
+ 	.pushsection .kprobes.text, "ax"
+ ENTRY(save_paranoid)
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index aecc98a..6cacab6 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -653,6 +653,7 @@ static void announce_cpu(int cpu, int apicid)
  {
- 	struct tmp102 *tmp102 = i2c_get_clientdata(client);
+ 	static int current_node = -1;
+ 	int node = early_cpu_to_node(cpu);
++	int max_cpu_present = find_last_bit(cpumask_bits(cpu_present_mask), NR_CPUS);
  
-+	thermal_zone_of_sensor_unregister(&client->dev, tmp102->tz);
- 	hwmon_device_unregister(tmp102->hwmon_dev);
- 	sysfs_remove_group(&client->dev.kobj, &tmp102_attr_group);
- 
--- 
-1.8.2.1.342.gfa7285d
-
+ 	if (system_state == SYSTEM_BOOTING) {
+ 		if (node != current_node) {
+@@ -661,7 +662,7 @@ static void announce_cpu(int cpu, int apicid)
+ 			current_node = node;
+ 			pr_info("Booting Node %3d, Processors ", node);
+ 		}
+-		pr_cont(" #%d%s", cpu, cpu == (nr_cpu_ids - 1) ? " OK\n" : "");
++		pr_cont(" #%4d%s", cpu, cpu == max_cpu_present ? " OK\n" : "");
+ 		return;
+ 	} else
+ 		pr_info("Booting Node %d Processor %d APIC 0x%x\n",
