@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab3IROr6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 10:47:58 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:5903 "EHLO
+	id S1752921Ab3IROtE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 10:49:04 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:5925 "EHLO
 	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab3IROrz (ORCPT
+	with ESMTP id S1751456Ab3IROtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 10:47:55 -0400
+	Wed, 18 Sep 2013 10:49:01 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 18 Sep 2013 07:44:34 -0700
+	by hqnvupgp07.nvidia.com on Wed, 18 Sep 2013 07:49:01 -0700
+Date: Wed, 18 Sep 2013 17:48:58 +0300
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Mike Turquette <mturquette@linaro.org>,
+To: Mike Turquette <mturquette@linaro.org>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
+        "Thierry Reding" <thierry.reding@avionic-design.de>,
         Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: [PATCH 03/12] clk: tegra: Add TEGRA_PERIPH_NO_DIV flag
-Date: Wed, 18 Sep 2013 17:40:55 +0300
-Message-ID: <1379515331-19427-4-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 00/12] Introduce common infra for tegra clocks
+Message-ID: <20130918144858.GV30013@tbergstrom-lnx.Nvidia.com>
 References: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag indicates the peripheral clock does not have a divider. It will
-simply the initialization tables and avoids some very similar code.
+On Wed, Sep 18, 2013 at 04:40:52PM +0200, Peter De Schrijver wrote:
+> This patchset introduces common infrastructure for clocks which exist in
+> several Tegra SoCs. We also move Tegra114 to this new infrastructure.
+> Tegra20 and Tegra30 will be moved later in separate patchsets.
+> 
+> Peter De Schrijver (12):
+>   clk: tegra: simplify periph clock data
+>   clk: tegra: periph_clk_enb_refcnt as common infra
+>   clk: tegra: Add TEGRA_PERIPH_NO_DIV flag
+>   clk: tegra: move some PLLC and PLLXC init to clk-pll.c
+>   clk: tegra: add header for common tegra clock IDs
+>   clk: tegra: add common infra for DT clocks
+>   clk: tegra: move audio clk to common file
+>   clk: tegra: move periph clocks to common file
+>   clk: tegra: move PMC clocks to common file
+>   clk: tegra: move fixed clocks to common file
+>   clk: tegra: introduce common tegra_osc_clk_init
+>   clk: tegra: introduce common gen4 super clock
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/clk-periph.c |    8 +++++---
- drivers/clk/tegra/clk.h        |    1 +
- 2 files changed, 6 insertions(+), 3 deletions(-)
+Forgot to mention that this patchset relies on 
 
-diff --git a/drivers/clk/tegra/clk-periph.c b/drivers/clk/tegra/clk-periph.c
-index 55ab4b1..becbeee 100644
---- a/drivers/clk/tegra/clk-periph.c
-+++ b/drivers/clk/tegra/clk-periph.c
-@@ -173,11 +173,12 @@ const struct clk_ops tegra_clk_periph_nodiv_ops = {
- static struct clk *_tegra_clk_register_periph(const char *name,
- 			const char **parent_names, int num_parents,
- 			struct tegra_clk_periph *periph,
--			void __iomem *clk_base, u32 offset, bool div,
-+			void __iomem *clk_base, u32 offset,
- 			unsigned long flags)
- {
- 	struct clk *clk;
- 	struct clk_init_data init;
-+	bool div = !(periph->gate.flags & TEGRA_PERIPH_NO_DIV);
- 
- 	init.name = name;
- 	init.ops = div ? &tegra_clk_periph_ops : &tegra_clk_periph_nodiv_ops;
-@@ -210,7 +211,7 @@ struct clk *tegra_clk_register_periph(const char *name,
- 		u32 offset, unsigned long flags)
- {
- 	return _tegra_clk_register_periph(name, parent_names, num_parents,
--			periph, clk_base, offset, true, flags);
-+			periph, clk_base, offset, flags);
- }
- 
- struct clk *tegra_clk_register_periph_nodiv(const char *name,
-@@ -218,6 +219,7 @@ struct clk *tegra_clk_register_periph_nodiv(const char *name,
- 		struct tegra_clk_periph *periph, void __iomem *clk_base,
- 		u32 offset)
- {
-+	periph->gate.flags |= TEGRA_PERIPH_NO_DIV;
- 	return _tegra_clk_register_periph(name, parent_names, num_parents,
--			periph, clk_base, offset, false, CLK_SET_RATE_PARENT);
-+			periph, clk_base, offset, CLK_SET_RATE_PARENT);
- }
-diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index a133279..1b951a1 100644
---- a/drivers/clk/tegra/clk.h
-+++ b/drivers/clk/tegra/clk.h
-@@ -397,6 +397,7 @@ struct tegra_clk_periph_gate {
- #define TEGRA_PERIPH_MANUAL_RESET BIT(1)
- #define TEGRA_PERIPH_ON_APB BIT(2)
- #define TEGRA_PERIPH_WAR_1005168 BIT(3)
-+#define TEGRA_PERIPH_NO_DIV BIT(4)
- 
- void tegra_periph_reset(struct tegra_clk_periph_gate *gate, bool assert);
- extern const struct clk_ops tegra_clk_periph_gate_ops;
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+[PATCH] clk: tegra: replace enum tegra114_clk by binding header 
 
+and obsoletes:
+
+[PATCH v2 0/4] Introduce table driven initializations
