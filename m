@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab3IRLw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 07:52:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36757 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751556Ab3IRLw2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 07:52:28 -0400
-Message-ID: <523993F9.6000705@free-electrons.com>
-Date: Wed, 18 Sep 2013 13:52:25 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: srinivas.kandagatla@st.com
-CC: stuart.menefy@st.com, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: STi: remove unused Kconfig parameters
-References: <1379474622-4715-1-git-send-email-michael.opdenacker@free-electrons.com> <523949A1.7080600@st.com>
-In-Reply-To: <523949A1.7080600@st.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752251Ab3IRLxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 07:53:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25160 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751556Ab3IRLxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 07:53:18 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20130918115000.b78a5e79d65aa23ced0ac8e4@canb.auug.org.au>
+References: <20130918115000.b78a5e79d65aa23ced0ac8e4@canb.auug.org.au> <alpine.LRH.2.02.1309120141280.4317@tundra.namei.org> <alpine.LRH.2.02.1309071426400.29124@tundra.namei.org> <alpine.LRH.2.02.1309070309360.24160@tundra.namei.org> <12075.1378340063@warthog.procyon.org.uk> <17000.1378488989@warthog.procyon.org.uk> <10114.1378806359@warthog.procyon.org.uk> <19686.1379426149@warthog.procyon.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: dhowells@redhat.com, James Morris <jmorris@namei.org>, simo@redhat.com,
+        zohar@linux.vnet.ibm.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Keyrings patches
+Date: Wed, 18 Sep 2013 12:53:06 +0100
+Message-ID: <1320.1379505186@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srini
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-On 09/18/2013 08:35 AM, Srinivas KANDAGATLA wrote:
-> Hi Michael.
-> On 18/09/13 04:23, Michael Opdenacker wrote:
->> This patch proposes to remove the 'SOC_STIH415' and 'SOC_STIH416'
->> parameters, which are used nowhere else in the source code
->> and Makefiles.
->>
->> Will they be needed in code that hasn't been submitted yet?
-> Yes, we will be using it in future patches, for something like reset
-> controller.
-> Also I am planning to use in dts/Makefiles so that we can build dtbs for
-> only selected SOC.
->
-> Thanks,
-> srini
-Thanks for your reply. That's fine for me if you have plans to use these
-parameters.
+> Is there some reason that those fixups cannot be done in a merge commit?
+> i.e. are they more than simple text updates?
 
-Cheers,
+That's somewhat up to James.  *He* would be the person doing the merge, not
+me.  I'm changing the lines in my patches also.
 
-Michael.
+> /me thinks that most rebases people do can be better done (and
+> documented) as merges.
 
--- 
-Michael Opdenacker, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
+That depends on how you define "better".  Better for what?  I think it's
+better to absorb the changes into my patch series.  StGIT is very good for
+handling this, since my patches are currently maintained as an StGIT set.
+That way, there ends up one fewer commit in the history, assuming no other
+collisions with what James merges.
 
+David
