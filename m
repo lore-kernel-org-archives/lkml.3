@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab3IRR17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 13:27:59 -0400
-Received: from mga03.intel.com ([143.182.124.21]:64401 "EHLO mga03.intel.com"
+	id S1752549Ab3IRR3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 13:29:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28147 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218Ab3IRR16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 13:27:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,930,1371106800"; 
-   d="scan'208";a="362398769"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] pstore/compression fixes
-Date: Wed, 18 Sep 2013 10:27:57 -0700
-Message-Id: <5239e29d26989e9096@agluck-desk.sc.intel.com>
+	id S1752055Ab3IRR3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 13:29:07 -0400
+From: Bart Kuivenhoven <bemk@redhat.com>
+To: matt.fleming@intel.com
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jcm@redhat.com, msalter@redhat.com, Bart Kuivenhoven <bemk@redhat.com>
+Subject: [PATCH] x86 efi: bugfix interrupt disabling sequence
+Date: Wed, 18 Sep 2013 19:28:53 +0200
+Message-Id: <1379525333-4373-1-git-send-email-bemk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit e831cbfc1ad843b5542cc45f777e1a00b73c0685:
+The problem in efi_main was that the idt was cleared before the
+interrupts were disabled.
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux (2013-09-11 08:36:03 -0700)
+The UEFI spec states that interrupts aren't used so this shouldn't be
+too much of a problem. Peripherals however don't necessarily know about
+this and thus might cause interrupts to happen anyway. Even if
+ExitBootServices() has been called.
 
-are available in the git repository at:
+This means there is a risk of an interrupt being triggered while the IDT
+register is nullified and the interrupt bit hasn't been cleared,
+allowing for a triple fault.
 
+This patch fixes this by clearing the interrupt bit before the lidt
+instruction.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux.git tags/please-pull-pstore
+Signed-off-by: Bart Kuivenhoven <bemk@redhat.com>
+---
+ arch/x86/boot/compressed/eboot.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-for you to fetch changes up to 802e4c6f5887205eda110c6bfb90c9bfa93dc8a7:
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index b7388a4..100b812 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -1267,11 +1267,11 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
+ 	desc->base2 = 0x00;
+ #endif /* CONFIG_X86_64 */
+ 
++	asm volatile("cli");
++
+ 	asm volatile ("lidt %0" : : "m" (*idt));
+ 	asm volatile ("lgdt %0" : : "m" (*gdt));
+ 
+-	asm volatile("cli");
+-
+ 	return boot_params;
+ fail:
+ 	return NULL;
+-- 
+1.8.4
 
-  pstore: Remove the messages related to compression failure (2013-09-16 09:28:29 -0700)
-
-----------------------------------------------------------------
-Three pstore fixes related to compression:
-1) Better adjustment of size of compression buffer (was too big
-   for EFIVARS backend resulting in compression failure
-2) Use zlib_inflateInit2 instead of zlib_inflateInit
-3) Don't print messages about compression failure.  They will
-   waste space that may better be used to log console output
-   leading to the crash.
-
-----------------------------------------------------------------
-Aruna Balakrishnaiah (3):
-      pstore: Adjust buffer size for compression for smaller registered buffers
-      pstore: Use zlib_inflateInit2 instead of zlib_inflateInit
-      pstore: Remove the messages related to compression failure
-
- fs/pstore/platform.c | 29 +++++++++++++++++++++++------
- 1 file changed, 23 insertions(+), 6 deletions(-)
