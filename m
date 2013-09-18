@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab3IRPIL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:08:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45823 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751414Ab3IRPII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:08:08 -0400
-Message-ID: <5239C19E.1090609@ti.com>
-Date: Wed, 18 Sep 2013 11:07:10 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752078Ab3IRPJn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 11:09:43 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:45798 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab3IRPJl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 11:09:41 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, <linus.walleij@linaro.org>
-CC: Sricharan R <r.sricharan@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, <rnayak@ti.com>
-Subject: Re: [RFC PATCH 1/4] DRIVERS: IRQCHIP: Add crossbar irqchip driver
-References: <1379000351-15672-1-git-send-email-r.sricharan@ti.com> <1379000351-15672-2-git-send-email-r.sricharan@ti.com> <alpine.DEB.2.02.1309122201530.4089@ionos.tec.linutronix.de> <523228B5.5070507@ti.com> <alpine.DEB.2.02.1309122335440.4089@ionos.tec.linutronix.de> <5232457A.8080709@ti.com> <alpine.DEB.2.02.1309130138550.4089@ionos.tec.linutronix.de> <52326D6B.2010003@ti.com> <alpine.DEB.2.02.1309131142540.4089@ionos.tec.linutronix.de> <52332772.5040203@ti.com>
-In-Reply-To: <52332772.5040203@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130918033358.51CA1C42C9E@trevor.secretlab.ca>
+References: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
+	<1379372965-22359-19-git-send-email-robherring2@gmail.com>
+	<20130918033358.51CA1C42C9E@trevor.secretlab.ca>
+Date: Wed, 18 Sep 2013 10:09:40 -0500
+Message-ID: <CAL_JsqKkhPt0hMKvdh+71WN9ERTRvzJKXO9ZV076ks-XGxbn4A@mail.gmail.com>
+Subject: Re: [PATCH 18/28] of: create default early_init_dt_add_memory_arch
+From: Rob Herring <robherring2@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        James Hogan <james.hogan@imgtec.com>, Michal Simek <monstr@monstr.eu>,
+        Jonas Bonn <jonas@southpole.se>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "microblaze-uclinux@itee.uq.edu.au" 
+	<microblaze-uclinux@itee.uq.edu.au>,
+        linux@openrisc.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
-
-On Friday 13 September 2013 10:55 AM, Santosh Shilimkar wrote:
-> On Friday 13 September 2013 10:24 AM, Thomas Gleixner wrote:
-
-[...]
-
->> Before you dig into MSI, lets talk about irq domains first.
+On Tue, Sep 17, 2013 at 10:33 PM, Grant Likely <grant.likely@linaro.org> wrote:
+> On Mon, 16 Sep 2013 18:09:14 -0500, Rob Herring <robherring2@gmail.com> wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
 >>
->> GIC implements a legacy irq domain, i.e. a linear domain of all
->> possible GIC interrupts with a 1:1 mapping.
+>> Create a weak version of early_init_dt_add_memory_arch which uses
+>> memblock or is an empty function when memblock is not enabled. This
+>> will unify all architectures except ones with custom memory bank
+>> structs.
+>
+> Two comments below, but otherwise:
+>
+> Acked-by: Grant Likely <grant.likely@linaro.org>
+>
+>> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+>> index 0714dd4..a9dce7a 100644
+>> --- a/drivers/of/fdt.c
+>> +++ b/drivers/of/fdt.c
+>> @@ -688,6 +688,17 @@ u64 __init dt_mem_next_cell(int s, __be32 **cellp)
+>>       return of_read_number(p, s);
+>>  }
 >>
->> So why can't you make use of irq domains and have the whole routing
->> business implemented sanely?
->>
->> What's needed is in gic_init_bases():
->>
->>        if (of_property_read(node, "routable_irqs", &nr_routable_irqs) {
->>        	  irq_domain_add_legacy(nr_gic_irqs);
->>        } else {
->>        	  irq_domain_add_legacy(nr_per_cpu_irqs);
->> 	  irq_domain_add_linear(nr_routable_irqs);
->>        }
->>
->> Now that separate domain has an xlate function which grabs a free GIC
->> irq from a bitmap and returns the hardware irq number in the gic
->> space. The map/unmap callbacks take care of setting up / tearing down
->> the route in the crossbar.
->>
->> Thoughts?
->>
-> This sounds pretty good idea. We will explore above option.
-> Thanks Thomas.
-> 
-After further looking into this, the irqdomain approach lets us
-setup the map only once during the init. This is similar to
-the earlier approach of cross-bar driver where at probe time
-the router was setup.  The whole debate started with the fact
-that we shouldn't fix the irq mapping at probe and should
-dynamically change the mapping based on [request/free]_irq()
-to be able to maximize the use of the IP.
+>> +void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
+>> +{
+>> +#ifdef CONFIG_HAVE_MEMBLOCK
+>> +     base &= PAGE_MASK;
+>> +     size &= PAGE_MASK;
+>> +     memblock_add(base, size);
+>> +#else
+>> +     pr_err("%s: ignoring memory (%llx, %llx)\n", __func__, base, size);
+>> +#endif
+>> +}
+>> +
+>
+> Can you do it this way instead:
+>
+> #ifdef CONFIG_HAVE_MEMBLOCK
+> void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
+> {
+>         base &= PAGE_MASK;
+>         size &= PAGE_MASK;
+>         memblock_add(base, size);
+> }
+> #endif
+>
+> If the platform doesn't provide an early_init_dt_add_memory_arch()
+> function and it doesn't have a memblock implementation, then the build
+> should outright fail. I don't see a scenario where we would want to
+> successfully build the kernel without a working add memory function.
 
-Since we have agreed now to move ahead with irdomain, i thought
-of mentioning it here.
+metag and x86 both have empty functions. I guess they get memory from
+a different boot interface.
 
-Regards,
-Santosh
+Rob
 
-
-
-
-
-
-
+>
+> Also, can you group this function with the common __weak
+> early_init_dt_alloc_memory_arch() implementation? It would be good to
+> group all the memblock specific functions together.
+>
+> g.
+>
