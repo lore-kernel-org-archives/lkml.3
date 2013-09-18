@@ -1,98 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab3IRUlT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 16:41:19 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:51054 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab3IRUlR (ORCPT
+	id S1753340Ab3IRUo5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 16:44:57 -0400
+Received: from smtprelay0185.hostedemail.com ([216.40.44.185]:41252 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751635Ab3IRUo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 16:41:17 -0400
-MIME-Version: 1.0
-X-Originating-IP: [64.196.191.133]
-In-Reply-To: <1379535836-12726-1-git-send-email-swarren@wwwdotorg.org>
-References: <1379535836-12726-1-git-send-email-swarren@wwwdotorg.org>
-Date: Wed, 18 Sep 2013 13:41:16 -0700
-Message-ID: <CAOesGMg0Rrmew0iK-Gtrx_UiODhpro_S2xUxQi0gZ+7PJmBHnw@mail.gmail.com>
-Subject: Re: [dtc RFC PATCH] Enforce node name unit-address presence/absence
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Jon Loeliger <jdl@jdl.com>, David Gibson <david@gibson.dropbear.id.au>,
-        Frank Rowand <frowand.list@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 18 Sep 2013 16:44:56 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3871:3874:4321:4605:5007:6119:7652:7875:7903:10004:10400:10848:11026:11233:11658:11914:12043:12438:12517:12519:12740:13069:13311:1
+X-HE-Tag: cry09_d680bde6c654
+X-Filterd-Recvd-Size: 3077
+Message-ID: <1379537090.1787.67.camel@joe-AO722>
+Subject: Re: [PATCHv4 02/16] drivers: thermal: introduce device tree parser
+From: Joe Perches <joe@perches.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: swarren@wwwdotorg.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ian.campbell@citrix.com, rob.herring@calxeda.com, linux@roeck-us.net,
+        rui.zhang@intel.com, wni@nvidia.com, grant.likely@linaro.org,
+        durgadoss.r@intel.com, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Date: Wed, 18 Sep 2013 13:44:50 -0700
+In-Reply-To: <1379536310-30000-1-git-send-email-eduardo.valentin@ti.com>
+References: <1379530923-29268-1-git-send-email-eduardo.valentin@ti.com>
+	 <1379536310-30000-1-git-send-email-eduardo.valentin@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 1:23 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->
-> ePAPR 1.1 section 2.2.1.1 "Node Name Requirements" specifies that any
-> node that has a reg property must include a unit address in its name
-> with value matching the first entry in its reg property. Conversely, if
-> a node does not have a reg property, the node name must not include a
-> unit address.
->
-> Implement a check for this. The code doesn't validate the format of the
-> unit address; ePAPR implies this may vary from binding to binding, so
-> I'm not sure that it's possible to validate the value itself.
->
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> This depends on my previous patch "Ensure all tests have matching reg
-> and unit address".
->
-> Note that this patch should not yet be applied; it will cause many real-
-> world *.dts files to fail to compile. Those need to be fixed first.
-> However, if/when that happens, this patch may be useful.
-> ---
->  checks.c | 18 +++++++++++++++++-
->  1 file changed, 17 insertions(+), 1 deletion(-)
->
-> diff --git a/checks.c b/checks.c
-> index ee96a25..c80a055 100644
-> --- a/checks.c
-> +++ b/checks.c
-> @@ -287,9 +287,25 @@ NODE_ERROR(node_name_chars, PROPNODECHARS "@");
->  static void check_node_name_format(struct check *c, struct node *dt,
->                                    struct node *node)
->  {
-> -       if (strchr(get_unitname(node), '@'))
-> +       const char *unitname;
-> +       struct property *prop;
+On Wed, 2013-09-18 at 16:31 -0400, Eduardo Valentin wrote:
+
+> +/**
+> + * of_parse_thermal_zones - parse device tree thermal data
+> + *
+> + * Initialization function that can be called by machine initialization
+> + * code to parse thermal data and populate the thermal framework
+> + * with hardware thermal zones info. This function only parses thermal zones.
+> + * Cooling devices and sensor devices nodes are supposed to be parsed
+> + * by their respective drivers.
+> + *
+> + * Return: 0 on success, proper error code otherwise
+> + *
+> + */
+> +int __init of_parse_thermal_zones(void)
+> +{
+> +	struct device_node *np, *child;
+> +	struct __thermal_zone *tz;
+> +	struct thermal_zone_device_ops *ops;
 > +
-> +       unitname = get_unitname(node);
+> +	np = of_find_node_by_name(NULL, "thermal-zones");
+> +	if (!np) {
+> +		pr_err("unable to find thermal zones\n");
+> +		return 0;
+
+return 0? This is success?
+
+> +	}
 > +
-> +       if (strchr(unitname, '@'))
->                 FAIL(c, "Node %s has multiple '@' characters in name",
->                      node->fullpath);
+> +	for_each_child_of_node(np, child) {
+> +		struct thermal_zone_device *zone;
+> +		struct thermal_zone_params *tzp;
 > +
-> +       prop = get_property(node, "reg");
-> +       if (prop) {
-> +               if (!unitname[0])
-> +                       FAIL(c, "Node %s has a reg property, but no unit name",
-> +                           node->fullpath);
-> +       } else {
-> +               if (unitname[0])
-> +                       FAIL(c, "Node %s has a unit name, but no reg property",
-> +                           node->fullpath);
+> +		tz = thermal_of_build_thermal_zone(child);
+> +		if (IS_ERR(tz)) {
+> +			pr_err("failed to build thermal zone %ld\n",
+> +			       PTR_ERR(tz));
+> +			return 0;
+> +		}
+> +
+> +		ops = kzalloc(sizeof(*ops), GFP_KERNEL);
+> +		if (!ops)
+> +			return 0;
+> +
+> +		memcpy(ops, &of_thermal_ops, sizeof(*ops));
 
-These checks are very useful, even though they might sort of cross
-over the domain to what a dtc linter would do instead of the compiler.
+kmemdup instead of alloc/memcpy
 
-Anyway, I think it'd be better to produce warnings than errors for
-this. That way we could also merge it now while the trees are fixed
-up.
+> +		tzp = kzalloc(sizeof(*tzp), GFP_KERNEL);
+> +		if (!ops)
+> +			return 0;
+> +
+> +		/* No hwmon because there might be hwmon drivers registering */
+> +		tzp->no_hwmon = true;
+> +
+> +		zone = thermal_zone_device_register(child->name, tz->ntrips,
+> +						    0, tz,
+> +						    ops, tzp,
+> +						    tz->passive_delay,
+> +						    tz->polling_delay);
+> +		if (IS_ERR(zone))
+> +			pr_err("Failed to build %s zone %ld\n", child->name,
+> +			       PTR_ERR(zone));
+> +	}
+> +	return 0;
+> +}
 
-Also, maybe warn for @0x<foo>, which is another unpreferred syntax, it
-should just be @<foo> (with foo being in hex).
+All returns are 0, always successful?
 
 
--Olof
