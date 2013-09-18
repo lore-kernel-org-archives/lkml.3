@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab3IRLec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 07:34:32 -0400
-Received: from mailout06.t-online.de ([194.25.134.19]:32915 "EHLO
-	mailout06.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909Ab3IRLeb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 07:34:31 -0400
-Message-ID: <52398FBF.5060102@t-online.de>
-Date: Wed, 18 Sep 2013 13:34:23 +0200
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752519Ab3IRLfx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 07:35:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63602 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752007Ab3IRLfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Sep 2013 07:35:52 -0400
+Message-ID: <52398FF1.5020502@redhat.com>
+Date: Wed, 18 Sep 2013 13:35:13 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Linux MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Intel-gfx] [PATCH] [RFC] mm/shrinker: Add a shrinker flag to
- always shrink a bit
-References: <1379495401-18279-1-git-send-email-daniel.vetter@ffwll.ch> <5239829F.4080601@t-online.de> <20130918105631.GS32145@phenom.ffwll.local>
-In-Reply-To: <20130918105631.GS32145@phenom.ffwll.local>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-ID: ExGChZZGQhlakVmLRNz5OtQvpLLv1f1ZriDZgUD5-GDJs39OQ7MYn1quvyhIO4xgdF
-X-TOI-MSGID: d653204d-15b2-40a8-bcb7-b9304ed02c9d
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <srostedt@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Subject: Re: [RFC] Full syscall argument decode in "perf trace"
+References: <20130917190606.GB3918@infradead.org>
+In-Reply-To: <20130917190606.GB3918@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/17/2013 09:06 PM, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Sep 17, 2013 at 05:10:55PM +0200, Denys Vlasenko escreveu:
+>> I'm trying to figure out how to extend "perf trace".
+>  
+>> Currently, it shows syscall names and arguments, and only them.
+>> Meaning that syscalls such as open(2) are shown as:
+>  
+>>     open(filename: 140736118412184, flags: 0, mode: 140736118403776) = 3
+>  
+>> The problem is, of course, that user wants to see the filename
+>> per se, not the address of its first byte.
+>  
+>> To improve that, we need to fetch the pointed-to data.
+>> There are two approaches to this: extending
+>> "raw_syscalls:sys_{enter,exit}" tracepoint so that it returns this data,
+>> or selectively stopping the traced process when it reaches the thacepoint.
+> 
+> We don't want to stop the process at all, this is one of the major
+> advantages of 'perf trace' over 'strace'.
 
-> Looking at the patch which introduced these error message for you, which
-> changed the ->count_objects return value from 0 to SHRINK_STOP your patch
-> below to treat 0 and SHRINK_STOP equally simply reverts the functional
-> change.
+This is a worthy goal. strace is so slow exactly because it stops
+traced process so often. strace developers do want to avoid
+as many of these stops as possible.
 
-Yes, for i915* it de facto restores the old behaviour.
+I'm not sure that "not stopping ever" is achievable, though.
+There are cases where stopping is necessary.
 
-> I don't think that's the intention behind SHRINK_STOP. But if it's the
-> right think to do we better revert the offending commit directly.
-But there is other code that also returns SHRINK_STOP. So i believe it´s better to
-adapt shrink_slab_node() to handle SHRINK_STOP properly than to revert 81e49f.
+For example, after clone() call, depending on the tracer needs,
+there may be operations which must be done on the new child
+before it is allowed to run.
 
->   And since I lack clue I think that's a call for core mm guys to make.
+strace used to use hideous, unsafe workarounds to catch children,
+until ptrace was augmented with features which made children stop
+immediately.
 
-I agree. They´ll probably have to apply some additional changes to
-shrink_slab_node(). It really doesn´t look right to me, but they certainly
-know better what the code is supposed to do ;-)
+Do you think you can work around that? I just don't see how.
 
+> Look at the tmp.perf/trace2 branch in my git repo, tglx and Ingo added a
+> tracepoint to vfs_getname to use that.
 
-cu,
-  Knut
+I know that this is the way how to fetch syscall args without stopping,
+yes.
+
+The problem: ~100 more tracepoints need to be added merely to get
+to the point where strace already is, wrt quality of syscall decoding.
+strace has nearly 300 separate custom syscall formatting functions,
+some of them quite complex.
+
+If we need to add syscall stopping feature (which, as I said above,
+will be necessary anyway IMO), then syscall decoding can be as good
+as strace *already*. Then, gradually more tracepoints are added
+to make it faster.
+
+I am thinking about going into this direction.
+
+Therefore my question should be restated as:
+
+Would perf developers accept the "syscall pausing" feature,
+or it won't be accepted?
+
+-- 
+vda
+
