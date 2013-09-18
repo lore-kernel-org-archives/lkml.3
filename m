@@ -1,155 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab3IRVEP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 17:04:15 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:40095 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab3IRVEK (ORCPT
+	id S1753850Ab3IRVEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 17:04:13 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:60794 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137Ab3IRVEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Sep 2013 17:04:10 -0400
-Message-ID: <523A1543.8040201@gmail.com>
-Date: Wed, 18 Sep 2013 23:04:03 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130827 Icedove/17.0.8
-To: Olof Johansson <olof@lixom.net>
-CC: Jason Cooper <jason@lakedaemon.net>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        kernel@stlinux.com, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson <STEricsson_nomadik_linux@list.st.com>,
-        linux-rpi-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 00/26] ARM: provide common arch init for DT clocks
-References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130918194711.GR19937@titan.lakedaemon.net> <523A046E.6040804@gmail.com> <CAOesGMguF33+-mXScLmUy1Kr9JkL36Ah1_ShW_ZuGy4Q0gJefg@mail.gmail.com>
-In-Reply-To: <CAOesGMguF33+-mXScLmUy1Kr9JkL36Ah1_ShW_ZuGy4Q0gJefg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Thu, 19 Sep 2013 02:33:58 +0530
+From: Anoop Thomas Mathew <atm@profoundis.com>
+To: vgupta@synopsys.com, tony.luck@intel.com, davem@davemloft.net
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: [PATCH] Fixed typo on word accounting in kprobes.c in mutliple
+ architectures
+Message-ID: <20130918210351.GA13811@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2013 10:48 PM, Olof Johansson wrote:
-> On Wed, Sep 18, 2013 at 12:52 PM, Sebastian Hesselbarth
-> <sebastian.hesselbarth@gmail.com> wrote:
->> On 09/18/2013 09:47 PM, Jason Cooper wrote:
->>>
->>> On Wed, Sep 18, 2013 at 07:53:33PM +0200, Sebastian Hesselbarth wrote:
->>> ...
->>>>
->>>> Sebastian Hesselbarth (26):
->>>>     ARM: nomadik: move mtu setup to clocksource init
->>>>     clk: nomadik: move src init out of nomadik_clk_init
->>>>     clk: nomadik: declare OF clock provider
->>>>     clk: prima2: declare OF clock provider
->>>>     ARM: socfgpa: prepare for arch-wide .init_time callback
->>>>     clk: sunxi: declare OF clock provider
->>>>     clk: vt8500: parse pmc_base from clock driver
->>>>     ARM: vt8500: prepare for arch-wide .init_time callback
->>>>     ARM: call of_clk_init from default time_init handler
->>>>     ARM: bcm2835: remove custom .init_time hook
->>>>     ARM: dove: remove custom .init_time hook
->>>>     ARM: exynos: remove custom .init_time hook
->>>>     ARM: highbank: remove custom .init_time hook
->>>>     ARM: imx: remove custom .init_time hook
->>>>     ARM: kirkwood: remove custom .init_time hook
->>>>     ARM: mxs: remove custom .init_time hook
->>>>     ARM: nomadik: remove custom .init_time hook
->>>>     ARM: nspire: remove custom .init_time hook
->>>>     ARM: prima2: remove custom .init_time hook
->>>>     ARM: rockchip: remove custom .init_time hook
->>>>     ARM: socfpga: remove custom .init_time hook
->>>>     ARM: sti: remove custom .init_time hook
->>>>     ARM: sunxi: remove custom .init_time hook
->>>>     ARM: tegra: remove custom .init_time hook
->>>>     ARM: vexpress: remove custom .init_time hook
->>>>     ARM: vt8500: remove custom .init_time hook
->>>>
->>>>    arch/arm/kernel/time.c                    |   27 ++---
->>>>    arch/arm/mach-bcm2835/bcm2835.c           |    2 -
->>>>    arch/arm/mach-dove/board-dt.c             |   11 --
->>>>    arch/arm/mach-exynos/common.c             |    8 --
->>>>    arch/arm/mach-exynos/common.h             |    1 -
->>>>    arch/arm/mach-exynos/mach-exynos4-dt.c    |    2 -
->>>>    arch/arm/mach-exynos/mach-exynos5-dt.c    |    2 -
->>>>    arch/arm/mach-highbank/highbank.c         |   23 ++---
->>>>    arch/arm/mach-imx/clk-imx51-imx53.c       |   29 ++----
->>>>    arch/arm/mach-imx/common.h                |    4 -
->>>>    arch/arm/mach-imx/imx51-dt.c              |    6 --
->>>>    arch/arm/mach-imx/mach-imx53.c            |    6 --
->>>>    arch/arm/mach-imx/mach-imx6q.c            |   14 +--
->>>>    arch/arm/mach-imx/mach-imx6sl.c           |    7 --
->>>>    arch/arm/mach-imx/mach-vf610.c            |    9 --
->>>>    arch/arm/mach-kirkwood/board-dt.c         |    8 --
->>>>    arch/arm/mach-mxs/mach-mxs.c              |   13 ---
->>>>    arch/arm/mach-nomadik/cpu-8815.c          |   36 -------
->>>>    arch/arm/mach-nspire/nspire.c             |    9 --
->>>>    arch/arm/mach-prima2/common.c             |   11 --
->>>>    arch/arm/mach-prima2/common.h             |    1 -
->>>>    arch/arm/mach-rockchip/rockchip.c         |    9 --
->>>>    arch/arm/mach-socfpga/socfpga.c           |    2 -
->>>>    arch/arm/mach-sti/board-dt.c              |   10 +-
->>>>    arch/arm/mach-sunxi/sunxi.c               |   10 --
->>>>    arch/arm/mach-tegra/tegra.c               |    9 --
->>>>    arch/arm/mach-vexpress/v2m.c              |   14 +--
->>>>    arch/arm/mach-vt8500/common.h             |   24 -----
->>>>    arch/arm/mach-vt8500/vt8500.c             |    6 --
->>>>    drivers/clk/clk-bcm2835.c                 |    8 --
->>>>    drivers/clk/clk-highbank.c                |   10 +-
->>>>    drivers/clk/clk-nomadik.c                 |  161
->>>> ++++++++++++++---------------
->>>>    drivers/clk/clk-prima2.c                  |   29 ++----
->>>>    drivers/clk/clk-vt8500.c                  |   31 ++++--
->>>>    drivers/clk/mxs/clk-imx23.c               |   15 +--
->>>>    drivers/clk/mxs/clk-imx28.c               |   16 +--
->>>>    drivers/clk/sunxi/clk-sunxi.c             |   11 +-
->>>>    drivers/clocksource/nomadik-mtu.c         |   11 ++
->>>>    include/linux/clk/mxs.h                   |    2 -
->>>>    include/linux/clk/sunxi.h                 |   22 ----
->>>>    include/linux/platform_data/clk-nomadik.h |    2 -
->>>>    41 files changed, 182 insertions(+), 449 deletions(-)
->>>>    delete mode 100644 arch/arm/mach-vt8500/common.h
->>>>    delete mode 100644 include/linux/clk/sunxi.h
->>>>    delete mode 100644 include/linux/platform_data/clk-nomadik.h
->>>
->>>
->>> How would you like to handle this series?
->>
->>
->> Jason,
->>
->> honestly I don't really know, yet. I was hoping for Arnd and Olof
->> decide on that. Maybe they also create a topic branch up to where
->> arch-wide of_clk_init is introduced. Then each removal patch can
->> go through the independent sub-trees. There may be more machs
->> introduced before, that can then also depend on the common branch.
->
-> I'd like to see this merged early into arm-soc and have it as a base
-> branch for other platform branches if there will be much conflicts
-> (for trivial or small conflicts we can resolve, of course). So please
-> collect acks and prepare a branch for me to merge, Sebastian. Or if
-> it's easier I can just apply the patches directly -- just let me know.
-> But given the tegra dependency it's probably easier to take a branch.
+Signed-off-by: Anoop Thomas Mathew <atm@profoundis.com>
+---
+ arch/arc/kernel/kprobes.c     |    2 +-
+ arch/ia64/kernel/kprobes.c    |    2 +-
+ arch/powerpc/kernel/kprobes.c |    2 +-
+ arch/s390/kernel/kprobes.c    |    2 +-
+ arch/sparc/kernel/kprobes.c   |    2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
 
-Actually, I'd be happy if you make a decision. It would be my first
-pull request and maybe it should go guided by more experienced devs
-from now on. Although I am willing to learn.
+diff --git a/arch/arc/kernel/kprobes.c b/arch/arc/kernel/kprobes.c
+index 72f9782..7446c8d 100644
+--- a/arch/arc/kernel/kprobes.c
++++ b/arch/arc/kernel/kprobes.c
+@@ -327,7 +327,7 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, unsigned long trapnr)
+ 		 */
+ 
+ 		/* We increment the nmissed count for accounting,
+-		 * we can also use npre/npostfault count for accouting
++		 * we can also use npre/npostfault count for accounting
+ 		 * these specific fault cases.
+ 		 */
+ 		kprobes_inc_nmissed_count(cur);
+diff --git a/arch/ia64/kernel/kprobes.c b/arch/ia64/kernel/kprobes.c
+index f8280a7..074fde4 100644
+--- a/arch/ia64/kernel/kprobes.c
++++ b/arch/ia64/kernel/kprobes.c
+@@ -947,7 +947,7 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 	case KPROBE_HIT_SSDONE:
+ 		/*
+ 		 * We increment the nmissed count for accounting,
+-		 * we can also use npre/npostfault count for accouting
++		 * we can also use npre/npostfault count for accounting
+ 		 * these specific fault cases.
+ 		 */
+ 		kprobes_inc_nmissed_count(cur);
+diff --git a/arch/powerpc/kernel/kprobes.c b/arch/powerpc/kernel/kprobes.c
+index 2156ea9..90fab64 100644
+--- a/arch/powerpc/kernel/kprobes.c
++++ b/arch/powerpc/kernel/kprobes.c
+@@ -429,7 +429,7 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 	case KPROBE_HIT_SSDONE:
+ 		/*
+ 		 * We increment the nmissed count for accounting,
+-		 * we can also use npre/npostfault count for accouting
++		 * we can also use npre/npostfault count for accounting
+ 		 * these specific fault cases.
+ 		 */
+ 		kprobes_inc_nmissed_count(cur);
+diff --git a/arch/s390/kernel/kprobes.c b/arch/s390/kernel/kprobes.c
+index 0ce9fb2..018c1c4 100644
+--- a/arch/s390/kernel/kprobes.c
++++ b/arch/s390/kernel/kprobes.c
+@@ -673,7 +673,7 @@ static int __kprobes kprobe_trap_handler(struct pt_regs *regs, int trapnr)
+ 	case KPROBE_HIT_SSDONE:
+ 		/*
+ 		 * We increment the nmissed count for accounting,
+-		 * we can also use npre/npostfault count for accouting
++		 * we can also use npre/npostfault count for accounting
+ 		 * these specific fault cases.
+ 		 */
+ 		kprobes_inc_nmissed_count(p);
+diff --git a/arch/sparc/kernel/kprobes.c b/arch/sparc/kernel/kprobes.c
+index e722121..d3d5d38 100644
+--- a/arch/sparc/kernel/kprobes.c
++++ b/arch/sparc/kernel/kprobes.c
+@@ -349,7 +349,7 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 	case KPROBE_HIT_SSDONE:
+ 		/*
+ 		 * We increment the nmissed count for accounting,
+-		 * we can also use npre/npostfault count for accouting
++		 * we can also use npre/npostfault count for accounting
+ 		 * these specific fault cases.
+ 		 */
+ 		kprobes_inc_nmissed_count(cur);
+-- 
+1.7.9.5
 
-> The long tail might be the cases where you rewrote some of the init
-> code, since that'll need to be tested on those platforms. I wonder if
-> we can pick up most of the other pieces if that ends up taking a
-> while.
-
-True, for an early merge that was a bad decision. I looked again into
-patches 1-8 and if there are concerns:
-- nomadik can be dropped as it still has custom .init_time.
-- prima2 and sunxi are quite straight forward but also have custom
-   .init_time that protect them from the arch-wide call.
-- socfpga needs some new custom .init_time then.
-- vt8500 is a little bit more changes but has .init_time call to
-   clocksource_of_init alone.
-
-Sebastian
