@@ -1,148 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab3IRSN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 14:13:59 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:43767 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab3IRSN5 (ORCPT
+	id S1753209Ab3IRSQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 14:16:51 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:9511 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab3IRSQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 14:13:57 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v2 2/2] RX-51: ARM errata 430973 workaround
-Date: Wed, 18 Sep 2013 20:13:52 +0200
-User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, Nishanth Menon <nm@ti.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Ivaylo Dimitrov <freemangordon@abv.bg>
-References: <1362044548-5398-1-git-send-email-pali.rohar@gmail.com> <201309181033.24965@pali> <20130918171816.GT9994@atomide.com>
-In-Reply-To: <20130918171816.GT9994@atomide.com>
+	Wed, 18 Sep 2013 14:16:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 18 Sep 2013 11:16:48 -0700
+From: Rhyland Klein <rklein@nvidia.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+CC: <spi-devel-general@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Simon Glass <sjg@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Rhyland Klein <rklein@nvidia.com>
+Subject: [IP REVIEW] spi/tegra114: Correct support for cs_change
+Date: Wed, 18 Sep 2013 14:13:39 -0400
+Message-ID: <1379528019-6042-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1431164.Jrtyb74O6d";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201309182013.52975@pali>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1431164.Jrtyb74O6d
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+The tegra114 driver wasn't currently handling the cs_change functionality.
+It is meant to invert normal behavior, and we were only using it to possibly
+delay at the end of a transfer.
 
-Hello,
+This patch modifies the logic so that the cs state will be toggled after
+every individual transfer or NOT toggled at the end of the last transfer
+if cs_change is set in that transfer struct.
 
-On Wednesday 18 September 2013 19:18:17 Tony Lindgren wrote:
-> * Pali Roh=C3=A1r <pali.rohar@gmail.com> [130918 01:41]:
-> > I'm not very happy. I sent this patch 6 months ago and only
-> > now you commented that needs rework again. This patch is
-> > needed because all thumb-2 userspace binaries crashing. I
-> > want to have working support for Nokia N900 and not always
-> > rebasing and changing patches. Also DT still not working on
-> > N900 (file contains only small subset of devices as in
-> > board files plus it is not in stable kernel) so I do not
-> > want to switch to DT. I need something which is working and
-> > not something new non-working. I belive that you and other
-> > kernel guys do not remove all n900 board files until every
-> > one line will be rewritten to DT and tested that everything
-> > working. And from this and other conversation it looks for
-> > me that you are going to do that. So please clarify what
-> > you want to do (and when) with board-rx51-* files. Aftethat
-> > I can decide what to do in future.
->=20
-> Sorry if there's been some going back and forth with the
-> patches, I think pretty much everybody wants n900 support in
-> the mainline.
->=20
-> It's obvious that we're moving everything to be devicetree
-> only as discussed on the mailing lists over past few years.
-> For most drivers it's already working, and we can still
-> initialize platform data too for the legacy devices until
-> they have bindings, so it should not be too intrusive except
-> for the configuration changes to use appended DTB or a
-> chained bootloader with DTB support.
->=20
-> > For now I see this situation something like: I wrote
-> > patches, send them to ML and after half of year maintainer
-> > politely rejected them becuase my patches not using new
-> > uber cool technology with still not working and also was
-> > not available half year ago. What happen if I find another
-> > time to rework this patch and send it again in next 2 or 5
-> > months?
->=20
-> Hmm hasn't there been pending comments until recently on your
-> patches?
->=20
+Also, this builds in logic so that if a different device tries to start
+a transfer while CS is active from a different device, it will abort the
+previous transfer and start a new one for the new device.
 
-Since 10.07.2013 I do not have any emails for patch 2/2. If I=20
-missed something from you, please resend me it.
+This work was based on the spi-atmel driver.
 
-> It seems that with the changes I suggested your patches should
-> work for both legacy booting and DT based booting, so maybe
-> just try to update them over next few weeks, let's say by
-> -rc3 rather than wait 2 to 5 months? :) No need to test them
-> currently on the DT based booting if you don't have that set
-> up, just move the code out of the board-*.c file.
->=20
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+---
+ drivers/spi/spi-tegra114.c |   59 ++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 52 insertions(+), 7 deletions(-)
 
-Ok, no problem. I will move code as you suggested.
+diff --git a/drivers/spi/spi-tegra114.c b/drivers/spi/spi-tegra114.c
+index 145dd43..a9973de 100644
+--- a/drivers/spi/spi-tegra114.c
++++ b/drivers/spi/spi-tegra114.c
+@@ -182,6 +182,7 @@ struct tegra_spi_data {
+ 	u32					cur_speed;
+ 
+ 	struct spi_device			*cur_spi;
++	struct spi_device			*cs_control;
+ 	unsigned				cur_pos;
+ 	unsigned				cur_len;
+ 	unsigned				words_per_32bit;
+@@ -717,7 +718,12 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
+ 		else if (req_mode == SPI_MODE_3)
+ 			command1 |= SPI_CONTROL_MODE_3;
+ 
+-		tegra_spi_writel(tspi, command1, SPI_COMMAND1);
++		if (tspi->cs_control) {
++			if (tspi->cs_control != spi)
++				tegra_spi_writel(tspi, command1, SPI_COMMAND1);
++			tspi->cs_control = NULL;
++		} else
++			tegra_spi_writel(tspi, command1, SPI_COMMAND1);
+ 
+ 		command1 |= SPI_CS_SW_HW;
+ 		if (spi->mode & SPI_CS_HIGH)
+@@ -732,6 +738,9 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
+ 		command1 |= SPI_BIT_LENGTH(bits_per_word - 1);
+ 	}
+ 
++	if (t->len == 0 && !t->tx_buf && !t->rx_buf)
++		return 0;
++
+ 	if (tspi->is_packed)
+ 		command1 |= SPI_PACKED;
+ 
+@@ -803,6 +812,17 @@ static int tegra_spi_setup(struct spi_device *spi)
+ 	return 0;
+ }
+ 
++static void tegra_spi_transfer_delay(int delay)
++{
++	if (!delay)
++		return;
++
++	if (delay >= 1000)
++		mdelay(delay / 1000);
++
++	udelay(delay % 1000);
++}
++
+ static int tegra_spi_transfer_one_message(struct spi_master *master,
+ 			struct spi_message *msg)
+ {
+@@ -812,6 +832,7 @@ static int tegra_spi_transfer_one_message(struct spi_master *master,
+ 	struct spi_transfer *xfer;
+ 	struct spi_device *spi = msg->spi;
+ 	int ret;
++	bool skip = false;
+ 
+ 	msg->status = 0;
+ 	msg->actual_length = 0;
+@@ -819,13 +840,20 @@ static int tegra_spi_transfer_one_message(struct spi_master *master,
+ 	single_xfer = list_is_singular(&msg->transfers);
+ 	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
+ 		INIT_COMPLETION(tspi->xfer_completion);
++
+ 		ret = tegra_spi_start_transfer_one(spi, xfer,
+ 					is_first_msg, single_xfer);
+ 		if (ret < 0) {
+ 			dev_err(tspi->dev,
+ 				"spi can not start transfer, err %d\n", ret);
+-			goto exit;
++			goto complete_xfer;
++		}
++
++		if (xfer->len == 0 && !xfer->tx_buf && !xfer->rx_buf) {
++			skip = true;
++			goto complete_xfer;
+ 		}
++
+ 		is_first_msg = false;
+ 		ret = wait_for_completion_timeout(&tspi->xfer_completion,
+ 						SPI_DMA_TIMEOUT);
+@@ -833,24 +861,41 @@ static int tegra_spi_transfer_one_message(struct spi_master *master,
+ 			dev_err(tspi->dev,
+ 				"spi trasfer timeout, err %d\n", ret);
+ 			ret = -EIO;
+-			goto exit;
++			goto complete_xfer;
+ 		}
+ 
+ 		if (tspi->tx_status ||  tspi->rx_status) {
+ 			dev_err(tspi->dev, "Error in Transfer\n");
+ 			ret = -EIO;
+-			goto exit;
++			goto complete_xfer;
+ 		}
+ 		msg->actual_length += xfer->len;
+-		if (xfer->cs_change && xfer->delay_usecs) {
++
++complete_xfer:
++		if (ret < 0 || skip) {
+ 			tegra_spi_writel(tspi, tspi->def_command1_reg,
+ 					SPI_COMMAND1);
+-			udelay(xfer->delay_usecs);
++			tegra_spi_transfer_delay(xfer->delay_usecs);
++			goto exit;
++		} else if (msg->transfers.prev == &xfer->transfer_list) {
++			/* This is the last transfer in message */
++			if (xfer->cs_change)
++				tspi->cs_control = spi;
++			else {
++				tegra_spi_writel(tspi, tspi->def_command1_reg,
++						SPI_COMMAND1);
++				tegra_spi_transfer_delay(xfer->delay_usecs);
++			}
++		} else if (xfer->cs_change) {
++			tegra_spi_writel(tspi, tspi->def_command1_reg,
++					SPI_COMMAND1);
++			tegra_spi_transfer_delay(xfer->delay_usecs);
+ 		}
++
+ 	}
+ 	ret = 0;
+ exit:
+-	tegra_spi_writel(tspi, tspi->def_command1_reg, SPI_COMMAND1);
++
+ 	msg->status = ret;
+ 	spi_finalize_current_message(master);
+ 	return ret;
+-- 
+1.7.9.5
 
-> > Tony, if you did not have time for review this patch months
-> > ago or you found it only today - no problem, I understand
-> > it. But what I need to know is what will happen with
-> > board-rx51-* files (and when?) You can see that DT does not
-> > have definitions of all n900 hw parts (plus it is not in
-> > last 3.11 kernel!) which means that DT is not usable for me
-> > and other n900 people. This also means that I cannot
-> > rewrite my patches for DT and test if they working.
->=20
-> I usually stop looking at new code around -rc4 and concentrate
-> on fixes until -rc1 or so. So there can be easily one month
-> delays on reviewing stuff depending on where we are with the
-> current merge window or -rc cycle, sorry if that's annoying.
->=20
-> The .dts files will be separate from the kernel soonish, so
-> that's not be a show stopper. Just like all the board specific
-> .config files are separate from the kernel already. Too bad
-> our .dts changes did not get merged for v3.12 because of
-> conflicts with other branches, but hey, they should be
-> independent from the kernel anyways.
->=20
-> The board files will be going away as soon as things are
-> working with DT. We've been pretty much only applying fixes
-> to them for quite some time now. For the timeline, the
-> earliest we'll be able to remove the board-*.c files and
-> platform data is for v3.13 assuming the PM dependencies get
-> sorted out before that. Making omap3 DT only is going remove
-> about 25k LOC, so that's a good reason for doing that.
->=20
-> Cheers,
->=20
-> Tony
-
-Thanks for clarification.
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1431164.Jrtyb74O6d
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlI57WAACgkQi/DJPQPkQ1JXDACfas6684/9ZPirlnHQc0lE47/z
-JD0AnA5aiHDaxtpUPX7nQ0QSMFBWf9oX
-=YDPw
------END PGP SIGNATURE-----
-
---nextPart1431164.Jrtyb74O6d--
