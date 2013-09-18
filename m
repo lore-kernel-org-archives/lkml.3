@@ -1,118 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab3IRPUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 11:20:38 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:54599 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab3IRPUg (ORCPT
+	id S1752326Ab3IRPVv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 11:21:51 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34670 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab3IRPVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 11:20:36 -0400
+	Wed, 18 Sep 2013 11:21:50 -0400
+Date: Wed, 18 Sep 2013 16:21:49 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Savchenko <bircoph@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        suspend-devel@lists.sourceforge.net
+Subject: Re: [BUG] 3.7-rc regression bisected: s2disk fails to resume image:
+ Processes could not be frozen, cannot continue resuming
+Message-ID: <20130918152149.GM13318@ZenIV.linux.org.uk>
+References: <20130812234415.7db639bb0d664e56b6ab2ab2@gmail.com>
+ <20130827074843.ba1b6f62cc0a6dca8e47c06c@gmail.com>
+ <20130918135239.GL13318@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20130918144420.GB16424@core.coreip.homeip.net>
-References: <52399E2C.7000805@gmail.com>
-	<20130918144420.GB16424@core.coreip.homeip.net>
-Date: Wed, 18 Sep 2013 19:20:34 +0400
-Message-ID: <CABWXVkNPET48b_Ru=y=WRFEFBKOMYLoxAGSsco36KNtzTFd1kQ@mail.gmail.com>
-Subject: Re: [PATCH] Input: i8042 - i8042_flush fix for a full 8042 buffer
-From: Andrey Moiseev <o2g.org.ru@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130918135239.GL13318@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nice. That should be of no interest for the outside world how much
-junk 8042 contained, so that's better.
+On Wed, Sep 18, 2013 at 02:52:39PM +0100, Al Viro wrote:
+> On Tue, Aug 27, 2013 at 07:48:43AM +0400, Andrew Savchenko wrote:
+> > > Additional (but probably useless) information on this bug may be found
+> > > here: https://forums.gentoo.org/viewtopic-p-7371120.html
+> 
+> Something's very fishy there:
+> 
+> [quote]
+> Digging into suspend-utils code shows that the following ioctl fails on      
+> "/dev/snapshot":                                                             
+>                                                                                 
+>                                     Code:                                       
+>                           ioctl(dev, _IO(3, 1), 0);                          
+> [end quote]
+> 
+> but that's _not_ anything freeze-related - that's HDIO_GETGEO, and with zero
+> as last argument it will fail, no matter what.  With EFAULT, if nothing
+> else...
+> 
+> Which ioctl() it really is?  A bit further down you write "I modified suspend
+> code to see errno, so freeze on /dev/snapshot fails [with EAGAIN]", so you
+> have isolated the call in question.  Could you quote the actual code?
 
-On Wed, Sep 18, 2013 at 6:44 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Hi Andrey,
->
-> On Wed, Sep 18, 2013 at 04:35:56PM +0400, Andrey Moiseev wrote:
->> When 8042 internal data buffer is full, the driver
->> erroneously decides that the controller is not present.
->>
->> I've already sent this 2 weeks ago, but that message received no comments.
->>
->
-> Sorry about the delay. How about we rework it a bit and make flush
-> return success/error instead of number of bytes read, like in the patch
-> below?
->
-> Thanks.
->
-> --
-> Dmitry
->
-> Input: i8042 - i8042_flush fix for a full 8042 buffer
->
-> From: Andrey Moiseev <o2g.org.ru@gmail.com>
->
-> When 8042 internal data buffer is full, the driver
-> erroneously decides that the controller is not present.
->
-> i8042_flush returns the number of flushed bytes, which is
-> in 0 - I8042_BUFFER_SIZE range inclusive. Therefore, i8042_flush
-> has no way to indicate an error. Moreover i8042_controller_check
-> takes initially full buffer (i8042_flush returned
-> I8042_BUFFER_SIZE) as a sign of absence of the controller.
->
-> Let's change i8042 to return success/error instead and make sure
-> we do not return error prematurely.
->
-> Signed-off-by: Andrey Moiseev <o2g.org.ru@gmail.com>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  drivers/input/serio/i8042.c |   23 ++++++++++++++---------
->  1 file changed, 14 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
-> index 78e4de4..52c9ebf 100644
-> --- a/drivers/input/serio/i8042.c
-> +++ b/drivers/input/serio/i8042.c
-> @@ -223,21 +223,26 @@ static int i8042_flush(void)
->  {
->         unsigned long flags;
->         unsigned char data, str;
-> -       int i = 0;
-> +       int count = 0;
-> +       int retval = 0;
->
->         spin_lock_irqsave(&i8042_lock, flags);
->
-> -       while (((str = i8042_read_status()) & I8042_STR_OBF) && (i < I8042_BUFFER_SIZE)) {
-> -               udelay(50);
-> -               data = i8042_read_data();
-> -               i++;
-> -               dbg("%02x <- i8042 (flush, %s)\n",
-> -                   data, str & I8042_STR_AUXDATA ? "aux" : "kbd");
-> +       while ((str = i8042_read_status()) & I8042_STR_OBF) {
-> +               if (count++ < I8042_BUFFER_SIZE) {
-> +                       udelay(50);
-> +                       data = i8042_read_data();
-> +                       dbg("%02x <- i8042 (flush, %s)\n",
-> +                           data, str & I8042_STR_AUXDATA ? "aux" : "kbd");
-> +               } else {
-> +                       retval = -EIO;
-> +                       break;
-> +               }
->         }
->
->         spin_unlock_irqrestore(&i8042_lock, flags);
->
-> -       return i;
-> +       return retval;
->  }
->
->  /*
-> @@ -849,7 +854,7 @@ static int __init i8042_check_aux(void)
->
->  static int i8042_controller_check(void)
->  {
-> -       if (i8042_flush() == I8042_BUFFER_SIZE) {
-> +       if (i8042_flush()) {
->                 pr_err("No controller found\n");
->                 return -ENODEV;
->         }
->
+*scratches head*  _IO('3', 1), perhaps?  At least that would make sense in
+such context...  Assuming that's the case, slap
+	printk(KERN_INFO "freeze_process() => %d", error);
+after the call of freeze_process() in kernel/power/user.c along with
+	printk(KERN_INFO "__usermodehelper_disable() => %d", error);
+and
+	printk(KERN_INFO "try_to_freeze_tasks() => %d", error);
+in kernel/power/process.c:freeze_process(), after the calls of
+__usermodehelper_disable() and try_to_freeze_tasks() resp.
+
+FWIW, I suspect that it's __usermodehelper_disable() - it does
+        retval = wait_event_timeout(running_helpers_waitq,
+                                        atomic_read(&running_helpers) == 0,
+                                        RUNNING_HELPERS_TIMEOUT);
+and returns -EAGAIN on timeout.  I'm not familiar with swsusp code, but
+it smells like we end up waiting for linuxrc itself to finish.
+
+Pavel, any suggestions?  If SNAPSHOT_FREEZE really wants everything run
+via usermodehelper gone for some reason, what makes /linuxrc different
+from e.g /sbin/modprobe?
