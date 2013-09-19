@@ -1,201 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab3ISLMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 07:12:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18285 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752720Ab3ISLMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 07:12:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,936,1371106800"; 
-   d="scan'208";a="380504284"
-Message-ID: <523ADD8D.1030607@intel.com>
-Date: Thu, 19 Sep 2013 14:18:37 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753571Ab3ISLPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 07:15:21 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:37469 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411Ab3ISLPT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 07:15:19 -0400
+Date: Thu, 19 Sep 2013 13:14:06 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: tsi108: Prevent compiler warning
+Message-ID: <20130919111405.GA10852@ulmo>
+References: <1379508595-30252-1-git-send-email-treding@nvidia.com>
+ <20130918.123853.1464055976885078627.davem@davemloft.net>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Vince Weaver <vince@deater.net>,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org, eranian@googlemail.com
-Subject: Re: [PATCH, v3] perf: Always set bit 0 in the capabilities field
- of 'struct perf_event_mmap_page' to 0, to maintain the ABI
-References: <alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy> <20130918085722.GL12926@twins.programming.kicks-ass.net> <alpine.DEB.2.02.1309181013100.23210@pianoman.cluster.toy> <20130918154224.GK9326@twins.programming.kicks-ass.net> <alpine.DEB.2.02.1309181556370.26402@pianoman.cluster.toy> <20130919081642.GL9326@twins.programming.kicks-ass.net> <20130919091452.GB14112@gmail.com> <20130919101240.GN9326@twins.programming.kicks-ass.net> <20130919102818.GA23487@gmail.com> <20130919103550.GO9326@twins.programming.kicks-ass.net> <20130919104056.GA18991@gmail.com>
-In-Reply-To: <20130919104056.GA18991@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
+Content-Disposition: inline
+In-Reply-To: <20130918.123853.1464055976885078627.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/09/13 13:40, Ingo Molnar wrote:
-> 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
->> On Thu, Sep 19, 2013 at 12:28:18PM +0200, Ingo Molnar wrote:
->>
->> You really don't like version fields do you ;-)
-> 
-> Indeed they are a horrible concept.
-> 
->> Would it make sense to do something like s/cap_usr/cap_user/ and drop 
->> the _available, _used postfixes? It results in different names but 
->> avoids these terribly long ones.
-> 
-> Absolutely! Find updated patch below.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 8355c84..a9c606b 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -1883,9 +1883,9 @@ static struct pmu pmu = {
->  
->  void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
->  {
-> -	userpg->cap_usr_time = 0;
-> -	userpg->cap_usr_time_zero = 0;
-> -	userpg->cap_usr_rdpmc = x86_pmu.attr_rdpmc;
-> +	userpg->cap_user_time = 0;
-> +	userpg->cap_user_time_zero = 0;
-> +	userpg->cap_user_rdpmc = x86_pmu.attr_rdpmc;
->  	userpg->pmc_width = x86_pmu.cntval_bits;
->  
->  	if (!boot_cpu_has(X86_FEATURE_CONSTANT_TSC))
-> @@ -1894,13 +1894,13 @@ void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
->  	if (!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
->  		return;
->  
-> -	userpg->cap_usr_time = 1;
-> +	userpg->cap_user_time = 1;
->  	userpg->time_mult = this_cpu_read(cyc2ns);
->  	userpg->time_shift = CYC2NS_SCALE_FACTOR;
->  	userpg->time_offset = this_cpu_read(cyc2ns_offset) - now;
->  
->  	if (sched_clock_stable && !check_tsc_disabled()) {
-> -		userpg->cap_usr_time_zero = 1;
-> +		userpg->cap_user_time_zero = 1;
->  		userpg->time_zero = this_cpu_read(cyc2ns_offset);
->  	}
->  }
-> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> index 40a1fb8..dd4c903 100644
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -380,10 +380,13 @@ struct perf_event_mmap_page {
->  	union {
->  		__u64	capabilities;
->  		struct {
-> -			__u64	cap_usr_time		: 1,
-> -				cap_usr_rdpmc		: 1,
-> -				cap_usr_time_zero	: 1,
-> -				cap_____res		: 61;
-> +			__u64	cap_bit0		: 1, /* Always 0, deprecated, see commit 860f085b74e9 */
-> +				cap_bit0_is_deprecated	: 1, /* Always 1, signals that bit 0 is zero */
-> +
-> +				cap_user_rdpmc		: 1, /* The RDPMC instruction can be used to read counts */
-> +				cap_user_time		: 1, /* The time_* fields are used */
-> +				cap_user_time_zero	: 1, /* The time_zero field is used */
-> +				cap_____res		: 59;
->  		};
->  	};
->  
-> @@ -442,12 +445,13 @@ struct perf_event_mmap_page {
->  	 *               ((rem * time_mult) >> time_shift);
->  	 */
->  	__u64	time_zero;
-> +	__u32	size;			/* Header size up to __reserved[] fields. */
->  
->  		/*
->  		 * Hole for extension of the self monitor capabilities
->  		 */
->  
-> -	__u64	__reserved[119];	/* align to 1k */
-> +	__u8	__reserved[118*8+4];	/* align to 1k. */
->  
->  	/*
->  	 * Control data for the mmap() data buffer.
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index dd236b6..cb4238e 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -3660,6 +3660,26 @@ static void calc_timer_values(struct perf_event *event,
->  	*running = ctx_time - event->tstamp_running;
->  }
->  
-> +static void perf_event_init_userpage(struct perf_event *event)
-> +{
-> +	struct perf_event_mmap_page *userpg;
-> +	struct ring_buffer *rb;
-> +
-> +	rcu_read_lock();
-> +	rb = rcu_dereference(event->rb);
-> +	if (!rb)
-> +		goto unlock;
-> +
-> +	userpg = rb->user_page;
-> +
-> +	/* Allow new userspace to detect that bit 0 is deprecated */
-> +	userpg->cap_bit0_is_deprecated = 1;
-> +	userpg->size = offsetof(struct perf_event_mmap_page, __reserved);
-> +
-> +unlock:
-> +	rcu_read_unlock();
-> +}
-> +
->  void __weak arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
->  {
->  }
-> @@ -4044,6 +4064,7 @@ again:
->  	ring_buffer_attach(event, rb);
->  	rcu_assign_pointer(event->rb, rb);
->  
-> +	perf_event_init_userpage(event);
->  	perf_event_update_userpage(event);
->  
->  unlock:
-> 
-> 
 
-Please consider adding:
+--LQksG6bCIzRHxTLp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Wed, Sep 18, 2013 at 12:38:53PM -0400, David Miller wrote:
+> From: Thierry Reding <thierry.reding@gmail.com>
+> Date: Wed, 18 Sep 2013 14:49:55 +0200
+>=20
+> > The dump_eth_one() function is only used if DEBUG is enabled, so protect
+> > it by a corresponding #ifdef DEBUG block.
+> >=20
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+>=20
+> I would prefer that this function and the one call site is simply
+> removed instead.
+>=20
+> This kind of thing can be provided via ethtool register dumps
+> and therefore without all of the ugliness this ad-hoc stuff
+> presents.
 
-diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
-index 9570c2b..b2519e4 100644
---- a/tools/perf/arch/x86/util/tsc.c
-+++ b/tools/perf/arch/x86/util/tsc.c
-@@ -32,7 +32,7 @@ u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc)
- int perf_read_tsc_conversion(const struct perf_event_mmap_page *pc,
- 			     struct perf_tsc_conversion *tc)
- {
--	bool cap_usr_time_zero;
-+	bool cap_user_time_zero;
- 	u32 seq;
- 	int i = 0;
+I just noticed the warning during some test builds I was doing due to
+some unrelated patches and thought I'd clean it up along the way.
 
-@@ -42,7 +42,7 @@ int perf_read_tsc_conversion(const struct
-perf_event_mmap_page *pc,
- 		tc->time_mult = pc->time_mult;
- 		tc->time_shift = pc->time_shift;
- 		tc->time_zero = pc->time_zero;
--		cap_usr_time_zero = pc->cap_usr_time_zero;
-+		cap_user_time_zero = pc->cap_user_time_zero;
- 		rmb();
- 		if (pc->lock == seq && !(seq & 1))
- 			break;
-@@ -52,7 +52,7 @@ int perf_read_tsc_conversion(const struct
-perf_event_mmap_page *pc,
- 		}
- 	}
+I'll send a patch to remove the functionality completely if that's what
+you prefer, but I won't be able to reimplement it using ethtool. Perhaps
+someone with actual hardware can do that.
 
--	if (!cap_usr_time_zero)
-+	if (!cap_user_time_zero)
- 		return -EOPNOTSUPP;
+Thierry
 
- 	return 0;
+--LQksG6bCIzRHxTLp
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSOtx9AAoJEN0jrNd/PrOhnT4QAIelrNP+MLJmxaxZq7wfGqcZ
+FViGIYuYfKPUjCYJ+jsihfyYJaLrpFsiYensrivPqEpdwRqOfYVY2jEw1AVRfwa8
+x9oVRbnylRJlxY8ztBpY2vm1TEpBQn8aXa1YReELWtEe2f4yEmYWBIm6NpjoHlnn
+Sc9UCtU0LMSaAY3/NRCutCEeEWYGF1I7b9ML4fPVYV61d+3hNAy+3vbZCugGUpM/
+WtaXrFn0XRGsa5yS5uDCwUQEscTOFfqtvj9mxkxNrLy2BJyhUPMgvQzUqfFsAnAk
+i1q1k++E9f4M4BDCfCQWB26oy92FC9K/hXQVtimQmIPM0vdLtq/cPm/67HY3+A84
+avzN+XKPNHtMpQcxSrIUQnh0juLIoOlGBJD9tRGUbqOQS52pE10/AKlcjYWChNAb
+3zZng+lkW2ug06nCpkPf8wlpO3KQz1Hw9LhCnAa6Vy6YYpPkLY76r32yEawHcs0z
+Oc28mEqaFVCw7sUoCECnuV+0ZYSYO4SDGynEeouD+c/3yo3U3WcgQsh1L2gAtq2n
+nN4HO7d7cJmC5u0DHkNff96IoRjcIT2XLdij2NbLYMzqV5N43BfyS0OQhuz9T6OM
+xzLPsCqoNPBPJmZm/ljNrxNuOR0vlzJ9YJWfgxCq2lnc2KYtoeS2LSLCIIQd8I67
+4U/jajMZbg9Pgi+r1Wcf
+=SUIx
+-----END PGP SIGNATURE-----
+
+--LQksG6bCIzRHxTLp--
