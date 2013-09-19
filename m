@@ -1,58 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab3ISM6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 08:58:32 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:44134 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab3ISM6b (ORCPT
+	id S1753884Ab3ISNCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:02:18 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:58360 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752033Ab3ISNCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 08:58:31 -0400
-Date: Thu, 19 Sep 2013 05:58:30 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: ceph-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph fixes for 3.12-rc2
-Message-ID: <alpine.DEB.2.00.1309190551380.23507@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 19 Sep 2013 09:02:15 -0400
+Message-ID: <523AF548.30400@st.com>
+Date: Thu, 19 Sep 2013 13:59:52 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Stephen GALLIMORE <stephen.gallimore@st.com>,
+        Stuart MENEFY <stuart.menefy@st.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Olivier CLERGEAUD <olivier.clergeaud@st.com>
+Subject: Re: [PATCH 2/4] ARM: STi: Supply I2C configuration to STiH416 SoC
+References: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com> <1379498483-4236-3-git-send-email-maxime.coquelin@st.com> <20130918120340.GF16984@lee--X1> <84625B87D65BCF478CC1E9C886A4C314DEF1BD9578@SAFEX1MAIL4.st.com> <5239A322.5010004@st.com> <84625B87D65BCF478CC1E9C886A4C314DEF1BD9579@SAFEX1MAIL4.st.com>
+In-Reply-To: <84625B87D65BCF478CC1E9C886A4C314DEF1BD9579@SAFEX1MAIL4.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 19/09/13 08:16, Maxime COQUELIN wrote:
+> Hi Srini,
+> 
+> On 09/18/2013 03:17 PM, Srinivas KANDAGATLA wrote:
+>> On 18/09/13 13:46, Maxime COQUELIN wrote:
+>>> On 09/18/2013 02:03 PM, Lee Jones wrote:
+>>>>>>> This patch supplies I2C configuration to STiH416 SoC.
+>>>>>>>
+>>>>>>> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>>>>>>> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+>>>>>>> ---
+>>>>>>>  arch/arm/boot/dts/stih416-pinctrl.dtsi |   35 ++++++++++++++++++++
+>>>>>>>  arch/arm/boot/dts/stih416.dtsi         |   57 ++++++++++++++++++++++++++++++++
+>>>>>>>  2 files changed, 92 insertions(+)
+>>>>>>>
+>>>>>>> diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+>>>>> I genuinely don't know the answer to this question, but are these
+>>>>> nodes identical to the ones you've just put in the stih415 DTSI file?
+>>>>> If so, I think it will be worth creating a stih41x DTSI rather than
+>>>>> duplicating lots of stuff unnecessarily.
+>>> There are close to be identical indeed.
+>>> For the clocks and pinctrl, the references names are the same, but they are
+>>> pointing on different nodes, as STiH415 and STiH416 have their own
+>>> clocks and pinctrl dtsi files.
+>>>
+>>> Srini, what is opinion about this?
+>> There is already a stih41x.dtsi file, but I don't think it is the right
+>> place for the pinctrl nodes there.
+>>
+>> Am not OK with the idea of common pinctrl nodes for STiH415 and STiH416
+>> for two reasons.
+>>
+>> 1> If we common up the pinctrl nodes, it will be very difficult to
+>> accommodate new pinctrls layout which is not guaranteed to be in same
+>> layout in future SOCs.
+>>
+>> 2> The retiming values in the pinctrl nodes tend to change as per SOC,
+>> so it will be difficult to manage it if we common it up.
+>>
+>> Am sure we can come up with a dt layout which can reduce duplication,
+>> but we have to be careful here not to lose the flexiblity to accommodate
+>> new picntrl layouts, new retimings values based on SOC.
+> Ok. What do you think of declaring the i2c nodes inside the stih41x.dtsi
+> file,
+> and overload them with the pinctrl and clock properties in the stih416
+> and stih415 dtsi files?
+Am not very comfortable with this idea.
 
-Please pull the following Ceph fixes for
+As there is no guarantee that the interrupt number/memory map and the
+i2c numbering will be same in future SOCs or other IPs.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+You might be already aware that the number of i2cs on each SOC are
+different as example on STiH415 we have 10 SSCs and on STiH416 we have
+11 SSCs. So, At what point you decide that which devices/IPs should be
+in stih41x and which should in stih415/Stih416?
 
-These fix several bugs with RBD from 3.11 that didn't get tested in time 
-for the merge window: some error handling, a use-after-free, and a 
-sequencing issue when unmapping and image races with a notify operation.
+Each i2c node will save around 5 lines if we common it up, but if the
+interrupt number or map changes this difference will be negligible.
 
-There is also a patch fixing a problem with the new ceph + fscache code 
-that just went in.
+Common up at this level and mixing un-common ones in stih415.dtsi or
+stih416.dtsi will add confusion to readers as the information is split
+at multiple places.
 
-Thanks!
-sage
+IMO the common up idea sounds good but reduces the readability and has
+no effect on final dtb size.
+
+Thanks,
+srini
 
 
-----------------------------------------------------------------
-Josh Durgin (6):
-      libceph: add function to ensure notifies are complete
-      rbd: complete notifies before cleaning up osd_client and rbd_dev
-      rbd: make rbd_obj_notify_ack() synchronous
-      rbd: fix use-after free of rbd_dev->disk
-      rbd: ignore unmapped snapshots that no longer exist
-      rbd: fix error handling from rbd_snap_name()
+> 
+> Regards,
+> Maxime
+>>
+>>
+>> thanks,
+>> srini
+>>
+>>
+> 
+> 
+> 
 
-Milosz Tanski (1):
-      fscache: check consistency does not decrement refcount
-
- drivers/block/rbd.c             | 77 +++++++++++++++++++++++++++++++----------
- fs/fscache/cookie.c             |  3 +-
- include/linux/ceph/osd_client.h |  2 ++
- net/ceph/osd_client.c           | 11 ++++++
- 4 files changed, 74 insertions(+), 19 deletions(-)
