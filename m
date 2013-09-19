@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab3ISMwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 08:52:40 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43723 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab3ISMwj (ORCPT
+	id S1753888Ab3ISMzN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 08:55:13 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:56192 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083Ab3ISMzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 08:52:39 -0400
-Date: Thu, 19 Sep 2013 14:52:37 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Michal Simek <monstr@monstr.eu>, Greg KH <greg@kroah.com>
-Cc: Alan Tull <atull@altera.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: /sys rules Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-Message-ID: <20130919125237.GA7125@amd.pavel.ucw.cz>
-References: <cover.1379519753.git.michal.simek@xilinx.com>
- <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
- <20130918191517.GQ19937@titan.lakedaemon.net>
- <20130918203247.GA11181@obsidianresearch.com>
- <1379539063.31417.23.camel@atx-linux-37>
- <523AD814.1060406@monstr.eu>
- <20130919111719.GA26246@amd.pavel.ucw.cz>
- <523ADE58.2070103@monstr.eu>
+	Thu, 19 Sep 2013 08:55:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <523ADE58.2070103@monstr.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <523AF22F.1010909@linux.vnet.ibm.com>
+References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
+	<45987104.t6r4hvPgQn@vostro.rjw.lan>
+	<523AF22F.1010909@linux.vnet.ibm.com>
+Date: Thu, 19 Sep 2013 14:55:10 +0200
+Message-ID: <CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com>
+Subject: Re: Regression on cpufreq in v3.12-rc1
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2013-09-19 13:22:00, Michal Simek wrote:
-> On 09/19/2013 01:17 PM, Pavel Machek wrote:
+On Thu, Sep 19, 2013 at 2:46 PM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
 
-> >> Status is just there and for my zynq devcfg driver I do export some status
-> >> bits.
-> >>
-> >> root@petalinux:~# cat /sys/class/fpga/fpga0/status
-> >> partial_bitstream_status: 0
-> >> prog_done_status: 1
-> >> dbg_lock_status: 0
-> >> seu_lock_status: 0
-> >> aes_en_lock_status: 0
-> >> aes_status: 0
-> >> seu_status: 0
-> >> spniden_status: 1
-> >> spiden_status: 1
-> >> niden_status: 1
-> >> dbgen_status: 1
-> >> dap_en_status: 7
-> > 
-> > This is single file? If so, it needs to be changed. Greg is rather
-> > clear about that.
-> 
-> Don't you have a link to these rules? I have seen any paragraph from Greg
-> about it but I forget where was it.
+>>> I don't really know if this is the right solution at all, so please
+>>> help me out here... if you want that patch I can send it once
+>>> I understand this properly.
+>
+> IIRC, recent kernels didn't return 0 or any error code when the !policy
+> condition was matched. So can you check whether this problem occurs with
+> 3.11 or 3.10 as well?
 
-"one value per file" and "there must be documentation in
-Documentation/ for each file" are the rules, iirc.
+v3.11 works fine.
 
-There's Documentation/sysfs-rules.txt, but it does not seem too
-relevant.
+The problem is not what it returns, the system seems to survive no matter
+whether it returns 0 or 17 or whatever.
 
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+The problem is that sometimes in the v3.12 kernel cycle we got a
+BUG() crash instead of some random value back for calling early.
+
+> So I think we should first identify (bisect?) and understand what caused that
+> particular change and then we will be in a position to evaluate whether the
+> patch you proposed would be the right fix or not.
+
+I'll see if I can get a bisect going, the problem is that I upload the
+kernel over the serial port so this isn't a very quick procedure :-(
+
+Yours,
+Linus Walleij
