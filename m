@@ -1,145 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab3ISO2Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:28:24 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:37761 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751Ab3ISO2W (ORCPT
+	id S1752377Ab3ISOao (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:30:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36127 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab3ISOan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:28:22 -0400
+	Thu, 19 Sep 2013 10:30:43 -0400
+Date: Thu, 19 Sep 2013 16:30:37 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
+        LKML <linux-kernel@vger.kernel.org>, Marc Pignat <marc.pignat@hevs.ch>,
+        john.stultz@linaro.org, kernel@pengutronix.de,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clockevents: Sanitize ticks to nsec conversion
+In-Reply-To: <20130919124805.GU24802@pengutronix.de>
+Message-ID: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
+References: <20130917100417.GQ12758@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1309171210450.4089@ionos.tec.linutronix.de> <20130917130153.GL26819@ludovic.desroches@atmel.com> <alpine.DEB.2.02.1309172228400.4089@ionos.tec.linutronix.de> <20130918085627.GN24802@pengutronix.de>
+ <alpine.DEB.2.02.1309181058470.4089@ionos.tec.linutronix.de> <20130918150958.GO24802@pengutronix.de> <alpine.DEB.2.02.1309182201000.4089@ionos.tec.linutronix.de> <20130919100239.GS24802@pengutronix.de> <alpine.DEB.2.02.1309191207460.4089@ionos.tec.linutronix.de>
+ <20130919124805.GU24802@pengutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <201309191756.BCF65661.MQFOLSJOFHFtOV@I-love.SAKURA.ne.jp>
-References: <CAGXu5jL+NeBw2_vXymM81UdtS6UO7KZA2S4rf3gwM_7nSJ2h6g@mail.gmail.com>
-	<20130917205742.16147.qmail@science.horizon.com>
-	<201309191756.BCF65661.MQFOLSJOFHFtOV@I-love.SAKURA.ne.jp>
-Date: Thu, 19 Sep 2013 07:28:21 -0700
-X-Google-Sender-Auth: d26ObyltyXAarZ0r-VwyPrcNOcM
-Message-ID: <CAGXu5jK_D1BJOQr=1A-UFrpM5Ad+Qu894HT_XjkZh4EmsbCkTQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] remove all uses of printf's %n
-From: Kees Cook <keescook@chromium.org>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: George Spelvin <linux@horizon.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jan Beulich <JBeulich@suse.com>, Joe Perches <joe@perches.com>,
-        Motohiro KOSAKI <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 1:56 AM, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
-> George Spelvin wrote:
->> >>   seq_setwidth(m, 21);
->> >>   seq_printf(m, "%s%d", con->name, con->index);
->> >>   seq_pad(m, '\n');
->>
->> > Ooh, I like this a lot! Much cleaner.
->>
->> That's certainly a good way to do it, too.
->> My "general principles" filter thinks it should be in a local variable
->> if it can, but if hiding it in the struct seq_file is fine if people
->> find that cleaner.
->
-> I think the good point of seq_file is that users don't need to worry about
-> length calculation for overflow detection. This patch helps users to simplify
-> length calculation for alignment. I think this approach is better if adding
-> a size_t to the seq_file is acceptable.
->
-> So, the patch follows.
-> ----------------------------------------
-> >From 02b28fd709971f71e5de9a5b595ff4fd059028b3 Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Thu, 19 Sep 2013 17:23:17 +0900
-> Subject: [PATCH] seq_file: Introduce seq_setwidth() and seq_pad()
->
-> There are several users who want to know bytes written by seq_*() for alignment
-> purpose. Currently they are using %n format for knowing it because seq_*()
-> returns 0 on success.
->
-> This patch introduces seq_setwidth() and seq_pad() for allowing them to align
-> without using %n format.
->
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Marc Kleine-Budde pointed out, that commit 77cc982 "clocksource: use
+clockevents_config_and_register() where possible" caused a regression
+for some of the converted subarchs.
 
-This really feels like a clean solution to me.
+The reason is, that the clockevents core code converts the minimal
+hardware tick delta to a nanosecond value for core internal
+usage. This conversion is affected by integer math rounding loss, so
+the backwards conversion to hardware ticks will likely result in a
+value which is less than the configured hardware limitation. The
+affected subarchs used their own workaround (SIGH!) which got lost in
+the conversion.
 
-Acked-by: Kees Cook <keescook@chromium.org>
+The solution for the issue at hand is simple: adding evt->mult - 1 to
+the shifted value before the integer divison in the core conversion
+function takes care of it. But this only works for the case where for
+the scaled math mult/shift pair "mult <= 1 << shift" is true. For the
+case where "mult > 1 << shift" we can apply the rounding add only for
+the minimum delta value to make sure that the backward conversion is
+not less than the given hardware limit. For the upper bound we need to
+omit the rounding add, because the backwards conversion is always
+larger than the original latch value. That would violate the upper
+bound of the hardware device.
 
--Kees
+Though looking closer at the details of that function reveals another
+bogosity: The upper bounds check is broken as well. Checking for a
+resulting "clc" value greater than KTIME_MAX after the conversion is
+pointless. The conversion does:
 
-> ---
->  fs/seq_file.c            |   15 +++++++++++++++
->  include/linux/seq_file.h |   15 +++++++++++++++
->  2 files changed, 30 insertions(+), 0 deletions(-)
->
-> diff --git a/fs/seq_file.c b/fs/seq_file.c
-> index 3135c25..40e471e 100644
-> --- a/fs/seq_file.c
-> +++ b/fs/seq_file.c
-> @@ -764,6 +764,21 @@ int seq_write(struct seq_file *seq, const void *data, size_t len)
->  }
->  EXPORT_SYMBOL(seq_write);
->
-> +/**
-> + * seq_pad - write padding spaces to buffer
-> + * @m: seq_file identifying the buffer to which data should be written
-> + * @c: the byte to append after padding if non-zero
-> + */
-> +void seq_pad(struct seq_file *m, char c)
-> +{
-> +       int size = m->pad_until - m->count;
-> +       if (size > 0)
-> +               seq_printf(m, "%*s", size, "");
-> +       if (c)
-> +               seq_putc(m, c);
-> +}
-> +EXPORT_SYMBOL(seq_pad);
-> +
->  struct list_head *seq_list_start(struct list_head *head, loff_t pos)
->  {
->         struct list_head *lh;
-> diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-> index 4e32edc..52e0097 100644
-> --- a/include/linux/seq_file.h
-> +++ b/include/linux/seq_file.h
-> @@ -20,6 +20,7 @@ struct seq_file {
->         size_t size;
->         size_t from;
->         size_t count;
-> +       size_t pad_until;
->         loff_t index;
->         loff_t read_pos;
->         u64 version;
-> @@ -79,6 +80,20 @@ static inline void seq_commit(struct seq_file *m, int num)
->         }
->  }
->
-> +/**
-> + * seq_setwidth - set padding width
-> + * @m: the seq_file handle
-> + * @size: the max number of bytes to pad.
-> + *
-> + * Call seq_setwidth() for setting max width, then call seq_printf() etc. and
-> + * finally call seq_pad() to pad the remaining bytes.
-> + */
-> +static inline void seq_setwidth(struct seq_file *m, size_t size)
-> +{
-> +       m->pad_until = m->count + size;
-> +}
-> +void seq_pad(struct seq_file *m, char c);
-> +
->  char *mangle_path(char *s, const char *p, const char *esc);
->  int seq_open(struct file *, const struct seq_operations *);
->  ssize_t seq_read(struct file *, char __user *, size_t, loff_t *);
-> --
-> 1.7.1
+      u64 clc = (latch << evt->shift) / evt->mult;
 
+So there is no sanity check for (latch << evt->shift) exceeding the
+64bit boundary. The latch argument is "unsigned long", so on a 64bit
+arch the handed in argument could easily lead to an unnoticed shift
+overflow. With the above rounding fix applied the calculation before
+the divison is:
 
+       u64 clc = (latch << evt->shift) + evt->mult - 1;
 
--- 
-Kees Cook
-Chrome OS Security
+So we need to make sure, that neither the shift nor the rounding add
+is overflowing the u64 boundary.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: nicolas.ferre@atmel.com
+Cc: Marc Pignat <marc.pignat@hevs.ch>
+Cc: john.stultz@linaro.org
+Cc: kernel@pengutronix.de
+Cc: Ronald Wahl <ronald.wahl@raritan.com>
+Cc: LAK <linux-arm-kernel@lists.infradead.org>
+Cc: u.kleine-koenig@pengutronix.de
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
+
+---
+ kernel/time/clockevents.c |   64 +++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 49 insertions(+), 15 deletions(-)
+
+Index: linux-2.6/kernel/time/clockevents.c
+===================================================================
+--- linux-2.6.orig/kernel/time/clockevents.c
++++ linux-2.6/kernel/time/clockevents.c
+@@ -33,29 +33,63 @@ struct ce_unbind {
+ 	int res;
+ };
+ 
+-/**
+- * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
+- * @latch:	value to convert
+- * @evt:	pointer to clock event device descriptor
+- *
+- * Math helper, returns latch value converted to nanoseconds (bound checked)
+- */
+-u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
++static u64 cev_delta2ns(unsigned long latch, struct clock_event_device *evt,
++			bool ismax)
+ {
+ 	u64 clc = (u64) latch << evt->shift;
++	u64 rnd = (u64) evt->mult - 1;
+ 
+ 	if (unlikely(!evt->mult)) {
+ 		evt->mult = 1;
+ 		WARN_ON(1);
+ 	}
+ 
++	/*
++	 * Upper bound sanity check. If the backwards conversion is
++	 * not equal latch, we know that the above shift overflowed.
++	 */
++	if (clc >> evt->shift) != (u64)latch)
++		clc = ~0ULL;
++
++	/*
++	 * Scaled math oddities:
++	 *
++	 * For mult <= (1 << shift) we can safely add mult - 1 to
++	 * prevent integer rounding loss. So the backwards conversion
++	 * from nsec to device ticks will be correct.
++	 *
++	 * For mult > (1 << shift), i.e. device frequency is > 1GHz we
++	 * need to be careful. Adding mult - 1 will result in a value
++	 * which when converted back to device ticks will be larger
++	 * than latch by (mult / (1 << shift)) - 1. For the min_delta
++	 * calculation we still want to apply this in order to stay
++	 * above the minimum device ticks limit. For the upper limit
++	 * we would end up with a latch value larger than the upper
++	 * limit of the device, so we omit the add to stay below the
++	 * device upper boundary.
++	 *
++	 * Also omit the add if it would overflow the u64 boundary.
++	 */
++	if ((~0ULL - clc > rnd) &&
++	    (!ismax || evt->mult <= (1U << evt->shift)))
++		clc += rnd;
++
+ 	do_div(clc, evt->mult);
+-	if (clc < 1000)
+-		clc = 1000;
+-	if (clc > KTIME_MAX)
+-		clc = KTIME_MAX;
+ 
+-	return clc;
++	/* Deltas less than 1usec are pointless noise */
++	return clc > 1000 ? clc : 1000;
++}
++
++/**
++ * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
++ * @latch:	value to convert
++ * @evt:	pointer to clock event device descriptor
++ *
++ * Math helper, returns latch value converted to nanoseconds (bound checked)
++ */
++u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
++{
++	return cev_delta2ns(latch, evt, false);
+ }
+ EXPORT_SYMBOL_GPL(clockevent_delta2ns);
+ 
+@@ -380,8 +414,8 @@ void clockevents_config(struct clock_eve
+ 		sec = 600;
+ 
+ 	clockevents_calc_mult_shift(dev, freq, sec);
+-	dev->min_delta_ns = clockevent_delta2ns(dev->min_delta_ticks, dev);
+-	dev->max_delta_ns = clockevent_delta2ns(dev->max_delta_ticks, dev);
++	dev->min_delta_ns = cev_delta2ns(dev->min_delta_ticks, dev, false);
++	dev->max_delta_ns = cev_delta2ns(dev->max_delta_ticks, dev, true);
+ }
+ 
+ /**
