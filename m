@@ -1,86 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab3ISNX4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 09:23:56 -0400
-Received: from ozlabs.org ([203.10.76.45]:43733 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083Ab3ISNWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 09:22:50 -0400
-Date: Thu, 19 Sep 2013 22:18:18 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Jon Loeliger <jdl@jdl.com>, Olof Johansson <olof@lixom.net>,
-        frowand.list@gmail.com, Tomasz Figa <tomasz.figa@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [dtc PATCH] Ensure all tests have matching reg and unit address
-Message-ID: <20130919121818.GB3551@voom.redhat.com>
-References: <1379535782-12667-1-git-send-email-swarren@wwwdotorg.org>
+	id S1754200Ab3ISNYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:24:08 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58776 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083Ab3ISNYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 09:24:05 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
+CC: <balajitk@ti.com>, <kishon@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: [RFC PATCH 11/15] arm: omap5: hwmod: add missing ocp2scp hwmod data
+Date: Thu, 19 Sep 2013 16:23:26 +0300
+Message-ID: <1379597006-15257-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1379595943-14622-1-git-send-email-rogerq@ti.com>
+References: <1379595943-14622-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xXmbgvnjoT4axfJE"
-Content-Disposition: inline
-In-Reply-To: <1379535782-12667-1-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Benoit Cousson <bcousson@baylibre.com>
 
---xXmbgvnjoT4axfJE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+without that hwmod data, USB3 will not in OMAP5 boards.
 
-On Wed, Sep 18, 2013 at 02:23:02PM -0600, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->=20
-> ePAPR 1.1 section 2.2.1.1 "Node Name Requirements" specifies that any
-> node that has a reg property must include a unit address in its name
-> with value matching the first entry in its reg property. Conversely, if
-> a node does not have a reg property, the node name must not include a
-> unit address.
->=20
-> Adjust all the dtc test-cases to conform to this rule.
->=20
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Benoit Cousson <bcousson@baylibre.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_54xx_data.c |   45 ++++++++++++++++++++++++++++
+ 1 files changed, 45 insertions(+), 0 deletions(-)
 
-Yeah, the testcase examples were built as purely syntactic exercises
-without really considering dt content conventions.  Fixing them up is
-arguably unnnecessary, but certainly doesn't hurt and makes them
-better as examples.
+diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+index 2b698b8..e7d4fcb 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+@@ -1146,6 +1146,42 @@ static struct omap_hwmod omap54xx_mpu_hwmod = {
+ };
+ 
+ /*
++ * 'ocp2scp' class
++ * bridge to transform ocp interface protocol to scp (serial control port)
++ * protocol
++ */
++
++static struct omap_hwmod_class_sysconfig omap54xx_ocp2scp_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_SIDLEMODE |
++			SYSC_HAS_SOFTRESET | SYSS_HAS_RESET_STATUS),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type1,
++};
++
++static struct omap_hwmod_class omap54xx_ocp2scp_hwmod_class = {
++	.name	= "ocp2scp",
++	.sysc	= &omap54xx_ocp2scp_sysc,
++};
++
++/* ocp2scp1 */
++static struct omap_hwmod omap54xx_ocp2scp1_hwmod = {
++	.name		= "ocp2scp1",
++	.class		= &omap54xx_ocp2scp_hwmod_class,
++	.clkdm_name	= "l3init_clkdm",
++	.main_clk	= "l4_root_clk_div",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = OMAP54XX_CM_L3INIT_OCP2SCP1_CLKCTRL_OFFSET,
++			.context_offs = OMAP54XX_RM_L3INIT_OCP2SCP1_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_HWCTRL,
++		},
++	},
++};
++
++/*
+  * 'timer' class
+  * general purpose timer module with accurate 1ms tick
+  * This class contains several variants: ['timer_1ms', 'timer']
+@@ -2040,6 +2076,14 @@ static struct omap_hwmod_ocp_if omap54xx_l4_cfg__mpu = {
+ 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+ };
+ 
++/* l4_cfg -> ocp2scp1 */
++static struct omap_hwmod_ocp_if omap54xx_l4_cfg__ocp2scp1 = {
++	.master		= &omap54xx_l4_cfg_hwmod,
++	.slave		= &omap54xx_ocp2scp1_hwmod,
++	.clk		= "l4_root_clk_div",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
+ /* l4_wkup -> timer1 */
+ static struct omap_hwmod_ocp_if omap54xx_l4_wkup__timer1 = {
+ 	.master		= &omap54xx_l4_wkup_hwmod,
+@@ -2243,6 +2287,7 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
+ 	&omap54xx_l4_per__mmc4,
+ 	&omap54xx_l4_per__mmc5,
+ 	&omap54xx_l4_cfg__mpu,
++	&omap54xx_l4_cfg__ocp2scp1,
+ 	&omap54xx_l4_wkup__timer1,
+ 	&omap54xx_l4_per__timer2,
+ 	&omap54xx_l4_per__timer3,
+-- 
+1.7.4.1
 
-Applied and pushed.
-
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
---xXmbgvnjoT4axfJE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSOuuKAAoJEGw4ysog2bOSnwsP/ibs8gr+BGLfowEehe1G21CO
-xzjngFEvyRvM8jcJ7xsV8XfLwd0nbxq3LiTSzvUIDibguKNiSXk+gjaCDhS0mw2D
-MnjUauayB+nwXLBrAwU6Yb+oHSJ4qJd3h+lrJv8Kn62Kv2XbtRitay11+fWDegaD
-LliEL0ZbiIEKryibVvwpbST+4f6tXrLcDevhu0UnvVmqrv2OcgyBmYAUpxsYsIOA
-6/8GRJFxSFQRvSxJjUao9RBZ8UOKvrLQ2yY+9lL78b3HvPbVr0N3/2NNRCa4NJ3o
-VFmbCcjI3Cf2Oq+wTN7JLahHeppJkbB1PTmBLlNcBavuCfXRUFZfPZOHdy7Ilv8w
-PkkIM1hwfNcp8fznJakvzIzTmJSKupFkA2diuxD6JjOV67lPAr9EAk2Z6sKzZv/X
-u6sdN5yOHig6E3apt5M+DWGyqc5isReXDGhSHfD23zemnyjY09MczeE6sjX+5NJH
-fxlDbx3KLwLghe7LpH08CuxoytwXauPERP/KOZUHlq9xU+RYWvb/eG8Cbw8qEKV9
-lXZWKhvbleQt51aV4U3f4RHHJ+mTvv7DWZAoHWM0+4Ff6UxswqSZ2wov1/+n0f9s
-mSuYngYKQKNQ2DObwQCaQ2Gd4uk6C+FeMynG3cq0FI74vEtSKImqfuIL2eZUUxD6
-onYajGOG204HPmy2tg8H
-=0jP5
------END PGP SIGNATURE-----
-
---xXmbgvnjoT4axfJE--
