@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab3ISJux (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 05:50:53 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:57997 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab3ISJut (ORCPT
+	id S1753376Ab3ISJu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 05:50:57 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:35555 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab3ISJux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 05:50:49 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-14-523ac8f8012a
+	Thu, 19 Sep 2013 05:50:53 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-a6-523ac8fc30dd
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
         m.szyprowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH v3 3/7] USB: gadget: s3c-hsotg: fix endpoint interrupts handling
-Date: Thu, 19 Sep 2013 11:50:19 +0200
-Message-id: <1379584223-15232-4-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH v3 4/7] USB: gadget: s3c-hsotg: add DAINT masking
+Date: Thu, 19 Sep 2013 11:50:20 +0200
+Message-id: <1379584223-15232-5-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1379584223-15232-1-git-send-email-r.baldyga@samsung.com>
 References: <1379584223-15232-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprALMWRmVeSWpSXmKPExsVy+t9jQd2fJ6yCDPbqW2ycsZ7V4uD9eovm
-	xevZLM42vWG3uLxrDpvFomWtzBZrj9xlt3hweCe7A4fH/rlr2D36tqxi9Dh+YzuTx+dNcgEs
-	UVw2Kak5mWWpRfp2CVwZjb2fWAs2cVfMfn2YtYFxFWcXIyeHhICJxNaDN1ggbDGJC/fWs3Ux
-	cnEICUxnlPh/YScThNPOJNF/exkzSBWbgI7Elu8TGEFsEQEBifUvLrGDFDELPGGUmHrkFZDD
-	wSEsECDxpFsEpIZFQFXiyblPrCBhXgFXiaXr60BMCQEFiTmTbEAqOAXcJCaefw12gxBQxeNN
-	X9gmMPIuYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcTs+kdzCuarA4xCjAwajEwxtx
-	wTJIiDWxrLgy9xCjBAezkgjvnENWQUK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7ZaBwoJpCeW
-	pGanphakFsFkmTg4pRoYNa9JHWYq7M3NbF3Uxtr/kEPr98PvGZO5atv1d6h0FxoL++1dkuOz
-	yu3dr7fR0Qx5j28UfzYV8xEof2ltMo17joSh4Nvp73eERznWnPZ8KeHz8POxw2YHrG6w+60t
-	PZVeJn1bK8BCQC/wQE/gJMHpSxtyLxpn+TYmzQp+H75U9k2L+I9Ve24osRRnJBpqMRcVJwIA
-	oK0XByMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t9jQd0/J6yCDLp7hSw2zljPanHwfr1F
+	8+L1bBZnm96wW1zeNYfNYtGyVmaLtUfusls8OLyT3YHDY//cNewefVtWMXocv7GdyePzJrkA
+	ligum5TUnMyy1CJ9uwSujMcztrEW/OOouHb+NEsD40b2LkZODgkBE4krR04wQthiEhfurWfr
+	YuTiEBKYziix/fwzZpCEkEA7k0TvGTMQm01AR2LL9wlgDSICAhLrX1xiB2lgFnjCKDH1yCuw
+	qcICjhLX515kA7FZBFQlXp7fzARi8wq4Snx+/AUozgG0TUFiziQbkDCngJvExPOvWSB2uUo8
+	3vSFbQIj7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwSH1TGoH48oGi0OMAhyMSjy8
+	ERcsg4RYE8uKK3MPMUpwMCuJ8M45ZBUkxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdAq3WgkEB6
+	YklqdmpqQWoRTJaJg1OqgXH1/LhnFf932xdHtEQtC0v0fPg++2hh19Tyn5O1fzmyH66dnBpo
+	8bhH+pBD0f8HXXV6khe/iOSZq3pf/15nOzVRcM73bfr1V9u5/hW3XPx/KqrSg7HYhoONdeH7
+	16+mKl49V//5/6d25RfN2m+yM444M5Ru17t39ret3qTsM581VV9u5J3cyKrEUpyRaKjFXFSc
+	CADLGKLgJQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When s3c_hsotg_trytx is called for ep without enqueued request, interrupts
-for this ep are disabled, to prevent interrupt flooding. Interrupts are
-enabled when new request for this ep is starting.
+In OEPInt/IEPInt interrupts handling added bitwise and of DAINT and
+DAINTMSK, because we should handle masked interrupts only.
 
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/usb/gadget/s3c-hsotg.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/usb/gadget/s3c-hsotg.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 4fe2f9e..3024685d 100644
+index 3024685d..e32f868 100644
 --- a/drivers/usb/gadget/s3c-hsotg.c
 +++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -823,6 +823,9 @@ static void s3c_hsotg_start_req(struct s3c_hsotg *hsotg,
+@@ -2398,10 +2398,14 @@ irq_retry:
  
- 	dev_dbg(hsotg->dev, "%s: DxEPCTL=0x%08x\n",
- 		__func__, readl(hsotg->regs + epctrl_reg));
+ 	if (gintsts & (GINTSTS_OEPInt | GINTSTS_IEPInt)) {
+ 		u32 daint = readl(hsotg->regs + DAINT);
+-		u32 daint_out = daint >> DAINT_OutEP_SHIFT;
+-		u32 daint_in = daint & ~(daint_out << DAINT_OutEP_SHIFT);
++		u32 daintmsk = readl(hsotg->regs + DAINTMSK);
++		u32 daint_out, daint_in;
+ 		int ep;
+ 
++		daint &= daintmsk;
++		daint_out = daint >> DAINT_OutEP_SHIFT;
++		daint_in = daint & ~(daint_out << DAINT_OutEP_SHIFT);
 +
-+	/* enable ep interrupts */
-+	s3c_hsotg_ctrl_epint(hsotg, hs_ep->index, hs_ep->dir_in, 1);
- }
+ 		dev_dbg(hsotg->dev, "%s: daint=%08x\n", __func__, daint);
  
- /**
-@@ -1791,8 +1794,16 @@ static int s3c_hsotg_trytx(struct s3c_hsotg *hsotg,
- {
- 	struct s3c_hsotg_req *hs_req = hs_ep->req;
- 
--	if (!hs_ep->dir_in || !hs_req)
-+	if (!hs_ep->dir_in || !hs_req) {
-+		/**
-+		 * if request is not enqueued, we disable interrupts
-+		 * for endpoints, excepting ep0
-+		 */
-+		if (hs_ep->index != 0)
-+			s3c_hsotg_ctrl_epint(hsotg, hs_ep->index,
-+					     hs_ep->dir_in, 0);
- 		return 0;
-+	}
- 
- 	if (hs_req->req.actual < hs_req->req.length) {
- 		dev_dbg(hsotg->dev, "trying to write more for ep%d\n",
+ 		for (ep = 0; ep < 15 && daint_out; ep++, daint_out >>= 1) {
 -- 
 1.7.9.5
 
