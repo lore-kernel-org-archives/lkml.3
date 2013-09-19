@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab3ISPwq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 11:52:46 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34060 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab3ISPwp (ORCPT
+	id S1752924Ab3ISPxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 11:53:07 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:42272 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab3ISPxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 11:52:45 -0400
-Date: Thu, 19 Sep 2013 16:52:22 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20130919155222.GF21013@sirena.org.uk>
-References: <5237AB72.5020806@infradead.org>
- <20130917103238.GM21013@sirena.org.uk>
- <52388CC4.7040101@infradead.org>
- <20130917192355.GK21013@sirena.org.uk>
- <20130917233328.GC11390@localhost>
- <20130919140131.GB21013@sirena.org.uk>
- <20130919152626.GB7925@localhost>
+	Thu, 19 Sep 2013 11:53:05 -0400
+Date: Thu, 19 Sep 2013 08:52:59 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "dan.carpenter@oracle.com" <dan.carpenter@oracle.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "vojtech@suse.cz" <vojtech@suse.cz>
+Subject: Re: [PATCH V2 1/1] Drivers: input: serio: New driver to support
+ Hyper-V synthetic keyboard
+Message-ID: <20130919155259.GA5731@core.coreip.homeip.net>
+References: <1379460418-1523-1-git-send-email-kys@microsoft.com>
+ <20130918210107.GA32320@core.coreip.homeip.net>
+ <304cbdeb0aa34f9a9ba6b44828fb5647@SN2PR03MB061.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fjRHIBfqI5bf54wl"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130919152626.GB7925@localhost>
-X-Cookie: Give him an evasive answer.
+In-Reply-To: <304cbdeb0aa34f9a9ba6b44828fb5647@SN2PR03MB061.namprd03.prod.outlook.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 86.153.71.95
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: fix fatal kernel-doc error
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 18, 2013 at 11:27:51PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> > Sent: Wednesday, September 18, 2013 2:01 PM
+> > To: KY Srinivasan
+> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > jasowang@redhat.com; dan.carpenter@oracle.com; linux-
+> > input@vger.kernel.org; vojtech@suse.cz
+> > Subject: Re: [PATCH V2 1/1] Drivers: input: serio: New driver to support Hyper-V
+> > synthetic keyboard
+> > 
+> > Hi K.Y.,
+> > 
+> > On Tue, Sep 17, 2013 at 04:26:58PM -0700, K. Y. Srinivasan wrote:
+> > > Add a new driver to support synthetic keyboard. On the next generation
+> > > Hyper-V guest firmware, many legacy devices will not be emulated and this
+> > > driver will be required.
+> > >
+> > > I would like to thank Vojtech Pavlik <vojtech@suse.cz> for helping me with the
+> > > details of the AT keyboard driver. I would also like to thank
+> > > Dan Carpenter <dan.carpenter@oracle.com> and
+> > > Dmitry Torokhov <dmitry.torokhov@gmail.com> for their detailed review of
+> > this
+> > > driver.
+> > >
+> > > I have addressed all the comments of Dan and Dmitry in this version of
+> > > the patch
+> > 
+> > This looks much better. Could you tell me if the patch below (on top of
+> > yours) still works?
+> > 
+> > Thanks.
+> 
+> Thank you. The code looks much better now. You forgot to initialize the port_data and
+> after I fixed that everything seems to work as it did before: Here is the patch I used:
 
---fjRHIBfqI5bf54wl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Excellent, thank you for trying it out. I folded it all together and
+queued for 3.13.
 
-On Thu, Sep 19, 2013 at 11:26:26PM +0800, Fengguang Wu wrote:
-> On Thu, Sep 19, 2013 at 03:01:31PM +0100, Mark Brown wrote:
+Thanks.
 
-> > I'd expect it to be but then it seems like the issue that Randy found
-> > wasn't picked up...  not sure if there's some other build that would
-> > cover it or something.
-
-> Yes.. it was missed because the script used to only grep for
-> "Warning(.*)" patterns and ignored the "Error(.*)" ones. Fixed
-> since last email.
-
-Ah, great - thanks!
-
---fjRHIBfqI5bf54wl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSOx2zAAoJELSic+t+oim9K08P/Ax1tSuR/8YvvKeFLLBEoCfZ
-8Iv2+uu4OHTt6i/fn4EyfpxGlfpdMu9s3+FzT30s9NQheZoOFCuXub5PyIwNARfV
-yRcYXNKbz1ZQle6bBkWn/cDDowWokBzCaU03sDIzq6gFR2XtZ112ti4Ow8iFE7eb
-nRjmb30vw5r0lE72VHAB92mtUHAIqGRgiSWOVpUNQY45qe0Jy9jmiVv+bfU9Q4Vn
-IwHw8l6Ln4Jm4Y7DX6iivHdtsOGhhVfA1t0gneuh9mgCxRFgMhzCcNznCprd9JEJ
-ZuqD/1afDdxKE9G7fZOAwCnFKoUmFOB7p9pAQVrZZtDZVf18c03Y+he+IBNvBSIW
-ssx+9qYFENSd/BoVFHkL45mJ+fRbU+jb8vsW5qv9Ii8haeRqWRLYODa9KkH15LCG
-08hOyNldG8jr9vkuNTzio6che0VJeh3qbQDk/ezP8P6ZkEEB6TibkZq0re/0UlAz
-p29kQSaIgHbGGozMveN9+WAntqe1Qo8UNBivmDohRWPUkDMisBRW2POXlWE3F0j/
-0fWFeMBi46UidbQqlCIP0EzvJHIpG4IBZNAULyaHjMCaKOPBcTYzXHI4XBtambVu
-2oRb6/WCWmHk/WggaIHAC+sODUEtd8/6uR83xgvVp50KyZZYsyIhS3Jjheagaa8U
-hnaAQQfFSl6gVq2dUTTb
-=DxPh
------END PGP SIGNATURE-----
-
---fjRHIBfqI5bf54wl--
+-- 
+Dmitry
