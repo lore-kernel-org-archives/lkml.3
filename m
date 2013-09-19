@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab3ISHMj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 03:12:39 -0400
-Received: from gate.crashing.org ([63.228.1.57]:34953 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735Ab3ISHMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 03:12:38 -0400
-Message-ID: <1379574653.6148.62.camel@pasglop>
-Subject: Re: [dtc RFC PATCH] Enforce node name unit-address presence/absence
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Jon Loeliger <jdl@jdl.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Frank Rowand <frowand.list@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	id S1753035Ab3ISHPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 03:15:16 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:64568 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752784Ab3ISHPO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 03:15:14 -0400
+MIME-Version: 1.0
+Date: Thu, 19 Sep 2013 09:15:13 +0200
+X-Google-Sender-Auth: ViCqEPCgKtMw3p1qCoZjCzFx1kA
+Message-ID: <CAMuHMdUUkKQjEA58W_HhQWtPUa4D2eRypPNQZgwXb+ZJutR4pQ@mail.gmail.com>
+Subject: Serial consoles (was: [Ksummit-2013-discuss] [HOBBYIST ATTEND] IIO
+ maintainer and developer)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rob Landley <rob@landley.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>
-Date: Thu, 19 Sep 2013 17:10:53 +1000
-In-Reply-To: <CAOesGMg0Rrmew0iK-Gtrx_UiODhpro_S2xUxQi0gZ+7PJmBHnw@mail.gmail.com>
-References: <1379535836-12726-1-git-send-email-swarren@wwwdotorg.org>
-	 <CAOesGMg0Rrmew0iK-Gtrx_UiODhpro_S2xUxQi0gZ+7PJmBHnw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        ksummit-2013-discuss@lists.linuxfoundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-18 at 13:41 -0700, Olof Johansson wrote:
-> Also, maybe warn for @0x<foo>, which is another unpreferred syntax, it
-> should just be @<foo> (with foo being in hex).
+> On Thu, Sep 12, 2013 at 10:12 PM, Rob Landley <rob at landley.net> wrote:
+> > 3) QEMU command line to boot to a shell prompt with serial console. x86 is
+> > ttyS0, arm versatile is ttyAMA0, sh4 is ttySC1. Get it wrong and you have no
+> > output.
+>
+> Can't we long-term fix this? Can we bring up both say ttyS0 and ttyAMA0
+> on a machine and remove the other one when the first is opened,
+> then print a friendly reminder to move over to ttyS0 if ttyAMA0 is
+> used instead, so people are encouraged to switch to ttyS0
+> for everything over time?
+>
+> Or do these separate serialport namespaces have a real utility?
 
-It can also bee @foo,bar, it doesn *have* to match the exact content of
-the reg property first entry. In fact it's not uncommon to use a 64-bit
-value here on 64-bit processors and pci uses a different encoding scheme
-(on real OFW at least) where they typically do @dev,fn
+I'd say they make life more difficult.
+Making it easier to distinguish ports may have been the original reason, but
+in other subsystems ("SCSI" disks, Ethernet ports, IDE, ...) there is a uniform
+device namespace.
+We still have different namepaces for other types of block devices, though, but
+that's (usually) handled automatically by udev, file system UUIDs, etc.
 
-Yes, the fact that the unit address is not something deterministic is
-and has always been a major PITA though.
+Note that on m68k we never followed the non-16550-ports-should-use-a-different-
+name-franze, and always continued using /dev/ttyS* for all serial ports.
 
-Cheers,
-Ben.
+BTW, perhaps we can keep the non-ksummit discussions on lkml?
+I'm only reading Ksummit-2013-discuss from the list archives occasually...
 
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
