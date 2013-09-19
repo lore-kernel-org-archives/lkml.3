@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab3ISMhn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 08:37:43 -0400
-Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:51753
-	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752343Ab3ISMhm (ORCPT
+	id S1753933Ab3ISMiV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 08:38:21 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:58626 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab3ISMiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 08:37:42 -0400
-Message-ID: <523AF014.5040806@newflow.co.uk>
-Date: Thu, 19 Sep 2013 13:37:40 +0100
-From: Mark Jackson <mpfj-list@newflow.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Thu, 19 Sep 2013 08:38:20 -0400
+Date: Thu, 19 Sep 2013 07:38:12 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: gregkh@linuxfoundation.org, kay@vrfy.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] sysfs: implement sysfs_remove()
+Message-ID: <20130919123812.GA4467@mtj.dyndns.org>
+References: <1379538938-5032-1-git-send-email-tj@kernel.org>
+ <87pps5dr3f.fsf@tw-ebiederman.twitter.com>
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: Nishanth Menon <nm@ti.com>, balbi@ti.com,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: PCF857x and 16-bit GPIO expanders
-References: <20130917190732.GD15645@radagast> <CACRpkdYn8yaTyFJMaC3vK4kGrQsaZpAX=pyn5y33ers7QhQ_pg@mail.gmail.com> <2356541.62QktiIBr5@avalon> <20130918173636.GT21559@radagast> <523AB235.1000808@ti.com> <523AE8FF.9020209@ti.com> <523AEC0C.6010005@ti.com>
-In-Reply-To: <523AEC0C.6010005@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87pps5dr3f.fsf@tw-ebiederman.twitter.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/09/13 13:20, George Cherian wrote:
-> On 9/19/2013 5:37 PM, Nishanth Menon wrote:
->> On 09/19/2013 03:13 AM, George Cherian wrote:
->>> On 9/18/2013 11:06 PM, Felipe Balbi wrote:
->>>> Hi,
->>>>
->>>> On Wed, Sep 18, 2013 at 07:18:04PM +0200, Laurent Pinchart wrote:
->>>>> On Wednesday 18 September 2013 13:16:27 Linus Walleij wrote:
->>>>>> On Tue, Sep 17, 2013 at 9:07 PM, Felipe Balbi <balbi@ti.com> wrote:
->>>>>>> has anyone ever successfully using gpio-pcf857x.c driver with 16-bit
->>>>>>> gpio expanders ? We're having some issues here where toggling the last
->>>>>>> gpio pin (gpio 15) on a PCF8575 device causes platform to hang and I
->>>>>>> can't come up with any explanation of why would it hang...
->>>>>> Bouncing the question to George, Laurent and Kuninori...
->>>>> I've got a board with a PCF8575 chip, but it uses I/Os 8 to 14 only as far as
->>>>> I know.
->>>>>
->>>>> I can try toggling I/O 15, but that will need to wait until next week as I'm
->>>>> currently travelling without access to the hardware.
->>>> alright, that'd help me a lot :-) Just want to make sure if we're having
->>>> a board issue, or PCF8575 is a bit screwy ;-)
->>> Is it on dra7x-evm if so which pcf device (i2c address)?
->>> The pins i were interested were only 1 and 2 I never tried pin 15.
->>>
->>> Just tried toggling through sysfs and it works for me.
->> When I look at the data sheet for PCF8575[1] Page 7, Figure 4 Write
->> mode (output)
->> I see the data writes are of the order:
->> I2c 1's byte: address
->> I2c 2'nd byte:P[7-0]
->> I2c 3rd byte:P[17-10]
-> 
-> I read it as an octal numbering.
+Hey, Eric.
 
-Kind of ... looking at the pinout, you have pins:-
+On Thu, Sep 19, 2013 at 05:48:52AM -0500, Eric W. Biederman wrote:
+> There are two very big problems with this direction.
+> 1) It violates the principle of least surprise.  In particular it messes
+>    up the mental model of people like Al Viro.  Which can easily lead to
+>    code breaking during routine maintenance because of unexpecte
+>    semantics.
 
-P00...P07
-P10...P17
+The interface is already and inherently different from the usual file
+removal operation.  If we were to follow the rm semantics, we would
+have to fail sysfs_remove_dir() if the node has any child.  The
+current behavior is actually more surprising because it creates
+dangling child directories - it is neither "rmdir" or "rm -rf".  I
+don't think enforcing "rmdir" semantics is useful for sysfs so the
+next best thing is to go for "rm -rf".
 
-So that's Port 0, bits 0..7, and Port 1, bits 0..7.
+> 2) Recursive removal is not safe.  There are very weird and somewhat
+>    pathological cases where sysfs directories are removed out of order
+>    aka parent before sibling, and (if my memory holds) recursive removal
+>    takes this from a little bit ugly to actually breaking things.
 
-Mark J.
+The case is already handled in the patch series for kobject users.
+kobjects just hold an extra ref on sysfs_dirent until it gets
+released.  Note that this is something peculiar about kobject based
+interface because it has fundamental distinction between "a
+sysfs_dirent which has a kobject associated" and the rest, and wants
+to treat the former specially.  That is all good and dandy for
+kobjects but that logic should stay with kobject.
+
+Also note that the current implementation kinda conflates the
+distinction between kobject-associated nodes and others with the
+distinction between directories and files.  This used to be okay
+because only kobjects could create directories; however, with groups,
+this no longer is the case and groups require explicit deletions
+although they are not associated with kobjects, which leads
+essentially unnecessary boilerplates - just count how many
+remove_group calls we have in the tree - and naturally some instances
+missing those calls and dangling and leaving those dirents without
+anyway to reach them - they don't have kobjects associated with them.
+
+> For long term maintenance and simplicity I believe we will be in much
+> better shape if we take directory removal in the opposite direction, and
+> fix the small number of issues with the users and don't support any kind
+> of recursive removal.
+
+If you're suggesting that we should do "rmdir" semantics, you're
+suggesting adding a *LOT* of boilerplate code to *all* users of sysfs,
+which is extremely tedious and error-prone in a way which will be
+difficult to track down.  We need to make it easier to use, not the
+other way around.
+
+I think all this mostly comes from the way we conjoined kobject and
+sysfs and then getting confused about the distinction between kobjects
+and directories.  The only special thing we need for kobject handling
+is allowing parent kobjects to be removed before its descendants as
+kobjects lifetime rules are weird and doesn't enforce any ordering
+according to its hierarchical organization, but if you put that one
+aside, we actually do want recursive removal.  You never want to
+require the destruction paths tedious.  That always leads to
+wide-spread bugs.
+
+Thanks.
+
+-- 
+tejun
