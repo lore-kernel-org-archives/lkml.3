@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab3ISSct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 14:32:49 -0400
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:53682 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab3ISScs convert rfc822-to-8bit (ORCPT
+	id S1753626Ab3ISSeH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 14:34:07 -0400
+Received: from smtprelay0249.hostedemail.com ([216.40.44.249]:35728 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752045Ab3ISSeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 14:32:48 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Dave Airlie <airlied@gmail.com>
-CC: "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Regression: bisected: commit 7c510133d93 breaks video
-Thread-Topic: Regression: bisected: commit 7c510133d93 breaks video
-Thread-Index: Ac603Dj75+4o5NvZQwiCa9lQKGnjBAAP/hCAABH+RhAAAI6esA==
-Date: Thu, 19 Sep 2013 18:32:47 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458E042D4@US01WEMBX2.internal.synopsys.com>
-References: <A2CA0424C0A6F04399FB9E1CD98E030458E03F28@US01WEMBX2.internal.synopsys.com>
- <CAPM=9txFE7=e47oY0rqe29DYva2T2MtKHgTjKBtuLfOaNZebZg@mail.gmail.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 19 Sep 2013 14:34:05 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3622:3865:3867:3868:3870:3871:4321:5007:7652:7875:7903:8784:10004:10400:10848:11232:11473:11658:11914:12517:12519:12740:13069:13158:13228:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wheel43_5d868d9305905
+X-Filterd-Recvd-Size: 1509
+Message-ID: <1379615641.22168.15.camel@joe-AO722>
+Subject: Re: [PATCH v1 5/6] bitops: Introduce BIT_ULL
+From: Joe Perches <joe@perches.com>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, gregkh@linuxfoundation.org,
+        len.brown@intel.com, rjw@sisk.pl, arjan@linux.intel.com,
+        jacob.jun.pan@linux.intel.com
+Date: Thu, 19 Sep 2013 11:34:01 -0700
+In-Reply-To: <523B43BC.2020701@linux.intel.com>
+References: <1379606435-15871-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+	 <1379606435-15871-6-git-send-email-srinivas.pandruvada@linux.intel.com>
+	 <20130919164830.GB9427@pd.tnic> <523B2F57.2050504@linux.intel.com>
+	 <20130919172819.GD9412@pd.tnic> <1379614490.22168.7.camel@joe-AO722>
+	 <523B43BC.2020701@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Paul Zimmerman
-> Sent: Thursday, September 19, 2013 11:21 AM
-> 
-> > From: Dave Airlie [mailto:airlied@gmail.com]
-> > Sent: Wednesday, September 18, 2013 7:40 PM
-> >
-> > On Thu, Sep 19, 2013 at 12:02 PM, Paul Zimmerman
-> > <Paul.Zimmerman@synopsys.com> wrote:
-> > > I have an ASUS P6X58D-Premium mobo with a GeForce 9400GT PCIe video card.
-> > > With kernel 3.12-rc1, I get scrambled video on boot. Kernel 3.11 works
-> > > fine.
-> > >
-> > > Bisecting this, I found 7c510133d93dd6f15ca040733ba7b2891ed61fd1 "drm:
-> > > mark context support as a legacy subsystem" is the guilty commit. If I
-> > > revert that commit, the video works fine.
-> > >
-> > > Is there any more info I can provide?
-> >
-> > Full dmesg, and what driver you are using.
-> 
-> Driver is nouveau.
-> 
-> The dmesg from a good boot with the commit reverted is attached.
-> 
-> For the bad boot, the dmesg log is filled with messages like this:
-> 
-> [   15.871667] nouveau E[     PFB][0000:03:00.0] trapped write at 0x01010010a0 on channel 0x0001fed0
-> [unknown] BAR/PFIFO_WRITE/IN reason: PAGE_NOT_PRESENT
-> [   15.871698] nouveau E[     PFB][0000:03:00.0] trapped write at 0x010100b2e0 on channel 0x0001fed0
-> [unknown] BAR/PFIFO_WRITE/IN reason: PAGE_NOT_PRESENT
-> [   15.871781] nouveau E[     PFB][0000:03:00.0] trapped write at 0x0101011600 on channel 0x0001fed0
-> [unknown] BAR/PFIFO_WRITE/IN reason: PAGE_NOT_PRESENT
-> 
-> I will try next with the patch series you sent to Linus yesterday, to
-> see if that happens to fix this.
+On Thu, 2013-09-19 at 11:34 -0700, Srinivas Pandruvada wrote:
 
-Nope, with your patch series from yesterday the problem still exists.
+> Let's do in two steps:
+> - In the next patcheset I will add BIT_ULL_MASK and BIT_ULL_WORD in 
+> addition to BIT_ULL
+> - Once this series is approved, submit a separate patch to change BIT_64 
+> to BIT_ULL
 
--- 
-Paul
+Fine by me.
+
 
