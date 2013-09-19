@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab3ISOzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:55:08 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58751 "EHLO mail.skyhub.de"
+	id S1753347Ab3ISOzu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:55:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58737 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752283Ab3ISOzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:55:03 -0400
+	id S1753047Ab3ISOzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 10:55:09 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: X86 ML <x86@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
@@ -15,78 +15,67 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
         James Bottomley <James.Bottomley@HansenPartnership.com>,
         Vivek Goyal <vgoyal@redhat.com>, Dave Young <dyoung@redhat.com>,
         linux-efi@vger.kernel.org
-Subject: [PATCH 04/11] x86, pageattr: Add a PGD pagetable populating function
-Date: Thu, 19 Sep 2013 16:54:47 +0200
-Message-Id: <1379602494-26684-5-git-send-email-bp@alien8.de>
+Subject: [PATCH 00/11] EFI runtime services virtual mapping
+Date: Thu, 19 Sep 2013 16:54:43 +0200
+Message-Id: <1379602494-26684-1-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1379602494-26684-1-git-send-email-bp@alien8.de>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-This allocates, if necessary, and populates the corresponding PGD entry
-with a PUD page. The next population level is a dummy macro which will
-be removed by the next patch and it is added here to keep the patch
-small and easily reviewable but not break bisection, at the same time.
+Hi all,
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/mm/pageattr.c | 39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+here's finally a new version of the runtime services VA mapping patchset
+which hopefully implements hpa's idea of statically mapping EFI runtime
+regions in a top-down manner starting at -4Gb virtual.
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index c53de62a1170..21a31e85283c 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -666,6 +666,45 @@ static int split_large_page(pte_t *kpte, unsigned long address)
- 	return 0;
- }
- 
-+#define populate_pud(cpa, addr, pgd, pgprot)	(-1)
-+
-+/*
-+ * Restrictions for kernel page table do not necessarily apply when mapping in
-+ * an alternate PGD.
-+ */
-+static int populate_pgd(struct cpa_data *cpa, unsigned long addr)
-+{
-+	pgprot_t pgprot = __pgprot(_KERNPG_TABLE);
-+	bool allocd_pgd = false;
-+	pgd_t *pgd_entry;
-+	pud_t *pud;
-+	int ret;
-+
-+	pgd_entry = cpa->pgd + pgd_index(addr);
-+
-+	/*
-+	 * Allocate a PUD page and hand it down for mapping.
-+	 */
-+	if (pgd_none(*pgd_entry)) {
-+		pud = (pud_t *)get_zeroed_page(GFP_KERNEL | __GFP_NOTRACK);
-+		if (!pud)
-+			return -1;
-+
-+		set_pgd(pgd_entry, __pgd(__pa(pud) | _KERNPG_TABLE));
-+		allocd_pgd = true;
-+	}
-+
-+	pgprot_val(pgprot) &= ~pgprot_val(cpa->mask_clr);
-+	pgprot_val(pgprot) |=  pgprot_val(cpa->mask_set);
-+
-+	ret = populate_pud(cpa, addr, pgd_entry, pgprot);
-+	if (ret < 0)
-+		return ret;
-+
-+	cpa->numpages = ret;
-+	return 0;
-+}
-+
- static int __cpa_process_fault(struct cpa_data *cpa, unsigned long vaddr,
- 			       int primary)
- {
+We're also using a different pagetable so as not to pollute kernel
+address space. For that, we switch to that table before doing an EFI
+call, and afterwards we switch back to the previous one.
+
+To the patches:
+
+1-2 are simple cleanups which Matt probably can take now
+
+3-10 add the machinery to map regions into an arbitrary PGD. Those I've
+split deliberately into very small bites so that they can be reviewed
+more thoroughly and easily for my pagetable skills are pretty basic.
+
+11 is the actual patch which implements that mapping so that we can use
+runtime services in kexec (which is the whole reason for this fuss :))
+
+So please take a long hard look at those, hammer on them on your
+boxes and let me know. They boot fine on my Dell UEFI box and in OVMF
+(obviously :)).
+
+Thanks.
+
+Borislav Petkov (11):
+  efi: Simplify EFI_DEBUG
+  efi: Remove EFI_PAGE_SHIFT and EFI_PAGE_SIZE
+  x86, pageattr: Lookup address in an arbitrary PGD
+  x86, pageattr: Add a PGD pagetable populating function
+  x86, pageattr: Add a PUD pagetable populating function
+  x86, pageattr: Add a PMD pagetable populating function
+  x86, pageattr: Add a PTE pagetable populating function
+  x86, pageattr: Add a PUD error unwinding path
+  x86, pageattr: Add last levels of error path
+  x86, cpa: Map in an arbitrary pgd
+  EFI: Runtime services virtual mapping
+
+ arch/x86/boot/compressed/eboot.c     |  12 +-
+ arch/x86/boot/compressed/eboot.h     |   1 -
+ arch/x86/include/asm/efi.h           |  58 +++--
+ arch/x86/include/asm/pgtable_types.h |   3 +-
+ arch/x86/mm/pageattr.c               | 461 +++++++++++++++++++++++++++++++++--
+ arch/x86/platform/efi/efi.c          | 126 +++++-----
+ arch/x86/platform/efi/efi_64.c       |  56 +----
+ arch/x86/platform/efi/efi_stub_64.S  |  47 ++++
+ include/linux/efi.h                  |   6 +-
+ 9 files changed, 615 insertions(+), 155 deletions(-)
+
 -- 
 1.8.4
 
