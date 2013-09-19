@@ -1,120 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab3ISEsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 00:48:46 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:35072 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725Ab3ISEsp convert rfc822-to-8bit (ORCPT
+	id S1752366Ab3ISFQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 01:16:28 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:48109 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab3ISFQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 00:48:45 -0400
+	Thu, 19 Sep 2013 01:16:26 -0400
+Date: Thu, 19 Sep 2013 10:16:12 +0500
+From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 2/2] iio: ti_am335x_adc: Add continuous sampling support
+Message-ID: <20130919051611.GA4363@gmail.com>
+References: <1379393047-11772-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1379393047-11772-3-git-send-email-zubair.lutfullah@gmail.com>
+ <20130918042726.GB13196@core.coreip.homeip.net>
+ <20130918065406.GA13451@gmail.com>
+ <53771776-0d33-436d-9687-995ed0d6345d@email.android.com>
+ <20130918141533.GA16424@core.coreip.homeip.net>
+ <b37c9a0e-36ed-49bf-bb68-453c7b07b437@email.android.com>
+ <20130918162442.GA14803@core.coreip.homeip.net>
+ <c141b8a3-1e5d-406c-bcc4-ef0abec56192@email.android.com>
 MIME-Version: 1.0
-In-Reply-To: <20130919034406.GA26385@angband.pl>
-References: <1379391093-27948-1-git-send-email-roy.franz@linaro.org>
-	<1379391093-27948-10-git-send-email-roy.franz@linaro.org>
-	<20130919034406.GA26385@angband.pl>
-Date: Wed, 18 Sep 2013 21:48:44 -0700
-Message-ID: <CAFECyb-tTaCEqUHUh23MaJf-P42ZpodFKeNG=kE+vmmi-gyKrw@mail.gmail.com>
-Subject: Re: [PATCH 09/17] Move unicode to ASCII conversion to shared function.
-From: Roy Franz <roy.franz@linaro.org>
-To: Adam Borowski <kilobyte@angband.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org, matt.fleming@intel.com,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Mark Salter <msalter@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <c141b8a3-1e5d-406c-bcc4-ef0abec56192@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 8:44 PM, Adam Borowski <kilobyte@angband.pl> wrote:
-> On Mon, Sep 16, 2013 at 09:11:25PM -0700, Roy Franz wrote:
->> +/* Convert the unicode UEFI command line to ASCII to pass to kernel.
->> + * Size of memory allocated return in *cmd_line_len.
->> + * Returns NULL on error.
->> + */
->> +static char *efi_convert_cmdline_to_ascii(efi_system_table_t *sys_table_arg,
->
->> +       int load_options_size = image->load_options_size / 2; /* ASCII */
->
->> +     for (i = 0; i < options_size - 1; i++)
->> +             *s1++ = *s2++;
->
-> I'm afraid both this commit and comments inside are misnamed.  What you're
-> changing here is the encoding rather than character set.
->
-> In fact, these days it's 8-bit encodings that are more likely to be Unicode
-> than 16-bit ones: UTF-8 is ubiquitous, while you usually get UCS2 at most.
-> In either case, though, we have here is a 7-bit charset encoded as either
-> 8-bit or 16-bit units.  What this function does is blindly truncating upper
-> byte.  The supported payload is in both cases ASCII.
->
-> I'd thus rename the function to what it already does: truncating u16 to u8,
-> and adjust comments accordingly.
->
-> Replacing values above 126 with a token character like '?' would be good
-> too: that'd avoid producing corrupted characters and/or random ASCII chars.
+On Wed, Sep 18, 2013 at 06:05:12PM +0100, Jonathan Cameron wrote:
+> 
+> >> >However in this case such conversion us dangerous. With all but IRQ
+> >> >resource managed by the traditional methods they will be released
+> >first
+> >> >with IRQ handler deregistered very last. Therefore if device is not
+> >> >properly quiesced IRQ raised during driver unbinding is likely to
+> >> >result
+> >> >in kernel oops.
+> >> >
+> >> >IOW devm_request_irq() is very often evil (it is still useful if
+> >_all_
+> >> >your resources are managed by devm_*).
+> >> >
+> >> >In case of your driver I'd recommend switching to
+> >> >request_irq()/free_irq() instead.
+> >> >
+> >> >Thanks.
+> >> 
+> >> Pretty much all resources are devm managed in here
+> >> 
+> >>
+> >https://git.kernel.org/cgit/linux/kernel/git/jic23/iio.git/tree/drivers/iio/adc/ti_am335x_adc.c?h=togreg&id=7a1aeba7ed0d5a1e83fd5a8ee2a2869430d40347
+> >
+> >
+> >So we are guaranteed that that new kfifo that is being allocated just
+> >before we requesting IRQ and will be freed way before we free the IRQ
+> >will not be used by the IOTQ handler?
+> >
+> >Thanks.
+> Good point. I forgot about that.  The source of interrupts 'should' be disabled before the kfifo is freed but I guess perhaps better to play it safe. Would take a fair bit of review to be sure that is not going to cause grief.
+> 
+> A few more devm handlers need writing before it is truly useful here.
+> 
+> Thanks for pointing this out.
+> 
+> J
 
-I stuck to re-arranging the code that was there, as I don't know
-enough about character encodings
-to propose changes.  Also, this code is running as part of the kernel
-decompressor, rather
-than the kernel itself, so it doesn't have access to any kernel
-facilities, and it also needs to
-be position independent.  It's running in a quite limited environment
--  the decompressor has
-its own copy of strstr(), and other string functions.
+If I understand the conclusion correctly, no devm here?
 
-I checked the UEFI specification, and it states that all 16 bit
-strings are UCS-2, unless
-otherwise noted.  The load options that the command line is provided
-through a void pointer
-specified as:
-
-    "LoadOptions A pointer to the image's binary load options."
-
-I couldn't quickly find any other mentions of LoadOptions in the
-spec., so I don't know what
-other types of values could be, or are typically provided.  The spec
-isn't helpful regarding the type
-of this data, and I don't know what common practice is here among the
-various EFI/UEFI firmwares
-out there.
-
-Would it be acceptable to fix the naming/comments, and convert values
-above 126 to '?'
-in the current patchset, and address a more thorough fix in another patch set?
-The ARM and ARM64 EFI stub patchsets that are mostly complete depend
-on this one,
-so getting this merged soon would be helpful.
-
-Something like:
->> +/* Convert the UEFI command line from 16 bit to 8 bit encoding to pass to kernel.
->> + * by truncating to 7 bits.  Values above 126 are converted to 63 (ASCII '?')
->> + * Size of memory allocated return in *cmd_line_len.
->> + * Returns NULL on error.
->> + */
-+static char *efi_truncate_cmdline_to_8bit_encoding(efi_system_table_t
-*sys_table_arg,
-(update code to truncate and convert to '?')
-
->
-> Your commit only moves things around, so it might be out of scope for now,
-> but I wonder: what if the kernel actually supported Unicode here?  Few
-> cmdline arguments take values where non-ASCII makes sense, but at least some
-> do: for example, a Russian guy is not unlikely to name subvolumes using
-> cyrillic.  Supporting that would be easy (estimating the length then
-> tf16us_to_utf8s()).  There's just one problem: which encoding to use, but
-> these days, most distributions have either dropped non-UTF8 or hardly pay
-> lip service, so we could get away with hard-coding UTF-8: those few who
-> use ancient charsets can stick to ASCII.  Would this be ok?  If so, shout,
-> I can code this if you don't care enough.
-
-I would certainly appreciate your help improving this, although I think we'll
-need to have a better understanding of what the UEFI firmware is providing
-before we can implement something better.
-
-
->
-> --
-> ᛊᚨᚾᛁᛏᚣ᛫ᛁᛊ᛫ᚠᛟᚱ᛫ᚦᛖ᛫ᚹᛖᚨᚲ
+Zubair
