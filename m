@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab3ISPSG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 11:18:06 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:36394 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab3ISPSE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 11:18:04 -0400
+	id S1752309Ab3ISPWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 11:22:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60470 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751157Ab3ISPWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 11:22:33 -0400
+Date: Thu, 19 Sep 2013 11:22:27 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Cc: mmarek@suse.cz, yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]kconfig/menu.c: fix uninitialized variable warning
+Message-ID: <20130919152227.GB19364@d2.synalogic.ca>
+References: <1379575697-6740-1-git-send-email-maddy@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <523AD814.1060406@monstr.eu>
-References: <cover.1379519753.git.michal.simek@xilinx.com>
-	<cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
-	<20130918191517.GQ19937@titan.lakedaemon.net>
-	<20130918203247.GA11181@obsidianresearch.com>
-	<1379539063.31417.23.camel@atx-linux-37>
-	<523AD814.1060406@monstr.eu>
-Date: Thu, 19 Sep 2013 10:18:03 -0500
-Message-ID: <CADuitaCjNv2HFCg_y2qpkvXmUmO-jKUVQ2Ra8ACOne1hwAmKJA@mail.gmail.com>
-Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-From: Yves Vandervennet <rocket.yvanderv@gmail.com>
-To: monstr@monstr.eu
-Cc: Alan Tull <atull@altera.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1379575697-6740-1-git-send-email-maddy@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 5:55 AM, Michal Simek <monstr@monstr.eu> wrote:
+On 2013/09/19 12:58, Madhavan Srinivasan wrote:
+> In file included from scripts/kconfig/zconf.tab.c:2537:0:
+> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
+> scripts/kconfig/menu.c:586:18: warning: ‘jump’ may be used uninitialized in
+> this function [-Wmaybe-uninitialized]
+                   ^^^^^
 
->> Is there some way a per-device userspace helper can be added that can
->> handle adding the headers?  Such that different fpga types get different
->> helpers?
->
-> What do you exactly mean by that? Any example what do you want to achieve?
-Bit streams may not be in raw format, so using 'cat' is not possible.
-Xilinx and Altera have their own bit stream "richer" format, that need
-to be processed before they are presented to the driver(s). So, a
-hotplug helper per manufacturer/FPGA is required. Assuming 'cat' will
-be used is too limiting.
-Does it make sense to you?
+from gcc(1):
+	"These warnings are made optional because GCC is not smart
+	enough to see all the reasons why the code might be correct
+	despite appearing to have an error."
 
-Thanks
-Yves
-Altera Corp.
+I do not see this warning with gcc 4.7.2 or 4.8.1. Which version are you
+using?
+
+The code does:
+
+static void get_prompt_str(struct gstr *r, struct property *prop,
+[...]
+	if (head && location) {
+		jump = xmalloc(sizeof(struct jump_key));
+[... different basic block ...]
+			if (head && location && menu == location)
+				jump->offset = r->len - 1;
+
+If the second "if" is true, then the first one was true as well, and
+"jump" is initilized.
+
+>      jump->offset = r->len - 1;
+>                   ^
+> scripts/kconfig/menu.c:547:19: note: ‘jump’ was declared here
+>   struct jump_key *jump;
+>                    ^
+> Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+> ---
+>  scripts/kconfig/menu.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+> index c1d5320..23b1827 100644
+> --- a/scripts/kconfig/menu.c
+> +++ b/scripts/kconfig/menu.c
+> @@ -544,7 +544,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
+>  {
+>  	int i, j;
+>  	struct menu *submenu[8], *menu, *location = NULL;
+> -	struct jump_key *jump;
+> +	struct jump_key *jump = NULL;
+> 
+>  	str_printf(r, _("Prompt: %s\n"), _(prop->text));
+>  	menu = prop->menu->parent;
+> --
+> 1.7.10.4
+> 
