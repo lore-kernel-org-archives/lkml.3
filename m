@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab3ISM4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 08:56:30 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:59803 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab3ISM42 convert rfc822-to-8bit (ORCPT
+	id S1753975Ab3ISM6c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 08:58:32 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:44134 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab3ISM6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 08:56:28 -0400
+	Thu, 19 Sep 2013 08:58:31 -0400
+Date: Thu, 19 Sep 2013 05:58:30 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: torvalds@linux-foundation.org
+cc: ceph-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Ceph fixes for 3.12-rc2
+Message-ID: <alpine.DEB.2.00.1309190551380.23507@cobra.newdream.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Thu, 19 Sep 2013 09:56:28 -0300
-Message-ID: <CAGG-pUQGm3YjCWu+Q+An31iqrLGgdu4g5qVd4MA5PN0wK7+00A@mail.gmail.com>
-Subject: [PATCH RFC] Patches: Already submitted
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello maintainers,
+Hi Linus,
 
-I submitted two patches:
+Please pull the following Ceph fixes for
 
-[PATCH 01/02] x86: Useless inode var, printks and coding style fixes
-[PATCH 02/02] x86_64: Add safe check in a.out loaders and some coding style
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-I know that I did a mess with the submissions, because I didn't put
-the versions between the brackets, and sent some e-mail directly to
-maintainers. I know now that they will not be answered.
+These fix several bugs with RBD from 3.11 that didn't get tested in time 
+for the merge window: some error handling, a use-after-free, and a 
+sequencing issue when unmapping and image races with a notify operation.
 
-My question are:
-- Do I need to resend them putting the version tag, or this time I'll
-be forgived?
-- The main tags (x86 and x86_64) are correct? I'm patching the a.out
-loader files.
+There is also a patch fixing a problem with the new ceph + fscache code 
+that just went in.
 
-Sorry about that mess one more time.
+Thanks!
+sage
 
-Regards,
 
-Geyslan Gregório Bem
-hackingbits.com
+----------------------------------------------------------------
+Josh Durgin (6):
+      libceph: add function to ensure notifies are complete
+      rbd: complete notifies before cleaning up osd_client and rbd_dev
+      rbd: make rbd_obj_notify_ack() synchronous
+      rbd: fix use-after free of rbd_dev->disk
+      rbd: ignore unmapped snapshots that no longer exist
+      rbd: fix error handling from rbd_snap_name()
+
+Milosz Tanski (1):
+      fscache: check consistency does not decrement refcount
+
+ drivers/block/rbd.c             | 77 +++++++++++++++++++++++++++++++----------
+ fs/fscache/cookie.c             |  3 +-
+ include/linux/ceph/osd_client.h |  2 ++
+ net/ceph/osd_client.c           | 11 ++++++
+ 4 files changed, 74 insertions(+), 19 deletions(-)
