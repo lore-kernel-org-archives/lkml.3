@@ -1,115 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab3ISJiu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 05:38:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55875 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab3ISJis (ORCPT
+	id S1753371Ab3ISJkA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 05:40:00 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:48199 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab3ISJj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 05:38:48 -0400
-Message-ID: <523AC615.9020204@pengutronix.de>
-Date: Thu, 19 Sep 2013 11:38:29 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+	Thu, 19 Sep 2013 05:39:58 -0400
+Date: Thu, 19 Sep 2013 11:39:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 01/11] x86: Use asm goto to implement better
+ modify_and_test() functions
+Message-ID: <20130919093954.GD14112@gmail.com>
+References: <20130917082838.218329307@infradead.org>
+ <20130917091143.387880231@infradead.org>
+ <CA+55aFyVZNb3ZrLfh5FkV4E_P5_LE4-LpDHBwFNp=W1H7CnSBg@mail.gmail.com>
+ <4ec87843-c29a-401a-a54f-2cd4d61fba62@email.android.com>
+ <20130919083102.GB11427@tassilo.jf.intel.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Thiago Farina <tfransosi@gmail.com>, Andre Naujoks <nautsch2@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux list <linux-kernel@vger.kernel.org>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH net 2/3] lib: introduce upper case hex ascii helpers
-References: <1379093833-4949-1-git-send-email-nautsch2@gmail.com> <1379093833-4949-3-git-send-email-nautsch2@gmail.com> <CACnwZYdBocYEjASpKCNZ6cfLNpzxeLxaVjLCHwxwsYO+P14tAQ@mail.gmail.com> <20130914213546.ae435cdd.akpm@linux-foundation.org>
-In-Reply-To: <20130914213546.ae435cdd.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="iCfvD6NdlXDqSNQWCIEWBj2ED0Hj6bojK"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130919083102.GB11427@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---iCfvD6NdlXDqSNQWCIEWBj2ED0Hj6bojK
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
 
-On 09/15/2013 06:35 AM, Andrew Morton wrote:
-> On Sun, 15 Sep 2013 01:27:03 -0300 Thiago Farina <tfransosi@gmail.com> =
-wrote:
->=20
->> On Fri, Sep 13, 2013 at 2:37 PM, Andre Naujoks <nautsch2@gmail.com> wr=
-ote:
->>> To be able to use the hex ascii functions in case sensitive environme=
-nts
->>> the array hex_asc_upper[] and the needed functions for hex_byte_pack_=
-upper()
->>> are introduced.
->>>
->>> Signed-off-by: Andre Naujoks <nautsch2@gmail.com>
->>> ---
->>>  include/linux/kernel.h | 11 +++++++++++
->>>  lib/hexdump.c          |  2 ++
->>>  2 files changed, 13 insertions(+)
->>>
->>> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
->>> index 482ad2d..672ddc4 100644
->>> --- a/include/linux/kernel.h
->>> +++ b/include/linux/kernel.h
->>> @@ -439,6 +439,17 @@ static inline char *hex_byte_pack(char *buf, u8 =
-byte)
->>>         return buf;
->>>  }
->>>
->>> +extern const char hex_asc_upper[];
->>> +#define hex_asc_upper_lo(x)    hex_asc_upper[((x) & 0x0f)]
->>> +#define hex_asc_upper_hi(x)    hex_asc_upper[((x) & 0xf0) >> 4]
->> Does using a macro instead of a real function (static inline)
->> generates a better code?
->=20
-> Yes, a static inline would be nicer, but these are derived from
-> hex_asc_lo/hex_asc_hi.  If we change one we should change the other
-> and that becomes a separate cleanup.  So I think this patch is
-> OK as-is.
+* Andi Kleen <ak@linux.intel.com> wrote:
 
-Is this an Acked-by?
+> On Wed, Sep 18, 2013 at 02:02:37PM -0500, H. Peter Anvin wrote:
+>
+> > Yes, a bit sad.  We allow bracketing with the get/put_user_try/catch 
+> > blocks, but that is x86-specific. I don't think a generic option is 
+> > possible without compiler support, but it might be possible to do 
+> > better than we do know.
+> 
+> Letting the compiler do it is a bit risky, because it may open it up for 
+> really large blocks, thus defeating the security advantages.
 
-> Also, it would make sense to get all the *hex* stuff out of kernel.h
-> and into a new header file (hexchar.h?).  They're a clean
-> self-contained thing and kernel.h is rather a dumping ground.
+Yeah, the compiler could cover other pointer dereferences in the put_user 
+block and that won't result in any visible breakage, so it's difficult to 
+prevent the compiler doing it accidentally or even intentionally.
 
-Who is taking this series?
+Then again the many repeated STAC/CLAC sequences are really not nice.
 
-Marc
+So maybe we could add some macro magic to generate better assembly here - 
+if we coded up a __put_user_2field() primitive then we could already 
+optimize the filldir() case:
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+before:
 
+        if (__put_user(d_ino, &dirent->d_ino))
+                goto efault;
+        if (__put_user(reclen, &dirent->d_reclen))
+                goto efault;
+        if (copy_to_user(dirent->d_name, name, namlen))
+                goto efault;
+        if (__put_user(0, dirent->d_name + namlen))
+                goto efault;
+        if (__put_user(d_type, (char __user *) dirent + reclen - 1))
+                goto efault;
 
---iCfvD6NdlXDqSNQWCIEWBj2ED0Hj6bojK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+after:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+        if (__put_user_2field(d_ino, &dirent->d_ino, reclen, &dirent->d_reclen))
+                goto efault;
+        if (copy_to_user(dirent->d_name, name, namlen))
+                goto efault;
+        if (__put_user_2field(0, dirent->d_name + namlen, d_type, (char __user *) dirent + reclen - 1)))
+                goto efault;
 
-iEYEARECAAYFAlI6xhYACgkQjTAFq1RaXHOv7gCeOMtVME9HrIevxcjsvAegM6M4
-EVEAoIiP1DZCuSmTQT9HpJBmvhUS65sh
-=mSZl
------END PGP SIGNATURE-----
+That cuts down the inlined STAC/CLAC pairs from 4 to 2.
 
---iCfvD6NdlXDqSNQWCIEWBj2ED0Hj6bojK--
+__put_user_2field() would be some truly disgusting (but hidden from most 
+people) macro and assembly magic.
+
+We could also add __put_user_4field() and slightly reorder filldir():
+
+        if (__put_user_4field(	d_ino,		&dirent->d_ino,
+				reclen,		&dirent->d_reclen,
+        			0,		dirent->d_name + namlen,
+				d_type,		(char __user *) dirent + reclen - 1)))
+                goto efault;
+
+        if (copy_to_user(dirent->d_name, name, namlen))
+                goto efault;
+
+That would reduce the inlined STAC/CLAC pairs to a minimal 1 (only one of 
+which would be visible in the filldir() disassembly).
+
+In theory we could do something generic:
+
+        if (__put_user_fields(	4,
+				d_ino,		&dirent->d_ino,
+				reclen,		&dirent->d_reclen,
+        			0,		 dirent->d_name + namlen,
+				d_type,		(char __user *)dirent + reclen-1 ))
+                goto efault;
+
+        if (copy_to_user(dirent->d_name, name, namlen))
+                goto efault;
+
+and implement it up to 4 or so. It will be some truly disgusting lowlevel 
+code (especially due to the size variations which could make it explode 
+combinatorically), with some generic header fallback that utilizes 
+existing put_user primitives.
+
+But it's solvable IMO, if we want to solve it. On the high level it's also 
+more readable in a fashion and hence perhaps a bit less fragile than our 
+usual __put_user() patterns.
+
+Btw., while at it we could also maybe fix the assignment ordering and use 
+copy_to_user() naming:
+
+        if (__copy_to_user_fields(4,
+
+			&dirent->d_ino,				d_ino,
+			&dirent->d_reclen,			reclen,		
+        		dirent->d_name + namlen,		0,
+			(char __user *)dirent + reclen-1,	d_type	))
+
+                goto efault;
+
+        if (copy_to_user(dirent->d_name, name, namlen))
+                goto efault;
+
+That would make it even more readable.
+
+(Thinking about the macro tricks needed for something like this gave me a 
+bad headache though.)
+
+Thanks,
+
+	Ingo
