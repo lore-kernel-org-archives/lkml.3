@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab3ISGZF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 02:25:05 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:47542 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab3ISGY4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 02:24:56 -0400
-From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-To: jic23@cam.ac.uk, dmitry.torokhov@gmail.com
-Cc: linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
-        gregkh@linuxfoundation.org, zubair.lutfullah@gmail.com
-Subject: [PATCH 2/3] iio: ti_am335x_adc: optimize memory usage
-Date: Thu, 19 Sep 2013 11:24:34 +0500
-Message-Id: <1379571876-12420-3-git-send-email-zubair.lutfullah@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1379571876-12420-1-git-send-email-zubair.lutfullah@gmail.com>
-References: <1379571876-12420-1-git-send-email-zubair.lutfullah@gmail.com>
+	id S1753120Ab3ISG0Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 02:26:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42283 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752486Ab3ISG0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 02:26:23 -0400
+Message-ID: <1379571981.8608.2.camel@linux-fkkt.site>
+Subject: Re: unsupported usb bluetooth device
+From: Oliver Neukum <oneukum@suse.de>
+To: "Ken O'Brien" <kernel@kenobrien.org>
+Cc: marcel@holtmann.org, linux-kernel@vger.kernel.org
+Date: Thu, 19 Sep 2013 08:26:21 +0200
+In-Reply-To: <1379552845.4788.6.camel@mjolnir.site>
+References: <1379552845.4788.6.camel@mjolnir.site>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.9.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-12 bit ADC data is stored in 32 bits of storage.
-Change from u32 to u16 to reduce wasted memory.
+On Thu, 2013-09-19 at 02:07 +0100, Ken O'Brien wrote:
+> Hi,
+> 
+> I've acquired a Belkin "Mini Bluetooth v4.0 Adapter" F8T065bf
+> 8830bf12557 Rev. A01.
+> 
+> I'm running Linux 3.7.10-1.16 (openSUSE 12.3) and this device is not
+> detecting beyond what I can see in lsusb.
 
-Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
----
- drivers/iio/adc/ti_am335x_adc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+That usually means that it is not advertising itself as a class
+device.
 
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index a952538..ebe93eb 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -122,7 +122,7 @@ static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
- 		chan->datasheet_name = chan_name_ain[chan->channel];
- 		chan->scan_type.sign = 'u';
- 		chan->scan_type.realbits = 12;
--		chan->scan_type.storagebits = 32;
-+		chan->scan_type.storagebits = 16;
- 	}
- 
- 	indio_dev->channels = chan_array;
-@@ -186,7 +186,7 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
- 		if (stepid == map_val) {
- 			read = read & FIFOREAD_DATA_MASK;
- 			found = true;
--			*val = read;
-+			*val = (u16) read;
- 		}
- 	}
- 
--- 
-1.7.9.5
+> What steps can I take to aid in patching the kernel to support this
+> device? I am a proficient C/asm programmer but I've not done kernel
+> driver dev before.
+
+You can try to add it to btusb.c. There's a table of BT adapters
+that advertise themselves as vendor specific.
+
+	Regards
+		Oliver
+
 
