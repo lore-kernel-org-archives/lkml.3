@@ -1,55 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab3ISCMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 22:12:51 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:63239 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab3ISCMu (ORCPT
+	id S1752540Ab3ISCUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 22:20:20 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:44922 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab3ISCUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 22:12:50 -0400
-X-Nat-Received: from [202.181.97.72]:61311 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1379556717.20584
-To: keescook@chromium.org
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org, joe@perches.com,
-        linux@horizon.com, dan.carpenter@oracle.com, JBeulich@suse.com,
-        kosaki.motohiro@gmail.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 0/2] vsprintf: ignore %n again
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <1379317437-28329-1-git-send-email-keescook@chromium.org>
-	<20130916155504.GC13318@ZenIV.linux.org.uk>
-	<CAGXu5jK2d+9m0uA84nGbZ5E=s974NRn+Sxz3iRcTsFWqWFTGNQ@mail.gmail.com>
-	<201309182214.IDD13060.FFOVJOLOFQtHSM@I-love.SAKURA.ne.jp>
-	<CAGXu5jKztpsUwTCa0dMNHUS==dPQE02FvT=xjNfZLK80NSriXQ@mail.gmail.com>
-In-Reply-To: <CAGXu5jKztpsUwTCa0dMNHUS==dPQE02FvT=xjNfZLK80NSriXQ@mail.gmail.com>
-Message-Id: <201309191111.HEI73985.FMOVFHtQFLOOSJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 19 Sep 2013 11:11:57 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 18092013 #11098720, status: clean
+	Wed, 18 Sep 2013 22:20:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPM=9twv-bb3MtnWNTT5+i5HfHQS+cbJG16xsaoL-XV_Qpf9Cw@mail.gmail.com>
+References: <CAPM=9twv-bb3MtnWNTT5+i5HfHQS+cbJG16xsaoL-XV_Qpf9Cw@mail.gmail.com>
+Date: Wed, 18 Sep 2013 21:20:18 -0500
+X-Google-Sender-Auth: inDxyPzs-4j5u3-L9zTX2xaod0w
+Message-ID: <CA+55aFxJvJA6Y1ro2dZ+QQ-Rrrq6RCyz7GQShPxpucO8+1LVLQ@mail.gmail.com>
+Subject: Re: [git pull] drm radeon/nouveau/core fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook wrote:
-> > ---------- output start ----------
-> > const : literal
-> > not const : const char *
-> > not const : const char []
-> > const : const char * const
-> 
-> What version of gcc did you use? I don't get the last as const, for
-> some reason. And as Dan mentions, shouldn't const char[] be detected
-> as const too?
+On Wed, Sep 18, 2013 at 9:07 PM, Dave Airlie <airlied@gmail.com> wrote:
+>
+> mostly radeon fixes, with some nouveau bios parser, ttm fix and a fix
+> for AST driver.
 
-This worked on
+Ugh. I hope things calm down from here.
 
-  gcc (GCC) 4.4.7 20120313 (Red Hat 4.4.7-3)
-  gcc (GCC) 3.3.5 (Debian 1:3.3.5-13)
-
-with -On (where n != 0), but didn't work on
-
-  gcc (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3
-
-. Oops...
+           Linus
