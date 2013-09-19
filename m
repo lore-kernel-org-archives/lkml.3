@@ -1,109 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab3ISKDm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 06:03:42 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38327 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab3ISKDl (ORCPT
+	id S1753410Ab3ISKFE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 06:05:04 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:48170 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab3ISKFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 06:03:41 -0400
-Date: Thu, 19 Sep 2013 12:03:39 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Jason Cooper <jason@lakedaemon.net>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu, Alan Tull <atull@altera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-Message-ID: <20130919100339.GB19346@amd.pavel.ucw.cz>
-References: <cover.1379519753.git.michal.simek@xilinx.com>
- <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
- <20130918191517.GQ19937@titan.lakedaemon.net>
- <20130918203247.GA11181@obsidianresearch.com>
+	Thu, 19 Sep 2013 06:05:02 -0400
+Date: Thu, 19 Sep 2013 11:04:34 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Marc Reilly <marc@cpdesign.com.au>, u.kleine-koenig@pengutronix.de,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 2/3] mfd: mc13xxx: Move SPI erratum workaround into SPI
+ I/O function
+Message-ID: <20130919100434.GB22389@lee--X1>
+References: <1379527587-14567-1-git-send-email-broonie@kernel.org>
+ <1379527587-14567-2-git-send-email-broonie@kernel.org>
+ <20130919091318.GA22389@lee--X1>
+ <20130919095628.GH21013@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130918203247.GA11181@obsidianresearch.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130919095628.GH21013@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+> Please delete irrelevant context from mails, it makes it easier to find
+> the new content that's beenn added.
 
-> > + Jason Gunthorpe
+I did, off the bottom.
+
+I only left 22 lines at the top. You're just being pernickety.
+
+> > On Wed, 18 Sep 2013, Mark Brown wrote:
 > 
-> Thanks, looks interesting, we could possibly use this interface if it 
-> met our needs..
->  
-> > On Wed, Sep 18, 2013 at 05:56:39PM +0200, Michal Simek wrote:
-> > > This new subsystem should unify all fpga drivers which
-> > > do the same things. Load configuration data to fpga
-> > > or another programmable logic through common interface.
-> > > It doesn't matter if it is MMIO device, gpio bitbanging,
-> > > etc. connection. The point is to have the same
-> > > inteface for these drivers.
+> > > @@ -94,10 +94,15 @@ static int mc13xxx_spi_write(void *context, const void *data, size_t count)
+> > >  {
+> > >  	struct device *dev = context;
+> > >  	struct spi_device *spi = to_spi_device(dev);
+> > > +	char *reg = data;
 > 
-> So, we have many years of in-field experience with this and this API
-> doesn't really match what we do.
+> > I think this requires a cast.
 > 
-> Here are the steps we perform, from userspace:
-...
+> No, you should never need a cast to or from void in C - it probably does
+> want to be a const char though.
 
->  - Ask kernel to place FPGA into reset and prepare for programming
->    * Kernel can return an error (eg FPGA failed to erase, etc)
->    * this is the PROG_N low -> DONE high, PROG_N high -> INIT_N high
->      sequencing on Xilinx chips
->  - Ask kernel to load a bitstream.
->    * Userspace locats the bitstream file to load, and the mmaps it.
->    * Userspace passes the entire file in a single write() call to the
->      kernel which streams it over the configuration bus
->    * The kernel can report an erro rhere (eg Xilinx can report CRC
->    error)
->  - Ask the kernel to verify that configuration is complete. 
->    * On Xilinx this wait for done to go high
->  - Ask the kernel to release the configuration bus (tristate
->    all drivers) (or sometimes we have to drive the bus low,
->    it depends on the bitfile, user space knows what to do)
-> 
-> It is very important that userspace know exactly which step fails
-> because the resolution is different. We use this in a manufacturing
-> setting, so failures are expected and need quick root cause
-> determination.
-> 
-> You could probably address that need by very clearly defining a
-> variety of errno values for the various cases. However, it would be a
-> disaster if every driver did something a little different :|
+Either way, it needs changing.
 
-Well, exact steps are a bit hw-specific, too. So, if anything, I'd
-suggest standartizing the errno values.
-
-> Using request_firmware exclusively is not useful for us. We
-> format the bitfile with a header that contains our internal tracking
-> information. Sometimes we need to bitswap the bitfile. Our userspace
-> handles all of this and can pass a bitfile in memory to write().
-
-Take a look at
-https://www.kernel.org/doc/Documentation/firmware_class/README . You
-can do processing at 
-
- 4), userspace:
-     - hotplug: cat appropriate_firmware_image > \
-       		    			       /sys/class/firmware/xxx/data
-
-What is the specific reason request_firmware is unsuitable?
-
-Thanks,
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
