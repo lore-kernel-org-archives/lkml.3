@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab3ISNF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 09:05:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59810 "EHLO mail.zytor.com"
+	id S1754067Ab3ISNGW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:06:22 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50541 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752033Ab3ISNF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 09:05:56 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <alpine.LNX.2.00.1309191030180.3014@linux.site>
-References: <alpine.LNX.2.00.1309121139000.3818@linux.site> <52322621.3040908@zytor.com> <alpine.LNX.2.00.1309191030180.3014@linux.site>
+	id S1753659Ab3ISNGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 09:06:15 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
+CC: <balajitk@ti.com>, <kishon@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [RFC PATCH 02/15] phy: omap-control: Update DT binding information
+Date: Thu, 19 Sep 2013 16:05:30 +0300
+Message-ID: <1379595943-14622-3-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1379595943-14622-1-git-send-email-rogerq@ti.com>
+References: <1379595943-14622-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [Resend PATCH 2/2] s390: provide hardware randomness from zcrypt card to /dev/random
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 19 Sep 2013 08:05:32 -0500
-To: Torsten Duwe <duwe@lst.de>, Torsten Duwe <duwe@lst.de>
-CC: tytso@mit.edu, ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Message-ID: <33dd164b-00a7-4cbd-9d62-66000ed4abbf@email.android.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As I said, the option of doing feed from hwrng directly via a kernel thread seems the most logical thing to me, assuming you can convince Ted & co.  rngd doesn't really add much value for a whitened source.
+Update compatibility string and DT binding document.
 
-Torsten Duwe <duwe@lst.de> wrote:
->
->
->On Thu, 12 Sep 2013, H. Peter Anvin wrote:
->
->> From what I can gather from the patch this is too heavyweight (need
->> locks and so on) to use as arch_get_random*().  There has been a lot
->of
->
->Alas, I can see there's only x86 that currently has this implemented?
->
->> discussion about the pros and cons of allowing the kernel to bypass
->> rngd, but I would think that any such plumbing -- once it gets past
->the
->> fully synchronous low latency properties of arch_get_random*() --
->really
->> should be implemented as an option in the existing hwrng device
->> infrastructure.
->
->As I wrote in the intro, the problem to solve is slow startup when ASLR
->is 
->in effect; in that case: until rngd or haveged is finally running.
->
->> In other words, start by implementing a hwrng device.  That will work
->> right now with rngd running.  Then we can consider if we want to
->allow
->
->That's already there, thanks to the IBM guys :)
->
->> bypass of rngd for certain hwrng devices -- which may include zcrypt,
->> virtio_rng and so on.
->
->I'm currently thinking about some kind of buffer in zcrypt, where 
->arch_get_random can get a long or int quickly, as "designed" after x86.
->Device init or low water would trigger a work item to refill the
->buffer.
->It might tun out though, that every device on every architecture that
->does
->not quite match the x86 approach implements its own buffer.
->
->What do you think?
->
->Besides that, as you wrote, a generic mechanism to mix hwrngs into the 
->input pool would be nice, triggered by user space policy. As far as I
->can 
->see, some mixing of arch_get_random is done, but no entropy credited?
->
->	Torsten
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ Documentation/devicetree/bindings/phy/omap-phy.txt |   23 ++++++++++++++++++++
+ Documentation/devicetree/bindings/usb/omap-usb.txt |   23 --------------------
+ 2 files changed, 23 insertions(+), 23 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/phy/omap-phy.txt b/Documentation/devicetree/bindings/phy/omap-phy.txt
+index 2c485ee..cf45b01 100644
+--- a/Documentation/devicetree/bindings/phy/omap-phy.txt
++++ b/Documentation/devicetree/bindings/phy/omap-phy.txt
+@@ -1,5 +1,28 @@
+ OMAP PHY: DT DOCUMENTATION FOR PHYs in OMAP PLATFORM
+ 
++OMAP CONTROL PHY
++
++Required properties:
++ - compatible: Should be one of
++ "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
++ "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
++			e.g. USB2_PHY on OMAP5.
++ "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
++			e.g. USB3 PHY and SATA PHY on OMAP5.
++ "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
++			DRA7 platform.
++ - reg : Address and length of the register set for the device. It contains
++   the address of "otghs_control" for control-phy-otghs or "power" register
++   for other types.
++ - reg-names: should be "otghs_control" control-phy-otghs and "power" for
++   other types.
++
++omap_control_otghs: omap-control-phy@4a002300 {
++	compatible = "ti,control-phy-otghs";
++	reg = <0x4a00233c 0x4>;
++	reg-names = "otghs_control";
++};
++
+ OMAP USB2 PHY
+ 
+ Required properties:
+diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+index b2bf7b3..4aa8eab 100644
+--- a/Documentation/devicetree/bindings/usb/omap-usb.txt
++++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+@@ -79,26 +79,3 @@ omap_dwc3 {
+ 	clock-names = "usb_otg_ss_refclk960m";
+ 	ranges;
+ };
+-
+-OMAP CONTROL USB
+-
+-Required properties:
+- - compatible: Should be one of
+- "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
+- "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
+-			e.g. USB2_PHY on OMAP5.
+- "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
+-			e.g. USB3 PHY and SATA PHY on OMAP5.
+- "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
+-			DRA7 platform.
+- - reg : Address and length of the register set for the device. It contains
+-   the address of "otghs_control" for control-phy-otghs or "power" register
+-   for other types.
+- - reg-names: should be "otghs_control" control-phy-otghs and "power" for
+-   other types.
+-
+-omap_control_usb: omap-control-usb@4a002300 {
+-	compatible = "ti,control-phy-otghs";
+-	reg = <0x4a00233c 0x4>;
+-	reg-names = "otghs_control";
+-};
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.7.4.1
+
