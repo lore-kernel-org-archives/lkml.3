@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab3ISIRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 04:17:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:32786 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780Ab3ISIQ7 (ORCPT
+	id S1753217Ab3ISIS7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 04:18:59 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:52836 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab3ISIS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 04:16:59 -0400
-Date: Thu, 19 Sep 2013 10:16:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vince@deater.net>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org, eranian@googlemail.com
-Subject: Re: [tip:perf/core] perf: Fix broken union in ' struct
- perf_event_mmap_page'
-Message-ID: <20130919081642.GL9326@twins.programming.kicks-ass.net>
-References: <1372425741-1676-2-git-send-email-adrian.hunter@intel.com>
- <tip-860f085b74e9f0075de8140ed3a1e5b5e3e39aa8@git.kernel.org>
- <alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy>
- <20130918085722.GL12926@twins.programming.kicks-ass.net>
- <alpine.DEB.2.02.1309181013100.23210@pianoman.cluster.toy>
- <20130918154224.GK9326@twins.programming.kicks-ass.net>
- <alpine.DEB.2.02.1309181556370.26402@pianoman.cluster.toy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1309181556370.26402@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 19 Sep 2013 04:18:57 -0400
+Message-ID: <1379578732.2403.4.camel@ThinkPad-X230.localdomain>
+Subject: Re: [REGRESSION][BISECTED] skge: add dma_mapping check
+From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Mirko Lindner <mlindner@marvell.com>, linux-kernel@vger.kernel.org,
+        Stephen Hemminger <stephen@networkplumber.org>, netdev@vger.kernel.org,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        member graysky <graysky@archlinux.us>
+Date: Thu, 19 Sep 2013 12:18:52 +0400
+In-Reply-To: <20130918220819.GA11989@electric-eye.fr.zoreil.com>
+References: <1379494844.2294.12.camel@ThinkPad-X230.localdomain>
+	 <20130918220819.GA11989@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.9.91 (3.9.91-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 04:07:52PM -0400, Vince Weaver wrote:
-> It would be nice if there was some way to detect this change; I liked the 
-> idea of a "cap_usr_fixed" bit.
+On Thu, 2013-09-19 at 00:08 +0200, Francois Romieu wrote:
+> Igor Gnatenko <i.gnatenko.brain@gmail.com> :
+> > Since 136d8f377e1575463b47840bc5f1b22d94bf8f63 commit we have kernel
+> > panic on:
+> > 01:05.0 Ethernet controller [0200]: Marvell Technology Group Ltd.
+> > 
+> > Screen: https://www.dropbox.com/s/mu3t3wxpxbn4ou5/IMAG0507.jpg
+> > 
+> > RHBZ: https://bugzilla.redhat.com/show_bug.cgi?id=1008323
+> 
+> Does the ugly stuff below against mainline make a difference ?
+> 
+> Note to testers: use a size argument above 500 for 'ping' to
+> exercize the relevant code path.
+Reported-and-tested-by: Vasiliy Glazov <vascom2@gmail.com>
+Bisected-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+> 
+> diff --git a/drivers/net/ethernet/marvell/skge.c b/drivers/net/ethernet/marvell/skge.c
+> index ef94a59..aa85a3f 100644
+> --- a/drivers/net/ethernet/marvell/skge.c
+> +++ b/drivers/net/ethernet/marvell/skge.c
+> @@ -3086,6 +3086,7 @@ static struct sk_buff *skge_rx_get(struct net_device *dev,
+>  					       PCI_DMA_FROMDEVICE);
+>  		skge_rx_reuse(e, skge->rx_buf_size);
+>  	} else {
+> +		struct skge_element ee = *e;
+>  		struct sk_buff *nskb;
+>  
+>  		nskb = netdev_alloc_skb_ip_align(dev, skge->rx_buf_size);
+> @@ -3098,10 +3099,10 @@ static struct sk_buff *skge_rx_get(struct net_device *dev,
+>  		}
+>  
+>  		pci_unmap_single(skge->hw->pdev,
+> -				 dma_unmap_addr(e, mapaddr),
+> -				 dma_unmap_len(e, maplen),
+> +				 dma_unmap_addr(&ee, mapaddr),
+> +				 dma_unmap_len(&ee, maplen),
+>  				 PCI_DMA_FROMDEVICE);
+> -		skb = e->skb;
+> +		skb = ee.skb;
+>  		prefetch(skb->data);
+>  	}
+>  
+Yes. This patch fixes problem. ping www.ru -s 500 works fine.
 
-How about we start using the version field for this? Arguably we should
-have incremented that value every time we changed the thing but we might
-as well start now.
 
----
+-- 
+Igor Gnatenko
+Fedora release 20 (Heisenbug)
+Linux 3.11.1-300.fc20.x86_64
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index dd236b6..c44d55c 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3660,6 +3660,25 @@ static void calc_timer_values(struct perf_event *event,
- 	*running = ctx_time - event->tstamp_running;
- }
- 
-+static void perf_event_init_userpage(struct perf_event *event)
-+{
-+	struct perf_event_mmap_page *userpg;
-+	struct ring_buffer *rb;
-+
-+	rcu_read_lock();
-+	rb = rcu_dereference(event->rb);
-+	if (!rb)
-+		goto unlock;
-+
-+	userpg = rb->user_page;
-+
-+	userpg->version = 1;
-+	userpg->compat_version = 0;
-+
-+unlock:
-+	rcu_read_unlock();
-+}
-+
- void __weak arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
- {
- }
-@@ -4044,6 +4063,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
- 	ring_buffer_attach(event, rb);
- 	rcu_assign_pointer(event->rb, rb);
- 
-+	perf_event_init_userpage(event);
- 	perf_event_update_userpage(event);
- 
- unlock:
