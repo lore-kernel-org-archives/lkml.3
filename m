@@ -1,82 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab3ISNWt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 09:22:49 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40872 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab3ISNWr (ORCPT
+	id S1754143Ab3ISNXA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:23:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58715 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754029Ab3ISNWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 09:22:47 -0400
-Date: Thu, 19 Sep 2013 14:22:34 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130919132234.GQ21013@sirena.org.uk>
-References: <1379582286-10600-1-git-send-email-treding@nvidia.com>
- <20130919104525.GJ21013@sirena.org.uk>
- <20130919112104.GB10852@ulmo>
+	Thu, 19 Sep 2013 09:22:54 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
+CC: <balajitk@ti.com>, <kishon@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [RFC PATCH 10/15] ARM: omap5: hwmod: Add ocp2scp3 and sata hwmods
+Date: Thu, 19 Sep 2013 16:22:27 +0300
+Message-ID: <1379596947-15213-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1379595943-14622-1-git-send-email-rogerq@ti.com>
+References: <1379595943-14622-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwwPlZPbpBX9O0Yk"
-Content-Disposition: inline
-In-Reply-To: <20130919112104.GB10852@ulmo>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 86.153.71.95
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: rt5640: Omit ACPI match table only if !ACPI
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Keshava Munegowda <keshava_mgowda@ti.com>
 
---rwwPlZPbpBX9O0Yk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Create hwmods for ocp2scp3 and sata modules.
 
-On Thu, Sep 19, 2013 at 01:21:04PM +0200, Thierry Reding wrote:
+[Roger Q] Clean up.
 
-> Or perhaps we can annotate the table so that the compiler will stop
-> complaining but remove the table nonetheless if it isn't used. Similarly
-> to what we can do with
->=20
-> 	if (IS_ENABLED(CONFIG_FOO)) {
-> 		...
-> 	}
->=20
-> constructs. I can't really think of a way to do that, though. Perhaps
-> gcc will throw away the table anyway, so we'll just need a way to make
-> it shut up?
+CC: Benoit Cousson <bcousson@baylibre.com>
+Signed-off-by: Balaji T K <balajitk@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_54xx_data.c |   72 ++++++++++++++++++++++++++++
+ 1 files changed, 72 insertions(+), 0 deletions(-)
 
-There's an annotation which can stop the unreferenced variable warning
-and then modern compilers are able to eliminate unreferenced static
-symbols.  Not sure if it's actually worth the effort of doing all this
-though, but it is nice to be able to avoid needing multiple builds.
+diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+index 3dae6b9..2b698b8 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+@@ -1545,6 +1545,76 @@ static struct omap_hwmod omap54xx_wd_timer2_hwmod = {
+ 	},
+ };
+ 
++/*
++ * 'ocp2scp' class
++ * bridge to transform ocp interface protocol to scp (serial control port)
++ * protocol
++ */
++/* ocp2scp3 */
++static struct omap_hwmod omap54xx_ocp2scp3_hwmod;
++/* l4_cfg -> ocp2scp3 */
++static struct omap_hwmod_ocp_if omap54xx_l4_cfg__ocp2scp3 = {
++	.master		= &omap54xx_l4_cfg_hwmod,
++	.slave		= &omap54xx_ocp2scp3_hwmod,
++	.clk		= "l4_root_clk_div",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod omap54xx_ocp2scp3_hwmod = {
++	.name		= "ocp2scp3",
++	.class		= &omap54xx_ocp2scp_hwmod_class,
++	.clkdm_name	= "l3init_clkdm",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = OMAP54XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
++			.context_offs = OMAP54XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_HWCTRL,
++		},
++	},
++};
++
++/*
++ * 'sata' class
++ * sata:  serial ata interface  gen2 compliant   ( 1 rx/ 1 tx)
++ */
++
++static struct omap_hwmod_class_sysconfig omap54xx_sata_sysc = {
++	.sysc_offs	= 0x0000,
++	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
++			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
++	.sysc_fields	= &omap_hwmod_sysc_type2,
++};
++
++static struct omap_hwmod_class omap54xx_sata_hwmod_class = {
++	.name	= "sata",
++	.sysc	= &omap54xx_sata_sysc,
++};
++
++/* sata */
++static struct omap_hwmod omap54xx_sata_hwmod = {
++	.name		= "sata",
++	.class		= &omap54xx_sata_hwmod_class,
++	.clkdm_name	= "l3init_clkdm",
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
++	.main_clk	= "func_48m_fclk",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = OMAP54XX_CM_L3INIT_SATA_CLKCTRL_OFFSET,
++			.context_offs = OMAP54XX_RM_L3INIT_SATA_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_SWCTRL,
++		},
++	},
++};
++
++/* l4_cfg -> sata */
++static struct omap_hwmod_ocp_if omap54xx_l4_cfg__sata = {
++	.master		= &omap54xx_l4_cfg_hwmod,
++	.slave		= &omap54xx_sata_hwmod,
++	.clk		= "l3_iclk_div",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
+ 
+ /*
+  * Interfaces
+@@ -2192,6 +2262,8 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
+ 	&omap54xx_l4_per__uart6,
+ 	&omap54xx_l4_cfg__usb_otg_ss,
+ 	&omap54xx_l4_wkup__wd_timer2,
++	&omap54xx_l4_cfg__ocp2scp3,
++	&omap54xx_l4_cfg__sata,
+ 	NULL,
+ };
+ 
+-- 
+1.7.4.1
 
---rwwPlZPbpBX9O0Yk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSOvqXAAoJELSic+t+oim9FLYP/iOV4teUC3n7y1c5yChrKEIr
-mWPc04x4xq2GfFho4ySCFQ1xAaUDp6DRMSHAGfpPI/X5ZpDV7SbJ2ynztRrpio/P
-XYIMFusWWWbziaFdCGIsRWlIYiDMflQ20qMt+a8/5BEvizMfPpTCBS+30ib1PBqS
-fz0nufBfa3s0mZAGkNF6wANnMCo3EJSG81JQSqo/ZqbIE6LbBhadRoZMw4glQGyu
-PYIp2dp96RbcP/4PC+o24PI5gElHkACf9R7ADJQpoWfpvj12VKLXMd4AoV/DlM5R
-sjhRYSNsrAJY49VV4lZJa8+fEX3BdepeQAWcJM8gAyNEZUIPxXJmjFv0BhNVgqr3
-QcEdQhnIK1QBFY8A09sDykxpw5gRQGtybBM3C2hh2vpOyTvc420d/BwrHILIYAmw
-7aBMoriwGc0Iu00fcLEx2OaZ+7AECsL2c5F7sjaa7UY3zfdPiSZwlSr9D6eB5WzB
-lL0fQL4676CXHnqZ1sJVXDNJi12u+Nw0TlojU4ojAeXVYv6GbMQwb4hf12k6Tn7t
-crhcryvx7tB+FkL4zYyxopcoK2H56wHJOjJdSSftfRlmKt7ZCnSZWTkLt+KcAYnW
-Slvbg3MZQ2q4S4zKtiVmXcaR1lSyiqp7wgScDXnFKMM0QQxrfEwKxq5tZngTLN7D
-hskZsk8x/h7sScaShqRO
-=3R8o
------END PGP SIGNATURE-----
-
---rwwPlZPbpBX9O0Yk--
