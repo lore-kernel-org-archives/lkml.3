@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab3ISVFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 17:05:18 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47594 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752738Ab3ISVFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 17:05:14 -0400
-From: Nishanth Menon <nm@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-pm@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <cpufreq@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>
-CC: Rob Landley <rob@landley.net>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 0/3] PM / OPP: rename to dev_pm_opp * equivalents
-Date: Thu, 19 Sep 2013 16:03:49 -0500
-Message-ID: <1379624632-17356-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753872Ab3ISVIT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 17:08:19 -0400
+Received: from server19320154104.serverpool.info ([193.201.54.104]:53011 "EHLO
+	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797Ab3ISVIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 17:08:17 -0400
+Message-ID: <523B67B8.2060706@hauke-m.de>
+Date: Thu, 19 Sep 2013 23:08:08 +0200
+From: Hauke Mehrtens <hauke@hauke-m.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: thomas@m3y3r.de, linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/10] MIPS: BCM47XX: Cocci spatch "noderef"
+References: <1379604755850-858421494-0-diffsplit-thomas@m3y3r.de> <1379604755851-1504037195-1-diffsplit-thomas@m3y3r.de>
+In-Reply-To: <1379604755851-1504037195-1-diffsplit-thomas@m3y3r.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/19/2013 08:38 PM, thomas@m3y3r.de wrote:
+> sizeof when applied to a pointer typed expression gives the size of the
+> pointer.
+> Found by coccinelle spatch "misc/noderef.cocci"
 
-Based on [1], Randy rightly pointed out that OPP functions and data
-structures could be a bit specific to Power management.
+Thanks for spotting this.
 
-So, the following series is based on v3.12-rc1 tag.
+Is this a new rule or has just nobody checked that part of the kernel?
 
-If folks like it broken in a different way, I am open to suggestions.
 
-Nishanth Menon (3):
-  PM / OPP: rename functions to dev_pm_opp*
-  PM / OPP: rename data structures to dev_pm equivalents
-  PM / OPP: rename header to linux/pm_opp.h
+The from field in the mail is broken.
 
- Documentation/power/opp.txt             |  108 ++++++++++++------------
- arch/arm/mach-imx/mach-imx6q.c          |    4 +-
- arch/arm/mach-omap2/board-omap3beagle.c |   10 +--
- arch/arm/mach-omap2/omap-pm.h           |    2 +-
- arch/arm/mach-omap2/opp.c               |    6 +-
- arch/arm/mach-omap2/pm.c                |    8 +-
- drivers/base/power/opp.c                |  115 ++++++++++++-------------
- drivers/cpufreq/arm_big_little.c        |    8 +-
- drivers/cpufreq/arm_big_little_dt.c     |    2 +-
- drivers/cpufreq/cpufreq-cpu0.c          |   24 +++---
- drivers/cpufreq/exynos5440-cpufreq.c    |   17 ++--
- drivers/cpufreq/imx6q-cpufreq.c         |   26 +++---
- drivers/cpufreq/omap-cpufreq.c          |   12 +--
- drivers/devfreq/devfreq.c               |   25 +++---
- drivers/devfreq/exynos/exynos4_bus.c    |   29 +++----
- drivers/devfreq/exynos/exynos5_bus.c    |   28 +++----
- include/linux/devfreq.h                 |    6 +-
- include/linux/opp.h                     |  134 -----------------------------
- include/linux/pm_opp.h                  |  139 +++++++++++++++++++++++++++++++
- 19 files changed, 357 insertions(+), 346 deletions(-)
- delete mode 100644 include/linux/opp.h
- create mode 100644 include/linux/pm_opp.h
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+Acked-by: Hauke Mehrtens <hauke@hauke-m.de>
 
--- 
-1.7.9.5
+> diff -u -p a/arch/mips/bcm47xx/sprom.c b/arch/mips/bcm47xx/sprom.c
+> --- a/arch/mips/bcm47xx/sprom.c
+> +++ b/arch/mips/bcm47xx/sprom.c
+> @@ -162,7 +162,7 @@ static void nvram_read_alpha2(const char
+>  		pr_warn("alpha2 is too long %s\n", buf);
+>  		return;
+>  	}
+> -	memcpy(val, buf, sizeof(val));
+> +	memcpy(val, buf, sizeof(*val));
+>  }
+>  
+>  static void bcm47xx_fill_sprom_r1234589(struct ssb_sprom *sprom,
+> 
 
