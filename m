@@ -1,98 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab3ISHi7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 03:38:59 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:24665 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753064Ab3ISHhK (ORCPT
+	id S1752893Ab3ISIE0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 04:04:26 -0400
+Received: from mailout02.t-online.de ([194.25.134.17]:55980 "EHLO
+	mailout02.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab3ISIEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 03:37:10 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 8
-X-BigFish: VS8(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kz70kd2iz1de098h1de097h8275bhz2dh2a8h839he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h20cfi1155h)
-From: Bharat Bhushan <r65777@freescale.com>
-To: <alex.williamson@redhat.com>, <joro@8bytes.org>,
-        <benh@kernel.crashing.org>, <galak@kernel.crashing.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-pci@vger.kernel.org>, <agraf@suse.de>,
-        <scottwood@freescale.com>, <iommu@lists.linux-foundation.org>
-CC: Bharat Bhushan <bharat.bhushan@freescale.com>
-Subject: [PATCH 3/7] fsl iommu: add get_dev_iommu_domain
-Date: Thu, 19 Sep 2013 12:59:19 +0530
-Message-ID: <1379575763-2091-4-git-send-email-Bharat.Bhushan@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
-References: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
+	Thu, 19 Sep 2013 04:04:23 -0400
+Message-ID: <523AAFFC.2070300@t-online.de>
+Date: Thu, 19 Sep 2013 10:04:12 +0200
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: Dave Chinner <david@fromorbit.com>, Linux MM <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] [PATCH] [RFC] mm/shrinker: Add a shrinker flag to
+ always shrink a bit
+References: <1379495401-18279-1-git-send-email-daniel.vetter@ffwll.ch> <5239829F.4080601@t-online.de> <20130918203822.GA4330@dastard> <CAKMK7uGR7HtMLgu2-tvfTm+W=_gndVJ7QPcf0okFcKX6Htd61Q@mail.gmail.com>
+In-Reply-To: <CAKMK7uGR7HtMLgu2-tvfTm+W=_gndVJ7QPcf0okFcKX6Htd61Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ID: S+BmTuZSwheIpfTq+OwlO-9h6Xkb2baeaAxmbwrUxIVLo45QGuvzX7jUABI8c5ow1y
+X-TOI-MSGID: 9867d6c8-d2c6-46ae-acf4-027ad42f50ac
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bharat Bhushan <bharat.bhushan@freescale.com>
+On 19.09.2013 08:57, Daniel Vetter wrote:
+> On Wed, Sep 18, 2013 at 10:38 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> No, that's wrong. ->count_objects should never ass SHRINK_STOP.
+>> Indeed, it should always return a count of objects in the cache,
+>> regardless of the context.
+>>
+>> SHRINK_STOP is for ->scan_objects to tell the shrinker it can make
+>> any progress due to the context it is called in. This allows the
+>> shirnker to defer the work to another call in a different context.
+>> However, if ->count-objects doesn't return a count, the work that
+>> was supposed to be done cannot be deferred, and that is what
+>> ->count_objects should always return the number of objects in the
+>> cache.
+> So we should rework the locking in the drm/i915 shrinker to be able to
+> always count objects? Thus far no one screamed yet that we're not
+> really able to do that in all call contexts ...
 
-returns the iommu_domain of the requested device for fsl pamu.
+If this would have been a problem in the past, it probably would
+have been ended up as one of those unresolved random glitches ...
 
-Use PCI controller dev struct for pci devices as current LIODN schema
-assign LIODN to PCI controller not PCI device. This will be corrected
-with proper LIODN schema.
+> So should I revert 81e49f or will the early return 0; completely upset
+> the core shrinker logic?
 
-Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
----
- drivers/iommu/fsl_pamu_domain.c |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
+After Daves answer and a look at all other uses of SHRINK_STOP in the current
+kernel sources it is clear that 81e49f must be reverted.
 
-diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
-index 14d803a..1d0dfe3 100644
---- a/drivers/iommu/fsl_pamu_domain.c
-+++ b/drivers/iommu/fsl_pamu_domain.c
-@@ -1140,6 +1140,35 @@ static u32 fsl_pamu_get_windows(struct iommu_domain *domain)
- 	return dma_domain->win_cnt;
- }
- 
-+static struct iommu_domain *fsl_get_dev_domain(struct device *dev)
-+{
-+	struct pci_controller *pci_ctl;
-+	struct device_domain_info *info;
-+	struct pci_dev *pdev;
-+
-+	/*
-+	 * Use PCI controller dev struct for pci devices as current
-+	 * LIODN schema assign LIODN to PCI controller not PCI device
-+	 * This should get corrected with proper LIODN schema.
-+	 */
-+	if (dev->bus == &pci_bus_type) {
-+		pdev = to_pci_dev(dev);
-+		pci_ctl = pci_bus_to_host(pdev->bus);
-+		/*
-+		 * make dev point to pci controller device
-+		 * so we can get the LIODN programmed by
-+		 * u-boot.
-+		 */
-+		dev = pci_ctl->parent;
-+	}
-+
-+	info = dev->archdata.iommu_domain;
-+	if (info && info->domain)
-+		return info->domain->iommu_domain;
-+
-+	return NULL;
-+}
-+
- static struct iommu_ops fsl_pamu_ops = {
- 	.domain_init	= fsl_pamu_domain_init,
- 	.domain_destroy = fsl_pamu_domain_destroy,
-@@ -1155,6 +1184,7 @@ static struct iommu_ops fsl_pamu_ops = {
- 	.domain_get_attr = fsl_pamu_get_domain_attr,
- 	.add_device	= fsl_pamu_add_device,
- 	.remove_device	= fsl_pamu_remove_device,
-+	.get_dev_iommu_domain = fsl_get_dev_domain,
- };
- 
- int pamu_domain_init()
--- 
-1.7.0.4
+Wherever else SHRINK_STOP  is returned, it ends up in ->scan_objects.
+So i915_gem_inactive_scan() and not  i915_gem_inactive_count()
+should return that value in case of a failed trylock:
 
+i915_gem_inactive_scan(struct shrinker *shrinker, struct shrink_control *sc)
+{
+         struct drm_i915_private *dev_priv =
+                 container_of(shrinker,
+                              struct drm_i915_private,
+                              mm.inactive_shrinker);
+         struct drm_device *dev = dev_priv->dev;
+         int nr_to_scan = sc->nr_to_scan;
+         unsigned long freed;
+         bool unlock = true;
+
+         if (!mutex_trylock(&dev->struct_mutex)) {
+                 if (!mutex_is_locked_by(&dev->struct_mutex, current))
+-                        return 0;
++                        return SHRINK_STOP;
+
+                 if (dev_priv->mm.shrinker_no_lock_stealing)
+-                        return 0;
++                        return SHRINK_STOP;
+
+                 unlock = false;
+         }
+
+
+atm a kernel with 81e49f reverted,
+i915_gem_inactive_scan() changed as described above,
+and i915_gem_inactive_count() always counting _without_ any locking
+seems to work fine here. Is locking really needed at that place?
+
+cu,
+  Knut
 
