@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab3ISJTU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 05:19:20 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:42346 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab3ISJTT (ORCPT
+	id S1753023Ab3ISJUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 05:20:24 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:36757 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711Ab3ISJUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 05:19:19 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: rt5640: Omit ACPI match table only if !ACPI
-Date: Thu, 19 Sep 2013 11:18:06 +0200
-Message-Id: <1379582286-10600-1-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4
+	Thu, 19 Sep 2013 05:20:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <1379412095-7213-1-git-send-email-geert@linux-m68k.org>
+References: <1379412095-7213-1-git-send-email-geert@linux-m68k.org>
+Date: Thu, 19 Sep 2013 11:20:22 +0200
+X-Google-Sender-Auth: 5mj6tjG3qCMb6D2OHWD15evNPRo
+Message-ID: <CAMuHMdW8y9_=LXQ1PXjFaPyq-nYTPe+FodE5hQh4P3QSdnP_dg@mail.gmail.com>
+Subject: Re: Preliminary kexec support for Linux/m68k
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>, kexec@lists.infradead.org,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI_PTR() macro evaluates to NULL if ACPI is disabled and hence the
-ACPI match table won't be used, causing the compiler to complain. Avoid
-this by protecting the table using an #ifdef CONFIG_ACPI.
+On Tue, Sep 17, 2013 at 12:01 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> This is a preliminary set of patches to add kexec support for m68k.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- sound/soc/codecs/rt5640.c | 2 ++
- 1 file changed, 2 insertions(+)
+>   - [PATCH 1/3] m68k: Add preliminary kexec support
+>   - [PATCH 2/3] m68k: Add support to export bootinfo in procfs
+>   - [PATCH 3/3] [RFC] m68k: Add System RAM to /proc/iomem
+>
+> Notes:
+>   - The bootinfo is now saved and exported to /proc/bootinfo, so kexec-tools
+>     can read it and pass it (possibly after modification) to the new kernel.
+>     This is similar to /proc/atags on ARM.
 
-diff --git a/sound/soc/codecs/rt5640.c b/sound/soc/codecs/rt5640.c
-index 0bfb960..641eeeb 100644
---- a/sound/soc/codecs/rt5640.c
-+++ b/sound/soc/codecs/rt5640.c
-@@ -2082,11 +2082,13 @@ static const struct i2c_device_id rt5640_i2c_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, rt5640_i2c_id);
- 
-+#ifdef CONFIG_ACPI
- static struct acpi_device_id rt5640_acpi_match[] = {
- 	{ "INT33CA", 0 },
- 	{ },
- };
- MODULE_DEVICE_TABLE(acpi, rt5640_acpi_match);
-+#endif
- 
- static int rt5640_parse_dt(struct rt5640_priv *rt5640, struct device_node *np)
- {
--- 
-1.8.4
+>   - I based [PATCH 3/3] on the PowerPC version, but it's no longer needed as we
+>     now get this information from the bootinfo.
+>     Does anyone think this is nice to have anyway?
 
+It seems kexec/kdump on ppc don't use /proc/iomem anymore, and only rely on
+/proc/device-tree these days?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
