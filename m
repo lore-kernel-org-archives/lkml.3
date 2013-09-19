@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832Ab3ISKnY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 06:43:24 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:58476 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751717Ab3ISKnW (ORCPT
+	id S1753164Ab3ISKpg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 06:45:36 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46105 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab3ISKpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 06:43:22 -0400
-Message-ID: <523AD544.7030100@hurleysoftware.com>
-Date: Thu, 19 Sep 2013 06:43:16 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 19 Sep 2013 06:45:35 -0400
+Date: Thu, 19 Sep 2013 11:45:25 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130919104525.GJ21013@sirena.org.uk>
+References: <1379582286-10600-1-git-send-email-treding@nvidia.com>
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Andre Naujoks <nautsch2@gmail.com>, davem@davemloft.net,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH net 1/3] slip/slcan: added locking in wakeup function
-References: <1379093833-4949-1-git-send-email-nautsch2@gmail.com> <1379093833-4949-2-git-send-email-nautsch2@gmail.com> <523AC589.5040006@pengutronix.de> <523AD21C.8030102@gmail.com> <523AD356.70607@pengutronix.de>
-In-Reply-To: <523AD356.70607@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="m699nQIRt8EJjqXo"
+Content-Disposition: inline
+In-Reply-To: <1379582286-10600-1-git-send-email-treding@nvidia.com>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 86.153.71.95
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: rt5640: Omit ACPI match table only if !ACPI
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +cc Greg Kroah-Hartman]
 
-On 09/19/2013 06:35 AM, Marc Kleine-Budde wrote:
-> On 09/19/2013 12:29 PM, Andre Naujoks wrote:
->> On 19.09.2013 11:36, schrieb Marc Kleine-Budde:
->>> On 09/13/2013 07:37 PM, Andre Naujoks wrote:
->>>> The locking is needed, since the the internal buffer for the CAN
->>>> frames is changed during the wakeup call. This could cause buffer
->>>> inconsistencies under high loads, especially for the outgoing
->>>> short CAN packet skbuffs.
->>>>
->>>> The needed locks led to deadlocks before commit
->>>> "5ede52538ee2b2202d9dff5b06c33bfde421e6e4 tty: Remove extra
->>>> wakeup from pty write() path", which removed the direct callback
->>>> to the wakeup function from the tty layer.
->>>
->>> What does that mean for older kernels? (<
->>> 5ede52538ee2b2202d9dff5b06c33bfde421e6e4)
->>
->> It seems the slcan (and slip) driver is broken for older kernels. See
->> this thread for a discussion about the patch in pty.c.
->>
->> http://marc.info/?l=linux-kernel&m=137269017002789&w=2
->
-> Thanks for the info.
->
->> The patch from Peter Hurley was actually already in the queue, when I
->> ran into the problem, and is now in kernel 3.12.
->>
->> Without the pty patch and slow CAN traffic, the driver works, because
->> the wakeup is called directly from the pty driver. That is also the
->> reason why there was no locking. It would just deadlock.
->>
->> When the pty driver defers the wakeup, we ran into synchronisation
->> problems (which should be fixed by the locking) and eventually into a
->> kernel panic because of a recursive loop (which should be fixed by the
->> pty.c patch).
->>
->> Maybe it is possible to get both patches back into the stable branches?
->
-> Sounds reasonable. You might get in touch with Peter Hurley, if his
-> patch is scheduled for stable. Documentation/stable_kernel_rules.txt
-> suggests a procedure if your patch depends on others to be cherry picked.
+--m699nQIRt8EJjqXo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Already following along.
+On Thu, Sep 19, 2013 at 11:18:06AM +0200, Thierry Reding wrote:
+> The ACPI_PTR() macro evaluates to NULL if ACPI is disabled and hence the
+> ACPI match table won't be used, causing the compiler to complain. Avoid
+> this by protecting the table using an #ifdef CONFIG_ACPI.
 
-I'd like to wait for 3.12 release before the pty patch goes to -stable
-(so that it gets more in-the-wild testing).
+Applied, thanks.  Like I was saying to Olof we really should be able to
+do better than needing the ifdefs though.
 
-Regards,
-Peter Hurley
+--m699nQIRt8EJjqXo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSOtXCAAoJELSic+t+oim9+NYP/2NNEJfIOoZT/HxrGBCCDCvK
+/j66ilAUrCNDybecOekiRonjD5nD+HXEeC6MeYm/Jv58nwfi5Xe9WeZJZWSawM8W
+4ai7tJT2ezBblNYMjKSSCeQ4llfTeUvPBxRQNEeqGhRbugk0FY0DfBHRhCLPvgbk
+TaLY3lU3LCjFDZlPlnVHjaxcw0Rc0vGeH1X5pXmLGyrr/wctIbMsBBdmyMEO8B6j
+hWL5XKgxsShBsfeP2G9km10hKBH8aTjtomXKrUpXbfp++DMAR2Iev9SqSFVtfW5r
+Wq8N6R/9RTE9Pn5xmeoMDpO3Zk/qymPFqV+Zs7khV4ZIg+kZJG3Vc0ckC6k9vuC/
+ijsiWBk2tFw4RX2Ntqt/3byk05/1+hTr41jUfSRZtPLSQkiNTbpmp6J3jhHk6vHH
+mD73WQJY4mBaQDGZ/mcUUy56vCNcBFCHTf1Uje1UWqZ6/ZeWmzthyS8aLoC+natQ
+DxxN3fFgPLbRfKgoo3nFoAZZugcxlki1PQCXhockv9O/1vf9oGk5JZXzyaAjyVoW
+WWKzbkTAXPgnztFKgBSlGRl6cbcyJVmhZSrJ6y8mhmtQAZf1rJ4vtGQkz2sydZ5+
+Twh0liYNagWJUlELDhPb284MLcos/urolynMb8sgNvrqmbnDppVjlykldW3yXmIJ
+X3bn3HV7uT1z0Z0kmzDs
+=yjk2
+-----END PGP SIGNATURE-----
+
+--m699nQIRt8EJjqXo--
