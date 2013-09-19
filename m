@@ -1,92 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab3ISOuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:50:12 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51434 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab3ISOuL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:50:11 -0400
-Date: Thu, 19 Sep 2013 15:50:01 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org, swarren@nvidia.com
-Message-ID: <20130919145001.GD21013@sirena.org.uk>
-References: <1379601988-25839-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZPyQn7mfIBXOql8K"
-Content-Disposition: inline
-In-Reply-To: <1379601988-25839-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 86.153.71.95
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: set current constraints while setting
- machine constraints
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1753210Ab3ISOzK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:55:10 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58763 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752309Ab3ISOzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 10:55:03 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Dave Young <dyoung@redhat.com>,
+        linux-efi@vger.kernel.org
+Subject: [PATCH 03/11] x86, pageattr: Lookup address in an arbitrary PGD
+Date: Thu, 19 Sep 2013 16:54:46 +0200
+Message-Id: <1379602494-26684-4-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1379602494-26684-1-git-send-email-bp@alien8.de>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Borislav Petkov <bp@suse.de>
 
---ZPyQn7mfIBXOql8K
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is preparatory work in order to be able to map pages into a
+specified PGD and not implicitly and only into init_mm.
 
-On Thu, Sep 19, 2013 at 08:16:28PM +0530, Laxman Dewangan wrote:
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/mm/pageattr.c | 36 ++++++++++++++++++++++++++----------
+ 1 file changed, 26 insertions(+), 10 deletions(-)
 
-> +	if (!rdev->desc->ops->set_current_limit ||
-> +			!rdev->desc->ops->get_current_limit)
-> +		return 0;
-> +
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index bb32480c2d71..c53de62a1170 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -30,6 +30,7 @@
+  */
+ struct cpa_data {
+ 	unsigned long	*vaddr;
++	pgd_t		*pgd;
+ 	pgprot_t	mask_set;
+ 	pgprot_t	mask_clr;
+ 	int		numpages;
+@@ -322,17 +323,9 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 	return prot;
+ }
+ 
+-/*
+- * Lookup the page table entry for a virtual address. Return a pointer
+- * to the entry and the level of the mapping.
+- *
+- * Note: We return pud and pmd either when the entry is marked large
+- * or when the present bit is not set. Otherwise we would return a
+- * pointer to a nonexisting mapping.
+- */
+-pte_t *lookup_address(unsigned long address, unsigned int *level)
++static pte_t *__lookup_address_in_pgd(pgd_t *pgd, unsigned long address,
++				      unsigned int *level)
+ {
+-	pgd_t *pgd = pgd_offset_k(address);
+ 	pud_t *pud;
+ 	pmd_t *pmd;
+ 
+@@ -361,8 +354,31 @@ pte_t *lookup_address(unsigned long address, unsigned int *level)
+ 
+ 	return pte_offset_kernel(pmd, address);
+ }
++
++/*
++ * Lookup the page table entry for a virtual address. Return a pointer
++ * to the entry and the level of the mapping.
++ *
++ * Note: We return pud and pmd either when the entry is marked large
++ * or when the present bit is not set. Otherwise we would return a
++ * pointer to a nonexisting mapping.
++ */
++pte_t *lookup_address(unsigned long address, unsigned int *level)
++{
++        return __lookup_address_in_pgd(pgd_offset_k(address), address, level);
++}
+ EXPORT_SYMBOL_GPL(lookup_address);
+ 
++static pte_t *_lookup_address_cpa(struct cpa_data *cpa, unsigned long address,
++				  unsigned int *level)
++{
++        if (cpa->pgd)
++		return __lookup_address_in_pgd(cpa->pgd + pgd_index(address),
++					       address, level);
++
++        return lookup_address(address, level);
++}
++
+ /*
+  * This is necessary because __pa() does not work on some
+  * kinds of memory, like vmalloc() or the alloc_remap()
+-- 
+1.8.4
 
-The indentation here is odd and we probably ought to complain if someone
-tries to set a current constarint on a regulator that doesn't support
-the operation, if only to avoid surprises later on when the limits don't
-take effect.
-
-> +	current_uA = rdev->desc->ops->get_current_limit(rdev);
-> +	if (current_uA < rdev->constraints->min_uA ||
-> +			current_uA > rdev->constraints->max_uA) {
-> +		ret = rdev->desc->ops->set_current_limit(rdev,
-> +				rdev->constraints->min_uA,
-> +				rdev->constraints->max_uA);
-> +		if (ret < 0) {
-> +			rdev_err(rdev,
-> +				"Failed to set current constraint, %d\n", ret);
-> +			return ret;
-> +		}
-
-Why is this conditional on the existing setting?  Just apply the
-constraint.
-
-> +	}
-> +	return 0;
-
-Missing blank.
-
---ZPyQn7mfIBXOql8K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSOw8WAAoJELSic+t+oim95TYP/A003HgFSsMeiT5JbZ28OGlf
-6wxQJZrg4OhBLwgg2jYexZdicusISOD6zx6S379tyrAjPa/k8rru5fhZsSSgwWZV
-RBJTjb7VCyvDj9CaR/A7FsZiZFHxvdTZSqZmcQHjkQYYpGPAirJr5OdKShdh8Jvo
-sJQUhw3cusfHERWWa23MtawJfa8vSZYLOJqQBTL4vRlTlgYqst/acVWlqGd+/rOl
-qQru3uOyo6tqNBU/dl4T4q9FdCvAUsjThiPlyszTyehsmAHp6WhAMIsCz9vlCnDD
-iZf5dYRMn2TxdWF0G1gZj6ZuNKsRODuXFWk6w+NklV0aI+4inGlh+zWMPiynUgB3
-+xN0LGu2HPbQInwMlOa+whRw4OrkZytcluTSFyHAQWPKIGlcxmJy2Umns8raRKoI
-a7bCBRZdiT+60yvG01LsCJRa/wmcI8VpJ0PlzIxBY/RYqj6NcxReIUIN2OFJPB+V
-mUDuKdBjfHGxCI5kmhQxgZWnEluri9fpcLUls+ZqU4g6tvDl2KMbIXyLpkWm4e1J
-DG8uDEOyB401fAIxWT0NGoQBSrjcOFB4BvPbRoJ/XiXOQK9c0MRJtO2bCRnPjkMH
-WW0F+hG9UGA1h8M7p0ILpNxcDUBI1d/1wlZbXXEfFfMC/zOoENjdAOofAcGFl24H
-BADavOzUEKndQPtzHoiw
-=hU4Y
------END PGP SIGNATURE-----
-
---ZPyQn7mfIBXOql8K--
