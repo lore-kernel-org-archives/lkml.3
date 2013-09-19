@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034Ab3ISRjd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 13:39:33 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:39645 "EHLO
+	id S1753293Ab3ISRkv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 13:40:51 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:39982 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab3ISRjb (ORCPT
+	with ESMTP id S1752018Ab3ISRku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 13:39:31 -0400
+	Thu, 19 Sep 2013 13:40:50 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <davem@davemloft.net>, <netdev@vger.kernel.org>
-CC: <f.fainelli@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
+CC: <b.brezillon@overkiz.com>, <f.fainelli@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Patrice Vilchez <patrice.vilchez@atmel.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
         "David J. Choi" <david.choi@micrel.com>
 Subject: [PATCH] phy/micrel: Add suspend/resume support to Micrel PHYs
-Date: Thu, 19 Sep 2013 19:39:29 +0200
-Message-ID: <1379612369-20692-1-git-send-email-nicolas.ferre@atmel.com>
+Date: Thu, 19 Sep 2013 19:40:48 +0200
+Message-ID: <1379612448-20805-1-git-send-email-nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
 Content-Type: text/plain
