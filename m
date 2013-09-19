@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab3ISWBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 18:01:39 -0400
-Received: from www17.your-server.de ([213.133.104.17]:57480 "EHLO
+	id S1754032Ab3ISWBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 18:01:43 -0400
+Received: from www17.your-server.de ([213.133.104.17]:57448 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943Ab3ISWBc (ORCPT
+	with ESMTP id S1753920Ab3ISWBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 18:01:32 -0400
-Subject: [PATCH 9/10] staging: r8188eu: Cocci spatch "noderef"
+	Thu, 19 Sep 2013 18:01:40 -0400
+Subject: [PATCH 8/10] staging: r8188eu: Add files for new drive: Cocci
+ spatch "noderef"
 From: Thomas Meyer <thomas@m3y3r.de>
 To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Message-ID: <1379604755854-737294623-9-diffsplit-thomas@m3y3r.de>
+Message-ID: <1379604755854-330484711-8-diffsplit-thomas@m3y3r.de>
 References: <1379604755850-858421494-0-diffsplit-thomas@m3y3r.de>
 In-Reply-To: <1379604755850-858421494-0-diffsplit-thomas@m3y3r.de>
 Date: Thu, 19 Sep 2013 23:45:46 +0200
@@ -30,15 +31,15 @@ Found by coccinelle spatch "misc/noderef.cocci"
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c b/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
---- a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-+++ b/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-@@ -6973,7 +6973,7 @@ static int rtw_mp_ctx(struct net_device
- 	stop = strncmp(extra, "stop", 4);
- 	sscanf(extra, "count =%d, pkt", &count);
+diff -u -p a/drivers/staging/rtl8188eu/hal/rtl8188e_dm.c b/drivers/staging/rtl8188eu/hal/rtl8188e_dm.c
+--- a/drivers/staging/rtl8188eu/hal/rtl8188e_dm.c
++++ b/drivers/staging/rtl8188eu/hal/rtl8188e_dm.c
+@@ -57,7 +57,7 @@ static void Init_ODM_ComInfo_88E(struct
+ 	u8 cut_ver, fab_ver;
  
--	_rtw_memset(extra, '\0', sizeof(extra));
-+	_rtw_memset(extra, '\0', sizeof(*extra));
+ 	/*  Init Value */
+-	_rtw_memset(dm_odm, 0, sizeof(dm_odm));
++	_rtw_memset(dm_odm, 0, sizeof(*dm_odm));
  
- 	if (stop == 0) {
- 		bStartTest = 0; /*  To set Stop */
+ 	dm_odm->Adapter = Adapter;
+ 
