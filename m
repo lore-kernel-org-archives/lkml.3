@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714Ab3ISSlA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 14:41:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43975 "EHLO
+	id S1753606Ab3ISSk5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 14:40:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43973 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab3ISSkp (ORCPT
+	with ESMTP id S1753024Ab3ISSkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Sep 2013 14:40:45 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 5/9] perf tools: Fix compile with libelf without get_phdrnum
-Date: Thu, 19 Sep 2013 15:40:28 -0300
-Message-Id: <1379616032-13061-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 3/9] perf annotate: Fix objdump line parsing offset validation
+Date: Thu, 19 Sep 2013 15:40:26 -0300
+Message-Id: <1379616032-13061-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1379616032-13061-1-git-send-email-acme@infradead.org>
 References: <1379616032-13061-1-git-send-email-acme@infradead.org>
@@ -31,8 +31,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Add a feature check for get_phdrnum() and implement a replacement if it
-is not present.
+When parsing lines from objdump a line containing source code starting
+with a numeric label is mistaken for a line of disassembly starting with
+a memory address.
+
+Current validation fails to recognise that the "memory address" is out
+of range and calculates an invalid offset which later causes this
+segfault:
+
+Program received signal SIGSEGV, Segmentation fault.
+0x0000000000457315 in disasm__calc_percent (notes=0xc98970, evidx=0, offset=143705, end=2127526177, path=0x7fffffffbf50)
+    at util/annotate.c:631
+631				hits += h->addr[offset++];
+(gdb) bt
+ #0  0x0000000000457315 in disasm__calc_percent (notes=0xc98970, evidx=0, offset=143705, end=2127526177, path=0x7fffffffbf50)
+    at util/annotate.c:631
+ #1  0x00000000004d65e3 in annotate_browser__calc_percent (browser=0x7fffffffd130, evsel=0xa01da0) at ui/browsers/annotate.c:364
+ #2  0x00000000004d7433 in annotate_browser__run (browser=0x7fffffffd130, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:672
+ #3  0x00000000004d80c9 in symbol__tui_annotate (sym=0xc989a0, map=0xa02660, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:962
+ #4  0x00000000004d7aa0 in hist_entry__tui_annotate (he=0xdf73f0, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:823
+ #5  0x00000000004dd648 in perf_evsel__hists_browse (evsel=0xa01da0, nr_events=1, helpline=
+    0x58b768 "For a higher level overview, try: perf report --sort comm,dso", ev_name=0xa02cd0 "cycles", left_exits=false, hbt=
+    0x0, min_pcnt=0, env=0xa011e0) at ui/browsers/hists.c:1659
+ #6  0x00000000004de372 in perf_evlist__tui_browse_hists (evlist=0xa01520, help=
+    0x58b768 "For a higher level overview, try: perf report --sort comm,dso", hbt=0x0, min_pcnt=0, env=0xa011e0)
+    at ui/browsers/hists.c:1950
+ #7  0x000000000042cf6b in __cmd_report (rep=0x7fffffffd6c0) at builtin-report.c:581
+ #8  0x000000000042e25d in cmd_report (argc=0, argv=0x7fffffffe4b0, prefix=0x0) at builtin-report.c:965
+ #9  0x000000000041a0e1 in run_builtin (p=0x801548, argc=1, argv=0x7fffffffe4b0) at perf.c:319
+ #10 0x000000000041a319 in handle_internal_command (argc=1, argv=0x7fffffffe4b0) at perf.c:376
+ #11 0x000000000041a465 in run_argv (argcp=0x7fffffffe38c, argv=0x7fffffffe380) at perf.c:420
+ #12 0x000000000041a707 in main (argc=1, argv=0x7fffffffe4b0) at perf.c:521
+
+After the fix is applied the symbol can be annotated showing the
+problematic line "1:      rep"
+
+copy_user_generic_string  /usr/lib/debug/lib/modules/3.9.10-100.fc17.x86_64/vmlinux
+             */
+            ENTRY(copy_user_generic_string)
+                    CFI_STARTPROC
+                    ASM_STAC
+                    andl %edx,%edx
+              and    %edx,%edx
+                    jz 4f
+              je     37
+                    cmpl $8,%edx
+              cmp    $0x8,%edx
+                    jb 2f           /* less than 8 bytes, go to byte copy loop */
+              jb     33
+                    ALIGN_DESTINATION
+              mov    %edi,%ecx
+              and    $0x7,%ecx
+              je     28
+              sub    $0x8,%ecx
+              neg    %ecx
+              sub    %ecx,%edx
+        1a:   mov    (%rsi),%al
+              mov    %al,(%rdi)
+              inc    %rsi
+              inc    %rdi
+              dec    %ecx
+              jne    1a
+                    movl %edx,%ecx
+        28:   mov    %edx,%ecx
+                    shrl $3,%ecx
+              shr    $0x3,%ecx
+                    andl $7,%edx
+              and    $0x7,%edx
+            1:      rep
+100.00        rep    movsq %ds:(%rsi),%es:(%rdi)
+                    movsq
+            2:      movl %edx,%ecx
+        33:   mov    %edx,%ecx
+            3:      rep
+              rep    movsb %ds:(%rsi),%es:(%rdi)
+                    movsb
+            4:      xorl %eax,%eax
+        37:   xor    %eax,%eax
+              data32 xchg %ax,%ax
+                    ASM_CLAC
+                    ret
+              retq
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -44,75 +123,25 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1379080170-6608-1-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1379009721-27667-1-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/config/Makefile          |  3 +++
- tools/perf/config/feature-tests.mak |  9 +++++++++
- tools/perf/util/symbol-elf.c        | 16 ++++++++++++++++
- 3 files changed, 28 insertions(+)
+ tools/perf/util/annotate.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 214e17e..346ee92 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -180,6 +180,9 @@ FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
- ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
-   CFLAGS += -DLIBELF_MMAP
- endif
-+ifeq ($(call try-cc,$(SOURCE_ELF_GETPHDRNUM),$(FLAGS_LIBELF),-DHAVE_ELF_GETPHDRNUM),y)
-+  CFLAGS += -DHAVE_ELF_GETPHDRNUM
-+endif
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index bfc5a27..7eae548 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -809,7 +809,7 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 		    end = map__rip_2objdump(map, sym->end);
  
- # include ARCH specific config
- -include $(src-perf)/arch/$(ARCH)/Makefile
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 7f550c1..d5a8dd4 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -61,6 +61,15 @@ int main(void)
- }
- endef
- 
-+define SOURCE_ELF_GETPHDRNUM
-+#include <libelf.h>
-+int main(void)
-+{
-+	size_t dst;
-+	return elf_getphdrnum(0, &dst);
-+}
-+endef
-+
- ifndef NO_SLANG
- define SOURCE_SLANG
- #include <slang.h>
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index a7b9ab5..a9c829b 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -8,6 +8,22 @@
- #include "symbol.h"
- #include "debug.h"
- 
-+#ifndef HAVE_ELF_GETPHDRNUM
-+static int elf_getphdrnum(Elf *elf, size_t *dst)
-+{
-+	GElf_Ehdr gehdr;
-+	GElf_Ehdr *ehdr;
-+
-+	ehdr = gelf_getehdr(elf, &gehdr);
-+	if (!ehdr)
-+		return -1;
-+
-+	*dst = ehdr->e_phnum;
-+
-+	return 0;
-+}
-+#endif
-+
- #ifndef NT_GNU_BUILD_ID
- #define NT_GNU_BUILD_ID 3
- #endif
+ 		offset = line_ip - start;
+-		if (offset < 0 || (u64)line_ip > end)
++		if ((u64)line_ip < start || (u64)line_ip > end)
+ 			offset = -1;
+ 		else
+ 			parsed_line = tmp2 + 1;
 -- 
 1.8.1.4
 
