@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab3ISOzT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:55:19 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58799 "EHLO mail.skyhub.de"
+	id S1753128Ab3ISOzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:55:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58751 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752578Ab3ISOzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:55:13 -0400
+	id S1752283Ab3ISOzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 10:55:03 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: X86 ML <x86@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
         James Bottomley <James.Bottomley@HansenPartnership.com>,
         Vivek Goyal <vgoyal@redhat.com>, Dave Young <dyoung@redhat.com>,
         linux-efi@vger.kernel.org
-Subject: [PATCH 10/11] x86, cpa: Map in an arbitrary pgd
-Date: Thu, 19 Sep 2013 16:54:53 +0200
-Message-Id: <1379602494-26684-11-git-send-email-bp@alien8.de>
+Subject: [PATCH 04/11] x86, pageattr: Add a PGD pagetable populating function
+Date: Thu, 19 Sep 2013 16:54:47 +0200
+Message-Id: <1379602494-26684-5-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1379602494-26684-1-git-send-email-bp@alien8.de>
 References: <1379602494-26684-1-git-send-email-bp@alien8.de>
@@ -27,156 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-Add the ability to map pages in an arbitrary pgd. This wires in the
-remaining stuff so that there's a new interface with which you can map a
-region into an arbitrary PGD.
+This allocates, if necessary, and populates the corresponding PGD entry
+with a PUD page. The next population level is a dummy macro which will
+be removed by the next patch and it is added here to keep the patch
+small and easily reviewable but not break bisection, at the same time.
 
 Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- arch/x86/mm/pageattr.c | 53 +++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 46 insertions(+), 7 deletions(-)
+ arch/x86/mm/pageattr.c | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
 diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index ca76481c09e8..991386bf3aad 100644
+index c53de62a1170..21a31e85283c 100644
 --- a/arch/x86/mm/pageattr.c
 +++ b/arch/x86/mm/pageattr.c
-@@ -453,7 +453,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * Check for races, another CPU might have split this page
- 	 * up already:
- 	 */
--	tmp = lookup_address(address, &level);
-+	tmp = _lookup_address_cpa(cpa, address, &level);
- 	if (tmp != kpte)
- 		goto out_unlock;
- 
-@@ -559,7 +559,8 @@ out_unlock:
- }
- 
- static int
--__split_large_page(pte_t *kpte, unsigned long address, struct page *base)
-+__split_large_page(struct cpa_data *cpa, pte_t *kpte, unsigned long address,
-+		   struct page *base)
- {
- 	pte_t *pbase = (pte_t *)page_address(base);
- 	unsigned long pfn, pfninc = 1;
-@@ -572,7 +573,7 @@ __split_large_page(pte_t *kpte, unsigned long address, struct page *base)
- 	 * Check for races, another CPU might have split this page
- 	 * up for us already:
- 	 */
--	tmp = lookup_address(address, &level);
-+	tmp = _lookup_address_cpa(cpa, address, &level);
- 	if (tmp != kpte) {
- 		spin_unlock(&pgd_lock);
- 		return 1;
-@@ -648,7 +649,8 @@ __split_large_page(pte_t *kpte, unsigned long address, struct page *base)
+@@ -666,6 +666,45 @@ static int split_large_page(pte_t *kpte, unsigned long address)
  	return 0;
  }
  
--static int split_large_page(pte_t *kpte, unsigned long address)
-+static int split_large_page(struct cpa_data *cpa, pte_t *kpte,
-+			    unsigned long address)
- {
- 	struct page *base;
- 
-@@ -660,7 +662,7 @@ static int split_large_page(pte_t *kpte, unsigned long address)
- 	if (!base)
- 		return -ENOMEM;
- 
--	if (__split_large_page(kpte, address, base))
-+	if (__split_large_page(cpa, kpte, address, base))
- 		__free_page(base);
- 
- 	return 0;
-@@ -1041,6 +1043,9 @@ static int populate_pgd(struct cpa_data *cpa, unsigned long addr)
++#define populate_pud(cpa, addr, pgd, pgprot)	(-1)
++
++/*
++ * Restrictions for kernel page table do not necessarily apply when mapping in
++ * an alternate PGD.
++ */
++static int populate_pgd(struct cpa_data *cpa, unsigned long addr)
++{
++	pgprot_t pgprot = __pgprot(_KERNPG_TABLE);
++	bool allocd_pgd = false;
++	pgd_t *pgd_entry;
++	pud_t *pud;
++	int ret;
++
++	pgd_entry = cpa->pgd + pgd_index(addr);
++
++	/*
++	 * Allocate a PUD page and hand it down for mapping.
++	 */
++	if (pgd_none(*pgd_entry)) {
++		pud = (pud_t *)get_zeroed_page(GFP_KERNEL | __GFP_NOTRACK);
++		if (!pud)
++			return -1;
++
++		set_pgd(pgd_entry, __pgd(__pa(pud) | _KERNPG_TABLE));
++		allocd_pgd = true;
++	}
++
++	pgprot_val(pgprot) &= ~pgprot_val(cpa->mask_clr);
++	pgprot_val(pgprot) |=  pgprot_val(cpa->mask_set);
++
++	ret = populate_pud(cpa, addr, pgd_entry, pgprot);
++	if (ret < 0)
++		return ret;
++
++	cpa->numpages = ret;
++	return 0;
++}
++
  static int __cpa_process_fault(struct cpa_data *cpa, unsigned long vaddr,
  			       int primary)
  {
-+	if (cpa->pgd)
-+		return populate_pgd(cpa, vaddr);
-+
- 	/*
- 	 * Ignore all non primary paths.
- 	 */
-@@ -1085,7 +1090,7 @@ static int __change_page_attr(struct cpa_data *cpa, int primary)
- 	else
- 		address = *cpa->vaddr;
- repeat:
--	kpte = lookup_address(address, &level);
-+	kpte = _lookup_address_cpa(cpa, address, &level);
- 	if (!kpte)
- 		return __cpa_process_fault(cpa, address, primary);
- 
-@@ -1149,7 +1154,7 @@ repeat:
- 	/*
- 	 * We have to split the large page:
- 	 */
--	err = split_large_page(kpte, address);
-+	err = split_large_page(cpa, kpte, address);
- 	if (!err) {
- 		/*
- 	 	 * Do a global flush tlb after splitting the large page
-@@ -1298,6 +1303,8 @@ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
- 	int ret, cache, checkalias;
- 	unsigned long baddr = 0;
- 
-+	memset(&cpa, 0, sizeof(cpa));
-+
- 	/*
- 	 * Check, if we are requested to change a not supported
- 	 * feature:
-@@ -1744,6 +1751,7 @@ static int __set_pages_p(struct page *page, int numpages)
- {
- 	unsigned long tempaddr = (unsigned long) page_address(page);
- 	struct cpa_data cpa = { .vaddr = &tempaddr,
-+				.pgd = 0,
- 				.numpages = numpages,
- 				.mask_set = __pgprot(_PAGE_PRESENT | _PAGE_RW),
- 				.mask_clr = __pgprot(0),
-@@ -1762,6 +1770,7 @@ static int __set_pages_np(struct page *page, int numpages)
- {
- 	unsigned long tempaddr = (unsigned long) page_address(page);
- 	struct cpa_data cpa = { .vaddr = &tempaddr,
-+				.pgd = 0,
- 				.numpages = numpages,
- 				.mask_set = __pgprot(0),
- 				.mask_clr = __pgprot(_PAGE_PRESENT | _PAGE_RW),
-@@ -1822,6 +1831,36 @@ bool kernel_page_present(struct page *page)
- 
- #endif /* CONFIG_DEBUG_PAGEALLOC */
- 
-+int kernel_map_pages_in_pgd(pgd_t *pgd, u64 pfn, unsigned long address,
-+			    unsigned numpages, unsigned long page_flags)
-+{
-+	int retval = 0;
-+
-+	struct cpa_data cpa = {
-+		.vaddr = &address,
-+		.pfn = pfn,
-+		.pgd = pgd,
-+		.numpages = numpages,
-+		.mask_set = __pgprot(0),
-+		.mask_clr = __pgprot(0),
-+		.flags = 0,
-+	};
-+
-+	if (!(__supported_pte_mask & _PAGE_NX))
-+		goto out;
-+
-+	if (!(page_flags & _PAGE_NX))
-+		cpa.mask_clr = __pgprot(_PAGE_NX);
-+
-+	cpa.mask_set = __pgprot(_PAGE_PRESENT | page_flags);
-+
-+	retval = __change_page_attr_set_clr(&cpa, 0);
-+	__flush_tlb_all();
-+
-+out:
-+	return retval;
-+}
-+
- /*
-  * The testcases use internal knowledge of the implementation that shouldn't
-  * be exposed to the rest of the kernel. Include these directly here.
 -- 
 1.8.4
 
