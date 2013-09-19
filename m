@@ -1,144 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab3ISRyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 13:54:33 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41531 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab3ISRyc (ORCPT
+	id S1753064Ab3ISSFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 14:05:23 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:44764 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716Ab3ISSFT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 13:54:32 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Jon Loeliger <jdl@jdl.com>, David Gibson <david@gibson.dropbear.id.au>
-Cc: Olof Johansson <olof@lixom.net>, frowand.list@gmail.com,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [dtc PATCH V2] Warn on node name unit-address presence/absence mismatch
-Date: Thu, 19 Sep 2013 11:54:23 -0600
-Message-Id: <1379613263-32080-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Thu, 19 Sep 2013 14:05:19 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1379544219-23579-1-git-send-email-soren.brinkmann@xilinx.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Hyun Kwon <hyunk@xilinx.com>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+References: <1379544219-23579-1-git-send-email-soren.brinkmann@xilinx.com>
+Message-ID: <20130919180512.5246.73360@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH v2] clk: si570: Add a driver for SI570 oscillators
+Date: Thu, 19 Sep 2013 11:05:12 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Quoting Soren Brinkmann (2013-09-18 15:43:38)
+> diff --git a/Documentation/devicetree/bindings/clock/silabs,si570.txt b/Documentation/devicetree/bindings/clock/silabs,si570.txt
+> new file mode 100644
+> index 0000000..7ab5c8b
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/silabs,si570.txt
+> @@ -0,0 +1,38 @@
+> +Binding for Silicon Labs 570, 571, 598 and 599 programmable
+> +I2C clock generators.
+> +
+> +Reference
+> +This binding uses the common clock binding[1]. Details about the devices can be
+> +found in the data sheets[2][3].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +[2] Si570/571 Data Sheet
+> +    http://www.silabs.com/Support%20Documents/TechnicalDocs/si570.pdf
+> +[3] Si598/599 Data Sheet
+> +    http://www.silabs.com/Support%20Documents/TechnicalDocs/si598-99.pdf
+> +
+> +Required properties:
+> + - compatible: Shall be one of "silabs,si570", "silabs,si571",
+> +                              "silabs,si598", "silabs,si599"
+> + - reg: I2C device address.
+> + - #clock-cells: From common clock bindings: Shall be 0.
+> + - factory-fout: Factory set default frequency. This frequency is part specific.
+> +                The correct frequency for the part used has to be provided in
+> +                order to generate the correct output frequencies. For more
+> +                details, please refer to the data sheet.
+> +
+> +Optional properties:
+> + - clock-output-names: From common clock bindings. Recommended to be "si570".
+> + - clock-frequency: Output frequency to generate. This defines the output
+> +                   frequency set during boot. It can be reprogrammed during
+> +                   runtime using the common clock framework.
+> + - temperature-stability-7ppm: Indicate a device with a temperature stability
+> +                              of 7ppm
 
-ePAPR 1.1 section 2.2.1.1 "Node Name Requirements" specifies that any
-node that has a reg property must include a unit address in its name
-with value matching the first entry in its reg property. Conversely, if
-a node does not have a reg property, the node name must not include a
-unit address.
+Some DT binding bike-shedding:
 
-Implement a check for this. The code doesn't validate the format of the
-unit address; ePAPR implies this may vary from (containing bus) binding
-to binding, so doing so would be much more complex.
+Should this be "temperature-stability-ppm = <7>;" ? Do you think that
+this value might change in the future?
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-v2: Implement the new checks separately, rather than as part of existing
-    checkes. downgrade from errors to warnings. Add tests.
+> diff --git a/drivers/clk/clk-si570.c b/drivers/clk/clk-si570.c
+> new file mode 100644
+> index 0000000..c20dfce
+> --- /dev/null
+> +++ b/drivers/clk/clk-si570.c
+> @@ -0,0 +1,517 @@
+<snip>
+> +static bool si570_regmap_is_volatile(struct device *dev, unsigned int reg)
+> +{
+> +       switch (reg) {
+> +       case 135:
+> +               return true;
+> +       default:
+> +               return false;
+> +       }
+> +}
+> +
+> +static bool si570_regmap_is_writeable(struct device *dev, unsigned int reg)
+> +{
+> +       switch (reg) {
+> +       case 7 ... 18:
+> +       case 135:
+> +       case 137:
+> +               return true;
+> +       default:
+> +               return false;
+> +       }
+> +}
 
-Question: Do I need to make a special exception for the /memory node? I
-assume we do want to fix that too, so the answer is no. That will require
-removing the /memory node from skeleton.dtsi in the kernel though.
----
- checks.c                        | 22 ++++++++++++++++++++--
- tests/reg-without-unit-addr.dts | 10 ++++++++++
- tests/run_tests.sh              |  2 ++
- tests/unit-addr-without-reg.dts |  9 +++++++++
- 4 files changed, 41 insertions(+), 2 deletions(-)
- create mode 100644 tests/reg-without-unit-addr.dts
- create mode 100644 tests/unit-addr-without-reg.dts
+Should magic numbers above be symbolic constants?
 
-diff --git a/checks.c b/checks.c
-index ee96a25..8d2ccc5 100644
---- a/checks.c
-+++ b/checks.c
-@@ -293,6 +293,24 @@ static void check_node_name_format(struct check *c, struct node *dt,
- }
- NODE_ERROR(node_name_format, NULL, &node_name_chars);
- 
-+static void check_unit_address_vs_reg(struct check *c, struct node *dt,
-+			     struct node *node)
-+{
-+	const char *unitname = get_unitname(node);
-+	struct property *prop = get_property(node, "reg");
-+
-+	if (prop) {
-+		if (!unitname[0])
-+			FAIL(c, "Node %s has a reg property, but no unit name",
-+			    node->fullpath);
-+	} else {
-+		if (unitname[0])
-+			FAIL(c, "Node %s has a unit name, but no reg property",
-+			    node->fullpath);
-+	}
-+}
-+NODE_WARNING(unit_address_vs_reg, NULL);
-+
- static void check_property_name_chars(struct check *c, struct node *dt,
- 				      struct node *node, struct property *prop)
- {
-@@ -653,8 +671,8 @@ TREE_WARNING(obsolete_chosen_interrupt_controller, NULL);
- 
- static struct check *check_table[] = {
- 	&duplicate_node_names, &duplicate_property_names,
--	&node_name_chars, &node_name_format, &property_name_chars,
--	&name_is_string, &name_properties,
-+	&node_name_chars, &node_name_format, &unit_address_vs_reg,
-+	&property_name_chars, &name_is_string, &name_properties,
- 
- 	&duplicate_label,
- 
-diff --git a/tests/reg-without-unit-addr.dts b/tests/reg-without-unit-addr.dts
-new file mode 100644
-index 0000000..aaf8af7
---- /dev/null
-+++ b/tests/reg-without-unit-addr.dts
-@@ -0,0 +1,10 @@
-+/dts-v1/;
-+
-+/ {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+
-+	node {
-+		reg = <0 1>;
-+	};
-+};
-diff --git a/tests/run_tests.sh b/tests/run_tests.sh
-index c0a136b..8a95bec 100755
---- a/tests/run_tests.sh
-+++ b/tests/run_tests.sh
-@@ -400,6 +400,8 @@ dtc_tests () {
-     check_tests reg-ranges-root.dts reg_format ranges_format
-     check_tests default-addr-size.dts avoid_default_addr_size
-     check_tests obsolete-chosen-interrupt-controller.dts obsolete_chosen_interrupt_controller
-+    check_tests reg-without-unit-addr.dts unit_address_vs_reg
-+    check_tests unit-addr-without-reg.dts unit_address_vs_reg
-     run_sh_test dtc-checkfails.sh node_name_chars -- -I dtb -O dtb bad_node_char.dtb
-     run_sh_test dtc-checkfails.sh node_name_format -- -I dtb -O dtb bad_node_format.dtb
-     run_sh_test dtc-checkfails.sh prop_name_chars -- -I dtb -O dtb bad_prop_char.dtb
-diff --git a/tests/unit-addr-without-reg.dts b/tests/unit-addr-without-reg.dts
-new file mode 100644
-index 0000000..ac786eb
---- /dev/null
-+++ b/tests/unit-addr-without-reg.dts
-@@ -0,0 +1,9 @@
-+/dts-v1/;
-+
-+/ {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+
-+	node@1 {
-+	};
-+};
--- 
-1.8.1.5
-
+Regards,
+Mike
