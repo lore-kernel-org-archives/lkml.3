@@ -1,202 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567Ab3ISKzX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 06:55:23 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:60437 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3ISKzW (ORCPT
+	id S1752975Ab3ISK4e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 06:56:34 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:34541 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab3ISK4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 06:55:22 -0400
-Message-ID: <523AD814.1060406@monstr.eu>
-Date: Thu, 19 Sep 2013 12:55:16 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 19 Sep 2013 06:56:33 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Tejun Heo <tj@kernel.org>
+Cc: gregkh@linuxfoundation.org, kay@vrfy.org, linux-kernel@vger.kernel.org
+References: <1379538938-5032-1-git-send-email-tj@kernel.org>
+Date: Thu, 19 Sep 2013 05:48:52 -0500
+In-Reply-To: <1379538938-5032-1-git-send-email-tj@kernel.org> (Tejun Heo's
+	message of "Wed, 18 Sep 2013 17:15:34 -0400")
+Message-ID: <87pps5dr3f.fsf@tw-ebiederman.twitter.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Alan Tull <atull@altera.com>
-CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-References: <cover.1379519753.git.michal.simek@xilinx.com>  <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>  <20130918191517.GQ19937@titan.lakedaemon.net>  <20130918203247.GA11181@obsidianresearch.com> <1379539063.31417.23.camel@atx-linux-37>
-In-Reply-To: <1379539063.31417.23.camel@atx-linux-37>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="BRRwltpCpwbaMkfKu4lnHlgp3mpIHCRbL"
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX197FePL3yMGr0vjHzh9HLYAe665ODRySLM=
+X-SA-Exim-Connect-IP: 98.172.60.222
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0424]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Tejun Heo <tj@kernel.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCHSET] sysfs: implement sysfs_remove()
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---BRRwltpCpwbaMkfKu4lnHlgp3mpIHCRbL
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Tejun Heo <tj@kernel.org> writes:
 
-Hi Alan,
+> Hello,
+>
+> Currently, there are multiple variants of internal sysfs removal
+> functions and the directory removal behavior is a bit weird in that
+> while it does remove the files contained immediately in the directory
+> it wouldn't recurse into its subdirectories, even the group ones which
+> belong to the same kobject.
 
-On 09/18/2013 11:17 PM, Alan Tull wrote:
-> On Wed, 2013-09-18 at 14:32 -0600, Jason Gunthorpe wrote:
->> On Wed, Sep 18, 2013 at 03:15:17PM -0400, Jason Cooper wrote:
->>
->>> + Jason Gunthorpe
->>
->> Thanks, looks interesting, we could possibly use this interface if it =
+There are two very big problems with this direction.
+1) It violates the principle of least surprise.  In particular it messes
+   up the mental model of people like Al Viro.  Which can easily lead to
+   code breaking during routine maintenance because of unexpecte
+   semantics.
 
->> met our needs..
->> =20
->>> On Wed, Sep 18, 2013 at 05:56:39PM +0200, Michal Simek wrote:
->>>> This new subsystem should unify all fpga drivers which
->>>> do the same things. Load configuration data to fpga
->>>> or another programmable logic through common interface.
->>>> It doesn't matter if it is MMIO device, gpio bitbanging,
->>>> etc. connection. The point is to have the same
->>>> inteface for these drivers.
->>
->> So, we have many years of in-field experience with this and this API
->> doesn't really match what we do.
->>
->> Here are the steps we perform, from userspace:
->>  - Ask kernel to place FPGA into reset and prepare for programming
->>    * Kernel can return an error (eg FPGA failed to erase, etc)
->>    * this is the PROG_N low -> DONE high, PROG_N high -> INIT_N high
->>      sequencing on Xilinx chips
->>  - Ask kernel to load a bitstream.
->>    * Userspace locats the bitstream file to load, and the mmaps it.
->>    * Userspace passes the entire file in a single write() call to the
->>      kernel which streams it over the configuration bus
->>    * The kernel can report an erro rhere (eg Xilinx can report CRC
->>    error)
->>  - Ask the kernel to verify that configuration is complete.=20
->>    * On Xilinx this wait for done to go high
->>  - Ask the kernel to release the configuration bus (tristate
->>    all drivers) (or sometimes we have to drive the bus low,
->>    it depends on the bitfile, user space knows what to do)
->>
->> It is very important that userspace know exactly which step fails
->> because the resolution is different. We use this in a manufacturing
->> setting, so failures are expected and need quick root cause
->> determination.
->>
->> You could probably address that need by very clearly defining a
->> variety of errno values for the various cases. However, it would be a
->> disaster if every driver did something a little different :|
->>
->> Using request_firmware exclusively is not useful for us. We
->> format the bitfile with a header that contains our internal tracking
->> information. Sometimes we need to bitswap the bitfile. Our userspace
->> handles all of this and can pass a bitfile in memory to write().
->>
->> request_firmware would be horrible to use :)
->>
->> Our API uses a binary sysfs attribute to stream the FPGA data, you
->> might want to consider that.
->>
->> Regards,
->> Jason
->=20
-> The firmware approach is interesting.  It might be less flexible
-> compared with my original code (see link to git below) that this is
-> based on.  The original code created a devnode like /dev/fpga0 and a ra=
-w
-> bitstream could be loaded by doing 'cat bitstream > /dev/fpga0'.  Or
-> some other userspace app could write the /dev/fpga0 to handle any
-> headers that needed to be added to the bitstream.
+2) Recursive removal is not safe.  There are very weird and somewhat
+   pathological cases where sysfs directories are removed out of order
+   aka parent before sibling, and (if my memory holds) recursive removal
+   takes this from a little bit ugly to actually breaking things.
 
-We are using char device driver for our devcfg device and hwicap too
-but this firmware interface is not far from that.
-As Jason mentioned we can use binary sysfs attributes and you should
-get the same functionality for userspace.
+For long term maintenance and simplicity I believe we will be in much
+better shape if we take directory removal in the opposite direction, and
+fix the small number of issues with the users and don't support any kind
+of recursive removal.
 
-
-> This code also creates a set of files under /sys for each separate fpga=
-=2E
-> I.e. checking status by looking at /sys/class/fpga/fpag0/status.  It
-> would be pretty small changes to control reseting the fpga by adding a
-> 'reset' file there also (added first to the framework, and an interface=
-
-> into the low level fpga manager driver).
-
-Status is just there and for my zynq devcfg driver I do export some statu=
-s
-bits.
-
-root@petalinux:~# cat /sys/class/fpga/fpga0/status
-partial_bitstream_status: 0
-prog_done_status: 1
-dbg_lock_status: 0
-seu_lock_status: 0
-aes_en_lock_status: 0
-aes_status: 0
-seu_status: 0
-spniden_status: 1
-spiden_status: 1
-niden_status: 1
-dbgen_status: 1
-dap_en_status: 7
-
-Originally these values are single device attribute but I need to confirm=
-
-exact usage for them. It means in this RFC I probably miss any standard
-channel how to change end driver behaviour and probably there should be o=
-ne more
-hook for that.
-
-> I am trying this out with my low level fpga manager driver.  I'm very
-> curious about your approach and I am wondering whether the firmware
-> approach will work for us or not.
-
-I believe so.
-
-> Will this framework handle more than one fpga at a time?
-
-I didn't tried that because I don't have any suitable hw for this on my d=
-esk
-but I there shouldn't be any problem in that.
-
-> Is there some way a per-device userspace helper can be added that can
-> handle adding the headers?  Such that different fpga types get differen=
-t
-> helpers?
-
-What do you exactly mean by that? Any example what do you want to achieve=
-?
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---BRRwltpCpwbaMkfKu4lnHlgp3mpIHCRbL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEUEARECAAYFAlI62BQACgkQykllyylKDCEWxACVEiP71txW/zr9/EGGxjMcd48B
-swCcDeTTWcFpefcTvE50WJ9ATLXWimE=
-=7JAr
------END PGP SIGNATURE-----
-
---BRRwltpCpwbaMkfKu4lnHlgp3mpIHCRbL--
+Eric
