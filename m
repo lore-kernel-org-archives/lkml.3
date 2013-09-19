@@ -1,129 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab3ISSlG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 14:41:06 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:32799
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753351Ab3ISSku convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 14:40:50 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zz98dIc89bh936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz17326ah1de097h186068h5eeeK8275bhz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh906i1155h192ch)
-Date: Thu, 19 Sep 2013 11:40:36 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Hyun Kwon <hyunk@xilinx.com>
-Subject: Re: [PATCH v2] clk: si570: Add a driver for SI570 oscillators
-References: <1379544219-23579-1-git-send-email-soren.brinkmann@xilinx.com>
- <20130919180512.5246.73360@quantum>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20130919180512.5246.73360@quantum>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <2c474f75-8d0c-497b-ad64-8cd4beb09956@CO9EHSMHS013.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1753862Ab3ISSlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 14:41:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43972 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab3ISSkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 14:40:45 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 4/9] perf tools: Fix buildid cache handling of kallsyms with kcore
+Date: Thu, 19 Sep 2013 15:40:27 -0300
+Message-Id: <1379616032-13061-5-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1379616032-13061-1-git-send-email-acme@infradead.org>
+References: <1379616032-13061-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 11:05:12AM -0700, Mike Turquette wrote:
-> Quoting Soren Brinkmann (2013-09-18 15:43:38)
-> > diff --git a/Documentation/devicetree/bindings/clock/silabs,si570.txt b/Documentation/devicetree/bindings/clock/silabs,si570.txt
-> > new file mode 100644
-> > index 0000000..7ab5c8b
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/clock/silabs,si570.txt
-> > @@ -0,0 +1,38 @@
-> > +Binding for Silicon Labs 570, 571, 598 and 599 programmable
-> > +I2C clock generators.
-> > +
-> > +Reference
-> > +This binding uses the common clock binding[1]. Details about the devices can be
-> > +found in the data sheets[2][3].
-> > +
-> > +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> > +[2] Si570/571 Data Sheet
-> > +    http://www.silabs.com/Support%20Documents/TechnicalDocs/si570.pdf
-> > +[3] Si598/599 Data Sheet
-> > +    http://www.silabs.com/Support%20Documents/TechnicalDocs/si598-99.pdf
-> > +
-> > +Required properties:
-> > + - compatible: Shall be one of "silabs,si570", "silabs,si571",
-> > +                              "silabs,si598", "silabs,si599"
-> > + - reg: I2C device address.
-> > + - #clock-cells: From common clock bindings: Shall be 0.
-> > + - factory-fout: Factory set default frequency. This frequency is part specific.
-> > +                The correct frequency for the part used has to be provided in
-> > +                order to generate the correct output frequencies. For more
-> > +                details, please refer to the data sheet.
-> > +
-> > +Optional properties:
-> > + - clock-output-names: From common clock bindings. Recommended to be "si570".
-> > + - clock-frequency: Output frequency to generate. This defines the output
-> > +                   frequency set during boot. It can be reprogrammed during
-> > +                   runtime using the common clock framework.
-> > + - temperature-stability-7ppm: Indicate a device with a temperature stability
-> > +                              of 7ppm
-> 
-> Some DT binding bike-shedding:
-> 
-> Should this be "temperature-stability-ppm = <7>;" ? Do you think that
-> this value might change in the future?
-Well, according to the data sheet all devices behave the same and only
-the si570/571 with a temperature stability of 7ppm (there are actually
-some more choices for this) need some special attention.
-So, the only case we really care about and has to be treated differently
-is the 7ppm case.
-I don't mind how we detect it, but with this boolean property it results
-in the least lines of code, I think.
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-> 
-> > diff --git a/drivers/clk/clk-si570.c b/drivers/clk/clk-si570.c
-> > new file mode 100644
-> > index 0000000..c20dfce
-> > --- /dev/null
-> > +++ b/drivers/clk/clk-si570.c
-> > @@ -0,0 +1,517 @@
-> <snip>
-> > +static bool si570_regmap_is_volatile(struct device *dev, unsigned int reg)
-> > +{
-> > +       switch (reg) {
-> > +       case 135:
-> > +               return true;
-> > +       default:
-> > +               return false;
-> > +       }
-> > +}
-> > +
-> > +static bool si570_regmap_is_writeable(struct device *dev, unsigned int reg)
-> > +{
-> > +       switch (reg) {
-> > +       case 7 ... 18:
-> > +       case 135:
-> > +       case 137:
-> > +               return true;
-> > +       default:
-> > +               return false;
-> > +       }
-> > +}
-> 
-> Should magic numbers above be symbolic constants?
-I'll change it. Corresponding #defines already exist anyway.
+When kallsyms is used with kcore the dso long_name becomes the kcore
+file name.  That prevents the buildid cache from caching kallsyms.
+(There is no support at present for caching kcore).  Fix by changing it
+so that the kallsyms name is used in that case instead.
 
-	Sören
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1379009959-28046-1-git-send-email-adrian.hunter@intel.com
+[ Kept 'struct foo' pointer as first parameter of foo__ prefixed functions ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/header.c | 41 ++++++++++++++++++++++++++++-------------
+ 1 file changed, 28 insertions(+), 13 deletions(-)
 
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 26441d0..ce69901 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -199,9 +199,11 @@ static int write_buildid(char *name, size_t name_len, u8 *build_id,
+ 	return write_padded(fd, name, name_len + 1, len);
+ }
+ 
+-static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
+-				u16 misc, int fd)
++static int __dsos__write_buildid_table(struct list_head *head,
++				       struct machine *machine,
++				       pid_t pid, u16 misc, int fd)
+ {
++	char nm[PATH_MAX];
+ 	struct dso *pos;
+ 
+ 	dsos__for_each_with_build_id(pos, head) {
+@@ -215,6 +217,10 @@ static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
+ 		if (is_vdso_map(pos->short_name)) {
+ 			name = (char *) VDSO__MAP_NAME;
+ 			name_len = sizeof(VDSO__MAP_NAME) + 1;
++		} else if (dso__is_kcore(pos)) {
++			machine__mmap_name(machine, nm, sizeof(nm));
++			name = nm;
++			name_len = strlen(nm) + 1;
+ 		} else {
+ 			name = pos->long_name;
+ 			name_len = pos->long_name_len + 1;
+@@ -240,10 +246,10 @@ static int machine__write_buildid_table(struct machine *machine, int fd)
+ 		umisc = PERF_RECORD_MISC_GUEST_USER;
+ 	}
+ 
+-	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine->pid,
+-					  kmisc, fd);
++	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine,
++					  machine->pid, kmisc, fd);
+ 	if (err == 0)
+-		err = __dsos__write_buildid_table(&machine->user_dsos,
++		err = __dsos__write_buildid_table(&machine->user_dsos, machine,
+ 						  machine->pid, umisc, fd);
+ 	return err;
+ }
+@@ -375,23 +381,31 @@ out_free:
+ 	return err;
+ }
+ 
+-static int dso__cache_build_id(struct dso *dso, const char *debugdir)
++static int dso__cache_build_id(struct dso *dso, struct machine *machine,
++			       const char *debugdir)
+ {
+ 	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
+ 	bool is_vdso = is_vdso_map(dso->short_name);
++	char *name = dso->long_name;
++	char nm[PATH_MAX];
+ 
+-	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id),
+-				     dso->long_name, debugdir,
+-				     is_kallsyms, is_vdso);
++	if (dso__is_kcore(dso)) {
++		is_kallsyms = true;
++		machine__mmap_name(machine, nm, sizeof(nm));
++		name = nm;
++	}
++	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id), name,
++				     debugdir, is_kallsyms, is_vdso);
+ }
+ 
+-static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
++static int __dsos__cache_build_ids(struct list_head *head,
++				   struct machine *machine, const char *debugdir)
+ {
+ 	struct dso *pos;
+ 	int err = 0;
+ 
+ 	dsos__for_each_with_build_id(pos, head)
+-		if (dso__cache_build_id(pos, debugdir))
++		if (dso__cache_build_id(pos, machine, debugdir))
+ 			err = -1;
+ 
+ 	return err;
+@@ -399,8 +413,9 @@ static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
+ 
+ static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
+ {
+-	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, debugdir);
+-	ret |= __dsos__cache_build_ids(&machine->user_dsos, debugdir);
++	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, machine,
++					  debugdir);
++	ret |= __dsos__cache_build_ids(&machine->user_dsos, machine, debugdir);
+ 	return ret;
+ }
+ 
+-- 
+1.8.1.4
 
