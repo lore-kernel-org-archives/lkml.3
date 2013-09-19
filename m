@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab3ISPsP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 11:48:15 -0400
-Received: from dkim1.fusionio.com ([66.114.96.53]:36559 "EHLO
-	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab3ISPsN (ORCPT
+	id S1753056Ab3ISPvl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 11:51:41 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:61717 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab3ISPvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 11:48:13 -0400
-X-ASG-Debug-ID: 1379605692-0421b5021f406c30001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-From: Josef Bacik <jbacik@fusionio.com>
-To: <linux-btrfs@vger.kernel.org>
-CC: <walken@google.com>, <linux-kernel@vger.kernel.org>, <mingo@elte.hu>,
-        <peter@hurleysoftware.com>, <akpm@linux-foundation.org>
-Subject: [PATCH 2/2] Btrfs: stop caching thread if extetn_commit_sem is contended
-Date: Thu, 19 Sep 2013 11:48:08 -0400
-X-ASG-Orig-Subj: [PATCH 2/2] Btrfs: stop caching thread if extetn_commit_sem is contended
-Message-ID: <1379605688-987-2-git-send-email-jbacik@fusionio.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1379605688-987-1-git-send-email-jbacik@fusionio.com>
-References: <1379605688-987-1-git-send-email-jbacik@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
-X-Barracuda-Start-Time: 1379605692
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_MISMATCH_TO
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140754
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
+	Thu, 19 Sep 2013 11:51:39 -0400
+Date: Thu, 19 Sep 2013 19:51:35 +0400
+From: Sergey Dyasly <dserrg@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+        Sha Zhengju <handai.szj@taobao.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] OOM killer: wait for tasks with pending SIGKILL to exit
+Message-Id: <20130919195135.f53a792b125497e281b6badf@gmail.com>
+In-Reply-To: <20130911190605.5528ee4563272dbea1ed56a6@gmail.com>
+References: <1378740624-2456-1-git-send-email-dserrg@gmail.com>
+	<alpine.DEB.2.02.1309091303010.12523@chino.kir.corp.google.com>
+	<20130911190605.5528ee4563272dbea1ed56a6@gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can starve out the transaction commit with a bunch of caching threads all
-running at the same time.  This is because we will only drop the
-extent_commit_sem if we need_resched(), which isn't likely to happen since we
-will be reading a lot from the disk so have already schedule()'ed plenty.  Alex
-observed that he could starve out a transaction commit for up to a minute with
-32 caching threads all running at once.  This will allow us to drop the
-extent_commit_sem to allow the transaction commit to swap the commit_root out
-and then all the cachers will start back up.  Thanks,
+Ping :)
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
----
- fs/btrfs/extent-tree.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+On Wed, 11 Sep 2013 19:06:05 +0400
+Sergey Dyasly <dserrg@gmail.com> wrote:
 
-diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-index cfb3cf7..cc074c34 100644
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -442,7 +442,8 @@ next:
- 			if (ret)
- 				break;
- 
--			if (need_resched()) {
-+			if (need_resched() ||
-+			    rwsem_is_contended(&fs_info->extent_commit_sem)) {
- 				caching_ctl->progress = last;
- 				btrfs_release_path(path);
- 				up_read(&fs_info->extent_commit_sem);
--- 
-1.8.3.1
-
+> On Mon, 9 Sep 2013 13:07:08 -0700 (PDT)
+> David Rientjes <rientjes@google.com> wrote:
+> 
+> > >  		/*
+> > >  		 * If this task is not being ptraced on exit, then wait for it
+> > >  		 * to finish before killing some other task unnecessarily.
+> > >  		 */
+> > > -		if (!(task->group_leader->ptrace & PT_TRACE_EXIT))
+> > > +		if (!(task->group_leader->ptrace & PT_TRACE_EXIT)) {
+> > > +			set_tsk_thread_flag(task, TIF_MEMDIE);
+> > 
+> > This does not, we do not give access to memory reserves unless the process 
+> > needs it to allocate memory.  The task here, which is not current, can 
+> > call into the oom killer and be granted memory reserves if necessary.
+> 
+> True. However, why TIF_MEMDIE is set for PF_EXITING task in oom_kill_process()
+> then?
+> Also, setting TIF_MEMDIE will avoid direct reclaim and memory allocation should
+> be fast if exiting task needs it.
+> 
+> > > @@ -412,16 +415,6 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+> > >  	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+> > >  					      DEFAULT_RATELIMIT_BURST);
+> > >  
+> > > -	/*
+> > > -	 * If the task is already exiting, don't alarm the sysadmin or kill
+> > > -	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+> > > -	 */
+> > > -	if (p->flags & PF_EXITING) {
+> > > -		set_tsk_thread_flag(p, TIF_MEMDIE);
+> > > -		put_task_struct(p);
+> > > -		return;
+> > > -	}
+> > 
+> > I think you misunderstood the point of this; if a selected process is 
+> > already in the exit path then this is simply avoiding dumping oom kill 
+> > lines to the kernel log.  We want to keep doing that.
+> 
+> This happens in oom_kill_process() after victim has been selected by
+> select_bad_process(). But there is already PF_EXITING check in
+> oom_scan_process_thread() and in this case OOM code won't call oom_kill_process.
+> There is only a slight chance that victim will become PF_EXITING between
+> scan and kill.
+> 
+> The only difference is in force_kill flag, and the only case where it's set
+> is SysRq. And I think in this case OOM killer messages are a good thing to have
+> even when victim is already exiting, instead of just silence.
+> 
+> -- 
+> Sergey Dyasly <dserrg@gmail.com>
