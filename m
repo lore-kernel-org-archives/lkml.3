@@ -1,60 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab3ISG5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 02:57:07 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:45103 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab3ISG5F (ORCPT
+	id S1752878Ab3ISHJF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 03:09:05 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:57117 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752774Ab3ISHJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 02:57:05 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130918203822.GA4330@dastard>
-References: <1379495401-18279-1-git-send-email-daniel.vetter@ffwll.ch>
-	<5239829F.4080601@t-online.de>
-	<20130918203822.GA4330@dastard>
-Date: Thu, 19 Sep 2013 08:57:04 +0200
-Message-ID: <CAKMK7uGR7HtMLgu2-tvfTm+W=_gndVJ7QPcf0okFcKX6Htd61Q@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] [RFC] mm/shrinker: Add a shrinker flag to
- always shrink a bit
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Knut Petersen <Knut_Petersen@t-online.de>, Linux MM <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Sep 2013 03:09:04 -0400
+X-Nat-Received: from [202.181.97.72]:54559 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1379574493.8894
+To: keescook@chromium.org
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org, joe@perches.com,
+        linux@horizon.com, dan.carpenter@oracle.com, JBeulich@suse.com,
+        kosaki.motohiro@gmail.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 0/2] vsprintf: ignore %n again
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20130916155504.GC13318@ZenIV.linux.org.uk>
+	<CAGXu5jK2d+9m0uA84nGbZ5E=s974NRn+Sxz3iRcTsFWqWFTGNQ@mail.gmail.com>
+	<201309182214.IDD13060.FFOVJOLOFQtHSM@I-love.SAKURA.ne.jp>
+	<CAGXu5jKztpsUwTCa0dMNHUS==dPQE02FvT=xjNfZLK80NSriXQ@mail.gmail.com>
+	<201309191111.HEI73985.FMOVFHtQFLOOSJ@I-love.SAKURA.ne.jp>
+In-Reply-To: <201309191111.HEI73985.FMOVFHtQFLOOSJ@I-love.SAKURA.ne.jp>
+Message-Id: <201309191608.AGD69743.VOHFSJFMFLOOQt@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 19 Sep 2013 16:08:13 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 18092013 #11098720, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 10:38 PM, Dave Chinner <david@fromorbit.com> wrote:
-> No, that's wrong. ->count_objects should never ass SHRINK_STOP.
-> Indeed, it should always return a count of objects in the cache,
-> regardless of the context.
->
-> SHRINK_STOP is for ->scan_objects to tell the shrinker it can make
-> any progress due to the context it is called in. This allows the
-> shirnker to defer the work to another call in a different context.
-> However, if ->count-objects doesn't return a count, the work that
-> was supposed to be done cannot be deferred, and that is what
-> ->count_objects should always return the number of objects in the
-> cache.
+If the code to test is built into vmlinux, we could use run-time checking like
 
-So we should rework the locking in the drm/i915 shrinker to be able to
-always count objects? Thus far no one screamed yet that we're not
-really able to do that in all call contexts ...
+----------
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -1601,6 +1601,11 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
+ 	if (WARN_ON_ONCE((int) size < 0))
+ 		return 0;
+ 
++	if (!(__start_rodata <= fmt && fmt < __end_rodata)) {
++		static unsigned char warn = 100;
++		WARN(warn && warn--, "Format string is not in RODATA section.");
++	}
++
+ 	str = buf;
+ 	end = buf + size;
+ 
+----------
 
-So should I revert 81e49f or will the early return 0; completely upset
-the core shrinker logic?
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+which reports errors like below.
+
+[    0.814121] ------------[ cut here ]------------
+[    0.814985] WARNING: CPU: 0 PID: 1 at lib/vsprintf.c:1606 vsnprintf+0xb4/0x3f0()
+[    0.816036] Format string is not in RODATA section.
+[    0.816883] Modules linked in:
+[    0.817490] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-rc1-00046-g9baa505-dirty #180
+[    0.818974] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[    0.820040]  00000646 00000000 df079dc0 c02eae66 df079dcc c02eaead c02f3684 df079df8
+[    0.821538]  c01422a9 c061bc40 df079e28 00000001 c061bc31 00000646 c02f3684 df079e08
+[    0.822995]  00000646 c061bc40 df079e14 c0142301 00000009 df079e08 c061bc40 df079e28
+[    0.824676] Call Trace:
+[    0.825124]  [<c02eae66>] __dump_stack+0x16/0x20
+[    0.825922]  [<c02eaead>] dump_stack+0x3d/0x60
+[    0.826691]  [<c02f3684>] ? vsnprintf+0xb4/0x3f0
+[    0.827478]  [<c01422a9>] warn_slowpath_common+0x79/0xa0
+[    0.828040]  [<c02f3684>] ? vsnprintf+0xb4/0x3f0
+[    0.828917]  [<c0142301>] warn_slowpath_fmt+0x31/0x40
+[    0.829798]  [<c02f3684>] vsnprintf+0xb4/0x3f0
+[    0.830584]  [<c0199d2b>] ? trace_hardirqs_on+0xb/0x10
+[    0.832050]  [<c02f70f4>] kvasprintf+0x24/0x60
+[    0.832831]  [<c02ed1c1>] kobject_set_name_vargs+0x21/0x60
+[    0.833850]  [<c02ed2c1>] kobject_add_varg+0x21/0x50
+[    0.834750]  [<c02ed379>] kobject_init_and_add+0x29/0x30
+[    0.835699]  [<c01f9fd3>] sysfs_slab_add+0x63/0xe0
+[    0.836055]  [<c06ec630>] ? kmem_cache_init_late+0x10/0x10
+[    0.837054]  [<c06ec6a7>] slab_sysfs_init+0x77/0x110
+[    0.838025]  [<c06ec251>] ? procswaps_init+0x21/0x30
+[    0.838958]  [<c0100472>] do_one_initcall+0x32/0xd0
+[    0.840046]  [<c015fb60>] ? parse_one+0xc0/0xe0
+[    0.840852]  [<c015fd0a>] ? parse_args+0x7a/0x170
+[    0.841676]  [<c06cf410>] ? loglevel+0x30/0x30
+[    0.842443]  [<c06cfb6a>] do_initcall_level+0x7a/0x90
+[    0.843338]  [<c06cf410>] ? loglevel+0x30/0x30
+[    0.844038]  [<c06cfb98>] do_initcalls+0x18/0x20
+[    0.844960]  [<c06cfbc8>] do_basic_setup+0x28/0x30
+[    0.845894]  [<c06cfc7f>] kernel_init_freeable+0x5f/0xf0
+[    0.846907]  [<c04c523b>] kernel_init+0xb/0xe0
+[    0.848045]  [<c04cc718>] ret_from_kernel_thread+0x1c/0x2c
+[    0.849070]  [<c04c5230>] ? rest_init+0x140/0x140
+[    0.849987] ---[ end trace c57fc7b42d34a992 ]---
+
+----------
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -5136,7 +5136,7 @@ static int sysfs_slab_add(struct kmem_cache *s)
+ 	}
+ 
+ 	s->kobj.kset = slab_kset;
+-	err = kobject_init_and_add(&s->kobj, &slab_ktype, NULL, name);
++	err = kobject_init_and_add(&s->kobj, &slab_ktype, NULL, "%s", name);
+ 	if (err) {
+ 		kobject_put(&s->kobj);
+ 		return err;
+----------
+
+But tools like sparse might find such bugs better?
