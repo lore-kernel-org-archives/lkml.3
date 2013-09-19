@@ -1,115 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab3ISTNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 15:13:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39619 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753199Ab3ISTNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 15:13:24 -0400
-Date: Thu, 19 Sep 2013 15:13:15 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]kconfig/menu.c: fix uninitialized variable warning
-Message-ID: <20130919191315.GA19703@d2.synalogic.ca>
-References: <1379575697-6740-1-git-send-email-maddy@linux.vnet.ibm.com>
- <20130919152227.GB19364@d2.synalogic.ca>
- <20130919172751.GA3317@free.fr>
+	id S1753237Ab3ISTYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 15:24:09 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:57305 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab3ISTYI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 15:24:08 -0400
+Date: Thu, 19 Sep 2013 14:24:03 -0500
+From: Gustavo Padovan <gustavo@padovan.org>
+To: "Ken O'Brien" <kernel@kenobrien.org>
+Cc: marcel@holtmann.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bluetooth: btusb: Added support for Belkin F8065bf usb
+ bluetooth device
+Message-ID: <20130919192403.GH4006@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Ken O'Brien <kernel@kenobrien.org>, marcel@holtmann.org,
+	johan.hedberg@gmail.com, linux-bluetooth@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1379610373-2640-1-git-send-email-kernel@kenobrien.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130919172751.GA3317@free.fr>
+In-Reply-To: <1379610373-2640-1-git-send-email-kernel@kenobrien.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/09/19 19:27, Yann E. MORIN wrote:
-> Benjamin, Madhavan, All,
-> 
-> On 2013-09-19 11:22 -0400, Benjamin Poirier spake thusly:
-> > On 2013/09/19 12:58, Madhavan Srinivasan wrote:
-> > > In file included from scripts/kconfig/zconf.tab.c:2537:0:
-> > > scripts/kconfig/menu.c: In function ‘get_symbol_str’:
-> > > scripts/kconfig/menu.c:586:18: warning: ‘jump’ may be used uninitialized in
-> > > this function [-Wmaybe-uninitialized]
-> >                    ^^^^^
-> > 
-> > from gcc(1):
-> > 	"These warnings are made optional because GCC is not smart
-> > 	enough to see all the reasons why the code might be correct
-> > 	despite appearing to have an error."
-> > 
-> > I do not see this warning with gcc 4.7.2 or 4.8.1. Which version are you
-> > using?
-> > 
-> > The code does:
-> > 
-> > static void get_prompt_str(struct gstr *r, struct property *prop,
-> > [...]
-> > 	if (head && location) {
-> > 		jump = xmalloc(sizeof(struct jump_key));
-> > [... different basic block ...]
-> > 			if (head && location && menu == location)
-> > 				jump->offset = r->len - 1;
-> > 
-> > If the second "if" is true, then the first one was true as well, and
-> > "jump" is initilized.
-> 
-> Exactly what I was going to say.
-> 
-> However:
->   - I believe we should strive for a warning-free code whenever possible
->   - while still getting help from gcc to pinpoint potential issues.
-> 
-> Clearly, gcc is wrong here. Setting jump to NULL will cause fault if we
-> try to dereference it. Since this should never happen given the code as
-> it currently is, I'm slightly in favour of acking this patch.
-> 
-> Any other reason not to apply it?
+Hi Ken,
 
-Did you manage to get that warning as well? I didn't. If it's only from
-old versions of gcc I'd feel better leaving the warning there than
-masking it, in case a future code change does really introduce a use
-before initialize.
+2013-09-19 Ken O'Brien <kernel@kenobrien.org>:
 
+> Belkin bluetooth device's usb device id added to generic usb bluetooth driver.
 > 
-> > >      jump->offset = r->len - 1;
-> > >                   ^
-> > > scripts/kconfig/menu.c:547:19: note: ‘jump’ was declared here
-> > >   struct jump_key *jump;
-> > >                    ^
-> > > Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-> > > ---
-> > >  scripts/kconfig/menu.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-> > > index c1d5320..23b1827 100644
-> > > --- a/scripts/kconfig/menu.c
-> > > +++ b/scripts/kconfig/menu.c
-> > > @@ -544,7 +544,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
-> > >  {
-> > >  	int i, j;
-> > >  	struct menu *submenu[8], *menu, *location = NULL;
-> > > -	struct jump_key *jump;
-> > > +	struct jump_key *jump = NULL;
-> > > 
-> > >  	str_printf(r, _("Prompt: %s\n"), _(prop->text));
-> > >  	menu = prop->menu->parent;
-> > > --
-> > > 1.7.10.4
-> > > 
+> Signed-off-by: Ken O'Brien <kernel@kenobrien.org>
+> ---
+>  drivers/bluetooth/btusb.c | 3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> Regards,
-> Yann E. MORIN.
-> 
-> -- 
-> .-----------------.--------------------.------------------.--------------------.
-> |  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-> | +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-> | +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-> | http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-> '------------------------------^-------^------------------^--------------------'
+> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+> index 8e16f0a..117b90c 100644
+> --- a/drivers/bluetooth/btusb.c
+> +++ b/drivers/bluetooth/btusb.c
+> @@ -111,6 +111,9 @@ static struct usb_device_id btusb_table[] = {
+>  
+>  	/*Broadcom devices with vendor specific id */
+>  	{ USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) },
+> +
+> +	/* Belkin F8T065bf */
+> +	{ USB_DEVICE(0x050d, 0x065a) },
+
+Could you please add the output of /sys/kernel/debug/usb/devices for this
+bluetooth controller to the commit messages, like we do for any new device id
+we add to btusb. Thanks.
+
+	Gustavo
