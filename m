@@ -1,126 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab3ISNCS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 09:02:18 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:58360 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752033Ab3ISNCP (ORCPT
+	id S1753966Ab3ISNC4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:02:56 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:46151 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810Ab3ISNCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 09:02:15 -0400
-Message-ID: <523AF548.30400@st.com>
-Date: Thu, 19 Sep 2013 13:59:52 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 19 Sep 2013 09:02:55 -0400
+Date: Thu, 19 Sep 2013 09:10:07 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: perf-related lockup on 3.11
+In-Reply-To: <8761tx5ie2.fsf@tassilo.jf.intel.com>
+Message-ID: <alpine.DEB.2.10.1309190906220.31380@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1309111130410.31828@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1309171710130.15599@vincent-weaver-1.um.maine.edu> <8761tx5ie2.fsf@tassilo.jf.intel.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Stephen GALLIMORE <stephen.gallimore@st.com>,
-        Stuart MENEFY <stuart.menefy@st.com>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Olivier CLERGEAUD <olivier.clergeaud@st.com>
-Subject: Re: [PATCH 2/4] ARM: STi: Supply I2C configuration to STiH416 SoC
-References: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com> <1379498483-4236-3-git-send-email-maxime.coquelin@st.com> <20130918120340.GF16984@lee--X1> <84625B87D65BCF478CC1E9C886A4C314DEF1BD9578@SAFEX1MAIL4.st.com> <5239A322.5010004@st.com> <84625B87D65BCF478CC1E9C886A4C314DEF1BD9579@SAFEX1MAIL4.st.com>
-In-Reply-To: <84625B87D65BCF478CC1E9C886A4C314DEF1BD9579@SAFEX1MAIL4.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/09/13 08:16, Maxime COQUELIN wrote:
-> Hi Srini,
+On Thu, 19 Sep 2013, Andi Kleen wrote:
+
+> Vince Weaver <vincent.weaver@maine.edu> writes:
 > 
-> On 09/18/2013 03:17 PM, Srinivas KANDAGATLA wrote:
->> On 18/09/13 13:46, Maxime COQUELIN wrote:
->>> On 09/18/2013 02:03 PM, Lee Jones wrote:
->>>>>>> This patch supplies I2C configuration to STiH416 SoC.
->>>>>>>
->>>>>>> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>>>>>> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
->>>>>>> ---
->>>>>>>  arch/arm/boot/dts/stih416-pinctrl.dtsi |   35 ++++++++++++++++++++
->>>>>>>  arch/arm/boot/dts/stih416.dtsi         |   57 ++++++++++++++++++++++++++++++++
->>>>>>>  2 files changed, 92 insertions(+)
->>>>>>>
->>>>>>> diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
->>>>> I genuinely don't know the answer to this question, but are these
->>>>> nodes identical to the ones you've just put in the stih415 DTSI file?
->>>>> If so, I think it will be worth creating a stih41x DTSI rather than
->>>>> duplicating lots of stuff unnecessarily.
->>> There are close to be identical indeed.
->>> For the clocks and pinctrl, the references names are the same, but they are
->>> pointing on different nodes, as STiH415 and STiH416 have their own
->>> clocks and pinctrl dtsi files.
->>>
->>> Srini, what is opinion about this?
->> There is already a stih41x.dtsi file, but I don't think it is the right
->> place for the pinctrl nodes there.
->>
->> Am not OK with the idea of common pinctrl nodes for STiH415 and STiH416
->> for two reasons.
->>
->> 1> If we common up the pinctrl nodes, it will be very difficult to
->> accommodate new pinctrls layout which is not guaranteed to be in same
->> layout in future SOCs.
->>
->> 2> The retiming values in the pinctrl nodes tend to change as per SOC,
->> so it will be difficult to manage it if we common it up.
->>
->> Am sure we can come up with a dt layout which can reduce duplication,
->> but we have to be careful here not to lose the flexiblity to accommodate
->> new picntrl layouts, new retimings values based on SOC.
-> Ok. What do you think of declaring the i2c nodes inside the stih41x.dtsi
-> file,
-> and overload them with the pinctrl and clock properties in the stih416
-> and stih415 dtsi files?
-Am not very comfortable with this idea.
-
-As there is no guarantee that the interrupt number/memory map and the
-i2c numbering will be same in future SOCs or other IPs.
-
-You might be already aware that the number of i2cs on each SOC are
-different as example on STiH415 we have 10 SSCs and on STiH416 we have
-11 SSCs. So, At what point you decide that which devices/IPs should be
-in stih41x and which should in stih415/Stih416?
-
-Each i2c node will save around 5 lines if we common it up, but if the
-interrupt number or map changes this difference will be negligible.
-
-Common up at this level and mixing un-common ones in stih415.dtsi or
-stih416.dtsi will add confusion to readers as the information is split
-at multiple places.
-
-IMO the common up idea sounds good but reduces the readability and has
-no effect on final dtb size.
-
-Thanks,
-srini
-
-
+> > On Wed, 11 Sep 2013, Vince Weaver wrote:
+> >
+> >> 
+> >> I got this hard lockup running my perf_fuzzer on 3.11 on a core2.
+> >> I guess I should try to reproduce it on linus-git but was hoping
+> >> I could wait until -rc1 before trying that.
+> >
+> > OK, I can also lock up 3.12-rc1 using the perf_fuzzer.  Last message
+> > logged is below.
 > 
-> Regards,
-> Maxime
->>
->>
->> thanks,
->> srini
->>
->>
-> 
-> 
-> 
+> If it's easily reproducible and a regression, could you perhaps bisect it?
 
+It's not necessarily easy to reproduce.  It shows up eventually, but it 
+varies a bit.
+
+It's also unclear whether it is a regression or not.  It only started 
+appearing because I already got fixed the 5 or so other bugs that the 
+fuzzer would trigger first.  So bisecting will be a pain because older 
+kernels would have to be patched and the patches don't necessarily apply 
+cleanly further back.
+
+I'm working on seeing if I can get a reproducible trace that I can work 
+with, but there's a lot of other stuff going on right now so it's semi low 
+priority until I can spare a machine from doing 3.12-rc1 validation tests.
+
+Vince
