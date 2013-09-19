@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab3ISSIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 14:08:32 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53284 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885Ab3ISSIb (ORCPT
+	id S1753363Ab3ISSLf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 14:11:35 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:63428 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab3ISSLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 14:08:31 -0400
-Date: Thu, 19 Sep 2013 14:08:29 -0400 (EDT)
-Message-Id: <20130919.140829.372011462903870193.davem@davemloft.net>
-To: nicolas.ferre@atmel.com
-Cc: netdev@vger.kernel.org, b.brezillon@overkiz.com, f.fainelli@gmail.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patrice.vilchez@atmel.com, david.choi@micrel.com
-Subject: Re: [PATCH] phy/micrel: Add suspend/resume support to Micrel PHYs
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1379612448-20805-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1379612448-20805-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 19 Sep 2013 11:08:30 -0700 (PDT)
+	Thu, 19 Sep 2013 14:11:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <1379614006-3844-1-git-send-email-will.deacon@arm.com>
+References: <1379614006-3844-1-git-send-email-will.deacon@arm.com>
+Date: Thu, 19 Sep 2013 13:11:32 -0500
+X-Google-Sender-Auth: lFVc8p37XKe05EyiLuFqimqFxE4
+Message-ID: <CA+55aFxuc3yD5pH2w5uEr_VDsEANvEiGCWA6tu1cSFrAiaU4Ow@mail.gmail.com>
+Subject: Re: [PATCH] lockref: use cmpxchg64 explicitly for lockless updates
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Waiman Long <Waiman.Long@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Date: Thu, 19 Sep 2013 19:40:48 +0200
+On Thu, Sep 19, 2013 at 1:06 PM, Will Deacon <will.deacon@arm.com> wrote:
+> The cmpxchg() function tends not to support 64-bit arguments on 32-bit
+> architectures. This could be either due to use of unsigned long arguments
+> (like on ARM) or lack of instruction support (cmpxchgq on x86). However,
+> these architectures may implement a specific cmpxchg64() function to
+> provide 64-bit cmpxchg support instead
 
-> From: Patrice Vilchez <patrice.vilchez@atmel.com>
-> 
-> All supported Micrel PHYs implement the standard "power down" bit 11 of BMCR,
-> so this patch adds support using the generic genphy_{suspend,resume} functions.
-> 
-> Signed-off-by: Patrice Vilchez <patrice.vilchez@atmel.com>
-> [b.brezillon@overkiz.com: adapt to newer kernel and generalize to other phys]
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> [nicolas.ferre@atmel.com: commit message modification]
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: David J. Choi <david.choi@micrel.com>
+I'm certainly ok with this, but I wonder how much point there is to
+use the cmpxchg alternatives for 32-bit architectures at all...
 
-What's the difference between this patch and the one you sent 60
-seconds beforehand?
+>From a performance standpoint, lockref really is expected to mainly
+help with big machines. Only insane people would do big machines with
+32-bit kernels these days.
+
+Of course, it may be that cmpxchg is actually faster on some
+architectures, but at least on x86-32, cmpxchg8b is traditionally
+quite slow.
+
+In other words, I'd actually like to see some numbers if there are
+loads where this actually helps and matters...
+
+                   Linus
