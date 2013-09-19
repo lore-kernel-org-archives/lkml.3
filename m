@@ -1,223 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab3ISXBM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 19:01:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48343 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754138Ab3ISXBK (ORCPT
+	id S1754210Ab3ISXCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 19:02:48 -0400
+Received: from tartarus.angband.pl ([89.206.35.136]:37921 "EHLO
+	tartarus.angband.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386Ab3ISXCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 19:01:10 -0400
-Message-ID: <523B8225.9040504@infradead.org>
-Date: Thu, 19 Sep 2013 16:00:53 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 19 Sep 2013 19:02:46 -0400
+Date: Fri, 20 Sep 2013 01:02:41 +0200
+From: Adam Borowski <kilobyte@angband.pl>
+To: Roy Franz <roy.franz@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org, matt.fleming@intel.com,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH 09/17] Move unicode to ASCII conversion to shared
+ function.
+Message-ID: <20130919230241.GA18666@angband.pl>
+References: <1379391093-27948-1-git-send-email-roy.franz@linaro.org>
+ <1379391093-27948-10-git-send-email-roy.franz@linaro.org>
+ <20130919034406.GA26385@angband.pl>
+ <CAFECyb-tTaCEqUHUh23MaJf-P42ZpodFKeNG=kE+vmmi-gyKrw@mail.gmail.com>
 MIME-Version: 1.0
-To: "Jeff P. Zacher" <ad_sicks@yahoo.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
-Subject: [stable] Re: Dependency bug in the uvcvideo Kconfig
-References: <1828294.VXnhqsmrEo@localhost> <CA+MoWDp0zFXaEhYbwsEV_uMg3H0Nabx9iu25ixyuJvgWGxi=Gg@mail.gmail.com> <523A2EB4.6070407@infradead.org> <1697645.iYIvpGsUS4@localhost> <523B5BD6.4000500@infradead.org>
-In-Reply-To: <523B5BD6.4000500@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFECyb-tTaCEqUHUh23MaJf-P42ZpodFKeNG=kE+vmmi-gyKrw@mail.gmail.com>
+X-Junkbait: adolf@angband.pl, zareba@angband.pl
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: kilobyte@tartarus.angband.pl
+X-SA-Exim-Scanned: No (on tartarus.angband.pl); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/13 13:17, Randy Dunlap wrote:
-> On 09/18/13 20:44, Jeff P. Zacher wrote:
->>  
->>
->> You are correct that this problem shown in the forum was in 3.5.4. However, I am 
->> having wither the same or similar problem in 3.10.7.
->> Here is the broken config file, saved as .config-bad
->>
+On Wed, Sep 18, 2013 at 09:48:44PM -0700, Roy Franz wrote:
+> On Wed, Sep 18, 2013 at 8:44 PM, Adam Borowski <kilobyte@angband.pl> wrote:
+> > [UCS2 truncation]
 > 
-> The failing kernel config file is attached.
+> I stuck to re-arranging the code that was there, as I don't know enough
+> about character encodings to propose changes.
 
-For Linux 3.10.x:
+I on the other hand don't know the kernel (lurking because of my first
+patch), but I'm on a crusade against mangled Unicode (so far in the
+userland).  Can't let such a blatant error slip through on my watch :)
 
+> Also, this code is running as part of the kernel decompressor, rather than
+> the kernel itself, so it doesn't have access to any kernel facilities, and
+> it also needs to be position independent.
 
-This is already fixed in mainline but patches need to be backported.
-Specifically these 2 commits (in this order):
+Ok, so it can't reuse common libraries.  No problem, a simplified, sanitized
+and optimized copy of utf16s_to_utf8s() can be done in quite less code than
+the original.
 
+> It's running in a quite limited environment - the decompressor has
+> its own copy of strstr(), and other string functions.
 
-commit a0f9354b1a319cb29c331bfd2e5a15d7f9b87fa4
-Author: Randy Dunlap <rdunlap@infradead.org>
-Date:   Wed May 8 17:28:13 2013 -0300
+I'd need nothing but a way to alloc the new string.  And I see this is
+already done (efi_{low,high_alloc()).
 
-    [media] media/usb: fix kconfig dependencies
+> I checked the UEFI specification, and it states that all 16 bit strings
+> are UCS-2, unless otherwise noted.
 
-and
+... which means it will either get upgraded to UTF-16 in a subsequent
+version, or some Unicode strings get mangled.  I'd ignore this bit and
+implement full UTF-16 from the start: every legal UCS-2 string can be
+decoded as UTF-16 so it's a strict superset.
 
-commit 5077ac3b8108007f4a2b4589f2d373cf55453206
-Author: Mauro Carvalho Chehab <mchehab@redhat.com>
-Date:   Wed May 22 11:25:52 2013 -0300
+> The load options that the command line is provided through a void pointer
+> specified as: [snip]
 
-    Properly handle tristate dependencies on USB/PCI menus
+Either a null pointer or a 16-bit string, that sounds clear enough.
 
+I see not a word about endianness (does anything do EFI on big endian?),
+but "same as host" seems to be a reasonable assumption.
 
->>  
->>
->>  
->>
->> On Wednesday, September 18, 2013 03:52:36 PM you wrote:
->>
->>> On 09/18/13 08:37, Peter Senna Tschudin wrote:
->>
->>>> Hi Randy,
->>
->>>>
->>
->>>> I've tried to download the .config file from the link on the forum,
->>
->>>> but it tries to install something in my browser and the file is not
->>
->>>> downloadable for me. Can you provide it over an simpler interface such
->>
->>>> as pastebin.com?
->>
->>>>
->>
->>>> Thanks
->>
->>>
->>
->>> The original poster (Jeff) should have mentioned that is is a build bug
->>
->>> problem in Linux 3.5.4. Jeff, have you tried 3.5.7? I expect that this
->>
->>> problem is already fixed, if not in 3.5.x then in some later kernel
->>
->>> version.
->>
->>>
->>
->>> Jeff, also please provide the kernel .config file as an attachment here
->>
->>> since the one posted in the forum does not download (or has been deleted).
->>
->>>> On Wed, Sep 18, 2013 at 4:59 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->>
->>>>> [adding linux-media mailing list]
->>
->>>>>
->>
->>>>> On 09/18/13 06:18, Jeff P. Zacher wrote:
->>
->>>>>> Not subscribed, please CC'me in replies:
->>
->>>>>>
->>
->>>>>> There seems to be a dependency bug in the Kconfig for the uvcvideo
->>
->>>>>> kernel
->>
->>>>>> module. If uvcvideo is built in and usb support is built as a module,
->>
->>>>>> the
->>
->>>>>> kernel build will fail with the obviously missing dependanies.
->>
->>>>>>
->>
->>>>>>
->>
->>>>>> Error logs:
->>
->>>>>>
->>
->>>>>> * ERROR: Failed to compile the "bzImage" target...
->>
->>>>>> *
->>
->>>>>> * -- Grepping log... --
->>
->>>>>> *
->>
->>>>>> * SHIPPED scripts/genksyms/keywords.hash.c
->>
->>>>>> * SHIPPED scripts/genksyms/parse.tab.h
->>
->>>>>> * SHIPPED scripts/genksyms/parse.tab.c
->>
->>>>>> * HOSTCC scripts/genksyms/lex.lex.o
->>
->>>>>> *scripts/genksyms/lex.lex.c_shipped: In function ‘yylex1’:
->>
->>>>>> *scripts/genksyms/lex.lex.c_shipped:904:1: warning: ignoring return
->>
->>>>>> value of ‘fwrite’, declared with attribute warn_unused_result
->>
->>>>>> [-Wunused-result] *--
->>
->>>>>> * CC drivers/video/console/font_8x16.o
->>
->>>>>> * CC drivers/video/console/softcursor.o
->>
->>>>>> * CC sound/core/seq/seq_memory.o
->>
->>>>>> * CC drivers/video/console/fbcondecor.o
->>
->>>>>> * CC sound/core/seq/seq_queue.o
->>
->>>>>> *drivers/video/console/fbcondecor.c:511:6: warning: function declaration
->>
->>>>>> isn’t a prototype [-Wstrict-prototypes]
->>
->>>>>> *--
->>
->>>>>> *(.text+0xf8fb1): undefined reference to `usb_submit_urb'
->>
->>>>>> *drivers/built-in.o: In function `uvc_init':
->>
->>>>>> *uvc_driver.c:(.init.text+0x908a): undefined reference to
->>
->>>>>> `usb_register_driver'
->>
->>>>>> *drivers/built-in.o: In function `uvc_cleanup':
->>
->>>>>> *uvc_driver.c:(.exit.text+0x67e): undefined reference to
->>
->>>>>> `usb_deregister'
->>
->>>>>> *make: *** [vmlinux] Error 1
->>
->>>>>> *--
->>
->>>>>> * Running with options: --lvm --menuconfig all
->>
->>>>>> * Using genkernel.conf from /etc/genkernel.conf
->>
->>>>>> * Sourcing arch-specific config.sh from
->>
->>>>>> /usr/share/genkernel/arch/x86_64/config.sh ..
->>
->>>>>> * Sourcing arch-specific modules_load from
->>
->>>>>> /usr/share/genkernel/arch/x86_64/modules_load ..
->>
->>>>>> *
->>
->>>>>> * ERROR: Failed to compile the "bzImage" target...
->>
->>>>>> *
->>
->>>>>> * -- End log... --
->>
->>>>>>
->>
->>>>>> Compiling uvc as a module allows the compilation to complete.
->>
->>>>>>
->>
->>>>>> Platform x86_64
->>
->>>>>>
->>
->>>>>> Ref: http://forums.gentoo.org/viewtopic-p-7398782.html#7398782
+> Would it be acceptable to fix the naming/comments, and convert values
+> above 126 to '?' in the current patchset, and address a more thorough fix
+> in another patch set?  The ARM and ARM64 EFI stub patchsets that are
+> mostly complete depend on this one, so getting this merged soon would be
+> helpful.
 
+I don't want to hinder your work, so what about putting in your version
+as-is and fixing it later?
+
+> > There's just one problem: which encoding to use, but
+> > these days, most distributions have either dropped non-UTF8 or hardly pay
+> > lip service, so we could get away with hard-coding UTF-8: those few who
+> > use ancient charsets can stick to ASCII.
+
+Not being able to use regular kernel facilities makes supporting ancient
+charsets a lost cause.  I'm so weeping about them... not.
+
+> I would certainly appreciate your help improving this
+
+Are we on the same page so far?  If so, I can make a patch atop yours.
 
 -- 
-~Randy
+ᛊᚨᚾᛁᛏᚣ᛫ᛁᛊ᛫ᚠᛟᚱ᛫ᚦᛖ᛫ᚹᛖᚨᚲ
