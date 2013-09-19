@@ -1,209 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab3ISKrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 06:47:41 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:45921 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab3ISKrk (ORCPT
+	id S1752567Ab3ISKzX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 06:55:23 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:60437 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab3ISKzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 06:47:40 -0400
-Message-ID: <523AD648.7000802@gmail.com>
-Date: Thu, 19 Sep 2013 12:47:36 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Mike Turquette <mturquette@linaro.org>,
+	Thu, 19 Sep 2013 06:55:22 -0400
+Message-ID: <523AD814.1060406@monstr.eu>
+Date: Thu, 19 Sep 2013 12:55:16 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Alan Tull <atull@altera.com>
+CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
         Jason Cooper <jason@lakedaemon.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] clk: si5351: remove variant from platform_data
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+References: <cover.1379519753.git.michal.simek@xilinx.com>  <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>  <20130918191517.GQ19937@titan.lakedaemon.net>  <20130918203247.GA11181@obsidianresearch.com> <1379539063.31417.23.camel@atx-linux-37>
+In-Reply-To: <1379539063.31417.23.camel@atx-linux-37>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="BRRwltpCpwbaMkfKu4lnHlgp3mpIHCRbL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9807362bfe1748d9bb48eecb9261f1b1aaafea1c
-   "clk: si5351: declare all device IDs for module loading"
-removed the common i2c_device_id and introduced new ones for each variant
-of the clock generator. Instead of exploiting that information in the 
-driver,
-it still depends on platform_data passing the chips .variant.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--BRRwltpCpwbaMkfKu4lnHlgp3mpIHCRbL
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-This removes the now redundant .variant from the platform_data and puts 
-it in
-i2c_device_id's .driver_data instead.
+Hi Alan,
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
-  drivers/clk/clk-si5351.c             |   28 ++++++++++++----------------
-  drivers/clk/clk-si5351.h             |   14 ++++++++++++++
-  include/linux/platform_data/si5351.h |   16 ----------------
-  3 files changed, 26 insertions(+), 32 deletions(-)
+On 09/18/2013 11:17 PM, Alan Tull wrote:
+> On Wed, 2013-09-18 at 14:32 -0600, Jason Gunthorpe wrote:
+>> On Wed, Sep 18, 2013 at 03:15:17PM -0400, Jason Cooper wrote:
+>>
+>>> + Jason Gunthorpe
+>>
+>> Thanks, looks interesting, we could possibly use this interface if it =
 
-diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
-index c50e837..b95aa09 100644
---- a/drivers/clk/clk-si5351.c
-+++ b/drivers/clk/clk-si5351.c
-@@ -1111,11 +1111,11 @@ static const struct of_device_id si5351_dt_ids[] = {
-  };
-  MODULE_DEVICE_TABLE(of, si5351_dt_ids);
-  -static int si5351_dt_parse(struct i2c_client *client)
-+static int si5351_dt_parse(struct i2c_client *client,
-+			   enum si5351_variant variant)
-  {
-  	struct device_node *child, *np = client->dev.of_node;
-  	struct si5351_platform_data *pdata;
--	const struct of_device_id *match;
-  	struct property *prop;
-  	const __be32 *p;
-  	int num = 0;
-@@ -1124,15 +1124,10 @@ static int si5351_dt_parse(struct i2c_client 
-*client)
-  	if (np == NULL)
-  		return 0;
-  -	match = of_match_node(si5351_dt_ids, np);
--	if (match == NULL)
--		return -EINVAL;
--
-  	pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
-  	if (!pdata)
-  		return -ENOMEM;
-  -	pdata->variant = (enum si5351_variant)match->data;
-  	pdata->clk_xtal = of_clk_get(np, 0);
-  	if (!IS_ERR(pdata->clk_xtal))
-  		clk_put(pdata->clk_xtal);
-@@ -1163,7 +1158,7 @@ static int si5351_dt_parse(struct i2c_client *client)
-  			pdata->pll_src[num] = SI5351_PLL_SRC_XTAL;
-  			break;
-  		case 1:
--			if (pdata->variant != SI5351_VARIANT_C) {
-+			if (variant != SI5351_VARIANT_C) {
-  				dev_err(&client->dev,
-  					"invalid parent %d for pll %d\n",
-  					val, num);
-@@ -1187,7 +1182,7 @@ static int si5351_dt_parse(struct i2c_client *client)
-  		}
-   		if (num >= 8 ||
--		    (pdata->variant == SI5351_VARIANT_A3 && num >= 3)) {
-+		    (variant == SI5351_VARIANT_A3 && num >= 3)) {
-  			dev_err(&client->dev, "invalid clkout %d\n", num);
-  			return -EINVAL;
-  		}
-@@ -1226,7 +1221,7 @@ static int si5351_dt_parse(struct i2c_client *client)
-  					SI5351_CLKOUT_SRC_XTAL;
-  				break;
-  			case 3:
--				if (pdata->variant != SI5351_VARIANT_C) {
-+				if (variant != SI5351_VARIANT_C) {
-  					dev_err(&client->dev,
-  						"invalid parent %d for clkout %d\n",
-  						val, num);
-@@ -1307,6 +1302,7 @@ static int si5351_dt_parse(struct i2c_client *client)
-  static int si5351_i2c_probe(struct i2c_client *client,
-  			    const struct i2c_device_id *id)
-  {
-+	enum si5351_variant variant = (enum si5351_variant)id->driver_data;
-  	struct si5351_platform_data *pdata;
-  	struct si5351_driver_data *drvdata;
-  	struct clk_init_data init;
-@@ -1315,7 +1311,7 @@ static int si5351_i2c_probe(struct i2c_client *client,
-  	u8 num_parents, num_clocks;
-  	int ret, n;
-  -	ret = si5351_dt_parse(client);
-+	ret = si5351_dt_parse(client, variant);
-  	if (ret)
-  		return ret;
-  @@ -1331,7 +1327,7 @@ static int si5351_i2c_probe(struct i2c_client 
-*client,
-   	i2c_set_clientdata(client, drvdata);
-  	drvdata->client = client;
--	drvdata->variant = pdata->variant;
-+	drvdata->variant = variant;
-  	drvdata->pxtal = pdata->clk_xtal;
-  	drvdata->pclkin = pdata->clk_clkin;
-  @@ -1568,10 +1564,10 @@ static int si5351_i2c_probe(struct i2c_client 
-*client,
-  }
-   static const struct i2c_device_id si5351_i2c_ids[] = {
--	{ "si5351a", 0 },
--	{ "si5351a-msop", 0 },
--	{ "si5351b", 0 },
--	{ "si5351c", 0 },
-+	{ "si5351a", SI5351_VARIANT_A },
-+	{ "si5351a-msop", SI5351_VARIANT_A3 },
-+	{ "si5351b", SI5351_VARIANT_B },
-+	{ "si5351c", SI5351_VARIANT_C },
-  	{ }
-  };
-  MODULE_DEVICE_TABLE(i2c, si5351_i2c_ids);
-diff --git a/drivers/clk/clk-si5351.h b/drivers/clk/clk-si5351.h
-index c0dbf26..4d0746b 100644
---- a/drivers/clk/clk-si5351.h
-+++ b/drivers/clk/clk-si5351.h
-@@ -153,4 +153,18 @@
-  #define  SI5351_XTAL_ENABLE			(1<<6)
-  #define  SI5351_MULTISYNTH_ENABLE		(1<<4)
-  +/**
-+ * enum si5351_variant - SiLabs Si5351 chip variant
-+ * @SI5351_VARIANT_A: Si5351A (8 output clocks, XTAL input)
-+ * @SI5351_VARIANT_A3: Si5351A MSOP10 (3 output clocks, XTAL input)
-+ * @SI5351_VARIANT_B: Si5351B (8 output clocks, XTAL/VXCO input)
-+ * @SI5351_VARIANT_C: Si5351C (8 output clocks, XTAL/CLKIN input)
-+ */
-+enum si5351_variant {
-+	SI5351_VARIANT_A = 1,
-+	SI5351_VARIANT_A3 = 2,
-+	SI5351_VARIANT_B = 3,
-+	SI5351_VARIANT_C = 4,
-+};
-+
-  #endif
-diff --git a/include/linux/platform_data/si5351.h 
-b/include/linux/platform_data/si5351.h
-index 5433439..a947ab8 100644
---- a/include/linux/platform_data/si5351.h
-+++ b/include/linux/platform_data/si5351.h
-@@ -8,20 +8,6 @@
-  struct clk;
-   /**
-- * enum si5351_variant - SiLabs Si5351 chip variant
-- * @SI5351_VARIANT_A: Si5351A (8 output clocks, XTAL input)
-- * @SI5351_VARIANT_A3: Si5351A MSOP10 (3 output clocks, XTAL input)
-- * @SI5351_VARIANT_B: Si5351B (8 output clocks, XTAL/VXCO input)
-- * @SI5351_VARIANT_C: Si5351C (8 output clocks, XTAL/CLKIN input)
-- */
--enum si5351_variant {
--	SI5351_VARIANT_A = 1,
--	SI5351_VARIANT_A3 = 2,
--	SI5351_VARIANT_B = 3,
--	SI5351_VARIANT_C = 4,
--};
--
--/**
-   * enum si5351_pll_src - Si5351 pll clock source
-   * @SI5351_PLL_SRC_DEFAULT: default, do not change eeprom config
-   * @SI5351_PLL_SRC_XTAL: pll source clock is XTAL input
-@@ -115,14 +101,12 @@ struct si5351_clkout_config {
-   /**
-   * struct si5351_platform_data - Platform data for the Si5351 clock driver
-- * @variant: Si5351 chip variant
-   * @clk_xtal: xtal input clock
-   * @clk_clkin: clkin input clock
-   * @pll_src: array of pll source clock setting
-   * @clkout: array of clkout configuration
-   */
-  struct si5351_platform_data {
--	enum si5351_variant variant;
-  	struct clk *clk_xtal;
-  	struct clk *clk_clkin;
-  	enum si5351_pll_src pll_src[2];
--- 
-1.7.10.4
+>> met our needs..
+>> =20
+>>> On Wed, Sep 18, 2013 at 05:56:39PM +0200, Michal Simek wrote:
+>>>> This new subsystem should unify all fpga drivers which
+>>>> do the same things. Load configuration data to fpga
+>>>> or another programmable logic through common interface.
+>>>> It doesn't matter if it is MMIO device, gpio bitbanging,
+>>>> etc. connection. The point is to have the same
+>>>> inteface for these drivers.
+>>
+>> So, we have many years of in-field experience with this and this API
+>> doesn't really match what we do.
+>>
+>> Here are the steps we perform, from userspace:
+>>  - Ask kernel to place FPGA into reset and prepare for programming
+>>    * Kernel can return an error (eg FPGA failed to erase, etc)
+>>    * this is the PROG_N low -> DONE high, PROG_N high -> INIT_N high
+>>      sequencing on Xilinx chips
+>>  - Ask kernel to load a bitstream.
+>>    * Userspace locats the bitstream file to load, and the mmaps it.
+>>    * Userspace passes the entire file in a single write() call to the
+>>      kernel which streams it over the configuration bus
+>>    * The kernel can report an erro rhere (eg Xilinx can report CRC
+>>    error)
+>>  - Ask the kernel to verify that configuration is complete.=20
+>>    * On Xilinx this wait for done to go high
+>>  - Ask the kernel to release the configuration bus (tristate
+>>    all drivers) (or sometimes we have to drive the bus low,
+>>    it depends on the bitfile, user space knows what to do)
+>>
+>> It is very important that userspace know exactly which step fails
+>> because the resolution is different. We use this in a manufacturing
+>> setting, so failures are expected and need quick root cause
+>> determination.
+>>
+>> You could probably address that need by very clearly defining a
+>> variety of errno values for the various cases. However, it would be a
+>> disaster if every driver did something a little different :|
+>>
+>> Using request_firmware exclusively is not useful for us. We
+>> format the bitfile with a header that contains our internal tracking
+>> information. Sometimes we need to bitswap the bitfile. Our userspace
+>> handles all of this and can pass a bitfile in memory to write().
+>>
+>> request_firmware would be horrible to use :)
+>>
+>> Our API uses a binary sysfs attribute to stream the FPGA data, you
+>> might want to consider that.
+>>
+>> Regards,
+>> Jason
+>=20
+> The firmware approach is interesting.  It might be less flexible
+> compared with my original code (see link to git below) that this is
+> based on.  The original code created a devnode like /dev/fpga0 and a ra=
+w
+> bitstream could be loaded by doing 'cat bitstream > /dev/fpga0'.  Or
+> some other userspace app could write the /dev/fpga0 to handle any
+> headers that needed to be added to the bitstream.
 
+We are using char device driver for our devcfg device and hwicap too
+but this firmware interface is not far from that.
+As Jason mentioned we can use binary sysfs attributes and you should
+get the same functionality for userspace.
+
+
+> This code also creates a set of files under /sys for each separate fpga=
+=2E
+> I.e. checking status by looking at /sys/class/fpga/fpag0/status.  It
+> would be pretty small changes to control reseting the fpga by adding a
+> 'reset' file there also (added first to the framework, and an interface=
+
+> into the low level fpga manager driver).
+
+Status is just there and for my zynq devcfg driver I do export some statu=
+s
+bits.
+
+root@petalinux:~# cat /sys/class/fpga/fpga0/status
+partial_bitstream_status: 0
+prog_done_status: 1
+dbg_lock_status: 0
+seu_lock_status: 0
+aes_en_lock_status: 0
+aes_status: 0
+seu_status: 0
+spniden_status: 1
+spiden_status: 1
+niden_status: 1
+dbgen_status: 1
+dap_en_status: 7
+
+Originally these values are single device attribute but I need to confirm=
+
+exact usage for them. It means in this RFC I probably miss any standard
+channel how to change end driver behaviour and probably there should be o=
+ne more
+hook for that.
+
+> I am trying this out with my low level fpga manager driver.  I'm very
+> curious about your approach and I am wondering whether the firmware
+> approach will work for us or not.
+
+I believe so.
+
+> Will this framework handle more than one fpga at a time?
+
+I didn't tried that because I don't have any suitable hw for this on my d=
+esk
+but I there shouldn't be any problem in that.
+
+> Is there some way a per-device userspace helper can be added that can
+> handle adding the headers?  Such that different fpga types get differen=
+t
+> helpers?
+
+What do you exactly mean by that? Any example what do you want to achieve=
+?
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--BRRwltpCpwbaMkfKu4lnHlgp3mpIHCRbL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEUEARECAAYFAlI62BQACgkQykllyylKDCEWxACVEiP71txW/zr9/EGGxjMcd48B
+swCcDeTTWcFpefcTvE50WJ9ATLXWimE=
+=7JAr
+-----END PGP SIGNATURE-----
+
+--BRRwltpCpwbaMkfKu4lnHlgp3mpIHCRbL--
