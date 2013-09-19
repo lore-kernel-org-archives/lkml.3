@@ -1,140 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab3ISO5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:57:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58784 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752545Ab3ISOzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:55:04 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: X86 ML <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Dave Young <dyoung@redhat.com>,
-        linux-efi@vger.kernel.org
-Subject: [PATCH 05/11] x86, pageattr: Add a PUD pagetable populating function
-Date: Thu, 19 Sep 2013 16:54:48 +0200
-Message-Id: <1379602494-26684-6-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1379602494-26684-1-git-send-email-bp@alien8.de>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+	id S1753928Ab3ISO6k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:58:40 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:47423 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752531Ab3ISO6i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 10:58:38 -0400
+X-Sasl-enc: snrPFU2Dh77rhrog7Ez3krNvSkRktZDHu9XHMa8djdag 1379602717
+Date: Thu, 19 Sep 2013 11:58:34 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Issues with AMD microcode updates
+Message-ID: <20130919145834.GA4298@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+Jacob, Andreas,
 
-Add the next level of the pagetable populating function, we handle
-chunks around a 1G boundary by mapping them with the lower level
-functions - otherwise we use 1G pages for the mappings, thus using as
-less amount of pagetable pages as possible.
+I take care of the amd64 microcode update support for Debian, and I'm
+receiving user reports of lockup issues with the AMD microcode driver in
+several kernels.  This is about the runtime update interface,
+/sys/devices/system/cpu/*/microcode/reload and
+/sys/devices/system/cpu/microcode/reload.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/mm/pageattr.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 86 insertions(+), 1 deletion(-)
+Basically, the issue is that the process that tries to write "1" to the
+reload node gets stuck in "D" state on several kernel versions.
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index 21a31e85283c..41c6fdbbfab0 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -666,7 +666,92 @@ static int split_large_page(pte_t *kpte, unsigned long address)
- 	return 0;
- }
- 
--#define populate_pud(cpa, addr, pgd, pgprot)	(-1)
-+static int alloc_pmd_page(pud_t *pud)
-+{
-+	pmd_t *pmd = (pmd_t *)get_zeroed_page(GFP_KERNEL | __GFP_NOTRACK);
-+	if (!pmd)
-+		return -1;
-+
-+	set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
-+	return 0;
-+}
-+
-+#define populate_pmd(cpa, start, end, pages, pud, pgprot)	(-1)
-+
-+static int populate_pud(struct cpa_data *cpa, unsigned long start, pgd_t *pgd,
-+			pgprot_t pgprot)
-+{
-+	pud_t *pud;
-+	unsigned long end;
-+	int cur_pages = 0;
-+
-+	end = start + (cpa->numpages << PAGE_SHIFT);
-+
-+	/*
-+	 * Not on a Gb page boundary? => map everything up to it with
-+	 * smaller pages.
-+	 */
-+	if (start & (PUD_SIZE - 1)) {
-+		unsigned long pre_end;
-+		unsigned long next_page = (start + PUD_SIZE) & PUD_MASK;
-+
-+		pre_end   = min_t(unsigned long, end, next_page);
-+		cur_pages = (pre_end - start) >> PAGE_SHIFT;
-+		cur_pages = min_t(int, (int)cpa->numpages, cur_pages);
-+
-+		pud = pud_offset(pgd, start);
-+
-+		/*
-+		 * Need a PMD page?
-+		 */
-+		if (pud_none(*pud))
-+			if (alloc_pmd_page(pud))
-+				return -1;
-+
-+		cur_pages = populate_pmd(cpa, start, pre_end, cur_pages,
-+					 pud, pgprot);
-+		if (cur_pages < 0)
-+			return cur_pages;
-+
-+		start = pre_end;
-+	}
-+
-+	/* We mapped them all? */
-+	if (cpa->numpages == cur_pages)
-+		return cur_pages;
-+
-+	pud = pud_offset(pgd, start);
-+
-+	/*
-+	 * Map everything starting from the Gb boundary, possibly with 1G pages
-+	 */
-+	while (end - start >= PUD_SIZE) {
-+		set_pud(pud, __pud(cpa->pfn | _PAGE_PSE | massage_pgprot(pgprot)));
-+
-+		start	  += PUD_SIZE;
-+		cpa->pfn  += PUD_SIZE;
-+		cur_pages += PUD_SIZE >> PAGE_SHIFT;
-+		pud++;
-+	}
-+
-+	/* Map trailing leftover */
-+	if (start < end) {
-+		int tmp;
-+
-+		pud = pud_offset(pgd, start);
-+		if (pud_none(*pud))
-+			if (alloc_pmd_page(pud))
-+				return -1;
-+
-+		tmp = populate_pmd(cpa, start, end, cpa->numpages - cur_pages,
-+				   pud, pgprot);
-+		if (tmp < 0)
-+			return cur_pages;
-+
-+		cur_pages += tmp;
-+	}
-+	return cur_pages;
-+}
- 
- /*
-  * Restrictions for kernel page table do not necessarily apply when mapping in
+I started by blacklisting several older kernels (e.g. I got a report of
+2.6.38 locking up), but recently I got a report of a lockup with kernel
+3.5.1.  Blacklisting everything before 3.10 is not exactly kosher, not when
+I would have to blindly trust 3.0, 3.2 and 3.4 to not have whatever issue is
+causing the lockups.
+
+IMHO that's the point where it becomes interesting to actually track down
+the bug even if it apparently doesn't exist anymore on the more recent
+kernels, and ensure that the stable/long-term kernels have the fix.  That
+would also help distros blacklist microcode update on the broken kernels.
+
+Unfortunately, I don't own, or have access to, any boxes with an AMD
+processor (let alone one with an AMD processor in need of a microcode
+update) to bissect the problem.
+
+I'd appreciate if AMD (or anyone with an AMD processor, really) could help
+me track this issue down.
+
+Debian bug reports:
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=717185
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=723081
+
 -- 
-1.8.4
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
