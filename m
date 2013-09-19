@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab3ISJum (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 05:50:42 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:35538 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3ISJuk (ORCPT
+	id S1753188Ab3ISJus (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 05:50:48 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:57991 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3ISJun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 05:50:40 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-97-523ac8ee6f67
+	Thu, 19 Sep 2013 05:50:43 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-0b-523ac8f2fce8
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
-        m.szyprowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v3 0/7] usb: s3c-hsotg: fixes for proper functioning
-Date: Thu, 19 Sep 2013 11:50:16 +0200
-Message-id: <1379584223-15232-1-git-send-email-r.baldyga@samsung.com>
+        m.szyprowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH v3 1/7] USB: gadget: s3c-hsotg: fix "protocol stall" handling
+Date: Thu, 19 Sep 2013 11:50:17 +0200
+Message-id: <1379584223-15232-2-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t9jQd13J6yCDI6ttbLYOGM9q8XB+/UW
-	zYvXs1lc3jWHzWLRslZmi7VH7rJbPDi8k92B3WP/3DXsHn1bVjF6HL+xncnj8ya5AJYoLpuU
-	1JzMstQifbsEroxDnT9YCpbxVxx/eZypgXE/TxcjJ4eEgInEkQ1HWSFsMYkL99azdTFycQgJ
-	TGeU6Hu0lAnCaWeSeLznKRNIFZuAjsSW7xMYQWwRAQGJ9S8usYMUMQtsZ5R48r8LLCEs4CJx
-	Ycc6dhCbRUBVYvfjM8xdjBwcvAKuEqfWa4CYEgIKEnMm2Uxg5F7AyLCKUTS1ILmgOCk911Cv
-	ODG3uDQvXS85P3cTIzgwnkntYFzZYHGIUYCDUYmHN+KCZZAQa2JZcWXuIUYJDmYlEd45h6yC
-	hHhTEiurUovy44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBKNTDy3/tVeSht
-	x6KmktjN/gxGGtXhzLwTA7ft/FpvbT//hIr35s+3OnKv84eJTD9+8NZWrVknxd6qGj0Rkfvw
-	6Z7B/fC9oRYyJo1LOBTWtuUe2nZYc46BqyX/NPtWLbmMPRwc8/ik/R5m7My58m7hYy7pgLMa
-	QnHLGtRXJes6beXfuu7Jw+kXn4oosRRnJBpqMRcVJwIAegBoqggCAAA=
+In-reply-to: <1379584223-15232-1-git-send-email-r.baldyga@samsung.com>
+References: <1379584223-15232-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t9jQd1PJ6yCDHreClhsnLGe1eLg/XqL
+	5sXr2SzONr1ht7i8aw6bxaJlrcwWa4/cZbd4cHgnuwOHx/65a9g9+rasYvQ4fmM7k8fnTXIB
+	LFFcNimpOZllqUX6dglcGZ9e/WMseMJdMad3FXMD42nOLkZODgkBE4nPV9YyQdhiEhfurWfr
+	YuTiEBKYziix68hJVginnUni7I01YFVsAjoSW75PYASxRQQEJNa/uMQOUsQs8IRRYuqRV+wg
+	CWEBX4n+pq9sIDaLgKrExpcHmUFsXgFXiUfLTwE1cwCtU5CYM8kGJMwp4CYx8fxrFhBbCKjk
+	8aYvbBMYeRcwMqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECA6qZ9I7GFc1WBxiFOBgVOLh
+	jbhgGSTEmlhWXJl7iFGCg1lJhHfOIasgId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHW60DhQTS
+	E0tSs1NTC1KLYLJMHJxSDYwcnlLqOu+e7Fcq/v2IlWnjvim1Zw6GC4maaws+Zy58eCR2x6fS
+	Tl6bDK8r8/1tmaqO68nnay8WNp6x/NsV79Dbecd4mJwfHMpU++mt47icQajq0cVLUraX2zu/
+	ZfB9DPyV5/LG+26h7qqWI8Ki/7ZMsKx6t/9TlQxjU461plirY5iW120FdiWW4oxEQy3mouJE
+	AOjPN2YmAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+After normal handling of SetupDone interrupt, XferCompl interrupt occurs, and
+then we enqueue new setup request. But when ep0 is stalled, there is no
+XferCompl, so we have to enqueue setup request immediately after stalling ep.
+Otherwise incoming control requests won't be processed correctly.
 
-This is a third version of set of patches fixing s3c-hsotg USB driver
-functioning. From the previous vesrion there are two changes - fixed
-one small mistake found in one of patches, and add new patch fixing
-interrupt configuration for dedicated-fifo mode.
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/usb/gadget/s3c-hsotg.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-These patches add few fixes:
-- Fix "protocol stall" handling, by enqueue new ep0 request when stalled
-- Fix s3c_hsotg_write_fifo function to be usable in dedicated-fifo mode.
-  Actually PTxFEmp/NPTxFEmp interrupts are enabled only in shared-fifo mode.
-- Fix endpoint interrput handling, by disabling interrupts for endpoints which
-  has no requests enqueued.
-- Fixed DAINT register usage. Now only masked ep interrupts are handled.
-- Fix "halt" property updating.
-- Fix endpoint halt clearing, when it is not currently halted.
-- Fix interrupt configuration in dedicated fifo mode.
-
-Best regards
-Robert Baldyga
-Samsung R&D Institute Poland
-
-Changelog:
-
-v3:
-- in patch 'fix clear feature ENDPOINT_HALT' fixed mistake in that logic OR
-  were used instead of logic AND
-- add patch setting correct interrupt configuration for dedicated-fifo mode
-
-v2: https://lkml.org/lkml/2013/9/18/99
-- splitted patches to get one fix in each patch, as Felipe Balbi suggested
-- fixed typos
-
-v1: https://lkml.org/lkml/2013/9/12/324
-- initial proposal
-
-Robert Baldyga (7):
-  USB: gadget: s3c-hsotg: fix "protocol stall" handling
-  USB: gadget: s3c-hsotg: fix s3c_hsotg_write_fifo function for
-    dedicated fifo mode
-  USB: gadget: s3c-hsotg: fix endpoint interrupts handling
-  USB: gadget: s3c-hsotg: add DAINT masking
-  USB: gadget: s3c-hsotg: fix "halted" property updating
-  USB: gadget: s3c-hsotg: fix clear feature ENDPOINT_HALT
-  USB: gadget: s3c-hsotg: fix interrupt configuration in dedicated-fifo
-    mode
-
- drivers/usb/gadget/s3c-hsotg.c |   74 +++++++++++++++++++++++++++++++---------
- 1 file changed, 57 insertions(+), 17 deletions(-)
-
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index dd5524c..c00ce27 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -1146,6 +1146,8 @@ static int s3c_hsotg_process_req_feature(struct s3c_hsotg *hsotg,
+ 	return 1;
+ }
+ 
++static void s3c_hsotg_enqueue_setup(struct s3c_hsotg *hsotg);
++
+ /**
+  * s3c_hsotg_process_control - process a control request
+  * @hsotg: The device state
+@@ -1245,11 +1247,15 @@ static void s3c_hsotg_process_control(struct s3c_hsotg *hsotg,
+ 		 * don't believe we need to anything more to get the EP
+ 		 * to reply with a STALL packet
+ 		 */
++
++		 /*
++		  * complete won't be called, so we enqueue
++		  * setup request here
++		  */
++		 s3c_hsotg_enqueue_setup(hsotg);
+ 	}
+ }
+ 
+-static void s3c_hsotg_enqueue_setup(struct s3c_hsotg *hsotg);
+-
+ /**
+  * s3c_hsotg_complete_setup - completion of a setup transfer
+  * @ep: The endpoint the request was on.
 -- 
 1.7.9.5
 
