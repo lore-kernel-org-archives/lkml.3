@@ -1,92 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab3ISEPq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 00:15:46 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:38785 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725Ab3ISEPo (ORCPT
+	id S1752193Ab3ISEsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 00:48:46 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:35072 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725Ab3ISEsp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 00:15:44 -0400
-Date: Wed, 18 Sep 2013 21:15:34 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Huang Shijie <b32955@freescale.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mtd: nand: fix memory leak in ONFI extended parameter
- page
-Message-ID: <20130919041534.GA31275@brian-ubuntu>
-References: <1379381512-2007-1-git-send-email-computersforpeace@gmail.com>
- <5237BAA9.6000606@freescale.com>
+	Thu, 19 Sep 2013 00:48:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5237BAA9.6000606@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130919034406.GA26385@angband.pl>
+References: <1379391093-27948-1-git-send-email-roy.franz@linaro.org>
+	<1379391093-27948-10-git-send-email-roy.franz@linaro.org>
+	<20130919034406.GA26385@angband.pl>
+Date: Wed, 18 Sep 2013 21:48:44 -0700
+Message-ID: <CAFECyb-tTaCEqUHUh23MaJf-P42ZpodFKeNG=kE+vmmi-gyKrw@mail.gmail.com>
+Subject: Re: [PATCH 09/17] Move unicode to ASCII conversion to shared function.
+From: Roy Franz <roy.franz@linaro.org>
+To: Adam Borowski <kilobyte@angband.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org, matt.fleming@intel.com,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Mark Salter <msalter@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 10:12:57AM +0800, Huang Shijie wrote:
-> 于 2013年09月17日 09:31, Brian Norris 写道:
-> > This fixes a memory leak in the ONFI support code for detecting the
-> > required ECC levels from this commit:
-> >
-> >   commit 6dcbe0cdd83fb5f77be4f44c9e06c535281c375a
-> >   Author: Huang Shijie <b32955@freescale.com>
-> >   Date:   Wed May 22 10:28:27 2013 +0800
-> >
-> >       mtd: get the ECC info from the Extended Parameter Page
-> >
-> > In the success case, we never freed the 'ep' buffer.
-> >
-> > Also, this fixes an oversight in the same commit where we (harmlessly)
-> > freed the NULL pointer.
-> >
-> > Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-> > Cc: Huang Shijie <b32955@freescale.com>
-> > ---
-> > David, if there are no objections, can you send this to Linus for 3.12?
-> >
-> > If this doesn't make it into 3.12, then it will be -stable material.
-> >
-> >  drivers/mtd/nand/nand_base.c | 8 +++-----
-> >  1 file changed, 3 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-> > index d4578a1..00022b4 100644
-> > --- a/drivers/mtd/nand/nand_base.c
-> > +++ b/drivers/mtd/nand/nand_base.c
-> > @@ -2869,10 +2869,8 @@ static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
-> >  
-> >  	len = le16_to_cpu(p->ext_param_page_length) * 16;
-> >  	ep = kmalloc(len, GFP_KERNEL);
-> > -	if (!ep) {
-> > -		ret = -ENOMEM;
-> > -		goto ext_out;
-> > -	}
-> > +	if (!ep)
-> > +		return -ENOMEM;
-> >  
-> >  	/* Send our own NAND_CMD_PARAM. */
-> >  	chip->cmdfunc(mtd, NAND_CMD_PARAM, 0, -1);
-> > @@ -2920,7 +2918,7 @@ static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
-> >  	}
-> >  
-> >  	pr_info("ONFI extended param page detected.\n");
-> > -	return 0;
-> > +	ret = 0;
-> >  
-> >  ext_out:
-> >  	kfree(ep);
-> good catch!
-> 
-> Acked-by: Huang Shijie <b32955@freescale.com>
+On Wed, Sep 18, 2013 at 8:44 PM, Adam Borowski <kilobyte@angband.pl> wrote:
+> On Mon, Sep 16, 2013 at 09:11:25PM -0700, Roy Franz wrote:
+>> +/* Convert the unicode UEFI command line to ASCII to pass to kernel.
+>> + * Size of memory allocated return in *cmd_line_len.
+>> + * Returns NULL on error.
+>> + */
+>> +static char *efi_convert_cmdline_to_ascii(efi_system_table_t *sys_table_arg,
+>
+>> +       int load_options_size = image->load_options_size / 2; /* ASCII */
+>
+>> +     for (i = 0; i < options_size - 1; i++)
+>> +             *s1++ = *s2++;
+>
+> I'm afraid both this commit and comments inside are misnamed.  What you're
+> changing here is the encoding rather than character set.
+>
+> In fact, these days it's 8-bit encodings that are more likely to be Unicode
+> than 16-bit ones: UTF-8 is ubiquitous, while you usually get UCS2 at most.
+> In either case, though, we have here is a 7-bit charset encoded as either
+> 8-bit or 16-bit units.  What this function does is blindly truncating upper
+> byte.  The supported payload is in both cases ASCII.
+>
+> I'd thus rename the function to what it already does: truncating u16 to u8,
+> and adjust comments accordingly.
+>
+> Replacing values above 126 with a token character like '?' would be good
+> too: that'd avoid producing corrupted characters and/or random ASCII chars.
 
-OK, pushed to l2-mtd.git. If I don't hear anything from David in a few
-days, then I'll see about sending it upstream myself. He had time to
-respond to your quad-SPI series but not to the pxa3xx compile failures
-in his -rc1 pull request.
+I stuck to re-arranging the code that was there, as I don't know
+enough about character encodings
+to propose changes.  Also, this code is running as part of the kernel
+decompressor, rather
+than the kernel itself, so it doesn't have access to any kernel
+facilities, and it also needs to
+be position independent.  It's running in a quite limited environment
+-  the decompressor has
+its own copy of strstr(), and other string functions.
 
-Brian
+I checked the UEFI specification, and it states that all 16 bit
+strings are UCS-2, unless
+otherwise noted.  The load options that the command line is provided
+through a void pointer
+specified as:
+
+    "LoadOptions A pointer to the image's binary load options."
+
+I couldn't quickly find any other mentions of LoadOptions in the
+spec., so I don't know what
+other types of values could be, or are typically provided.  The spec
+isn't helpful regarding the type
+of this data, and I don't know what common practice is here among the
+various EFI/UEFI firmwares
+out there.
+
+Would it be acceptable to fix the naming/comments, and convert values
+above 126 to '?'
+in the current patchset, and address a more thorough fix in another patch set?
+The ARM and ARM64 EFI stub patchsets that are mostly complete depend
+on this one,
+so getting this merged soon would be helpful.
+
+Something like:
+>> +/* Convert the UEFI command line from 16 bit to 8 bit encoding to pass to kernel.
+>> + * by truncating to 7 bits.  Values above 126 are converted to 63 (ASCII '?')
+>> + * Size of memory allocated return in *cmd_line_len.
+>> + * Returns NULL on error.
+>> + */
++static char *efi_truncate_cmdline_to_8bit_encoding(efi_system_table_t
+*sys_table_arg,
+(update code to truncate and convert to '?')
+
+>
+> Your commit only moves things around, so it might be out of scope for now,
+> but I wonder: what if the kernel actually supported Unicode here?  Few
+> cmdline arguments take values where non-ASCII makes sense, but at least some
+> do: for example, a Russian guy is not unlikely to name subvolumes using
+> cyrillic.  Supporting that would be easy (estimating the length then
+> tf16us_to_utf8s()).  There's just one problem: which encoding to use, but
+> these days, most distributions have either dropped non-UTF8 or hardly pay
+> lip service, so we could get away with hard-coding UTF-8: those few who
+> use ancient charsets can stick to ASCII.  Would this be ok?  If so, shout,
+> I can code this if you don't care enough.
+
+I would certainly appreciate your help improving this, although I think we'll
+need to have a better understanding of what the UEFI firmware is providing
+before we can implement something better.
+
+
+>
+> --
+> ᛊᚨᚾᛁᛏᚣ᛫ᛁᛊ᛫ᚠᛟᚱ᛫ᚦᛖ᛫ᚹᛖᚨᚲ
