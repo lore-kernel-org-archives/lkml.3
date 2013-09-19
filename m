@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab3ISVmt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 17:42:49 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:37601 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab3ISVms (ORCPT
+	id S1753941Ab3ISVo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 17:44:28 -0400
+Received: from www17.your-server.de ([213.133.104.17]:55685 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab3ISVo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 17:42:48 -0400
-MIME-Version: 1.0
-X-Originating-IP: [204.57.119.28]
-In-Reply-To: <0000014109b8e5db-4b0f577e-c3b4-47fe-b7f2-0e5febbcc948-000000@email.amazonses.com>
-References: <00000140e9dfd6bd-40db3d4f-c1be-434f-8132-7820f81bb586-000000@email.amazonses.com>
-	<CAOtvUMdfqyg80_9J8AnOaAdahuRYGC-bpemdo_oucDBPguXbVA@mail.gmail.com>
-	<0000014109b8e5db-4b0f577e-c3b4-47fe-b7f2-0e5febbcc948-000000@email.amazonses.com>
-Date: Thu, 19 Sep 2013 16:42:46 -0500
-Message-ID: <CAOtvUMfQcxwrkKUVRVT+HGGJLphppbLD3cb0uztEjydddmRGng@mail.gmail.com>
-Subject: Re: RFC vmstat: On demand vmstat threads
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Sep 2013 17:44:27 -0400
+Subject: [PATCH 3/10] iio: at91_adc: Cocci spatch "noderef"
+From: Thomas Meyer <thomas@m3y3r.de>
+To: jic23@cam.ac.uk, grant.likely@linaro.org, rob.herring@calxeda.com,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Message-ID: <1379604755852-604229709-3-diffsplit-thomas@m3y3r.de>
+References: <1379604755850-858421494-0-diffsplit-thomas@m3y3r.de>
+In-Reply-To: <1379604755850-858421494-0-diffsplit-thomas@m3y3r.de>
+Date: Thu, 19 Sep 2013 23:42:22 +0200
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 4:13 PM, Christoph Lameter <cl@linux.com> wrote:
+sizeof when applied to a pointer typed expression gives the size of the
+pointer.
+Found by coccinelle spatch "misc/noderef.cocci"
 
->
-> Note: This patch is based on the vmstat patches in Andrew's tree
-> to be merged for the 3.12 kernel.
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
 
-Sorry for being dumb but this patch doesn't apply for me on either
-mmotm nor Linus master. What did I miss?
-
-Gilad
-
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+diff -u -p a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
+--- a/drivers/iio/adc/at91_adc.c
++++ b/drivers/iio/adc/at91_adc.c
+@@ -279,7 +279,7 @@ static int at91_adc_trigger_init(struct
+ 	int i, ret;
+ 
+ 	st->trig = devm_kzalloc(&idev->dev,
+-				st->trigger_number * sizeof(st->trig),
++				st->trigger_number * sizeof(*st->trig),
+ 				GFP_KERNEL);
+ 
+ 	if (st->trig == NULL) {
