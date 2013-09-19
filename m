@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab3ISAnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 20:43:15 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:34114 "EHLO
+	id S1752267Ab3ISArk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 20:47:40 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:35468 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab3ISAnK (ORCPT
+	with ESMTP id S1751632Ab3ISAri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 20:43:10 -0400
+	Wed, 18 Sep 2013 20:47:38 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
         linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH tty-next 1/1] tty: Prevent tty_port destruction if tty not released
-Date: Wed, 18 Sep 2013 20:42:39 -0400
-Message-Id: <1379551359-15000-2-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH tty-next] tty: Remove unused drop() method from tty_port interface
+Date: Wed, 18 Sep 2013 20:47:06 -0400
+Message-Id: <1379551626-15063-1-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379551359-15000-1-git-send-email-peter@hurleysoftware.com>
-References: <1379551359-15000-1-git-send-email-peter@hurleysoftware.com>
 X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the tty driver mistakenly drops the last port reference
-before the tty has been released, issue a diagnostic and
-abort the port destruction.
-
-This will leak memory and may zombify the port, but might
-otherwise keep the machine in runnable state.
+Although originally conceived as a hook for port drivers to know
+when a port reference is dropped, no driver uses this method.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_port.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/tty/tty_port.c | 6 +-----
+ include/linux/tty.h    | 1 -
+ 2 files changed, 1 insertion(+), 6 deletions(-)
 
 diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
-index 9857f7e..c94d234 100644
+index f597e88..9857f7e 100644
 --- a/drivers/tty/tty_port.c
 +++ b/drivers/tty/tty_port.c
-@@ -140,6 +140,10 @@ EXPORT_SYMBOL(tty_port_destroy);
- static void tty_port_destructor(struct kref *kref)
- {
- 	struct tty_port *port = container_of(kref, struct tty_port, kref);
-+
-+	/* check if last port ref was dropped before tty release */
-+	if (WARN_ON(port->itty))
-+		return;
- 	if (port->xmit_buf)
- 		free_page((unsigned long)port->xmit_buf);
- 	tty_port_destroy(port);
+@@ -480,8 +480,6 @@ int tty_port_close_start(struct tty_port *port,
+ 
+ 	if (port->count) {
+ 		spin_unlock_irqrestore(&port->lock, flags);
+-		if (port->ops->drop)
+-			port->ops->drop(port);
+ 		return 0;
+ 	}
+ 	set_bit(ASYNCB_CLOSING, &port->flags);
+@@ -500,9 +498,7 @@ int tty_port_close_start(struct tty_port *port,
+ 	/* Flush the ldisc buffering */
+ 	tty_ldisc_flush(tty);
+ 
+-	/* Don't call port->drop for the last reference. Callers will want
+-	   to drop the last active reference in ->shutdown() or the tty
+-	   shutdown path */
++	/* Report to caller this is the last port reference */
+ 	return 1;
+ }
+ EXPORT_SYMBOL(tty_port_close_start);
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 64f8646..2f47989 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -180,7 +180,6 @@ struct tty_port_operations {
+ 	   IFF the port was initialized. Do not use to free resources. Called
+ 	   under the port mutex to serialize against activate/shutdowns */
+ 	void (*shutdown)(struct tty_port *port);
+-	void (*drop)(struct tty_port *port);
+ 	/* Called under the port mutex from tty_port_open, serialized using
+ 	   the port mutex */
+         /* FIXME: long term getting the tty argument *out* of this would be
 -- 
 1.8.1.2
 
