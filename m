@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab3ISQHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 12:07:05 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:47468 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab3ISQHC (ORCPT
+	id S1753270Ab3ISQLl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 12:11:41 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:44257 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab3ISQLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 12:07:02 -0400
-From: avi.kp.137@gmail.com
-To: davem@davemloft.net
-Cc: akong@redhat.com, stefanha@gmail.com, jiri@resnulli.us,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Avinash Kumar <avi.kp.137@gmail.com>
-Subject: [PATCH 5/5] net: ethernet: eth.c: removed checkpatch warnings and errors
-Date: Thu, 19 Sep 2013 21:36:50 +0530
-Message-Id: <523b2124.645d440a.1c55.0f75@mx.google.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 19 Sep 2013 12:11:39 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: mpatlasov@parallels.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [PATCH 3/3] fuse: writepage: skip already in flight
+Date: Thu, 19 Sep 2013 18:11:56 +0200
+Message-Id: <1379607116-13382-4-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1379607116-13382-1-git-send-email-miklos@szeredi.hu>
+References: <1379607116-13382-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Avinash Kumar <avi.kp.137@gmail.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-removed these checkpatch.pl warnings:
-net/ethernet/eth.c:61: WARNING: Use #include <linux/uaccess.h> instead of <asm/uaccess.h>
-net/ethernet/eth.c:136: WARNING: Prefer netdev_dbg(netdev, ... then dev_dbg(dev, ... then pr_debug(...  to printk(KERN_DEBUG ...
-net/ethernet/eth.c:181: ERROR: space prohibited before that close parenthesis ')'
+If ->writepage() tries to write back a page whose copy is still in flight,
+then just skip by calling redirty_page_for_writepage().
 
-Signed-off-by: Avinash Kumar <avi.kp.137@gmail.com>
+This is OK, since now ->writepage() should never be called for data
+integrity sync.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- net/ethernet/eth.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/fuse/file.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
-index be1f64d..9bd3c31 100644
---- a/net/ethernet/eth.c
-+++ b/net/ethernet/eth.c
-@@ -58,7 +58,7 @@
- #include <net/ipv6.h>
- #include <net/ip.h>
- #include <net/dsa.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index f8ff019..135360e 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1591,6 +1591,18 @@ static int fuse_writepage(struct page *page, struct writeback_control *wbc)
+ {
+ 	int err;
  
- __setup("ether=", netdev_boot_setup);
++	if (fuse_page_is_writeback(page->mapping->host, page->index)) {
++		/*
++		 * ->writepages() should be called for sync() and friends.  We
++		 * should only get here on direct reclaim and then we are
++		 * allowed to skip a page which is already in flight
++		 */
++		WARN_ON(wbc->sync_mode == WB_SYNC_ALL);
++
++		redirty_page_for_writepage(wbc, page);
++		return 0;
++	}
++
+ 	err = fuse_writepage_locked(page);
+ 	unlock_page(page);
  
-@@ -133,7 +133,7 @@ int eth_rebuild_header(struct sk_buff *skb)
- 		return arp_find(eth->h_dest, skb);
- #endif
- 	default:
--		printk(KERN_DEBUG
-+		netdev_dbg(dev,
- 		       "%s: unable to resolve type %X addresses.\n",
- 		       dev->name, ntohs(eth->h_proto));
- 
-@@ -178,7 +178,7 @@ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev)
- 	 *      seems to set IFF_PROMISC.
- 	 */
- 
--	else if (1 /*dev->flags&IFF_PROMISC */ ) {
-+	else if (1 /*dev->flags&IFF_PROMISC */) {
- 		if (unlikely(!ether_addr_equal_64bits(eth->h_dest,
- 						      dev->dev_addr)))
- 			skb->pkt_type = PACKET_OTHERHOST;
 -- 
-1.7.10.4
+1.8.1.4
 
