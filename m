@@ -1,33 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab3ISBEZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Sep 2013 21:04:25 -0400
-Received: from mail-ve0-f193.google.com ([209.85.128.193]:59031 "EHLO
-	mail-ve0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760Ab3ISBEY (ORCPT
+	id S1752338Ab3ISBEb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Sep 2013 21:04:31 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:33057 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157Ab3ISBE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Sep 2013 21:04:24 -0400
+	Wed, 18 Sep 2013 21:04:27 -0400
+Date: Wed, 18 Sep 2013 18:04:25 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jianguo Wu <wujianguo@huawei.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: Re: [RESEND PATCH] mm/mempolicy: use NUMA_NO_NODE
+In-Reply-To: <5237AB84.9000404@huawei.com>
+Message-ID: <alpine.DEB.2.02.1309181804160.22497@chino.kir.corp.google.com>
+References: <5237AB84.9000404@huawei.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Reply-To: richard.fast.loancompany@gmail.com
-Date: Wed, 18 Sep 2013 18:04:23 -0700
-Message-ID: <CAP6aAyGa6poNPVg5ZGnKxRg_iBJe52=aRjkAJbRt=q8tQ3uKvA@mail.gmail.com>
-Subject: 
-From: Loan Offer <richard.fast.loancompany1@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--- 
-Are You In Need Of money to pay your bills or to start any kind of
-Business? If Yes; Contact us via: richard.fast.loancompany1@gmail.com
-Full Name:
-Amount Needed:
-Duration:
-Country:
-Cell No:
-Sex:
-Age:
-Noted that all email should been send to Mr Richard Fast on this
-email: richard.fast.loancompany1@gmail.com
+On Tue, 17 Sep 2013, Jianguo Wu wrote:
+
+> Use more appropriate NUMA_NO_NODE instead of -1
+> 
+> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+Acked-by: David Rientjes <rientjes@google.com>
