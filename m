@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab3ISKFE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 06:05:04 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:48170 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab3ISKFC (ORCPT
+	id S1753105Ab3ISKIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 06:08:36 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38499 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab3ISKIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 06:05:02 -0400
-Date: Thu, 19 Sep 2013 11:04:34 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Marc Reilly <marc@cpdesign.com.au>, u.kleine-koenig@pengutronix.de,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 2/3] mfd: mc13xxx: Move SPI erratum workaround into SPI
- I/O function
-Message-ID: <20130919100434.GB22389@lee--X1>
-References: <1379527587-14567-1-git-send-email-broonie@kernel.org>
- <1379527587-14567-2-git-send-email-broonie@kernel.org>
- <20130919091318.GA22389@lee--X1>
- <20130919095628.GH21013@sirena.org.uk>
+	Thu, 19 Sep 2013 06:08:35 -0400
+Date: Thu, 19 Sep 2013 12:08:33 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Alan Tull <atull@altera.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        monstr@monstr.eu, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+Message-ID: <20130919100833.GC19346@amd.pavel.ucw.cz>
+References: <cover.1379519753.git.michal.simek@xilinx.com>
+ <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
+ <20130918191517.GQ19937@titan.lakedaemon.net>
+ <20130918203247.GA11181@obsidianresearch.com>
+ <1379539063.31417.23.camel@atx-linux-37>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130919095628.GH21013@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1379539063.31417.23.camel@atx-linux-37>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Please delete irrelevant context from mails, it makes it easier to find
-> the new content that's beenn added.
+Hi!
 
-I did, off the bottom.
+> The firmware approach is interesting.  It might be less flexible
+> compared with my original code (see link to git below) that this is
 
-I only left 22 lines at the top. You're just being pernickety.
+On the other hand... that's the interface world wants, right? To most
+users, fpga bitstream is just a firmware.
 
-> > On Wed, 18 Sep 2013, Mark Brown wrote:
-> 
-> > > @@ -94,10 +94,15 @@ static int mc13xxx_spi_write(void *context, const void *data, size_t count)
-> > >  {
-> > >  	struct device *dev = context;
-> > >  	struct spi_device *spi = to_spi_device(dev);
-> > > +	char *reg = data;
-> 
-> > I think this requires a cast.
-> 
-> No, you should never need a cast to or from void in C - it probably does
-> want to be a const char though.
+> Is there some way a per-device userspace helper can be added that can
+> handle adding the headers?  Such that different fpga types get different
+> helpers?
 
-Either way, it needs changing.
+https://www.kernel.org/doc/Documentation/firmware_class/README
 
+ 4), userspace:
+     - hotplug: cat appropriate_firmware_image > \
+       		    			       /sys/class/firmware/xxx/data
+
+I assume udev's firmware.sh could be modified to add headers.
+
+But... if same bitstream is expected to work across multiple FPGAs (is
+it?) maybe kernel should hide that difference and provide headers
+itself.
+
+Thanks,
+									Pavel
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
