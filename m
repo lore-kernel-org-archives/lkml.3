@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab3ISHR3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 03:17:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43592 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752774Ab3ISHR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 03:17:27 -0400
-Date: Thu, 19 Sep 2013 09:17:20 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Vinson Lee <vlee@freedesktop.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Vinson Lee <vlee@twitter.com>
-Subject: Re: [PATCH] tools lib lk: Uninclude linux/magic.h in debugfs.c.
-Message-ID: <20130919071720.GA9435@pd.tnic>
-References: <1379546200-17028-1-git-send-email-vlee@freedesktop.org>
+	id S1753160Ab3ISHS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 03:18:28 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:45345 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752784Ab3ISHS0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 03:18:26 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Stephen GALLIMORE <stephen.gallimore@st.com>,
+        Stuart MENEFY <stuart.menefy@st.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Olivier CLERGEAUD <olivier.clergeaud@st.com>
+Date: Thu, 19 Sep 2013 09:16:27 +0200
+Subject: Re: [PATCH 2/4] ARM: STi: Supply I2C configuration to STiH416 SoC
+Thread-Topic: [PATCH 2/4] ARM: STi: Supply I2C configuration to STiH416 SoC
+Thread-Index: AQHOtQgo5KmvX3sF7Eefywdx+54/jg==
+Message-ID: <84625B87D65BCF478CC1E9C886A4C314DEF1BD9579@SAFEX1MAIL4.st.com>
+References: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com>
+ <1379498483-4236-3-git-send-email-maxime.coquelin@st.com>
+ <20130918120340.GF16984@lee--X1>
+ <84625B87D65BCF478CC1E9C886A4C314DEF1BD9578@SAFEX1MAIL4.st.com>
+ <5239A322.5010004@st.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1379546200-17028-1-git-send-email-vlee@freedesktop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 04:16:40PM -0700, Vinson Lee wrote:
-> From: Vinson Lee <vlee@twitter.com>
-> 
-> The compilation only looks for linux/magic.h from the default include
-> paths, which does not include the source tree. This results in a build
-> error if linux/magic.h is not available or not installed.
+Hi Srini,
 
-Right, we have:
+On 09/18/2013 03:17 PM, Srinivas KANDAGATLA wrote:
+> On 18/09/13 13:46, Maxime COQUELIN wrote:
+>> On 09/18/2013 02:03 PM, Lee Jones wrote:
+>>>>>> This patch supplies I2C configuration to STiH416 SoC.
+>>>>>>
+>>>>>> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>>>>>> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+>>>>>> ---
+>>>>>>  arch/arm/boot/dts/stih416-pinctrl.dtsi |   35 ++++++++++++++++++++
+>>>>>>  arch/arm/boot/dts/stih416.dtsi         |   57 ++++++++++++++++++++++++++++++++
+>>>>>>  2 files changed, 92 insertions(+)
+>>>>>>
+>>>>>> diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+>>>> I genuinely don't know the answer to this question, but are these
+>>>> nodes identical to the ones you've just put in the stih415 DTSI file?
+>>>> If so, I think it will be worth creating a stih41x DTSI rather than
+>>>> duplicating lots of stuff unnecessarily.
+>> There are close to be identical indeed.
+>> For the clocks and pinctrl, the references names are the same, but they are
+>> pointing on different nodes, as STiH415 and STiH416 have their own
+>> clocks and pinctrl dtsi files.
+>>
+>> Srini, what is opinion about this?
+> There is already a stih41x.dtsi file, but I don't think it is the right
+> place for the pinctrl nodes there.
+>
+> Am not OK with the idea of common pinctrl nodes for STiH415 and STiH416
+> for two reasons.
+>
+> 1> If we common up the pinctrl nodes, it will be very difficult to
+> accommodate new pinctrls layout which is not guaranteed to be in same
+> layout in future SOCs.
+>
+> 2> The retiming values in the pinctrl nodes tend to change as per SOC,
+> so it will be difficult to manage it if we common it up.
+>
+> Am sure we can come up with a dt layout which can reduce duplication,
+> but we have to be careful here not to lose the flexiblity to accommodate
+> new picntrl layouts, new retimings values based on SOC.
+Ok. What do you think of declaring the i2c nodes inside the stih41x.dtsi
+file,
+and overload them with the pinctrl and clock properties in the stih416
+and stih415 dtsi files?
 
-tools/perf/util/include/linux/magic.h
+Regards,
+Maxime
+>
+>
+> thanks,
+> srini
+>
+>
 
-but tools/lib/lk/Makefile doesn't know about it, it seems. Oh well, the
-solution falling back to debugfs.h is even better. :)
-
-> For example, this build error occurs on CentOS 5.
-> 
-> $ make -C tools/lib/lk V=1
-> [...]
-> gcc -o debugfs.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6
-> -D_FORTIFY_SOURCE=2 -Wbad-function-cast -Wdeclaration-after-statement
-> -Wformat-security -Wformat-y2k -Winit-self -Wmissing-declarations
-> -Wmissing-prototypes -Wnested-externs -Wno-system-headers
-> -Wold-style-definition -Wpacked -Wredundant-decls -Wshadow
-> -Wstrict-aliasing=3 -Wstrict-prototypes -Wswitch-default -Wswitch-enum
-> -Wundef -Wwrite-strings -Wformat  -fPIC  -D_LARGEFILE64_SOURCE
-> -D_FILE_OFFSET_BITS=64 debugfs.c
-> debugfs.c:8:25: error: linux/magic.h: No such file or directory
-> 
-> The only symbol from linux/magic.h needed by debugfs.c is DEBUGFS_MAGIC,
-> and that is already defined in debugfs.h. linux/magic.h isn't providing
-> any extra symbols and can unincluded. This is similar to the approach by
-> perf, which has its own magic.h wrapper at
-> tools/perf/util/include/linux/magic.h
-> 
-> Signed-off-by: Vinson Lee <vlee@twitter.com>
-> Cc: stable@vger.kernel.org # 3.10+
-
-Acked-by: Borislav Petkov <bp@suse.de>
-
-> ---
->  tools/lib/lk/debugfs.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/tools/lib/lk/debugfs.c b/tools/lib/lk/debugfs.c
-> index 099e7cd..7c43479 100644
-> --- a/tools/lib/lk/debugfs.c
-> +++ b/tools/lib/lk/debugfs.c
-> @@ -5,7 +5,6 @@
->  #include <stdbool.h>
->  #include <sys/vfs.h>
->  #include <sys/mount.h>
-> -#include <linux/magic.h>
->  #include <linux/kernel.h>
->  
->  #include "debugfs.h"
-> -- 
-> 1.8.2.1
-> 
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
