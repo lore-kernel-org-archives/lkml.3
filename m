@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab3ISLzr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 07:55:47 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41030 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab3ISLzn (ORCPT
+	id S1753832Ab3ISL4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 07:56:43 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:45422 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab3ISL4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 07:55:43 -0400
-Date: Thu, 19 Sep 2013 12:55:01 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, sameo@linux.intel.com,
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk, rob@landley.net,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130919115501.GM21013@sirena.org.uk>
-References: <1379579392-1794-1-git-send-email-ldewangan@nvidia.com>
- <20130919083050.GH16984@lee--X1>
+	Thu, 19 Sep 2013 07:56:41 -0400
+Date: Thu, 19 Sep 2013 12:56:30 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Milo Kim <milo.kim@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] Documentation: add LP3943 DT bindings and document
+Message-ID: <20130919115629.GF22389@lee--X1>
+References: <1378949700-6384-1-git-send-email-milo.kim@ti.com>
+ <20130912152455.GN11227@lee--X1>
+ <20130915112755.GB9765@ulmo>
+ <20130916073000.GA3999@lee--X1>
+ <20130919112545.GC10852@ulmo>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FAVlh7XA/4iOdtaa"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130919083050.GH16984@lee--X1>
-X-Cookie: Give him an evasive answer.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130919112545.GC10852@ulmo>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 86.153.71.95
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] mfd: core: introduce of_node_name for mfd sub devices
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 19 Sep 2013, Thierry Reding wrote:
 
---FAVlh7XA/4iOdtaa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Mon, Sep 16, 2013 at 08:30:00AM +0100, Lee Jones wrote:
+> > On Sun, 15 Sep 2013, Thierry Reding wrote:
+> > 
+> > > On Thu, Sep 12, 2013 at 04:24:55PM +0100, Lee Jones wrote:
+> > > > On Thu, 12 Sep 2013, Milo Kim wrote:
+> > > [...]
+> > > > > diff --git a/Documentation/lp3943.txt b/Documentation/lp3943.txt
+> > > > > new file mode 100644
+> > > > > index 0000000..576ebd0
+> > > > > --- /dev/null
+> > > > > +++ b/Documentation/lp3943.txt
+> > > [...]
+> > > > If this stuff is really important (and most of it really isn't), then
+> > > > put it either in the commit log or in the driver.
+> > > 
+> > > I can only speak for myself, but the initial driver commit message is
+> > > about the last place I look for this kind of information. I'd expect it
+> > > to be either somewhere in Documentation/ or in one of the source files.
+> > > In this case I'd probably look at the MFD core driver source file. More
+> > > likely, even, I'd just go google "LP3943" and grab a public datasheet
+> > > from TI where all of this can hopefully be found.
+> > 
+> > The latter option is the most common. If the datasheet is publicly
+> > available, then there is no rhyme nor reason to put it in the kernel
+> > source too. /Documentation is already overloaded, it would be even
+> > more so if each and every driver residing in the kernel decided to
+> > bulk it up further.
+> 
+> Okay. So in this case perhaps Milo should simply drop the documentation
+> file. Perhaps link to the public datasheet from on of the source files,
+> although that could be problematic if the URL isn't permanent.
 
-On Thu, Sep 19, 2013 at 09:30:50AM +0100, Lee Jones wrote:
+I'm not sure even that's required.
 
-> I'm not entirely sure this is what Mark was saying. I think he was
-> complaining about the existence of the sub-nodes rather than how the
-> MFD Core assigns their of_node. My take is that the chip is really a
-> single device which provides different bits of functionality. To break
-> that functionality up and disperse the drivers into various subsystems
-> is a Linuxisum. By providing each functional block with its own node
-> you're describing how we do things in Linux, rather than specifying a
-> single node for the AS3722 which would probably be the norm.
+I just Googled it and found the datasheet on the first hit.
 
-Yes, that's exactly what I was thinking of.
-
-> Do the sub-nodes have their own properties? If so, it would be worth
-> breaking them up as other OSes could reuse the specifics. If they do,
-> then you need so put them in the binding. If they don't, then you do
-> not require sub-nodes. The MFD core will ensure the sub-devices are
-> probed and there is no requirement for the of_node to be assigned.
-
-You do see some reusable IP blocks (like the regualtors on the wm831x
-PMICs for example, they're repeated blocks) which can be reused but
-generally they have a register base as part of the binding.  Personally
-if it's just a property or two I'd probably just put them on the root
-node for the device.
-
---FAVlh7XA/4iOdtaa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSOuYSAAoJELSic+t+oim9LlcP/iXsJl5JsRYOAqGLP0TfnNHw
-fKuYUMnbJvoZ8hvXh1SQ0YyzshUQLJHixsJFqRZX9sNiG2ZRqMjb/dpBAhpv7R5f
-J+skTM3eiN7q9qBwEKBSibiVsCq1l8jOi8FG+Ls+ETTMhHMlnu9mYYTyorXQsCcR
-hS9UxZpcVEzh6jOkDYUcPIzf/GQKH0ThvSmtPGDcx0C4kEH+Rv8nSopZ73fS/B7a
-+5opYK3jVDbglmISC4gkWyarCdxiE8Gt13ASOSfbVS05BOtaLHPgyQh5Hqju+3D1
-nvEPKe8AGqeSL3TfJLbdnIS23jJlZnQRCCBS27A0mQ2pCAPwSjuo4MajpuZL3Kp0
-KAsWzyn0Sgo9W8eba1o16nCuNg6UFQk8Ri+L/Y1cdzXtop99YucgSSZmGu+VPH58
-DSdjAteGbO4M3DB3i7Mu02ZIjWUhEeniIz1U1AhrtWLVl8ccYfQjQ6gfA09o706/
-doGdwWgjZLC1o7dl16f4pFOMeJ8QFfEg/6S5qogxVpiCSuc7JZwvakKW6y387hzS
-lVquNhMWzRDVmA2wPrd9SVU+UH62oB4r/52m/ZxkwSMxYBmHv17hZcttdkvgvMcX
-2rnjaoqD5THOQXhefv2m1VTAj9al0sLG08lelWFWsI605TSguyL/VNmJ0q/bNrsX
-QDablCSTvH9oAHhyYNfj
-=idoZ
------END PGP SIGNATURE-----
-
---FAVlh7XA/4iOdtaa--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
