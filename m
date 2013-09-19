@@ -1,91 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab3ISVPl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 17:15:41 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:62252 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab3ISVPj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 17:15:39 -0400
-Date: Thu, 19 Sep 2013 14:15:35 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Hyun Kwon <hyunk@xilinx.com>
-Subject: Re: [PATCH v2] clk: si570: Add a driver for SI570 oscillators
-Message-ID: <20130919211535.GB11537@roeck-us.net>
-References: <1379544219-23579-1-git-send-email-soren.brinkmann@xilinx.com>
- <20130919180512.5246.73360@quantum>
+	id S1753411Ab3ISVTR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 17:19:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57477 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797Ab3ISVTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 17:19:16 -0400
+From: Steve Grubb <sgrubb@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Duval <dan.duval@oracle.com>,
+        Chuck Anderson <chuck.anderson@oracle.com>,
+        Guy Streeter <streeter@redhat.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 7/8] audit: clean up AUDIT_GET/SET local variables and future-proof API
+Date: Thu, 19 Sep 2013 17:18:55 -0400
+Message-ID: <1557446.mvTTyrtVjc@x2>
+Organization: Red Hat
+User-Agent: KMail/4.11.1 (Linux/3.11.1-200.fc19.x86_64; KDE/4.11.1; x86_64; ; )
+In-Reply-To: <3c8ba778c317db8e9d49fa44af736f4b122e4d06.1379530867.git.rgb@redhat.com>
+References: <20130917152842.51158606ed46ec67b97b4448@linux-foundation.org> <3c8ba778c317db8e9d49fa44af736f4b122e4d06.1379530867.git.rgb@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130919180512.5246.73360@quantum>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 11:05:12AM -0700, Mike Turquette wrote:
-> Quoting Soren Brinkmann (2013-09-18 15:43:38)
-> > diff --git a/Documentation/devicetree/bindings/clock/silabs,si570.txt b/Documentation/devicetree/bindings/clock/silabs,si570.txt
-> > new file mode 100644
-> > index 0000000..7ab5c8b
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/clock/silabs,si570.txt
-> > @@ -0,0 +1,38 @@
-> > +Binding for Silicon Labs 570, 571, 598 and 599 programmable
-> > +I2C clock generators.
-> > +
-> > +Reference
-> > +This binding uses the common clock binding[1]. Details about the devices can be
-> > +found in the data sheets[2][3].
-> > +
-> > +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> > +[2] Si570/571 Data Sheet
-> > +    http://www.silabs.com/Support%20Documents/TechnicalDocs/si570.pdf
-> > +[3] Si598/599 Data Sheet
-> > +    http://www.silabs.com/Support%20Documents/TechnicalDocs/si598-99.pdf
-> > +
-> > +Required properties:
-> > + - compatible: Shall be one of "silabs,si570", "silabs,si571",
-> > +                              "silabs,si598", "silabs,si599"
-> > + - reg: I2C device address.
-> > + - #clock-cells: From common clock bindings: Shall be 0.
-> > + - factory-fout: Factory set default frequency. This frequency is part specific.
-> > +                The correct frequency for the part used has to be provided in
-> > +                order to generate the correct output frequencies. For more
-> > +                details, please refer to the data sheet.
-> > +
-> > +Optional properties:
-> > + - clock-output-names: From common clock bindings. Recommended to be "si570".
-> > + - clock-frequency: Output frequency to generate. This defines the output
-> > +                   frequency set during boot. It can be reprogrammed during
-> > +                   runtime using the common clock framework.
-> > + - temperature-stability-7ppm: Indicate a device with a temperature stability
-> > +                              of 7ppm
+On Wednesday, September 18, 2013 03:06:52 PM Richard Guy Briggs wrote:
+> Re-named confusing local variable names (status_set and status_get didn't
+> agree with their command type name) and reduced their scope.
 > 
-> Some DT binding bike-shedding:
-> 
-> Should this be "temperature-stability-ppm = <7>;" ? Do you think that
-> this value might change in the future?
-> 
-Valid values are 7, 20, and 50 as far as I know. Problem is that the value is
-not used directly, but only to hint that a specific set of registers shall be
-used.
+> Future-proof API changes by not depending on the exact size of the
+> audit_status struct.
 
-Given that, it may in fact be better to use an explicit number. Even though the
-two register sets are specified by <7> in one case and <20,50> in the other
-today, there may at some point be yet another value which might use the 7 ppm
-register set or the 20/50 ppm register set ... or yet another register set.
-An explicit number would cover all future accuracy ranges, not just the
-existing ones.
+I wished things like this were coordinated before being written. We had some 
+discussion of this back in July under a topic, "audit: implement generic 
+feature setting and retrieving". Maybe that API can be fixed so its not just 
+set/unset but can take a number as well.
 
-Guenter
+Also, because there is no way to query the kernel to see what kind of things 
+it supports, we've typically defined a new message type and put into it exactly 
+what we need. In other words, if you want something expandable, the define a 
+new message type like AUDIT_GET_EXT and AUDIT_SET_EXT and build it to be 
+expandable.
+
+Then in a future version of auditctl it will try to use the new command and 
+fall back to the old one if it gets EINVAL. Then some years later the old GET 
+and SET can be deprecated. But the audit code base has to support a wide 
+variety of kernels and suddenly making on resizable might break old code on 
+new kernel. A new message type is a safer migration path.
+
+-Steve
+
+
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> ---
+>  kernel/audit.c |   51 +++++++++++++++++++++++++++------------------------
+>  1 files changed, 27 insertions(+), 24 deletions(-)
+> 
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index acfa7a9..3d17670 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -635,7 +635,6 @@ static int audit_receive_msg(struct sk_buff *skb, struct
+> nlmsghdr *nlh) {
+>  	u32			seq;
+>  	void			*data;
+> -	struct audit_status	*status_get, status_set;
+>  	int			err;
+>  	struct audit_buffer	*ab;
+>  	u16			msg_type = nlh->nlmsg_type;
+> @@ -661,47 +660,51 @@ static int audit_receive_msg(struct sk_buff *skb,
+> struct nlmsghdr *nlh) data = nlmsg_data(nlh);
+> 
+>  	switch (msg_type) {
+> -	case AUDIT_GET:
+> -		status_set.enabled	 = audit_enabled;
+> -		status_set.failure	 = audit_failure;
+> -		status_set.pid		 = audit_pid;
+> -		status_set.rate_limit	 = audit_rate_limit;
+> -		status_set.backlog_limit = audit_backlog_limit;
+> -		status_set.lost		 = atomic_read(&audit_lost);
+> -		status_set.backlog	 = skb_queue_len(&audit_skb_queue);
+> +	case AUDIT_GET: {
+> +		struct audit_status	s;
+> +		s.enabled	 = audit_enabled;
+> +		s.failure	 = audit_failure;
+> +		s.pid		 = audit_pid;
+> +		s.rate_limit	 = audit_rate_limit;
+> +		s.backlog_limit = audit_backlog_limit;
+> +		s.lost		 = atomic_read(&audit_lost);
+> +		s.backlog	 = skb_queue_len(&audit_skb_queue);
+>  		audit_send_reply(NETLINK_CB(skb).portid, seq, AUDIT_GET, 0, 0,
+> -				 &status_set, sizeof(status_set));
+> +				 &s, sizeof(s));
+>  		break;
+> -	case AUDIT_SET:
+> -		if (nlh->nlmsg_len < sizeof(struct audit_status))
+> -			return -EINVAL;
+> -		status_get   = (struct audit_status *)data;
+> -		if (status_get->mask & AUDIT_STATUS_ENABLED) {
+> -			err = audit_set_enabled(status_get->enabled);
+> +	}
+> +	case AUDIT_SET: {
+> +		struct audit_status	s;
+> +		memset(&s, 0, sizeof(s));
+> +		/* guard against past and future API changes */
+> +		memcpy(&s, data, min(sizeof(s), (size_t)nlh->nlmsg_len));
+> +		if (s.mask & AUDIT_STATUS_ENABLED) {
+> +			err = audit_set_enabled(s.enabled);
+>  			if (err < 0)
+>  				return err;
+>  		}
+> -		if (status_get->mask & AUDIT_STATUS_FAILURE) {
+> -			err = audit_set_failure(status_get->failure);
+> +		if (s.mask & AUDIT_STATUS_FAILURE) {
+> +			err = audit_set_failure(s.failure);
+>  			if (err < 0)
+>  				return err;
+>  		}
+> -		if (status_get->mask & AUDIT_STATUS_PID) {
+> -			int new_pid = status_get->pid;
+> +		if (s.mask & AUDIT_STATUS_PID) {
+> +			int new_pid = s.pid;
+> 
+>  			if (audit_enabled != AUDIT_OFF)
+>  				audit_log_config_change("audit_pid", new_pid, audit_pid, 
+1);
+>  			audit_pid = new_pid;
+>  			audit_nlk_portid = NETLINK_CB(skb).portid;
+>  		}
+> -		if (status_get->mask & AUDIT_STATUS_RATE_LIMIT) {
+> -			err = audit_set_rate_limit(status_get->rate_limit);
+> +		if (s.mask & AUDIT_STATUS_RATE_LIMIT) {
+> +			err = audit_set_rate_limit(s.rate_limit);
+>  			if (err < 0)
+>  				return err;
+>  		}
+> -		if (status_get->mask & AUDIT_STATUS_BACKLOG_LIMIT)
+> -			err = audit_set_backlog_limit(status_get->backlog_limit);
+> +		if (s.mask & AUDIT_STATUS_BACKLOG_LIMIT)
+> +			err = audit_set_backlog_limit(s.backlog_limit);
+>  		break;
+> +	}
+>  	case AUDIT_USER:
+>  	case AUDIT_FIRST_USER_MSG ... AUDIT_LAST_USER_MSG:
+>  	case AUDIT_FIRST_USER_MSG2 ... AUDIT_LAST_USER_MSG2:
+
