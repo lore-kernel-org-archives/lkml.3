@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab3ISOSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:18:18 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51244 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751655Ab3ISOSQ (ORCPT
+	id S1752737Ab3ISOVK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:21:10 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:61706 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab3ISOVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:18:16 -0400
-X-Sasl-enc: 7Nd3GhAH+bcJPghue6bODYgHojWgp01RhurACPWMKx1q 1379600295
-Date: Thu, 19 Sep 2013 07:18:50 -0700
-From: Greg KH <greg@kroah.com>
+	Thu, 19 Sep 2013 10:21:08 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19zOzeERCL4RmNpFIkjR1oDq3gYvRgsSyU=
+Date: Thu, 19 Sep 2013 10:20:48 -0400
+From: Jason Cooper <jason@lakedaemon.net>
 To: Michal Simek <monstr@monstr.eu>
-Cc: Pavel Machek <pavel@denx.de>, Alan Tull <atull@altera.com>,
+Cc: Greg KH <greg@kroah.com>, Pavel Machek <pavel@denx.de>,
+        Alan Tull <atull@altera.com>,
         Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
         Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
         Dinh Nguyen <dinguyen@altera.com>,
         Philip Balister <philip@balister.org>,
@@ -25,7 +28,7 @@ Cc: Pavel Machek <pavel@denx.de>, Alan Tull <atull@altera.com>,
         Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
         David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
 Subject: Re: /sys rules Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-Message-ID: <20130919141850.GA21568@kroah.com>
+Message-ID: <20130919142048.GS19937@titan.lakedaemon.net>
 References: <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
  <20130918191517.GQ19937@titan.lakedaemon.net>
  <20130918203247.GA11181@obsidianresearch.com>
@@ -40,7 +43,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <523B05E6.90605@monstr.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -92,13 +95,10 @@ On Thu, Sep 19, 2013 at 04:10:46PM +0200, Michal Simek wrote:
 > 
 > ok. I will read that. This is output from my fpga end driver - nothing
 > what I have sent for review.
-> Can you please look at origin patch and tell me what you think about it?
 
-When I return from LinuxCon/Plumbers and catch up on my pending patch
-queue, I will.  It seems that others have already provided good code
-review, so I suggest sending out a new version with their changes
-integrated and not wait for me.
+If this is useful to you (and others), you could use debugfs for this.
+The rules there are intentionally a lot more lax.
 
-thanks,
+thx,
 
-greg k-h
+Jason.
