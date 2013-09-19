@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab3ISLRW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 07:17:22 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40300 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab3ISLRV (ORCPT
+	id S1753578Ab3ISLUB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 07:20:01 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:32850 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab3ISLUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 07:17:21 -0400
-Date: Thu, 19 Sep 2013 13:17:19 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Alan Tull <atull@altera.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-Message-ID: <20130919111719.GA26246@amd.pavel.ucw.cz>
-References: <cover.1379519753.git.michal.simek@xilinx.com>
- <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
- <20130918191517.GQ19937@titan.lakedaemon.net>
- <20130918203247.GA11181@obsidianresearch.com>
- <1379539063.31417.23.camel@atx-linux-37>
- <523AD814.1060406@monstr.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <523AD814.1060406@monstr.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 19 Sep 2013 07:20:00 -0400
+Message-ID: <523ADDDC.7010008@gmail.com>
+Date: Thu, 19 Sep 2013 13:19:56 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Quentin Armitage <quentin@armitage.org.uk>, linux-kernel@vger.kernel.org
+CC: Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH 1/1] Fix address of second XOR engine in Kirkwood SoC
+ DT
+References: <1379588429.2484.84.camel@samson1.armitage.org.uk>
+In-Reply-To: <1379588429.2484.84.camel@samson1.armitage.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 09/19/13 13:00, Quentin Armitage wrote:
+> There appears to be an error in the second address of the second XOR
+> engine in the Kirkwood SoC device tree, which is specified as 0xd0b00
+> but should be 0x60b00.
+>
+> For confirmation of address see
+> http://www.marvell.com/embedded-processors/kirkwood/assets/FS_88F6180_9x_6281_OpenSource.pdf table 581 page 658.
+> Also see definition of XOR1_HIGH_PHYS_BASE in
+> arch/arm/mach-kirkwood/include/mach/kirkwood.h
+> #define XOR1_HIGH_PHYS_BASE    (KIRKWOOD_REGS_PHYS_BASE + 0x60B00)
+>
+> Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
 
-> > This code also creates a set of files under /sys for each separate fpga.
-> > I.e. checking status by looking at /sys/class/fpga/fpag0/status.  It
-> > would be pretty small changes to control reseting the fpga by adding a
-> > 'reset' file there also (added first to the framework, and an interface
-> > into the low level fpga manager driver).
-> 
-> Status is just there and for my zynq devcfg driver I do export some status
-> bits.
-> 
-> root@petalinux:~# cat /sys/class/fpga/fpga0/status
-> partial_bitstream_status: 0
-> prog_done_status: 1
-> dbg_lock_status: 0
-> seu_lock_status: 0
-> aes_en_lock_status: 0
-> aes_status: 0
-> seu_status: 0
-> spniden_status: 1
-> spiden_status: 1
-> niden_status: 1
-> dbgen_status: 1
-> dap_en_status: 7
+I double-checked the references, typo and fix are correct.
 
-This is single file? If so, it needs to be changed. Greg is rather
-clear about that.
+Reviewed-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> ---
+>   arch/arm/boot/dts/kirkwood.dtsi | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/boot/dts/kirkwood.dtsi
+> b/arch/arm/boot/dts/kirkwood.dtsi
+> index cf7aeaf..63d4066 100644
+> --- a/arch/arm/boot/dts/kirkwood.dtsi
+> +++ b/arch/arm/boot/dts/kirkwood.dtsi
+> @@ -167,7 +167,7 @@
+>   		xor@60900 {
+>   			compatible = "marvell,orion-xor";
+>   			reg = <0x60900 0x100
+> -			       0xd0B00 0x100>;
+> +			       0x60B00 0x100>;
+>   			status = "okay";
+>   			clocks = <&gate_clk 16>;
+>
+> ---
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
