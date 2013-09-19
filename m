@@ -1,111 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab3ISLWI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 07:22:08 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:63931 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab3ISLWG (ORCPT
+	id S1753644Ab3ISLWV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 07:22:21 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:42945 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753606Ab3ISLWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 07:22:06 -0400
-Message-ID: <523ADE58.2070103@monstr.eu>
-Date: Thu, 19 Sep 2013 13:22:00 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 19 Sep 2013 07:22:17 -0400
+Date: Thu, 19 Sep 2013 13:21:04 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: rt5640: Omit ACPI match table only if !ACPI
+Message-ID: <20130919112104.GB10852@ulmo>
+References: <1379582286-10600-1-git-send-email-treding@nvidia.com>
+ <20130919104525.GJ21013@sirena.org.uk>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@denx.de>
-CC: Alan Tull <atull@altera.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-References: <cover.1379519753.git.michal.simek@xilinx.com> <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com> <20130918191517.GQ19937@titan.lakedaemon.net> <20130918203247.GA11181@obsidianresearch.com> <1379539063.31417.23.camel@atx-linux-37> <523AD814.1060406@monstr.eu> <20130919111719.GA26246@amd.pavel.ucw.cz>
-In-Reply-To: <20130919111719.GA26246@amd.pavel.ucw.cz>
-X-Enigmail-Version: 1.5.2
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="WfNSFJTCg4K9xKFdLfuDASg0pcou7XGeH"
+	protocol="application/pgp-signature"; boundary="BwCQnh7xodEAoBMC"
+Content-Disposition: inline
+In-Reply-To: <20130919104525.GJ21013@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---WfNSFJTCg4K9xKFdLfuDASg0pcou7XGeH
-Content-Type: text/plain; charset=ISO-8859-1
+
+--BwCQnh7xodEAoBMC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 09/19/2013 01:17 PM, Pavel Machek wrote:
-> Hi!
+On Thu, Sep 19, 2013 at 11:45:25AM +0100, Mark Brown wrote:
+> On Thu, Sep 19, 2013 at 11:18:06AM +0200, Thierry Reding wrote:
+> > The ACPI_PTR() macro evaluates to NULL if ACPI is disabled and hence the
+> > ACPI match table won't be used, causing the compiler to complain. Avoid
+> > this by protecting the table using an #ifdef CONFIG_ACPI.
 >=20
->>> This code also creates a set of files under /sys for each separate fp=
-ga.
->>> I.e. checking status by looking at /sys/class/fpga/fpag0/status.  It
->>> would be pretty small changes to control reseting the fpga by adding =
-a
->>> 'reset' file there also (added first to the framework, and an interfa=
-ce
->>> into the low level fpga manager driver).
->>
->> Status is just there and for my zynq devcfg driver I do export some st=
-atus
->> bits.
->>
->> root@petalinux:~# cat /sys/class/fpga/fpga0/status
->> partial_bitstream_status: 0
->> prog_done_status: 1
->> dbg_lock_status: 0
->> seu_lock_status: 0
->> aes_en_lock_status: 0
->> aes_status: 0
->> seu_status: 0
->> spniden_status: 1
->> spiden_status: 1
->> niden_status: 1
->> dbgen_status: 1
->> dap_en_status: 7
->=20
-> This is single file? If so, it needs to be changed. Greg is rather
-> clear about that.
+> Applied, thanks.  Like I was saying to Olof we really should be able to
+> do better than needing the ifdefs though.
 
-Don't you have a link to these rules? I have seen any paragraph from Greg=
+The struct device_driver's .acpi_match_table field is unconditionally
+declared and the ACPI table with one entry and the sentinel weighs in
+at 26 bytes, so perhaps doing away with the conditionals would be an
+equally good option.
 
-about it but I forget where was it.
+Or perhaps we can annotate the table so that the compiler will stop
+complaining but remove the table nonetheless if it isn't used. Similarly
+to what we can do with
 
-Thanks,
-Michal
+	if (IS_ENABLED(CONFIG_FOO)) {
+		...
+	}
 
+constructs. I can't really think of a way to do that, though. Perhaps
+gcc will throw away the table anyway, so we'll just need a way to make
+it shut up?
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Thierry
 
-
-
---WfNSFJTCg4K9xKFdLfuDASg0pcou7XGeH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--BwCQnh7xodEAoBMC
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-iEYEARECAAYFAlI63lkACgkQykllyylKDCEyVwCfUa6uJA3qkufqEdxYWCpPc9ZB
-7pgAn3CjoU6Hj7qDv3ISoojC3LVH6gCU
-=aUhN
+iQIcBAEBAgAGBQJSOt4fAAoJEN0jrNd/PrOhhfgP/2n44EedI+4yGfxiJSYeK3LW
+Od9cT6CGmyRmCAw2dzcpWrvP9oIOkq/kCnOUmfsawX7eJnnsWyDL2aZtTT3qcaGq
+ASmABxlpl2FI8+t1PJ4w/MmFiKyWRUCIV1p4Xt6rtlLeMmNTRZUtxuPx+2Qd8OOB
+yE5HfTlc8kYEDDTvLSp4+AwAwrRWuQAXikJYL/5vDjRdLas0wLkNBkmAThXXpDr4
+Ha7aVKbVgmEKRtPoach3xtdkWiGpZNHZQSM8jFumVv2eVEM+oq5nJzj5iLjCJW7n
+/9kqxOajZ9C7+jEQ3cjJOYVnL/sfKMCKxl55Z/lgNEWgr9MWVTsWX9N65srYzZb0
+Ue1NoQYFpVZusw/ILgKG14f3dXkRT4iC8srDw6sGg0ohrkIZ8Vmjsu6atPXspcY7
+JGbxMKYJSCFeVhHLurknTuqxgYnTPT9aaaHPZ3eRLj1D0xkpYL1HM2LWSt937pgJ
+3KzgvDvz29pzOzD1qbNbjvTcGCuZ6Yv7Bkt49I0LFAIbk9PBiZ+2FmmcwXjfrRVh
+VgZixTqOJPgTPHdLlOSk3bhoOOkCiRhrmFWjXmCs2b85AuIPaTX0ANpc1YKDLSFO
+8ngP3bcXLOKbs1B9TgCTLhIRprCDdRgoJyeyw4D79dTlraJlUtWJOjcBmvGhgTRL
+CiTHi7LKlkzRlyEhxQzj
+=EKGL
 -----END PGP SIGNATURE-----
 
---WfNSFJTCg4K9xKFdLfuDASg0pcou7XGeH--
+--BwCQnh7xodEAoBMC--
