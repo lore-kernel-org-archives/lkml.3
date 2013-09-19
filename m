@@ -1,78 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab3ISSku (ORCPT <rfc822;w@1wt.eu>);
+	id S1753910Ab3ISSlG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 14:41:06 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:32799
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753351Ab3ISSku convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Sep 2013 14:40:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43989 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab3ISSkr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 14:40:47 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/9] perf tools: Sharpen the libaudit dependencies test
-Date: Thu, 19 Sep 2013 15:40:24 -0300
-Message-Id: <1379616032-13061-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1379616032-13061-1-git-send-email-acme@infradead.org>
-References: <1379616032-13061-1-git-send-email-acme@infradead.org>
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VPS-5(zz98dIc89bh936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz17326ah1de097h186068h5eeeK8275bhz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh906i1155h192ch)
+Date: Thu, 19 Sep 2013 11:40:36 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Hyun Kwon <hyunk@xilinx.com>
+Subject: Re: [PATCH v2] clk: si570: Add a driver for SI570 oscillators
+References: <1379544219-23579-1-git-send-email-soren.brinkmann@xilinx.com>
+ <20130919180512.5246.73360@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20130919180512.5246.73360@quantum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <2c474f75-8d0c-497b-ad64-8cd4beb09956@CO9EHSMHS013.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+On Thu, Sep 19, 2013 at 11:05:12AM -0700, Mike Turquette wrote:
+> Quoting Soren Brinkmann (2013-09-18 15:43:38)
+> > diff --git a/Documentation/devicetree/bindings/clock/silabs,si570.txt b/Documentation/devicetree/bindings/clock/silabs,si570.txt
+> > new file mode 100644
+> > index 0000000..7ab5c8b
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/clock/silabs,si570.txt
+> > @@ -0,0 +1,38 @@
+> > +Binding for Silicon Labs 570, 571, 598 and 599 programmable
+> > +I2C clock generators.
+> > +
+> > +Reference
+> > +This binding uses the common clock binding[1]. Details about the devices can be
+> > +found in the data sheets[2][3].
+> > +
+> > +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> > +[2] Si570/571 Data Sheet
+> > +    http://www.silabs.com/Support%20Documents/TechnicalDocs/si570.pdf
+> > +[3] Si598/599 Data Sheet
+> > +    http://www.silabs.com/Support%20Documents/TechnicalDocs/si598-99.pdf
+> > +
+> > +Required properties:
+> > + - compatible: Shall be one of "silabs,si570", "silabs,si571",
+> > +                              "silabs,si598", "silabs,si599"
+> > + - reg: I2C device address.
+> > + - #clock-cells: From common clock bindings: Shall be 0.
+> > + - factory-fout: Factory set default frequency. This frequency is part specific.
+> > +                The correct frequency for the part used has to be provided in
+> > +                order to generate the correct output frequencies. For more
+> > +                details, please refer to the data sheet.
+> > +
+> > +Optional properties:
+> > + - clock-output-names: From common clock bindings. Recommended to be "si570".
+> > + - clock-frequency: Output frequency to generate. This defines the output
+> > +                   frequency set during boot. It can be reprogrammed during
+> > +                   runtime using the common clock framework.
+> > + - temperature-stability-7ppm: Indicate a device with a temperature stability
+> > +                              of 7ppm
+> 
+> Some DT binding bike-shedding:
+> 
+> Should this be "temperature-stability-ppm = <7>;" ? Do you think that
+> this value might change in the future?
+Well, according to the data sheet all devices behave the same and only
+the si570/571 with a temperature stability of 7ppm (there are actually
+some more choices for this) need some special attention.
+So, the only case we really care about and has to be treated differently
+is the 7ppm case.
+I don't mind how we detect it, but with this boolean property it results
+in the least lines of code, I think.
 
-There are older libaudit versions that don't have an
-audit_errno_to_name() method, resulting in a builtin-trace.c build
-error:
+> 
+> > diff --git a/drivers/clk/clk-si570.c b/drivers/clk/clk-si570.c
+> > new file mode 100644
+> > index 0000000..c20dfce
+> > --- /dev/null
+> > +++ b/drivers/clk/clk-si570.c
+> > @@ -0,0 +1,517 @@
+> <snip>
+> > +static bool si570_regmap_is_volatile(struct device *dev, unsigned int reg)
+> > +{
+> > +       switch (reg) {
+> > +       case 135:
+> > +               return true;
+> > +       default:
+> > +               return false;
+> > +       }
+> > +}
+> > +
+> > +static bool si570_regmap_is_writeable(struct device *dev, unsigned int reg)
+> > +{
+> > +       switch (reg) {
+> > +       case 7 ... 18:
+> > +       case 135:
+> > +       case 137:
+> > +               return true;
+> > +       default:
+> > +               return false;
+> > +       }
+> > +}
+> 
+> Should magic numbers above be symbolic constants?
+I'll change it. Corresponding #defines already exist anyway.
 
-  builtin-trace.c: In function ‘trace__sys_exit’:
-  builtin-trace.c:794: warning: implicit declaration of function ‘audit_errno_to_name’
+	Sören
 
-Expand the libaudit test to detect this.
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20130912132706.GD23826@gmail.com
-[ Fix the test by escaping the double quotes ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/config/feature-tests.mak | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 708fb8e..7f550c1 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -210,6 +210,7 @@ define SOURCE_LIBAUDIT
- 
- int main(void)
- {
-+	printf(\"error message: %s\n\", audit_errno_to_name(0));
- 	return audit_open();
- }
- endef
--- 
-1.8.1.4
 
