@@ -1,102 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab3ISNZW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 09:25:22 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37852 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754407Ab3ISNZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 09:25:17 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
-CC: <balajitk@ti.com>, <kishon@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [RFC PATCH 15/15] arm: dts: dra7: add sata node
-Date: Thu, 19 Sep 2013 16:24:19 +0300
-Message-ID: <1379597059-15405-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1379595943-14622-1-git-send-email-rogerq@ti.com>
-References: <1379595943-14622-1-git-send-email-rogerq@ti.com>
+	id S1753962Ab3ISNcX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:32:23 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63767 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386Ab3ISNcW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 09:32:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1378218483-19532-1-git-send-email-ldewangan@nvidia.com>
+References: <1378218483-19532-1-git-send-email-ldewangan@nvidia.com>
+Date: Thu, 19 Sep 2013 15:32:21 +0200
+Message-ID: <CACRpkdbrvSS0n-qS6nqe7Z4-55atgQzieFPmhYDDugvYPpL83g@mail.gmail.com>
+Subject: Re: [PATCH] gpio: palmas: add support for TPS80036
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Balaji T K <balajitk@ti.com>
+On Tue, Sep 3, 2013 at 4:28 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
 
-Add support for sata controller.
+> TI Palmas series device TPS80036 supports 16 GPIOs.
+> Register its all 16 gpios when this device is selected.
+>
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-[Roger Q] Clean up.
+Patch applied.
 
-CC: Benoit Cousson <bcousson@baylibre.com>
-Signed-off-by: Balaji T K <balajitk@ti.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/boot/dts/dra7.dtsi |   49 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 49 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index ce9a0f0..545545d 100644
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -426,6 +426,55 @@
- 			dma-names = "tx", "rx";
- 		};
- 
-+		omap_control_sata: control-phy@4a002374 {
-+			compatible = "ti,control-phy-pipe3";
-+			reg = <0x4a002374 0x4>;
-+			reg-names = "power";
-+			clocks = <&sys_clkin1>;
-+			clock-names = "sysclk";
-+		};
-+
-+		ocp2scp3: ocp2scp3@4a090000 {
-+			compatible = "ti,omap-ocp2scp";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+			ti,hwmods = "ocp2scp3";
-+			reg = <0x4a090000 0x1f>; /* ocp2scp3 */
-+			reg-names = "ocp2scp3";
-+			sata_phy: sataphy@4A096000 {
-+				compatible = "ti,phy-pipe3-sata";
-+				reg = <0x4A096000 0x80>, /* phy_rx */
-+				      <0x4A096400 0x64>, /* phy_tx */
-+				      <0x4A096800 0x40>; /* pll_ctrl */
-+				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
-+				ctrl-module = <&omap_control_sata>;
-+				clocks = <&sata_ref_clk>,
-+					 <&sys_clkin1>;
-+				clock-names = "optclk", "sysclk";
-+				#phy-cells = <0>;
-+			};
-+		};
-+
-+		sata: sata@4a141100 {
-+			compatible = "ti,sata";
-+			ti,hwmods = "sata";
-+			reg = <0x4a141100 0x7>;
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+			dwc-ahci@4a140000 {
-+				  compatible = "snps,dwc-ahci";
-+				  reg = <0x4a140000 0x1100>;
-+				  interrupts = <0 54 0x4>;
-+				  phys = <&sata_phy>;
-+				  phy-names = "sata-phy";
-+				  clocks = <&sata_ref_clk>;
-+				  clock-names = "optclk";
-+			};
-+		};
-+
-+
- 		mcspi1: spi@48098000 {
- 			compatible = "ti,omap4-mcspi";
- 			reg = <0x48098000 0x200>;
--- 
-1.7.4.1
-
+Yours,
+Linus Walleij
