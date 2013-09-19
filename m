@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab3ISOM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:12:28 -0400
-Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:46445 "EHLO
+	id S1753000Ab3ISOM1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:12:27 -0400
+Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:55982 "EHLO
 	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752273Ab3ISOMW (ORCPT
+	by vger.kernel.org with ESMTP id S1752210Ab3ISOMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Sep 2013 10:12:22 -0400
 X-RRZE-Submit-IP: 131.188.42.159
@@ -24,9 +24,9 @@ Cc: Dominik Paulus <dominik.paulus@fau.de>,
         Harvey Yang <harvey.huawei.yang@gmail.com>, linux-usb@vger.kernel.org,
         devel@driverdev.osuosl.org, linux-kernel@i4.cs.fau.de,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] staging: usbip: Add encryption support to kernel
-Date: Thu, 19 Sep 2013 16:11:57 +0200
-Message-Id: <1379599919-24763-6-git-send-email-dominik.paulus@fau.de>
+Subject: [PATCH 2/7] staging: usbip: Exchange session keys in userspace
+Date: Thu, 19 Sep 2013 16:11:54 +0200
+Message-Id: <1379599919-24763-3-git-send-email-dominik.paulus@fau.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1379599919-24763-1-git-send-email-dominik.paulus@fau.de>
 References: <1379599919-24763-1-git-send-email-dominik.paulus@fau.de>
@@ -34,556 +34,301 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds code performing the actual encryption and authentication
-operations in the usbip kernel code. The whole data stream may now be
-encrypted and authenticated with AES-GCM and symmetric 128 bit keys.
+In preparation for the kernel crypto support, we exchange two - randomly
+generated - session keys between usbip and usbipd to be used for
+encrypting all traffic generated in kernelspace. We use two different
+128-bit keys, one for sending and one for receiving. Both are generated
+by the client (usbip, probably has more entropy available than the
+server) and transferred over the already established TLS connection.
+
+As this breaks compatibility with older clients supporting userspace
+encryption, the protocol version is increased.
 
 Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
 Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
 ---
- drivers/staging/usbip/Kconfig        |   2 +-
- drivers/staging/usbip/stub.h         |   3 +
- drivers/staging/usbip/stub_dev.c     |   8 +
- drivers/staging/usbip/usbip_common.c | 342 ++++++++++++++++++++++++++++++++++-
- drivers/staging/usbip/usbip_common.h |  22 +++
- drivers/staging/usbip/vhci_hcd.c     |   4 +-
- drivers/staging/usbip/vhci_sysfs.c   |  10 +
- 7 files changed, 387 insertions(+), 4 deletions(-)
+ .../staging/usbip/userspace/libsrc/usbip_common.h  | 21 ++++++++++
+ .../usbip/userspace/libsrc/usbip_host_driver.c     |  5 ++-
+ .../usbip/userspace/libsrc/usbip_host_driver.h     |  3 +-
+ .../staging/usbip/userspace/libsrc/vhci_driver.c   | 19 +++------
+ .../staging/usbip/userspace/libsrc/vhci_driver.h   |  9 ++---
+ drivers/staging/usbip/userspace/src/usbip_attach.c | 47 +++++++++++++++++++++-
+ .../staging/usbip/userspace/src/usbip_network.h    |  2 +-
+ drivers/staging/usbip/userspace/src/usbipd.c       | 32 ++++++++++++---
+ 8 files changed, 106 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/staging/usbip/Kconfig b/drivers/staging/usbip/Kconfig
-index 8860009..87220af 100644
---- a/drivers/staging/usbip/Kconfig
-+++ b/drivers/staging/usbip/Kconfig
-@@ -1,6 +1,6 @@
- config USBIP_CORE
- 	tristate "USB/IP support"
--	depends on USB && NET
-+	depends on USB && NET && CRYPTO_GCM && CRYPTO_AES
- 	default N
- 	---help---
- 	  This enables pushing USB packets over IP to allow remote
-diff --git a/drivers/staging/usbip/stub.h b/drivers/staging/usbip/stub.h
-index cfe75d1..2aaea3a 100644
---- a/drivers/staging/usbip/stub.h
-+++ b/drivers/staging/usbip/stub.h
-@@ -26,6 +26,9 @@
- #include <linux/types.h>
- #include <linux/usb.h>
- #include <linux/wait.h>
-+#include <linux/crypto.h>
-+#include <linux/err.h>
-+#include <linux/scatterlist.h>
+diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.h b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
+index 938ad1c..f804c04 100644
+--- a/drivers/staging/usbip/userspace/libsrc/usbip_common.h
++++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
+@@ -127,6 +127,27 @@ struct usbip_usb_device {
+ 	uint8_t bNumInterfaces;
+ } __attribute__((packed));
  
- #define STUB_BUSID_OTHER 0
- #define STUB_BUSID_REMOV 1
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index f7bc6e1..0e61efb 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -21,6 +21,7 @@
- #include <linux/file.h>
- #include <linux/kthread.h>
- #include <linux/module.h>
-+#include <linux/kfifo.h>
- 
- #include "usbip_common.h"
- #include "stub.h"
-@@ -137,6 +138,12 @@ static ssize_t store_sockfd(struct device *dev, struct device_attribute *attr,
- 
- 		spin_unlock_irq(&sdev->ud.lock);
- 
-+		if (sdev->ud.use_crypto) {
-+			err = usbip_init_crypto(&sdev->ud, sendkey, recvkey);
-+			if (err < 0)
-+				goto err;
-+		}
 +
- 		sdev->ud.tcp_rx = kthread_get_run(stub_rx_loop, &sdev->ud,
- 						  "stub_rx");
- 		sdev->ud.tcp_tx = kthread_get_run(stub_tx_loop, &sdev->ud,
-@@ -298,6 +305,7 @@ static void stub_shutdown_connection(struct usbip_device *ud)
- 	}
- 
- 	/* 3. free used data */
-+	usbip_deinit_crypto(ud);
- 	stub_device_cleanup_urbs(sdev);
- 
- 	/* 4. free stub_unlink */
-diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
-index f46c3d2..0729df6 100644
---- a/drivers/staging/usbip/usbip_common.c
-+++ b/drivers/staging/usbip/usbip_common.c
-@@ -26,6 +26,8 @@
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <net/sock.h>
-+#include <linux/scatterlist.h>
-+#include <linux/crypto.h>
- 
- #include "usbip_common.h"
- 
-@@ -626,17 +628,353 @@ static void usbip_pack_iso(struct usbip_iso_packet_descriptor *iso,
- 	}
- }
- 
-+int usbip_init_crypto(struct usbip_device *ud, unsigned char *sendkey, unsigned
-+		char *recvkey)
-+{
-+	int ret;
-+
-+	ud->use_crypto = 1;
-+
-+	ud->tfm_recv = crypto_alloc_aead("gcm(aes)", 0, 0);
-+	if (IS_ERR(ud->tfm_recv))
-+		return -PTR_ERR(ud->tfm_recv);
-+	ud->tfm_send = crypto_alloc_aead("gcm(aes)", 0, 0);
-+	if (IS_ERR(ud->tfm_send)) {
-+		crypto_free_aead(ud->tfm_recv);
-+		return -PTR_ERR(ud->tfm_send);
-+	}
-+	ret = kfifo_alloc(&ud->recv_queue, RECVQ_SIZE, GFP_KERNEL);
-+	if (ret) {
-+		crypto_free_aead(ud->tfm_recv);
-+		crypto_free_aead(ud->tfm_send);
-+		return ret;
-+	}
-+
-+	if (crypto_aead_setkey(ud->tfm_send, sendkey, USBIP_KEYSIZE) != 0 ||
-+			crypto_aead_setkey(ud->tfm_recv, recvkey,
-+				USBIP_KEYSIZE) != 0 ||
-+			crypto_aead_setauthsize(ud->tfm_send,
-+				USBIP_AUTHSIZE) != 0 ||
-+			crypto_aead_setauthsize(ud->tfm_recv,
-+				USBIP_AUTHSIZE)) {
-+		crypto_free_aead(ud->tfm_recv);
-+		crypto_free_aead(ud->tfm_send);
-+		kfifo_free(&ud->recv_queue);
-+	}
-+
-+	ud->ctr_send = 0;
-+	ud->ctr_recv = 0;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(usbip_init_crypto);
-+
-+void usbip_deinit_crypto(struct usbip_device *ud)
-+{
-+	if (ud->use_crypto) {
-+		crypto_free_aead(ud->tfm_send);
-+		crypto_free_aead(ud->tfm_recv);
-+		kfifo_free(&ud->recv_queue);
-+		ud->use_crypto = 0;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(usbip_deinit_crypto);
-+
-+struct tcrypt_result {
-+	struct completion completion;
-+	int err;
++/*
++ * These structs contain the configuration
++ * data to be passed to the kernel
++ */
++struct host_conf {
++	int sockfd;
++	uint8_t use_crypto;
++	uint8_t key1[16];
++	uint8_t key2[16];
++};
++struct vhci_conf {
++	uint8_t port;
++	int sockfd;
++	uint32_t devid;
++	uint32_t speed;
++	uint8_t use_crypto;
++	uint8_t key1[16];
++	uint8_t key2[16];
 +};
 +
-+static void tcrypt_complete(struct crypto_async_request *req, int err)
-+{
-+	struct tcrypt_result *res = req->data;
-+
-+	if (err == -EINPROGRESS)
-+		return;
-+
-+	res->err = err;
-+	complete(&res->completion);
-+}
-+
-+/*
-+ * Perform encryption/decryption on one chunk of data.
-+ * Uses global crypto state stored in usbip_device.
-+ * Parameters:
-+ * encrypt: 1 to perform encryption, 0 to perform decryption operation
-+ * packetsize: Size of the encrypted packet, including the authentication tag,
-+ * not including the associated data (length field).
-+ * plaintext and ciphertext have to be appropiately managed by the caller
-+ * (i.e. they must be at least packetsize bytes long).
-+ * Returns: 0 on success
-+ */
-+static int usbip_crypt(struct usbip_device *ud, int encrypt, uint32_t
-+		packetsize, unsigned char *plaintext, unsigned char
-+		*ciphertext)
-+{
-+	struct crypto_aead *tfm;
-+	struct aead_request *req;
-+	struct tcrypt_result result;
-+	struct scatterlist plain, cipher, assoc;
-+	char iv[16];
-+	u64 *iv_num;
-+	u64 iv_net;
-+	const int plainsize = packetsize - USBIP_AUTHSIZE;
-+	int ret;
-+
-+	memset(iv, 0, sizeof(iv));
-+	if (encrypt) {
-+		tfm = ud->tfm_send;
-+		iv_num = &ud->ctr_send;
-+	} else {
-+		tfm = ud->tfm_recv;
-+		iv_num = &ud->ctr_recv;
-+	}
-+	iv_net = cpu_to_be64(*iv_num);
-+	memcpy(iv, &iv_net, sizeof(iv_net));
-+
-+	req = aead_request_alloc(tfm, GFP_KERNEL);
-+	if (IS_ERR(req))
-+		return -PTR_ERR(req);
-+
-+	init_completion(&result.completion);
-+	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
-+			tcrypt_complete, &result);
-+
-+	sg_init_one(&cipher, ciphertext, packetsize);
-+	sg_init_one(&plain, plaintext, plainsize);
-+	crypto_aead_clear_flags(tfm, ~0);
-+
-+	if (encrypt)
-+		aead_request_set_crypt(req, &plain, &cipher, plainsize, iv);
-+	else
-+		aead_request_set_crypt(req, &cipher, &plain, packetsize, iv);
-+	packetsize = cpu_to_be32(packetsize);
-+	sg_init_one(&assoc, &packetsize, sizeof(packetsize));
-+	/* Associated data: Unencrypted length tag */
-+	aead_request_set_assoc(req, &assoc, sizeof(packetsize));
-+
-+	if (encrypt)
-+		ret = crypto_aead_encrypt(req);
-+	else
-+		ret = crypto_aead_decrypt(req);
-+
-+	switch (ret) {
-+	case 0: /* Success */
-+		break;
-+	case -EINPROGRESS:
-+	case -EBUSY:
-+		wait_for_completion(&result.completion);
-+		break;
-+	default:
-+		aead_request_free(req);
-+		return ret;
-+	}
-+
-+	aead_request_free(req);
-+
-+	(*iv_num)++; /* Increment IV */
-+
-+	return 0;
-+}
-+
-+/*
-+ * Wrapper to kernel_recvmsg. If necessary, also does the necessary decryption.
-+ * If decryption is enabled, you _MUST_ pass 1 as parameter for num, i.e.
-+ * only receive into a single continuous buffer.
-+ */
- int usbip_recvmsg(struct usbip_device *ud, struct msghdr *msg, struct kvec
- 		*vec, size_t num, size_t size, int flags)
- {
--	return kernel_recvmsg(ud->tcp_socket, msg, vec, num, size, flags);
-+	int ret;
-+	size_t total = 0;
-+	unsigned char *plainbuf, *cipherbuf;
-+
-+	/* If crypto is disabled, we just wrap the normal kernel calls. */
-+	if (!ud->use_crypto)
-+		return kernel_recvmsg(ud->tcp_socket, msg, vec, num, size,
-+				flags);
-+
-+	if (vec[0].iov_len < size)
-+		return -EINVAL;
-+	if (num != 1)
-+		return -EINVAL;
-+
-+	plainbuf = kmalloc(USBIP_PACKETSIZE, GFP_KERNEL);
-+	if (IS_ERR(plainbuf))
-+		return -PTR_ERR(plainbuf);
-+	cipherbuf = kmalloc(USBIP_PACKETSIZE, GFP_KERNEL);
-+	if (IS_ERR(cipherbuf)) {
-+		kfree(plainbuf);
-+		return -PTR_ERR(cipherbuf);
-+	}
-+
-+	while (total < size) {
-+		uint32_t packetsize;
-+		struct kvec recvvec;
-+
-+		/*
-+		 * We use a global kfifo to buffer unrequested plaintext bytes.
-+		 * Flush this buffer first before receiving new data.
-+		 */
-+		if (kfifo_len(&ud->recv_queue)) {
-+			size_t next = min_t(size_t, kfifo_len(&ud->recv_queue),
-+					size - total);
-+			/* No error checking necessary - see previous line */
-+			ret = kfifo_out(&ud->recv_queue, ((char *)
-+						vec[0].iov_base)+total, next);
-+			total += next;
-+			continue;
-+		}
-+
-+		/* See usbip_sendmsg() for the format of one encrypted packet */
-+
-+		/*
-+		 * Receive size of next crypto packet
-+		 */
-+		recvvec.iov_base = &packetsize;
-+		recvvec.iov_len = sizeof(packetsize);
-+
-+		ret = kernel_recvmsg(ud->tcp_socket, msg, &recvvec, 1,
-+				sizeof(packetsize), flags);
-+		packetsize = be32_to_cpu(packetsize);
-+		if (ret <= 0) {
-+			total = ret;
-+			goto err;
-+		} else if (ret != sizeof(packetsize)) {
-+			total = -EBADMSG;
-+			goto err;
-+		}
-+
-+		if (packetsize > USBIP_PACKETSIZE) {
-+			total = -EBADMSG;
-+			goto err;
-+		}
-+
-+		/*
-+		 * Receive the rest of the packet
-+		 */
-+		recvvec.iov_base = cipherbuf;
-+		recvvec.iov_len = packetsize;
-+		ret = kernel_recvmsg(ud->tcp_socket, msg, &recvvec, 1,
-+				packetsize, flags);
-+		if (ret <= 0) {
-+			total = ret;
-+			goto err;
-+		} else if (ret != packetsize) {
-+			total = -EBADMSG;
-+			goto err;
-+		}
-+
-+		/*
-+		 * Decrypt the packet. This will also authenticate the length
-+		 * field
-+		 */
-+		ret = usbip_crypt(ud, 0, packetsize, plainbuf, cipherbuf);
-+		if (ret != 0) {
-+			total = ret;
-+			goto err;
-+		}
-+
-+		/*
-+		 * Add this packet to our global buffer (It will be stored in
-+		 * the user buffer in the next loop iteration) No error
-+		 * checking necessary - we already know the packet is going to
-+		 * fit.
-+		 */
-+		(void) kfifo_in(&ud->recv_queue, plainbuf, packetsize -
-+				USBIP_AUTHSIZE);
-+	}
-+
-+err:
-+	kfree(plainbuf);
-+	kfree(cipherbuf);
-+
-+	return total;
+ #define to_string(s)	#s
+ 
+ void dump_usb_interface(struct usbip_usb_interface *);
+diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c b/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
+index 71a449c..60247f2 100644
+--- a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
++++ b/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
+@@ -332,7 +332,8 @@ int usbip_host_refresh_device_list(void)
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(usbip_recvmsg);
  
- int usbip_sendmsg(struct usbip_device *ud, struct msghdr *msg, struct kvec
- 		*vec, size_t num, size_t size)
+-int usbip_host_export_device(struct usbip_exported_device *edev, int sockfd)
++int usbip_host_export_device(struct usbip_exported_device *edev,
++		struct host_conf *conf)
  {
--	return kernel_sendmsg(ud->tcp_socket, msg, vec, num, size);
-+	int i = 0, ret, offset = 0;
-+	size_t total = 0;
-+	unsigned char *cipherbuf;
-+
-+	/* If crypto is disabled, we just wrap the normal kernel calls. */
-+	if (!ud->use_crypto)
-+		return kernel_sendmsg(ud->tcp_socket, msg, vec, num, size);
-+
-+	cipherbuf = kmalloc(USBIP_PACKETSIZE, GFP_KERNEL);
-+	if (IS_ERR(cipherbuf))
-+		return -PTR_ERR(cipherbuf);
-+
-+	/*
-+	 * The receiver has to decrypt whole packets. To avoid the need
-+	 * to allocate large buffers at the receiving side, we split the
-+	 * data to be sent in USBIP_PACKETSIZE large chunks that can be
-+	 * decrypted separately. See below for the format of each chunk.
-+	 */
-+
-+	/* Iterate over all kvecs, splitting them up as necessary. */
-+	for (i = 0; i != num && size; ) {
-+		/* Compute the remaining number of bytes to send for
-+		 * this kvec */
-+		const size_t PLAIN_SIZE = min_t(size_t, vec[i].iov_len -
-+				offset, min_t(size_t, size, USBIP_PACKETSIZE -
-+					USBIP_AUTHSIZE));
-+		const size_t PACKET_SIZE = PLAIN_SIZE + USBIP_AUTHSIZE;
-+		uint32_t packet_size_net = cpu_to_be32(PACKET_SIZE);
-+		struct kvec sendvec[2];
-+
-+		if (PLAIN_SIZE == 0) {
-+			++i;
-+			offset = 0;
-+			continue;
-+		}
-+
-+		/*
-+		 * One encrypted packet consists of:
-+		 *  - An unencrypted, authenticated length tag (exactly 4
-+		 *    bytes) containing the length of the packet.
-+		 *  - Up to USBIP_PACKETSIZE - USBIP_AUTHSIZE bytes of user
-+		 *    payload, encrypted
-+		 *  - Exactly USBIP_AUTHSIZE bytes authentication tag.
-+		 * Note: The packet length is also authenticated, but has
-+		 * - for obvious reasons - to be sent in plaintext. This
-+		 * packet format will be parsed by usbip_recvmsg (see above).
-+		 */
-+		ret = usbip_crypt(ud, 1, PACKET_SIZE, vec[i].iov_base + offset,
-+				cipherbuf);
-+		if (ret != 0) {
-+			kfree(cipherbuf);
-+			return ret;
-+		}
-+
-+		/* Length field */
-+		sendvec[0].iov_base = &packet_size_net;
-+		sendvec[0].iov_len = sizeof(packet_size_net);
-+		/* Payload and authentication tag */
-+		sendvec[1].iov_base = cipherbuf;
-+		sendvec[1].iov_len = PACKET_SIZE;
-+		ret = kernel_sendmsg(ud->tcp_socket, msg, sendvec,
-+				ARRAY_SIZE(sendvec), sendvec[0].iov_len +
-+				sendvec[1].iov_len);
-+		if (ret < 0) {
-+			kfree(cipherbuf);
-+			return ret;
-+		}
-+		if (ret != sendvec[0].iov_len + sendvec[1].iov_len) {
-+			kfree(cipherbuf);
-+			return -EPROTO;
-+		}
-+		offset += PLAIN_SIZE;
-+		size -= PLAIN_SIZE;
-+		total += PLAIN_SIZE;
-+	}
-+
-+	kfree(cipherbuf);
-+
-+	return total;
- }
- EXPORT_SYMBOL_GPL(usbip_sendmsg);
- 
-diff --git a/drivers/staging/usbip/usbip_common.h b/drivers/staging/usbip/usbip_common.h
-index 99f9dab..2b71c58 100644
---- a/drivers/staging/usbip/usbip_common.h
-+++ b/drivers/staging/usbip/usbip_common.h
-@@ -29,15 +29,28 @@
- #include <linux/types.h>
- #include <linux/usb.h>
- #include <linux/wait.h>
-+#include <linux/kfifo.h>
- 
- #define USBIP_VERSION "1.0.0"
- 
- /*
-+ * Length of the authentication tag associated with each packet, in bytes. Can
-+ * be set to 4, 8, 12, 13, 14, 15 or 16. See crypto_gcm_setauthsize in
-+ * crypto/gcm.c. Increasing this will increase crypto protocol overhead.
-+ */
-+#define USBIP_AUTHSIZE 4
-+/*
-  * Length of symmetric keys. Currently, this should be fixed at 16 bytes.
-  * Will break code if changed, look at userspace and stub_dev.c/vhci_sysfs.c
-  * where this constant is used before changing.
-  */
- #define USBIP_KEYSIZE 16
-+/*
-+ * Maximum size of encrypted packets. Decreasing this will increase overhead
-+ * and decrease memory usage.
-+ */
-+#define USBIP_PACKETSIZE 1024
-+#define RECVQ_SIZE (2*USBIP_PACKETSIZE)
- 
- #undef pr_fmt
- 
-@@ -300,6 +313,11 @@ struct usbip_device {
- 
- 	/* Crypto support */
- 	int use_crypto;
-+	struct crypto_aead *tfm_recv;
-+	struct crypto_aead *tfm_send;
-+	/* Counters to be used as IVs */
-+	u64 ctr_send, ctr_recv;
-+	DECLARE_KFIFO_PTR(recv_queue, char);
- };
- 
- #define kthread_get_run(threadfn, data, namefmt, ...)			   \
-@@ -323,6 +341,10 @@ struct usbip_device {
- void usbip_dump_urb(struct urb *purb);
- void usbip_dump_header(struct usbip_header *pdu);
- 
-+int usbip_init_crypto(struct usbip_device *ud, unsigned char *sendkey,
-+		unsigned char *recvkey);
-+void usbip_deinit_crypto(struct usbip_device *ud);
-+
- int usbip_recv(struct usbip_device *ui, void *buf, int size);
- struct socket *sockfd_to_socket(unsigned int sockfd);
- 
-diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-index d7974cb..0b72bcf 100644
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -786,7 +786,9 @@ static void vhci_shutdown_connection(struct usbip_device *ud)
- 		kthread_stop_put(vdev->ud.tcp_tx);
- 		vdev->ud.tcp_tx = NULL;
+ 	char attr_name[] = "usbip_sockfd";
+ 	char attr_path[SYSFS_PATH_MAX];
+@@ -366,7 +367,7 @@ int usbip_host_export_device(struct usbip_exported_device *edev, int sockfd)
+ 		return -1;
  	}
--	pr_info("stop threads\n");
-+	pr_info("stopped threads\n");
+ 
+-	snprintf(sockfd_buff, sizeof(sockfd_buff), "%d\n", sockfd);
++	snprintf(sockfd_buff, sizeof(sockfd_buff), "%d\n", conf->sockfd);
+ 	dbg("write: %s", sockfd_buff);
+ 
+ 	ret = sysfs_write_attribute(attr, sockfd_buff, strlen(sockfd_buff));
+diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.h b/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.h
+index 34fd14c..ceaf7cc 100644
+--- a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.h
++++ b/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.h
+@@ -42,7 +42,8 @@ int usbip_host_driver_open(void);
+ void usbip_host_driver_close(void);
+ 
+ int usbip_host_refresh_device_list(void);
+-int usbip_host_export_device(struct usbip_exported_device *edev, int sockfd);
++int usbip_host_export_device(struct usbip_exported_device *edev,
++		struct host_conf *conf);
+ struct usbip_exported_device *usbip_host_get_device(int num);
+ 
+ #endif /* __USBIP_HOST_DRIVER_H */
+diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
+index 1091bb2..d1d45bb 100644
+--- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
++++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
+@@ -467,8 +467,8 @@ int usbip_vhci_get_free_port(void)
+ 	return -1;
+ }
+ 
+-int usbip_vhci_attach_device2(uint8_t port, int sockfd, uint32_t devid,
+-		uint32_t speed) {
++int usbip_vhci_attach_device(struct vhci_conf *conf)
++{
+ 	struct sysfs_attribute *attr_attach;
+ 	char buff[200]; /* what size should be ? */
+ 	int ret;
+@@ -481,7 +481,7 @@ int usbip_vhci_attach_device2(uint8_t port, int sockfd, uint32_t devid,
+ 	}
+ 
+ 	snprintf(buff, sizeof(buff), "%u %u %u %u",
+-			port, sockfd, devid, speed);
++			conf->port, conf->sockfd, conf->devid, conf->speed);
+ 	dbg("writing: %s", buff);
+ 
+ 	ret = sysfs_write_attribute(attr_attach, buff, strlen(buff));
+@@ -490,25 +490,16 @@ int usbip_vhci_attach_device2(uint8_t port, int sockfd, uint32_t devid,
+ 		return -1;
+ 	}
+ 
+-	dbg("attached port: %d", port);
++	dbg("attached port: %d", conf->port);
+ 
+ 	return 0;
+ }
+ 
+-static unsigned long get_devid(uint8_t busnum, uint8_t devnum)
++unsigned long get_devid(uint8_t busnum, uint8_t devnum)
+ {
+ 	return (busnum << 16) | devnum;
+ }
+ 
+-/* will be removed */
+-int usbip_vhci_attach_device(uint8_t port, int sockfd, uint8_t busnum,
+-		uint8_t devnum, uint32_t speed)
+-{
+-	int devid = get_devid(busnum, devnum);
+-
+-	return usbip_vhci_attach_device2(port, sockfd, devid, speed);
+-}
+-
+ int usbip_vhci_detach_device(uint8_t port)
+ {
+ 	struct sysfs_attribute  *attr_detach;
+diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.h b/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
+index 89949aa..325d0fa 100644
+--- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
++++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
+@@ -55,13 +55,10 @@ int  usbip_vhci_refresh_device_list(void);
+ 
+ 
+ int usbip_vhci_get_free_port(void);
+-int usbip_vhci_attach_device2(uint8_t port, int sockfd, uint32_t devid,
+-		uint32_t speed);
+-
+-/* will be removed */
+-int usbip_vhci_attach_device(uint8_t port, int sockfd, uint8_t busnum,
+-		uint8_t devnum, uint32_t speed);
++int usbip_vhci_attach_device(struct vhci_conf *conf);
+ 
+ int usbip_vhci_detach_device(uint8_t port);
+ 
++unsigned long get_devid(uint8_t busnum, uint8_t devnum);
 +
-+	usbip_deinit_crypto(&vdev->ud);
+ #endif /* __VHCI_DRIVER_H */
+diff --git a/drivers/staging/usbip/userspace/src/usbip_attach.c b/drivers/staging/usbip/userspace/src/usbip_attach.c
+index 9f4a064..7b8a5db 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_attach.c
++++ b/drivers/staging/usbip/userspace/src/usbip_attach.c
+@@ -29,6 +29,13 @@
+ #include <unistd.h>
+ #include <errno.h>
  
- 	/* active connection is closed */
- 	if (vdev->ud.tcp_socket) {
-diff --git a/drivers/staging/usbip/vhci_sysfs.c b/drivers/staging/usbip/vhci_sysfs.c
-index 1ef3f25..ce46c16 100644
---- a/drivers/staging/usbip/vhci_sysfs.c
-+++ b/drivers/staging/usbip/vhci_sysfs.c
-@@ -20,6 +20,8 @@
- #include <linux/kthread.h>
- #include <linux/file.h>
- #include <linux/net.h>
-+#include <linux/crypto.h>
-+#include <linux/kfifo.h>
- 
++#include "../config.h"
++
++#ifdef HAVE_GNUTLS
++#include <gnutls/gnutls.h>
++#include <gnutls/crypto.h>
++#endif
++
+ #include "vhci_driver.h"
  #include "usbip_common.h"
- #include "vhci.h"
-@@ -227,6 +229,13 @@ static ssize_t store_attach(struct device *dev, struct device_attribute *attr,
- 	/* begin a lock */
- 	spin_lock(&the_controller->lock);
- 	vdev = port_to_vdev(rhport);
-+	if (use_crypto) {
-+		int ret = usbip_init_crypto(&vdev->ud, sendkey, recvkey);
-+		if (ret < 0) {
-+			spin_unlock(&the_controller->lock);
-+			return ret;
+ #include "usbip_network.h"
+@@ -91,6 +98,38 @@ static int import_device(struct usbip_connection *conn, struct usbip_usb_device
+ {
+ 	int rc;
+ 	int port;
++	struct vhci_conf conf;
++
++	conf.use_crypto = 0;
++#ifdef HAVE_GNUTLS
++	if (conn->have_crypto) {
++		dbg("Generating session key and sending it to client");
++
++		rc = gnutls_rnd(GNUTLS_RND_RANDOM, conf.key1,
++				sizeof(conf.key1));
++		if (rc < 0) {
++			err("Session key generation failed: %s",
++					gnutls_strerror(rc));
++			return -1;
 +		}
++		rc = gnutls_rnd(GNUTLS_RND_RANDOM, conf.key2,
++				sizeof(conf.key2));
++		if (rc < 0) {
++			err("Session key generation failed: %s",
++					gnutls_strerror(rc));
++			return -1;
++		}
++
++		if (usbip_net_send(conn, (void *) conf.key1, sizeof(conf.key1))
++				< 0 || usbip_net_send(conn, (void *) conf.key2,
++					sizeof(conf.key2)) < 0) {
++			err("Unable to send session key to client");
++			return -1;
++		}
++
++		conf.use_crypto = 1;
 +	}
- 	spin_lock(&vdev->ud.lock);
++#endif
  
- 	if (vdev->ud.status != VDEV_ST_NULL) {
-@@ -237,6 +246,7 @@ static ssize_t store_attach(struct device *dev, struct device_attribute *attr,
- 		fput(socket->file);
- 
- 		dev_err(dev, "port %d already used\n", rhport);
-+		usbip_deinit_crypto(&vdev->ud);
- 		return -EINVAL;
+ 	rc = usbip_vhci_driver_open();
+ 	if (rc < 0) {
+@@ -106,9 +145,13 @@ static int import_device(struct usbip_connection *conn, struct usbip_usb_device
  	}
  
+ 	usbip_net_bye(conn);
+-	rc = usbip_vhci_attach_device(port, conn->sockfd, udev->busnum,
+-				      udev->devnum, udev->speed);
+ 
++	conf.port = port;
++	conf.sockfd = conn->sockfd;
++	conf.devid = get_devid(udev->busnum, udev->devnum);
++	conf.speed = udev->speed;
++
++	rc = usbip_vhci_attach_device(&conf);
+ 	if (rc < 0) {
+ 		err("import device");
+ 		usbip_vhci_driver_close();
+diff --git a/drivers/staging/usbip/userspace/src/usbip_network.h b/drivers/staging/usbip/userspace/src/usbip_network.h
+index 0001c46..5222e4c 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_network.h
++++ b/drivers/staging/usbip/userspace/src/usbip_network.h
+@@ -22,7 +22,7 @@
+  * Protocol version. Incremented only on non-backwards-compatible
+  * changes.
+  */
+-#define PROTOCOL_VERSION 0x111
++#define PROTOCOL_VERSION 0x112
+ 
+ extern int usbip_port;
+ extern char *usbip_port_string;
+diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
+index 6bd97a0..1a80bb6 100644
+--- a/drivers/staging/usbip/userspace/src/usbipd.c
++++ b/drivers/staging/usbip/userspace/src/usbipd.c
+@@ -245,13 +245,33 @@ static int recv_request_import(struct usbip_connection *conn)
+ 		return -1;
+ 	}
+ 
+-	usbip_net_bye(conn);
++	if (found) {
++		struct host_conf conf = {
++			.sockfd = conn->sockfd,
++			.use_crypto = 0
++		};
+ 
+-	/* export device needs a TCP/IP socket descriptor */
+-	rc = usbip_host_export_device(edev, conn->sockfd);
+-	if (rc < 0) {
+-		err("usbip_host_export_device");
+-		return -1;
++#ifdef HAVE_GNUTLS
++		if (conn->have_crypto) {
++			if (usbip_net_recv(conn, (void *) conf.key1,
++						sizeof(conf.key1)) < 0 ||
++					usbip_net_recv(conn, (void *) conf.key2,
++						sizeof(conf.key2)) < 0) {
++				err("Unable to receive session key");
++				return -1;
++			}
++			conf.use_crypto = 1;
++		}
++#endif
++
++		usbip_net_bye(conn);
++		/* export device needs a TCP/IP socket descriptor */
++		conf.sockfd = conn->sockfd;
++		rc = usbip_host_export_device(edev, &conf);
++		if (rc < 0) {
++			err("usbip_host_export_device");
++			return -1;
++		}
+ 	}
+ 
+ 	dbg("import request busid %s: complete", req.busid);
 -- 
 1.8.4
 
