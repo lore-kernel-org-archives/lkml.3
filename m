@@ -1,133 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab3ISNXA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 09:23:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58715 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029Ab3ISNWy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 09:22:54 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
-CC: <balajitk@ti.com>, <kishon@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [RFC PATCH 10/15] ARM: omap5: hwmod: Add ocp2scp3 and sata hwmods
-Date: Thu, 19 Sep 2013 16:22:27 +0300
-Message-ID: <1379596947-15213-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1379595943-14622-1-git-send-email-rogerq@ti.com>
-References: <1379595943-14622-1-git-send-email-rogerq@ti.com>
+	id S1754114Ab3ISNW7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:22:59 -0400
+Received: from ozlabs.org ([203.10.76.45]:55055 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753938Ab3ISNWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 09:22:50 -0400
+Date: Thu, 19 Sep 2013 22:31:03 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Olof Johansson <olof@lixom.net>, Jon Loeliger <jdl@jdl.com>,
+        Frank Rowand <frowand.list@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [dtc RFC PATCH] Enforce node name unit-address presence/absence
+Message-ID: <20130919123103.GD3551@voom.redhat.com>
+References: <1379535836-12726-1-git-send-email-swarren@wwwdotorg.org>
+ <CAOesGMg0Rrmew0iK-Gtrx_UiODhpro_S2xUxQi0gZ+7PJmBHnw@mail.gmail.com>
+ <523A30FC.3060309@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J5MfuwkIyy7RmF4Q"
+Content-Disposition: inline
+In-Reply-To: <523A30FC.3060309@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keshava Munegowda <keshava_mgowda@ti.com>
 
-Create hwmods for ocp2scp3 and sata modules.
+--J5MfuwkIyy7RmF4Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[Roger Q] Clean up.
+On Wed, Sep 18, 2013 at 05:02:20PM -0600, Stephen Warren wrote:
+> On 09/18/2013 02:41 PM, Olof Johansson wrote:
+> > On Wed, Sep 18, 2013 at 1:23 PM, Stephen Warren <swarren@wwwdotorg.org>=
+ wrote:
+> >> From: Stephen Warren <swarren@nvidia.com>
+> >>
+> >> ePAPR 1.1 section 2.2.1.1 "Node Name Requirements" specifies that any
+> >> node that has a reg property must include a unit address in its name
+> >> with value matching the first entry in its reg property. Conversely, if
+> >> a node does not have a reg property, the node name must not include a
+> >> unit address.
+> >>
+> >> Implement a check for this. The code doesn't validate the format of the
+> >> unit address; ePAPR implies this may vary from binding to binding, so
+> >> I'm not sure that it's possible to validate the value itself.
+> ...
+> > Anyway, I think it'd be better to produce warnings than errors for
+> > this. That way we could also merge it now while the trees are fixed
+> > up.
+>=20
+> Yes, that makes sense.
+>=20
+> > Also, maybe warn for @0x<foo>, which is another unpreferred syntax, it
+> > should just be @<foo> (with foo being in hex).
+>=20
+> ePAPR doesn't seem to disallow that; it explicitly says that the
+> unit-address consists of the characters from table 2-1, which is the
+> same table of characters used for the node name itself. However, it does
+> state that the binding for a particular bus may impose additional
+> restrictions; should I implement such a check but limit it to the root
+> node or specific known bus types? That would require explicitly
+> whitelisting the check for a lot of bus types, given that each I2C/...
+> controller binding is a bus type...
 
-CC: Benoit Cousson <bcousson@baylibre.com>
-Signed-off-by: Balaji T K <balajitk@ti.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/mach-omap2/omap_hwmod_54xx_data.c |   72 ++++++++++++++++++++++++++++
- 1 files changed, 72 insertions(+), 0 deletions(-)
+Yeah, I think that's the wrong approach.  Instead I think we need a
+table of bus type -> unit address validation functions.  That way we
+can start with the common ones - plain memory address, PCI, USB and
+I2C, then add more as we need them.
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-index 3dae6b9..2b698b8 100644
---- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-@@ -1545,6 +1545,76 @@ static struct omap_hwmod omap54xx_wd_timer2_hwmod = {
- 	},
- };
- 
-+/*
-+ * 'ocp2scp' class
-+ * bridge to transform ocp interface protocol to scp (serial control port)
-+ * protocol
-+ */
-+/* ocp2scp3 */
-+static struct omap_hwmod omap54xx_ocp2scp3_hwmod;
-+/* l4_cfg -> ocp2scp3 */
-+static struct omap_hwmod_ocp_if omap54xx_l4_cfg__ocp2scp3 = {
-+	.master		= &omap54xx_l4_cfg_hwmod,
-+	.slave		= &omap54xx_ocp2scp3_hwmod,
-+	.clk		= "l4_root_clk_div",
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
-+static struct omap_hwmod omap54xx_ocp2scp3_hwmod = {
-+	.name		= "ocp2scp3",
-+	.class		= &omap54xx_ocp2scp_hwmod_class,
-+	.clkdm_name	= "l3init_clkdm",
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_offs = OMAP54XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
-+			.context_offs = OMAP54XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
-+			.modulemode   = MODULEMODE_HWCTRL,
-+		},
-+	},
-+};
-+
-+/*
-+ * 'sata' class
-+ * sata:  serial ata interface  gen2 compliant   ( 1 rx/ 1 tx)
-+ */
-+
-+static struct omap_hwmod_class_sysconfig omap54xx_sata_sysc = {
-+	.sysc_offs	= 0x0000,
-+	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-+			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
-+			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
-+	.sysc_fields	= &omap_hwmod_sysc_type2,
-+};
-+
-+static struct omap_hwmod_class omap54xx_sata_hwmod_class = {
-+	.name	= "sata",
-+	.sysc	= &omap54xx_sata_sysc,
-+};
-+
-+/* sata */
-+static struct omap_hwmod omap54xx_sata_hwmod = {
-+	.name		= "sata",
-+	.class		= &omap54xx_sata_hwmod_class,
-+	.clkdm_name	= "l3init_clkdm",
-+	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
-+	.main_clk	= "func_48m_fclk",
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_offs = OMAP54XX_CM_L3INIT_SATA_CLKCTRL_OFFSET,
-+			.context_offs = OMAP54XX_RM_L3INIT_SATA_CONTEXT_OFFSET,
-+			.modulemode   = MODULEMODE_SWCTRL,
-+		},
-+	},
-+};
-+
-+/* l4_cfg -> sata */
-+static struct omap_hwmod_ocp_if omap54xx_l4_cfg__sata = {
-+	.master		= &omap54xx_l4_cfg_hwmod,
-+	.slave		= &omap54xx_sata_hwmod,
-+	.clk		= "l3_iclk_div",
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
- 
- /*
-  * Interfaces
-@@ -2192,6 +2262,8 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
- 	&omap54xx_l4_per__uart6,
- 	&omap54xx_l4_cfg__usb_otg_ss,
- 	&omap54xx_l4_wkup__wd_timer2,
-+	&omap54xx_l4_cfg__ocp2scp3,
-+	&omap54xx_l4_cfg__sata,
- 	NULL,
- };
- 
--- 
-1.7.4.1
+I actually started implementing this once, but I seem to have lost the
+patch.
 
+One thing to bear in mind if you do have a crack at this - the correct
+encoding of reg -> unit address isn't always unique, although it
+usually is.
+
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--J5MfuwkIyy7RmF4Q
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSOu6HAAoJEGw4ysog2bOS3xkP/1ARiMSKexL9sT7Mdf+KWIL5
+HmNRWhi6kj+eAsJxh7bSEiBQ+ReD9SfWu68l3A/WhlqFcVxCgabTDMt9Vkn9xQsK
+DM9yXjlI8T0MK6+GLpaHgsZs1fBPypUGwOmJ48yi2AjwFw2k5IWBhOaY0eacycdA
+PBZjY+MlwtWrBE6lN9ItD1MQYy+GzN5RzkEcqIYxIoysB61jgYDni2WlPOMdN6mg
+ffi+h9ciaD3HwYa3bRUqnz0Sg3CBo+Ji6z7e7oG5tVTaPOXEzo6Yb3PtrCfH2z6j
+3MdWM/qn57XvdlfOaTsnfnMwKBA09HlruNK2FaowyQXCQ9/ewZuyBdQCN3hVrQGA
+bXt9s+v3AXybHwv2sqrTmnNiUKRHYLEcYX82L08eclTLtg1wngAmF3tYTmB+taDX
+kb5U4Tm5KYglYv/iInIaAx/qcf4l5WGSERfSXlMCVI/5LgbYaQtoJDcRbZ7M6bJ+
+b7nDEw1WdWjzlzAbHIAbMro41vai9SMvUDaaTofUA3LHXySl3Z64EmDLZgNQX7sD
+dmFJMOcO6qT0mdTpBmnS4kY3mslefzEU9NpsCBOcPwvJS5avjbS+PpCbgB36kKEQ
+xPXwvHuXKsnGDn2c5EcfsRROpbQAmdqmosZUV5O5frRCdgH+oQ0A7VKhap/xB1nS
+qzhjRgyFkz0YqaeEZkWT
+=Dtw8
+-----END PGP SIGNATURE-----
+
+--J5MfuwkIyy7RmF4Q--
