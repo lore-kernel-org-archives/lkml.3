@@ -1,100 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab3ISVUa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 17:20:30 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:34158 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab3ISVU2 (ORCPT
+	id S1753816Ab3ISVW3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 17:22:29 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:13164 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab3ISVW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 17:20:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458E04369@US01WEMBX2.internal.synopsys.com>
-References: <A2CA0424C0A6F04399FB9E1CD98E030458E03F28@US01WEMBX2.internal.synopsys.com>
-	<CAPM=9txFE7=e47oY0rqe29DYva2T2MtKHgTjKBtuLfOaNZebZg@mail.gmail.com>
-	<A2CA0424C0A6F04399FB9E1CD98E030458E042D4@US01WEMBX2.internal.synopsys.com>
-	<20130919201058.GD32145@phenom.ffwll.local>
-	<CAPM=9twVBn3EMt2RwQHBZBNV+6iYBKbYTGNbiOsnKnRA+dpyKw@mail.gmail.com>
-	<A2CA0424C0A6F04399FB9E1CD98E030458E04369@US01WEMBX2.internal.synopsys.com>
-Date: Fri, 20 Sep 2013 07:20:27 +1000
-Message-ID: <CAPM=9tzPVYcyADMKvFGwi+RQVpmmB2oD2Jjx9OFZmSeisu6VXg@mail.gmail.com>
-Subject: Re: Regression: bisected: commit 7c510133d93 breaks video
-From: Dave Airlie <airlied@gmail.com>
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Cc: "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Sep 2013 17:22:27 -0400
+Message-ID: <1379625742.2145.19.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/4] ipc: shm and msg fixes
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        sedat.dilek@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>,
+        linux-security-module@vger.kernel.org
+Date: Thu, 19 Sep 2013 14:22:22 -0700
+In-Reply-To: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
+References: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 7:13 AM, Paul Zimmerman
-<Paul.Zimmerman@synopsys.com> wrote:
->> From: Dave Airlie [mailto:airlied@gmail.com]
->> Sent: Thursday, September 19, 2013 1:15 PM
->>
->> On Fri, Sep 20, 2013 at 6:10 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
->> > On Thu, Sep 19, 2013 at 06:32:47PM +0000, Paul Zimmerman wrote:
->> >> > From: Paul Zimmerman
->> >> > Sent: Thursday, September 19, 2013 11:21 AM
->> >> >
->> >> > > From: Dave Airlie [mailto:airlied@gmail.com]
->> >> > > Sent: Wednesday, September 18, 2013 7:40 PM
->> >> > >
->> >> > > On Thu, Sep 19, 2013 at 12:02 PM, Paul Zimmerman
->> >> > > <Paul.Zimmerman@synopsys.com> wrote:
->> >> > > > I have an ASUS P6X58D-Premium mobo with a GeForce 9400GT PCIe video card.
->> >> > > > With kernel 3.12-rc1, I get scrambled video on boot. Kernel 3.11 works
->> >> > > > fine.
->> >> > > >
->> >> > > > Bisecting this, I found 7c510133d93dd6f15ca040733ba7b2891ed61fd1 "drm:
->> >> > > > mark context support as a legacy subsystem" is the guilty commit. If I
->> >> > > > revert that commit, the video works fine.
->> >> > > >
->> >> > > > Is there any more info I can provide?
->> >> > >
->> >> > > Full dmesg, and what driver you are using.
->> >> >
->> >> > Driver is nouveau.
->> >> >
->> >> > The dmesg from a good boot with the commit reverted is attached.
->> >> >
->> >> > For the bad boot, the dmesg log is filled with messages like this:
->> >> >
->> >> > [   15.871667] nouveau E[     PFB][0000:03:00.0] trapped write at 0x01010010a0 on channel
->> 0x0001fed0
->> >> > [unknown] BAR/PFIFO_WRITE/IN reason: PAGE_NOT_PRESENT
->> >> > [   15.871698] nouveau E[     PFB][0000:03:00.0] trapped write at 0x010100b2e0 on channel
->> 0x0001fed0
->> >> > [unknown] BAR/PFIFO_WRITE/IN reason: PAGE_NOT_PRESENT
->> >> > [   15.871781] nouveau E[     PFB][0000:03:00.0] trapped write at 0x0101011600 on channel
->> 0x0001fed0
->> >> > [unknown] BAR/PFIFO_WRITE/IN reason: PAGE_NOT_PRESENT
->> >> >
->> >> > I will try next with the patch series you sent to Linus yesterday, to
->> >> > see if that happens to fix this.
->> >>
->> >> Nope, with your patch series from yesterday the problem still exists.
->> >
->> > Just to double-check: Does the revert still work, even on latest upstream
->> > git + Dave's pull request?
->>
->> Also what versions of userspace have you got, libdrm +
->> xf86-video-nouveau and mesa?
->
-> Yes, the revert still works.
->
-> I have pretty old userspace, Fedora 14.
->
-> libdrm is 2.4.22-1.fc14, mesa is 7.9-5.fc14.
->
-> I don't have xf86-video-nouveau, I have
-> xorg-x11-drv-nouveau.x86_64 1:0.0.16-14.20101010git8c8f15c.fc14
+On Sun, 2013-09-15 at 20:04 -0700, Davidlohr Bueso wrote:
+> This patchset deals with the selinux and rmid races Manfred found on
+> the ipc scaling work that has been going on. It specifically addresses
+> shared mem and msg queues. While semaphores still need updated, I want
+> to make sure these are correct first. Also, Manfred had already sent out
+> a patchset that deals with a race in sem complex operations. So any changes
+> should be on top of his.
+> 
+> Patches 1 and 2 deal with shared memory.
+> Patches 3 and 4 deal with msg queues.
+> Specific details about each race and its fix are in the corresponding
+> patches.
+> 
+> Note that Linus suggested a good alternative to patches 1 and 3: use
+> kfree_rcu() and delay the freeing of the security structure. I would
+> much prefer that approach to doing security checks with the lock held,
+> but I want to leave the patches out and ready in case we go with the
+> later solution.
 
-Okay it all makes sense now!
+Cc'ing selinux/security people - folks, could you please confirm that
+this change is ok and won't break anything related to security?
 
-I'll revert the patch upstream then, older nouveau userspace used
-contexts, for what reason I've no idea :-)
+Thanks!
 
-Dave.
+
+8<-------------------------------------------
+
+From: Davidlohr Bueso <davidlohr@hp.com>
+Date: Thu, 19 Sep 2013 09:32:05 -0700
+Subject: [PATCH] selinux: rely on rcu to free ipc isec
+
+Currently, IPC mechanisms do security and auditing related checks under
+RCU. However, since selinux can free the security structure, through
+selinux_[sem,msg_queue,shm]_free_security(), we can race if the structure
+is freed before other tasks are done with it, creating a use-after-free
+condition. Manfred illustrates this nicely, for example with shared mem:
+
+--> do_shmat calls rcu_read_lock()
+--> do_shmat calls shm_object_check().
+     Checks that the object is still valid - but doesn't acquire any locks.
+     Then it returns.
+--> do_shmat calls security_shm_shmat (e.g. selinux_shm_shmat)
+--> selinux_shm_shmat calls ipc_has_perm()
+--> ipc_has_perm accesses ipc_perms->security
+
+shm_close()
+--> shm_close acquires rw_mutex & shm_lock
+--> shm_close calls shm_destroy
+--> shm_destroy calls security_shm_free (e.g. selinux_shm_free_security)
+--> selinux_shm_free_security calls ipc_free_security(&shp->shm_perm)
+--> ipc_free_security calls kfree(ipc_perms->security)
+
+There are two solutions to this: (i) perform the security checking and whatever
+IPC operation(s) atomically (that is, with the kern_ipc_perm.lock held), or
+(ii) delay the freeing of the isec structure after all RCU readers are done.
+This patch takes the second approach, which, at least from a performance perspective,
+is more practical than the first as it keeps the IPC critical regions smaller.
+
+I have tested this patch with IPC testcases from LTP on both my quad-core
+laptop and on a 64 core NUMA server. In both cases selinux is enabled, and
+tests pass for both voluntary and forced preemption models.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ security/selinux/hooks.c          | 9 ++++++++-
+ security/selinux/include/objsec.h | 5 +++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index a5091ec..179ffe9 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -4892,8 +4892,15 @@ static int ipc_alloc_security(struct task_struct *task,
+ static void ipc_free_security(struct kern_ipc_perm *perm)
+ {
+ 	struct ipc_security_struct *isec = perm->security;
++
++	/*
++	 * All IPC mechanisms do security and audit
++	 * checking under RCU: wait a grace period before
++	 * freeing isec, otherwise we can run into a
++	 * use-after-free scenario.
++	 */
++	kfree_rcu(isec, rcu);
+ 	perm->security = NULL;
+-	kfree(isec);
+ }
+ 
+ static int msg_msg_alloc_security(struct msg_msg *msg)
+diff --git a/security/selinux/include/objsec.h b/security/selinux/include/objsec.h
+index aa47bca..38d17b7 100644
+--- a/security/selinux/include/objsec.h
++++ b/security/selinux/include/objsec.h
+@@ -70,8 +70,9 @@ struct msg_security_struct {
+ };
+ 
+ struct ipc_security_struct {
+-	u16 sclass;	/* security class of this object */
+-	u32 sid;	/* SID of IPC resource */
++	u16 sclass;	     /* security class of this object */
++	u32 sid;             /* SID of IPC resource */
++	struct rcu_head	rcu; /* rcu struct for selinux based IPC security */
+ };
+ 
+ struct netif_security_struct {
+-- 
+1.7.11.7
+
+
+
