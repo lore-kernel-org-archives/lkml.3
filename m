@@ -1,185 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab3ISOao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:30:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36127 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab3ISOan (ORCPT
+	id S1752813Ab3ISOdK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:33:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39440 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab3ISOdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:30:43 -0400
-Date: Thu, 19 Sep 2013 16:30:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
-        LKML <linux-kernel@vger.kernel.org>, Marc Pignat <marc.pignat@hevs.ch>,
-        john.stultz@linaro.org, kernel@pengutronix.de,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clockevents: Sanitize ticks to nsec conversion
-In-Reply-To: <20130919124805.GU24802@pengutronix.de>
-Message-ID: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
-References: <20130917100417.GQ12758@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1309171210450.4089@ionos.tec.linutronix.de> <20130917130153.GL26819@ludovic.desroches@atmel.com> <alpine.DEB.2.02.1309172228400.4089@ionos.tec.linutronix.de> <20130918085627.GN24802@pengutronix.de>
- <alpine.DEB.2.02.1309181058470.4089@ionos.tec.linutronix.de> <20130918150958.GO24802@pengutronix.de> <alpine.DEB.2.02.1309182201000.4089@ionos.tec.linutronix.de> <20130919100239.GS24802@pengutronix.de> <alpine.DEB.2.02.1309191207460.4089@ionos.tec.linutronix.de>
- <20130919124805.GU24802@pengutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 19 Sep 2013 10:33:08 -0400
+Date: Thu, 19 Sep 2013 16:32:41 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130919143241.GB26785@twins.programming.kicks-ass.net>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-38-git-send-email-mgorman@suse.de>
+ <20130917143003.GA29354@twins.programming.kicks-ass.net>
+ <20130917162050.GK22421@suse.de>
+ <20130917164505.GG12926@twins.programming.kicks-ass.net>
+ <20130918154939.GZ26785@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130918154939.GZ26785@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marc Kleine-Budde pointed out, that commit 77cc982 "clocksource: use
-clockevents_config_and_register() where possible" caused a regression
-for some of the converted subarchs.
 
-The reason is, that the clockevents core code converts the minimal
-hardware tick delta to a nanosecond value for core internal
-usage. This conversion is affected by integer math rounding loss, so
-the backwards conversion to hardware ticks will likely result in a
-value which is less than the configured hardware limitation. The
-affected subarchs used their own workaround (SIGH!) which got lost in
-the conversion.
 
-The solution for the issue at hand is simple: adding evt->mult - 1 to
-the shifted value before the integer divison in the core conversion
-function takes care of it. But this only works for the case where for
-the scaled math mult/shift pair "mult <= 1 << shift" is true. For the
-case where "mult > 1 << shift" we can apply the rounding add only for
-the minimum delta value to make sure that the backward conversion is
-not less than the given hardware limit. For the upper bound we need to
-omit the rounding add, because the backwards conversion is always
-larger than the original latch value. That would violate the upper
-bound of the hardware device.
 
-Though looking closer at the details of that function reveals another
-bogosity: The upper bounds check is broken as well. Checking for a
-resulting "clc" value greater than KTIME_MAX after the conversion is
-pointless. The conversion does:
+Meh, I should stop poking at this..
 
-      u64 clc = (latch << evt->shift) / evt->mult;
+This one lost all the comments again :/
 
-So there is no sanity check for (latch << evt->shift) exceeding the
-64bit boundary. The latch argument is "unsigned long", so on a 64bit
-arch the handed in argument could easily lead to an unnoticed shift
-overflow. With the above rounding fix applied the calculation before
-the divison is:
+It uses preempt_disable/preempt_enable vs synchronize_sched() to remove
+the barriers from the fast path.
 
-       u64 clc = (latch << evt->shift) + evt->mult - 1;
+After that it waits for !refcount before setting state, which stops new
+readers.
 
-So we need to make sure, that neither the shift nor the rounding add
-is overflowing the u64 boundary.
+I used a per-cpu spinlock to keep the state check and refcount inc
+atomic vs the setting of state.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: nicolas.ferre@atmel.com
-Cc: Marc Pignat <marc.pignat@hevs.ch>
-Cc: john.stultz@linaro.org
-Cc: kernel@pengutronix.de
-Cc: Ronald Wahl <ronald.wahl@raritan.com>
-Cc: LAK <linux-arm-kernel@lists.infradead.org>
-Cc: u.kleine-koenig@pengutronix.de
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
+So the slow path is still per-cpu and mostly uncontended even in the
+pending writer case.
+
+After setting state it again waits for !refcount -- someone could have
+sneaked in between the last !refcount and setting state. But this time
+we know refcount will stay 0.
+
+The only thing I don't really like is the unconditional writer wake in
+the read-unlock slowpath, but I couldn't come up with anything better.
+Here at least we guarantee that there is a wakeup after the last dec --
+although there might be far too many wakes.
 
 ---
- kernel/time/clockevents.c |   64 +++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 49 insertions(+), 15 deletions(-)
+Subject: hotplug: Optimize {get,put}_online_cpus()
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Tue Sep 17 16:17:11 CEST 2013
 
-Index: linux-2.6/kernel/time/clockevents.c
-===================================================================
---- linux-2.6.orig/kernel/time/clockevents.c
-+++ linux-2.6/kernel/time/clockevents.c
-@@ -33,29 +33,63 @@ struct ce_unbind {
- 	int res;
- };
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ include/linux/cpu.h |   32 ++++++++++-
+ kernel/cpu.c        |  151 +++++++++++++++++++++++++++++-----------------------
+ 2 files changed, 116 insertions(+), 67 deletions(-)
+
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -16,6 +16,7 @@
+ #include <linux/node.h>
+ #include <linux/compiler.h>
+ #include <linux/cpumask.h>
++#include <linux/percpu.h>
  
--/**
-- * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
-- * @latch:	value to convert
-- * @evt:	pointer to clock event device descriptor
-- *
-- * Math helper, returns latch value converted to nanoseconds (bound checked)
-- */
--u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
-+static u64 cev_delta2ns(unsigned long latch, struct clock_event_device *evt,
-+			bool ismax)
- {
- 	u64 clc = (u64) latch << evt->shift;
-+	u64 rnd = (u64) evt->mult - 1;
+ struct device;
  
- 	if (unlikely(!evt->mult)) {
- 		evt->mult = 1;
- 		WARN_ON(1);
- 	}
+@@ -175,8 +176,35 @@ extern struct bus_type cpu_subsys;
  
-+	/*
-+	 * Upper bound sanity check. If the backwards conversion is
-+	 * not equal latch, we know that the above shift overflowed.
-+	 */
-+	if (clc >> evt->shift) != (u64)latch)
-+		clc = ~0ULL;
+ extern void cpu_hotplug_begin(void);
+ extern void cpu_hotplug_done(void);
+-extern void get_online_cpus(void);
+-extern void put_online_cpus(void);
 +
-+	/*
-+	 * Scaled math oddities:
-+	 *
-+	 * For mult <= (1 << shift) we can safely add mult - 1 to
-+	 * prevent integer rounding loss. So the backwards conversion
-+	 * from nsec to device ticks will be correct.
-+	 *
-+	 * For mult > (1 << shift), i.e. device frequency is > 1GHz we
-+	 * need to be careful. Adding mult - 1 will result in a value
-+	 * which when converted back to device ticks will be larger
-+	 * than latch by (mult / (1 << shift)) - 1. For the min_delta
-+	 * calculation we still want to apply this in order to stay
-+	 * above the minimum device ticks limit. For the upper limit
-+	 * we would end up with a latch value larger than the upper
-+	 * limit of the device, so we omit the add to stay below the
-+	 * device upper boundary.
-+	 *
-+	 * Also omit the add if it would overflow the u64 boundary.
-+	 */
-+	if ((~0ULL - clc > rnd) &&
-+	    (!ismax || evt->mult <= (1U << evt->shift)))
-+		clc += rnd;
++extern struct task_struct *__cpuhp_writer;
++DECLARE_PER_CPU(unsigned int, __cpuhp_refcount);
 +
- 	do_div(clc, evt->mult);
--	if (clc < 1000)
--		clc = 1000;
--	if (clc > KTIME_MAX)
--		clc = KTIME_MAX;
- 
--	return clc;
-+	/* Deltas less than 1usec are pointless noise */
-+	return clc > 1000 ? clc : 1000;
++extern void __get_online_cpus(void);
++
++static inline void get_online_cpus(void)
++{
++	might_sleep();
++
++	preempt_disable();
++	if (likely(!__cpuhp_writer || __cpuhp_writer == current))
++		this_cpu_inc(__cpuhp_refcount);
++	else
++		__get_online_cpus();
++	preempt_enable();
 +}
 +
-+/**
-+ * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
-+ * @latch:	value to convert
-+ * @evt:	pointer to clock event device descriptor
-+ *
-+ * Math helper, returns latch value converted to nanoseconds (bound checked)
-+ */
-+u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
++extern void __put_online_cpus(void);
++
++static inline void put_online_cpus(void)
 +{
-+	return cev_delta2ns(latch, evt, false);
++	preempt_disable();
++	this_cpu_dec(__cpuhp_refcount);
++	if (unlikely(__cpuhp_writer && __cpuhp_writer != current))
++		__put_online_cpus();
++	preempt_enable();
++}
++
+ extern void cpu_hotplug_disable(void);
+ extern void cpu_hotplug_enable(void);
+ #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -49,88 +49,109 @@ static int cpu_hotplug_disabled;
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+ 
+-static struct {
+-	struct task_struct *active_writer;
+-	struct mutex lock; /* Synchronizes accesses to refcount, */
+-	/*
+-	 * Also blocks the new readers during
+-	 * an ongoing cpu hotplug operation.
+-	 */
+-	int refcount;
+-} cpu_hotplug = {
+-	.active_writer = NULL,
+-	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
+-	.refcount = 0,
+-};
+-
+-void get_online_cpus(void)
+-{
+-	might_sleep();
+-	if (cpu_hotplug.active_writer == current)
+-		return;
+-	mutex_lock(&cpu_hotplug.lock);
+-	cpu_hotplug.refcount++;
+-	mutex_unlock(&cpu_hotplug.lock);
+-
+-}
+-EXPORT_SYMBOL_GPL(get_online_cpus);
+-
+-void put_online_cpus(void)
+-{
+-	if (cpu_hotplug.active_writer == current)
+-		return;
+-	mutex_lock(&cpu_hotplug.lock);
+-
+-	if (WARN_ON(!cpu_hotplug.refcount))
+-		cpu_hotplug.refcount++; /* try to fix things up */
+-
+-	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
+-		wake_up_process(cpu_hotplug.active_writer);
+-	mutex_unlock(&cpu_hotplug.lock);
++struct task_struct *__cpuhp_writer = NULL;
++EXPORT_SYMBOL_GPL(__cpuhp_writer);
+ 
++DEFINE_PER_CPU(unsigned int, __cpuhp_refcount);
++EXPORT_PER_CPU_SYMBOL_GPL(__cpuhp_refcount);
++
++static DEFINE_PER_CPU(int, cpuhp_state);
++static DEFINE_PER_CPU(spinlock_t, cpuhp_lock);
++static DECLARE_WAIT_QUEUE_HEAD(cpuhp_wq);
++
++void __get_online_cpus(void)
++{
++	spin_lock(__this_cpu_ptr(&cpuhp_lock));
++	for (;;) {
++		if (!__this_cpu_read(cpuhp_state)) {
++			__this_cpu_inc(__cpuhp_refcount);
++			break;
++		}
++
++		spin_unlock(__this_cpu_ptr(&cpuhp_lock));
++		preempt_enable();
++
++		wait_event(cpuhp_wq, !__cpuhp_writer);
++
++		preempt_disable();
++		spin_lock(__this_cpu_ptr(&cpuhp_lock));
++	}
++	spin_unlock(__this_cpu_ptr(&cpuhp_lock));
++}
++EXPORT_SYMBOL_GPL(__get_online_cpus);
++
++void __put_online_cpus(void)
++{
++	wake_up_process(__cpuhp_writer);
++}
++EXPORT_SYMBOL_GPL(__put_online_cpus);
++
++static void cpuph_wait_refcount(void)
++{
++	for (;;) {
++		unsigned int refcnt = 0;
++		int cpu;
++
++		set_current_state(TASK_UNINTERRUPTIBLE);
++
++		for_each_possible_cpu(cpu)
++			refcnt += per_cpu(__cpuhp_refcount, cpu);
++
++		if (!refcnt)
++			break;
++
++		schedule();
++	}
++	__set_current_state(TASK_RUNNING);
++}
++
++static void cpuhp_set_state(int state)
++{
++	int cpu;
++
++	for_each_possible_cpu(cpu) {
++		spinlock_t *lock = &per_cpu(cpuhp_lock, cpu);
++
++		spin_lock(lock);
++		per_cpu(cpuhp_state, cpu) = state;
++		spin_unlock(lock);
++	}
  }
- EXPORT_SYMBOL_GPL(clockevent_delta2ns);
+-EXPORT_SYMBOL_GPL(put_online_cpus);
  
-@@ -380,8 +414,8 @@ void clockevents_config(struct clock_eve
- 		sec = 600;
+ /*
+  * This ensures that the hotplug operation can begin only when the
+  * refcount goes to zero.
+  *
+- * Note that during a cpu-hotplug operation, the new readers, if any,
+- * will be blocked by the cpu_hotplug.lock
+- *
+  * Since cpu_hotplug_begin() is always called after invoking
+  * cpu_maps_update_begin(), we can be sure that only one writer is active.
+- *
+- * Note that theoretically, there is a possibility of a livelock:
+- * - Refcount goes to zero, last reader wakes up the sleeping
+- *   writer.
+- * - Last reader unlocks the cpu_hotplug.lock.
+- * - A new reader arrives at this moment, bumps up the refcount.
+- * - The writer acquires the cpu_hotplug.lock finds the refcount
+- *   non zero and goes to sleep again.
+- *
+- * However, this is very difficult to achieve in practice since
+- * get_online_cpus() not an api which is called all that often.
+- *
+  */
+ void cpu_hotplug_begin(void)
+ {
+-	cpu_hotplug.active_writer = current;
++	lockdep_assert_held(&cpu_add_remove_lock);
  
- 	clockevents_calc_mult_shift(dev, freq, sec);
--	dev->min_delta_ns = clockevent_delta2ns(dev->min_delta_ticks, dev);
--	dev->max_delta_ns = clockevent_delta2ns(dev->max_delta_ticks, dev);
-+	dev->min_delta_ns = cev_delta2ns(dev->min_delta_ticks, dev, false);
-+	dev->max_delta_ns = cev_delta2ns(dev->max_delta_ticks, dev, true);
+-	for (;;) {
+-		mutex_lock(&cpu_hotplug.lock);
+-		if (likely(!cpu_hotplug.refcount))
+-			break;
+-		__set_current_state(TASK_UNINTERRUPTIBLE);
+-		mutex_unlock(&cpu_hotplug.lock);
+-		schedule();
+-	}
++	__cpuhp_writer = current;
++
++	/* After this everybody will observe _writer and take the slow path. */
++	synchronize_sched();
++
++	/* Wait for no readers -- reader preference */
++	cpuhp_wait_refcount();
++
++	/* Stop new readers. */
++	cpuhp_set_state(1);
++
++	/* Wait for no readers */
++	cpuhp_wait_refcount();
  }
  
- /**
+ void cpu_hotplug_done(void)
+ {
+-	cpu_hotplug.active_writer = NULL;
+-	mutex_unlock(&cpu_hotplug.lock);
++	__cpuhp_writer = NULL;
++
++	/* Allow new readers */
++	cpuhp_set_state(0);
++
++	wake_up_all(&cpuhp_wq);
+ }
+ 
+ /*
