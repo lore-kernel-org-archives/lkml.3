@@ -1,305 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3ISOdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:33:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39440 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab3ISOdI (ORCPT
+	id S1752429Ab3ISOgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:36:42 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:59385 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751562Ab3ISOgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:33:08 -0400
-Date: Thu, 19 Sep 2013 16:32:41 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130919143241.GB26785@twins.programming.kicks-ass.net>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
- <1378805550-29949-38-git-send-email-mgorman@suse.de>
- <20130917143003.GA29354@twins.programming.kicks-ass.net>
- <20130917162050.GK22421@suse.de>
- <20130917164505.GG12926@twins.programming.kicks-ass.net>
- <20130918154939.GZ26785@twins.programming.kicks-ass.net>
+	Thu, 19 Sep 2013 10:36:41 -0400
+X-Sasl-enc: jHQyMbhSFjEYnV33pMkWt6TPDm2HDJBWJQu62BirG8mK 1379601400
+Date: Thu, 19 Sep 2013 07:37:15 -0700
+From: Greg KH <greg@kroah.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Michal Simek <monstr@monstr.eu>, Pavel Machek <pavel@denx.de>,
+        Alan Tull <atull@altera.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Subject: Re: /sys rules Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+Message-ID: <20130919143715.GA22928@kroah.com>
+References: <20130918191517.GQ19937@titan.lakedaemon.net>
+ <20130918203247.GA11181@obsidianresearch.com>
+ <1379539063.31417.23.camel@atx-linux-37>
+ <523AD814.1060406@monstr.eu>
+ <20130919111719.GA26246@amd.pavel.ucw.cz>
+ <523ADE58.2070103@monstr.eu>
+ <20130919125237.GA7125@amd.pavel.ucw.cz>
+ <20130919140633.GC19943@kroah.com>
+ <523B05E6.90605@monstr.eu>
+ <20130919142048.GS19937@titan.lakedaemon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130918154939.GZ26785@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130919142048.GS19937@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 19, 2013 at 10:20:48AM -0400, Jason Cooper wrote:
+> On Thu, Sep 19, 2013 at 04:10:46PM +0200, Michal Simek wrote:
+> > On 09/19/2013 04:06 PM, Greg KH wrote:
+> > > On Thu, Sep 19, 2013 at 02:52:37PM +0200, Pavel Machek wrote:
+> > >> On Thu 2013-09-19 13:22:00, Michal Simek wrote:
+> > >>> On 09/19/2013 01:17 PM, Pavel Machek wrote:
+> > >>
+> > >>>>> Status is just there and for my zynq devcfg driver I do export some status
+> > >>>>> bits.
+> > >>>>>
+> > >>>>> root@petalinux:~# cat /sys/class/fpga/fpga0/status
+> > >>>>> partial_bitstream_status: 0
+> > >>>>> prog_done_status: 1
+> > >>>>> dbg_lock_status: 0
+> > >>>>> seu_lock_status: 0
+> > >>>>> aes_en_lock_status: 0
+> > >>>>> aes_status: 0
+> > >>>>> seu_status: 0
+> > >>>>> spniden_status: 1
+> > >>>>> spiden_status: 1
+> > >>>>> niden_status: 1
+> > >>>>> dbgen_status: 1
+> > >>>>> dap_en_status: 7
+> > >>>>
+> > >>>> This is single file? If so, it needs to be changed. Greg is rather
+> > >>>> clear about that.
+> > >>>
+> > >>> Don't you have a link to these rules? I have seen any paragraph from Greg
+> > >>> about it but I forget where was it.
+> > >>
+> > >> "one value per file" and "there must be documentation in
+> > >> Documentation/ for each file" are the rules, iirc.
+> > >>
+> > >> There's Documentation/sysfs-rules.txt, but it does not seem too
+> > >> relevant.
+> > > 
+> > > Documentation/filesystems/sysfs.txt says it.  It probably should be
+> > > added to sysfs-rules.txt as well, but the odds that anyone ever reads
+> > > the documentation is so low I doubt it's even worth it.
+> > > 
+> > > Also, all sysfs files have to be documented in Documentation/ABI/ which
+> > > this patch does not do :(
+> > > 
+> > > And yes, multiple values in a single sysfs file is not allowed at all.
+> > > 
+> > 
+> > ok. I will read that. This is output from my fpga end driver - nothing
+> > what I have sent for review.
+> 
+> If this is useful to you (and others), you could use debugfs for this.
+> The rules there are intentionally a lot more lax.
 
+Yes, there is only one rule in debugfs, "There is no rules".
 
-
-Meh, I should stop poking at this..
-
-This one lost all the comments again :/
-
-It uses preempt_disable/preempt_enable vs synchronize_sched() to remove
-the barriers from the fast path.
-
-After that it waits for !refcount before setting state, which stops new
-readers.
-
-I used a per-cpu spinlock to keep the state check and refcount inc
-atomic vs the setting of state.
-
-So the slow path is still per-cpu and mostly uncontended even in the
-pending writer case.
-
-After setting state it again waits for !refcount -- someone could have
-sneaked in between the last !refcount and setting state. But this time
-we know refcount will stay 0.
-
-The only thing I don't really like is the unconditional writer wake in
-the read-unlock slowpath, but I couldn't come up with anything better.
-Here at least we guarantee that there is a wakeup after the last dec --
-although there might be far too many wakes.
-
----
-Subject: hotplug: Optimize {get,put}_online_cpus()
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Tue Sep 17 16:17:11 CEST 2013
-
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- include/linux/cpu.h |   32 ++++++++++-
- kernel/cpu.c        |  151 +++++++++++++++++++++++++++++-----------------------
- 2 files changed, 116 insertions(+), 67 deletions(-)
-
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -16,6 +16,7 @@
- #include <linux/node.h>
- #include <linux/compiler.h>
- #include <linux/cpumask.h>
-+#include <linux/percpu.h>
- 
- struct device;
- 
-@@ -175,8 +176,35 @@ extern struct bus_type cpu_subsys;
- 
- extern void cpu_hotplug_begin(void);
- extern void cpu_hotplug_done(void);
--extern void get_online_cpus(void);
--extern void put_online_cpus(void);
-+
-+extern struct task_struct *__cpuhp_writer;
-+DECLARE_PER_CPU(unsigned int, __cpuhp_refcount);
-+
-+extern void __get_online_cpus(void);
-+
-+static inline void get_online_cpus(void)
-+{
-+	might_sleep();
-+
-+	preempt_disable();
-+	if (likely(!__cpuhp_writer || __cpuhp_writer == current))
-+		this_cpu_inc(__cpuhp_refcount);
-+	else
-+		__get_online_cpus();
-+	preempt_enable();
-+}
-+
-+extern void __put_online_cpus(void);
-+
-+static inline void put_online_cpus(void)
-+{
-+	preempt_disable();
-+	this_cpu_dec(__cpuhp_refcount);
-+	if (unlikely(__cpuhp_writer && __cpuhp_writer != current))
-+		__put_online_cpus();
-+	preempt_enable();
-+}
-+
- extern void cpu_hotplug_disable(void);
- extern void cpu_hotplug_enable(void);
- #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -49,88 +49,109 @@ static int cpu_hotplug_disabled;
- 
- #ifdef CONFIG_HOTPLUG_CPU
- 
--static struct {
--	struct task_struct *active_writer;
--	struct mutex lock; /* Synchronizes accesses to refcount, */
--	/*
--	 * Also blocks the new readers during
--	 * an ongoing cpu hotplug operation.
--	 */
--	int refcount;
--} cpu_hotplug = {
--	.active_writer = NULL,
--	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
--	.refcount = 0,
--};
--
--void get_online_cpus(void)
--{
--	might_sleep();
--	if (cpu_hotplug.active_writer == current)
--		return;
--	mutex_lock(&cpu_hotplug.lock);
--	cpu_hotplug.refcount++;
--	mutex_unlock(&cpu_hotplug.lock);
--
--}
--EXPORT_SYMBOL_GPL(get_online_cpus);
--
--void put_online_cpus(void)
--{
--	if (cpu_hotplug.active_writer == current)
--		return;
--	mutex_lock(&cpu_hotplug.lock);
--
--	if (WARN_ON(!cpu_hotplug.refcount))
--		cpu_hotplug.refcount++; /* try to fix things up */
--
--	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
--		wake_up_process(cpu_hotplug.active_writer);
--	mutex_unlock(&cpu_hotplug.lock);
-+struct task_struct *__cpuhp_writer = NULL;
-+EXPORT_SYMBOL_GPL(__cpuhp_writer);
- 
-+DEFINE_PER_CPU(unsigned int, __cpuhp_refcount);
-+EXPORT_PER_CPU_SYMBOL_GPL(__cpuhp_refcount);
-+
-+static DEFINE_PER_CPU(int, cpuhp_state);
-+static DEFINE_PER_CPU(spinlock_t, cpuhp_lock);
-+static DECLARE_WAIT_QUEUE_HEAD(cpuhp_wq);
-+
-+void __get_online_cpus(void)
-+{
-+	spin_lock(__this_cpu_ptr(&cpuhp_lock));
-+	for (;;) {
-+		if (!__this_cpu_read(cpuhp_state)) {
-+			__this_cpu_inc(__cpuhp_refcount);
-+			break;
-+		}
-+
-+		spin_unlock(__this_cpu_ptr(&cpuhp_lock));
-+		preempt_enable();
-+
-+		wait_event(cpuhp_wq, !__cpuhp_writer);
-+
-+		preempt_disable();
-+		spin_lock(__this_cpu_ptr(&cpuhp_lock));
-+	}
-+	spin_unlock(__this_cpu_ptr(&cpuhp_lock));
-+}
-+EXPORT_SYMBOL_GPL(__get_online_cpus);
-+
-+void __put_online_cpus(void)
-+{
-+	wake_up_process(__cpuhp_writer);
-+}
-+EXPORT_SYMBOL_GPL(__put_online_cpus);
-+
-+static void cpuph_wait_refcount(void)
-+{
-+	for (;;) {
-+		unsigned int refcnt = 0;
-+		int cpu;
-+
-+		set_current_state(TASK_UNINTERRUPTIBLE);
-+
-+		for_each_possible_cpu(cpu)
-+			refcnt += per_cpu(__cpuhp_refcount, cpu);
-+
-+		if (!refcnt)
-+			break;
-+
-+		schedule();
-+	}
-+	__set_current_state(TASK_RUNNING);
-+}
-+
-+static void cpuhp_set_state(int state)
-+{
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu) {
-+		spinlock_t *lock = &per_cpu(cpuhp_lock, cpu);
-+
-+		spin_lock(lock);
-+		per_cpu(cpuhp_state, cpu) = state;
-+		spin_unlock(lock);
-+	}
- }
--EXPORT_SYMBOL_GPL(put_online_cpus);
- 
- /*
-  * This ensures that the hotplug operation can begin only when the
-  * refcount goes to zero.
-  *
-- * Note that during a cpu-hotplug operation, the new readers, if any,
-- * will be blocked by the cpu_hotplug.lock
-- *
-  * Since cpu_hotplug_begin() is always called after invoking
-  * cpu_maps_update_begin(), we can be sure that only one writer is active.
-- *
-- * Note that theoretically, there is a possibility of a livelock:
-- * - Refcount goes to zero, last reader wakes up the sleeping
-- *   writer.
-- * - Last reader unlocks the cpu_hotplug.lock.
-- * - A new reader arrives at this moment, bumps up the refcount.
-- * - The writer acquires the cpu_hotplug.lock finds the refcount
-- *   non zero and goes to sleep again.
-- *
-- * However, this is very difficult to achieve in practice since
-- * get_online_cpus() not an api which is called all that often.
-- *
-  */
- void cpu_hotplug_begin(void)
- {
--	cpu_hotplug.active_writer = current;
-+	lockdep_assert_held(&cpu_add_remove_lock);
- 
--	for (;;) {
--		mutex_lock(&cpu_hotplug.lock);
--		if (likely(!cpu_hotplug.refcount))
--			break;
--		__set_current_state(TASK_UNINTERRUPTIBLE);
--		mutex_unlock(&cpu_hotplug.lock);
--		schedule();
--	}
-+	__cpuhp_writer = current;
-+
-+	/* After this everybody will observe _writer and take the slow path. */
-+	synchronize_sched();
-+
-+	/* Wait for no readers -- reader preference */
-+	cpuhp_wait_refcount();
-+
-+	/* Stop new readers. */
-+	cpuhp_set_state(1);
-+
-+	/* Wait for no readers */
-+	cpuhp_wait_refcount();
- }
- 
- void cpu_hotplug_done(void)
- {
--	cpu_hotplug.active_writer = NULL;
--	mutex_unlock(&cpu_hotplug.lock);
-+	__cpuhp_writer = NULL;
-+
-+	/* Allow new readers */
-+	cpuhp_set_state(0);
-+
-+	wake_up_all(&cpuhp_wq);
- }
- 
- /*
+greg k-h
