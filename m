@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab3ISJaG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 05:30:06 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37416 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711Ab3ISJaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 05:30:05 -0400
-Date: Thu, 19 Sep 2013 11:30:02 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: will.deacon@arm.com, catalin.marinas@arm.com
-Subject: 3.12-rc1: no longer compiles for Nokia n900 (omap based)
-Message-ID: <20130919093002.GA23806@amd.pavel.ucw.cz>
+	id S1753119Ab3ISJc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 05:32:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48010 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751646Ab3ISJcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 05:32:55 -0400
+Date: Thu, 19 Sep 2013 10:32:50 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Kent Overstreet <koverstreet@google.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Did immutable bvecs accidentally break stable page writes?
+Message-ID: <20130919093250.GS22421@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Commit ffecfd1a (block: optionally snapshot page contents to provide
+stable pages during write) uses bounce buffers for stable page writes in
+jbd and ext3. Simplistically, __blk_queue_bounce takes a force parameter
+that is used when pages must be snapshot.
 
-I get:
+Commit 6bc454d1 (bounce: Refactor __blk_queue_bounce to not use
+bi_io_vec) refactored __blk_queue_bounce and now the start of the
+function looks like this
 
-  CC      arch/arm/kernel/machine_kexec.o
-/tmp/ccCFXeXG.s: Assembler messages:
-/tmp/ccCFXeXG.s:217: Error: garbage following instruction -- `dsb
-nshst'
-/tmp/ccCFXeXG.s:225: Error: garbage following instruction -- `dsb nsh'
-make[1]: *** [arch/arm/kernel/suspend.o] Error 1
-make[1]: *** Waiting for unfinished jobs....
+static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
+			       mempool_t *pool, int force)
+{
+	struct bio *bio;
+	int rw = bio_data_dir(*bio_orig);
+	struct bio_vec *to, *from;
+	unsigned i;
 
-pavel@amd:/data/l/linux-n900$ arm-linux-gnueabi-gcc --version
-arm-linux-gnueabi-gcc (Debian 4.3.5-4) 4.3.5
+	bio_for_each_segment(from, *bio_orig, i)
+		if (page_to_pfn(from->bv_page) > queue_bounce_pfn(q))
+			goto bounce;
 
-Minimum required gcc is 3.2, so I'm safe.
+	return;
+bounce:
+	bio = bio_clone_bioset(*bio_orig, GFP_NOIO, fs_bio_set);
 
-I suspect
+	bio_for_each_segment_all(to, bio, i) {
+		struct page *page = to->bv_page;
 
-commit 62cbbc42e0019aff6310259f275ae812463f8836
-Author: Will Deacon <will.deacon@arm.com>
-Date:   Thu May 23 18:43:58 2013 +0100
+		if (page_to_pfn(page) <= queue_bounce_pfn(q) && !force)
+			continue;
 
-								Pavel
+Note that the first bio_for_each_segment is completely ignoring the
+force parameter and hence snapshotting. This is particularly problematic
+for ext3 which forces the use of MS_SNAP_STABLE.
+
+I have not actually reproduced any problem, this is just code inspection
+but it looks like commit 6bc454d1 broke ext3. Kent, why was the force
+paramter ignored in that commit?
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Mel Gorman
+SUSE Labs
