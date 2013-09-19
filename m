@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab3ISKLE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 06:11:04 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38561 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab3ISKLB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 06:11:01 -0400
-Date: Thu, 19 Sep 2013 12:11:00 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH v3 RFT 2/2] PM / Hibernate: use name_to_dev_t to parse
- resume
-Message-ID: <20130919101100.GE19346@amd.pavel.ucw.cz>
-References: <1379546942-22344-1-git-send-email-sebastian.capella@linaro.org>
- <1379546942-22344-3-git-send-email-sebastian.capella@linaro.org>
+	id S1753480Ab3ISKMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 06:12:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37200 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751717Ab3ISKMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 06:12:31 -0400
+Date: Thu, 19 Sep 2013 12:12:14 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        jstancek@redhat.com, keescook@chromium.org,
+        peter.oberparleiter@de.ibm.com, rusty@rustcorp.com.au,
+        linux-arch@vger.kernel.org, arnd@arndb.de, mgahagan@redhat.com,
+        agospoda@redhat.com
+Subject: Re: [PATCH v2 2/4] gcov: add support for gcc 4.7 gcov format
+Message-ID: <20130919101214.GA2313@localhost.localdomain>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1378305776-3644-1-git-send-email-fhrbata@redhat.com>
+ <1378305776-3644-3-git-send-email-fhrbata@redhat.com>
+ <20130918142259.8c504e7cfbc8318a0550a891@linux-foundation.org>
+ <1379539625.1787.77.camel@joe-AO722>
+ <20130918143127.8dbdf6bc5e9d076a87cb2582@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379546942-22344-3-git-send-email-sebastian.capella@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130918143127.8dbdf6bc5e9d076a87cb2582@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2013-09-18 16:29:02, Sebastian Capella wrote:
-> Use the name_to_dev_t call to parse the device name echo'd to
-> to /sys/power/resume.  This imitates the method used in hibernate.c
-> in software_resume, and allows the resume partition to be specified
-> using other equivalent device formats as well.  By allowing
-> /sys/debug/resume to accept the same syntax as the resume=device
-> parameter, we can parse the resume=device in the init script and
-> use the resume device directly from the kernel command line.
+On Wed, Sep 18, 2013 at 02:31:27PM -0700, Andrew Morton wrote:
+> On Wed, 18 Sep 2013 14:27:05 -0700 Joe Perches <joe@perches.com> wrote:
 > 
-> Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-> Cc: Len Brown <len.brown@intel.com>
+> > On Wed, 2013-09-18 at 14:22 -0700, Andrew Morton wrote:
+> > > On Wed,  4 Sep 2013 16:42:54 +0200 Frantisek Hrbata <fhrbata@redhat.com> wrote:
+> > > > The gcov in-memory format changed in gcc 4.7. The biggest change, which
+> > > > requires this special implementation, is that gcov_info no longer contains
+> > > > array of counters for each counter type for all functions and gcov_fn_info is
+> > > > not used for mapping of function's counters to these arrays(offset). Now each
+> > > > gcov_fn_info contans it's counters, which makes things a little bit easier.
+> > > > 
+> > > > This is heavily based on the previous gcc_3_4.c implementation and patches
+> > > > provided by Peter Oberparleiter. Specially the buffer gcda implementation for
+> > > > iterator.
+> > > 
+> > > A couple of little tweaks:
+> > []
+> > > +++ a/kernel/gcov/gcc_4_7.c
+> > []
+> > > @@ -267,8 +266,8 @@ struct gcov_info *gcov_info_dup(struct g
+> > >  	if (!dup->filename)
+> > >  		goto err_free;
+> > >  
+> > > -	dup->functions = kzalloc(sizeof(struct gcov_fn_info *) *
+> > > -			info->n_functions, GFP_KERNEL);
+> > > +	dup->functions = kcalloc(sizeof(struct gcov_fn_info *),
+> > > +				 info->n_functions, GFP_KERNEL);
+> > 
+> > kcalloc(n, size_t, flags)
+> > 
+> > 	dup->functions = kcalloc(info->n_functions,
+> > 				 sizeof(struct gcov_fn_info *), GFP_KERNEL);
+> > 
+> 
+> Already did that after checkpatch whined at me.  Stupid thing.
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
+Many thanks Andrew and I'm really sorry about the "style problems". Lesson well
+learned: use checkpatch before posting.
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Frantisek Hrbata
