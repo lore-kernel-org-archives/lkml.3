@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab3ISW5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 18:57:33 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53333 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753689Ab3ISW5c (ORCPT
+	id S1754425Ab3ISW5o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 18:57:44 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:37281 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754387Ab3ISW5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 18:57:32 -0400
-Message-ID: <523B8157.4050508@hurleysoftware.com>
-Date: Thu, 19 Sep 2013 18:57:27 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 19 Sep 2013 18:57:41 -0400
 MIME-Version: 1.0
-To: Josef Bacik <jbacik@fusionio.com>
-CC: linux-btrfs@vger.kernel.org, walken@google.com,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/2] rwsem: add rwsem_is_contended V2
-References: <1379605688-987-1-git-send-email-jbacik@fusionio.com>
-In-Reply-To: <1379605688-987-1-git-send-email-jbacik@fusionio.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+In-Reply-To: <1379626776.753.164.camel@shinybook.infradead.org>
+References: <20130919194752.GA19975@quad.lixom.net>
+	<1379626776.753.164.camel@shinybook.infradead.org>
+Date: Thu, 19 Sep 2013 15:57:40 -0700
+Message-ID: <CAN8TOE8j=oosn-5hAdqoTPcuW-sGvDAHd_nK6BZfJpxMwwpisQ@mail.gmail.com>
+Subject: Re: [GIT PULL] ARM: SoC fixes for 3.12-rc
+From: Brian Norris <computersforpeace@gmail.com>
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2013 11:48 AM, Josef Bacik wrote:
-> Btrfs needs a simple way to know if it needs to let go of it's read lock on a
-> rwsem.  Introduce rwsem_is_contended to check to see if there are any waiters on
-> this rwsem currently.  This is just a hueristic, it is meant to be light and not
-> 100% accurate and called by somebody already holding on to the rwsem in either
-> read or write.  Thanks,
+On Thu, Sep 19, 2013 at 2:39 PM, Woodhouse, David
+<david.woodhouse@intel.com> wrote:
+> On Thu, 2013-09-19 at 12:47 -0700, Olof Johansson wrote:
+>>
+>> - A fix for build breakage in the MTD subsystem for some PXA devices.
+>>   David Woodhouse has this patch in his for-next branch but has not been
+>>   responding to our requests to send it up so here it is.
+>>   I should have amended the commit message to describe the build failure for
+>>   CONFIG_OF=n setups, but forgot and now it's down in the stack of commits.
 >
-> Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-> ---
-> V1->V2: took everybodys suggestions and simplified it to just one function in
-> rwsem.h so it works for both the spinlock case and non-spinlock case.
->
->   include/linux/rwsem.h | 13 +++++++++++++
->   1 file changed, 13 insertions(+)
->
-> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-> index 0616ffe..c340493 100644
-> --- a/include/linux/rwsem.h
-> +++ b/include/linux/rwsem.h
-> @@ -75,6 +75,19 @@ do {								\
->   } while (0)
->
->   /*
-> + * This is the same regardless of which rwsem implementation that is being used.
-> + * It is just a heuristic meant to be called by somebody alreadying holding the
-> + * rwsem to see if somebody from  the opposite type is wanting access to the
-                                         ^^^^^^^^^^^^^
+> Thanks for pulling that in. Apologies for the screwup.
 
-Readers can infer that at least one writer is waiting if the wait_list is
-!empty; however, writers cannot infer anything other than some other
-thread is waiting -- it could be a reader or a writer or multiples of either.
+Speaking of such process issues: there's an outstanding patch for a
+(small) memory leak that was introduced in the nand_base.c ONFI code
+in 3.12-rc1. Can I expect you to attend to these sort of -rcX (where X
+> 1) issues? Or should I send Linus the patch myself? I don't really
+want it to wait around until 3.13-rc1 to go to -stable.
 
+It's in l2-mtd.git (will need cherry-picked out of there) and ready
+for the next linux-next:
 
-> + * lock.
-> + */
-> +static inline int rwsem_is_contended(struct rw_semaphore *sem)
-> +{
-> +	if (!list_empty(&sem->wait_list))
-> +		return 1;
-> +	return 0;
+commit b2bdf43fcc1d440d8f4e1d5c8c59bf2ca76204df
+Author: Brian Norris <computersforpeace@gmail.com>
+Date:   Mon Sep 16 17:59:20 2013 -0700
 
-How about
+    mtd: nand: fix memory leak in ONFI extended parameter page
 
-         return !list_empty(&sem->wait_list);
-
-?
-
-> +}
-> +
-> +/*
->    * lock for reading
->    */
->   extern void down_read(struct rw_semaphore *sem);
->
-
+Brian
