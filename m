@@ -1,59 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab3ISRC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 13:02:27 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:49560 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab3ISRCZ (ORCPT
+	id S1752950Ab3ISREG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 13:04:06 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:51302 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab3ISREE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 13:02:25 -0400
-X-Auth-Info: 8Foob0Gwu4QiuB066nsdVFZoKddb3JLmqZLmaCXNw4E=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: [patch 1/6] hardirq: Make hardirq bits generic
-References: <20130917082838.218329307@infradead.org>
-	<20130917182350.449685712@linutronix.de>
-	<20130917183628.534494408@linutronix.de>
-	<CAMuHMdWgrQf+ULDrZyY5R+vT3GtiWEgpsWxmfk0b5pivN7wBmg@mail.gmail.com>
-	<alpine.DEB.2.02.1309172315550.4089@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1309181159520.4089@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1309191652480.4089@ionos.tec.linutronix.de>
-X-Yow: Look DEEP into the OPENINGS!!  Do you see any ELVES or EDSELS...
- or a HIGHBALL??...
-Date: Thu, 19 Sep 2013 19:02:18 +0200
-In-Reply-To: <alpine.DEB.2.02.1309191652480.4089@ionos.tec.linutronix.de>
-	(Thomas Gleixner's message of "Thu, 19 Sep 2013 17:14:57 +0200
-	(CEST)")
-Message-ID: <87txhg3ftx.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 19 Sep 2013 13:04:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1379512574-25912-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1379512574-25912-1-git-send-email-ricardo.ribalda@gmail.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Thu, 19 Sep 2013 19:03:43 +0200
+Message-ID: <CAPybu_3H9NkE4gh9oobu-xB2V=vjhAtD6uhvB5kAd8b9=gsigA@mail.gmail.com>
+Subject: Re: [PATCHv3] perf: Support for Openembedded/Yocto -dbg packages
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner <tglx@linutronix.de> writes:
+Anything else to fix on this patch?
 
-> +	/*
-> +	 * Only the last interrupt leaving the kernel goes through the
-> +	 * various exception return checks.
-> +	 */
-> +	cmpl	#0, %d0
-	tstl	%d0
+On Wed, Sep 18, 2013 at 3:56 PM, Ricardo Ribalda Delgado
+<ricardo.ribalda@gmail.com> wrote:
+> On OpenEmbedded the symbol files are located under a .debug folder on
+> the same folder as the binary file.
+>
+> This patch adds support for such files.
+>
+> Without this patch on perf top you can see:
+>
+> no symbols found in /usr/lib/gstreamer-1.0/libtheoraenc.so.1.1.2, maybe install
+> a debug package?
+>
+> 84.56%  libtheoraenc.so.1.1.2       [.] 0x000000000000b346
+>
+> With this patch symbols are shown:
+>
+> 19.06%  libtheoraenc.so.1.1.2       [.] oc_int_frag_satd_thresh_mmxext
+> 9.76%   libtheoraenc.so.1.1.2       [.] oc_analyze_mb_mode_luma
+> 5.58%   libtheoraenc.so.1.1.2       [.] oc_qii_state_advance
+> 4.84%   libtheoraenc.so.1.1.2       [.] oc_enc_tokenize_ac
+> ...
+>
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>
+> v2: Changes proposed by Ingo Molnar
+>
+> -Improve changeset
+> -Improve multi-snprintf readability
+> -Code Style
+>
+> v3: Changes proposed by Ingo Molnar, Arnaldo Carvalho de Melo and Peter Zijlstra
+>
+> -Code Style
+> -Use scnprintf
+>
+>
+>  tools/perf/util/dso.c    | 49 +++++++++++++++++++++++++++++++++++-------------
+>  tools/perf/util/dso.h    |  1 +
+>  tools/perf/util/symbol.c |  1 +
+>  3 files changed, 38 insertions(+), 13 deletions(-)
+>
+> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+> index e3c1ff8..6bfc8aa 100644
+> --- a/tools/perf/util/dso.c
+> +++ b/tools/perf/util/dso.c
+> @@ -7,19 +7,20 @@
+>  char dso__symtab_origin(const struct dso *dso)
+>  {
+>         static const char origin[] = {
+> -               [DSO_BINARY_TYPE__KALLSYMS]             = 'k',
+> -               [DSO_BINARY_TYPE__VMLINUX]              = 'v',
+> -               [DSO_BINARY_TYPE__JAVA_JIT]             = 'j',
+> -               [DSO_BINARY_TYPE__DEBUGLINK]            = 'l',
+> -               [DSO_BINARY_TYPE__BUILD_ID_CACHE]       = 'B',
+> -               [DSO_BINARY_TYPE__FEDORA_DEBUGINFO]     = 'f',
+> -               [DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]     = 'u',
+> -               [DSO_BINARY_TYPE__BUILDID_DEBUGINFO]    = 'b',
+> -               [DSO_BINARY_TYPE__SYSTEM_PATH_DSO]      = 'd',
+> -               [DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]  = 'K',
+> -               [DSO_BINARY_TYPE__GUEST_KALLSYMS]       = 'g',
+> -               [DSO_BINARY_TYPE__GUEST_KMODULE]        = 'G',
+> -               [DSO_BINARY_TYPE__GUEST_VMLINUX]        = 'V',
+> +               [DSO_BINARY_TYPE__KALLSYMS]                     = 'k',
+> +               [DSO_BINARY_TYPE__VMLINUX]                      = 'v',
+> +               [DSO_BINARY_TYPE__JAVA_JIT]                     = 'j',
+> +               [DSO_BINARY_TYPE__DEBUGLINK]                    = 'l',
+> +               [DSO_BINARY_TYPE__BUILD_ID_CACHE]               = 'B',
+> +               [DSO_BINARY_TYPE__FEDORA_DEBUGINFO]             = 'f',
+> +               [DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]             = 'u',
+> +               [DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO]       = 'o',
+> +               [DSO_BINARY_TYPE__BUILDID_DEBUGINFO]            = 'b',
+> +               [DSO_BINARY_TYPE__SYSTEM_PATH_DSO]              = 'd',
+> +               [DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]          = 'K',
+> +               [DSO_BINARY_TYPE__GUEST_KALLSYMS]               = 'g',
+> +               [DSO_BINARY_TYPE__GUEST_KMODULE]                = 'G',
+> +               [DSO_BINARY_TYPE__GUEST_VMLINUX]                = 'V',
+>         };
+>
+>         if (dso == NULL || dso->symtab_type == DSO_BINARY_TYPE__NOT_FOUND)
+> @@ -64,6 +65,28 @@ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
+>                          symbol_conf.symfs, dso->long_name);
+>                 break;
+>
+> +       case DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO:
+> +       {
+> +               char *last_slash;
+> +               size_t len;
+> +               size_t dir_size;
+> +
+> +               last_slash = dso->long_name + dso->long_name_len;
+> +               while (last_slash != dso->long_name && *last_slash != '/')
+> +                       last_slash--;
+> +
+> +               len = scnprintf(file, size, "%s", symbol_conf.symfs);
+> +               dir_size = last_slash - dso->long_name + 2;
+> +               if (dir_size > (size - len)) {
+> +                       ret = -1;
+> +                       break;
+> +               }
+> +               len += scnprintf(file + len, dir_size, "%s",  dso->long_name);
+> +               len += scnprintf(file + len , size - len, ".debug%s",
+> +                                                               last_slash);
+> +               break;
+> +       }
+> +
+>         case DSO_BINARY_TYPE__BUILDID_DEBUGINFO:
+>                 if (!dso->has_build_id) {
+>                         ret = -1;
+> diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+> index b793053..dbd9241 100644
+> --- a/tools/perf/util/dso.h
+> +++ b/tools/perf/util/dso.h
+> @@ -23,6 +23,7 @@ enum dso_binary_type {
+>         DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
+>         DSO_BINARY_TYPE__KCORE,
+>         DSO_BINARY_TYPE__GUEST_KCORE,
+> +       DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
+>         DSO_BINARY_TYPE__NOT_FOUND,
+>  };
+>
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index 7eb0362..cd1dcc4 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -51,6 +51,7 @@ static enum dso_binary_type binary_type_symtab[] = {
+>         DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
+>         DSO_BINARY_TYPE__GUEST_KMODULE,
+>         DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
+> +       DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
+>         DSO_BINARY_TYPE__NOT_FOUND,
+>  };
+>
+> --
+> 1.8.4.rc3
+>
 
-Andreas.
+
 
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Ricardo Ribalda
