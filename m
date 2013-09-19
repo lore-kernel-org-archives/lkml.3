@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab3ISJ5L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 05:57:11 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60861 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab3ISJ5J (ORCPT
+	id S1753352Ab3ISJ5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 05:57:16 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38175 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab3ISJ5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 05:57:09 -0400
-Date: Thu, 19 Sep 2013 10:56:28 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Marc Reilly <marc@cpdesign.com.au>, u.kleine-koenig@pengutronix.de,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linaro-kernel@lists.linaro.org
-Message-ID: <20130919095628.GH21013@sirena.org.uk>
-References: <1379527587-14567-1-git-send-email-broonie@kernel.org>
- <1379527587-14567-2-git-send-email-broonie@kernel.org>
- <20130919091318.GA22389@lee--X1>
+	Thu, 19 Sep 2013 05:57:12 -0400
+Date: Thu, 19 Sep 2013 11:57:11 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: 3.12-rc1: no longer compiles for Nokia n900 (omap based)
+Message-ID: <20130919095711.GA19346@amd.pavel.ucw.cz>
+References: <20130919093002.GA23806@amd.pavel.ucw.cz>
+ <20130919093627.GB24866@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="D+MycPccvPlP5/X+"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130919091318.GA22389@lee--X1>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 86.153.71.95
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/3] mfd: mc13xxx: Move SPI erratum workaround into SPI
- I/O function
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20130919093627.GB24866@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu 2013-09-19 10:36:28, Will Deacon wrote:
+> On Thu, Sep 19, 2013 at 10:30:02AM +0100, Pavel Machek wrote:
+> > Hi!
+> > 
+> > I get:
+> > 
+> >   CC      arch/arm/kernel/machine_kexec.o
+> > /tmp/ccCFXeXG.s: Assembler messages:
+> > /tmp/ccCFXeXG.s:217: Error: garbage following instruction -- `dsb
+> > nshst'
+> > /tmp/ccCFXeXG.s:225: Error: garbage following instruction -- `dsb nsh'
+> > make[1]: *** [arch/arm/kernel/suspend.o] Error 1
+> > make[1]: *** Waiting for unfinished jobs....
+> > 
+> > pavel@amd:/data/l/linux-n900$ arm-linux-gnueabi-gcc --version
+> > arm-linux-gnueabi-gcc (Debian 4.3.5-4) 4.3.5
+> > 
+> > Minimum required gcc is 3.2, so I'm safe.
+> 
+> Please check your binutils. >= 2.22 has been reported to work.
 
---D+MycPccvPlP5/X+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+pavel@amd:/data/l/linux-good$ arm-linux-gnueabi-ld --version
+GNU ld (GNU Binutils for Debian) 2.20.1.20100303
+Copyright 2009 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms
+of
+the GNU General Public License version 3 or (at your option) a later
+version.
+This program has absolutely no warranty.
 
-On Thu, Sep 19, 2013 at 10:13:18AM +0100, Lee Jones wrote:
+but
 
-Please delete irrelevant context from mails, it makes it easier to find
-the new content that's beenn added.
+Documentation/Changes:
+o  binutils               2.12                    # ld -v
 
-> On Wed, 18 Sep 2013, Mark Brown wrote:
+Can the code be fixed so that binutils 2.12 still work?
 
-> > @@ -94,10 +94,15 @@ static int mc13xxx_spi_write(void *context, const void *data, size_t count)
-> >  {
-> >  	struct device *dev = context;
-> >  	struct spi_device *spi = to_spi_device(dev);
-> > +	char *reg = data;
-
-> I think this requires a cast.
-
-No, you should never need a cast to or from void in C - it probably does
-want to be a const char though.
-
---D+MycPccvPlP5/X+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSOspDAAoJELSic+t+oim9FpkP/igeBTgdqLd2AM0jwuzRaaIp
-feGipN7o51qlbvGEawz50qIkqrfiSiq0Zr1CPdvvBxMyE/uHxwMDxNazmDESL7h3
-2kWHuMyhQuT0YIahFc/M/7wr7SszfCFNmu9NAT7pQtrGuBV19MkerPCFr3qVFQVz
-OxWpQ1IZXraXV9t+DAq2o/FJtK6IZOO7QHUufY5y6UpkZIqIhvW8yY+A4XWgOylJ
-Y0r88K9Ips1w729JUjHxZEF8u4KH6IMP/xMT04vO1YMXsmNKXKNAGRuAZex7NVom
-eXSgeQgsEcuTkpHwd7Ny6AWepMI/0342BJHylDlJOSP1UEzOc3+Z+RPIFoaDqbzK
-IxDjmq0deFWaqAaAIwVH37Ub5uI+/Kua2Lv/QlRfGlfZvxOQPI/RhC7GAtwc3c38
-pqAEPyeKP+BVKuq6ipJ7+Y+PvY4FpGnhHSjJB7bHqR4mVfR3GHnQz3SmTe5TzfaR
-7cf9hgidCEqZ+2zCroTCy3A0e6/hYur25ekZmNH+EZovIcFGxWLIkFYKI4U/PTb2
-PhwFRM4RBGuFcrymMMdeToGCYNJZnbfO+XaQ5VUsZnSX9+0ooN0pDKZo3tn8MLhr
-qbO0ghy5nXTahj0ABaJ1skkUk/vUW9OL7tJ+WwOEcUpCxe0fmhaTtfoPWFHDq3PP
-YXM3I6yo9sansFj0gt3Z
-=2/jp
------END PGP SIGNATURE-----
-
---D+MycPccvPlP5/X+--
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
