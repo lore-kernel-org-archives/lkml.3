@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab3ISOzu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:55:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58737 "EHLO mail.skyhub.de"
+	id S1753453Ab3ISO4G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:56:06 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58771 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047Ab3ISOzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:55:09 -0400
+	id S1752417Ab3ISOzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 10:55:07 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: X86 ML <x86@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
@@ -15,67 +15,59 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
         James Bottomley <James.Bottomley@HansenPartnership.com>,
         Vivek Goyal <vgoyal@redhat.com>, Dave Young <dyoung@redhat.com>,
         linux-efi@vger.kernel.org
-Subject: [PATCH 00/11] EFI runtime services virtual mapping
-Date: Thu, 19 Sep 2013 16:54:43 +0200
-Message-Id: <1379602494-26684-1-git-send-email-bp@alien8.de>
+Subject: [PATCH 07/11] x86, pageattr: Add a PTE pagetable populating function
+Date: Thu, 19 Sep 2013 16:54:50 +0200
+Message-Id: <1379602494-26684-8-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1379602494-26684-1-git-send-email-bp@alien8.de>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-Hi all,
+Handle last level by unconditionally writing the PTEs into the PTE page
+while paying attention to the NX bit.
 
-here's finally a new version of the runtime services VA mapping patchset
-which hopefully implements hpa's idea of statically mapping EFI runtime
-regions in a top-down manner starting at -4Gb virtual.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/mm/pageattr.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
-We're also using a different pagetable so as not to pollute kernel
-address space. For that, we switch to that table before doing an EFI
-call, and afterwards we switch back to the previous one.
-
-To the patches:
-
-1-2 are simple cleanups which Matt probably can take now
-
-3-10 add the machinery to map regions into an arbitrary PGD. Those I've
-split deliberately into very small bites so that they can be reviewed
-more thoroughly and easily for my pagetable skills are pretty basic.
-
-11 is the actual patch which implements that mapping so that we can use
-runtime services in kexec (which is the whole reason for this fuss :))
-
-So please take a long hard look at those, hammer on them on your
-boxes and let me know. They boot fine on my Dell UEFI box and in OVMF
-(obviously :)).
-
-Thanks.
-
-Borislav Petkov (11):
-  efi: Simplify EFI_DEBUG
-  efi: Remove EFI_PAGE_SHIFT and EFI_PAGE_SIZE
-  x86, pageattr: Lookup address in an arbitrary PGD
-  x86, pageattr: Add a PGD pagetable populating function
-  x86, pageattr: Add a PUD pagetable populating function
-  x86, pageattr: Add a PMD pagetable populating function
-  x86, pageattr: Add a PTE pagetable populating function
-  x86, pageattr: Add a PUD error unwinding path
-  x86, pageattr: Add last levels of error path
-  x86, cpa: Map in an arbitrary pgd
-  EFI: Runtime services virtual mapping
-
- arch/x86/boot/compressed/eboot.c     |  12 +-
- arch/x86/boot/compressed/eboot.h     |   1 -
- arch/x86/include/asm/efi.h           |  58 +++--
- arch/x86/include/asm/pgtable_types.h |   3 +-
- arch/x86/mm/pageattr.c               | 461 +++++++++++++++++++++++++++++++++--
- arch/x86/platform/efi/efi.c          | 126 +++++-----
- arch/x86/platform/efi/efi_64.c       |  56 +----
- arch/x86/platform/efi/efi_stub_64.S  |  47 ++++
- include/linux/efi.h                  |   6 +-
- 9 files changed, 615 insertions(+), 155 deletions(-)
-
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index c56d71591617..02cf97b3bb7c 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -686,7 +686,27 @@ static int alloc_pmd_page(pud_t *pud)
+ 	return 0;
+ }
+ 
+-#define populate_pte(cpa, start, end, pages, pmd, pgprot)	do {} while (0)
++static void populate_pte(struct cpa_data *cpa,
++			 unsigned long start, unsigned long end,
++			 unsigned num_pages, pmd_t *pmd, pgprot_t pgprot)
++{
++	pte_t *pte;
++
++	pte = pte_offset_kernel(pmd, start);
++
++	while (num_pages-- && start < end) {
++
++		/* deal with the NX bit */
++		if (!(pgprot_val(pgprot) & _PAGE_NX))
++			cpa->pfn &= ~_PAGE_NX;
++
++		set_pte(pte, pfn_pte(cpa->pfn >> PAGE_SHIFT, pgprot));
++
++		start	 += PAGE_SIZE;
++		cpa->pfn += PAGE_SIZE;
++		pte++;
++	}
++}
+ 
+ static int populate_pmd(struct cpa_data *cpa,
+ 			unsigned long start, unsigned long end,
 -- 
 1.8.4
 
