@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab3ISOtw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:49:52 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:64527 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab3ISOtv (ORCPT
+	id S1752920Ab3ISOuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:50:12 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51434 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914Ab3ISOuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:49:51 -0400
-Date: Thu, 19 Sep 2013 11:49:43 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 02/11] perf tools: fix path unpopulated in
- machine__create_modules()
-Message-ID: <20130919144943.GE17742@ghostprotocols.net>
-References: <1379328772-21214-1-git-send-email-adrian.hunter@intel.com>
- <1379328772-21214-3-git-send-email-adrian.hunter@intel.com>
+	Thu, 19 Sep 2013 10:50:11 -0400
+Date: Thu, 19 Sep 2013 15:50:01 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org, swarren@nvidia.com
+Message-ID: <20130919145001.GD21013@sirena.org.uk>
+References: <1379601988-25839-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZPyQn7mfIBXOql8K"
 Content-Disposition: inline
-In-Reply-To: <1379328772-21214-3-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <1379601988-25839-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Give him an evasive answer.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 86.153.71.95
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: set current constraints while setting
+ machine constraints
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Sep 16, 2013 at 01:52:43PM +0300, Adrian Hunter escreveu:
-> In machine__create_modules() the 'path' char array
-> was used in a call to symbol__restricted_filename()
-> without always being populated.
 
-Isn't this equivalent and shorter?
+--ZPyQn7mfIBXOql8K
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-[acme@zoo linux]$ git diff
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 933d14f..6188d28 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -792,7 +792,7 @@ static int machine__create_modules(struct machine *machine)
-                modules = path;
-        }
- 
--       if (symbol__restricted_filename(path, "/proc/modules"))
-+       if (symbol__restricted_filename(modules, "/proc/modules"))
-                return -1;
- 
-        file = fopen(modules, "r");
-[acme@zoo linux]$ 
+On Thu, Sep 19, 2013 at 08:16:28PM +0530, Laxman Dewangan wrote:
 
-- Arnaldo
+> +	if (!rdev->desc->ops->set_current_limit ||
+> +			!rdev->desc->ops->get_current_limit)
+> +		return 0;
+> +
 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->  tools/perf/util/machine.c | 11 ++++-------
->  1 file changed, 4 insertions(+), 7 deletions(-)
-> 
-> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> index 933d14f..1ae917c 100644
-> --- a/tools/perf/util/machine.c
-> +++ b/tools/perf/util/machine.c
-> @@ -782,20 +782,17 @@ static int machine__create_modules(struct machine *machine)
->  	size_t n;
->  	FILE *file;
->  	struct map *map;
-> -	const char *modules;
->  	char path[PATH_MAX];
->  
->  	if (machine__is_default_guest(machine))
-> -		modules = symbol_conf.default_guest_modules;
-> -	else {
-> -		sprintf(path, "%s/proc/modules", machine->root_dir);
-> -		modules = path;
-> -	}
-> +		strncpy(path, symbol_conf.default_guest_modules, PATH_MAX);
-> +	else
-> +		snprintf(path, PATH_MAX, "%s/proc/modules", machine->root_dir);
->  
->  	if (symbol__restricted_filename(path, "/proc/modules"))
->  		return -1;
->  
-> -	file = fopen(modules, "r");
-> +	file = fopen(path, "r");
->  	if (file == NULL)
->  		return -1;
->  
-> -- 
-> 1.7.11.7
+The indentation here is odd and we probably ought to complain if someone
+tries to set a current constarint on a regulator that doesn't support
+the operation, if only to avoid surprises later on when the limits don't
+take effect.
+
+> +	current_uA = rdev->desc->ops->get_current_limit(rdev);
+> +	if (current_uA < rdev->constraints->min_uA ||
+> +			current_uA > rdev->constraints->max_uA) {
+> +		ret = rdev->desc->ops->set_current_limit(rdev,
+> +				rdev->constraints->min_uA,
+> +				rdev->constraints->max_uA);
+> +		if (ret < 0) {
+> +			rdev_err(rdev,
+> +				"Failed to set current constraint, %d\n", ret);
+> +			return ret;
+> +		}
+
+Why is this conditional on the existing setting?  Just apply the
+constraint.
+
+> +	}
+> +	return 0;
+
+Missing blank.
+
+--ZPyQn7mfIBXOql8K
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSOw8WAAoJELSic+t+oim95TYP/A003HgFSsMeiT5JbZ28OGlf
+6wxQJZrg4OhBLwgg2jYexZdicusISOD6zx6S379tyrAjPa/k8rru5fhZsSSgwWZV
+RBJTjb7VCyvDj9CaR/A7FsZiZFHxvdTZSqZmcQHjkQYYpGPAirJr5OdKShdh8Jvo
+sJQUhw3cusfHERWWa23MtawJfa8vSZYLOJqQBTL4vRlTlgYqst/acVWlqGd+/rOl
+qQru3uOyo6tqNBU/dl4T4q9FdCvAUsjThiPlyszTyehsmAHp6WhAMIsCz9vlCnDD
+iZf5dYRMn2TxdWF0G1gZj6ZuNKsRODuXFWk6w+NklV0aI+4inGlh+zWMPiynUgB3
++xN0LGu2HPbQInwMlOa+whRw4OrkZytcluTSFyHAQWPKIGlcxmJy2Umns8raRKoI
+a7bCBRZdiT+60yvG01LsCJRa/wmcI8VpJ0PlzIxBY/RYqj6NcxReIUIN2OFJPB+V
+mUDuKdBjfHGxCI5kmhQxgZWnEluri9fpcLUls+ZqU4g6tvDl2KMbIXyLpkWm4e1J
+DG8uDEOyB401fAIxWT0NGoQBSrjcOFB4BvPbRoJ/XiXOQK9c0MRJtO2bCRnPjkMH
+WW0F+hG9UGA1h8M7p0ILpNxcDUBI1d/1wlZbXXEfFfMC/zOoENjdAOofAcGFl24H
+BADavOzUEKndQPtzHoiw
+=hU4Y
+-----END PGP SIGNATURE-----
+
+--ZPyQn7mfIBXOql8K--
