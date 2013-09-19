@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab3ISOMG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:12:06 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:62392 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab3ISOME (ORCPT
+	id S1752844Ab3ISOMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:12:19 -0400
+Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:53847 "EHLO
+	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752210Ab3ISOMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:12:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <523AF50E.1040502@linux.vnet.ibm.com>
-References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
-	<45987104.t6r4hvPgQn@vostro.rjw.lan>
-	<523AF22F.1010909@linux.vnet.ibm.com>
-	<CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com>
-	<523AF50E.1040502@linux.vnet.ibm.com>
-Date: Thu, 19 Sep 2013 19:42:03 +0530
-Message-ID: <CAKohpok_u=yUsw3pci90G0sKYy2Ndg8qc9SW+wJm_woSfQhy-g@mail.gmail.com>
-Subject: Re: Regression on cpufreq in v3.12-rc1
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Sep 2013 10:12:15 -0400
+X-RRZE-Submit-IP: 131.188.42.159
+From: Dominik Paulus <dominik.paulus@fau.de>
+To: usbip-devel@lists.sourceforge.net
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Dominik Paulus <dominik.paulus@fau.de>,
+        Tobias Polzer <tobias.polzer@fau.de>,
+        Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
+        Stefan Reif <ke42caxa@cip.cs.fau.de>, Joe Perches <joe@perches.com>,
+        Bart Westgeest <bart@elbrys.com>,
+        Jake Champlin <jake.champlin.27@gmail.com>,
+        Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Anthony Foiani <anthony.foiani@gmail.com>,
+        Bernard Blackham <b-linuxgit@largestprime.net>,
+        Harvey Yang <harvey.huawei.yang@gmail.com>, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@i4.cs.fau.de,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/7] staging: usbip: Extend crypto support
+Date: Thu, 19 Sep 2013 16:11:52 +0200
+Message-Id: <1379599919-24763-1-git-send-email-dominik.paulus@fau.de>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 September 2013 18:28, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> On 09/19/2013 06:25 PM, Linus Walleij wrote:
+Hi,
 
->> The problem is not what it returns, the system seems to survive no matter
->> whether it returns 0 or 17 or whatever.
->>
->
-> Of course. What I intended to say was that I don't recall recent kernels
-> returning _anything_ on !policy. So there wasn't any sudden change in _that_
-> piece of code, AFAIR.
->
->> The problem is that sometimes in the v3.12 kernel cycle we got a
->> BUG() crash instead of some random value back for calling early.
->>
->
-> Yep, and that's most likely due to some change in ordering of calls somewhere,
-> which makes calls to lock_policy_rwsem_read() before it is safe to do so,
-> rather than anything related to how lock_policy_rwsem_read() handles the call.
+this patch series extends our previous set of patches (see [1]). We extended
+the crypto support so all of the usbip network traffic can now be completely
+encrypted and authenticated.
 
-I don't see any problem in the order things are called from both the places
-where you got the crash from.. Because cpufreq driver is registered with
-arch_initcall() and both the crash locations gets initialized after that..
+We now use GnuTLS not only for password verification, but extend the lifetime
+of the TLS connection to cover all of the userland communications.  Before
+handing over the connection to the kernel, two randomly generated 128 bit
+session keys are exchanged between client and server and stored in sysfs
+together with the sockfd. The kernel uses these keys to encrypt and
+authenticate all of the traffic using AES-GCM and the linux crypto API.
+Separate keys are used for both directions of the data channel.
 
-I believe the problem is, cpufreq driver failed to register for some reason
-and so we are getting this problem...
+To the best of our knowledge, the implemented encryption should provide decent
+security. However, it still lacks complete review; we also note that in the
+documentation.
 
-Can you please confirm if cpufreq driver failed to register or not?
+As mentioned in the project README, the network protocol needs more discussion.
+This series increments the protocol version, because the improved crypto
+support breaks compatibility with the previous patch series[1]. In the long
+term, the protocol should be extended to support proper feature negotiation. If
+both patch series are merged as one, the protocol version increment can be
+omitted - both patch series are compatible with unauthenticated transport, but
+are incompatible with each other.
 
-And, I have another solution in mind for getting this problem fixed,
-will get that to you by then..
+Regards,
+	Tobias Polzer and Dominik Paulus
+
+[1] <1379066161-8278-1-git-send-email-dominik.paulus@fau.de>,
+    https://lkml.org/lkml/2013/9/13/104
+
