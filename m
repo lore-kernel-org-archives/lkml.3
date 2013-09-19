@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab3ISMgk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 08:36:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39863 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751914Ab3ISMgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 08:36:38 -0400
-Message-ID: <523AEFD1.8000109@ti.com>
-Date: Thu, 19 Sep 2013 07:36:33 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753905Ab3ISMhn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 08:37:43 -0400
+Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:51753
+	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752343Ab3ISMhm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 08:37:42 -0400
+Message-ID: <523AF014.5040806@newflow.co.uk>
+Date: Thu, 19 Sep 2013 13:37:40 +0100
+From: Mark Jackson <mpfj-list@newflow.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: George Cherian <george.cherian@ti.com>
-CC: <balbi@ti.com>, Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+CC: Nishanth Menon <nm@ti.com>, balbi@ti.com,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
         Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
@@ -22,13 +24,13 @@ CC: <balbi@ti.com>, Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
 Subject: Re: PCF857x and 16-bit GPIO expanders
 References: <20130917190732.GD15645@radagast> <CACRpkdYn8yaTyFJMaC3vK4kGrQsaZpAX=pyn5y33ers7QhQ_pg@mail.gmail.com> <2356541.62QktiIBr5@avalon> <20130918173636.GT21559@radagast> <523AB235.1000808@ti.com> <523AE8FF.9020209@ti.com> <523AEC0C.6010005@ti.com>
 In-Reply-To: <523AEC0C.6010005@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2013 07:20 AM, George Cherian wrote:
+On 19/09/13 13:20, George Cherian wrote:
 > On 9/19/2013 5:37 PM, Nishanth Menon wrote:
 >> On 09/19/2013 03:13 AM, George Cherian wrote:
 >>> On 9/18/2013 11:06 PM, Felipe Balbi wrote:
@@ -61,55 +63,12 @@ On 09/19/2013 07:20 AM, George Cherian wrote:
 >> I2c 3rd byte:P[17-10]
 > 
 > I read it as an octal numbering.
->> Note: bits 8,9 are missing not supported.
-> 
-> In octal there is no 8 and 9
 
-Where is octal coming into play here? P8 and 9 does not exist as per
-the data sheet -> look at the pinout on page 1[1] ->P00-P17 this is
-exactly what is described on page 2[1]:
-"The number of data bytes that can be sent successively is not limited
-After every two bytes, the previous data is overwritten. When the
-PCF8575 receives the pairs of data bytes, the first byte is referred
-to as P07 – P00 and the second byte as P17 – P10. The third byte
-is referred to as P07 – P00, the fourth byte as P17 – P10, and so
-on"
+Kind of ... looking at the pinout, you have pins:-
 
-For someone reading schematics and setting up the P15, if the person
-uses gpios = <&PCF8575 15 OF_GPIO_HIGH>; this will result in offset =
-15, and as a result 0x80 will be send in byte 3, which from h/w point
-of view is P13 which could be controlling something weird!
+P00...P07
+P10...P17
 
->>
->> Now [2] claims that it does support PCF8575, however when I look at
->> line 143[3]
->> 	unsigned	bit = 1 << offset;
->> [snip]
->> 	if (value)
->> 		gpio->out |= bit;
->> 	else
->> 		gpio->out &= ~bit;
->>
->> There is no handling for the skip needed for bits 8 and 9.. Seems to
->> me like a driver bug.
-> 
-> In which case there is no driver bug
+So that's Port 0, bits 0..7, and Port 1, bits 0..7.
 
-It probably needs clarification:
-
-Depends on how the definition is done - to hit exact P15 in definition
-and to set P15, should I provide 17 as gpio number? That does not
-match what the h/w description is in the data sheet!
-
->> [1] http://www.ti.com/lit/ds/symlink/pcf8575.pdf
->> [2]
->> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/drivers/gpio/gpio-pcf857x.c
->> [3]
->> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/drivers/gpio/gpio-pcf857x.c#n143
-> 
-> 
-
-
--- 
-Regards,
-Nishanth Menon
+Mark J.
