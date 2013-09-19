@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab3ISSlD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 14:41:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43972 "EHLO
+	id S1753800Ab3ISSlC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 14:41:02 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43983 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab3ISSkp (ORCPT
+	with ESMTP id S1753086Ab3ISSkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 14:40:45 -0400
+	Thu, 19 Sep 2013 14:40:46 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 4/9] perf tools: Fix buildid cache handling of kallsyms with kcore
-Date: Thu, 19 Sep 2013 15:40:27 -0300
-Message-Id: <1379616032-13061-5-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 6/9] perf session: Check for SIGINT in more loops
+Date: Thu, 19 Sep 2013 15:40:29 -0300
+Message-Id: <1379616032-13061-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1379616032-13061-1-git-send-email-acme@infradead.org>
 References: <1379616032-13061-1-git-send-email-acme@infradead.org>
@@ -29,123 +28,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-When kallsyms is used with kcore the dso long_name becomes the kcore
-file name.  That prevents the buildid cache from caching kallsyms.
-(There is no support at present for caching kcore).  Fix by changing it
-so that the kallsyms name is used in that case instead.
+When processing big files we were not checking if session_done was set
+by the SIGINT signal handler, for instance in 'perf report'. Fix it.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1379009959-28046-1-git-send-email-adrian.hunter@intel.com
-[ Kept 'struct foo' pointer as first parameter of foo__ prefixed functions ]
+Link: http://lkml.kernel.org/n/tip-pyad42lgrtq7xhg2dpsoauq7@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c | 41 ++++++++++++++++++++++++++++-------------
- 1 file changed, 28 insertions(+), 13 deletions(-)
+ tools/perf/builtin-inject.c | 2 --
+ tools/perf/builtin-report.c | 5 +++--
+ tools/perf/builtin-script.c | 2 --
+ tools/perf/util/hist.c      | 2 ++
+ tools/perf/util/session.c   | 9 +++++++--
+ tools/perf/util/session.h   | 4 ++++
+ 6 files changed, 16 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 26441d0..ce69901 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -199,9 +199,11 @@ static int write_buildid(char *name, size_t name_len, u8 *build_id,
- 	return write_padded(fd, name, name_len + 1, len);
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 423875c..afe377b 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -321,8 +321,6 @@ found:
+ 	return perf_event__repipe(tool, event_sw, &sample_sw, machine);
  }
  
--static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
--				u16 misc, int fd)
-+static int __dsos__write_buildid_table(struct list_head *head,
-+				       struct machine *machine,
-+				       pid_t pid, u16 misc, int fd)
+-extern volatile int session_done;
+-
+ static void sig_handler(int sig __maybe_unused)
  {
-+	char nm[PATH_MAX];
- 	struct dso *pos;
+ 	session_done = 1;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 8e50d8d..72eae74 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -401,8 +401,6 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
+ 	return 0;
+ }
  
- 	dsos__for_each_with_build_id(pos, head) {
-@@ -215,6 +217,10 @@ static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
- 		if (is_vdso_map(pos->short_name)) {
- 			name = (char *) VDSO__MAP_NAME;
- 			name_len = sizeof(VDSO__MAP_NAME) + 1;
-+		} else if (dso__is_kcore(pos)) {
-+			machine__mmap_name(machine, nm, sizeof(nm));
-+			name = nm;
-+			name_len = strlen(nm) + 1;
- 		} else {
- 			name = pos->long_name;
- 			name_len = pos->long_name_len + 1;
-@@ -240,10 +246,10 @@ static int machine__write_buildid_table(struct machine *machine, int fd)
- 		umisc = PERF_RECORD_MISC_GUEST_USER;
+-extern volatile int session_done;
+-
+ static void sig_handler(int sig __maybe_unused)
+ {
+ 	session_done = 1;
+@@ -568,6 +566,9 @@ static int __cmd_report(struct perf_report *rep)
+ 		}
  	}
  
--	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine->pid,
--					  kmisc, fd);
-+	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine,
-+					  machine->pid, kmisc, fd);
- 	if (err == 0)
--		err = __dsos__write_buildid_table(&machine->user_dsos,
-+		err = __dsos__write_buildid_table(&machine->user_dsos, machine,
- 						  machine->pid, umisc, fd);
- 	return err;
- }
-@@ -375,23 +381,31 @@ out_free:
- 	return err;
- }
++	if (session_done())
++		return 0;
++
+ 	if (nr_samples == 0) {
+ 		ui__error("The %s file has no samples!\n", session->filename);
+ 		return 0;
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 7f31a3d..9c333ff 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -553,8 +553,6 @@ static struct perf_tool perf_script = {
+ 	.ordering_requires_timestamps = true,
+ };
  
--static int dso__cache_build_id(struct dso *dso, const char *debugdir)
-+static int dso__cache_build_id(struct dso *dso, struct machine *machine,
-+			       const char *debugdir)
+-extern volatile int session_done;
+-
+ static void sig_handler(int sig __maybe_unused)
  {
- 	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
- 	bool is_vdso = is_vdso_map(dso->short_name);
-+	char *name = dso->long_name;
-+	char nm[PATH_MAX];
+ 	session_done = 1;
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 46a0d35..9ff6cf3 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -611,6 +611,8 @@ void hists__collapse_resort(struct hists *hists)
+ 	next = rb_first(root);
  
--	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id),
--				     dso->long_name, debugdir,
--				     is_kallsyms, is_vdso);
-+	if (dso__is_kcore(dso)) {
-+		is_kallsyms = true;
-+		machine__mmap_name(machine, nm, sizeof(nm));
-+		name = nm;
-+	}
-+	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id), name,
-+				     debugdir, is_kallsyms, is_vdso);
+ 	while (next) {
++		if (session_done())
++			break;
+ 		n = rb_entry(next, struct hist_entry, rb_node_in);
+ 		next = rb_next(&n->rb_node_in);
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 51f5edf..70ffa41 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -531,6 +531,9 @@ static int flush_sample_queue(struct perf_session *s,
+ 		return 0;
+ 
+ 	list_for_each_entry_safe(iter, tmp, head, list) {
++		if (session_done())
++			return 0;
++
+ 		if (iter->timestamp > limit)
+ 			break;
+ 
+@@ -1160,7 +1163,6 @@ static void perf_session__warn_about_errors(const struct perf_session *session,
+ 	}
  }
  
--static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
-+static int __dsos__cache_build_ids(struct list_head *head,
-+				   struct machine *machine, const char *debugdir)
- {
- 	struct dso *pos;
- 	int err = 0;
+-#define session_done()	(*(volatile int *)(&session_done))
+ volatile int session_done;
  
- 	dsos__for_each_with_build_id(pos, head)
--		if (dso__cache_build_id(pos, debugdir))
-+		if (dso__cache_build_id(pos, machine, debugdir))
- 			err = -1;
+ static int __perf_session__process_pipe_events(struct perf_session *self,
+@@ -1372,10 +1374,13 @@ more:
+ 				    "Processing events...");
+ 	}
  
- 	return err;
-@@ -399,8 +413,9 @@ static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
++	err = 0;
++	if (session_done())
++		goto out_err;
++
+ 	if (file_pos < file_size)
+ 		goto more;
  
- static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
- {
--	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, debugdir);
--	ret |= __dsos__cache_build_ids(&machine->user_dsos, debugdir);
-+	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, machine,
-+					  debugdir);
-+	ret |= __dsos__cache_build_ids(&machine->user_dsos, machine, debugdir);
- 	return ret;
- }
+-	err = 0;
+ 	/* do the final flush for ordered samples */
+ 	session->ordered_samples.next_flush = ULLONG_MAX;
+ 	err = flush_sample_queue(session, tool);
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 3aa75fb..04bf737 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -124,4 +124,8 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
  
+ #define perf_session__set_tracepoints_handlers(session, array) \
+ 	__perf_session__set_tracepoints_handlers(session, array, ARRAY_SIZE(array))
++
++extern volatile int session_done;
++
++#define session_done()	(*(volatile int *)(&session_done))
+ #endif /* __PERF_SESSION_H */
 -- 
 1.8.1.4
 
