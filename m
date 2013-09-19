@@ -1,134 +1,1022 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab3ISNGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 09:06:20 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36967 "EHLO comal.ext.ti.com"
+	id S1754292Ab3ISNJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:09:00 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50553 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752033Ab3ISNGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 09:06:15 -0400
+	id S1754021Ab3ISNGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 09:06:19 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
 CC: <balajitk@ti.com>, <kishon@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         Roger Quadros <rogerq@ti.com>
-Subject: [RFC PATCH 00/15] Add SATA support for TI OMAP5 and DRA7 SoCs
-Date: Thu, 19 Sep 2013 16:05:28 +0300
-Message-ID: <1379595943-14622-1-git-send-email-rogerq@ti.com>
+Subject: [RFC PATCH 01/15] phy: rename struct omap_control_usb to struct omap_control_phy
+Date: Thu, 19 Sep 2013 16:05:29 +0300
+Message-ID: <1379595943-14622-2-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1379595943-14622-1-git-send-email-rogerq@ti.com>
+References: <1379595943-14622-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Kishon Vijay Abraham I <kishon@ti.com>
 
-This series adds SATA controller support for the Texas Instruments
-OMAP5 and DRA7 platforms.
+Rename struct omap_control_usb to struct omap_control_phy since it can
+be used to control PHY of USB, SATA and PCIE. Also move the driver and
+include files under *phy* and made the corresponding changes in the users
+of phy-omap-control.
 
-As the SATA controller is compatible with AHCI, we use the ahci_platform
-driver and just provide the glue logic.
-
-The AHCI controller is enclosed within a TI specific Wrapper that controls
-the controller power mode. Patch 9 adds a driver for this wrapper.
-
-The controller is linked to a SATA (PIPE3) PHY, which needs to be clocked
-and powered up before it can be used. We do that with the help of the
-generic PHY framework [2] in Patch 8.
-
-Patches 1 to 7 adapt the the PHY driver to the Generic PHY framework.
-
-Patches 9 to 15 provide platform adaptation code for OMAP5 and DRA7.
-
-Patches are based on v3.12-rc1 with the following patches on top
-[1] - omap control usb multiple instance support
-      http://article.gmane.org/gmane.linux.ports.arm.kernel/267587
-      git://github.com/rogerq/linux.git usb-control-module
-
-[2] - Generic PHY framework
-      git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git testing
-
-[3] - Clock DT support
-      git://gitorious.org/~kristo/omap-pm/omap-pm-work.git mainline-3.11-rc3-omap-dt-clks-v5
-
-[4] - PHY framework mis cleanup
-      https://lkml.org/lkml/2013/9/2/313
-
-NOTE: [2], [3] and [4] will cause merge conflicts and need to be resolved manually.
-A merged tree is available for reference/testing at
-
-git://github.com/rogerq/linux.git ti-3.12-sata
-
-Tested on omap5-uevm and dra7-evm with Gen2 SATA hard drive.
-
-Known issues:
-- Gen3 SATA SSD does not work due to some issue with PHY speed negotiation.
-
-cheers,
--roger
-
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
-Balaji T K (3):
-  ata: ahci_platform: Manage SATA PHY
-  arm: dts: omap5: add sata node
-  arm: dts: dra7: add sata node
-
-Benoit Cousson (1):
-  arm: omap5: hwmod: add missing ocp2scp hwmod data
-
-Keshava Munegowda (1):
-  ARM: omap5: hwmod: Add ocp2scp3 and sata hwmods
-
-Kishon Vijay Abraham I (2):
-  phy: rename struct omap_control_usb to struct omap_control_phy
-  phy: omap-pipe3: use generic clock names
-
-Nikhil Devshatwar (1):
-  ARM: DRA7: hwmod: Add ocp2scp3 and sata hwmods
-
-Roger Quadros (7):
-  phy: omap-control: Update DT binding information
-  ARM: dts: omap5: Add clocks to usb3_phy node
-  phy: omap-pipe3: Add SATA DPLL support
-  phy: omap-pipe3: update compatibility string and DT binding
-  ARM: dts: omap5: Update usb3phy node
-  ata: ti_sata: Add Texas Instruments SATA Wrapper driver
-  ARM: dts: omap5: add ocp2scp1 address resource
-
- .../devicetree/bindings/ata/ahci-platform.txt      |    2 +-
- Documentation/devicetree/bindings/ata/ti-sata.txt  |   31 ++
- Documentation/devicetree/bindings/phy/omap-phy.txt |   26 ++-
- Documentation/devicetree/bindings/usb/omap-usb.txt |   23 --
- arch/arm/boot/dts/dra7.dtsi                        |   49 ++++
- arch/arm/boot/dts/omap5.dtsi                       |   56 ++++-
- arch/arm/mach-omap2/omap_hwmod_54xx_data.c         |  117 ++++++++
- arch/arm/mach-omap2/omap_hwmod_7xx_data.c          |   40 +++-
- drivers/ata/Kconfig                                |    8 +
- drivers/ata/Makefile                               |    1 +
- drivers/ata/ahci.h                                 |    2 +
- drivers/ata/ahci_platform.c                        |   31 ++-
- drivers/ata/sata_ti.c                              |  160 +++++++++++
- drivers/phy/Kconfig                                |   14 +-
- drivers/phy/Makefile                               |    1 +
- drivers/phy/phy-omap-control.c                     |  300 ++++++++++++++++++++
- drivers/phy/phy-omap-pipe3.c                       |  157 ++++++-----
- drivers/phy/phy-omap-usb2.c                        |    9 +-
- drivers/usb/musb/omap2430.c                        |    2 +-
- drivers/usb/phy/Kconfig                            |   10 -
- drivers/usb/phy/Makefile                           |    1 -
- drivers/usb/phy/phy-omap-control.c                 |  300 --------------------
- include/linux/phy/omap_control_phy.h               |   83 ++++++
- include/linux/phy/omap_pipe3.h                     |    6 +
- include/linux/usb/omap_control_usb.h               |   83 ------
- 25 files changed, 1013 insertions(+), 499 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/ata/ti-sata.txt
- create mode 100644 drivers/ata/sata_ti.c
+ drivers/phy/Kconfig                  |   14 ++-
+ drivers/phy/Makefile                 |    1 +
+ drivers/phy/phy-omap-control.c       |  300 ++++++++++++++++++++++++++++++++++
+ drivers/phy/phy-omap-pipe3.c         |    8 +-
+ drivers/phy/phy-omap-usb2.c          |    9 +-
+ drivers/usb/musb/omap2430.c          |    2 +-
+ drivers/usb/phy/Kconfig              |   10 -
+ drivers/usb/phy/Makefile             |    1 -
+ drivers/usb/phy/phy-omap-control.c   |  300 ----------------------------------
+ include/linux/phy/omap_control_phy.h |   83 ++++++++++
+ include/linux/usb/omap_control_usb.h |   83 ----------
+ 11 files changed, 406 insertions(+), 405 deletions(-)
  create mode 100644 drivers/phy/phy-omap-control.c
  delete mode 100644 drivers/usb/phy/phy-omap-control.c
  create mode 100644 include/linux/phy/omap_control_phy.h
  delete mode 100644 include/linux/usb/omap_control_usb.h
 
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index 5c2e7a0..7155f56 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -15,12 +15,22 @@ config GENERIC_PHY
+ 	  phy users can obtain reference to the PHY. All the users of this
+ 	  framework should select this config.
+ 
++config OMAP_CONTROL_PHY
++	tristate "OMAP CONTROL PHY Driver"
++	help
++	  Enable this to add support for the PHY part present in the control
++	  module. This driver has API to power on the USB2 PHY and to write to
++	  the mailbox. The mailbox is present only in omap4 and the register to
++	  power on the USB2 PHY is present in OMAP4 and OMAP5. OMAP5 has an
++	  additional register to power on USB3 PHY/SATA PHY/PCIE PHY
++	  (PIPE3 PHY).
++
+ config OMAP_USB2
+ 	tristate "OMAP USB2 PHY Driver"
+ 	depends on ARCH_OMAP2PLUS
+ 	select GENERIC_PHY
+ 	select USB_PHY
+-	select OMAP_CONTROL_USB
++	select OMAP_CONTROL_PHY
+ 	help
+ 	  Enable this to support the transceiver that is part of SOC. This
+ 	  driver takes care of all the PHY functionality apart from comparator.
+@@ -30,7 +40,7 @@ config OMAP_USB2
+ config OMAP_PIPE3
+ 	tristate "OMAP PIPE3 PHY Driver"
+ 	select GENERIC_PHY
+-	select OMAP_CONTROL_USB
++	select OMAP_CONTROL_PHY
+ 	help
+ 	  Enable this to support the PIPE3 PHY that is part of SOC. This
+ 	  driver takes care of all the PHY functionality apart from comparator.
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index 48bf9f2..f0127f6 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -3,6 +3,7 @@
+ #
+ 
+ obj-$(CONFIG_GENERIC_PHY)	+= phy-core.o
++obj-$(CONFIG_OMAP_CONTROL_PHY)	+= phy-omap-control.o
+ obj-$(CONFIG_OMAP_USB2)		+= phy-omap-usb2.o
+ obj-$(CONFIG_OMAP_PIPE3)	+= phy-omap-pipe3.o
+ obj-$(CONFIG_TWL4030_USB)	+= phy-twl4030-usb.o
+diff --git a/drivers/phy/phy-omap-control.c b/drivers/phy/phy-omap-control.c
+new file mode 100644
+index 0000000..5b85478
+--- /dev/null
++++ b/drivers/phy/phy-omap-control.c
+@@ -0,0 +1,300 @@
++/*
++ * omap-control-phy.c - The PHY part of control module.
++ *
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * Author: Kishon Vijay Abraham I <kishon@ti.com>
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/clk.h>
++#include <linux/phy/omap_control_phy.h>
++
++/**
++ * omap_control_phy_power - power on/off the phy using control module reg
++ * @dev: the control module device
++ * @on: 0 or 1, based on powering on or off the PHY
++ */
++void omap_control_phy_power(struct device *dev, int on)
++{
++	u32 val;
++	unsigned long rate;
++	struct omap_control_phy	*control_phy;
++
++	if (IS_ERR(dev) || !dev) {
++		pr_err("%s: invalid device\n", __func__);
++		return;
++	}
++
++	control_phy = dev_get_drvdata(dev);
++	if (!control_phy) {
++		dev_err(dev, "%s: invalid control phy device\n", __func__);
++		return;
++	}
++
++	if (control_phy->type == OMAP_CTRL_TYPE_OTGHS)
++		return;
++
++	val = readl(control_phy->power);
++
++	switch (control_phy->type) {
++	case OMAP_CTRL_TYPE_USB2:
++		if (on)
++			val &= ~OMAP_CTRL_DEV_PHY_PD;
++		else
++			val |= OMAP_CTRL_DEV_PHY_PD;
++		break;
++
++	case OMAP_CTRL_TYPE_PIPE3:
++		rate = clk_get_rate(control_phy->sys_clk);
++		rate = rate/1000000;
++
++		if (on) {
++			val &= ~(OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_MASK |
++				OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_FREQ_MASK);
++			val |= OMAP_CTRL_PIPE3_PHY_TX_RX_POWERON <<
++				OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_SHIFT;
++			val |= rate <<
++				OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_FREQ_SHIFT;
++		} else {
++			val &= ~OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_MASK;
++			val |= OMAP_CTRL_PIPE3_PHY_TX_RX_POWEROFF <<
++				OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_SHIFT;
++		}
++		break;
++
++	case OMAP_CTRL_TYPE_DRA7USB2:
++		if (on)
++			val &= ~OMAP_CTRL_USB2_PHY_PD;
++		else
++			val |= OMAP_CTRL_USB2_PHY_PD;
++		break;
++	default:
++		dev_err(dev, "%s: type %d not recognized\n",
++					__func__, control_phy->type);
++		break;
++	}
++
++	writel(val, control_phy->power);
++}
++EXPORT_SYMBOL_GPL(omap_control_phy_power);
++
++/**
++ * omap_control_usb_host_mode - set AVALID, VBUSVALID and ID pin in grounded
++ * @ctrl_phy: struct omap_control_phy *
++ *
++ * Writes to the mailbox register to notify the usb core that a usb
++ * device has been connected.
++ */
++static void omap_control_usb_host_mode(struct omap_control_phy *ctrl_phy)
++{
++	u32 val;
++
++	val = readl(ctrl_phy->otghs_control);
++	val &= ~(OMAP_CTRL_DEV_IDDIG | OMAP_CTRL_DEV_SESSEND);
++	val |= OMAP_CTRL_DEV_AVALID | OMAP_CTRL_DEV_VBUSVALID;
++	writel(val, ctrl_phy->otghs_control);
++}
++
++/**
++ * omap_control_usb_device_mode - set AVALID, VBUSVALID and ID pin in high
++ * impedance
++ * @ctrl_phy: struct omap_control_phy *
++ *
++ * Writes to the mailbox register to notify the usb core that it has been
++ * connected to a usb host.
++ */
++static void omap_control_usb_device_mode(struct omap_control_phy *ctrl_phy)
++{
++	u32 val;
++
++	val = readl(ctrl_phy->otghs_control);
++	val &= ~OMAP_CTRL_DEV_SESSEND;
++	val |= OMAP_CTRL_DEV_IDDIG | OMAP_CTRL_DEV_AVALID |
++		OMAP_CTRL_DEV_VBUSVALID;
++	writel(val, ctrl_phy->otghs_control);
++}
++
++/**
++ * omap_control_usb_set_sessionend - Enable SESSIONEND and IDIG to high
++ * impedance
++ * @ctrl_phy: struct omap_control_phy *
++ *
++ * Writes to the mailbox register to notify the usb core it's now in
++ * disconnected state.
++ */
++static void omap_control_usb_set_sessionend(struct omap_control_phy *ctrl_phy)
++{
++	u32 val;
++
++	val = readl(ctrl_phy->otghs_control);
++	val &= ~(OMAP_CTRL_DEV_AVALID | OMAP_CTRL_DEV_VBUSVALID);
++	val |= OMAP_CTRL_DEV_IDDIG | OMAP_CTRL_DEV_SESSEND;
++	writel(val, ctrl_phy->otghs_control);
++}
++
++/**
++ * omap_control_usb_set_mode - Calls to functions to set USB in one of host mode
++ * or device mode or to denote disconnected state
++ * @dev: the control module device
++ * @mode: The mode to which usb should be configured
++ *
++ * This is an API to write to the mailbox register to notify the usb core that
++ * a usb device has been connected.
++ */
++void omap_control_usb_set_mode(struct device *dev,
++	enum omap_control_usb_mode mode)
++{
++	struct omap_control_phy	*ctrl_phy;
++
++	if (IS_ERR(dev) || !dev)
++		return;
++
++	ctrl_phy = dev_get_drvdata(dev);
++
++	if (!ctrl_phy) {
++		dev_err(dev, "Invalid control phy device\n");
++		return;
++	}
++
++	if (ctrl_phy->type != OMAP_CTRL_TYPE_OTGHS)
++		return;
++
++	switch (mode) {
++	case USB_MODE_HOST:
++		omap_control_usb_host_mode(ctrl_phy);
++		break;
++	case USB_MODE_DEVICE:
++		omap_control_usb_device_mode(ctrl_phy);
++		break;
++	case USB_MODE_DISCONNECT:
++		omap_control_usb_set_sessionend(ctrl_phy);
++		break;
++	default:
++		dev_vdbg(dev, "invalid omap control usb mode\n");
++	}
++}
++EXPORT_SYMBOL_GPL(omap_control_usb_set_mode);
++
++#ifdef CONFIG_OF
++
++static const enum omap_control_phy_type otghs_data = OMAP_CTRL_TYPE_OTGHS;
++static const enum omap_control_phy_type usb2_data = OMAP_CTRL_TYPE_USB2;
++static const enum omap_control_phy_type pipe3_data = OMAP_CTRL_TYPE_PIPE3;
++static const enum omap_control_phy_type dra7usb2_data = OMAP_CTRL_TYPE_DRA7USB2;
++
++static const struct of_device_id omap_control_phy_id_table[] = {
++	{
++		.compatible = "ti,control-phy-otghs",
++		.data = &otghs_data,
++	},
++	{
++		.compatible = "ti,control-phy-usb2",
++		.data = &usb2_data,
++	},
++	{
++		.compatible = "ti,control-phy-pipe3",
++		.data = &pipe3_data,
++	},
++	{
++		.compatible = "ti,control-phy-dra7usb2",
++		.data = &dra7usb2_data,
++	},
++	{},
++};
++MODULE_DEVICE_TABLE(of, omap_control_phy_id_table);
++#endif
++
++static int omap_control_phy_probe(struct platform_device *pdev)
++{
++	struct resource	*res;
++	const struct of_device_id *of_id;
++	struct omap_control_phy *control_phy;
++
++	of_id = of_match_device(of_match_ptr(omap_control_phy_id_table),
++								&pdev->dev);
++	if (!of_id)
++		return -EINVAL;
++
++	control_phy = devm_kzalloc(&pdev->dev, sizeof(*control_phy),
++		GFP_KERNEL);
++	if (!control_phy) {
++		dev_err(&pdev->dev, "unable to alloc memory for control phy\n");
++		return -ENOMEM;
++	}
++
++	control_phy->dev = &pdev->dev;
++	control_phy->type = *(enum omap_control_phy_type *)of_id->data;
++
++	if (control_phy->type == OMAP_CTRL_TYPE_OTGHS) {
++		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++			"otghs_control");
++		control_phy->otghs_control = devm_ioremap_resource(
++			&pdev->dev, res);
++		if (IS_ERR(control_phy->otghs_control))
++			return PTR_ERR(control_phy->otghs_control);
++	} else {
++		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++				"power");
++		control_phy->power = devm_ioremap_resource(&pdev->dev, res);
++		if (IS_ERR(control_phy->power)) {
++			dev_err(&pdev->dev, "Couldn't get power register\n");
++			return PTR_ERR(control_phy->power);
++		}
++	}
++
++	if (control_phy->type == OMAP_CTRL_TYPE_PIPE3) {
++		control_phy->sys_clk = devm_clk_get(control_phy->dev,
++			"sys_clkin");
++		if (IS_ERR(control_phy->sys_clk)) {
++			pr_err("%s: unable to get sys_clkin\n", __func__);
++			return -EINVAL;
++		}
++	}
++
++	dev_set_drvdata(control_phy->dev, control_phy);
++
++	return 0;
++}
++
++static struct platform_driver omap_control_phy_driver = {
++	.probe		= omap_control_phy_probe,
++	.driver		= {
++		.name	= "omap-control-phy",
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(omap_control_phy_id_table),
++	},
++};
++
++static int __init omap_control_phy_init(void)
++{
++	return platform_driver_register(&omap_control_phy_driver);
++}
++subsys_initcall(omap_control_phy_init);
++
++static void __exit omap_control_phy_exit(void)
++{
++	platform_driver_unregister(&omap_control_phy_driver);
++}
++module_exit(omap_control_phy_exit);
++
++MODULE_ALIAS("platform: omap_control_phy");
++MODULE_AUTHOR("Texas Instruments Inc.");
++MODULE_DESCRIPTION("OMAP Control Module PHY Driver");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/phy/phy-omap-pipe3.c b/drivers/phy/phy-omap-pipe3.c
+index ee9a901..63de0f8 100644
+--- a/drivers/phy/phy-omap-pipe3.c
++++ b/drivers/phy/phy-omap-pipe3.c
+@@ -26,7 +26,7 @@
+ #include <linux/err.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/delay.h>
+-#include <linux/usb/omap_control_usb.h>
++#include <linux/phy/omap_control_phy.h>
+ #include <linux/of_platform.h>
+ 
+ #define	PLL_STATUS		0x00000004
+@@ -101,7 +101,7 @@ static int omap_pipe3_power_off(struct phy *x)
+ 		udelay(1);
+ 	} while (--timeout);
+ 
+-	omap_control_usb_phy_power(phy->control_dev, 0);
++	omap_control_phy_power(phy->control_dev, 0);
+ 
+ 	return 0;
+ }
+@@ -194,7 +194,7 @@ static int omap_pipe3_init(struct phy *x)
+ 	if (ret)
+ 		return ret;
+ 
+-	omap_control_usb_phy_power(phy->control_dev, 1);
++	omap_control_phy_power(phy->control_dev, 1);
+ 
+ 	return 0;
+ }
+@@ -270,7 +270,7 @@ static int omap_pipe3_probe(struct platform_device *pdev)
+ 
+ 	phy->control_dev = &control_pdev->dev;
+ 
+-	omap_control_usb_phy_power(phy->control_dev, 0);
++	omap_control_phy_power(phy->control_dev, 0);
+ 
+ 	platform_set_drvdata(pdev, phy);
+ 	pm_runtime_enable(phy->dev);
+diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+index 332178d..9c231b8 100644
+--- a/drivers/phy/phy-omap-usb2.c
++++ b/drivers/phy/phy-omap-usb2.c
+@@ -27,7 +27,8 @@
+ #include <linux/err.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/delay.h>
+-#include <linux/usb/omap_control_usb.h>
++#include <linux/phy/omap_control_phy.h>
++#include <linux/phy/phy.h>
+ #include <linux/of_platform.h>
+ #include <linux/phy/phy.h>
+ 
+@@ -102,7 +103,7 @@ static int omap_usb_power_off(struct phy *x)
+ {
+ 	struct omap_usb *phy = phy_get_drvdata(x);
+ 
+-	omap_control_usb_phy_power(phy->control_dev, 0);
++	omap_control_phy_power(phy->control_dev, 0);
+ 
+ 	return 0;
+ }
+@@ -111,7 +112,7 @@ static int omap_usb_power_on(struct phy *x)
+ {
+ 	struct omap_usb *phy = phy_get_drvdata(x);
+ 
+-	omap_control_usb_phy_power(phy->control_dev, 1);
++	omap_control_phy_power(phy->control_dev, 1);
+ 
+ 	return 0;
+ }
+@@ -172,7 +173,7 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 
+ 	phy->control_dev = &control_pdev->dev;
+ 
+-	omap_control_usb_phy_power(phy->control_dev, 0);
++	omap_control_phy_power(phy->control_dev, 0);
+ 
+ 	otg->set_host		= omap_usb_set_host;
+ 	otg->set_peripheral	= omap_usb_set_peripheral;
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index 9eab645..4f5ef0b 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -37,7 +37,7 @@
+ #include <linux/err.h>
+ #include <linux/delay.h>
+ #include <linux/usb/musb-omap.h>
+-#include <linux/usb/omap_control_usb.h>
++#include <linux/phy/omap_control_phy.h>
+ #include <linux/of_platform.h>
+ 
+ #include "musb_core.h"
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index 0210e03..f517d49 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -56,16 +56,6 @@ config NOP_USB_XCEIV
+ 	  built-in with usb ip or which are autonomous and doesn't require any
+ 	  phy programming such as ISP1x04 etc.
+ 
+-config OMAP_CONTROL_USB
+-	tristate "OMAP CONTROL USB Driver"
+-	depends on ARCH_OMAP2PLUS || COMPILE_TEST
+-	help
+-	  Enable this to add support for the USB part present in the control
+-	  module. This driver has API to power on the USB2 PHY and to write to
+-	  the mailbox. The mailbox is present only in omap4 and the register to
+-	  power on the USB2 PHY is present in OMAP4 and OMAP5. OMAP5 has an
+-	  additional register to power on USB3 PHY.
+-
+ config AM335X_CONTROL_USB
+ 	tristate
+ 
+diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
+index fa80661..b356953 100644
+--- a/drivers/usb/phy/Makefile
++++ b/drivers/usb/phy/Makefile
+@@ -12,7 +12,6 @@ obj-$(CONFIG_FSL_USB2_OTG)		+= phy-fsl-usb2.o
+ obj-$(CONFIG_ISP1301_OMAP)		+= phy-isp1301-omap.o
+ obj-$(CONFIG_MV_U3D_PHY)		+= phy-mv-u3d-usb.o
+ obj-$(CONFIG_NOP_USB_XCEIV)		+= phy-generic.o
+-obj-$(CONFIG_OMAP_CONTROL_USB)		+= phy-omap-control.o
+ obj-$(CONFIG_AM335X_CONTROL_USB)	+= phy-am335x-control.o
+ obj-$(CONFIG_AM335X_PHY_USB)		+= phy-am335x.o
+ obj-$(CONFIG_SAMSUNG_USBPHY)		+= phy-samsung-usb.o
+diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/usb/phy/phy-omap-control.c
+deleted file mode 100644
+index 09c5ace..0000000
+--- a/drivers/usb/phy/phy-omap-control.c
++++ /dev/null
+@@ -1,300 +0,0 @@
+-/*
+- * omap-control-usb.c - The USB part of control module.
+- *
+- * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * Author: Kishon Vijay Abraham I <kishon@ti.com>
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/slab.h>
+-#include <linux/of.h>
+-#include <linux/of_device.h>
+-#include <linux/err.h>
+-#include <linux/io.h>
+-#include <linux/clk.h>
+-#include <linux/usb/omap_control_usb.h>
+-
+-/**
+- * omap_control_usb_phy_power - power on/off the phy using control module reg
+- * @dev: the control module device
+- * @on: 0 or 1, based on powering on or off the PHY
+- */
+-void omap_control_usb_phy_power(struct device *dev, int on)
+-{
+-	u32 val;
+-	unsigned long rate;
+-	struct omap_control_usb	*control_usb;
+-
+-	if (IS_ERR(dev) || !dev) {
+-		pr_err("%s: invalid device\n", __func__);
+-		return;
+-	}
+-
+-	control_usb = dev_get_drvdata(dev);
+-	if (!control_usb) {
+-		dev_err(dev, "%s: invalid control usb device\n", __func__);
+-		return;
+-	}
+-
+-	if (control_usb->type == OMAP_CTRL_TYPE_OTGHS)
+-		return;
+-
+-	val = readl(control_usb->power);
+-
+-	switch (control_usb->type) {
+-	case OMAP_CTRL_TYPE_USB2:
+-		if (on)
+-			val &= ~OMAP_CTRL_DEV_PHY_PD;
+-		else
+-			val |= OMAP_CTRL_DEV_PHY_PD;
+-		break;
+-
+-	case OMAP_CTRL_TYPE_PIPE3:
+-		rate = clk_get_rate(control_usb->sys_clk);
+-		rate = rate/1000000;
+-
+-		if (on) {
+-			val &= ~(OMAP_CTRL_USB_PWRCTL_CLK_CMD_MASK |
+-					OMAP_CTRL_USB_PWRCTL_CLK_FREQ_MASK);
+-			val |= OMAP_CTRL_USB3_PHY_TX_RX_POWERON <<
+-				OMAP_CTRL_USB_PWRCTL_CLK_CMD_SHIFT;
+-			val |= rate << OMAP_CTRL_USB_PWRCTL_CLK_FREQ_SHIFT;
+-		} else {
+-			val &= ~OMAP_CTRL_USB_PWRCTL_CLK_CMD_MASK;
+-			val |= OMAP_CTRL_USB3_PHY_TX_RX_POWEROFF <<
+-				OMAP_CTRL_USB_PWRCTL_CLK_CMD_SHIFT;
+-		}
+-		break;
+-
+-	case OMAP_CTRL_TYPE_DRA7USB2:
+-		if (on)
+-			val &= ~OMAP_CTRL_USB2_PHY_PD;
+-		else
+-			val |= OMAP_CTRL_USB2_PHY_PD;
+-		break;
+-	default:
+-		dev_err(dev, "%s: type %d not recognized\n",
+-					__func__, control_usb->type);
+-		break;
+-	}
+-
+-	writel(val, control_usb->power);
+-}
+-EXPORT_SYMBOL_GPL(omap_control_usb_phy_power);
+-
+-/**
+- * omap_control_usb_host_mode - set AVALID, VBUSVALID and ID pin in grounded
+- * @ctrl_usb: struct omap_control_usb *
+- *
+- * Writes to the mailbox register to notify the usb core that a usb
+- * device has been connected.
+- */
+-static void omap_control_usb_host_mode(struct omap_control_usb *ctrl_usb)
+-{
+-	u32 val;
+-
+-	val = readl(ctrl_usb->otghs_control);
+-	val &= ~(OMAP_CTRL_DEV_IDDIG | OMAP_CTRL_DEV_SESSEND);
+-	val |= OMAP_CTRL_DEV_AVALID | OMAP_CTRL_DEV_VBUSVALID;
+-	writel(val, ctrl_usb->otghs_control);
+-}
+-
+-/**
+- * omap_control_usb_device_mode - set AVALID, VBUSVALID and ID pin in high
+- * impedance
+- * @ctrl_usb: struct omap_control_usb *
+- *
+- * Writes to the mailbox register to notify the usb core that it has been
+- * connected to a usb host.
+- */
+-static void omap_control_usb_device_mode(struct omap_control_usb *ctrl_usb)
+-{
+-	u32 val;
+-
+-	val = readl(ctrl_usb->otghs_control);
+-	val &= ~OMAP_CTRL_DEV_SESSEND;
+-	val |= OMAP_CTRL_DEV_IDDIG | OMAP_CTRL_DEV_AVALID |
+-		OMAP_CTRL_DEV_VBUSVALID;
+-	writel(val, ctrl_usb->otghs_control);
+-}
+-
+-/**
+- * omap_control_usb_set_sessionend - Enable SESSIONEND and IDIG to high
+- * impedance
+- * @ctrl_usb: struct omap_control_usb *
+- *
+- * Writes to the mailbox register to notify the usb core it's now in
+- * disconnected state.
+- */
+-static void omap_control_usb_set_sessionend(struct omap_control_usb *ctrl_usb)
+-{
+-	u32 val;
+-
+-	val = readl(ctrl_usb->otghs_control);
+-	val &= ~(OMAP_CTRL_DEV_AVALID | OMAP_CTRL_DEV_VBUSVALID);
+-	val |= OMAP_CTRL_DEV_IDDIG | OMAP_CTRL_DEV_SESSEND;
+-	writel(val, ctrl_usb->otghs_control);
+-}
+-
+-/**
+- * omap_control_usb_set_mode - Calls to functions to set USB in one of host mode
+- * or device mode or to denote disconnected state
+- * @dev: the control module device
+- * @mode: The mode to which usb should be configured
+- *
+- * This is an API to write to the mailbox register to notify the usb core that
+- * a usb device has been connected.
+- */
+-void omap_control_usb_set_mode(struct device *dev,
+-	enum omap_control_usb_mode mode)
+-{
+-	struct omap_control_usb	*ctrl_usb;
+-
+-	if (IS_ERR(dev) || !dev)
+-		return;
+-
+-	ctrl_usb = dev_get_drvdata(dev);
+-
+-	if (!ctrl_usb) {
+-		dev_err(dev, "Invalid control usb device\n");
+-		return;
+-	}
+-
+-	if (ctrl_usb->type != OMAP_CTRL_TYPE_OTGHS)
+-		return;
+-
+-	switch (mode) {
+-	case USB_MODE_HOST:
+-		omap_control_usb_host_mode(ctrl_usb);
+-		break;
+-	case USB_MODE_DEVICE:
+-		omap_control_usb_device_mode(ctrl_usb);
+-		break;
+-	case USB_MODE_DISCONNECT:
+-		omap_control_usb_set_sessionend(ctrl_usb);
+-		break;
+-	default:
+-		dev_vdbg(dev, "invalid omap control usb mode\n");
+-	}
+-}
+-EXPORT_SYMBOL_GPL(omap_control_usb_set_mode);
+-
+-#ifdef CONFIG_OF
+-
+-static const enum omap_control_usb_type otghs_data = OMAP_CTRL_TYPE_OTGHS;
+-static const enum omap_control_usb_type usb2_data = OMAP_CTRL_TYPE_USB2;
+-static const enum omap_control_usb_type pipe3_data = OMAP_CTRL_TYPE_PIPE3;
+-static const enum omap_control_usb_type dra7usb2_data = OMAP_CTRL_TYPE_DRA7USB2;
+-
+-static const struct of_device_id omap_control_usb_id_table[] = {
+-	{
+-		.compatible = "ti,control-phy-otghs",
+-		.data = &otghs_data,
+-	},
+-	{
+-		.compatible = "ti,control-phy-usb2",
+-		.data = &usb2_data,
+-	},
+-	{
+-		.compatible = "ti,control-phy-pipe3",
+-		.data = &pipe3_data,
+-	},
+-	{
+-		.compatible = "ti,control-phy-dra7usb2",
+-		.data = &dra7usb2_data,
+-	},
+-	{},
+-};
+-MODULE_DEVICE_TABLE(of, omap_control_usb_id_table);
+-#endif
+-
+-
+-static int omap_control_usb_probe(struct platform_device *pdev)
+-{
+-	struct resource	*res;
+-	const struct of_device_id *of_id;
+-	struct omap_control_usb *control_usb;
+-
+-	of_id = of_match_device(of_match_ptr(omap_control_usb_id_table),
+-								&pdev->dev);
+-	if (!of_id)
+-		return -EINVAL;
+-
+-	control_usb = devm_kzalloc(&pdev->dev, sizeof(*control_usb),
+-		GFP_KERNEL);
+-	if (!control_usb) {
+-		dev_err(&pdev->dev, "unable to alloc memory for control usb\n");
+-		return -ENOMEM;
+-	}
+-
+-	control_usb->dev = &pdev->dev;
+-	control_usb->type = *(enum omap_control_usb_type *)of_id->data;
+-
+-	if (control_usb->type == OMAP_CTRL_TYPE_OTGHS) {
+-		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+-			"otghs_control");
+-		control_usb->otghs_control = devm_ioremap_resource(
+-			&pdev->dev, res);
+-		if (IS_ERR(control_usb->otghs_control))
+-			return PTR_ERR(control_usb->otghs_control);
+-	} else {
+-		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+-				"power");
+-		control_usb->power = devm_ioremap_resource(&pdev->dev, res);
+-		if (IS_ERR(control_usb->power)) {
+-			dev_err(&pdev->dev, "Couldn't get power register\n");
+-			return PTR_ERR(control_usb->power);
+-		}
+-	}
+-
+-	if (control_usb->type == OMAP_CTRL_TYPE_PIPE3) {
+-		control_usb->sys_clk = devm_clk_get(control_usb->dev,
+-			"sys_clkin");
+-		if (IS_ERR(control_usb->sys_clk)) {
+-			pr_err("%s: unable to get sys_clkin\n", __func__);
+-			return -EINVAL;
+-		}
+-	}
+-
+-	dev_set_drvdata(control_usb->dev, control_usb);
+-
+-	return 0;
+-}
+-
+-static struct platform_driver omap_control_usb_driver = {
+-	.probe		= omap_control_usb_probe,
+-	.driver		= {
+-		.name	= "omap-control-usb",
+-		.owner	= THIS_MODULE,
+-		.of_match_table = of_match_ptr(omap_control_usb_id_table),
+-	},
+-};
+-
+-static int __init omap_control_usb_init(void)
+-{
+-	return platform_driver_register(&omap_control_usb_driver);
+-}
+-subsys_initcall(omap_control_usb_init);
+-
+-static void __exit omap_control_usb_exit(void)
+-{
+-	platform_driver_unregister(&omap_control_usb_driver);
+-}
+-module_exit(omap_control_usb_exit);
+-
+-MODULE_ALIAS("platform: omap_control_usb");
+-MODULE_AUTHOR("Texas Instruments Inc.");
+-MODULE_DESCRIPTION("OMAP Control Module USB Driver");
+-MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/phy/omap_control_phy.h b/include/linux/phy/omap_control_phy.h
+new file mode 100644
+index 0000000..44ad1fc
+--- /dev/null
++++ b/include/linux/phy/omap_control_phy.h
+@@ -0,0 +1,83 @@
++/*
++ * omap_control_phy.h - Header file for the PHY part of control module.
++ *
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * Author: Kishon Vijay Abraham I <kishon@ti.com>
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __OMAP_CONTROL_PHY_H__
++#define __OMAP_CONTROL_PHY_H__
++
++enum omap_control_phy_type {
++	OMAP_CTRL_TYPE_OTGHS = 1,	/* Mailbox OTGHS_CONTROL */
++	OMAP_CTRL_TYPE_USB2,	/* USB2_PHY, power down in CONTROL_DEV_CONF */
++	OMAP_CTRL_TYPE_PIPE3,	/* PIPE3 PHY, DPLL & seperate Rx/Tx power */
++	OMAP_CTRL_TYPE_DRA7USB2, /* USB2 PHY, power and power_aux e.g. DRA7 */
++};
++
++struct omap_control_phy {
++	struct device *dev;
++
++	u32 __iomem *otghs_control;
++	u32 __iomem *power;
++	u32 __iomem *power_aux;
++
++	struct clk *sys_clk;
++
++	enum omap_control_phy_type type;
++};
++
++enum omap_control_usb_mode {
++	USB_MODE_UNDEFINED = 0,
++	USB_MODE_HOST,
++	USB_MODE_DEVICE,
++	USB_MODE_DISCONNECT,
++};
++
++#define	OMAP_CTRL_DEV_PHY_PD		BIT(0)
++
++#define	OMAP_CTRL_DEV_AVALID		BIT(0)
++#define	OMAP_CTRL_DEV_BVALID		BIT(1)
++#define	OMAP_CTRL_DEV_VBUSVALID		BIT(2)
++#define	OMAP_CTRL_DEV_SESSEND		BIT(3)
++#define	OMAP_CTRL_DEV_IDDIG		BIT(4)
++
++#define	OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_MASK		0x003FC000
++#define	OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_SHIFT	0xE
++
++#define	OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_FREQ_MASK	0xFFC00000
++#define	OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_FREQ_SHIFT	0x16
++
++#define	OMAP_CTRL_PIPE3_PHY_TX_RX_POWERON	0x3
++#define	OMAP_CTRL_PIPE3_PHY_TX_RX_POWEROFF	0x0
++
++#define OMAP_CTRL_USB2_PHY_PD		BIT(28)
++
++#if IS_ENABLED(CONFIG_OMAP_CONTROL_PHY)
++extern void omap_control_phy_power(struct device *dev, int on);
++extern void omap_control_usb_set_mode(struct device *dev,
++	enum omap_control_usb_mode mode);
++#else
++
++static inline void omap_control_phy_power(struct device *dev, int on)
++{
++}
++
++static inline void omap_control_usb_set_mode(struct device *dev,
++	enum omap_control_usb_mode mode)
++{
++}
++#endif
++
++#endif	/* __OMAP_CONTROL_PHY_H__ */
+diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
+deleted file mode 100644
+index 596b019..0000000
+--- a/include/linux/usb/omap_control_usb.h
++++ /dev/null
+@@ -1,83 +0,0 @@
+-/*
+- * omap_control_usb.h - Header file for the USB part of control module.
+- *
+- * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * Author: Kishon Vijay Abraham I <kishon@ti.com>
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#ifndef __OMAP_CONTROL_USB_H__
+-#define __OMAP_CONTROL_USB_H__
+-
+-enum omap_control_usb_type {
+-	OMAP_CTRL_TYPE_OTGHS = 1,	/* Mailbox OTGHS_CONTROL */
+-	OMAP_CTRL_TYPE_USB2,	/* USB2_PHY, power down in CONTROL_DEV_CONF */
+-	OMAP_CTRL_TYPE_PIPE3,	/* PIPE3 PHY, DPLL & seperate Rx/Tx power */
+-	OMAP_CTRL_TYPE_DRA7USB2, /* USB2 PHY, power and power_aux e.g. DRA7 */
+-};
+-
+-struct omap_control_usb {
+-	struct device *dev;
+-
+-	u32 __iomem *otghs_control;
+-	u32 __iomem *power;
+-	u32 __iomem *power_aux;
+-
+-	struct clk *sys_clk;
+-
+-	enum omap_control_usb_type type;
+-};
+-
+-enum omap_control_usb_mode {
+-	USB_MODE_UNDEFINED = 0,
+-	USB_MODE_HOST,
+-	USB_MODE_DEVICE,
+-	USB_MODE_DISCONNECT,
+-};
+-
+-#define	OMAP_CTRL_DEV_PHY_PD		BIT(0)
+-
+-#define	OMAP_CTRL_DEV_AVALID		BIT(0)
+-#define	OMAP_CTRL_DEV_BVALID		BIT(1)
+-#define	OMAP_CTRL_DEV_VBUSVALID		BIT(2)
+-#define	OMAP_CTRL_DEV_SESSEND		BIT(3)
+-#define	OMAP_CTRL_DEV_IDDIG		BIT(4)
+-
+-#define	OMAP_CTRL_USB_PWRCTL_CLK_CMD_MASK	0x003FC000
+-#define	OMAP_CTRL_USB_PWRCTL_CLK_CMD_SHIFT	0xE
+-
+-#define	OMAP_CTRL_USB_PWRCTL_CLK_FREQ_MASK	0xFFC00000
+-#define	OMAP_CTRL_USB_PWRCTL_CLK_FREQ_SHIFT	0x16
+-
+-#define	OMAP_CTRL_USB3_PHY_TX_RX_POWERON	0x3
+-#define	OMAP_CTRL_USB3_PHY_TX_RX_POWEROFF	0x0
+-
+-#define OMAP_CTRL_USB2_PHY_PD		BIT(28)
+-
+-#if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
+-extern void omap_control_usb_phy_power(struct device *dev, int on);
+-extern void omap_control_usb_set_mode(struct device *dev,
+-	enum omap_control_usb_mode mode);
+-#else
+-
+-static inline void omap_control_usb_phy_power(struct device *dev, int on)
+-{
+-}
+-
+-static inline void omap_control_usb_set_mode(struct device *dev,
+-	enum omap_control_usb_mode mode)
+-{
+-}
+-#endif
+-
+-#endif	/* __OMAP_CONTROL_USB_H__ */
 -- 
 1.7.4.1
 
