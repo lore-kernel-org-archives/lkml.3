@@ -1,147 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab3ISPXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 11:23:17 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:49643 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751797Ab3ISPXO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 11:23:14 -0400
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Stephen GALLIMORE <stephen.gallimore@st.com>,
-        Stuart MENEFY <stuart.menefy@st.com>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Olivier CLERGEAUD <olivier.clergeaud@st.com>
-Date: Thu, 19 Sep 2013 17:22:30 +0200
-Subject: Re: [PATCH 2/4] ARM: STi: Supply I2C configuration to STiH416 SoC
-Thread-Topic: [PATCH 2/4] ARM: STi: Supply I2C configuration to STiH416 SoC
-Thread-Index: AQHOtUwO9YE1fhMorUmIqSpGJM/Akg==
-Message-ID: <84625B87D65BCF478CC1E9C886A4C314DEF1BD957D@SAFEX1MAIL4.st.com>
-References: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com>
- <1379498483-4236-3-git-send-email-maxime.coquelin@st.com>
- <20130918120340.GF16984@lee--X1>
- <84625B87D65BCF478CC1E9C886A4C314DEF1BD9578@SAFEX1MAIL4.st.com>
- <5239A322.5010004@st.com>
- <84625B87D65BCF478CC1E9C886A4C314DEF1BD9579@SAFEX1MAIL4.st.com>
- <523AF548.30400@st.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752414Ab3ISP0i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 11:26:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40860 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751157Ab3ISP0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 11:26:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,937,1371106800"; 
+   d="scan'208";a="398170158"
+Date: Thu, 19 Sep 2013 23:26:26 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: [PATCH] regulator: fix fatal kernel-doc error
+Message-ID: <20130919152626.GB7925@localhost>
+References: <5237AB72.5020806@infradead.org>
+ <20130917103238.GM21013@sirena.org.uk>
+ <52388CC4.7040101@infradead.org>
+ <20130917192355.GK21013@sirena.org.uk>
+ <20130917233328.GC11390@localhost>
+ <20130919140131.GB21013@sirena.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130919140131.GB21013@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2013 03:01 PM, Srinivas KANDAGATLA wrote:
-> On 19/09/13 08:16, Maxime COQUELIN wrote:
->> Hi Srini,
->>
->> On 09/18/2013 03:17 PM, Srinivas KANDAGATLA wrote:
->>> On 18/09/13 13:46, Maxime COQUELIN wrote:
->>>> On 09/18/2013 02:03 PM, Lee Jones wrote:
->>>>>>>> This patch supplies I2C configuration to STiH416 SoC.
->>>>>>>>
->>>>>>>> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>>>>>>> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
->>>>>>>> ---
->>>>>>>>  arch/arm/boot/dts/stih416-pinctrl.dtsi |   35 ++++++++++++++++++++
->>>>>>>>  arch/arm/boot/dts/stih416.dtsi         |   57 ++++++++++++++++++++++++++++++++
->>>>>>>>  2 files changed, 92 insertions(+)
->>>>>>>>
->>>>>>>> diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
->>>>>> I genuinely don't know the answer to this question, but are these
->>>>>> nodes identical to the ones you've just put in the stih415 DTSI file?
->>>>>> If so, I think it will be worth creating a stih41x DTSI rather than
->>>>>> duplicating lots of stuff unnecessarily.
->>>> There are close to be identical indeed.
->>>> For the clocks and pinctrl, the references names are the same, but they are
->>>> pointing on different nodes, as STiH415 and STiH416 have their own
->>>> clocks and pinctrl dtsi files.
->>>>
->>>> Srini, what is opinion about this?
->>> There is already a stih41x.dtsi file, but I don't think it is the right
->>> place for the pinctrl nodes there.
->>>
->>> Am not OK with the idea of common pinctrl nodes for STiH415 and STiH416
->>> for two reasons.
->>>
->>> 1> If we common up the pinctrl nodes, it will be very difficult to
->>> accommodate new pinctrls layout which is not guaranteed to be in same
->>> layout in future SOCs.
->>>
->>> 2> The retiming values in the pinctrl nodes tend to change as per SOC,
->>> so it will be difficult to manage it if we common it up.
->>>
->>> Am sure we can come up with a dt layout which can reduce duplication,
->>> but we have to be careful here not to lose the flexiblity to accommodate
->>> new picntrl layouts, new retimings values based on SOC.
->> Ok. What do you think of declaring the i2c nodes inside the stih41x.dtsi
->> file,
->> and overload them with the pinctrl and clock properties in the stih416
->> and stih415 dtsi files?
-> Am not very comfortable with this idea.
->
-> As there is no guarantee that the interrupt number/memory map and the
-> i2c numbering will be same in future SOCs or other IPs.
->
-> You might be already aware that the number of i2cs on each SOC are
-> different as example on STiH415 we have 10 SSCs and on STiH416 we have
-> 11 SSCs. So, At what point you decide that which devices/IPs should be
-> in stih41x and which should in stih415/Stih416?
-Yes, I know there is one more SSC on STiH416.
+On Thu, Sep 19, 2013 at 03:01:31PM +0100, Mark Brown wrote:
+> On Wed, Sep 18, 2013 at 07:33:28AM +0800, Fengguang Wu wrote:
+> > On Tue, Sep 17, 2013 at 08:23:55PM +0100, Mark Brown wrote:
+> 
+> > > Could these checks be added to Fengguang's tester?  If nobody's looking
+> > > at the output (I've never found the processed output useful myself) or
+> > > running the tool then it's a bit worrying...
+> 
+> > Yes, I'm running "make htmldocs" checks and send out all new warnings:
+> 
+> > Does that sound enough?
+> 
+> I'd expect it to be but then it seems like the issue that Randy found
+> wasn't picked up...  not sure if there's some other build that would
+> cover it or something.
 
-On one hand, this could add some confusion. But on the other hand,
-someone who will need to activate a SSP will know which one he has
-to activate.
-
->
-> Each i2c node will save around 5 lines if we common it up, but if the
-> interrupt number or map changes this difference will be negligible.
->
-> Common up at this level and mixing un-common ones in stih415.dtsi or
-> stih416.dtsi will add confusion to readers as the information is split
-> at multiple places.
-I agree it will be messy if one part of the node declared at one place,
-and the rest at another place.
->
-> IMO the common up idea sounds good but reduces the readability and has
-> no effect on final dtb size.
-
-Fair enough. Lee, are you ok with keeping it as is?
+Yes.. it was missed because the script used to only grep for
+"Warning(.*)" patterns and ignored the "Error(.*)" ones. Fixed
+since last email.
 
 Thanks,
-Maxime
->
-> Thanks,
-> srini
->
->
->> Regards,
->> Maxime
->>>
->>> thanks,
->>> srini
->>>
->>>
->>
->>
->
-
+Fengguang
