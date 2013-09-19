@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab3ISWZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 18:25:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10875 "EHLO mga02.intel.com"
+	id S1754064Ab3ISW0n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 18:26:43 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:55273 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183Ab3ISWZ2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 18:25:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,940,1371106800"; 
-   d="scan'208";a="380810474"
-From: "Verma, Vishal L" <vishal.l.verma@intel.com>
-To: Thomas Meyer <thomas@m3y3r.de>,
-        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] NVMe: Cocci spatch "kzalloc-simple"
-Thread-Topic: [PATCH 1/2] NVMe: Cocci spatch "kzalloc-simple"
-Thread-Index: AQHOtYPunnl54iCbH0WF7vDJ8vtZxpnNs/6A
-Date: Thu, 19 Sep 2013 22:25:24 +0000
-Message-ID: <CE60D5BF.F105%vishal.l.verma@intel.com>
-In-Reply-To: <1379604510863-2133994021-1-diffsplit-thomas@m3y3r.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.7.130812
-x-originating-ip: [10.22.226.39]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <57B172942144744097E0EBD862511940@intel.com>
-Content-Transfer-Encoding: 8BIT
+	id S1752183Ab3ISW0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 18:26:41 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: return EEXIST instead of EBUSY for second registering
+Date: Fri, 20 Sep 2013 00:37:50 +0200
+Message-ID: <11319698.mBBnJVdnIk@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAKohpomt+sASL=2i-v=HSkhOZhbPmnFesEfPoEqSE+WKcCfnmw@mail.gmail.com>
+References: <1379563520-7221-1-git-send-email-yinghai@kernel.org> <CAKohpomt+sASL=2i-v=HSkhOZhbPmnFesEfPoEqSE+WKcCfnmw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/19/13 3:45 PM, "Thomas Meyer" <thomas@m3y3r.de> wrote:
+On Thursday, September 19, 2013 09:38:32 AM Viresh Kumar wrote:
+> On 19 September 2013 09:35, Yinghai Lu <yinghai@kernel.org> wrote:
+> > System that cpu support intel_pstate, acpi_cpufreq fail to
+> > load, and udev keep trying until trace get filled up and
+> > kernel crash.
+> >
+> > The root cause is driver return ret from cpufreq_register_driver
+> > and when some other driver take over before, it would return
+> > EBUSY, then udev will keep trying...
+> >
+> > cpufreq_register_driver should return EEXIST instead.
+> > then system could boot without appending intel_pstate=disable
+> > and still use intel_pstate.
+> >
+> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
->Use kzalloc rather than kmalloc followed by memset with 0.
->Found by coccinelle spatch "api/alloc/kzalloc-simple.cocci"
->
->Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
->---
-
-Thomas,
-
-This has already been applied to Matthew's tree:
-http://git.infradead.org/users/willy/linux-nvme.git/commitdiff/03ea83e9a37e
-41d436f8348e6eee3d8281bfff3a
+Applied, thanks!
 
 
--Vishal
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
