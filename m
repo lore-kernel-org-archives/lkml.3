@@ -1,202 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3ISSO4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 14:14:56 -0400
-Received: from smtprelay0059.hostedemail.com ([216.40.44.59]:33401 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752045Ab3ISSOz (ORCPT
+	id S1753513Ab3ISSP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 14:15:29 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:55088 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab3ISSP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 14:14:55 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:2:41:355:379:541:599:960:966:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1535:1593:1594:1606:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3167:3354:3622:3865:3867:3868:3870:3871:3872:3874:4117:4250:4321:4385:4419:4605:5007:6117:6119:7652:9592:10004:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:12679:12740,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: loss38_479c74178985e
-X-Filterd-Recvd-Size: 6970
-Message-ID: <1379614490.22168.7.camel@joe-AO722>
-Subject: Re: [PATCH v1 5/6] bitops: Introduce BIT_ULL
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        gregkh@linuxfoundation.org, len.brown@intel.com, rjw@sisk.pl,
-        arjan@linux.intel.com, jacob.jun.pan@linux.intel.com
-Date: Thu, 19 Sep 2013 11:14:50 -0700
-In-Reply-To: <20130919172819.GD9412@pd.tnic>
-References: <1379606435-15871-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-	 <1379606435-15871-6-git-send-email-srinivas.pandruvada@linux.intel.com>
-	 <20130919164830.GB9427@pd.tnic> <523B2F57.2050504@linux.intel.com>
-	 <20130919172819.GD9412@pd.tnic>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 19 Sep 2013 14:15:28 -0400
+Message-ID: <523B3E4B.6080003@linux.vnet.ibm.com>
+Date: Thu, 19 Sep 2013 23:41:23 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: Regression on cpufreq in v3.12-rc1
+References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com> <45987104.t6r4hvPgQn@vostro.rjw.lan>	<523AF22F.1010909@linux.vnet.ibm.com> <CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com> <523AF50E.1040502@linux.vnet.ibm.com>
+In-Reply-To: <523AF50E.1040502@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091918-8256-0000-0000-0000094BD1DA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-19 at 19:28 +0200, Borislav Petkov wrote:
-> On Thu, Sep 19, 2013 at 10:07:35AM -0700, Srinivas Pandruvada wrote:
-> > The current definition for BIT_64 is in arch/x86/include/asm/bitops.h.
-> > I feel it should be applicable for all architectures and move to some
-> > common file.
-> 
-> Feel free to move it there or change BIT_64 to BIT_ULL or whatever ...
-> just don't add yet another redundant macro.
+On 09/19/2013 06:28 PM, Srivatsa S. Bhat wrote:
+> On 09/19/2013 06:25 PM, Linus Walleij wrote:
+>> On Thu, Sep 19, 2013 at 2:46 PM, Srivatsa S. Bhat
+>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>
+>>>>> I don't really know if this is the right solution at all, so please
+>>>>> help me out here... if you want that patch I can send it once
+>>>>> I understand this properly.
+>>>
+>>> IIRC, recent kernels didn't return 0 or any error code when the !policy
+>>> condition was matched. So can you check whether this problem occurs with
+>>> 3.11 or 3.10 as well?
+>>
+>> v3.11 works fine.
+>>
 
-Seems sensible.
+Ok, now that I got a chance to look at the code and the git logs, I think
+I have a clearer idea of what is happening.
 
-Maybe using U32_C/U64_C is better than 1ul and 1ull
-as it'd work in assembly.
+Basically commit 474deff74 (cpufreq: remove cpufreq_policy_cpu per-cpu
+variable) exposed a hidden issue. Before that commit, the code looked like
+this:
 
-Maybe something like:
+static DEFINE_PER_CPU(int, cpufreq_policy_cpu);
 
-Add BIT_ULL/BIT_ULL_MASK/BIT_ULL_WORD
-Rename BIT_64 uses to BIT_ULL
-Remove BIT_64 from x86 specific location
+[...]
 
----
+static int lock_policy_rwsem_##mode(int cpu)                            \
+{                                                                       \
+        int policy_cpu = per_cpu(cpufreq_policy_cpu, cpu);              \
+        BUG_ON(policy_cpu == -1);                                       \
+        down_##mode(&per_cpu(cpu_policy_rwsem, policy_cpu));            \
+                                                                        \
+        return 0;                                                       \
+}
 
-It looks like bitops.h needs
-#include <linux/kernel.h>
-as it uses DIV_ROUND_UP
+But there was no code to set the per-cpu values to -1 to begin with. Since
+the per-cpu variable was defined as static, it would have been initialized
+to zero. Thus, we would never actually hit the BUG_ON() condition, since
+policy_cpu didn't turn out to be -1.
 
- arch/x86/include/asm/bitops.h    |  2 --
- arch/x86/kernel/cpu/mcheck/mce.c |  4 ++--
- drivers/edac/amd64_edac.c        | 10 +++++-----
- drivers/edac/mce_amd.c           |  2 +-
- drivers/edac/mce_amd.h           |  4 ++--
- include/linux/bitops.h           | 13 ++++++++++---
- 6 files changed, 20 insertions(+), 15 deletions(-)
+(The per-cpu variable was set to -1 only during error in __cpufreq_add_dev
+and during cpufreq_remove_dev, both of which are irrelevant to the scenario
+we are dealing with here).
 
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 41639ce..f0bb112 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -23,8 +23,6 @@
- # error "Unexpected BITS_PER_LONG"
+So, code ended up accessing and locking CPU 0's rwsemaphore. But how was
+its initialization taken care of? The answer is the initcall sequence.
+Cpufreq core code initialized itself at the core_initcall stage, and the
+sa1100 cpufreq driver initialized itself at the arch_initcall stage, like
+Viresh mentioned. And core-initcall comes before arch-initcall. So the
+cpufreq core would have finished initializing the per-cpu rwsemaphores,
+so that locking/unlocking them wouldn't crash the system or get complaints
+from lockdep.
+
+To summarize, I think before commit 474deff74, we were accessing CPU0's
+rwsems (perhaps incorrectly) and due to the lacking initialization of the
+per-cpu vars, the BUG_ON() would never fire.
+
+To confirm this, you can perhaps try out one commit before 474deff74 and see
+if it works for you. Or equivalently, you can apply the following patch
+(revert of 474deff74) over mainline and see if it works.
+
+That said, I'm still not sure how to fix the original issue. I'll do some
+more digging later.
+
+Regards,
+Srivatsa S. Bhat
+
+[The following is an untested plain revert of 474deff74, with a small
+correction to account for the movement of update_policy_cpu() function.
+If this doesn't work, please try a commit below 474deff74.]
+
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 82ecbe3..5164529 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -64,14 +64,15 @@ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+  * - Lock should not be held across
+  *     __cpufreq_governor(data, CPUFREQ_GOV_STOP);
+  */
++static DEFINE_PER_CPU(int, cpufreq_policy_cpu);
+ static DEFINE_PER_CPU(struct rw_semaphore, cpu_policy_rwsem);
+ 
+ #define lock_policy_rwsem(mode, cpu)					\
+ static int lock_policy_rwsem_##mode(int cpu)				\
+ {									\
+-	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);	\
+-	BUG_ON(!policy);						\
+-	down_##mode(&per_cpu(cpu_policy_rwsem, policy->cpu));		\
++	int policy_cpu = per_cpu(cpufreq_policy_cpu, cpu);		\
++	BUG_ON(policy_cpu == -1);					\
++	down_##mode(&per_cpu(cpu_policy_rwsem, policy_cpu));		\
+ 									\
+ 	return 0;							\
+ }
+@@ -82,9 +83,9 @@ lock_policy_rwsem(write, cpu);
+ #define unlock_policy_rwsem(mode, cpu)					\
+ static void unlock_policy_rwsem_##mode(int cpu)				\
+ {									\
+-	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);	\
+-	BUG_ON(!policy);						\
+-	up_##mode(&per_cpu(cpu_policy_rwsem, policy->cpu));		\
++	int policy_cpu = per_cpu(cpufreq_policy_cpu, cpu);		\
++	BUG_ON(policy_cpu == -1);					\
++	up_##mode(&per_cpu(cpu_policy_rwsem, policy_cpu));		\
+ }
+ 
+ unlock_policy_rwsem(read, cpu);
+@@ -880,6 +881,7 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
+ 	write_lock_irqsave(&cpufreq_driver_lock, flags);
+ 
+ 	cpumask_set_cpu(cpu, policy->cpus);
++	per_cpu(cpufreq_policy_cpu, cpu) = policy->cpu;
+ 	per_cpu(cpufreq_cpu_data, cpu) = policy;
+ 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+ 
+@@ -949,6 +951,9 @@ static void cpufreq_policy_free(struct cpufreq_policy *policy)
+ 
+ static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
+ {
++	int j;
++	unsigned long flags;
++
+ 	if (cpu == policy->cpu)
+ 		return;
+ 
+@@ -966,6 +971,13 @@ static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
+ 
+ 	up_write(&per_cpu(cpu_policy_rwsem, policy->last_cpu));
+ 
++	write_lock_irqsave(&cpufreq_driver_lock, flags);
++
++	for_each_cpu(j, policy->cpus)
++		per_cpu(cpufreq_policy_cpu, j) = cpu;
++
++	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
++
+ #ifdef CONFIG_CPU_FREQ_TABLE
+ 	cpufreq_frequency_table_update_policy_cpu(policy);
+ #endif
+@@ -1041,6 +1053,9 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+ 	policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
+ 	cpumask_copy(policy->cpus, cpumask_of(cpu));
+ 
++	/* Initially set CPU itself as the policy_cpu */
++	per_cpu(cpufreq_policy_cpu, cpu) = cpu;
++
+ 	init_completion(&policy->kobj_unregister);
+ 	INIT_WORK(&policy->update, handle_update);
+ 
+@@ -1078,8 +1093,10 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
  #endif
  
--#define BIT_64(n)			(U64_C(1) << (n))
--
- /*
-  * These have to be done with inline assembly: that way the bit-setting
-  * is guaranteed to be atomic. All bit operations return 0 if the bit
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index b3218cd..8074b58 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1551,8 +1551,8 @@ static int __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
- 				 rdmsrl(msrs[i], val);
+ 	write_lock_irqsave(&cpufreq_driver_lock, flags);
+-	for_each_cpu(j, policy->cpus)
++	for_each_cpu(j, policy->cpus) {
+ 		per_cpu(cpufreq_cpu_data, j) = policy;
++		per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
++	}
+ 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
  
- 				 /* CntP bit set? */
--				 if (val & BIT_64(62)) {
--					val &= ~BIT_64(62);
-+				 if (val & BIT_ULL(62)) {
-+					val &= ~BIT_ULL(62);
- 					wrmsrl(msrs[i], val);
- 				 }
- 			 }
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 3c9e4e9..f277053 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -1310,7 +1310,7 @@ static u64 f1x_get_norm_dct_addr(struct amd64_pvt *pvt, u8 range,
- 		if ((!(dct_sel_base_addr >> 16) ||
- 		     dct_sel_base_addr < dhar_base(pvt)) &&
- 		    dhar_valid(pvt) &&
--		    (sys_addr >= BIT_64(32)))
-+		    (sys_addr >= BIT_ULL(32)))
- 			chan_off = hole_off;
- 		else
- 			chan_off = dct_sel_base_off;
-@@ -1324,7 +1324,7 @@ static u64 f1x_get_norm_dct_addr(struct amd64_pvt *pvt, u8 range,
- 		 * else
- 		 *	remove dram base to normalize to DCT address
- 		 */
--		if (dhar_valid(pvt) && (sys_addr >= BIT_64(32)))
-+		if (dhar_valid(pvt) && (sys_addr >= BIT_ULL(32)))
- 			chan_off = hole_off;
- 		else
- 			chan_off = dram_base;
-@@ -1459,7 +1459,7 @@ static int f1x_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
+ 	if (!frozen) {
+@@ -1103,11 +1120,15 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
  
- 	if (dhar_valid(pvt) &&
- 	    dhar_base(pvt) <= sys_addr &&
--	    sys_addr < BIT_64(32)) {
-+	    sys_addr < BIT_ULL(32)) {
- 		amd64_warn("Huh? Address is in the MMIO hole: 0x%016llx\n",
- 			    sys_addr);
- 		return -EINVAL;
-@@ -1551,7 +1551,7 @@ static int f15_m30h_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
+ err_out_unregister:
+ 	write_lock_irqsave(&cpufreq_driver_lock, flags);
+-	for_each_cpu(j, policy->cpus)
++	for_each_cpu(j, policy->cpus) {
+ 		per_cpu(cpufreq_cpu_data, j) = NULL;
++		if (j != cpu)
++			per_cpu(cpufreq_policy_cpu, j) = -1;
++	}
+ 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
  
- 	if (dhar_valid(pvt) &&
- 	    dhar_base(pvt) <= sys_addr &&
--	    sys_addr < BIT_64(32)) {
-+	    sys_addr < BIT_ULL(32)) {
- 		amd64_warn("Huh? Address is in the MMIO hole: 0x%016llx\n",
- 			    sys_addr);
- 		return -EINVAL;
-@@ -1582,7 +1582,7 @@ static int f15_m30h_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
- 	leg_mmio_hole = (u8) (dct_cont_base_reg >> 1 & BIT(0));
+ err_set_policy_cpu:
++	per_cpu(cpufreq_policy_cpu, cpu) = -1;
+ 	cpufreq_policy_free(policy);
+ nomem_out:
+ 	up_read(&cpufreq_rwsem);
+@@ -1133,6 +1154,7 @@ static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
+ 					   unsigned int old_cpu, bool frozen)
+ {
+ 	struct device *cpu_dev;
++	unsigned long flags;
+ 	int ret;
  
- 	/* Get normalized DCT addr */
--	if (leg_mmio_hole && (sys_addr >= BIT_64(32)))
-+	if (leg_mmio_hole && (sys_addr >= BIT_ULL(32)))
- 		chan_offset = dhar_offset;
- 	else
- 		chan_offset = dct_base << 27;
-diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
-index 30f7309..6486270 100644
---- a/drivers/edac/mce_amd.c
-+++ b/drivers/edac/mce_amd.c
-@@ -395,7 +395,7 @@ static void decode_mc1_mce(struct mce *m)
- 		pr_cont("%s TLB %s.\n", LL_MSG(ec),
- 			(xec ? "multimatch" : "parity error"));
- 	else if (BUS_ERROR(ec)) {
--		bool k8 = (boot_cpu_data.x86 == 0xf && (m->status & BIT_64(58)));
-+		bool k8 = (boot_cpu_data.x86 == 0xf && (m->status & BIT_ULL(58)));
+ 	/* first sibling now owns the new sysfs dir */
+@@ -1149,6 +1171,11 @@ static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
  
- 		pr_cont("during %s.\n", (k8 ? "system linefill" : "NB data read"));
- 	} else if (fam_ops->mc1_mce(ec, xec))
-diff --git a/drivers/edac/mce_amd.h b/drivers/edac/mce_amd.h
-index 51b7e3a..f4aa69d 100644
---- a/drivers/edac/mce_amd.h
-+++ b/drivers/edac/mce_amd.h
-@@ -32,8 +32,8 @@
- #define R4(x)				(((x) >> 4) & 0xf)
- #define R4_MSG(x)			((R4(x) < 9) ?  rrrr_msgs[R4(x)] : "Wrong R4!")
- 
--#define MCI_STATUS_DEFERRED		BIT_64(44)
--#define MCI_STATUS_POISON		BIT_64(43)
-+#define MCI_STATUS_DEFERRED		BIT_ULL(44)
-+#define MCI_STATUS_POISON		BIT_ULL(43)
- 
- extern const char * const pp_msgs[];
- 
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index a3b6b82..33e6f13 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -3,11 +3,18 @@
- #include <asm/types.h>
- 
- #ifdef	__KERNEL__
--#define BIT(nr)			(1UL << (nr))
--#define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_LONG))
--#define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
+ 		WARN_ON(lock_policy_rwsem_write(old_cpu));
+ 		cpumask_set_cpu(old_cpu, policy->cpus);
 +
- #define BITS_PER_BYTE		8
- #define BITS_TO_LONGS(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
++		write_lock_irqsave(&cpufreq_driver_lock, flags);
++		per_cpu(cpufreq_cpu_data, old_cpu) = policy;
++		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
 +
-+#define BIT(nr)			(U32_C(1) << (nr))
-+#define BIT_MASK(nr)		(U32_C(1) << ((nr) % BITS_PER_LONG))
-+#define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
-+
-+#define BIT_ULL(nr)		(U64_C(1) << (nr))
-+#define BIT_ULL_MASK(nr)	(U64_C(1) << ((nr) % BITS_PER_LONG))
-+#define BIT_ULL_WORD(nr)	((nr) / BITS_PER_LONG)
-+
- #endif
+ 		unlock_policy_rwsem_write(old_cpu);
  
- extern unsigned int __sw_hweight8(unsigned int w);
-
+ 		ret = sysfs_create_link(&cpu_dev->kobj, &policy->kobj,
+@@ -1174,6 +1201,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+ 	write_lock_irqsave(&cpufreq_driver_lock, flags);
+ 
+ 	policy = per_cpu(cpufreq_cpu_data, cpu);
++	per_cpu(cpufreq_cpu_data, cpu) = NULL;
+ 
+ 	/* Save the policy somewhere when doing a light-weight tear-down */
+ 	if (frozen)
+@@ -1305,7 +1333,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+ 		}
+ 	}
+ 
+-	per_cpu(cpufreq_cpu_data, cpu) = NULL;
++	per_cpu(cpufreq_policy_cpu, cpu) = -1;
+ 	return 0;
+ }
+ 
+@@ -2185,8 +2213,10 @@ static int __init cpufreq_core_init(void)
+ 	if (cpufreq_disabled())
+ 		return -ENODEV;
+ 
+-	for_each_possible_cpu(cpu)
++	for_each_possible_cpu(cpu) {
++		per_cpu(cpufreq_policy_cpu, cpu) = -1;
+ 		init_rwsem(&per_cpu(cpu_policy_rwsem, cpu));
++	}
+ 
+ 	cpufreq_global_kobject = kobject_create();
+ 	BUG_ON(!cpufreq_global_kobject);
 
