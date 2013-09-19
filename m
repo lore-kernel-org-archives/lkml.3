@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678Ab3ISVLT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 17:11:19 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:61970 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab3ISVLR (ORCPT
+	id S1753679Ab3ISVNc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 17:13:32 -0400
+Received: from hermes.synopsys.com ([198.182.44.81]:58904 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab3ISVNb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 17:11:17 -0400
-Date: Thu, 19 Sep 2013 14:11:12 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Hyun Kwon <hyunk@xilinx.com>
-Subject: Re: [PATCH v2] clk: si570: Add a driver for SI570 oscillators
-Message-ID: <20130919211112.GA11537@roeck-us.net>
-References: <1379544219-23579-1-git-send-email-soren.brinkmann@xilinx.com>
- <20130919131712.GB24088@roeck-us.net>
- <6401b71c-8c18-4735-8b40-9692cd788336@VA3EHSMHS037.ehs.local>
- <20130919164438.GA7461@roeck-us.net>
- <86ee8eea-7a98-443b-a156-46f3db1f9678@CO1EHSMHS031.ehs.local>
+	Thu, 19 Sep 2013 17:13:31 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Dave Airlie <airlied@gmail.com>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>
+Subject: RE: Regression: bisected: commit 7c510133d93 breaks video
+Thread-Topic: Regression: bisected: commit 7c510133d93 breaks video
+Thread-Index: Ac603Dj75+4o5NvZQwiCa9lQKGnjBAAP/hCAABH+RhAAAI6esAASKIYAAAAkNoAADNwJkA==
+Date: Thu, 19 Sep 2013 21:13:28 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458E04369@US01WEMBX2.internal.synopsys.com>
+References: <A2CA0424C0A6F04399FB9E1CD98E030458E03F28@US01WEMBX2.internal.synopsys.com>
+	<CAPM=9txFE7=e47oY0rqe29DYva2T2MtKHgTjKBtuLfOaNZebZg@mail.gmail.com>
+	<A2CA0424C0A6F04399FB9E1CD98E030458E042D4@US01WEMBX2.internal.synopsys.com>
+	<20130919201058.GD32145@phenom.ffwll.local>
+ <CAPM=9twVBn3EMt2RwQHBZBNV+6iYBKbYTGNbiOsnKnRA+dpyKw@mail.gmail.com>
+In-Reply-To: <CAPM=9twVBn3EMt2RwQHBZBNV+6iYBKbYTGNbiOsnKnRA+dpyKw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.240]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <86ee8eea-7a98-443b-a156-46f3db1f9678@CO1EHSMHS031.ehs.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 01:59:38PM -0700, Sören Brinkmann wrote:
-> On Thu, Sep 19, 2013 at 09:44:38AM -0700, Guenter Roeck wrote:
-> > On Thu, Sep 19, 2013 at 09:01:01AM -0700, Sören Brinkmann wrote:
-> > > On Thu, Sep 19, 2013 at 06:17:12AM -0700, Guenter Roeck wrote:
-> > > > On Wed, Sep 18, 2013 at 03:43:38PM -0700, Soren Brinkmann wrote:
-> [...]
-> > > > > +	if (of_property_read_bool(client->dev.of_node,
-> > > > > +				"temperature-stability-7ppm"))
-> > > > > +		data->div_offset = SI570_DIV_OFFSET_7PPM;
-> > > > > +
-> > > > Just noticed that you dropped platform data support. Doesn't matter much for me
-> > > > right now, but in my previous company we used the chip on an x86 system which
-> > > > does not support devicetree. Would be nice to keep it and derive platform data
-> > > > from devicetree data if provided, like other drivers do it.
-> > > I'll look into this. The issue I have with that is, I can hardly test it
-> > > since we only use this on Zynq which uses DT. So, I'd rather prefer to
-> > > not include it unless somebody volunteers to test it.
-> > > 
-> > Fair enough. I can not test it myself anymore, and my previous employer
-> > now has a strict non-contributions-to-linux policy, so I guess they won't
-> > test it either or at least not publish any test results. Leave it out.
-> > 
-> > > > The 7ppm option is only relevant for si570/si751 and not supported on
-> > > > si598/si599. You should mention that in the bindings document and check for it.
-> > > Right, I'll add a note in the doc. And ignore it for devices this does
-> > > not apply.
-> > > 
-> > I would bail out, but that is your call.
-> Correct me if I'm wrong, but in general drivers do not test for
-> unsupported properties. So, in case we have one of the supported 59x
-> device, we should not test whether a (unsupported) property is present,
-> just to fail in that case, IMHO.
+> From: Dave Airlie [mailto:airlied@gmail.com]
+> Sent: Thursday, September 19, 2013 1:15 PM
 > 
-Ok with me if that is the accepted way of handling this condition.
+> On Fri, Sep 20, 2013 at 6:10 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > On Thu, Sep 19, 2013 at 06:32:47PM +0000, Paul Zimmerman wrote:
+> >> > From: Paul Zimmerman
+> >> > Sent: Thursday, September 19, 2013 11:21 AM
+> >> >
+> >> > > From: Dave Airlie [mailto:airlied@gmail.com]
+> >> > > Sent: Wednesday, September 18, 2013 7:40 PM
+> >> > >
+> >> > > On Thu, Sep 19, 2013 at 12:02 PM, Paul Zimmerman
+> >> > > <Paul.Zimmerman@synopsys.com> wrote:
+> >> > > > I have an ASUS P6X58D-Premium mobo with a GeForce 9400GT PCIe video card.
+> >> > > > With kernel 3.12-rc1, I get scrambled video on boot. Kernel 3.11 works
+> >> > > > fine.
+> >> > > >
+> >> > > > Bisecting this, I found 7c510133d93dd6f15ca040733ba7b2891ed61fd1 "drm:
+> >> > > > mark context support as a legacy subsystem" is the guilty commit. If I
+> >> > > > revert that commit, the video works fine.
+> >> > > >
+> >> > > > Is there any more info I can provide?
+> >> > >
+> >> > > Full dmesg, and what driver you are using.
+> >> >
+> >> > Driver is nouveau.
+> >> >
+> >> > The dmesg from a good boot with the commit reverted is attached.
+> >> >
+> >> > For the bad boot, the dmesg log is filled with messages like this:
+> >> >
+> >> > [   15.871667] nouveau E[     PFB][0000:03:00.0] trapped write at 0x01010010a0 on channel
+> 0x0001fed0
+> >> > [unknown] BAR/PFIFO_WRITE/IN reason: PAGE_NOT_PRESENT
+> >> > [   15.871698] nouveau E[     PFB][0000:03:00.0] trapped write at 0x010100b2e0 on channel
+> 0x0001fed0
+> >> > [unknown] BAR/PFIFO_WRITE/IN reason: PAGE_NOT_PRESENT
+> >> > [   15.871781] nouveau E[     PFB][0000:03:00.0] trapped write at 0x0101011600 on channel
+> 0x0001fed0
+> >> > [unknown] BAR/PFIFO_WRITE/IN reason: PAGE_NOT_PRESENT
+> >> >
+> >> > I will try next with the patch series you sent to Linus yesterday, to
+> >> > see if that happens to fix this.
+> >>
+> >> Nope, with your patch series from yesterday the problem still exists.
+> >
+> > Just to double-check: Does the revert still work, even on latest upstream
+> > git + Dave's pull request?
+> 
+> Also what versions of userspace have you got, libdrm +
+> xf86-video-nouveau and mesa?
 
-Guenter
+Yes, the revert still works.
+
+I have pretty old userspace, Fedora 14.
+
+libdrm is 2.4.22-1.fc14, mesa is 7.9-5.fc14.
+
+I don't have xf86-video-nouveau, I have
+xorg-x11-drv-nouveau.x86_64 1:0.0.16-14.20101010git8c8f15c.fc14
+
+-- 
+Paul
+
