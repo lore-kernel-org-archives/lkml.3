@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab3ISNHr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 09:07:47 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36979 "EHLO comal.ext.ti.com"
+	id S1754237Ab3ISNIM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:08:12 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36977 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754102Ab3ISNG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 09:06:29 -0400
+	id S1754082Ab3ISNGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 09:06:25 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
 CC: <balajitk@ti.com>, <kishon@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         Roger Quadros <rogerq@ti.com>
-Subject: [RFC PATCH 07/15] ARM: dts: omap5: Update usb3phy node
-Date: Thu, 19 Sep 2013 16:05:35 +0300
-Message-ID: <1379595943-14622-8-git-send-email-rogerq@ti.com>
+Subject: [RFC PATCH 05/15] phy: omap-pipe3: Add SATA DPLL support
+Date: Thu, 19 Sep 2013 16:05:33 +0300
+Message-ID: <1379595943-14622-6-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1379595943-14622-1-git-send-email-rogerq@ti.com>
 References: <1379595943-14622-1-git-send-email-rogerq@ti.com>
@@ -24,27 +24,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update compatible property for usb3phy node.
+USB and SATA DPLLs need different settings. Provide
+the SATA DPLL settings and use the proper DPLL settings
+based on device tree compatible_id.
 
-CC: Benoit Cousson <bcousson@baylibre.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/omap5.dtsi |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/phy/phy-omap-pipe3.c   |   82 ++++++++++++++++++++++++++--------------
+ include/linux/phy/omap_pipe3.h |    6 +++
+ 2 files changed, 60 insertions(+), 28 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index 97f361a..06aa665 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -671,7 +671,7 @@
- 			};
+diff --git a/drivers/phy/phy-omap-pipe3.c b/drivers/phy/phy-omap-pipe3.c
+index 807ab8a..19d1664 100644
+--- a/drivers/phy/phy-omap-pipe3.c
++++ b/drivers/phy/phy-omap-pipe3.c
+@@ -58,29 +58,41 @@
+  */
+ # define PLL_IDLE_TIME  100;
  
- 			usb3_phy: usb3phy@4a084400 {
--				compatible = "ti,omap-usb3";
-+				compatible = "ti,phy-pipe3-usb3";
- 				reg = <0x4a084400 0x80>,
- 				      <0x4a084800 0x64>,
- 				      <0x4a084c00 0x40>;
+-struct pipe3_dpll_map {
+-	unsigned long rate;
+-	struct pipe3_dpll_params params;
+-};
+-
+-static struct pipe3_dpll_map dpll_map[] = {
++static struct pipe3_dpll_map dpll_map_usb[] = {
+ 	{12000000, {1250, 5, 4, 20, 0} },	/* 12 MHz */
+ 	{16800000, {3125, 20, 4, 20, 0} },	/* 16.8 MHz */
+ 	{19200000, {1172, 8, 4, 20, 65537} },	/* 19.2 MHz */
+ 	{20000000, {1000, 7, 4, 10, 0} },	/* 20 MHz */
+ 	{26000000, {1250, 12, 4, 20, 0} },	/* 26 MHz */
+ 	{38400000, {3125, 47, 4, 20, 92843} },	/* 38.4 MHz */
++	{ },					/* Terminator */
++};
++
++static struct pipe3_dpll_map dpll_map_sata[] = {
++	{12000000, {1000, 7, 4, 6, 0} },	/* 12 MHz */
++	{16800000, {714, 7, 4, 6, 0} },		/* 16.8 MHz */
++	{19200000, {625, 7, 4, 6, 0} },		/* 19.2 MHz */
++	{20000000, {600, 7, 4, 6, 0} },		/* 20 MHz */
++	{26000000, {461, 7, 4, 6, 0} },		/* 26 MHz */
++	{38400000, {312, 7, 4, 6, 0} },		/* 38.4 MHz */
++	{ },					/* Terminator */
+ };
+ 
+-static struct pipe3_dpll_params *omap_pipe3_get_dpll_params(unsigned long rate)
++static struct pipe3_dpll_params *omap_pipe3_get_dpll_params(struct omap_pipe3
++									*pipe3)
+ {
+-	int i;
++	unsigned long rate;
++	struct pipe3_dpll_map *dpll_map = pipe3->dpll_map;
+ 
+-	for (i = 0; i < ARRAY_SIZE(dpll_map); i++) {
+-		if (rate == dpll_map[i].rate)
+-			return &dpll_map[i].params;
++	rate = clk_get_rate(pipe3->sys_clk);
++
++	for (; dpll_map->rate; dpll_map++) {
++		if (rate == dpll_map->rate)
++			return &dpll_map->params;
+ 	}
+ 
++	dev_err(pipe3->dev,
++		  "No DPLL configuration for %lu Hz SYS CLK\n", rate);
+ 	return 0;
+ }
+ 
+@@ -148,10 +160,8 @@ static int omap_pipe3_dpll_lock(struct omap_pipe3 *phy)
+ 	struct pipe3_dpll_params *dpll_params;
+ 
+ 	rate = clk_get_rate(phy->sys_clk);
+-	dpll_params = omap_pipe3_get_dpll_params(rate);
++	dpll_params = omap_pipe3_get_dpll_params(phy);
+ 	if (!dpll_params) {
+-		dev_err(phy->dev,
+-			  "No DPLL configuration for %lu Hz SYS CLK\n", rate);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -206,6 +216,25 @@ static struct phy_ops ops = {
+ 	.owner		= THIS_MODULE,
+ };
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id omap_pipe3_id_table[] = {
++	{
++		.compatible = "ti,omap-pipe3",
++		.data = dpll_map_usb,
++	},
++	{
++		.compatible = "ti,omap-sata",
++		.data = dpll_map_sata,
++	},
++	{
++		.compatible = "ti,omap-usb3",
++		.data = dpll_map_usb,
++	},
++	{},
++};
++MODULE_DEVICE_TABLE(of, omap_pipe3_id_table);
++#endif
++
+ static int omap_pipe3_probe(struct platform_device *pdev)
+ {
+ 	struct omap_pipe3 *phy;
+@@ -215,9 +244,7 @@ static int omap_pipe3_probe(struct platform_device *pdev)
+ 	struct device_node *node = pdev->dev.of_node;
+ 	struct device_node *control_node;
+ 	struct platform_device *control_pdev;
+-
+-	if (!node)
+-		return -EINVAL;
++	const struct of_device_id *match;
+ 
+ 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+ 	if (!phy) {
+@@ -225,6 +252,16 @@ static int omap_pipe3_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
++	match = of_match_device(of_match_ptr(omap_pipe3_id_table), &pdev->dev);
++	if (!match)
++		return -EINVAL;
++
++	phy->dpll_map = (struct pipe3_dpll_map *)match->data;
++	if (!phy->dpll_map) {
++		dev_err(&pdev->dev, "no dpll data\n");
++		return -EINVAL;
++	}
++
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pll_ctrl");
+ 	phy->pll_ctrl_base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(phy->pll_ctrl_base))
+@@ -354,17 +391,6 @@ static const struct dev_pm_ops omap_pipe3_pm_ops = {
+ #define DEV_PM_OPS     NULL
+ #endif
+ 
+-#ifdef CONFIG_OF
+-static const struct of_device_id omap_pipe3_id_table[] = {
+-	{ .compatible = "ti,omap-pipe3" },
+-	{ .compatible = "ti,omap-sata" },
+-	{ .compatible = "ti,omap-pcie" },
+-	{ .compatible = "ti,omap-usb3" },
+-	{}
+-};
+-MODULE_DEVICE_TABLE(of, omap_pipe3_id_table);
+-#endif
+-
+ static struct platform_driver omap_pipe3_driver = {
+ 	.probe		= omap_pipe3_probe,
+ 	.remove		= omap_pipe3_remove,
+diff --git a/include/linux/phy/omap_pipe3.h b/include/linux/phy/omap_pipe3.h
+index 7329056..86825ca 100644
+--- a/include/linux/phy/omap_pipe3.h
++++ b/include/linux/phy/omap_pipe3.h
+@@ -29,6 +29,11 @@ struct pipe3_dpll_params {
+ 	u32	mf;
+ };
+ 
++struct pipe3_dpll_map {
++	unsigned long rate;
++	struct pipe3_dpll_params params;
++};
++
+ struct omap_pipe3 {
+ 	void __iomem		*pll_ctrl_base;
+ 	struct device		*dev;
+@@ -36,6 +41,7 @@ struct omap_pipe3 {
+ 	struct clk		*wkupclk;
+ 	struct clk		*sys_clk;
+ 	struct clk		*optclk;
++	struct pipe3_dpll_map	*dpll_map;
+ };
+ 
+ static inline u32 omap_pipe3_readl(void __iomem *addr, unsigned offset)
 -- 
 1.7.4.1
 
