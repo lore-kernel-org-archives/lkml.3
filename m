@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab3ISWsZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 18:48:25 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37305 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab3ISWsX (ORCPT
+	id S1754268Ab3ISWxT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 18:53:19 -0400
+Received: from nm4-vm3.access.bullet.mail.bf1.yahoo.com ([216.109.114.114]:39694
+	"EHLO nm4-vm3.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754148Ab3ISWxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 18:48:23 -0400
-Date: Fri, 20 Sep 2013 00:48:21 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Greg KH <greg@kroah.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Michal Simek <monstr@monstr.eu>,
-        Alan Tull <atull@altera.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: Re: /sys rules Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-Message-ID: <20130919224821.GA20481@amd.pavel.ucw.cz>
-References: <20130918203247.GA11181@obsidianresearch.com>
- <1379539063.31417.23.camel@atx-linux-37>
- <523AD814.1060406@monstr.eu>
- <20130919111719.GA26246@amd.pavel.ucw.cz>
- <523ADE58.2070103@monstr.eu>
- <20130919125237.GA7125@amd.pavel.ucw.cz>
- <20130919140633.GC19943@kroah.com>
- <523B05E6.90605@monstr.eu>
- <20130919142048.GS19937@titan.lakedaemon.net>
- <20130919143715.GA22928@kroah.com>
+	Thu, 19 Sep 2013 18:53:18 -0400
+X-Yahoo-Newman-Id: 913212.29684.bm@smtp114.sbc.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 9xzK_Q0VM1kQVHO.60hh09x735gwGyxTIqWhXStyWxpnonB
+ TxqG1yq9O5ydum7whUGse5KjJLz7x6BakWtnU7cN9FB_mIgDtCzJEELH88FP
+ s.mlqQKHOID8Hd00_YdlBzbPgDYBSzGFiJpoYmIPfei5Z_7Mn2GWrY1Q_7At
+ 55Kt3sXy2tc21a5byMyV_VRg8v908mcKrBYlNV3VbACuN5gyxo1L4.p_Xde8
+ 5JeGNCTTnKFtiXzMFxzbuYXASPur..Xg5ty5KpX1l3_nOyjkTrUGnoTyfWYZ
+ J._tlfdNdKUgsJX4vpA8zWCkYX3hH68dExpBi7nsfBM0OkafAzFD57j4jt._
+ zu1An2aSahgWUI4dDTuBl1JxY0kKn3OPcbD9TuDyQHpPhX_Qbviv_Lzqsyr6
+ .AS6DRJGoZWkPBZ3RpQqz2DfEcCyOMp0IsY9kvUbV4tJqJ5aFzu7GoBUeG7L
+ lce6Ixp3OXaQDT.kWd_YCbQJoIFVFQQEPIsGu5zbtuTdt5qc3H.QYqeZwzKc
+ 7sC0AzqrcVwR8KiXDTLW0uBhxRi4VYXy5JIz._KwxZmstND9ziP0iipdSRYw
+ oxC2tJk_uUWLsFz572eHhQbn6jIm8AMx86gWJTYpoPKV_k_hTDdRsUXcVsux
+ N6LYQQA--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with )
+        by smtp114.sbc.mail.bf1.yahoo.com with SMTP; 19 Sep 2013 15:53:16 -0700 PDT
+Message-ID: <523B8078.1070401@att.net>
+Date: Thu, 19 Sep 2013 17:53:44 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130730 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130919143715.GA22928@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Daniel Santos <daniel.santos@pobox.com>
+CC: David Howells <dhowells@redhat.com>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        George Spelvin <linux@horizon.com>
+Subject: Re: [PATCH 1/5] scripts: Add mkstrerror.sh
+References: <1379459317-13046-2-git-send-email-daniel.santos@pobox.com> <1379459317-13046-1-git-send-email-daniel.santos@pobox.com> <29168.1379504300@warthog.procyon.org.uk> <523B7C38.8050609@att.net>
+In-Reply-To: <523B7C38.8050609@att.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2013-09-19 07:37:15, Greg KH wrote:
-> On Thu, Sep 19, 2013 at 10:20:48AM -0400, Jason Cooper wrote:
-> > On Thu, Sep 19, 2013 at 04:10:46PM +0200, Michal Simek wrote:
-> > > On 09/19/2013 04:06 PM, Greg KH wrote:
-> > > > On Thu, Sep 19, 2013 at 02:52:37PM +0200, Pavel Machek wrote:
-> > > >> On Thu 2013-09-19 13:22:00, Michal Simek wrote:
-> > > >>> On 09/19/2013 01:17 PM, Pavel Machek wrote:
-> > > >>
-> > > >>>>> Status is just there and for my zynq devcfg driver I do export some status
-> > > >>>>> bits.
-> > > >>>>>
-> > > >>>>> root@petalinux:~# cat /sys/class/fpga/fpga0/status
-> > > >>>>> partial_bitstream_status: 0
-> > > >>>>> prog_done_status: 1
-> > > >>>>> dbg_lock_status: 0
-> > > >>>>> seu_lock_status: 0
-> > > >>>>> aes_en_lock_status: 0
-> > > >>>>> aes_status: 0
-> > > >>>>> seu_status: 0
-> > > >>>>> spniden_status: 1
-> > > >>>>> spiden_status: 1
-> > > >>>>> niden_status: 1
-> > > >>>>> dbgen_status: 1
-> > > >>>>> dap_en_status: 7
-> > > >>>>
-> > > >>>> This is single file? If so, it needs to be changed. Greg is rather
-> > > >>>> clear about that.
-> > > >>>
-> > > >>> Don't you have a link to these rules? I have seen any paragraph from Greg
-> > > >>> about it but I forget where was it.
-> > > >>
-> > > >> "one value per file" and "there must be documentation in
-> > > >> Documentation/ for each file" are the rules, iirc.
-> > > >>
-> > > >> There's Documentation/sysfs-rules.txt, but it does not seem too
-> > > >> relevant.
-> > > > 
-> > > > Documentation/filesystems/sysfs.txt says it.  It probably should be
-> > > > added to sysfs-rules.txt as well, but the odds that anyone ever reads
-> > > > the documentation is so low I doubt it's even worth it.
-> > > > 
-> > > > Also, all sysfs files have to be documented in Documentation/ABI/ which
-> > > > this patch does not do :(
-> > > > 
-> > > > And yes, multiple values in a single sysfs file is not allowed at all.
-> > > > 
-> > > 
-> > > ok. I will read that. This is output from my fpga end driver - nothing
-> > > what I have sent for review.
-> > 
-> > If this is useful to you (and others), you could use debugfs for this.
-> > The rules there are intentionally a lot more lax.
-> 
-> Yes, there is only one rule in debugfs, "There is no rules".
 
-Yeah. OTOH, depending on debugfs for normal operation would be
-ugly. Don't do that (tm).
-									Pavel
+On 09/19/2013 05:35 PM, Daniel Santos wrote:
+>
+> Hmm, I cannot reproduce the error. :( I'm using next-20130919 
+> currently (x86_64), and if I try to just "make O=lib" it fails w/o my 
+> patches.  The only file that should depend upon error_strings.h is 
+> lib/string.c.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Ahh! I've never seen the "make O=foo" before and just presumed it was an 
+alternate directive to specify a directory of the source tree to build.  
+I'm certainly glad to learn that the kernel supports out of tree builds! :)
+
+So I am getting the error now and this is because the script expects to 
+run in the root of the source tree. This will be an easy fix and I think 
+I've figured out the correct place to put the make target for it as well.
+
+Daniel
