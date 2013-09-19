@@ -1,58 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957Ab3ISH2j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 03:28:39 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:60098 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab3ISH2i (ORCPT
+	id S1752935Ab3ISHce (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 03:32:34 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:56670 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752083Ab3ISHcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 03:28:38 -0400
-From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-To: mmarek@suse.cz
-Cc: yann.morin.1998@free.fr, bpoirier@suse.de, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Subject: =?UTF-8?q?=5BPATCH=5Dkconfig/menu=2Ec=3A=20fix=20uninitialized=20variable=20warning?=
-Date: Thu, 19 Sep 2013 12:58:17 +0530
-Message-Id: <1379575697-6740-1-git-send-email-maddy@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 19 Sep 2013 03:32:33 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AukGAM2nOlJ5Lapl/2dsb2JhbABagwe8eIU/gSEXdIIlAQEEAScTHCMQCAMYCSUPBSUDIROHfQW5bBaPUQeEHgOXepF1gWaBUCo
+Date: Thu, 19 Sep 2013 17:32:25 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>, Linux MM <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] [PATCH] [RFC] mm/shrinker: Add a shrinker flag to
+ always shrink a bit
+Message-ID: <20130919073225.GI9901@dastard>
+References: <1379495401-18279-1-git-send-email-daniel.vetter@ffwll.ch>
+ <5239829F.4080601@t-online.de>
+ <20130918203822.GA4330@dastard>
+ <CAKMK7uGR7HtMLgu2-tvfTm+W=_gndVJ7QPcf0okFcKX6Htd61Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091907-2000-0000-0000-00000DC8C641
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uGR7HtMLgu2-tvfTm+W=_gndVJ7QPcf0okFcKX6Htd61Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In file included from scripts/kconfig/zconf.tab.c:2537:0:
-scripts/kconfig/menu.c: In function ‘get_symbol_str’:
-scripts/kconfig/menu.c:586:18: warning: ‘jump’ may be used uninitialized in
-this function [-Wmaybe-uninitialized]
-     jump->offset = r->len - 1;
-                  ^
-scripts/kconfig/menu.c:547:19: note: ‘jump’ was declared here
-  struct jump_key *jump;
-                   ^
-Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
----
- scripts/kconfig/menu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Thu, Sep 19, 2013 at 08:57:04AM +0200, Daniel Vetter wrote:
+> On Wed, Sep 18, 2013 at 10:38 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > No, that's wrong. ->count_objects should never ass SHRINK_STOP.
+> > Indeed, it should always return a count of objects in the cache,
+> > regardless of the context.
+> >
+> > SHRINK_STOP is for ->scan_objects to tell the shrinker it can make
+> > any progress due to the context it is called in. This allows the
+> > shirnker to defer the work to another call in a different context.
+> > However, if ->count-objects doesn't return a count, the work that
+> > was supposed to be done cannot be deferred, and that is what
+> > ->count_objects should always return the number of objects in the
+> > cache.
+> 
+> So we should rework the locking in the drm/i915 shrinker to be able to
+> always count objects? Thus far no one screamed yet that we're not
+> really able to do that in all call contexts ...
 
-diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-index c1d5320..23b1827 100644
---- a/scripts/kconfig/menu.c
-+++ b/scripts/kconfig/menu.c
-@@ -544,7 +544,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
- {
- 	int i, j;
- 	struct menu *submenu[8], *menu, *location = NULL;
--	struct jump_key *jump;
-+	struct jump_key *jump = NULL;
+It's not the end of the world if you count no objects. in an ideal
+world, you keep a count of the object sizes on the LRU when you
+add/remove the objects on the list, that way .count_objects doesn't
+need to walk or lock anything, which is what things like the inode
+and dentry caches do...
 
- 	str_printf(r, _("Prompt: %s\n"), _(prop->text));
- 	menu = prop->menu->parent;
---
-1.7.10.4
+> 
+> So should I revert 81e49f or will the early return 0; completely upset
+> the core shrinker logic?
 
+It looks to me like 81e49f changed the wrong function to return
+SHRINK_STOP. It should have changed i915_gem_inactive_scan() to
+return SHRINK_STOP when the locks could not be taken, not
+i915_gem_inactive_count().
+
+What should happen is this:
+
+	max_pass = count_objects()
+	if (max_pass == 0)
+		/* skip to next shrinker */
+
+	/* calculate total_scan from max_pass and previous leftovers */
+
+	while (total_scan) {
+		freed = scan_objects(batch_size)
+		if (freed == SHRINK_STOP)
+			break; /* can't make progress */
+		total_scan -= batch_size;
+	}
+
+	/* save remaining total_scan for next pass */
+
+
+i.e. SHRINK_STOP will abort the scan loop when nothing can be done.
+Right now, if nothing can be done because the locks can't be taken,
+the scan loop will continue running until total_scan reaches zero.
+i.e. it does a whole lotta nothing.
+
+So right now, I'd revert 81e49f and then convert
+i915_gem_inactive_scan() to return SHRINK_STOP if it can't get
+locks, and everything shoul dwork just fine...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
