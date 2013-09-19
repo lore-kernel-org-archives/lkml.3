@@ -1,80 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab3ISPWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 11:22:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60470 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751157Ab3ISPWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 11:22:33 -0400
-Date: Thu, 19 Sep 2013 11:22:27 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Cc: mmarek@suse.cz, yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]kconfig/menu.c: fix uninitialized variable warning
-Message-ID: <20130919152227.GB19364@d2.synalogic.ca>
-References: <1379575697-6740-1-git-send-email-maddy@linux.vnet.ibm.com>
+	id S1753044Ab3ISPXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 11:23:17 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:49643 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751797Ab3ISPXO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 11:23:14 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Stephen GALLIMORE <stephen.gallimore@st.com>,
+        Stuart MENEFY <stuart.menefy@st.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Olivier CLERGEAUD <olivier.clergeaud@st.com>
+Date: Thu, 19 Sep 2013 17:22:30 +0200
+Subject: Re: [PATCH 2/4] ARM: STi: Supply I2C configuration to STiH416 SoC
+Thread-Topic: [PATCH 2/4] ARM: STi: Supply I2C configuration to STiH416 SoC
+Thread-Index: AQHOtUwO9YE1fhMorUmIqSpGJM/Akg==
+Message-ID: <84625B87D65BCF478CC1E9C886A4C314DEF1BD957D@SAFEX1MAIL4.st.com>
+References: <1379498483-4236-1-git-send-email-maxime.coquelin@st.com>
+ <1379498483-4236-3-git-send-email-maxime.coquelin@st.com>
+ <20130918120340.GF16984@lee--X1>
+ <84625B87D65BCF478CC1E9C886A4C314DEF1BD9578@SAFEX1MAIL4.st.com>
+ <5239A322.5010004@st.com>
+ <84625B87D65BCF478CC1E9C886A4C314DEF1BD9579@SAFEX1MAIL4.st.com>
+ <523AF548.30400@st.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1379575697-6740-1-git-send-email-maddy@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/09/19 12:58, Madhavan Srinivasan wrote:
-> In file included from scripts/kconfig/zconf.tab.c:2537:0:
-> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
-> scripts/kconfig/menu.c:586:18: warning: ‘jump’ may be used uninitialized in
-> this function [-Wmaybe-uninitialized]
-                   ^^^^^
+On 09/19/2013 03:01 PM, Srinivas KANDAGATLA wrote:
+> On 19/09/13 08:16, Maxime COQUELIN wrote:
+>> Hi Srini,
+>>
+>> On 09/18/2013 03:17 PM, Srinivas KANDAGATLA wrote:
+>>> On 18/09/13 13:46, Maxime COQUELIN wrote:
+>>>> On 09/18/2013 02:03 PM, Lee Jones wrote:
+>>>>>>>> This patch supplies I2C configuration to STiH416 SoC.
+>>>>>>>>
+>>>>>>>> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>>>>>>>> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+>>>>>>>> ---
+>>>>>>>>  arch/arm/boot/dts/stih416-pinctrl.dtsi |   35 ++++++++++++++++++++
+>>>>>>>>  arch/arm/boot/dts/stih416.dtsi         |   57 ++++++++++++++++++++++++++++++++
+>>>>>>>>  2 files changed, 92 insertions(+)
+>>>>>>>>
+>>>>>>>> diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+>>>>>> I genuinely don't know the answer to this question, but are these
+>>>>>> nodes identical to the ones you've just put in the stih415 DTSI file?
+>>>>>> If so, I think it will be worth creating a stih41x DTSI rather than
+>>>>>> duplicating lots of stuff unnecessarily.
+>>>> There are close to be identical indeed.
+>>>> For the clocks and pinctrl, the references names are the same, but they are
+>>>> pointing on different nodes, as STiH415 and STiH416 have their own
+>>>> clocks and pinctrl dtsi files.
+>>>>
+>>>> Srini, what is opinion about this?
+>>> There is already a stih41x.dtsi file, but I don't think it is the right
+>>> place for the pinctrl nodes there.
+>>>
+>>> Am not OK with the idea of common pinctrl nodes for STiH415 and STiH416
+>>> for two reasons.
+>>>
+>>> 1> If we common up the pinctrl nodes, it will be very difficult to
+>>> accommodate new pinctrls layout which is not guaranteed to be in same
+>>> layout in future SOCs.
+>>>
+>>> 2> The retiming values in the pinctrl nodes tend to change as per SOC,
+>>> so it will be difficult to manage it if we common it up.
+>>>
+>>> Am sure we can come up with a dt layout which can reduce duplication,
+>>> but we have to be careful here not to lose the flexiblity to accommodate
+>>> new picntrl layouts, new retimings values based on SOC.
+>> Ok. What do you think of declaring the i2c nodes inside the stih41x.dtsi
+>> file,
+>> and overload them with the pinctrl and clock properties in the stih416
+>> and stih415 dtsi files?
+> Am not very comfortable with this idea.
+>
+> As there is no guarantee that the interrupt number/memory map and the
+> i2c numbering will be same in future SOCs or other IPs.
+>
+> You might be already aware that the number of i2cs on each SOC are
+> different as example on STiH415 we have 10 SSCs and on STiH416 we have
+> 11 SSCs. So, At what point you decide that which devices/IPs should be
+> in stih41x and which should in stih415/Stih416?
+Yes, I know there is one more SSC on STiH416.
 
-from gcc(1):
-	"These warnings are made optional because GCC is not smart
-	enough to see all the reasons why the code might be correct
-	despite appearing to have an error."
+On one hand, this could add some confusion. But on the other hand,
+someone who will need to activate a SSP will know which one he has
+to activate.
 
-I do not see this warning with gcc 4.7.2 or 4.8.1. Which version are you
-using?
+>
+> Each i2c node will save around 5 lines if we common it up, but if the
+> interrupt number or map changes this difference will be negligible.
+>
+> Common up at this level and mixing un-common ones in stih415.dtsi or
+> stih416.dtsi will add confusion to readers as the information is split
+> at multiple places.
+I agree it will be messy if one part of the node declared at one place,
+and the rest at another place.
+>
+> IMO the common up idea sounds good but reduces the readability and has
+> no effect on final dtb size.
 
-The code does:
+Fair enough. Lee, are you ok with keeping it as is?
 
-static void get_prompt_str(struct gstr *r, struct property *prop,
-[...]
-	if (head && location) {
-		jump = xmalloc(sizeof(struct jump_key));
-[... different basic block ...]
-			if (head && location && menu == location)
-				jump->offset = r->len - 1;
+Thanks,
+Maxime
+>
+> Thanks,
+> srini
+>
+>
+>> Regards,
+>> Maxime
+>>>
+>>> thanks,
+>>> srini
+>>>
+>>>
+>>
+>>
+>
 
-If the second "if" is true, then the first one was true as well, and
-"jump" is initilized.
-
->      jump->offset = r->len - 1;
->                   ^
-> scripts/kconfig/menu.c:547:19: note: ‘jump’ was declared here
->   struct jump_key *jump;
->                    ^
-> Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-> ---
->  scripts/kconfig/menu.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-> index c1d5320..23b1827 100644
-> --- a/scripts/kconfig/menu.c
-> +++ b/scripts/kconfig/menu.c
-> @@ -544,7 +544,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
->  {
->  	int i, j;
->  	struct menu *submenu[8], *menu, *location = NULL;
-> -	struct jump_key *jump;
-> +	struct jump_key *jump = NULL;
-> 
->  	str_printf(r, _("Prompt: %s\n"), _(prop->text));
->  	menu = prop->menu->parent;
-> --
-> 1.7.10.4
-> 
