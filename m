@@ -1,102 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab3ISOgm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 10:36:42 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:59385 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751562Ab3ISOgl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 10:36:41 -0400
-X-Sasl-enc: jHQyMbhSFjEYnV33pMkWt6TPDm2HDJBWJQu62BirG8mK 1379601400
-Date: Thu, 19 Sep 2013 07:37:15 -0700
-From: Greg KH <greg@kroah.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Michal Simek <monstr@monstr.eu>, Pavel Machek <pavel@denx.de>,
-        Alan Tull <atull@altera.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: Re: /sys rules Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-Message-ID: <20130919143715.GA22928@kroah.com>
-References: <20130918191517.GQ19937@titan.lakedaemon.net>
- <20130918203247.GA11181@obsidianresearch.com>
- <1379539063.31417.23.camel@atx-linux-37>
- <523AD814.1060406@monstr.eu>
- <20130919111719.GA26246@amd.pavel.ucw.cz>
- <523ADE58.2070103@monstr.eu>
- <20130919125237.GA7125@amd.pavel.ucw.cz>
- <20130919140633.GC19943@kroah.com>
- <523B05E6.90605@monstr.eu>
- <20130919142048.GS19937@titan.lakedaemon.net>
+	id S1752690Ab3ISOkv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 10:40:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64641 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562Ab3ISOkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 10:40:49 -0400
+Date: Thu, 19 Sep 2013 22:40:17 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] kexec: Let slurp_file_len() return the number of
+ bytes read
+Message-ID: <20130919144017.GB4487@dhcp-16-126.nay.redhat.com>
+References: <1379412095-7213-1-git-send-email-geert@linux-m68k.org>
+ <1379412095-7213-5-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130919142048.GS19937@titan.lakedaemon.net>
+In-Reply-To: <1379412095-7213-5-git-send-email-geert@linux-m68k.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 10:20:48AM -0400, Jason Cooper wrote:
-> On Thu, Sep 19, 2013 at 04:10:46PM +0200, Michal Simek wrote:
-> > On 09/19/2013 04:06 PM, Greg KH wrote:
-> > > On Thu, Sep 19, 2013 at 02:52:37PM +0200, Pavel Machek wrote:
-> > >> On Thu 2013-09-19 13:22:00, Michal Simek wrote:
-> > >>> On 09/19/2013 01:17 PM, Pavel Machek wrote:
-> > >>
-> > >>>>> Status is just there and for my zynq devcfg driver I do export some status
-> > >>>>> bits.
-> > >>>>>
-> > >>>>> root@petalinux:~# cat /sys/class/fpga/fpga0/status
-> > >>>>> partial_bitstream_status: 0
-> > >>>>> prog_done_status: 1
-> > >>>>> dbg_lock_status: 0
-> > >>>>> seu_lock_status: 0
-> > >>>>> aes_en_lock_status: 0
-> > >>>>> aes_status: 0
-> > >>>>> seu_status: 0
-> > >>>>> spniden_status: 1
-> > >>>>> spiden_status: 1
-> > >>>>> niden_status: 1
-> > >>>>> dbgen_status: 1
-> > >>>>> dap_en_status: 7
-> > >>>>
-> > >>>> This is single file? If so, it needs to be changed. Greg is rather
-> > >>>> clear about that.
-> > >>>
-> > >>> Don't you have a link to these rules? I have seen any paragraph from Greg
-> > >>> about it but I forget where was it.
-> > >>
-> > >> "one value per file" and "there must be documentation in
-> > >> Documentation/ for each file" are the rules, iirc.
-> > >>
-> > >> There's Documentation/sysfs-rules.txt, but it does not seem too
-> > >> relevant.
-> > > 
-> > > Documentation/filesystems/sysfs.txt says it.  It probably should be
-> > > added to sysfs-rules.txt as well, but the odds that anyone ever reads
-> > > the documentation is so low I doubt it's even worth it.
-> > > 
-> > > Also, all sysfs files have to be documented in Documentation/ABI/ which
-> > > this patch does not do :(
-> > > 
-> > > And yes, multiple values in a single sysfs file is not allowed at all.
-> > > 
-> > 
-> > ok. I will read that. This is output from my fpga end driver - nothing
-> > what I have sent for review.
+On 09/17/13 at 12:01pm, Geert Uytterhoeven wrote:
+> Add an optional output parameter to slurp_file_len() so it can return the
+> actual number of bytes read.
+
+Acked-by: Dave Young <dyoung@redhat.com>
+
+BTW, looking the slurp_file function, it would be better to call/reuse slurp_file_len
+in slurp_file, care to improve this as well?
+
 > 
-> If this is useful to you (and others), you could use debugfs for this.
-> The rules there are intentionally a lot more lax.
-
-Yes, there is only one rule in debugfs, "There is no rules".
-
-greg k-h
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  kexec/arch/i386/crashdump-x86.c |    5 ++---
+>  kexec/kexec.c                   |    4 +++-
+>  kexec/kexec.h                   |    2 +-
+>  3 files changed, 6 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kexec/arch/i386/crashdump-x86.c b/kexec/arch/i386/crashdump-x86.c
+> index e44fceb..e2da50b 100644
+> --- a/kexec/arch/i386/crashdump-x86.c
+> +++ b/kexec/arch/i386/crashdump-x86.c
+> @@ -121,7 +121,7 @@ static int get_kernel_vaddr_and_size(struct kexec_info *UNUSED(info),
+>  	struct mem_ehdr ehdr;
+>  	struct mem_phdr *phdr, *end_phdr;
+>  	int align;
+> -	unsigned long size;
+> +	off_t size;
+>  	uint32_t elf_flags = 0;
+>  
+>  	if (elf_info->machine != EM_X86_64)
+> @@ -131,8 +131,7 @@ static int get_kernel_vaddr_and_size(struct kexec_info *UNUSED(info),
+>  		return 0;
+>  
+>  	align = getpagesize();
+> -	size = KCORE_ELF_HEADERS_SIZE;
+> -	buf = slurp_file_len(kcore, size);
+> +	buf = slurp_file_len(kcore, KCORE_ELF_HEADERS_SIZE, &size);
+>  	if (!buf) {
+>  		fprintf(stderr, "Cannot read %s: %s\n", kcore, strerror(errno));
+>  		return -1;
+> diff --git a/kexec/kexec.c b/kexec/kexec.c
+> index b863d2a..2b98ef0 100644
+> --- a/kexec/kexec.c
+> +++ b/kexec/kexec.c
+> @@ -537,7 +537,7 @@ char *slurp_file(const char *filename, off_t *r_size)
+>  /* This functions reads either specified number of bytes from the file or
+>     lesser if EOF is met. */
+>  
+> -char *slurp_file_len(const char *filename, off_t size)
+> +char *slurp_file_len(const char *filename, off_t size, off_t *nread)
+>  {
+>  	int fd;
+>  	char *buf;
+> @@ -575,6 +575,8 @@ char *slurp_file_len(const char *filename, off_t size)
+>  		die("Close of %s failed: %s\n",
+>  			filename, strerror(errno));
+>  	}
+> +	if (nread)
+> +		*nread = progress;
+>  	return buf;
+>  }
+>  
+> diff --git a/kexec/kexec.h b/kexec/kexec.h
+> index 715b568..5844b42 100644
+> --- a/kexec/kexec.h
+> +++ b/kexec/kexec.h
+> @@ -237,7 +237,7 @@ extern void die(const char *fmt, ...)
+>  extern void *xmalloc(size_t size);
+>  extern void *xrealloc(void *ptr, size_t size);
+>  extern char *slurp_file(const char *filename, off_t *r_size);
+> -extern char *slurp_file_len(const char *filename, off_t size);
+> +extern char *slurp_file_len(const char *filename, off_t size, off_t *nread);
+>  extern char *slurp_decompress_file(const char *filename, off_t *r_size);
+>  extern unsigned long virt_to_phys(unsigned long addr);
+>  extern void add_segment(struct kexec_info *info,
+> -- 
+> 1.7.9.5
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
