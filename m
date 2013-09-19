@@ -1,143 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab3ISVW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 17:22:29 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:13164 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab3ISVW1 (ORCPT
+	id S1753762Ab3ISV0a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 17:26:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57632 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab3ISV03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 17:22:27 -0400
-Message-ID: <1379625742.2145.19.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 0/4] ipc: shm and msg fixes
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        sedat.dilek@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@parisplace.org>,
-        linux-security-module@vger.kernel.org
-Date: Thu, 19 Sep 2013 14:22:22 -0700
-In-Reply-To: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
-References: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Thu, 19 Sep 2013 17:26:29 -0400
+Date: Thu, 19 Sep 2013 14:26:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        mhocko@suse.cz, hare@suse.de, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 0/4 v6] Avoid softlockups in console_unlock()
+Message-Id: <20130919142627.2b67463baea318c7d26fe6af@linux-foundation.org>
+In-Reply-To: <20130905154612.GD19782@quack.suse.cz>
+References: <1377072512-7986-1-git-send-email-jack@suse.cz>
+	<20130821142723.5fd8c0b0062b35ee83a68dcc@linux-foundation.org>
+	<20130821225915.GA16653@quack.suse.cz>
+	<20130822124913.c6de8fe61e9fd601bd83ff63@linux-foundation.org>
+	<alpine.LNX.2.00.1308232146250.25124@deuxcents.site>
+	<20130823125822.b3f5b946ef1e86c52834d0c3@linux-foundation.org>
+	<20130905154612.GD19782@quack.suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-09-15 at 20:04 -0700, Davidlohr Bueso wrote:
-> This patchset deals with the selinux and rmid races Manfred found on
-> the ipc scaling work that has been going on. It specifically addresses
-> shared mem and msg queues. While semaphores still need updated, I want
-> to make sure these are correct first. Also, Manfred had already sent out
-> a patchset that deals with a race in sem complex operations. So any changes
-> should be on top of his.
+On Thu, 5 Sep 2013 17:46:12 +0200 Jan Kara <jack@suse.cz> wrote:
+
+>   Sorry for a delayed reply. I was on vacation...
 > 
-> Patches 1 and 2 deal with shared memory.
-> Patches 3 and 4 deal with msg queues.
-> Specific details about each race and its fix are in the corresponding
-> patches.
+> On Fri 23-08-13 12:58:22, Andrew Morton wrote:
+> > On Fri, 23 Aug 2013 21:48:36 +0200 (CEST) Jiri Kosina <jkosina@suse.cz> wrote:
+> > 
+> > > > >   We have customers (quite a few of them actually) which have machines with
+> > > > > lots of SCSI disks attached (due to multipath etc.) and during boot when
+> > > > > these disks are discovered and partitions set up quite some printing
+> > > > > happens - multiplied by the number of devices (1000+) it is too much for a
+> > > > > serial console to handle quickly enough. So these machines aren't able to
+> > > > > boot with serial console enabled.
+> > > > 
+> > > > It sounds like rather a corner case, not worth mucking up the critical
+> > > > core logging code.
+> > > 
+> > > Andrew, I have to admit I don't understand this argument at all.
+> > 
+> > Of course you do.  print should be simple, robust and have minimum
+> > dependency on other kernel parts.
+> > 
+> > I suppose that if you make the proposed
+> > /proc/sys/kernel/max_printk_chars settable from the boot command line
+> > and default to zero, any risks are minimized.
+>   That's easy enough to do so if it makes you happy I'll go for that.
+> During my vacation I was also thinking how I could address some of your
+> concerns. The only idea I found plausible was a scheme where CPU that
+> wants to stop printing would raise some flag but still keep printing
+> releasing and reacquiring the console_sem from time to time. In
+> console_trylock_for_printk() we would block waiting for console_sem
+> if we see the flag raised.
 > 
-> Note that Linus suggested a good alternative to patches 1 and 3: use
-> kfree_rcu() and delay the freeing of the security structure. I would
-> much prefer that approach to doing security checks with the lock held,
-> but I want to leave the patches out and ready in case we go with the
-> later solution.
+> This way we would be guaranteed someone has really taken over printing
+> before we leave console_unlock(). We would still need to use irq_work so
+> that we have someone to take over printing in case printk storm has filled
+> our dmesg buffer and we are now slowly getting it out to the console.
+> 
+> So all in all this would be a bit more complex than my current solution
+> (additional flag and some logic around it). The advantage is that we would
+> rely on irq_work only to achieve reasonable irq latency but it won't be
+> necessary for getting printk out to console. If this addresses your
+> concerns better I could try implementing that. Thoughts?
+> 
 
-Cc'ing selinux/security people - folks, could you please confirm that
-this change is ok and won't break anything related to security?
+What driver is in use here, anyway? 
+Is it drivers/tty/serial/8250/8250_early.c?
 
-Thanks!
+I'm not sure that I fully undertand the problem yet.  You say "These
+patches avoid softlockups when a CPU gets caught in console_unlock()
+for a long time during heavy printing from other CPU".  But *why* is
+the printing CPU holding the lock for so long?  A single printk won't
+take a huge amount of time, so that CPU must be spinning waiting for
+previously-printk'd characters to drain?  Or something else?
 
-
-8<-------------------------------------------
-
-From: Davidlohr Bueso <davidlohr@hp.com>
-Date: Thu, 19 Sep 2013 09:32:05 -0700
-Subject: [PATCH] selinux: rely on rcu to free ipc isec
-
-Currently, IPC mechanisms do security and auditing related checks under
-RCU. However, since selinux can free the security structure, through
-selinux_[sem,msg_queue,shm]_free_security(), we can race if the structure
-is freed before other tasks are done with it, creating a use-after-free
-condition. Manfred illustrates this nicely, for example with shared mem:
-
---> do_shmat calls rcu_read_lock()
---> do_shmat calls shm_object_check().
-     Checks that the object is still valid - but doesn't acquire any locks.
-     Then it returns.
---> do_shmat calls security_shm_shmat (e.g. selinux_shm_shmat)
---> selinux_shm_shmat calls ipc_has_perm()
---> ipc_has_perm accesses ipc_perms->security
-
-shm_close()
---> shm_close acquires rw_mutex & shm_lock
---> shm_close calls shm_destroy
---> shm_destroy calls security_shm_free (e.g. selinux_shm_free_security)
---> selinux_shm_free_security calls ipc_free_security(&shp->shm_perm)
---> ipc_free_security calls kfree(ipc_perms->security)
-
-There are two solutions to this: (i) perform the security checking and whatever
-IPC operation(s) atomically (that is, with the kern_ipc_perm.lock held), or
-(ii) delay the freeing of the isec structure after all RCU readers are done.
-This patch takes the second approach, which, at least from a performance perspective,
-is more practical than the first as it keeps the IPC critical regions smaller.
-
-I have tested this patch with IPC testcases from LTP on both my quad-core
-laptop and on a 64 core NUMA server. In both cases selinux is enabled, and
-tests pass for both voluntary and forced preemption models.
-
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- security/selinux/hooks.c          | 9 ++++++++-
- security/selinux/include/objsec.h | 5 +++--
- 2 files changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index a5091ec..179ffe9 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4892,8 +4892,15 @@ static int ipc_alloc_security(struct task_struct *task,
- static void ipc_free_security(struct kern_ipc_perm *perm)
- {
- 	struct ipc_security_struct *isec = perm->security;
-+
-+	/*
-+	 * All IPC mechanisms do security and audit
-+	 * checking under RCU: wait a grace period before
-+	 * freeing isec, otherwise we can run into a
-+	 * use-after-free scenario.
-+	 */
-+	kfree_rcu(isec, rcu);
- 	perm->security = NULL;
--	kfree(isec);
- }
- 
- static int msg_msg_alloc_security(struct msg_msg *msg)
-diff --git a/security/selinux/include/objsec.h b/security/selinux/include/objsec.h
-index aa47bca..38d17b7 100644
---- a/security/selinux/include/objsec.h
-+++ b/security/selinux/include/objsec.h
-@@ -70,8 +70,9 @@ struct msg_security_struct {
- };
- 
- struct ipc_security_struct {
--	u16 sclass;	/* security class of this object */
--	u32 sid;	/* SID of IPC resource */
-+	u16 sclass;	     /* security class of this object */
-+	u32 sid;             /* SID of IPC resource */
-+	struct rcu_head	rcu; /* rcu struct for selinux based IPC security */
- };
- 
- struct netif_security_struct {
--- 
-1.7.11.7
-
-
-
+See, if we can get to the bottom of this then perhaps we can pace the
+printing CPU so that it somehow twiddles thumbs outside console_lock().
