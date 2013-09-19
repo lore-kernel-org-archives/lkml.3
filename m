@@ -1,68 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab3ISKpg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 06:45:36 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46105 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab3ISKpf (ORCPT
+	id S1753402Ab3ISKpz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 06:45:55 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:45419 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753296Ab3ISKpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 06:45:35 -0400
-Date: Thu, 19 Sep 2013 11:45:25 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130919104525.GJ21013@sirena.org.uk>
-References: <1379582286-10600-1-git-send-email-treding@nvidia.com>
+	Thu, 19 Sep 2013 06:45:53 -0400
+Message-ID: <523AD5DA.6060907@monstr.eu>
+Date: Thu, 19 Sep 2013 12:45:46 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Alan Tull <atull@altera.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+References: <cover.1379519753.git.michal.simek@xilinx.com> <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com> <20130918191517.GQ19937@titan.lakedaemon.net> <20130918203247.GA11181@obsidianresearch.com>
+In-Reply-To: <20130918203247.GA11181@obsidianresearch.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="m699nQIRt8EJjqXo"
-Content-Disposition: inline
-In-Reply-To: <1379582286-10600-1-git-send-email-treding@nvidia.com>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 86.153.71.95
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: rt5640: Omit ACPI match table only if !ACPI
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+ protocol="application/pgp-signature";
+ boundary="8hrXtFgndJTt1lbfJsegRt3B8EW2RcHNR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--8hrXtFgndJTt1lbfJsegRt3B8EW2RcHNR
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
---m699nQIRt8EJjqXo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Jason,
 
-On Thu, Sep 19, 2013 at 11:18:06AM +0200, Thierry Reding wrote:
-> The ACPI_PTR() macro evaluates to NULL if ACPI is disabled and hence the
-> ACPI match table won't be used, causing the compiler to complain. Avoid
-> this by protecting the table using an #ifdef CONFIG_ACPI.
+On 09/18/2013 10:32 PM, Jason Gunthorpe wrote:
+> On Wed, Sep 18, 2013 at 03:15:17PM -0400, Jason Cooper wrote:
+>=20
+>> + Jason Gunthorpe
+>=20
+> Thanks, looks interesting, we could possibly use this interface if it=20
+> met our needs..
 
-Applied, thanks.  Like I was saying to Olof we really should be able to
-do better than needing the ifdefs though.
+That will be great.
 
---m699nQIRt8EJjqXo
+> =20
+>> On Wed, Sep 18, 2013 at 05:56:39PM +0200, Michal Simek wrote:
+>>> This new subsystem should unify all fpga drivers which
+>>> do the same things. Load configuration data to fpga
+>>> or another programmable logic through common interface.
+>>> It doesn't matter if it is MMIO device, gpio bitbanging,
+>>> etc. connection. The point is to have the same
+>>> inteface for these drivers.
+>=20
+> So, we have many years of in-field experience with this and this API
+> doesn't really match what we do.
+
+then we can talk about it to also provide you enough support to achieve
+what you want to achieve.
+
+> Here are the steps we perform, from userspace:
+>  - Ask kernel to place FPGA into reset and prepare for programming
+>    * Kernel can return an error (eg FPGA failed to erase, etc)
+>    * this is the PROG_N low -> DONE high, PROG_N high -> INIT_N high
+>      sequencing on Xilinx chips
+
+Isn't it enough to do it in your custom driver in read_init/write_init ph=
+ase?
+
+>  - Ask kernel to load a bitstream.
+>    * Userspace locats the bitstream file to load, and the mmaps it.
+>    * Userspace passes the entire file in a single write() call to the
+>      kernel which streams it over the configuration bus
+
+ok
+
+
+>    * The kernel can report an erro rhere (eg Xilinx can report CRC
+>    error)
+
+yep - you can do it in read_init/write_init phase.
+For these generic features like CRC we should probably create
+xilinx.c, altera.c, etc files which will provide these generic algorithms=
+=2E
+
+>  - Ask the kernel to verify that configuration is complete.=20
+>    * On Xilinx this wait for done to go high
+
+that should be done by read_complete/write_complete.
+
+>  - Ask the kernel to release the configuration bus (tristate
+>    all drivers) (or sometimes we have to drive the bus low,
+>    it depends on the bitfile, user space knows what to do)
+
+complete phase should be also suitable for that.
+
+>=20
+> It is very important that userspace know exactly which step fails
+> because the resolution is different. We use this in a manufacturing
+> setting, so failures are expected and need quick root cause
+> determination.
+>=20
+> You could probably address that need by very clearly defining a
+> variety of errno values for the various cases. However, it would be a
+> disaster if every driver did something a little different :|
+
+Sure I agree with you and others that we have to improve that error value=
+s
+but in general we can just exactly identify correct error values
+which driver should return. I can't see any problem in that.
+
+>=20
+> Using request_firmware exclusively is not useful for us. We
+> format the bitfile with a header that contains our internal tracking
+> information. Sometimes we need to bitswap the bitfile. Our userspace
+> handles all of this and can pass a bitfile in memory to write().
+>=20
+> request_firmware would be horrible to use :)
+>
+> Our API uses a binary sysfs attribute to stream the FPGA data, you
+> might want to consider that.
+
+It depends where are you going to add this functionality but anyway
+in origin Altera driver they use char device but I think that using
+request firmware is also one way to go.
+But I am not saying that we have to use it exlusively.
+As you see the part of fpga_manager struct is just simple write
+function which can be used there.
+It means if you don't like that device attributes that you are passing
+just firmware name we can change that.
+I have no problem to use binary sysfs attribute just for reading/writing =
+data
+directly to the end driver instead of passing there just information
+about firmware name itself.
+
+It should just end up in very similar calling
+sequence where it will call one function which will write data
+to fpga though any interface.
+But the point is that user access to all these devices is the same
+and doesn't matter if this zynq pl, altera socfpga, fpga connected
+through gpio, etc. These end drivers will be unique but interface
+should be the same.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--8hrXtFgndJTt1lbfJsegRt3B8EW2RcHNR
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJSOtXCAAoJELSic+t+oim9+NYP/2NNEJfIOoZT/HxrGBCCDCvK
-/j66ilAUrCNDybecOekiRonjD5nD+HXEeC6MeYm/Jv58nwfi5Xe9WeZJZWSawM8W
-4ai7tJT2ezBblNYMjKSSCeQ4llfTeUvPBxRQNEeqGhRbugk0FY0DfBHRhCLPvgbk
-TaLY3lU3LCjFDZlPlnVHjaxcw0Rc0vGeH1X5pXmLGyrr/wctIbMsBBdmyMEO8B6j
-hWL5XKgxsShBsfeP2G9km10hKBH8aTjtomXKrUpXbfp++DMAR2Iev9SqSFVtfW5r
-Wq8N6R/9RTE9Pn5xmeoMDpO3Zk/qymPFqV+Zs7khV4ZIg+kZJG3Vc0ckC6k9vuC/
-ijsiWBk2tFw4RX2Ntqt/3byk05/1+hTr41jUfSRZtPLSQkiNTbpmp6J3jhHk6vHH
-mD73WQJY4mBaQDGZ/mcUUy56vCNcBFCHTf1Uje1UWqZ6/ZeWmzthyS8aLoC+natQ
-DxxN3fFgPLbRfKgoo3nFoAZZugcxlki1PQCXhockv9O/1vf9oGk5JZXzyaAjyVoW
-WWKzbkTAXPgnztFKgBSlGRl6cbcyJVmhZSrJ6y8mhmtQAZf1rJ4vtGQkz2sydZ5+
-Twh0liYNagWJUlELDhPb284MLcos/urolynMb8sgNvrqmbnDppVjlykldW3yXmIJ
-X3bn3HV7uT1z0Z0kmzDs
-=yjk2
+iEYEARECAAYFAlI61dsACgkQykllyylKDCFEQwCfRQnqBzTist/MDvLzJwUbyHC8
+tycAn0I9vpakGzpSbkIfPLu+Ljkgc9aS
+=Dw1h
 -----END PGP SIGNATURE-----
 
---m699nQIRt8EJjqXo--
+--8hrXtFgndJTt1lbfJsegRt3B8EW2RcHNR--
