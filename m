@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab3ISMqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 08:46:05 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57025 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab3ISMqD (ORCPT
+	id S1753784Ab3ISMsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 08:48:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51284 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab3ISMsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 08:46:03 -0400
-Date: Thu, 19 Sep 2013 07:44:57 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: George Cherian <george.cherian@ti.com>
-CC: <balbi@ti.com>, Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: PCF857x and 16-bit GPIO expanders
-Message-ID: <20130919124457.GB26101@radagast>
-Reply-To: <balbi@ti.com>
-References: <20130917190732.GD15645@radagast>
- <CACRpkdYn8yaTyFJMaC3vK4kGrQsaZpAX=pyn5y33ers7QhQ_pg@mail.gmail.com>
- <2356541.62QktiIBr5@avalon>
- <20130918173636.GT21559@radagast>
- <523AB235.1000808@ti.com>
+	Thu, 19 Sep 2013 08:48:15 -0400
+Date: Thu, 19 Sep 2013 14:48:05 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
+        LKML <linux-kernel@vger.kernel.org>, Marc Pignat <marc.pignat@hevs.ch>,
+        john.stultz@linaro.org, kernel@pengutronix.de,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clockevents: Sanitize ticks to nsec conversion
+Message-ID: <20130919124805.GU24802@pengutronix.de>
+References: <20130917100417.GQ12758@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.02.1309171210450.4089@ionos.tec.linutronix.de>
+ <20130917130153.GL26819@ludovic.desroches@atmel.com>
+ <alpine.DEB.2.02.1309172228400.4089@ionos.tec.linutronix.de>
+ <20130918085627.GN24802@pengutronix.de>
+ <alpine.DEB.2.02.1309181058470.4089@ionos.tec.linutronix.de>
+ <20130918150958.GO24802@pengutronix.de>
+ <alpine.DEB.2.02.1309182201000.4089@ionos.tec.linutronix.de>
+ <20130919100239.GS24802@pengutronix.de>
+ <alpine.DEB.2.02.1309191207460.4089@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2B/JsCI69OhZNC5r"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <523AB235.1000808@ti.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.02.1309191207460.4089@ionos.tec.linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---2B/JsCI69OhZNC5r
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Thomas,
 
-Hi,
+On Thu, Sep 19, 2013 at 12:15:10PM +0200, Thomas Gleixner wrote:
+> On Thu, 19 Sep 2013, Uwe Kleine-König wrote:
+> > On Thu, Sep 19, 2013 at 12:01:25AM +0200, Thomas Gleixner wrote:
+> > > Versus the 64bit overflow check, we need to be even more careful. We
+> > > need to check for overflowing (1 << 63) - 1 (i.e. the max positive
+> > > value which fits into a s64). See clockevents_program_event().
+> > 
+> > That is because you interpret times < 0 as in the past, right? But note
+> > that the interim result we're talking about here is still to be divided
+> > by evt->mult. So assuming mult > 1, that check is too strict unless you
+> > move it below the do_div in clockevent_delta2ns. For sure it makes sense
+> > to use the same value for a and b in the handling:
+> 
+> No, it's not too strict.
+> 
+>     nsec = (latch << shift) / mult;
+> 
+> Now the backwards conversion does:
+> 
+>     latch = (nsec * mult) >> shift;
+>
+> So we want nsec * mult to be in the positive range of s64. Which
+> means, that latch << shift must be in that range as well.
+The backwards conversion is in clockevents_program_event(), right? There
+is:
 
-On Thu, Sep 19, 2013 at 01:43:41PM +0530, George Cherian wrote:
-> On 9/18/2013 11:06 PM, Felipe Balbi wrote:
-> >Hi,
-> >
-> >On Wed, Sep 18, 2013 at 07:18:04PM +0200, Laurent Pinchart wrote:
-> >>On Wednesday 18 September 2013 13:16:27 Linus Walleij wrote:
-> >>>On Tue, Sep 17, 2013 at 9:07 PM, Felipe Balbi <balbi@ti.com> wrote:
-> >>>>has anyone ever successfully using gpio-pcf857x.c driver with 16-bit
-> >>>>gpio expanders ? We're having some issues here where toggling the last
-> >>>>gpio pin (gpio 15) on a PCF8575 device causes platform to hang and I
-> >>>>can't come up with any explanation of why would it hang...
-> >>>Bouncing the question to George, Laurent and Kuninori...
-> >>I've got a board with a PCF8575 chip, but it uses I/Os 8 to 14 only as =
-far as
-> >>I know.
-> >>
-> >>I can try toggling I/O 15, but that will need to wait until next week a=
-s I'm
-> >>currently travelling without access to the hardware.
-> >alright, that'd help me a lot :-) Just want to make sure if we're having
-> >a board issue, or PCF8575 is a bit screwy ;-)
-> Is it on dra7x-evm if so which pcf device (i2c address)?
+	clc = ((unsigned long long) delta * dev->mult) >> dev->shift;
 
-0x21 IIRC, it's pin 15 on that goes to a discrete mux. I want to toggle
-the mux ;-)
+So I don't see a problem if nsec * mult overflows (1 << 63) - 1 as long
+as it still fits into an unsigned long long (i.e. a 64 bit value).
 
---=20
-balbi
+What am I missing?
 
---2B/JsCI69OhZNC5r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Best regards
+Uwe
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSOvHIAAoJEIaOsuA1yqREHAcP/0wD7i2/nHKvkGCE/Vin+zpF
-w7sNneqGPgKpf6pZyUIxjDkmVZIeAvgiQcNpn2xzeOIdBXZbDKtmpnT2x7cuwl/j
-3ViPvRNb05ci0VBWgydy4xalGBoL7YPxuW6EELvBfnfWSuEKOfmxDnJovsRlIb0E
-ixqZhVVTOeJb+XzyzV5BivfHii/kHbq0r7lCqqjQK6qi9U4bHhwT2Oltk3BgLiAA
-Zy/y4/rVyT7gJKEDstQmkB4S/w8YTDDrMX4rx2esYViQMipiZbah0V8Mdnt3q75T
-5qAueB2O6c6g68IW8l7y9OkFtJkdi7NaDN37NdNSa3wHKKHGyEgK5x8XsMSJtuYE
-Ma0r+oXN83Ymb513Yzdybe+Ln+7JYia6iUrsZue7R7tG34d/Y1v/xCUVAB4xfCcS
-45AiRgrwDpVwWa+XVgCHxrQIf5JQz3kn55f+5lj0yNWvJ2mY4ENlx7jqAYPxNRqv
-uswNo09AAoeuNQYH5BhjyweAtr4mrko1CwCEl1OS1htnuh3WlglEA6IHohlcDsdt
-3QLBF/Hfmj8ilu36Qr7Vqvlu7izbXc7CUtsm45kIgal7aQVfa79XsTYE4PAmZrVS
-pziiEk9Ya28apy2RmNT2BGCKTSbdWOLDR/TSFBfs86SjU8kjNyeSn3jKuR1iwMGC
-AdwoXjP7BYt8Yz1u2lpR
-=BBA6
------END PGP SIGNATURE-----
-
---2B/JsCI69OhZNC5r--
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
