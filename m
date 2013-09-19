@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab3ISQ7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 12:59:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14732 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751689Ab3ISQ7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 12:59:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,938,1371106800"; 
-   d="scan'208";a="405954400"
-Message-ID: <523B2F57.2050504@linux.intel.com>
-Date: Thu, 19 Sep 2013 10:07:35 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1752773Ab3ISRC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 13:02:27 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:49560 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab3ISRCZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 13:02:25 -0400
+X-Auth-Info: 8Foob0Gwu4QiuB066nsdVFZoKddb3JLmqZLmaCXNw4E=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [patch 1/6] hardirq: Make hardirq bits generic
+References: <20130917082838.218329307@infradead.org>
+	<20130917182350.449685712@linutronix.de>
+	<20130917183628.534494408@linutronix.de>
+	<CAMuHMdWgrQf+ULDrZyY5R+vT3GtiWEgpsWxmfk0b5pivN7wBmg@mail.gmail.com>
+	<alpine.DEB.2.02.1309172315550.4089@ionos.tec.linutronix.de>
+	<alpine.DEB.2.02.1309181159520.4089@ionos.tec.linutronix.de>
+	<alpine.DEB.2.02.1309191652480.4089@ionos.tec.linutronix.de>
+X-Yow: Look DEEP into the OPENINGS!!  Do you see any ELVES or EDSELS...
+ or a HIGHBALL??...
+Date: Thu, 19 Sep 2013 19:02:18 +0200
+In-Reply-To: <alpine.DEB.2.02.1309191652480.4089@ionos.tec.linutronix.de>
+	(Thomas Gleixner's message of "Thu, 19 Sep 2013 17:14:57 +0200
+	(CEST)")
+Message-ID: <87txhg3ftx.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        gregkh@linuxfoundation.org, len.brown@intel.com, rjw@sisk.pl,
-        arjan@linux.intel.com, jacob.jun.pan@linux.intel.com
-Subject: Re: [PATCH v1 5/6] bitops: Introduce BIT_ULL
-References: <1379606435-15871-1-git-send-email-srinivas.pandruvada@linux.intel.com> <1379606435-15871-6-git-send-email-srinivas.pandruvada@linux.intel.com> <20130919164830.GB9427@pd.tnic>
-In-Reply-To: <20130919164830.GB9427@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2013 09:48 AM, Borislav Petkov wrote:
-> On Thu, Sep 19, 2013 at 09:00:34AM -0700, Srinivas Pandruvada wrote:
->> Adding BIT(x) equivalent for unsigned long long type, BIT_ULL(x).
->>
->> Suggested-by: Joe Perches <joe@perches.com>
->> Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
->> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
->> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> ---
->>   include/linux/bitops.h | 1 +
->>   1 file changed, 1 insertion(+)
->>
->> diff --git a/include/linux/bitops.h b/include/linux/bitops.h
->> index a3b6b82..34e9e94 100644
->> --- a/include/linux/bitops.h
->> +++ b/include/linux/bitops.h
->> @@ -4,6 +4,7 @@
->>   
->>   #ifdef	__KERNEL__
->>   #define BIT(nr)			(1UL << (nr))
->> +#define BIT_ULL(nr)		(1ULL << (nr))
-> We already have BIT_64 for that.
->
-The current definition for BIT_64 is in arch/x86/include/asm/bitops.h. I 
-feel it should be applicable for all architectures and move to some 
-common file.
+Thomas Gleixner <tglx@linutronix.de> writes:
 
-Thanks,
-Srinivas
+> +	/*
+> +	 * Only the last interrupt leaving the kernel goes through the
+> +	 * various exception return checks.
+> +	 */
+> +	cmpl	#0, %d0
+	tstl	%d0
+
+Andreas.
+
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
