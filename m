@@ -1,50 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab3ISJg5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 05:36:57 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51300 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751157Ab3ISJg4 (ORCPT
+	id S1753186Ab3ISJiu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 05:38:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55875 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab3ISJis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 05:36:56 -0400
-Date: Thu, 19 Sep 2013 10:36:28 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: 3.12-rc1: no longer compiles for Nokia n900 (omap based)
-Message-ID: <20130919093627.GB24866@mudshark.cambridge.arm.com>
-References: <20130919093002.GA23806@amd.pavel.ucw.cz>
+	Thu, 19 Sep 2013 05:38:48 -0400
+Message-ID: <523AC615.9020204@pengutronix.de>
+Date: Thu, 19 Sep 2013 11:38:29 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130919093002.GA23806@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Thiago Farina <tfransosi@gmail.com>, Andre Naujoks <nautsch2@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
+        Jason Baron <jbaron@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux list <linux-kernel@vger.kernel.org>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH net 2/3] lib: introduce upper case hex ascii helpers
+References: <1379093833-4949-1-git-send-email-nautsch2@gmail.com> <1379093833-4949-3-git-send-email-nautsch2@gmail.com> <CACnwZYdBocYEjASpKCNZ6cfLNpzxeLxaVjLCHwxwsYO+P14tAQ@mail.gmail.com> <20130914213546.ae435cdd.akpm@linux-foundation.org>
+In-Reply-To: <20130914213546.ae435cdd.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="iCfvD6NdlXDqSNQWCIEWBj2ED0Hj6bojK"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 10:30:02AM +0100, Pavel Machek wrote:
-> Hi!
-> 
-> I get:
-> 
->   CC      arch/arm/kernel/machine_kexec.o
-> /tmp/ccCFXeXG.s: Assembler messages:
-> /tmp/ccCFXeXG.s:217: Error: garbage following instruction -- `dsb
-> nshst'
-> /tmp/ccCFXeXG.s:225: Error: garbage following instruction -- `dsb nsh'
-> make[1]: *** [arch/arm/kernel/suspend.o] Error 1
-> make[1]: *** Waiting for unfinished jobs....
-> 
-> pavel@amd:/data/l/linux-n900$ arm-linux-gnueabi-gcc --version
-> arm-linux-gnueabi-gcc (Debian 4.3.5-4) 4.3.5
-> 
-> Minimum required gcc is 3.2, so I'm safe.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--iCfvD6NdlXDqSNQWCIEWBj2ED0Hj6bojK
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Please check your binutils. >= 2.22 has been reported to work.
+On 09/15/2013 06:35 AM, Andrew Morton wrote:
+> On Sun, 15 Sep 2013 01:27:03 -0300 Thiago Farina <tfransosi@gmail.com> =
+wrote:
+>=20
+>> On Fri, Sep 13, 2013 at 2:37 PM, Andre Naujoks <nautsch2@gmail.com> wr=
+ote:
+>>> To be able to use the hex ascii functions in case sensitive environme=
+nts
+>>> the array hex_asc_upper[] and the needed functions for hex_byte_pack_=
+upper()
+>>> are introduced.
+>>>
+>>> Signed-off-by: Andre Naujoks <nautsch2@gmail.com>
+>>> ---
+>>>  include/linux/kernel.h | 11 +++++++++++
+>>>  lib/hexdump.c          |  2 ++
+>>>  2 files changed, 13 insertions(+)
+>>>
+>>> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+>>> index 482ad2d..672ddc4 100644
+>>> --- a/include/linux/kernel.h
+>>> +++ b/include/linux/kernel.h
+>>> @@ -439,6 +439,17 @@ static inline char *hex_byte_pack(char *buf, u8 =
+byte)
+>>>         return buf;
+>>>  }
+>>>
+>>> +extern const char hex_asc_upper[];
+>>> +#define hex_asc_upper_lo(x)    hex_asc_upper[((x) & 0x0f)]
+>>> +#define hex_asc_upper_hi(x)    hex_asc_upper[((x) & 0xf0) >> 4]
+>> Does using a macro instead of a real function (static inline)
+>> generates a better code?
+>=20
+> Yes, a static inline would be nicer, but these are derived from
+> hex_asc_lo/hex_asc_hi.  If we change one we should change the other
+> and that becomes a separate cleanup.  So I think this patch is
+> OK as-is.
 
-Will1
+Is this an Acked-by?
+
+> Also, it would make sense to get all the *hex* stuff out of kernel.h
+> and into a new header file (hexchar.h?).  They're a clean
+> self-contained thing and kernel.h is rather a dumping ground.
+
+Who is taking this series?
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--iCfvD6NdlXDqSNQWCIEWBj2ED0Hj6bojK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlI6xhYACgkQjTAFq1RaXHOv7gCeOMtVME9HrIevxcjsvAegM6M4
+EVEAoIiP1DZCuSmTQT9HpJBmvhUS65sh
+=mSZl
+-----END PGP SIGNATURE-----
+
+--iCfvD6NdlXDqSNQWCIEWBj2ED0Hj6bojK--
