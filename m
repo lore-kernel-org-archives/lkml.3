@@ -1,38 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab3ISTuc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 15:50:32 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:59384 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab3ISTub (ORCPT
+	id S1753389Ab3ISTvP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 15:51:15 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:47742 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab3ISTvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 15:50:31 -0400
-Date: Thu, 19 Sep 2013 16:50:20 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v6] perf tools: Separate out GTK codes to libperf-gtk.so
-Message-ID: <20130919195020.GG17742@ghostprotocols.net>
-References: <20130912123156.GA15187@krava.brq.redhat.com>
- <1379053663-13706-1-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379053663-13706-1-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Sep 2013 15:51:14 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+Date: Thu, 19 Sep 2013 14:51:04 -0500
+Message-Id: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Sep 13, 2013 at 03:27:43PM +0900, Namhyung Kim escreveu:
-> Separate out GTK codes to a shared object called libperf-gtk.so.  This
-> time only GTK codes are built with -fPIC and libperf remains as is.
-> Now run GTK hist and annotation browser using libdl.
+Thomas,
 
-Thanks, applied
+Please consider this patchset for pulling from:
 
-- Arnaldo
+git://github.com/fweisbec/linux-dynticks.git
+	irq/core-v2
+
+HEAD: 539b9cde35b473483c722de110133cd757015947
+
+It fixes stacks overruns reported by Benjamin Herrenschmidt:
+http://lkml.kernel.org/r/1378330796.4321.50.camel%40pasglop
+
+And Paul Mackerras gave a feedback here:
+http://lkml.kernel.org/r/20130918065101.GA22060@drongo
+
+Of course the fix probably comes at the expense of a performance
+hit due to cache switch, miss, etc... when softirq are processed
+at the end of interrupts, although I haven't tried to measure that.
+
+Thanks.
+
+---
+Frederic Weisbecker (3):
+  irq: Consolidate do_softirq() arch overriden implementations
+  irq: Execute softirq on its own stack on irq exit
+  irq: Comment on the use of inline stack for ksoftirqd
+
+ arch/metag/kernel/irq.c    | 56 ++++++++++++++++++-------------------------
+ arch/parisc/kernel/irq.c   | 17 ++-----------
+ arch/powerpc/kernel/irq.c  | 17 +------------
+ arch/s390/kernel/irq.c     | 52 ++++++++++++++++------------------------
+ arch/sh/kernel/irq.c       | 60 +++++++++++++++++++---------------------------
+ arch/sparc/kernel/irq_64.c | 31 ++++++++----------------
+ arch/x86/kernel/irq_32.c   | 34 ++++++++++----------------
+ arch/x86/kernel/irq_64.c   | 18 +++-----------
+ include/linux/interrupt.h  | 11 +++++++++
+ kernel/softirq.c           | 13 +++++-----
+ 10 files changed, 115 insertions(+), 194 deletions(-)
+
+-- 
+1.8.3.1
+
