@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab3ISTYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 15:24:09 -0400
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:57305 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab3ISTYI (ORCPT
+	id S1752765Ab3IST0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 15:26:21 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:43637 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751822Ab3IST0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 15:24:08 -0400
-Date: Thu, 19 Sep 2013 14:24:03 -0500
-From: Gustavo Padovan <gustavo@padovan.org>
-To: "Ken O'Brien" <kernel@kenobrien.org>
-Cc: marcel@holtmann.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bluetooth: btusb: Added support for Belkin F8065bf usb
- bluetooth device
-Message-ID: <20130919192403.GH4006@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Ken O'Brien <kernel@kenobrien.org>, marcel@holtmann.org,
-	johan.hedberg@gmail.com, linux-bluetooth@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1379610373-2640-1-git-send-email-kernel@kenobrien.org>
+	Thu, 19 Sep 2013 15:26:19 -0400
+X-Sasl-enc: SceqybzHaiphSnaYR17q5yGRm1ih+GAFFAraarCIs6/N 1379618778
+Date: Thu, 19 Sep 2013 16:26:15 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jacob Shin <jacob.shin@amd.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Issues with AMD microcode updates
+Message-ID: <20130919192615.GB10055@khazad-dum.debian.net>
+References: <20130919145834.GA4298@khazad-dum.debian.net>
+ <20130919164409.GA9427@pd.tnic>
+ <20130919181554.GA10055@khazad-dum.debian.net>
+ <20130919184656.GF9412@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379610373-2640-1-git-send-email-kernel@kenobrien.org>
+In-Reply-To: <20130919184656.GF9412@pd.tnic>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ken,
-
-2013-09-19 Ken O'Brien <kernel@kenobrien.org>:
-
-> Belkin bluetooth device's usb device id added to generic usb bluetooth driver.
+On Thu, 19 Sep 2013, Borislav Petkov wrote:
+> On Thu, Sep 19, 2013 at 03:15:54PM -0300, Henrique de Moraes Holschuh wrote:
+> > I can request help on debian-user or debian-devel to get someone with
+> > an AMD box to help with bissection, but it is usually best if we don't
+> > ask general users to bissect kernels (due to non-zero risk of data
+> > corruption if the bissect hit one of the problem spots that often show
+> > up during the development window).
 > 
-> Signed-off-by: Ken O'Brien <kernel@kenobrien.org>
-> ---
->  drivers/bluetooth/btusb.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-> index 8e16f0a..117b90c 100644
-> --- a/drivers/bluetooth/btusb.c
-> +++ b/drivers/bluetooth/btusb.c
-> @@ -111,6 +111,9 @@ static struct usb_device_id btusb_table[] = {
->  
->  	/*Broadcom devices with vendor specific id */
->  	{ USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) },
-> +
-> +	/* Belkin F8T065bf */
-> +	{ USB_DEVICE(0x050d, 0x065a) },
+> I have a couple of AMD boxes so I can bisect - I just need a reproducer
+> how to trigger.
 
-Could you please add the output of /sys/kernel/debug/usb/devices for this
-bluetooth controller to the commit messages, like we do for any new device id
-we add to btusb. Thanks.
+Sure.  There are two possibilities:
 
-	Gustavo
+
+Possiblity one (the most likely): hang on first microcode update:
+
+1. Have the lastest AMD microcode update (from linux-firmware) installed to
+the proper place under /lib/firmware, but NOT yet uploaded to kernel.
+
+2. run this:
+
+   find /sys/devices/system/cpu -noleaf -type f -path '/sys/devices/system/cpu/cpu*/microcode/reload' | while read i ; do echo -n 1 >"$i" || true ; done
+
+If the kernel is buggy, it should hang.  If it doesn't hang for a
+supposed-bad kernel (2.6.38 or 3.5.2), please check "possibility two" below.
+
+
+
+Possibility two: hang on second microcode update in a row:
+
+1.  Install a previous version of the AMD microcode update (which must still
+be newer than what is in the processor) to /lib/firmware/...
+
+2. Run the command (2) above.   It should not hang, and it should update the
+microcode in the processor.
+
+3. Update /lib/firmware with the latest microcode from AMD (i.e. so that the
+processor will have its microcode updated TWICE).
+
+4. Run the command (2) above.   It should hang if the kernel is buggy.
+
+
+
+
+
+I do not have any reports of kernels 3.6 and later causing issues.  If they
+do, the "reproducer" should be this, instead:
+
+  echo -n 1 > /sys/devices/system/cpu/microcode/reload
+
+You can get earlier versions of the AMD microcode to test "possiblity two"
+from the Debian package historical archive:
+
+http://snapshot.debian.org/archive/debian/20120710T032858Z/pool/non-free/a/amd64-microcode/amd64-microcode_1.20120117.orig.tar.bz2
+http://snapshot.debian.org/archive/debian/20120915T033250Z/pool/non-free/a/amd64-microcode/amd64-microcode_1.20120910.orig.tar.bz2
+
+The latest version of the microcode is available in linux-firmware.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
