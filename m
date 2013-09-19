@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab3ISPpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 11:45:35 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56619 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab3ISPpd (ORCPT
+	id S1752828Ab3ISPsN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 11:48:13 -0400
+Received: from dkim2.fusionio.com ([66.114.96.54]:45513 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab3ISPsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 11:45:33 -0400
-Date: Thu, 19 Sep 2013 16:45:21 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <20130919154521.GE21013@sirena.org.uk>
-References: <CA+55aFxg-WropC74v5ir5r9kBJKEd93fgye4oTBhw5T8e8sb+g@mail.gmail.com>
- <20130917155057.2125aa5f69fb9cf9bbe01166@canb.auug.org.au>
+	Thu, 19 Sep 2013 11:48:11 -0400
+X-ASG-Debug-ID: 1379605690-0421b50220406c50001-xx1T2L
+X-Barracuda-Envelope-From: JBacik@fusionio.com
+From: Josef Bacik <jbacik@fusionio.com>
+To: <linux-btrfs@vger.kernel.org>
+CC: <walken@google.com>, <linux-kernel@vger.kernel.org>, <mingo@elte.hu>,
+        <peter@hurleysoftware.com>, <akpm@linux-foundation.org>
+Subject: [PATCH 1/2] rwsem: add rwsem_is_contended V2
+Date: Thu, 19 Sep 2013 11:48:07 -0400
+X-ASG-Orig-Subj: [PATCH 1/2] rwsem: add rwsem_is_contended V2
+Message-ID: <1379605688-987-1-git-send-email-jbacik@fusionio.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EzoGi9kFQAnUjl0a"
-Content-Disposition: inline
-In-Reply-To: <20130917155057.2125aa5f69fb9cf9bbe01166@canb.auug.org.au>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 86.153.71.95
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next stats (Was: Linux 3.12-rc1)
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
+X-Barracuda-Start-Time: 1379605690
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_MISMATCH_TO
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140754
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Btrfs needs a simple way to know if it needs to let go of it's read lock on a
+rwsem.  Introduce rwsem_is_contended to check to see if there are any waiters on
+this rwsem currently.  This is just a hueristic, it is meant to be light and not
+100% accurate and called by somebody already holding on to the rwsem in either
+read or write.  Thanks,
 
---EzoGi9kFQAnUjl0a
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+---
+V1->V2: took everybodys suggestions and simplified it to just one function in
+rwsem.h so it works for both the spinlock case and non-spinlock case.
 
-On Tue, Sep 17, 2013 at 03:50:57PM +1000, Stephen Rothwell wrote:
+ include/linux/rwsem.h | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
->      21 Sachin Kamat <sachin.kamat@linaro.org>
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 0616ffe..c340493 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -75,6 +75,19 @@ do {								\
+ } while (0)
+ 
+ /*
++ * This is the same regardless of which rwsem implementation that is being used.
++ * It is just a heuristic meant to be called by somebody alreadying holding the
++ * rwsem to see if somebody from the opposite type is wanting access to the
++ * lock.
++ */
++static inline int rwsem_is_contended(struct rw_semaphore *sem)
++{
++	if (!list_empty(&sem->wait_list))
++		return 1;
++	return 0;
++}
++
++/*
+  * lock for reading
+  */
+ extern void down_read(struct rw_semaphore *sem);
+-- 
+1.8.3.1
 
-These should all be fixes, Sachin submitted a bunch of fixes for common
-patterns with errors just about the time the merge window opened.
-
---EzoGi9kFQAnUjl0a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSOxwOAAoJELSic+t+oim9bxoP/2VvOk6Ctx13PEnuViWGAvhU
-lAewuIWgoM2qZvtPadcUxg5ZN+8nCzdESczReDKv+p8B+c3zvMp4tROBRMAE4g0g
-yzu1Ec91OtrT0laLzCAvoJSm7Nx/1TIQgoDISDCiumwNvo7YhNcC5EVeWv41jPQl
-J/7GHdVn992Ia5qJv5sztZ5YQoeshEma62D0Xdl5E0VVP8ZTrvQl1mpmtYfiZ1EO
-Z5PInUPAKXKr7FEz1HfjjBpN5Cb1xbHEp/pCv8T/ggEyNoOlVPmaHmLkGwgM0A2g
-STLflVKNEqz9SaJEZoCDOjlgyvqd1OBxgx+h8iKE0Crfz6w1UC7nojkdVJ4vyn0p
-oW8bnYWMqXMZ6E6P2YV9I4xUFNes/GD9PP3MHwuREUUP+zTOdX/QPB2lub3JhLIs
-H2+azcuvx8EjnYcb2sIOq8BaQitRUkiovbXwv2Pcbo0S4eqWik5hbDFrr9cU1J5I
-cpTX+WBN+NEYvEXEPUevtsuCKPcP+EHBZ3yHd4BJhvwgZQTwVuApLyyhRwhjsogr
-lKchAC3LU7I/hNe9RK3rDKCbewgwaLyTV7FOhQNnBLZoEC3JVt27sE8gL+UDoO3n
-rU73V9mAWX+pdKtyu83zzwEgNIk5X4yAspHIDA4tx92InHBxRmqwJ+98Dql0LsoA
-AcTh0DFba6Vwm2A8pqWy
-=mnAj
------END PGP SIGNATURE-----
-
---EzoGi9kFQAnUjl0a--
