@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab3ISNZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 09:25:12 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37848 "EHLO comal.ext.ti.com"
+	id S1754429Ab3ISNZW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:25:22 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37852 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754379Ab3ISNZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 09:25:07 -0400
+	id S1754407Ab3ISNZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 09:25:17 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
 CC: <balajitk@ti.com>, <kishon@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Nikhil Devshatwar <nikhil.nd@ti.com>, Roger Quadros <rogerq@ti.com>
-Subject: [RFC PATCH 14/15] ARM: DRA7: hwmod: Add ocp2scp3 and sata hwmods
-Date: Thu, 19 Sep 2013 16:24:05 +0300
-Message-ID: <1379597045-15368-1-git-send-email-rogerq@ti.com>
+        Roger Quadros <rogerq@ti.com>
+Subject: [RFC PATCH 15/15] arm: dts: dra7: add sata node
+Date: Thu, 19 Sep 2013 16:24:19 +0300
+Message-ID: <1379597059-15405-1-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1379595943-14622-1-git-send-email-rogerq@ti.com>
 References: <1379595943-14622-1-git-send-email-rogerq@ti.com>
@@ -24,92 +24,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikhil Devshatwar <nikhil.nd@ti.com>
+From: Balaji T K <balajitk@ti.com>
 
-Add hwmods for ocp2scp3 and sata modules.
+Add support for sata controller.
 
 [Roger Q] Clean up.
 
 CC: Benoit Cousson <bcousson@baylibre.com>
 Signed-off-by: Balaji T K <balajitk@ti.com>
-Signed-off-by: Nikhil Devshatwar <nikhil.nd@ti.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   40 +++++++++++++++++++++++++---
- 1 files changed, 35 insertions(+), 5 deletions(-)
+ arch/arm/boot/dts/dra7.dtsi |   49 +++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 49 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-index f647998b..4d7d70f 100644
---- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-@@ -1215,6 +1215,40 @@ static struct omap_hwmod dra7xx_ocp2scp1_hwmod = {
- 	},
- };
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index ce9a0f0..545545d 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -426,6 +426,55 @@
+ 			dma-names = "tx", "rx";
+ 		};
  
-+/* ocp2scp3 */
-+static struct omap_hwmod dra7xx_ocp2scp3_hwmod;
-+static struct omap_hwmod_addr_space dra7xx_ocp2scp3_addrs[] = {
-+	{
-+		.name		= "ocp2scp3",
-+		.pa_start	= 0x4a090000,
-+		.pa_end		= 0x4a09001f,
-+		.flags		= ADDR_TYPE_RT
-+	},
-+	{ }
-+};
++		omap_control_sata: control-phy@4a002374 {
++			compatible = "ti,control-phy-pipe3";
++			reg = <0x4a002374 0x4>;
++			reg-names = "power";
++			clocks = <&sys_clkin1>;
++			clock-names = "sysclk";
++		};
 +
-+/* l4_cfg -> ocp2scp3 */
-+static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp3 = {
-+	.master		= &dra7xx_l4_cfg_hwmod,
-+	.slave		= &dra7xx_ocp2scp3_hwmod,
-+	.clk		= "l4_root_clk_div",
-+	.addr		= dra7xx_ocp2scp3_addrs,
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
++		ocp2scp3: ocp2scp3@4a090000 {
++			compatible = "ti,omap-ocp2scp";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++			ti,hwmods = "ocp2scp3";
++			reg = <0x4a090000 0x1f>; /* ocp2scp3 */
++			reg-names = "ocp2scp3";
++			sata_phy: sataphy@4A096000 {
++				compatible = "ti,phy-pipe3-sata";
++				reg = <0x4A096000 0x80>, /* phy_rx */
++				      <0x4A096400 0x64>, /* phy_tx */
++				      <0x4A096800 0x40>; /* pll_ctrl */
++				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
++				ctrl-module = <&omap_control_sata>;
++				clocks = <&sata_ref_clk>,
++					 <&sys_clkin1>;
++				clock-names = "optclk", "sysclk";
++				#phy-cells = <0>;
++			};
++		};
 +
-+static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
-+	.name		= "ocp2scp3",
-+	.class		= &dra7xx_ocp2scp_hwmod_class,
-+	.clkdm_name	= "l3init_clkdm",
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_offs = DRA7XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
-+			.context_offs = DRA7XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
-+			.modulemode   = MODULEMODE_HWCTRL,
-+		},
-+	},
-+};
++		sata: sata@4a141100 {
++			compatible = "ti,sata";
++			ti,hwmods = "sata";
++			reg = <0x4a141100 0x7>;
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++			dwc-ahci@4a140000 {
++				  compatible = "snps,dwc-ahci";
++				  reg = <0x4a140000 0x1100>;
++				  interrupts = <0 54 0x4>;
++				  phys = <&sata_phy>;
++				  phy-names = "sata-phy";
++				  clocks = <&sata_ref_clk>;
++				  clock-names = "optclk";
++			};
++		};
 +
- /*
-  * 'qspi' class
-  *
-@@ -1268,9 +1302,6 @@ static struct omap_hwmod_class dra7xx_sata_hwmod_class = {
- };
- 
- /* sata */
--static struct omap_hwmod_opt_clk sata_opt_clks[] = {
--	{ .role = "ref_clk", .clk = "sata_ref_clk" },
--};
- 
- static struct omap_hwmod dra7xx_sata_hwmod = {
- 	.name		= "sata",
-@@ -1285,8 +1316,6 @@ static struct omap_hwmod dra7xx_sata_hwmod = {
- 			.modulemode   = MODULEMODE_SWCTRL,
- 		},
- 	},
--	.opt_clks	= sata_opt_clks,
--	.opt_clks_cnt	= ARRAY_SIZE(sata_opt_clks),
- };
- 
- /*
-@@ -2683,6 +2712,7 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
- 	&dra7xx_l4_per1__mmc4,
- 	&dra7xx_l4_cfg__mpu,
- 	&dra7xx_l4_cfg__ocp2scp1,
-+	&dra7xx_l4_cfg__ocp2scp3,
- 	&dra7xx_l3_main_1__qspi,
- 	&dra7xx_l4_cfg__sata,
- 	&dra7xx_l4_cfg__smartreflex_core,
++
+ 		mcspi1: spi@48098000 {
+ 			compatible = "ti,omap4-mcspi";
+ 			reg = <0x48098000 0x200>;
 -- 
 1.7.4.1
 
