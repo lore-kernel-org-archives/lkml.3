@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab3ISV31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 17:29:27 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46555 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885Ab3ISV30 (ORCPT
+	id S1753813Ab3ISVcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 17:32:54 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:52267 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab3ISVcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 17:29:26 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18+/+NNsQ6pHXLtxP56+j3T
-Date: Thu, 19 Sep 2013 14:29:22 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] RX-51: Add missing max_current to
- rx51_lp5523_led_config
-Message-ID: <20130919212922.GA27501@atomide.com>
-References: <1379541145-25934-1-git-send-email-pali.rohar@gmail.com>
- <20130918222642.GK9994@atomide.com>
- <201309192301.58761@pali>
+	Thu, 19 Sep 2013 17:32:53 -0400
+Date: Thu, 19 Sep 2013 23:32:41 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Joe Perches <joe@perches.com>
+Cc: David Miller <davem@davemloft.net>, stephen@networkplumber.org,
+        netdev@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] stable_kernel_rules.txt: Exclude networking from stable
+ rules
+Message-ID: <20130919213241.GB31672@electric-eye.fr.zoreil.com>
+References: <alpine.LRH.2.02.1309191229480.32035@file01.intranet.prod.int.rdu2.redhat.com>
+ <20130919.135628.1201613770803318193.davem@davemloft.net>
+ <alpine.LRH.2.02.1309191359300.12162@file01.intranet.prod.int.rdu2.redhat.com>
+ <1379615474.22168.13.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201309192301.58761@pali>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1379615474.22168.13.camel@joe-AO722>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pali Rohár <pali.rohar@gmail.com> [130919 14:10]:
-> On Thursday 19 September 2013 00:26:43 Tony Lindgren wrote:
-> > * Pali Rohár <pali.rohar@gmail.com> [130918 15:02]:
-> > > Without max_current data in board file lp5523 driver does
-> > > not change current.
-> > 
-> > Hmm is this a regression or are there other reasons to merge
-> > this during the -rc cycle?
-> > 
-> 
-> I think this is regression, drivers/leds/leds-lp55xx-common.c 
-> code refuse to change led_current sysfs attribute if value is 
-> higher than max_current specified in board file. And because in 
-> board file max_current is not specified it is by default zero as 
-> global variable. So changing led_current is not possible because 
-> any positive value is more than zero. First I saw this behaviour 
-> in 3.10, but I forgot to send this patch.
+Joe Perches <joe@perches.com> :
+[...]
+> diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
+> index b0714d8..a2d6da0 100644
+> --- a/Documentation/stable_kernel_rules.txt
+> +++ b/Documentation/stable_kernel_rules.txt
+> @@ -29,6 +29,11 @@ Rules on what kind of patches are accepted, and which ones are not, into the
+>  
+>  Procedure for submitting patches to the -stable tree:
+>  
+> + - The networking tree (net/ and drivers/net/) is 'special' and doesn't
+> +   follow the rules below.  Don't send or cc: patches for the -stable tree to
+> +   stable@vger.kernel.org.  Don't mark them stable.  Just send the patches to
+> +   netdev@vger.kernel.org and let the networking maintainer decide what to do
+> +   with them.
 
-OK thanks, can you please update the patch description with
-that so I can merge it for the -rc cycle? Ideally of course
-with the breaking commit too.
+David said "simply ask me to queue them up for -stable explicitly".
 
-Regards,
+He did not say "send the patches and let me decide what to do with them".
 
-Tony
+-- 
+Ueimor
