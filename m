@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab3ISSko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 14:40:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43954 "EHLO
+	id S1753465Ab3ISSku (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 14:40:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43989 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab3ISSkm (ORCPT
+	with ESMTP id S1753099Ab3ISSkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 14:40:42 -0400
+	Thu, 19 Sep 2013 14:40:47 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Vinson Lee <vlee@twitter.com>,
-        Borislav Petkov <bp@suse.de>, Vinson Lee <vlee@freedesktop.org>,
-        stable@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 9/9] tools lib lk: Uninclude linux/magic.h in debugfs.c
-Date: Thu, 19 Sep 2013 15:40:32 -0300
-Message-Id: <1379616032-13061-10-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/9] perf tools: Sharpen the libaudit dependencies test
+Date: Thu, 19 Sep 2013 15:40:24 -0300
+Message-Id: <1379616032-13061-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1379616032-13061-1-git-send-email-acme@infradead.org>
 References: <1379616032-13061-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vinson Lee <vlee@twitter.com>
+From: Ingo Molnar <mingo@kernel.org>
 
-The compilation only looks for linux/magic.h from the default include
-paths, which does not include the source tree. This results in a build
-error if linux/magic.h is not available or not installed.
+There are older libaudit versions that don't have an
+audit_errno_to_name() method, resulting in a builtin-trace.c build
+error:
 
-For example, this build error occurs on CentOS 5.
+  builtin-trace.c: In function ‘trace__sys_exit’:
+  builtin-trace.c:794: warning: implicit declaration of function ‘audit_errno_to_name’
 
-$ make -C tools/lib/lk V=1
-[...]
-gcc -o debugfs.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6
--D_FORTIFY_SOURCE=2 -Wbad-function-cast -Wdeclaration-after-statement
--Wformat-security -Wformat-y2k -Winit-self -Wmissing-declarations
--Wmissing-prototypes -Wnested-externs -Wno-system-headers
--Wold-style-definition -Wpacked -Wredundant-decls -Wshadow
--Wstrict-aliasing=3 -Wstrict-prototypes -Wswitch-default -Wswitch-enum
--Wundef -Wwrite-strings -Wformat  -fPIC  -D_LARGEFILE64_SOURCE
--D_FILE_OFFSET_BITS=64 debugfs.c
-debugfs.c:8:25: error: linux/magic.h: No such file or directory
+Expand the libaudit test to detect this.
 
-The only symbol from linux/magic.h needed by debugfs.c is DEBUGFS_MAGIC,
-and that is already defined in debugfs.h. linux/magic.h isn't providing
-any extra symbols and can unincluded. This is similar to the approach by
-perf, which has its own magic.h wrapper at
-tools/perf/util/include/linux/magic.h
-
-Signed-off-by: Vinson Lee <vlee@twitter.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Vinson Lee <vlee@freedesktop.org>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1379546200-17028-1-git-send-email-vlee@freedesktop.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/20130912132706.GD23826@gmail.com
+[ Fix the test by escaping the double quotes ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/lk/debugfs.c | 1 -
- 1 file changed, 1 deletion(-)
+ tools/perf/config/feature-tests.mak | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/lib/lk/debugfs.c b/tools/lib/lk/debugfs.c
-index 099e7cd..7c43479 100644
---- a/tools/lib/lk/debugfs.c
-+++ b/tools/lib/lk/debugfs.c
-@@ -5,7 +5,6 @@
- #include <stdbool.h>
- #include <sys/vfs.h>
- #include <sys/mount.h>
--#include <linux/magic.h>
- #include <linux/kernel.h>
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 708fb8e..7f550c1 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -210,6 +210,7 @@ define SOURCE_LIBAUDIT
  
- #include "debugfs.h"
+ int main(void)
+ {
++	printf(\"error message: %s\n\", audit_errno_to_name(0));
+ 	return audit_open();
+ }
+ endef
 -- 
 1.8.1.4
 
