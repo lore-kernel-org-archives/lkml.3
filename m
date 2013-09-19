@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab3ISNGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 09:06:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41212 "EHLO arroyo.ext.ti.com"
+	id S1754193Ab3ISNGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:06:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36996 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753659Ab3ISNG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 09:06:27 -0400
+	id S1753710Ab3ISNGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 09:06:41 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
 CC: <balajitk@ti.com>, <kishon@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [RFC PATCH 04/15] phy: omap-pipe3: use generic clock names
-Date: Thu, 19 Sep 2013 16:05:32 +0300
-Message-ID: <1379595943-14622-5-git-send-email-rogerq@ti.com>
+        Tejun Heo <tj@kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [RFC PATCH 08/15] ata: ahci_platform: Manage SATA PHY
+Date: Thu, 19 Sep 2013 16:05:36 +0300
+Message-ID: <1379595943-14622-9-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1379595943-14622-1-git-send-email-rogerq@ti.com>
 References: <1379595943-14622-1-git-send-email-rogerq@ti.com>
@@ -24,145 +24,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kishon Vijay Abraham I <kishon@ti.com>
+From: Balaji T K <balajitk@ti.com>
 
-As this driver is no longer USB specific use generic clock names.
+Some platforms have a PHY hooked up to the
+SATA controller. The PHY needs to be initialized
+and powered up for SATA to work. We do that
+using the PHY framework.
 
-[Roger Q]
-- Fix PLL_SD_SHIFT from 9 to 10
-- As optclk and wkupclk may not be always required, don't bail out
-if they aren't available.
+[Roger Q] Cleaned up.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+CC: Tejun Heo <tj@kernel.org>
+Signed-off-by: Balaji T K <balajitk@ti.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/phy/phy-omap-pipe3.c |   71 +++++++++++++++++++++++-------------------
- 1 files changed, 39 insertions(+), 32 deletions(-)
+ .../devicetree/bindings/ata/ahci-platform.txt      |    2 +-
+ drivers/ata/Kconfig                                |    1 +
+ drivers/ata/ahci.h                                 |    2 +
+ drivers/ata/ahci_platform.c                        |   31 +++++++++++++++++++-
+ 4 files changed, 34 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/phy/phy-omap-pipe3.c b/drivers/phy/phy-omap-pipe3.c
-index 63de0f8..807ab8a 100644
---- a/drivers/phy/phy-omap-pipe3.c
-+++ b/drivers/phy/phy-omap-pipe3.c
-@@ -37,15 +37,15 @@
- #define	PLL_CONFIGURATION4	0x00000020
+diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+index 89de156..c6c549a 100644
+--- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
++++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+@@ -4,7 +4,7 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
+ Each SATA controller should have its own node.
  
- #define	PLL_REGM_MASK		0x001FFE00
--#define	PLL_REGM_SHIFT		0x9
-+#define	PLL_REGM_SHIFT		9
- #define	PLL_REGM_F_MASK		0x0003FFFF
--#define	PLL_REGM_F_SHIFT	0x0
-+#define	PLL_REGM_F_SHIFT	0
- #define	PLL_REGN_MASK		0x000001FE
--#define	PLL_REGN_SHIFT		0x1
-+#define	PLL_REGN_SHIFT		1
- #define	PLL_SELFREQDCO_MASK	0x0000000E
--#define	PLL_SELFREQDCO_SHIFT	0x1
-+#define	PLL_SELFREQDCO_SHIFT	1
- #define	PLL_SD_MASK		0x0003FC00
--#define	PLL_SD_SHIFT		0x9
-+#define	PLL_SD_SHIFT		10
- #define	SET_PLL_GO		0x1
- #define	PLL_TICOPWDN		0x10000
- #define	PLL_LOCK		0x2
-@@ -232,23 +232,21 @@ static int omap_pipe3_probe(struct platform_device *pdev)
+ Required properties:
+-- compatible        : compatible list, contains "snps,spear-ahci"
++- compatible        : compatible list, contains "snps,spear-ahci" or "snps,dwc-ahci"
+ - interrupts        : <interrupt mapping for SATA IRQ>
+ - reg               : <registers mapping>
  
- 	phy->dev		= &pdev->dev;
+diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+index 4e73772..a53ef27 100644
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -91,6 +91,7 @@ config SATA_AHCI
  
--	phy->wkupclk = devm_clk_get(phy->dev, "usb_phy_cm_clk32k");
--	if (IS_ERR(phy->wkupclk)) {
--		dev_err(&pdev->dev, "unable to get usb_phy_cm_clk32k\n");
--		return PTR_ERR(phy->wkupclk);
--	}
--	clk_prepare(phy->wkupclk);
-+	phy->wkupclk = devm_clk_get(phy->dev, "wkupclk");
-+	if (IS_ERR(phy->wkupclk))
-+		dev_dbg(&pdev->dev, "unable to get wkupclk\n");
-+	else
-+		clk_prepare(phy->wkupclk);
+ config SATA_AHCI_PLATFORM
+ 	tristate "Platform AHCI SATA support"
++	select GENERIC_PHY
+ 	help
+ 	  This option enables support for Platform AHCI Serial ATA
+ 	  controllers.
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index 1145637..94484cb 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -37,6 +37,7 @@
  
--	phy->optclk = devm_clk_get(phy->dev, "usb_otg_ss_refclk960m");
--	if (IS_ERR(phy->optclk)) {
--		dev_err(&pdev->dev, "unable to get usb_otg_ss_refclk960m\n");
--		return PTR_ERR(phy->optclk);
--	}
--	clk_prepare(phy->optclk);
-+	phy->optclk = devm_clk_get(phy->dev, "optclk");
-+	if (IS_ERR(phy->optclk))
-+		dev_dbg(&pdev->dev, "unable to get optclk\n");
-+	else
-+		clk_prepare(phy->optclk);
+ #include <linux/clk.h>
+ #include <linux/libata.h>
++#include <linux/phy/phy.h>
  
--	phy->sys_clk = devm_clk_get(phy->dev, "sys_clkin");
-+	phy->sys_clk = devm_clk_get(phy->dev, "sysclk");
- 	if (IS_ERR(phy->sys_clk)) {
--		pr_err("%s: unable to get sys_clkin\n", __func__);
-+		dev_err(&pdev->dev, "unable to get sysclk\n");
- 		return -EINVAL;
+ /* Enclosure Management Control */
+ #define EM_CTRL_MSG_TYPE              0x000f0000
+@@ -322,6 +323,7 @@ struct ahci_host_priv {
+ 	u32			em_buf_sz;	/* EM buffer size in byte */
+ 	u32			em_msg_type;	/* EM message type */
+ 	struct clk		*clk;		/* Only for platforms supporting clk */
++	struct phy		*phy;		/* If platforms use phy */
+ 	void			*plat_data;	/* Other platform data */
+ };
+ 
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 2daaee0..f812ffa 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -23,6 +23,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/libata.h>
+ #include <linux/ahci_platform.h>
++#include <linux/phy/phy.h>
+ #include "ahci.h"
+ 
+ static void ahci_host_stop(struct ata_host *host);
+@@ -141,16 +142,32 @@ static int ahci_probe(struct platform_device *pdev)
+ 		}
  	}
  
-@@ -290,8 +288,10 @@ static int omap_pipe3_remove(struct platform_device *pdev)
- {
- 	struct omap_pipe3 *phy = platform_get_drvdata(pdev);
- 
--	clk_unprepare(phy->wkupclk);
--	clk_unprepare(phy->optclk);
-+	if (!IS_ERR(phy->wkupclk))
-+		clk_unprepare(phy->wkupclk);
-+	if (!IS_ERR(phy->optclk))
-+		clk_unprepare(phy->optclk);
- 	if (!pm_runtime_suspended(&pdev->dev))
- 		pm_runtime_put(&pdev->dev);
- 	pm_runtime_disable(&pdev->dev);
-@@ -305,8 +305,10 @@ static int omap_pipe3_runtime_suspend(struct device *dev)
- {
- 	struct omap_pipe3	*phy = dev_get_drvdata(dev);
- 
--	clk_disable(phy->wkupclk);
--	clk_disable(phy->optclk);
-+	if (!IS_ERR(phy->wkupclk))
-+		clk_disable(phy->wkupclk);
-+	if (!IS_ERR(phy->optclk))
-+		clk_disable(phy->optclk);
- 
- 	return 0;
- }
-@@ -316,22 +318,27 @@ static int omap_pipe3_runtime_resume(struct device *dev)
- 	u32 ret = 0;
- 	struct omap_pipe3	*phy = dev_get_drvdata(dev);
- 
--	ret = clk_enable(phy->optclk);
--	if (ret) {
--		dev_err(phy->dev, "Failed to enable optclk %d\n", ret);
--		goto err1;
-+	if (!IS_ERR(phy->optclk)) {
-+		ret = clk_enable(phy->optclk);
-+		if (ret) {
-+			dev_err(phy->dev, "Failed to enable optclk %d\n", ret);
-+			goto err1;
++	hpriv->phy = devm_phy_get(dev, "sata-phy");
++	if (IS_ERR(hpriv->phy)) {
++		dev_err(dev, "can't get phy\n");
++		/* return only if -EPROBE_DEFER */
++		if (PTR_ERR(hpriv->phy) == -EPROBE_DEFER) {
++			rc = -EPROBE_DEFER;
++			goto disable_unprepare_clk;
 +		}
++	}
++
+ 	/*
+ 	 * Some platforms might need to prepare for mmio region access,
+ 	 * which could be done in the following init call. So, the mmio
+ 	 * region shouldn't be accessed before init (if provided) has
+ 	 * returned successfully.
+ 	 */
++
++	if (!(IS_ERR(hpriv->phy))) {
++		phy_init(hpriv->phy);
++		phy_power_on(hpriv->phy);
++	}
++
+ 	if (pdata && pdata->init) {
+ 		rc = pdata->init(dev, hpriv->mmio);
+ 		if (rc)
+-			goto disable_unprepare_clk;
++			goto disable_phy;
  	}
  
--	ret = clk_enable(phy->wkupclk);
--	if (ret) {
--		dev_err(phy->dev, "Failed to enable wkupclk %d\n", ret);
--		goto err2;
-+	if (!IS_ERR(phy->wkupclk)) {
-+		ret = clk_enable(phy->wkupclk);
-+		if (ret) {
-+			dev_err(phy->dev, "Failed to enable wkupclk %d\n", ret);
-+			goto err2;
-+		}
- 	}
+ 	ahci_save_initial_config(dev, hpriv,
+@@ -220,6 +237,12 @@ static int ahci_probe(struct platform_device *pdev)
+ pdata_exit:
+ 	if (pdata && pdata->exit)
+ 		pdata->exit(dev);
++disable_phy:
++	if (!IS_ERR(hpriv->phy)) {
++		phy_power_off(hpriv->phy);
++		phy_exit(hpriv->phy);
++	}
++
+ disable_unprepare_clk:
+ 	if (!IS_ERR(hpriv->clk))
+ 		clk_disable_unprepare(hpriv->clk);
+@@ -238,6 +261,11 @@ static void ahci_host_stop(struct ata_host *host)
+ 	if (pdata && pdata->exit)
+ 		pdata->exit(dev);
  
- 	return 0;
- 
- err2:
--	clk_disable(phy->optclk);
-+	if (!IS_ERR(phy->optclk))
-+		clk_disable(phy->optclk);
- 
- err1:
- 	return ret;
++	if (!IS_ERR(hpriv->phy)) {
++		phy_power_off(hpriv->phy);
++		phy_exit(hpriv->phy);
++	}
++
+ 	if (!IS_ERR(hpriv->clk)) {
+ 		clk_disable_unprepare(hpriv->clk);
+ 		clk_put(hpriv->clk);
+@@ -328,6 +356,7 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
+ static const struct of_device_id ahci_of_match[] = {
+ 	{ .compatible = "snps,spear-ahci", },
+ 	{ .compatible = "snps,exynos5440-ahci", },
++	{ .compatible = "snps,dwc-ahci", },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, ahci_of_match);
 -- 
 1.7.4.1
 
