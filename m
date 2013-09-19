@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab3ISNDj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 09:03:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59785 "EHLO mail.zytor.com"
+	id S1753996Ab3ISNF5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 09:05:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59810 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083Ab3ISNDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 09:03:38 -0400
+	id S1752033Ab3ISNF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 09:05:56 -0400
 User-Agent: K-9 Mail for Android
 In-Reply-To: <alpine.LNX.2.00.1309191030180.3014@linux.site>
 References: <alpine.LNX.2.00.1309121139000.3818@linux.site> <52322621.3040908@zytor.com> <alpine.LNX.2.00.1309191030180.3014@linux.site>
@@ -15,7 +15,7 @@ Content-Type: text/plain;
 Content-Transfer-Encoding: 8bit
 Subject: Re: [Resend PATCH 2/2] s390: provide hardware randomness from zcrypt card to /dev/random
 From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 19 Sep 2013 08:03:11 -0500
+Date: Thu, 19 Sep 2013 08:05:32 -0500
 To: Torsten Duwe <duwe@lst.de>, Torsten Duwe <duwe@lst.de>
 CC: tytso@mit.edu, ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
         Hans-Georg Markgraf <MGRF@de.ibm.com>,
@@ -23,14 +23,12 @@ CC: tytso@mit.edu, ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Joe Perches <joe@perches.com>
-Message-ID: <bddd8f30-4105-4d93-9322-a1ccd9c4b537@email.android.com>
+Message-ID: <33dd164b-00a7-4cbd-9d62-66000ed4abbf@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By the way, haveged is... worthy of suspicion (I doubt it is malicious, but still).  Its self-tests are completely useless (replace the entropy source with a constant "1" and they still pass) and there is as far as I know no analysis about the randomness other than "it passes some tests."
-
-
+As I said, the option of doing feed from hwrng directly via a kernel thread seems the most logical thing to me, assuming you can convince Ted & co.  rngd doesn't really add much value for a whitened source.
 
 Torsten Duwe <duwe@lst.de> wrote:
 >
