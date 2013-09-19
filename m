@@ -1,267 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028Ab3ISKB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 06:01:26 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:65261 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694Ab3ISKBY (ORCPT
+	id S1753134Ab3ISKC7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 06:02:59 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60188 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab3ISKC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 06:01:24 -0400
-Message-ID: <523ACB70.2020000@monstr.eu>
-Date: Thu, 19 Sep 2013 12:01:20 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 19 Sep 2013 06:02:57 -0400
+Date: Thu, 19 Sep 2013 12:02:39 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
+        LKML <linux-kernel@vger.kernel.org>, Marc Pignat <marc.pignat@hevs.ch>,
+        john.stultz@linaro.org, kernel@pengutronix.de,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clockevents: Sanitize ticks to nsec conversion
+Message-ID: <20130919100239.GS24802@pengutronix.de>
+References: <1379077365-18458-1-git-send-email-mkl@pengutronix.de>
+ <20130917095600.GJ26819@ludovic.desroches@atmel.com>
+ <20130917100417.GQ12758@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.02.1309171210450.4089@ionos.tec.linutronix.de>
+ <20130917130153.GL26819@ludovic.desroches@atmel.com>
+ <alpine.DEB.2.02.1309172228400.4089@ionos.tec.linutronix.de>
+ <20130918085627.GN24802@pengutronix.de>
+ <alpine.DEB.2.02.1309181058470.4089@ionos.tec.linutronix.de>
+ <20130918150958.GO24802@pengutronix.de>
+ <alpine.DEB.2.02.1309182201000.4089@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Alan Tull <atull@altera.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-References: <cover.1379519753.git.michal.simek@xilinx.com>  <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com> <1379520665.1787.40.camel@joe-AO722>
-In-Reply-To: <1379520665.1787.40.camel@joe-AO722>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="MXRir3bQaJsTfhIn6WrsBmlofgMIBvT0P"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.02.1309182201000.4089@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---MXRir3bQaJsTfhIn6WrsBmlofgMIBvT0P
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hello Thomas,
 
-Hi Joe,
+On Thu, Sep 19, 2013 at 12:01:25AM +0200, Thomas Gleixner wrote:
+> On Wed, 18 Sep 2013, Uwe Kleine-König wrote:
+> > On Wed, Sep 18, 2013 at 11:38:07AM +0200, Thomas Gleixner wrote:
+> > > On Wed, 18 Sep 2013, Uwe Kleine-König wrote:
+> > > > Another doubt I have is: You changed clockevent_delta2ns to round up now
+> > > > unconditionally. For the numbers on at91 that doesn't matter, but I
+> > > > wonder if there are situations that make the timer core violate the
+> > > > max_delta_ticks condition now.
+> > > 
+> > > And how so? The + (mult - 1) ensures, that the conversion back to
+> > > ticks results in the same value as latch. So how should it violate
+> > > the max boundary?
+> > That is wrong:
+> > With max_delta_ticks << shift = n * mult - k for k in [0 .. mult-1] and
+> > an integer n:
+> > 
+> > 	  (max_delta_ns * mult) >> shift
+> > 	= ((((max_delta_ticks << shift) + mult - 1) / mult) * mult) >> shift
+> > 	= (((n * mult - k + mult - 1) / mult) * mult) >> shift
+> > 	= n * mult >> shift
+> > 	= ((max_delta_ticks << shift) + k) >> shift
+> > 	= max_delta_ticks + (k >> shift)
+> > 
+> > k >> shift is only known to be zero if mult <= 1 << shift (i.e. the same
+> > condition as above where your 64bit overflow detection is wrong). So
+> > this can result in values > max_delta_ticks.
+> 
+> Right, should have waited for coffee actually activating the right
+> brain cells.
+> 
+> So the rounding thing works nicely for mult <= (1 << sft). For the
+> other cases the conversion is wrong by (mult / (1 << sft)) - 1. So for
+> a 3 GHz clock it's off by 2. That's not an issue for the min value,
+> but for the max value it might overflow the hardware limit. Not a real
+> functional issue as we'd just get a pointless short interrupt, but for
+> correctness reasons and for the sake of NOHZ we need to fix that.
+Well, you're assuming here that this is how the hardware reacts. Might
+be worse. But we're on the same side here, it should be fixed.
+ 
+> There is no real correct solution for these cases, which will result
+> in a correct backwards conversion. We could validate against the max
+> delta ticks in program_event, but that adds another boundary check to
+> the hotpath so I rather want to avoid it.
+> 
+> The simple solution is to check for the following in the conversion
+> routine:
+> 
+>     if (latch == dev->min_delta_ticks || dev->mult <= (1 << dev->sft))
+>        clc += mult - 1
+I didn't do the necessary math, but I wouldn't be surprised if you'd
+need to check for
 
-On 09/18/2013 06:11 PM, Joe Perches wrote:
-> On Wed, 2013-09-18 at 17:56 +0200, Michal Simek wrote:
->> This new subsystem should unify all fpga drivers which
->> do the same things. Load configuration data to fpga
->> or another programmable logic through common interface.
->> It doesn't matter if it is MMIO device, gpio bitbanging,
->> etc. connection. The point is to have the same
->> inteface for these drivers.
->=20
-> Is this really a "driver".
-> Perhaps it's more of a core kernel function
-> and belongs in kernel.
+	latch <= dev->min_delta_ticks + n
 
-This is not a driver just kernel subsystem and real drivers
-will register itself in this subsystem.
+for some non-negative n.
 
->=20
->> diff --git a/drivers/fpga/fpga-mgr.c b/drivers/fpga/fpga-mgr.c
->=20
-> The error messages are a little shouty with all
-> the unnecessary "!" uses. =20
->=20
-> []
+Another simple solution is to apply the uprounding only for
+min_delta_ticks -> min_delta_ns conversion, but not for the
+max_delta_ticks -> max_delta_ns conversion. For the first you have to
+guarantee not to yield lower values so round up, for the latter you must
+not pass on bigger values so round down.
+ 
+> That ensures, that we never violate the lower boundary independent of
+> the mult/sft relation. For the max_delta_ticks conversion in the "mult
+> > (1 << sft)" case we end up with a slightly smaller value, but well
+> inside the boundaries and close enough to the hardware limitations.
+Yeah, probably it's not worth to calculate the optimal value (actually
+for both limits). Anyhow, I will check that on my next shopping tour :-)
+ 
+> Versus the 64bit overflow check, we need to be even more careful. We
+> need to check for overflowing (1 << 63) - 1 (i.e. the max positive
+> value which fits into a s64). See clockevents_program_event().
+That is because you interpret times < 0 as in the past, right? But note
+that the interim result we're talking about here is still to be divided
+by evt->mult. So assuming mult > 1, that check is too strict unless you
+move it below the do_div in clockevent_delta2ns. For sure it makes sense
+to use the same value for a and b in the handling:
 
-Fixed.
+	if (calculatedval overflows a)
+		calculatedval = b
 
->=20
->> +/**
->> + * fpga_mgr_read - Read data from fpga
->> + * @mgr: Pointer to the fpga manager structure
->> + * @buf: Pointer to the buffer location
->> + * @count: Pointer to the number of copied bytes
->> + *
->> + * Function reads fpga bitstream and copy them to output buffer.
->> + *
->> + * Returns the number of bytes copied to @buf, a negative error numbe=
-r otherwise
->> + */
->> +static int fpga_mgr_read(struct fpga_manager *mgr, char *buf, ssize_t=
- *count)
->> +{
->> +	int ret;
->> +
->> +	if (test_and_set_bit_lock(FPGA_MGR_DEV_BUSY, &mgr->flags))
->> +		return -EBUSY;
->> +
->> +	if (!mgr->mops || !mgr->mops->read) {
->> +		dev_err(mgr->dev,
->> +			"Controller doesn't support read operations!\n");
->> +		return -EPERM;
->> +	}
->> +
->> +	if (mgr->mops->read_init) {
->> +		ret =3D mgr->mops->read_init(mgr);
->> +		if (ret) {
->> +			dev_err(mgr->dev, "Failed in read-init!\n");
->> +			return ret;
->> +		}
->> +	}
->> +
->> +	if (mgr->mops->read) {
->> +		ret =3D mgr->mops->read(mgr, buf, count);
->> +		if (ret) {
->> +			dev_err(mgr->dev, "Failed to read firmware!\n");
->> +			return ret;
->> +		}
->> +	}
->> +
->> +	if (mgr->mops->read_complete) {
->> +		ret =3D mgr->mops->read_complete(mgr);
->> +		if (ret) {
->> +			dev_err(mgr->dev, "Failed in read-complete!\n");
->> +			return ret;
->> +		}
->> +	}
->> +
->> +	clear_bit_unlock(FPGA_MGR_DEV_BUSY, &mgr->flags);
->> +
->> +	return 0;
->> +}
->> +
->> +/**
->> + * fpga_mgr_attr_read - Read data from fpga
->> + * @dev: Pointer to the device structure
->> + * @attr: Pointer to the device attribute structure
->> + * @buf: Pointer to the buffer location
->> + *
->> + * Function reads fpga bitstream and copy them to output buffer
->> + *
->> + * Returns the number of bytes copied to @buf, a negative error numbe=
-r otherwise
->> + */
->> +static ssize_t fpga_mgr_attr_read(struct device *dev,
->> +				   struct device_attribute *attr, char *buf)
->> +{
->> +	struct fpga_manager *mgr =3D dev_get_drvdata(dev);
->> +	ssize_t count;
->> +	int ret;
->> +
->> +	if (mgr && mgr->fpga_read)
->> +		ret =3D mgr->fpga_read(mgr, buf, &count);
->> +
->> +	return ret =3D=3D 0 ? count : -EPERM;
->=20
-> EPERM isn't the only error return from fpga_read.
+Best regards
+Uwe
 
-Yeah I know. Will revisit all return codes.
-
-
->> +}
->> +
->> +/**
->> + * fpga_mgr_write - Write data to fpga
->> + * @mgr: Pointer to the fpga manager structure
->> + * @fw_name: Pointer to the buffer location with bistream firmware fi=
-lename
->> + *
->> + * @buf contains firmware filename which is loading through firmware
->> + * interface and passed to the fpga driver.
->> + *
->> + * Returns string lenght added to @fw_name, a negative error number o=
-therwise
->> + */
->> +static int fpga_mgr_write(struct fpga_manager *mgr, const char *fw_na=
-me)
->> +{
->> +	int ret =3D 0;
->> +	const struct firmware *fw;
->> +
->> +	if (!fw_name || !strlen(fw_name)) {
->> +		dev_err(mgr->dev, "Firmware name is not specified!\n");
->> +		return -EINVAL;
->> +	}
->> +
->> +	if (!mgr->mops || !mgr->mops->write) {
->> +		dev_err(mgr->dev,
->> +			"Controller doesn't support write operations!\n");
->> +		return -EPERM;
->=20
-> I think you should revisit the return codes.
-
-yap
-
->=20
->=20
->> +/**
->> + * fpga_mgr_attr_write - Write data to fpga
->> + * @dev: Pointer to the device structure
->> + * @attr: Pointer to the device attribute structure
->> + * @buf: Pointer to the buffer location with bistream firmware filena=
-me
->> + * @count: Number of characters in @buf
->> + *
->> + * @buf contains firmware filename which is loading through firmware
->> + * interface and passed to the fpga driver.
->> + *
->> + * Returns string lenght added to @buf, a negative error number other=
-wise
->> + */
->> +static ssize_t fpga_mgr_attr_write(struct device *dev,
->> +				   struct device_attribute *attr,
->> +				   const char *buf, size_t count)
->> +{
->> +	struct fpga_manager *mgr =3D dev_get_drvdata(dev);
->> +	int ret;
->> +
->> +	if (mgr && mgr->fpga_write)
->> +		ret =3D mgr->fpga_write(mgr, buf);
->> +
->> +	return ret =3D=3D 0 ? strlen(buf) : -EPERM;
->> +}
->=20
-> Same -EPERM issue as read
-
-yap
-
->=20
->> +	mgr =3D devm_kzalloc(&pdev->dev, sizeof(*mgr), GFP_KERNEL);
->> +	if (!mgr) {
->> +		dev_err(&pdev->dev, "Failed to alloc mgr struct!\n");
->=20
-> Unnecessary OOM message as there's a general dump_stack()
-> already done on any OOM without GFP_NOWARN
->=20
->> diff --git a/include/linux/fpga.h b/include/linux/fpga.h
-> []
->> +struct fpga_manager {
->> +	char name[48];
->=20
-> Maybe a #define instead of 48?
-
-There is another comment to fix this by pointer which is sensible solutio=
-n too.
-
-Thanks for review,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---MXRir3bQaJsTfhIn6WrsBmlofgMIBvT0P
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlI6y3AACgkQykllyylKDCGXsQCeIyIyr+/4b3UX+gPhCP0b0JNm
-tMYAnAqLqXF5Hifpjp7DKXRVLc1ONwsi
-=SKlB
------END PGP SIGNATURE-----
-
---MXRir3bQaJsTfhIn6WrsBmlofgMIBvT0P--
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
