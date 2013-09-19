@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035Ab3ISHPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 03:15:16 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:64568 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784Ab3ISHPO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 03:15:14 -0400
+	id S1753053Ab3ISHR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 03:17:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43592 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752774Ab3ISHR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 03:17:27 -0400
+Date: Thu, 19 Sep 2013 09:17:20 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Vinson Lee <vlee@freedesktop.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Vinson Lee <vlee@twitter.com>
+Subject: Re: [PATCH] tools lib lk: Uninclude linux/magic.h in debugfs.c.
+Message-ID: <20130919071720.GA9435@pd.tnic>
+References: <1379546200-17028-1-git-send-email-vlee@freedesktop.org>
 MIME-Version: 1.0
-Date: Thu, 19 Sep 2013 09:15:13 +0200
-X-Google-Sender-Auth: ViCqEPCgKtMw3p1qCoZjCzFx1kA
-Message-ID: <CAMuHMdUUkKQjEA58W_HhQWtPUa4D2eRypPNQZgwXb+ZJutR4pQ@mail.gmail.com>
-Subject: Serial consoles (was: [Ksummit-2013-discuss] [HOBBYIST ATTEND] IIO
- maintainer and developer)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rob Landley <rob@landley.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1379546200-17028-1-git-send-email-vlee@freedesktop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Sep 12, 2013 at 10:12 PM, Rob Landley <rob at landley.net> wrote:
-> > 3) QEMU command line to boot to a shell prompt with serial console. x86 is
-> > ttyS0, arm versatile is ttyAMA0, sh4 is ttySC1. Get it wrong and you have no
-> > output.
->
-> Can't we long-term fix this? Can we bring up both say ttyS0 and ttyAMA0
-> on a machine and remove the other one when the first is opened,
-> then print a friendly reminder to move over to ttyS0 if ttyAMA0 is
-> used instead, so people are encouraged to switch to ttyS0
-> for everything over time?
->
-> Or do these separate serialport namespaces have a real utility?
+On Wed, Sep 18, 2013 at 04:16:40PM -0700, Vinson Lee wrote:
+> From: Vinson Lee <vlee@twitter.com>
+> 
+> The compilation only looks for linux/magic.h from the default include
+> paths, which does not include the source tree. This results in a build
+> error if linux/magic.h is not available or not installed.
 
-I'd say they make life more difficult.
-Making it easier to distinguish ports may have been the original reason, but
-in other subsystems ("SCSI" disks, Ethernet ports, IDE, ...) there is a uniform
-device namespace.
-We still have different namepaces for other types of block devices, though, but
-that's (usually) handled automatically by udev, file system UUIDs, etc.
+Right, we have:
 
-Note that on m68k we never followed the non-16550-ports-should-use-a-different-
-name-franze, and always continued using /dev/ttyS* for all serial ports.
+tools/perf/util/include/linux/magic.h
 
-BTW, perhaps we can keep the non-ksummit discussions on lkml?
-I'm only reading Ksummit-2013-discuss from the list archives occasually...
+but tools/lib/lk/Makefile doesn't know about it, it seems. Oh well, the
+solution falling back to debugfs.h is even better. :)
 
-Gr{oetje,eeting}s,
+> For example, this build error occurs on CentOS 5.
+> 
+> $ make -C tools/lib/lk V=1
+> [...]
+> gcc -o debugfs.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6
+> -D_FORTIFY_SOURCE=2 -Wbad-function-cast -Wdeclaration-after-statement
+> -Wformat-security -Wformat-y2k -Winit-self -Wmissing-declarations
+> -Wmissing-prototypes -Wnested-externs -Wno-system-headers
+> -Wold-style-definition -Wpacked -Wredundant-decls -Wshadow
+> -Wstrict-aliasing=3 -Wstrict-prototypes -Wswitch-default -Wswitch-enum
+> -Wundef -Wwrite-strings -Wformat  -fPIC  -D_LARGEFILE64_SOURCE
+> -D_FILE_OFFSET_BITS=64 debugfs.c
+> debugfs.c:8:25: error: linux/magic.h: No such file or directory
+> 
+> The only symbol from linux/magic.h needed by debugfs.c is DEBUGFS_MAGIC,
+> and that is already defined in debugfs.h. linux/magic.h isn't providing
+> any extra symbols and can unincluded. This is similar to the approach by
+> perf, which has its own magic.h wrapper at
+> tools/perf/util/include/linux/magic.h
+> 
+> Signed-off-by: Vinson Lee <vlee@twitter.com>
+> Cc: stable@vger.kernel.org # 3.10+
 
-                        Geert
+Acked-by: Borislav Petkov <bp@suse.de>
 
+> ---
+>  tools/lib/lk/debugfs.c | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/tools/lib/lk/debugfs.c b/tools/lib/lk/debugfs.c
+> index 099e7cd..7c43479 100644
+> --- a/tools/lib/lk/debugfs.c
+> +++ b/tools/lib/lk/debugfs.c
+> @@ -5,7 +5,6 @@
+>  #include <stdbool.h>
+>  #include <sys/vfs.h>
+>  #include <sys/mount.h>
+> -#include <linux/magic.h>
+>  #include <linux/kernel.h>
+>  
+>  #include "debugfs.h"
+> -- 
+> 1.8.2.1
+> 
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
