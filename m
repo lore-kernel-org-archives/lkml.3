@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab3ISJ5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 05:57:16 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38175 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab3ISJ5M (ORCPT
+	id S1753432Ab3ISJ5o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 05:57:44 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:18256 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab3ISJ5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 05:57:12 -0400
-Date: Thu, 19 Sep 2013 11:57:11 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: 3.12-rc1: no longer compiles for Nokia n900 (omap based)
-Message-ID: <20130919095711.GA19346@amd.pavel.ucw.cz>
-References: <20130919093002.GA23806@amd.pavel.ucw.cz>
- <20130919093627.GB24866@mudshark.cambridge.arm.com>
+	Thu, 19 Sep 2013 05:57:41 -0400
+X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9DbcbmpiO4kpRCxejnXg==
+X-RZG-CLASS-ID: mo00
+Message-ID: <523ACA82.6070902@hartkopp.net>
+Date: Thu, 19 Sep 2013 11:57:22 +0200
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130820 Icedove/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130919093627.GB24866@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Thiago Farina <tfransosi@gmail.com>,
+        Andre Naujoks <nautsch2@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
+        Jason Baron <jbaron@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux list <linux-kernel@vger.kernel.org>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH net 2/3] lib: introduce upper case hex ascii helpers
+References: <1379093833-4949-1-git-send-email-nautsch2@gmail.com> <1379093833-4949-3-git-send-email-nautsch2@gmail.com> <CACnwZYdBocYEjASpKCNZ6cfLNpzxeLxaVjLCHwxwsYO+P14tAQ@mail.gmail.com> <20130914213546.ae435cdd.akpm@linux-foundation.org> <523AC615.9020204@pengutronix.de>
+In-Reply-To: <523AC615.9020204@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2013-09-19 10:36:28, Will Deacon wrote:
-> On Thu, Sep 19, 2013 at 10:30:02AM +0100, Pavel Machek wrote:
-> > Hi!
-> > 
-> > I get:
-> > 
-> >   CC      arch/arm/kernel/machine_kexec.o
-> > /tmp/ccCFXeXG.s: Assembler messages:
-> > /tmp/ccCFXeXG.s:217: Error: garbage following instruction -- `dsb
-> > nshst'
-> > /tmp/ccCFXeXG.s:225: Error: garbage following instruction -- `dsb nsh'
-> > make[1]: *** [arch/arm/kernel/suspend.o] Error 1
-> > make[1]: *** Waiting for unfinished jobs....
-> > 
-> > pavel@amd:/data/l/linux-n900$ arm-linux-gnueabi-gcc --version
-> > arm-linux-gnueabi-gcc (Debian 4.3.5-4) 4.3.5
-> > 
-> > Minimum required gcc is 3.2, so I'm safe.
+On 19.09.2013 11:38, Marc Kleine-Budde wrote:
+> On 09/15/2013 06:35 AM, Andrew Morton wrote:
+>> On Sun, 15 Sep 2013 01:27:03 -0300 Thiago Farina <tfransosi@gmail.com> wrote:
+>>
+>>> On Fri, Sep 13, 2013 at 2:37 PM, Andre Naujoks <nautsch2@gmail.com> wrote:
+>>>> To be able to use the hex ascii functions in case sensitive environments
+>>>> the array hex_asc_upper[] and the needed functions for hex_byte_pack_upper()
+>>>> are introduced.
+>>>>
+>>>> Signed-off-by: Andre Naujoks <nautsch2@gmail.com>
+>>>> ---
+>>>>  include/linux/kernel.h | 11 +++++++++++
+>>>>  lib/hexdump.c          |  2 ++
+>>>>  2 files changed, 13 insertions(+)
+>>>>
+>>>> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+>>>> index 482ad2d..672ddc4 100644
+>>>> --- a/include/linux/kernel.h
+>>>> +++ b/include/linux/kernel.h
+>>>> @@ -439,6 +439,17 @@ static inline char *hex_byte_pack(char *buf, u8 byte)
+>>>>         return buf;
+>>>>  }
+>>>>
+>>>> +extern const char hex_asc_upper[];
+>>>> +#define hex_asc_upper_lo(x)    hex_asc_upper[((x) & 0x0f)]
+>>>> +#define hex_asc_upper_hi(x)    hex_asc_upper[((x) & 0xf0) >> 4]
+>>> Does using a macro instead of a real function (static inline)
+>>> generates a better code?
+>>
+>> Yes, a static inline would be nicer, but these are derived from
+>> hex_asc_lo/hex_asc_hi.  If we change one we should change the other
+>> and that becomes a separate cleanup.  So I think this patch is
+>> OK as-is.
 > 
-> Please check your binutils. >= 2.22 has been reported to work.
+> Is this an Acked-by?
+> 
+>> Also, it would make sense to get all the *hex* stuff out of kernel.h
+>> and into a new header file (hexchar.h?).  They're a clean
+>> self-contained thing and kernel.h is rather a dumping ground.
+> 
+> Who is taking this series?
 
-pavel@amd:/data/l/linux-good$ arm-linux-gnueabi-ld --version
-GNU ld (GNU Binutils for Debian) 2.20.1.20100303
-Copyright 2009 Free Software Foundation, Inc.
-This program is free software; you may redistribute it under the terms
-of
-the GNU General Public License version 3 or (at your option) a later
-version.
-This program has absolutely no warranty.
+Andre suggested that Dave Miller could take these three patches for 3.12 as
+they are mainly network fixes:
 
-but
+http://marc.info/?l=linux-can&m=137909384116115&w=2
 
-Documentation/Changes:
-o  binutils               2.12                    # ld -v
+Regards,
+Oliver
 
-Can the code be fixed so that binutils 2.12 still work?
 
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
