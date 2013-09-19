@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030Ab3ISJHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 05:07:55 -0400
-Received: from mx-rz-2.rrze.uni-erlangen.de ([131.188.11.21]:56270 "EHLO
-	mx-rz-2.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752044Ab3ISJHx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 05:07:53 -0400
-X-Greylist: delayed 739 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Sep 2013 05:07:53 EDT
-X-RRZE-Submit-IP: 2001:638:a000:4142::ff10:e5e4
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: usbip-devel@lists.sourceforge.net,
-        "Dominik Paulus" <dominik.paulus@fau.de>
-Cc: linux-kernel@i4.cs.fau.de, "Tobias Polzer" <tobias.polzer@fau.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Stefan Reif" <ke42caxa@cip.cs.fau.de>,
-        "Anthony Foiani" <anthony.foiani@gmail.com>, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: usbip: Fix build on Debian ppc
-References: <1379579978-2570-1-git-send-email-dominik.paulus@fau.de>
-Date: Thu, 19 Sep 2013 10:55:18 +0200
+	id S1752395Ab3ISJML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 05:12:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33864 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751892Ab3ISJMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 05:12:09 -0400
+Date: Thu, 19 Sep 2013 11:12:05 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Cc: dougthompson@xmission.com, davej@redhat.com, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] EDAC, AMD64_EDAC: Remove superfluous condition check.
+Message-ID: <20130919091204.GA9412@pd.tnic>
+References: <1378914958-2289-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Tobias Polzer" <bulsa.t.polzer@studium.uni-erlangen.de>
-Organization: FAU
-Message-ID: <op.w3nhqgkq423x8j@localhost>
-In-Reply-To: <1379579978-2570-1-git-send-email-dominik.paulus@fau.de>
-User-Agent: Opera Mail/12.16 (Linux)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1378914958-2289-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When testing usbip under powerpc, it (unexpectedly) worked, but only after
-removing the following lines from vhch_hcd.c:
+On Wed, Sep 11, 2013 at 10:55:58AM -0500, Aravind Gopalakrishnan wrote:
+> The condition check 'channel < 0' is needless since channel is unsigned.
+> 
+> Reported by Dave Jones here:
+> http://marc.info/?l=linux-kernel&m=137839225430844&w=2
+> 
+> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
 
-1004         /* will be removed */
-1005         if (pdev->dev.dma_mask) {
-1006                 dev_info(&pdev->dev, "vhci_hcd DMA not supported\n");
-1007                 return -EINVAL;
-1008         }
+Applied, thanks.
 
-We encountered no problems without those lines. Is it safe to remove this
-check?
+-- 
+Regards/Gruss,
+    Boris.
 
-Regards,
-           Tobias Polzer and Dominik Paulus
+Sent from a fat crate under my desk. Formatting is fine.
+--
