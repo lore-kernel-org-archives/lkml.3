@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3ISSLf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 14:11:35 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:63428 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab3ISSLd (ORCPT
+	id S1753421Ab3ISSNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 14:13:05 -0400
+Received: from nm38-vm9.bullet.mail.bf1.yahoo.com ([72.30.239.25]:41558 "EHLO
+	nm38-vm9.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752566Ab3ISSND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 14:11:33 -0400
+	Thu, 19 Sep 2013 14:13:03 -0400
+X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Sep 2013 14:13:03 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 192095.48778.bm@omp1001.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=3oRLCqT607e2T7CExp1B6wR1dnwRa/poYbDIISJh3kMEL4Y8rNmd/qqlnLSLN3826T/XeyHG8tTIfvZXLR1f6V8MJJHBZd34mDBlXQ09fjWNy+sad50Z3MSVfunuwl04KkBqCJlb95TVMKq+GMiz/1M4KaWpjUTMCLo+6rhpNp4=;
+X-YMail-OSG: wxFXZzIVM1nwj2jBfBMRCXWQCqsK6qgk.Yc.LMFoNP3hzE9
+ 98Ven01L0IJ.rGN4-
+X-Rocket-MIMEInfo: 002.001,SGVsbG8gTXkgRGVhciwNCkhvdyBhcmUgeW91IHRvZGF5PyBJIGhvcGUgZmluZSwgSSBjYW1lIGFjcm9zcyB5b3VyIGNvbnRhY3QgdG9kYXkgd2hpbGUgYnJvd3NpbmcgbG9va2luZyBmb3IgcmVsaWFibGUgZnJpZW5kIGFuZCBpIGJlY2FtZSBpbnRlcmVzdGVkLCBNeSBuYW1lIGlzIG1pc3MgRmFtYXR0YSBTYW5kby4gSSB3aXNoIHRvIGhhdmUgeW91IGFzIGEgZnJpZW5kLCBpZiB5b3UgY2FyZS4gSSBoYXZlIGltcG9ydGFudCByZWFzb25zIHRvIHJlcXVlc3QgeW91ciBpbnRlcmVzdCBmb3IgYSBzZXJpb3VzIGYBMAEBAQE-
+X-RocketYMMF: lovebaby2021
+X-Mailer: YahooMailClassic/332 YahooMailWebService/0.8.157.561
+Message-ID: <1379614040.37723.YahooMailBasic@web141205.mail.bf1.yahoo.com>
+Date: Thu, 19 Sep 2013 11:07:20 -0700 (PDT)
+From: Famatta Sando <famatasando23@yahoo.com>
+Reply-To: famatasando23@yahoo.com
+Subject: Hello My Dear.
+To: famatasando23@yahoo.com
 MIME-Version: 1.0
-In-Reply-To: <1379614006-3844-1-git-send-email-will.deacon@arm.com>
-References: <1379614006-3844-1-git-send-email-will.deacon@arm.com>
-Date: Thu, 19 Sep 2013 13:11:32 -0500
-X-Google-Sender-Auth: lFVc8p37XKe05EyiLuFqimqFxE4
-Message-ID: <CA+55aFxuc3yD5pH2w5uEr_VDsEANvEiGCWA6tu1cSFrAiaU4Ow@mail.gmail.com>
-Subject: Re: [PATCH] lockref: use cmpxchg64 explicitly for lockless updates
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Waiman Long <Waiman.Long@hp.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 1:06 PM, Will Deacon <will.deacon@arm.com> wrote:
-> The cmpxchg() function tends not to support 64-bit arguments on 32-bit
-> architectures. This could be either due to use of unsigned long arguments
-> (like on ARM) or lack of instruction support (cmpxchgq on x86). However,
-> these architectures may implement a specific cmpxchg64() function to
-> provide 64-bit cmpxchg support instead
-
-I'm certainly ok with this, but I wonder how much point there is to
-use the cmpxchg alternatives for 32-bit architectures at all...
-
->From a performance standpoint, lockref really is expected to mainly
-help with big machines. Only insane people would do big machines with
-32-bit kernels these days.
-
-Of course, it may be that cmpxchg is actually faster on some
-architectures, but at least on x86-32, cmpxchg8b is traditionally
-quite slow.
-
-In other words, I'd actually like to see some numbers if there are
-loads where this actually helps and matters...
-
-                   Linus
+Hello My Dear,
+How are you today? I hope fine, I came across your contact today while browsing looking for reliable friend and i became interested, My name is miss Famatta Sando. I wish to have you as a friend, if you care. I have important reasons to request your interest for a serious friendship, i will be happy if you write me back, so that i can easily explain to you more about me and give you my picture for you to know whom i am,
+I have something very Important to tell you. Thanks for your understanding.
+Your New Friend.
+Miss Famatta.
