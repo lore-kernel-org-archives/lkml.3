@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab3ISPxt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 11:53:49 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:16869 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738Ab3ISPxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 11:53:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 19 Sep 2013 08:53:46 -0700
-Message-ID: <523B1E08.6050003@nvidia.com>
-Date: Thu, 19 Sep 2013 11:53:44 -0400
-From: Rhyland Klein <rklein@nvidia.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Manish Badarkhe <badarkhe.manish@gmail.com>
-CC: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
-        Darbha Sriharsha <dsriharsha@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] drivers: power: Add support for bq24735 charger
-References: <1379452259-3499-1-git-send-email-rklein@nvidia.com> <CAKDJKT4D7VV1pxC1Bme5wptEW=2uyWBccVCv06tTwgrW20diVA@mail.gmail.com>
-In-Reply-To: <CAKDJKT4D7VV1pxC1Bme5wptEW=2uyWBccVCv06tTwgrW20diVA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752285Ab3ISQA2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 12:00:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60050 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562Ab3ISQA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 12:00:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,937,1371106800"; 
+   d="scan'208";a="380631604"
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, gregkh@linuxfoundation.org, len.brown@intel.com,
+        rjw@sisk.pl, arjan@linux.intel.com, jacob.jun.pan@linux.intel.com,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Subject: [PATCH v1 0/6] Power Capping Framework and RAPL Driver
+Date: Thu, 19 Sep 2013 09:00:29 -0700
+Message-Id: <1379606435-15871-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/19/2013 9:56 AM, Manish Badarkhe wrote:
-> Hi
-> 
->> +               ret = gpio_request(charger_device->pdata->status_gpio, name);
->> +               if (ret) {
->> +                       dev_err(&client->dev, "Failed gpio request: %d\n", ret);
->> +                       goto err_free_name;
->> +               }
->> +       }
-> 
-> snip ...
-> 
->> +err_free_name:
->> +       if (name && name != charger_device->pdata->name)
->> +               kfree(name);
->> +
->> +       return ret;
->> +}
-> 
-> Like to know, Is there a need to free gpio which has been requested previously?
-> Alternatively, this can be get requested using "devm_" function so
-> that it will get
-> freed automatically during removal.
+Overview
+With the evolution of technologies, which enables power monitoring and limiting,
+more and more devices are able to constrain their power consumption under certain
+limits. There are several use cases for such technologies:
+- Power monitoring: Each device can report its power consumption.
+- Power Limiting: Setting power limits on the devices allows users to guard against
+platform reaching max system power level.
+- Maximize performance: While staying below a power limit, it allows devices to
+automatically adjust performance to meet demands
+- Dynamic control and re-budgeting: If each device can be constrained to some power,
+extra power can redistributed to other devices, which needs additional performance.
 
-As a matter of fact yes, I meant to use the devm_ variant, which is why
-I don't have the cleanup. Thanks for catching this! Will fix in V2.
+One such example of technologies is RAPL (Running Average Power Limit) mechanism
+available in the latest Intel processors. Intel is slowly adding many devices under
+RAPL control. Also there are other technologies available, for power capping various
+devices. Soon it is very likely that other vendors are also adding or considering
+such implementation.
 
-> 
->> +static int bq24735_charger_remove(struct i2c_client *client)
->> +{
->> +       struct bq24735_charger *charger_device = i2c_get_clientdata(client);
->> +
->> +       if (charger_device->irq)
->> +               devm_free_irq(charger_device->dev, charger_device->irq,
->> +                               &charger_device->charger);
->> +
->> +       power_supply_unregister(&charger_device->charger);
->> +
->> +       if (charger_device->charger.name != charger_device->pdata->name)
->> +               kfree(charger_device->charger.name);
->> +
->> +       return 0;
-> 
-> Ditto, If go with free_gpio.
-> 
-> 
-> Regards
-> Manish Badarkhe
-> 
+Power Capping framework is an effort to have a uniform interface available to Linux
+drivers, which will enable
+- A uniform sysfs interface for all devices which can offer power capping
+- A common API for drivers, which will avoid code duplication and easy
+implementation of client drivers.
 
-Thanks!
+Also submitting Intel RAPL driver using power capping framework.
 
--rhyland
+History:
+v1
+Incorporated changes suggested during RFC stage
+
+Jacob Pan (2):
+  x86/msr: add 64bit _on_cpu access functions
+  Introduce Intel RAPL power capping driver
+
+Srinivas Pandruvada (4):
+  PowerCap: Documentation
+  PowerCap: Add class driver
+  PowerCap: Added to drivers build
+  bitops: Introduce BIT_ULL
+
+ Documentation/ABI/testing/sysfs-class-powercap |  152 +++
+ Documentation/power/powercap/powercap.txt      |  236 ++++
+ arch/x86/include/asm/msr.h                     |   22 +
+ arch/x86/lib/msr-smp.c                         |   62 ++
+ drivers/Kconfig                                |    2 +
+ drivers/Makefile                               |    1 +
+ drivers/powercap/Kconfig                       |   31 +
+ drivers/powercap/Makefile                      |    2 +
+ drivers/powercap/intel_rapl.c                  | 1395 ++++++++++++++++++++++++
+ drivers/powercap/powercap_sys.c                |  699 ++++++++++++
+ include/linux/bitops.h                         |    1 +
+ include/linux/powercap.h                       |  325 ++++++
+ 12 files changed, 2928 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-powercap
+ create mode 100644 Documentation/power/powercap/powercap.txt
+ create mode 100644 drivers/powercap/Kconfig
+ create mode 100644 drivers/powercap/Makefile
+ create mode 100644 drivers/powercap/intel_rapl.c
+ create mode 100644 drivers/powercap/powercap_sys.c
+ create mode 100644 include/linux/powercap.h
 
 -- 
-nvpublic
+1.8.3.1
+
