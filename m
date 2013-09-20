@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab3ITQro (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 12:47:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34139 "EHLO mx1.redhat.com"
+	id S1752951Ab3ITQsG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 12:48:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18071 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752281Ab3ITQrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 12:47:43 -0400
-Date: Fri, 20 Sep 2013 12:47:32 -0400
-From: Dave Jones <davej@redhat.com>
-To: rostedt@goodmis.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: tracing: don't stuff stale pointers in filp->private_data
-Message-ID: <20130920164732.GA31520@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, rostedt@goodmis.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1752302Ab3ITQsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 12:48:03 -0400
+Date: Fri, 20 Sep 2013 18:41:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        roland@hack.frob.com, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: do_wait: Add missing tasklist unlocking in error paths.
+Message-ID: <20130920164144.GA31808@redhat.com>
+References: <20130920163733.GA24958@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130920163733.GA24958@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Probably harmless, but still not a nice thing to do.
+On 09/20, Dave Jones wrote:
+>
+> It looks like both 64a16caf5, and 98abed020 both introduced error paths to do_wait
+> where we miss unlocking the tasklist.
+>
+> Spotted with coverity.
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
+Not really, afaics.
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 368a4d5..75d3556 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1124,6 +1124,7 @@ static int system_tr_open(struct inode *inode, struct file *filp)
- 	if (ret < 0) {
- 		trace_array_put(tr);
- 		kfree(dir);
-+		dir = NULL;
- 	}
- 
- 	filp->private_data = dir;
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -1526,13 +1526,15 @@ repeat:
+>  	tsk = current;
+>  	do {
+>  		retval = do_wait_thread(wo, tsk);
+> -		if (retval)
+> +		if (retval) {
+> +			read_unlock(&tasklist_lock);
+
+note that do_wait_thread() paths should drop tasklist if it returns non-zero.
+
+Oleg.
+
