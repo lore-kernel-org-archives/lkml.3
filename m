@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab3ITJt3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 05:49:29 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60719 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754275Ab3ITJt2 (ORCPT
+	id S1754460Ab3ITJt7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 05:49:59 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:49423 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754427Ab3ITJt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 05:49:28 -0400
-Date: Fri, 20 Sep 2013 10:49:13 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Dave Young <dyoung@redhat.com>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Subject: Re: [PATCH 00/11] EFI runtime services virtual mapping
-Message-ID: <20130920094913.GG4785@console-pimps.org>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
- <20130920072904.GA21922@dhcp-16-126.nay.redhat.com>
- <20130920090544.GA9574@pd.tnic>
+	Fri, 20 Sep 2013 05:49:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130920090544.GA9574@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1378919210-10372-1-git-send-email-zab@redhat.com>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+Date: Fri, 20 Sep 2013 11:49:56 +0200
+X-Google-Sender-Auth: 0Jn8wFAfWNO3X_CkXNlbQvfWsVI
+Message-ID: <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
+Subject: Re: [RFC] extending splice for copy offloading
+From: Szeredi Miklos <miklos@szeredi.hu>
+To: Zach Brown <zab@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Sep, at 11:05:44AM, Borislav Petkov wrote:
-> > Another concern is that is it safe for i386 efi boot?
-> 
-> That's why I didn't put a git tree on k.org - I wanted to run tests
-> myself before Fengguang's robot :)
-> 
-> But no, 32-bit is not addressed here. Which just dawned on me: Matt, I
-> probably should keep the ioremapping code for 32-bit, doh. I completely
-> went 64-bit only here :-)
+On Wed, Sep 11, 2013 at 7:06 PM, Zach Brown <zab@redhat.com> wrote:
+>
+> When I first started on this stuff I followed the lead of previous
+> work and added a new syscall for the copy operation:
+>
+> https://lkml.org/lkml/2013/5/14/618
+>
+> Towards the end of that thread Eric Wong asked why we didn't just
+> extend splice.  I immediately replied with some dumb dismissive
+> answer.  Once I sat down and looked at it, though, it does make a
+> lot of sense.  So good job, Eric.  +10 Dummie points for me.
+>
+> Extending splice avoids all the noise of adding a new syscall and
+> naturally falls back to buffered copying as that's what the direct
+> splice path does for sendfile() today.
 
-/home/build/git/efi/arch/x86/platform/efi/efi.c: In function ‘__map_region’:
-/home/build/git/efi/arch/x86/platform/efi/efi.c:753:24: error: ‘struct real_mode_header’ has no member named ‘trampoline_pgd’
-/home/build/git/efi/arch/x86/platform/efi/efi.c: In function ‘efi_enter_virtual_mode’:
-/home/build/git/efi/arch/x86/platform/efi/efi.c:863:64: error: ‘struct real_mode_header’ has no member named ‘trampoline_pgd’
-/home/build/git/efi/arch/x86/platform/efi/efi.c:867:2: error: implicit declaration of function ‘efi_sync_low_kernel_mappings’
-[-Werror=implicit-function-declaration]
+Nice idea.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+>
+> So that's what this patch series demonstrates.  It adds a flag that
+> lets splice get at the same direct splicing that sendfile() does.
+> We then add a file system file_operations method to accelerate the
+> copy which has access to both files.
+>
+> Some things to talk about:
+> - I really don't care about the naming here.  If you do, holler.
+> - We might want different flags for file-to-file splicing and acceleration
+
+Yes, I think "copy" and "reflink" needs to be differentiated.
+
+> - We might want flags to require or forbid acceleration
+> - We might want to provide all these flags to sendfile, too
+>
+> Thoughts?  Objections?
+
+Can filesystem support "whole file copy" only?  Or arbitrary
+block-to-block copy should be mandatory?
+
+Splice has size_t argument for the size, which is limited to 4G on 32
+bit.  Won't this be an issue for whole-file-copy?  We could have
+special value (-1) for whole file, but that's starting to be hackish.
+
+We are talking about copying large amounts of data in a single
+syscall, which will possibly take a long time.  Will the syscall be
+interruptible?  Restartable?
+
+Thanks,
+Miklos
