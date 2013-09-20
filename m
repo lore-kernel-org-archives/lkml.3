@@ -1,170 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab3ITPVJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 11:21:09 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:47718 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab3ITPVG (ORCPT
+	id S1752177Ab3ITP0S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 11:26:18 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:44045 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab3ITP0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 11:21:06 -0400
+	Fri, 20 Sep 2013 11:26:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKohpokdOXrGVxEA89yrAq2T8MiqZNHrrXNagqqggo67rEmKYg@mail.gmail.com>
-References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
-	<45987104.t6r4hvPgQn@vostro.rjw.lan>
-	<523AF22F.1010909@linux.vnet.ibm.com>
-	<CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com>
-	<CACRpkdYBYdMJ6mTGUropOypx0ZVNn8eQMzV+eKocCSBZAu6xTA@mail.gmail.com>
-	<CAKohpokQO82XMGwcTjVmNTbBVESyFqV4DAxMMU_RHEtN+LqUgg@mail.gmail.com>
-	<CACRpkdYoNkgno24dtJAwOq2T9yoKQYgKQ+adfkSN8affYNePjQ@mail.gmail.com>
-	<CAKohpokdOXrGVxEA89yrAq2T8MiqZNHrrXNagqqggo67rEmKYg@mail.gmail.com>
-Date: Fri, 20 Sep 2013 17:21:04 +0200
-Message-ID: <CACRpkdZDqoqrEPfdra+iVS-hopLpJbPmWh=r8UkYRFUMg17jpw@mail.gmail.com>
-Subject: Re: Regression on cpufreq in v3.12-rc1
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130920144027.GG12758@n2100.arm.linux.org.uk>
+References: <20130919212235.GD12758@n2100.arm.linux.org.uk>
+	<E1VMmBi-0007iw-MP@rmk-PC.arm.linux.org.uk>
+	<1379687206.10899.5.camel@smile>
+	<20130920144027.GG12758@n2100.arm.linux.org.uk>
+Date: Fri, 20 Sep 2013 18:26:16 +0300
+Message-ID: <CAHp75VdviE_FpEHub=W=f3reb6Dd2VVxtRkd_kYw5XC3772cTQ@mail.gmail.com>
+Subject: Re: [PATCH 30/51] DMA-API: dma: dw_dmac.c: convert to use dma_coerce_mask_and_coherent()
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 10:49 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-
-> We used to return early in case policy isn't found, but now we went
-> and took the lock..
-
-Aha!
-
-> Hmm... Remember I told you last time that I have another way of fixing
-> it up, probably we need that now..
+On Fri, Sep 20, 2013 at 5:40 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Sep 20, 2013 at 05:26:46PM +0300, Andy Shevchenko wrote:
+>> On Thu, 2013-09-19 at 22:55 +0100, Russell King wrote:
+>> > This code sequence:
+>> >     if (!pdev->dev.dma_mask) {
+>> >             pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+>> >             pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+>> >     }
+>> > bypasses the architectures check on the DMA mask.  It can be replaced
+>> > with dma_coerce_mask_and_coherent(), avoiding the direct initialization
+>> > of this mask.
+>> >
+>> > Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+>> > ---
+>> >  drivers/dma/dw/platform.c |    8 +++-----
+>> >  1 files changed, 3 insertions(+), 5 deletions(-)
+>> >
+>> > diff --git a/drivers/dma/dw/platform.c b/drivers/dma/dw/platform.c
+>> > index e35d975..453822c 100644
+>> > --- a/drivers/dma/dw/platform.c
+>> > +++ b/drivers/dma/dw/platform.c
+>> > @@ -191,11 +191,9 @@ static int dw_probe(struct platform_device *pdev)
+>> >     if (IS_ERR(chip->regs))
+>> >             return PTR_ERR(chip->regs);
+>> >
+>> > -   /* Apply default dma_mask if needed */
+>> > -   if (!dev->dma_mask) {
+>> > -           dev->dma_mask = &dev->coherent_dma_mask;
+>> > -           dev->coherent_dma_mask = DMA_BIT_MASK(32);
+>> > -   }
+>> > +   err = dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+>> > +   if (err)
+>> > +           return err;
+>>
+>> I have at least one question.
+>>
+>> In case of new code you always assign dev->dma_mask.
+>>
+>> static inline int dma_coerce_mask_and_coherent(struct device *dev, u64
+>> mask)
+>> {
+>>        dev->dma_mask = &dev->coherent_dma_mask;
+>>        return dma_set_mask_and_coherent(dev, mask);
+>> }
+>>
+>> So, the question is how keep the initialized dma_mask (and should we do
+>> so by your opinion)?
 >
-> I wanted to add another variable to reflect if a cpufreq_driver is registered
-> or not, and if not then return early from these routines..
+> Well, the way the DMA mask stuff is supposed to operate is:
 >
-> I will get that in now, please see if you can give it a try..
+> - The device creator initializes the DMA mask to some default value.
+> - The driver then uses dma_set_mask() / dma_set_coherent_mask() /
+>   dma_set_mask_and_coherent() to adjust the mask according to the
+>   capabilities of the device, *even* if the mask is the same as the
+>   default.
+>
+> This is specified in the various DMA API documents.
+>
+> So, in PCI land, it works like this:
+> - When a PCI device is created, it has its mask set to 32-bit.
+> - When a driver comes along
+>   - if the device is capable of 64-bit addressing, it tries to set a
+>     64-bit mask.  If this fails, it tries to set a 32-bit mask and
+>     turns off 64-bit DMA.
+>   - if a device is not capable of 32-bit addressing but of a smaller
+>     space (there are some PCI devices which can only do 31-bit) then
+>     it tries to set that mask.
+>   If the driver can't successfully set a mask, it should fail to
+>   initialise.
+>
 
-OK standing by.
+Thanks for explanation.
 
-> But I am still surprised how are we reaching this place before your cpufreq
-> driver gets registered..
+> This is where we should be headed with all drivers, and I would welcome
+> a patch for this driver to make it conform wrt the DMA API and DMA masks
+> in place of this patch.
 
-I have no idea really. The funny thing is that Russell has a similar
-platform (Assabet) and he's not seeing the issue. It appears on this
-h3600 iPAQ only.
+I see.
 
-So here is the backtrace:
+> Think of the coerse stuff as a middle-step to bring these types of issues
+> up to the fore.
 
-[<c01db010>] (lock_policy_rwsem_read+0x0/0x3c) from [<c01dc6c8>]
-(cpufreq_get+0x34/0x68)
-[<c01dc694>] (cpufreq_get+0x0/0x68) from [<c01d2c94>]
-(sa1100_pcmcia_set_timing+0x18/0x28)
- r5:00000000 r4:c182d008
-[<c01d2c7c>] (sa1100_pcmcia_set_timing+0x0/0x28) from [<c01d27ec>]
-(soc_pcmcia_add_one+0x100/0x220)
- r4:c182d008
-[<c01d26ec>] (soc_pcmcia_add_one+0x0/0x220) from [<c01d2d30>]
-(sa11xx_drv_pcmcia_add_one+0x8c/0xa4)
-[<c01d2ca4>] (sa11xx_drv_pcmcia_add_one+0x0/0xa4) from [<c01d2de4>]
-(sa11xx_drv_pcmcia_probe+0x9c/0xf8)
- r8:00000002 r7:c182d000 r6:c182d000 r5:00000000 r4:c182d008
-[<c01d2d48>] (sa11xx_drv_pcmcia_probe+0x0/0xf8) from [<c01d3184>]
-(pcmcia_h3600_init+0x1c/0x24)
-[<c01d3168>] (pcmcia_h3600_init+0x0/0x24) from [<c01d2f70>]
-(sa11x0_drv_pcmcia_probe+0x14/0x18)
-[<c01d2f5c>] (sa11x0_drv_pcmcia_probe+0x0/0x18) from [<c019ec70>]
-(platform_drv_probe+0x20/0x24)
-[<c019ec50>] (platform_drv_probe+0x0/0x24) from [<c019d638>]
-(really_probe+0x108/0x1c4)
-[<c019d530>] (really_probe+0x0/0x1c4) from [<c019d724>]
-(driver_probe_device+0x30/0x34)
- r8:00000000 r7:c019d970 r6:c05c81f0 r5:c05bb6b0 r4:c05bb67c
-[<c019d6f4>] (driver_probe_device+0x0/0x34) from [<c019d9f8>]
-(__driver_attach+0x88/0x8c)
-[<c019d970>] (__driver_attach+0x0/0x8c) from [<c019bea0>]
-(bus_for_each_dev+0x74/0x98)
- r6:c05c81f0 r5:c1833e40 r4:00000000
-[<c019be2c>] (bus_for_each_dev+0x0/0x98) from [<c019d410>]
-(driver_attach+0x20/0x28)
- r7:00000000 r6:c05c6c58 r5:c05c81f0 r4:c18c5900
-[<c019d3f0>] (driver_attach+0x0/0x28) from [<c019cc6c>]
-(bus_add_driver+0xe0/0x19c)
-[<c019cb8c>] (bus_add_driver+0x0/0x19c) from [<c019dfe4>]
-(driver_register+0x60/0x104)
- r7:c036b6ac r6:00000006 r5:00000000 r4:c05c81f0
-[<c019df84>] (driver_register+0x0/0x104) from [<c019ef64>]
-(__platform_driver_register+0x50/0x64)
- r5:00000000 r4:c1832000
-[<c019ef14>] (__platform_driver_register+0x0/0x64) from [<c036b6c4>]
-(sa11x0_pcmcia_init+0x18/0x20)
-[<c036b6ac>] (sa11x0_pcmcia_init+0x0/0x20) from [<c00085a4>]
-(do_one_initcall+0x9c/0xfc)
-[<c0008508>] (do_one_initcall+0x0/0xfc) from [<c0355590>]
-(do_initcall_level+0x80/0xb0)
- r7:c036fbec r6:00000006 r5:00000005 r4:c0372d9c
-[<c0355510>] (do_initcall_level+0x0/0xb0) from [<c03555e4>]
-(do_initcalls+0x24/0x30)
- r7:00000000 r6:00000000 r5:c0297820 r4:00000006
-[<c03555c0>] (do_initcalls+0x0/0x30) from [<c03556bc>]
-(do_basic_setup+0x28/0x2c)
- r4:00000000
-[<c0355694>] (do_basic_setup+0x0/0x2c) from [<c0355a98>]
-(kernel_init_freeable+0x4c/0xdc)
-[<c0355a4c>] (kernel_init_freeable+0x0/0xdc) from [<c0297830>]
-(kernel_init+0x10/0xf0)
- r4:00000000
-[<c0297820>] (kernel_init+0x0/0xf0) from [<c000f950>] (ret_from_fork+0x14/0x24)
- r4:00000000
-Code: e59f0014 eb02f800 e3a00000 e89da800 (e7f001f2)
+I will check your patches on next week, though I think it will neglect
+dma_mask set by PCI part of the code in PCI case of the driver.
 
-sa11x0_pcmcia_init() which starts this chain of events is called as
-an fs_initcall(), see drivers/pcmcia/sa1100_generic.c
-if I comment out this one, I get the same thing in the frambuffer
-driver instead, which is at module_init().
+Well, there are a lot of drivers that are designed like:
+- core part as library *or* separate driver
+- platform driver
+- pci driver
+- acpi driver
+- ... whatever bus driver for this device
 
-I don't have a trace so it's not like I know exactly what happened
-before this point,
-but the dmesg up to here reads:
+Core part doesn't know what the upper layer (bus layer) sets, and
+approaches to set that may differ from bus to bus (e.g. PCI vs. ACPI
+).
+So, ACPI could set the proper values from its own guts and in core
+driver we have to respect those values.
 
-Linux version 3.11.0-rc4-00024-g6eed940 (linus@localhost.localdomain)
-(gcc version 4.2.1) #41 Fri Sep 20 10:50:04 CEST 2013
-CPU: StrongARM-1110 [6901b118] revision 8 (ARMv4), cr=c000717f
-CPU: VIVT data cache, VIVT instruction cache
-Machine: Compaq iPAQ H3600
-Ignoring tag cmdline (using the default kernel command line)
-Memory policy: ECC disabled, Data cache writeback
-Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 8128
-Kernel command line: console=ttySA0,115200n8
-PID hash table entries: 128 (order: -3, 512 bytes)
-Dentry cache hash table entries: 4096 (order: 2, 16384 bytes)
-Inode-cache hash table entries: 2048 (order: 1, 8192 bytes)
-Memory: 26412K/32768K available (2643K kernel code, 118K rwdata, 736K
-rodata, 2411K init, 76K bss, 6356K reserved)
-Virtual kernel memory layout:
-    vector  : 0xffff0000 - 0xffff1000   (   4 kB)
-    fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
-    vmalloc : 0xc2800000 - 0xff000000   ( 968 MB)
-    lowmem  : 0xc0000000 - 0xc2000000   (  32 MB)
-    modules : 0xbf000000 - 0xc0000000   (  16 MB)
-      .text : 0xc0008000 - 0xc0354f18   (3380 kB)
-      .init : 0xc0355000 - 0xc05affb4   (2412 kB)
-      .data : 0xc05b0000 - 0xc05cd840   ( 119 kB)
-       .bss : 0xc05cd840 - 0xc05e0a68   (  77 kB)
-SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-NR_IRQS:16 nr_irqs:49 49
-sched_clock: 32 bits at 3686kHz, resolution 271ns, wraps every 1165084ms
-Console: colour dummy device 80x30
-console [ttySA0] enabled
-Calibrating delay loop... 136.60 BogoMIPS (lpj=683008)
-pid_max: default: 32768 minimum: 301
-Mount-cache hash table entries: 512
-CPU: Testing write buffer coherency: ok
-Setting up static identity map for 0xc029a910 - 0xc029a968
-NET: Registered protocol family 16
-DMA: preallocated 256 KiB pool for atomic coherent allocations
-bio: create slab <bio-0> at 0
-Switched to clocksource oscr
+Tioday is Friday, and I'm too lazy now to think a bit how this could
+be solved in case of your helper involved.
 
-Yours,
-Linus Walleij
+-- 
+With Best Regards,
+Andy Shevchenko
