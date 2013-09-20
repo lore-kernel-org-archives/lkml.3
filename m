@@ -1,41 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab3ITU2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:28:51 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:44325 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208Ab3ITU2t (ORCPT
+	id S932106Ab3ITU3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:29:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41492 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754553Ab3ITUMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:28:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <523638FC.1030006@ti.com>
-References: <1378949441-6073-1-git-send-email-milo.kim@ti.com>
-	<20130912152809.GO11227@lee--X1>
-	<20130915111730.GA9765@ulmo>
-	<523638FC.1030006@ti.com>
-Date: Fri, 20 Sep 2013 22:28:48 +0200
-Message-ID: <CACRpkdZYfyNJxNzHaU9taaPpC+NzbLEsVyeraMQxvL1ijL_wBQ@mail.gmail.com>
-Subject: Re: [PATCH v3 0/4] LP3943 MFD driver for a GPIO expander and a PWM generator
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Milo Kim <milo.kim@ti.com>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 Sep 2013 16:12:52 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 54/93] x86, smap: Handle csum_partial_copy_*_user()
+Date: Fri, 20 Sep 2013 13:08:49 -0700
+Message-Id: <1379707768-1804-55-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
+References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 12:47 AM, Milo Kim <milo.kim@ti.com> wrote:
+3.8.13.10 -stable review patch.  If anyone has any objections, please let me know.
 
-> I agree Thierry.
-> If you don't mind, can I create a MFD subdirectory with this patch-set in
-> next version, v4?
+------------------
 
-This seems like a good idea.
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-Yours,
-Linus Walleij
+commit 7263dda41b5a28ae6566fd126d9b06ada73dd721 upstream.
+
+Add SMAP annotations to csum_partial_copy_to/from_user().  These
+functions legitimately access user space and thus need to set the AC
+flag.
+
+TODO: add explicit checks that the side with the kernel space pointer
+really points into kernel space.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-2aps0u00eer658fd5xyanan7@git.kernel.org
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/x86/include/asm/checksum_32.h | 22 +++++++++++++++++-----
+ arch/x86/lib/csum-wrappers_64.c    | 12 ++++++++++--
+ 2 files changed, 27 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/include/asm/checksum_32.h b/arch/x86/include/asm/checksum_32.h
+index 46fc474..f50de69 100644
+--- a/arch/x86/include/asm/checksum_32.h
++++ b/arch/x86/include/asm/checksum_32.h
+@@ -49,9 +49,15 @@ static inline __wsum csum_partial_copy_from_user(const void __user *src,
+ 						 int len, __wsum sum,
+ 						 int *err_ptr)
+ {
++	__wsum ret;
++
+ 	might_sleep();
+-	return csum_partial_copy_generic((__force void *)src, dst,
+-					 len, sum, err_ptr, NULL);
++	stac();
++	ret = csum_partial_copy_generic((__force void *)src, dst,
++					len, sum, err_ptr, NULL);
++	clac();
++
++	return ret;
+ }
+ 
+ /*
+@@ -176,10 +182,16 @@ static inline __wsum csum_and_copy_to_user(const void *src,
+ 					   int len, __wsum sum,
+ 					   int *err_ptr)
+ {
++	__wsum ret;
++
+ 	might_sleep();
+-	if (access_ok(VERIFY_WRITE, dst, len))
+-		return csum_partial_copy_generic(src, (__force void *)dst,
+-						 len, sum, NULL, err_ptr);
++	if (access_ok(VERIFY_WRITE, dst, len)) {
++		stac();
++		ret = csum_partial_copy_generic(src, (__force void *)dst,
++						len, sum, NULL, err_ptr);
++		clac();
++		return ret;
++	}
+ 
+ 	if (len)
+ 		*err_ptr = -EFAULT;
+diff --git a/arch/x86/lib/csum-wrappers_64.c b/arch/x86/lib/csum-wrappers_64.c
+index 25b7ae8..7609e0e 100644
+--- a/arch/x86/lib/csum-wrappers_64.c
++++ b/arch/x86/lib/csum-wrappers_64.c
+@@ -6,6 +6,7 @@
+  */
+ #include <asm/checksum.h>
+ #include <linux/module.h>
++#include <asm/smap.h>
+ 
+ /**
+  * csum_partial_copy_from_user - Copy and checksum from user space.
+@@ -52,8 +53,10 @@ csum_partial_copy_from_user(const void __user *src, void *dst,
+ 			len -= 2;
+ 		}
+ 	}
++	stac();
+ 	isum = csum_partial_copy_generic((__force const void *)src,
+ 				dst, len, isum, errp, NULL);
++	clac();
+ 	if (unlikely(*errp))
+ 		goto out_err;
+ 
+@@ -82,6 +85,8 @@ __wsum
+ csum_partial_copy_to_user(const void *src, void __user *dst,
+ 			  int len, __wsum isum, int *errp)
+ {
++	__wsum ret;
++
+ 	might_sleep();
+ 
+ 	if (unlikely(!access_ok(VERIFY_WRITE, dst, len))) {
+@@ -105,8 +110,11 @@ csum_partial_copy_to_user(const void *src, void __user *dst,
+ 	}
+ 
+ 	*errp = 0;
+-	return csum_partial_copy_generic(src, (void __force *)dst,
+-					 len, isum, NULL, errp);
++	stac();
++	ret = csum_partial_copy_generic(src, (void __force *)dst,
++					len, isum, NULL, errp);
++	clac();
++	return ret;
+ }
+ EXPORT_SYMBOL(csum_partial_copy_to_user);
+ 
+-- 
+1.8.1.2
+
