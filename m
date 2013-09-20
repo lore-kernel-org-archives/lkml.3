@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab3ITUO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:14:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41603 "EHLO
+	id S1755003Ab3ITUOd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:14:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41632 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab3ITUOT (ORCPT
+	with ESMTP id S1752670Ab3ITUOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:14:19 -0400
+	Fri, 20 Sep 2013 16:14:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 51/93] drm/radeon: fix handling of variable sized arrays for router objects
-Date: Fri, 20 Sep 2013 13:08:46 -0700
-Message-Id: <1379707768-1804-52-git-send-email-kamal@canonical.com>
+Subject: [PATCH 26/93] arm64: perf: fix group validation when using enable_on_exec
+Date: Fri, 20 Sep 2013 13:08:21 -0700
+Message-Id: <1379707768-1804-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -27,54 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit fb93df1c2d8b3b1fb16d6ee9e32554e0c038815d upstream.
+commit 8455e6ec70f33b0e8c3ffd47067e00481f09f454 upstream.
 
-The table has the following format:
+This is a port of cb2d8b342aa0 ("ARM: 7698/1: perf: fix group validation
+when using enable_on_exec") to arm64, which fixes the event validation
+checking so that events in the OFF state are still considered when
+enable_on_exec is true.
 
-typedef struct _ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT         //usSrcDstTableOffset pointing to this structure
-{
-  UCHAR               ucNumberOfSrc;
-  USHORT              usSrcObjectID[1];
-  UCHAR               ucNumberOfDst;
-  USHORT              usDstObjectID[1];
-}ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT;
-
-usSrcObjectID[] and usDstObjectID[] are variably sized, so we
-can't access them directly.  Use pointers and update the offset
-appropriately when accessing the Dst members.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/arm64/kernel/perf_event.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
-index 1105876..6048f2b 100644
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -715,13 +715,16 @@ bool radeon_get_atom_connector_info_from_object_table(struct drm_device *dev)
- 								(ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT *)
- 								(ctx->bios + data_offset +
- 								 le16_to_cpu(router_obj->asObjects[k].usSrcDstTableOffset));
-+							u8 *num_dst_objs = (u8 *)
-+								((u8 *)router_src_dst_table + 1 +
-+								 (router_src_dst_table->ucNumberOfSrc * 2));
-+							u16 *dst_objs = (u16 *)(num_dst_objs + 1);
- 							int enum_id;
+diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+index 34e1bca..bb18b6e 100644
+--- a/arch/arm64/kernel/perf_event.c
++++ b/arch/arm64/kernel/perf_event.c
+@@ -325,7 +325,10 @@ validate_event(struct pmu_hw_events *hw_events,
+ 	if (is_software_event(event))
+ 		return 1;
  
- 							router.router_id = router_obj_id;
--							for (enum_id = 0; enum_id < router_src_dst_table->ucNumberOfDst;
--							     enum_id++) {
-+							for (enum_id = 0; enum_id < (*num_dst_objs); enum_id++) {
- 								if (le16_to_cpu(path->usConnObjectId) ==
--								    le16_to_cpu(router_src_dst_table->usDstObjectID[enum_id]))
-+								    le16_to_cpu(dst_objs[enum_id]))
- 									break;
- 							}
+-	if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
++	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
++		return 1;
++
++	if (event->state == PERF_EVENT_STATE_OFF && !event->attr.enable_on_exec)
+ 		return 1;
  
+ 	return armpmu->get_event_idx(hw_events, &fake_event) >= 0;
 -- 
 1.8.1.2
 
