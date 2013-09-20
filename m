@@ -1,107 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab3ITUVz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:21:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41651 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034Ab3ITUOr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:14:47 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 37/93] HID: validate HID report id size
-Date: Fri, 20 Sep 2013 13:08:32 -0700
-Message-Id: <1379707768-1804-38-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
-References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1755548Ab3ITUWB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:22:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10694 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753946Ab3ITUV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 16:21:56 -0400
+Message-ID: <1379708486.12705.131.camel@dhcp-128-237.ams.redhat.com>
+Subject: Re: [PATCH] x86 efi: bugfix interrupt disabling sequence
+From: Bart Kuivenhoven <bemk@redhat.com>
+Reply-To: bemk@redhat.com
+To: Matt Fleming <matt@console-pimps.org>
+Cc: matt.fleming@intel.com, hpa@zytor.com, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jcm@redhat.com, msalter@redhat.com
+Date: Fri, 20 Sep 2013 22:21:26 +0200
+In-Reply-To: <20130920152859.GC21381@console-pimps.org>
+References: <1379525333-4373-1-git-send-email-bemk@redhat.com>
+	 <20130920152859.GC21381@console-pimps.org>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.10 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2013-09-20 at 16:28 +0100, Matt Fleming wrote:
+> On Wed, 18 Sep, at 07:28:53PM, Bart Kuivenhoven wrote:
+> > The problem in efi_main was that the idt was cleared before the
+> > interrupts were disabled.
+> > 
+> > The UEFI spec states that interrupts aren't used so this shouldn't be
+> > too much of a problem. Peripherals however don't necessarily know about
+> > this and thus might cause interrupts to happen anyway. Even if
+> > ExitBootServices() has been called.
+> >
+> > This means there is a risk of an interrupt being triggered while the IDT
+> > register is nullified and the interrupt bit hasn't been cleared,
+> > allowing for a triple fault.
+> 
+> Just to be clear, you haven't witnessed a triple fault, correct?
+> 
+> > This patch fixes this by clearing the interrupt bit before the lidt
+> > instruction.
+> 
+> I think we can go even further than this and get rid of all of the IDT
+> code in the EFI boot stub. The kernel maintains its own IDT anyway.
+> 
 
-------------------
+Well, isn't it so, that the kernel expects a setup in which interrupts
+are disabled before the decompressed image is loaded?
 
-From: Kees Cook <keescook@chromium.org>
+What we can do is remove the lidt instruction and IDT pointer, but that
+still doesn't change anything with regards to the kernels expectations.
 
-commit 43622021d2e2b82ea03d883926605bdd0525e1d1 upstream.
+And no, I haven't witnessed a triple fault, this is purely theoretical,
+with a very slim chance of it actually happening. That does not mean
+that it can't happen though.
 
-The "Report ID" field of a HID report is used to build indexes of
-reports. The kernel's index of these is limited to 256 entries, so any
-malicious device that sets a Report ID greater than 255 will trigger
-memory corruption on the host:
-
-[ 1347.156239] BUG: unable to handle kernel paging request at ffff88094958a878
-[ 1347.156261] IP: [<ffffffff813e4da0>] hid_register_report+0x2a/0x8b
-
-CVE-2013-2888
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/hid/hid-core.c | 10 +++++++---
- include/linux/hid.h    |  4 +++-
- 2 files changed, 10 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 08eb32a..194597f 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -63,6 +63,8 @@ struct hid_report *hid_register_report(struct hid_device *device, unsigned type,
- 	struct hid_report_enum *report_enum = device->report_enum + type;
- 	struct hid_report *report;
- 
-+	if (id >= HID_MAX_IDS)
-+		return NULL;
- 	if (report_enum->report_id_hash[id])
- 		return report_enum->report_id_hash[id];
- 
-@@ -404,8 +406,10 @@ static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
- 
- 	case HID_GLOBAL_ITEM_TAG_REPORT_ID:
- 		parser->global.report_id = item_udata(item);
--		if (parser->global.report_id == 0) {
--			hid_err(parser->device, "report_id 0 is invalid\n");
-+		if (parser->global.report_id == 0 ||
-+		    parser->global.report_id >= HID_MAX_IDS) {
-+			hid_err(parser->device, "report_id %u is invalid\n",
-+				parser->global.report_id);
- 			return -1;
- 		}
- 		return 0;
-@@ -575,7 +579,7 @@ static void hid_close_report(struct hid_device *device)
- 	for (i = 0; i < HID_REPORT_TYPES; i++) {
- 		struct hid_report_enum *report_enum = device->report_enum + i;
- 
--		for (j = 0; j < 256; j++) {
-+		for (j = 0; j < HID_MAX_IDS; j++) {
- 			struct hid_report *report = report_enum->report_id_hash[j];
- 			if (report)
- 				hid_free_report(report);
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 7330a0f..13d812b 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -392,10 +392,12 @@ struct hid_report {
- 	struct hid_device *device;			/* associated device */
- };
- 
-+#define HID_MAX_IDS 256
-+
- struct hid_report_enum {
- 	unsigned numbered;
- 	struct list_head report_list;
--	struct hid_report *report_id_hash[256];
-+	struct hid_report *report_id_hash[HID_MAX_IDS];
- };
- 
- #define HID_REPORT_TYPES 3
 -- 
-1.8.1.2
+Kind regards/Met vriendelijke groet,
+Bart Kuivenhoven.
+
+Intern Fedora ARM,
+Red Hat.
 
