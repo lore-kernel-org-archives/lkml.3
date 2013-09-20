@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab3ITVOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 17:14:07 -0400
-Received: from mail-ye0-f201.google.com ([209.85.213.201]:60830 "EHLO
-	mail-ye0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251Ab3ITVOD (ORCPT
+	id S1754483Ab3ITVOP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 17:14:15 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:56189 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab3ITVOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 17:14:03 -0400
+	Fri, 20 Sep 2013 17:14:10 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: linux-samsung-soc@vger.kernel.org
 Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
@@ -28,131 +28,38 @@ Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH 1/6] clk: exynos-audss: convert to platform device
-Date: Fri, 20 Sep 2013 14:13:52 -0700
-Message-Id: <1379711637-5226-1-git-send-email-abrestic@chromium.org>
+Subject: [PATCH 6/6] ARM: dts: exynos5420: add sclk_pcm_in to audss clock controller
+Date: Fri, 20 Sep 2013 14:13:57 -0700
+Message-Id: <1379711637-5226-6-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1379711637-5226-1-git-send-email-abrestic@chromium.org>
+References: <1379711637-5226-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Exynos AudioSS clock controller will later be modified to allow
-input clocks to be specified via device-tree in order to support
-multiple Exynos SoCs.  This will introduce a dependency on the core
-SoC clock controller being initialized first so that the AudioSS driver
-can look up its input clocks, but the order in which clock providers
-are probed in of_clk_init() is not guaranteed.  Since deferred probing
-is not supported in of_clk_init() and the AudioSS block is not the core
-controller, we can initialize it later as a platform device.
+The parent of sclk_pcm in the AudioSS block is sclk_maupcm0.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
- drivers/clk/samsung/clk-exynos-audss.c | 71 +++++++++++++++++++++++++++-------
- 1 file changed, 58 insertions(+), 13 deletions(-)
+ arch/arm/boot/dts/exynos5420.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
-index 39b40aa..7571e88 100644
---- a/drivers/clk/samsung/clk-exynos-audss.c
-+++ b/drivers/clk/samsung/clk-exynos-audss.c
-@@ -14,6 +14,8 @@
- #include <linux/clk-provider.h>
- #include <linux/of_address.h>
- #include <linux/syscore_ops.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
+diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+index d537cd7..339ab93 100644
+--- a/arch/arm/boot/dts/exynos5420.dtsi
++++ b/arch/arm/boot/dts/exynos5420.dtsi
+@@ -72,8 +72,8 @@
+ 		compatible = "samsung,exynos5420-audss-clock";
+ 		reg = <0x03810000 0x0C>;
+ 		#clock-cells = <1>;
+-		clocks = <&clock 148>;
+-		clock-names = "sclk_audio";
++		clocks = <&clock 148>, <&clock 149>;
++		clock-names = "sclk_audio", "sclk_pcm_in";
+ 	};
  
- #include <dt-bindings/clk/exynos-audss-clk.h>
- 
-@@ -62,24 +64,29 @@ static struct syscore_ops exynos_audss_clk_syscore_ops = {
- #endif /* CONFIG_PM_SLEEP */
- 
- /* register exynos_audss clocks */
--static void __init exynos_audss_clk_init(struct device_node *np)
-+static int exynos_audss_clk_probe(struct platform_device *pdev)
- {
--	reg_base = of_iomap(np, 0);
--	if (!reg_base) {
--		pr_err("%s: failed to map audss registers\n", __func__);
--		return;
-+	struct resource *res;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	reg_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(reg_base)) {
-+		dev_err(&pdev->dev, "failed to map audss registers\n");
-+		return PTR_ERR(reg_base);
- 	}
- 
--	clk_table = kzalloc(sizeof(struct clk *) * EXYNOS_AUDSS_MAX_CLKS,
-+	clk_table = devm_kzalloc(&pdev->dev,
-+				sizeof(struct clk *) * EXYNOS_AUDSS_MAX_CLKS,
- 				GFP_KERNEL);
- 	if (!clk_table) {
--		pr_err("%s: could not allocate clk lookup table\n", __func__);
--		return;
-+		dev_err(&pdev->dev, "could not allocate clk lookup table\n");
-+		return -ENOMEM;
- 	}
- 
- 	clk_data.clks = clk_table;
- 	clk_data.clk_num = EXYNOS_AUDSS_MAX_CLKS;
--	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
-+	of_clk_add_provider(pdev->dev.of_node, of_clk_src_onecell_get,
-+				&clk_data);
- 
- 	clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
- 				mout_audss_p, ARRAY_SIZE(mout_audss_p),
-@@ -128,8 +135,46 @@ static void __init exynos_audss_clk_init(struct device_node *np)
- #endif
- 
- 	pr_info("Exynos: Audss: clock setup completed\n");
-+
-+	return 0;
-+}
-+
-+static int exynos_audss_clk_remove(struct platform_device *pdev)
-+{
-+	of_clk_del_provider(pdev->dev.of_node);
-+
-+	return 0;
- }
--CLK_OF_DECLARE(exynos4210_audss_clk, "samsung,exynos4210-audss-clock",
--		exynos_audss_clk_init);
--CLK_OF_DECLARE(exynos5250_audss_clk, "samsung,exynos5250-audss-clock",
--		exynos_audss_clk_init);
-+
-+static const struct of_device_id exynos_audss_clk_of_match[] = {
-+	{ .compatible = "samsung,exynos4210-audss-clock", },
-+	{ .compatible = "samsung,exynos5250-audss-clock", },
-+	{},
-+};
-+
-+static struct platform_driver exynos_audss_clk_driver = {
-+	.driver	= {
-+		.name = "exynos-audss-clk",
-+		.owner = THIS_MODULE,
-+		.of_match_table = exynos_audss_clk_of_match,
-+	},
-+	.probe = exynos_audss_clk_probe,
-+	.remove = exynos_audss_clk_remove,
-+};
-+
-+static int __init exynos_audss_clk_init(void)
-+{
-+	return platform_driver_register(&exynos_audss_clk_driver);
-+}
-+core_initcall(exynos_audss_clk_init);
-+
-+static void __init exynos_audss_clk_exit(void)
-+{
-+	platform_driver_unregister(&exynos_audss_clk_driver);
-+}
-+module_exit(exynos_audss_clk_exit);
-+
-+MODULE_AUTHOR("Padmavathi Venna <padma.v@samsung.com>");
-+MODULE_DESCRIPTION("Exynos AudioSS Clock Controller");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:exynos-audss-clk");
+ 	codec@11000000 {
 -- 
 1.8.4
 
