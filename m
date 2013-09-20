@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab3ITB4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 21:56:30 -0400
-Received: from gate.crashing.org ([63.228.1.57]:47915 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752048Ab3ITB43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 21:56:29 -0400
-Message-ID: <1379642029.6148.89.camel@pasglop>
-Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 20 Sep 2013 11:53:49 +1000
-In-Reply-To: <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
-References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
-	 <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753609Ab3ITCgK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 22:36:10 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:53302 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112Ab3ITCgI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 22:36:08 -0400
+Message-ID: <523BB48F.9020403@linux.vnet.ibm.com>
+Date: Fri, 20 Sep 2013 08:05:59 +0530
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+CC: Benjamin Poirier <bpoirier@suse.de>, mmarek@suse.cz,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]kconfig/menu.c: fix uninitialized variable warning
+References: <1379575697-6740-1-git-send-email-maddy@linux.vnet.ibm.com> <20130919152227.GB19364@d2.synalogic.ca> <20130919172751.GA3317@free.fr> <20130919191315.GA19703@d2.synalogic.ca> <20130919200430.GC3317@free.fr>
+In-Reply-To: <20130919200430.GC3317@free.fr>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092002-8878-0000-0000-000008E98D4B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-19 at 19:02 -0500, Linus Torvalds wrote:
-> On Thu, Sep 19, 2013 at 2:51 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >
-> > It fixes stacks overruns reported by Benjamin Herrenschmidt:
-> > http://lkml.kernel.org/r/1378330796.4321.50.camel%40pasglop
+On Friday 20 September 2013 01:34 AM, Yann E. MORIN wrote:
+> Benjamin, All,
 > 
-> So I don't really dislike this patch-series, but isn't "irq_exit()"
-> (which calls the new softirq_on_stack()) already running in the
-> context of the irq stack? 
-
-Not on powerpc and afaik not on i386 from my quick look at
-handle_irq() in irq_32.c ... maybe x86_64 calls do_IRQ already
-on the irq stack ?
-
-Also irq and softirq are (somewhat on purpose) different stacks
-
-> And it's run at the very end of the irq
-> processing, so the irq stack should be empty too at that point.
-> So switching to *another* empty stack sounds really sad. No? Taking
-> more cache misses etc, instead of using the already empty - but
-> cache-hot - stack that we already have.
+> On 2013-09-19 15:13 -0400, Benjamin Poirier spake thusly:
+>> On 2013/09/19 19:27, Yann E. MORIN wrote:
+>>> Benjamin, Madhavan, All,
+>>>
+>>> On 2013-09-19 11:22 -0400, Benjamin Poirier spake thusly:
+>>>> On 2013/09/19 12:58, Madhavan Srinivasan wrote:
+>>>>> In file included from scripts/kconfig/zconf.tab.c:2537:0:
+>>>>> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
+>>>>> scripts/kconfig/menu.c:586:18: warning: ‘jump’ may be used uninitialized in
+>>>>> this function [-Wmaybe-uninitialized]
+>>>>                    ^^^^^
+>>>>
+>>>> from gcc(1):
+>>>> 	"These warnings are made optional because GCC is not smart
+>>>> 	enough to see all the reasons why the code might be correct
+>>>> 	despite appearing to have an error."
+>>>>
+>>>> I do not see this warning with gcc 4.7.2 or 4.8.1. Which version are you
+>>>> using?
+>>>>
+>>>> The code does:
+>>>>
+>>>> static void get_prompt_str(struct gstr *r, struct property *prop,
+>>>> [...]
+>>>> 	if (head && location) {
+>>>> 		jump = xmalloc(sizeof(struct jump_key));
+>>>> [... different basic block ...]
+>>>> 			if (head && location && menu == location)
+>>>> 				jump->offset = r->len - 1;
+>>>>
+>>>> If the second "if" is true, then the first one was true as well, and
+>>>> "jump" is initilized.
+>>>
+>>> Exactly what I was going to say.
+>>>
+>>> However:
+>>>   - I believe we should strive for a warning-free code whenever possible
+>>>   - while still getting help from gcc to pinpoint potential issues.
+>>>
+>>> Clearly, gcc is wrong here. Setting jump to NULL will cause fault if we
+>>> try to dereference it. Since this should never happen given the code as
+>>> it currently is, I'm slightly in favour of acking this patch.
+>>>
+>>> Any other reason not to apply it?
+>>
+>> Did you manage to get that warning as well? I didn't. If it's only from
+>> old versions of gcc I'd feel better leaving the warning there than
+>> masking it, in case a future code change does really introduce a use
+>> before initialize.
 > 
-> I'm assuming that the problem is that since we're already on the irq
-> stack, if *another* irq comes in, now that *other* irq doesn't get yet
-> another irq stack page. And I'm wondering whether we shouldn't just
-> fix that (hopefully unlikely) case instead? So instead of having a
-> softirq stack, we'd have just an extra irq stack for the case where
-> the original irq stack is already in use.
-
-Well actually in the crash we observed we aren't already in the irq
-stack.
-
-We could try to change powerpc to switch stack before calling do_IRQ but
-that would be fairly invasive for various reasons (a significant change
-of our assembly entry code) unless we do it as a kind of wrapper around
-do_IRQ (and thus keep the actual interrupt frame on the main kernel
-stack).
-
-I'll look into hacking something up along those lines, it might be the
-best approach for a RHEL7 fix anyway.
-
-Ben.
-
-> Hmm?
+> No, I was not able to reproduce it with either gcc-4.4.7, gcc-4.6.4 or
+> gcc-4.7.3 on my Ubuntu 13.04. Neither gcc-4.5 nor 4.8 are packaged, so
+> I could not test them.
 > 
->                    Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+> Anyway, -Wmaybe-uninitialized is new with 4.7. So, the warning can't
+> happen with gcc < 4.7.
+> 
+> Madhavan, what gcc version are you using?
+gcc i have is gcc version 4.8.0 20130526
+> 
+> Regards,
+> Yann E. MORIN.
+> 
 
