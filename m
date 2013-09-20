@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab3ITNTA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 09:19:00 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58739 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754590Ab3ITNS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 09:18:58 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: return EEXIST instead of EBUSY for second registering
-Date: Fri, 20 Sep 2013 15:30:08 +0200
-Message-ID: <3290463.fBbGMovmdx@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAE9FiQU5PD4asdE3=sBSnLK8fwPT8vK81FAOuYtAWj_3ruyS0g@mail.gmail.com>
-References: <1379563520-7221-1-git-send-email-yinghai@kernel.org> <CAKohpom-3orEns00DC2=uk4pgV_xnfRpM1hrdyK9pjPUEgBXrA@mail.gmail.com> <CAE9FiQU5PD4asdE3=sBSnLK8fwPT8vK81FAOuYtAWj_3ruyS0g@mail.gmail.com>
+	id S1754754Ab3ITN0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 09:26:12 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:58802 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590Ab3ITN0K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 09:26:10 -0400
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH v2 0/3] OMAP3 ROM Random Number Generator support
+Date: Fri, 20 Sep 2013 15:25:04 +0200
+Message-Id: <1379683507-30793-1-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1379534757-20870-1-git-send-email-pali.rohar@gmail.com>
+References: <1379534757-20870-1-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 19, 2013 10:30:04 PM Yinghai Lu wrote:
-> On Thu, Sep 19, 2013 at 9:23 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > On 20 September 2013 07:01, Yinghai Lu <yinghai@kernel.org> wrote:
-> >> Sorry,  looks like this one is not enough.
+This patch series adding support for OMAP3 ROM Random Number Generator on Nokia N900.
+In previous version I forgot to send patch which changing clk dev id to new driver name.
 
-Well, I've already applied this one and it makes sense to me anyway.
+Pali Rohár (3):
+  omap2: Change clk dev id for rng to omap3-rom-rng
+  hwrng: OMAP3 ROM Random Number Generator support
+  RX-51: Add support for OMAP3 ROM Random Number Generator
 
-> >> please let me know if you prefer me send addon patch
-> >> or revised one.
-> >
-> > Atleast you can let us know what the problem is? And then we
-> > can decide on that.. But anyway, you can send a new patch
-> > based over latest linux-next (which will have your original patch),
-> > and then leave it onto Rafael to merge it or have two patches..
-> > (though I am quite sure he will not drop anything now, unless its
-> > too screwed.., at worst he might revert it..)..
-> 
-> looks like the crash is intermittent..., so i thought that patch fixed
-> the problem.
-> but later I found other suspicious print out.
+ arch/arm/mach-omap2/board-rx51-peripherals.c |   19 ++++
+ arch/arm/mach-omap2/cclock3xxx_data.c        |    2 +-
+ arch/arm/mach-omap2/omap-secure.c            |   11 ++
+ arch/arm/mach-omap2/omap-secure.h            |    1 +
+ drivers/char/hw_random/Kconfig               |   13 +++
+ drivers/char/hw_random/Makefile              |    1 +
+ drivers/char/hw_random/omap3-rom-rng.c       |  141 ++++++++++++++++++++++++++
+ 7 files changed, 187 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/char/hw_random/omap3-rom-rng.c
 
-So, does it mean that the $subject patch fixes the issue for you to some
-extent, but more changes are necessary to make it go away completely?
-
-> please check new one:
-> 
-> https://patchwork.kernel.org/patch/2915181/
-
-I see.
-
-I *think* we can just drop the module requesting stuff entirely, because it
-doesn't seem to work anyway and udev is handling this for us.
-
-Thanks,
-Rafael
+-- 
+1.7.10.4
 
