@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab3ITJRA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 05:17:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59654 "EHLO mx2.suse.de"
+	id S1754330Ab3ITJSI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 05:18:08 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48479 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754166Ab3ITJQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 05:16:59 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>, Bob Liu <bob.liu@oracle.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        =?UTF-8?q?J=C3=B6rn=20Engel?= <joern@logfs.org>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>
-Subject: [PATCH] mm: munlock: Prevent walking off the end of a pagetable in no-pmd configuration
-Date: Fri, 20 Sep 2013 11:16:05 +0200
-Message-Id: <1379668565-13444-1-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <20130916084752.GC11479@localhost>
-References: <20130916084752.GC11479@localhost>
+	id S1754148Ab3ITJSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 05:18:05 -0400
+Message-ID: <523C12C7.60002@ti.com>
+Date: Fri, 20 Sep 2013 12:17:59 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+CC: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] radeon: Conditionally compile PM code
+References: <1379508512-30155-1-git-send-email-treding@nvidia.com>
+In-Reply-To: <1379508512-30155-1-git-send-email-treding@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="fgoo0FikkwDbb3jv7GmBU8vfcO2RmALqG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function __munlock_pagevec_fill() introduced in commit 7a8010cd3
-("mm: munlock: manual pte walk in fast path instead of follow_page_mask()")
-uses pmd_addr_end() for restricting its operation within current page table.
-This is insufficient on architectures/configurations where pmd is folded
-and pmd_addr_end() just returns the end of the full range to be walked. In
-this case, it allows pte++ to walk off the end of a page table resulting in
-unpredictable behaviour.
+--fgoo0FikkwDbb3jv7GmBU8vfcO2RmALqG
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-This patch fixes the function by using pgd_addr_end() and pud_addr_end()
-before pmd_addr_end(), which will yield correct page table boundary on all
-configurations. This is similar to what existing page walkers do when walking
-each level of the page table.
+On 18/09/13 15:48, Thierry Reding wrote:
+> The power management code is only used on X86 and PowerMac. To prevent
+> the compiler from warning about unused code, only build when PM and one=
 
-Additionaly, the patch clarifies a comment for get_locked_pte() call in the
-function.
+> of X86 or PowerMac is selected.
+>=20
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Reviewed-by: Bob Liu <bob.liu@oracle.com>
-Cc: Jörn Engel <joern@logfs.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
----
- mm/mlock.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+Thanks, applied for 3.13.
 
-diff --git a/mm/mlock.c b/mm/mlock.c
-index d638026..758c0fc 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -379,10 +379,14 @@ static unsigned long __munlock_pagevec_fill(struct pagevec *pvec,
- 
- 	/*
- 	 * Initialize pte walk starting at the already pinned page where we
--	 * are sure that there is a pte.
-+	 * are sure that there is a pte, as it was pinned under the same
-+	 * mmap_sem write op.
- 	 */
- 	pte = get_locked_pte(vma->vm_mm, start,	&ptl);
--	end = min(end, pmd_addr_end(start, end));
-+	/* Make sure we do not cross the page table boundary */
-+	end = pgd_addr_end(start, end);
-+	end = pud_addr_end(start, end);
-+	end = pmd_addr_end(start, end);
- 
- 	/* The page next to the pinned page is the first we will try to get */
- 	start += PAGE_SIZE;
--- 
-1.8.1.4
+ Tomi
 
+
+
+--fgoo0FikkwDbb3jv7GmBU8vfcO2RmALqG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSPBLHAAoJEPo9qoy8lh71/2EQAIV7f1phQ62jF9m7k4xF8rzq
+BFvKSY8mySr/W6Af6HfMYx6+ETccNo2RsyxPKoztJdtGoIJ4rPjXTK+t3eGAUHKh
+CoRZFMnrdnDRyqsLQfxEVWWxUAk7r8FdVr3dlmtNEw2D2Jc2+MSbRdm7diBgxBdJ
+Wdw7G5Nvq7PTePxbrmkHX0ZBKM57+EoFne94ddvSPXEPeAUzN7EJiQ3LO143k/t5
+heyLmH2o7Il/7m4JMQ0bjiPWNr9HvlscrMtN5IV/l1pGTBWdVC/l/XqNUZW18lfl
+NukNX1juHAX3KsAGaqkWjbcoPAwlSLMt9OdBpmXMLMvfXBlEqupjd8Qpel6Fasxo
+SGD4WpooXiEwovgLoQr+g8QTd+Fjya1UqX3BeTPfMTCVK61TlANMJ+i4QjLf0Ld+
+A0aHAvCkKoJT81rjb/e5xBC7xcVnvB2u4CukObBbKfP4RKGgFEjMqRBLJLJhaA4h
+wmD1gnEZXxPNM8kO3KYdxbvjO98dI6QeRaCfzBDEzTW3Tr3ePlFtCW75EVhYU0mm
+f3RyyZzkueMLQr1ztQ1J9sRiXHyheeyRHKW6l3ggM1LVXf8Blz3p2jsaKMdoNJ9s
+TVYZMeK0zFjqOTmbCTW5aJ0ETgJbBMBLpSOEtk95WmXMukqgNkxe9t0zvLfaxWvD
+yDdPRRP3p3SPvw7fmErb
+=Lb/F
+-----END PGP SIGNATURE-----
+
+--fgoo0FikkwDbb3jv7GmBU8vfcO2RmALqG--
