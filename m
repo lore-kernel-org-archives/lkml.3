@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab3ITExq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 00:53:46 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:56690 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148Ab3ITExl (ORCPT
+	id S1754211Ab3ITE46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 00:56:58 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:44637 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab3ITE44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 00:53:41 -0400
+	Fri, 20 Sep 2013 00:56:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <1379650985.2021.12.camel@joe-AO722>
-References: <CAGXu5jL+NeBw2_vXymM81UdtS6UO7KZA2S4rf3gwM_7nSJ2h6g@mail.gmail.com>
-	<20130917205742.16147.qmail@science.horizon.com>
-	<201309191756.BCF65661.MQFOLSJOFHFtOV@I-love.SAKURA.ne.jp>
-	<CAGXu5jK_D1BJOQr=1A-UFrpM5Ad+Qu894HT_XjkZh4EmsbCkTQ@mail.gmail.com>
-	<201309201309.GFB52620.OQOtSFLMJVHOFF@I-love.SAKURA.ne.jp>
-	<1379650985.2021.12.camel@joe-AO722>
-Date: Thu, 19 Sep 2013 21:53:40 -0700
-X-Google-Sender-Auth: cK0D2B5Sv-auAs4dMDx-E3_2Ow0
-Message-ID: <CAGXu5jJNuFbBrYyWufqhDOapS4qYWkvLMi4pk8AnqgD8wXo5RA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] remove all uses of printf's %n
-From: Kees Cook <keescook@chromium.org>
-To: Joe Perches <joe@perches.com>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Jiri Slaby <jslaby@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Pavel Emelyanov <xemul@openvz.org>, remi.denis-courmont@nokia.com,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        linux-sctp@vger.kernel.org, George Spelvin <linux@horizon.com>,
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20130920144612.5741656ad6ffa8e6739d391c@canb.auug.org.au>
+References: <20130920144612.5741656ad6ffa8e6739d391c@canb.auug.org.au>
+Date: Thu, 19 Sep 2013 21:56:55 -0700
+Message-ID: <CAOesGMjO0JQ8Whm_MEXrOnFFPAG8MXBiQpddV6e8jRR6rcCkTQ@mail.gmail.com>
+Subject: Re: linux-next: taking a break
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Linus <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        Motohiro KOSAKI <kosaki.motohiro@gmail.com>
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 9:23 PM, Joe Perches <joe@perches.com> wrote:
-> On Fri, 2013-09-20 at 13:09 +0900, Tetsuo Handa wrote:
->> Hello.
+On Thu, Sep 19, 2013 at 9:46 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
 >
-> Tetsuo-san:
->
->> We are discussing about removal of %n support from vsnprintf() at
->> https://lkml.org/lkml/2013/9/16/52 , and you are using %n in seq_printf().
->
-> Well, I'm not using (mere alcohol isn't using, right?)
-> but I still have the same question for Al.
->
-> Are there any races here?
+> I will be having a 3 week break leading up to the kernel
+> summit.  This means that next-20130927 (next Friday) will be the last
+> linux-next release until next-20131028 (or maybe 29 depending on
+> jetlag).  I presume that Linus will be up to v3.12-rc7 by then and -rc7
+> is often the last before a release ... Please plan accordingly.
 
-All the call sites I examined were linear. FWIW, I didn't see any races.
+This brings up a subject that could be good to discuss at KS: Do you
+want a backup to share your workload and for hand-off at times like
+this?
 
--Kees
+You've been carrying the load of linux-next alone for years now, and
+having someone that can take over every now and then seems like a good
+idea. You've been doing an outstanding job but everybody need downtime
+sometimes.
 
->
->> I posted https://lkml.org/lkml/diff/2013/9/19/53/1 which introduces
->> seq_setwidth() / seq_pad() which can avoid use of %n in seq_printf().
->
-> I still think adding last_len, last_rtn
-> is sensible.
->
->
+Linux-next is incredibly valuable for _so_ many of us, and a big part
+of the value is in the continuous frequent releases that allows us to
+catch issues quickly when they are staged, and keep bisectability as
+high as possible. It also helps us discover early on when someone is
+merging code through a maintainer they shouldn't (due to conflicts).
+It will be very much missed during your well-deserved vacation.
 
 
-
--- 
-Kees Cook
-Chrome OS Security
+-Olof
