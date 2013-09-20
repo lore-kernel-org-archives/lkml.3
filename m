@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab3ITRBu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 13:01:50 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:57649 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab3ITRBr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 13:01:47 -0400
-Date: Fri, 20 Sep 2013 10:01:35 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Manish Badarkhe <badarkhe.manish@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        josh.wu@atmel.com
-Subject: Re: [PATCH] Input: atmel_tscadcc - update to devm_* API
-Message-ID: <20130920170135.GB6300@core.coreip.homeip.net>
-References: <1379343178-6468-1-git-send-email-badarkhe.manish@gmail.com>
+	id S1753294Ab3ITRDc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 13:03:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21678 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752798Ab3ITRDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 13:03:31 -0400
+Date: Fri, 20 Sep 2013 13:03:22 -0400
+From: Dave Jones <davej@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, roland@hack.frob.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: do_wait: Add missing tasklist unlocking in error paths.
+Message-ID: <20130920170322.GA762@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Oleg Nesterov <oleg@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, roland@hack.frob.com,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <20130920163733.GA24958@redhat.com>
+ <20130920164144.GA31808@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379343178-6468-1-git-send-email-badarkhe.manish@gmail.com>
+In-Reply-To: <20130920164144.GA31808@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Manish,
+On Fri, Sep 20, 2013 at 06:41:44PM +0200, Oleg Nesterov wrote:
+ > On 09/20, Dave Jones wrote:
+ > >
+ > > It looks like both 64a16caf5, and 98abed020 both introduced error paths to do_wait
+ > > where we miss unlocking the tasklist.
+ > >
+ > > Spotted with coverity.
+ > 
+ > Not really, afaics.
+ > 
+ > > --- a/kernel/exit.c
+ > > +++ b/kernel/exit.c
+ > > @@ -1526,13 +1526,15 @@ repeat:
+ > >  	tsk = current;
+ > >  	do {
+ > >  		retval = do_wait_thread(wo, tsk);
+ > > -		if (retval)
+ > > +		if (retval) {
+ > > +			read_unlock(&tasklist_lock);
+ > 
+ > note that do_wait_thread() paths should drop tasklist if it returns non-zero.
 
-On Mon, Sep 16, 2013 at 08:22:58PM +0530, Manish Badarkhe wrote:
->  static int atmel_tsadcc_remove(struct platform_device *pdev)
->  {
->  	struct atmel_tsadcc *ts_dev = platform_get_drvdata(pdev);
-> -	struct resource *res;
-> -
-> -	free_irq(ts_dev->irq, ts_dev);
->  
->  	input_unregister_device(ts_dev->input);
->  
-> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	iounmap(tsc_base);
-> -	release_mem_region(res->start, resource_size(res));
-> -
->  	clk_disable(ts_dev->clk);
-> -	clk_put(ts_dev->clk);
-> -
-> -	kfree(ts_dev);
->  
->  	return 0;
->  }
+Ah, I missed the unlock in wait_task_continued. 
+
+I'm not sure why the checker didn't infer that. Perhaps it thinks it's possible we
+can get take one of the early returns in that function before we do the tasklist unlock.
+
+thanks,
+
+	Dave
 
 
-By doing this conversion we disable the clock too early. I need to
-resurrect my patches to add devm_clk_enable and then we can revisit this
-patch.
-
-Thanks.
-
--- 
-Dmitry
