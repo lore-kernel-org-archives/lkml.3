@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab3ITSeH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 14:34:07 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:59883 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017Ab3ITSeF (ORCPT
+	id S1753454Ab3ITSfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 14:35:30 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44910 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab3ITSf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 14:34:05 -0400
+	Fri, 20 Sep 2013 14:35:28 -0400
+Date: Fri, 20 Sep 2013 14:35:17 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: old trees
+Message-ID: <20130920183517.GH5707@phenom.dumpdata.com>
+References: <20130917170124.0afa2e103a9977355ad7c72c@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1378904607-23349-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1378904607-23349-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-Date: Fri, 20 Sep 2013 20:34:04 +0200
-Message-ID: <CACRpkdZ50nL4G16Uku9g9HoKbY=L_nv6Q=T0_rWkcE0RwiuUcw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: arizona: Add wm8997 support to probe
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        patches@opensource.wolfsonmicro.com,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130917170124.0afa2e103a9977355ad7c72c@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 3:03 PM, Charles Keepax
-<ckeepax@opensource.wolfsonmicro.com> wrote:
+On Tue, Sep 17, 2013 at 05:01:24PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> This message is bcc'd to each of the contacts for the trees listed below,
+> so apologies if you get two copies.
+> 
+> I have been inspired to check the ages of the trees included in
+> linux-next.  Below I have listed all the trees that have not been
+> commited to in the past 6 months.  Please let me know if the tree is not
+> longer in use.  I don't mind keeping these trees in linux-next if they
+> will have continued use, but would like to remove any that are no longer
+> needed.
 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->
-> A bit of confusion with merging this last time because I
-> messed up the CCs, is safe to merge this patch on its own
-> now.
+Thank you for the prunning effort.
 
-OK patch applied.
 
-Yours,
-Linus Walleij
+> ibft		1 year, 9 months ago
+
+Can go away.
+
+> swiotlb		11 months ago
+
+Need it. Don't remove it pls.
+
+> tmem		11 months ago
+
+Can go away.
