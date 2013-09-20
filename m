@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab3ITM3W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 08:29:22 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:46135 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754467Ab3ITM3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 08:29:21 -0400
-Date: Fri, 20 Sep 2013 13:29:15 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Dave Young <dyoung@redhat.com>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Subject: Re: [PATCH 00/11] EFI runtime services virtual mapping
-Message-ID: <20130920122915.GB21381@console-pimps.org>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
- <20130920072904.GA21922@dhcp-16-126.nay.redhat.com>
- <20130920090544.GA9574@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130920090544.GA9574@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754702Ab3ITMcD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 08:32:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50346 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754467Ab3ITMcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 08:32:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,944,1371106800"; 
+   d="scan'208";a="406389069"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <20130919171727.GC6802@sgi.com>
+References: <1379330740-5602-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130919171727.GC6802@sgi.com>
+Subject: Re: [PATCHv2 0/9] split page table lock for PMD tables
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130920123137.BE2F7E0090@blue.fi.intel.com>
+Date: Fri, 20 Sep 2013 15:31:37 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Sep, at 11:05:44AM, Borislav Petkov wrote:
-> On Fri, Sep 20, 2013 at 03:29:04PM +0800, Dave Young wrote:
-> > Just tested this series, for 1st kernel It boots ok in qemu+ovmf. But
-> > it immediately reboot on my Thinkpad T420. Unfortunately there's no
-> > way to debug this very early problem because there's no serial port
-> > also earlyprintk does not work for efi boot. No usb debug as well on
-> > this machine. I will test it when I go back to work after the china
-> > holiday.
+Alex Thorlton wrote:
+> On Mon, Sep 16, 2013 at 02:25:31PM +0300, Kirill A. Shutemov wrote:
+> > Alex Thorlton noticed that some massivly threaded workloads work poorly,
+> > if THP enabled. This patchset fixes this by introducing split page table
+> > lock for PMD tables. hugetlbfs is not covered yet.
+> > 
+> > This patchset is based on work by Naoya Horiguchi.
+> > 
+> > Changes:
+> >  v2:
+> >   - reuse CONFIG_SPLIT_PTLOCK_CPUS for PMD split lock;
+> >   - s/huge_pmd_lock/pmd_lock/g;
+> >   - assume pgtable_pmd_page_ctor() can fail;
+> >   - fix format line in task_mem() for VmPTE;
+> > 
+> > Benchmark (from Alex): ftp://shell.sgi.com/collect/appsx_test/pthread_test.tar.gz
+> > Run on 4 socket Westmere with 128 GiB of RAM.
 > 
-> Hmm, I'm booting with the efi boot stub, how do you do it?
+> Kirill,
+> 
+> I'm hitting some performance issues with these patches on our larger
+> machines (>=128 cores/256 threads).  I've managed to livelock larger
+> systems with one of our tests (I'll publish this one soon), and I'm
+> actually seeing a performance hit on some of the smaller ones.
 
-Dave, could you try this patch?
+Does "performance hit" mean performance degradation?
 
----
+> I'm currently collecting some results to show the problems I'm hitting, and
+> trying to research what's causing the livelock.  For now I just wanted to let
+> you know that I'm seeing some issues.  I'll be in touch with more details.
 
-diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-index 06e71c2..9bcc15c 100644
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -207,6 +207,8 @@ ENTRY(startup_64)
- 	jmp	preferred_addr
- 
- ENTRY(efi_pe_entry)
-+	movq	%cr3, %r15
-+	movq	%r15, efi_scratch+16(%rip)
- 	mov	%rcx, %rdi
- 	mov	%rdx, %rsi
- 	pushq	%rdi
-@@ -219,6 +221,8 @@ ENTRY(efi_pe_entry)
- 	popq	%rdi
- 
- ENTRY(efi_stub_entry)
-+	movq	%cr3, %r15
-+	movq	%r15, efi_scratch+16(%rip)
- 	call	efi_main
- 	movq	%rax,%rsi
- 	cmpq	$0,%rax
+Looking forward for more details. Thanks for testing.
+
+I'll try to find a bigger machine myself.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+ Kirill A. Shutemov
