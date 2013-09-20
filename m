@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab3ITFaH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 01:30:07 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:34812 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab3ITFaG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 01:30:06 -0400
+	id S1753976Ab3ITFgV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 01:36:21 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39585 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752729Ab3ITFgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 01:36:19 -0400
+Message-ID: <523BDE70.4090407@ti.com>
+Date: Fri, 20 Sep 2013 11:04:40 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAKohpom-3orEns00DC2=uk4pgV_xnfRpM1hrdyK9pjPUEgBXrA@mail.gmail.com>
-References: <1379563520-7221-1-git-send-email-yinghai@kernel.org>
-	<CAKohpomt+sASL=2i-v=HSkhOZhbPmnFesEfPoEqSE+WKcCfnmw@mail.gmail.com>
-	<11319698.mBBnJVdnIk@vostro.rjw.lan>
-	<CAE9FiQXP3DARdJYHBS8w0ATVM78Q9tGTd=8CeMJiwozBU0F_OA@mail.gmail.com>
-	<CAKohpom-3orEns00DC2=uk4pgV_xnfRpM1hrdyK9pjPUEgBXrA@mail.gmail.com>
-Date: Thu, 19 Sep 2013 22:30:04 -0700
-X-Google-Sender-Auth: mnEn9nITmgk9IAuwyTw_9LaC54k
-Message-ID: <CAE9FiQU5PD4asdE3=sBSnLK8fwPT8vK81FAOuYtAWj_3ruyS0g@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: return EEXIST instead of EBUSY for second registering
-From: Yinghai Lu <yinghai@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <balbi@ti.com>, Andrew Morton <akpm@linux-foundation.org>,
+        <kyungmin.park@samsung.com>, <jg1.han@samsung.com>,
+        <s.nawrocki@samsung.com>, <kgene.kim@samsung.com>,
+        <stern@rowland.harvard.edu>, <broonie@kernel.org>,
+        <tomasz.figa@gmail.com>, <arnd@arndb.de>, <grant.likely@linaro.org>,
+        <tony@atomide.com>, <swarren@nvidia.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <balajitk@ti.com>,
+        <george.cherian@ti.com>, <nsekhar@ti.com>, <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v11 0/8] PHY framework
+References: <1377063973-22044-1-git-send-email-kishon@ti.com> <521B0E79.6060506@ti.com> <20130827192059.GZ3005@radagast> <5225FF63.6080608@ti.com> <20130903155030.GA21525@kroah.com> <5226F5E2.5010409@ti.com> <20130917154107.GH15645@radagast>
+In-Reply-To: <20130917154107.GH15645@radagast>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 9:23 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 20 September 2013 07:01, Yinghai Lu <yinghai@kernel.org> wrote:
->> Sorry,  looks like this one is not enough.
+Hi Greg,
+
+On Tuesday 17 September 2013 09:11 PM, Felipe Balbi wrote:
+> On Wed, Sep 04, 2013 at 02:27:06PM +0530, Kishon Vijay Abraham I wrote:
+>> On Tuesday 03 September 2013 09:20 PM, Greg KH wrote:
+>>> On Tue, Sep 03, 2013 at 08:55:23PM +0530, Kishon Vijay Abraham I wrote:
+>>>> Hi Greg,
+>>>>
+>>>> On Wednesday 28 August 2013 12:50 AM, Felipe Balbi wrote:
+>>>>> Hi,
+>>>>>
+>>>>> On Mon, Aug 26, 2013 at 01:44:49PM +0530, Kishon Vijay Abraham I wrote:
+>>>>>> On Wednesday 21 August 2013 11:16 AM, Kishon Vijay Abraham I wrote:
+>>>>>>> Added a generic PHY framework that provides a set of APIs for the PHY drivers
+>>>>>>> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
+>>>>>>> the PHY with or without using phandle.
+>>>>>>>
+>>>>>>> This framework will be of use only to devices that uses external PHY (PHY
+>>>>>>> functionality is not embedded within the controller).
+>>>>>>>
+>>>>>>> The intention of creating this framework is to bring the phy drivers spread
+>>>>>>> all over the Linux kernel to drivers/phy to increase code re-use and to
+>>>>>>> increase code maintainability.
+>>>>>>>
+>>>>>>> Comments to make PHY as bus wasn't done because PHY devices can be part of
+>>>>>>> other bus and making a same device attached to multiple bus leads to bad
+>>>>>>> design.
+>>>>>>>
+>>>>>>> If the PHY driver has to send notification on connect/disconnect, the PHY
+>>>>>>> driver should make use of the extcon framework. Using this susbsystem
+>>>>>>> to use extcon framwork will have to be analysed.
+>>>>>>>
+>>>>>>> You can find this patch series @
+>>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git testing
+>>>>>>
+>>>>>> Looks like there are not further comments on this series. Can you take this in
+>>>>>> your misc tree?
+>>>>>
+>>>>> Do you want me to queue these for you ? There are quite a few users for
+>>>>> this framework already and I know of at least 2 others which will show
+>>>>> up for v3.13.
+>>>>
+>>>> Can you queue this patch series? There are quite a few users already for this
+>>>> framework.
+>>>
+>>> It will have to wait for 3.13 as the merge window for new features has
+>>> been closed for a week or so.  Sorry, I'll queue this up after 3.12-rc1
+>>> is out.
 >>
->> please let me know if you prefer me send addon patch
->> or revised one.
->
-> Atleast you can let us know what the problem is? And then we
-> can decide on that.. But anyway, you can send a new patch
-> based over latest linux-next (which will have your original patch),
-> and then leave it onto Rafael to merge it or have two patches..
-> (though I am quite sure he will not drop anything now, unless its
-> too screwed.., at worst he might revert it..)..
+>> Alright, thanks.
+> 
+> Just a gentle ping on this one...
 
-looks like the crash is intermittent..., so i thought that patch fixed
-the problem.
-but later I found other suspicious print out.
-
-please check new one:
-
-https://patchwork.kernel.org/patch/2915181/
+Let me know if you want me to rebase this patch series on the latest mainline HEAD.
 
 Thanks
-
-Yinghai
+Kishon
