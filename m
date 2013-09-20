@@ -1,31 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab3ITJ5e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 05:57:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42176 "EHLO
+	id S1754692Ab3ITJ5p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 05:57:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42182 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754365Ab3ITJ5b (ORCPT
+	with ESMTP id S1754365Ab3ITJ5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 05:57:31 -0400
-Date: Fri, 20 Sep 2013 02:56:50 -0700
-From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-0f9654296eabf7f238661d20a6af545986cf713f@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <20130912131649.GC23826@gmail.com>
-References: <20130912131649.GC23826@gmail.com>
+	Fri, 20 Sep 2013 05:57:44 -0400
+Date: Fri, 20 Sep 2013 02:57:11 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-43nl31erfbajwpfj254f6zji@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools:
-  Fix old GCC build error in trace-event-parse.c:parse_proc_kallsyms()
-Git-Commit-ID: 0f9654296eabf7f238661d20a6af545986cf713f
+Subject: [tip:perf/core] perf/x86/intel:
+  Remove division from the intel_pmu_drain_pebs_nhm() hot path
+Git-Commit-ID: eb8417aa703eff5ff43d0275f19b0a8e591d818d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,57 +26,60 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 20 Sep 2013 02:56:57 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 20 Sep 2013 02:57:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0f9654296eabf7f238661d20a6af545986cf713f
-Gitweb:     http://git.kernel.org/tip/0f9654296eabf7f238661d20a6af545986cf713f
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Thu, 12 Sep 2013 15:16:49 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 19 Sep 2013 15:08:47 -0300
+Commit-ID:  eb8417aa703eff5ff43d0275f19b0a8e591d818d
+Gitweb:     http://git.kernel.org/tip/eb8417aa703eff5ff43d0275f19b0a8e591d818d
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Mon, 16 Sep 2013 09:23:02 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 20 Sep 2013 06:53:44 +0200
 
-perf tools: Fix old GCC build error in trace-event-parse.c:parse_proc_kallsyms()
+perf/x86/intel: Remove division from the intel_pmu_drain_pebs_nhm() hot path
 
-Old GCC (4.1) does not see through the code flow of parse_proc_kallsyms()
-and gets confused about the status of 'fmt':
+Only do the division in case we have to print the result out in a warning.
 
- util/trace-event-parse.c: In function ‘parse_proc_kallsyms’:
- util/trace-event-parse.c:189: warning: ‘fmt’ may be used uninitialized in this function
- make: *** [util/trace-event-parse.o] Error 1
-
-Help out GCC by initializing 'fmt' to NULL.
-
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-43nl31erfbajwpfj254f6zji@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20130912131649.GC23826@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/trace-event-parse.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index fe7a27d..e9e1c03 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -186,7 +186,7 @@ void parse_proc_kallsyms(struct pevent *pevent,
- 	char *next = NULL;
- 	char *addr_str;
- 	char *mod;
--	char *fmt;
-+	char *fmt = NULL;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index f364c13..655d591 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -944,7 +944,7 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+ 	struct perf_event *event = NULL;
+ 	void *at, *top;
+ 	u64 status = 0;
+-	int bit, n;
++	int bit;
  
- 	line = strtok_r(file, "\n", &next);
- 	while (line) {
+ 	if (!x86_pmu.pebs_active)
+ 		return;
+@@ -954,16 +954,16 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+ 
+ 	ds->pebs_index = ds->pebs_buffer_base;
+ 
+-	n = (top - at) / x86_pmu.pebs_record_size;
+-	if (n <= 0)
++	if (unlikely(at > top))
+ 		return;
+ 
+ 	/*
+ 	 * Should not happen, we program the threshold at 1 and do not
+ 	 * set a reset value.
+ 	 */
+-	WARN_ONCE(n > x86_pmu.max_pebs_events,
+-		  "Unexpected number of pebs records %d\n", n);
++	WARN_ONCE(top - at > x86_pmu.max_pebs_events * x86_pmu.pebs_record_size,
++		  "Unexpected number of pebs records %ld\n",
++		  (top - at) / x86_pmu.pebs_record_size);
+ 
+ 	for (; at < top; at += x86_pmu.pebs_record_size) {
+ 		struct pebs_record_nhm *p = at;
