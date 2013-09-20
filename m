@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab3ITULw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:11:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41432 "EHLO
+	id S1754200Ab3ITULv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:11:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41436 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127Ab3ITULs (ORCPT
+	with ESMTP id S1753487Ab3ITULt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:11:48 -0400
+	Fri, 20 Sep 2013 16:11:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 87/93] ASoC: mc13783: add spi errata fix
-Date: Fri, 20 Sep 2013 13:09:22 -0700
-Message-Id: <1379707768-1804-88-git-send-email-kamal@canonical.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 81/93] crypto: api - Fix race condition in larval lookup
+Date: Fri, 20 Sep 2013 13:09:16 -0700
+Message-Id: <1379707768-1804-82-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -27,43 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit 9f6f0afbb9fdabf6dcac642dfec457f28981e3f8 upstream.
+commit 77dbd7a95e4a4f15264c333a9e9ab97ee27dc2aa upstream.
 
-The MC13783 Chip Errata, Rev. 4 says, that depending on SPI clock
-and main audio clock speed, the Audio Codec or Stereo DAC do sometimes
-not start when programmed to do so. This is due to an internal clock
-timing issue related to the loading of the SPI bits into the audio block.
+crypto_larval_lookup should only return a larval if it created one.
+Any larval created by another entity must be processed through
+crypto_larval_wait before being returned.
 
-On an i.MX27 based system, this issue lead to switched audio channels under
-certain circumstances: RTC + Touch + Audio are used and loaded at startup.
+Otherwise this will lead to a larval being killed twice, which
+will most likely lead to a crash.
 
-The mentioned workaround of writing registers 40 and 41 two times is implemented
-here.
-
-Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reported-by: Kees Cook <keescook@chromium.org>
+Tested-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/mc13783.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ crypto/api.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/mc13783.c b/sound/soc/codecs/mc13783.c
-index 5402dfb..8a8d936 100644
---- a/sound/soc/codecs/mc13783.c
-+++ b/sound/soc/codecs/mc13783.c
-@@ -126,6 +126,10 @@ static int mc13783_write(struct snd_soc_codec *codec,
+diff --git a/crypto/api.c b/crypto/api.c
+index 3b61803..37c4c72 100644
+--- a/crypto/api.c
++++ b/crypto/api.c
+@@ -34,6 +34,8 @@ EXPORT_SYMBOL_GPL(crypto_alg_sem);
+ BLOCKING_NOTIFIER_HEAD(crypto_chain);
+ EXPORT_SYMBOL_GPL(crypto_chain);
  
- 	ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
- 
-+	/* include errata fix for spi audio problems */
-+	if (reg == MC13783_AUDIO_CODEC || reg == MC13783_AUDIO_DAC)
-+		ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
++static struct crypto_alg *crypto_larval_wait(struct crypto_alg *alg);
 +
- 	mc13xxx_unlock(priv->mc13xxx);
+ struct crypto_alg *crypto_mod_get(struct crypto_alg *alg)
+ {
+ 	return try_module_get(alg->cra_module) ? crypto_alg_get(alg) : NULL;
+@@ -144,8 +146,11 @@ static struct crypto_alg *crypto_larval_add(const char *name, u32 type,
+ 	}
+ 	up_write(&crypto_alg_sem);
  
- 	return ret;
+-	if (alg != &larval->alg)
++	if (alg != &larval->alg) {
+ 		kfree(larval);
++		if (crypto_is_larval(alg))
++			alg = crypto_larval_wait(alg);
++	}
+ 
+ 	return alg;
+ }
 -- 
 1.8.1.2
 
