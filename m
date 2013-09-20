@@ -1,149 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab3ITUbk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:31:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41379 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab3ITUKC (ORCPT
+	id S932135Ab3ITUbr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:31:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36803 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932121Ab3ITUbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:10:02 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 13/93] intel-iommu: Fix leaks in pagetable freeing
-Date: Fri, 20 Sep 2013 13:08:08 -0700
-Message-Id: <1379707768-1804-14-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
-References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 20 Sep 2013 16:31:45 -0400
+Date: Fri, 20 Sep 2013 13:32:22 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        ohering@suse.com, jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: Drivers: scsi: FLUSH timeout
+Message-ID: <20130920203222.GA14306@kroah.com>
+References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379705547-15028-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.10 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Sep 20, 2013 at 12:32:27PM -0700, K. Y. Srinivasan wrote:
+> The SD_FLUSH_TIMEOUT value is currently hardcoded.
 
-------------------
+Hardcoded where?  Please, more context.
 
-From: Alex Williamson <alex.williamson@redhat.com>
+> On our cloud, we sometimes hit this timeout. I was wondering if we
+> could make this a module parameter. If this is acceptable, I can send
+> you a patch for this.
 
-commit 3269ee0bd6686baf86630300d528500ac5b516d7 upstream.
+A module parameter don't make sense for a per-device value, does it?
 
-At best the current code only seems to free the leaf pagetables and
-the root.  If you're unlucky enough to have a large gap (like any
-QEMU guest with more than 3G of memory), only the first chunk of leaf
-pagetables are freed (plus the root).  This is a massive memory leak.
-This patch re-writes the pagetable freeing function to use a
-recursive algorithm and manages to not only free all the pagetables,
-but does it without any apparent performance loss versus the current
-broken version.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/iommu/intel-iommu.c | 72 ++++++++++++++++++++++-----------------------
- 1 file changed, 35 insertions(+), 37 deletions(-)
-
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index f1e7b86..72f2ee9 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -887,56 +887,54 @@ static int dma_pte_clear_range(struct dmar_domain *domain,
- 	return order;
- }
- 
-+static void dma_pte_free_level(struct dmar_domain *domain, int level,
-+			       struct dma_pte *pte, unsigned long pfn,
-+			       unsigned long start_pfn, unsigned long last_pfn)
-+{
-+	pfn = max(start_pfn, pfn);
-+	pte = &pte[pfn_level_offset(pfn, level)];
-+
-+	do {
-+		unsigned long level_pfn;
-+		struct dma_pte *level_pte;
-+
-+		if (!dma_pte_present(pte) || dma_pte_superpage(pte))
-+			goto next;
-+
-+		level_pfn = pfn & level_mask(level - 1);
-+		level_pte = phys_to_virt(dma_pte_addr(pte));
-+
-+		if (level > 2)
-+			dma_pte_free_level(domain, level - 1, level_pte,
-+					   level_pfn, start_pfn, last_pfn);
-+
-+		/* If range covers entire pagetable, free it */
-+		if (!(start_pfn > level_pfn ||
-+		      last_pfn < level_pfn + level_size(level))) {
-+			dma_clear_pte(pte);
-+			domain_flush_cache(domain, pte, sizeof(*pte));
-+			free_pgtable_page(level_pte);
-+		}
-+next:
-+		pfn += level_size(level);
-+	} while (!first_pte_in_page(++pte) && pfn <= last_pfn);
-+}
-+
- /* free page table pages. last level pte should already be cleared */
- static void dma_pte_free_pagetable(struct dmar_domain *domain,
- 				   unsigned long start_pfn,
- 				   unsigned long last_pfn)
- {
- 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
--	struct dma_pte *first_pte, *pte;
--	int total = agaw_to_level(domain->agaw);
--	int level;
--	unsigned long tmp;
--	int large_page = 2;
- 
- 	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
- 	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
- 	BUG_ON(start_pfn > last_pfn);
- 
- 	/* We don't need lock here; nobody else touches the iova range */
--	level = 2;
--	while (level <= total) {
--		tmp = align_to_level(start_pfn, level);
--
--		/* If we can't even clear one PTE at this level, we're done */
--		if (tmp + level_size(level) - 1 > last_pfn)
--			return;
--
--		do {
--			large_page = level;
--			first_pte = pte = dma_pfn_level_pte(domain, tmp, level, &large_page);
--			if (large_page > level)
--				level = large_page + 1;
--			if (!pte) {
--				tmp = align_to_level(tmp + 1, level + 1);
--				continue;
--			}
--			do {
--				if (dma_pte_present(pte)) {
--					free_pgtable_page(phys_to_virt(dma_pte_addr(pte)));
--					dma_clear_pte(pte);
--				}
--				pte++;
--				tmp += level_size(level);
--			} while (!first_pte_in_page(pte) &&
--				 tmp + level_size(level) - 1 <= last_pfn);
-+	dma_pte_free_level(domain, agaw_to_level(domain->agaw),
-+			   domain->pgd, 0, start_pfn, last_pfn);
- 
--			domain_flush_cache(domain, first_pte,
--					   (void *)pte - (void *)first_pte);
--			
--		} while (tmp && tmp + level_size(level) - 1 <= last_pfn);
--		level++;
--	}
- 	/* free pgd */
- 	if (start_pfn == 0 && last_pfn == DOMAIN_MAX_PFN(domain->gaw)) {
- 		free_pgtable_page(domain->pgd);
--- 
-1.8.1.2
-
+greg k-h
