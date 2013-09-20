@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282Ab3ITOku (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 10:40:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6238 "EHLO mga11.intel.com"
+	id S1752823Ab3ITOmF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 10:42:05 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52072 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752051Ab3ITOks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 10:40:48 -0400
+	id S1752263Ab3ITOku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 10:40:50 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,944,1371106800"; 
-   d="scan'208";a="398675928"
+   d="scan'208";a="406446766"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@infradead.org, mingo@kernel.org, peterz@infradead.org,
-        eranian@google.com, jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/6] perf, x86: Add Haswell specific transaction flag reporting v5
-Date: Fri, 20 Sep 2013 07:40:40 -0700
-Message-Id: <1379688044-14173-3-git-send-email-andi@firstfloor.org>
+        eranian@google.com, jolsa@redhat.com
+Subject: perf, x86: Add last TSX PMU code for Haswell v2
+Date: Fri, 20 Sep 2013 07:40:38 -0700
+Message-Id: <1379688044-14173-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1379688044-14173-1-git-send-email-andi@firstfloor.org>
-References: <1379688044-14173-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+[This has kernel and user parts, so will need
+review/ack/merges from both perf kernel and user land maintainers]
+[v2: Address Peter's feedback for the kernel parts]
 
-In the PEBS handler report the transaction flags using the new
-generic transaction flags facility. Most of them come from
-the "tsx_tuning" field in PEBSv2, but the abort code is derived
-from the RAX register reported in the PEBS record.
+This is currently the last part of the TSX PMU code,
+just adding the left over bits:
 
-v2: Fix interaction with precise-loads
-v3: Mask out reserved bits. More comments.
-v4: Adjust white space
-v5: Refactor PEBS handler code to collapse one if
-    and move parts into new inline.
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 25 ++++++++++++++++++++-----
- 1 file changed, 20 insertions(+), 5 deletions(-)
+This adds some changes to the user interfaces.
+I'll send patches for the manpage separately.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 104cbba..fd2dbac 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -207,6 +207,8 @@ union hsw_tsx_tuning {
- 	u64	    value;
- };
- 
-+#define PEBS_HSW_TSX_FLAGS	0xff00000000ULL
-+
- void init_debug_store_on_cpu(int cpu)
- {
- 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
-@@ -807,6 +809,16 @@ static inline u64 intel_hsw_weight(struct pebs_record_hsw *pebs)
- 	return 0;
- }
- 
-+static inline u64 intel_hsw_transaction(struct pebs_record_hsw *pebs)
-+{
-+	u64 txn = (pebs->tsx_tuning & PEBS_HSW_TSX_FLAGS) >> 32;
-+
-+	/* For RTM XABORTs also log the abort code from AX */
-+	if ((txn & PERF_TXN_TRANSACTION) && (pebs->ax & 1))
-+		txn |= ((pebs->ax >> 24) & 0xff) << PERF_TXN_ABORT_SHIFT;
-+	return txn;
-+}
-+
- static void __intel_pmu_pebs_event(struct perf_event *event,
- 				   struct pt_regs *iregs, void *__pebs)
- {
-@@ -887,11 +899,14 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 		x86_pmu.intel_cap.pebs_format >= 1)
- 		data.addr = pebs->dla;
- 
--	/* Only set the TSX weight when no memory weight was requested. */
--	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) &&
--	    !fll &&
--	    (x86_pmu.intel_cap.pebs_format >= 2))
--		data.weight = intel_hsw_weight(pebs);
-+	if (x86_pmu.intel_cap.pebs_format >= 2) {
-+		/* Only set the TSX weight when no memory weight. */
-+		if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) && !fll)
-+			data.weight = intel_hsw_weight(pebs);
-+
-+		if (event->attr.sample_type & PERF_SAMPLE_TRANSACTION)
-+			data.txn = intel_hsw_transaction(pebs);
-+	}
- 
- 	if (has_branch_stack(event))
- 		data.br_stack = &cpuc->lbr_stack;
--- 
-1.8.3.1
+- Report the transaction abort flags to user space
+using a new field, and add the code to display them.
+This is used to classify abort types, also fairly
+important for tuning as it guides the tuning process,
+together with the abort weight that was added earleir.
 
+[3 patches, generic, x86, user tools]
+
+- Add support for reporting the two new TSX LBR flags: in_tx
+and abort_tx. The code to handle the LBRs was already
+added earlier, this just adds the code to report,
+filter and display them.
+
+- Add a workaround for a Haswell issue that it reports
+an extra LBR record for every abort. We just filter
+those out in the kernel.
+
+Open perf TSX issues left:
+- Revisit automatic enabling of precise for tx/el-abort
+- Need to fix the sort handling in the user tools
+to actually sort on other fields
+- The aggregated LBR display in the user tools is not 
+very useful for transactions, need a way to report them 
+in a histogram like backtraces.
+- May want some shortcut options for
+record --transaction --weight / report --sort symbol,transaction,weight
+
+-Andi
