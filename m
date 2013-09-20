@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab3ITLVg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 07:21:36 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:48988 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab3ITLVe (ORCPT
+	id S1754665Ab3ITLZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 07:25:26 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34829 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab3ITLZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 07:21:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJd=RBD_6FMHS3Dg_Zqugs4YCHHDeCgrxypANpPP5K2xTLE0bA@mail.gmail.com>
-References: <CAJd=RBBbJMWox5yJaNzW_jUdDfKfWe-Y7d1riYdN6huQStxzcA@mail.gmail.com>
- <CAOMqctQyS2SFraqJpzE0sRFcihFpMHRhT+3QuZhxft=SUXYVDw@mail.gmail.com>
- <CAOMqctQ+XchmXk_Xno6ViAoZF-tHFPpDWoy7LVW1nooa+ywbmg@mail.gmail.com>
- <CAOMqctT2u7E0kwpm052B9pkNo4D=sYHO+Vk=P_TziUb5KvTMKA@mail.gmail.com>
- <20130917211317.GB6537@quack.suse.cz> <CAOMqctT5Wi_Y9ODAnoG-RQiO1oJ+yKR=LnF21swuupyLShL=+w@mail.gmail.com>
- <CAJd=RBD_6FMHS3Dg_Zqugs4YCHHDeCgrxypANpPP5K2xTLE0bA@mail.gmail.com>
-From: Michal Suchanek <hramrach@gmail.com>
-Date: Fri, 20 Sep 2013 13:20:53 +0200
-Message-ID: <CAOMqctSyovsfff++g=cUfRLmyBM9nHrQ7RB4R7z96-aXr9QcEw@mail.gmail.com>
-Subject: Re: doing lots of disk writes causes oom killer to kill processes
-To: Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 20 Sep 2013 07:25:25 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Thierry Reding <treding@nvidia.com>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
+Date: Fri, 20 Sep 2013 12:24:49 +0100
+Message-Id: <1379676289-18882-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.4.rc3
+X-SA-Exim-Connect-IP: 86.153.71.95
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regulator: core: Fix default return value for _get()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Mark Brown <broonie@linaro.org>
 
-On 19 September 2013 10:07, Hillf Danton <dhillf@gmail.com> wrote:
-> Hello Michal
->
-> Take it easy please, the kernel is made by human hands.
->
-> Can you please try the diff(and sorry if mail agent reformats it)?
->
-> Best Regards
-> Hillf
->
->
-> --- a/mm/vmscan.c Wed Sep 18 08:44:08 2013
-> +++ b/mm/vmscan.c Wed Sep 18 09:31:34 2013
-> @@ -1543,8 +1543,11 @@ shrink_inactive_list(unsigned long nr_to
->   * implies that pages are cycling through the LRU faster than
->   * they are written so also forcibly stall.
->   */
-> - if (nr_unqueued_dirty == nr_taken || nr_immediate)
-> + if (nr_unqueued_dirty == nr_taken || nr_immediate) {
-> + if (current_is_kswapd())
-> + wakeup_flusher_threads(0, WB_REASON_TRY_TO_FREE_PAGES);
->   congestion_wait(BLK_RW_ASYNC, HZ/10);
-> + }
->   }
->
->   /*
-> --
+Now that we are defaulting to providing dummy regulators fix the logic
+for substituting a dummy by making the default return code -EPROBE_DEFER.
 
-I applied the patch and raised the dirty block ratios to 30/10 and the
-default 60/40 while imaging a VM and did not observe any problems so I
-guess this solves it.
+Reported-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
 
-Thanks
+Not tested at all.
 
-Michal
+ drivers/regulator/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 4eefcc3..353779b 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1231,7 +1231,7 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
+ 	struct regulator_dev *rdev;
+ 	struct regulator *regulator = ERR_PTR(-EPROBE_DEFER);
+ 	const char *devname = NULL;
+-	int ret = 0;
++	int ret = -EPROBE_DEFER;
+ 
+ 	if (id == NULL) {
+ 		pr_err("get() with no identifier\n");
+-- 
+1.8.4.rc3
+
