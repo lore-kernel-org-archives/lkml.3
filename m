@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab3ITQvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 12:51:12 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:60805 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab3ITQvI (ORCPT
+	id S1753059Ab3ITQy3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 12:54:29 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:46694 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285Ab3ITQy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 12:51:08 -0400
+	Fri, 20 Sep 2013 12:54:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130920123808.GA22176@kahuna>
-References: <1379624632-17356-1-git-send-email-nm@ti.com>
-	<1379624632-17356-2-git-send-email-nm@ti.com>
-	<CAKohpoku7n6b2dDKD=+3DqG4pHtmWoeXZnAt3EoFRp+rNFofYA@mail.gmail.com>
-	<20130920123808.GA22176@kahuna>
-Date: Fri, 20 Sep 2013 22:21:05 +0530
-Message-ID: <CAKohpoktS4ZSQAeKvu3hdVsKkzcbKFvHvR2=wCA3qeB6moPphA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / OPP: rename functions to dev_pm_opp*
+In-Reply-To: <523C66C5.9040008@linux.vnet.ibm.com>
+References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
+	<45987104.t6r4hvPgQn@vostro.rjw.lan>
+	<523AF22F.1010909@linux.vnet.ibm.com>
+	<CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com>
+	<CACRpkdYBYdMJ6mTGUropOypx0ZVNn8eQMzV+eKocCSBZAu6xTA@mail.gmail.com>
+	<CAKohpokQO82XMGwcTjVmNTbBVESyFqV4DAxMMU_RHEtN+LqUgg@mail.gmail.com>
+	<CACRpkdYoNkgno24dtJAwOq2T9yoKQYgKQ+adfkSN8affYNePjQ@mail.gmail.com>
+	<CAKohpokdOXrGVxEA89yrAq2T8MiqZNHrrXNagqqggo67rEmKYg@mail.gmail.com>
+	<CAKohpomXsZ+BsE7j-J4qU+x9f+JPsNEMi3d=CmfMByzPw_wvtw@mail.gmail.com>
+	<523C66C5.9040008@linux.vnet.ibm.com>
+Date: Fri, 20 Sep 2013 22:24:26 +0530
+Message-ID: <CAKohpo=b8WiE5kY8u4d5RDtJazR-U+NMR1jJTS85wTc9hvkGYA@mail.gmail.com>
+Subject: Re: Regression on cpufreq in v3.12-rc1
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Randy Dunlap <rdunlap@infradead.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 September 2013 18:08, Nishanth Menon <nm@ti.com> wrote:
+On 20 September 2013 20:46, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> I think show() and store() also suffer
+> from a similar fate. So do you think we need to add these checks there as well?
+> I'm not sure, since I can't think of a situation in which show() or store()
+> can be invoked before the cpufreq-driver is registered.. or, is such a
+> situation possible with cpufreq_disabled()?
 
-> I am open to suggestions if any one feels we can improve this better.
-
-I didn't really had one.. I thought of pm_opp** instead of dev_pm_opp**
-though..
-
-> I believe that change was from Patch #2[1]
-
-Yeah.. I just replied on a single patch :)
-
-> yes, you are right, I had squashed this patch in to squelch checkpatch
-> warnings:
-
-I see..
-
-> I had added a comment:
-> " Minor checkpatch warning fixes as a result of this change was fixed as
-> well."
-
-I really missed that..
-
-> Would you suggest I split the change off to a separate patch or improve
->  the comment a little more?
-
-don't really know, maybe leave those as is and let checkpatch warn you..
+cpufreq_disabled() is supposed to be called at boot time, so that
+cpufreq_core_init() fails.. and so show/store wouldn't exist without
+a driver..
