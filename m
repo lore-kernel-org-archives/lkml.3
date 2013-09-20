@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab3ITVhO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 17:37:14 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:59124 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab3ITVhM (ORCPT
+	id S1754137Ab3ITVqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 17:46:15 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:36021 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752249Ab3ITVqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 17:37:12 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        STEricsson <STEricsson_nomadik_linux@list.st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 01/26] ARM: nomadik: remove mtu initalization from .init_time
-Date: Fri, 20 Sep 2013 23:37:00 +0200
-Message-Id: <1379713020-7287-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1379526839-14798-2-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1379526839-14798-2-git-send-email-sebastian.hesselbarth@gmail.com>
+	Fri, 20 Sep 2013 17:46:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130920135648.GA19879@redhat.com>
+References: <20130920135648.GA19879@redhat.com>
+Date: Fri, 20 Sep 2013 23:46:12 +0200
+Message-ID: <CAMeQTsYY4E+dqRs=bmfrfStgv5oXQheKrbyqEQJFnOe4FC6cwQ@mail.gmail.com>
+Subject: Re: gma500: remove double free in psbfb_create
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: Dave Jones <davej@redhat.com>, Dave Airlie <airlied@redhat.com>,
+        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Rob Clark <robdclark@gmail.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nomadik clock initialization is properly done in clk-nomadik since
-patch "clk: nomadik: set all timers to use 2.4 MHz TIMCLK".
-Therefore, this patch removes now redundant mtu initialization from
-.init_time callback.
+On Fri, Sep 20, 2013 at 3:56 PM, Dave Jones <davej@redhat.com> wrote:
+> This code appears to be calling psb_gtt_free_range twice with the same args.
+> (The second call didn't appear in the diff output, it's right after the mutex_unlock)
+>
+> Spotted with Coverity, not tested due to lack of hardware.
+>
+> Signed-off-by: Dave Jones <davej@fedoraproject.org>
+>
+> diff --git a/drivers/gpu/drm/gma500/framebuffer.c b/drivers/gpu/drm/gma500/framebuffer.c
+> index 01dd7d2..d35ffc4 100644
+> --- a/drivers/gpu/drm/gma500/framebuffer.c
+> +++ b/drivers/gpu/drm/gma500/framebuffer.c
+> @@ -479,9 +479,7 @@ static int psbfb_create(struct psb_fbdev *fbdev,
+>         mutex_unlock(&dev->struct_mutex);
+>         return 0;
+>  out_unref:
+> -       if (backing->stolen)
+> -               psb_gtt_free_range(dev, backing);
+> -       else
+> +       if (!backing->stolen)
+>                 drm_gem_object_unreference(&backing->gem);
+>  out_err1:
+>         mutex_unlock(&dev->struct_mutex);
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Changelog:
-v1->v2:
-- adapt to clk-nomadik changes and just remove mtu init (Suggested by
-  Linus Walleij
-- reword commit message and description accordingly
+Hi Dave, thanks for the patch.
 
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Alessandro Rubini <rubini@unipv.it>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-nomadik/cpu-8815.c |   26 --------------------------
- 1 file changed, 26 deletions(-)
+This part of the code is a ref count disaster and probably needs to be
+reworked anyways. It would be nice to always let drm_gem_object_unreference()
+do the final cleanup call to psb_gtt_free_range() but stolen memory is treated
+as an exception in some cases. Also we don't seem to take down the framebuffer
+correctly on failure after drm_framebuffer_init() which seems scary.
+psb_framebuffer_init() calls drm_framebuffer_init() which clearly states that
+we need to be done with the setup and stop failing at this point.
 
-diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
-index 13e0df9..0fcb149 100644
---- a/arch/arm/mach-nomadik/cpu-8815.c
-+++ b/arch/arm/mach-nomadik/cpu-8815.c
-@@ -113,36 +113,10 @@ static void cpu8815_restart(enum reboot_mode mode, const char *cmd)
- 	writel(1, srcbase + 0x18);
- }
- 
--/* Initial value for SRC control register: all timers use MXTAL/8 source */
--#define SRC_CR_INIT_MASK	0x00007fff
--#define SRC_CR_INIT_VAL		0x2aaa8000
--
- static void __init cpu8815_timer_init_of(void)
- {
--	struct device_node *mtu;
--	void __iomem *base;
--	int irq;
--	u32 src_cr;
--
- 	/* We need this to be up now */
- 	nomadik_clk_init();
--
--	mtu = of_find_node_by_path("/mtu@101e2000");
--	if (!mtu)
--		return;
--	base = of_iomap(mtu, 0);
--	if (WARN_ON(!base))
--		return;
--	irq = irq_of_parse_and_map(mtu, 0);
--
--	pr_info("Remapped MTU @ %p, irq: %d\n", base, irq);
--
--	/* Configure timer sources in "system reset controller" ctrl reg */
--	src_cr = readl(base);
--	src_cr &= SRC_CR_INIT_MASK;
--	src_cr |= SRC_CR_INIT_VAL;
--	writel(src_cr, base);
--
- 	clocksource_of_init();
- }
- 
--- 
-1.7.10.4
+Also, we always get a stolen memory backed object (we're even lowering the
+depth to make sure we get one) so the drm_gem_object_unreference() is a NOP.
 
+Anyways, your patch looks good but I would like to look at this some more since
+it seems broken anyways.
+
+Patrik
