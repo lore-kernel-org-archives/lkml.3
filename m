@@ -1,189 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab3ITQDT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 12:03:19 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:45224 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309Ab3ITQBs (ORCPT
+	id S1752310Ab3ITQHd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 12:07:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48088 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751942Ab3ITQHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 12:01:48 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-ff-523c716b15d8
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Subject: [PATCH RESEND v8 3/7] thermal:boost: Automatic enable/disable of BOOST
- feature
-Date: Fri, 20 Sep 2013 18:01:00 +0200
-Message-id: <1379692864-4954-4-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1379692864-4954-1-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1379692864-4954-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t9jAd3sQpsggx1TuSw2zljPavG06Qe7
-	xbzPshZ9P68wW6zZ/5PJovPsE2aLN4+4Ld483MxocXnXHDaLz71HGC1uN65gs+hf2Mtk8eRh
-	H5vFxq8eDnwei/e8ZPK4c20Pm8e6aW+ZPfq2rGL0eLS4hdHj+I3tTB6fN8kFsEdx2aSk5mSW
-	pRbp2yVwZXw8VVPwSbli3qHzbA2MW2W7GDk5JARMJKY+28IOYYtJXLi3nq2LkYtDSGARo8T0
-	Z89YIJwuJokV6zcyg1SxCehJfL77lAnEFhGYwyhx56g7iM0ssItZ4tIlXRBbWCBSom/VTqBm
-	Dg4WAVWJb6sDQMK8Aq4SeyZuZ4FYJi/x9H4fG4jNKeAm8fjzPKhdjYwSb2ctYp3AyLuAkWEV
-	o2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnCgPpPawbiyweIQowAHoxIPb0eQTZAQa2JZcWXu
-	IUYJDmYlEd7aAqAQb0piZVVqUX58UWlOavEhRmkOFiVx3gOt1oFCAumJJanZqakFqUUwWSYO
-	TqkGRpaJtpd1V865r3558sem+P/rUn41/j21TuZgxarTMj06PsdTsjQbghkm3NvKZqSb8scw
-	tCvm6lq5y7UJBr++C58u4lywau+N7QWPprp+VbiypDtIPV1bYfujXsvpl70CRQou2r3WKI15
-	0PyR71DHN3Nu1kPPVERWKt9x2f7oZtuldFNX36eTNZRYijMSDbWYi4oTAckJgltQAgAA
+	Fri, 20 Sep 2013 12:07:32 -0400
+Date: Fri, 20 Sep 2013 11:07:17 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Oliver Schinagl <oliver+list@schinagl.nl>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "maxime-ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "oliver@schinagl.nl" <oliver@schinagl.nl>
+Subject: Re: [PATCH] [PATCH] ARM: sunxi: doc: Add sun7i (A20) interrupt table
+Message-ID: <20130920160717.GB5429@lukather>
+References: <1379675560-30656-1-git-send-email-oliver+list@schinagl.nl>
+ <1379675560-30656-2-git-send-email-oliver+list@schinagl.nl>
+ <20130920123956.GI17453@e106331-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IiVenqGWf+H9Y6IX"
+Content-Disposition: inline
+In-Reply-To: <20130920123956.GI17453@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides auto disable/enable operation for boost. When any
-defined trip point is passed, the boost is disabled.
-In that moment thermal monitor workqueue is woken up and it monitors
-if the device temperature drops below 75% of the smallest trip point.
-When device cools down, the boost is enabled again.
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+--IiVenqGWf+H9Y6IX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
----
-Changes for v8:
-- Move cpufreq_boost_* stub functions definition (needed when cpufreq
-  is not compiled in) to cpufreq.h at cpufreq core support commit
+Hi Mark,
 
-Changes for v7:
-- None
+On Fri, Sep 20, 2013 at 01:39:56PM +0100, Mark Rutland wrote:
+> On Fri, Sep 20, 2013 at 12:12:40PM +0100, Oliver Schinagl wrote:
+> > From: Oliver Schinagl <oliver@schinagl.nl>
+> >=20
+> > This patch adds some documentation about the Allwinner sun7i (A20) using
+> > the GIC.
+> >=20
+> > Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
+>=20
+> NAK.
+>=20
+> This information is not a binding, and it's not a property of the
+> interrupt controller. It's the integration of a full SoC, which should
+> be described full in a dtsi where it can actually be used.
+>=20
+> The only other SoCs that have this are other sunxi variants, and I see
+> no reason to have them here either.
 
-Changes for v6:
-- Disable boost only when supported and enabled
-- Protect boost related thermal_zone_device struct fields with mutex
-- Evaluate temperature trend during boost enable decision
-- Create separate methods to handle boost enable/disable
-  (thermal_boost_{enable|disable}) operations
-- Boost is disabled at any trip point passage (not only the non critical one)
-- Add stub definitions for cpufreq boost functions used when
-  CONFIG_CPU_FREQ is NOT defined.
+This was mostly here because we had a very sparse documentation for
+these SoCs when we first submitted the patches, and these informations
+were not easy to find out. So a misplaced documentation is still better
+than no documentation.
 
-Changes for v5:
-- Move boost disable code from cpu_cooling.c to thermal_core.c
-  (to handle_non_critical_trips)
-- Extent struct thermal_zone_device by adding overheated bool flag
-- Implement auto enable of boost after device cools down
-- Introduce boost_polling flag, which indicates if thermal uses it's predefined
-  pool delay or has woken up thermal workqueue only to wait until device
-  cools down.
+We do have the same documentation for the clocks here, mostly for the
+same reason.
 
-Changes for v4:
-- New patch
+Maxime
 
- drivers/thermal/thermal_core.c |   55 ++++++++++++++++++++++++++++++++++++++++
- include/linux/thermal.h        |    2 ++
- 2 files changed, 57 insertions(+)
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index 1f02e8e..8f4be55 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -34,6 +34,7 @@
- #include <linux/thermal.h>
- #include <linux/reboot.h>
- #include <linux/string.h>
-+#include <linux/cpufreq.h>
- #include <net/netlink.h>
- #include <net/genetlink.h>
- 
-@@ -354,9 +355,59 @@ static void handle_critical_trips(struct thermal_zone_device *tz,
- 	}
- }
- 
-+static int thermal_boost_enable(struct thermal_zone_device *tz)
-+{
-+	enum thermal_trend trend = get_tz_trend(tz, 0);
-+	long trip_temp;
-+
-+	if (!tz->ops->get_trip_temp || !tz->overheated)
-+		return -EPERM;
-+	if (trend == THERMAL_TREND_RAISING || trend == THERMAL_TREND_RAISE_FULL)
-+		return -EBUSY;
-+
-+	tz->ops->get_trip_temp(tz, 0, &trip_temp);
-+	/*
-+	 * Enable boost again only when current temperature is less
-+	 * than 75% of trip_temp[0]
-+	 */
-+	if ((tz->temperature + (trip_temp >> 2)) < trip_temp) {
-+		mutex_lock(&tz->lock);
-+		tz->overheated = false;
-+		if (tz->boost_polling) {
-+			tz->boost_polling = false;
-+			tz->polling_delay = 0;
-+		}
-+		mutex_unlock(&tz->lock);
-+		cpufreq_boost_trigger_state(1);
-+		return 0;
-+	}
-+	return -EBUSY;
-+}
-+
-+static void thermal_boost_disable(struct thermal_zone_device *tz)
-+{
-+	cpufreq_boost_trigger_state(0);
-+
-+	/*
-+	 * If no workqueue for monitoring is running - start one with
-+	 * 1000 ms monitoring period
-+	 * If workqueue already running - do not change its period and only
-+	 * test if target CPU has cooled down
-+	 */
-+	mutex_lock(&tz->lock);
-+	if (!tz->polling_delay) {
-+		tz->boost_polling = true;
-+		tz->polling_delay = 1000;
-+	}
-+	tz->overheated = true;
-+	mutex_unlock(&tz->lock);
-+}
-+
- static void handle_thermal_trip(struct thermal_zone_device *tz, int trip)
- {
- 	enum thermal_trip_type type;
-+	if (cpufreq_boost_supported() && cpufreq_boost_enabled())
-+		thermal_boost_disable(tz);
- 
- 	tz->ops->get_trip_type(tz, trip, &type);
- 
-@@ -455,6 +506,10 @@ static void thermal_zone_device_check(struct work_struct *work)
- 	struct thermal_zone_device *tz = container_of(work, struct
- 						      thermal_zone_device,
- 						      poll_queue.work);
-+	if (cpufreq_boost_supported())
-+		if (!thermal_boost_enable(tz))
-+			return;
-+
- 	thermal_zone_device_update(tz);
- }
- 
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index a386a1c..f1aa3c2 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -172,6 +172,8 @@ struct thermal_zone_device {
- 	int emul_temperature;
- 	int passive;
- 	unsigned int forced_passive;
-+	bool overheated;
-+	bool boost_polling;
- 	const struct thermal_zone_device_ops *ops;
- 	const struct thermal_zone_params *tzp;
- 	struct thermal_governor *governor;
--- 
-1.7.10.4
+--IiVenqGWf+H9Y6IX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSPHK0AAoJEBx+YmzsjxAgv4gP/13dni0QuVK6K/rGCSS7oLj1
+uuNHfAnZPvbDHlLcgIdCClaDEQQB52uLLc1ROSjWGfSQG9dkoQKB0rrGJvk9jpTO
+1BHGvThB6edsUWwajHdxu6VmiwCP7i8fyR6Ya94fbLf7yvE2xlhmZtkCbYnjWRPn
+WWaGx3gXVSlrV82PSqeRxYxj2goWoLDRFfnczGt3TDYCzEJsOBzNsDD6urGgpbBd
+lRxO2HxCV7l05xeDSFwRdakLpFn5/hlEsZZYJdvlr4MPiTniKd8vUJUKCpNMpFb2
+eddShZvRFbeHzgBnL3u9do53NGRWwULi115b6uIkJ8v+EV2KhvcKw3Ut8jwCc31l
+uQ68kw5wvutxDzqW/wDbw6jmHLQHY9CqLoQJf9Ty/pi27k9BOQ8SJDdrhWhfGNbn
+7n+dMnlIzDiJ0YdI+Gw7N2SS9lw+J8QtJAp6fS8yErLn3tN6wInVjnIMTNKkq9G1
+YUUnzatvuwvjoGeKc1Plj0t57Pzx05F9xjmYVTaZzoCk8DyjRPj2ZT6gUwsDhbxr
+m3+kik46kUmJL3GIGD0ox0J9WYC2CJ1eMQLSPWLYFeIW1z3aW5cHpKT8xuJoMCd1
+3gbYljV3MbDX0JtHHohqwZfNMzcVwSYmOICbvxHxLzfoHmhkRT/xVRcYGEHzh/Bf
+uDKq+BRWHGVuaPv9BJFd
+=/xRw
+-----END PGP SIGNATURE-----
+
+--IiVenqGWf+H9Y6IX--
