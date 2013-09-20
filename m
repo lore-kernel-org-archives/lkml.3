@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab3ITULs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:11:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41427 "EHLO
+	id S1754241Ab3ITULw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:11:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41432 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab3ITULq (ORCPT
+	with ESMTP id S1754127Ab3ITULs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:11:46 -0400
+	Fri, 20 Sep 2013 16:11:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pavel Shilovsky <pshilovsky@samba.org>, Steve French <smfrench@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 83/93] CIFS: Fix a memory leak when a lease break comes
-Date: Fri, 20 Sep 2013 13:09:18 -0700
-Message-Id: <1379707768-1804-84-git-send-email-kamal@canonical.com>
+Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 87/93] ASoC: mc13783: add spi errata fix
+Date: Fri, 20 Sep 2013 13:09:22 -0700
+Message-Id: <1379707768-1804-88-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -27,33 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <pshilovsky@samba.org>
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
 
-commit 1a05096de82f3cd672c76389f63964952678506f upstream.
+commit 9f6f0afbb9fdabf6dcac642dfec457f28981e3f8 upstream.
 
-This happens when we receive a lease break from a server, then
-find an appropriate lease key in opened files and schedule the
-oplock_break slow work. lw pointer isn't freed in this case.
+The MC13783 Chip Errata, Rev. 4 says, that depending on SPI clock
+and main audio clock speed, the Audio Codec or Stereo DAC do sometimes
+not start when programmed to do so. This is due to an internal clock
+timing issue related to the loading of the SPI bits into the audio block.
 
-Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-Signed-off-by: Steve French <smfrench@gmail.com>
+On an i.MX27 based system, this issue lead to switched audio channels under
+certain circumstances: RTC + Touch + Audio are used and loaded at startup.
+
+The mentioned workaround of writing registers 40 and 41 two times is implemented
+here.
+
+Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/cifs/smb2misc.c | 1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/mc13783.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/fs/cifs/smb2misc.c b/fs/cifs/smb2misc.c
-index 7b1c5e3..a27f337 100644
---- a/fs/cifs/smb2misc.c
-+++ b/fs/cifs/smb2misc.c
-@@ -469,6 +469,7 @@ smb2_is_valid_lease_break(char *buffer, struct TCP_Server_Info *server)
+diff --git a/sound/soc/codecs/mc13783.c b/sound/soc/codecs/mc13783.c
+index 5402dfb..8a8d936 100644
+--- a/sound/soc/codecs/mc13783.c
++++ b/sound/soc/codecs/mc13783.c
+@@ -126,6 +126,10 @@ static int mc13783_write(struct snd_soc_codec *codec,
  
- 				queue_work(cifsiod_wq, &cfile->oplock_break);
+ 	ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
  
-+				kfree(lw);
- 				spin_unlock(&cifs_file_list_lock);
- 				spin_unlock(&cifs_tcp_ses_lock);
- 				return true;
++	/* include errata fix for spi audio problems */
++	if (reg == MC13783_AUDIO_CODEC || reg == MC13783_AUDIO_DAC)
++		ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
++
+ 	mc13xxx_unlock(priv->mc13xxx);
+ 
+ 	return ret;
 -- 
 1.8.1.2
 
