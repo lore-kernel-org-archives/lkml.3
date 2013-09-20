@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab3ITUv6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:51:58 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:47890 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296Ab3ITUv5 (ORCPT
+	id S1754331Ab3ITUyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:54:15 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:47884 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab3ITUyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:51:57 -0400
+	Fri, 20 Sep 2013 16:54:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZqm=3oed979Jyg7n+8KwW_-2AGv3OzJBTPN20ZH=Vc3Q@mail.gmail.com>
+In-Reply-To: <1379526839-14798-3-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1379526839-14798-2-git-send-email-sebastian.hesselbarth@gmail.com>
-	<CACRpkdZqm=3oed979Jyg7n+8KwW_-2AGv3OzJBTPN20ZH=Vc3Q@mail.gmail.com>
-Date: Fri, 20 Sep 2013 22:51:56 +0200
-Message-ID: <CACRpkdauZCi+BDGa9gAZq0eG1jzHBuym5RzzwfxxcCMCAFJZEg@mail.gmail.com>
-Subject: Re: [PATCH 01/26] ARM: nomadik: move mtu setup to clocksource init
+	<1379526839-14798-3-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Fri, 20 Sep 2013 22:54:13 +0200
+Message-ID: <CACRpkdaD9yvtxP8a6gav_KaYWYSO_uh_e6Qz2bM8-0jTpvJ9gA@mail.gmail.com>
+Subject: Re: [PATCH 02/26] clk: nomadik: move src init out of nomadik_clk_init
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
         Alessandro Rubini <rubini@unipv.it>,
         STEricsson <STEricsson_nomadik_linux@list.st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
@@ -31,31 +28,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 10:49 PM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
-> On Wed, Sep 18, 2013 at 7:53 PM, Sebastian Hesselbarth
-> <sebastian.hesselbarth@gmail.com> wrote:
->
->> MTU timer initialization is stuffed into .init_time callback, while
->> cpu8815_timer_init_of again maps addresses from the same device node.
->> Therefore, this patch moves mtu setup from to clocksource init.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->
-> Another happy Nomadik user? Or are you just compile testing
-> this?
->
-> Actually, this is superceded and collides with this pending fix:
-> http://marc.info/?l=linux-arm-kernel&m=137910161418706&w=2
->
-> We should wait for that to hit mainline and then see what we want
-> to do with this.
+On Wed, Sep 18, 2013 at 7:53 PM, Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com> wrote:
 
-By the way - this can *definately* not be moved into the MTU
-driver as it is pertaining to clocks, not the timer using it.
+> nomadik_clk_init currently also maps system reset controller base address
+> used by clocks and registers a reboot notifier. To allow further cleanup of
+> nomadik clk setup, this moves system reset controller setup from
+> nomadik_clk_init to its own function.
+>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-As nmdk_timer_init() can also be called from the ux500 which
-does not want to do this, things get broken for ux500.
+I don't see where it's going until I've seen the rest of the patches
+but OK: Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
 Yours,
 Linus Walleij
