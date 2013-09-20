@@ -1,139 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab3ITVNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 17:13:13 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:58638 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862Ab3ITVNL (ORCPT
+	id S1754287Ab3ITVOH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 17:14:07 -0400
+Received: from mail-ye0-f201.google.com ([209.85.213.201]:60830 "EHLO
+	mail-ye0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251Ab3ITVOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 17:13:11 -0400
-Message-ID: <523CBA5F.60901@gmail.com>
-Date: Fri, 20 Sep 2013 23:13:03 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        STEricsson <STEricsson_nomadik_linux@list.st.com>,
+	Fri, 20 Sep 2013 17:14:03 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: linux-samsung-soc@vger.kernel.org
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/26] ARM: nomadik: move mtu setup to clocksource init
-References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com> <1379526839-14798-2-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1379526839-14798-2-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Tomasz Figa <t.figa@samsung.com>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Padmavathi Venna <padma.v@samsung.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH 1/6] clk: exynos-audss: convert to platform device
+Date: Fri, 20 Sep 2013 14:13:52 -0700
+Message-Id: <1379711637-5226-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2013 07:53 PM, Sebastian Hesselbarth wrote:
-> MTU timer initialization is stuffed into .init_time callback, while
-> cpu8815_timer_init_of again maps addresses from the same device node.
-> Therefore, this patch moves mtu setup from to clocksource init.
->
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Alessandro Rubini <rubini@unipv.it>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->   arch/arm/mach-nomadik/cpu-8815.c  |   26 --------------------------
->   drivers/clocksource/nomadik-mtu.c |   11 +++++++++++
->   2 files changed, 11 insertions(+), 26 deletions(-)
->
-> diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
-> index 13e0df9..0fcb149 100644
-> --- a/arch/arm/mach-nomadik/cpu-8815.c
-> +++ b/arch/arm/mach-nomadik/cpu-8815.c
-> @@ -113,36 +113,10 @@ static void cpu8815_restart(enum reboot_mode mode, const char *cmd)
->   	writel(1, srcbase + 0x18);
->   }
->
-> -/* Initial value for SRC control register: all timers use MXTAL/8 source */
-> -#define SRC_CR_INIT_MASK	0x00007fff
-> -#define SRC_CR_INIT_VAL		0x2aaa8000
-> -
->   static void __init cpu8815_timer_init_of(void)
->   {
-> -	struct device_node *mtu;
-> -	void __iomem *base;
-> -	int irq;
-> -	u32 src_cr;
-> -
->   	/* We need this to be up now */
->   	nomadik_clk_init();
-> -
-> -	mtu = of_find_node_by_path("/mtu@101e2000");
-> -	if (!mtu)
-> -		return;
-> -	base = of_iomap(mtu, 0);
-> -	if (WARN_ON(!base))
-> -		return;
-> -	irq = irq_of_parse_and_map(mtu, 0);
-> -
-> -	pr_info("Remapped MTU @ %p, irq: %d\n", base, irq);
-> -
-> -	/* Configure timer sources in "system reset controller" ctrl reg */
-> -	src_cr = readl(base);
-> -	src_cr &= SRC_CR_INIT_MASK;
-> -	src_cr |= SRC_CR_INIT_VAL;
-> -	writel(src_cr, base);
-> -
->   	clocksource_of_init();
->   }
+The Exynos AudioSS clock controller will later be modified to allow
+input clocks to be specified via device-tree in order to support
+multiple Exynos SoCs.  This will introduce a dependency on the core
+SoC clock controller being initialized first so that the AudioSS driver
+can look up its input clocks, but the order in which clock providers
+are probed in of_clk_init() is not guaranteed.  Since deferred probing
+is not supported in of_clk_init() and the AudioSS block is not the core
+controller, we can initialize it later as a platform device.
 
-Linus,
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+ drivers/clk/samsung/clk-exynos-audss.c | 71 +++++++++++++++++++++++++++-------
+ 1 file changed, 58 insertions(+), 13 deletions(-)
 
-looking at the fix you posted at [1], can I assume that the above it
-redundant and can be removed?
-
-[1] http://marc.info/?l=linux-arm-kernel&m=137910161418706&w=2
-
-> diff --git a/drivers/clocksource/nomadik-mtu.c b/drivers/clocksource/nomadik-mtu.c
-> index 1b74bea..b9f97ba 100644
-> --- a/drivers/clocksource/nomadik-mtu.c
-> +++ b/drivers/clocksource/nomadik-mtu.c
-> @@ -257,12 +257,17 @@ void __init nmdk_timer_init(void __iomem *base, int irq)
->   	__nmdk_timer_init(base, irq, pclk0, clk0);
->   }
->
-> +/* Initial value for SRC control register: all timers use MXTAL/8 source */
-> +#define SRC_CR_INIT_MASK	0x00007fff
-> +#define SRC_CR_INIT_VAL		0x2aaa8000
-> +
->   static void __init nmdk_timer_of_init(struct device_node *node)
->   {
->   	struct clk *pclk;
->   	struct clk *clk;
->   	void __iomem *base;
->   	int irq;
-> +	u32 src_cr;
->
->   	base = of_iomap(node, 0);
->   	if (!base)
-> @@ -280,6 +285,12 @@ static void __init nmdk_timer_of_init(struct device_node *node)
->   	if (irq <= 0)
->   		panic("Can't parse IRQ");
->
-> +	/* Configure timer sources in "system reset controller" ctrl reg */
-> +	src_cr = readl(base);
-> +	src_cr &= SRC_CR_INIT_MASK;
-> +	src_cr |= SRC_CR_INIT_VAL;
-> +	writel(src_cr, base);
-> +
->   	__nmdk_timer_init(base, irq, pclk, clk);
->   }
->   CLOCKSOURCE_OF_DECLARE(nomadik_mtu, "st,nomadik-mtu",
->
+diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
+index 39b40aa..7571e88 100644
+--- a/drivers/clk/samsung/clk-exynos-audss.c
++++ b/drivers/clk/samsung/clk-exynos-audss.c
+@@ -14,6 +14,8 @@
+ #include <linux/clk-provider.h>
+ #include <linux/of_address.h>
+ #include <linux/syscore_ops.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
+ 
+ #include <dt-bindings/clk/exynos-audss-clk.h>
+ 
+@@ -62,24 +64,29 @@ static struct syscore_ops exynos_audss_clk_syscore_ops = {
+ #endif /* CONFIG_PM_SLEEP */
+ 
+ /* register exynos_audss clocks */
+-static void __init exynos_audss_clk_init(struct device_node *np)
++static int exynos_audss_clk_probe(struct platform_device *pdev)
+ {
+-	reg_base = of_iomap(np, 0);
+-	if (!reg_base) {
+-		pr_err("%s: failed to map audss registers\n", __func__);
+-		return;
++	struct resource *res;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	reg_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(reg_base)) {
++		dev_err(&pdev->dev, "failed to map audss registers\n");
++		return PTR_ERR(reg_base);
+ 	}
+ 
+-	clk_table = kzalloc(sizeof(struct clk *) * EXYNOS_AUDSS_MAX_CLKS,
++	clk_table = devm_kzalloc(&pdev->dev,
++				sizeof(struct clk *) * EXYNOS_AUDSS_MAX_CLKS,
+ 				GFP_KERNEL);
+ 	if (!clk_table) {
+-		pr_err("%s: could not allocate clk lookup table\n", __func__);
+-		return;
++		dev_err(&pdev->dev, "could not allocate clk lookup table\n");
++		return -ENOMEM;
+ 	}
+ 
+ 	clk_data.clks = clk_table;
+ 	clk_data.clk_num = EXYNOS_AUDSS_MAX_CLKS;
+-	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
++	of_clk_add_provider(pdev->dev.of_node, of_clk_src_onecell_get,
++				&clk_data);
+ 
+ 	clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
+ 				mout_audss_p, ARRAY_SIZE(mout_audss_p),
+@@ -128,8 +135,46 @@ static void __init exynos_audss_clk_init(struct device_node *np)
+ #endif
+ 
+ 	pr_info("Exynos: Audss: clock setup completed\n");
++
++	return 0;
++}
++
++static int exynos_audss_clk_remove(struct platform_device *pdev)
++{
++	of_clk_del_provider(pdev->dev.of_node);
++
++	return 0;
+ }
+-CLK_OF_DECLARE(exynos4210_audss_clk, "samsung,exynos4210-audss-clock",
+-		exynos_audss_clk_init);
+-CLK_OF_DECLARE(exynos5250_audss_clk, "samsung,exynos5250-audss-clock",
+-		exynos_audss_clk_init);
++
++static const struct of_device_id exynos_audss_clk_of_match[] = {
++	{ .compatible = "samsung,exynos4210-audss-clock", },
++	{ .compatible = "samsung,exynos5250-audss-clock", },
++	{},
++};
++
++static struct platform_driver exynos_audss_clk_driver = {
++	.driver	= {
++		.name = "exynos-audss-clk",
++		.owner = THIS_MODULE,
++		.of_match_table = exynos_audss_clk_of_match,
++	},
++	.probe = exynos_audss_clk_probe,
++	.remove = exynos_audss_clk_remove,
++};
++
++static int __init exynos_audss_clk_init(void)
++{
++	return platform_driver_register(&exynos_audss_clk_driver);
++}
++core_initcall(exynos_audss_clk_init);
++
++static void __init exynos_audss_clk_exit(void)
++{
++	platform_driver_unregister(&exynos_audss_clk_driver);
++}
++module_exit(exynos_audss_clk_exit);
++
++MODULE_AUTHOR("Padmavathi Venna <padma.v@samsung.com>");
++MODULE_DESCRIPTION("Exynos AudioSS Clock Controller");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:exynos-audss-clk");
+-- 
+1.8.4
 
