@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab3ITJaM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 05:30:12 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:47971 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754202Ab3ITJaK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 05:30:10 -0400
-Date: Fri, 20 Sep 2013 10:30:01 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Adam Borowski <kilobyte@angband.pl>
-Cc: Roy Franz <roy.franz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org, matt.fleming@intel.com,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH 09/17] Move unicode to ASCII conversion to shared
- function.
-Message-ID: <20130920093001.GE4785@console-pimps.org>
-References: <1379391093-27948-1-git-send-email-roy.franz@linaro.org>
- <1379391093-27948-10-git-send-email-roy.franz@linaro.org>
- <20130919034406.GA26385@angband.pl>
- <CAFECyb-tTaCEqUHUh23MaJf-P42ZpodFKeNG=kE+vmmi-gyKrw@mail.gmail.com>
- <20130919230241.GA18666@angband.pl>
+	id S1754391Ab3ITJeA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 05:34:00 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52608 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754148Ab3ITJd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 05:33:58 -0400
+Date: Fri, 20 Sep 2013 11:33:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
+Subject: Re: [PATCH 00/11] EFI runtime services virtual mapping
+Message-ID: <20130920093352.GB9574@pd.tnic>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <20130920072904.GA21922@dhcp-16-126.nay.redhat.com>
+ <20130920081940.GC21922@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130919230241.GA18666@angband.pl>
+In-Reply-To: <20130920081940.GC21922@dhcp-16-126.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Sep, at 01:02:41AM, Adam Borowski wrote:
-> Are we on the same page so far?  If so, I can make a patch atop yours.
+On Fri, Sep 20, 2013 at 04:19:40PM +0800, Dave Young wrote:
+> Actually the ovmf testing is "qemu-system-x86_64 -kernel ", boot from grub
+> fails as well. Nothing printed on serial. I guess '-kernel' is using efi stub
+> to boot?
 
-Patches to fix this would be most welcome, though I'd wait until Roy
-sends out another version of this patch with the name/comment changes.
+Yes.
 
-This series will eventually end up in the 'next' branch at,
+Which OVMF are you using? Mine is pretty recent: svn revision 14530 from August.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
+Thanks.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
