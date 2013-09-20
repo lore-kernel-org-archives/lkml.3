@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab3ITQJB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 12:09:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48039 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752151Ab3ITQI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 12:08:58 -0400
-Message-ID: <523C69F7.4030903@redhat.com>
-Date: Fri, 20 Sep 2013 10:29:59 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752901Ab3ITQJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 12:09:05 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:55290 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab3ITQJD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 12:09:03 -0400
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, tytso@mit.edu,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: ext4: fix memory leak in xattr code.
-References: <20130920142918.GA21988@redhat.com>
-In-Reply-To: <20130920142918.GA21988@redhat.com>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <5226ED69.8080506@nod.at>
+References: <1377511730-14834-1-git-send-email-richard@nod.at>
+	<5226ED69.8080506@nod.at>
+Date: Fri, 20 Sep 2013 18:09:02 +0200
+Message-ID: <CAFLxGvwQ64QpC7GB5wG9S1RaQVfGuK5sn_JqABrdEmkqXY2KwA@mail.gmail.com>
+Subject: Re: [PATCH] UBI: fix refill_wl_user_pool()
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: richard.genoud@gmail.com,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/20/13 9:29 AM, Dave Jones wrote:
-> If we take the 2nd retry path in ext4_expand_extra_isize_ea, we potentionally
-> return from the function without having freed these allocations.
-> If we don't do the return, we over-write the previous allocation pointers, 
-> so we leak either way.
-> 
-> Spotted with Coverity.
-> 
-> Signed-off-by: Dave Jones <davej@fedoraproject.org>
+On Wed, Sep 4, 2013 at 10:20 AM, Richard Weinberger <richard@nod.at> wrote:
+> Am 26.08.2013 12:08, schrieb Richard Weinberger:
+>> If no free PEBs are available refill_wl_user_pool() must not
+>> return with -ENOSPC immediately.
+>> It has to block till produce_free_peb() produced a free PEB.
+>>
+>> Reported-and-Tested-by: Richard Genoud <richard.genoud@gmail.com>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> ---
+>>  drivers/mtd/ubi/wl.c | 4 ----
+>>  1 file changed, 4 deletions(-)
+>>
+>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+>> index c95bfb1..02317c1 100644
+>> --- a/drivers/mtd/ubi/wl.c
+>> +++ b/drivers/mtd/ubi/wl.c
+>> @@ -599,10 +599,6 @@ static void refill_wl_user_pool(struct ubi_device *ubi)
+>>       return_unused_pool_pebs(ubi, pool);
+>>
+>>       for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
+>> -             if (!ubi->free.rb_node ||
+>> -                (ubi->free_count - ubi->beb_rsvd_pebs < 1))
+>> -                     break;
+>> -
+>>               pool->pebs[pool->size] = __wl_get_peb(ubi);
+>>               if (pool->pebs[pool->size] < 0)
+>>                       break;
+>>
+>
+> Artem, please don't forget do apply this patch.
 
-Looks right to me.
+*ping*
 
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-
-Thanks!
-
--Eric
-
-> diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-> index c081e34..f3a6220 100644
-> --- a/fs/ext4/xattr.c
-> +++ b/fs/ext4/xattr.c
-> @@ -1350,6 +1350,8 @@ retry:
->  				    s_min_extra_isize) {
->  					tried_min_extra_isize++;
->  					new_extra_isize = s_min_extra_isize;
-> +					kfree(is);
-> +					kfree(bs);
->  					goto retry;
->  				}
->  				error = -1;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+-- 
+Thanks,
+//richard
