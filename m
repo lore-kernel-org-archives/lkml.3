@@ -1,81 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab3ITUde (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:33:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41356 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab3ITUKC (ORCPT
+	id S932183Ab3ITUdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:33:51 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:56674 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab3ITUds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:10:02 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Federico Vaga <federico.vaga@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Markus Kreidl <markus.kreidl@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 01/93] Revert "net/core/sock.c: add missing VSOCK string in af_family_*_key_strings"
-Date: Fri, 20 Sep 2013 13:07:56 -0700
-Message-Id: <1379707768-1804-2-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
-References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 20 Sep 2013 16:33:48 -0400
+Message-ID: <1379709689.31806.6.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Mike Christie <mchristie@fusionio.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Fri, 20 Sep 2013 13:41:29 -0700
+In-Reply-To: <20130920151915.GC10507@dhcp-26-207.brq.redhat.com>
+References: <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
+	 <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
+	 <1374248000.2266.20.camel@dabdike>
+	 <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+	 <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+	 <51EAA33C.9010405@fusionio.com>
+	 <20130809191542.GD25306@dhcp-26-207.brq.redhat.com>
+	 <1376079457.5171.172.camel@haakon3.risingtidesystems.com>
+	 <20130815162316.GA27882@dhcp-26-207.brq.redhat.com>
+	 <1376619569.5171.217.camel@haakon3.risingtidesystems.com>
+	 <20130920151915.GC10507@dhcp-26-207.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.10 -stable review patch.  If anyone has any objections, please let me know.
+Hi Alexander!
 
-------------------
+Apologies for the long delay on this follow-up..  Comments below.
 
-From: Kamal Mostafa <kamal@canonical.com>
+On Fri, 2013-09-20 at 17:19 +0200, Alexander Gordeev wrote:
+> On Thu, Aug 15, 2013 at 07:19:29PM -0700, Nicholas A. Bellinger wrote:
+> > Ok, here's a bit better idea of what is going on now..
+> > 
+> > The problem is that blkdev_issue_flush() -> blk_mq_make_request() ->
+> > __blk_mq_alloc_request() allocates the first tag, which calls
+> > blk_insert_flush() -> blk_flush_complete_seq() -> blk_flush_kick() ->
+> > mq_flush_work() -> blk_mq_alloc_request() to allocate a second tag for
+> > the struct request that actually gets dispatched into scsi-mq as a
+> > SYCHRONIZE_CACHE command..
+> > 
+> > I'm not exactly sure why this double tag usage of struct request is
+> > occurring, but AFAICT it does happen for every flush, and is not
+> > specific to the blkdev_issue_flush() codepath..  I'm sure that Jens can
+> > fill us in on that bit.  ;)
+> 
+> I also played with the double tag using a reserved tag (below).
+> 
+> While it fixes 'fdisk /dev/sda' issue when trying to 'mount /dev/sda1 /mnt'
+> what appears to be a call to bio->bi_end_io() from the free'd bio hits in.
+> 
+> Not sure if I should pursue the root cause until the whole double-tag
+> thingy is confirmed.
+> 
+> Jens?
+> 
+> 
+> diff --git a/block/blk-mq.c b/block/blk-mq.c
+> index 6fc1df3..81794dc 100644
+> --- a/block/blk-mq.c
+> +++ b/block/blk-mq.c
+> @@ -874,14 +874,14 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
+>  	hctx = q->mq_ops->map_queue(q, ctx->cpu);
+>  
+>  	trace_block_getrq(q, bio, rw);
+> -	rq = __blk_mq_alloc_request(hctx, GFP_ATOMIC, false);
+> +	rq = __blk_mq_alloc_request(hctx, GFP_ATOMIC, is_flush_fua);
+>  	if (likely(rq))
+>  		blk_mq_rq_ctx_init(ctx, rq, rw);
+>  	else {
+>  		blk_mq_put_ctx(ctx);
+>  		trace_block_sleeprq(q, bio, rw);
+>  		rq = blk_mq_alloc_request_pinned(q, rw, __GFP_WAIT|GFP_ATOMIC,
+> -							false);
+> +							is_flush_fua);
+>  		ctx = rq->mq_ctx;
+>  		hctx = q->mq_ops->map_queue(q, ctx->cpu);
+>  	}
 
-This reverts commit 98aab898043fdc0f63621dae282fb5448fc39f9a, which
-was commit 456db6a4d495f40777da6f1f32f62f13026f52db upstream.
+So this is what I ended up doing as well, and does address the specific
+bug with queue_depth=1.
 
-98aab89 should not have been applied to v3.8-stable since VSOCK is not
-relevant for v3.8.
+> @@ -1317,6 +1317,9 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_reg *reg,
+>  		reg->queue_depth = BLK_MQ_MAX_DEPTH;
+>  	}
+>  
+> +	reg->queue_depth++;
+> +	reg->reserved_tags++;
+> +
+>  	ctx = alloc_percpu(struct blk_mq_ctx);
+>  	if (!ctx)
+>  		return ERR_PTR(-ENOMEM);
+> 
 
-Cc: Federico Vaga <federico.vaga@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Markus Kreidl <markus.kreidl@gmail.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/core/sock.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+I was actually setting this within scsi_mq_alloc_queue(), but given that
+the queue_depth=1 issue is independent of scsi-mq, this does make more
+sense.
 
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 57b3243..b8af814 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -208,7 +208,7 @@ static const char *const af_family_key_strings[AF_MAX+1] = {
-   "sk_lock-AF_TIPC"  , "sk_lock-AF_BLUETOOTH", "sk_lock-IUCV"        ,
-   "sk_lock-AF_RXRPC" , "sk_lock-AF_ISDN"     , "sk_lock-AF_PHONET"   ,
-   "sk_lock-AF_IEEE802154", "sk_lock-AF_CAIF" , "sk_lock-AF_ALG"      ,
--  "sk_lock-AF_NFC"   , "sk_lock-AF_VSOCK"    , "sk_lock-AF_MAX"
-+  "sk_lock-AF_NFC"   , "sk_lock-AF_MAX"
- };
- static const char *const af_family_slock_key_strings[AF_MAX+1] = {
-   "slock-AF_UNSPEC", "slock-AF_UNIX"     , "slock-AF_INET"     ,
-@@ -224,7 +224,7 @@ static const char *const af_family_slock_key_strings[AF_MAX+1] = {
-   "slock-AF_TIPC"  , "slock-AF_BLUETOOTH", "slock-AF_IUCV"     ,
-   "slock-AF_RXRPC" , "slock-AF_ISDN"     , "slock-AF_PHONET"   ,
-   "slock-AF_IEEE802154", "slock-AF_CAIF" , "slock-AF_ALG"      ,
--  "slock-AF_NFC"   , "slock-AF_VSOCK"    ,"slock-AF_MAX"
-+  "slock-AF_NFC"   , "slock-AF_MAX"
- };
- static const char *const af_family_clock_key_strings[AF_MAX+1] = {
-   "clock-AF_UNSPEC", "clock-AF_UNIX"     , "clock-AF_INET"     ,
-@@ -240,7 +240,7 @@ static const char *const af_family_clock_key_strings[AF_MAX+1] = {
-   "clock-AF_TIPC"  , "clock-AF_BLUETOOTH", "clock-AF_IUCV"     ,
-   "clock-AF_RXRPC" , "clock-AF_ISDN"     , "clock-AF_PHONET"   ,
-   "clock-AF_IEEE802154", "clock-AF_CAIF" , "clock-AF_ALG"      ,
--  "clock-AF_NFC"   , "clock-AF_VSOCK"    , "clock-AF_MAX"
-+  "clock-AF_NFC"   , "clock-AF_MAX"
- };
- 
- /*
--- 
-1.8.1.2
+Also, these extra increments should probably happen only when the passed
+queue_depth == 1 && reserved_tags == 0.
+
+Other than that minor nit.
+
+Reviewed-by: Nicholas Bellinger <nab@linux-iscsi.org>
 
