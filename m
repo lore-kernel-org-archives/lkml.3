@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab3ITAQq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 20:16:46 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41768 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab3ITAQo (ORCPT
+	id S1752566Ab3ITApB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 20:45:01 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:55973 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab3ITAo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 20:16:44 -0400
-Message-ID: <523B93E2.80405@oracle.com>
-Date: Fri, 20 Sep 2013 08:16:34 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Thu, 19 Sep 2013 20:44:59 -0400
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: linux-scsi@vger.kernel.org,
+In-Reply-To: <1379632757.12963.4.camel@shinybook.infradead.org>
+References: <20130919194752.GA19975@quad.lixom.net>
+	<1379626776.753.164.camel@shinybook.infradead.org>
+	<CAN8TOE8j=oosn-5hAdqoTPcuW-sGvDAHd_nK6BZfJpxMwwpisQ@mail.gmail.com>
+	<1379632757.12963.4.camel@shinybook.infradead.org>
+Date: Thu, 19 Sep 2013 17:44:57 -0700
+Message-ID: <CAN8TOE8Xf9fv9zyY6wof3b9QhqgV=s-cK4V4D6n+Gw4HgacT0g@mail.gmail.com>
+Subject: Re: [GIT PULL] ARM: SoC fixes for 3.12-rc
+From: Brian Norris <computersforpeace@gmail.com>
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Guru Anbalagane <guru.anbalagane@oracle.com>
-Subject: [PATCH V2] [scsi] enclosure: remove duplicate device before add new
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When do disk pull/insert test we encountered below:
+On Thu, Sep 19, 2013 at 4:19 PM, Woodhouse, David
+<david.woodhouse@intel.com> wrote:
+> On Thu, 2013-09-19 at 15:57 -0700, Brian Norris wrote:
+>> On Thu, Sep 19, 2013 at 2:39 PM, Woodhouse, David
+>> <david.woodhouse@intel.com> wrote:
+>> > On Thu, 2013-09-19 at 12:47 -0700, Olof Johansson wrote:
+>> >>
+>> >> - A fix for build breakage in the MTD subsystem for some PXA devices.
+>> >>   David Woodhouse has this patch in his for-next branch but has not been
+>> >>   responding to our requests to send it up so here it is.
+>> >>   I should have amended the commit message to describe the build failure for
+>> >>   CONFIG_OF=n setups, but forgot and now it's down in the stack of commits.
+>> >
+>> > Thanks for pulling that in. Apologies for the screwup.
+>>
+>> Speaking of such process issues: there's an outstanding patch for a
+>> (small) memory leak that was introduced in the nand_base.c ONFI code
+>> in 3.12-rc1. Can I expect you to attend to these sort of -rcX (where X
+>> > 1) issues? Or should I send Linus the patch myself? I don't really
+>> want it to wait around until 3.13-rc1 to go to -stable.
+>
+> I'm aware of it, and will get to it shortly. Was going to round it up
+> along with the one that Olof just sent, either some time this week at
+> Plumbers or when I get home.
+>
+> If you want to stick it in the linux-mtd.git tree before that and send
+> Linus a pull request, I have no objection.
 
-WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0xbc/0xe0()
-Hardware name: SUN FIRE X4370 M2 SERVER
-sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:03.0/0000:0d:00.0/host6/port-6:1/expander-6:1/port-6:1:14/end_device-6:1:14/target6:0:27/6:0:27:0/enclosure_device:HDD10'
-Modules linked in: mptctl mptbase autofs4 hidp bluetooth rfkill lockd sunrpc bonding be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi cxgb3 mdio libiscsi_tcp libiscsi scsi_transport_iscsi dm_round_robin dm_multipath video sbs sbshc acpi_pad acpi_memhotplug acpi_ipmi parport_pc lp parport ipmi_si ipmi_devintf ipmi_msghandler sg ses enclosure ixgbe e1000e hwmon igb snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd soundcore snd_page_alloc iTCO_wdt pcspkr i2c_i801 ioatdma ghes iTCO_vendor_support hed dca i2c_core i7core_edac edac_core dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_mod usb_storage shpchp mpt2sas scsi_transport_sas raid_class ahci libahci sd_mod crc_t10dif raid1 ext3 jbd mbcache
-Pid: 23302, comm: kworker/u:2 Tainted: P            2.6.39-400.124.1.el5uek #1
-Call Trace:
- [<ffffffff811daf8c>] ? sysfs_add_one+0xbc/0xe0
- [<ffffffff8106f030>] warn_slowpath_common+0x90/0xc0
- [<ffffffff8106f15e>] warn_slowpath_fmt+0x6e/0x70
- [<ffffffff81258bd4>] ? strlcat+0x54/0x70
- [<ffffffff811daf8c>] sysfs_add_one+0xbc/0xe0
- [<ffffffff811dbec8>] sysfs_do_create_link+0x148/0x1d0
- [<ffffffff811dbf83>] sysfs_create_link+0x13/0x20
- [<ffffffffa00de307>] enclosure_add_links+0xe7/0x110 [enclosure]
- [<ffffffff8125325d>] ? kobject_release+0xd/0x10
- [<ffffffff812549e7>] ? kref_put+0x37/0x70
- [<ffffffffa00de3c3>] enclosure_add_device+0x93/0xa0 [enclosure]
- [<ffffffffa00c8666>] ses_enclosure_find_by_addr+0x76/0xc0 [ses]
- [<ffffffffa00c85f0>] ? ses_get_fault+0x40/0x40 [ses]
- [<ffffffffa00de433>] enclosure_for_each_device+0x63/0x90 [enclosure]
- [<ffffffffa00c8a8a>] ses_match_to_enclosure+0x11a/0x1d0 [ses]
- [<ffffffffa00c8e08>] ses_intf_add+0x2c8/0x5c0 [ses]
- [<ffffffff8125327a>] ? kobject_get+0x1a/0x30
- [<ffffffff814e8b56>] ? add_tail+0x36/0x50
- [<ffffffff81345ae4>] device_add+0x2d4/0x380
- [<ffffffff8136b096>] scsi_sysfs_add_sdev+0xe6/0x2a0
- [<ffffffff813682cc>] scsi_add_lun+0x41c/0x560
- [<ffffffff81368a80>] scsi_probe_and_add_lun+0x1e0/0x3e0
- [<ffffffff81041009>] ? default_spin_lock_flags+0x9/0x10
- [<ffffffff813696e7>] __scsi_scan_target+0xe7/0x120
- [<ffffffff81369b8d>] scsi_scan_target+0xcd/0xf0
- [<ffffffffa003faab>] sas_rphy_add+0x11b/0x170 [scsi_transport_sas]
- [<ffffffffa009a74f>] mpt2sas_transport_port_add+0x2cf/0x430 [mpt2sas]
- [<ffffffffa008d437>] _scsih_sas_device_add+0x87/0x110 [mpt2sas]
- [<ffffffffa0094eb8>] _scsih_add_device+0x248/0x340 [mpt2sas]
- [<ffffffffa0098cb1>] ? mpt2sas_transport_update_links+0xf1/0x190 [mpt2sas]
- [<ffffffffa00977b6>] _scsih_sas_topology_change_event+0x3c6/0x490 [mpt2sas]
- [<ffffffff81080698>] ? add_timer+0x18/0x20
- [<ffffffff8108a405>] ? queue_delayed_work_on+0xc5/0x170
- [<ffffffffa0097a85>] _mpt2sas_fw_work+0x205/0x240 [mpt2sas]
- [<ffffffffa0097ad9>] _firmware_event_work_delayed+0x19/0x20 [mpt2sas]
- [<ffffffff8108c0d9>] process_one_work+0xf9/0x370
- [<ffffffffa0097ac0>] ? _mpt2sas_fw_work+0x240/0x240 [mpt2sas]
- [<ffffffff8108ca1a>] worker_thread+0xca/0x240
- [<ffffffff8108c950>] ? manage_workers+0x90/0x90
- [<ffffffff81090ff7>] kthread+0x97/0xa0
- [<ffffffff8150fdc4>] kernel_thread_helper+0x4/0x10
- [<ffffffff81090f60>] ? kthread_bind+0x80/0x80
- [<ffffffff8150fdc0>] ? gs_change+0x13/0x13
----[ end trace 89a1351702ab360f ]---
+If you're up to it, then you can take it. I'll take it myself if I
+feel it's getting too late. The problem is just when I can't
+differentiate your quiet awareness from oblivion (or obliviousness?).
 
-This caused by duplicate device in enclosure list, we need to remove the
-possible duplicate entry to avoid the conflict when we add new one.
+> Does that m25p80 'fix 4 byte addressing' fix for Micron not also want to
+> go in?
 
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
----
- drivers/misc/enclosure.c | 2 ++
- 1 file changed, 2 insertions(+)
+I suppose the m25p80 one can go in as well. It's not so much a bugfix
+as augmenting my original patch to support more devices. But it is
+safe enough.
 
-diff --git a/drivers/misc/enclosure.c b/drivers/misc/enclosure.c
-index 0e8df41..173974d 100644
---- a/drivers/misc/enclosure.c
-+++ b/drivers/misc/enclosure.c
-@@ -325,6 +325,8 @@ int enclosure_add_device(struct enclosure_device *edev, int component,
- 	if (cdev->dev)
- 		enclosure_remove_links(cdev);
- 
-+	enclosure_remove_device(edev, dev);
-+
- 	put_device(cdev->dev);
- 	cdev->dev = get_device(dev);
- 	return enclosure_add_links(cdev);
--- 
-1.8.3.1
-
+Brian
