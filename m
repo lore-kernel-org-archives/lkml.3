@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3ITUOY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:14:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41607 "EHLO
+	id S1755641Ab3ITUYS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:24:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41612 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884Ab3ITUOV (ORCPT
+	with ESMTP id S1754929Ab3ITUOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:14:21 -0400
+	Fri, 20 Sep 2013 16:14:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 45/93] drm/edid: add quirk for Medion MD30217PG
-Date: Fri, 20 Sep 2013 13:08:40 -0700
-Message-Id: <1379707768-1804-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 43/93] USB: fix build error when CONFIG_PM_SLEEP isn't enabled
+Date: Fri, 20 Sep 2013 13:08:38 -0700
+Message-Id: <1379707768-1804-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -27,78 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 118bdbd86b39dbb843155054021d2c59058f1e05 upstream.
+commit 9d8924297cd9c256c23c02abae40202563452453 upstream.
 
-This LCD monitor (1280x1024 native) has a completely
-bogus detailed timing (640x350@70hz).  User reports that
-1280x1024@60 has waves so prefer 1280x1024@75.
+This patch fixes a build error that occurs when CONFIG_PM is enabled
+and CONFIG_PM_SLEEP isn't:
 
-Manufacturer: MED  Model: 7b8  Serial#: 99188
-Year: 2005  Week: 5
-EDID Version: 1.3
-Analog Display Input,  Input Voltage Level: 0.700/0.700 V
-Sync:  Separate
-Max Image Size [cm]: horiz.: 34  vert.: 27
-Gamma: 2.50
-DPMS capabilities: Off; RGB/Color Display
-First detailed timing is preferred mode
-redX: 0.645 redY: 0.348   greenX: 0.280 greenY: 0.605
-blueX: 0.142 blueY: 0.071   whiteX: 0.313 whiteY: 0.329
-Supported established timings:
-720x400@70Hz
-640x480@60Hz
-640x480@72Hz
-640x480@75Hz
-800x600@56Hz
-800x600@60Hz
-800x600@72Hz
-800x600@75Hz
-1024x768@60Hz
-1024x768@70Hz
-1024x768@75Hz
-1280x1024@75Hz
-Manufacturer's mask: 0
-Supported standard timings:
-Supported detailed timing:
-clock: 25.2 MHz   Image Size:  337 x 270 mm
-h_active: 640  h_sync: 688  h_sync_end 784 h_blank_end 800 h_border: 0
-v_active: 350  v_sync: 350  v_sync_end 352 v_blanking: 449 v_border: 0
-Monitor name: MD30217PG
-Ranges: V min: 56 V max: 76 Hz, H min: 30 H max: 83 kHz, PixClock max 145 MHz
-Serial No: 501099188
-EDID (in hex):
-          00ffffffffffff0034a4b80774830100
-          050f010368221b962a0c55a559479b24
-          125054afcf00310a0101010101018180
-          000000000000d60980a0205e63103060
-          0200510e1100001e000000fc004d4433
-          3032313750470a202020000000fd0038
-          4c1e530e000a202020202020000000ff
-          003530313039393138380a2020200078
+>> drivers/usb/host/ohci-pci.c:294:10: error: 'usb_hcd_pci_pm_ops' undeclared here (not in a function)
+      .pm = &usb_hcd_pci_pm_ops
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reported-by: friedrich@mailstation.de
+Since the usb_hcd_pci_pm_ops structure is defined and used when
+CONFIG_PM is enabled, its declaration should not be protected by
+CONFIG_PM_SLEEP.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/drm_edid.c | 3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/usb/hcd.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
-index dfd9ed3..60d6b35 100644
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -125,6 +125,9 @@ static struct edid_quirk {
+diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
+index 0a78df5..40e8563 100644
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -408,7 +408,7 @@ extern int usb_hcd_pci_probe(struct pci_dev *dev,
+ extern void usb_hcd_pci_remove(struct pci_dev *dev);
+ extern void usb_hcd_pci_shutdown(struct pci_dev *dev);
  
- 	/* ViewSonic VA2026w */
- 	{ "VSC", 5020, EDID_QUIRK_FORCE_REDUCED_BLANKING },
-+
-+	/* Medion MD 30217 PG */
-+	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
- };
- 
- /*** DDC fetch and block validation ***/
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ extern const struct dev_pm_ops usb_hcd_pci_pm_ops;
+ #endif
+ #endif /* CONFIG_PCI */
 -- 
 1.8.1.2
 
