@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753688Ab3ITTKk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 15:10:40 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58743 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752624Ab3ITTKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 15:10:39 -0400
-Message-ID: <523C9D8B.2000701@ti.com>
-Date: Fri, 20 Sep 2013 14:10:03 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753499Ab3ITTQV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 15:16:21 -0400
+Received: from mail-ye0-f182.google.com ([209.85.213.182]:51302 "EHLO
+	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419Ab3ITTQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 15:16:19 -0400
+Date: Fri, 20 Sep 2013 15:16:14 -0400
+From: Matt Porter <matt.porter@linaro.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Christian Daudt <csd@broadcom.com>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
+        linux-tegra@vger.kernel.org, linux-rpi-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kernel@stlinux.com,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/26] ARM: provide common arch init for DT clocks
+Message-ID: <20130920191613.GA25191@ohporter.com>
 MIME-Version: 1.0
-To: <balbi@ti.com>, Olof Johansson <olof@lixom.net>
-CC: Tony Lindgren <tony@atomide.com>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] ARM: OMAP3630: Add generic machine descriptor
-References: <1379693332-10585-1-git-send-email-nm@ti.com> <CAOesGMj6G7LeYUJsGpZHxKOjiNrk+1U55QFqcQyTb6_Co+n4zQ@mail.gmail.com> <20130920162329.GC18721@radagast> <CAOesGMiru=RUHS4XKLL=DC+hxtAJqtcjgd5hPbaccnAfEZ3y0g@mail.gmail.com> <20130920174228.GK18721@radagast>
-In-Reply-To: <20130920174228.GK18721@radagast>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2013 12:42 PM, Felipe Balbi wrote:
-> Hi,
+On Wed, Sep 18, 2013 at 07:53:33PM +0200, Sebastian Hesselbarth wrote:
+> This is a patch set based on an RFC [1][2] sent earlier to provide a common
+> arch/arm init for DT clock providers. Currently, the call to of_clk_init(NULL)
+> to initialize DT clock providers is spread among several mach-dirs. Since most
+> machs require DT clocks initialized before timers, no initcall can be used.
 > 
-> On Fri, Sep 20, 2013 at 10:16:48AM -0700, Olof Johansson wrote:
->>> On Fri, Sep 20, 2013 at 09:19:02AM -0700, Olof Johansson wrote:
->>>> On Fri, Sep 20, 2013 at 9:08 AM, Nishanth Menon <nm@ti.com> wrote:
->>>>> An alternative approach may be to (for all SoCs):
->>>>> 1. define every SoC entry - ti,omap3430 ti,omap3630...
->>>>> 2. have a generic omap3_init which uses "if (of_machine_is_compatible("ti,omap3630"))"
->>>>> to invoke the appropriate omap3xxx_init_early.
->>>>
->>>> Yes, this would be better, but you can do add a DT_MACHINE as in this
->>>> patch but have ti,omap3630 as the dt_compat table. Then there's no
->>>> need to add runtime checks.
->>>
->>> I was going to reply that adding of_machine_is_compatible("ti,omap3630")
->>> would help in some situations, but guess it's already tainted ;-)
->>
->> Oh, if it's just a few checks, then by all means go down that route. I
->> didn't look at the code to see how much it would be.
->>
->> But if a new DT_MACHINE is added, then it should definitely be based
->> on ti,omap3630 instead of listing all the boards.
-This was more in the direction I was hoping to go.
-
+> By adding of_clk_init(NULL) to arch/arm time_init(), we can remove all
+> mach-specific .init_time hooks that basically called of_clk_init and
+> clocksource_of_init.
 > 
-> the idea was to CPU compatible property to conditionally enable known
-> erratas workarounds. In some cases, Revision register can't be trusted,
-> so instead of creating per-errata DT properties (since that'd be
-> describing the SW, in a way), I thought of using
-> of_machine_is_compatible() checks, but that assumes CPU compatible is
-> "correct".
-I think the quirk handling is part of what Tony is attempting, and the
-definition of these might help, I think..
+> In contrast to the RFC version, of_clk_init(NULL) is now only called if no
+> custom .init_time callback is set. This allows some machs to still call clock
+> init themselves, as not all can be converted now. Therefore, this patch sets
+> drops conversion of mach-mvebu and mach-zynq. New machs that were introduced
+> with v3.12-rc1 are also converted, except mach-u300 that requires clocks
+> before irqs.
+> 
+> The patch set is based on v3.12-rc1 and further depends on a topic branch
+> created by Stephen Warren for mach-tegra [3]. It is now split into preparation
+> and removal patches to not break bisectability. I added all Acked-by/Tested-by's
+> where applicable or dropped them, if the patch was separated into two.
+> It has been compile tested for all machs involved with the following defconfigs
+> (multi_v7, bcm2835, dove, exynos, kirkwood, mxs, nhk8815) and nspire selected
+> on multi_v4_v5.
+> 
+> Patches 1-8 comprise preparation patches that convert machs nomadik, prima2,
+> socfpga, sunxi, tegra, and vt8500 to usual .init_time callbacks calling only
+> of_clk_init and clocksource_of_init.
+> 
+> Patch 9 then introduces of_clk_init(NULL) to the arch-wide default .init_time
+> callback.
+> 
+> Patches 10-26 finally remove custom .init_time callbacks from the machs involved.
 
+Hi Sebastian,
 
+Could you pick up the following patch for mach-bcm/ into this series?
+
+Thanks,
+Matt
+
+>From f65d048b3453447bb3e693cb21701c4d0c6375ed Mon Sep 17 00:00:00 2001
+From: Matt Porter <matt.porter@linaro.org>
+Date: Fri, 20 Sep 2013 13:41:06 -0400
+Subject: [PATCH] ARM: bcm: Remove custom .time_init hook
+
+With arch/arm calling of_clk_init(NULL) and clocksource_of_init()
+this is no longer needed. The former is useful because we can make
+use of dummy fixed clocks for drivers until the bcm281xx common
+clock driver is ready.
+
+Signed-off-by: Matt Porter <matt.porter@linaro.org>
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+Reviewed-by: Christian Daudt <csd@broadcom.com>
+---
+ arch/arm/mach-bcm/board_bcm281xx.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm/mach-bcm/board_bcm281xx.c b/arch/arm/mach-bcm/board_bcm281xx.c
+index 8d9f931..26b2390 100644
+--- a/arch/arm/mach-bcm/board_bcm281xx.c
++++ b/arch/arm/mach-bcm/board_bcm281xx.c
+@@ -68,7 +68,6 @@ static void __init board_init(void)
+ static const char * const bcm11351_dt_compat[] = { "brcm,bcm11351", NULL, };
+ 
+ DT_MACHINE_START(BCM11351_DT, "Broadcom Application Processor")
+-	.init_time = clocksource_of_init,
+ 	.init_machine = board_init,
+ 	.restart = bcm_kona_restart,
+ 	.dt_compat = bcm11351_dt_compat,
 -- 
-Regards,
-Nishanth Menon
+1.8.4
+
