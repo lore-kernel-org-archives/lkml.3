@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab3ITPk0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 11:40:26 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:61504 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036Ab3ITPkZ (ORCPT
+	id S1752229Ab3ITPpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 11:45:31 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50276 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751675Ab3ITPpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 11:40:25 -0400
+	Fri, 20 Sep 2013 11:45:30 -0400
+Date: Fri, 20 Sep 2013 16:45:18 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: Re: [PATCH] lockref: use cmpxchg64 explicitly for lockless updates
+Message-ID: <20130920154518.GE5015@mudshark.cambridge.arm.com>
+References: <1379614006-3844-1-git-send-email-will.deacon@arm.com>
+ <CA+55aFxuc3yD5pH2w5uEr_VDsEANvEiGCWA6tu1cSFrAiaU4Ow@mail.gmail.com>
+ <20130920100806.GA5015@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-In-Reply-To: <523C6A88.30800@linux.vnet.ibm.com>
-References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
-	<45987104.t6r4hvPgQn@vostro.rjw.lan>
-	<523AF22F.1010909@linux.vnet.ibm.com>
-	<CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com>
-	<CACRpkdYBYdMJ6mTGUropOypx0ZVNn8eQMzV+eKocCSBZAu6xTA@mail.gmail.com>
-	<CAKohpokQO82XMGwcTjVmNTbBVESyFqV4DAxMMU_RHEtN+LqUgg@mail.gmail.com>
-	<CACRpkdYoNkgno24dtJAwOq2T9yoKQYgKQ+adfkSN8affYNePjQ@mail.gmail.com>
-	<CAKohpokdOXrGVxEA89yrAq2T8MiqZNHrrXNagqqggo67rEmKYg@mail.gmail.com>
-	<CACRpkdZDqoqrEPfdra+iVS-hopLpJbPmWh=r8UkYRFUMg17jpw@mail.gmail.com>
-	<523C6A88.30800@linux.vnet.ibm.com>
-Date: Fri, 20 Sep 2013 17:40:24 +0200
-Message-ID: <CACRpkdasfW9OzZHPgfksjkHgw+Z-n7Tc_d2yXYy+BjShUhAYFg@mail.gmail.com>
-Subject: Re: Regression on cpufreq in v3.12-rc1
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130920100806.GA5015@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 5:32 PM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> On 09/20/2013 08:51 PM, Linus Walleij wrote:
+On Fri, Sep 20, 2013 at 11:08:06AM +0100, Will Deacon wrote:
+> On Thu, Sep 19, 2013 at 07:11:32PM +0100, Linus Torvalds wrote:
+> > From a performance standpoint, lockref really is expected to mainly
+> > help with big machines. Only insane people would do big machines with
+> > 32-bit kernels these days.
+> 
+> Our definitions of "big" machines probably differ significantly, but it
+> would be interesting to see if this *does* make a difference on some of the
+> multi-cluster ARMv7 hardware.
 
->> sa11x0_pcmcia_init() which starts this chain of events is called as
->> an fs_initcall(), see drivers/pcmcia/sa1100_generic.c
->
-> But fs_initcall() comes after arch_initcall() right? (looking at
-> include/linux/init.h). Since the corresponding cpufreq-driver (drivers/
-> cpufreq/sa1100-cpufreq.c) uses arch_initcall() to register itself, it
-> is all the more surprising how this could happen...
+[...]
 
-Hm it does happen if the cpufreq driver does not probe *at all*
-right? I will look closer at this, maybe it just doesn't register
-properly for some SA1100 variants...
+> > In other words, I'd actually like to see some numbers if there are
+> > loads where this actually helps and matters...
+> 
+> That's fair enough; I just saw the new lockref stuff, thought "that's a cool
+> hack" then looked at playing with it on ARM. I'll go see what this AIM7
+> thing is all about...
 
-Yours,
-Linus Walleij
+Right, turns out I can get some interesting numbers from your simple t.c
+program on my dual-cluster, 5 CPU ARMv7 machine. The new cmpxchg-based lockref
+code gives ~50% improvement, but the fun part is that implementing cmpxchg64
+without memory barriers doubles this win to ~100% over current mainline.
+
+If we can guarantee that the CODE just messes around with the lockref, those
+barriers probably aren't needed...
+
+As for AIM7/re-aim, I'm having a hard time getting repeatable numbers out of
+it to establish a baseline, so it's not proving to be especially helpful.
+
+Will
