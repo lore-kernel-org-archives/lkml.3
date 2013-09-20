@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab3ITUV3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:21:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41669 "EHLO
+	id S1755530Ab3ITUVz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:21:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41651 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061Ab3ITUOu (ORCPT
+	with ESMTP id S1755034Ab3ITUOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:14:50 -0400
+	Fri, 20 Sep 2013 16:14:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 25/93] USB: mos7720: fix big-endian control requests
-Date: Fri, 20 Sep 2013 13:08:20 -0700
-Message-Id: <1379707768-1804-26-git-send-email-kamal@canonical.com>
+Subject: [PATCH 37/93] HID: validate HID report id size
+Date: Fri, 20 Sep 2013 13:08:32 -0700
+Message-Id: <1379707768-1804-38-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -28,36 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 3b716caf190ccc6f2a09387210e0e6a26c1d81a4 upstream.
+commit 43622021d2e2b82ea03d883926605bdd0525e1d1 upstream.
 
-Fix endianess bugs in parallel-port code which caused corrupt
-control-requests to be issued on big-endian machines.
+The "Report ID" field of a HID report is used to build indexes of
+reports. The kernel's index of these is limited to 256 entries, so any
+malicious device that sets a Report ID greater than 255 will trigger
+memory corruption on the host:
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ 1347.156239] BUG: unable to handle kernel paging request at ffff88094958a878
+[ 1347.156261] IP: [<ffffffff813e4da0>] hid_register_report+0x2a/0x8b
+
+CVE-2013-2888
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/mos7720.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/hid/hid-core.c | 10 +++++++---
+ include/linux/hid.h    |  4 +++-
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
-index cdb3823..c5afc94 100644
---- a/drivers/usb/serial/mos7720.c
-+++ b/drivers/usb/serial/mos7720.c
-@@ -383,8 +383,8 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
- 	}
- 	urbtrack->setup->bRequestType = (__u8)0x40;
- 	urbtrack->setup->bRequest = (__u8)0x0e;
--	urbtrack->setup->wValue = get_reg_value(reg, dummy);
--	urbtrack->setup->wIndex = get_reg_index(reg);
-+	urbtrack->setup->wValue = cpu_to_le16(get_reg_value(reg, dummy));
-+	urbtrack->setup->wIndex = cpu_to_le16(get_reg_index(reg));
- 	urbtrack->setup->wLength = 0;
- 	usb_fill_control_urb(urbtrack->urb, usbdev,
- 			     usb_sndctrlpipe(usbdev, 0),
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 08eb32a..194597f 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -63,6 +63,8 @@ struct hid_report *hid_register_report(struct hid_device *device, unsigned type,
+ 	struct hid_report_enum *report_enum = device->report_enum + type;
+ 	struct hid_report *report;
+ 
++	if (id >= HID_MAX_IDS)
++		return NULL;
+ 	if (report_enum->report_id_hash[id])
+ 		return report_enum->report_id_hash[id];
+ 
+@@ -404,8 +406,10 @@ static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
+ 
+ 	case HID_GLOBAL_ITEM_TAG_REPORT_ID:
+ 		parser->global.report_id = item_udata(item);
+-		if (parser->global.report_id == 0) {
+-			hid_err(parser->device, "report_id 0 is invalid\n");
++		if (parser->global.report_id == 0 ||
++		    parser->global.report_id >= HID_MAX_IDS) {
++			hid_err(parser->device, "report_id %u is invalid\n",
++				parser->global.report_id);
+ 			return -1;
+ 		}
+ 		return 0;
+@@ -575,7 +579,7 @@ static void hid_close_report(struct hid_device *device)
+ 	for (i = 0; i < HID_REPORT_TYPES; i++) {
+ 		struct hid_report_enum *report_enum = device->report_enum + i;
+ 
+-		for (j = 0; j < 256; j++) {
++		for (j = 0; j < HID_MAX_IDS; j++) {
+ 			struct hid_report *report = report_enum->report_id_hash[j];
+ 			if (report)
+ 				hid_free_report(report);
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index 7330a0f..13d812b 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -392,10 +392,12 @@ struct hid_report {
+ 	struct hid_device *device;			/* associated device */
+ };
+ 
++#define HID_MAX_IDS 256
++
+ struct hid_report_enum {
+ 	unsigned numbered;
+ 	struct list_head report_list;
+-	struct hid_report *report_id_hash[256];
++	struct hid_report *report_id_hash[HID_MAX_IDS];
+ };
+ 
+ #define HID_REPORT_TYPES 3
 -- 
 1.8.1.2
 
