@@ -1,61 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab3ITU21 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:28:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41510 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754608Ab3ITUND (ORCPT
+	id S1754608Ab3ITU2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:28:51 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:44325 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208Ab3ITU2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:13:03 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alexander Shiyan <shc_work@mail.ru>, Kamil Debski <k.debski@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 62/93] [media] media: coda: Fix DT driver data pointer for i.MX27
-Date: Fri, 20 Sep 2013 13:08:57 -0700
-Message-Id: <1379707768-1804-63-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
-References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 20 Sep 2013 16:28:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <523638FC.1030006@ti.com>
+References: <1378949441-6073-1-git-send-email-milo.kim@ti.com>
+	<20130912152809.GO11227@lee--X1>
+	<20130915111730.GA9765@ulmo>
+	<523638FC.1030006@ti.com>
+Date: Fri, 20 Sep 2013 22:28:48 +0200
+Message-ID: <CACRpkdZYfyNJxNzHaU9taaPpC+NzbLEsVyeraMQxvL1ijL_wBQ@mail.gmail.com>
+Subject: Re: [PATCH v3 0/4] LP3943 MFD driver for a GPIO expander and a PWM generator
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Milo Kim <milo.kim@ti.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.10 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Sep 16, 2013 at 12:47 AM, Milo Kim <milo.kim@ti.com> wrote:
 
-------------------
+> I agree Thierry.
+> If you don't mind, can I create a MFD subdirectory with this patch-set in
+> next version, v4?
 
-From: Alexander Shiyan <shc_work@mail.ru>
+This seems like a good idea.
 
-commit 7b0dd9e60e714951b5400dd0740b3c4c3c3cb76f upstream.
-
-The data pointer should point to DT data, and not to the ID
-array.
-
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-Signed-off-by: Kamil Debski <k.debski@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/media/platform/coda.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/media/platform/coda.c b/drivers/media/platform/coda.c
-index 4a980e0..02d4970 100644
---- a/drivers/media/platform/coda.c
-+++ b/drivers/media/platform/coda.c
-@@ -1884,7 +1884,7 @@ MODULE_DEVICE_TABLE(platform, coda_platform_ids);
- 
- #ifdef CONFIG_OF
- static const struct of_device_id coda_dt_ids[] = {
--	{ .compatible = "fsl,imx27-vpu", .data = &coda_platform_ids[CODA_IMX27] },
-+	{ .compatible = "fsl,imx27-vpu", .data = &coda_devdata[CODA_IMX27] },
- 	{ .compatible = "fsl,imx53-vpu", .data = &coda_devdata[CODA_IMX53] },
- 	{ /* sentinel */ }
- };
--- 
-1.8.1.2
-
+Yours,
+Linus Walleij
