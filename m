@@ -1,167 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab3ITDKR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 23:10:17 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:34499 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364Ab3ITDKO (ORCPT
+	id S1754065Ab3ITDKd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 23:10:33 -0400
+Received: from smtprelay0099.hostedemail.com ([216.40.44.99]:55950 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753987Ab3ITDKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 23:10:14 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org, joe@perches.com
-Cc: linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>
-Subject: [PATCH v2 2/2] ia32_aout: x86_64: Add safe check in a.out loaders, printks, conding style fixes
-Date: Fri, 20 Sep 2013 00:08:20 -0300
-Message-Id: <1379646500-11858-2-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1379646500-11858-1-git-send-email-geyslan@gmail.com>
-References: <1379646500-11858-1-git-send-email-geyslan@gmail.com>
+	Thu, 19 Sep 2013 23:10:15 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:857:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3866:3867:3871:4321:4384:5007:7652:10004:10400:10848:11026:11658:11914:12438:12517:12519:12555:12731:12737:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: voice73_593d8347d550a
+X-Filterd-Recvd-Size: 2277
+Message-ID: <1379646611.2021.7.camel@joe-AO722>
+Subject: [PATCH 2/2] framebuffer: Fix int cast to pointer warnings
+From: Joe Perches <joe@perches.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 19 Sep 2013 20:10:11 -0700
+In-Reply-To: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>
+References: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ia32_aout had no safe checks concerning the mmap and f_op in this module.
-It's not necessary to verify f_op in the load_aout_library, since the
-prior kernel_read/vfs_read function already does.
-Made coding style fixes and printks replacements.
+Casts of int to pointer need additional casts to (unsigned long)
+when compiled for x86-64 to silence the compiler.
 
-Tested using qemu, a handcrafted a.out binary and a a.out linked with a
-cross-compiled ld.
-
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/x86/ia32/ia32_aout.c | 63 +++++++++++++++++++++++------------------------
- 1 file changed, 31 insertions(+), 32 deletions(-)
+ drivers/video/arkfb.c    | 2 +-
+ drivers/video/vt8623fb.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
-index bae3aba..87d5114 100644
---- a/arch/x86/ia32/ia32_aout.c
-+++ b/arch/x86/ia32/ia32_aout.c
-@@ -24,9 +24,9 @@
- #include <linux/binfmts.h>
- #include <linux/personality.h>
- #include <linux/init.h>
--#include <linux/jiffies.h>
-+#include <linux/ratelimit.h>
-+#include <linux/uaccess.h>
+diff --git a/drivers/video/arkfb.c b/drivers/video/arkfb.c
+index b13f3f2..26fd4e4 100644
+--- a/drivers/video/arkfb.c
++++ b/drivers/video/arkfb.c
+@@ -1016,7 +1016,7 @@ static int ark_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
  
--#include <asm/uaccess.h>
- #include <asm/pgalloc.h>
- #include <asm/cacheflush.h>
- #include <asm/user32.h>
-@@ -224,9 +224,9 @@ static u32 __user *create_aout_tables(char __user *p, struct linux_binprm *bprm)
- 	int argc = bprm->argc, envc = bprm->envc;
+ 	pcibios_bus_to_resource(dev, &vga_res, &bus_reg);
  
- 	sp = (u32 __user *) ((-(unsigned long)sizeof(u32)) & (unsigned long) p);
--	sp -= envc+1;
-+	sp -= envc + 1;
- 	envp = sp;
--	sp -= argc+1;
-+	sp -= argc + 1;
- 	argv = sp;
- 	put_user((unsigned long) envp, --sp);
- 	put_user((unsigned long) argv, --sp);
-@@ -271,10 +271,17 @@ static int load_aout_binary(struct linux_binprm *bprm)
- 	     N_MAGIC(ex) != QMAGIC && N_MAGIC(ex) != NMAGIC) ||
- 	    N_TRSIZE(ex) || N_DRSIZE(ex) ||
- 	    i_size_read(file_inode(bprm->file)) <
--	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
-+	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
- 		return -ENOEXEC;
- 	}
+-	par->state.vgabase = (void __iomem *) vga_res.start;
++	par->state.vgabase = (void __iomem *)(unsigned long)vga_res.start;
  
-+	/*
-+	 * Requires a mmap handler. This prevents people from using a.out
-+	 * as part of an exploit attack against /proc-related vulnerabilities.
-+	 */
-+	if (!bprm->file->f_op || !bprm->file->f_op->mmap)
-+		return -ENOEXEC;
-+
- 	fd_offset = N_TXTOFF(ex);
+ 	/* FIXME get memsize */
+ 	regval = vga_rseq(par->state.vgabase, 0x10);
+diff --git a/drivers/video/vt8623fb.c b/drivers/video/vt8623fb.c
+index 7e97c53..281d41b 100644
+--- a/drivers/video/vt8623fb.c
++++ b/drivers/video/vt8623fb.c
+@@ -731,7 +731,7 @@ static int vt8623_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
  
- 	/* Check initial limits. This avoids letting people circumvent
-@@ -322,7 +329,7 @@ static int load_aout_binary(struct linux_binprm *bprm)
- 		unsigned long text_addr, map_size;
+ 	pcibios_bus_to_resource(dev, &vga_res, &bus_reg);
  
- 		text_addr = N_TXTADDR(ex);
--		map_size = ex.a_text+ex.a_data;
-+		map_size = ex.a_text + ex.a_data;
+-	par->state.vgabase = (void __iomem *) vga_res.start;
++	par->state.vgabase = (void __iomem *)(unsigned long)vga_res.start;
  
- 		error = vm_brk(text_addr & PAGE_MASK, map_size);
- 
-@@ -339,28 +346,19 @@ static int load_aout_binary(struct linux_binprm *bprm)
- 		}
- 	} else {
- #ifdef WARN_OLD
--		static unsigned long error_time, error_time2;
- 		if ((ex.a_text & 0xfff || ex.a_data & 0xfff) &&
--		    (N_MAGIC(ex) != NMAGIC) &&
--				time_after(jiffies, error_time2 + 5*HZ)) {
--			printk(KERN_NOTICE "executable not page aligned\n");
--			error_time2 = jiffies;
--		}
-+		    (N_MAGIC(ex) != NMAGIC))
-+			pr_notice_ratelimited("executable not page aligned\n");
- 
--		if ((fd_offset & ~PAGE_MASK) != 0 &&
--			    time_after(jiffies, error_time + 5*HZ)) {
--			printk(KERN_WARNING
--			       "fd_offset is not page aligned. Please convert "
--			       "program: %s\n",
--			       bprm->file->f_path.dentry->d_name.name);
--			error_time = jiffies;
--		}
-+		if ((fd_offset & ~PAGE_MASK) != 0)
-+			pr_warn_ratelimited("fd_offset is not page aligned. Please convert program: %s\n",
-+					    bprm->file->f_path.dentry->d_name.name);
- #endif
- 
--		if (!bprm->file->f_op->mmap || (fd_offset & ~PAGE_MASK) != 0) {
--			vm_brk(N_TXTADDR(ex), ex.a_text+ex.a_data);
-+		if ((fd_offset & ~PAGE_MASK) != 0) {
-+			vm_brk(N_TXTADDR(ex), ex.a_text + ex.a_data);
- 			read_code(bprm->file, N_TXTADDR(ex), fd_offset,
--					ex.a_text+ex.a_data);
-+					ex.a_text + ex.a_data);
- 			goto beyond_if;
- 		}
- 
-@@ -424,10 +422,17 @@ static int load_aout_library(struct file *file)
- 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != QMAGIC) || N_TRSIZE(ex) ||
- 	    N_DRSIZE(ex) || ((ex.a_entry & 0xfff) && N_MAGIC(ex) == ZMAGIC) ||
- 	    i_size_read(file_inode(file)) <
--	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
-+	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
- 		goto out;
- 	}
- 
-+	/*
-+	 * Requires a mmap handler. This prevents people from using a.out
-+	 * as part of an exploit attack against /proc-related vulnerabilities.
-+	 */
-+	if (!file->f_op->mmap)
-+		goto out;
-+
- 	if (N_FLAGS(ex))
- 		goto out;
- 
-@@ -438,14 +443,8 @@ static int load_aout_library(struct file *file)
- 
- 	if ((N_TXTOFF(ex) & ~PAGE_MASK) != 0) {
- #ifdef WARN_OLD
--		static unsigned long error_time;
--		if (time_after(jiffies, error_time + 5*HZ)) {
--			printk(KERN_WARNING
--			       "N_TXTOFF is not page aligned. Please convert "
--			       "library: %s\n",
--			       file->f_path.dentry->d_name.name);
--			error_time = jiffies;
--		}
-+		pr_warn_ratelimited("N_TXTOFF is not page aligned. Please convert library: %s\n",
-+				    file->f_path.dentry->d_name.name);
- #endif
- 		vm_brk(start_addr, ex.a_text + ex.a_data + ex.a_bss);
- 
--- 
-1.8.4
+ 	/* Find how many physical memory there is on card */
+ 	memsize1 = (vga_rseq(par->state.vgabase, 0x34) + 1) >> 1;
+
 
