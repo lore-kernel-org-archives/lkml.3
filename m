@@ -1,161 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab3ITSWw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 14:22:52 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:56826 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab3ITSWv (ORCPT
+	id S1753473Ab3ITSXe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 14:23:34 -0400
+Received: from smtprelay0234.hostedemail.com ([216.40.44.234]:53879 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753314Ab3ITSXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 14:22:51 -0400
-Message-ID: <523C9291.9060506@prisktech.co.nz>
-Date: Sat, 21 Sep 2013 06:23:13 +1200
-From: Tony Prisk <linux@prisktech.co.nz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/26] clk: vt8500: parse pmc_base from clock driver
-References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com> <1379526839-14798-8-git-send-email-sebastian.hesselbarth@gmail.com> <523B4A51.4020704@prisktech.co.nz> <523B4C9B.6000002@gmail.com> <523BD452.4080801@prisktech.co.nz> <523BE9F8.1040708@gmail.com>
-In-Reply-To: <523BE9F8.1040708@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Sep 2013 14:23:33 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1345:1437:1534:1543:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3355:3865:3866:3867:3868:3870:3871:4321:4605:5007:6261:7903:9592:10004:10026:10848:11026:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13161:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fly82_3bdca9a402c1d
+X-Filterd-Recvd-Size: 4421
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/11] compat.h: Remove extern from function prototypes
+Date: Fri, 20 Sep 2013 11:23:18 -0700
+Message-Id: <597c1b62607f823af60dc4a99d59373dddfb7837.1379701322.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/09/13 18:23, Sebastian Hesselbarth wrote:
-> On 09/20/2013 06:51 AM, Tony Prisk wrote:
->> On 20/09/13 07:12, Sebastian Hesselbarth wrote:
->>> On 09/19/2013 09:02 PM, Tony Prisk wrote:
->>>> On 19/09/13 05:53, Sebastian Hesselbarth wrote:
->>>>> Currently, clock providers for vt8500 depend on machine_init 
->>>>> providing
->>>>> pmc_base address before calling of_clk_init. With upcoming arch-wide
->>>>> .time_init calling of_clk_init, we should make clock providers
->>>>> independent
->>>>> of mach code. This adds a pmc_base parsing helper to current clock
->>>>> provider
->>>>> that gets called if there is no pmc_base set, yet.
->>>>>
->>>>> Signed-off-by: Sebastian Hesselbarth 
->>>>> <sebastian.hesselbarth@gmail.com>
->>>>> ---
->>>>> Cc: Olof Johansson <olof@lixom.net>
->>>>> Cc: Arnd Bergmann <arnd@arndb.de>
->>>>> Cc: Tony Prisk <linux@prisktech.co.nz>
->>>>> Cc: Mike Turquette <mturquette@linaro.org>
->>>>> Cc: linux-arm-kernel@lists.infradead.org
->>>>> Cc: linux-kernel@vger.kernel.org
->>>>> ---
->>>>>   drivers/clk/clk-vt8500.c |   21 +++++++++++++++++++++
->>>>>   1 file changed, 21 insertions(+)
->>>>>
->>>>> diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
->>>>> index 82306f5..a5ee01c 100644
->>>>> --- a/drivers/clk/clk-vt8500.c
->>>>> +++ b/drivers/clk/clk-vt8500.c
->>>>> @@ -15,11 +15,14 @@
->>>>>   #include <linux/io.h>
->>>>>   #include <linux/of.h>
->>>>> +#include <linux/of_address.h>
->>>>>   #include <linux/slab.h>
->>>>>   #include <linux/bitops.h>
->>>>>   #include <linux/clkdev.h>
->>>>>   #include <linux/clk-provider.h>
->>>>> +#define LEGACY_PMC_BASE        0xD8130000
->>>>> +
->>>>>   /* All clocks share the same lock as none can be changed
->>>>> concurrently */
->>>>>   static DEFINE_SPINLOCK(_lock);
->>>>> @@ -626,6 +629,21 @@ const struct clk_ops vtwm_pll_ops = {
->>>>>       .recalc_rate = vtwm_pll_recalc_rate,
->>>>>   };
->>>>> +static __init void vtwm_set_pmc_base(void)
->>>>> +{
->>>>> +    struct device_node *np =
->>>>> +        of_find_compatible_node(NULL, NULL, "via,vt8500-pmc");
->>>>> +
->>>>> +    if (np)
->>>>> +        pmc_base = of_iomap(np, 0);
->>>>> +    else
->>>>> +        pmc_base = ioremap(LEGACY_PMC_BASE, 0x1000);
->>>>> +    of_node_put(np);
->>>>> +
->>>>> +    if (!pmc_base)
->>>>> +        pr_err("%s:of_iomap(pmc) failed\n", __func__);
->>>>> +}
->>>>> +
->>>>>   static __init void vtwm_pll_clk_init(struct device_node *node, int
->>>>> pll_type)
->>>>>   {
->>>>>       u32 reg;
->>>>> @@ -636,6 +654,9 @@ static __init void vtwm_pll_clk_init(struct
->>>>> device_node *node, int pll_type)
->>>>>       struct clk_init_data init;
->>>>>       int rc;
->>>>> +    if (!pmc_base)
->>>>> +        vtwm_set_pmc_base();
->>>>> +
->>>>>       rc = of_property_read_u32(node, "reg", &reg);
->>>>>       if (WARN_ON(rc))
->>>>>           return;
->>>> What happens if the first clock registered is a 'device clock' rather
->>>> than a 'pll'?
->>>>
->>>> static __init void vtwm_device_clk_init(struct device_node *node)
->>>> {
->>>>      u32 en_reg, div_reg;
->>>>      struct clk *clk;
->>>>      struct clk_device *dev_clk;
->>>>      const char *clk_name = node->name;
->>>>      const char *parent_name;
->>>>      struct clk_init_data init;
->>>>      int rc;
->>>>      int clk_init_flags = 0;
->>>>
->>>>      dev_clk = kzalloc(sizeof(*dev_clk), GFP_KERNEL);
->>>>      if (WARN_ON(!dev_clk))
->>>>          return;
->>>>
->>>>      dev_clk->lock = &_lock;
->>>>
->>>>      rc = of_property_read_u32(node, "enable-reg", &en_reg);
->>>>      if (!rc) {
->>>>          dev_clk->en_reg = pmc_base + en_reg;
->>>> ...
->>>> }
->>>> CLK_OF_DECLARE(vt8500_device, "via,vt8500-device-clock",
->>>> vtwm_device_clk_init);
->>>>
->>>> If a device clock is initialized first, pmc_base will be null and
->>>> dev_clk->en_reg (+ other register offsets) will be incorrect.
->>>
->>> Tony,
->>>
->>> looks like I just missed to add the same check for !pmc_base to
->>> vtwm_device_clk_init. If you are ok with the general approach,
->>> I send v2 for this patch shortly.
->>>
->>> Optionally, you can also choose to take care of clk-vt8500 yourself,
->>> as mach-vt8500 has its own .init_time callback and will be unaffected
->>> by the arch-wide default callback. If so, I will drop vt8500 to not
->>> stall this series too much now.
->>>
->>> Sebastian
->> I have no issue with the concept - just pointing out the missing bit. If
->> you can fix that small issue for v2 then you can also add my:
->>
->> Acked-by: Tony Prisk <linux@prisktech.co.nz>
->
-> Just to make sure, does that also count for the other vt8500 patches?
->
-> Sebastian
-Sorry, I should have been more specific.
+There are a mix of function prototypes with and without extern
+in the kernel sources.  Standardize on not using extern for
+function prototypes.
 
-For the whole series (vt8500-related):
-Acked-by: Tony Prisk <linux@prisktech.co.nz>
+Function prototypes don't need to be written with extern.
+extern is assumed by the compiler.  Its use is as unnecessary as
+using auto to declare automatic/local variables in a block.
 
-Regards
-Tony P
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/net/compat.h | 48 +++++++++++++++++++++++++++---------------------
+ 1 file changed, 27 insertions(+), 21 deletions(-)
+
+diff --git a/include/net/compat.h b/include/net/compat.h
+index 6e95653..3b603b1 100644
+--- a/include/net/compat.h
++++ b/include/net/compat.h
+@@ -29,8 +29,8 @@ struct compat_cmsghdr {
+ 	compat_int_t	cmsg_type;
+ };
+ 
+-extern int compat_sock_get_timestamp(struct sock *, struct timeval __user *);
+-extern int compat_sock_get_timestampns(struct sock *, struct timespec __user *);
++int compat_sock_get_timestamp(struct sock *, struct timeval __user *);
++int compat_sock_get_timestampns(struct sock *, struct timespec __user *);
+ 
+ #else /* defined(CONFIG_COMPAT) */
+ /*
+@@ -40,24 +40,30 @@ extern int compat_sock_get_timestampns(struct sock *, struct timespec __user *);
+ #define compat_mmsghdr	mmsghdr
+ #endif /* defined(CONFIG_COMPAT) */
+ 
+-extern int get_compat_msghdr(struct msghdr *, struct compat_msghdr __user *);
+-extern int verify_compat_iovec(struct msghdr *, struct iovec *, struct sockaddr_storage *, int);
+-extern asmlinkage long compat_sys_sendmsg(int,struct compat_msghdr __user *,unsigned int);
+-extern asmlinkage long compat_sys_sendmmsg(int, struct compat_mmsghdr __user *,
+-					   unsigned int, unsigned int);
+-extern asmlinkage long compat_sys_recvmsg(int,struct compat_msghdr __user *,unsigned int);
+-extern asmlinkage long compat_sys_recvmmsg(int, struct compat_mmsghdr __user *,
+-					   unsigned int, unsigned int,
+-					   struct compat_timespec __user *);
+-extern asmlinkage long compat_sys_getsockopt(int, int, int, char __user *, int __user *);
+-extern int put_cmsg_compat(struct msghdr*, int, int, int, void *);
+-
+-extern int cmsghdr_from_user_compat_to_kern(struct msghdr *, struct sock *, unsigned char *, int);
+-
+-extern int compat_mc_setsockopt(struct sock *, int, int, char __user *, unsigned int,
+-	int (*)(struct sock *, int, int, char __user *, unsigned int));
+-extern int compat_mc_getsockopt(struct sock *, int, int, char __user *,
+-	int __user *, int (*)(struct sock *, int, int, char __user *,
+-				int __user *));
++int get_compat_msghdr(struct msghdr *, struct compat_msghdr __user *);
++int verify_compat_iovec(struct msghdr *, struct iovec *,
++			struct sockaddr_storage *, int);
++asmlinkage long compat_sys_sendmsg(int, struct compat_msghdr __user *,
++				   unsigned int);
++asmlinkage long compat_sys_sendmmsg(int, struct compat_mmsghdr __user *,
++				    unsigned int, unsigned int);
++asmlinkage long compat_sys_recvmsg(int, struct compat_msghdr __user *,
++				   unsigned int);
++asmlinkage long compat_sys_recvmmsg(int, struct compat_mmsghdr __user *,
++				    unsigned int, unsigned int,
++				    struct compat_timespec __user *);
++asmlinkage long compat_sys_getsockopt(int, int, int, char __user *,
++				      int __user *);
++int put_cmsg_compat(struct msghdr*, int, int, int, void *);
++
++int cmsghdr_from_user_compat_to_kern(struct msghdr *, struct sock *,
++				     unsigned char *, int);
++
++int compat_mc_setsockopt(struct sock *, int, int, char __user *, unsigned int,
++			 int (*)(struct sock *, int, int, char __user *,
++				 unsigned int));
++int compat_mc_getsockopt(struct sock *, int, int, char __user *, int __user *,
++			 int (*)(struct sock *, int, int, char __user *,
++				 int __user *));
+ 
+ #endif /* NET_COMPAT_H */
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
