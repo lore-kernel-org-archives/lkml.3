@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab3ITULe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:11:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41402 "EHLO
+	id S1755799Ab3ITUbk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:31:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41379 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501Ab3ITUKD (ORCPT
+	with ESMTP id S1753469Ab3ITUKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:10:03 -0400
+	Fri, 20 Sep 2013 16:10:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Matthieu Castet <matthieu.castet@parrot.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 04/93] mtd: nand: fix NAND_BUSWIDTH_AUTO for x16 devices
-Date: Fri, 20 Sep 2013 13:07:59 -0700
-Message-Id: <1379707768-1804-5-git-send-email-kamal@canonical.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 13/93] intel-iommu: Fix leaks in pagetable freeing
+Date: Fri, 20 Sep 2013 13:08:08 -0700
+Message-Id: <1379707768-1804-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -30,69 +27,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 68e8078072e802e77134664f11d2ffbfbd2f8fbe upstream.
+commit 3269ee0bd6686baf86630300d528500ac5b516d7 upstream.
 
-The code for NAND_BUSWIDTH_AUTO is broken. According to Alexander:
+At best the current code only seems to free the leaf pagetables and
+the root.  If you're unlucky enough to have a large gap (like any
+QEMU guest with more than 3G of memory), only the first chunk of leaf
+pagetables are freed (plus the root).  This is a massive memory leak.
+This patch re-writes the pagetable freeing function to use a
+recursive algorithm and manages to not only free all the pagetables,
+but does it without any apparent performance loss versus the current
+broken version.
 
-  "I have a problem with attach NAND UBI in 16 bit mode.
-   NAND works fine if I specify NAND_BUSWIDTH_16 option, but not
-   working with NAND_BUSWIDTH_AUTO option. In second case NAND
-   chip is identifyed with ONFI."
-
-See his report for the rest of the details:
-
-  http://lists.infradead.org/pipermail/linux-mtd/2013-July/047515.html
-
-Anyway, the problem is that nand_set_defaults() is called twice, we
-intend it to reset the chip functions to their x16 buswidth verions
-if the buswidth changed from x8 to x16; however, nand_set_defaults()
-does exactly nothing if called a second time.
-
-Fix this by hacking nand_set_defaults() to reset the buswidth-dependent
-functions if they were set to the x8 version the first time. Note that
-this does not do anything to reset from x16 to x8, but that's not the
-supported use case for NAND_BUSWIDTH_AUTO anyway.
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Reported-by: Alexander Shiyan <shc_work@mail.ru>
-Tested-by: Alexander Shiyan <shc_work@mail.ru>
-Cc: Matthieu Castet <matthieu.castet@parrot.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mtd/nand/nand_base.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/iommu/intel-iommu.c | 72 ++++++++++++++++++++++-----------------------
+ 1 file changed, 35 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index db04f53..d831091 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2810,7 +2810,9 @@ static void nand_set_defaults(struct nand_chip *chip, int busw)
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index f1e7b86..72f2ee9 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -887,56 +887,54 @@ static int dma_pte_clear_range(struct dmar_domain *domain,
+ 	return order;
+ }
  
- 	if (!chip->select_chip)
- 		chip->select_chip = nand_select_chip;
--	if (!chip->read_byte)
++static void dma_pte_free_level(struct dmar_domain *domain, int level,
++			       struct dma_pte *pte, unsigned long pfn,
++			       unsigned long start_pfn, unsigned long last_pfn)
++{
++	pfn = max(start_pfn, pfn);
++	pte = &pte[pfn_level_offset(pfn, level)];
 +
-+	/* If called twice, pointers that depend on busw may need to be reset */
-+	if (!chip->read_byte || chip->read_byte == nand_read_byte)
- 		chip->read_byte = busw ? nand_read_byte16 : nand_read_byte;
- 	if (!chip->read_word)
- 		chip->read_word = nand_read_word;
-@@ -2818,9 +2820,9 @@ static void nand_set_defaults(struct nand_chip *chip, int busw)
- 		chip->block_bad = nand_block_bad;
- 	if (!chip->block_markbad)
- 		chip->block_markbad = nand_default_block_markbad;
--	if (!chip->write_buf)
-+	if (!chip->write_buf || chip->write_buf == nand_write_buf)
- 		chip->write_buf = busw ? nand_write_buf16 : nand_write_buf;
--	if (!chip->read_buf)
-+	if (!chip->read_buf || chip->read_buf == nand_read_buf)
- 		chip->read_buf = busw ? nand_read_buf16 : nand_read_buf;
- 	if (!chip->scan_bbt)
- 		chip->scan_bbt = nand_default_bbt;
++	do {
++		unsigned long level_pfn;
++		struct dma_pte *level_pte;
++
++		if (!dma_pte_present(pte) || dma_pte_superpage(pte))
++			goto next;
++
++		level_pfn = pfn & level_mask(level - 1);
++		level_pte = phys_to_virt(dma_pte_addr(pte));
++
++		if (level > 2)
++			dma_pte_free_level(domain, level - 1, level_pte,
++					   level_pfn, start_pfn, last_pfn);
++
++		/* If range covers entire pagetable, free it */
++		if (!(start_pfn > level_pfn ||
++		      last_pfn < level_pfn + level_size(level))) {
++			dma_clear_pte(pte);
++			domain_flush_cache(domain, pte, sizeof(*pte));
++			free_pgtable_page(level_pte);
++		}
++next:
++		pfn += level_size(level);
++	} while (!first_pte_in_page(++pte) && pfn <= last_pfn);
++}
++
+ /* free page table pages. last level pte should already be cleared */
+ static void dma_pte_free_pagetable(struct dmar_domain *domain,
+ 				   unsigned long start_pfn,
+ 				   unsigned long last_pfn)
+ {
+ 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+-	struct dma_pte *first_pte, *pte;
+-	int total = agaw_to_level(domain->agaw);
+-	int level;
+-	unsigned long tmp;
+-	int large_page = 2;
+ 
+ 	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
+ 	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
+ 	BUG_ON(start_pfn > last_pfn);
+ 
+ 	/* We don't need lock here; nobody else touches the iova range */
+-	level = 2;
+-	while (level <= total) {
+-		tmp = align_to_level(start_pfn, level);
+-
+-		/* If we can't even clear one PTE at this level, we're done */
+-		if (tmp + level_size(level) - 1 > last_pfn)
+-			return;
+-
+-		do {
+-			large_page = level;
+-			first_pte = pte = dma_pfn_level_pte(domain, tmp, level, &large_page);
+-			if (large_page > level)
+-				level = large_page + 1;
+-			if (!pte) {
+-				tmp = align_to_level(tmp + 1, level + 1);
+-				continue;
+-			}
+-			do {
+-				if (dma_pte_present(pte)) {
+-					free_pgtable_page(phys_to_virt(dma_pte_addr(pte)));
+-					dma_clear_pte(pte);
+-				}
+-				pte++;
+-				tmp += level_size(level);
+-			} while (!first_pte_in_page(pte) &&
+-				 tmp + level_size(level) - 1 <= last_pfn);
++	dma_pte_free_level(domain, agaw_to_level(domain->agaw),
++			   domain->pgd, 0, start_pfn, last_pfn);
+ 
+-			domain_flush_cache(domain, first_pte,
+-					   (void *)pte - (void *)first_pte);
+-			
+-		} while (tmp && tmp + level_size(level) - 1 <= last_pfn);
+-		level++;
+-	}
+ 	/* free pgd */
+ 	if (start_pfn == 0 && last_pfn == DOMAIN_MAX_PFN(domain->gaw)) {
+ 		free_pgtable_page(domain->pgd);
 -- 
 1.8.1.2
 
