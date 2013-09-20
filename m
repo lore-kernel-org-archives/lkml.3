@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab3ITQy3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 12:54:29 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:46694 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab3ITQy1 (ORCPT
+	id S1752893Ab3ITQy2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 12:54:28 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41763 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab3ITQy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 12:54:27 -0400
+	Fri, 20 Sep 2013 12:54:26 -0400
+Date: Fri, 20 Sep 2013 09:54:07 -0700
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Kent Overstreet <kmo@daterainc.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Jan Kara <jack@suse.cz>,
+        Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: Fix a regression where MS_SNAP_STABLE (stable pages
+ snapshotting) was ignored
+Message-ID: <20130920165407.GA10392@birch.djwong.org>
+References: <20130920030602.GC4565@birch.djwong.org>
+ <20130920080637.GV22421@suse.de>
+ <20130920082807.GW22421@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <523C66C5.9040008@linux.vnet.ibm.com>
-References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
-	<45987104.t6r4hvPgQn@vostro.rjw.lan>
-	<523AF22F.1010909@linux.vnet.ibm.com>
-	<CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com>
-	<CACRpkdYBYdMJ6mTGUropOypx0ZVNn8eQMzV+eKocCSBZAu6xTA@mail.gmail.com>
-	<CAKohpokQO82XMGwcTjVmNTbBVESyFqV4DAxMMU_RHEtN+LqUgg@mail.gmail.com>
-	<CACRpkdYoNkgno24dtJAwOq2T9yoKQYgKQ+adfkSN8affYNePjQ@mail.gmail.com>
-	<CAKohpokdOXrGVxEA89yrAq2T8MiqZNHrrXNagqqggo67rEmKYg@mail.gmail.com>
-	<CAKohpomXsZ+BsE7j-J4qU+x9f+JPsNEMi3d=CmfMByzPw_wvtw@mail.gmail.com>
-	<523C66C5.9040008@linux.vnet.ibm.com>
-Date: Fri, 20 Sep 2013 22:24:26 +0530
-Message-ID: <CAKohpo=b8WiE5kY8u4d5RDtJazR-U+NMR1jJTS85wTc9hvkGYA@mail.gmail.com>
-Subject: Re: Regression on cpufreq in v3.12-rc1
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130920082807.GW22421@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 September 2013 20:46, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> I think show() and store() also suffer
-> from a similar fate. So do you think we need to add these checks there as well?
-> I'm not sure, since I can't think of a situation in which show() or store()
-> can be invoked before the cpufreq-driver is registered.. or, is such a
-> situation possible with cpufreq_disabled()?
+On Fri, Sep 20, 2013 at 09:28:07AM +0100, Mel Gorman wrote:
+> On Fri, Sep 20, 2013 at 09:06:37AM +0100, Mel Gorman wrote:
+> > On Thu, Sep 19, 2013 at 08:06:02PM -0700, Darrick J. Wong wrote:
+> > > The "force" parameter in __blk_queue_bounce was being ignored, which means that
+> > > stable page snapshots are not always happening (on ext3).  This of course
+> > > leads to DIF disks reporting checksum errors, so fix this regression.
+> > > 
+> > > The regression was introduced in commit 6bc454d1 (bounce: Refactor
+> > > __blk_queue_bounce to not use bi_io_vec)
+> > > 
+> > > Reported-by: Mel Gorman <mgorman@suse.de>
+> > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> > 
+> > I have no means of testing it but it looks right and thanks for checking
+> > DIF disks.
+> > 
+> > Acked-by: Mel Gorman <mgorman@suse.de>
+> > 
+> 
+> That said the two checks are now redundant. They could just be deleted
+> and depend entirely on the following check within the loop
+> 
+>                 if (page_to_pfn(page) <= queue_bounce_pfn(q) && !force)
+>                         continue;
+> 
+> with an update to the comment explaining that the check is for pages
+> below the bounce pfn or for bios that require stable writes
 
-cpufreq_disabled() is supposed to be called at boot time, so that
-cpufreq_core_init() fails.. and so show/store wouldn't exist without
-a driver..
+I'm under the impression that the point of the first looping-check is to avoid
+the bio_clone_bioset() if we're not going to bounce anything.  But I could be
+wrong.  Maybe Kent can shed some light on this?
+
+--D
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
