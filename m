@@ -1,99 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab3ITVa1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 17:30:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43988 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab3ITVa0 (ORCPT
+	id S1754208Ab3ITVhO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 17:37:14 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:59124 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027Ab3ITVhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 17:30:26 -0400
-Date: Fri, 20 Sep 2013 23:30:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
-        LKML <linux-kernel@vger.kernel.org>, Marc Pignat <marc.pignat@hevs.ch>,
-        john.stultz@linaro.org, kernel@pengutronix.de,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clockevents: Sanitize ticks to nsec conversion
-In-Reply-To: <20130920204125.GB16106@pengutronix.de>
-Message-ID: <alpine.DEB.2.02.1309202304280.4089@ionos.tec.linutronix.de>
-References: <20130918085627.GN24802@pengutronix.de> <alpine.DEB.2.02.1309181058470.4089@ionos.tec.linutronix.de> <20130918150958.GO24802@pengutronix.de> <alpine.DEB.2.02.1309182201000.4089@ionos.tec.linutronix.de> <20130919100239.GS24802@pengutronix.de>
- <alpine.DEB.2.02.1309191207460.4089@ionos.tec.linutronix.de> <20130919124805.GU24802@pengutronix.de> <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de> <20130919200343.GV24802@pengutronix.de> <alpine.DEB.2.02.1309201127400.4089@ionos.tec.linutronix.de>
- <20130920204125.GB16106@pengutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-341680546-1379712421=:4089"
-Content-ID: <alpine.DEB.2.02.1309202327210.4089@ionos.tec.linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 20 Sep 2013 17:37:12 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 01/26] ARM: nomadik: remove mtu initalization from .init_time
+Date: Fri, 20 Sep 2013 23:37:00 +0200
+Message-Id: <1379713020-7287-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1379526839-14798-2-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1379526839-14798-2-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Nomadik clock initialization is properly done in clk-nomadik since
+patch "clk: nomadik: set all timers to use 2.4 MHz TIMCLK".
+Therefore, this patch removes now redundant mtu initialization from
+.init_time callback.
 
---8323329-341680546-1379712421=:4089
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.02.1309202327211.4089@ionos.tec.linutronix.de>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Changelog:
+v1->v2:
+- adapt to clk-nomadik changes and just remove mtu init (Suggested by
+  Linus Walleij
+- reword commit message and description accordingly
 
-On Fri, 20 Sep 2013, Uwe Kleine-König wrote:
-> On Fri, Sep 20, 2013 at 11:56:27AM +0200, Thomas Gleixner wrote:
-> > On Thu, 19 Sep 2013, Uwe Kleine-König wrote:
-> > > > +	 * from nsec to device ticks will be correct.
-> > > > +	 *
-> > > > +	 * For mult > (1 << shift), i.e. device frequency is > 1GHz we
-> > > > +	 * need to be careful. Adding mult - 1 will result in a value
-> > > > +	 * which when converted back to device ticks will be larger
-> > > s/will/can/
-> > 
-> > No, it will always be larger.
-> Hmm, consider a 1.25 GHz clock with shift = 2 and mult = 5. Then
-> ns2clc(clc2ns(1000)) = 1000. So it's not always larger!
-> In the fast-clock-case we have:
-> With x << shift = n * mult - k for k in [0 .. mult-1] and an integer n:
-> 
-> 	  ns2clc(clc2ns(x))
-> 	= ns2clc(((x << shift) + mult - 1) / mult)
-> 	= ((((x << shift) + mult - 1) / mult) * mult) >> shift
-> 	= n * mult >> shift
-> 	= ((x << shift) + k) >> shift
-> 	= x + (k >> shift)
-> 
-> So ns2clc(clc2ns(x)) = x for all x > 0 that have
-> 
-> 	k = mult - ((x << shift) - 1) % mult - 1 < 1 << shift
-> 
-> So my correction still stands.
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Alessandro Rubini <rubini@unipv.it>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/mach-nomadik/cpu-8815.c |   26 --------------------------
+ 1 file changed, 26 deletions(-)
 
-Fair enough.  
+diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
+index 13e0df9..0fcb149 100644
+--- a/arch/arm/mach-nomadik/cpu-8815.c
++++ b/arch/arm/mach-nomadik/cpu-8815.c
+@@ -113,36 +113,10 @@ static void cpu8815_restart(enum reboot_mode mode, const char *cmd)
+ 	writel(1, srcbase + 0x18);
+ }
+ 
+-/* Initial value for SRC control register: all timers use MXTAL/8 source */
+-#define SRC_CR_INIT_MASK	0x00007fff
+-#define SRC_CR_INIT_VAL		0x2aaa8000
+-
+ static void __init cpu8815_timer_init_of(void)
+ {
+-	struct device_node *mtu;
+-	void __iomem *base;
+-	int irq;
+-	u32 src_cr;
+-
+ 	/* We need this to be up now */
+ 	nomadik_clk_init();
+-
+-	mtu = of_find_node_by_path("/mtu@101e2000");
+-	if (!mtu)
+-		return;
+-	base = of_iomap(mtu, 0);
+-	if (WARN_ON(!base))
+-		return;
+-	irq = irq_of_parse_and_map(mtu, 0);
+-
+-	pr_info("Remapped MTU @ %p, irq: %d\n", base, irq);
+-
+-	/* Configure timer sources in "system reset controller" ctrl reg */
+-	src_cr = readl(base);
+-	src_cr &= SRC_CR_INIT_MASK;
+-	src_cr |= SRC_CR_INIT_VAL;
+-	writel(src_cr, base);
+-
+ 	clocksource_of_init();
+ }
+ 
+-- 
+1.7.10.4
 
-> > 1) We cannot add if we'd overflow
-> > 
-> > 2) For mult <= 1 << shift it's always correct
-> > 
-> > 3) for mult > 1 << shift we only apply it to the min value not the max
-> 
-> Yeah, I didn't say your code is wrong *here*. I just think that my
-> easier (and so probably faster) code is good enough.
-
-Granted. I was stuck in the correctness discussion. So yeah, it does
-not matter if we steal 30 usec of maximum idle sleep time from a 32kHz
-clock. OTOH it does not matter much in the setup slow path to take
-another conditional. :)
-
-> Best regards and thanks for the nice discussion,
-  
-Ditto! You saved me from actually sitting down and using the pencil to
-do the proper math.
-
-Thanks,
-
-	tglx
---8323329-341680546-1379712421=:4089--
