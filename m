@@ -1,67 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab3ITDKd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 23:10:33 -0400
-Received: from smtprelay0099.hostedemail.com ([216.40.44.99]:55950 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753987Ab3ITDKP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753972Ab3ITDKP (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 19 Sep 2013 23:10:15 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:857:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3866:3867:3871:4321:4384:5007:7652:10004:10400:10848:11026:11658:11914:12438:12517:12519:12555:12731:12737:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: voice73_593d8347d550a
-X-Filterd-Recvd-Size: 2277
-Message-ID: <1379646611.2021.7.camel@joe-AO722>
-Subject: [PATCH 2/2] framebuffer: Fix int cast to pointer warnings
-From: Joe Perches <joe@perches.com>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 19 Sep 2013 20:10:11 -0700
-In-Reply-To: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>
-References: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:61690 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112Ab3ITDKN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Sep 2013 23:10:13 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org, joe@perches.com
+Cc: linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>
+Subject: [PATCH v2 1/2] binfmt_aout: x86: Useless inode var, printks coding style fixes
+Date: Fri, 20 Sep 2013 00:08:19 -0300
+Message-Id: <1379646500-11858-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Casts of int to pointer need additional casts to (unsigned long)
-when compiled for x86-64 to silence the compiler.
+file size used only once, so removed due its useless prior allocation.
+It's not necessary to verify f_op in the load_aout_library, since the
+prior kernel_read/vfs_read function already does.
+Made coding style fixes and printk replacements.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Tested using qemu, a handcrafted a.out binary and a a.out linked with a
+cross-compiled ld.
+
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
 ---
- drivers/video/arkfb.c    | 2 +-
- drivers/video/vt8623fb.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/binfmt_aout.c | 98 +++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 48 insertions(+), 50 deletions(-)
 
-diff --git a/drivers/video/arkfb.c b/drivers/video/arkfb.c
-index b13f3f2..26fd4e4 100644
---- a/drivers/video/arkfb.c
-+++ b/drivers/video/arkfb.c
-@@ -1016,7 +1016,7 @@ static int ark_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+diff --git a/fs/binfmt_aout.c b/fs/binfmt_aout.c
+index 89dec7f..c732b8e 100644
+--- a/fs/binfmt_aout.c
++++ b/fs/binfmt_aout.c
+@@ -25,13 +25,14 @@
+ #include <linux/init.h>
+ #include <linux/coredump.h>
+ #include <linux/slab.h>
++#include <linux/ratelimit.h>
++#include <linux/uaccess.h>
  
- 	pcibios_bus_to_resource(dev, &vga_res, &bus_reg);
+-#include <asm/uaccess.h>
+ #include <asm/cacheflush.h>
+ #include <asm/a.out-core.h>
  
--	par->state.vgabase = (void __iomem *) vga_res.start;
-+	par->state.vgabase = (void __iomem *)(unsigned long)vga_res.start;
+ static int load_aout_binary(struct linux_binprm *);
+-static int load_aout_library(struct file*);
++static int load_aout_library(struct file *);
  
- 	/* FIXME get memsize */
- 	regval = vga_rseq(par->state.vgabase, 0x10);
-diff --git a/drivers/video/vt8623fb.c b/drivers/video/vt8623fb.c
-index 7e97c53..281d41b 100644
---- a/drivers/video/vt8623fb.c
-+++ b/drivers/video/vt8623fb.c
-@@ -731,7 +731,7 @@ static int vt8623_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ #ifdef CONFIG_COREDUMP
+ /*
+@@ -62,7 +63,7 @@ static int aout_core_dump(struct coredump_params *cprm)
+ 	fs = get_fs();
+ 	set_fs(KERNEL_DS);
+ 	has_dumped = 1;
+-       	strncpy(dump.u_comm, current->comm, sizeof(dump.u_comm));
++	strncpy(dump.u_comm, current->comm, sizeof(dump.u_comm));
+ 	dump.u_ar0 = offsetof(struct user, regs);
+ 	dump.signal = cprm->siginfo->si_signo;
+ 	aout_dump_thread(cprm->regs, &dump);
+@@ -78,9 +79,11 @@ static int aout_core_dump(struct coredump_params *cprm)
  
- 	pcibios_bus_to_resource(dev, &vga_res, &bus_reg);
+ /* make sure we actually have a data and stack area to dump */
+ 	set_fs(USER_DS);
+-	if (!access_ok(VERIFY_READ, START_DATA(dump), dump.u_dsize << PAGE_SHIFT))
++	if (!access_ok(VERIFY_READ, START_DATA(dump),
++		       dump.u_dsize << PAGE_SHIFT))
+ 		dump.u_dsize = 0;
+-	if (!access_ok(VERIFY_READ, START_STACK(dump), dump.u_ssize << PAGE_SHIFT))
++	if (!access_ok(VERIFY_READ, START_STACK(dump),
++		       dump.u_ssize << PAGE_SHIFT))
+ 		dump.u_ssize = 0;
  
--	par->state.vgabase = (void __iomem *) vga_res.start;
-+	par->state.vgabase = (void __iomem *)(unsigned long)vga_res.start;
+ 	set_fs(KERNEL_DS);
+@@ -142,7 +145,8 @@ static int set_brk(unsigned long start, unsigned long end)
+  * memory and creates the pointer tables from them, and puts their
+  * addresses on the "stack", returning the new stack pointer value.
+  */
+-static unsigned long __user *create_aout_tables(char __user *p, struct linux_binprm * bprm)
++static unsigned long __user *create_aout_tables(char __user *p,
++						struct linux_binprm *bprm)
+ {
+ 	char __user * __user *argv;
+ 	char __user * __user *envp;
+@@ -150,7 +154,8 @@ static unsigned long __user *create_aout_tables(char __user *p, struct linux_bin
+ 	int argc = bprm->argc;
+ 	int envc = bprm->envc;
  
- 	/* Find how many physical memory there is on card */
- 	memsize1 = (vga_rseq(par->state.vgabase, 0x34) + 1) >> 1;
-
+-	sp = (void __user *)((-(unsigned long)sizeof(char *)) & (unsigned long) p);
++	sp = (void __user *) ((-(unsigned long) sizeof(char *))
++			      & (unsigned long) p);
+ #ifdef __alpha__
+ /* whee.. test-programs are so much fun. */
+ 	put_user(0, --sp);
+@@ -169,28 +174,28 @@ static unsigned long __user *create_aout_tables(char __user *p, struct linux_bin
+ 	sp -= argc+1;
+ 	argv = (char __user * __user *) sp;
+ #ifndef __alpha__
+-	put_user((unsigned long) envp,--sp);
+-	put_user((unsigned long) argv,--sp);
++	put_user((unsigned long) envp, --sp);
++	put_user((unsigned long) argv, --sp);
+ #endif
+-	put_user(argc,--sp);
++	put_user(argc, --sp);
+ 	current->mm->arg_start = (unsigned long) p;
+-	while (argc-->0) {
++	while (argc-- > 0) {
+ 		char c;
+-		put_user(p,argv++);
++		put_user(p, argv++);
+ 		do {
+-			get_user(c,p++);
++			get_user(c, p++);
+ 		} while (c);
+ 	}
+-	put_user(NULL,argv);
++	put_user(NULL, argv);
+ 	current->mm->arg_end = current->mm->env_start = (unsigned long) p;
+-	while (envc-->0) {
++	while (envc-- > 0) {
+ 		char c;
+-		put_user(p,envp++);
++		put_user(p, envp++);
+ 		do {
+-			get_user(c,p++);
++			get_user(c, p++);
+ 		} while (c);
+ 	}
+-	put_user(NULL,envp);
++	put_user(NULL, envp);
+ 	current->mm->env_end = (unsigned long) p;
+ 	return sp;
+ }
+@@ -200,7 +205,7 @@ static unsigned long __user *create_aout_tables(char __user *p, struct linux_bin
+  * libraries.  There is no binary dependent code anywhere else.
+  */
+ 
+-static int load_aout_binary(struct linux_binprm * bprm)
++static int load_aout_binary(struct linux_binprm *bprm)
+ {
+ 	struct pt_regs *regs = current_pt_regs();
+ 	struct exec ex;
+@@ -213,7 +218,8 @@ static int load_aout_binary(struct linux_binprm * bprm)
+ 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != OMAGIC &&
+ 	     N_MAGIC(ex) != QMAGIC && N_MAGIC(ex) != NMAGIC) ||
+ 	    N_TRSIZE(ex) || N_DRSIZE(ex) ||
+-	    i_size_read(file_inode(bprm->file)) < ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
++	    i_size_read(file_inode(bprm->file)) <
++	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+ 		return -ENOEXEC;
+ 	}
+ 
+@@ -292,19 +298,12 @@ static int load_aout_binary(struct linux_binprm * bprm)
+ 		}
+ 	} else {
+ 		if ((ex.a_text & 0xfff || ex.a_data & 0xfff) &&
+-		    (N_MAGIC(ex) != NMAGIC) && printk_ratelimit())
+-		{
+-			printk(KERN_NOTICE "executable not page aligned\n");
+-		}
+-
+-		if ((fd_offset & ~PAGE_MASK) != 0 && printk_ratelimit())
+-		{
+-			printk(KERN_WARNING 
+-			       "fd_offset is not page aligned. Please convert program: %s\n",
+-			       bprm->file->f_path.dentry->d_name.name);
+-		}
++		    (N_MAGIC(ex) != NMAGIC))
++			pr_notice_ratelimited("executable not page aligned\n");
+ 
+-		if (!bprm->file->f_op->mmap||((fd_offset & ~PAGE_MASK) != 0)) {
++		if ((fd_offset & ~PAGE_MASK) != 0) {
++			pr_warn_ratelimited("fd_offset is not page aligned. Please convert program: %s\n",
++					    bprm->file->f_path.dentry->d_name.name);
+ 			vm_brk(N_TXTADDR(ex), ex.a_text+ex.a_data);
+ 			read_code(bprm->file, N_TXTADDR(ex), fd_offset,
+ 				  ex.a_text + ex.a_data);
+@@ -312,9 +311,10 @@ static int load_aout_binary(struct linux_binprm * bprm)
+ 		}
+ 
+ 		error = vm_mmap(bprm->file, N_TXTADDR(ex), ex.a_text,
+-			PROT_READ | PROT_EXEC,
+-			MAP_FIXED | MAP_PRIVATE | MAP_DENYWRITE | MAP_EXECUTABLE,
+-			fd_offset);
++				PROT_READ | PROT_EXEC,
++				(MAP_FIXED | MAP_PRIVATE
++				 | MAP_DENYWRITE | MAP_EXECUTABLE),
++				fd_offset);
+ 
+ 		if (error != N_TXTADDR(ex)) {
+ 			send_sig(SIGKILL, current, 0);
+@@ -323,8 +323,10 @@ static int load_aout_binary(struct linux_binprm * bprm)
+ 
+ 		error = vm_mmap(bprm->file, N_DATADDR(ex), ex.a_data,
+ 				PROT_READ | PROT_WRITE | PROT_EXEC,
+-				MAP_FIXED | MAP_PRIVATE | MAP_DENYWRITE | MAP_EXECUTABLE,
++				(MAP_FIXED | MAP_PRIVATE
++				 | MAP_DENYWRITE | MAP_EXECUTABLE),
+ 				fd_offset + ex.a_text);
++
+ 		if (error != N_DATADDR(ex)) {
+ 			send_sig(SIGKILL, current, 0);
+ 			return error;
+@@ -340,7 +342,8 @@ beyond_if:
+ 	}
+ 
+ 	current->mm->start_stack =
+-		(unsigned long) create_aout_tables((char __user *) bprm->p, bprm);
++		(unsigned long) create_aout_tables((char __user *) bprm->p,
++						   bprm);
+ #ifdef __alpha__
+ 	regs->gp = ex.a_gpvalue;
+ #endif
+@@ -350,14 +353,11 @@ beyond_if:
+ 
+ static int load_aout_library(struct file *file)
+ {
+-	struct inode * inode;
+ 	unsigned long bss, start_addr, len;
+ 	unsigned long error;
+ 	int retval;
+ 	struct exec ex;
+ 
+-	inode = file_inode(file);
+-
+ 	retval = -ENOEXEC;
+ 	error = kernel_read(file, 0, (char *) &ex, sizeof(ex));
+ 	if (error != sizeof(ex))
+@@ -366,7 +366,8 @@ static int load_aout_library(struct file *file)
+ 	/* We come in here for the regular a.out style of shared libraries */
+ 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != QMAGIC) || N_TRSIZE(ex) ||
+ 	    N_DRSIZE(ex) || ((ex.a_entry & 0xfff) && N_MAGIC(ex) == ZMAGIC) ||
+-	    i_size_read(inode) < ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
++	    i_size_read(file_inode(file)) <
++	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+ 		goto out;
+ 	}
+ 
+@@ -374,7 +375,7 @@ static int load_aout_library(struct file *file)
+ 	 * Requires a mmap handler. This prevents people from using a.out
+ 	 * as part of an exploit attack against /proc-related vulnerabilities.
+ 	 */
+-	if (!file->f_op || !file->f_op->mmap)
++	if (!file->f_op->mmap)
+ 		goto out;
+ 
+ 	if (N_FLAGS(ex))
+@@ -383,17 +384,14 @@ static int load_aout_library(struct file *file)
+ 	/* For  QMAGIC, the starting address is 0x20 into the page.  We mask
+ 	   this off to get the starting address for the page */
+ 
+-	start_addr =  ex.a_entry & 0xfffff000;
++	start_addr = ex.a_entry & 0xfffff000;
+ 
+ 	if ((N_TXTOFF(ex) & ~PAGE_MASK) != 0) {
+-		if (printk_ratelimit())
+-		{
+-			printk(KERN_WARNING 
+-			       "N_TXTOFF is not page aligned. Please convert library: %s\n",
+-			       file->f_path.dentry->d_name.name);
+-		}
++		pr_warn_ratelimited("N_TXTOFF is not page aligned. Please convert library: %s\n",
++				    file->f_path.dentry->d_name.name);
++
+ 		vm_brk(start_addr, ex.a_text + ex.a_data + ex.a_bss);
+-		
++
+ 		read_code(file, start_addr, N_TXTOFF(ex),
+ 			  ex.a_text + ex.a_data);
+ 		retval = 0;
+-- 
+1.8.4
 
