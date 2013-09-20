@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab3ITRmW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 13:42:22 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:47792 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab3ITRmU (ORCPT
+	id S1753279Ab3ITRn4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 13:43:56 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44890 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817Ab3ITRny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 13:42:20 -0400
-Message-ID: <523C971E.5090809@kernel.org>
-Date: Fri, 20 Sep 2013 19:42:38 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	Fri, 20 Sep 2013 13:43:54 -0400
+Date: Fri, 20 Sep 2013 12:42:28 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Olof Johansson <olof@lixom.net>
+CC: Felipe Balbi <balbi@ti.com>, Nishanth Menon <nm@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] ARM: OMAP3630: Add generic machine descriptor
+Message-ID: <20130920174228.GK18721@radagast>
+Reply-To: <balbi@ti.com>
+References: <1379693332-10585-1-git-send-email-nm@ti.com>
+ <CAOesGMj6G7LeYUJsGpZHxKOjiNrk+1U55QFqcQyTb6_Co+n4zQ@mail.gmail.com>
+ <20130920162329.GC18721@radagast>
+ <CAOesGMiru=RUHS4XKLL=DC+hxtAJqtcjgd5hPbaccnAfEZ3y0g@mail.gmail.com>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Thomas Meyer <thomas@m3y3r.de>, jic23@cam.ac.uk, grant.likely@linaro.org,
-        rob.herring@calxeda.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 3/10] iio: at91_adc: Cocci spatch "noderef"
-References: <1379604755850-858421494-0-diffsplit-thomas@m3y3r.de> <1379604755852-604229709-3-diffsplit-thomas@m3y3r.de> <523BF89E.4000508@atmel.com> <523C95B0.6070906@kernel.org>
-In-Reply-To: <523C95B0.6070906@kernel.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OOq1TgGhe8eTwFBO"
+Content-Disposition: inline
+In-Reply-To: <CAOesGMiru=RUHS4XKLL=DC+hxtAJqtcjgd5hPbaccnAfEZ3y0g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/13 19:36, Jonathan Cameron wrote:
-> On 09/20/13 08:26, Nicolas Ferre wrote:
->> On 19/09/2013 23:42, Thomas Meyer :
->>> sizeof when applied to a pointer typed expression gives the size of the
->>> pointer.
->>> Found by coccinelle spatch "misc/noderef.cocci"
->>>
->>> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
->>
->> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Applied to the fixes-togreg branch of
-> git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
+--OOq1TgGhe8eTwFBO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Actually, change of plan. Applied to the togreg branch of that
-tree.  Whilst technically more correct to have it as you say,
-we are dealing with the size of a struct iio_trig ** vs
-a struct iio_trig *  so it isn't actually a bug, just a
-less than ideal bit of code ;)
+Hi,
 
-It was so obviously a fix I didn't initially check if it
-was a 'real' bug or not. oops.
+On Fri, Sep 20, 2013 at 10:16:48AM -0700, Olof Johansson wrote:
+> > On Fri, Sep 20, 2013 at 09:19:02AM -0700, Olof Johansson wrote:
+> >> On Fri, Sep 20, 2013 at 9:08 AM, Nishanth Menon <nm@ti.com> wrote:
+> >> > An alternative approach may be to (for all SoCs):
+> >> > 1. define every SoC entry - ti,omap3430 ti,omap3630...
+> >> > 2. have a generic omap3_init which uses "if (of_machine_is_compatibl=
+e("ti,omap3630"))"
+> >> > to invoke the appropriate omap3xxx_init_early.
+> >>
+> >> Yes, this would be better, but you can do add a DT_MACHINE as in this
+> >> patch but have ti,omap3630 as the dt_compat table. Then there's no
+> >> need to add runtime checks.
+> >
+> > I was going to reply that adding of_machine_is_compatible("ti,omap3630")
+> > would help in some situations, but guess it's already tainted ;-)
+>=20
+> Oh, if it's just a few checks, then by all means go down that route. I
+> didn't look at the code to see how much it would be.
+>=20
+> But if a new DT_MACHINE is added, then it should definitely be based
+> on ti,omap3630 instead of listing all the boards.
 
-Jonathan
+the idea was to CPU compatible property to conditionally enable known
+erratas workarounds. In some cases, Revision register can't be trusted,
+so instead of creating per-errata DT properties (since that'd be
+describing the SW, in a way), I thought of using
+of_machine_is_compatible() checks, but that assumes CPU compatible is
+"correct".
 
+cheers
 
-> 
-> Thanks,
->>
->>> ---
->>>
->>> diff -u -p a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
->>> --- a/drivers/iio/adc/at91_adc.c
->>> +++ b/drivers/iio/adc/at91_adc.c
->>> @@ -279,7 +279,7 @@ static int at91_adc_trigger_init(struct
->>>       int i, ret;
->>>
->>>       st->trig = devm_kzalloc(&idev->dev,
->>> -                st->trigger_number * sizeof(st->trig),
->>> +                st->trigger_number * sizeof(*st->trig),
->>>                   GFP_KERNEL);
->>>
->>>       if (st->trig == NULL) {
->>> -- 
->>> To unsubscribe from this list: send the line "unsubscribe devicetree" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>
->>
+--=20
+balbi
+
+--OOq1TgGhe8eTwFBO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSPIkEAAoJEIaOsuA1yqREOe8P/31BsNNkb7YJ/cla20N5UA3J
+ZRTboYG9pFzFbXQiPPyieytfOIqDGsQ+c/Ur3kLwDx0isALIV36aZKZevwOXHv66
+sJJnSLxxPnVoOZ/S17RcTQ3n5Brm/G2OGQ+RHuUIdpELhxc4HG404OKgeSbSDs7s
+LtEEs8lT2T4HVtv4pM83/GZcL26ucBsQuRa+82/+qJV7YlRgpyszQtCwwleO1EoL
+w7bg2cZzXGDhH+Nd+hD9haTyhzqhh7Bo6s4ihbbQm3VMZBWQNYjXmr/R6YKtnc28
+c6NSMIFJ9gZ17Tneph4Sjc+3o0oen0KQ2AgDwyceBc/p4DXuKtThxIPbS6PDOHL6
+HUOXZnkByFzBrrtVyJ76rHtUaosXgoCxItdjEUWGdhXwqbgNGaBDYXLg/TouvAEP
+a4EWjkASKIgTwKQv4rHZtE5IoltMljnRejtTAseY3s4LslaZycuebPQSR9aJiVX8
+9w0uWPz5ijRI4MxBKLrKwtF9BpM9wBSmd9vRpzio2tzNVClKjDA/bGm2kLWDxCHl
+cbD9CVUhqO4AjVtmPXjji183QakTn3vsuXFS20kWAJwE47TAfadElJfH8kE3g46b
+qb4p4WulxFRtMKs9Et9ZyoDW1vXocYsFw3VhSSDKt3vOlMiwP6aD4EiKU3oa7tOs
+eMqcO0zLmI48DvLpK45h
+=U/bY
+-----END PGP SIGNATURE-----
+
+--OOq1TgGhe8eTwFBO--
