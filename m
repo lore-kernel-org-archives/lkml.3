@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab3ITUNr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:13:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41549 "EHLO
+	id S1754819Ab3ITUOA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:14:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41555 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab3ITUNh (ORCPT
+	with ESMTP id S1754751Ab3ITUN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:13:37 -0400
+	Fri, 20 Sep 2013 16:13:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 55/93] Introduce [compat_]save_altstack_ex() to unbreak x86 SMAP
-Date: Fri, 20 Sep 2013 13:08:50 -0700
-Message-Id: <1379707768-1804-56-git-send-email-kamal@canonical.com>
+Cc: Maxim Patlasov <mpatlasov@parallels.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 60/93] fuse: postpone end_page_writeback() in fuse_writepage_locked()
+Date: Fri, 20 Sep 2013 13:08:55 -0700
+Message-Id: <1379707768-1804-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -27,114 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Maxim Patlasov <MPatlasov@parallels.com>
 
-commit bd1c149aa9915b9abb6d83d0f01dfd2ace0680b5 upstream.
+commit 4a4ac4eba1010ef9a804569058ab29e3450c0315 upstream.
 
-For performance reasons, when SMAP is in use, SMAP is left open for an
-entire put_user_try { ... } put_user_catch(); block, however, calling
-__put_user() in the middle of that block will close SMAP as the
-STAC..CLAC constructs intentionally do not nest.
+The patch fixes a race between ftruncate(2), mmap-ed write and write(2):
 
-Furthermore, using __put_user() rather than put_user_ex() here is bad
-for performance.
+1) An user makes a page dirty via mmap-ed write.
+2) The user performs shrinking truncate(2) intended to purge the page.
+3) Before fuse_do_setattr calls truncate_pagecache, the page goes to
+   writeback. fuse_writepage_locked fills FUSE_WRITE request and releases
+   the original page by end_page_writeback.
+4) fuse_do_setattr() completes and successfully returns. Since now, i_mutex
+   is free.
+5) Ordinary write(2) extends i_size back to cover the page. Note that
+   fuse_send_write_pages do wait for fuse writeback, but for another
+   page->index.
+6) fuse_writepage_locked proceeds by queueing FUSE_WRITE request.
+   fuse_send_writepage is supposed to crop inarg->size of the request,
+   but it doesn't because i_size has already been extended back.
 
-Thus, introduce new [compat_]save_altstack_ex() helpers that replace
-__[compat_]save_altstack() for x86, being currently the only
-architecture which supports put_user_try { ... } put_user_catch().
+Moving end_page_writeback to the end of fuse_writepage_locked fixes the
+race because now the fact that truncate_pagecache is successfully returned
+infers that fuse_writepage_locked has already called end_page_writeback.
+And this, in turn, infers that fuse_flush_writepages has already called
+fuse_send_writepage, and the latter used valid (shrunk) i_size. write(2)
+could not extend it because of i_mutex held by ftruncate(2).
 
-Reported-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-es5p6y64if71k8p5u08agv9n@git.kernel.org
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/ia32/ia32_signal.c | 2 +-
- arch/x86/kernel/signal.c    | 6 +++---
- include/linux/compat.h      | 7 +++++++
- include/linux/signal.h      | 8 ++++++++
- 4 files changed, 19 insertions(+), 4 deletions(-)
+ fs/fuse/file.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
-index a1daf4a..fb53906 100644
---- a/arch/x86/ia32/ia32_signal.c
-+++ b/arch/x86/ia32/ia32_signal.c
-@@ -467,7 +467,7 @@ int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __compat_save_altstack(&frame->uc.uc_stack, regs->sp);
-+		compat_save_altstack_ex(&frame->uc.uc_stack, regs->sp);
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index f3ab824..e9c40f3 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1299,7 +1299,6 @@ static int fuse_writepage_locked(struct page *page)
  
- 		if (ka->sa.sa_flags & SA_RESTORER)
- 			restorer = ka->sa.sa_restorer;
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index d6bf1f3..1697f73 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -364,7 +364,7 @@ static int __setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
-+		save_altstack_ex(&frame->uc.uc_stack, regs->sp);
+ 	inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
+ 	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
+-	end_page_writeback(page);
  
- 		/* Set up to return from userspace.  */
- 		restorer = VDSO32_SYMBOL(current->mm->context.vdso, rt_sigreturn);
-@@ -429,7 +429,7 @@ static int __setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
-+		save_altstack_ex(&frame->uc.uc_stack, regs->sp);
+ 	spin_lock(&fc->lock);
+ 	list_add(&req->writepages_entry, &fi->writepages);
+@@ -1307,6 +1306,8 @@ static int fuse_writepage_locked(struct page *page)
+ 	fuse_flush_writepages(inode);
+ 	spin_unlock(&fc->lock);
  
- 		/* Set up to return from userspace.  If provided, use a stub
- 		   already in userspace.  */
-@@ -496,7 +496,7 @@ static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __compat_save_altstack(&frame->uc.uc_stack, regs->sp);
-+		compat_save_altstack_ex(&frame->uc.uc_stack, regs->sp);
- 		put_user_ex(0, &frame->uc.uc__pad0);
- 
- 		if (ka->sa.sa_flags & SA_RESTORER) {
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index dec7e2d..98ac3c5 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -648,6 +648,13 @@ asmlinkage long compat_sys_sigaltstack(const compat_stack_t __user *uss_ptr,
- 
- int compat_restore_altstack(const compat_stack_t __user *uss);
- int __compat_save_altstack(compat_stack_t __user *, unsigned long);
-+#define compat_save_altstack_ex(uss, sp) do { \
-+	compat_stack_t __user *__uss = uss; \
-+	struct task_struct *t = current; \
-+	put_user_ex(ptr_to_compat((void __user *)t->sas_ss_sp), &__uss->ss_sp); \
-+	put_user_ex(sas_ss_flags(sp), &__uss->ss_flags); \
-+	put_user_ex(t->sas_ss_size, &__uss->ss_size); \
-+} while (0);
- #endif
- 
- asmlinkage long compat_sys_sched_rr_get_interval(compat_pid_t pid,
-diff --git a/include/linux/signal.h b/include/linux/signal.h
-index 0a89ffc..b50aa60 100644
---- a/include/linux/signal.h
-+++ b/include/linux/signal.h
-@@ -388,4 +388,12 @@ void signals_init(void);
- int restore_altstack(const stack_t __user *);
- int __save_altstack(stack_t __user *, unsigned long);
- 
-+#define save_altstack_ex(uss, sp) do { \
-+	stack_t __user *__uss = uss; \
-+	struct task_struct *t = current; \
-+	put_user_ex((void __user *)t->sas_ss_sp, &__uss->ss_sp); \
-+	put_user_ex(sas_ss_flags(sp), &__uss->ss_flags); \
-+	put_user_ex(t->sas_ss_size, &__uss->ss_size); \
-+} while (0);
++	end_page_writeback(page);
 +
- #endif /* _LINUX_SIGNAL_H */
+ 	return 0;
+ 
+ err_free:
 -- 
 1.8.1.2
 
