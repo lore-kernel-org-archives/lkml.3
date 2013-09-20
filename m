@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab3ITTIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 15:08:21 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48281 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab3ITTIS (ORCPT
+	id S1753615Ab3ITTJA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 15:09:00 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:49812 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563Ab3ITTI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 15:08:18 -0400
-Message-ID: <523C9CE5.9040009@ti.com>
-Date: Fri, 20 Sep 2013 14:07:17 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 20 Sep 2013 15:08:58 -0400
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH 1/3] PM / OPP: rename functions to dev_pm_opp*
-References: <1379624632-17356-1-git-send-email-nm@ti.com>	<1379624632-17356-2-git-send-email-nm@ti.com>	<CAKohpoku7n6b2dDKD=+3DqG4pHtmWoeXZnAt3EoFRp+rNFofYA@mail.gmail.com>	<20130920123808.GA22176@kahuna> <CAKohpoktS4ZSQAeKvu3hdVsKkzcbKFvHvR2=wCA3qeB6moPphA@mail.gmail.com>
-In-Reply-To: <CAKohpoktS4ZSQAeKvu3hdVsKkzcbKFvHvR2=wCA3qeB6moPphA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
+Date: Fri, 20 Sep 2013 21:08:57 +0200
+Message-ID: <CACRpkdZ4WNmt5ZO_+Wtpm0+GD4EMAK5VscV-cTN+43heF17FJg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio / ACPI: register to ACPI events automatically
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2013 11:51 AM, Viresh Kumar wrote:
-> On 20 September 2013 18:08, Nishanth Menon <nm@ti.com> wrote:
-> 
->> I am open to suggestions if any one feels we can improve this better.
-> 
-> I didn't really had one.. I thought of pm_opp** instead of dev_pm_opp**
-> though..
+On Fri, Sep 13, 2013 at 5:14 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
 
-I had proposed this earlier, however, had gone with Rafael's
-suggestion [1] to have the right context to the usage.
+> Instead of asking each driver to register to the ACPI events we can just
+> call acpi_gpiochip_register_interrupts() for each chip that has ACPI
+> handle. It checks chip->to_irq and if it is set to NULL (a GPIO driver that
+> doesn't do interrupts) the function does nothing.
+>
+> Also make the event interface to be private to gpiolib-acpi and remove call
+> to the API from the one existing user (pinctrl-baytrail.c).
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-> 
->> I believe that change was from Patch #2[1]
-> 
-> Yeah.. I just replied on a single patch :)
-> 
->> yes, you are right, I had squashed this patch in to squelch checkpatch
->> warnings:
-> 
-> I see..
-> 
->> I had added a comment:
->> " Minor checkpatch warning fixes as a result of this change was fixed as
->> well."
-> 
-> I really missed that..
-no problems..
+The concept looks sane...
 
-> 
->> Would you suggest I split the change off to a separate patch or improve
->>  the comment a little more?
-> 
-> don't really know, maybe leave those as is and let checkpatch warn you..
-> 
-that is fair as well. i can split it off seperately in the next respin.
+> +void acpi_gpiochip_add(struct gpio_chip *chip)
+> +{
+> +       acpi_gpiochip_request_interrupts(chip);
+> +}
+> +EXPORT_SYMBOL_GPL(acpi_gpiochip_add);
+> +
+> +void acpi_gpiochip_remove(struct gpio_chip *chip)
+> +{
+> +       acpi_gpiochip_free_interrupts(chip);
+> +}
+> +EXPORT_SYMBOL_GPL(acpi_gpiochip_remove);
 
-[1] http://marc.info/?l=linaro-kernel&m=137645747511725&w=2
--- 
-Regards,
-Nishanth Menon
+If you're only going to call this from within gpiolib, why are
+you EXPORTing the APIs?
+
+I think we should maybe create drivers/gpio/gpiolib.h
+for such subsystem-local headers.
+
+> @@ -1221,6 +1222,7 @@ int gpiochip_add(struct gpio_chip *chip)
+>  #endif
+>
+>         of_gpiochip_add(chip);
+> +       acpi_gpiochip_add(chip);
+>
+>         if (status)
+>                 goto fail;
+> @@ -1262,6 +1264,7 @@ int gpiochip_remove(struct gpio_chip *chip)
+>
+>         gpiochip_remove_pin_ranges(chip);
+>         of_gpiochip_remove(chip);
+> +       acpi_gpiochip_remove(chip);
+
+What happens on a platform that is not using CONFIG_GPIO_ACPI
+when they try to compile this?
+
+You forgot to add static inline stubs for the non-ACPI case.
+
+Yours,
+Linus Walleij
