@@ -1,174 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab3ITVUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 17:20:32 -0400
-Received: from mail-ye0-f201.google.com ([209.85.213.201]:49118 "EHLO
-	mail-ye0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191Ab3ITVU1 (ORCPT
+	id S1754665Ab3ITVWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 17:22:30 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:57772 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027Ab3ITVW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 17:20:27 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: linux-samsung-soc@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
+	Fri, 20 Sep 2013 17:22:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <523CBA5F.60901@gmail.com>
+References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1379526839-14798-2-git-send-email-sebastian.hesselbarth@gmail.com>
+	<523CBA5F.60901@gmail.com>
+Date: Fri, 20 Sep 2013 23:22:29 +0200
+Message-ID: <CACRpkdZDoBDrF0A4KFUeJxw0cZzL8dLcRTFzhxY0ZRKET8T7bg@mail.gmail.com>
+Subject: Re: [PATCH 01/26] ARM: nomadik: move mtu setup to clocksource init
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Alessandro Rubini <rubini@unipv.it>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Tomasz Figa <t.figa@samsung.com>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Padmavathi Venna <padma.v@samsung.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH 2/6] clk: exynos-audss: allow input clocks to be specified in device tree
-Date: Fri, 20 Sep 2013 14:13:53 -0700
-Message-Id: <1379711637-5226-2-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1379711637-5226-1-git-send-email-abrestic@chromium.org>
-References: <1379711637-5226-1-git-send-email-abrestic@chromium.org>
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows the input clocks to the Exynos AudioSS block to be
-specified via device-tree bindings.  Default names will be used
-when an input clock is not given.
+On Fri, Sep 20, 2013 at 11:13 PM, Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com> wrote:
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- .../devicetree/bindings/clock/clk-exynos-audss.txt | 33 ++++++++++++++++++++--
- drivers/clk/samsung/clk-exynos-audss.c             | 25 ++++++++++++----
- 2 files changed, 51 insertions(+), 7 deletions(-)
+> Linus,
+>
+> looking at the fix you posted at [1], can I assume that the above it
+> redundant and can be removed?
+>
+> [1] http://marc.info/?l=linux-arm-kernel&m=137910161418706&w=2
 
-diff --git a/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt b/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt
-index 75e2e19..d51a2f9 100644
---- a/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt
-+++ b/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt
-@@ -14,6 +14,23 @@ Required Properties:
- 
- - #clock-cells: should be 1.
- 
-+Optional Properties:
-+
-+- clocks:
-+  - pll_ref: Fixed rate PLL reference clock, parent of mout_audss. "fin_pll"
-+    is used if not specified.
-+  - pll_in: Input PLL to the AudioSS block, parent of mout_audss. "fout_epll"
-+    is used if not specified.
-+  - cdclk: External i2s clock, parent of mout_i2s. "cdclk0" is used if not
-+    specified.
-+  - sclk_audio: Audio bus clock, parent of mout_i2s. "sclk_audio0" is used if
-+    not specified.
-+  - sclk_pcm_in: PCM clock, parent of sclk_pcm.  "sclk_pcm0" is used if not
-+    specified.
-+
-+- clock-names: Aliases for the above clocks. They should be "pll_ref",
-+  "pll_in", "cdclk", "sclk_audio", and "sclk_pcm_in" respectively.
-+
- The following is the list of clocks generated by the controller. Each clock is
- assigned an identifier and client nodes use this identifier to specify the
- clock which they consume. Some of the clocks are available only on a particular
-@@ -35,15 +52,27 @@ sclk_i2s        7
- pcm_bus         8
- sclk_pcm        9
- 
--Example 1: An example of a clock controller node is listed below.
-+Example 1: An example of a clock controller node using the default input
-+	   clock names is listed below.
-+
-+clock_audss: audss-clock-controller@3810000 {
-+	compatible = "samsung,exynos5250-audss-clock";
-+	reg = <0x03810000 0x0C>;
-+	#clock-cells = <1>;
-+};
-+
-+Example 2: An example of a clock controller node with audio bus input clock
-+	   specified is listed below.
- 
- clock_audss: audss-clock-controller@3810000 {
- 	compatible = "samsung,exynos5250-audss-clock";
- 	reg = <0x03810000 0x0C>;
- 	#clock-cells = <1>;
-+	clocks = <&clock 138>;
-+	clock-names = "sclk_audio";
- };
- 
--Example 2: I2S controller node that consumes the clock generated by the clock
-+Example 3: I2S controller node that consumes the clock generated by the clock
-            controller. Refer to the standard clock bindings for information
-            about 'clocks' and 'clock-names' property.
- 
-diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
-index 7571e88..aac5342 100644
---- a/drivers/clk/samsung/clk-exynos-audss.c
-+++ b/drivers/clk/samsung/clk-exynos-audss.c
-@@ -34,10 +34,6 @@ static unsigned long reg_save[][2] = {
- 	{ASS_CLK_GATE, 0},
- };
- 
--/* list of all parent clock list */
--static const char *mout_audss_p[] = { "fin_pll", "fout_epll" };
--static const char *mout_i2s_p[] = { "mout_audss", "cdclk0", "sclk_audio0" };
--
- #ifdef CONFIG_PM_SLEEP
- static int exynos_audss_clk_suspend(void)
- {
-@@ -66,6 +62,10 @@ static struct syscore_ops exynos_audss_clk_syscore_ops = {
- /* register exynos_audss clocks */
- static int exynos_audss_clk_probe(struct platform_device *pdev)
- {
-+	const char *mout_audss_p[] = {"fin_pll", "fout_epll"};
-+	const char *mout_i2s_p[] = {"mout_audss", "cdclk0", "sclk_audio0"};
-+	const char *sclk_pcm_p = "sclk_pcm0";
-+	struct clk *pll_ref, *pll_in, *cdclk, *sclk_audio, *sclk_pcm_in;
- 	struct resource *res;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -88,11 +88,23 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
- 	of_clk_add_provider(pdev->dev.of_node, of_clk_src_onecell_get,
- 				&clk_data);
- 
-+	pll_ref = devm_clk_get(&pdev->dev, "pll_ref");
-+	pll_in = devm_clk_get(&pdev->dev, "pll_in");
-+	if (!IS_ERR(pll_ref))
-+		mout_audss_p[0] = __clk_get_name(pll_ref);
-+	if (!IS_ERR(pll_in))
-+		mout_audss_p[1] = __clk_get_name(pll_in);
- 	clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
- 				mout_audss_p, ARRAY_SIZE(mout_audss_p),
- 				CLK_SET_RATE_NO_REPARENT,
- 				reg_base + ASS_CLK_SRC, 0, 1, 0, &lock);
- 
-+	cdclk = devm_clk_get(&pdev->dev, "cdclk");
-+	sclk_audio = devm_clk_get(&pdev->dev, "sclk_audio");
-+	if (!IS_ERR(cdclk))
-+		mout_i2s_p[1] = __clk_get_name(cdclk);
-+	if (!IS_ERR(sclk_audio))
-+		mout_i2s_p[2] = __clk_get_name(sclk_audio);
- 	clk_table[EXYNOS_MOUT_I2S] = clk_register_mux(NULL, "mout_i2s",
- 				mout_i2s_p, ARRAY_SIZE(mout_i2s_p),
- 				CLK_SET_RATE_NO_REPARENT,
-@@ -126,8 +138,11 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
- 				 "sclk_pcm", CLK_SET_RATE_PARENT,
- 				reg_base + ASS_CLK_GATE, 4, 0, &lock);
- 
-+	sclk_pcm_in = devm_clk_get(&pdev->dev, "sclk_pcm_in");
-+	if (!IS_ERR(sclk_pcm_in))
-+		sclk_pcm_p = __clk_get_name(sclk_pcm_in);
- 	clk_table[EXYNOS_SCLK_PCM] = clk_register_gate(NULL, "sclk_pcm",
--				"div_pcm0", CLK_SET_RATE_PARENT,
-+				sclk_pcm_p, CLK_SET_RATE_PARENT,
- 				reg_base + ASS_CLK_GATE, 5, 0, &lock);
- 
- #ifdef CONFIG_PM_SLEEP
--- 
-1.8.4
+I think so, post a version doing that and I'll test it along with my other
+patch.
 
+If it blows up I'll notice :-)
+
+Yours,
+Linus Walleij
