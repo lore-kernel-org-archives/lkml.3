@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab3ITUOD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:14:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41560 "EHLO
+	id S1754905Ab3ITUOO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:14:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41586 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808Ab3ITUOA (ORCPT
+	with ESMTP id S1754879Ab3ITUOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:14:00 -0400
+	Fri, 20 Sep 2013 16:14:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Colin Cross <ccross@android.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Mark Brown <broonie@linaro.org>, Mike Turquette <mturquette@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 39/93] cpuidle: coupled: disable interrupts after entering safe state
-Date: Fri, 20 Sep 2013 13:08:34 -0700
-Message-Id: <1379707768-1804-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 44/93] clk: wm831x: Initialise wm831x pointer on init
+Date: Fri, 20 Sep 2013 13:08:39 -0700
+Message-Id: <1379707768-1804-45-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -28,43 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Mark Brown <broonie@linaro.org>
 
-commit 59e998561103a93f294c8d3138dd659af772a5da upstream.
+commit 08442ce993deeb15a070c14cc3f3459e87d111e0 upstream.
 
-Calling cpuidle_enter_state is expected to return with interrupts
-enabled, but interrupts must be disabled before starting the
-ready loop synchronization stage.  Call local_irq_disable after
-each call to cpuidle_enter_state for the safe state.
+Otherwise any attempt to interact with the hardware will crash. This is
+what happens when drivers get written blind.
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Colin Cross <ccross@android.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/cpuidle/coupled.c | 2 ++
+ drivers/clk/clk-wm831x.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-index dc9e647..5d39627 100644
---- a/drivers/cpuidle/coupled.c
-+++ b/drivers/cpuidle/coupled.c
-@@ -470,6 +470,7 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
- 		}
- 		entered_state = cpuidle_enter_state(dev, drv,
- 			dev->safe_state_index);
-+		local_irq_disable();
- 	}
+diff --git a/drivers/clk/clk-wm831x.c b/drivers/clk/clk-wm831x.c
+index 16ed068..917a3ab 100644
+--- a/drivers/clk/clk-wm831x.c
++++ b/drivers/clk/clk-wm831x.c
+@@ -360,6 +360,8 @@ static int wm831x_clk_probe(struct platform_device *pdev)
+ 	if (!clkdata)
+ 		return -ENOMEM;
  
- 	/* Read barrier ensures online_count is read after prevent is cleared */
-@@ -514,6 +515,7 @@ retry:
- 
- 		entered_state = cpuidle_enter_state(dev, drv,
- 			dev->safe_state_index);
-+		local_irq_disable();
- 	}
- 
- 	if (cpuidle_coupled_clear_pokes(dev->cpu)) {
++	clkdata->wm831x = wm831x;
++
+ 	/* XTAL_ENA can only be set via OTP/InstantConfig so just read once */
+ 	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
+ 	if (ret < 0) {
 -- 
 1.8.1.2
 
