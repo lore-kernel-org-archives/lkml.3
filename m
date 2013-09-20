@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab3ITJt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 05:49:59 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:49423 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754427Ab3ITJt4 (ORCPT
+	id S1754493Ab3ITJua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 05:50:30 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47518 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754477Ab3ITJu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 05:49:56 -0400
+	Fri, 20 Sep 2013 05:50:28 -0400
+Date: Fri, 20 Sep 2013 10:49:59 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <20130920094959.GK21013@sirena.org.uk>
+References: <1379650535-17223-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1378919210-10372-1-git-send-email-zab@redhat.com>
-References: <1378919210-10372-1-git-send-email-zab@redhat.com>
-Date: Fri, 20 Sep 2013 11:49:56 +0200
-X-Google-Sender-Auth: 0Jn8wFAfWNO3X_CkXNlbQvfWsVI
-Message-ID: <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
-Subject: Re: [RFC] extending splice for copy offloading
-From: Szeredi Miklos <miklos@szeredi.hu>
-To: Zach Brown <zab@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dbdikjxO6Hyl7qA/"
+Content-Disposition: inline
+In-Reply-To: <1379650535-17223-1-git-send-email-sachin.kamat@linaro.org>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 86.153.71.95
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/1] regulator: tps6524x: Remove redundant spi_set_drvdata
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 7:06 PM, Zach Brown <zab@redhat.com> wrote:
->
-> When I first started on this stuff I followed the lead of previous
-> work and added a new syscall for the copy operation:
->
-> https://lkml.org/lkml/2013/5/14/618
->
-> Towards the end of that thread Eric Wong asked why we didn't just
-> extend splice.  I immediately replied with some dumb dismissive
-> answer.  Once I sat down and looked at it, though, it does make a
-> lot of sense.  So good job, Eric.  +10 Dummie points for me.
->
-> Extending splice avoids all the noise of adding a new syscall and
-> naturally falls back to buffered copying as that's what the direct
-> splice path does for sendfile() today.
 
-Nice idea.
+--dbdikjxO6Hyl7qA/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
-> So that's what this patch series demonstrates.  It adds a flag that
-> lets splice get at the same direct splicing that sendfile() does.
-> We then add a file system file_operations method to accelerate the
-> copy which has access to both files.
->
-> Some things to talk about:
-> - I really don't care about the naming here.  If you do, holler.
-> - We might want different flags for file-to-file splicing and acceleration
+On Fri, Sep 20, 2013 at 09:45:35AM +0530, Sachin Kamat wrote:
+> Driver core sets driver data to NULL upon failure or remove.
 
-Yes, I think "copy" and "reflink" needs to be differentiated.
+Applied, thanks.
 
-> - We might want flags to require or forbid acceleration
-> - We might want to provide all these flags to sendfile, too
->
-> Thoughts?  Objections?
+--dbdikjxO6Hyl7qA/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Can filesystem support "whole file copy" only?  Or arbitrary
-block-to-block copy should be mandatory?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-Splice has size_t argument for the size, which is limited to 4G on 32
-bit.  Won't this be an issue for whole-file-copy?  We could have
-special value (-1) for whole file, but that's starting to be hackish.
+iQIcBAEBAgAGBQJSPBo+AAoJELSic+t+oim92ucP/3JnYPwFozwlpbY80YQp6WIB
+dEowfCIzAt+Rfebje1r43GRcs+kRCp0aHNUrb++os0YnrVLpAdaBSRQdUT+ZOWfQ
+LkBr6+LdNS1Ieds7zch96EURDQkEuWw5Qw6py/vjnzZaYkmUApVKyTK+wJK3KwYo
+7adfJX6RMDaqQTK1VENsoGSgFZ70p8EW99XbqdZQKOeiE03XAp73VdK6lRYiX0la
+nfLtixjA8NysijDhQ/1fVMfoUdvqzK0D1UQkM603tSgV+RsTraSyfuzxz1TElmtH
+d7EpTYOVkxf1Sa4F9kYAFJSztcvPsbuEo7nKwD1KCA14/76b7uH/VmCCxsyudTDq
+1rCwVhbHo46AM1m5j86PQGIMeB87rBLXi7B1Ott0QOGo+yl7s43aaEHskDfybJpX
+66M+JRJkVc9U+IlZ56wa7fP4xgxLAzdYl/wSR9Bb8FWRlGCnJsQfRW1KPCj5euWZ
+Zpw3r/On3ZKh3eKmtQMGzlf1V0H4/cS03sLckVHoyyGHJQ1ywdZ5YAwWYdMG+35D
+3s6r1VLPGbaTRwv+OlQxyayNZR+AilyMhxqJjXqxrZt3otRdiE4xiBOA5MJV0WXl
+oypxM7Haz5G/naXwjcflNxLE/ZKhm6wXMRjWiK2P0jcFm90/e8n15FH0yB8pSm6N
+pd3g4LNAoJGKHz6hMgxZ
+=mfgP
+-----END PGP SIGNATURE-----
 
-We are talking about copying large amounts of data in a single
-syscall, which will possibly take a long time.  Will the syscall be
-interruptible?  Restartable?
-
-Thanks,
-Miklos
+--dbdikjxO6Hyl7qA/--
