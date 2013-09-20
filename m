@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab3ITTJA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 15:09:00 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:49812 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563Ab3ITTI6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 15:08:58 -0400
+	id S1753688Ab3ITTKk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 15:10:40 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58743 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752624Ab3ITTKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 15:10:39 -0400
+Message-ID: <523C9D8B.2000701@ti.com>
+Date: Fri, 20 Sep 2013 14:10:03 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
-Date: Fri, 20 Sep 2013 21:08:57 +0200
-Message-ID: <CACRpkdZ4WNmt5ZO_+Wtpm0+GD4EMAK5VscV-cTN+43heF17FJg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio / ACPI: register to ACPI events automatically
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <balbi@ti.com>, Olof Johansson <olof@lixom.net>
+CC: Tony Lindgren <tony@atomide.com>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] ARM: OMAP3630: Add generic machine descriptor
+References: <1379693332-10585-1-git-send-email-nm@ti.com> <CAOesGMj6G7LeYUJsGpZHxKOjiNrk+1U55QFqcQyTb6_Co+n4zQ@mail.gmail.com> <20130920162329.GC18721@radagast> <CAOesGMiru=RUHS4XKLL=DC+hxtAJqtcjgd5hPbaccnAfEZ3y0g@mail.gmail.com> <20130920174228.GK18721@radagast>
+In-Reply-To: <20130920174228.GK18721@radagast>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 5:14 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
+On 09/20/2013 12:42 PM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Fri, Sep 20, 2013 at 10:16:48AM -0700, Olof Johansson wrote:
+>>> On Fri, Sep 20, 2013 at 09:19:02AM -0700, Olof Johansson wrote:
+>>>> On Fri, Sep 20, 2013 at 9:08 AM, Nishanth Menon <nm@ti.com> wrote:
+>>>>> An alternative approach may be to (for all SoCs):
+>>>>> 1. define every SoC entry - ti,omap3430 ti,omap3630...
+>>>>> 2. have a generic omap3_init which uses "if (of_machine_is_compatible("ti,omap3630"))"
+>>>>> to invoke the appropriate omap3xxx_init_early.
+>>>>
+>>>> Yes, this would be better, but you can do add a DT_MACHINE as in this
+>>>> patch but have ti,omap3630 as the dt_compat table. Then there's no
+>>>> need to add runtime checks.
+>>>
+>>> I was going to reply that adding of_machine_is_compatible("ti,omap3630")
+>>> would help in some situations, but guess it's already tainted ;-)
+>>
+>> Oh, if it's just a few checks, then by all means go down that route. I
+>> didn't look at the code to see how much it would be.
+>>
+>> But if a new DT_MACHINE is added, then it should definitely be based
+>> on ti,omap3630 instead of listing all the boards.
+This was more in the direction I was hoping to go.
 
-> Instead of asking each driver to register to the ACPI events we can just
-> call acpi_gpiochip_register_interrupts() for each chip that has ACPI
-> handle. It checks chip->to_irq and if it is set to NULL (a GPIO driver that
-> doesn't do interrupts) the function does nothing.
->
-> Also make the event interface to be private to gpiolib-acpi and remove call
-> to the API from the one existing user (pinctrl-baytrail.c).
->
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> the idea was to CPU compatible property to conditionally enable known
+> erratas workarounds. In some cases, Revision register can't be trusted,
+> so instead of creating per-errata DT properties (since that'd be
+> describing the SW, in a way), I thought of using
+> of_machine_is_compatible() checks, but that assumes CPU compatible is
+> "correct".
+I think the quirk handling is part of what Tony is attempting, and the
+definition of these might help, I think..
 
-The concept looks sane...
 
-> +void acpi_gpiochip_add(struct gpio_chip *chip)
-> +{
-> +       acpi_gpiochip_request_interrupts(chip);
-> +}
-> +EXPORT_SYMBOL_GPL(acpi_gpiochip_add);
-> +
-> +void acpi_gpiochip_remove(struct gpio_chip *chip)
-> +{
-> +       acpi_gpiochip_free_interrupts(chip);
-> +}
-> +EXPORT_SYMBOL_GPL(acpi_gpiochip_remove);
-
-If you're only going to call this from within gpiolib, why are
-you EXPORTing the APIs?
-
-I think we should maybe create drivers/gpio/gpiolib.h
-for such subsystem-local headers.
-
-> @@ -1221,6 +1222,7 @@ int gpiochip_add(struct gpio_chip *chip)
->  #endif
->
->         of_gpiochip_add(chip);
-> +       acpi_gpiochip_add(chip);
->
->         if (status)
->                 goto fail;
-> @@ -1262,6 +1264,7 @@ int gpiochip_remove(struct gpio_chip *chip)
->
->         gpiochip_remove_pin_ranges(chip);
->         of_gpiochip_remove(chip);
-> +       acpi_gpiochip_remove(chip);
-
-What happens on a platform that is not using CONFIG_GPIO_ACPI
-when they try to compile this?
-
-You forgot to add static inline stubs for the non-ACPI case.
-
-Yours,
-Linus Walleij
+-- 
+Regards,
+Nishanth Menon
