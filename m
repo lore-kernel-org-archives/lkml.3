@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab3ITRMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 13:12:34 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:38928 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab3ITRMc (ORCPT
+	id S1753208Ab3ITRQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 13:16:50 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:46842 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950Ab3ITRQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 13:12:32 -0400
+	Fri, 20 Sep 2013 13:16:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <3290463.fBbGMovmdx@vostro.rjw.lan>
-References: <1379563520-7221-1-git-send-email-yinghai@kernel.org>
-	<CAKohpom-3orEns00DC2=uk4pgV_xnfRpM1hrdyK9pjPUEgBXrA@mail.gmail.com>
-	<CAE9FiQU5PD4asdE3=sBSnLK8fwPT8vK81FAOuYtAWj_3ruyS0g@mail.gmail.com>
-	<3290463.fBbGMovmdx@vostro.rjw.lan>
-Date: Fri, 20 Sep 2013 10:12:31 -0700
-X-Google-Sender-Auth: v3OZv3PB-cUCZt6-oc0T2eLTA-8
-Message-ID: <CAE9FiQWm=Db4e8nYdVJzpirmV2EfKxEYYRHo6ggTtX0CY3-hhg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: return EEXIST instead of EBUSY for second registering
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20130920162329.GC18721@radagast>
+References: <1379693332-10585-1-git-send-email-nm@ti.com>
+	<CAOesGMj6G7LeYUJsGpZHxKOjiNrk+1U55QFqcQyTb6_Co+n4zQ@mail.gmail.com>
+	<20130920162329.GC18721@radagast>
+Date: Fri, 20 Sep 2013 10:16:48 -0700
+Message-ID: <CAOesGMiru=RUHS4XKLL=DC+hxtAJqtcjgd5hPbaccnAfEZ3y0g@mail.gmail.com>
+Subject: Re: [RFC PATCH] ARM: OMAP3630: Add generic machine descriptor
+From: Olof Johansson <olof@lixom.net>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 6:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, September 19, 2013 10:30:04 PM Yinghai Lu wrote:
->> On Thu, Sep 19, 2013 at 9:23 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> > On 20 September 2013 07:01, Yinghai Lu <yinghai@kernel.org> wrote:
->> >> Sorry,  looks like this one is not enough.
+On Fri, Sep 20, 2013 at 9:23 AM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
 >
-> Well, I've already applied this one and it makes sense to me anyway.
-
-you can keep that.
-
->
->> >> please let me know if you prefer me send addon patch
->> >> or revised one.
->> >
->> > Atleast you can let us know what the problem is? And then we
->> > can decide on that.. But anyway, you can send a new patch
->> > based over latest linux-next (which will have your original patch),
->> > and then leave it onto Rafael to merge it or have two patches..
->> > (though I am quite sure he will not drop anything now, unless its
->> > too screwed.., at worst he might revert it..)..
+> On Fri, Sep 20, 2013 at 09:19:02AM -0700, Olof Johansson wrote:
+>> On Fri, Sep 20, 2013 at 9:08 AM, Nishanth Menon <nm@ti.com> wrote:
+>> > An alternative approach may be to (for all SoCs):
+>> > 1. define every SoC entry - ti,omap3430 ti,omap3630...
+>> > 2. have a generic omap3_init which uses "if (of_machine_is_compatible("ti,omap3630"))"
+>> > to invoke the appropriate omap3xxx_init_early.
 >>
->> looks like the crash is intermittent..., so i thought that patch fixed
->> the problem.
->> but later I found other suspicious print out.
+>> Yes, this would be better, but you can do add a DT_MACHINE as in this
+>> patch but have ti,omap3630 as the dt_compat table. Then there's no
+>> need to add runtime checks.
 >
-> So, does it mean that the $subject patch fixes the issue for you to some
-> extent, but more changes are necessary to make it go away completely?
+> I was going to reply that adding of_machine_is_compatible("ti,omap3630")
+> would help in some situations, but guess it's already tainted ;-)
 
-yes.
+Oh, if it's just a few checks, then by all means go down that route. I
+didn't look at the code to see how much it would be.
 
->
->> please check new one:
->>
->> https://patchwork.kernel.org/patch/2915181/
->
-> I see.
->
-> I *think* we can just drop the module requesting stuff entirely, because it
-> doesn't seem to work anyway and udev is handling this for us.
+But if a new DT_MACHINE is added, then it should definitely be based
+on ti,omap3630 instead of listing all the boards.
 
-looks some nehalem/westmere based system may need it when they have
-several SSDTs. will double check that.
 
-Thanks
-
-Yinghai
+-Olof
