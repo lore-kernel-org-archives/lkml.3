@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab3ITHPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 03:15:04 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:64134 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab3ITHPC (ORCPT
+	id S1754046Ab3ITHV3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 03:21:29 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:13724 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab3ITHV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 03:15:02 -0400
+	Fri, 20 Sep 2013 03:21:27 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 20 Sep 2013 00:21:27 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@kernel.org>
+CC: <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <swarren@nvidia.com>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2] regulator: core: set current constraints while setting machine constraints
+Date: Fri, 20 Sep 2013 13:13:02 +0530
+Message-ID: <1379662982-21327-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-In-Reply-To: <20130919210750.GH2918@verge.net.au>
-References: <1379412095-7213-1-git-send-email-geert@linux-m68k.org>
-	<20130919210750.GH2918@verge.net.au>
-Date: Fri, 20 Sep 2013 09:15:02 +0200
-X-Google-Sender-Auth: Neyg96B34UHoXKcQS-gzm_4Q-qU
-Message-ID: <CAMuHMdVx3KmL9cK-_g3qcrkHxxCAno+3z4O=kVTOGCYhD_WmWw@mail.gmail.com>
-Subject: Re: Preliminary kexec support for Linux/m68k
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Simon Horman <horms@verge.net.au>
-Cc: linux-m68k <linux-m68k@vger.kernel.org>, kexec@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
+Machine constraints is configured during regulator register. If current
+constraints are provided through machine constraints then it is observed
+that sometime the current configured on rail is out of range what machine
+constraint has.
 
-Thanks for your comments!
+Set the current constraints when setting machine constraints to make
+sure that rail's current is within the range of given machine constraints.
 
-On Thu, Sep 19, 2013 at 11:07 PM, Simon Horman <horms@verge.net.au> wrote:
-> Pasting two series in one was a bit confusing for me at first.
-> Perhaps you could consider posting two separate series in future.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Changes from V1:
+- Correct the indentng.
+- Prints warning when current-ops are not implemented.
+- Set constraint current unconditionally.
+- Blank line before last return.
 
-Sorry, I wanted to have all information in one series for the first posting, to
-avoid people having to look around too much if they want to give it a try.
+ drivers/regulator/core.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
 
-I'll post seperate series in the future.
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index b698e2b..bc75cb2 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -904,6 +904,36 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 	return 0;
+ }
+ 
++static int machine_constraints_current(struct regulator_dev *rdev,
++	struct regulation_constraints *constraints)
++{
++	struct regulator_ops *ops = rdev->desc->ops;
++	int ret;
++
++	if (!constraints->min_uA && !constraints->max_uA)
++		return 0;
++
++	if (constraints->min_uA > constraints->max_uA) {
++		rdev_err(rdev, "Invalid current constraints\n");
++		return -EINVAL;
++	}
++
++	if (!ops->set_current_limit || !ops->get_current_limit) {
++		rdev_warn(rdev, "Operation of current configuration missing\n");
++		return 0;
++	}
++
++	/* Set regulator current in constraints range */
++	ret = ops->set_current_limit(rdev, constraints->min_uA,
++			constraints->max_uA);
++	if (ret < 0) {
++		rdev_err(rdev, "Failed to set current constraint, %d\n", ret);
++		return ret;
++	}
++
++	return 0;
++}
++
+ /**
+  * set_machine_constraints - sets regulator constraints
+  * @rdev: regulator source
+@@ -934,6 +964,10 @@ static int set_machine_constraints(struct regulator_dev *rdev,
+ 	if (ret != 0)
+ 		goto out;
+ 
++	ret = machine_constraints_current(rdev, rdev->constraints);
++	if (ret != 0)
++		goto out;
++
+ 	/* do we need to setup our suspend state */
+ 	if (rdev->constraints->initial_state) {
+ 		ret = suspend_prepare(rdev, rdev->constraints->initial_state);
+-- 
+1.7.1.1
 
->> Patches:
->>   - [PATCH 1/2] kexec: Let slurp_file_len() return the number of bytes
->>   - [PATCH 2/2] kexec: Add preliminary m68k support
->>
->> Notes:
->>   - Based on git://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git
->
-> A good choice.
-
-Is it normal I don't see much activity there?
-
->>   - The ramdisk is loaded at the top of memory minus 4096, unlike with
->>     m68boot (ataboot/amiboot), as locate_hole() seems to have a bug that it
->>     cannot reserve a block at the real top of memory.
->
-> Is this a bug that could be fixed?
-
-Possibly. I suspect an off-by-one bug somewhere, but I haven't looked deeply
-into it.
-
->>   - Do we want to check the struct bootversion at the start of the kernel,
->>     like m68kboot does?
->>     Kexec may be used to load ELF files that are not Linux kernel images,
->>     and thus don't have a Linux-specific struct bootversion.
->
-> If the check can sanely be skipped for non Linux kernel images then
-> this sounds like a reasonable idea to me. Otherwise I would lean towards
-> omitting it. Either way, I don't feel strongly about this.
->
->>   - Do we want to check the size of the kernel image + bootinfo, and warn the
->>     user if it's larger than 4 MiB?
->>     This is a limitation of the current Linux/m68k kernel only.
->
-> I think that sounds like a good idea but I don't feel strongly about it.
-
-Currently I'm leaning towards just printing a warning for both
-(missing/incompatible
-bootversion and image-too-large).
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
