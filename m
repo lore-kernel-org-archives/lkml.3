@@ -1,166 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab3ITSQj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 14:16:39 -0400
-Received: from mail-ye0-f178.google.com ([209.85.213.178]:49242 "EHLO
-	mail-ye0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753072Ab3ITSQi (ORCPT
+	id S1753443Ab3ITSRz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 14:17:55 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:65502 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251Ab3ITSRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 14:16:38 -0400
-Message-ID: <1379700524.5434.22.camel@flatline.rdu.redhat.com>
-Subject: Re: [PATCH 0/4] ipc: shm and msg fixes
-From: Eric Paris <eparis@parisplace.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        sedat.dilek@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>
-Date: Fri, 20 Sep 2013 14:08:44 -0400
-In-Reply-To: <1379625742.2145.19.camel@buesod1.americas.hpqcorp.net>
-References: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
-	 <1379625742.2145.19.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	Fri, 20 Sep 2013 14:17:53 -0400
+Message-ID: <523C9172.8070509@windriver.com>
+Date: Fri, 20 Sep 2013 14:18:26 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <kvm@vger.kernel.org>, <gleb@redhat.com>,
+        <linux-rt-users@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH 0/3] KVM: Make kvm_lock non-raw
+References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com> <5237824E.5090802@windriver.com> <20130920175150.GA24770@windriver.com> <523C8E23.4080904@siemens.com>
+In-Reply-To: <523C8E23.4080904@siemens.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-19 at 14:22 -0700, Davidlohr Bueso wrote:
-> On Sun, 2013-09-15 at 20:04 -0700, Davidlohr Bueso wrote:
-> > This patchset deals with the selinux and rmid races Manfred found on
-> > the ipc scaling work that has been going on. It specifically addresses
-> > shared mem and msg queues. While semaphores still need updated, I want
-> > to make sure these are correct first. Also, Manfred had already sent out
-> > a patchset that deals with a race in sem complex operations. So any changes
-> > should be on top of his.
-> > 
-> > Patches 1 and 2 deal with shared memory.
-> > Patches 3 and 4 deal with msg queues.
-> > Specific details about each race and its fix are in the corresponding
-> > patches.
-> > 
-> > Note that Linus suggested a good alternative to patches 1 and 3: use
-> > kfree_rcu() and delay the freeing of the security structure. I would
-> > much prefer that approach to doing security checks with the lock held,
-> > but I want to leave the patches out and ready in case we go with the
-> > later solution.
+On 13-09-20 02:04 PM, Jan Kiszka wrote:
+> On 2013-09-20 19:51, Paul Gortmaker wrote:
+>> [Re: [PATCH 0/3] KVM: Make kvm_lock non-raw] On 16/09/2013 (Mon 18:12) Paul Gortmaker wrote:
+>>
+>>> On 13-09-16 10:06 AM, Paolo Bonzini wrote:
+>>>> Paul Gortmaker reported a BUG on preempt-rt kernels, due to taking the
+>>>> mmu_lock within the raw kvm_lock in mmu_shrink_scan.  He provided a
+>>>> patch that shrunk the kvm_lock critical section so that the mmu_lock
+>>>> critical section does not nest with it, but in the end there is no reason
+>>>> for the vm_list to be protected by a raw spinlock.  Only manipulations
+>>>> of kvm_usage_count and the consequent hardware_enable/disable operations
+>>>> are not preemptable.
+>>>>
+>>>> This small series thus splits the kvm_lock in the "raw" part and the
+>>>> "non-raw" part.
+>>>>
+>>>> Paul, could you please provide your Tested-by?
+>>>
+>>> Sure, I'll go back and see if I can find what triggered it in the
+>>> original report, and give the patches a spin on 3.4.x-rt (and probably
+>>> 3.10.x-rt, since that is where rt-current is presently).
+>>
+>> Seems fine on 3.4-rt.  On 3.10.10-rt7 it looks like there are other
+>> issues, probably not explicitly related to this patchset (see below).
+>>
+>> Paul.
+>> --
+>>
+>> e1000e 0000:00:19.0 eth1: removed PHC
+>> assign device 0:0:19.0
+>> pci 0000:00:19.0: irq 43 for MSI/MSI-X
+>> pci 0000:00:19.0: irq 43 for MSI/MSI-X
+>> pci 0000:00:19.0: irq 43 for MSI/MSI-X
+>> pci 0000:00:19.0: irq 43 for MSI/MSI-X
+>> BUG: sleeping function called from invalid context at /home/paul/git/linux-rt/kernel/rtmutex.c:659
+>> in_atomic(): 1, irqs_disabled(): 1, pid: 0, name: swapper/0
+>> 2 locks held by swapper/0/0:
+>>  #0:  (rcu_read_lock){.+.+.+}, at: [<ffffffff8100998a>] kvm_set_irq_inatomic+0x2a/0x4a0
+>>  #1:  (rcu_read_lock){.+.+.+}, at: [<ffffffff81038800>] kvm_irq_delivery_to_apic_fast+0x60/0x3d0
+>> irq event stamp: 6121390
+>> hardirqs last  enabled at (6121389): [<ffffffff819f9ae0>] restore_args+0x0/0x30
+>> hardirqs last disabled at (6121390): [<ffffffff819f9a2a>] common_interrupt+0x6a/0x6f
+>> softirqs last  enabled at (0): [<          (null)>]           (null)
+>> softirqs last disabled at (0): [<          (null)>]           (null)
+>> Preemption disabled at:[<ffffffff810ebb9a>] cpu_startup_entry+0x1ba/0x430
+>>
+>> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.10-rt7 #2
+>> Hardware name: Dell Inc. OptiPlex 990/0VNP2H, BIOS A17 03/14/2013
+>>  ffffffff8201c440 ffff880223603cf0 ffffffff819f177d ffff880223603d18
+>>  ffffffff810c90d3 ffff880214a50110 0000000000000001 0000000000000001
+>>  ffff880223603d38 ffffffff819f89a4 ffff880214a50110 ffff880214a50110
+>> Call Trace:
+>>  <IRQ>  [<ffffffff819f177d>] dump_stack+0x19/0x1b
+>>  [<ffffffff810c90d3>] __might_sleep+0x153/0x250
+>>  [<ffffffff819f89a4>] rt_spin_lock+0x24/0x60
+>>  [<ffffffff810ccdd6>] __wake_up+0x36/0x70
+>>  [<ffffffff81003bbb>] kvm_vcpu_kick+0x3b/0xd0
 > 
-> Cc'ing selinux/security people - folks, could you please confirm that
-> this change is ok and won't break anything related to security?
+> -rt lacks an atomic waitqueue for triggering VCPU wakeups on MSIs from
+> assigned devices directly from the host IRQ handler. We need to disable
+> this fast-path in -rt or introduce such an abstraction (I did this once
+> over 2.6.33-rt).
 
-I agree with the approach to delay the freeing and it does not appear to
-be a problem from an SELinux PoV, but I don't necessarily agree with the
-location of the delay.  Why should every LSM be required to know the
-details of that object lifetime?  It seems to me like we might want to
-move this delay up to shm_destroy.  I know that's going to be more code
-then using kfree_rcu(), but it seems like a much better abstraction to
-hide that knowledge away from the LSM.
+Ah, right -- the simple wait queue support (currently -rt specific)
+would have to be used here.  It is on the todo list to get that moved
+from -rt into mainline.
 
-Possibly place the rcu_head in struct kern_ipc_perm?  Then use
-call_rcu() to call the security destroy hook?  You'll have to re-write
-to LSM hook to take an rcu_head, etc, but that shouldn't be a big
-problem.
-
-Doing it this way, also means you won't break the security model of
-SMACK.  It looks like you'd still have the exact same race with SMACK,
-except they can't be fixed with kfree_rcu().  They are just setting a
-pointer to NULL.  Which could then be dereferenced later.  They don't
-actually do allocation/free.
-
-So ACK on the RCU delay, but NACK to making the hooks do the delay,
-instead do it in the IPC code.
+Paul.
+--
 
 > 
-> Thanks!
+> IIRC, VFIO goes the slower patch via a kernel thread unconditionally,
+> thus cannot trigger this. Only legacy device assignment is affected.
 > 
+> Jan
 > 
-> 8<-------------------------------------------
+>>  [<ffffffff810371a2>] __apic_accept_irq+0x2b2/0x3a0
+>>  [<ffffffff810385f7>] kvm_apic_set_irq+0x27/0x30
+>>  [<ffffffff8103894e>] kvm_irq_delivery_to_apic_fast+0x1ae/0x3d0
+>>  [<ffffffff81038800>] ? kvm_irq_delivery_to_apic_fast+0x60/0x3d0
+>>  [<ffffffff81009a8b>] kvm_set_irq_inatomic+0x12b/0x4a0
+>>  [<ffffffff8100998a>] ? kvm_set_irq_inatomic+0x2a/0x4a0
+>>  [<ffffffff8100c5b3>] kvm_assigned_dev_msi+0x23/0x40
+>>  [<ffffffff8113cb38>] handle_irq_event_percpu+0x88/0x3d0
+>>  [<ffffffff810ebb7c>] ? cpu_startup_entry+0x19c/0x430
+>>  [<ffffffff8113cec8>] handle_irq_event+0x48/0x70
+>>  [<ffffffff8113f9b7>] handle_edge_irq+0x77/0x120
+>>  [<ffffffff8104c6ae>] handle_irq+0x1e/0x30
+>>  [<ffffffff81a035ca>] do_IRQ+0x5a/0xd0
+>>  [<ffffffff819f9a2f>] common_interrupt+0x6f/0x6f
+>>  <EOI>  [<ffffffff819f9ae0>] ? retint_restore_args+0xe/0xe
+>>  [<ffffffff810ebb7c>] ? cpu_startup_entry+0x19c/0x430
+>>  [<ffffffff810ebb38>] ? cpu_startup_entry+0x158/0x430
+>>  [<ffffffff819db767>] rest_init+0x137/0x140
+>>  [<ffffffff819db635>] ? rest_init+0x5/0x140
+>>  [<ffffffff822fde18>] start_kernel+0x3af/0x3bc
+>>  [<ffffffff822fd870>] ? repair_env_string+0x5e/0x5e
+>>  [<ffffffff822fd5a5>] x86_64_start_reservations+0x2a/0x2c
+>>  [<ffffffff822fd673>] x86_64_start_kernel+0xcc/0xcf
+>>
+>> =================================
+>> [ INFO: inconsistent lock state ]
+>> 3.10.10-rt7 #2 Not tainted
+>> ---------------------------------
+>> inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
+>> swapper/0/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
+>>  (&(&(&q->lock)->lock)->wait_lock){?.+.-.}, at: [<ffffffff819f7e98>] rt_spin_lock_slowlock+0x48/0x370
+>> {HARDIRQ-ON-W} state was registered at:
+>>   [<ffffffff810fc94d>] __lock_acquire+0x69d/0x20e0
+>>   [<ffffffff810feaee>] lock_acquire+0x9e/0x1f0
+>>   [<ffffffff819f9090>] _raw_spin_lock+0x40/0x80
+>>   [<ffffffff819f7e98>] rt_spin_lock_slowlock+0x48/0x370
+>>   [<ffffffff819f89ac>] rt_spin_lock+0x2c/0x60
+>>   [<ffffffff810ccdd6>] __wake_up+0x36/0x70
+>>   [<ffffffff8109c5ce>] run_timer_softirq+0x1be/0x390
+>>   [<ffffffff81092a09>] do_current_softirqs+0x239/0x5b0
+>>   [<ffffffff81092db8>] run_ksoftirqd+0x38/0x60
+>>   [<ffffffff810c5d7c>] smpboot_thread_fn+0x22c/0x340
+>>   [<ffffffff810bbf4d>] kthread+0xcd/0xe0
+>>   [<ffffffff81a019dc>] ret_from_fork+0x7c/0xb0
+>> irq event stamp: 6121390
+>> hardirqs last  enabled at (6121389): [<ffffffff819f9ae0>] restore_args+0x0/0x30
+>> hardirqs last disabled at (6121390): [<ffffffff819f9a2a>] common_interrupt+0x6a/0x6f
+>> softirqs last  enabled at (0): [<          (null)>]           (null)
+>> softirqs last disabled at (0): [<          (null)>]           (null)
+>>
+>> other info that might help us debug this:
+>>  Possible unsafe locking scenario:
+>>
+>>        CPU0
+>>        ----
+>>   lock(&(&(&q->lock)->lock)->wait_lock);
+>>   <Interrupt>
+>>     lock(&(&(&q->lock)->lock)->wait_lock);
+>>
+>>  *** DEADLOCK ***
+>>
+>> 2 locks held by swapper/0/0:
+>>  #0:  (rcu_read_lock){.+.+.+}, at: [<ffffffff8100998a>] kvm_set_irq_inatomic+0x2a/0x4a0
+>>  #1:  (rcu_read_lock){.+.+.+}, at: [<ffffffff81038800>] kvm_irq_delivery_to_apic_fast+0x60/0x3d0
+>>
+>> stack backtrace:
+>> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.10-rt7 #2
+>> Hardware name: Dell Inc. OptiPlex 990/0VNP2H, BIOS A17 03/14/2013
+>>  ffffffff8262b550 ffff880223603a40 ffffffff819f177d ffff880223603a90
+>>  ffffffff819ec532 0000000000000000 ffffffff00000000 ffff880200000001
+>>  0000000000000002 ffffffff8201ccc0 ffffffff810f9040 0000000000000000
+>> Call Trace:
+>>  <IRQ>  [<ffffffff819f177d>] dump_stack+0x19/0x1b
+>>  [<ffffffff819ec532>] print_usage_bug.part.36+0x28b/0x29a
+>>  [<ffffffff810f9040>] ? check_usage_backwards+0x150/0x150
+>>  [<ffffffff810f9dab>] mark_lock+0x28b/0x6a0
+>>  [<ffffffff810fcbf9>] __lock_acquire+0x949/0x20e0
+>>  [<ffffffff811091f2>] ? __module_text_address+0x12/0x60
+>>  [<ffffffff8110ea8f>] ? is_module_text_address+0x2f/0x60
+>>  [<ffffffff810b8408>] ? __kernel_text_address+0x58/0x80
+>>  [<ffffffff8104dbb2>] ? print_context_stack+0x62/0xf0
+>>  [<ffffffff810feaee>] lock_acquire+0x9e/0x1f0
+>>  [<ffffffff819f7e98>] ? rt_spin_lock_slowlock+0x48/0x370
+>>  [<ffffffff819f9090>] _raw_spin_lock+0x40/0x80
+>>  [<ffffffff819f7e98>] ? rt_spin_lock_slowlock+0x48/0x370
+>>  [<ffffffff819f7e98>] rt_spin_lock_slowlock+0x48/0x370
+>>  [<ffffffff819f89ac>] rt_spin_lock+0x2c/0x60
+>>  [<ffffffff810ccdd6>] __wake_up+0x36/0x70
+>>  [<ffffffff81003bbb>] kvm_vcpu_kick+0x3b/0xd0
+>>  [<ffffffff810371a2>] __apic_accept_irq+0x2b2/0x3a0
+>>  [<ffffffff810385f7>] kvm_apic_set_irq+0x27/0x30
+>>  [<ffffffff8103894e>] kvm_irq_delivery_to_apic_fast+0x1ae/0x3d0
+>>  [<ffffffff81038800>] ? kvm_irq_delivery_to_apic_fast+0x60/0x3d0
+>>  [<ffffffff81009a8b>] kvm_set_irq_inatomic+0x12b/0x4a0
+>>  [<ffffffff8100998a>] ? kvm_set_irq_inatomic+0x2a/0x4a0
+>>  [<ffffffff8100c5b3>] kvm_assigned_dev_msi+0x23/0x40
+>>  [<ffffffff8113cb38>] handle_irq_event_percpu+0x88/0x3d0
+>>  [<ffffffff810ebb7c>] ? cpu_startup_entry+0x19c/0x430
+>>  [<ffffffff8113cec8>] handle_irq_event+0x48/0x70
+>>  [<ffffffff8113f9b7>] handle_edge_irq+0x77/0x120
+>>  [<ffffffff8104c6ae>] handle_irq+0x1e/0x30
+>>  [<ffffffff81a035ca>] do_IRQ+0x5a/0xd0
+>>  [<ffffffff819f9a2f>] common_interrupt+0x6f/0x6f
+>>  <EOI>  [<ffffffff819f9ae0>] ? retint_restore_args+0xe/0xe
+>>  [<ffffffff810ebb7c>] ? cpu_startup_entry+0x19c/0x430
+>>  [<ffffffff810ebb38>] ? cpu_startup_entry+0x158/0x430
+>>  [<ffffffff819db767>] rest_init+0x137/0x140
+>>  [<ffffffff819db635>] ? rest_init+0x5/0x140
+>>  [<ffffffff822fde18>] start_kernel+0x3af/0x3bc
+>>  [<ffffffff822fd870>] ? repair_env_string+0x5e/0x5e
+>>  [<ffffffff822fd5a5>] x86_64_start_reservations+0x2a/0x2c
+>>  [<ffffffff822fd673>] x86_64_start_kernel+0xcc/0xcf
 > 
-> From: Davidlohr Bueso <davidlohr@hp.com>
-> Date: Thu, 19 Sep 2013 09:32:05 -0700
-> Subject: [PATCH] selinux: rely on rcu to free ipc isec
-> 
-> Currently, IPC mechanisms do security and auditing related checks under
-> RCU. However, since selinux can free the security structure, through
-> selinux_[sem,msg_queue,shm]_free_security(), we can race if the structure
-> is freed before other tasks are done with it, creating a use-after-free
-> condition. Manfred illustrates this nicely, for example with shared mem:
-> 
-> --> do_shmat calls rcu_read_lock()
-> --> do_shmat calls shm_object_check().
->      Checks that the object is still valid - but doesn't acquire any locks.
->      Then it returns.
-> --> do_shmat calls security_shm_shmat (e.g. selinux_shm_shmat)
-> --> selinux_shm_shmat calls ipc_has_perm()
-> --> ipc_has_perm accesses ipc_perms->security
-> 
-> shm_close()
-> --> shm_close acquires rw_mutex & shm_lock
-> --> shm_close calls shm_destroy
-> --> shm_destroy calls security_shm_free (e.g. selinux_shm_free_security)
-> --> selinux_shm_free_security calls ipc_free_security(&shp->shm_perm)
-> --> ipc_free_security calls kfree(ipc_perms->security)
-> 
-> There are two solutions to this: (i) perform the security checking and whatever
-> IPC operation(s) atomically (that is, with the kern_ipc_perm.lock held), or
-> (ii) delay the freeing of the isec structure after all RCU readers are done.
-> This patch takes the second approach, which, at least from a performance perspective,
-> is more practical than the first as it keeps the IPC critical regions smaller.
-> 
-> I have tested this patch with IPC testcases from LTP on both my quad-core
-> laptop and on a 64 core NUMA server. In both cases selinux is enabled, and
-> tests pass for both voluntary and forced preemption models.
-> 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> ---
->  security/selinux/hooks.c          | 9 ++++++++-
->  security/selinux/include/objsec.h | 5 +++--
->  2 files changed, 11 insertions(+), 3 deletions(-)
-> 
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index a5091ec..179ffe9 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -4892,8 +4892,15 @@ static int ipc_alloc_security(struct task_struct *task,
->  static void ipc_free_security(struct kern_ipc_perm *perm)
->  {
->  	struct ipc_security_struct *isec = perm->security;
-> +
-> +	/*
-> +	 * All IPC mechanisms do security and audit
-> +	 * checking under RCU: wait a grace period before
-> +	 * freeing isec, otherwise we can run into a
-> +	 * use-after-free scenario.
-> +	 */
-> +	kfree_rcu(isec, rcu);
->  	perm->security = NULL;
-> -	kfree(isec);
->  }
->  
->  static int msg_msg_alloc_security(struct msg_msg *msg)
-> diff --git a/security/selinux/include/objsec.h b/security/selinux/include/objsec.h
-> index aa47bca..38d17b7 100644
-> --- a/security/selinux/include/objsec.h
-> +++ b/security/selinux/include/objsec.h
-> @@ -70,8 +70,9 @@ struct msg_security_struct {
->  };
->  
->  struct ipc_security_struct {
-> -	u16 sclass;	/* security class of this object */
-> -	u32 sid;	/* SID of IPC resource */
-> +	u16 sclass;	     /* security class of this object */
-> +	u32 sid;             /* SID of IPC resource */
-> +	struct rcu_head	rcu; /* rcu struct for selinux based IPC security */
->  };
->  
->  struct netif_security_struct {
-
-
