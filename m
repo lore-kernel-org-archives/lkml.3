@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab3ITUda (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:33:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41371 "EHLO
+	id S1755850Ab3ITUd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:33:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41360 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421Ab3ITUKC (ORCPT
+	with ESMTP id S1753432Ab3ITUKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Sep 2013 16:10:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Oliver Neukum <oneukum@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 16/93] xhci-plat: Don't enable legacy PCI interrupts.
-Date: Fri, 20 Sep 2013 13:08:11 -0700
-Message-Id: <1379707768-1804-17-git-send-email-kamal@canonical.com>
+Subject: [PATCH 11/93] USB: cdc-wdm: fix race between interrupt handler and tasklet
+Date: Fri, 20 Sep 2013 13:08:06 -0700
+Message-Id: <1379707768-1804-12-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -27,89 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 52fb61250a7a132b0cfb9f4a1060a1f3c49e5a25 upstream.
+commit 6dd433e6cf2475ce8abec1b467720858c24450eb upstream.
 
-The xHCI platform driver calls into usb_add_hcd to register the irq for
-its platform device.  It does not want the xHCI generic driver to
-register an interrupt for it at all.  The original code did that by
-setting the XHCI_BROKEN_MSI quirk, which tells the xHCI driver to not
-enable MSI or MSI-X for a PCI host.
+Both could want to submit the same URB. Some checks of the flag
+intended to prevent that were missing.
 
-Unfortunately, if CONFIG_PCI is enabled, and CONFIG_USB_DW3 is enabled,
-the xHCI generic driver will attempt to register a legacy PCI interrupt
-for the xHCI platform device in xhci_try_enable_msi().  This will result
-in a bogus irq being registered, since the underlying device is a
-platform_device, not a pci_device, and thus the pci_device->irq pointer
-will be bogus.
-
-Add a new quirk, XHCI_PLAT, so that the xHCI generic driver can
-distinguish between a PCI device that can't handle MSI or MSI-X, and a
-platform device that should not have its interrupts touched at all.
-This quirk may be useful in the future, in case other corner cases like
-this arise.
-
-This patch should be backported to kernels as old as 3.9, that
-contain the commit 00eed9c814cb8f281be6f0f5d8f45025dc0a97eb "USB: xhci:
-correctly enable interrupts".
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Yu Y Wang <yu.y.wang@intel.com>
-Tested-by: Yu Y Wang <yu.y.wang@intel.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/xhci-plat.c | 2 +-
- drivers/usb/host/xhci.c      | 7 ++++++-
- drivers/usb/host/xhci.h      | 1 +
- 3 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/usb/class/cdc-wdm.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index 93ad67e..6e70ce9 100644
---- a/drivers/usb/host/xhci-plat.c
-+++ b/drivers/usb/host/xhci-plat.c
-@@ -24,7 +24,7 @@ static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
- 	 * here that the generic code does not try to make a pci_dev from our
- 	 * dev struct in order to setup MSI
- 	 */
--	xhci->quirks |= XHCI_BROKEN_MSI;
-+	xhci->quirks |= XHCI_PLAT;
- }
- 
- /* called during probe() after chip reset completes */
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 661c553..99d68c8 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -342,9 +342,14 @@ static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
- static int xhci_try_enable_msi(struct usb_hcd *hcd)
+diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
+index 122d056..46c9379 100644
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -208,6 +208,7 @@ skip_error:
+ static void wdm_int_callback(struct urb *urb)
  {
- 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
--	struct pci_dev  *pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
-+	struct pci_dev  *pdev;
- 	int ret;
+ 	int rv = 0;
++	int responding;
+ 	int status = urb->status;
+ 	struct wdm_device *desc;
+ 	struct usb_cdc_notification *dr;
+@@ -261,8 +262,8 @@ static void wdm_int_callback(struct urb *urb)
  
-+	/* The xhci platform device has set up IRQs through usb_add_hcd. */
-+	if (xhci->quirks & XHCI_PLAT)
-+		return 0;
-+
-+	pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
- 	/*
- 	 * Some Fresco Logic host controllers advertise MSI, but fail to
- 	 * generate interrupts.  Don't even try to enable MSI.
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index abed254..d0dd206 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1516,6 +1516,7 @@ struct xhci_hcd {
- #define XHCI_SPURIOUS_REBOOT	(1 << 13)
- #define XHCI_COMP_MODE_QUIRK	(1 << 14)
- #define XHCI_AVOID_BEI		(1 << 15)
-+#define XHCI_PLAT		(1 << 16)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+ 	spin_lock(&desc->iuspin);
+ 	clear_bit(WDM_READ, &desc->flags);
+-	set_bit(WDM_RESPONDING, &desc->flags);
+-	if (!test_bit(WDM_DISCONNECTING, &desc->flags)
++	responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
++	if (!responding && !test_bit(WDM_DISCONNECTING, &desc->flags)
+ 		&& !test_bit(WDM_SUSPENDING, &desc->flags)) {
+ 		rv = usb_submit_urb(desc->response, GFP_ATOMIC);
+ 		dev_dbg(&desc->intf->dev, "%s: usb_submit_urb %d",
+@@ -666,16 +667,20 @@ static void wdm_rxwork(struct work_struct *work)
+ {
+ 	struct wdm_device *desc = container_of(work, struct wdm_device, rxwork);
+ 	unsigned long flags;
+-	int rv;
++	int rv = 0;
++	int responding;
+ 
+ 	spin_lock_irqsave(&desc->iuspin, flags);
+ 	if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
+ 		spin_unlock_irqrestore(&desc->iuspin, flags);
+ 	} else {
++		responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
+ 		spin_unlock_irqrestore(&desc->iuspin, flags);
+-		rv = usb_submit_urb(desc->response, GFP_KERNEL);
++		if (!responding)
++			rv = usb_submit_urb(desc->response, GFP_KERNEL);
+ 		if (rv < 0 && rv != -EPERM) {
+ 			spin_lock_irqsave(&desc->iuspin, flags);
++			clear_bit(WDM_RESPONDING, &desc->flags);
+ 			if (!test_bit(WDM_DISCONNECTING, &desc->flags))
+ 				schedule_work(&desc->rxwork);
+ 			spin_unlock_irqrestore(&desc->iuspin, flags);
 -- 
 1.8.1.2
 
