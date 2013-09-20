@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab3ITURX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:17:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41757 "EHLO
+	id S1755307Ab3ITURV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:17:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41760 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223Ab3ITUPY (ORCPT
+	with ESMTP id S1755139Ab3ITUPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:15:24 -0400
+	Fri, 20 Sep 2013 16:15:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Libin <huawei.libin@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 91/93] mm/huge_memory.c: fix potential NULL pointer dereference
-Date: Fri, 20 Sep 2013 13:09:26 -0700
-Message-Id: <1379707768-1804-92-git-send-email-kamal@canonical.com>
+Cc: Kees Cook <keescook@chromium.org>, Rafi Rubin <rafi@seas.upenn.edu>,
+        Jiri Kosina <jkosina@suse.cz>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 72/93] HID: ntrig: validate feature report details
+Date: Fri, 20 Sep 2013 13:09:07 -0700
+Message-Id: <1379707768-1804-73-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -28,44 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Libin <huawei.libin@huawei.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit a8f531ebc33052642b4bd7b812eedf397108ce64 upstream.
+commit 875b4e3763dbc941f15143dd1a18d10bb0be303b upstream.
 
-In collapse_huge_page() there is a race window between releasing the
-mmap_sem read lock and taking the mmap_sem write lock, so find_vma() may
-return NULL.  So check the return value to avoid NULL pointer dereference.
+A HID device could send a malicious feature report that would cause the
+ntrig HID driver to trigger a NULL dereference during initialization:
 
-collapse_huge_page
-	khugepaged_alloc_page
-		up_read(&mm->mmap_sem)
-	down_write(&mm->mmap_sem)
-	vma = find_vma(mm, address)
+[57383.031190] usb 3-1: New USB device found, idVendor=1b96, idProduct=0001
+...
+[57383.315193] BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+[57383.315308] IP: [<ffffffffa08102de>] ntrig_probe+0x25e/0x420 [hid_ntrig]
 
-Signed-off-by: Libin <huawei.libin@huawei.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+CVE-2013-2896
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/huge_memory.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/hid/hid-ntrig.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 9459edd..e9308d3 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2327,6 +2327,8 @@ static void collapse_huge_page(struct mm_struct *mm,
- 		goto out;
+diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
+index 86a969f..60bd823 100644
+--- a/drivers/hid/hid-ntrig.c
++++ b/drivers/hid/hid-ntrig.c
+@@ -115,7 +115,8 @@ static inline int ntrig_get_mode(struct hid_device *hdev)
+ 	struct hid_report *report = hdev->report_enum[HID_FEATURE_REPORT].
+ 				    report_id_hash[0x0d];
  
- 	vma = find_vma(mm, address);
-+	if (!vma)
-+		goto out;
- 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
- 	hend = vma->vm_end & HPAGE_PMD_MASK;
- 	if (address < hstart || address + HPAGE_PMD_SIZE > hend)
+-	if (!report)
++	if (!report || report->maxfield < 1 ||
++	    report->field[0]->report_count < 1)
+ 		return -EINVAL;
+ 
+ 	usbhid_submit_report(hdev, report, USB_DIR_IN);
 -- 
 1.8.1.2
 
