@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab3ITJzl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 05:55:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55119 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab3ITJzk (ORCPT
+	id S1754523Ab3ITJ4d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 05:56:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42093 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754443Ab3ITJ4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 05:55:40 -0400
-Date: Fri, 20 Sep 2013 11:55:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 46/50] sched: numa: Prevent parallel updates to group
- stats during placement
-Message-ID: <20130920095526.GT9326@twins.programming.kicks-ass.net>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
- <1378805550-29949-47-git-send-email-mgorman@suse.de>
+	Fri, 20 Sep 2013 05:56:31 -0400
+Date: Fri, 20 Sep 2013 02:55:39 -0700
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-33cbbdccf39f6d7e01c282c4320d818a75b67d54@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <20130912132706.GD23826@gmail.com>
+References: <20130912132706.GD23826@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools:
+  Sharpen the libaudit dependencies test
+Git-Commit-ID: 33cbbdccf39f6d7e01c282c4320d818a75b67d54
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1378805550-29949-47-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 20 Sep 2013 02:55:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 10:32:26AM +0100, Mel Gorman wrote:
-> Having multiple tasks in a group go through task_numa_placement
-> simultaneously can lead to a task picking a wrong node to run on, because
-> the group stats may be in the middle of an update. This patch avoids
-> parallel updates by holding the numa_group lock during placement
-> decisions.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  kernel/sched/fair.c | 35 +++++++++++++++++++++++------------
->  1 file changed, 23 insertions(+), 12 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 3a92c58..4653f71 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1231,6 +1231,7 @@ static void task_numa_placement(struct task_struct *p)
->  {
->  	int seq, nid, max_nid = -1, max_group_nid = -1;
->  	unsigned long max_faults = 0, max_group_faults = 0;
-> +	spinlock_t *group_lock = NULL;
->  
->  	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
->  	if (p->numa_scan_seq == seq)
-> @@ -1239,6 +1240,12 @@ static void task_numa_placement(struct task_struct *p)
->  	p->numa_migrate_seq++;
->  	p->numa_scan_period_max = task_scan_max(p);
->  
-> +	/* If the task is part of a group prevent parallel updates to group stats */
-> +	if (p->numa_group) {
-> +		group_lock = &p->numa_group->lock;
-> +		spin_lock(group_lock);
-> +	}
-> +
->  	/* Find the node with the highest number of faults */
->  	for_each_online_node(nid) {
->  		unsigned long faults = 0, group_faults = 0;
-> @@ -1277,20 +1284,24 @@ static void task_numa_placement(struct task_struct *p)
->  		}
->  	}
->  
-> +	if (p->numa_group) {
-> +		/*
-> +		 * If the preferred task and group nids are different, 
-> +		 * iterate over the nodes again to find the best place.
-> +		 */
-> +		if (max_nid != max_group_nid) {
-> +			unsigned long weight, max_weight = 0;
-> +
-> +			for_each_online_node(nid) {
-> +				weight = task_weight(p, nid) + group_weight(p, nid);
-> +				if (weight > max_weight) {
-> +					max_weight = weight;
-> +					max_nid = nid;
-> +				}
->  			}
->  		}
-> +
-> +		spin_unlock(group_lock);
->  	}
->  
->  	/* Preferred node as the node with the most faults */
+Commit-ID:  33cbbdccf39f6d7e01c282c4320d818a75b67d54
+Gitweb:     http://git.kernel.org/tip/33cbbdccf39f6d7e01c282c4320d818a75b67d54
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Thu, 12 Sep 2013 15:27:06 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 19 Sep 2013 11:32:17 -0300
 
-If you're going to hold locks you can also do away with all that
-atomic_long_*() nonsense :-)
+perf tools: Sharpen the libaudit dependencies test
+
+There are older libaudit versions that don't have an
+audit_errno_to_name() method, resulting in a builtin-trace.c build
+error:
+
+  builtin-trace.c: In function ‘trace__sys_exit’:
+  builtin-trace.c:794: warning: implicit declaration of function ‘audit_errno_to_name’
+
+Expand the libaudit test to detect this.
+
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/20130912132706.GD23826@gmail.com
+[ Fix the test by escaping the double quotes ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/config/feature-tests.mak | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 708fb8e..7f550c1 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -210,6 +210,7 @@ define SOURCE_LIBAUDIT
+ 
+ int main(void)
+ {
++	printf(\"error message: %s\n\", audit_errno_to_name(0));
+ 	return audit_open();
+ }
+ endef
