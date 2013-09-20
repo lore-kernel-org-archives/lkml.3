@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab3ITRoT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 13:44:19 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:30136 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab3ITRoP (ORCPT
+	id S1753428Ab3ITRqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 13:46:52 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49509 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752665Ab3ITRqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 13:44:15 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v2] cpufreq: fix racing between acpi_cpufreq_loading
-Date: Fri, 20 Sep 2013 10:44:03 -0700
-Message-Id: <1379699043-7414-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 20 Sep 2013 13:46:50 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18RTQH+xzcmttGhg9YglL66
+Date: Fri, 20 Sep 2013 10:46:41 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] omap2: Change clk dev id for rng to
+ omap3-rom-rng
+Message-ID: <20130920174640.GA2684@atomide.com>
+References: <1379534757-20870-1-git-send-email-pali.rohar@gmail.com>
+ <1379683507-30793-2-git-send-email-pali.rohar@gmail.com>
+ <20130920162342.GS9994@atomide.com>
+ <201309201841.16197@pali>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201309201841.16197@pali>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is racing in
-	__acpi_processor_start
-		 ==> acpi_processor_load_module
-			 ==> request_module_nowait/requested = 1
-before first pr path to have requested set, second cpu would request again.
-that will cause acpi_cpufreq_early_init to be called in parallel,
-that will cause data curruption in acpi_cpufreq_early_init...
-and intermittent crash.
+* Pali Rohár <pali.rohar@gmail.com> [130920 09:49]:
+> On Friday 20 September 2013 18:23:43 Tony Lindgren wrote:
+> > * Pali Rohár <pali.rohar@gmail.com> [130920 06:33]:
+> > > Name omap_rng is already used by omap_rng driver which is
+> > > for omap2 and omap4. For omap3 HS devices there is new
+> > > driver omap3-rom-rng which needs that clk. And because
+> > > there cannot be two drivers with same name, rename omap3
+> > > clk dev id.
+> > > 
+> > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> > > ---
+> > > 
+> > >  arch/arm/mach-omap2/cclock3xxx_data.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c
+> > > b/arch/arm/mach-omap2/cclock3xxx_data.c index
+> > > 334b767..5059338 100644
+> > > --- a/arch/arm/mach-omap2/cclock3xxx_data.c
+> > > +++ b/arch/arm/mach-omap2/cclock3xxx_data.c
+> > > @@ -3274,7 +3274,7 @@ static struct omap_clk omap36xx_clks[]
+> > > = {
+> > > 
+> > >   */
+> > >  
+> > >  static struct omap_clk omap34xx_omap36xx_clks[] = {
+> > >  
+> > >  	CLK(NULL,	"aes1_ick",	&aes1_ick),
+> > > 
+> > > -	CLK("omap_rng",	"ick",		&rng_ick),
+> > > +	CLK("omap3-rom-rng",	"ick",		&rng_ick),
+> > > 
+> > >  	CLK(NULL,	"sha11_ick",	&sha11_ick),
+> > >  	CLK(NULL,	"des1_ick",	&des1_ick),
+> > >  	CLK(NULL,	"cam_mclk",	&cam_mclk),
+> > 
+> > Hmm are you sure the omap_rng is not available on
+> > any of the omap3 GP versions? If so, the omap_rng
+> > alias should be kept as well.
+> > 
+> > Regards,
+> > 
+> > Tony
+> 
+> I really do not know, but driver char/hw_random/omap-rng.c 
+> support only omap2 and omap4 platforms. So "omap_rng" dev id for 
+> omap3 is not used.
+> 
+> In email [1] you suggested to use clk_get instead clk_get_sys. If 
+> I understand correctly clk_get calling clk_get_sys with driver 
+> name. So dev in in CLK macro must be same as driver name. And 
+> because in cclock3xxx_data.c is dev id "omap_rng" and there is 
+> already driver with name "omap_rng", I need to rename dev in 
+> cclock3xxx_data.c to get new omap3-rom-rng driver working.
+> 
+> Or if you know better way how to do it, let me know.
 
-So add mutex to protect it.
+I think it's safest to keep the existing alias also, and
+add a comment saying that it may not be available on omap3
+processors.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Regards,
 
----
- drivers/acpi/processor_perflib.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/acpi/processor_perflib.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/processor_perflib.c
-+++ linux-2.6/drivers/acpi/processor_perflib.c
-@@ -235,6 +235,7 @@ void acpi_processor_ppc_exit(void)
- 	acpi_processor_ppc_status &= ~PPC_REGISTERED;
- }
+Tony
  
-+static DEFINE_MUTEX(acpi_cpufreq_load_lock);
- /*
-  * Do a quick check if the systems looks like it should use ACPI
-  * cpufreq. We look at a _PCT method being available, but don't
-@@ -246,8 +247,12 @@ void acpi_processor_load_module(struct a
- 	acpi_status status = 0;
- 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
- 
--	if (!arch_has_acpi_pdc() || requested)
-+	mutex_lock(&acpi_cpufreq_load_lock);
-+	if (!arch_has_acpi_pdc() || requested) {
-+		mutex_unlock(&acpi_cpufreq_load_lock);
- 		return;
-+	}
-+
- 	status = acpi_evaluate_object(pr->handle, "_PCT", NULL, &buffer);
- 	if (!ACPI_FAILURE(status)) {
- 		printk(KERN_INFO PREFIX "Requesting acpi_cpufreq\n");
-@@ -255,6 +260,7 @@ void acpi_processor_load_module(struct a
- 		requested = 1;
- 	}
- 	kfree(buffer.pointer);
-+	mutex_unlock(&acpi_cpufreq_load_lock);
- }
- 
- static int acpi_processor_get_performance_control(struct acpi_processor *pr)
+> [1] - https://lkml.org/lkml/2013/4/1/278
+> 
+> -- 
+> Pali Rohár
+> pali.rohar@gmail.com
+
+
