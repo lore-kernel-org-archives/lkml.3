@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab3ITRB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 13:01:29 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:63212 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab3ITRB2 (ORCPT
+	id S1753285Ab3ITRBu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 13:01:50 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:57649 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab3ITRBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 13:01:28 -0400
+	Fri, 20 Sep 2013 13:01:47 -0400
+Date: Fri, 20 Sep 2013 10:01:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Manish Badarkhe <badarkhe.manish@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        josh.wu@atmel.com
+Subject: Re: [PATCH] Input: atmel_tscadcc - update to devm_* API
+Message-ID: <20130920170135.GB6300@core.coreip.homeip.net>
+References: <1379343178-6468-1-git-send-email-badarkhe.manish@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdbEdR6g7cGouSxVoCp7jFRUSmP9yKcu5+afEMqUR45Kfg@mail.gmail.com>
-References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
-	<45987104.t6r4hvPgQn@vostro.rjw.lan>
-	<523AF22F.1010909@linux.vnet.ibm.com>
-	<CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com>
-	<CACRpkdYBYdMJ6mTGUropOypx0ZVNn8eQMzV+eKocCSBZAu6xTA@mail.gmail.com>
-	<CAKohpokQO82XMGwcTjVmNTbBVESyFqV4DAxMMU_RHEtN+LqUgg@mail.gmail.com>
-	<CACRpkdYoNkgno24dtJAwOq2T9yoKQYgKQ+adfkSN8affYNePjQ@mail.gmail.com>
-	<CAKohpokdOXrGVxEA89yrAq2T8MiqZNHrrXNagqqggo67rEmKYg@mail.gmail.com>
-	<CACRpkdZDqoqrEPfdra+iVS-hopLpJbPmWh=r8UkYRFUMg17jpw@mail.gmail.com>
-	<523C6A88.30800@linux.vnet.ibm.com>
-	<CACRpkdasfW9OzZHPgfksjkHgw+Z-n7Tc_d2yXYy+BjShUhAYFg@mail.gmail.com>
-	<CACRpkdbEdR6g7cGouSxVoCp7jFRUSmP9yKcu5+afEMqUR45Kfg@mail.gmail.com>
-Date: Fri, 20 Sep 2013 22:31:27 +0530
-Message-ID: <CAKohpokFzxaDt+oYY2tZXs3EBCRcByuv1buQECpdSzjN4e6x9g@mail.gmail.com>
-Subject: Re: Regression on cpufreq in v3.12-rc1
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kristoffer Ericson <kristoffer.ericson@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379343178-6468-1-git-send-email-badarkhe.manish@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 September 2013 22:04, Linus Walleij <linus.walleij@linaro.org> wrote:
-> In this case we have neither. So the cpufreq driver fails to
-> register. But the kernel used to survive in any case, as you
-> could call cpufreq_get() without a cpufreq driver registered.
+Hi Manish,
 
-Aha, so exactly what I suspected in my first mail..
+On Mon, Sep 16, 2013 at 08:22:58PM +0530, Manish Badarkhe wrote:
+>  static int atmel_tsadcc_remove(struct platform_device *pdev)
+>  {
+>  	struct atmel_tsadcc *ts_dev = platform_get_drvdata(pdev);
+> -	struct resource *res;
+> -
+> -	free_irq(ts_dev->irq, ts_dev);
+>  
+>  	input_unregister_device(ts_dev->input);
+>  
+> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	iounmap(tsc_base);
+> -	release_mem_region(res->start, resource_size(res));
+> -
+>  	clk_disable(ts_dev->clk);
+> -	clk_put(ts_dev->clk);
+> -
+> -	kfree(ts_dev);
+>  
+>  	return 0;
+>  }
+
+
+By doing this conversion we disable the clock too early. I need to
+resurrect my patches to add devm_clk_enable and then we can revisit this
+patch.
+
+Thanks.
+
+-- 
+Dmitry
