@@ -1,146 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab3ITLNh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 07:13:37 -0400
-Received: from 7of9.schinagl.nl ([88.159.158.68]:53573 "EHLO 7of9.schinagl.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754413Ab3ITLNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 07:13:34 -0400
-From: Oliver Schinagl <oliver+list@schinagl.nl>
-To: rob@landley.net
-Cc: linux-kernel@vger.kernel.org, maxime-ripard@free-electrons.com,
-        linux-sunxi@google-groups.com, devicetree@vger.kernel.org,
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ian.campbell@citrix.com, oliver@schinagl.nl
-Subject: [PATCH] [PATCH] ARM: sunxi: doc: Add sun7i (A20) interrupt table
-Date: Fri, 20 Sep 2013 13:12:40 +0200
-Message-Id: <1379675560-30656-2-git-send-email-oliver+list@schinagl.nl>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1379675560-30656-1-git-send-email-oliver+list@schinagl.nl>
-References: <1379675560-30656-1-git-send-email-oliver+list@schinagl.nl>
+	id S1754650Ab3ITLVg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 07:21:36 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:48988 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480Ab3ITLVe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 07:21:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAJd=RBD_6FMHS3Dg_Zqugs4YCHHDeCgrxypANpPP5K2xTLE0bA@mail.gmail.com>
+References: <CAJd=RBBbJMWox5yJaNzW_jUdDfKfWe-Y7d1riYdN6huQStxzcA@mail.gmail.com>
+ <CAOMqctQyS2SFraqJpzE0sRFcihFpMHRhT+3QuZhxft=SUXYVDw@mail.gmail.com>
+ <CAOMqctQ+XchmXk_Xno6ViAoZF-tHFPpDWoy7LVW1nooa+ywbmg@mail.gmail.com>
+ <CAOMqctT2u7E0kwpm052B9pkNo4D=sYHO+Vk=P_TziUb5KvTMKA@mail.gmail.com>
+ <20130917211317.GB6537@quack.suse.cz> <CAOMqctT5Wi_Y9ODAnoG-RQiO1oJ+yKR=LnF21swuupyLShL=+w@mail.gmail.com>
+ <CAJd=RBD_6FMHS3Dg_Zqugs4YCHHDeCgrxypANpPP5K2xTLE0bA@mail.gmail.com>
+From: Michal Suchanek <hramrach@gmail.com>
+Date: Fri, 20 Sep 2013 13:20:53 +0200
+Message-ID: <CAOMqctSyovsfff++g=cUfRLmyBM9nHrQ7RB4R7z96-aXr9QcEw@mail.gmail.com>
+Subject: Re: doing lots of disk writes causes oom killer to kill processes
+To: Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oliver Schinagl <oliver@schinagl.nl>
+Hello,
 
-This patch adds some documentation about the Allwinner sun7i (A20) using
-the GIC.
+On 19 September 2013 10:07, Hillf Danton <dhillf@gmail.com> wrote:
+> Hello Michal
+>
+> Take it easy please, the kernel is made by human hands.
+>
+> Can you please try the diff(and sorry if mail agent reformats it)?
+>
+> Best Regards
+> Hillf
+>
+>
+> --- a/mm/vmscan.c Wed Sep 18 08:44:08 2013
+> +++ b/mm/vmscan.c Wed Sep 18 09:31:34 2013
+> @@ -1543,8 +1543,11 @@ shrink_inactive_list(unsigned long nr_to
+>   * implies that pages are cycling through the LRU faster than
+>   * they are written so also forcibly stall.
+>   */
+> - if (nr_unqueued_dirty == nr_taken || nr_immediate)
+> + if (nr_unqueued_dirty == nr_taken || nr_immediate) {
+> + if (current_is_kswapd())
+> + wakeup_flusher_threads(0, WB_REASON_TRY_TO_FREE_PAGES);
+>   congestion_wait(BLK_RW_ASYNC, HZ/10);
+> + }
+>   }
+>
+>   /*
+> --
 
-Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
----
- .../interrupt-controller/sunxi/sun7i-a20.txt       | 102 +++++++++++++++++++++
- 1 file changed, 102 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/sunxi/sun7i-a20.txt
+I applied the patch and raised the dirty block ratios to 30/10 and the
+default 60/40 while imaging a VM and did not observe any problems so I
+guess this solves it.
 
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/sunxi/sun7i-a20.txt b/Documentation/devicetree/bindings/interrupt-controller/sunxi/sun7i-a20.txt
-new file mode 100644
-index 0000000..e5e59df
---- /dev/null
-+++ b/Documentation/devicetree/bindings/interrupt-controller/sunxi/sun7i-a20.txt
-@@ -0,0 +1,102 @@
-+Allwinner A20 (sun7i) interrupt sources
-+---------------------------------------
-+The sun7i interrupt controller is actually a standard arm GIC one. For more
-+information see Documentation/devicetree/bindings/arm/gic.txt
-+
-+Interrupts are offset by 32, skipping the SGI and PPI's. The IRQ numbers here
-+is what is expected in the drivers device tree table.
-+
-+The interrupt sources available for the Allwinner A20 SoC are the
-+following ones:
-+
-+0: ENMI
-+1: UART0
-+2: UART1
-+3: UART2
-+4: UART3
-+5: IR0
-+6: IR1
-+7: I2C0
-+8: I2C1
-+9: I2C2
-+10: SPI0
-+11: SPI1
-+12: SPI2
-+13: SPDIF
-+14: AC97
-+15: TS
-+16: I2S0
-+17: UART4
-+18: UART5
-+19: UART6
-+20: UART7
-+21: KEYPAD
-+22: TIMER0
-+23: TIMER1
-+24: TIMER2
-+25: TIMER3
-+26: CAN
-+27: DMA
-+28: PIO
-+29: TOUCH_PANEL
-+30: AUDIO_CODEC
-+31: LRADC
-+32: MMC0
-+33: MMC1
-+34: MMC2
-+35: MMC3
-+36: MEMSTICK
-+37: NAND
-+38: USB0
-+39: USB1
-+40: USB2
-+41: SCR
-+42: CSI0
-+43: CSI1
-+44: LCDCTRL0
-+45: LCDCTRL1
-+46: MP
-+47: DEFEBE0
-+48: DEFEBE1
-+49: PMU
-+50: SPI3
-+51: TZASC
-+52: PATA
-+53: VE
-+54: SS
-+55: EMAC
-+56: SATA
-+57: GPS
-+58: HDMI
-+59: TVE
-+60: ACE
-+61: TVD
-+62: PS2_0
-+63: PS2_1
-+64: USB3
-+65: USB4
-+66: PLE_PFM
-+67: TIMER4
-+68: TIMER5
-+69: GPU_GP
-+70: GPU_GPMMU
-+71: GPU_PP0
-+72: GPU_PPMMU0
-+73: GPU_PMU
-+74: GPU_PP1
-+75: GPU_PPMMU1
-+76: GPU_RSV0
-+77: GPU_RSV1
-+78: GPU_RSV2
-+79: GPU_RSV3
-+80: GPU_RSV4
-+81: HS_TIMER0
-+82: HS_TIMER1
-+83: HS_TIMER2
-+84: HS_TIMER3
-+85: GMAC
-+86: HDMI1
-+87: I2S1
-+88: I2C3
-+89: I2C4
-+90: I2S2
--- 
-1.8.1.5
+Thanks
 
+Michal
