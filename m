@@ -1,75 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab3ITNJk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 09:09:40 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:60668 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754624Ab3ITNJj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 09:09:39 -0400
+	id S1754792Ab3ITNSA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 09:18:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1426 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754590Ab3ITNR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 09:17:58 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH 1/2] CacheFiles: Fix memory leak in cachefiles_check_auxdata
+ error paths
+To: torvalds@linux-foundation.org
+From: David Howells <dhowells@redhat.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>, linux-kernel@vger.kernel.org,
+        linux-cachefs@redhat.com, Milosz Tanski <milosz@adfin.com>,
+        ceph-devel@vger.kernel.org, Hongyi Jia <jiayisuse@gmail.com>
+Date: Fri, 20 Sep 2013 14:17:52 +0100
+Message-ID: <20130920131752.24001.87500.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <cddbd29cf4bcef172196eb4d9f8d0464@mail.ud03.udmedia.de>
-References: <CAPM=9twv-bb3MtnWNTT5+i5HfHQS+cbJG16xsaoL-XV_Qpf9Cw@mail.gmail.com>
-	<cddbd29cf4bcef172196eb4d9f8d0464@mail.ud03.udmedia.de>
-Date: Fri, 20 Sep 2013 09:09:38 -0400
-Message-ID: <CADnq5_PSgYSFVO7Q2==0UAWYp7pLdo9cX4rjXv=sTAhadXTxTA@mail.gmail.com>
-Subject: Re: [git pull] drm radeon/nouveau/core fixes
-From: Alex Deucher <alexdeucher@gmail.com>
-To: =?ISO-8859-1?Q?Dieter_N=FCtzel?= <dieter@nuetzel-hh.de>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 8:01 AM, Dieter Nützel <dieter@nuetzel-hh.de> wrote:
-> Am 19.09.2013 04:07, schrieb Dave Airlie:
->
->> Hi Linus,
->>
->> mostly radeon fixes, with some nouveau bios parser, ttm fix and a fix
->> for AST driver.
->>
->> Dave.
->>
->> The following changes since commit
->> 01172772c7c973debf5b4881fcb9463891ea97ec:
->>
->>   drm/nouveau: fix oops on runtime suspend/resume (2013-09-10 12:38:53
->> +1000)
->>
->> are available in the git repository at:
->>
->>   git://people.freedesktop.org/~airlied/linux drm-fixes
->>
->> for you to fetch changes up to 928c2f0c006bf7f381f58af2b2786d2a858ae311:
->>
->>   drm/fb-helper: don't sleep for screen unblank when an oops is in
->> progress (2013-09-19 11:54:34 +1000)
->
->
-> [-]
->
->
->> Christian König (3):
->>       drm/radeon: remove stale radeon_fence_retire tracepoint
->>       drm/radeon: add command submission tracepoint
->>       drm/radeon: avoid UVD corruptions on AGP cards
->
->
-> Alex,
->
-> I think your PCIE AGP (radeon.agpmode=-1) UVD fix is missing, here.
->
+From: Josh Boyer <jwboyer@redhat.com>
 
-It didn't get into this pull.  I'll be in my next -fixes pull.
+In cachefiles_check_auxdata(), we allocate auxbuf but fail to free it if we
+determine there's an error or that the data is stale.
 
-Alex
+Further, assigning the output of vfs_getxattr() to auxbuf->len gives problems
+with checking for errors as auxbuf->len is a u16.  We don't actually need to
+set auxbuf->len, so keep the length in a variable for now.  We shouldn't need
+to check the upper limit of the buffer as an overflow there should be
+indicated by -ERANGE.
 
-> Thanks for working UVD and dpm on mostly all asics!
->
-> -Dieter
+Whilst we're at it, fscache_check_aux() returns an enum value, not an int, so
+assign it to an appropriately typed variable rather than to ret.
+
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Hongyi Jia <jiayisuse@gmail.com>
+cc: Milosz Tanski <milosz@adfin.com>
+---
+
+ fs/cachefiles/xattr.c |   29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
+
+diff --git a/fs/cachefiles/xattr.c b/fs/cachefiles/xattr.c
+index 34c88b8..12b0eef 100644
+--- a/fs/cachefiles/xattr.c
++++ b/fs/cachefiles/xattr.c
+@@ -162,8 +162,9 @@ int cachefiles_update_object_xattr(struct cachefiles_object *object,
+ int cachefiles_check_auxdata(struct cachefiles_object *object)
+ {
+ 	struct cachefiles_xattr *auxbuf;
++	enum fscache_checkaux validity;
+ 	struct dentry *dentry = object->dentry;
+-	unsigned int dlen;
++	ssize_t xlen;
+ 	int ret;
+ 
+ 	ASSERT(dentry);
+@@ -174,22 +175,22 @@ int cachefiles_check_auxdata(struct cachefiles_object *object)
+ 	if (!auxbuf)
+ 		return -ENOMEM;
+ 
+-	auxbuf->len = vfs_getxattr(dentry, cachefiles_xattr_cache,
+-				   &auxbuf->type, 512 + 1);
+-	if (auxbuf->len < 1)
+-		return -ESTALE;
+-
+-	if (auxbuf->type != object->fscache.cookie->def->type)
+-		return -ESTALE;
++	xlen = vfs_getxattr(dentry, cachefiles_xattr_cache,
++			    &auxbuf->type, 512 + 1);
++	ret = -ESTALE;
++	if (xlen < 1 ||
++	    auxbuf->type != object->fscache.cookie->def->type)
++		goto error;
+ 
+-	dlen = auxbuf->len - 1;
+-	ret = fscache_check_aux(&object->fscache, &auxbuf->data, dlen);
++	xlen--;
++	validity = fscache_check_aux(&object->fscache, &auxbuf->data, xlen);
++	if (validity != FSCACHE_CHECKAUX_OKAY)
++		goto error;
+ 
++	ret = 0;
++error:
+ 	kfree(auxbuf);
+-	if (ret != FSCACHE_CHECKAUX_OKAY)
+-		return -ESTALE;
+-
+-	return 0;
++	return ret;
+ }
+ 
+ /*
+
