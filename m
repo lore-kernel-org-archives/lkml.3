@@ -1,58 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab3ITOcb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 10:32:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44656 "EHLO mail.zytor.com"
+	id S1751850Ab3ITOhH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 10:37:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44741 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751870Ab3ITOc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 10:32:29 -0400
-Message-ID: <523C5C70.40908@zytor.com>
-Date: Fri, 20 Sep 2013 09:32:16 -0500
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751598Ab3ITOhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 10:37:06 -0400
+Date: Fri, 20 Sep 2013 16:36:59 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Matt Fleming <matt@console-pimps.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Dont-Auto-Build
+Message-ID: <20130920143659.GA10591@pd.tnic>
 MIME-Version: 1.0
-To: Roy Franz <roy.franz@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        matt.fleming@intel.com, leif.lindholm@linaro.org, msalter@redhat.com
-Subject: Re: [PATCH V4 00/17] ARM EFI stub common code
-References: <1379391093-27948-1-git-send-email-roy.franz@linaro.org>
-In-Reply-To: <1379391093-27948-1-git-send-email-roy.franz@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A general note:
+Hey Fengguang,
 
-In multiline comments like:
+do you still grep for "Dont-Auto-Build" in all the commit messages of a
+branch which is not supposed to be tested?
 
-/* Relocate a kernel image, either compressed or uncompressed.
- * In the ARM64 case, all kernel images are currently
- * uncompressed, and as such when we relocate it we need to
- * allocate additional space for the BSS segment. Any low
- * memory that this function should avoid needs to be
- * unavailable in the EFI memory map, as if the preferred
- * address is not available the lowest available address will
- * be used.
- */
+Or can I tag the branch name to make it more explicit for everyone?
 
-Please have a blank line at the beginning:
+Thanks.
 
-/*
- * Relocate a kernel image, either compressed or uncompressed.
- * In the ARM64 case, all kernel images are currently
- * uncompressed, and as such when we relocate it we need to
- * allocate additional space for the BSS segment. Any low
- * memory that this function should avoid needs to be
- * unavailable in the EFI memory map, as if the preferred
- * address is not available the lowest available address will
- * be used.
- */
+-- 
+Regards/Gruss,
+    Boris.
 
-Also, if this a comment at the head of a function, have a blank line
-before the comment.
-
-	-hpa
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
