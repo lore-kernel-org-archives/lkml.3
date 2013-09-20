@@ -1,85 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab3ITGPj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 02:15:39 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37825 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab3ITGPi (ORCPT
+	id S1754041Ab3ITGWr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 02:22:47 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:33462 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab3ITGWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 02:15:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <1379654772-10700-1-git-send-email-yinghai@kernel.org>
-References: <1379654772-10700-1-git-send-email-yinghai@kernel.org>
-Date: Fri, 20 Sep 2013 11:40:18 +0530
-Message-ID: <CAKohpokdyk9hfBreVeXttN23biTVjWiJRm8eYkfAjLz+cbnreQ@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: skip loading acpi_cpufreq after intel_pstate
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 Sep 2013 02:22:46 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Prisk <linux@prisktech.co.nz>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 07/26] clk: vt8500: parse pmc_base from clock driver
+Date: Fri, 20 Sep 2013 08:22:33 +0200
+Message-Id: <1379658153-28070-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1379526839-14798-8-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1379526839-14798-8-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 September 2013 10:56, Yinghai Lu <yinghai@kernel.org> wrote:
-> If the hw support intel_pstate and acpi_cpufreq, intel_pstate will
-> get loaded at first.
+Currently, clock providers for vt8500 depend on machine_init providing
+pmc_base address before calling of_clk_init. With upcoming arch-wide
+.time_init calling of_clk_init, we should make clock providers independent
+of mach code. This adds a pmc_base parsing helper to current clock provider
+that gets called if there is no pmc_base set, yet.
 
-s/at //
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Acked-by: Tony Prisk <linux@prisktech.co.nz>
+---
+Changelog:
+v1->v2:
+- Also check pmc_base in vtwm_device_clk_init (Reported by Tony Prisk)
+  This also requires vtwm_set_pmc_base to move upwards.
 
->
-> acpi_cpufreq_init will call acpi_cpufreq_early_init()
-> and it allocate perf data and init those perf data in ACPI core, (that
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Tony Prisk <linux@prisktech.co.nz>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/clk/clk-vt8500.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-s/it /that will /
+diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
+index 82306f5..39fe72a 100644
+--- a/drivers/clk/clk-vt8500.c
++++ b/drivers/clk/clk-vt8500.c
+@@ -15,11 +15,14 @@
+ 
+ #include <linux/io.h>
+ #include <linux/of.h>
++#include <linux/of_address.h>
+ #include <linux/slab.h>
+ #include <linux/bitops.h>
+ #include <linux/clkdev.h>
+ #include <linux/clk-provider.h>
+ 
++#define LEGACY_PMC_BASE		0xD8130000
++
+ /* All clocks share the same lock as none can be changed concurrently */
+ static DEFINE_SPINLOCK(_lock);
+ 
+@@ -53,6 +56,21 @@ struct clk_pll {
+ 
+ static void __iomem *pmc_base;
+ 
++static __init void vtwm_set_pmc_base(void)
++{
++	struct device_node *np =
++		of_find_compatible_node(NULL, NULL, "via,vt8500-pmc");
++
++	if (np)
++		pmc_base = of_iomap(np, 0);
++	else
++		pmc_base = ioremap(LEGACY_PMC_BASE, 0x1000);
++	of_node_put(np);
++
++	if (!pmc_base)
++		pr_err("%s:of_iomap(pmc) failed\n", __func__);
++}
++
+ #define to_clk_device(_hw) container_of(_hw, struct clk_device, hw)
+ 
+ #define VT8500_PMC_BUSY_MASK		0x18
+@@ -222,6 +240,9 @@ static __init void vtwm_device_clk_init(struct device_node *node)
+ 	int rc;
+ 	int clk_init_flags = 0;
+ 
++	if (!pmc_base)
++		vtwm_set_pmc_base();
++
+ 	dev_clk = kzalloc(sizeof(*dev_clk), GFP_KERNEL);
+ 	if (WARN_ON(!dev_clk))
+ 		return;
+@@ -636,6 +657,9 @@ static __init void vtwm_pll_clk_init(struct device_node *node, int pll_type)
+ 	struct clk_init_data init;
+ 	int rc;
+ 
++	if (!pmc_base)
++		vtwm_set_pmc_base();
++
+ 	rc = of_property_read_u32(node, "reg", &reg);
+ 	if (WARN_ON(rc))
+ 		return;
+-- 
+1.7.10.4
 
-> will go over all cpus).
-
-s/go over/cover/
-
-> but late it will free them as cpufreq_register_driver(acpi_cpufreq) will
-
-s/late/later
-
-> return fail as init_pstate already take over before.
-
-write it as: fail as intel_pstate is already registered.
-
-> Use cpufreq_get_current_driver() to check if we can skip the
-> acpi_cpufreq loading.
-
-The below material looks to be a separate issue and so we
-probably break this patch into two?
-
-> Also there is racing in
->         __acpi_processor_start
->                  ==> acpi_processor_load_module
->                          ==> request_module_nowait/requested = 1
-
-> Index: linux-2.6/drivers/cpufreq/acpi-cpufreq.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/cpufreq/acpi-cpufreq.c
-> +++ linux-2.6/drivers/cpufreq/acpi-cpufreq.c
-> @@ -986,6 +986,10 @@ static int __init acpi_cpufreq_init(void
->  {
->         int ret;
->
-> +       /* don't keep reloading if cpufreq_driver exists */
-> +       if (cpufreq_get_current_driver())
-> +               return 0;
-> +
->         if (acpi_disabled)
->                 return 0;
-
-This looks fine to me..
-
-> Index: linux-2.6/drivers/acpi/processor_perflib.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/processor_perflib.c
-> +++ linux-2.6/drivers/acpi/processor_perflib.c
-
-Can't really review this one.. Rafael will do it..
