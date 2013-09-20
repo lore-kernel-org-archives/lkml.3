@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab3ITP3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 11:29:09 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:49817 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751737Ab3ITP3H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 11:29:07 -0400
-Date: Fri, 20 Sep 2013 16:28:59 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Bart Kuivenhoven <bemk@redhat.com>
-Cc: matt.fleming@intel.com, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jcm@redhat.com, msalter@redhat.com
-Subject: Re: [PATCH] x86 efi: bugfix interrupt disabling sequence
-Message-ID: <20130920152859.GC21381@console-pimps.org>
-References: <1379525333-4373-1-git-send-email-bemk@redhat.com>
+	id S1752267Ab3ITPeQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 11:34:16 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:54041 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751776Ab3ITPeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 11:34:14 -0400
+Date: Fri, 20 Sep 2013 08:34:01 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH RESEND] printk: report boot console names during cut-over
+Message-ID: <20130920153400.GA32516@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379525333-4373-1-git-send-email-bemk@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Sep, at 07:28:53PM, Bart Kuivenhoven wrote:
-> The problem in efi_main was that the idt was cleared before the
-> interrupts were disabled.
-> 
-> The UEFI spec states that interrupts aren't used so this shouldn't be
-> too much of a problem. Peripherals however don't necessarily know about
-> this and thus might cause interrupts to happen anyway. Even if
-> ExitBootServices() has been called.
->
-> This means there is a risk of an interrupt being triggered while the IDT
-> register is nullified and the interrupt bit hasn't been cleared,
-> allowing for a triple fault.
+This reports the names of boot consoles as they're being disabled to
+help identify which is which during cut-over. Helps answer the question
+"which boot console actually got activated?" once the regular console
+is running, mostly when debugging boot console failures.
 
-Just to be clear, you haven't witnessed a triple fault, correct?
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ kernel/printk/printk.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-> This patch fixes this by clearing the interrupt bit before the lidt
-> instruction.
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index b4e8500..0dc54c9 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -2361,14 +2361,18 @@ void register_console(struct console *newcon)
+ 	if (bcon &&
+ 	    ((newcon->flags & (CON_CONSDEV | CON_BOOT)) == CON_CONSDEV) &&
+ 	    !keep_bootcon) {
+-		/* we need to iterate through twice, to make sure we print
+-		 * everything out, before we unregister the console(s)
++		/* We need to iterate through all boot consoles, to make
++		 * sure we print everything out, before we unregister them.
+ 		 */
+-		printk(KERN_INFO "console [%s%d] enabled, bootconsole disabled\n",
+-			newcon->name, newcon->index);
+-		for_each_console(bcon)
+-			if (bcon->flags & CON_BOOT)
++		for_each_console(bcon) {
++			if (bcon->flags & CON_BOOT) {
++				printk(KERN_INFO "console [%s%d] enabled, "
++					"bootconsole [%s%d] disabled\n",
++					newcon->name, newcon->index,
++					bcon->name, bcon->index);
+ 				unregister_console(bcon);
++			}
++		}
+ 	} else {
+ 		printk(KERN_INFO "%sconsole [%s%d] enabled\n",
+ 			(newcon->flags & CON_BOOT) ? "boot" : "" ,
+-- 
+1.7.9.5
 
-I think we can go even further than this and get rid of all of the IDT
-code in the EFI boot stub. The kernel maintains its own IDT anyway.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Kees Cook
+Chrome OS Security
