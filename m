@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab3ITMHw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 08:07:52 -0400
-Received: from ud03.udmedia.de ([194.117.254.43]:36950 "EHLO
-	mail.ud03.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754428Ab3ITMHu (ORCPT
+	id S1754711Ab3ITMIr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 08:08:47 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:13411 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab3ITMIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 08:07:50 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Sep 2013 08:07:50 EDT
+	Fri, 20 Sep 2013 08:08:45 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 20 Sep 2013 05:05:19 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <lee.jones@linaro.org>, <sameo@linux.intel.com>, <broonie@kernel.org>,
+        <linus.walleij@linaro.org>, <akpm@linux-foundation.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
+        <rtc-linux@googlegroups.com>, <rob.herring@calxeda.com>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
+        <rob@landley.net>, <ijc+devicetree@hellion.org.uk>,
+        <grant.likely@linaro.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2 0/5] Add AMS AS3722 mfd, GPIO, regulator and RTC driver
+Date: Fri, 20 Sep 2013 18:00:09 +0530
+Message-ID: <1379680214-9143-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Fri, 20 Sep 2013 14:01:08 +0200
-From: =?UTF-8?Q?Dieter_N=C3=BCtzel?= <dieter@nuetzel-hh.de>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: [git pull] drm radeon/nouveau/core fixes
-Organization: DN
-In-Reply-To: <CAPM=9twv-bb3MtnWNTT5+i5HfHQS+cbJG16xsaoL-XV_Qpf9Cw@mail.gmail.com>
-References: <CAPM=9twv-bb3MtnWNTT5+i5HfHQS+cbJG16xsaoL-XV_Qpf9Cw@mail.gmail.com>
-Message-ID: <cddbd29cf4bcef172196eb4d9f8d0464@mail.ud03.udmedia.de>
-User-Agent: Roundcube Webmail/0.8.5
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 19.09.2013 04:07, schrieb Dave Airlie:
-> Hi Linus,
-> 
-> mostly radeon fixes, with some nouveau bios parser, ttm fix and a fix
-> for AST driver.
-> 
-> Dave.
-> 
-> The following changes since commit 
-> 01172772c7c973debf5b4881fcb9463891ea97ec:
-> 
->   drm/nouveau: fix oops on runtime suspend/resume (2013-09-10 12:38:53 
-> +1000)
-> 
-> are available in the git repository at:
-> 
->   git://people.freedesktop.org/~airlied/linux drm-fixes
-> 
-> for you to fetch changes up to 
-> 928c2f0c006bf7f381f58af2b2786d2a858ae311:
-> 
->   drm/fb-helper: don't sleep for screen unblank when an oops is in
-> progress (2013-09-19 11:54:34 +1000)
+This series add the driver support for AMS AS3722 PMIC. The driver includes
+MFD, GPIO, regulator and RTC.
 
-[-]
+Changes from V1:
+- Remove compatible string from DT for subnode.
+- Add macro in regmap.h for definign range.
+- Nit cleanups in driver and use module_i2c_driver/module_platform_driver.
+- Use linear_range and added regulator_map_* on regulators.
+- Move OC configuration to regulator_current limit setting.
+- Get rid of clk32k out configuration from RTC. Will add clock driver.
 
-> Christian König (3):
->       drm/radeon: remove stale radeon_fence_retire tracepoint
->       drm/radeon: add command submission tracepoint
->       drm/radeon: avoid UVD corruptions on AGP cards
 
-Alex,
+Laxman Dewangan (5):
+  regmap: add helper macro to set min/max range of register
+  mfd: add support for AMS AS3722 PMIC
+  gpio: add support for AMS AS3722 gpio driver
+  regulator: as3722: add regulator driver for AMS AS3722
+  drivers/rtc/rtc-as3722: add RTC driver
 
-I think your PCIE AGP (radeon.agpmode=-1) UVD fix is missing, here.
+ .../devicetree/bindings/gpio/gpio-as3722.txt       |   62 ++
+ Documentation/devicetree/bindings/mfd/as3722.txt   |   47 +
+ .../bindings/regulator/as3722-regulator.txt        |   91 ++
+ drivers/gpio/Kconfig                               |    6 +
+ drivers/gpio/Makefile                              |    1 +
+ drivers/gpio/gpio-as3722.c                         |  435 ++++++++++
+ drivers/mfd/Kconfig                                |   12 +
+ drivers/mfd/Makefile                               |    1 +
+ drivers/mfd/as3722.c                               |  448 ++++++++++
+ drivers/regulator/Kconfig                          |    8 +
+ drivers/regulator/Makefile                         |    1 +
+ drivers/regulator/as3722-regulator.c               |  917 ++++++++++++++++++++
+ drivers/rtc/Kconfig                                |   10 +
+ drivers/rtc/Makefile                               |    1 +
+ drivers/rtc/rtc-as3722.c                           |  296 +++++++
+ include/linux/mfd/as3722.h                         |  423 +++++++++
+ include/linux/regmap.h                             |    2 +
+ 17 files changed, 2761 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-as3722.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/as3722.txt
+ create mode 100644 Documentation/devicetree/bindings/regulator/as3722-regulator.txt
+ create mode 100644 drivers/gpio/gpio-as3722.c
+ create mode 100644 drivers/mfd/as3722.c
+ create mode 100644 drivers/regulator/as3722-regulator.c
+ create mode 100644 drivers/rtc/rtc-as3722.c
+ create mode 100644 include/linux/mfd/as3722.h
 
-Thanks for working UVD and dpm on mostly all asics!
-
--Dieter
