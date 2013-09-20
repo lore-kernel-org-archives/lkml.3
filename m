@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab3ITRIL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 13:08:11 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:53049 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753226Ab3ITRII (ORCPT
+	id S1753365Ab3ITRJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 13:09:08 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52555 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab3ITRJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 13:08:08 -0400
+	Fri, 20 Sep 2013 13:09:05 -0400
+Date: Fri, 20 Sep 2013 18:08:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lee.jones@linaro.org, sameo@linux.intel.com, linus.walleij@linaro.org,
+        akpm@linux-foundation.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, rtc-linux@googlegroups.com,
+        rob.herring@calxeda.com, mark.rutland@arm.com, pawel.moll@arm.com,
+        swarren@wwwdotorg.org, rob@landley.net, ijc+devicetree@hellion.org.uk,
+        grant.likely@linaro.org, Florian Lobmaier <florian.lobmaier@ams.com>
+Message-ID: <20130920170847.GR21013@sirena.org.uk>
+References: <1379680214-9143-1-git-send-email-ldewangan@nvidia.com>
+ <1379680214-9143-5-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpokdyk9hfBreVeXttN23biTVjWiJRm8eYkfAjLz+cbnreQ@mail.gmail.com>
-References: <1379654772-10700-1-git-send-email-yinghai@kernel.org>
-	<CAKohpokdyk9hfBreVeXttN23biTVjWiJRm8eYkfAjLz+cbnreQ@mail.gmail.com>
-Date: Fri, 20 Sep 2013 10:08:07 -0700
-X-Google-Sender-Auth: lmyk9QFbjmr75ymTb0A0reeUM3U
-Message-ID: <CAE9FiQUXGtNeAS70Mr6Nscax26dRoXTCyb28gz1iX2j1s8Nojw@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: skip loading acpi_cpufreq after intel_pstate
-From: Yinghai Lu <yinghai@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3nbTfX4V9Gs/5Yhz"
+Content-Disposition: inline
+In-Reply-To: <1379680214-9143-5-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 86.153.71.95
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V2 4/5] regulator: as3722: add regulator driver for AMS
+ AS3722
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 11:10 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 20 September 2013 10:56, Yinghai Lu <yinghai@kernel.org> wrote:
->> If the hw support intel_pstate and acpi_cpufreq, intel_pstate will
->> get loaded at first.
->
-> s/at //
->
->>
->> acpi_cpufreq_init will call acpi_cpufreq_early_init()
->> and it allocate perf data and init those perf data in ACPI core, (that
->
-> s/it /that will /
->
->> will go over all cpus).
->
-> s/go over/cover/
->
->> but late it will free them as cpufreq_register_driver(acpi_cpufreq) will
->
-> s/late/later
->
->> return fail as init_pstate already take over before.
->
-> write it as: fail as intel_pstate is already registered.
->
->> Use cpufreq_get_current_driver() to check if we can skip the
->> acpi_cpufreq loading.
->
-> The below material looks to be a separate issue and so we
-> probably break this patch into two?
 
-ok, check that.
+--3nbTfX4V9Gs/5Yhz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks
+On Fri, Sep 20, 2013 at 06:00:13PM +0530, Laxman Dewangan wrote:
+> The AMS AS3722 is a compact system PMU suitable for mobile phones,
+> tablets etc. It has 4 DCDC step down regulators, 3 DCDC step down
+> controller, 11 LDOs.
 
-Yinghai
+Applied, thanks.
+
+--3nbTfX4V9Gs/5Yhz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSPIEbAAoJELSic+t+oim9xDEP/0nU7Qp6D1wCr/LbFIGcnfXD
+56PAT7omsjQy0q7y6bOvnqK82HgD8PNCQq9sxoOOuCSYj7sf6sBUq7BPnQwJZRXz
+0M3NwAZ+Ha8ZSN+Csp7qazEU7L3vfAvTAQZ42NXCwr27yJldmFR38mHuAuv0mxQ+
+ASL4OYTrFyC3TbgYkqBZ3UIz5yej2wtLg86CQGojPjpcXtnB4xry1eTnJg6ec8Id
+EpZQblgtzBHZbA3HxkMrnph2P+1pb6sVtpgcK+iPZA83xAJS9tzLsTb/yHPat3qu
+HgSoBKFqfAX56YFT+PiLsgMNoxsnlqHhS89BrHnFKynOH6LorkT9e57IN42NdCTK
+kAjz+qBn8R+LPtL2pgC5qweJ6dc4QWckV5c3w02HMNA/AOMGZzxmXlCiQ1VvWexG
+rVvJQUzXVSUJxbSDB6qhWSFuwOc7Mc/wtlWOmBfygWsM3ntHaimC96pjCJQlEhmX
+ZjHYAlUor1FTDW4SAxyBuiDytolW3Xga5jA1X0W3qYxlaMPhQLl2t5afvOUkhssd
+DTfKIYuikIujJpOME0D4KtlP4y8I1ndUAyfsMlD0Gt2jCHXtkOyfLMQDwugJh2A5
+8gnAZWThMaNdqVfzDekLJyuQ747v/Z3//zLKTOKw0wVrELIMjPRmv/Cm5aFAHE1p
+DVIQ5jiFcXtZFBZsAQE4
+=5t4b
+-----END PGP SIGNATURE-----
+
+--3nbTfX4V9Gs/5Yhz--
