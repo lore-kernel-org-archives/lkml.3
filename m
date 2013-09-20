@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab3ITUSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:18:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41744 "EHLO
+	id S1755381Ab3ITUSz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:18:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41726 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab3ITUPU (ORCPT
+	with ESMTP id S1754268Ab3ITUPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:15:20 -0400
+	Fri, 20 Sep 2013 16:15:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Arun Kumar K <arun.kk@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 67/93] [media] exynos-gsc: Register v4l2 device
-Date: Fri, 20 Sep 2013 13:09:02 -0700
-Message-Id: <1379707768-1804-68-git-send-email-kamal@canonical.com>
+Cc: Peter Maydell <peter.maydell@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 76/93] ARM: PCI: versatile: Fix map_irq function to match hardware
+Date: Fri, 20 Sep 2013 13:09:11 -0700
+Message-Id: <1379707768-1804-77-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -29,87 +27,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arun Kumar K <arun.kk@samsung.com>
+From: Peter Maydell <peter.maydell@linaro.org>
 
-commit d0b1c31349969973204fad21a076aecf131cc5e4 upstream.
+commit f9b71fef12f0d6ac5c7051cfd87f7700f78c56b6 upstream.
 
-Gscaler video device registration was happening without reference to
-a parent v4l2_dev causing probe to fail. The patch creates a parent
-v4l2 device and uses it for the gsc m2m video device registration.
-This fixes regression introduced with comit commit 1c1d86a1ea07506
-[media] v4l2: always require v4l2_dev, rename parent to dev_parent
+The PCI controller code for the Versatile board has never had the
+correct IRQ mapping for hardware.  For many years it had an odd
+mapping ("all interrupts are int 27") which aligned with the
+equivalent bug in QEMU.  However as of commit 1bc39ac5dab265
+the mapping changed and no longer matched either hardware or QEMU,
+with the result that any PCI card beyond the first in QEMU would
+not have functioning interrupts; for example a boot with a SCSI
+controller would time out as follows:
 
-Signed-off-by: Arun Kumar K <arun.kk@samsung.com>
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+ ------------
+ sym0: <895a> rev 0x0 at pci 0000:00:0d.0 irq 92
+ sym0: SCSI BUS has been reset.
+ scsi0 : sym-2.2.3
+ [...]
+ scsi 0:0:0:0: ABORT operation started
+ scsi 0:0:0:0: ABORT operation timed-out.
+ scsi 0:0:0:0: DEVICE RESET operation started
+ scsi 0:0:0:0: DEVICE RESET operation timed-out.
+ scsi 0:0:0:0: BUS RESET operation started
+ scsi 0:0:0:0: BUS RESET operation timed-out.
+ scsi 0:0:0:0: HOST RESET operation started
+ sym0: SCSI BUS has been reset
+ ------------
+
+Fix the mapping so that it matches real hardware (checked against the
+schematics for PB926 and backplane, and tested against the hardware).
+This allows PCI cards using interrupts to work on hardware for the
+first time; this change will also work with QEMU 1.5 or later, where
+the equivalent bugs in the modelling of the hardware have been fixed.
+
+Although QEMU will attempt to autodetect whether the kernel is
+expecting the long-standing "everything is int 27" mapping or the one
+hardware has, for certainty we force it into "definitely behave like
+hardware mode"; this will avoid unexpected surprises later if we
+implement sparse irqs. This is harmless on hardware.
+
+Thanks to Paul Gortmaker for bisecting the problem and finding an initial
+solution, to Russell King for providing the correct interrupt mapping,
+and to Guenter Roeck for providing an initial version of this patch
+and prodding me into relocating the hardware and retesting everything.
+
+Signed-off-by: Peter Maydell <peter.maydell@linaro.org>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/platform/exynos-gsc/gsc-core.c | 9 ++++++++-
- drivers/media/platform/exynos-gsc/gsc-core.h | 1 +
- drivers/media/platform/exynos-gsc/gsc-m2m.c  | 1 +
- 3 files changed, 10 insertions(+), 1 deletion(-)
+ arch/arm/mach-versatile/pci.c | 25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/media/platform/exynos-gsc/gsc-core.c b/drivers/media/platform/exynos-gsc/gsc-core.c
-index 2b1b9f3..661c563 100644
---- a/drivers/media/platform/exynos-gsc/gsc-core.c
-+++ b/drivers/media/platform/exynos-gsc/gsc-core.c
-@@ -1121,10 +1121,14 @@ static int gsc_probe(struct platform_device *pdev)
- 		goto err_clk;
- 	}
+diff --git a/arch/arm/mach-versatile/pci.c b/arch/arm/mach-versatile/pci.c
+index e92e5e0..234740d 100644
+--- a/arch/arm/mach-versatile/pci.c
++++ b/arch/arm/mach-versatile/pci.c
+@@ -295,6 +295,19 @@ int __init pci_versatile_setup(int nr, struct pci_sys_data *sys)
+ 	__raw_writel(PHYS_OFFSET, local_pci_cfg_base + PCI_BASE_ADDRESS_2);
  
--	ret = gsc_register_m2m_device(gsc);
-+	ret = v4l2_device_register(dev, &gsc->v4l2_dev);
- 	if (ret)
- 		goto err_clk;
- 
-+	ret = gsc_register_m2m_device(gsc);
-+	if (ret)
-+		goto err_v4l2;
+ 	/*
++	 * For many years the kernel and QEMU were symbiotically buggy
++	 * in that they both assumed the same broken IRQ mapping.
++	 * QEMU therefore attempts to auto-detect old broken kernels
++	 * so that they still work on newer QEMU as they did on old
++	 * QEMU. Since we now use the correct (ie matching-hardware)
++	 * IRQ mapping we write a definitely different value to a
++	 * PCI_INTERRUPT_LINE register to tell QEMU that we expect
++	 * real hardware behaviour and it need not be backwards
++	 * compatible for us. This write is harmless on real hardware.
++	 */
++	__raw_writel(0, VERSATILE_PCI_VIRT_BASE+PCI_INTERRUPT_LINE);
 +
- 	platform_set_drvdata(pdev, gsc);
- 	pm_runtime_enable(dev);
- 	ret = pm_runtime_get_sync(&pdev->dev);
-@@ -1146,6 +1150,8 @@ err_pm:
- 	pm_runtime_put(dev);
- err_m2m:
- 	gsc_unregister_m2m_device(gsc);
-+err_v4l2:
-+	v4l2_device_unregister(&gsc->v4l2_dev);
- err_clk:
- 	gsc_clk_put(gsc);
- 	return ret;
-@@ -1156,6 +1162,7 @@ static int gsc_remove(struct platform_device *pdev)
- 	struct gsc_dev *gsc = platform_get_drvdata(pdev);
++	/*
+ 	 * Do not to map Versatile FPGA PCI device into memory space
+ 	 */
+ 	pci_slot_ignore |= (1 << myslot);
+@@ -327,13 +340,13 @@ static int __init versatile_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+ {
+ 	int irq;
  
- 	gsc_unregister_m2m_device(gsc);
-+	v4l2_device_unregister(&gsc->v4l2_dev);
+-	/* slot,  pin,	irq
+-	 *  24     1     IRQ_SIC_PCI0
+-	 *  25     1     IRQ_SIC_PCI1
+-	 *  26     1     IRQ_SIC_PCI2
+-	 *  27     1     IRQ_SIC_PCI3
++	/*
++	 * Slot	INTA	INTB	INTC	INTD
++	 * 31	PCI1	PCI2	PCI3	PCI0
++	 * 30	PCI0	PCI1	PCI2	PCI3
++	 * 29	PCI3	PCI0	PCI1	PCI2
+ 	 */
+-	irq = IRQ_SIC_PCI0 + ((slot - 24 + pin - 1) & 3);
++	irq = IRQ_SIC_PCI0 + ((slot + 2 + pin - 1) & 3);
  
- 	vb2_dma_contig_cleanup_ctx(gsc->alloc_ctx);
- 	pm_runtime_disable(&pdev->dev);
-diff --git a/drivers/media/platform/exynos-gsc/gsc-core.h b/drivers/media/platform/exynos-gsc/gsc-core.h
-index 5f157ef..a1b4148 100644
---- a/drivers/media/platform/exynos-gsc/gsc-core.h
-+++ b/drivers/media/platform/exynos-gsc/gsc-core.h
-@@ -343,6 +343,7 @@ struct gsc_dev {
- 	unsigned long			state;
- 	struct vb2_alloc_ctx		*alloc_ctx;
- 	struct video_device		vdev;
-+	struct v4l2_device		v4l2_dev;
- };
- 
- /**
-diff --git a/drivers/media/platform/exynos-gsc/gsc-m2m.c b/drivers/media/platform/exynos-gsc/gsc-m2m.c
-index c267c57..a11be54 100644
---- a/drivers/media/platform/exynos-gsc/gsc-m2m.c
-+++ b/drivers/media/platform/exynos-gsc/gsc-m2m.c
-@@ -732,6 +732,7 @@ int gsc_register_m2m_device(struct gsc_dev *gsc)
- 	gsc->vdev.release	= video_device_release_empty;
- 	gsc->vdev.lock		= &gsc->lock;
- 	gsc->vdev.vfl_dir	= VFL_DIR_M2M;
-+	gsc->vdev.v4l2_dev	= &gsc->v4l2_dev;
- 	snprintf(gsc->vdev.name, sizeof(gsc->vdev.name), "%s.%d:m2m",
- 					GSC_MODULE_NAME, gsc->id);
- 
+ 	return irq;
+ }
 -- 
 1.8.1.2
 
