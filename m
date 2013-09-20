@@ -1,84 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab3ITIIP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 04:08:15 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:53331 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842Ab3ITIIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 04:08:12 -0400
-Message-ID: <523C0268.20404@suse.cz>
-Date: Fri, 20 Sep 2013 10:08:08 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754182Ab3ITIPx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 04:15:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:13952 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754051Ab3ITIPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 04:15:52 -0400
+X-IronPort-AV: E=Sophos;i="4.90,938,1371052800"; 
+   d="scan'208";a="8569624"
+Message-ID: <523C030E.3040408@cn.fujitsu.com>
+Date: Fri, 20 Sep 2013 16:10:54 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, viro@zeniv.linux.org.uk,
-        xemul@openvz.org, remi.denis-courmont@nokia.com
-CC: keescook@chromium.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-sctp@vger.kernel.org, linux@horizon.com,
-        akpm@linux-foundation.org, dan.carpenter@oracle.com,
-        geert@linux-m68k.org, JBeulich@suse.com, joe@perches.com,
-        kosaki.motohiro@gmail.com
-Subject: Re: [PATCH 1/2] remove all uses of printf's %n
-References: <CAGXu5jL+NeBw2_vXymM81UdtS6UO7KZA2S4rf3gwM_7nSJ2h6g@mail.gmail.com>	<20130917205742.16147.qmail@science.horizon.com>	<201309191756.BCF65661.MQFOLSJOFHFtOV@I-love.SAKURA.ne.jp>	<CAGXu5jK_D1BJOQr=1A-UFrpM5Ad+Qu894HT_XjkZh4EmsbCkTQ@mail.gmail.com> <201309201309.GFB52620.OQOtSFLMJVHOFF@I-love.SAKURA.ne.jp>
-In-Reply-To: <201309201309.GFB52620.OQOtSFLMJVHOFF@I-love.SAKURA.ne.jp>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Al Viro <viro@zeniv.linux.org.uk>
+CC: Jens <axboe@kernel.dk>, fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fs/bio-integrity: remove duplicate code
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/20 16:14:15,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/20 16:14:15,
+	Serialize complete at 2013/09/20 16:14:15
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2013 06:09 AM, Tetsuo Handa wrote:
-> --- a/fs/proc/consoles.c
-> +++ b/fs/proc/consoles.c
-...
-> @@ -47,11 +46,10 @@ static int show_console_dev(struct seq_file *m, void *v)
->  			con_flags[a].name : ' ';
->  	flags[a] = 0;
->  
-> -	seq_printf(m, "%s%d%n", con->name, con->index, &len);
-> -	len = 21 - len;
-> -	if (len < 1)
-> -		len = 1;
-> -	seq_printf(m, "%*c%c%c%c (%s)", len, ' ', con->read ? 'R' : '-',
-> +	seq_setwidth(m, 21 - 1);
-> +	seq_printf(m, "%s%d", con->name, con->index);
-> +	seq_pad(m, ' ');
-> +	seq_printf(m, "%c%c%c (%s)", con->read ? 'R' : '-',
->  			con->write ? 'W' : '-', con->unblank ? 'U' : '-',
->  			flags);
+Most code of function bio_integrity_verify and bio_integrity_generate
+is the same, so introduce a common function bio_integrity_generate_verity()
+to remove the duplicate code.
 
-Hello, do you really need seq_setwidth? It makes it really ugly...
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/bio-integrity.c |   84 ++++++++++++++++++++++-----------------------------
+ 1 files changed, 36 insertions(+), 48 deletions(-)
 
-Or do we need that all? Couldn't we simply have seq_printf_padded? Or
-maybe some % modifier in seq_printf to pad the string?
-
-> --- a/net/ipv4/fib_trie.c
-> +++ b/net/ipv4/fib_trie.c
-...
-> @@ -2548,15 +2549,15 @@ static int fib_route_seq_show(struct seq_file *seq, void *v)
->  					 (fi->fib_advmss ?
->  					  fi->fib_advmss + 40 : 0),
->  					 fi->fib_window,
-> -					 fi->fib_rtt >> 3, &len);
-> +					 fi->fib_rtt >> 3);
->  			else
->  				seq_printf(seq,
->  					 "*\t%08X\t%08X\t%04X\t%d\t%u\t"
-> -					 "%d\t%08X\t%d\t%u\t%u%n",
-> +					 "%d\t%08X\t%d\t%u\t%u",
->  					 prefix, 0, flags, 0, 0, 0,
-> -					 mask, 0, 0, 0, &len);
-> +					 mask, 0, 0, 0);
->  
-> -			seq_printf(seq, "%*s\n", 127 - len, "");
-> +			seq_pad(seq, '\n');
-
-Hmm, seq_pad is unintuitive. I would say it pads the string by '\n'. Of
-course it does not, but...
-
-thanks,
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index 6025084..f096aec 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -287,24 +287,25 @@ int bio_integrity_get_tag(struct bio *bio, void *tag_buf, unsigned int len)
+ EXPORT_SYMBOL(bio_integrity_get_tag);
+ 
+ /**
+- * bio_integrity_generate - Generate integrity metadata for a bio
+- * @bio:	bio to generate integrity metadata for
+- *
+- * Description: Generates integrity metadata for a bio by calling the
+- * block device's generation callback function.  The bio must have a
+- * bip attached with enough room to accommodate the generated
+- * integrity metadata.
++ * bio_integrity_generate_verify - Generate/verify integrity metadata for a bio
++ * @bio:	bio to generate/verify integrity metadata for
++ * @operate:	operate number, 1 for generate, 0 for verify
+  */
+-static void bio_integrity_generate(struct bio *bio)
++static int bio_integrity_generate_verify(struct bio *bio, int operate)
+ {
+ 	struct blk_integrity *bi = bdev_get_integrity(bio->bi_bdev);
+ 	struct blk_integrity_exchg bix;
+ 	struct bio_vec *bv;
+-	sector_t sector = bio->bi_sector;
+-	unsigned int i, sectors, total;
++	sector_t sector;
++	unsigned int i, sectors, total, ret;
+ 	void *prot_buf = bio->bi_integrity->bip_buf;
+ 
+-	total = 0;
++	if (operate)
++		sector = bio->bi_sector;
++	else
++		sector = bio->bi_integrity->bip_sector;
++
++	ret = total = 0;
+ 	bix.disk_name = bio->bi_bdev->bd_disk->disk_name;
+ 	bix.sector_size = bi->sector_size;
+ 
+@@ -314,8 +315,13 @@ static void bio_integrity_generate(struct bio *bio)
+ 		bix.data_size = bv->bv_len;
+ 		bix.prot_buf = prot_buf;
+ 		bix.sector = sector;
+-
+-		bi->generate_fn(&bix);
++		if (operate) {
++			bi->generate_fn(&bix);
++		} else {
++			ret = bi->verify_fn(&bix);
++			kunmap_atomic(kaddr);
++			return ret;
++		}
+ 
+ 		sectors = bv->bv_len / bi->sector_size;
+ 		sector += sectors;
+@@ -325,6 +331,22 @@ static void bio_integrity_generate(struct bio *bio)
+ 
+ 		kunmap_atomic(kaddr);
+ 	}
++
++	return ret;
++}
++
++/**
++ * bio_integrity_generate - Generate integrity metadata for a bio
++ * @bio:	bio to generate integrity metadata for
++ *
++ * Description: Generates integrity metadata for a bio by calling the
++ * block device's generation callback function.  The bio must have a
++ * bip attached with enough room to accommodate the generated
++ * integrity metadata.
++ */
++static void bio_integrity_generate(struct bio *bio)
++{
++	bio_integrity_generate_verify(bio, 1);
+ }
+ 
+ static inline unsigned short blk_integrity_tuple_size(struct blk_integrity *bi)
+@@ -439,41 +461,7 @@ EXPORT_SYMBOL(bio_integrity_prep);
+  */
+ static int bio_integrity_verify(struct bio *bio)
+ {
+-	struct blk_integrity *bi = bdev_get_integrity(bio->bi_bdev);
+-	struct blk_integrity_exchg bix;
+-	struct bio_vec *bv;
+-	sector_t sector = bio->bi_integrity->bip_sector;
+-	unsigned int i, sectors, total, ret;
+-	void *prot_buf = bio->bi_integrity->bip_buf;
+-
+-	ret = total = 0;
+-	bix.disk_name = bio->bi_bdev->bd_disk->disk_name;
+-	bix.sector_size = bi->sector_size;
+-
+-	bio_for_each_segment(bv, bio, i) {
+-		void *kaddr = kmap_atomic(bv->bv_page);
+-		bix.data_buf = kaddr + bv->bv_offset;
+-		bix.data_size = bv->bv_len;
+-		bix.prot_buf = prot_buf;
+-		bix.sector = sector;
+-
+-		ret = bi->verify_fn(&bix);
+-
+-		if (ret) {
+-			kunmap_atomic(kaddr);
+-			return ret;
+-		}
+-
+-		sectors = bv->bv_len / bi->sector_size;
+-		sector += sectors;
+-		prot_buf += sectors * bi->tuple_size;
+-		total += sectors * bi->tuple_size;
+-		BUG_ON(total > bio->bi_integrity->bip_size);
+-
+-		kunmap_atomic(kaddr);
+-	}
+-
+-	return ret;
++	return bio_integrity_generate_verify(bio, 0);
+ }
+ 
+ /**
 -- 
-js
-suse labs
+1.7.7
+
