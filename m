@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab3ITRFa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 13:05:30 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:50439 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752596Ab3ITRF3 (ORCPT
+	id S1753237Ab3ITRHn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 13:07:43 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:43785 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414Ab3ITRHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 13:05:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdaAryP9BVEeEPWBS+_BuTB75c-Zqv01eRNmwDqKgvyz-Q@mail.gmail.com>
-References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
-	<45987104.t6r4hvPgQn@vostro.rjw.lan>
-	<523AF22F.1010909@linux.vnet.ibm.com>
-	<CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com>
-	<CACRpkdYBYdMJ6mTGUropOypx0ZVNn8eQMzV+eKocCSBZAu6xTA@mail.gmail.com>
-	<CAKohpokQO82XMGwcTjVmNTbBVESyFqV4DAxMMU_RHEtN+LqUgg@mail.gmail.com>
-	<CACRpkdYoNkgno24dtJAwOq2T9yoKQYgKQ+adfkSN8affYNePjQ@mail.gmail.com>
-	<CAKohpokdOXrGVxEA89yrAq2T8MiqZNHrrXNagqqggo67rEmKYg@mail.gmail.com>
-	<CAKohpomXsZ+BsE7j-J4qU+x9f+JPsNEMi3d=CmfMByzPw_wvtw@mail.gmail.com>
-	<CACRpkdaAryP9BVEeEPWBS+_BuTB75c-Zqv01eRNmwDqKgvyz-Q@mail.gmail.com>
-Date: Fri, 20 Sep 2013 22:35:29 +0530
-Message-ID: <CAKohpomg=0YYHYu1Eh4MGW=_h3cppntBr1dQWMjCj_=AuRBDPQ@mail.gmail.com>
-Subject: Re: Regression on cpufreq in v3.12-rc1
+	Fri, 20 Sep 2013 13:07:41 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        linus.walleij@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: check cpufreq driver is valid and cpufreq isn't disabled in cpufreq_get()
+Date: Fri, 20 Sep 2013 22:37:31 +0530
+Message-Id: <389fbc3c8ad7c339cd2d9572d73c355b7b967823.1379669625.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 September 2013 21:09, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Fri, Sep 20, 2013 at 11:35 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->
->> +++ b/drivers/cpufreq/cpufreq.c
->> @@ -1460,6 +1460,9 @@ unsigned int cpufreq_get(unsigned int cpu)
->>  {
->>         unsigned int ret_freq = 0;
->>
->> +       if (cpufreq_disabled() || !cpufreq_driver)
->> +               return -ENOENT;
->> +
->
-> But given that a cpufreq driver is just like any other driver, isn't the
-> proper thing to do to return -EPROBE_DEFER?
+cpufreq_get() can be called from external drivers which might not be aware if
+cpufreq driver is registered or not. And so we should actually check if cpufreq
+driver is registered or not and also if cpufreq is active or disabled, at the
+beginning of cpufreq_get().
 
-Its not a probe and so that error type doesn't look correct to me..
-Also, its only taking care of things when this routine is called without
-a cpufreq driver and so it should be fine..
+Otherwise call to lock_policy_rwsem_read() might hit BUG_ON(!policy).
+
+Reported-and-Tested-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+
+For 3.12.
+
+ drivers/cpufreq/cpufreq.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 82ecbe3..db004a8 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1460,6 +1460,9 @@ unsigned int cpufreq_get(unsigned int cpu)
+ {
+ 	unsigned int ret_freq = 0;
+ 
++	if (cpufreq_disabled() || !cpufreq_driver)
++		return -ENOENT;
++
+ 	if (!down_read_trylock(&cpufreq_rwsem))
+ 		return 0;
+ 
+-- 
+1.7.12.rc2.18.g61b472e
+
