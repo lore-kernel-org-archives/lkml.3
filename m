@@ -1,56 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab3ITE46 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 00:56:58 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:44637 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab3ITE44 (ORCPT
+	id S1753907Ab3ITFMw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 01:12:52 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:48340 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab3ITFMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 00:56:56 -0400
+	Fri, 20 Sep 2013 01:12:51 -0400
+Date: Fri, 20 Sep 2013 07:12:47 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Josef Bacik <jbacik@fusionio.com>
+Cc: linux-btrfs@vger.kernel.org, walken@google.com,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, peter@hurleysoftware.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 2/2] Btrfs: stop caching thread if extetn_commit_sem is
+ contended
+Message-ID: <20130920051247.GC1486@gmail.com>
+References: <1379605688-987-1-git-send-email-jbacik@fusionio.com>
+ <1379605688-987-2-git-send-email-jbacik@fusionio.com>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20130920144612.5741656ad6ffa8e6739d391c@canb.auug.org.au>
-References: <20130920144612.5741656ad6ffa8e6739d391c@canb.auug.org.au>
-Date: Thu, 19 Sep 2013 21:56:55 -0700
-Message-ID: <CAOesGMjO0JQ8Whm_MEXrOnFFPAG8MXBiQpddV6e8jRR6rcCkTQ@mail.gmail.com>
-Subject: Re: linux-next: taking a break
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379605688-987-2-git-send-email-jbacik@fusionio.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 9:46 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> I will be having a 3 week break leading up to the kernel
-> summit.  This means that next-20130927 (next Friday) will be the last
-> linux-next release until next-20131028 (or maybe 29 depending on
-> jetlag).  I presume that Linus will be up to v3.12-rc7 by then and -rc7
-> is often the last before a release ... Please plan accordingly.
 
-This brings up a subject that could be good to discuss at KS: Do you
-want a backup to share your workload and for hand-off at times like
-this?
+* Josef Bacik <jbacik@fusionio.com> wrote:
 
-You've been carrying the load of linux-next alone for years now, and
-having someone that can take over every now and then seems like a good
-idea. You've been doing an outstanding job but everybody need downtime
-sometimes.
+> We can starve out the transaction commit with a bunch of caching threads 
+> all running at the same time.  This is because we will only drop the 
+> extent_commit_sem if we need_resched(), which isn't likely to happen 
+> since we will be reading a lot from the disk so have already 
+> schedule()'ed plenty.  Alex observed that he could starve out a 
+> transaction commit for up to a minute with 32 caching threads all 
+> running at once.  This will allow us to drop the extent_commit_sem to 
+> allow the transaction commit to swap the commit_root out and then all 
+> the cachers will start back up.  Thanks,
+> 
+> Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+> ---
+>  fs/btrfs/extent-tree.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+> index cfb3cf7..cc074c34 100644
+> --- a/fs/btrfs/extent-tree.c
+> +++ b/fs/btrfs/extent-tree.c
+> @@ -442,7 +442,8 @@ next:
+>  			if (ret)
+>  				break;
+>  
+> -			if (need_resched()) {
+> +			if (need_resched() ||
+> +			    rwsem_is_contended(&fs_info->extent_commit_sem)) {
+>  				caching_ctl->progress = last;
+>  				btrfs_release_path(path);
+>  				up_read(&fs_info->extent_commit_sem);
 
-Linux-next is incredibly valuable for _so_ many of us, and a big part
-of the value is in the continuous frequent releases that allows us to
-catch issues quickly when they are staged, and keep bisectability as
-high as possible. It also helps us discover early on when someone is
-merging code through a maintainer they shouldn't (due to conflicts).
-It will be very much missed during your well-deserved vacation.
+So, just to fill in what happens in this loop:
 
+				mutex_unlock(&caching_ctl->mutex);
+				cond_resched();
+				goto again;
 
--Olof
+where 'again:' takes caching_ctl->mutex and fs_info->extent_commit_sem 
+again:
+
+	again:
+	        mutex_lock(&caching_ctl->mutex);
+		/* need to make sure the commit_root doesn't disappear */
+		down_read(&fs_info->extent_commit_sem);
+
+So, if I'm reading the code correct, there can be a fair amount of 
+concurrency here: there may be multiple 'caching kthreads' per filesystem 
+active, while there's one fs_info->extent_commit_sem per filesystem 
+AFAICS.
+
+So, what happens if there are a lot of CPUs all busy holding the 
+->extent_commit_sem rwsem read-locked and a writer arrives? They'd all 
+rush to try to release the fs_info->extent_commit_sem, and they'd block in 
+the down_read() because there's a writer waiting.
+
+So there's a guarantee of forward progress. This should answer akpm's 
+concern I think.
+
+If this analysis is correct then:
+
+  Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ingo
