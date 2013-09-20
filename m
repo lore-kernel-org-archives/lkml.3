@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab3ITUd3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:33:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41360 "EHLO
+	id S1755375Ab3ITUd1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:33:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41384 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432Ab3ITUKC (ORCPT
+	with ESMTP id S1753441Ab3ITUKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Sep 2013 16:10:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 11/93] USB: cdc-wdm: fix race between interrupt handler and tasklet
-Date: Fri, 20 Sep 2013 13:08:06 -0700
-Message-Id: <1379707768-1804-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 18/93] ath9k: avoid accessing MRC registers on single-chain devices
+Date: Fri, 20 Sep 2013 13:08:13 -0700
+Message-Id: <1379707768-1804-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -28,66 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 6dd433e6cf2475ce8abec1b467720858c24450eb upstream.
+commit a1c781bb20ac1e03280e420abd47a99eb8bbdd3b upstream.
 
-Both could want to submit the same URB. Some checks of the flag
-intended to prevent that were missing.
+They are not implemented, and accessing them might trigger errors
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/class/cdc-wdm.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
-index 122d056..46c9379 100644
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -208,6 +208,7 @@ skip_error:
- static void wdm_int_callback(struct urb *urb)
- {
- 	int rv = 0;
-+	int responding;
- 	int status = urb->status;
- 	struct wdm_device *desc;
- 	struct usb_cdc_notification *dr;
-@@ -261,8 +262,8 @@ static void wdm_int_callback(struct urb *urb)
- 
- 	spin_lock(&desc->iuspin);
- 	clear_bit(WDM_READ, &desc->flags);
--	set_bit(WDM_RESPONDING, &desc->flags);
--	if (!test_bit(WDM_DISCONNECTING, &desc->flags)
-+	responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
-+	if (!responding && !test_bit(WDM_DISCONNECTING, &desc->flags)
- 		&& !test_bit(WDM_SUSPENDING, &desc->flags)) {
- 		rv = usb_submit_urb(desc->response, GFP_ATOMIC);
- 		dev_dbg(&desc->intf->dev, "%s: usb_submit_urb %d",
-@@ -666,16 +667,20 @@ static void wdm_rxwork(struct work_struct *work)
- {
- 	struct wdm_device *desc = container_of(work, struct wdm_device, rxwork);
- 	unsigned long flags;
--	int rv;
-+	int rv = 0;
-+	int responding;
- 
- 	spin_lock_irqsave(&desc->iuspin, flags);
- 	if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
- 		spin_unlock_irqrestore(&desc->iuspin, flags);
- 	} else {
-+		responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
- 		spin_unlock_irqrestore(&desc->iuspin, flags);
--		rv = usb_submit_urb(desc->response, GFP_KERNEL);
-+		if (!responding)
-+			rv = usb_submit_urb(desc->response, GFP_KERNEL);
- 		if (rv < 0 && rv != -EPERM) {
- 			spin_lock_irqsave(&desc->iuspin, flags);
-+			clear_bit(WDM_RESPONDING, &desc->flags);
- 			if (!test_bit(WDM_DISCONNECTING, &desc->flags))
- 				schedule_work(&desc->rxwork);
- 			spin_unlock_irqrestore(&desc->iuspin, flags);
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_phy.c b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+index 3afc24b..e962502 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+@@ -1072,6 +1072,10 @@ static bool ar9003_hw_ani_control(struct ath_hw *ah,
+ 		 * is_on == 0 means MRC CCK is OFF (more noise imm)
+ 		 */
+ 		bool is_on = param ? 1 : 0;
++
++		if (ah->caps.rx_chainmask == 1)
++			break;
++
+ 		REG_RMW_FIELD(ah, AR_PHY_MRC_CCK_CTRL,
+ 			      AR_PHY_MRC_CCK_ENABLE, is_on);
+ 		REG_RMW_FIELD(ah, AR_PHY_MRC_CCK_CTRL,
 -- 
 1.8.1.2
 
