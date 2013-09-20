@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab3ITEXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 00:23:41 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:38129 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753958Ab3ITEXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 00:23:39 -0400
+	id S1753544Ab3ITEoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 00:44:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39832 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753060Ab3ITEoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 00:44:32 -0400
+Message-ID: <523BD277.2040302@zytor.com>
+Date: Thu, 19 Sep 2013 23:43:35 -0500
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXP3DARdJYHBS8w0ATVM78Q9tGTd=8CeMJiwozBU0F_OA@mail.gmail.com>
-References: <1379563520-7221-1-git-send-email-yinghai@kernel.org>
-	<CAKohpomt+sASL=2i-v=HSkhOZhbPmnFesEfPoEqSE+WKcCfnmw@mail.gmail.com>
-	<11319698.mBBnJVdnIk@vostro.rjw.lan>
-	<CAE9FiQXP3DARdJYHBS8w0ATVM78Q9tGTd=8CeMJiwozBU0F_OA@mail.gmail.com>
-Date: Fri, 20 Sep 2013 09:53:39 +0530
-Message-ID: <CAKohpom-3orEns00DC2=uk4pgV_xnfRpM1hrdyK9pjPUEgBXrA@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: return EEXIST instead of EBUSY for second registering
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andi Kleen <ak@linux.intel.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 01/11] x86: Use asm goto to implement better modify_and_test()
+ functions
+References: <20130917082838.218329307@infradead.org> <20130917091143.387880231@infradead.org> <CA+55aFyVZNb3ZrLfh5FkV4E_P5_LE4-LpDHBwFNp=W1H7CnSBg@mail.gmail.com> <4ec87843-c29a-401a-a54f-2cd4d61fba62@email.android.com> <20130919083102.GB11427@tassilo.jf.intel.com>
+In-Reply-To: <20130919083102.GB11427@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 September 2013 07:01, Yinghai Lu <yinghai@kernel.org> wrote:
-> Sorry,  looks like this one is not enough.
+On 09/19/2013 03:31 AM, Andi Kleen wrote:
+> On Wed, Sep 18, 2013 at 02:02:37PM -0500, H. Peter Anvin wrote:
+>> Yes, a bit sad.  We allow bracketing with the get/put_user_try/catch blocks, but that is x86-specific.
+>>
+>> I don't think a generic option is possible without compiler support, but it might be possible to do better than we do know.
 >
-> please let me know if you prefer me send addon patch
-> or revised one.
+> Letting the compiler do it is a bit risky, because it may open it up for
+> really large blocks, thus defeating the security advantages.
+>
+> -Andi
+>
 
-Atleast you can let us know what the problem is? And then we
-can decide on that.. But anyway, you can send a new patch
-based over latest linux-next (which will have your original patch),
-and then leave it onto Rafael to merge it or have two patches..
-(though I am quite sure he will not drop anything now, unless its
-too screwed.., at worst he might revert it..)..
+The compiler support. if done right, should avoid unannotated memory 
+references.  This is a pretty big job in the compiler, though.
+
+	-hpa
+
