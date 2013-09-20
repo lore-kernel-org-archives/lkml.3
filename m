@@ -1,89 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3ITMjj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 08:39:39 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:57619 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754754Ab3ITMjg (ORCPT
+	id S1754789Ab3ITMkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 08:40:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46472 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754612Ab3ITMkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 08:39:36 -0400
-Date: Fri, 20 Sep 2013 13:39:30 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: sameo@linux.intel.com, broonie@kernel.org, linus.walleij@linaro.org,
-        akpm@linux-foundation.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org, rtc-linux@googlegroups.com,
-        rob.herring@calxeda.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        swarren@wwwdotorg.org, rob@landley.net, ijc+devicetree@hellion.org.uk,
-        grant.likely@linaro.org, Florian Lobmaier <florian.lobmaier@ams.com>
-Subject: Re: [PATCH V2 2/5] mfd: add support for AMS AS3722 PMIC
-Message-ID: <20130920123930.GB2185@lee--X1>
-References: <1379680214-9143-1-git-send-email-ldewangan@nvidia.com>
- <1379680214-9143-3-git-send-email-ldewangan@nvidia.com>
+	Fri, 20 Sep 2013 08:40:22 -0400
+Date: Fri, 20 Sep 2013 13:39:56 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Oliver Schinagl <oliver+list@schinagl.nl>
+Cc: "rob@landley.net" <rob@landley.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "maxime-ripard@free-electrons.com" <maxime-ripard@free-electrons.com>,
+        "linux-sunxi@google-groups.com" <linux-sunxi@google-groups.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "oliver@schinagl.nl" <oliver@schinagl.nl>
+Subject: Re: [PATCH] [PATCH] ARM: sunxi: doc: Add sun7i (A20) interrupt
+ table
+Message-ID: <20130920123956.GI17453@e106331-lin.cambridge.arm.com>
+References: <1379675560-30656-1-git-send-email-oliver+list@schinagl.nl>
+ <1379675560-30656-2-git-send-email-oliver+list@schinagl.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1379680214-9143-3-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1379675560-30656-2-git-send-email-oliver+list@schinagl.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The AMS AS3722 is a compact system PMU suitable for mobile phones,
-> tablets etc. It has 4 DC/DC step-down regulators, 3 DC/DC step-down
-> controller, 11 LDOs, RTC, automatic battery, temperature and
-> over-current monitoring, 8 GPIOs, ADC and wathdog.
+On Fri, Sep 20, 2013 at 12:12:40PM +0100, Oliver Schinagl wrote:
+> From: Oliver Schinagl <oliver@schinagl.nl>
 > 
-> Add mfd core driver for the AS3722 to support core functionality.
+> This patch adds some documentation about the Allwinner sun7i (A20) using
+> the GIC.
+> 
+> Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
 
-<snip>
+NAK.
 
-> +Example:
-> +--------
-> +ams3722 {
-> +	compatible = "ams,as3722";
-> +	reg = <0x48>
+This information is not a binding, and it's not a property of the
+interrupt controller. It's the integration of a full SoC, which should
+be described full in a dtsi where it can actually be used.
+
+The only other SoCs that have this are other sunxi variants, and I see
+no reason to have them here either.
+
+Thanks,
+Mark.
+
+> ---
+>  .../interrupt-controller/sunxi/sun7i-a20.txt       | 102 +++++++++++++++++++++
+>  1 file changed, 102 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/sunxi/sun7i-a20.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/interrupt-controller/sunxi/sun7i-a20.txt b/Documentation/devicetree/bindings/interrupt-controller/sunxi/sun7i-a20.txt
+> new file mode 100644
+> index 0000000..e5e59df
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/interrupt-controller/sunxi/sun7i-a20.txt
+> @@ -0,0 +1,102 @@
+> +Allwinner A20 (sun7i) interrupt sources
+> +---------------------------------------
+> +The sun7i interrupt controller is actually a standard arm GIC one. For more
+> +information see Documentation/devicetree/bindings/arm/gic.txt
 > +
-> +	interrupt-parent = <&intc>;
-> +	interrupt-controller;
-> +	#interrupt-cells = <2>;
+> +Interrupts are offset by 32, skipping the SGI and PPI's. The IRQ numbers here
+> +is what is expected in the drivers device tree table.
 > +
-> +	gpio-controller;
-> +	#gpio-cells = <2>;
+> +The interrupt sources available for the Allwinner A20 SoC are the
+> +following ones:
 > +
-> +	gpio {
-> +		/*
-> +		 * GPIO related properties
-> +		 * Refer document bindings/gpio/gpio-as3722.txt
-> +		 */
-> +	};
-> +
-> +	regulators {
-> +		/*
-> +		 * Regulator related properties
-> +		 * Refer document bindings/regulator/as3722-regulator.txt
-> +		 */
-> +	};
-> +};
-
-I still don't think this is the way to go. If you can justify that
-these sub-devices require their own node, then they should have a
-compatible string. The MFD sub-system will then populate the of_node
-for you and you can use/request them in the normal way.
-
-To reiterate, Mark's issue was not the existence of the compatible
-string, it was with the existence of the child nodes in general.
-
-Personally I think the device should have sub-nodes. It's how  we
-dealt with our DB8500 and AB8500 and it works very well. At the end of
-the day these all-in-one chips do house very different devices. I see
-no harm in describing them that way. I'm sure other OSes can make use
-of the sub-devices in similar ways.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> +0: ENMI
+> +1: UART0
+> +2: UART1
+> +3: UART2
+> +4: UART3
+> +5: IR0
+> +6: IR1
+> +7: I2C0
+> +8: I2C1
+> +9: I2C2
+> +10: SPI0
+> +11: SPI1
+> +12: SPI2
+> +13: SPDIF
+> +14: AC97
+> +15: TS
+> +16: I2S0
+> +17: UART4
+> +18: UART5
+> +19: UART6
+> +20: UART7
+> +21: KEYPAD
+> +22: TIMER0
+> +23: TIMER1
+> +24: TIMER2
+> +25: TIMER3
+> +26: CAN
+> +27: DMA
+> +28: PIO
+> +29: TOUCH_PANEL
+> +30: AUDIO_CODEC
+> +31: LRADC
+> +32: MMC0
+> +33: MMC1
+> +34: MMC2
+> +35: MMC3
+> +36: MEMSTICK
+> +37: NAND
+> +38: USB0
+> +39: USB1
+> +40: USB2
+> +41: SCR
+> +42: CSI0
+> +43: CSI1
+> +44: LCDCTRL0
+> +45: LCDCTRL1
+> +46: MP
+> +47: DEFEBE0
+> +48: DEFEBE1
+> +49: PMU
+> +50: SPI3
+> +51: TZASC
+> +52: PATA
+> +53: VE
+> +54: SS
+> +55: EMAC
+> +56: SATA
+> +57: GPS
+> +58: HDMI
+> +59: TVE
+> +60: ACE
+> +61: TVD
+> +62: PS2_0
+> +63: PS2_1
+> +64: USB3
+> +65: USB4
+> +66: PLE_PFM
+> +67: TIMER4
+> +68: TIMER5
+> +69: GPU_GP
+> +70: GPU_GPMMU
+> +71: GPU_PP0
+> +72: GPU_PPMMU0
+> +73: GPU_PMU
+> +74: GPU_PP1
+> +75: GPU_PPMMU1
+> +76: GPU_RSV0
+> +77: GPU_RSV1
+> +78: GPU_RSV2
+> +79: GPU_RSV3
+> +80: GPU_RSV4
+> +81: HS_TIMER0
+> +82: HS_TIMER1
+> +83: HS_TIMER2
+> +84: HS_TIMER3
+> +85: GMAC
+> +86: HDMI1
+> +87: I2S1
+> +88: I2C3
+> +89: I2C4
+> +90: I2S2
+> -- 
+> 1.8.1.5
+> 
+> 
