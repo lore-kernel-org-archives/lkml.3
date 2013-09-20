@@ -1,277 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab3ITDZl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 23:25:41 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:42796 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab3ITDZO (ORCPT
+	id S1754072Ab3ITD1W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 23:27:22 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48505 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab3ITD1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 23:25:14 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org, joe@perches.com
-Cc: linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>
-Subject: [PATCH v3 1/2] binfmt_aout: x86: Useless inode var, printks coding style fixes
-Date: Fri, 20 Sep 2013 00:15:12 -0300
-Message-Id: <1379646913-12445-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Thu, 19 Sep 2013 23:27:21 -0400
+Date: Fri, 20 Sep 2013 13:27:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: linux-next: build failure after merge of the pinctrl tree
+Message-Id: <20130920132709.11fbc8443fc6385fd5c17830@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__20_Sep_2013_13_27_09_+1000_QnHHMG10wpvpauWN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-file size used only once, so removed due its useless prior allocation.
-It's not necessary to verify f_op in the load_aout_library, since the
-prior kernel_read/vfs_read function already does.
-Made coding style fixes and printk replacements.
+--Signature=_Fri__20_Sep_2013_13_27_09_+1000_QnHHMG10wpvpauWN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Tested using qemu, a handcrafted a.out binary and an a.out linked with a
-cross-compiled ld.
+Hi Linus,
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
----
- fs/binfmt_aout.c | 98 +++++++++++++++++++++++++++-----------------------------
- 1 file changed, 48 insertions(+), 50 deletions(-)
+After merging the pinctrl tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-diff --git a/fs/binfmt_aout.c b/fs/binfmt_aout.c
-index 89dec7f..c732b8e 100644
---- a/fs/binfmt_aout.c
-+++ b/fs/binfmt_aout.c
-@@ -25,13 +25,14 @@
- #include <linux/init.h>
- #include <linux/coredump.h>
- #include <linux/slab.h>
-+#include <linux/ratelimit.h>
-+#include <linux/uaccess.h>
- 
--#include <asm/uaccess.h>
- #include <asm/cacheflush.h>
- #include <asm/a.out-core.h>
- 
- static int load_aout_binary(struct linux_binprm *);
--static int load_aout_library(struct file*);
-+static int load_aout_library(struct file *);
- 
- #ifdef CONFIG_COREDUMP
- /*
-@@ -62,7 +63,7 @@ static int aout_core_dump(struct coredump_params *cprm)
- 	fs = get_fs();
- 	set_fs(KERNEL_DS);
- 	has_dumped = 1;
--       	strncpy(dump.u_comm, current->comm, sizeof(dump.u_comm));
-+	strncpy(dump.u_comm, current->comm, sizeof(dump.u_comm));
- 	dump.u_ar0 = offsetof(struct user, regs);
- 	dump.signal = cprm->siginfo->si_signo;
- 	aout_dump_thread(cprm->regs, &dump);
-@@ -78,9 +79,11 @@ static int aout_core_dump(struct coredump_params *cprm)
- 
- /* make sure we actually have a data and stack area to dump */
- 	set_fs(USER_DS);
--	if (!access_ok(VERIFY_READ, START_DATA(dump), dump.u_dsize << PAGE_SHIFT))
-+	if (!access_ok(VERIFY_READ, START_DATA(dump),
-+		       dump.u_dsize << PAGE_SHIFT))
- 		dump.u_dsize = 0;
--	if (!access_ok(VERIFY_READ, START_STACK(dump), dump.u_ssize << PAGE_SHIFT))
-+	if (!access_ok(VERIFY_READ, START_STACK(dump),
-+		       dump.u_ssize << PAGE_SHIFT))
- 		dump.u_ssize = 0;
- 
- 	set_fs(KERNEL_DS);
-@@ -142,7 +145,8 @@ static int set_brk(unsigned long start, unsigned long end)
-  * memory and creates the pointer tables from them, and puts their
-  * addresses on the "stack", returning the new stack pointer value.
-  */
--static unsigned long __user *create_aout_tables(char __user *p, struct linux_binprm * bprm)
-+static unsigned long __user *create_aout_tables(char __user *p,
-+						struct linux_binprm *bprm)
- {
- 	char __user * __user *argv;
- 	char __user * __user *envp;
-@@ -150,7 +154,8 @@ static unsigned long __user *create_aout_tables(char __user *p, struct linux_bin
- 	int argc = bprm->argc;
- 	int envc = bprm->envc;
- 
--	sp = (void __user *)((-(unsigned long)sizeof(char *)) & (unsigned long) p);
-+	sp = (void __user *) ((-(unsigned long) sizeof(char *))
-+			      & (unsigned long) p);
- #ifdef __alpha__
- /* whee.. test-programs are so much fun. */
- 	put_user(0, --sp);
-@@ -169,28 +174,28 @@ static unsigned long __user *create_aout_tables(char __user *p, struct linux_bin
- 	sp -= argc+1;
- 	argv = (char __user * __user *) sp;
- #ifndef __alpha__
--	put_user((unsigned long) envp,--sp);
--	put_user((unsigned long) argv,--sp);
-+	put_user((unsigned long) envp, --sp);
-+	put_user((unsigned long) argv, --sp);
- #endif
--	put_user(argc,--sp);
-+	put_user(argc, --sp);
- 	current->mm->arg_start = (unsigned long) p;
--	while (argc-->0) {
-+	while (argc-- > 0) {
- 		char c;
--		put_user(p,argv++);
-+		put_user(p, argv++);
- 		do {
--			get_user(c,p++);
-+			get_user(c, p++);
- 		} while (c);
- 	}
--	put_user(NULL,argv);
-+	put_user(NULL, argv);
- 	current->mm->arg_end = current->mm->env_start = (unsigned long) p;
--	while (envc-->0) {
-+	while (envc-- > 0) {
- 		char c;
--		put_user(p,envp++);
-+		put_user(p, envp++);
- 		do {
--			get_user(c,p++);
-+			get_user(c, p++);
- 		} while (c);
- 	}
--	put_user(NULL,envp);
-+	put_user(NULL, envp);
- 	current->mm->env_end = (unsigned long) p;
- 	return sp;
- }
-@@ -200,7 +205,7 @@ static unsigned long __user *create_aout_tables(char __user *p, struct linux_bin
-  * libraries.  There is no binary dependent code anywhere else.
-  */
- 
--static int load_aout_binary(struct linux_binprm * bprm)
-+static int load_aout_binary(struct linux_binprm *bprm)
- {
- 	struct pt_regs *regs = current_pt_regs();
- 	struct exec ex;
-@@ -213,7 +218,8 @@ static int load_aout_binary(struct linux_binprm * bprm)
- 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != OMAGIC &&
- 	     N_MAGIC(ex) != QMAGIC && N_MAGIC(ex) != NMAGIC) ||
- 	    N_TRSIZE(ex) || N_DRSIZE(ex) ||
--	    i_size_read(file_inode(bprm->file)) < ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
-+	    i_size_read(file_inode(bprm->file)) <
-+	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
- 		return -ENOEXEC;
- 	}
- 
-@@ -292,19 +298,12 @@ static int load_aout_binary(struct linux_binprm * bprm)
- 		}
- 	} else {
- 		if ((ex.a_text & 0xfff || ex.a_data & 0xfff) &&
--		    (N_MAGIC(ex) != NMAGIC) && printk_ratelimit())
--		{
--			printk(KERN_NOTICE "executable not page aligned\n");
--		}
--
--		if ((fd_offset & ~PAGE_MASK) != 0 && printk_ratelimit())
--		{
--			printk(KERN_WARNING 
--			       "fd_offset is not page aligned. Please convert program: %s\n",
--			       bprm->file->f_path.dentry->d_name.name);
--		}
-+		    (N_MAGIC(ex) != NMAGIC))
-+			pr_notice_ratelimited("executable not page aligned\n");
- 
--		if (!bprm->file->f_op->mmap||((fd_offset & ~PAGE_MASK) != 0)) {
-+		if ((fd_offset & ~PAGE_MASK) != 0) {
-+			pr_warn_ratelimited("fd_offset is not page aligned. Please convert program: %s\n",
-+					    bprm->file->f_path.dentry->d_name.name);
- 			vm_brk(N_TXTADDR(ex), ex.a_text+ex.a_data);
- 			read_code(bprm->file, N_TXTADDR(ex), fd_offset,
- 				  ex.a_text + ex.a_data);
-@@ -312,9 +311,10 @@ static int load_aout_binary(struct linux_binprm * bprm)
- 		}
- 
- 		error = vm_mmap(bprm->file, N_TXTADDR(ex), ex.a_text,
--			PROT_READ | PROT_EXEC,
--			MAP_FIXED | MAP_PRIVATE | MAP_DENYWRITE | MAP_EXECUTABLE,
--			fd_offset);
-+				PROT_READ | PROT_EXEC,
-+				(MAP_FIXED | MAP_PRIVATE
-+				 | MAP_DENYWRITE | MAP_EXECUTABLE),
-+				fd_offset);
- 
- 		if (error != N_TXTADDR(ex)) {
- 			send_sig(SIGKILL, current, 0);
-@@ -323,8 +323,10 @@ static int load_aout_binary(struct linux_binprm * bprm)
- 
- 		error = vm_mmap(bprm->file, N_DATADDR(ex), ex.a_data,
- 				PROT_READ | PROT_WRITE | PROT_EXEC,
--				MAP_FIXED | MAP_PRIVATE | MAP_DENYWRITE | MAP_EXECUTABLE,
-+				(MAP_FIXED | MAP_PRIVATE
-+				 | MAP_DENYWRITE | MAP_EXECUTABLE),
- 				fd_offset + ex.a_text);
-+
- 		if (error != N_DATADDR(ex)) {
- 			send_sig(SIGKILL, current, 0);
- 			return error;
-@@ -340,7 +342,8 @@ beyond_if:
- 	}
- 
- 	current->mm->start_stack =
--		(unsigned long) create_aout_tables((char __user *) bprm->p, bprm);
-+		(unsigned long) create_aout_tables((char __user *) bprm->p,
-+						   bprm);
- #ifdef __alpha__
- 	regs->gp = ex.a_gpvalue;
- #endif
-@@ -350,14 +353,11 @@ beyond_if:
- 
- static int load_aout_library(struct file *file)
- {
--	struct inode * inode;
- 	unsigned long bss, start_addr, len;
- 	unsigned long error;
- 	int retval;
- 	struct exec ex;
- 
--	inode = file_inode(file);
--
- 	retval = -ENOEXEC;
- 	error = kernel_read(file, 0, (char *) &ex, sizeof(ex));
- 	if (error != sizeof(ex))
-@@ -366,7 +366,8 @@ static int load_aout_library(struct file *file)
- 	/* We come in here for the regular a.out style of shared libraries */
- 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != QMAGIC) || N_TRSIZE(ex) ||
- 	    N_DRSIZE(ex) || ((ex.a_entry & 0xfff) && N_MAGIC(ex) == ZMAGIC) ||
--	    i_size_read(inode) < ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
-+	    i_size_read(file_inode(file)) <
-+	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
- 		goto out;
- 	}
- 
-@@ -374,7 +375,7 @@ static int load_aout_library(struct file *file)
- 	 * Requires a mmap handler. This prevents people from using a.out
- 	 * as part of an exploit attack against /proc-related vulnerabilities.
- 	 */
--	if (!file->f_op || !file->f_op->mmap)
-+	if (!file->f_op->mmap)
- 		goto out;
- 
- 	if (N_FLAGS(ex))
-@@ -383,17 +384,14 @@ static int load_aout_library(struct file *file)
- 	/* For  QMAGIC, the starting address is 0x20 into the page.  We mask
- 	   this off to get the starting address for the page */
- 
--	start_addr =  ex.a_entry & 0xfffff000;
-+	start_addr = ex.a_entry & 0xfffff000;
- 
- 	if ((N_TXTOFF(ex) & ~PAGE_MASK) != 0) {
--		if (printk_ratelimit())
--		{
--			printk(KERN_WARNING 
--			       "N_TXTOFF is not page aligned. Please convert library: %s\n",
--			       file->f_path.dentry->d_name.name);
--		}
-+		pr_warn_ratelimited("N_TXTOFF is not page aligned. Please convert library: %s\n",
-+				    file->f_path.dentry->d_name.name);
-+
- 		vm_brk(start_addr, ex.a_text + ex.a_data + ex.a_bss);
--		
-+
- 		read_code(file, start_addr, N_TXTOFF(ex),
- 			  ex.a_text + ex.a_data);
- 		retval = 0;
--- 
-1.8.4
+drivers/pinctrl/pinctrl-adi2.c:25:25: fatal error: asm/portmux.h: No such f=
+ile or directory
+ #include <asm/portmux.h>
+                         ^
 
+Caused by commit e9a03add0c6e ("pinctrl: ADI PIN control driver for the
+GPIO controller on bf54x and bf60x"). asm/portmux.h only exists on
+blackfin ...
+
+I have used the version of the pinctrl tree from next-20130919 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__20_Sep_2013_13_27_09_+1000_QnHHMG10wpvpauWN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSO8CSAAoJEECxmPOUX5FE3H0QAJaf1bDcPfzkXa7oaSL+rf0j
+1cyprIAHjSiltHEFfI2Cw/lG2Da+nWrNNu4ljd4IsgEV7WUbF+Ny7B9XR0qgvaqG
+n2Xol0Bc6nW6Ms3vUrzXdXwlOm1/yaVZoHUz7JMNV5aY565aEAZNJia67h0pDd2r
+dHs2rmunrHVlxUoQWvYYEynrc8yUWJhGmINpaqCFhD9KvhxWRuXUuXqsUmW+nuRW
+ltwsxqDtk/7Z+TVJK/g6MjoqswMzg4m2W/qbGZW4xLof0DBMmMmgko8F7X1qtsKy
+E2ipkhyo6iNH6u8F+71zTeDMlg/6UaPKDDtp0CzOWL+m1AGSTTZC9afgEYHBHXK2
+XJLmyT1AYZqKVcNporw+4f9sk4oEHa1xKnt0c+9YcEgs/Gu7a+oP3j+EERGQW+RY
+017Z9qFfXrxl/Nk43GMx4GlfRR97wD5irPbRZ/mSThjcvOYUaY/E3E4xq55exf73
+VTv38D/U4bKYDXYLF/GxNSgnVqDG0QQcTp8HtMYePZwm/T5ezehisnOVx01LTRml
+wIlK1enc7528nP/zKn0UGlTw3WFSWcvUVqIkcGldvUl9cubfndIRxCVOunDmeGKq
+iERA11U1VJWbbBTNahEBnN7x9o6jU40sIxCuk1yGGTXmiqu3eYeTt2jDOg54kVxB
+aZlcbN1wRVLglSqSjaE2
+=Ez+K
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__20_Sep_2013_13_27_09_+1000_QnHHMG10wpvpauWN--
