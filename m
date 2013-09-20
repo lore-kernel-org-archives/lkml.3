@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab3ITKIU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 06:08:20 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43395 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754494Ab3ITKIS (ORCPT
+	id S1754437Ab3ITKRx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 06:17:53 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:35230 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379Ab3ITKRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 06:08:18 -0400
-Date: Fri, 20 Sep 2013 11:08:07 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: Re: [PATCH] lockref: use cmpxchg64 explicitly for lockless updates
-Message-ID: <20130920100806.GA5015@mudshark.cambridge.arm.com>
-References: <1379614006-3844-1-git-send-email-will.deacon@arm.com>
- <CA+55aFxuc3yD5pH2w5uEr_VDsEANvEiGCWA6tu1cSFrAiaU4Ow@mail.gmail.com>
+	Fri, 20 Sep 2013 06:17:52 -0400
+Message-ID: <523C1FDC.80805@linux.vnet.ibm.com>
+Date: Fri, 20 Sep 2013 15:43:48 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxuc3yD5pH2w5uEr_VDsEANvEiGCWA6tu1cSFrAiaU4Ow@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regression on cpufreq in v3.12-rc1
+References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com> <45987104.t6r4hvPgQn@vostro.rjw.lan>	<523AF22F.1010909@linux.vnet.ibm.com> <CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com> <523AF50E.1040502@linux.vnet.ibm.com>	<523B3E4B.6080003@linux.vnet.ibm.com> <CAKohpoktxF5U4MyNprGF-=GjYf3M_ji_H-LfsEdi=VLd7_-0=w@mail.gmail.com>
+In-Reply-To: <CAKohpoktxF5U4MyNprGF-=GjYf3M_ji_H-LfsEdi=VLd7_-0=w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092010-2674-0000-0000-00000AB9CB6D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 07:11:32PM +0100, Linus Torvalds wrote:
-> On Thu, Sep 19, 2013 at 1:06 PM, Will Deacon <will.deacon@arm.com> wrote:
-> > The cmpxchg() function tends not to support 64-bit arguments on 32-bit
-> > architectures. This could be either due to use of unsigned long arguments
-> > (like on ARM) or lack of instruction support (cmpxchgq on x86). However,
-> > these architectures may implement a specific cmpxchg64() function to
-> > provide 64-bit cmpxchg support instead
+On 09/20/2013 09:49 AM, Viresh Kumar wrote:
+> On 19 September 2013 23:41, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> But there was no code to set the per-cpu values to -1 to begin with. Since
+>> the per-cpu variable was defined as static, it would have been initialized
+>> to zero. Thus, we would never actually hit the BUG_ON() condition, since
+>> policy_cpu didn't turn out to be -1.
 > 
-> I'm certainly ok with this, but I wonder how much point there is to
-> use the cmpxchg alternatives for 32-bit architectures at all...
+> Really!! Or I have turned blind (and there is very strong chance of that,
+> considering the amount of silly mistakes I do :) )...
 > 
-> From a performance standpoint, lockref really is expected to mainly
-> help with big machines. Only insane people would do big machines with
-> 32-bit kernels these days.
+> I picked it up from 474deff7 only:
+> 
+> @@ -2148,10 +2125,8 @@ static int __init cpufreq_core_init(void)
+>         if (cpufreq_disabled())
+>                 return -ENODEV;
+> 
+> -       for_each_possible_cpu(cpu) {
+> -               per_cpu(cpufreq_policy_cpu, cpu) = -1;
+> +       for_each_possible_cpu(cpu)
+>                 init_rwsem(&per_cpu(cpu_policy_rwsem, cpu));
+> -       }
+> 
+>         cpufreq_global_kobject = kobject_create();
+>         BUG_ON(!cpufreq_global_kobject);
+> 
 
-Our definitions of "big" machines probably differ significantly, but it
-would be interesting to see if this *does* make a difference on some of the
-multi-cluster ARMv7 hardware. Unfortunately, my development boards are all
-I/O bound, so I'll need to leave a strategically placed crate of
-non-poisoned beer next to the server guys' office...
 
-> Of course, it may be that cmpxchg is actually faster on some
-> architectures, but at least on x86-32, cmpxchg8b is traditionally
-> quite slow.
+Heh, looks like it was me who was blind then :-/
 
-On ARMv7, our double-word exclusives shouldn't be slower than the word
-exclusives (hell, everything apart from the machine registers will be >=
-64-bit).
+Regards,
+Srivatsa S. Bhat
 
-> In other words, I'd actually like to see some numbers if there are
-> loads where this actually helps and matters...
-
-That's fair enough; I just saw the new lockref stuff, thought "that's a cool
-hack" then looked at playing with it on ARM. I'll go see what this AIM7
-thing is all about...
-
-Cheers,
-
-Will
