@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab3ITRMJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 13:12:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51496 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752204Ab3ITRMG (ORCPT
+	id S1753406Ab3ITRMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 13:12:34 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:38928 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414Ab3ITRMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 13:12:06 -0400
-Date: Fri, 20 Sep 2013 18:11:51 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: Re: [PATCH] lockref: use cmpxchg64 explicitly for lockless updates
-Message-ID: <20130920171151.GB6859@mudshark.cambridge.arm.com>
-References: <1379614006-3844-1-git-send-email-will.deacon@arm.com>
- <CA+55aFxuc3yD5pH2w5uEr_VDsEANvEiGCWA6tu1cSFrAiaU4Ow@mail.gmail.com>
- <20130920100806.GA5015@mudshark.cambridge.arm.com>
- <20130920154518.GE5015@mudshark.cambridge.arm.com>
- <CA+55aFxh-ueQgpY9sgizTBxqKqrGCTcAM-tw_50LG9wmakziPg@mail.gmail.com>
+	Fri, 20 Sep 2013 13:12:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxh-ueQgpY9sgizTBxqKqrGCTcAM-tw_50LG9wmakziPg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3290463.fBbGMovmdx@vostro.rjw.lan>
+References: <1379563520-7221-1-git-send-email-yinghai@kernel.org>
+	<CAKohpom-3orEns00DC2=uk4pgV_xnfRpM1hrdyK9pjPUEgBXrA@mail.gmail.com>
+	<CAE9FiQU5PD4asdE3=sBSnLK8fwPT8vK81FAOuYtAWj_3ruyS0g@mail.gmail.com>
+	<3290463.fBbGMovmdx@vostro.rjw.lan>
+Date: Fri, 20 Sep 2013 10:12:31 -0700
+X-Google-Sender-Auth: v3OZv3PB-cUCZt6-oc0T2eLTA-8
+Message-ID: <CAE9FiQWm=Db4e8nYdVJzpirmV2EfKxEYYRHo6ggTtX0CY3-hhg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: return EEXIST instead of EBUSY for second registering
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 05:00:19PM +0100, Linus Torvalds wrote:
-> On Fri, Sep 20, 2013 at 10:45 AM, Will Deacon <will.deacon@arm.com> wrote:
-> > If we can guarantee that the CODE just messes around with the lockref, those
-> > barriers probably aren't needed...
-> 
-> Yes. I've been thyinking about the barrier issue, and as far as I can
-> see, as long as the lockref code only ever messes with the reference
-> count, a totally unordered cmpxchg is fine.
+On Fri, Sep 20, 2013 at 6:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, September 19, 2013 10:30:04 PM Yinghai Lu wrote:
+>> On Thu, Sep 19, 2013 at 9:23 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> > On 20 September 2013 07:01, Yinghai Lu <yinghai@kernel.org> wrote:
+>> >> Sorry,  looks like this one is not enough.
+>
+> Well, I've already applied this one and it makes sense to me anyway.
 
-The only problem then is the use of cmpxchg64 by the sched_clock code.
-Whilst most sched_clock() implementations probably have barrier semantics
-due to I/O access, that's certainly not true everywhere so I don't think
-the cmpxchg64 there can be relaxed safely.
+you can keep that.
 
-We could add cmpxchg64_relaxed (at the risk of confusing it with the relaxed
-I/O accessors, which aren't well defined)? That might help Tony with ia64
-too.
+>
+>> >> please let me know if you prefer me send addon patch
+>> >> or revised one.
+>> >
+>> > Atleast you can let us know what the problem is? And then we
+>> > can decide on that.. But anyway, you can send a new patch
+>> > based over latest linux-next (which will have your original patch),
+>> > and then leave it onto Rafael to merge it or have two patches..
+>> > (though I am quite sure he will not drop anything now, unless its
+>> > too screwed.., at worst he might revert it..)..
+>>
+>> looks like the crash is intermittent..., so i thought that patch fixed
+>> the problem.
+>> but later I found other suspicious print out.
+>
+> So, does it mean that the $subject patch fixes the issue for you to some
+> extent, but more changes are necessary to make it go away completely?
 
-> And at least right now we indeed only ever mess with the reference count.
-> 
-> I have been idly toying with the concept of using the cmpxchg also for
-> possibly taking the lock (for the "xyz_or_lock" versions), but every
-> time I look at it it seems unlikely to help, and it would require
-> memory ordering and various architecture-dependent issues, so I
-> suspect it's never going to make much sense. So yes, an unordered
-> cmpxchg64 should be perfectly fine.
+yes.
 
-Yikes, using cmpxchg for the locking sounds scary. For the contended case, I
-think spinlocks would be better since they might have back-off and/or
-fairness logic which we'd lose if we somehow moved exclusively to cmpxchg.
+>
+>> please check new one:
+>>
+>> https://patchwork.kernel.org/patch/2915181/
+>
+> I see.
+>
+> I *think* we can just drop the module requesting stuff entirely, because it
+> doesn't seem to work anyway and udev is handling this for us.
 
-> > As for AIM7/re-aim, I'm having a hard time getting repeatable numbers out of
-> > it to establish a baseline, so it's not proving to be especially helpful.
-> 
-> That's fine, and yeah, I doubt the t.c improvement really shows
-> anywhere else (it's kind of extreme), but your numbers are certainly
-> already sufficient to say "ok, it makes sense even on 32-bit
-> machines".
+looks some nehalem/westmere based system may need it when they have
+several SSDTs. will double check that.
 
-Great, thanks.
+Thanks
 
-Will
+Yinghai
