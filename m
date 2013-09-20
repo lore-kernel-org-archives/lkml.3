@@ -1,31 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab3ITSuc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 14:50:32 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:51835
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753321Ab3ITSua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 14:50:30 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Subject: Drivers: scsi: FLUSH timeout 
-Date: Fri, 20 Sep 2013 12:32:27 -0700
-Message-Id: <1379705547-15028-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753637Ab3ITSxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 14:53:40 -0400
+Received: from smtprelay0138.hostedemail.com ([216.40.44.138]:47227 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753069Ab3ITSxj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 14:53:39 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1536:1559:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3866:3873:4321:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pan99_1f8c3a83e0a15
+X-Filterd-Recvd-Size: 1041
+Message-ID: <1379703215.2301.15.camel@joe-AO722>
+Subject: Re: [PATCH 01/11] compat.h: Remove extern from function prototypes
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 20 Sep 2013 11:53:35 -0700
+In-Reply-To: <20130920.144949.2032827652741780854.davem@davemloft.net>
+References: <597c1b62607f823af60dc4a99d59373dddfb7837.1379701322.git.joe@perches.com>
+	 <20130920.144949.2032827652741780854.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SD_FLUSH_TIMEOUT value is currently hardcoded. On our cloud, we
-sometimes hit this timeout. I was wondering if we could make this
-a module parameter. If this is acceptable, I can send you a patch for
-this.
+On Fri, 2013-09-20 at 14:49 -0400, David Miller wrote:
+> Series applied, thanks Joe.
 
-Regards,
+I've got 36 more of these.
+How many do you want, how often?
 
-K. Y
+
