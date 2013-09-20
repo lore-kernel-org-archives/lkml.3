@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab3ITJEz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 05:04:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59357 "EHLO mx2.suse.de"
+	id S1754387Ab3ITJFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 05:05:53 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33762 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754166Ab3ITJEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 05:04:53 -0400
-Message-ID: <523C0FAF.10401@suse.cz>
-Date: Fri, 20 Sep 2013 11:04:47 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1754313Ab3ITJFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 05:05:50 -0400
+Date: Fri, 20 Sep 2013 11:05:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
+Subject: Re: [PATCH 00/11] EFI runtime services virtual mapping
+Message-ID: <20130920090544.GA9574@pd.tnic>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <20130920072904.GA21922@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [RFC PATCH RESEND] mm: munlock: Prevent walking off the end of
- a pagetable in no-pmd configuration
-References: <52385A59.2080304@suse.cz> <1379427739-31451-1-git-send-email-vbabka@suse.cz> <5238FF3A.2070500@oracle.com>
-In-Reply-To: <5238FF3A.2070500@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130920072904.GA21922@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2013 03:17 AM, Bob Liu wrote:
-> On 09/17/2013 10:22 PM, Vlastimil Babka wrote:
+On Fri, Sep 20, 2013 at 03:29:04PM +0800, Dave Young wrote:
+> Just tested this series, for 1st kernel It boots ok in qemu+ovmf. But
+> it immediately reboot on my Thinkpad T420. Unfortunately there's no
+> way to debug this very early problem because there's no serial port
+> also earlyprintk does not work for efi boot. No usb debug as well on
+> this machine. I will test it when I go back to work after the china
+> holiday.
 
->> --- a/mm/mlock.c
->> +++ b/mm/mlock.c
->> @@ -379,10 +379,14 @@ static unsigned long __munlock_pagevec_fill(struct pagevec *pvec,
->>  
->>  	/*
->>  	 * Initialize pte walk starting at the already pinned page where we
->> -	 * are sure that there is a pte.
->> +	 * are sure that there is a pte, as it was pinned under the same
->> +	 * mmap_sem write op.
->>  	 */
->>  	pte = get_locked_pte(vma->vm_mm, start,	&ptl);
->> -	end = min(end, pmd_addr_end(start, end));
->> +	/* Make sure we do not cross the page table boundary */
->> +	end = pgd_addr_end(start, end);
->> +	end = pud_addr_end(start, end);
->> +	end = pmd_addr_end(start, end);
->>  
-> 
-> Nitpick, how about unfolding pmd_addr_end(start, end) directly? Like:
-> 
-> --- a/mm/mlock.c
-> +++ b/mm/mlock.c
-> @@ -376,13 +376,14 @@ static unsigned long __munlock_pagevec_fill(struct
-> pagevec *pvec,
->  {
->         pte_t *pte;
->         spinlock_t *ptl;
-> +       unsigned long pmd_end = (start + PMD_SIZE) & PMD_MASK;
-> +       end = (pmd_end - 1 < end - 1) ? pmd_end : end;
-> 
->         /*
->          * Initialize pte walk starting at the already pinned page where we
->          * are sure that there is a pte.
->          */
->         pte = get_locked_pte(vma->vm_mm, start, &ptl);
-> -       end = min(end, pmd_addr_end(start, end));
-> 
->         /* The page next to the pinned page is the first we will try to
-> get */
->         start += PAGE_SIZE;
-> 
+Hmm, I'm booting with the efi boot stub, how do you do it?
 
-That should also work but for maintainability reasons I wouldn't like to
-special case it like this, instead of using standard functions as they
-would be used in a full pagewalk.
+> OTOH, for 2nd kernel testing because kexec tools does not fill
+> efi_info[] in bootparam so kernel will disable efi, also it pass
+> acpi_rsdp pointer automaticlly to make 2nd kernel boot ok.
 
-> Anyway,
-> Reviewed-by: Bob Liu <bob.liu@oracle.com>
+Right, the way this could be done is to pass in efi_info.efi_memmap,
+i.e. the physical map and then iterate over it and compute the virtual
+addresses *without* calling phys_efi_set_virtual_address_map() - they
+are stable now.
+
+> I tested with a user space patch which copy efi_info from 1st kernel
+> to bootparams, as I said previously this is not enough because several
+> fields in systab, fw_vendor, runtime and tables are converted to
+> virtual address but in kernel efi init function they are assumed
+> physical addresses. Thus we need save these physical address. I have a
+> patch to save them and pass them to 2nd kernel in bootparams.
+
+Yep.
+
+> Since the mapping are same, I wonder if we can calculate the physical
+> address from virtual address. Idea?
+
+Just look at the loop where we're iterating over regions in
+efi_enter_virtual_mode(): we basically can do the same __map_region
+calls without calling phys_efi_set_virtual_address_map.
+
+> Another concern is that is it safe for i386 efi boot?
+
+That's why I didn't put a git tree on k.org - I wanted to run tests
+myself before Fengguang's robot :)
+
+But no, 32-bit is not addressed here. Which just dawned on me: Matt, I
+probably should keep the ioremapping code for 32-bit, doh. I completely
+went 64-bit only here :-)
 
 Thanks.
 
-Vlastimil
+-- 
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
