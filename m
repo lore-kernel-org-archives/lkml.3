@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab3ITUco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:32:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41380 "EHLO
+	id S1755820Ab3ITUcl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:32:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41383 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab3ITUKC (ORCPT
+	with ESMTP id S1753461Ab3ITUKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Sep 2013 16:10:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Manoj Chourasia <mchourasia@nvidia.com>, Jiri Kosina <jkosina@suse.cz>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 21/93] ext4: fix lost truncate due to race with writeback
-Date: Fri, 20 Sep 2013 13:08:16 -0700
-Message-Id: <1379707768-1804-22-git-send-email-kamal@canonical.com>
+Subject: [PATCH 05/93] HID: hidraw: correctly deallocate memory on device disconnect
+Date: Fri, 20 Sep 2013 13:08:00 -0700
+Message-Id: <1379707768-1804-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -27,133 +27,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Manoj Chourasia <mchourasia@nvidia.com>
 
-commit 90e775b71ac4e685898c7995756fe58c135adaa6 upstream.
+commit 212a871a3934beccf43431608c27ed2e05a476ec upstream.
 
-The following race can lead to a loss of i_disksize update from truncate
-thus resulting in a wrong inode size if the inode size isn't updated
-again before inode is reclaimed:
+This changes puts the commit 4fe9f8e203f back in place
+with the fixes for slab corruption because of the commit.
 
-ext4_setattr()				mpage_map_and_submit_extent()
-  EXT4_I(inode)->i_disksize = attr->ia_size;
-  ...					  ...
-					  disksize = ((loff_t)mpd->first_page) << PAGE_CACHE_SHIFT
-					  /* False because i_size isn't
-					   * updated yet */
-					  if (disksize > i_size_read(inode))
-					  /* True, because i_disksize is
-					   * already truncated */
-					  if (disksize > EXT4_I(inode)->i_disksize)
-					    /* Overwrite i_disksize
-					     * update from truncate */
-					    ext4_update_i_disksize()
-  i_size_write(inode, attr->ia_size);
+When a device is unplugged, wait for all processes that
+have opened the device to close before deallocating the device.
 
-For other places updating i_disksize such race cannot happen because
-i_mutex prevents these races. Writeback is the only place where we do
-not hold i_mutex and we cannot grab it there because of lock ordering.
+This commit was solving kernel crash because of the corruption in
+rb tree of vmalloc. The rootcause was the device data pointer was
+geting excessed after the memory associated with hidraw was freed.
 
-We fix the race by doing both i_disksize and i_size update in truncate
-atomically under i_data_sem and in mpage_map_and_submit_extent() we move
-the check against i_size under i_data_sem as well.
+The commit 4fe9f8e203f was buggy as it was also freeing the hidraw
+first and then calling delete operation on the list associated with
+that hidraw leading to slab corruption.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: Manoj Chourasia <mchourasia@nvidia.com>
+Tested-by: Peter Wu <lekensteyn@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/ext4.h  | 24 ++++++++++++++++++++----
- fs/ext4/inode.c | 17 ++++++++++++-----
- 2 files changed, 32 insertions(+), 9 deletions(-)
+ drivers/hid/hidraw.c | 60 ++++++++++++++++++++++------------------------------
+ 1 file changed, 25 insertions(+), 35 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index bbcd6a0..a4903ff 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2341,16 +2341,32 @@ do {								\
- #define EXT4_FREECLUSTERS_WATERMARK 0
- #endif
+diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+index 413a731..cfe5288 100644
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -113,7 +113,7 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
+ 	__u8 *buf;
+ 	int ret = 0;
  
-+/* Update i_disksize. Requires i_mutex to avoid races with truncate */
- static inline void ext4_update_i_disksize(struct inode *inode, loff_t newsize)
- {
--	/*
--	 * XXX: replace with spinlock if seen contended -bzzz
--	 */
-+	WARN_ON_ONCE(S_ISREG(inode->i_mode) &&
-+		     !mutex_is_locked(&inode->i_mutex));
-+	down_write(&EXT4_I(inode)->i_data_sem);
-+	if (newsize > EXT4_I(inode)->i_disksize)
-+		EXT4_I(inode)->i_disksize = newsize;
-+	up_write(&EXT4_I(inode)->i_data_sem);
-+}
-+
-+/*
-+ * Update i_disksize after writeback has been started. Races with truncate
-+ * are avoided by checking i_size under i_data_sem.
-+ */
-+static inline void ext4_wb_update_i_disksize(struct inode *inode, loff_t newsize)
-+{
-+	loff_t i_size;
-+
- 	down_write(&EXT4_I(inode)->i_data_sem);
-+	i_size = i_size_read(inode);
-+	if (newsize > i_size)
-+		newsize = i_size;
- 	if (newsize > EXT4_I(inode)->i_disksize)
- 		EXT4_I(inode)->i_disksize = newsize;
- 	up_write(&EXT4_I(inode)->i_data_sem);
--	return ;
+-	if (!hidraw_table[minor]) {
++	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
+ 		ret = -ENODEV;
+ 		goto out;
+ 	}
+@@ -261,7 +261,7 @@ static int hidraw_open(struct inode *inode, struct file *file)
+ 	}
+ 
+ 	mutex_lock(&minors_lock);
+-	if (!hidraw_table[minor]) {
++	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
+ 		err = -ENODEV;
+ 		goto out_unlock;
+ 	}
+@@ -302,39 +302,38 @@ static int hidraw_fasync(int fd, struct file *file, int on)
+ 	return fasync_helper(fd, file, on, &list->fasync);
  }
  
- struct ext4_group_info {
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 158145b..fe1fada 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1666,10 +1666,8 @@ static void mpage_da_map_and_submit(struct mpage_da_data *mpd)
- 	 * Update on-disk size along with block allocation.
- 	 */
- 	disksize = ((loff_t) next + blks) << mpd->inode->i_blkbits;
--	if (disksize > i_size_read(mpd->inode))
--		disksize = i_size_read(mpd->inode);
- 	if (disksize > EXT4_I(mpd->inode)->i_disksize) {
--		ext4_update_i_disksize(mpd->inode, disksize);
-+		ext4_wb_update_i_disksize(mpd->inode, disksize);
- 		err = ext4_mark_inode_dirty(handle, mpd->inode);
- 		if (err)
- 			ext4_error(mpd->inode->i_sb,
-@@ -4449,18 +4447,27 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
- 				error = ext4_orphan_add(handle, inode);
- 				orphan = 1;
- 			}
-+			down_write(&EXT4_I(inode)->i_data_sem);
- 			EXT4_I(inode)->i_disksize = attr->ia_size;
- 			rc = ext4_mark_inode_dirty(handle, inode);
- 			if (!error)
- 				error = rc;
-+			/*
-+			 * We have to update i_size under i_data_sem together
-+			 * with i_disksize to avoid races with writeback code
-+			 * running ext4_wb_update_i_disksize().
-+			 */
-+			if (!error)
-+				i_size_write(inode, attr->ia_size);
-+			up_write(&EXT4_I(inode)->i_data_sem);
- 			ext4_journal_stop(handle);
- 			if (error) {
- 				ext4_orphan_del(NULL, inode);
- 				goto err_out;
- 			}
--		}
-+		} else
-+			i_size_write(inode, attr->ia_size);
++static void drop_ref(struct hidraw *hidraw, int exists_bit)
++{
++	if (exists_bit) {
++		hid_hw_close(hidraw->hid);
++		hidraw->exist = 0;
++		if (hidraw->open)
++			wake_up_interruptible(&hidraw->wait);
++	} else {
++		--hidraw->open;
++	}
++
++	if (!hidraw->open && !hidraw->exist) {
++		device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
++		hidraw_table[hidraw->minor] = NULL;
++		kfree(hidraw);
++	}
++}
++
+ static int hidraw_release(struct inode * inode, struct file * file)
+ {
+ 	unsigned int minor = iminor(inode);
+-	struct hidraw *dev;
+ 	struct hidraw_list *list = file->private_data;
+-	int ret;
+-	int i;
  
--		i_size_write(inode, attr->ia_size);
- 		/*
- 		 * Blocks are going to be removed from the inode. Wait
- 		 * for dio in flight.  Temporarily disable
+ 	mutex_lock(&minors_lock);
+-	if (!hidraw_table[minor]) {
+-		ret = -ENODEV;
+-		goto unlock;
+-	}
+ 
+ 	list_del(&list->node);
+-	dev = hidraw_table[minor];
+-	if (!--dev->open) {
+-		if (list->hidraw->exist) {
+-			hid_hw_power(dev->hid, PM_HINT_NORMAL);
+-			hid_hw_close(dev->hid);
+-		} else {
+-			kfree(list->hidraw);
+-		}
+-	}
+-
+-	for (i = 0; i < HIDRAW_BUFFER_SIZE; ++i)
+-		kfree(list->buffer[i].value);
+ 	kfree(list);
+-	ret = 0;
+-unlock:
+-	mutex_unlock(&minors_lock);
+ 
+-	return ret;
++	drop_ref(hidraw_table[minor], 0);
++
++	mutex_unlock(&minors_lock);
++	return 0;
+ }
+ 
+ static long hidraw_ioctl(struct file *file, unsigned int cmd,
+@@ -539,18 +538,9 @@ void hidraw_disconnect(struct hid_device *hid)
+ 	struct hidraw *hidraw = hid->hidraw;
+ 
+ 	mutex_lock(&minors_lock);
+-	hidraw->exist = 0;
+-
+-	device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
+ 
+-	hidraw_table[hidraw->minor] = NULL;
++	drop_ref(hidraw, 1);
+ 
+-	if (hidraw->open) {
+-		hid_hw_close(hid);
+-		wake_up_interruptible(&hidraw->wait);
+-	} else {
+-		kfree(hidraw);
+-	}
+ 	mutex_unlock(&minors_lock);
+ }
+ EXPORT_SYMBOL_GPL(hidraw_disconnect);
 -- 
 1.8.1.2
 
