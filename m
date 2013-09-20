@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab3ITHOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 03:14:07 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:36635 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab3ITHOC (ORCPT
+	id S1754130Ab3ITHPE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 03:15:04 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:64134 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab3ITHPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 03:14:02 -0400
+	Fri, 20 Sep 2013 03:15:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <1379624632-17356-2-git-send-email-nm@ti.com>
-References: <1379624632-17356-1-git-send-email-nm@ti.com>
-	<1379624632-17356-2-git-send-email-nm@ti.com>
-Date: Fri, 20 Sep 2013 12:44:00 +0530
-Message-ID: <CAKohpoku7n6b2dDKD=+3DqG4pHtmWoeXZnAt3EoFRp+rNFofYA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / OPP: rename functions to dev_pm_opp*
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130919210750.GH2918@verge.net.au>
+References: <1379412095-7213-1-git-send-email-geert@linux-m68k.org>
+	<20130919210750.GH2918@verge.net.au>
+Date: Fri, 20 Sep 2013 09:15:02 +0200
+X-Google-Sender-Auth: Neyg96B34UHoXKcQS-gzm_4Q-qU
+Message-ID: <CAMuHMdVx3KmL9cK-_g3qcrkHxxCAno+3z4O=kVTOGCYhD_WmWw@mail.gmail.com>
+Subject: Re: Preliminary kexec support for Linux/m68k
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Simon Horman <horms@verge.net.au>
+Cc: linux-m68k <linux-m68k@vger.kernel.org>, kexec@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 September 2013 02:33, Nishanth Menon <nm@ti.com> wrote:
-> opp_get_opp_count
-> opp_find_freq_exact
-> opp_init_cpufreq_table
-> opp_free_cpufreq_table
+Hi Simon,
 
-The only problem I see is that routines names for few of them are getting
-really long now.. Otherwise not much I could find...
+Thanks for your comments!
 
-Though you had following changes, which you could have avoided in this
-hard to review patchset:
+On Thu, Sep 19, 2013 at 11:07 PM, Simon Horman <horms@verge.net.au> wrote:
+> Pasting two series in one was a bit confusing for me at first.
+> Perhaps you could consider posting two separate series in future.
 
-diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-        new_opp = [-kzalloc(sizeof(struct
-opp),-]{+kzalloc(sizeof(*new_opp),+} GFP_KERNEL);
-        new_opp = [-kmalloc(sizeof(struct
-opp),-]{+kmalloc(sizeof(*new_opp),+} GFP_KERNEL);
+Sorry, I wanted to have all information in one series for the first posting, to
+avoid people having to look around too much if they want to give it a try.
 
-It is almost impossible to catch these with naked eyes for such long
-patches.. I took help of --word-diff though :)
+I'll post seperate series in the future.
 
-If no one else sees these as problems then feel free to add my:
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> Patches:
+>>   - [PATCH 1/2] kexec: Let slurp_file_len() return the number of bytes
+>>   - [PATCH 2/2] kexec: Add preliminary m68k support
+>>
+>> Notes:
+>>   - Based on git://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git
+>
+> A good choice.
+
+Is it normal I don't see much activity there?
+
+>>   - The ramdisk is loaded at the top of memory minus 4096, unlike with
+>>     m68boot (ataboot/amiboot), as locate_hole() seems to have a bug that it
+>>     cannot reserve a block at the real top of memory.
+>
+> Is this a bug that could be fixed?
+
+Possibly. I suspect an off-by-one bug somewhere, but I haven't looked deeply
+into it.
+
+>>   - Do we want to check the struct bootversion at the start of the kernel,
+>>     like m68kboot does?
+>>     Kexec may be used to load ELF files that are not Linux kernel images,
+>>     and thus don't have a Linux-specific struct bootversion.
+>
+> If the check can sanely be skipped for non Linux kernel images then
+> this sounds like a reasonable idea to me. Otherwise I would lean towards
+> omitting it. Either way, I don't feel strongly about this.
+>
+>>   - Do we want to check the size of the kernel image + bootinfo, and warn the
+>>     user if it's larger than 4 MiB?
+>>     This is a limitation of the current Linux/m68k kernel only.
+>
+> I think that sounds like a good idea but I don't feel strongly about it.
+
+Currently I'm leaning towards just printing a warning for both
+(missing/incompatible
+bootversion and image-too-large).
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
