@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab3ITUQf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:16:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41789 "EHLO
+	id S1753906Ab3ITUQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:16:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41766 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755250Ab3ITUPb (ORCPT
+	with ESMTP id S1755229Ab3ITUP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:15:31 -0400
+	Fri, 20 Sep 2013 16:15:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 66/93] [media] hdpvr: fix iteration over uninitialized lists in hdpvr_probe()
-Date: Fri, 20 Sep 2013 13:09:01 -0700
-Message-Id: <1379707768-1804-67-git-send-email-kamal@canonical.com>
+Subject: [PATCH 73/93] HID: sensor-hub: validate feature report details
+Date: Fri, 20 Sep 2013 13:09:08 -0700
+Message-Id: <1379707768-1804-74-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -29,62 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: Kees Cook <keescook@chromium.org>
 
-commit 2e923a0527ac439e135b9961e58d3acd876bba10 upstream.
+commit 9e8910257397372633e74b333ef891f20c800ee4 upstream.
 
-free_buff_list and rec_buff_list are initialized in the middle of hdpvr_probe(),
-but if something bad happens before that, error handling code calls hdpvr_delete(),
-which contains iteration over the lists (via hdpvr_free_buffers()).
-The patch moves the lists initialization to the beginning and by the way fixes
-goto label in error handling of registering videodev.
-Found by Linux Driver Verification project (linuxtesting.org).
+A HID device could send a malicious feature report that would cause the
+sensor-hub HID driver to read past the end of heap allocation, leaking
+kernel memory contents to the caller.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-[ kamal: backport to 3.8 (context) ]
+CVE-2013-2898
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/usb/hdpvr/hdpvr-core.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/hid/hid-sensor-hub.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/usb/hdpvr/hdpvr-core.c b/drivers/media/usb/hdpvr/hdpvr-core.c
-index 84dc26f..e35fab4 100644
---- a/drivers/media/usb/hdpvr/hdpvr-core.c
-+++ b/drivers/media/usb/hdpvr/hdpvr-core.c
-@@ -309,6 +309,11 @@ static int hdpvr_probe(struct usb_interface *interface,
+diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+index 0bc58bd..5dfcf43 100644
+--- a/drivers/hid/hid-sensor-hub.c
++++ b/drivers/hid/hid-sensor-hub.c
+@@ -223,7 +223,8 @@ int sensor_hub_get_feature(struct hid_sensor_hub_device *hsdev, u32 report_id,
  
- 	dev->workqueue = 0;
- 
-+	/* init video transfer queues first of all */
-+	/* to prevent oops in hdpvr_delete() on error paths */
-+	INIT_LIST_HEAD(&dev->free_buff_list);
-+	INIT_LIST_HEAD(&dev->rec_buff_list);
-+
- 	/* register v4l2_device early so it can be used for printks */
- 	if (v4l2_device_register(&interface->dev, &dev->v4l2_dev)) {
- 		dev_err(&interface->dev, "v4l2_device_register failed\n");
-@@ -331,10 +336,6 @@ static int hdpvr_probe(struct usb_interface *interface,
- 	if (!dev->workqueue)
- 		goto error;
- 
--	/* init video transfer queues */
--	INIT_LIST_HEAD(&dev->free_buff_list);
--	INIT_LIST_HEAD(&dev->rec_buff_list);
--
- 	dev->options = hdpvr_default_options;
- 
- 	if (default_video_input < HDPVR_VIDEO_INPUTS)
-@@ -388,7 +389,7 @@ static int hdpvr_probe(struct usb_interface *interface,
- 	if (hdpvr_register_videodev(dev, &interface->dev,
- 				    video_nr[atomic_inc_return(&dev_nr)])) {
- 		v4l2_err(&dev->v4l2_dev, "registering videodev failed\n");
--		goto error;
-+		goto reg_fail;
+ 	mutex_lock(&data->mutex);
+ 	report = sensor_hub_report(report_id, hsdev->hdev, HID_FEATURE_REPORT);
+-	if (!report || (field_index >=  report->maxfield)) {
++	if (!report || (field_index >=  report->maxfield) ||
++	    report->field[field_index]->report_count < 1) {
+ 		ret = -EINVAL;
+ 		goto done_proc;
  	}
- 
- #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 -- 
 1.8.1.2
 
