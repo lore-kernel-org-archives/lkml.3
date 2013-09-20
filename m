@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab3ITUWB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:22:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753946Ab3ITUV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:21:56 -0400
-Message-ID: <1379708486.12705.131.camel@dhcp-128-237.ams.redhat.com>
-Subject: Re: [PATCH] x86 efi: bugfix interrupt disabling sequence
-From: Bart Kuivenhoven <bemk@redhat.com>
-Reply-To: bemk@redhat.com
-To: Matt Fleming <matt@console-pimps.org>
-Cc: matt.fleming@intel.com, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jcm@redhat.com, msalter@redhat.com
-Date: Fri, 20 Sep 2013 22:21:26 +0200
-In-Reply-To: <20130920152859.GC21381@console-pimps.org>
-References: <1379525333-4373-1-git-send-email-bemk@redhat.com>
-	 <20130920152859.GC21381@console-pimps.org>
-Organization: Red Hat
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755513Ab3ITUVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:21:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41655 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755035Ab3ITUOr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 16:14:47 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 35/93] ACPI / EC: Add HP Folio 13 to ec_dmi_table in order to skip DSDT scan
+Date: Fri, 20 Sep 2013 13:08:30 -0700
+Message-Id: <1379707768-1804-36-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
+References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-20 at 16:28 +0100, Matt Fleming wrote:
-> On Wed, 18 Sep, at 07:28:53PM, Bart Kuivenhoven wrote:
-> > The problem in efi_main was that the idt was cleared before the
-> > interrupts were disabled.
-> > 
-> > The UEFI spec states that interrupts aren't used so this shouldn't be
-> > too much of a problem. Peripherals however don't necessarily know about
-> > this and thus might cause interrupts to happen anyway. Even if
-> > ExitBootServices() has been called.
-> >
-> > This means there is a risk of an interrupt being triggered while the IDT
-> > register is nullified and the interrupt bit hasn't been cleared,
-> > allowing for a triple fault.
-> 
-> Just to be clear, you haven't witnessed a triple fault, correct?
-> 
-> > This patch fixes this by clearing the interrupt bit before the lidt
-> > instruction.
-> 
-> I think we can go even further than this and get rid of all of the IDT
-> code in the EFI boot stub. The kernel maintains its own IDT anyway.
-> 
+3.8.13.10 -stable review patch.  If anyone has any objections, please let me know.
 
-Well, isn't it so, that the kernel expects a setup in which interrupts
-are disabled before the decompressed image is loaded?
+------------------
 
-What we can do is remove the lidt instruction and IDT pointer, but that
-still doesn't change anything with regards to the kernels expectations.
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-And no, I haven't witnessed a triple fault, this is purely theoretical,
-with a very slim chance of it actually happening. That does not mean
-that it can't happen though.
+commit eff9a4b62b14cf0d9913e3caf1f26f8b7a6105c9 upstream.
 
+HP Folio 13's BIOS defines CMOS RTC Operation Region and the EC's
+_REG method will access that region.  To allow the CMOS RTC region
+handler to be installed before the EC _REG method is first invoked,
+add ec_skip_dsdt_scan() as HP Folio 13's callback to ec_dmi_table.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=54621
+Reported-and-tested-by: Stefan Nagy <public@stefan-nagy.at>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/acpi/ec.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index a563e11..bbb6d47 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -983,6 +983,10 @@ static struct dmi_system_id __initdata ec_dmi_table[] = {
+ 	ec_enlarge_storm_threshold, "CLEVO hardware", {
+ 	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
+ 	DMI_MATCH(DMI_PRODUCT_NAME, "M720T/M730T"),}, NULL},
++	{
++	ec_skip_dsdt_scan, "HP Folio 13", {
++	DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++	DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13"),}, NULL},
+ 	{},
+ };
+ 
 -- 
-Kind regards/Met vriendelijke groet,
-Bart Kuivenhoven.
-
-Intern Fedora ARM,
-Red Hat.
+1.8.1.2
 
