@@ -1,118 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab3ITTYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 15:24:41 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:43804 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab3ITTYj (ORCPT
+	id S1753966Ab3ITTYw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 15:24:52 -0400
+Received: from s15283307.onlinehome-server.info ([87.106.208.187]:34933 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab3ITTYu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 15:24:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <523C0268.20404@suse.cz>
-References: <CAGXu5jL+NeBw2_vXymM81UdtS6UO7KZA2S4rf3gwM_7nSJ2h6g@mail.gmail.com>
-	<20130917205742.16147.qmail@science.horizon.com>
-	<201309191756.BCF65661.MQFOLSJOFHFtOV@I-love.SAKURA.ne.jp>
-	<CAGXu5jK_D1BJOQr=1A-UFrpM5Ad+Qu894HT_XjkZh4EmsbCkTQ@mail.gmail.com>
-	<201309201309.GFB52620.OQOtSFLMJVHOFF@I-love.SAKURA.ne.jp>
-	<523C0268.20404@suse.cz>
-Date: Fri, 20 Sep 2013 12:24:38 -0700
-X-Google-Sender-Auth: y04mly3YVmgPRm6g09WgcVTgaJM
-Message-ID: <CAGXu5jLENb+x6b9XOY7-pWMT7GsFgnLr0=A8VNFLkqMi0BX4=w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] remove all uses of printf's %n
-From: Kees Cook <keescook@chromium.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>, Pavel Emelyanov <xemul@openvz.org>,
-        =?ISO-8859-1?Q?R=E9mi_Denis=2DCourmont?= 
-	<remi.denis-courmont@nokia.com>,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        linux-sctp@vger.kernel.org, George Spelvin <linux@horizon.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jan Beulich <JBeulich@suse.com>, Joe Perches <joe@perches.com>,
-        Motohiro KOSAKI <kosaki.motohiro@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 Sep 2013 15:24:50 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
+Subject: Re: [PATCH] drivers: bluetooth: btusb: Added support for Belkin F8065bf usb bluetooth device
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1379704619-27691-1-git-send-email-kernel@kenobrien.org>
+Date: Fri, 20 Sep 2013 14:24:43 -0500
+Cc: gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E19250BC-3E1A-4DC9-8612-190829CF68EA@holtmann.org>
+References: <1379704619-27691-1-git-send-email-kernel@kenobrien.org>
+To: "Ken O'Brien" <kernel@kenobrien.org>
+X-Mailer: Apple Mail (2.1510)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 1:08 AM, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 09/20/2013 06:09 AM, Tetsuo Handa wrote:
->> --- a/fs/proc/consoles.c
->> +++ b/fs/proc/consoles.c
-> ...
->> @@ -47,11 +46,10 @@ static int show_console_dev(struct seq_file *m, void *v)
->>                       con_flags[a].name : ' ';
->>       flags[a] = 0;
->>
->> -     seq_printf(m, "%s%d%n", con->name, con->index, &len);
->> -     len = 21 - len;
->> -     if (len < 1)
->> -             len = 1;
->> -     seq_printf(m, "%*c%c%c%c (%s)", len, ' ', con->read ? 'R' : '-',
->> +     seq_setwidth(m, 21 - 1);
->> +     seq_printf(m, "%s%d", con->name, con->index);
->> +     seq_pad(m, ' ');
->> +     seq_printf(m, "%c%c%c (%s)", con->read ? 'R' : '-',
->>                       con->write ? 'W' : '-', con->unblank ? 'U' : '-',
->>                       flags);
->
-> Hello, do you really need seq_setwidth? It makes it really ugly...
+Hi Ken,
 
-There are a few problems that have been discussed on the various
-threads. Namely, we want to minimize the changes to the seq_file
-structure and to not add additional work to all the seq_file users
-that don't care about padding. If the seq_file calls always track how
-far they're written across each call, we add unneeded work to all the
-users. To avoid this, we must identify to the seq_file subsystem where
-we want to start tracking the length written. To allow this to be
-spread across multiple calls (something the %n can't do), we must
-record seq->count at some point, and then compare against it at the
-point where we want to perform padding.
+> Belkin bluetooth device's usb device id added to generic usb bluetooth driver.
+> 
+> It's another instance of Broadcom's BCM20702A0.
+> 
+> Relevant section from /sys/kernel/debug/usb/devices:
+> 
+> T:  Bus=03 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=12   MxCh= 0
+> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=050d ProdID=065a Rev= 1.12
+> S:  Manufacturer=Broadcom Corp
+> S:  Product=BCM20702A0
+> S:  SerialNumber=0002723E2D29
+> C:* #Ifs= 4 Cfg#= 1 Atr=a0 MxPwr=100mA
+> I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
 
-> Or do we need that all? Couldn't we simply have seq_printf_padded? Or
-> maybe some % modifier in seq_printf to pad the string?
+we might consider a generic rule for this:
 
-Adding a _padding version of things means we'd have to add it to all
-seq_* function that print things (like printing paths, etc). Using
-this method, the output doesn't matter. We declare the starting point,
-output whatever we need, then perform padding, and continue writing.
+	/* comment of the device vendor and type goes here */
+        { USB_VENDOR_AND_INTERFACE_INFO(0x050d, 0xff, 0x01, 0x01) },
 
-I think the declaration/output/pad method seems the least invasive to
-existing users of padding, and the highest level of flexibility going
-forward for future users.
+Regards
 
->> --- a/net/ipv4/fib_trie.c
->> +++ b/net/ipv4/fib_trie.c
-> ...
->> @@ -2548,15 +2549,15 @@ static int fib_route_seq_show(struct seq_file *seq, void *v)
->>                                        (fi->fib_advmss ?
->>                                         fi->fib_advmss + 40 : 0),
->>                                        fi->fib_window,
->> -                                      fi->fib_rtt >> 3, &len);
->> +                                      fi->fib_rtt >> 3);
->>                       else
->>                               seq_printf(seq,
->>                                        "*\t%08X\t%08X\t%04X\t%d\t%u\t"
->> -                                      "%d\t%08X\t%d\t%u\t%u%n",
->> +                                      "%d\t%08X\t%d\t%u\t%u",
->>                                        prefix, 0, flags, 0, 0, 0,
->> -                                      mask, 0, 0, 0, &len);
->> +                                      mask, 0, 0, 0);
->>
->> -                     seq_printf(seq, "%*s\n", 127 - len, "");
->> +                     seq_pad(seq, '\n');
->
-> Hmm, seq_pad is unintuitive. I would say it pads the string by '\n'. Of
-> course it does not, but...
+Marcel
 
-I don't think this is a very serious problem. Currently, the padding
-character is always ' ' for all existing callers, so it only makes
-sense to make the trailing character an argument.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
