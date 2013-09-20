@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab3ITN1A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 09:27:00 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:52863 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629Ab3ITN0L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 09:26:11 -0400
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: [PATCH v2 1/3] omap2: Change clk dev id for rng to omap3-rom-rng
-Date: Fri, 20 Sep 2013 15:25:05 +0200
-Message-Id: <1379683507-30793-2-git-send-email-pali.rohar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1379683507-30793-1-git-send-email-pali.rohar@gmail.com>
-References: <1379534757-20870-1-git-send-email-pali.rohar@gmail.com>
- <1379683507-30793-1-git-send-email-pali.rohar@gmail.com>
+	id S1754811Ab3ITNbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 09:31:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41354 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754629Ab3ITNbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 09:31:35 -0400
+Date: Fri, 20 Sep 2013 14:31:30 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 46/50] sched: numa: Prevent parallel updates to group
+ stats during placement
+Message-ID: <20130920133130.GY22421@suse.de>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-47-git-send-email-mgorman@suse.de>
+ <20130920095526.GT9326@twins.programming.kicks-ass.net>
+ <20130920123151.GX22421@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130920123151.GX22421@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Name omap_rng is already used by omap_rng driver which is for omap2 and omap4.
-For omap3 HS devices there is new driver omap3-rom-rng which needs that clk.
-And because there cannot be two drivers with same name, rename omap3 clk dev id.
+On Fri, Sep 20, 2013 at 01:31:51PM +0100, Mel Gorman wrote:
+> @@ -1402,14 +1394,15 @@ unlock:
+>  	if (!join)
+>  		return;
+>  
+> +	double_lock(&my_grp->lock, &grp->lock);
+> +
+>  	for (i = 0; i < 2*nr_node_ids; i++) {
+> -		atomic_long_sub(p->numa_faults[i], &my_grp->faults[i]);
+> -		atomic_long_add(p->numa_faults[i], &grp->faults[i]);
+> +		my_grp->faults[i] -= p->numa_faults[i];
+> +		grp->faults[i] -= p->numa_faults[i];
+> +		WARN_ON_ONCE(grp->faults[i] < 0);
+>  	}
 
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
----
- arch/arm/mach-omap2/cclock3xxx_data.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+That stupidity got fixed
 
-diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c b/arch/arm/mach-omap2/cclock3xxx_data.c
-index 334b767..5059338 100644
---- a/arch/arm/mach-omap2/cclock3xxx_data.c
-+++ b/arch/arm/mach-omap2/cclock3xxx_data.c
-@@ -3274,7 +3274,7 @@ static struct omap_clk omap36xx_clks[] = {
-  */
- static struct omap_clk omap34xx_omap36xx_clks[] = {
- 	CLK(NULL,	"aes1_ick",	&aes1_ick),
--	CLK("omap_rng",	"ick",		&rng_ick),
-+	CLK("omap3-rom-rng",	"ick",		&rng_ick),
- 	CLK(NULL,	"sha11_ick",	&sha11_ick),
- 	CLK(NULL,	"des1_ick",	&des1_ick),
- 	CLK(NULL,	"cam_mclk",	&cam_mclk),
 -- 
-1.7.10.4
-
+Mel Gorman
+SUSE Labs
