@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab3ITUNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:13:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41520 "EHLO
+	id S1754749Ab3ITUNa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:13:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41539 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760Ab3ITUNH (ORCPT
+	with ESMTP id S1754702Ab3ITUN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:13:07 -0400
+	Fri, 20 Sep 2013 16:13:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
+Cc: Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 52/93] radeon kms: fix uninitialised hotplug work usage in r100_irq_process()
-Date: Fri, 20 Sep 2013 13:08:47 -0700
-Message-Id: <1379707768-1804-53-git-send-email-kamal@canonical.com>
+Subject: [PATCH 59/93] ALSA: hda - hdmi: Fallback to ALSA allocation when selecting CA
+Date: Fri, 20 Sep 2013 13:08:54 -0700
+Message-Id: <1379707768-1804-60-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,105 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-commit 27c505ca84e164ec66ad55dcf3f5befaac83f10a upstream.
+commit 18e391862cceaf43ddb8eb5cca05e1a83abdebaa upstream.
 
-Commit a01c34f72e7cd2624570818f579b5ab464f93de2 (radeon kms: do not
-flush uninitialized hotplug work) moved work initialisation phase to
-the last step of radeon_irq_kms_init(). Meelis Roos reported that this
-causes problems on his machine because drm_irq_install() uses hotplug
-work on r100.
+hdmi_channel_allocation() tries to find a HDMI channel allocation that
+matches the number channels in the playback stream and contains only
+speakers that the HDMI sink has reported as available via EDID. If no
+such allocation is found, 0 (stereo audio) is used.
 
-hotplug work flushed in radeon_irq_kms_fini(), with two possible cases:
--- radeon_irq_kms_fini() call after successful radeon_irq_kms_init()
--- radeon_irq_kms_fini() call after unsuccessful (or not called at all)
-   radeon_irq_kms_init()
+Using CA 0 causes the audio causes the sink to discard everything except
+the first two channels (front left and front right).
 
-The latter one causes flush work on uninitialised hotplug work. Move
-work initialisation before drm_irq_install(), but keep existing agreement
-to flush hotplug work in radeon_irq_kms_fini() only for `irq.installed'
-(successful radeon_irq_kms_init()) case.
+However, the sink may be capable of receiving more channels than it has
+speakers (and then perform downmix or discard the extra channels), in
+which case it is preferable to use a CA that contains extra channels
+than to use CA 0 which discards all the non-stereo channels.
 
-WARNING: CPU: 0 PID: 243 at kernel/workqueue.c:1378 __queue_work+0x132/0x16d()
-Call Trace:
-[<c12319b3>] ? dump_stack+0xa/0x13
-[<c1022600>] ? warn_slowpath_common+0x75/0x8a
-[<c1031010>] ? __queue_work+0x132/0x16d
-[<c1031010>] ? __queue_work+0x132/0x16d
-[<c102269e>] ? warn_slowpath_null+0x1b/0x1f
-[<c1031010>] ? __queue_work+0x132/0x16d
-[<c103107b>] ? queue_work_on+0x30/0x40
-[<f8aed3f3>] ? r100_irq_process+0x16d/0x1e6 [radeon]
-[<f8ae77cf>] ? radeon_driver_irq_preinstall_kms+0xc2/0xc5 [radeon]
-[<f8974d77>] ? drm_irq_install+0xb2/0x1ac [drm]
-[<f897604d>] ? drm_vblank_init+0x196/0x1d2 [drm]
-[<f8ae78d3>] ? radeon_irq_kms_init+0x33/0xc6 [radeon]
-[<f8aef35a>] ? r100_startup+0x1a3/0x1d6 [radeon]
-[<f8ad77c8>] ? radeon_ttm_init+0x26e/0x287 [radeon]
-[<f8aef752>] ? r100_init+0x2b3/0x309 [radeon]
-[<c118082e>] ? vga_client_register+0x39/0x40
-[<f8ac535f>] ? radeon_device_init+0x54b/0x61b [radeon]
-[<f8ac40fd>] ? cail_mc_write+0x13/0x13 [radeon]
-[<f8ac6864>] ? radeon_driver_load_kms+0x82/0xda [radeon]
-[<f8978bbd>] ? drm_get_pci_dev+0x136/0x22d [drm]
-[<f8ac409b>] ? radeon_pci_probe+0x6c/0x86 [radeon]
-[<c112acf6>] ? pci_device_probe+0x4c/0x83
-[<c11846c7>] ? driver_probe_device+0x80/0x184
-[<c112a848>] ? pci_match_id+0x18/0x36
-[<c1184837>] ? __driver_attach+0x44/0x5f
-[<c11833f4>] ? bus_for_each_dev+0x50/0x5a
-[<c118433e>] ? driver_attach+0x14/0x16
-[<c11847f3>] ? __device_attach+0x28/0x28
-[<c1184045>] ? bus_add_driver+0xd6/0x1bf
-[<c1184c22>] ? driver_register+0x78/0xcf
-[<f8ba8000>] ? 0xf8ba7fff
-[<c10003bf>] ? do_one_initcall+0x8b/0x121
-[<c101e668>] ? change_page_attr_clear+0x2e/0x33
-[<f8ba8000>] ? 0xf8ba7fff
-[<c101e689>] ? set_memory_ro+0x1c/0x20
-[<c104de94>] ? set_page_attributes+0x11/0x12
-[<c104f6e1>] ? load_module+0x12fa/0x17e8
-[<c107483b>] ? map_vm_area+0x22/0x31
-[<c104fc36>] ? SyS_init_module+0x67/0x7d
-[<c1234245>] ? sysenter_do_call+0x12/0x26
+Additionally, it seems that HBR (HD) passthrough output does not work on
+Intel HDMI codecs when CA is set to 0 (possibly the codec zeroes
+channels not present in CA). This happens with all receivers that report
+a 5.1 speaker mask since a HBR stream is carried on 8 channels to the
+codec.
 
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ kamal: backport to 3.8 (no reset_work) ]
+Add a fallback in the CA selection so that the CA channel count at least
+matches the stream channel count, even if the stream contains channels
+not present in the sink speaker descriptor.
+
+Thanks to GrimGriefer at OpenELEC forums for discovering that changing
+the sink speaker mask allowed HBR output.
+
+Reported-by: GrimGriefer
+Reported-by: Ashecrow
+Reported-by: Frank Zafka <kafkaesque1978@gmail.com>
+Reported-by: Peter Frühberger <fritsch@xbmc.org>
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_hdmi.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-index 4f3b4d5..ecd62b8 100644
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -256,16 +256,18 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
- 			dev_info(rdev->dev, "radeon: using MSI.\n");
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 5c19496..40f5e2d 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -530,6 +530,17 @@ static int hdmi_channel_allocation(struct hdmi_eld *eld, int channels)
  		}
  	}
-+
-+	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
-+	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
-+
- 	rdev->irq.installed = true;
- 	r = drm_irq_install(rdev->ddev);
- 	if (r) {
- 		rdev->irq.installed = false;
-+		flush_work(&rdev->hotplug_work);
- 		return r;
- 	}
  
--	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
--	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
--
- 	DRM_INFO("radeon: irq initialized.\n");
- 	return 0;
- }
++	if (!ca) {
++		/* if there was no match, select the regular ALSA channel
++		 * allocation with the matching number of channels */
++		for (i = 0; i < ARRAY_SIZE(channel_allocations); i++) {
++			if (channels == channel_allocations[i].channels) {
++				ca = channel_allocations[i].ca_index;
++				break;
++			}
++		}
++	}
++
+ 	snd_print_channel_allocation(eld->spk_alloc, buf, sizeof(buf));
+ 	snd_printdd("HDMI: select CA 0x%x for %d-channel allocation: %s\n",
+ 		    ca, channels, buf);
 -- 
 1.8.1.2
 
