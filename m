@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab3ITIgi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 04:36:38 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:34779 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353Ab3ITIgf (ORCPT
+	id S1754404Ab3ITIjR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 04:39:17 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:35232 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156Ab3ITIjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 04:36:35 -0400
+	Fri, 20 Sep 2013 04:39:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <1378294169-22661-2-git-send-email-acourbot@nvidia.com>
-References: <1378294169-22661-1-git-send-email-acourbot@nvidia.com>
-	<1378294169-22661-2-git-send-email-acourbot@nvidia.com>
-Date: Fri, 20 Sep 2013 10:36:34 +0200
-Message-ID: <CACRpkdZrjM0cQm8AXNDnaSh2Tp5BVcevDUObFg87cUTEmJxc1w@mail.gmail.com>
-Subject: Re: [RFC 1/5] gpiolib: factorize gpiod_get/set functions
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+In-Reply-To: <CACRpkdYBYdMJ6mTGUropOypx0ZVNn8eQMzV+eKocCSBZAu6xTA@mail.gmail.com>
+References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
+	<45987104.t6r4hvPgQn@vostro.rjw.lan>
+	<523AF22F.1010909@linux.vnet.ibm.com>
+	<CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com>
+	<CACRpkdYBYdMJ6mTGUropOypx0ZVNn8eQMzV+eKocCSBZAu6xTA@mail.gmail.com>
+Date: Fri, 20 Sep 2013 14:09:15 +0530
+Message-ID: <CAKohpokQO82XMGwcTjVmNTbBVESyFqV4DAxMMU_RHEtN+LqUgg@mail.gmail.com>
+Subject: Re: Regression on cpufreq in v3.12-rc1
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 1:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-
-> gpiod_get/set functions share common code between their regular and
-> cansleep variants. The exporting of the gpiod interface will make
-> the situation worse. This patch factorizes the common code to avoid code
-> redundancy.
+On 20 September 2013 14:03, Linus Walleij <linus.walleij@linaro.org> wrote:
+> I suspect this hunk from the patch may be the cause:
 >
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> +       if (cpufreq_driver) {
+> +               /* get the CPU */
+> +               policy = per_cpu(cpufreq_cpu_data, cpu);
+> +               if (policy)
+> +                       kobject_get(&policy->kobj);
+> +       }
+>
+> -       /* get the CPU */
+> -       policy = per_cpu(cpufreq_cpu_data, cpu);
+>
+> As you see we *always* set a policy pointer before this patch,
+> but after this patch we only do it if we have a cpufreq driver
+> registered!
 
-I don't see why this patch should be RFC?
+Not really!! See this few lines above:
 
-I just rebased and applied it, it's a clean and nice refactoring.
-
-Yours,
-Linus Walleij
+-       if (!cpufreq_driver)
+-               goto err_out_unlock;
+-
