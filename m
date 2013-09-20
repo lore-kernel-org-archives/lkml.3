@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab3ITQIz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 12:08:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39388 "EHLO mx1.redhat.com"
+	id S1752829Ab3ITQJB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 12:09:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48039 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752271Ab3ITQIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 12:08:54 -0400
-Message-ID: <1379693326.5434.11.camel@flatline.rdu.redhat.com>
-Subject: Re: [PATCH] audit: remove newline accidentally added during session
- id helper refactor
-From: Eric Paris <eparis@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Steve Grubb <sgrubb@redhat.com>
-Date: Fri, 20 Sep 2013 12:08:46 -0400
-In-Reply-To: <0c842120dc69b8dadc143ee70c29094e1f9d5110.1379517385.git.rgb@redhat.com>
-References: <0c842120dc69b8dadc143ee70c29094e1f9d5110.1379517385.git.rgb@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1752151Ab3ITQI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 12:08:58 -0400
+Message-ID: <523C69F7.4030903@redhat.com>
+Date: Fri, 20 Sep 2013 10:29:59 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, tytso@mit.edu,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: ext4: fix memory leak in xattr code.
+References: <20130920142918.GA21988@redhat.com>
+In-Reply-To: <20130920142918.GA21988@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-18 at 11:17 -0400, Richard Guy Briggs wrote:
-> A newline was accidentally added during session ID helper refactorization in
-> commit 4d3fb709.  This needlessly uses up buffer space, messes up syslog
-> formatting and makes userspace processing less efficient.  Remove it.
+On 9/20/13 9:29 AM, Dave Jones wrote:
+> If we take the 2nd retry path in ext4_expand_extra_isize_ea, we potentionally
+> return from the function without having freed these allocations.
+> If we don't do the return, we over-write the previous allocation pointers, 
+> so we leak either way.
 > 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-
-Acked-by: Eric Paris <eparis@redhat.com>
-
-> ---
->  kernel/audit.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Spotted with Coverity.
 > 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 3d17670..ac16540 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -1413,7 +1413,7 @@ void audit_log_session_info(struct audit_buffer *ab)
->  	u32 sessionid = audit_get_sessionid(current);
->  	uid_t auid = from_kuid(&init_user_ns, audit_get_loginuid(current));
->  
-> -	audit_log_format(ab, " auid=%u ses=%u\n", auid, sessionid);
-> +	audit_log_format(ab, " auid=%u ses=%u", auid, sessionid);
->  }
->  
->  void audit_log_key(struct audit_buffer *ab, char *key)
+> Signed-off-by: Dave Jones <davej@fedoraproject.org>
 
+Looks right to me.
+
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+
+Thanks!
+
+-Eric
+
+> diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+> index c081e34..f3a6220 100644
+> --- a/fs/ext4/xattr.c
+> +++ b/fs/ext4/xattr.c
+> @@ -1350,6 +1350,8 @@ retry:
+>  				    s_min_extra_isize) {
+>  					tried_min_extra_isize++;
+>  					new_extra_isize = s_min_extra_isize;
+> +					kfree(is);
+> +					kfree(bs);
+>  					goto retry;
+>  				}
+>  				error = -1;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
