@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab3ITItU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 04:49:20 -0400
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:62183 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754144Ab3ITItT (ORCPT
+	id S1754353Ab3ITItm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 04:49:42 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:57867 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754280Ab3ITItX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 04:49:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdYoNkgno24dtJAwOq2T9yoKQYgKQ+adfkSN8affYNePjQ@mail.gmail.com>
-References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
-	<45987104.t6r4hvPgQn@vostro.rjw.lan>
-	<523AF22F.1010909@linux.vnet.ibm.com>
-	<CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com>
-	<CACRpkdYBYdMJ6mTGUropOypx0ZVNn8eQMzV+eKocCSBZAu6xTA@mail.gmail.com>
-	<CAKohpokQO82XMGwcTjVmNTbBVESyFqV4DAxMMU_RHEtN+LqUgg@mail.gmail.com>
-	<CACRpkdYoNkgno24dtJAwOq2T9yoKQYgKQ+adfkSN8affYNePjQ@mail.gmail.com>
-Date: Fri, 20 Sep 2013 14:19:18 +0530
-Message-ID: <CAKohpokdOXrGVxEA89yrAq2T8MiqZNHrrXNagqqggo67rEmKYg@mail.gmail.com>
-Subject: Re: Regression on cpufreq in v3.12-rc1
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 Sep 2013 04:49:23 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, sameo@linux.intel.com, sachin.kamat@linaro.org
+Subject: [PATCH 1/1] mfd: Remove redundant dev_set_drvdata
+Date: Fri, 20 Sep 2013 14:19:34 +0530
+Message-Id: <1379666974-24211-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 September 2013 14:11, Linus Walleij <linus.walleij@linaro.org> wrote:
-> Any other idea why this patch is causing the issue?
+Driver core sets driver data to NULL upon failure or remove.
 
-I went into looking that patch in more detail
-after my first reply, not as if I ran away from answering that :)
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/mfd/mc13xxx-i2c.c |    1 -
+ drivers/mfd/rtsx_pcr.c    |    5 +----
+ drivers/mfd/ti-ssp.c      |    1 -
+ 3 files changed, 1 insertion(+), 6 deletions(-)
 
-Probably yes.. I know what's causing it:
-
- unsigned int cpufreq_get(unsigned int cpu)
- {
-        unsigned int ret_freq = 0;
--       struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
-
--       if (!policy)
--               goto out;
-+       if (!down_read_trylock(&cpufreq_rwsem))
-+               return 0;
-
-        if (unlikely(lock_policy_rwsem_read(cpu)))
-                goto out_policy;
-@@ -1438,8 +1413,8 @@ unsigned int cpufreq_get(unsigned int cpu)
-        unlock_policy_rwsem_read(cpu);
-
- out_policy:
--       cpufreq_cpu_put(policy);
--out:
-+       up_read(&cpufreq_rwsem);
-+
-        return ret_freq;
+diff --git a/drivers/mfd/mc13xxx-i2c.c b/drivers/mfd/mc13xxx-i2c.c
+index f745e27..898bd33 100644
+--- a/drivers/mfd/mc13xxx-i2c.c
++++ b/drivers/mfd/mc13xxx-i2c.c
+@@ -78,7 +78,6 @@ static int mc13xxx_i2c_probe(struct i2c_client *client,
+ 		ret = PTR_ERR(mc13xxx->regmap);
+ 		dev_err(mc13xxx->dev, "Failed to initialize register map: %d\n",
+ 				ret);
+-		dev_set_drvdata(&client->dev, NULL);
+ 		return ret;
+ 	}
+ 
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+index e6ae772..11e20af 100644
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -1149,7 +1149,7 @@ static int rtsx_pci_probe(struct pci_dev *pcidev,
+ 	pcr->remap_addr = ioremap_nocache(base, len);
+ 	if (!pcr->remap_addr) {
+ 		ret = -ENOMEM;
+-		goto free_host;
++		goto free_handle;
+ 	}
+ 
+ 	pcr->rtsx_resv_buf = dma_alloc_coherent(&(pcidev->dev),
+@@ -1209,8 +1209,6 @@ disable_msi:
+ 			pcr->rtsx_resv_buf, pcr->rtsx_resv_buf_addr);
+ unmap:
+ 	iounmap(pcr->remap_addr);
+-free_host:
+-	dev_set_drvdata(&pcidev->dev, NULL);
+ free_handle:
+ 	kfree(handle);
+ free_pcr:
+@@ -1242,7 +1240,6 @@ static void rtsx_pci_remove(struct pci_dev *pcidev)
+ 		pci_disable_msi(pcr->pci);
+ 	iounmap(pcr->remap_addr);
+ 
+-	dev_set_drvdata(&pcidev->dev, NULL);
+ 	pci_release_regions(pcidev);
+ 	pci_disable_device(pcidev);
+ 
+diff --git a/drivers/mfd/ti-ssp.c b/drivers/mfd/ti-ssp.c
+index 1c2b994..71e3e0c 100644
+--- a/drivers/mfd/ti-ssp.c
++++ b/drivers/mfd/ti-ssp.c
+@@ -445,7 +445,6 @@ static int ti_ssp_remove(struct platform_device *pdev)
+ 	iounmap(ssp->regs);
+ 	release_mem_region(ssp->res->start, resource_size(ssp->res));
+ 	kfree(ssp);
+-	dev_set_drvdata(dev, NULL);
+ 	return 0;
  }
+ 
+-- 
+1.7.9.5
 
----------x---------------x--------------
-
-We used to return early in case policy isn't found, but now we went
-and took the lock..
-
-Hmm... Remember I told you last time that I have another way of fixing
-it up, probably we need that now..
-
-I wanted to add another variable to reflect if a cpufreq_driver is registered
-or not, and if not then return early from these routines..
-
-I will get that in now, please see if you can give it a try..
-
-But I am still surprised how are we reaching this place before your cpufreq
-driver gets registered..
