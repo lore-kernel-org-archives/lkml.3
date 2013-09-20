@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab3ITUKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:10:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41333 "EHLO
+	id S1753875Ab3ITUKa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:10:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41418 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418Ab3ITUKB (ORCPT
+	with ESMTP id S1753813Ab3ITUK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:10:01 -0400
+	Fri, 20 Sep 2013 16:10:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Khalid Aziz <khalid.aziz@oracle.com>, Pravin B Shelar <pshelar@nicira.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 02/93] Revert "zram: use zram->lock to protect zram_free_page() in swap free notify path"
-Date: Fri, 20 Sep 2013 13:07:57 -0700
-Message-Id: <1379707768-1804-3-git-send-email-kamal@canonical.com>
+Subject: [PATCH 92/93] mm: fix aio performance regression for database caused by THP
+Date: Fri, 20 Sep 2013 13:09:27 -0700
+Message-Id: <1379707768-1804-93-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -29,54 +34,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamal Mostafa <kamal@canonical.com>
+From: Khalid Aziz <khalid.aziz@oracle.com>
 
-This reverts commit f56c0e44628257f97063089eb865d5eb2dfdd642, which
-was commit 57ab048532c0d975538cebd4456491b5c34248f4 upstream.
+commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 upstream.
 
-BugLink: https://bugs.launchpad.net/bugs/1215513
+I am working with a tool that simulates oracle database I/O workload.
+This tool (orion to be specific -
+<http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
+allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag.  It then
+does aio into these pages from flash disks using various common block
+sizes used by database.  I am looking at performance with two of the most
+common block sizes - 1M and 64K.  aio performance with these two block
+sizes plunged after Transparent HugePages was introduced in the kernel.
+Here are performance numbers:
 
-f56c0e4 was identified as provoking the lockup bug noted above.
+		pre-THP		2.6.39		3.11-rc5
+1M read		8384 MB/s	5629 MB/s	6501 MB/s
+64K read	7867 MB/s	4576 MB/s	4251 MB/s
 
-Cc: Jiang Liu <jiang.liu@huawei.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Luis Henriques <luis.henriques@canonical.com>
+I have narrowed the performance impact down to the overheads introduced by
+THP in __get_page_tail() and put_compound_page() routines.  perf top shows
+>40% of cycles being spent in these two routines.  Every time direct I/O
+to hugetlbfs pages starts, kernel calls get_page() to grab a reference to
+the pages and calls put_page() when I/O completes to put the reference
+away.  THP introduced significant amount of locking overhead to get_page()
+and put_page() when dealing with compound pages because hugepages can be
+split underneath get_page() and put_page().  It added this overhead
+irrespective of whether it is dealing with hugetlbfs pages or transparent
+hugepages.  This resulted in 20%-45% drop in aio performance when using
+hugetlbfs pages.
+
+Since hugetlbfs pages can not be split, there is no reason to go through
+all the locking overhead for these pages from what I can see.  I added
+code to __get_page_tail() and put_compound_page() to bypass all the
+locking code when working with hugetlbfs pages.  This improved performance
+significantly.  Performance numbers with this patch:
+
+		pre-THP		3.11-rc5	3.11-rc5 + Patch
+1M read		8384 MB/s	6501 MB/s	8371 MB/s
+64K read	7867 MB/s	4251 MB/s	6510 MB/s
+
+Performance with 64K read is still lower than what it was before THP, but
+still a 53% improvement.  It does mean there is more work to be done but I
+will take a 53% improvement for now.
+
+Please take a look at the following patch and let me know if it looks
+reasonable.
+
+[akpm@linux-foundation.org: tweak comments]
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/zram/zram_drv.c | 2 --
- drivers/staging/zram/zram_drv.h | 5 ++---
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ mm/swap.c | 77 ++++++++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 52 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 62f8276..dd915ce 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -622,9 +622,7 @@ static void zram_slot_free_notify(struct block_device *bdev,
- 	struct zram *zram;
+diff --git a/mm/swap.c b/mm/swap.c
+index 6310dc2..7009b21 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -30,6 +30,7 @@
+ #include <linux/backing-dev.h>
+ #include <linux/memcontrol.h>
+ #include <linux/gfp.h>
++#include <linux/hugetlb.h>
  
- 	zram = bdev->bd_disk->private_data;
--	down_write(&zram->lock);
- 	zram_free_page(zram, index);
--	up_write(&zram->lock);
- 	zram_stat64_inc(zram, &zram->stats.notify_free);
+ #include "internal.h"
+ 
+@@ -77,6 +78,19 @@ static void __put_compound_page(struct page *page)
+ 
+ static void put_compound_page(struct page *page)
+ {
++	/*
++	 * hugetlbfs pages cannot be split from under us.  If this is a
++	 * hugetlbfs page, check refcount on head page and release the page if
++	 * the refcount becomes zero.
++	 */
++	if (PageHuge(page)) {
++		page = compound_head(page);
++		if (put_page_testzero(page))
++			__put_compound_page(page);
++
++		return;
++	}
++
+ 	if (unlikely(PageTail(page))) {
+ 		/* __split_huge_page_refcount can run under us */
+ 		struct page *page_head = compound_trans_head(page);
+@@ -180,38 +194,51 @@ bool __get_page_tail(struct page *page)
+ 	 * proper PT lock that already serializes against
+ 	 * split_huge_page().
+ 	 */
+-	unsigned long flags;
+ 	bool got = false;
+-	struct page *page_head = compound_trans_head(page);
++	struct page *page_head;
+ 
+-	if (likely(page != page_head && get_page_unless_zero(page_head))) {
++	/*
++	 * If this is a hugetlbfs page it cannot be split under us.  Simply
++	 * increment refcount for the head page.
++	 */
++	if (PageHuge(page)) {
++		page_head = compound_head(page);
++		atomic_inc(&page_head->_count);
++		got = true;
++	} else {
++		unsigned long flags;
++
++		page_head = compound_trans_head(page);
++		if (likely(page != page_head &&
++					get_page_unless_zero(page_head))) {
++
++			/* Ref to put_compound_page() comment. */
++			if (PageSlab(page_head)) {
++				if (likely(PageTail(page))) {
++					__get_page_tail_foll(page, false);
++					return true;
++				} else {
++					put_page(page_head);
++					return false;
++				}
++			}
+ 
+-		/* Ref to put_compound_page() comment. */
+-		if (PageSlab(page_head)) {
++			/*
++			 * page_head wasn't a dangling pointer but it
++			 * may not be a head page anymore by the time
++			 * we obtain the lock. That is ok as long as it
++			 * can't be freed from under us.
++			 */
++			flags = compound_lock_irqsave(page_head);
++			/* here __split_huge_page_refcount won't run anymore */
+ 			if (likely(PageTail(page))) {
+ 				__get_page_tail_foll(page, false);
+-				return true;
+-			} else {
+-				put_page(page_head);
+-				return false;
++				got = true;
+ 			}
++			compound_unlock_irqrestore(page_head, flags);
++			if (unlikely(!got))
++				put_page(page_head);
+ 		}
+-
+-		/*
+-		 * page_head wasn't a dangling pointer but it
+-		 * may not be a head page anymore by the time
+-		 * we obtain the lock. That is ok as long as it
+-		 * can't be freed from under us.
+-		 */
+-		flags = compound_lock_irqsave(page_head);
+-		/* here __split_huge_page_refcount won't run anymore */
+-		if (likely(PageTail(page))) {
+-			__get_page_tail_foll(page, false);
+-			got = true;
+-		}
+-		compound_unlock_irqrestore(page_head, flags);
+-		if (unlikely(!got))
+-			put_page(page_head);
+ 	}
+ 	return got;
  }
- 
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 4265ab4..df2eec4 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -92,9 +92,8 @@ struct zram {
- 	void *compress_buffer;
- 	struct table *table;
- 	spinlock_t stat64_lock;	/* protect 64-bit stats */
--	struct rw_semaphore lock; /* protect compression buffers, table,
--				   * 32bit stat counters against concurrent
--				   * notifications, reads and writes */
-+	struct rw_semaphore lock; /* protect compression buffers and table
-+				   * against concurrent read and writes */
- 	struct request_queue *queue;
- 	struct gendisk *disk;
- 	int init_done;
 -- 
 1.8.1.2
 
