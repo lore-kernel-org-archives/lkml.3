@@ -1,159 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3ITJ4j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 05:56:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39562 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab3ITJ4e (ORCPT
+	id S1754610Ab3ITJ46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 05:56:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42115 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516Ab3ITJ4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 05:56:34 -0400
-Date: Fri, 20 Sep 2013 11:56:27 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
-        LKML <linux-kernel@vger.kernel.org>, Marc Pignat <marc.pignat@hevs.ch>,
-        john.stultz@linaro.org, kernel@pengutronix.de,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clockevents: Sanitize ticks to nsec conversion
-In-Reply-To: <20130919200343.GV24802@pengutronix.de>
-Message-ID: <alpine.DEB.2.02.1309201127400.4089@ionos.tec.linutronix.de>
-References: <20130917130153.GL26819@ludovic.desroches@atmel.com> <alpine.DEB.2.02.1309172228400.4089@ionos.tec.linutronix.de> <20130918085627.GN24802@pengutronix.de> <alpine.DEB.2.02.1309181058470.4089@ionos.tec.linutronix.de> <20130918150958.GO24802@pengutronix.de>
- <alpine.DEB.2.02.1309182201000.4089@ionos.tec.linutronix.de> <20130919100239.GS24802@pengutronix.de> <alpine.DEB.2.02.1309191207460.4089@ionos.tec.linutronix.de> <20130919124805.GU24802@pengutronix.de> <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
- <20130919200343.GV24802@pengutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 20 Sep 2013 05:56:46 -0400
+Date: Fri, 20 Sep 2013 02:56:09 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-5b6a42fcb38f3230922239255698dd8c39382978@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, efault@gmx.de, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <1379009959-28046-1-git-send-email-adrian.hunter@intel.com>
+References: <1379009959-28046-1-git-send-email-adrian.hunter@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools:
+  Fix buildid cache handling of kallsyms with kcore
+Git-Commit-ID: 5b6a42fcb38f3230922239255698dd8c39382978
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1381942138-1379670810=:4089"
-Content-ID: <alpine.DEB.2.02.1309201153550.4089@ionos.tec.linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 20 Sep 2013 02:56:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Commit-ID:  5b6a42fcb38f3230922239255698dd8c39382978
+Gitweb:     http://git.kernel.org/tip/5b6a42fcb38f3230922239255698dd8c39382978
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Thu, 12 Sep 2013 21:19:19 +0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 19 Sep 2013 11:32:17 -0300
 
---8323329-1381942138-1379670810=:4089
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.02.1309201153551.4089@ionos.tec.linutronix.de>
+perf tools: Fix buildid cache handling of kallsyms with kcore
 
-On Thu, 19 Sep 2013, Uwe Kleine-König wrote:
-> > +     u64 rnd = (u64) evt->mult - 1;
-> >  
-> >       if (unlikely(!evt->mult)) {
-> >               evt->mult = 1;
-> >               WARN_ON(1);
-> >       }
-> I suggest to move the assignment to rnd below this if block as it
-> changes mult. 
+When kallsyms is used with kcore the dso long_name becomes the kcore
+file name.  That prevents the buildid cache from caching kallsyms.
+(There is no support at present for caching kcore).  Fix by changing it
+so that the kallsyms name is used in that case instead.
 
-True.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1379009959-28046-1-git-send-email-adrian.hunter@intel.com
+[ Kept 'struct foo' pointer as first parameter of foo__ prefixed functions ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/header.c | 41 ++++++++++++++++++++++++++++-------------
+ 1 file changed, 28 insertions(+), 13 deletions(-)
 
->  
-> +     /*
-> +      * Upper bound sanity check. If the backwards conversion is
-> +      * not equal latch, we know that the above shift overflowed.
-> +      */
-> +     if (clc >> evt->shift) != (u64)latch)
-You didn't compile test, did you? Also the cast on the rhs isn't needed.
-
-I did. I just missed to refresh the patch before sending it :)
-
-> > +	 * For mult <= (1 << shift) we can safely add mult - 1 to
-> > +	 * prevent integer rounding loss. So the backwards conversion
-> It doesn't prevent inexactness to add mult - 1. It (only) asserts that
-> the ns2delta(delta2ns(latch)) >= latch instead of ... <= latch when not
-> doing it.
-
-For mult <= 1 << shift the conversion is always ending up with the
-same latch value.
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 26441d0..ce69901 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -199,9 +199,11 @@ static int write_buildid(char *name, size_t name_len, u8 *build_id,
+ 	return write_padded(fd, name, name_len + 1, len);
+ }
  
-> > +	 * from nsec to device ticks will be correct.
-> > +	 *
-> > +	 * For mult > (1 << shift), i.e. device frequency is > 1GHz we
-> > +	 * need to be careful. Adding mult - 1 will result in a value
-> > +	 * which when converted back to device ticks will be larger
-> s/will/can/
-
-No, it will always be larger.
-
-> > +	 * than latch by (mult / (1 << shift)) - 1. For the min_delta
-> s/by/by up to/
-> 
-> > +	 * calculation we still want to apply this in order to stay
-> > +	 * above the minimum device ticks limit. For the upper limit
-> > +	 * we would end up with a latch value larger than the upper
-> > +	 * limit of the device, so we omit the add to stay below the
-> > +	 * device upper boundary.
-> > +	 *
-> > +	 * Also omit the add if it would overflow the u64 boundary.
-> > +	 */
-> > +	if ((~0ULL - clc > rnd) &&
-> > +	    (!ismax || evt->mult <= (1U << evt->shift)))
-> > +		clc += rnd;
-> I would expect that
-> 
-> 	if (!ismax)
-> 		if (~0ULL - clc > rnd)
-> 			clc += rnd;
-> 		else
-> 			clc = ~0ULL;
-> 
-> is enough (and a tad more exact in the presence of an overflow). I have
-> to think about that though.
-
-Errm.
-
-1) We cannot add if we'd overflow
-
-2) For mult <= 1 << shift it's always correct
-
-3) for mult > 1 << shift we only apply it to the min value not the max
+-static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
+-				u16 misc, int fd)
++static int __dsos__write_buildid_table(struct list_head *head,
++				       struct machine *machine,
++				       pid_t pid, u16 misc, int fd)
+ {
++	char nm[PATH_MAX];
+ 	struct dso *pos;
  
-> >  	clockevents_calc_mult_shift(dev, freq, sec);
-> > -	dev->min_delta_ns = clockevent_delta2ns(dev->min_delta_ticks, dev);
-> > -	dev->max_delta_ns = clockevent_delta2ns(dev->max_delta_ticks, dev);
-> > +	dev->min_delta_ns = cev_delta2ns(dev->min_delta_ticks, dev, false);
-> > +	dev->max_delta_ns = cev_delta2ns(dev->max_delta_ticks, dev, true);
-> Another improvement that came to my mind just now. For min_delta_ns you
-> want to assert that it results in a value >= min_delta_ticks when
-> converted back. For max_delta_ns you want ... value <= max_delta_ticks.
-> What about the values in between? They for sure should land in
-> [min_delta_ticks ... max_delta_ticks] when converted back and ideally
-> should be most exact. The latter part would mean to add (rnd / 2)
-> instead of rnd. I don't know yet how that would behave at the borders of
-> the [min_delta_ns ... max_delta_ns] interval, but I think you still need
-> to special-case that.
-
-Again:
-
-1) For mult <= 1 << shift the backwards conversion is always the same as
-   the input value.
-
-2) For mult > 1 << shift the backwards conversion of the min value is
-   always > than the input value. And the backwards conversion of the
-   max value is always < than the input value.
-
-The values between that are completely uninteresting as the
-program_events code always converts from nsec to device ticks.
-
-We clamp the delta between min_ns and max_ns. So due to the above any
-
-   min_ns <= delta <= max_ns
-
-will after conversion fulfil 
-
-   min_tick <= delta_tick <= max_tick
-
-So what are you going to improve? Either the math works or it does not.
-
-Thanks,
-
-	tglx
---8323329-1381942138-1379670810=:4089--
+ 	dsos__for_each_with_build_id(pos, head) {
+@@ -215,6 +217,10 @@ static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
+ 		if (is_vdso_map(pos->short_name)) {
+ 			name = (char *) VDSO__MAP_NAME;
+ 			name_len = sizeof(VDSO__MAP_NAME) + 1;
++		} else if (dso__is_kcore(pos)) {
++			machine__mmap_name(machine, nm, sizeof(nm));
++			name = nm;
++			name_len = strlen(nm) + 1;
+ 		} else {
+ 			name = pos->long_name;
+ 			name_len = pos->long_name_len + 1;
+@@ -240,10 +246,10 @@ static int machine__write_buildid_table(struct machine *machine, int fd)
+ 		umisc = PERF_RECORD_MISC_GUEST_USER;
+ 	}
+ 
+-	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine->pid,
+-					  kmisc, fd);
++	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine,
++					  machine->pid, kmisc, fd);
+ 	if (err == 0)
+-		err = __dsos__write_buildid_table(&machine->user_dsos,
++		err = __dsos__write_buildid_table(&machine->user_dsos, machine,
+ 						  machine->pid, umisc, fd);
+ 	return err;
+ }
+@@ -375,23 +381,31 @@ out_free:
+ 	return err;
+ }
+ 
+-static int dso__cache_build_id(struct dso *dso, const char *debugdir)
++static int dso__cache_build_id(struct dso *dso, struct machine *machine,
++			       const char *debugdir)
+ {
+ 	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
+ 	bool is_vdso = is_vdso_map(dso->short_name);
++	char *name = dso->long_name;
++	char nm[PATH_MAX];
+ 
+-	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id),
+-				     dso->long_name, debugdir,
+-				     is_kallsyms, is_vdso);
++	if (dso__is_kcore(dso)) {
++		is_kallsyms = true;
++		machine__mmap_name(machine, nm, sizeof(nm));
++		name = nm;
++	}
++	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id), name,
++				     debugdir, is_kallsyms, is_vdso);
+ }
+ 
+-static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
++static int __dsos__cache_build_ids(struct list_head *head,
++				   struct machine *machine, const char *debugdir)
+ {
+ 	struct dso *pos;
+ 	int err = 0;
+ 
+ 	dsos__for_each_with_build_id(pos, head)
+-		if (dso__cache_build_id(pos, debugdir))
++		if (dso__cache_build_id(pos, machine, debugdir))
+ 			err = -1;
+ 
+ 	return err;
+@@ -399,8 +413,9 @@ static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
+ 
+ static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
+ {
+-	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, debugdir);
+-	ret |= __dsos__cache_build_ids(&machine->user_dsos, debugdir);
++	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, machine,
++					  debugdir);
++	ret |= __dsos__cache_build_ids(&machine->user_dsos, machine, debugdir);
+ 	return ret;
+ }
+ 
