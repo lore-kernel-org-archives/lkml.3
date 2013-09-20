@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab3ITUNK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:13:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41515 "EHLO
+	id S1755780Ab3ITU1e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:27:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41529 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516Ab3ITUNF (ORCPT
+	with ESMTP id S1754516Ab3ITUNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:13:05 -0400
+	Fri, 20 Sep 2013 16:13:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 50/93] drm/radeon: fix resume on some rs4xx boards (v2)
-Date: Fri, 20 Sep 2013 13:08:45 -0700
-Message-Id: <1379707768-1804-51-git-send-email-kamal@canonical.com>
+Cc: =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        Jiri Kosina <jkosina@suse.cz>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 57/93] HID: picolcd: Prevent NULL pointer dereference on _remove()
+Date: Fri, 20 Sep 2013 13:08:52 -0700
+Message-Id: <1379707768-1804-58-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,50 +30,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>
 
-commit acf88deb8ddbb73acd1c3fa32fde51af9153227f upstream.
+commit 1cde501bb4655e98fb832194beb88ac73be5a05d upstream.
 
-Setting MC_MISC_CNTL.GART_INDEX_REG_EN causes hangs on
-some boards on resume.  The systems seem to work fine
-without touching this bit so leave it as is.
+When picolcd is switched into bootloader mode (for FW flashing) make
+sure not to try to dereference NULL-pointers of feature-devices during
+unplug/unbind.
 
-v2: read-modify-write the GART_INDEX_REG_EN bit.
-I suspect the problem is that we are losing the other
-settings in the register.
+This fixes following BUG:
+  BUG: unable to handle kernel NULL pointer dereference at 00000298
+  IP: [<f811f56b>] picolcd_exit_framebuffer+0x1b/0x80 [hid_picolcd]
+  *pde = 00000000
+  Oops: 0000 [#1]
+  Modules linked in: hid_picolcd syscopyarea sysfillrect sysimgblt fb_sys_fops
+  CPU: 0 PID: 15 Comm: khubd Not tainted 3.11.0-rc7-00002-g50d62d4 #2
+  EIP: 0060:[<f811f56b>] EFLAGS: 00010292 CPU: 0
+  EIP is at picolcd_exit_framebuffer+0x1b/0x80 [hid_picolcd]
+  Call Trace:
+   [<f811d1ab>] picolcd_remove+0xcb/0x120 [hid_picolcd]
+   [<c1469b09>] hid_device_remove+0x59/0xc0
+   [<c13464ca>] __device_release_driver+0x5a/0xb0
+   [<c134653f>] device_release_driver+0x1f/0x30
+   [<c134603d>] bus_remove_device+0x9d/0xd0
+   [<c13439a5>] device_del+0xd5/0x150
+   [<c14696a4>] hid_destroy_device+0x24/0x60
+   [<c1474cbb>] usbhid_disconnect+0x1b/0x40
+   ...
 
-fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=52952
-
-Reported-by: Ondrej Zary <linux@rainbow-software.org>
-Tested-by: Daniel Tobias <dan.g.tob@gmail.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/rs400.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/hid/hid-picolcd_cir.c | 3 ++-
+ drivers/hid/hid-picolcd_fb.c  | 6 +++++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/rs400.c b/drivers/gpu/drm/radeon/rs400.c
-index 233a9b9..b8074a8 100644
---- a/drivers/gpu/drm/radeon/rs400.c
-+++ b/drivers/gpu/drm/radeon/rs400.c
-@@ -174,10 +174,13 @@ int rs400_gart_enable(struct radeon_device *rdev)
- 	/* FIXME: according to doc we should set HIDE_MMCFG_BAR=0,
- 	 * AGPMODE30=0 & AGP30ENHANCED=0 in NB_CNTL */
- 	if ((rdev->family == CHIP_RS690) || (rdev->family == CHIP_RS740)) {
--		WREG32_MC(RS480_MC_MISC_CNTL,
--			  (RS480_GART_INDEX_REG_EN | RS690_BLOCK_GFX_D3_EN));
-+		tmp = RREG32_MC(RS480_MC_MISC_CNTL);
-+		tmp |= RS480_GART_INDEX_REG_EN | RS690_BLOCK_GFX_D3_EN;
-+		WREG32_MC(RS480_MC_MISC_CNTL, tmp);
- 	} else {
--		WREG32_MC(RS480_MC_MISC_CNTL, RS480_GART_INDEX_REG_EN);
-+		tmp = RREG32_MC(RS480_MC_MISC_CNTL);
-+		tmp |= RS480_GART_INDEX_REG_EN;
-+		WREG32_MC(RS480_MC_MISC_CNTL, tmp);
- 	}
- 	/* Enable gart */
- 	WREG32_MC(RS480_AGP_ADDRESS_SPACE_SIZE, (RS480_GART_EN | size_reg));
+diff --git a/drivers/hid/hid-picolcd_cir.c b/drivers/hid/hid-picolcd_cir.c
+index a79e95b..1a79a1e 100644
+--- a/drivers/hid/hid-picolcd_cir.c
++++ b/drivers/hid/hid-picolcd_cir.c
+@@ -147,6 +147,7 @@ void picolcd_exit_cir(struct picolcd_data *data)
+ 	struct rc_dev *rdev = data->rc_dev;
+ 
+ 	data->rc_dev = NULL;
+-	rc_unregister_device(rdev);
++	if (rdev)
++		rc_unregister_device(rdev);
+ }
+ 
+diff --git a/drivers/hid/hid-picolcd_fb.c b/drivers/hid/hid-picolcd_fb.c
+index eb00357..104df56 100644
+--- a/drivers/hid/hid-picolcd_fb.c
++++ b/drivers/hid/hid-picolcd_fb.c
+@@ -595,10 +595,14 @@ err_nomem:
+ void picolcd_exit_framebuffer(struct picolcd_data *data)
+ {
+ 	struct fb_info *info = data->fb_info;
+-	struct picolcd_fb_data *fbdata = info->par;
++	struct picolcd_fb_data *fbdata;
+ 	unsigned long flags;
+ 
++	if (!info)
++		return;
++
+ 	device_remove_file(&data->hdev->dev, &dev_attr_fb_update_rate);
++	fbdata = info->par;
+ 
+ 	/* disconnect framebuffer from HID dev */
+ 	spin_lock_irqsave(&fbdata->lock, flags);
 -- 
 1.8.1.2
 
