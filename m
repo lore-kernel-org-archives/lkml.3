@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab3ITUZT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:25:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41591 "EHLO
+	id S1754862Ab3ITUOH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:14:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41569 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860Ab3ITUON (ORCPT
+	with ESMTP id S1754808Ab3ITUOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:14:13 -0400
+	Fri, 20 Sep 2013 16:14:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Colin Cross <ccross@android.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 38/93] cpuidle: coupled: abort idle if pokes are pending
-Date: Fri, 20 Sep 2013 13:08:33 -0700
-Message-Id: <1379707768-1804-39-git-send-email-kamal@canonical.com>
+Subject: [PATCH 40/93] cpuidle: coupled: fix race condition between pokes and safe state
+Date: Fri, 20 Sep 2013 13:08:35 -0700
+Message-Id: <1379707768-1804-41-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -30,246 +30,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Colin Cross <ccross@android.com>
 
-commit f983827bcb9d2c34c4d8935861a1e9128aec2baf upstream.
+commit 9e19b73c30a5fa42a53583a1f7817dd857126156 upstream.
 
-Joseph Lo <josephl@nvidia.com> reported a lockup on Tegra20 caused
-by a race condition in coupled cpuidle.  When two or more cpus
-enter idle at the same time, the first cpus to arrive may go to the
-ready loop without processing pending pokes from the last cpu to
-arrive.
+The coupled cpuidle waiting loop clears pending pokes before
+entering the safe state.  If a poke arrives just before the
+pokes are cleared, but after the while loop condition checks,
+the poke will be lost and the cpu will stay in the safe state
+until another interrupt arrives.  This may cause the cpu that
+sent the poke to spin in the ready loop with interrupts off
+until another cpu receives an interrupt, and if no other cpus
+have interrupts routed to them it can spin forever.
 
-This patch adds a check for pending pokes once all cpus have been
-synchronized in the ready loop and resets the coupled state and
-retries if any cpus failed to handle their pending poke.
+Change the return value of cpuidle_coupled_clear_pokes to
+return if a poke was cleared, and move the need_resched()
+checks into the callers.  In the waiting loop, if
+a poke was cleared restart the loop to repeat the while
+condition checks.
 
-Retrying on all cpus may trigger the same issue again, so this patch
-also adds a check to ensure that each cpu has received at least one
-poke between when it enters the waiting loop and when it moves on to
-the ready loop.
-
-Reported-and-tested-by: Joseph Lo <josephl@nvidia.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
+Reported-by: Neil Zhang <zhangwm@marvell.com>
 Signed-off-by: Colin Cross <ccross@android.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/cpuidle/coupled.c | 107 +++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 82 insertions(+), 25 deletions(-)
+ drivers/cpuidle/coupled.c | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-index 2a297f8..dc9e647 100644
+index 5d39627..f8a8636 100644
 --- a/drivers/cpuidle/coupled.c
 +++ b/drivers/cpuidle/coupled.c
-@@ -106,6 +106,7 @@ struct cpuidle_coupled {
- 	cpumask_t coupled_cpus;
- 	int requested_state[NR_CPUS];
- 	atomic_t ready_waiting_counts;
-+	atomic_t abort_barrier;
- 	int online_count;
- 	int refcnt;
- 	int prevent;
-@@ -122,12 +123,19 @@ static DEFINE_MUTEX(cpuidle_coupled_lock);
- static DEFINE_PER_CPU(struct call_single_data, cpuidle_coupled_poke_cb);
- 
- /*
-- * The cpuidle_coupled_poked_mask mask is used to avoid calling
-+ * The cpuidle_coupled_poke_pending mask is used to avoid calling
-  * __smp_call_function_single with the per cpu call_single_data struct already
-  * in use.  This prevents a deadlock where two cpus are waiting for each others
-  * call_single_data struct to be available
-  */
--static cpumask_t cpuidle_coupled_poked_mask;
-+static cpumask_t cpuidle_coupled_poke_pending;
-+
-+/*
-+ * The cpuidle_coupled_poked mask is used to ensure that each cpu has been poked
-+ * once to minimize entering the ready loop with a poke pending, which would
-+ * require aborting and retrying.
-+ */
-+static cpumask_t cpuidle_coupled_poked;
- 
- /**
-  * cpuidle_coupled_parallel_barrier - synchronize all online coupled cpus
-@@ -291,10 +299,11 @@ static inline int cpuidle_coupled_get_state(struct cpuidle_device *dev,
- 	return state;
- }
- 
--static void cpuidle_coupled_poked(void *info)
-+static void cpuidle_coupled_handle_poke(void *info)
- {
- 	int cpu = (unsigned long)info;
--	cpumask_clear_cpu(cpu, &cpuidle_coupled_poked_mask);
-+	cpumask_set_cpu(cpu, &cpuidle_coupled_poked);
-+	cpumask_clear_cpu(cpu, &cpuidle_coupled_poke_pending);
- }
- 
- /**
-@@ -313,7 +322,7 @@ static void cpuidle_coupled_poke(int cpu)
- {
- 	struct call_single_data *csd = &per_cpu(cpuidle_coupled_poke_cb, cpu);
- 
--	if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poked_mask))
-+	if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poke_pending))
- 		__smp_call_function_single(cpu, csd, 0);
- }
- 
-@@ -340,30 +349,19 @@ static void cpuidle_coupled_poke_others(int this_cpu,
-  * @coupled: the struct coupled that contains the current cpu
-  * @next_state: the index in drv->states of the requested state for this cpu
+@@ -408,19 +408,22 @@ static void cpuidle_coupled_set_done(int cpu, struct cpuidle_coupled *coupled)
+  * been processed and the poke bit has been cleared.
   *
-- * Updates the requested idle state for the specified cpuidle device,
-- * poking all coupled cpus out of idle if necessary to let them see the new
-- * state.
-+ * Updates the requested idle state for the specified cpuidle device.
-+ * Returns the number of waiting cpus.
+  * Other interrupts may also be processed while interrupts are enabled, so
+- * need_resched() must be tested after turning interrupts off again to make sure
++ * need_resched() must be tested after this function returns to make sure
+  * the interrupt didn't schedule work that should take the cpu out of idle.
+  *
+- * Returns 0 if need_resched was false, -EINTR if need_resched was true.
++ * Returns 0 if no poke was pending, 1 if a poke was cleared.
   */
--static void cpuidle_coupled_set_waiting(int cpu,
-+static int cpuidle_coupled_set_waiting(int cpu,
- 		struct cpuidle_coupled *coupled, int next_state)
- {
--	int w;
--
- 	coupled->requested_state[cpu] = next_state;
- 
- 	/*
--	 * If this is the last cpu to enter the waiting state, poke
--	 * all the other cpus out of their waiting state so they can
--	 * enter a deeper state.  This can race with one of the cpus
--	 * exiting the waiting state due to an interrupt and
--	 * decrementing waiting_count, see comment below.
--	 *
- 	 * The atomic_inc_return provides a write barrier to order the write
- 	 * to requested_state with the later write that increments ready_count.
- 	 */
--	w = atomic_inc_return(&coupled->ready_waiting_counts) & WAITING_MASK;
--	if (w == coupled->online_count)
--		cpuidle_coupled_poke_others(cpu, coupled);
-+	return atomic_inc_return(&coupled->ready_waiting_counts) & WAITING_MASK;
- }
- 
- /**
-@@ -418,13 +416,24 @@ static void cpuidle_coupled_set_done(int cpu, struct cpuidle_coupled *coupled)
  static int cpuidle_coupled_clear_pokes(int cpu)
  {
++	if (!cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
++		return 0;
++
  	local_irq_enable();
--	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poked_mask))
-+	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
+ 	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
  		cpu_relax();
  	local_irq_disable();
  
- 	return need_resched() ? -EINTR : 0;
+-	return need_resched() ? -EINTR : 0;
++	return 1;
  }
  
-+static bool cpuidle_coupled_any_pokes_pending(struct cpuidle_coupled *coupled)
-+{
-+	cpumask_t cpus;
-+	int ret;
-+
-+	cpumask_and(&cpus, cpu_online_mask, &coupled->coupled_cpus);
-+	ret = cpumask_and(&cpus, &cpuidle_coupled_poke_pending, &cpus);
-+
-+	return ret;
-+}
-+
- /**
-  * cpuidle_enter_state_coupled - attempt to enter a state with coupled cpus
-  * @dev: struct cpuidle_device for the current cpu
-@@ -449,6 +458,7 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
- {
- 	int entered_state = -1;
- 	struct cpuidle_coupled *coupled = dev->coupled;
-+	int w;
- 
- 	if (!coupled)
+ static bool cpuidle_coupled_any_pokes_pending(struct cpuidle_coupled *coupled)
+@@ -464,7 +467,8 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
  		return -EINVAL;
-@@ -465,14 +475,33 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
- 	/* Read barrier ensures online_count is read after prevent is cleared */
- 	smp_rmb();
  
--	cpuidle_coupled_set_waiting(dev->cpu, coupled, next_state);
-+reset:
-+	cpumask_clear_cpu(dev->cpu, &cpuidle_coupled_poked);
-+
-+	w = cpuidle_coupled_set_waiting(dev->cpu, coupled, next_state);
-+	/*
-+	 * If this is the last cpu to enter the waiting state, poke
-+	 * all the other cpus out of their waiting state so they can
-+	 * enter a deeper state.  This can race with one of the cpus
-+	 * exiting the waiting state due to an interrupt and
-+	 * decrementing waiting_count, see comment below.
-+	 */
-+	if (w == coupled->online_count) {
-+		cpumask_set_cpu(dev->cpu, &cpuidle_coupled_poked);
-+		cpuidle_coupled_poke_others(dev->cpu, coupled);
-+	}
- 
- retry:
- 	/*
- 	 * Wait for all coupled cpus to be idle, using the deepest state
--	 * allowed for a single cpu.
-+	 * allowed for a single cpu.  If this was not the poking cpu, wait
-+	 * for at least one poke before leaving to avoid a race where
-+	 * two cpus could arrive at the waiting loop at the same time,
-+	 * but the first of the two to arrive could skip the loop without
-+	 * processing the pokes from the last to arrive.
+ 	while (coupled->prevent) {
+-		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
++		cpuidle_coupled_clear_pokes(dev->cpu);
++		if (need_resched()) {
+ 			local_irq_enable();
+ 			return entered_state;
+ 		}
+@@ -503,7 +507,10 @@ retry:
  	 */
--	while (!cpuidle_coupled_cpus_waiting(coupled)) {
-+	while (!cpuidle_coupled_cpus_waiting(coupled) ||
-+			!cpumask_test_cpu(dev->cpu, &cpuidle_coupled_poked)) {
- 		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
+ 	while (!cpuidle_coupled_cpus_waiting(coupled) ||
+ 			!cpumask_test_cpu(dev->cpu, &cpuidle_coupled_poked)) {
+-		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
++		if (cpuidle_coupled_clear_pokes(dev->cpu))
++			continue;
++
++		if (need_resched()) {
  			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
  			goto out;
-@@ -493,6 +522,12 @@ retry:
+ 		}
+@@ -518,7 +525,8 @@ retry:
+ 		local_irq_disable();
  	}
  
- 	/*
-+	 * Make sure final poke status for this cpu is visible before setting
-+	 * cpu as ready.
-+	 */
-+	smp_wmb();
-+
-+	/*
- 	 * All coupled cpus are probably idle.  There is a small chance that
- 	 * one of the other cpus just became active.  Increment the ready count,
- 	 * and spin until all coupled cpus have incremented the counter. Once a
-@@ -511,6 +546,28 @@ retry:
- 		cpu_relax();
+-	if (cpuidle_coupled_clear_pokes(dev->cpu)) {
++	cpuidle_coupled_clear_pokes(dev->cpu);
++	if (need_resched()) {
+ 		cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
+ 		goto out;
  	}
- 
-+	/*
-+	 * Make sure read of all cpus ready is done before reading pending pokes
-+	 */
-+	smp_rmb();
-+
-+	/*
-+	 * There is a small chance that a cpu left and reentered idle after this
-+	 * cpu saw that all cpus were waiting.  The cpu that reentered idle will
-+	 * have sent this cpu a poke, which will still be pending after the
-+	 * ready loop.  The pending interrupt may be lost by the interrupt
-+	 * controller when entering the deep idle state.  It's not possible to
-+	 * clear a pending interrupt without turning interrupts on and handling
-+	 * it, and it's too late to turn on interrupts here, so reset the
-+	 * coupled idle state of all cpus and retry.
-+	 */
-+	if (cpuidle_coupled_any_pokes_pending(coupled)) {
-+		cpuidle_coupled_set_done(dev->cpu, coupled);
-+		/* Wait for all cpus to see the pending pokes */
-+		cpuidle_coupled_parallel_barrier(dev, &coupled->abort_barrier);
-+		goto reset;
-+	}
-+
- 	/* all cpus have acked the coupled state */
- 	next_state = cpuidle_coupled_get_state(dev, coupled);
- 
-@@ -596,7 +653,7 @@ have_coupled:
- 	coupled->refcnt++;
- 
- 	csd = &per_cpu(cpuidle_coupled_poke_cb, dev->cpu);
--	csd->func = cpuidle_coupled_poked;
-+	csd->func = cpuidle_coupled_handle_poke;
- 	csd->info = (void *)(unsigned long)dev->cpu;
- 
- 	return 0;
 -- 
 1.8.1.2
 
