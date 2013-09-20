@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab3ITShj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 14:37:39 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:65423 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187Ab3ITShi (ORCPT
+	id S1753361Ab3ITSkv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 14:40:51 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:60365 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab3ITSkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 14:37:38 -0400
-Date: Fri, 20 Sep 2013 13:37:33 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
-Message-ID: <20130920183731.GC30381@localhost.localdomain>
-References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
- <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
- <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
- <20130920162603.GA30381@localhost.localdomain>
- <alpine.DEB.2.02.1309201926440.4089@ionos.tec.linutronix.de>
+	Fri, 20 Sep 2013 14:40:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1309201926440.4089@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52279082.5010105@wwwdotorg.org>
+References: <1378294169-22661-1-git-send-email-acourbot@nvidia.com>
+	<1378294169-22661-5-git-send-email-acourbot@nvidia.com>
+	<52279082.5010105@wwwdotorg.org>
+Date: Fri, 20 Sep 2013 20:40:48 +0200
+Message-ID: <CACRpkdY70r8mL8PSDmexr+_0Ddi-Y8x0RaDF-WWucZM9V8n=yw@mail.gmail.com>
+Subject: Re: [RFC 4/5] gpiolib: add gpiod_get() and gpiod_put() functions
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 07:30:14PM +0200, Thomas Gleixner wrote:
-> On Fri, 20 Sep 2013, Frederic Weisbecker wrote:
-> 
-> > Now just for clarity, what do we then do with inline sofirq
-> > executions: on local_bh_enable() for example, or explicit calls to
-> > do_softirq() other than irq exit?  Should we keep the current switch
-> > to a different softirq stack? If we have a generic irq stack (used
-> > for both hard and soft) that is big enough, perhaps we can also
-> > switch to this generic irq stack for inline softirqs executions?
-> > After all there is no much point in keeping a separate stack for
-> > that: this result in cache misses if the inline softirq is
-> > interrupted by a hardirq, also inlined softirqs can't happen in
-> > hardirq, so there should be no much risk of overruns.
-> 
-> We can use the same irqstack for this because from the irqstack point
-> of view, thats the same as if softirqs get executed from
-> irq_exit().
+On Wed, Sep 4, 2013 at 9:56 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 09/04/2013 05:29 AM, Alexandre Courbot wrote:
+>> Add gpiod_get() and gpiod_put() functions that provide safer handling of
+>> GPIOs.
+>>
+>> These functions put the GPIO framework in line with the conventions of
+>> other frameworks in the kernel, and help ensure every GPIO is declared
+>> properly and valid while it is used.
+>
+>> diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
+>
+>> +struct gpio_desc *__must_check gpiod_get(struct device *dev,
+>> +                                      const char *con_id);
+>> +void gpiod_put(struct gpio_desc *desc);
+>
+> It might be nice to add an "int index" parameter to this function. For
+> example, a bit-banged parallel bus protocol driver might have 1
+> chip-select GPIO, 1 clock GPIO, and 8 data GPIOs. gpiod_get(dev, "bus",
+> 0)..gpiod_get(dev, "bus", 7) might be nicer than gpiod_get(dev,
+> "bus0")..gpiod_get(dev, "bus7")? Possibly for client-simplicity,
+> implement both gpiod_get(dev, con_id) (as an inline wrapper for ...) and
+> gpiod_get_index(dev, con_id, index)?
+>
+> In DT terms, this would map to:
+>
+> cs-gpios = <&gpio 3 0>;
+> clock-gpios = <&gpio 5 0>;
+> bus-gpios = <&gpio 10 0 ... &gpio 17 0>;
+>
+> ... and with the mapping table registration mechanism, we could
+> presumably add "int index" to struct gpiod_lookup.
 
-Ok, so I see that's what x86-64 is doing. But x86-32 seems to be using different
-stacks for hard and soft irqs for no much reasons (expept maybe to avoid overrun if
-the hardirq). And x86-32 only switches to hardirq
-stack for the handler. So probably we can use the same stack for the whole and extend
-it to before irq_enter() and after irq_exit(), like you suggested.
+This is an interesting usability aspect of the API, so I'd especially
+like some input from the ACPI people on this as well.
 
-BTW, we still want the 1st patch of my series I think, as it simply consolidate existing code.
-Using the same stack for hard and soft irqs is independant from that.
+Paging Mika, Rafael, Mathias.
 
-If you're ok with it, would you agree to apply it?
-
-Thanks.
+Yours,
+Linus Walleij
