@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab3ITR6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 13:58:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50153 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752363Ab3ITR6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 13:58:49 -0400
-Date: Fri, 20 Sep 2013 13:58:40 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]kconfig/menu.c: fix uninitialized variable warning
-Message-ID: <20130920175840.GA31609@d2.synalogic.ca>
-References: <1379575697-6740-1-git-send-email-maddy@linux.vnet.ibm.com>
- <20130919152227.GB19364@d2.synalogic.ca>
- <20130919172751.GA3317@free.fr>
- <20130919191315.GA19703@d2.synalogic.ca>
- <20130919200430.GC3317@free.fr>
- <523BB48F.9020403@linux.vnet.ibm.com>
+	id S1753330Ab3ITR7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 13:59:13 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:55720 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753203Ab3ITR7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 13:59:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <523BB48F.9020403@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1378294169-22661-6-git-send-email-acourbot@nvidia.com>
+References: <1378294169-22661-1-git-send-email-acourbot@nvidia.com>
+	<1378294169-22661-6-git-send-email-acourbot@nvidia.com>
+Date: Fri, 20 Sep 2013 19:59:00 +0200
+Message-ID: <CACRpkdbB29rL_kTqKQ6ZC=J=p9amRODRDVFMP6ZoF=aa6k9pqA@mail.gmail.com>
+Subject: Re: [RFC 5/5] gpiolib: update documentation
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/09/20 08:05, Madhavan Srinivasan wrote:
-> On Friday 20 September 2013 01:34 AM, Yann E. MORIN wrote:
-> > Benjamin, All,
-> > 
-> > On 2013-09-19 15:13 -0400, Benjamin Poirier spake thusly:
-> >> On 2013/09/19 19:27, Yann E. MORIN wrote:
-> >>> Benjamin, Madhavan, All,
-> >>>
-> >>> On 2013-09-19 11:22 -0400, Benjamin Poirier spake thusly:
-> >>>> On 2013/09/19 12:58, Madhavan Srinivasan wrote:
-> >>>>> In file included from scripts/kconfig/zconf.tab.c:2537:0:
-> >>>>> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
-> >>>>> scripts/kconfig/menu.c:586:18: warning: ‘jump’ may be used uninitialized in
-> >>>>> this function [-Wmaybe-uninitialized]
-[...]
-> >>>>
-> >>>> I do not see this warning with gcc 4.7.2 or 4.8.1. Which version are you
-> >>>> using?
-> >>>>
-[...]
-> > 
-> > No, I was not able to reproduce it with either gcc-4.4.7, gcc-4.6.4 or
-> > gcc-4.7.3 on my Ubuntu 13.04. Neither gcc-4.5 nor 4.8 are packaged, so
-> > I could not test them.
-> > 
-> > Anyway, -Wmaybe-uninitialized is new with 4.7. So, the warning can't
-> > happen with gcc < 4.7.
-> > 
-> > Madhavan, what gcc version are you using?
-> gcc i have is gcc version 4.8.0 20130526
+On Wed, Sep 4, 2013 at 1:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-In that case, I don't have a strong opinion whether the patch should be
-merged or not, but if it is merged, I think a comment should be added to
-the code or the changelog stating that this is to work around a
-deficiency observed in gcc 4.8.0.
+> +The GPIO framework has quite a bit of history behind it. Currently there exist
+> +two different (although very similar) ways of using GPIOs:
+> +
+> +  - The legacy integer-based interface represents GPIOs as integers. This is
+> +    the "historic" way of accessing GPIOs and it was done so because it makes
+> +    GPIOs easy to represent and also allows for the compiler to statically know
+> +    the GPIO number and use fast-paths on GPIOs for which performance matters.
+> +    However, GPIOs can easily be forged this way, and the maximum number of
+> +    GPIOs in the system must be known in advance. Functions of this interface
+> +    are prefixed with "gpio_".
+> +
+> +  - The new descriptor-based interface represents GPIOs as an opaque pointer.
+> +    This ensures GPIOs are properly acquired before usage, and also does not
+> +    presume anything about their underlying implementation. This interface
+> +    provides get/put functions to acquire GPIOs according to their function for
+> +    a particular device, similarly to e.g. the regulator framework. For these
+> +    reasons, it is the preferred way to access GPIOs. Its functions are prefixed
+> +    with "gpiod_".
+
+I would put all the new style gpiod_* based things on top of the file, and
+all the old stuff under a separate heading below DEPRECATED LEGACY INTERFACE
+so it's crystal clear that this is going away.
+
+Yours,
+Linus Walleij
