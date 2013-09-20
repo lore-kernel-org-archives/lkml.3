@@ -1,38 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab3ITPvA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 11:51:00 -0400
-Received: from ip-17-6.unej.ac.id ([202.154.17.6]:57803 "EHLO mail.uj.ac.id"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751675Ab3ITPu7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 11:50:59 -0400
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Sep 2013 11:50:59 EDT
-Content-Type: text/plain; charset=US-ASCII
+	id S1752365Ab3ITPvg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 11:51:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52590 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752189Ab3ITPve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 11:51:34 -0400
+Date: Fri, 20 Sep 2013 21:21:29 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@dhcp193-39.pnq.redhat.com
+To: linux-kernel@vger.kernel.org
+Subject: Need patch review
+Message-ID: <alpine.LFD.2.03.1309191948100.13498@erqung.pbz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: system administrator
-To: Recipients <akademik@uj.ac.id>
-From: "WEBMASTER" <akademik@uj.ac.id>
-Date: Fri, 20 Sep 2013 10:36:54 +0100
-Reply-To: 647812717@qq.com
-Message-Id: <20130920154419.B82DB7A191E2@mail.uj.ac.id>
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear user
-Your email has exceeded 2 GB, which is created by
-Webmaster, now at 2.30GB, you can not Send or receive new messages 
-until you check your account.Complete the form to verify your account.
+    Hello,
 
-Please complete the details below to confirm your account
+NULL pointer dereference while loading initramfs
+   -> https://lkml.org/lkml/2013/9/15/20
 
-(1) E-mail:
-(2) Name:
-(3) Password:
-(4) Confirm Password:
+Export initial ramdisk compression config option
+   -> https://lkml.org/lkml/2013/9/15/22
 
-thank you
-system administrator
+Could someone have a look at these patches please?
+
+Thank you.
+--
+Prasad J Pandit / Red Hat Security Response Team
+DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
