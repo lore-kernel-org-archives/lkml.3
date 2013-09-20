@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab3ITU1e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:27:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41529 "EHLO
+	id S932082Ab3ITU15 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:27:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41524 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516Ab3ITUNK (ORCPT
+	with ESMTP id S1754646Ab3ITUNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:13:10 -0400
+	Fri, 20 Sep 2013 16:13:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        Jiri Kosina <jkosina@suse.cz>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 57/93] HID: picolcd: Prevent NULL pointer dereference on _remove()
-Date: Fri, 20 Sep 2013 13:08:52 -0700
-Message-Id: <1379707768-1804-58-git-send-email-kamal@canonical.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 58/93] HID: battery: don't do DMA from stack
+Date: Fri, 20 Sep 2013 13:08:53 -0700
+Message-Id: <1379707768-1804-59-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,75 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 1cde501bb4655e98fb832194beb88ac73be5a05d upstream.
+commit 6c2794a2984f4c17a58117a68703cc7640f01c5a upstream.
 
-When picolcd is switched into bootloader mode (for FW flashing) make
-sure not to try to dereference NULL-pointers of feature-devices during
-unplug/unbind.
+Instead of using data from stack for DMA in hidinput_get_battery_property(),
+allocate the buffer dynamically.
 
-This fixes following BUG:
-  BUG: unable to handle kernel NULL pointer dereference at 00000298
-  IP: [<f811f56b>] picolcd_exit_framebuffer+0x1b/0x80 [hid_picolcd]
-  *pde = 00000000
-  Oops: 0000 [#1]
-  Modules linked in: hid_picolcd syscopyarea sysfillrect sysimgblt fb_sys_fops
-  CPU: 0 PID: 15 Comm: khubd Not tainted 3.11.0-rc7-00002-g50d62d4 #2
-  EIP: 0060:[<f811f56b>] EFLAGS: 00010292 CPU: 0
-  EIP is at picolcd_exit_framebuffer+0x1b/0x80 [hid_picolcd]
-  Call Trace:
-   [<f811d1ab>] picolcd_remove+0xcb/0x120 [hid_picolcd]
-   [<c1469b09>] hid_device_remove+0x59/0xc0
-   [<c13464ca>] __device_release_driver+0x5a/0xb0
-   [<c134653f>] device_release_driver+0x1f/0x30
-   [<c134603d>] bus_remove_device+0x9d/0xd0
-   [<c13439a5>] device_del+0xd5/0x150
-   [<c14696a4>] hid_destroy_device+0x24/0x60
-   [<c1474cbb>] usbhid_disconnect+0x1b/0x40
-   ...
-
-Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+Reported-by: Richard Ryniker <ryniker@alum.mit.edu>
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hid/hid-picolcd_cir.c | 3 ++-
- drivers/hid/hid-picolcd_fb.c  | 6 +++++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/hid/hid-input.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/hid/hid-picolcd_cir.c b/drivers/hid/hid-picolcd_cir.c
-index a79e95b..1a79a1e 100644
---- a/drivers/hid/hid-picolcd_cir.c
-+++ b/drivers/hid/hid-picolcd_cir.c
-@@ -147,6 +147,7 @@ void picolcd_exit_cir(struct picolcd_data *data)
- 	struct rc_dev *rdev = data->rc_dev;
- 
- 	data->rc_dev = NULL;
--	rc_unregister_device(rdev);
-+	if (rdev)
-+		rc_unregister_device(rdev);
- }
- 
-diff --git a/drivers/hid/hid-picolcd_fb.c b/drivers/hid/hid-picolcd_fb.c
-index eb00357..104df56 100644
---- a/drivers/hid/hid-picolcd_fb.c
-+++ b/drivers/hid/hid-picolcd_fb.c
-@@ -595,10 +595,14 @@ err_nomem:
- void picolcd_exit_framebuffer(struct picolcd_data *data)
+diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+index 21b196c..f495ada 100644
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -340,7 +340,7 @@ static int hidinput_get_battery_property(struct power_supply *psy,
  {
- 	struct fb_info *info = data->fb_info;
--	struct picolcd_fb_data *fbdata = info->par;
-+	struct picolcd_fb_data *fbdata;
- 	unsigned long flags;
+ 	struct hid_device *dev = container_of(psy, struct hid_device, battery);
+ 	int ret = 0;
+-	__u8 buf[2] = {};
++	__u8 *buf;
  
-+	if (!info)
-+		return;
+ 	switch (prop) {
+ 	case POWER_SUPPLY_PROP_PRESENT:
+@@ -349,13 +349,19 @@ static int hidinput_get_battery_property(struct power_supply *psy,
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_CAPACITY:
 +
- 	device_remove_file(&data->hdev->dev, &dev_attr_fb_update_rate);
-+	fbdata = info->par;
++		buf = kmalloc(2 * sizeof(__u8), GFP_KERNEL);
++		if (!buf) {
++			ret = -ENOMEM;
++			break;
++		}
+ 		ret = dev->hid_get_raw_report(dev, dev->battery_report_id,
+-					      buf, sizeof(buf),
++					      buf, 2,
+ 					      dev->battery_report_type);
  
- 	/* disconnect framebuffer from HID dev */
- 	spin_lock_irqsave(&fbdata->lock, flags);
+ 		if (ret != 2) {
+-			if (ret >= 0)
+-				ret = -EINVAL;
++			ret = -ENODATA;
++			kfree(buf);
+ 			break;
+ 		}
+ 
+@@ -364,6 +370,7 @@ static int hidinput_get_battery_property(struct power_supply *psy,
+ 		    buf[1] <= dev->battery_max)
+ 			val->intval = (100 * (buf[1] - dev->battery_min)) /
+ 				(dev->battery_max - dev->battery_min);
++		kfree(buf);
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_MODEL_NAME:
 -- 
 1.8.1.2
 
