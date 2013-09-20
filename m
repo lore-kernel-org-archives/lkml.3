@@ -1,99 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab3ITGHS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 02:07:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60713 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab3ITGHN (ORCPT
+	id S1754052Ab3ITGPj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 02:15:39 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:37825 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab3ITGPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 02:07:13 -0400
-Date: Thu, 19 Sep 2013 23:07:49 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: balbi@ti.com, Andrew Morton <akpm@linux-foundation.org>,
-        kyungmin.park@samsung.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
-        kgene.kim@samsung.com, stern@rowland.harvard.edu, broonie@kernel.org,
-        tomasz.figa@gmail.com, arnd@arndb.de, grant.likely@linaro.org,
-        tony@atomide.com, swarren@nvidia.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, balajitk@ti.com, george.cherian@ti.com,
-        nsekhar@ti.com, linux@arm.linux.org.uk
-Subject: Re: [PATCH v11 0/8] PHY framework
-Message-ID: <20130920060749.GB6983@kroah.com>
-References: <1377063973-22044-1-git-send-email-kishon@ti.com>
- <521B0E79.6060506@ti.com>
- <20130827192059.GZ3005@radagast>
- <5225FF63.6080608@ti.com>
- <20130903155030.GA21525@kroah.com>
- <5226F5E2.5010409@ti.com>
- <20130917154107.GH15645@radagast>
- <523BDE70.4090407@ti.com>
+	Fri, 20 Sep 2013 02:15:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <523BDE70.4090407@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1379654772-10700-1-git-send-email-yinghai@kernel.org>
+References: <1379654772-10700-1-git-send-email-yinghai@kernel.org>
+Date: Fri, 20 Sep 2013 11:40:18 +0530
+Message-ID: <CAKohpokdyk9hfBreVeXttN23biTVjWiJRm8eYkfAjLz+cbnreQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: skip loading acpi_cpufreq after intel_pstate
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 11:04:40AM +0530, Kishon Vijay Abraham I wrote:
-> Hi Greg,
-> 
-> On Tuesday 17 September 2013 09:11 PM, Felipe Balbi wrote:
-> > On Wed, Sep 04, 2013 at 02:27:06PM +0530, Kishon Vijay Abraham I wrote:
-> >> On Tuesday 03 September 2013 09:20 PM, Greg KH wrote:
-> >>> On Tue, Sep 03, 2013 at 08:55:23PM +0530, Kishon Vijay Abraham I wrote:
-> >>>> Hi Greg,
-> >>>>
-> >>>> On Wednesday 28 August 2013 12:50 AM, Felipe Balbi wrote:
-> >>>>> Hi,
-> >>>>>
-> >>>>> On Mon, Aug 26, 2013 at 01:44:49PM +0530, Kishon Vijay Abraham I wrote:
-> >>>>>> On Wednesday 21 August 2013 11:16 AM, Kishon Vijay Abraham I wrote:
-> >>>>>>> Added a generic PHY framework that provides a set of APIs for the PHY drivers
-> >>>>>>> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
-> >>>>>>> the PHY with or without using phandle.
-> >>>>>>>
-> >>>>>>> This framework will be of use only to devices that uses external PHY (PHY
-> >>>>>>> functionality is not embedded within the controller).
-> >>>>>>>
-> >>>>>>> The intention of creating this framework is to bring the phy drivers spread
-> >>>>>>> all over the Linux kernel to drivers/phy to increase code re-use and to
-> >>>>>>> increase code maintainability.
-> >>>>>>>
-> >>>>>>> Comments to make PHY as bus wasn't done because PHY devices can be part of
-> >>>>>>> other bus and making a same device attached to multiple bus leads to bad
-> >>>>>>> design.
-> >>>>>>>
-> >>>>>>> If the PHY driver has to send notification on connect/disconnect, the PHY
-> >>>>>>> driver should make use of the extcon framework. Using this susbsystem
-> >>>>>>> to use extcon framwork will have to be analysed.
-> >>>>>>>
-> >>>>>>> You can find this patch series @
-> >>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git testing
-> >>>>>>
-> >>>>>> Looks like there are not further comments on this series. Can you take this in
-> >>>>>> your misc tree?
-> >>>>>
-> >>>>> Do you want me to queue these for you ? There are quite a few users for
-> >>>>> this framework already and I know of at least 2 others which will show
-> >>>>> up for v3.13.
-> >>>>
-> >>>> Can you queue this patch series? There are quite a few users already for this
-> >>>> framework.
-> >>>
-> >>> It will have to wait for 3.13 as the merge window for new features has
-> >>> been closed for a week or so.  Sorry, I'll queue this up after 3.12-rc1
-> >>> is out.
-> >>
-> >> Alright, thanks.
-> > 
-> > Just a gentle ping on this one...
-> 
-> Let me know if you want me to rebase this patch series on the latest mainline HEAD.
+On 20 September 2013 10:56, Yinghai Lu <yinghai@kernel.org> wrote:
+> If the hw support intel_pstate and acpi_cpufreq, intel_pstate will
+> get loaded at first.
 
-Yes please.
+s/at //
+
+>
+> acpi_cpufreq_init will call acpi_cpufreq_early_init()
+> and it allocate perf data and init those perf data in ACPI core, (that
+
+s/it /that will /
+
+> will go over all cpus).
+
+s/go over/cover/
+
+> but late it will free them as cpufreq_register_driver(acpi_cpufreq) will
+
+s/late/later
+
+> return fail as init_pstate already take over before.
+
+write it as: fail as intel_pstate is already registered.
+
+> Use cpufreq_get_current_driver() to check if we can skip the
+> acpi_cpufreq loading.
+
+The below material looks to be a separate issue and so we
+probably break this patch into two?
+
+> Also there is racing in
+>         __acpi_processor_start
+>                  ==> acpi_processor_load_module
+>                          ==> request_module_nowait/requested = 1
+
+> Index: linux-2.6/drivers/cpufreq/acpi-cpufreq.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/cpufreq/acpi-cpufreq.c
+> +++ linux-2.6/drivers/cpufreq/acpi-cpufreq.c
+> @@ -986,6 +986,10 @@ static int __init acpi_cpufreq_init(void
+>  {
+>         int ret;
+>
+> +       /* don't keep reloading if cpufreq_driver exists */
+> +       if (cpufreq_get_current_driver())
+> +               return 0;
+> +
+>         if (acpi_disabled)
+>                 return 0;
+
+This looks fine to me..
+
+> Index: linux-2.6/drivers/acpi/processor_perflib.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/processor_perflib.c
+> +++ linux-2.6/drivers/acpi/processor_perflib.c
+
+Can't really review this one.. Rafael will do it..
