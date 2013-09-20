@@ -1,80 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab3ITQ4o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 12:56:44 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34390 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab3ITQ4m (ORCPT
+	id S1753214Ab3ITQ5Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 12:57:25 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:44449 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab3ITQ5Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 12:56:42 -0400
-Date: Fri, 20 Sep 2013 17:56:02 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com, linus.walleij@linaro.org,
-        akpm@linux-foundation.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org, rtc-linux@googlegroups.com,
-        rob.herring@calxeda.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        swarren@wwwdotorg.org, rob@landley.net, ijc+devicetree@hellion.org.uk,
-        grant.likely@linaro.org
-Message-ID: <20130920165602.GQ21013@sirena.org.uk>
-References: <1379680214-9143-1-git-send-email-ldewangan@nvidia.com>
- <1379680214-9143-2-git-send-email-ldewangan@nvidia.com>
+	Fri, 20 Sep 2013 12:57:24 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eOjGLwyQwZ6mtm8V"
-Content-Disposition: inline
-In-Reply-To: <1379680214-9143-2-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 86.153.71.95
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V2 1/5] regmap: add helper macro to set min/max range of
- register
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <1379646913-12445-1-git-send-email-geyslan@gmail.com>
+References: <1379646913-12445-1-git-send-email-geyslan@gmail.com>
+Date: Fri, 20 Sep 2013 13:57:22 -0300
+Message-ID: <CAGG-pUQ9u8V+Tqvw-FaiO8oayVvq9O+hdhZkAOPrGjvKpDp6vw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] binfmt_aout: x86: Useless inode var, printks
+ coding style fixes
+From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
+To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi guys,
 
---eOjGLwyQwZ6mtm8V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Just to know whether the approach of my patches is correct.
+[PATCH v3 1/2] binfmt_aout: x86: Useless inode var, printks coding style fixes
+[PATCH v3 2/2] ia32_aout: x86_64: Add safe check in a.out loaders,
+printks, conding style fixes
 
-On Fri, Sep 20, 2013 at 06:00:10PM +0530, Laxman Dewangan wrote:
-> Add helper macro to set the min and max value of the register range.
->=20
-> This is useful when initialising the register ranges of the device like
+If so I'll start to sanitize the fs/exec.c
 
-Applied on a branch, thanks - please feel free to pull
+Please, reply.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git regmap-ra=
-nge-macro
+Regards,
 
-in for anything that depends on it.
+Geyslan Gregório Bem
+hackingbits.com
 
---eOjGLwyQwZ6mtm8V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSPH4fAAoJELSic+t+oim9XVAP/1ZfeJrqQRX/yf63eUvZvTi7
-OkfpcdrUakaU6H97+I8sQxDTQc8mN2VqAdFbnFq6iOKSTpi4MlpqCuXdPkbDeBmD
-QDNkxTavESCLKlVS7KE4uVwfTHbcXy3ggz4G1dBfVWAqLZprV/r7hT2O98XJrxn+
-Q0SnAt30XdibYlNTlWtL9s0sM/YFYYi1JBuoT+7vd/ipR+jWgseuL3v+v9bNZ+63
-Oj+qp9YN6jTV0XL+7n13+8HnB18G1BjIW0nhuAkIOpqooMyA4DN2BnBWraBnQ3eA
-QY1ou8DTLSbC5s/N0ps3z8dla0SGD2DpmeApJtXamgE+kKEfxHF8xb+1X4fYI16+
-yLtPYVFmUeV0pvACAxWFY0JuHoAbo+a56RlAID8nktmP9/PIrfrjfs4eQ31p9xCJ
-NoKW7Rha9g/YEVXb1Xb03Rr2Xg+L0lqBPPnY5vV7uRuH0sV7mqXhivjfOrmyzjin
-niGaeLTyHRJDbBH2OugRMDx3V+D9QciEU26e7klx3JXtZDVpcp0Q2GiVmyIEvP8K
-2ySeh7jRDNvBwm2nhv6oadzNNUlWZqO19Uzk9Qdr12ZuPdfThGs0GO4YJ6PcvcnW
-UXlcqa30beBji2wN7qWShvKA09xgxiWTmTWfkGkWQn2+36UiDZpMioLTNfGlimqc
-fqBo/PbSjPxcnV4+XP4k
-=0Oey
------END PGP SIGNATURE-----
-
---eOjGLwyQwZ6mtm8V--
+2013/9/20 Geyslan G. Bem <geyslan@gmail.com>:
+> file size used only once, so removed due its useless prior allocation.
+> It's not necessary to verify f_op in the load_aout_library, since the
+> prior kernel_read/vfs_read function already does.
+> Made coding style fixes and printk replacements.
+>
+> Tested using qemu, a handcrafted a.out binary and an a.out linked with a
+> cross-compiled ld.
+>
+> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+> ---
+>  fs/binfmt_aout.c | 98 +++++++++++++++++++++++++++-----------------------------
+>  1 file changed, 48 insertions(+), 50 deletions(-)
+>
+> diff --git a/fs/binfmt_aout.c b/fs/binfmt_aout.c
+> index 89dec7f..c732b8e 100644
+> --- a/fs/binfmt_aout.c
+> +++ b/fs/binfmt_aout.c
+> @@ -25,13 +25,14 @@
+>  #include <linux/init.h>
+>  #include <linux/coredump.h>
+>  #include <linux/slab.h>
+> +#include <linux/ratelimit.h>
+> +#include <linux/uaccess.h>
+>
+> -#include <asm/uaccess.h>
+>  #include <asm/cacheflush.h>
+>  #include <asm/a.out-core.h>
+>
+>  static int load_aout_binary(struct linux_binprm *);
+> -static int load_aout_library(struct file*);
+> +static int load_aout_library(struct file *);
+>
+>  #ifdef CONFIG_COREDUMP
+>  /*
+> @@ -62,7 +63,7 @@ static int aout_core_dump(struct coredump_params *cprm)
+>         fs = get_fs();
+>         set_fs(KERNEL_DS);
+>         has_dumped = 1;
+> -               strncpy(dump.u_comm, current->comm, sizeof(dump.u_comm));
+> +       strncpy(dump.u_comm, current->comm, sizeof(dump.u_comm));
+>         dump.u_ar0 = offsetof(struct user, regs);
+>         dump.signal = cprm->siginfo->si_signo;
+>         aout_dump_thread(cprm->regs, &dump);
+> @@ -78,9 +79,11 @@ static int aout_core_dump(struct coredump_params *cprm)
+>
+>  /* make sure we actually have a data and stack area to dump */
+>         set_fs(USER_DS);
+> -       if (!access_ok(VERIFY_READ, START_DATA(dump), dump.u_dsize << PAGE_SHIFT))
+> +       if (!access_ok(VERIFY_READ, START_DATA(dump),
+> +                      dump.u_dsize << PAGE_SHIFT))
+>                 dump.u_dsize = 0;
+> -       if (!access_ok(VERIFY_READ, START_STACK(dump), dump.u_ssize << PAGE_SHIFT))
+> +       if (!access_ok(VERIFY_READ, START_STACK(dump),
+> +                      dump.u_ssize << PAGE_SHIFT))
+>                 dump.u_ssize = 0;
+>
+>         set_fs(KERNEL_DS);
+> @@ -142,7 +145,8 @@ static int set_brk(unsigned long start, unsigned long end)
+>   * memory and creates the pointer tables from them, and puts their
+>   * addresses on the "stack", returning the new stack pointer value.
+>   */
+> -static unsigned long __user *create_aout_tables(char __user *p, struct linux_binprm * bprm)
+> +static unsigned long __user *create_aout_tables(char __user *p,
+> +                                               struct linux_binprm *bprm)
+>  {
+>         char __user * __user *argv;
+>         char __user * __user *envp;
+> @@ -150,7 +154,8 @@ static unsigned long __user *create_aout_tables(char __user *p, struct linux_bin
+>         int argc = bprm->argc;
+>         int envc = bprm->envc;
+>
+> -       sp = (void __user *)((-(unsigned long)sizeof(char *)) & (unsigned long) p);
+> +       sp = (void __user *) ((-(unsigned long) sizeof(char *))
+> +                             & (unsigned long) p);
+>  #ifdef __alpha__
+>  /* whee.. test-programs are so much fun. */
+>         put_user(0, --sp);
+> @@ -169,28 +174,28 @@ static unsigned long __user *create_aout_tables(char __user *p, struct linux_bin
+>         sp -= argc+1;
+>         argv = (char __user * __user *) sp;
+>  #ifndef __alpha__
+> -       put_user((unsigned long) envp,--sp);
+> -       put_user((unsigned long) argv,--sp);
+> +       put_user((unsigned long) envp, --sp);
+> +       put_user((unsigned long) argv, --sp);
+>  #endif
+> -       put_user(argc,--sp);
+> +       put_user(argc, --sp);
+>         current->mm->arg_start = (unsigned long) p;
+> -       while (argc-->0) {
+> +       while (argc-- > 0) {
+>                 char c;
+> -               put_user(p,argv++);
+> +               put_user(p, argv++);
+>                 do {
+> -                       get_user(c,p++);
+> +                       get_user(c, p++);
+>                 } while (c);
+>         }
+> -       put_user(NULL,argv);
+> +       put_user(NULL, argv);
+>         current->mm->arg_end = current->mm->env_start = (unsigned long) p;
+> -       while (envc-->0) {
+> +       while (envc-- > 0) {
+>                 char c;
+> -               put_user(p,envp++);
+> +               put_user(p, envp++);
+>                 do {
+> -                       get_user(c,p++);
+> +                       get_user(c, p++);
+>                 } while (c);
+>         }
+> -       put_user(NULL,envp);
+> +       put_user(NULL, envp);
+>         current->mm->env_end = (unsigned long) p;
+>         return sp;
+>  }
+> @@ -200,7 +205,7 @@ static unsigned long __user *create_aout_tables(char __user *p, struct linux_bin
+>   * libraries.  There is no binary dependent code anywhere else.
+>   */
+>
+> -static int load_aout_binary(struct linux_binprm * bprm)
+> +static int load_aout_binary(struct linux_binprm *bprm)
+>  {
+>         struct pt_regs *regs = current_pt_regs();
+>         struct exec ex;
+> @@ -213,7 +218,8 @@ static int load_aout_binary(struct linux_binprm * bprm)
+>         if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != OMAGIC &&
+>              N_MAGIC(ex) != QMAGIC && N_MAGIC(ex) != NMAGIC) ||
+>             N_TRSIZE(ex) || N_DRSIZE(ex) ||
+> -           i_size_read(file_inode(bprm->file)) < ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
+> +           i_size_read(file_inode(bprm->file)) <
+> +           ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+>                 return -ENOEXEC;
+>         }
+>
+> @@ -292,19 +298,12 @@ static int load_aout_binary(struct linux_binprm * bprm)
+>                 }
+>         } else {
+>                 if ((ex.a_text & 0xfff || ex.a_data & 0xfff) &&
+> -                   (N_MAGIC(ex) != NMAGIC) && printk_ratelimit())
+> -               {
+> -                       printk(KERN_NOTICE "executable not page aligned\n");
+> -               }
+> -
+> -               if ((fd_offset & ~PAGE_MASK) != 0 && printk_ratelimit())
+> -               {
+> -                       printk(KERN_WARNING
+> -                              "fd_offset is not page aligned. Please convert program: %s\n",
+> -                              bprm->file->f_path.dentry->d_name.name);
+> -               }
+> +                   (N_MAGIC(ex) != NMAGIC))
+> +                       pr_notice_ratelimited("executable not page aligned\n");
+>
+> -               if (!bprm->file->f_op->mmap||((fd_offset & ~PAGE_MASK) != 0)) {
+> +               if ((fd_offset & ~PAGE_MASK) != 0) {
+> +                       pr_warn_ratelimited("fd_offset is not page aligned. Please convert program: %s\n",
+> +                                           bprm->file->f_path.dentry->d_name.name);
+>                         vm_brk(N_TXTADDR(ex), ex.a_text+ex.a_data);
+>                         read_code(bprm->file, N_TXTADDR(ex), fd_offset,
+>                                   ex.a_text + ex.a_data);
+> @@ -312,9 +311,10 @@ static int load_aout_binary(struct linux_binprm * bprm)
+>                 }
+>
+>                 error = vm_mmap(bprm->file, N_TXTADDR(ex), ex.a_text,
+> -                       PROT_READ | PROT_EXEC,
+> -                       MAP_FIXED | MAP_PRIVATE | MAP_DENYWRITE | MAP_EXECUTABLE,
+> -                       fd_offset);
+> +                               PROT_READ | PROT_EXEC,
+> +                               (MAP_FIXED | MAP_PRIVATE
+> +                                | MAP_DENYWRITE | MAP_EXECUTABLE),
+> +                               fd_offset);
+>
+>                 if (error != N_TXTADDR(ex)) {
+>                         send_sig(SIGKILL, current, 0);
+> @@ -323,8 +323,10 @@ static int load_aout_binary(struct linux_binprm * bprm)
+>
+>                 error = vm_mmap(bprm->file, N_DATADDR(ex), ex.a_data,
+>                                 PROT_READ | PROT_WRITE | PROT_EXEC,
+> -                               MAP_FIXED | MAP_PRIVATE | MAP_DENYWRITE | MAP_EXECUTABLE,
+> +                               (MAP_FIXED | MAP_PRIVATE
+> +                                | MAP_DENYWRITE | MAP_EXECUTABLE),
+>                                 fd_offset + ex.a_text);
+> +
+>                 if (error != N_DATADDR(ex)) {
+>                         send_sig(SIGKILL, current, 0);
+>                         return error;
+> @@ -340,7 +342,8 @@ beyond_if:
+>         }
+>
+>         current->mm->start_stack =
+> -               (unsigned long) create_aout_tables((char __user *) bprm->p, bprm);
+> +               (unsigned long) create_aout_tables((char __user *) bprm->p,
+> +                                                  bprm);
+>  #ifdef __alpha__
+>         regs->gp = ex.a_gpvalue;
+>  #endif
+> @@ -350,14 +353,11 @@ beyond_if:
+>
+>  static int load_aout_library(struct file *file)
+>  {
+> -       struct inode * inode;
+>         unsigned long bss, start_addr, len;
+>         unsigned long error;
+>         int retval;
+>         struct exec ex;
+>
+> -       inode = file_inode(file);
+> -
+>         retval = -ENOEXEC;
+>         error = kernel_read(file, 0, (char *) &ex, sizeof(ex));
+>         if (error != sizeof(ex))
+> @@ -366,7 +366,8 @@ static int load_aout_library(struct file *file)
+>         /* We come in here for the regular a.out style of shared libraries */
+>         if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != QMAGIC) || N_TRSIZE(ex) ||
+>             N_DRSIZE(ex) || ((ex.a_entry & 0xfff) && N_MAGIC(ex) == ZMAGIC) ||
+> -           i_size_read(inode) < ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
+> +           i_size_read(file_inode(file)) <
+> +           ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+>                 goto out;
+>         }
+>
+> @@ -374,7 +375,7 @@ static int load_aout_library(struct file *file)
+>          * Requires a mmap handler. This prevents people from using a.out
+>          * as part of an exploit attack against /proc-related vulnerabilities.
+>          */
+> -       if (!file->f_op || !file->f_op->mmap)
+> +       if (!file->f_op->mmap)
+>                 goto out;
+>
+>         if (N_FLAGS(ex))
+> @@ -383,17 +384,14 @@ static int load_aout_library(struct file *file)
+>         /* For  QMAGIC, the starting address is 0x20 into the page.  We mask
+>            this off to get the starting address for the page */
+>
+> -       start_addr =  ex.a_entry & 0xfffff000;
+> +       start_addr = ex.a_entry & 0xfffff000;
+>
+>         if ((N_TXTOFF(ex) & ~PAGE_MASK) != 0) {
+> -               if (printk_ratelimit())
+> -               {
+> -                       printk(KERN_WARNING
+> -                              "N_TXTOFF is not page aligned. Please convert library: %s\n",
+> -                              file->f_path.dentry->d_name.name);
+> -               }
+> +               pr_warn_ratelimited("N_TXTOFF is not page aligned. Please convert library: %s\n",
+> +                                   file->f_path.dentry->d_name.name);
+> +
+>                 vm_brk(start_addr, ex.a_text + ex.a_data + ex.a_bss);
+> -
+> +
+>                 read_code(file, start_addr, N_TXTOFF(ex),
+>                           ex.a_text + ex.a_data);
+>                 retval = 0;
+> --
+> 1.8.4
+>
