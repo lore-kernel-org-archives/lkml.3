@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab3ITTTB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 15:19:01 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:48113 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab3ITTS6 (ORCPT
+	id S1753677Ab3ITTVl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 15:21:41 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:35223 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609Ab3ITTVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 15:18:58 -0400
-Date: Fri, 20 Sep 2013 12:18:50 -0700
-From: Simon Horman <horms@verge.net.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k <linux-m68k@vger.kernel.org>, kexec@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Preliminary kexec support for Linux/m68k
-Message-ID: <20130920191850.GA23335@verge.net.au>
-References: <1379412095-7213-1-git-send-email-geert@linux-m68k.org>
- <20130919210750.GH2918@verge.net.au>
- <CAMuHMdVx3KmL9cK-_g3qcrkHxxCAno+3z4O=kVTOGCYhD_WmWw@mail.gmail.com>
+	Fri, 20 Sep 2013 15:21:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdVx3KmL9cK-_g3qcrkHxxCAno+3z4O=kVTOGCYhD_WmWw@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1379085280-2211-2-git-send-email-mika.westerberg@linux.intel.com>
+References: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1379085280-2211-2-git-send-email-mika.westerberg@linux.intel.com>
+Date: Fri, 20 Sep 2013 21:21:37 +0200
+Message-ID: <CACRpkdb5fqMycTxou50-+oiNOs3vzd+8XfWsPbX8vBJp2Su3aw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] gpio / ACPI: add support for GPIO operation regions
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 09:15:02AM +0200, Geert Uytterhoeven wrote:
-> Hi Simon,
-> 
-> Thanks for your comments!
-> 
-> On Thu, Sep 19, 2013 at 11:07 PM, Simon Horman <horms@verge.net.au> wrote:
-> > Pasting two series in one was a bit confusing for me at first.
-> > Perhaps you could consider posting two separate series in future.
-> 
-> Sorry, I wanted to have all information in one series for the first posting, to
-> avoid people having to look around too much if they want to give it a try.
-> 
-> I'll post seperate series in the future.
+On Fri, Sep 13, 2013 at 5:14 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
 
-Thanks.
+> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+(...)
+> +struct acpi_gpio_chip_data {
+> +       /*
+> +        * acpi_install_address_space_handler() wants to put the connection
+> +        * information at the start of the context structure we pass it, in
+> +        * case we are dealing with GPIO operation regions.
+> +        */
+> +       struct acpi_connection_info ci;
+> +       struct gpio_chip *chip;
+> +       struct list_head *evt_pins;
+> +};
 
-> >> Patches:
-> >>   - [PATCH 1/2] kexec: Let slurp_file_len() return the number of bytes
-> >>   - [PATCH 2/2] kexec: Add preliminary m68k support
-> >>
-> >> Notes:
-> >>   - Based on git://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git
-> >
-> > A good choice.
-> 
-> Is it normal I don't see much activity there?
+Consider just naming this acpi_gpio_chip, as it is obviously some
+generic container that you will keep adding to.
 
-Yes, that is normal.
+I'm uncertain how things work, it wouldn't add something to have
+struct gpio_chip be a true member (not a pointer) so you can
+allocate one thing from the drivers, and e.g. use container_of()
+to get from the gpio_chip to the acpi_gpio_chip[_data]?
 
-> 
-> >>   - The ramdisk is loaded at the top of memory minus 4096, unlike with
-> >>     m68boot (ataboot/amiboot), as locate_hole() seems to have a bug that it
-> >>     cannot reserve a block at the real top of memory.
-> >
-> > Is this a bug that could be fixed?
-> 
-> Possibly. I suspect an off-by-one bug somewhere, but I haven't looked deeply
-> into it.
-
-My feeling is that if possible it would be better to fix the bug than add a
-work-around.
-
-> >>   - Do we want to check the struct bootversion at the start of the kernel,
-> >>     like m68kboot does?
-> >>     Kexec may be used to load ELF files that are not Linux kernel images,
-> >>     and thus don't have a Linux-specific struct bootversion.
-> >
-> > If the check can sanely be skipped for non Linux kernel images then
-> > this sounds like a reasonable idea to me. Otherwise I would lean towards
-> > omitting it. Either way, I don't feel strongly about this.
-> >
-> >>   - Do we want to check the size of the kernel image + bootinfo, and warn the
-> >>     user if it's larger than 4 MiB?
-> >>     This is a limitation of the current Linux/m68k kernel only.
-> >
-> > I think that sounds like a good idea but I don't feel strongly about it.
-> 
-> Currently I'm leaning towards just printing a warning for both
-> (missing/incompatible
-> bootversion and image-too-large).
-
-That sounds fine to me.
+Yours,
+Linus Walleij
