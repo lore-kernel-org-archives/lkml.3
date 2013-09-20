@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab3ITUXq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:23:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41618 "EHLO
+	id S1754948Ab3ITUOY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:14:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41607 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951Ab3ITUO0 (ORCPT
+	with ESMTP id S1753884Ab3ITUOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:14:26 -0400
+	Fri, 20 Sep 2013 16:14:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 28/93] staging: comedi: dt282x: dt282x_ai_insn_read() always fails
-Date: Fri, 20 Sep 2013 13:08:23 -0700
-Message-Id: <1379707768-1804-29-git-send-email-kamal@canonical.com>
+Subject: [PATCH 45/93] drm/edid: add quirk for Medion MD30217PG
+Date: Fri, 20 Sep 2013 13:08:40 -0700
+Message-Id: <1379707768-1804-46-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -28,38 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 2c4283ca7cdcc6605859c836fc536fcd83a4525f upstream.
+commit 118bdbd86b39dbb843155054021d2c59058f1e05 upstream.
 
-In dt282x_ai_insn_read() we call this macro like:
-wait_for(!mux_busy(), comedi_error(dev, "timeout\n"); return -ETIME;);
-Because the if statement doesn't have curly braces it means we always
-return -ETIME and the function never succeeds.
+This LCD monitor (1280x1024 native) has a completely
+bogus detailed timing (640x350@70hz).  User reports that
+1280x1024@60 has waves so prefer 1280x1024@75.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Manufacturer: MED  Model: 7b8  Serial#: 99188
+Year: 2005  Week: 5
+EDID Version: 1.3
+Analog Display Input,  Input Voltage Level: 0.700/0.700 V
+Sync:  Separate
+Max Image Size [cm]: horiz.: 34  vert.: 27
+Gamma: 2.50
+DPMS capabilities: Off; RGB/Color Display
+First detailed timing is preferred mode
+redX: 0.645 redY: 0.348   greenX: 0.280 greenY: 0.605
+blueX: 0.142 blueY: 0.071   whiteX: 0.313 whiteY: 0.329
+Supported established timings:
+720x400@70Hz
+640x480@60Hz
+640x480@72Hz
+640x480@75Hz
+800x600@56Hz
+800x600@60Hz
+800x600@72Hz
+800x600@75Hz
+1024x768@60Hz
+1024x768@70Hz
+1024x768@75Hz
+1280x1024@75Hz
+Manufacturer's mask: 0
+Supported standard timings:
+Supported detailed timing:
+clock: 25.2 MHz   Image Size:  337 x 270 mm
+h_active: 640  h_sync: 688  h_sync_end 784 h_blank_end 800 h_border: 0
+v_active: 350  v_sync: 350  v_sync_end 352 v_blanking: 449 v_border: 0
+Monitor name: MD30217PG
+Ranges: V min: 56 V max: 76 Hz, H min: 30 H max: 83 kHz, PixClock max 145 MHz
+Serial No: 501099188
+EDID (in hex):
+          00ffffffffffff0034a4b80774830100
+          050f010368221b962a0c55a559479b24
+          125054afcf00310a0101010101018180
+          000000000000d60980a0205e63103060
+          0200510e1100001e000000fc004d4433
+          3032313750470a202020000000fd0038
+          4c1e530e000a202020202020000000ff
+          003530313039393138380a2020200078
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: friedrich@mailstation.de
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/comedi/drivers/dt282x.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/drm_edid.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/staging/comedi/drivers/dt282x.c b/drivers/staging/comedi/drivers/dt282x.c
-index 122d980..bc811dd 100644
---- a/drivers/staging/comedi/drivers/dt282x.c
-+++ b/drivers/staging/comedi/drivers/dt282x.c
-@@ -271,8 +271,9 @@ struct dt282x_private {
- 			}					\
- 			udelay(5);				\
- 		}						\
--		if (_i)						\
-+		if (_i) {					\
- 			b					\
-+		}						\
- 	} while (0)
+diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
+index dfd9ed3..60d6b35 100644
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -125,6 +125,9 @@ static struct edid_quirk {
  
- static int prep_ai_dma(struct comedi_device *dev, int chan, int size);
+ 	/* ViewSonic VA2026w */
+ 	{ "VSC", 5020, EDID_QUIRK_FORCE_REDUCED_BLANKING },
++
++	/* Medion MD 30217 PG */
++	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
+ };
+ 
+ /*** DDC fetch and block validation ***/
 -- 
 1.8.1.2
 
