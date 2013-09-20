@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab3ITUT3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:19:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41722 "EHLO
+	id S1755412Ab3ITUTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:19:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41718 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755161Ab3ITUPG (ORCPT
+	with ESMTP id S1755147Ab3ITUPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:15:06 -0400
+	Fri, 20 Sep 2013 16:15:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Miklos Szeredi <mszeredi@suse.cz>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 68/93] fuse: readdir: check for slash in names
-Date: Fri, 20 Sep 2013 13:09:03 -0700
-Message-Id: <1379707768-1804-69-git-send-email-kamal@canonical.com>
+Cc: Felix Fietkau <nbd@openwrt.org>, Gabor Juhos <juhosg@openwrt.org>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 69/93] MIPS: ath79: Fix ar933x watchdog clock
+Date: Fri, 20 Sep 2013 13:09:04 -0700
+Message-Id: <1379707768-1804-70-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -26,33 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit efeb9e60d48f7778fdcad4a0f3ad9ea9b19e5dfd upstream.
+commit a1191927ace7e6f827132aa9e062779eb3f11fa5 upstream.
 
-Userspace can add names containing a slash character to the directory
-listing.  Don't allow this as it could cause all sorts of trouble.
+The watchdog device on the AR933x is connected to
+the AHB clock, however the current code uses the
+reference clock. Due to the wrong rate, the watchdog
+driver can't calculate correct register values for
+a given timeout value and the watchdog unexpectedly
+restarts the system.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-[ kamal: backport to 3.8 (no dirplus) ]
+The code uses the wrong value since the initial
+commit 04225e1d227c8e68d685936ecf42ac175fec0e54
+(MIPS: ath79: add AR933X specific clock init)
+
+The patch fixes the code to use the correct clock
+rate to avoid the problem.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/5777/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/fuse/dir.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/mips/ath79/clock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 54a24fc..146276a 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -1148,6 +1148,8 @@ static int parse_dirfile(char *buf, size_t nbytes, struct file *file,
- 			return -EIO;
- 		if (reclen > nbytes)
- 			break;
-+		if (memchr(dirent->name, '/', dirent->namelen) != NULL)
-+			return -EIO;
+diff --git a/arch/mips/ath79/clock.c b/arch/mips/ath79/clock.c
+index 579f452..300d7d3 100644
+--- a/arch/mips/ath79/clock.c
++++ b/arch/mips/ath79/clock.c
+@@ -164,7 +164,7 @@ static void __init ar933x_clocks_init(void)
+ 		ath79_ahb_clk.rate = freq / t;
+ 	}
  
- 		over = filldir(dstbuf, dirent->name, dirent->namelen,
- 			       file->f_pos, dirent->ino, dirent->type);
+-	ath79_wdt_clk.rate = ath79_ref_clk.rate;
++	ath79_wdt_clk.rate = ath79_ahb_clk.rate;
+ 	ath79_uart_clk.rate = ath79_ref_clk.rate;
+ }
+ 
 -- 
 1.8.1.2
 
