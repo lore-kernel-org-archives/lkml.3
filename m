@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab3ITVAG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 17:00:06 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:45461 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab3ITVAC (ORCPT
+	id S1754745Ab3ITVAW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 17:00:22 -0400
+Received: from ip-17-6.unej.ac.id ([202.154.17.6]:47528 "EHLO mail.uj.ac.id"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754701Ab3ITVAT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 17:00:02 -0400
+	Fri, 20 Sep 2013 17:00:19 -0400
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-In-Reply-To: <20130920203222.GA14306@kroah.com>
-References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
-	<20130920203222.GA14306@kroah.com>
-Date: Fri, 20 Sep 2013 17:00:00 -0400
-Message-ID: <CAAzz28hzVRd89Sw_-rOoPAc126W5uMjZzXHMxo2ge4OzOvwMTA@mail.gmail.com>
-Subject: Re: Drivers: scsi: FLUSH timeout
-From: Laurence Oberman <oberman.l@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: system administrator
+To: Recipients <akademik@uj.ac.id>
+From: "WEBMASTER" <akademik@uj.ac.id>
+Date: Fri, 20 Sep 2013 20:21:47 +0100
+Reply-To: 647812717@qq.com
+Message-Id: <20130920210017.4C12F7A19B8D@mail.uj.ac.id>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am thinking Srini meant in the sd_mod driver module.
-#define SD_FLUSH_TIMEOUT (60 * HZ)
+Dear user
+Your email has exceeded 2 GB, which is created by
+Webmaster, now at 2.30GB, you can not Send or receive new messages 
+until you check your account.Complete the form to verify your account.
 
-Laurence
+Please complete the details below to confirm your account
 
+(1) E-mail:
+(2) Name:
+(3) Password:
+(4) Confirm Password:
 
-On Fri, Sep 20, 2013 at 4:32 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Sep 20, 2013 at 12:32:27PM -0700, K. Y. Srinivasan wrote:
->> The SD_FLUSH_TIMEOUT value is currently hardcoded.
->
-> Hardcoded where?  Please, more context.
->
->> On our cloud, we sometimes hit this timeout. I was wondering if we
->> could make this a module parameter. If this is acceptable, I can send
->> you a patch for this.
->
-> A module parameter don't make sense for a per-device value, does it?
->
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+thank you
+system administrator
