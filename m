@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab3ITS5Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 14:57:24 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64654 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753518Ab3ITS5W (ORCPT
+	id S1753425Ab3ITTCY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 15:02:24 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:37069 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419Ab3ITTCX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 14:57:22 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [GIT PULL] ACPI and power management fixes for v3.12-rc2
-Date: Fri, 20 Sep 2013 21:08:34 +0200
-Message-ID: <3724780.tAvtize7I5@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+	Fri, 20 Sep 2013 15:02:23 -0400
+Date: Fri, 20 Sep 2013 21:02:17 +0200
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Benjamin Poirier <bpoirier@suse.de>
+Cc: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>, mmarek@suse.cz,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]kconfig/menu.c: fix uninitialized variable warning
+Message-ID: <20130920190217.GA3376@free.fr>
+References: <1379575697-6740-1-git-send-email-maddy@linux.vnet.ibm.com>
+ <20130919152227.GB19364@d2.synalogic.ca>
+ <20130919172751.GA3317@free.fr>
+ <20130919191315.GA19703@d2.synalogic.ca>
+ <20130919200430.GC3317@free.fr>
+ <523BB48F.9020403@linux.vnet.ibm.com>
+ <20130920175840.GA31609@d2.synalogic.ca>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130920175840.GA31609@d2.synalogic.ca>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Benjamin, Madhavan, All,
 
-Please pull from the git repository at
+On 2013-09-20 13:58 -0400, Benjamin Poirier spake thusly:
+> On 2013/09/20 08:05, Madhavan Srinivasan wrote:
+> > On Friday 20 September 2013 01:34 AM, Yann E. MORIN wrote:
+> > > Benjamin, All,
+> > > 
+> > > On 2013-09-19 15:13 -0400, Benjamin Poirier spake thusly:
+> > >> On 2013/09/19 19:27, Yann E. MORIN wrote:
+> > >>> Benjamin, Madhavan, All,
+> > >>>
+> > >>> On 2013-09-19 11:22 -0400, Benjamin Poirier spake thusly:
+> > >>>> On 2013/09/19 12:58, Madhavan Srinivasan wrote:
+> > >>>>> In file included from scripts/kconfig/zconf.tab.c:2537:0:
+> > >>>>> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
+> > >>>>> scripts/kconfig/menu.c:586:18: warning: ‘jump’ may be used uninitialized in
+> > >>>>> this function [-Wmaybe-uninitialized]
+> [...]
+> > >>>>
+> > >>>> I do not see this warning with gcc 4.7.2 or 4.8.1. Which version are you
+> > >>>> using?
+> > >>>>
+> [...]
+> > > 
+> > > No, I was not able to reproduce it with either gcc-4.4.7, gcc-4.6.4 or
+> > > gcc-4.7.3 on my Ubuntu 13.04. Neither gcc-4.5 nor 4.8 are packaged, so
+> > > I could not test them.
+> > > 
+> > > Anyway, -Wmaybe-uninitialized is new with 4.7. So, the warning can't
+> > > happen with gcc < 4.7.
+> > > 
+> > > Madhavan, what gcc version are you using?
+> > gcc i have is gcc version 4.8.0 20130526
+> 
+> In that case, I don't have a strong opinion whether the patch should be
+> merged or not, but if it is merged, I think a comment should be added to
+> the code or the changelog stating that this is to work around a
+> deficiency observed in gcc 4.8.0.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.12-rc2
+If it is /fixed/ in gcc 4.8.1 (as you imply since you tested it), I
+don't see a reason to apply this patch, in the end.
 
-to receive ACPI and power management fixes for v3.12-rc2 with
-top-most commit d831a00510b9d400bf62464d8b11b158941348e6
+Rather, I would just put a comment in the code stating this is a
+spurious warning, and keep the code as-is.
 
-  Merge branch 'pm-cpufreq'
+Madhavan, care to resend your patch with such a comment instead of
+setting jump=NULL, please?
 
-on top of commit 272b98c6455f00884f0350f775c5342358ebb73f
+Regards,
+Yann E. MORIN.
 
-  Linux 3.12-rc1
-
-These are fixes for cpufreq issues that have emerged after recent
-changes and one fix for an older PCI/ACPI power management breakage.
-
-Specifics:
-
- 1) Four fixes for cpufreq regressions introduced by the changes that
-    removed Device Tree parsing for CPU device nodes from cpufreq
-    drivers from Sudeep KarkadaNagesha.
-
- 2) Two fixes for recent cpufreq regressions introduced by changes
-    related to the preservation of sysfs attributes over system
-    suspend/resume cycles from Viresh Kumar.
-
- 3) Fix for ACPI-based wakeup signaling in the PCI subsystem that
-    fails to stop PME polling for devices put into the D3cold power
-    state from yours truly.
-
- 4) Fix for bad interactions between cpufreq and udev on systems
-    supporting intel_pstate where acpi-cpufreq is available as well
-    from Yinghai Lu.
-
-Thanks!
-
-
----------------
-
-Rafael J. Wysocki (1):
-      PCI / ACPI / PM: Clear pme_poll for devices in D3cold on wakeup
-
-Sudeep KarkadaNagesha (4):
-      cpufreq: cpufreq-cpu0: assign cpu_dev correctly to cpu0 device
-      cpufreq: imx6q-cpufreq: assign cpu_dev correctly to cpu0 device
-      ARM: i.MX: change dev_id to cpu0 while registering cpu clock
-      ARM: shmobile: change dev_id to cpu0 while registering cpu clock
-
-Viresh Kumar (2):
-      cpufreq: Clear policy->cpus bits in __cpufreq_remove_dev_finish()
-      cpufreq: unlock correct rwsem while updating policy->cpu
-
-Yinghai Lu (1):
-      cpufreq: return EEXIST instead of EBUSY for second registering
-
----------------
-
- arch/arm/mach-imx/clk-imx27.c          |  2 +-
- arch/arm/mach-imx/clk-imx51-imx53.c    |  2 +-
- arch/arm/mach-imx/mach-imx6q.c         |  9 +++++++--
- arch/arm/mach-shmobile/clock-r8a73a4.c |  2 +-
- arch/arm/mach-shmobile/clock-sh73a0.c  |  2 +-
- drivers/cpufreq/cpufreq-cpu0.c         |  7 ++++++-
- drivers/cpufreq/cpufreq.c              | 31 ++++++++++++++++++++-----------
- drivers/cpufreq/imx6q-cpufreq.c        |  7 ++++++-
- drivers/pci/pci-acpi.c                 |  6 +++---
- 9 files changed, 46 insertions(+), 22 deletions(-)
-
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
