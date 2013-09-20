@@ -1,128 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3ITFVA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 01:21:00 -0400
-Received: from nm19-vm10.access.bullet.mail.bf1.yahoo.com ([216.109.115.105]:28302
-	"EHLO nm19-vm10.access.bullet.mail.bf1.yahoo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753522Ab3ITFU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 01:20:58 -0400
-X-Yahoo-Newman-Id: 955841.38334.bm@smtp112.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: k81OxdUVM1mJryEmcSWLc5GNi3uravzhWlF7r7_D6YtPy8J
- m_1SsWfOYkv05zwIUuCXWOKc6ZxYSuAftfy00PEtZ2PFmNbGZa3BtOZwYjMo
- PHTxTj.KyAVtk5BtI3ALNYPVCuh1NNSX2juyriv6hDhHwfFAbhl01i3Ko3XR
- IMw_fp2rCIoRvlHRqr8i9fpzTA_jxgD27eVNTS_B8uf7y_WkM3yxJ64419xA
- UHBoo7ULiJ1r81tyaPvrHjHfMj5X8tOFvYSUq0dfqfw37vj2Xq.rHrjWNoOu
- nCsJHJx_eOigt7L.l.XYrG_CjVZVIk4jfbH2rBugoJASyUgnHw337qQt3R8B
- 9zfs3BSUiXTMq4j.yiLrO0xy6zS7UvUhq1owIf4PXtg0c0x6xpdyVnnh86BM
- jk8BrPnXQgJdw3jvjvhWLjB9G_6IB5LJjk8n_64Wvk1_nIwUvBU30a1esMQ8
- on.8lOtbccM.yjcdxWAAaY0dnXoRpDYeso9v_Z8Gas.nAXrXK5MfTbxSvMv7
- ATNEK3Fnrei4EEaei7HodALuksl2hU7QzEJU-
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with )
-        by smtp112.sbc.mail.ne1.yahoo.com with SMTP; 19 Sep 2013 22:20:56 -0700 PDT
-Message-ID: <523BDB55.2000008@att.net>
-Date: Fri, 20 Sep 2013 00:21:25 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130730 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Daniel Santos <daniel.santos@pobox.com>,
-        David Howells <dhowells@redhat.com>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        George Spelvin <linux@horizon.com>
-Subject: Re: [PATCH 5/5] lib: Add error string support to printks
-References: <1379482610.1787.7.camel@joe-AO722>  <1379459317-13046-1-git-send-email-daniel.santos@pobox.com>  <1379459317-13046-6-git-send-email-daniel.santos@pobox.com>  <22238.1379502295@warthog.procyon.org.uk> <523A5316.50405@att.net> <1379639226.5862.9.camel@joe-AO722>
-In-Reply-To: <1379639226.5862.9.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753987Ab3ITF0e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 01:26:34 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17096 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab3ITF0b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 01:26:31 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] cpufreq: skip loading acpi_cpufreq after intel_pstate
+Date: Thu, 19 Sep 2013 22:26:12 -0700
+Message-Id: <1379654772-10700-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If the hw support intel_pstate and acpi_cpufreq, intel_pstate will
+get loaded at first.
 
-On 09/19/2013 08:07 PM, Joe Perches wrote:
-> On Wed, 2013-09-18 at 20:27 -0500, Daniel Santos wrote:
->> if I use ERR_PTR() on a signed int on a x86_64 where pointer
->> is 64 bits and int is 32, wouldn't that mean a signed conversion
->> instruction where the sign bit has to be moved from bit 31 to 63?
-> No.  It's cast to long
->
-> static inline void * __must_check ERR_PTR(long error)
-> {
-> 	return (void *) error;
-> }
+acpi_cpufreq_init will call acpi_cpufreq_early_init()
+and it allocate perf data and init those perf data in ACPI core, (that
+will go over all cpus).
+but late it will free them as cpufreq_register_driver(acpi_cpufreq) will
+return fail as init_pstate already take over before.
 
-Yes, but it is that cast from int to long that costs us a signed extend 
-instruction on platforms where sizeof(int) != sizeof(long).  This 
-example should demonstrate the issue:
+Use cpufreq_get_current_driver() to check if we can skip the
+acpi_cpufreq loading.
 
-         extern void funca(void *ptr);
+Also there is racing in
+	__acpi_processor_start
+		 ==> acpi_processor_load_module
+			 ==> request_module_nowait/requested = 1
+before first pr path to have requested set, second cpu would request again.
+that will cause acpi_cpufreq_early_init to be called in parallel.
+that is cause for intermittent crashes.
 
-         static inline void * ERR_PTR(long error)
-         {
-                 return (void *) error;
-         }
+So add mutex to protect it.
 
-         void funcb(int i)
-         {
-                 funca(ERR_PTR(i));
-         }
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-         void funcc(long l)
-         {
-                 funca(ERR_PTR(l));
-         }
+---
+ drivers/acpi/processor_perflib.c |    8 +++++++-
+ drivers/cpufreq/acpi-cpufreq.c   |    4 ++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
-And here is the generated code on x86_64 with -O2:
-
-         0000000000000000 <funcb>:
-                 return (void *) error;
-         }
-
-         void funcb(int i)
-         {
-                 funca(ERR_PTR(i));
-            0:   48 63 ff                movslq %edi,%rdi
-            3:   e9 00 00 00 00          jmpq   8 <funcb+0x8>
-                                 4: R_X86_64_PC32 funca-0x4
-            8:   0f 1f 84 00 00 00 00    nopl 0x0(%rax,%rax,1)
-            f:   00
-
-         0000000000000010 <funcc>:
-         }
-
-         void funcc(long l)
-         {
-                 funca(ERR_PTR(l));
-           10:   e9 00 00 00 00          jmpq   15 <funcc+0x5>
-                                 11: R_X86_64_PC32 funca-0x4
-
-
-So on x86_64 this movslq is 3 bytes of text, plus register pollution for 
-each time you convert an int to a pointer. I don't know the precise 
-number of cases where error numbers are passed to printk as ints, but I 
-presume it is enough that this could add several kilobytes of text.  
-Either way, for a popular function like vsnprintf, it's better to take a 
-moderate bloat in the function than a little bloat at many call sites, 
-especially when it's not performance critical.
-
->> Either way, %pE does seem to make a lot of sense for conditions where we
->> already have a pointer that we would otherwise use PTR_ERR() to convert,
->> but it just seems klunky to use it on an int, to have it treated like a
->> pointer and then re-interpreted as an int.  Maybe we can add %pE as well
->> as %dE and leave [ioxXu] out of it?
-> I think having just one way to format is better.
->
-Yeah, I do agree, I just don't see how to do it without introducing 
-unnecessary bloat.
-
-Daniel
+Index: linux-2.6/drivers/cpufreq/acpi-cpufreq.c
+===================================================================
+--- linux-2.6.orig/drivers/cpufreq/acpi-cpufreq.c
++++ linux-2.6/drivers/cpufreq/acpi-cpufreq.c
+@@ -986,6 +986,10 @@ static int __init acpi_cpufreq_init(void
+ {
+ 	int ret;
+ 
++	/* don't keep reloading if cpufreq_driver exists */
++	if (cpufreq_get_current_driver())
++		return 0;
++
+ 	if (acpi_disabled)
+ 		return 0;
+ 
+Index: linux-2.6/drivers/acpi/processor_perflib.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/processor_perflib.c
++++ linux-2.6/drivers/acpi/processor_perflib.c
+@@ -235,6 +235,7 @@ void acpi_processor_ppc_exit(void)
+ 	acpi_processor_ppc_status &= ~PPC_REGISTERED;
+ }
+ 
++static DEFINE_MUTEX(acpi_cpufreq_load_lock);
+ /*
+  * Do a quick check if the systems looks like it should use ACPI
+  * cpufreq. We look at a _PCT method being available, but don't
+@@ -246,8 +247,12 @@ void acpi_processor_load_module(struct a
+ 	acpi_status status = 0;
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+ 
+-	if (!arch_has_acpi_pdc() || requested)
++	mutex_lock(&acpi_cpufreq_load_lock);
++	if (!arch_has_acpi_pdc() || requested ||cpufreq_get_current_driver()) {
++		mutex_unlock(&acpi_cpufreq_load_lock);
+ 		return;
++	}
++
+ 	status = acpi_evaluate_object(pr->handle, "_PCT", NULL, &buffer);
+ 	if (!ACPI_FAILURE(status)) {
+ 		printk(KERN_INFO PREFIX "Requesting acpi_cpufreq\n");
+@@ -255,6 +260,7 @@ void acpi_processor_load_module(struct a
+ 		requested = 1;
+ 	}
+ 	kfree(buffer.pointer);
++	mutex_unlock(&acpi_cpufreq_load_lock);
+ }
+ 
+ static int acpi_processor_get_performance_control(struct acpi_processor *pr)
