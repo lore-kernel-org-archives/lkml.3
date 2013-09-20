@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab3ITU0o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:26:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41564 "EHLO
+	id S1754671Ab3ITUNK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 16:13:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41515 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab3ITUOC (ORCPT
+	with ESMTP id S1754516Ab3ITUNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:14:02 -0400
+	Fri, 20 Sep 2013 16:13:05 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Grant Likely <grant.likely@linaro.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 41/93] of: Fix missing memory initialization on FDT unflattening
-Date: Fri, 20 Sep 2013 13:08:36 -0700
-Message-Id: <1379707768-1804-42-git-send-email-kamal@canonical.com>
+Subject: [PATCH 50/93] drm/radeon: fix resume on some rs4xx boards (v2)
+Date: Fri, 20 Sep 2013 13:08:45 -0700
+Message-Id: <1379707768-1804-51-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379707768-1804-1-git-send-email-kamal@canonical.com>
 References: <1379707768-1804-1-git-send-email-kamal@canonical.com>
@@ -27,35 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 0640332e073be9207f0784df43595c0c39716e42 upstream.
+commit acf88deb8ddbb73acd1c3fa32fde51af9153227f upstream.
 
-Any calls to dt_alloc() need to be zeroed. This is a temporary fix, but
-the allocation function itself needs to zero memory before returning
-it. This is a follow up to patch 9e4012752, "of: fdt: fix memory
-initialization for expanded DT" which fixed one call site but missed
-another.
+Setting MC_MISC_CNTL.GART_INDEX_REG_EN causes hangs on
+some boards on resume.  The systems seem to work fine
+without touching this bit so leave it as is.
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Acked-by: Wladislav Wiebe <wladislav.kw@gmail.com>
+v2: read-modify-write the GART_INDEX_REG_EN bit.
+I suspect the problem is that we are losing the other
+settings in the register.
+
+fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=52952
+
+Reported-by: Ondrej Zary <linux@rainbow-software.org>
+Tested-by: Daniel Tobias <dan.g.tob@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/of/base.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/rs400.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 2390ddb..8d6faae 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1482,6 +1482,7 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
- 		ap = dt_alloc(sizeof(*ap) + len + 1, 4);
- 		if (!ap)
- 			continue;
-+		memset(ap, 0, sizeof(*ap) + len + 1);
- 		ap->alias = start;
- 		of_alias_add(ap, np, id, start, len);
+diff --git a/drivers/gpu/drm/radeon/rs400.c b/drivers/gpu/drm/radeon/rs400.c
+index 233a9b9..b8074a8 100644
+--- a/drivers/gpu/drm/radeon/rs400.c
++++ b/drivers/gpu/drm/radeon/rs400.c
+@@ -174,10 +174,13 @@ int rs400_gart_enable(struct radeon_device *rdev)
+ 	/* FIXME: according to doc we should set HIDE_MMCFG_BAR=0,
+ 	 * AGPMODE30=0 & AGP30ENHANCED=0 in NB_CNTL */
+ 	if ((rdev->family == CHIP_RS690) || (rdev->family == CHIP_RS740)) {
+-		WREG32_MC(RS480_MC_MISC_CNTL,
+-			  (RS480_GART_INDEX_REG_EN | RS690_BLOCK_GFX_D3_EN));
++		tmp = RREG32_MC(RS480_MC_MISC_CNTL);
++		tmp |= RS480_GART_INDEX_REG_EN | RS690_BLOCK_GFX_D3_EN;
++		WREG32_MC(RS480_MC_MISC_CNTL, tmp);
+ 	} else {
+-		WREG32_MC(RS480_MC_MISC_CNTL, RS480_GART_INDEX_REG_EN);
++		tmp = RREG32_MC(RS480_MC_MISC_CNTL);
++		tmp |= RS480_GART_INDEX_REG_EN;
++		WREG32_MC(RS480_MC_MISC_CNTL, tmp);
  	}
+ 	/* Enable gart */
+ 	WREG32_MC(RS480_AGP_ADDRESS_SPACE_SIZE, (RS480_GART_EN | size_reg));
 -- 
 1.8.1.2
 
