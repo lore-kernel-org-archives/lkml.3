@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab3ITWvt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 18:51:49 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39181 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936Ab3ITWvq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 18:51:46 -0400
-To: Bernd Schubert <bernd.schubert@fastmail.fm>
-Cc: Nix <nix@esperi.org.uk>, Greg KH <greg@kroah.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, nick.cheng@areca.com.tw,
-        stable@vger.kernel.org, Douglas Gilbert <dgilbert@interlog.com>,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Re: [PATCH] scsi disk: Use its own buffer for the vpd request
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm>
-	<87fvuxdqes.fsf@spindle.srvr.nix> <yq1txjdhree.fsf@sermon.lab.mkp.net>
-	<51F80167.1080004@fastmail.fm> <yq1zjt3h11y.fsf@sermon.lab.mkp.net>
-	<51F94E8D.5040908@fastmail.fm> <51F95A2E.60805@fastmail.fm>
-	<51FA71E2.6010501@fastmail.fm> <871u5b7azv.fsf@spindle.srvr.nix>
-	<20130831015337.GA8164@kroah.com> <87d2ot1w27.fsf@spindle.srvr.nix>
-	<52238A33.7020703@fastmail.fm>
-Date: Fri, 20 Sep 2013 18:51:20 -0400
-In-Reply-To: <52238A33.7020703@fastmail.fm> (Bernd Schubert's message of "Sun,
-	01 Sep 2013 20:40:51 +0200")
-Message-ID: <yq1fvszds47.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1753729Ab3ITWwd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 18:52:33 -0400
+Received: from fifo99.com ([67.223.236.141]:33019 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753564Ab3ITWwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 18:52:32 -0400
+X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Sep 2013 18:52:32 EDT
+From: Daniel Walker <dwalker@fifo99.com>
+To: Ralf Baechle <ralf@linux-mips.org>, David Daney <david.daney@cavium.com>,
+        Doug Thompson <dougthompson@xmission.com>
+Cc: linux-edac@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] drivers: edac: octeon: fix lack of opstate_init
+Date: Fri, 20 Sep 2013 15:46:40 -0700
+Message-Id: <1379717202-26990-1-git-send-email-dwalker@fifo99.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Bernd" == Bernd Schubert <bernd.schubert@fastmail.fm> writes:
+If the opstate_init() isn't called the driver won't start properly.
 
-[Sorry about the delay. Catching up on a couple of weeks worth of email]
+I just added it in what appears to be an appropriate place.
 
-Bernd> So if anything else than a Seagate drive is connected to an Areca
-Bernd> controller with older firmware it will still fail.
+Signed-off-by: Daniel Walker <dwalker@fifo99.com>
+---
+ drivers/edac/octeon_edac-lmc.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-It's just blacklisting a specific Seagate drive. However, skip_vpd_pages
-is also set by USB.
-
-I'm still completely in favor of your patch to reduce the VPD buffer
-size. Please resubmit and feel free to add my Acked-by:.
-
+diff --git a/drivers/edac/octeon_edac-lmc.c b/drivers/edac/octeon_edac-lmc.c
+index 93412d6..4881ad0 100644
+--- a/drivers/edac/octeon_edac-lmc.c
++++ b/drivers/edac/octeon_edac-lmc.c
+@@ -92,6 +92,8 @@ static int octeon_lmc_edac_probe(struct platform_device *pdev)
+ 	struct edac_mc_layer layers[1];
+ 	int mc = pdev->id;
+ 
++	opstate_init();
++
+ 	layers[0].type = EDAC_MC_LAYER_CHANNEL;
+ 	layers[0].size = 1;
+ 	layers[0].is_virt_csrow = false;
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+1.8.1.2
+
