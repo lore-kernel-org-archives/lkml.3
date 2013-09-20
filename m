@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438Ab3ITJGN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 05:06:13 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:41312 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754413Ab3ITJGL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 05:06:11 -0400
-Date: Fri, 20 Sep 2013 10:06:04 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: jerry.hoemann@hp.com
-Cc: Andrew Fish <afish@apple.com>, Laszlo Ersek <lersek@redhat.com>,
-        linux-efi@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Brian Richardson <brian.richardson@intel.com>,
-        Colin Ian King <colin.king@canonical.com>,
-        Randy Wright <rwright@hp.com>, Linn Crosetto <linn.crosetto@hp.com>,
-        terry.lee@hp.com, samer.el-haj-mahmoud@hp.com, randy.pawell@hp.com,
-        chrisp@hp.com, linda.knippers@hp.com, dong.wei@hp.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Josh Triplett <josh@joshtriplett.org>,
-        kexec <kexec@lists.infradead.org>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130920090604.GB4785@console-pimps.org>
-References: <20130806141036.GD14891@pd.tnic>
- <520116D1.2010000@redhat.com>
- <20130807151935.GJ17920@pd.tnic>
- <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com>
- <20130807201908.GG2515@console-pimps.org>
- <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
- <20130808101730.GJ2515@console-pimps.org>
- <20130913203812.GA312@anatevka.fc.hp.com>
- <20130916105920.GB2697@console-pimps.org>
- <20130918192414.GB3345@anatevka.fc.hp.com>
+	id S1754257Ab3ITJRA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 05:17:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59654 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754166Ab3ITJQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 05:16:59 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>, Bob Liu <bob.liu@oracle.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
+        =?UTF-8?q?J=C3=B6rn=20Engel?= <joern@logfs.org>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>
+Subject: [PATCH] mm: munlock: Prevent walking off the end of a pagetable in no-pmd configuration
+Date: Fri, 20 Sep 2013 11:16:05 +0200
+Message-Id: <1379668565-13444-1-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <20130916084752.GC11479@localhost>
+References: <20130916084752.GC11479@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130918192414.GB3345@anatevka.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Sep, at 01:24:14PM, jerry.hoemann@hp.com wrote:
-> Matt,
-> 
-> I conducted the following experiments on a 3.11 kernel:
- 
-Jerry, could you paste your memory map from the kernel log?
+The function __munlock_pagevec_fill() introduced in commit 7a8010cd3
+("mm: munlock: manual pte walk in fast path instead of follow_page_mask()")
+uses pmd_addr_end() for restricting its operation within current page table.
+This is insufficient on architectures/configurations where pmd is folded
+and pmd_addr_end() just returns the end of the full range to be walked. In
+this case, it allows pte++ to walk off the end of a page table resulting in
+unpredictable behaviour.
 
+This patch fixes the function by using pgd_addr_end() and pud_addr_end()
+before pmd_addr_end(), which will yield correct page table boundary on all
+configurations. This is similar to what existing page walkers do when walking
+each level of the page table.
+
+Additionaly, the patch clarifies a comment for get_locked_pte() call in the
+function.
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Reviewed-by: Bob Liu <bob.liu@oracle.com>
+Cc: Jörn Engel <joern@logfs.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+---
+ mm/mlock.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/mm/mlock.c b/mm/mlock.c
+index d638026..758c0fc 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -379,10 +379,14 @@ static unsigned long __munlock_pagevec_fill(struct pagevec *pvec,
+ 
+ 	/*
+ 	 * Initialize pte walk starting at the already pinned page where we
+-	 * are sure that there is a pte.
++	 * are sure that there is a pte, as it was pinned under the same
++	 * mmap_sem write op.
+ 	 */
+ 	pte = get_locked_pte(vma->vm_mm, start,	&ptl);
+-	end = min(end, pmd_addr_end(start, end));
++	/* Make sure we do not cross the page table boundary */
++	end = pgd_addr_end(start, end);
++	end = pud_addr_end(start, end);
++	end = pmd_addr_end(start, end);
+ 
+ 	/* The page next to the pinned page is the first we will try to get */
+ 	start += PAGE_SIZE;
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.8.1.4
+
