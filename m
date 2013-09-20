@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab3ITU7s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 16:59:48 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:34087 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209Ab3ITU7q (ORCPT
+	id S1754684Ab3ITVAG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 17:00:06 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:45461 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754170Ab3ITVAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 16:59:46 -0400
+	Fri, 20 Sep 2013 17:00:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <1379506478-16625-23-git-send-email-lee.jones@linaro.org>
-References: <1379506478-16625-1-git-send-email-lee.jones@linaro.org>
-	<1379506478-16625-23-git-send-email-lee.jones@linaro.org>
-Date: Fri, 20 Sep 2013 22:59:46 +0200
-Message-ID: <CACRpkdZ+kg8VEMZ6gy6CG=YK0Ycj-Ud-UuRohzKgE4UW_VUMjg@mail.gmail.com>
-Subject: Re: [PATCH 22/41] clk: ux500: Copy u8500_clk_init() ready for DT enablement
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <20130920203222.GA14306@kroah.com>
+References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
+	<20130920203222.GA14306@kroah.com>
+Date: Fri, 20 Sep 2013 17:00:00 -0400
+Message-ID: <CAAzz28hzVRd89Sw_-rOoPAc126W5uMjZzXHMxo2ge4OzOvwMTA@mail.gmail.com>
+Subject: Re: Drivers: scsi: FLUSH timeout
+From: Laurence Oberman <oberman.l@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 2:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
+I am thinking Srini meant in the sd_mod driver module.
+#define SD_FLUSH_TIMEOUT (60 * HZ)
 
-> Here we're using the old clock initialisation function as a template.
-> It's necessary to remove all of the clk_register_clkdev() calls as
-> they don't make sense when booting with Device Tree.
+Laurence
+
+
+On Fri, Sep 20, 2013 at 4:32 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Sep 20, 2013 at 12:32:27PM -0700, K. Y. Srinivasan wrote:
+>> The SD_FLUSH_TIMEOUT value is currently hardcoded.
 >
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-
-I *really* like the looks of this! Mike can we have your ACK on this?
-
-Yours,
-Linus Walleij
+> Hardcoded where?  Please, more context.
+>
+>> On our cloud, we sometimes hit this timeout. I was wondering if we
+>> could make this a module parameter. If this is acceptable, I can send
+>> you a patch for this.
+>
+> A module parameter don't make sense for a per-device value, does it?
+>
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
