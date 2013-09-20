@@ -1,51 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab3ITDO5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Sep 2013 23:14:57 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:13188 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab3ITDOz (ORCPT
+	id S1754054Ab3ITDRD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Sep 2013 23:17:03 -0400
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:63959 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753965Ab3ITDRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Sep 2013 23:14:55 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18eeUjshfyOPNeA2h4CDMVgSgUN1W2+MLY=
-Date: Thu, 19 Sep 2013 23:14:52 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Quentin Armitage <quentin@armitage.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Fix address of second XOR engine in Kirkwood SoC DT
-Message-ID: <20130920031452.GA11119@titan.lakedaemon.net>
-References: <1379588429.2484.84.camel@samson1.armitage.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379588429.2484.84.camel@samson1.armitage.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 19 Sep 2013 23:17:01 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org, joe@perches.com
+Cc: linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>
+Subject: [PATCH v3 2/2] ia32_aout: x86_64: Add safe check in a.out loaders, printks, conding style fixes
+Date: Fri, 20 Sep 2013 00:15:13 -0300
+Message-Id: <1379646913-12445-2-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1379646913-12445-1-git-send-email-geyslan@gmail.com>
+References: <1379646913-12445-1-git-send-email-geyslan@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 12:00:29PM +0100, Quentin Armitage wrote:
-> There appears to be an error in the second address of the second XOR
-> engine in the Kirkwood SoC device tree, which is specified as 0xd0b00
-> but should be 0x60b00.
-> 
-> For confirmation of address see
-> http://www.marvell.com/embedded-processors/kirkwood/assets/FS_88F6180_9x_6281_OpenSource.pdf table 581 page 658.
-> Also see definition of XOR1_HIGH_PHYS_BASE in
-> arch/arm/mach-kirkwood/include/mach/kirkwood.h
-> #define XOR1_HIGH_PHYS_BASE    (KIRKWOOD_REGS_PHYS_BASE + 0x60B00)
-> 
-> Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
-> 
-> ---
->  arch/arm/boot/dts/kirkwood.dtsi | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+ia32_aout had no safe checks concerning the mmap and f_op in this module.
+It's not necessary to verify f_op in the load_aout_library, since the
+prior kernel_read/vfs_read function already does.
+Made coding style fixes and printks replacements.
 
-Applied to mvebu/fixes with Sebastian's Reviewed-by.
+Tested using qemu, a handcrafted a.out binary and an a.out linked with a
+cross-compiled ld.
 
-thx,
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ arch/x86/ia32/ia32_aout.c | 63 +++++++++++++++++++++++------------------------
+ 1 file changed, 31 insertions(+), 32 deletions(-)
 
-Jason.
+diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
+index bae3aba..87d5114 100644
+--- a/arch/x86/ia32/ia32_aout.c
++++ b/arch/x86/ia32/ia32_aout.c
+@@ -24,9 +24,9 @@
+ #include <linux/binfmts.h>
+ #include <linux/personality.h>
+ #include <linux/init.h>
+-#include <linux/jiffies.h>
++#include <linux/ratelimit.h>
++#include <linux/uaccess.h>
+ 
+-#include <asm/uaccess.h>
+ #include <asm/pgalloc.h>
+ #include <asm/cacheflush.h>
+ #include <asm/user32.h>
+@@ -224,9 +224,9 @@ static u32 __user *create_aout_tables(char __user *p, struct linux_binprm *bprm)
+ 	int argc = bprm->argc, envc = bprm->envc;
+ 
+ 	sp = (u32 __user *) ((-(unsigned long)sizeof(u32)) & (unsigned long) p);
+-	sp -= envc+1;
++	sp -= envc + 1;
+ 	envp = sp;
+-	sp -= argc+1;
++	sp -= argc + 1;
+ 	argv = sp;
+ 	put_user((unsigned long) envp, --sp);
+ 	put_user((unsigned long) argv, --sp);
+@@ -271,10 +271,17 @@ static int load_aout_binary(struct linux_binprm *bprm)
+ 	     N_MAGIC(ex) != QMAGIC && N_MAGIC(ex) != NMAGIC) ||
+ 	    N_TRSIZE(ex) || N_DRSIZE(ex) ||
+ 	    i_size_read(file_inode(bprm->file)) <
+-	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
++	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+ 		return -ENOEXEC;
+ 	}
+ 
++	/*
++	 * Requires a mmap handler. This prevents people from using a.out
++	 * as part of an exploit attack against /proc-related vulnerabilities.
++	 */
++	if (!bprm->file->f_op || !bprm->file->f_op->mmap)
++		return -ENOEXEC;
++
+ 	fd_offset = N_TXTOFF(ex);
+ 
+ 	/* Check initial limits. This avoids letting people circumvent
+@@ -322,7 +329,7 @@ static int load_aout_binary(struct linux_binprm *bprm)
+ 		unsigned long text_addr, map_size;
+ 
+ 		text_addr = N_TXTADDR(ex);
+-		map_size = ex.a_text+ex.a_data;
++		map_size = ex.a_text + ex.a_data;
+ 
+ 		error = vm_brk(text_addr & PAGE_MASK, map_size);
+ 
+@@ -339,28 +346,19 @@ static int load_aout_binary(struct linux_binprm *bprm)
+ 		}
+ 	} else {
+ #ifdef WARN_OLD
+-		static unsigned long error_time, error_time2;
+ 		if ((ex.a_text & 0xfff || ex.a_data & 0xfff) &&
+-		    (N_MAGIC(ex) != NMAGIC) &&
+-				time_after(jiffies, error_time2 + 5*HZ)) {
+-			printk(KERN_NOTICE "executable not page aligned\n");
+-			error_time2 = jiffies;
+-		}
++		    (N_MAGIC(ex) != NMAGIC))
++			pr_notice_ratelimited("executable not page aligned\n");
+ 
+-		if ((fd_offset & ~PAGE_MASK) != 0 &&
+-			    time_after(jiffies, error_time + 5*HZ)) {
+-			printk(KERN_WARNING
+-			       "fd_offset is not page aligned. Please convert "
+-			       "program: %s\n",
+-			       bprm->file->f_path.dentry->d_name.name);
+-			error_time = jiffies;
+-		}
++		if ((fd_offset & ~PAGE_MASK) != 0)
++			pr_warn_ratelimited("fd_offset is not page aligned. Please convert program: %s\n",
++					    bprm->file->f_path.dentry->d_name.name);
+ #endif
+ 
+-		if (!bprm->file->f_op->mmap || (fd_offset & ~PAGE_MASK) != 0) {
+-			vm_brk(N_TXTADDR(ex), ex.a_text+ex.a_data);
++		if ((fd_offset & ~PAGE_MASK) != 0) {
++			vm_brk(N_TXTADDR(ex), ex.a_text + ex.a_data);
+ 			read_code(bprm->file, N_TXTADDR(ex), fd_offset,
+-					ex.a_text+ex.a_data);
++					ex.a_text + ex.a_data);
+ 			goto beyond_if;
+ 		}
+ 
+@@ -424,10 +422,17 @@ static int load_aout_library(struct file *file)
+ 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != QMAGIC) || N_TRSIZE(ex) ||
+ 	    N_DRSIZE(ex) || ((ex.a_entry & 0xfff) && N_MAGIC(ex) == ZMAGIC) ||
+ 	    i_size_read(file_inode(file)) <
+-	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
++	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
+ 		goto out;
+ 	}
+ 
++	/*
++	 * Requires a mmap handler. This prevents people from using a.out
++	 * as part of an exploit attack against /proc-related vulnerabilities.
++	 */
++	if (!file->f_op->mmap)
++		goto out;
++
+ 	if (N_FLAGS(ex))
+ 		goto out;
+ 
+@@ -438,14 +443,8 @@ static int load_aout_library(struct file *file)
+ 
+ 	if ((N_TXTOFF(ex) & ~PAGE_MASK) != 0) {
+ #ifdef WARN_OLD
+-		static unsigned long error_time;
+-		if (time_after(jiffies, error_time + 5*HZ)) {
+-			printk(KERN_WARNING
+-			       "N_TXTOFF is not page aligned. Please convert "
+-			       "library: %s\n",
+-			       file->f_path.dentry->d_name.name);
+-			error_time = jiffies;
+-		}
++		pr_warn_ratelimited("N_TXTOFF is not page aligned. Please convert library: %s\n",
++				    file->f_path.dentry->d_name.name);
+ #endif
+ 		vm_brk(start_addr, ex.a_text + ex.a_data + ex.a_bss);
+ 
+-- 
+1.8.4
+
