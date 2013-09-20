@@ -1,161 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab3ITJ4r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 05:56:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42112 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab3ITJ4o (ORCPT
+	id S1754580Ab3ITJ4j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 05:56:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39562 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754461Ab3ITJ4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 05:56:44 -0400
-Date: Fri, 20 Sep 2013 02:55:59 -0700
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-886b37baa6274350fb271b2044dc50eb93cb1fc2@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1379009721-27667-1-git-send-email-adrian.hunter@intel.com>
-References: <1379009721-27667-1-git-send-email-adrian.hunter@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf annotate:
-  Fix objdump line parsing offset validation
-Git-Commit-ID: 886b37baa6274350fb271b2044dc50eb93cb1fc2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 20 Sep 2013 05:56:34 -0400
+Date: Fri, 20 Sep 2013 11:56:27 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
+        LKML <linux-kernel@vger.kernel.org>, Marc Pignat <marc.pignat@hevs.ch>,
+        john.stultz@linaro.org, kernel@pengutronix.de,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clockevents: Sanitize ticks to nsec conversion
+In-Reply-To: <20130919200343.GV24802@pengutronix.de>
+Message-ID: <alpine.DEB.2.02.1309201127400.4089@ionos.tec.linutronix.de>
+References: <20130917130153.GL26819@ludovic.desroches@atmel.com> <alpine.DEB.2.02.1309172228400.4089@ionos.tec.linutronix.de> <20130918085627.GN24802@pengutronix.de> <alpine.DEB.2.02.1309181058470.4089@ionos.tec.linutronix.de> <20130918150958.GO24802@pengutronix.de>
+ <alpine.DEB.2.02.1309182201000.4089@ionos.tec.linutronix.de> <20130919100239.GS24802@pengutronix.de> <alpine.DEB.2.02.1309191207460.4089@ionos.tec.linutronix.de> <20130919124805.GU24802@pengutronix.de> <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
+ <20130919200343.GV24802@pengutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 20 Sep 2013 02:56:05 -0700 (PDT)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1381942138-1379670810=:4089"
+Content-ID: <alpine.DEB.2.02.1309201153550.4089@ionos.tec.linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  886b37baa6274350fb271b2044dc50eb93cb1fc2
-Gitweb:     http://git.kernel.org/tip/886b37baa6274350fb271b2044dc50eb93cb1fc2
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Thu, 12 Sep 2013 21:15:21 +0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 19 Sep 2013 11:32:17 -0300
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-perf annotate: Fix objdump line parsing offset validation
+--8323329-1381942138-1379670810=:4089
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.02.1309201153551.4089@ionos.tec.linutronix.de>
 
-When parsing lines from objdump a line containing source code starting
-with a numeric label is mistaken for a line of disassembly starting with
-a memory address.
+On Thu, 19 Sep 2013, Uwe Kleine-König wrote:
+> > +     u64 rnd = (u64) evt->mult - 1;
+> >  
+> >       if (unlikely(!evt->mult)) {
+> >               evt->mult = 1;
+> >               WARN_ON(1);
+> >       }
+> I suggest to move the assignment to rnd below this if block as it
+> changes mult. 
 
-Current validation fails to recognise that the "memory address" is out
-of range and calculates an invalid offset which later causes this
-segfault:
+True.
 
-Program received signal SIGSEGV, Segmentation fault.
-0x0000000000457315 in disasm__calc_percent (notes=0xc98970, evidx=0, offset=143705, end=2127526177, path=0x7fffffffbf50)
-    at util/annotate.c:631
-631				hits += h->addr[offset++];
-(gdb) bt
- #0  0x0000000000457315 in disasm__calc_percent (notes=0xc98970, evidx=0, offset=143705, end=2127526177, path=0x7fffffffbf50)
-    at util/annotate.c:631
- #1  0x00000000004d65e3 in annotate_browser__calc_percent (browser=0x7fffffffd130, evsel=0xa01da0) at ui/browsers/annotate.c:364
- #2  0x00000000004d7433 in annotate_browser__run (browser=0x7fffffffd130, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:672
- #3  0x00000000004d80c9 in symbol__tui_annotate (sym=0xc989a0, map=0xa02660, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:962
- #4  0x00000000004d7aa0 in hist_entry__tui_annotate (he=0xdf73f0, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:823
- #5  0x00000000004dd648 in perf_evsel__hists_browse (evsel=0xa01da0, nr_events=1, helpline=
-    0x58b768 "For a higher level overview, try: perf report --sort comm,dso", ev_name=0xa02cd0 "cycles", left_exits=false, hbt=
-    0x0, min_pcnt=0, env=0xa011e0) at ui/browsers/hists.c:1659
- #6  0x00000000004de372 in perf_evlist__tui_browse_hists (evlist=0xa01520, help=
-    0x58b768 "For a higher level overview, try: perf report --sort comm,dso", hbt=0x0, min_pcnt=0, env=0xa011e0)
-    at ui/browsers/hists.c:1950
- #7  0x000000000042cf6b in __cmd_report (rep=0x7fffffffd6c0) at builtin-report.c:581
- #8  0x000000000042e25d in cmd_report (argc=0, argv=0x7fffffffe4b0, prefix=0x0) at builtin-report.c:965
- #9  0x000000000041a0e1 in run_builtin (p=0x801548, argc=1, argv=0x7fffffffe4b0) at perf.c:319
- #10 0x000000000041a319 in handle_internal_command (argc=1, argv=0x7fffffffe4b0) at perf.c:376
- #11 0x000000000041a465 in run_argv (argcp=0x7fffffffe38c, argv=0x7fffffffe380) at perf.c:420
- #12 0x000000000041a707 in main (argc=1, argv=0x7fffffffe4b0) at perf.c:521
+>  
+> +     /*
+> +      * Upper bound sanity check. If the backwards conversion is
+> +      * not equal latch, we know that the above shift overflowed.
+> +      */
+> +     if (clc >> evt->shift) != (u64)latch)
+You didn't compile test, did you? Also the cast on the rhs isn't needed.
 
-After the fix is applied the symbol can be annotated showing the
-problematic line "1:      rep"
+I did. I just missed to refresh the patch before sending it :)
 
-copy_user_generic_string  /usr/lib/debug/lib/modules/3.9.10-100.fc17.x86_64/vmlinux
-             */
-            ENTRY(copy_user_generic_string)
-                    CFI_STARTPROC
-                    ASM_STAC
-                    andl %edx,%edx
-              and    %edx,%edx
-                    jz 4f
-              je     37
-                    cmpl $8,%edx
-              cmp    $0x8,%edx
-                    jb 2f           /* less than 8 bytes, go to byte copy loop */
-              jb     33
-                    ALIGN_DESTINATION
-              mov    %edi,%ecx
-              and    $0x7,%ecx
-              je     28
-              sub    $0x8,%ecx
-              neg    %ecx
-              sub    %ecx,%edx
-        1a:   mov    (%rsi),%al
-              mov    %al,(%rdi)
-              inc    %rsi
-              inc    %rdi
-              dec    %ecx
-              jne    1a
-                    movl %edx,%ecx
-        28:   mov    %edx,%ecx
-                    shrl $3,%ecx
-              shr    $0x3,%ecx
-                    andl $7,%edx
-              and    $0x7,%edx
-            1:      rep
-100.00        rep    movsq %ds:(%rsi),%es:(%rdi)
-                    movsq
-            2:      movl %edx,%ecx
-        33:   mov    %edx,%ecx
-            3:      rep
-              rep    movsb %ds:(%rsi),%es:(%rdi)
-                    movsb
-            4:      xorl %eax,%eax
-        37:   xor    %eax,%eax
-              data32 xchg %ax,%ax
-                    ASM_CLAC
-                    ret
-              retq
+> > +	 * For mult <= (1 << shift) we can safely add mult - 1 to
+> > +	 * prevent integer rounding loss. So the backwards conversion
+> It doesn't prevent inexactness to add mult - 1. It (only) asserts that
+> the ns2delta(delta2ns(latch)) >= latch instead of ... <= latch when not
+> doing it.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1379009721-27667-1-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/annotate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index bfc5a27..7eae548 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -809,7 +809,7 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 		    end = map__rip_2objdump(map, sym->end);
+For mult <= 1 << shift the conversion is always ending up with the
+same latch value.
  
- 		offset = line_ip - start;
--		if (offset < 0 || (u64)line_ip > end)
-+		if ((u64)line_ip < start || (u64)line_ip > end)
- 			offset = -1;
- 		else
- 			parsed_line = tmp2 + 1;
+> > +	 * from nsec to device ticks will be correct.
+> > +	 *
+> > +	 * For mult > (1 << shift), i.e. device frequency is > 1GHz we
+> > +	 * need to be careful. Adding mult - 1 will result in a value
+> > +	 * which when converted back to device ticks will be larger
+> s/will/can/
+
+No, it will always be larger.
+
+> > +	 * than latch by (mult / (1 << shift)) - 1. For the min_delta
+> s/by/by up to/
+> 
+> > +	 * calculation we still want to apply this in order to stay
+> > +	 * above the minimum device ticks limit. For the upper limit
+> > +	 * we would end up with a latch value larger than the upper
+> > +	 * limit of the device, so we omit the add to stay below the
+> > +	 * device upper boundary.
+> > +	 *
+> > +	 * Also omit the add if it would overflow the u64 boundary.
+> > +	 */
+> > +	if ((~0ULL - clc > rnd) &&
+> > +	    (!ismax || evt->mult <= (1U << evt->shift)))
+> > +		clc += rnd;
+> I would expect that
+> 
+> 	if (!ismax)
+> 		if (~0ULL - clc > rnd)
+> 			clc += rnd;
+> 		else
+> 			clc = ~0ULL;
+> 
+> is enough (and a tad more exact in the presence of an overflow). I have
+> to think about that though.
+
+Errm.
+
+1) We cannot add if we'd overflow
+
+2) For mult <= 1 << shift it's always correct
+
+3) for mult > 1 << shift we only apply it to the min value not the max
+ 
+> >  	clockevents_calc_mult_shift(dev, freq, sec);
+> > -	dev->min_delta_ns = clockevent_delta2ns(dev->min_delta_ticks, dev);
+> > -	dev->max_delta_ns = clockevent_delta2ns(dev->max_delta_ticks, dev);
+> > +	dev->min_delta_ns = cev_delta2ns(dev->min_delta_ticks, dev, false);
+> > +	dev->max_delta_ns = cev_delta2ns(dev->max_delta_ticks, dev, true);
+> Another improvement that came to my mind just now. For min_delta_ns you
+> want to assert that it results in a value >= min_delta_ticks when
+> converted back. For max_delta_ns you want ... value <= max_delta_ticks.
+> What about the values in between? They for sure should land in
+> [min_delta_ticks ... max_delta_ticks] when converted back and ideally
+> should be most exact. The latter part would mean to add (rnd / 2)
+> instead of rnd. I don't know yet how that would behave at the borders of
+> the [min_delta_ns ... max_delta_ns] interval, but I think you still need
+> to special-case that.
+
+Again:
+
+1) For mult <= 1 << shift the backwards conversion is always the same as
+   the input value.
+
+2) For mult > 1 << shift the backwards conversion of the min value is
+   always > than the input value. And the backwards conversion of the
+   max value is always < than the input value.
+
+The values between that are completely uninteresting as the
+program_events code always converts from nsec to device ticks.
+
+We clamp the delta between min_ns and max_ns. So due to the above any
+
+   min_ns <= delta <= max_ns
+
+will after conversion fulfil 
+
+   min_tick <= delta_tick <= max_tick
+
+So what are you going to improve? Either the math works or it does not.
+
+Thanks,
+
+	tglx
+--8323329-1381942138-1379670810=:4089--
