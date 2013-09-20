@@ -1,82 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab3ITQY7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 12:24:59 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48688 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752499Ab3ITQY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 12:24:58 -0400
-Date: Fri, 20 Sep 2013 11:23:30 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Olof Johansson <olof@lixom.net>
-CC: Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] ARM: OMAP3630: Add generic machine descriptor
-Message-ID: <20130920162329.GC18721@radagast>
-Reply-To: <balbi@ti.com>
-References: <1379693332-10585-1-git-send-email-nm@ti.com>
- <CAOesGMj6G7LeYUJsGpZHxKOjiNrk+1U55QFqcQyTb6_Co+n4zQ@mail.gmail.com>
+	id S1752803Ab3ITQcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 12:32:22 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:50253 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261Ab3ITQcV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Sep 2013 12:32:21 -0400
+Date: Fri, 20 Sep 2013 11:26:05 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+Message-ID: <20130920162603.GA30381@localhost.localdomain>
+References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
+ <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
+ <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GZVR6ND4mMseVXL/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOesGMj6G7LeYUJsGpZHxKOjiNrk+1U55QFqcQyTb6_Co+n4zQ@mail.gmail.com>
+In-Reply-To: <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---GZVR6ND4mMseVXL/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 20, 2013 at 01:03:17PM +0200, Thomas Gleixner wrote:
+> On Thu, 19 Sep 2013, Linus Torvalds wrote:
+> 
+> > On Thu, Sep 19, 2013 at 2:51 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > >
+> > > It fixes stacks overruns reported by Benjamin Herrenschmidt:
+> > > http://lkml.kernel.org/r/1378330796.4321.50.camel%40pasglop
+> > 
+> > So I don't really dislike this patch-series, but isn't "irq_exit()"
+> > (which calls the new softirq_on_stack()) already running in the
+> > context of the irq stack? And it's run at the very end of the irq
+> > processing, so the irq stack should be empty too at that point.
+> 
+> Right, but most of the implementations are braindamaged.
+> 
+>       irq_enter();
+>       handle_irq_on_hardirq_stack();
+>       irq_exit();
+> 
+> instead of doing:
+> 	
+>       switch_stack()
+>       irq_enter()
+>       handle_irq()
+>       irq_exit()
+>       restore_stack()
+> 
+> So in the case of softirq processing (the likely case) we end up doing:
+> 
+>    switch_to_hardirq_stack()
+>    ...
+>    restore_original_stack()
+>    switch_to_softirq_stack()
+>    ...
+>    restore_original_stack()
+> 
+> Two avoidable stack switch operations for no gain.
+> 
+> > I'm assuming that the problem is that since we're already on the irq
+> > stack, if *another* irq comes in, now that *other* irq doesn't get yet
+> > another irq stack page. And I'm wondering whether we shouldn't just
+> > fix that (hopefully unlikely) case instead? So instead of having a
+> > softirq stack, we'd have just an extra irq stack for the case where
+> > the original irq stack is already in use.
+> 
+> Why not have a single irq_stack large enough to accomodate interrupt
+> handling during softirq processing? We have no interrupt nesting so
+> the maximum stack depth necessary is
+> 
+>   max(softirq_stack_usage) + max(irq_stack_usage)
+> 
+> Today we allocate THREAD_SIZE_ORDER for the hard and the soft context,
+> so allocating 2 * THREAD_SIZE_ORDER should be sufficient.
 
-Hi,
+Looks good to me.
 
-On Fri, Sep 20, 2013 at 09:19:02AM -0700, Olof Johansson wrote:
-> On Fri, Sep 20, 2013 at 9:08 AM, Nishanth Menon <nm@ti.com> wrote:
-> > An alternative approach may be to (for all SoCs):
-> > 1. define every SoC entry - ti,omap3430 ti,omap3630...
-> > 2. have a generic omap3_init which uses "if (of_machine_is_compatible("=
-ti,omap3630"))"
-> > to invoke the appropriate omap3xxx_init_early.
->=20
-> Yes, this would be better, but you can do add a DT_MACHINE as in this
-> patch but have ti,omap3630 as the dt_compat table. Then there's no
-> need to add runtime checks.
+Now just for clarity, what do we then do with inline sofirq executions: on local_bh_enable()
+for example, or explicit calls to do_softirq() other than irq exit?
 
-I was going to reply that adding of_machine_is_compatible("ti,omap3630")
-would help in some situations, but guess it's already tainted ;-)
+Should we keep the current switch to a different softirq stack? If we have a generic irq stack
+(used for both hard and soft) that is big enough, perhaps we can also switch to this
+generic irq stack for inline softirqs executions? After all there is no much point in keeping
+a separate stack for that: this result in cache misses if the inline softirq is interrupted by
+a hardirq, also inlined softirqs can't happen in hardirq, so there should be no much risk of overruns.
 
-cheers
+Or am I missing other things?
 
---=20
-balbi
-
---GZVR6ND4mMseVXL/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSPHaBAAoJEIaOsuA1yqRESMsQAIumLCjQoU5R0ppxxctnoTY+
-Mo5ufBbLe0jpen+N97unfJyjearXgALHW39uSvsHnH/gdpwBprFQWkK6+PgATJpx
-nOXFZ/5EXcuGYHYe3mjYIEinin53kgFmDYoiPQK88ljx6lriTsSr1bg+lbuXqzop
-TKx5jHqk7A+tikLw40ZV0PKPfxd86onztawWBD+8PE3twyophPFy/glPMTlBuuri
-PyvEmazgykXdmbb4ry9p4ixQqlA1f5XfbjufJpJiV4qX/T0FzNdgC4QGS5Lujhzo
-+kU/nwy51XAuW6hj0MCps6rwxhpcWEhT7y+IkULEZRzPk+nTs1L5J6mtDgJ9kS8F
-U7+76rSp0g7gYSZ4vJuNh0ocTGJTMqOPTJL7nuRNF6LbS/g7yYMfXIQltqG16tb1
-hJ93GJWLo94N8bkshEbdUGikvq1fe0XCDxQAYTYcXxz0xqjJsnOSGkPtimztleYE
-3h04jPUhS0fjxYl4oXidPM/cKTzjXnbUfheA2FFFqrH9lF/gFl/FBj9wLnLLQ6V4
-7xFQl8FauHxkKLnAPxLi/9gefP3IjXmYCvODLdhM4BJqG73Y/xxlJuwC/seTK3Ht
-w2huBScLGttVDXPLfYGeyCyHeDE302j1d/9O1ImFW+5IOInBsVFP12BLT9tbOvfx
-5gFI5X3NGgGW/atconIY
-=FvN5
------END PGP SIGNATURE-----
-
---GZVR6ND4mMseVXL/--
+> 
+> Thanks,
+> 
+> 	tglx
