@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab3ITSb5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 14:31:57 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:30250 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab3ITSb4 (ORCPT
+	id S1753376Ab3ITSeH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 14:34:07 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:59883 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753017Ab3ITSeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 14:31:56 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/kUgfZF47ViG5XH46K78Iv
-Date: Fri, 20 Sep 2013 11:31:44 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] omap2: Change clk dev id for rng to
- omap3-rom-rng
-Message-ID: <20130920183144.GB2684@atomide.com>
-References: <1379534757-20870-1-git-send-email-pali.rohar@gmail.com>
- <201309201841.16197@pali>
- <20130920174640.GA2684@atomide.com>
- <201309202024.50755@pali>
+	Fri, 20 Sep 2013 14:34:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201309202024.50755@pali>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1378904607-23349-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1378904607-23349-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Date: Fri, 20 Sep 2013 20:34:04 +0200
+Message-ID: <CACRpkdZ50nL4G16Uku9g9HoKbY=L_nv6Q=T0_rWkcE0RwiuUcw@mail.gmail.com>
+Subject: Re: [PATCH] gpio: arizona: Add wm8997 support to probe
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        patches@opensource.wolfsonmicro.com,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pali Rohár <pali.rohar@gmail.com> [130920 11:32]:
-> On Friday 20 September 2013 19:46:41 Tony Lindgren wrote:
-> 
-> Ok, then there is new patch which only adding omap3-rom-rng and not removing omap_rng.
-> It is OK to have same CLK data but with different names?
+On Wed, Sep 11, 2013 at 3:03 PM, Charles Keepax
+<ckeepax@opensource.wolfsonmicro.com> wrote:
 
-Yes in this case it's always either omap_rng or omap3-rom-rng
-so the patch below looks OK to me.
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>
+> A bit of confusion with merging this last time because I
+> messed up the CCs, is safe to merge this patch on its own
+> now.
 
-Regards,
+OK patch applied.
 
-Tony
- 
-> diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c b/arch/arm/mach-omap2/cclock3xxx_data.c
-> index 334b767..03a2829 100644
-> --- a/arch/arm/mach-omap2/cclock3xxx_data.c
-> +++ b/arch/arm/mach-omap2/cclock3xxx_data.c
-> @@ -3275,6 +3275,7 @@ static struct omap_clk omap36xx_clks[] = {
->  static struct omap_clk omap34xx_omap36xx_clks[] = {
->  	CLK(NULL,	"aes1_ick",	&aes1_ick),
->  	CLK("omap_rng",	"ick",		&rng_ick),
-> +	CLK("omap3-rom-rng",	"ick",	&rng_ick),
->  	CLK(NULL,	"sha11_ick",	&sha11_ick),
->  	CLK(NULL,	"des1_ick",	&des1_ick),
->  	CLK(NULL,	"cam_mclk",	&cam_mclk),
-> 
-> 
-> -- 
-> Pali Rohár
-> pali.rohar@gmail.com
-
-
+Yours,
+Linus Walleij
