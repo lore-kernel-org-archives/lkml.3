@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab3ITRbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Sep 2013 13:31:45 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:49216 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab3ITRbo (ORCPT
+	id S1753268Ab3ITRgR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Sep 2013 13:36:17 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:47678 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752393Ab3ITRgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Sep 2013 13:31:44 -0400
+	Fri, 20 Sep 2013 13:36:16 -0400
+Message-ID: <523C95B0.6070906@kernel.org>
+Date: Fri, 20 Sep 2013 19:36:32 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAKohpomg=0YYHYu1Eh4MGW=_h3cppntBr1dQWMjCj_=AuRBDPQ@mail.gmail.com>
-References: <CACRpkdYo24DO7ra7cgc54BUN-1SGfmbdhacOT41n2=KknyEtLw@mail.gmail.com>
-	<45987104.t6r4hvPgQn@vostro.rjw.lan>
-	<523AF22F.1010909@linux.vnet.ibm.com>
-	<CACRpkdYxiDA25Yb+csWWgXMmJuKMMTNVbdF+2JUnsSrXQpYysQ@mail.gmail.com>
-	<CACRpkdYBYdMJ6mTGUropOypx0ZVNn8eQMzV+eKocCSBZAu6xTA@mail.gmail.com>
-	<CAKohpokQO82XMGwcTjVmNTbBVESyFqV4DAxMMU_RHEtN+LqUgg@mail.gmail.com>
-	<CACRpkdYoNkgno24dtJAwOq2T9yoKQYgKQ+adfkSN8affYNePjQ@mail.gmail.com>
-	<CAKohpokdOXrGVxEA89yrAq2T8MiqZNHrrXNagqqggo67rEmKYg@mail.gmail.com>
-	<CAKohpomXsZ+BsE7j-J4qU+x9f+JPsNEMi3d=CmfMByzPw_wvtw@mail.gmail.com>
-	<CACRpkdaAryP9BVEeEPWBS+_BuTB75c-Zqv01eRNmwDqKgvyz-Q@mail.gmail.com>
-	<CAKohpomg=0YYHYu1Eh4MGW=_h3cppntBr1dQWMjCj_=AuRBDPQ@mail.gmail.com>
-Date: Fri, 20 Sep 2013 19:31:43 +0200
-Message-ID: <CACRpkdZRyUrC9-kkVcP_PbhE21ycTd=me8Gbjo7bRx6HhaT9JA@mail.gmail.com>
-Subject: Re: Regression on cpufreq in v3.12-rc1
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Thomas Meyer <thomas@m3y3r.de>, jic23@cam.ac.uk, grant.likely@linaro.org,
+        rob.herring@calxeda.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 3/10] iio: at91_adc: Cocci spatch "noderef"
+References: <1379604755850-858421494-0-diffsplit-thomas@m3y3r.de> <1379604755852-604229709-3-diffsplit-thomas@m3y3r.de> <523BF89E.4000508@atmel.com>
+In-Reply-To: <523BF89E.4000508@atmel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 7:05 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 20 September 2013 21:09, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Fri, Sep 20, 2013 at 11:35 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+On 09/20/13 08:26, Nicolas Ferre wrote:
+> On 19/09/2013 23:42, Thomas Meyer :
+>> sizeof when applied to a pointer typed expression gives the size of the
+>> pointer.
+>> Found by coccinelle spatch "misc/noderef.cocci"
 >>
->>> +++ b/drivers/cpufreq/cpufreq.c
->>> @@ -1460,6 +1460,9 @@ unsigned int cpufreq_get(unsigned int cpu)
->>>  {
->>>         unsigned int ret_freq = 0;
->>>
->>> +       if (cpufreq_disabled() || !cpufreq_driver)
->>> +               return -ENOENT;
->>> +
+>> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+> 
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Applied to the fixes-togreg branch of
+git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
+
+Thanks,
+> 
+>> ---
 >>
->> But given that a cpufreq driver is just like any other driver, isn't the
->> proper thing to do to return -EPROBE_DEFER?
->
-> Its not a probe and so that error type doesn't look correct to me..
-> Also, its only taking care of things when this routine is called without
-> a cpufreq driver and so it should be fine..
-
-Well given the use case here I agree, keep with the -ENOENT.
-
-Yours,
-Linus Walleij
+>> diff -u -p a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
+>> --- a/drivers/iio/adc/at91_adc.c
+>> +++ b/drivers/iio/adc/at91_adc.c
+>> @@ -279,7 +279,7 @@ static int at91_adc_trigger_init(struct
+>>       int i, ret;
+>>
+>>       st->trig = devm_kzalloc(&idev->dev,
+>> -                st->trigger_number * sizeof(st->trig),
+>> +                st->trigger_number * sizeof(*st->trig),
+>>                   GFP_KERNEL);
+>>
+>>       if (st->trig == NULL) {
+>> -- 
+>> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
+> 
