@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab3IUPSW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 11:18:22 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:48478 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab3IUPST (ORCPT
+	id S1752849Ab3IUPTL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 11:19:11 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:56295 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab3IUPTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 11:18:19 -0400
+	Sat, 21 Sep 2013 11:19:08 -0400
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: Andrew Bresticker <abrestic@chromium.org>
 Cc: linux-samsung-soc@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
@@ -27,12 +27,12 @@ Cc: linux-samsung-soc@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
         Padmavathi Venna <padma.v@samsung.com>, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] ARM: dts: exynos5420: add sclk_pcm_in to audss clock controller
-Date: Sat, 21 Sep 2013 17:18:14 +0200
-Message-ID: <9260897.NJpGqJ1JKi@flatron>
+Subject: Re: [PATCH 3/6] clk: exynos5250: add clock ID for div_pcm0
+Date: Sat, 21 Sep 2013 17:19:01 +0200
+Message-ID: <3865571.vRPq0Or7Pr@flatron>
 User-Agent: KMail/4.11.1 (Linux/3.11.1-gentoo; KDE/4.11.1; x86_64; ; )
-In-Reply-To: <1379711637-5226-6-git-send-email-abrestic@chromium.org>
-References: <1379711637-5226-1-git-send-email-abrestic@chromium.org> <1379711637-5226-6-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1379711637-5226-3-git-send-email-abrestic@chromium.org>
+References: <1379711637-5226-1-git-send-email-abrestic@chromium.org> <1379711637-5226-3-git-send-email-abrestic@chromium.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -42,29 +42,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Andrew,
 
-On Friday 20 of September 2013 14:13:57 Andrew Bresticker wrote:
-> The parent of sclk_pcm in the AudioSS block is sclk_maupcm0.
+On Friday 20 of September 2013 14:13:54 Andrew Bresticker wrote:
+> There is no gate for the PCM clock input to the AudioSS block, so
+> the parent of sclk_pcm is div_pcm0.  Add a clock ID for it so that
+> we can reference it in device trees.
 > 
 > Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 > ---
->  arch/arm/boot/dts/exynos5420.dtsi | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/exynos5420.dtsi
-> b/arch/arm/boot/dts/exynos5420.dtsi index d537cd7..339ab93 100644
-> --- a/arch/arm/boot/dts/exynos5420.dtsi
-> +++ b/arch/arm/boot/dts/exynos5420.dtsi
-> @@ -72,8 +72,8 @@
->  		compatible = "samsung,exynos5420-audss-clock";
->  		reg = <0x03810000 0x0C>;
->  		#clock-cells = <1>;
-> -		clocks = <&clock 148>;
-> -		clock-names = "sclk_audio";
-> +		clocks = <&clock 148>, <&clock 149>;
-> +		clock-names = "sclk_audio", "sclk_pcm_in";
+>  Documentation/devicetree/bindings/clock/exynos5250-clock.txt | 1 +
+>  drivers/clk/samsung/clk-exynos5250.c                         | 4 ++--
+>  2 files changed, 3 insertions(+), 2 deletions(-)
 
-Same note as for Exynos 5250. I think it would be more reasonable to 
-specify all the input clocks here.
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
 Best regards,
 Tomasz
