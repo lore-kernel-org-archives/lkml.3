@@ -1,108 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab3IUKmS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 06:42:18 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39691 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab3IUKmQ (ORCPT
+	id S1752543Ab3IULPA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 07:15:00 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:61449 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab3IULO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 06:42:16 -0400
-Date: Sat, 21 Sep 2013 11:42:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alexey Pelykh <alexey.pelykh@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Tony Lindgren <tony@atomide.com>,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] OMAP/serial: Fix division by zero exception on 3M+
-	baud rates
-Message-ID: <20130921104202.GR25647@n2100.arm.linux.org.uk>
-References: <20130921074344.GA15524@inertiallabs-linux64>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130921074344.GA15524@inertiallabs-linux64>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sat, 21 Sep 2013 07:14:58 -0400
+From: Manjunath Goudar <manjunath.goudar@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: patches@linaro.org, arnd@linaro.org, dsaxena@linaro.org,
+        manjunath.goudar@linaro.org, linaro-kernel@lists.linaro.org,
+        Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH V2] USB: EHCI: make ehci-w90X900 a separate driver
+Date: Sat, 21 Sep 2013 16:44:42 +0530
+Message-Id: <1379762082-389-1-git-send-email-manjunath.goudar@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372347109-5563-1-git-send-email-manjunath.goudar@linaro.org>
+References: <1372347109-5563-1-git-send-email-manjunath.goudar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 21, 2013 at 03:43:44AM -0400, Alexey Pelykh wrote:
-> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-> index 816d1a2..808a880 100644
-> --- a/drivers/tty/serial/omap-serial.c
-> +++ b/drivers/tty/serial/omap-serial.c
-> @@ -240,8 +240,8 @@ serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
->  {
->  	unsigned int n13 = port->uartclk / (13 * baud);
->  	unsigned int n16 = port->uartclk / (16 * baud);
-> -	int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
-> -	int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
-> +	int baudAbsDiff13 = n13 ? (baud - (port->uartclk / (13 * n13))) : INT_MAX;
-> +	int baudAbsDiff16 = n16 ? (baud - (port->uartclk / (16 * n16))) : INT_MAX;
->  	if(baudAbsDiff13 < 0)
->  		baudAbsDiff13 = -baudAbsDiff13;
->  	if(baudAbsDiff16 < 0)
+Separate the W90X900(W90P910) on-chip host controller driver from
+ehci-hcd host code so that it can be built as a separate driver module.
+This work is part of enabling multi-platform kernels on ARM;
+however, note that other changes are still needed before W90X900(W90P910)
+can be booted with a multi-platform kernel
 
-So, this code is trying to work out whether it's better to use a prescaler
-of 13 or 16?  In which case, the above code is rather buggy in many ways.
-Let's take an example - what if port->uartclk is 19MHz?
+and an ehci driver that only works on one of them.
 
-n13 = 19M / 13 * 115200 = 1
-n16 = 19M / 16 * 115200 = 1
-baudAbsDiff13 = 115200 - (19M / 13 * 1) = 115200 - 146153 = -30953 -> 30953
-baudAbsDiff16 = 115200 - (19M / 16 * 1) = 115200 - 118750 = -3550 -> 3350
+With the infrastructure added by Alan Stern in patch 3e0232039
+"USB: EHCI: prepare to make ehci-hcd a library module", we can
+avoid this problem by turning a bus glue into a separate
+module, as we do here for the w90X900 bus glue.
 
-return (baudAbsDiff13 > baudAbsDiff16); -> 1
+This patch is rebased on greghk/usb-next 3.12 rc1.
 
-That seems like it's right.
+Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
+Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Wan ZongShun <mcuos.com@gmail.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <greg@kroah.com>
+Cc: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 
-Now, what if it's 18MHz?
+V1->V2:
+-Arranged  #include's in alphabetical order.
+-Replaced "w90p910" by "w90x900" because it is supports
+ all series of w90x900.
+---
+ drivers/usb/host/Kconfig        |    2 +-
+ drivers/usb/host/Makefile       |    1 +
+ drivers/usb/host/ehci-hcd.c     |    5 ---
+ drivers/usb/host/ehci-w90x900.c |   89 ++++++++++++++++-----------------------
+ 4 files changed, 39 insertions(+), 58 deletions(-)
 
-n13 = 18M / 13 * 115200 = 1
-n16 = 18M / 16 * 115200 = 0
-baudAbsDiff13 = 115200 - (18M / 13 * 1) = 115200 - 146153 = -23261 -> 23261
-baudAbsDiff16 = 115200 - (18M / 16 * 0) = 115200 - 118750 = INT_MAX
-
-return (baudAbsDiff13 > baudAbsDiff16); -> 0
-
-Now, consider the question: with a 18MHz clock, which produces a more
-accurate 115200 baud rate - a prescaler of 16 or 13?  Let's go back to
-the math.
-
-	115200 * 13 => 1497600
-	115200 * 16 => 1843200
-
-So, choosing a prescaler of 16 will give a slower baud rate, but it's
-a lot closer to 115200 than using the prescaler of 13.  Yet, the code
-will select the latter.
-
-I'd suggest that this code gets rewritten to do "what it says on the tin"
-a bit better:
-
-	unsigned n13 = DIV_ROUND_CLOSEST(port->uartclk, 13 * baud);
-	unsigned n16 = DIV_ROUND_CLOSEST(port->uartclk, 16 * baud);
-	int delta_clk_13 = 13 * baud * n13 - port->uartclk;
-	int delta_clk_16 = 16 * baud * n16 - port->uartclk;
-
-	if (delta_clk_13 < 0)
-		delta_clk_13 = -delta_clk_13;
-	if (delta_clk_16 < 0)
-		delta_clk_16 = -delta_clk_16;
-
-	return delta_clk_13 > delta_clk_16;
-
-Note that baud will never be larger than port->uartclk / 13, so n13
-will always be greater than 1.  n16 may be zero though, and in this
-case, at the point of the test, delta_clk_16 becomes much larger than
-delta_clk_13, so the above calculation returns false, meaning we
-correctly use a prescaler of 13.
-
-Not only does this avoid the problem with the divider being zero, but
-it also selects the prescaler which gives us the closest baud rate to
-the one which is being requested.
-
-Finally, serial_omap_get_divisor should also use DIV_ROUND_CLOSEST() -
-or for extra points, integrate this into serial_omap_get_divisor(),
-and have it also return the prescaler too.
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 8ea1afc..4e298a4 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -224,7 +224,7 @@ config USB_EHCI_MV
+ 	  on-chip EHCI USB controller" for those.
+ 
+ config USB_W90X900_EHCI
+-	bool "W90X900(W90P910) EHCI support"
++	tristate "W90X900(W90P910) EHCI support"
+ 	depends on ARCH_W90X900
+ 	---help---
+ 		Enables support for the W90X900 USB controller
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index 8fcb8da..0b9fdee 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -38,6 +38,7 @@ obj-$(CONFIG_USB_EHCI_S5P)	+= ehci-s5p.o
+ obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
+ obj-$(CONFIG_USB_EHCI_MSM)	+= ehci-msm.o
+ obj-$(CONFIG_USB_EHCI_TEGRA)	+= ehci-tegra.o
++obj-$(CONFIG_USB_W90X900_EHCI)	+= ehci-w90x900.o
+ 
+ obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
+ obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 5d6022f..3e3ca83 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1238,11 +1238,6 @@ MODULE_LICENSE ("GPL");
+ #define XILINX_OF_PLATFORM_DRIVER	ehci_hcd_xilinx_of_driver
+ #endif
+ 
+-#ifdef CONFIG_USB_W90X900_EHCI
+-#include "ehci-w90x900.c"
+-#define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
+-#endif
+-
+ #ifdef CONFIG_USB_OCTEON_EHCI
+ #include "ehci-octeon.c"
+ #define PLATFORM_DRIVER		ehci_octeon_driver
+diff --git a/drivers/usb/host/ehci-w90x900.c b/drivers/usb/host/ehci-w90x900.c
+index 1c370df..cdad843 100644
+--- a/drivers/usb/host/ehci-w90x900.c
++++ b/drivers/usb/host/ehci-w90x900.c
+@@ -11,13 +11,28 @@
+  *
+  */
+ 
++#include <linux/dma-mapping.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
+ #include <linux/platform_device.h>
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++
++#include "ehci.h"
+ 
+ /* enable phy0 and phy1 for w90p910 */
+ #define	ENPHY		(0x01<<8)
+ #define PHY0_CTR	(0xA4)
+ #define PHY1_CTR	(0xA8)
+ 
++#define DRIVER_DESC "EHCI w90x900 driver"
++
++static const char hcd_name[] = "ehci-w90x900 ";
++
++static struct hc_driver __read_mostly ehci_w90x900_hc_driver;
++
+ static int usb_w90x900_probe(const struct hc_driver *driver,
+ 		      struct platform_device *pdev)
+ {
+@@ -90,8 +105,8 @@ err1:
+ 	return retval;
+ }
+ 
+-static
+-void usb_w90x900_remove(struct usb_hcd *hcd, struct platform_device *pdev)
++static void usb_w90x900_remove(struct usb_hcd *hcd,
++			struct platform_device *pdev)
+ {
+ 	usb_remove_hcd(hcd);
+ 	iounmap(hcd->regs);
+@@ -99,54 +114,6 @@ void usb_w90x900_remove(struct usb_hcd *hcd, struct platform_device *pdev)
+ 	usb_put_hcd(hcd);
+ }
+ 
+-static const struct hc_driver ehci_w90x900_hc_driver = {
+-	.description = hcd_name,
+-	.product_desc = "Nuvoton w90x900 EHCI Host Controller",
+-	.hcd_priv_size = sizeof(struct ehci_hcd),
+-
+-	/*
+-	 * generic hardware linkage
+-	 */
+-	.irq = ehci_irq,
+-	.flags = HCD_USB2|HCD_MEMORY|HCD_BH,
+-
+-	/*
+-	 * basic lifecycle operations
+-	 */
+-	.reset = ehci_setup,
+-	.start = ehci_run,
+-
+-	.stop = ehci_stop,
+-	.shutdown = ehci_shutdown,
+-
+-	/*
+-	 * managing i/o requests and associated device resources
+-	 */
+-	.urb_enqueue = ehci_urb_enqueue,
+-	.urb_dequeue = ehci_urb_dequeue,
+-	.endpoint_disable = ehci_endpoint_disable,
+-	.endpoint_reset = ehci_endpoint_reset,
+-
+-	/*
+-	 * scheduling support
+-	 */
+-	.get_frame_number = ehci_get_frame,
+-
+-	/*
+-	 * root hub support
+-	 */
+-	.hub_status_data = ehci_hub_status_data,
+-	.hub_control = ehci_hub_control,
+-#ifdef	CONFIG_PM
+-	.bus_suspend = ehci_bus_suspend,
+-	.bus_resume = ehci_bus_resume,
+-#endif
+-	.relinquish_port	= ehci_relinquish_port,
+-	.port_handed_over	= ehci_port_handed_over,
+-
+-	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
+-};
+-
+ static int ehci_w90x900_probe(struct platform_device *pdev)
+ {
+ 	if (usb_disabled())
+@@ -173,7 +140,25 @@ static struct platform_driver ehci_hcd_w90x900_driver = {
+ 	},
+ };
+ 
++static int __init ehci_w90X900_init(void)
++{
++	if (usb_disabled())
++		return -ENODEV;
++
++	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
++
++	ehci_init_driver(&ehci_w90x900_hc_driver, NULL);
++	return platform_driver_register(&ehci_hcd_w90x900_driver);
++}
++module_init(ehci_w90X900_init);
++
++static void __exit ehci_w90X900_cleanup(void)
++{
++	platform_driver_unregister(&ehci_hcd_w90x900_driver);
++}
++module_exit(ehci_w90X900_cleanup);
++
++MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_AUTHOR("Wan ZongShun <mcuos.com@gmail.com>");
+-MODULE_DESCRIPTION("w90p910 usb ehci driver!");
+-MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:w90p910-ehci");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.9.5
 
