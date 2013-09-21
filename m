@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab3IUPls (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 11:41:48 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:48131 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751923Ab3IUPlr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 11:41:47 -0400
-Date: Sat, 21 Sep 2013 16:41:27 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Bart Kuivenhoven <bemk@redhat.com>
-Cc: matt.fleming@intel.com, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jcm@redhat.com, msalter@redhat.com
-Subject: Re: [PATCH] x86 efi: bugfix interrupt disabling sequence
-Message-ID: <20130921154127.GD21381@console-pimps.org>
-References: <1379525333-4373-1-git-send-email-bemk@redhat.com>
- <20130920152859.GC21381@console-pimps.org>
- <1379708486.12705.131.camel@dhcp-128-237.ams.redhat.com>
+	id S1752394Ab3IUPmK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 11:42:10 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60124 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752252Ab3IUPlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Sep 2013 11:41:53 -0400
+Date: Sat, 21 Sep 2013 17:41:43 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: Matt Fleming <matt@console-pimps.org>, Mark Salter <msalter@redhat.com>,
+        X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Dave Young <dyoung@redhat.com>,
+        linux-efi@vger.kernel.org, Roy Franz <roy.franz@linaro.org>
+Subject: Re: [PATCH 02/11] efi: Remove EFI_PAGE_SHIFT and EFI_PAGE_SIZE
+Message-ID: <20130921154143.GC1587@pd.tnic>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <1379602494-26684-3-git-send-email-bp@alien8.de>
+ <20130920104249.GA21381@console-pimps.org>
+ <20130921152139.GG2737@rocoto.smurfnet.nu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1379708486.12705.131.camel@dhcp-128-237.ams.redhat.com>
+In-Reply-To: <20130921152139.GG2737@rocoto.smurfnet.nu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Sep, at 10:21:26PM, Bart Kuivenhoven wrote:
-> Well, isn't it so, that the kernel expects a setup in which interrupts
-> are disabled before the decompressed image is loaded?
- 
-Yes, but I wasn't advocating leaving interrupts enabled, rather, because
-interrupts are disabled we don't need to build an empty IDT, which will
-never be used.
+On Sat, Sep 21, 2013 at 05:21:39PM +0200, Leif Lindholm wrote:
 
-> What we can do is remove the lidt instruction and IDT pointer, but that
-> still doesn't change anything with regards to the kernels expectations.
-> 
-> And no, I haven't witnessed a triple fault, this is purely theoretical,
-> with a very slim chance of it actually happening. That does not mean
-> that it can't happen though.
- 
-Right, but the answer to my question will dictate how aggressively we
-apply your patch - whether it goes in the 'urgent' queue to be pushed
-quickly or whether we give it more testing. Patches that fix serious
-issues that users are hitting tend to make it into the next release. For
-patches that fix theoretical bugs, we'll usually put it through more
-strenuous testing first.
+> It will probably not be a problem on the stub side, and it's not used
+> in many places but it would break efi_lookup_mapped_address(),
+> efi_range_is_wc() and memrange_efi_to_native() for use by arm64.
+> At least the first of these would be a problem.
+
+Ok, maybe the generic header include/linux/efi.h might be a problem but
+the rest are changes to arch/x86/ which should have no effect whatsoever
+on any other arch.
+
+Or are you planning to move some of it into generic code?
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
