@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab3IUI1R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 04:27:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:32797 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751702Ab3IUI1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 04:27:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,951,1371106800"; 
-   d="scan'208";a="398990647"
-Date: Sat, 21 Sep 2013 16:27:10 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matt Fleming <matt@console-pimps.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Dont-Auto-Build
-Message-ID: <20130921082710.GA30273@localhost>
-References: <20130920143659.GA10591@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130920143659.GA10591@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752251Ab3IUJa0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 05:30:26 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:56327 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752035Ab3IUJaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Sep 2013 05:30:24 -0400
+From: Valentin Ilie <valentin.ilie@gmail.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Valentin Ilie <valentin.ilie@gmail.com>
+Subject: [PATCH] usb: gadget: mv_u3d_core: fix memory leaks
+Date: Sat, 21 Sep 2013 12:30:15 +0300
+Message-Id: <1379755816-21822-1-git-send-email-valentin.ilie@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
+When trb_hw is NULL, trb should be free'd before return.
 
-On Fri, Sep 20, 2013 at 04:36:59PM +0200, Borislav Petkov wrote:
-> Hey Fengguang,
-> 
-> do you still grep for "Dont-Auto-Build" in all the commit messages of a
-> branch which is not supposed to be tested?
+Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+---
+ drivers/usb/gadget/mv_u3d_core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Yes.
+diff --git a/drivers/usb/gadget/mv_u3d_core.c b/drivers/usb/gadget/mv_u3d_core.c
+index 561b30e..4d31177 100644
+--- a/drivers/usb/gadget/mv_u3d_core.c
++++ b/drivers/usb/gadget/mv_u3d_core.c
+@@ -310,6 +310,7 @@ static struct mv_u3d_trb *mv_u3d_build_trb_one(struct mv_u3d_req *req,
+ 	 */
+ 	trb_hw = dma_pool_alloc(u3d->trb_pool, GFP_ATOMIC, dma);
+ 	if (!trb_hw) {
++		kfree(trb);
+ 		dev_err(u3d->dev,
+ 			"%s, dma_pool_alloc fail\n", __func__);
+ 		return NULL;
+@@ -454,6 +455,7 @@ static int mv_u3d_req_to_trb(struct mv_u3d_req *req)
+ 
+ 		trb_hw = kcalloc(trb_num, sizeof(*trb_hw), GFP_ATOMIC);
+ 		if (!trb_hw) {
++			kfree(trb);
+ 			dev_err(u3d->dev,
+ 					"%s, trb_hw alloc fail\n", __func__);
+ 			return -ENOMEM;
+-- 
+1.7.9.5
 
-> Or can I tag the branch name to make it more explicit for everyone?
-
-If you name the branch *-experimental, it will be skipped by the robot.
-
-Thanks,
-Fengguang
