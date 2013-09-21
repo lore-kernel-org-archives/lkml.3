@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab3IUPCO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 11:02:14 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:63653 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab3IUPBX (ORCPT
+	id S1752723Ab3IUPMM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 11:12:12 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:52841 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab3IUPMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 11:01:23 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-19-523db4c2e182
-From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-To: m.chehab@samsung.com
-Cc: t.stanislaws@samsung.com, t.figa@samsung.com, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, s.nawrocki@samsung.com,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Subject: [PATCH v5 2/4] media: s5p-tv: Restore vpll clock rate
-Date: Sat, 21 Sep 2013 17:00:47 +0200
-Message-id: <1379775649-6331-3-git-send-email-m.krawczuk@partner.samsung.com>
-X-Mailer: git-send-email 1.8.1.2
-In-reply-to: <1379775649-6331-1-git-send-email-m.krawczuk@partner.samsung.com>
-References: <1379775649-6331-1-git-send-email-m.krawczuk@partner.samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jQd1DW2yDDLp/iVtsnLGe1eJs0xt2
-	i02Pr7FaXN41h82iZ8NWVouL6+QtTq85xWxx+E07q8X6Ga9ZLOa1v2R14PLYvKTe4+C7PUwe
-	fVtWMXp83iQXwBLFZZOSmpNZllqkb5fAlXF54zb2gj8CFU8+7GJpYGzk62Lk5JAQMJH4svEt
-	C4QtJnHh3nq2LkYuDiGB6YwS06/8ZYVw2pkk7t2+wgZSxSZgLjHx2SawDhEBCYn7q5+BdTAL
-	TGeS2PqhmxUkISxgJ/H8+wMwm0VAVeLw6R5GEJtXwFei4+VzqHUKEj8vnwBq5uDgFPCT+LYn
-	GSQsBFSy8MQJ1gmMvAsYGVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBIfZM+kdjKsaLA4x
-	CnAwKvHwCiTYBgmxJpYVV+YeYpTgYFYS4ZVPBQrxpiRWVqUW5ccXleakFh9ilOZgURLnPdhq
-	HSgkkJ5YkpqdmlqQWgSTZeLglGpgjBOROFK4um5fwQ7/otM/jB9+dpBSebjnodxhDVvuRA7r
-	kBO7FmiwVBopl+55tsFvQdUXkw3PNZp+hCesjZrrt/DF1Fdvb1XOPK0u+LyUV3DniXVrgjh+
-	MXXMP20yb87kLQs+TOQ/pBS+MvjujCi9+P4lf4OWTYyw835+sU3pRQjXQvEDat1/5ymxFGck
-	GmoxFxUnAgB8jVJcLwIAAA==
+	Sat, 21 Sep 2013 11:12:09 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        linux-samsung-soc@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        linux-doc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
+        linux-kernel@vger.kernel.org, Tushar Behera <tushar.behera@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Padmavathi Venna <padma.v@samsung.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 2/6] clk: exynos-audss: allow input clocks to be specified in device tree
+Date: Sat, 21 Sep 2013 17:12:04 +0200
+Message-ID: <9856196.dhfL7qQoq1@flatron>
+User-Agent: KMail/4.11.1 (Linux/3.11.1-gentoo; KDE/4.11.1; x86_64; ; )
+In-Reply-To: <1379711637-5226-2-git-send-email-abrestic@chromium.org>
+References: <1379711637-5226-1-git-send-email-abrestic@chromium.org> <1379711637-5226-2-git-send-email-abrestic@chromium.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Restore vpll clock rate if start stream fail or stream is off.
+Hi Andrew,
 
-Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/media/platform/s5p-tv/sdo_drv.c | 23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+On Friday 20 of September 2013 14:13:53 Andrew Bresticker wrote:
+> This allows the input clocks to the Exynos AudioSS block to be
+> specified via device-tree bindings.  Default names will be used
+> when an input clock is not given.
+[snip]
+> +Optional Properties:
+> +
+> +- clocks:
+> +  - pll_ref: Fixed rate PLL reference clock, parent of mout_audss.
+> "fin_pll" +    is used if not specified.
+> +  - pll_in: Input PLL to the AudioSS block, parent of mout_audss.
+> "fout_epll" +    is used if not specified.
+> +  - cdclk: External i2s clock, parent of mout_i2s. "cdclk0" is used if
+> not +    specified.
+> +  - sclk_audio: Audio bus clock, parent of mout_i2s. "sclk_audio0" is
+> used if +    not specified.
+> +  - sclk_pcm_in: PCM clock, parent of sclk_pcm.  "sclk_pcm0" is used if
+> not +    specified.
+> +
+> +- clock-names: Aliases for the above clocks. They should be "pll_ref",
+> +  "pll_in", "cdclk", "sclk_audio", and "sclk_pcm_in" respectively.
 
-diff --git a/drivers/media/platform/s5p-tv/sdo_drv.c b/drivers/media/platform/s5p-tv/sdo_drv.c
-index 0afa90f..e49ac6c 100644
---- a/drivers/media/platform/s5p-tv/sdo_drv.c
-+++ b/drivers/media/platform/s5p-tv/sdo_drv.c
-@@ -55,6 +55,8 @@ struct sdo_device {
- 	struct clk *dacphy;
- 	/** clock for control of VPLL */
- 	struct clk *fout_vpll;
-+	/** vpll rate before sdo stream was on */
-+	unsigned long vpll_rate;
- 	/** regulator for SDO IP power */
- 	struct regulator *vdac;
- 	/** regulator for SDO plug detection */
-@@ -193,17 +195,33 @@ static int sdo_s_power(struct v4l2_subdev *sd, int on)
- 
- static int sdo_streamon(struct sdo_device *sdev)
- {
-+	int ret;
-+
- 	/* set proper clock for Timing Generator */
--	clk_set_rate(sdev->fout_vpll, 54000000);
-+	sdev->vpll_rate = clk_get_rate(sdev->fout_vpll);
-+	ret = clk_set_rate(sdev->fout_vpll, 54000000);
-+	if (ret < 0) {
-+		dev_err(sdev->dev, "Failed to set vpll rate\n");
-+		return ret;
-+	}
- 	dev_info(sdev->dev, "fout_vpll.rate = %lu\n",
- 	clk_get_rate(sdev->fout_vpll));
- 	/* enable clock in SDO */
- 	sdo_write_mask(sdev, SDO_CLKCON, ~0, SDO_TVOUT_CLOCK_ON);
--	clk_enable(sdev->dacphy);
-+	ret = clk_enable(sdev->dacphy);
-+	if (ret < 0) {
-+		dev_err(sdev->dev, "clk_enable(dacphy) failed\n");
-+		goto fail;
-+	}
- 	/* enable DAC */
- 	sdo_write_mask(sdev, SDO_DAC, ~0, SDO_POWER_ON_DAC);
- 	sdo_reg_debug(sdev);
- 	return 0;
-+	
-+fail:
-+	sdo_write_mask(sdev, SDO_CLKCON, 0, SDO_TVOUT_CLOCK_ON);
-+	clk_set_rate(sdev->fout_vpll, sdev->vpll_rate);
-+	return ret;
- }
- 
- static int sdo_streamoff(struct sdo_device *sdev)
-@@ -220,6 +238,7 @@ static int sdo_streamoff(struct sdo_device *sdev)
- 	}
- 	if (tries == 0)
- 		dev_err(sdev->dev, "failed to stop streaming\n");
-+	clk_set_rate(sdev->fout_vpll, sdev->vpll_rate);
- 	return tries ? 0 : -EIO;
- }
- 
--- 
-1.8.1.2
+I'd say that it should be preferred to specify all the input clocks 
+appropriate for particular SoCs to fully represent the hardware. So the 
+properties above should be marked as required (depending on SoC probably).
+
+The fallback to default names in the driver should stay, though, to 
+support older device trees.
+
+Best regards,
+Tomasz
 
