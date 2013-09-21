@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab3IUM1W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 08:27:22 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49850 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759Ab3IUM1U (ORCPT
+	id S1752093Ab3IUMdM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 08:33:12 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:64057 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab3IUMdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 08:27:20 -0400
-Date: Sat, 21 Sep 2013 14:27:18 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Luciano Coelho <coelho@ti.com>
-Cc: Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, nsekhar@ti.com,
-        mturquette@linaro.org, mark.rutland@arm.com,
-        Felipe Balbi <balbi@ti.com>, grant.likely@linaro.org,
-        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 0/9] wilink: add device tree support
-Message-ID: <20130921122718.GA4431@amd.pavel.ucw.cz>
-References: <1372776948-24840-1-git-send-email-coelho@ti.com>
- <CANOLnOPBHesTiV61zpQ_QS9c7E91K50EnbMnGhvgaViuA_3=Bw@mail.gmail.com>
- <1372859132.21065.111.camel@cumari.coelho.fi>
+	Sat, 21 Sep 2013 08:33:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372859132.21065.111.camel@cumari.coelho.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CACRpkdbFhORYnAUf+BMXtL1LezL7gPJ6gKQnqwvKZjqqCt3A4Q@mail.gmail.com>
+References: <1378294169-22661-1-git-send-email-acourbot@nvidia.com>
+ <CACRpkdYjkDf7c9VxfDTHtFx_upWWRAK8vpXTkrkrRsMjErq1dQ@mail.gmail.com>
+ <20130920193254.GA19130@mithrandir> <CACRpkdbFhORYnAUf+BMXtL1LezL7gPJ6gKQnqwvKZjqqCt3A4Q@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Sat, 21 Sep 2013 21:32:47 +0900
+Message-ID: <CAAVeFuLyUE_46xKCK23Mr_o2Dp2wZ4vVvcNQrQ6eDK-848RGkg@mail.gmail.com>
+Subject: Re: [RFC 0/5] New descriptor-based GPIO interface
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sat, Sep 21, 2013 at 6:23 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Sep 20, 2013 at 9:32 PM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+>
+>> Given that it seems like there won't be a linux-next from September 28
+>> until close to the next merge window, it would be good to get this into
+>> linux-next before that so that the series can receive broader testing.
+>
+> Good point. Alexandre: ready when you are.
 
-> > > This is a follow-up on a previous patch set that had a smaller
-> > > audience.  This time, I added the lists and people who were involved
-> > > in the review of the bindings documentation, since most of my changes
-> > > in v2 are coming from discussions there.
-> > >
-> > > This patch series adds device tree support to the wlcore_sdio driver,
-> > > which is used by WiLink6, WiLink7 and WiLink8.
-> > 
-> > Could you perhaps consider doing device tree conversion for wl1251
-> > too? With the knowledge you have from working on this series, it would
-> > be much easier for you to do it than for someone else, and I don't
-> > have much hope someone will do it at all. It's WiLink series chip
-> > after all. Without this pandora and N900 are going to lose wifi
-> > support after the switch to dt-only kernel.
-> 
-> Unfortunately I don't have much time to work on wl1251.  I think it
-> wouldn't be too difficult to do though, so patches are welcome. ;)
-> 
-> Maybe you could try to make this change and I could support you if
-> needed?
-> 
-> 
-> > I can offer you my help testing things on pandora and I'm sure someone
-> > here could try it on N900.
-> 
-> I could try it on the N900, if it is still bootable easily with the
-> mainline. ;)
+I really need to test this more extensively, but give me a couple of
+days and I will send a real submission of it (not a RFC). Then we can
+discuss the small issues that remain.
 
-3.11 should be bootable on mainline, including device tree and
-video. (But excluding some other stuff, like MMC.)
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks,
+Alex.
