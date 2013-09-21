@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab3IUVca (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 17:32:30 -0400
-Received: from imap.thunk.org ([74.207.234.97]:35432 "EHLO imap.thunk.org"
+	id S1751979Ab3IUVld (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 17:41:33 -0400
+Received: from imap.thunk.org ([74.207.234.97]:35443 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567Ab3IUVc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 17:32:28 -0400
-Date: Sat, 21 Sep 2013 17:25:10 -0400
+	id S1751742Ab3IUVlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Sep 2013 17:41:31 -0400
+Date: Sat, 21 Sep 2013 17:41:18 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: John Stultz <john.stultz@linaro.org>,
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        John Stultz <john.stultz@linaro.org>,
         Stephan Mueller <smueller@chronox.de>,
         LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
 Subject: Re: [PATCH,RFC] random: make fast_mix() honor its name
-Message-ID: <20130921212510.GD8606@thunk.org>
+Message-ID: <20130921214118.GE8606@thunk.org>
 Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
 	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
 	John Stultz <john.stultz@linaro.org>,
@@ -23,8 +23,7 @@ Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
 	LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
 	Frederic Weisbecker <fweisbec@gmail.com>,
 	Thomas Gleixner <tglx@linutronix.de>
-References: <20130910203853.GG29237@thunk.org>
- <522F851D.1040101@linaro.org>
+References: <522F851D.1040101@linaro.org>
  <20130910211009.GI29237@thunk.org>
  <522F984C.2070909@linaro.org>
  <20130910223326.GD11063@thunk.org>
@@ -33,11 +32,11 @@ References: <20130910203853.GG29237@thunk.org>
  <20130912210717.GC3809@logfs.org>
  <20130912233155.GB5279@thunk.org>
  <20130916154026.GA23345@logfs.org>
+ <20130921212510.GD8606@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130916154026.GA23345@logfs.org>
+In-Reply-To: <20130921212510.GD8606@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: tytso@thunk.org
@@ -46,84 +45,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 11:40:27AM -0400, Jörn Engel wrote:
-> 
-> Here is a patch to make add_interrupt_randomness() significantly
-> cheaper without significantly impacting the quality.  The second part
-> is my personal opinion and others might disagree.
-> 
-> So far this has only seen userspace performance testing, so don't
-> merge it in a hurry.
+BTW, just to give another example of the difference between the mixing
+funtions, try compiling the following with and without ORIG_MIX defined...
 
-Performance testing, but your new fast_mix pool has some serious
-problems in terms of how well it works.
-
-First of all, I think this is a typo:
-
-> +	for (i = 0; i < 3; i++) {
-
-This means that pool[3] is always 0, and the input[3] is never mixed
-in.  Hence, the pool is now only 96 bits instead of 128 bits, and the
-last 4 bytes of the input pool are not getting mixed in.
-
-Secondly, if you change this so that we actually use the whole pool,
-and you mix in a constant set of inputs like this:
-
-	for (i = 0; i < 100; i++) {
-		input[0] = i;
-		input[1] = i;
-		input[2] = i;
-		input[3] = i;
-		fast_mix(&pool, input);
-		print_pool(&pool);
-	}
-
-you see something like this:
-
-pool:
-        0x00000000
-        0x00000000
-        0x00000000
-        0x00000000
-pool:
-        0x00000001
-        0x00000001
-        0x00000001
-        0x00000001
-pool:
-        0x00000082
-        0x00000082
-        0x00000082
-        0x00000082
-pool:
-        0x00004103
-        0x00004103
-        0x00004103
-        0x00004103
-pool:
-        0x00208184
-        0x00208184
-        0x00208184
-        0x00208184
-pool:
-        0x1040c205
-        0x1040c205
-        0x1040c205
-        0x1040c205
-
-Granted, it's unlikely that we will be mixing numbers like this, but
-it's a great demonstration of why I added the input_rotate aspect to
-my mixing functions.
-
-See my testing program below.  I need to think a bit more about
-whether I'm comfortable with the new fast_mix that you've proposed
-with the input_rotate restored, but at the minimum I think the rotate
-is needed.
-
-Regards,
-
-						- Ted
-
+	      		    	      	       - Ted
 
 #include <stdio.h>
 #include <unistd.h>
@@ -132,9 +57,9 @@ Regards,
 
 /* #define ORIG_MIX */
 #define ADD_ROTATE
-/* #define DEBUG_POOL */
+#define DEBUG_POOL
 #ifdef DEBUG_POOL
-#define NUM_LOOPS 32
+#define NUM_LOOPS 100
 #else
 #define NUM_LOOPS 1000000
 #endif
@@ -227,13 +152,10 @@ int main(const char *argv, int argc)
 	unsigned int input[4];
 
 	memset(&pool, 0, sizeof(struct fast_pool));
-	srandom(42);
+	memset(&input, 0, sizeof(input));
+	pool.pool[0] = 1;
 
 	for (i = 0; i < NUM_LOOPS; i++) {
-		input[0] = i;
-		input[1] = i;
-		input[2] = i;
-		input[3] = i;
 #ifdef ORIG_MIX
 		fast_mix(&pool, &input, sizeof(input));
 #else
@@ -248,7 +170,3 @@ int main(const char *argv, int argc)
 #endif
 	return 0;
 }	
-
-
-
-
