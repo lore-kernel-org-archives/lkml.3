@@ -1,230 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab3IUQlL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 12:41:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19533 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225Ab3IUQlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 12:41:09 -0400
-Date: Sat, 21 Sep 2013 18:34:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130921163404.GA8545@redhat.com>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de> <1378805550-29949-38-git-send-email-mgorman@suse.de> <20130917143003.GA29354@twins.programming.kicks-ass.net> <20130917162050.GK22421@suse.de> <20130917164505.GG12926@twins.programming.kicks-ass.net> <20130918154939.GZ26785@twins.programming.kicks-ass.net> <20130919143241.GB26785@twins.programming.kicks-ass.net>
+	id S1752252Ab3IUQts (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 12:49:48 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:48608 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab3IUQtr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Sep 2013 12:49:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130919143241.GB26785@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130921140059.GA2779@lukather>
+References: <1379768716-11672-1-git-send-email-cinifr@gmail.com>
+	<1379768716-11672-2-git-send-email-cinifr@gmail.com>
+	<20130921140059.GA2779@lukather>
+Date: Sun, 22 Sep 2013 00:49:45 +0800
+Message-ID: <CAK3cCByL3nD5pMdDwAkxOE8pP0HQEWthD1HUPJ70VeprNpLzBA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] Add smp support for Allwinner A20(sunxi 7i).
+From: cinifr <cinifr@gmail.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: coosty@163.com, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "pawel.moll@arm.co" <pawel.moll@arm.co>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>
+Content-Type: multipart/mixed; boundary=001a113351940c63a904e6e7937a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for delay, I was sick...
+--001a113351940c63a904e6e7937a
+Content-Type: text/plain; charset=ISO-8859-1
 
-On 09/19, Peter Zijlstra wrote:
->
-> I used a per-cpu spinlock to keep the state check and refcount inc
-> atomic vs the setting of state.
+Thanks. I have modify my patch as you said.
+It is in attachments. Maybe I remail the new patch?
 
-I think this could be simpler, see below.
+--001a113351940c63a904e6e7937a
+Content-Type: application/octet-stream; 
+	name="0001-Add-smp-support-for-Allwinner-A20-sunxi-7i.patch"
+Content-Disposition: attachment; 
+	filename="0001-Add-smp-support-for-Allwinner-A20-sunxi-7i.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hlv2o8av1
 
-> So the slow path is still per-cpu and mostly uncontended even in the
-> pending writer case.
-
-Is it really important? I mean, per-cpu/uncontended even if the writer
-is pending?
-
-Otherwise we could do
-
-	static DEFINE_PER_CPU(long, cpuhp_fast_ctr);
-	static struct task_struct *cpuhp_writer;
-	static DEFINE_MUTEX(cpuhp_slow_lock)
-	static long cpuhp_slow_ctr;
-
-	static bool update_fast_ctr(int inc)
-	{
-		bool success = true;
-
-		preempt_disable();
-		if (likely(!cpuhp_writer))
-			__get_cpu_var(cpuhp_fast_ctr) += inc;
-		else if (cpuhp_writer != current)
-			success = false;
-		preempt_enable();
-
-		return success;
-	}
-
-	void get_online_cpus(void)
-	{
-		if (likely(update_fast_ctr(+1));
-			return;
-
-		mutex_lock(&cpuhp_slow_lock);
-		cpuhp_slow_ctr++;
-		mutex_unlock(&cpuhp_slow_lock);
-	}
-
-	void put_online_cpus(void)
-	{
-		if (likely(update_fast_ctr(-1));
-			return;
-
-		mutex_lock(&cpuhp_slow_lock);
-		if (!--cpuhp_slow_ctr && cpuhp_writer)
-			wake_up_process(cpuhp_writer);
-		mutex_unlock(&cpuhp_slow_lock);
-	}
-
-	static void clear_fast_ctr(void)
-	{
-		long total = 0;
-		int cpu;
-
-		for_each_possible_cpu(cpu) {
-			total += per_cpu(cpuhp_fast_ctr, cpu);
-			per_cpu(cpuhp_fast_ctr, cpu) = 0;
-		}
-
-		return total;
-	}
-
-	static void cpu_hotplug_begin(void)
-	{
-		cpuhp_writer = current;
-		synchronize_sched();
-
-		/* Nobody except us can use can use cpuhp_fast_ctr */
-
-		mutex_lock(&cpuhp_slow_lock);
-		cpuhp_slow_ctr += clear_fast_ctr();
-
-		while (cpuhp_slow_ctr) {
-			__set_current_state(TASK_UNINTERRUPTIBLE);
-			mutex_unlock(&&cpuhp_slow_lock);
-			schedule();
-			mutex_lock(&cpuhp_slow_lock);
-		}
-	}
-
-	static void cpu_hotplug_done(void)
-	{
-		cpuhp_writer = NULL;
-		mutex_unlock(&cpuhp_slow_lock);
-	}
-
-I already sent this code in 2010, it needs some trivial updates.
-
-But. We already have percpu_rw_semaphore, can't we reuse it? In fact
-I thought about this from the very beginning. Just we need
-percpu_down_write_recursive_readers() which does
-
-	bool xxx(brw)
-	{
-		if (down_trylock(&brw->rw_sem))
-			return false;
-		if (!atomic_read(&brw->slow_read_ctr))
-			return true;
-		up_write(&brw->rw_sem);
-			return false;
-	}
-
-	ait_event(brw->write_waitq, xxx(brw));
-
-instead of down_write() + wait_event(!atomic_read(&brw->slow_read_ctr)).
-
-The only problem is the lockdep annotations in percpu_down_read(), but
-this looks simple, just we need down_read_no_lockdep() (like __up_read).
-
-Note also that percpu_down_write/percpu_up_write can be improved wrt
-synchronize_sched(). We can turn the 2nd one into call_rcu(), and the
-1nd one can be avoided if another percpu_down_write() comes "soon after"
-percpu_down_up().
-
-
-As for the patch itself, I am not sure.
-
-> +static void cpuph_wait_refcount(void)
-> +{
-> +	for (;;) {
-> +		unsigned int refcnt = 0;
-> +		int cpu;
-> +
-> +		set_current_state(TASK_UNINTERRUPTIBLE);
-> +
-> +		for_each_possible_cpu(cpu)
-> +			refcnt += per_cpu(__cpuhp_refcount, cpu);
-> +
-> +		if (!refcnt)
-> +			break;
-> +
-> +		schedule();
-> +	}
-> +	__set_current_state(TASK_RUNNING);
-> +}
-
-It seems, this can succeed while it should not, see below.
-
->  void cpu_hotplug_begin(void)
->  {
-> -	cpu_hotplug.active_writer = current;
-> +	lockdep_assert_held(&cpu_add_remove_lock);
->
-> -	for (;;) {
-> -		mutex_lock(&cpu_hotplug.lock);
-> -		if (likely(!cpu_hotplug.refcount))
-> -			break;
-> -		__set_current_state(TASK_UNINTERRUPTIBLE);
-> -		mutex_unlock(&cpu_hotplug.lock);
-> -		schedule();
-> -	}
-> +	__cpuhp_writer = current;
-> +
-> +	/* After this everybody will observe _writer and take the slow path. */
-> +	synchronize_sched();
-
-Yes, the reader should see _writer, but:
-
-> +	/* Wait for no readers -- reader preference */
-> +	cpuhp_wait_refcount();
-
-but how we can ensure the writer sees the results of the reader's updates?
-
-Suppose that we have 2 CPU's, __cpuhp_refcount[0] = 0, __cpuhp_refcount[1] = 1.
-IOW, we have a single R reader which takes this lock on CPU_1 and sleeps.
-
-Now,
-
-	- The writer calls cpuph_wait_refcount()
-
-	- cpuph_wait_refcount() does refcnt += __cpuhp_refcount[0].
-	  refcnt == 0.
-
-	- another reader comes on CPU_0, increments __cpuhp_refcount[0].
-
-	- this reader migrates to CPU_1 and does put_online_cpus(),
-	  this decrements __cpuhp_refcount[1] which becomes zero.
-
-	- cpuph_wait_refcount() continues and reads __cpuhp_refcount[1]
-	  which is zero. refcnt == 0, return.
-
-	- The writer does cpuhp_set_state(1).
-
-	- The reader R (original reader) wakes up, calls get_online_cpus()
-	  recursively, and sleeps in wait_event(!__cpuhp_writer).
-
-Btw, I think that  __sb_start_write/etc is equally wrong. Perhaps it is
-another potential user of percpu_rw_sem.
-
-Oleg.
-
+RnJvbSA0Mzg2ZGI4MzBmZjI5YTU1YjEyYmRjYTc4ZGRhOTI5ODYyNzEwODI1IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBGYW4gUm9uZyA8Y2luaWZyQGdtYWlsLmNvbT4KRGF0ZTogU3Vu
+LCAyMiBTZXAgMjAxMyAwMDo0NjowNCArMDgwMApTdWJqZWN0OiBbUEFUQ0hdIEFkZCBzbXAgc3Vw
+cG9ydCBmb3IgQWxsd2lubmVyIEEyMChzdW54aSA3aSkuCgpTaWduZWQtb2ZmLWJ5OiBGYW4gUm9u
+ZyA8Y2luaWZyQGdtYWlsLmNvbT4KLS0tCiBhcmNoL2FybS9tYWNoLXN1bnhpL01ha2VmaWxlICB8
+ICAyICsKIGFyY2gvYXJtL21hY2gtc3VueGkvaGVhZHNtcC5TIHwgMTcgKysrKysrKysrCiBhcmNo
+L2FybS9tYWNoLXN1bnhpL3BsYXRzbXAuYyB8IDg2ICsrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKysrKysrKysrKysKIGFyY2gvYXJtL21hY2gtc3VueGkvc3VueGkuYyAgIHwgMzEgKysr
+KysrKysrKysrKysrKwogNCBmaWxlcyBjaGFuZ2VkLCAxMzYgaW5zZXJ0aW9ucygrKQogY3JlYXRl
+IG1vZGUgMTAwNjQ0IGFyY2gvYXJtL21hY2gtc3VueGkvaGVhZHNtcC5TCiBjcmVhdGUgbW9kZSAx
+MDA2NDQgYXJjaC9hcm0vbWFjaC1zdW54aS9wbGF0c21wLmMKCmRpZmYgLS1naXQgYS9hcmNoL2Fy
+bS9tYWNoLXN1bnhpL01ha2VmaWxlIGIvYXJjaC9hcm0vbWFjaC1zdW54aS9NYWtlZmlsZQppbmRl
+eCA5M2JlYmZjLi5kN2YxZWY0IDEwMDY0NAotLS0gYS9hcmNoL2FybS9tYWNoLXN1bnhpL01ha2Vm
+aWxlCisrKyBiL2FyY2gvYXJtL21hY2gtc3VueGkvTWFrZWZpbGUKQEAgLTEgKzEsMyBAQAogb2Jq
+LSQoQ09ORklHX0FSQ0hfU1VOWEkpICs9IHN1bnhpLm8KK29iai0kKENPTkZJR19BUkNIX1NVTlhJ
+KSArPSBwbGF0c21wLm8KK29iai0kKENPTkZJR19BUkNIX1NVTlhJKSArPSBoZWFkc21wLm8KZGlm
+ZiAtLWdpdCBhL2FyY2gvYXJtL21hY2gtc3VueGkvaGVhZHNtcC5TIGIvYXJjaC9hcm0vbWFjaC1z
+dW54aS9oZWFkc21wLlMKbmV3IGZpbGUgbW9kZSAxMDA2NDQKaW5kZXggMDAwMDAwMC4uNTg5OTM5
+OQotLS0gL2Rldi9udWxsCisrKyBiL2FyY2gvYXJtL21hY2gtc3VueGkvaGVhZHNtcC5TCkBAIC0w
+LDAgKzEsMTcgQEAKKy8qCisgKiBTTVAgc3VwcG9ydCBmb3IgQTIwCisgKgorICogIENvcHlyaWdo
+dCAoQykgMjAxMyBGYW4gUm9uZyA8Y2luaWZyQGdtYWlsLmNvbT4KKyAqCisgKiBUaGlzIHByb2dy
+YW0gaXMgZnJlZSBzb2Z0d2FyZTsgeW91IGNhbiByZWRpc3RyaWJ1dGUgaXQgYW5kL29yIG1vZGlm
+eQorICogaXQgdW5kZXIgdGhlIHRlcm1zIG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGljZW5z
+ZSB2ZXJzaW9uIDIgYXMKKyAqIHB1Ymxpc2hlZCBieSB0aGUgRnJlZSBTb2Z0d2FyZSBGb3VuZGF0
+aW9uLgorICovCisKKyNpbmNsdWRlIDxsaW51eC9saW5rYWdlLmg+CisjaW5jbHVkZSA8bGludXgv
+aW5pdC5oPgorCisuc2VjdGlvbiAiLnRleHQuaGVhZCIsICJheCIgRU5UUlkoc3VuN2lfc2Vjb25k
+YXJ5X3N0YXJ0dXApCittc3IgY3Bzcl9mc3hjLAorIzB4ZDMKK2Igc2Vjb25kYXJ5X3N0YXJ0dXAg
+RU5EUFJPQyhzdW43aV9zZWNvbmRhcnlfc3RhcnR1cCkKZGlmZiAtLWdpdCBhL2FyY2gvYXJtL21h
+Y2gtc3VueGkvcGxhdHNtcC5jIGIvYXJjaC9hcm0vbWFjaC1zdW54aS9wbGF0c21wLmMKbmV3IGZp
+bGUgbW9kZSAxMDA2NDQKaW5kZXggMDAwMDAwMC4uNWUzZTk5NAotLS0gL2Rldi9udWxsCisrKyBi
+L2FyY2gvYXJtL21hY2gtc3VueGkvcGxhdHNtcC5jCkBAIC0wLDAgKzEsODYgQEAKKy8qCisgKiAg
+bGludXgvYXJjaC9hcm0vbWFjaC1zdW43aS9wbGF0c21wLmMKKyAqCisgKiAgQ29weXJpZ2h0IChD
+KSAyMDEzIEZhbiBSb25nIDxjaW5pZnJAZ21haWwuY29tPgorICogIEFsbCBSaWdodHMgUmVzZXJ2
+ZWQKKyAqCisgKiBUaGlzIHByb2dyYW0gaXMgZnJlZSBzb2Z0d2FyZTsgeW91IGNhbiByZWRpc3Ry
+aWJ1dGUgaXQgYW5kL29yIG1vZGlmeQorICogaXQgdW5kZXIgdGhlIHRlcm1zIG9mIHRoZSBHTlUg
+R2VuZXJhbCBQdWJsaWMgTGljZW5zZSB2ZXJzaW9uIDIgYXMKKyAqIHB1Ymxpc2hlZCBieSB0aGUg
+RnJlZSBTb2Z0d2FyZSBGb3VuZGF0aW9uLgorICovCisjaW5jbHVkZSA8bGludXgvaW5pdC5oPgor
+I2luY2x1ZGUgPGxpbnV4L2Vycm5vLmg+CisjaW5jbHVkZSA8bGludXgvc21wLmg+CisjaW5jbHVk
+ZSA8bGludXgvaW8uaD4KKyNpbmNsdWRlIDxsaW51eC9kZWxheS5oPgorI2luY2x1ZGUgPGxpbnV4
+L3NtcC5oPgorCitleHRlcm4gdm9pZCBfX2lvbWVtICpzdW54aTdpX2NjX2Jhc2U7Cit2b2lkIHN1
+bjdpX3NlY29uZGFyeV9zdGFydHVwKHZvaWQpOworCisvKgorICogQ1BVQ0ZHCisgKi8KKyNkZWZp
+bmUgU1VON0lfQ1BVQ0ZHX0JPT1RBRERSCTB4MDFhNAorCisjZGVmaW5lIFNVTjdJX0NQVUNGR19H
+RU5DVEwJMHgwMTg0CisjZGVmaW5lIFNVTjdJX0NQVUNGR19EQkdDVEwwCTB4MDFlMAorI2RlZmlu
+ZSBTVU43SV9DUFVDRkdfREJHQ1RMMQkweDAxZTQKKworI2RlZmluZSBTVU43SV9DUFUxX1BXUl9D
+TEFNUAkweDAxYjAKKyNkZWZpbmUgU1VON0lfQ1BVMV9QV1JPRkZfUkVHCTB4MDFiNAorI2RlZmlu
+ZSBTVU43SV9DUFVYX1JFU0VUX0NUTCh4KQkoMHg0MCArICh4KSoweDQwKQorCitzdGF0aWMgaW50
+IHN1bjdpX2Jvb3Rfc2Vjb25kYXJ5KHVuc2lnbmVkIGludCBjcHUsIHN0cnVjdCB0YXNrX3N0cnVj
+dCAqaWRsZSkKK3sKKwlsb25nIHBhZGRyOworCXVpbnQzMl90IHB3cl9yZWc7CisJdWludDMyX3Qg
+aiA9IDB4ZmYgPDwgMTsKKwlpZiAoIXN1bnhpN2lfY2NfYmFzZSkgeworCQlwcl9kZWJ1ZygiZXJy
+b3IgbWFwIGNwdSBjb25maWd1cmVcbiIpOworCQlyZXR1cm4gLUVOT1NZUzsKKwl9CisJLyogU2V0
+IGJvb3QgYWRkciAqLworCXBhZGRyID0gdmlydF90b19waHlzKHN1bjdpX3NlY29uZGFyeV9zdGFy
+dHVwKTsKKwl3cml0ZWwocGFkZHIsIHN1bnhpN2lfY2NfYmFzZSArIFNVTjdJX0NQVUNGR19CT09U
+QUREUik7CisKKwkvKiBBc3NlcnQgY3B1IGNvcmUgcmVzZXQgKi8KKwl3cml0ZWwoMCwgc3VueGk3
+aV9jY19iYXNlICsgU1VON0lfQ1BVWF9SRVNFVF9DVEwoY3B1KSk7CisKKwkvKiBFbnN1cmUgQ1BV
+IHJlc2V0IGFsc28gaW52YWxpZGF0ZXMgTDEgY2FjaGVzICovCisJcHdyX3JlZyA9IHJlYWRsKHN1
+bnhpN2lfY2NfYmFzZSArIFNVTjdJX0NQVUNGR19HRU5DVEwpOworCXB3cl9yZWcgJj0gfiBCSVQo
+Y3B1KTsKKwl3cml0ZWwocHdyX3JlZywgc3VueGk3aV9jY19iYXNlICsgU1VON0lfQ1BVQ0ZHX0dF
+TkNUTCk7CisKKwkvKiBEQkdQV1JEVVAgaG9sZCBsb3cgKi8KKwlwd3JfcmVnID0gcmVhZGwoc3Vu
+eGk3aV9jY19iYXNlICsgU1VON0lfQ1BVQ0ZHX0RCR0NUTDEpOworCXB3cl9yZWcgJj0gfiBCSVQo
+Y3B1KTsKKwl3cml0ZWwocHdyX3JlZywgc3VueGk3aV9jY19iYXNlICsgU1VON0lfQ1BVQ0ZHX0RC
+R0NUTDEpOworCisJLyogUmFtcCB1cCBwb3dlciB0byBDUFUxICovCisJZG8geworCQl3cml0ZWwo
+aiwgc3VueGk3aV9jY19iYXNlICsgU1VON0lfQ1BVMV9QV1JfQ0xBTVApOworCQlqID0gaiA+PiAx
+OworCX0gd2hpbGUgKGogIT0gMCk7CisKKwltZGVsYXkoMTApOworCisJcHdyX3JlZyA9IHJlYWRs
+KHN1bnhpN2lfY2NfYmFzZSArIFNVTjdJX0NQVTFfUFdST0ZGX1JFRyk7CisJcHdyX3JlZyAmPSB+
+MTsKKwl3cml0ZWwocHdyX3JlZywgc3VueGk3aV9jY19iYXNlICsgU1VON0lfQ1BVMV9QV1JPRkZf
+UkVHKTsKKwltZGVsYXkoMSk7CisKKwkvKiBSZWxlYXNlIENQVSByZXNldCAqLworCXdyaXRlbCgz
+LCBzdW54aTdpX2NjX2Jhc2UgKyBTVU43SV9DUFVYX1JFU0VUX0NUTChjcHUpKTsKKworCS8qIFVu
+bG9jayBDUFUgKi8KKwlwd3JfcmVnID0gcmVhZGwoc3VueGk3aV9jY19iYXNlICsgU1VON0lfQ1BV
+Q0ZHX0RCR0NUTDEpOworCXB3cl9yZWcgfD0gQklUKGNwdSk7CisJd3JpdGVsKHB3cl9yZWcsIHN1
+bnhpN2lfY2NfYmFzZSArIFNVTjdJX0NQVUNGR19EQkdDVEwxKTsKKworCXJldHVybiAwOworfQor
+CitzdHJ1Y3Qgc21wX29wZXJhdGlvbnMgc3VuN2lfc21wX29wcyBfX2luaXRkYXRhID0geworCS5z
+bXBfYm9vdF9zZWNvbmRhcnkgPSBzdW43aV9ib290X3NlY29uZGFyeSwKK307CmRpZmYgLS1naXQg
+YS9hcmNoL2FybS9tYWNoLXN1bnhpL3N1bnhpLmMgYi9hcmNoL2FybS9tYWNoLXN1bnhpL3N1bnhp
+LmMKaW5kZXggZTc5ZmIzNC4uYTY5MjM1MCAxMDA2NDQKLS0tIGEvYXJjaC9hcm0vbWFjaC1zdW54
+aS9zdW54aS5jCisrKyBiL2FyY2gvYXJtL21hY2gtc3VueGkvc3VueGkuYwpAQCAtMjYsNiArMjYs
+OCBAQAogI2luY2x1ZGUgPGFzbS9tYWNoL21hcC5oPgogI2luY2x1ZGUgPGFzbS9zeXN0ZW1fbWlz
+Yy5oPgogCitleHRlcm4gc3RydWN0IHNtcF9vcGVyYXRpb25zIHN1bjdpX3NtcF9vcHM7CisKICNk
+ZWZpbmUgU1VONElfV0FUQ0hET0dfQ1RSTF9SRUcJCTB4MDAKICNkZWZpbmUgU1VONElfV0FUQ0hE
+T0dfQ1RSTF9SRVNUQVJUCQlCSVQoMCkKICNkZWZpbmUgU1VONElfV0FUQ0hET0dfTU9ERV9SRUcJ
+CTB4MDQKQEAgLTQyLDYgKzQ0LDE0IEBACiAjZGVmaW5lIFNVTjZJX1dBVENIRE9HMV9NT0RFX0VO
+QUJMRQkJQklUKDApCiAKIHN0YXRpYyB2b2lkIF9faW9tZW0gKndkdF9iYXNlOworLyoKKyAqIENQ
+VSBDb25maWd1cmUgbW9kdWxlIHN1cHBvcnQKKyAqIDE6IFNvZnR3YXJlIHJlc2V0IGZvciBzbXAg
+Y3B1cworICogMjogQ29uZmlndXJlIGZvciBzbXAgY3B1cyBpbmNsdWRpbmcgYm9vdC4KKyAqIDM6
+IFRocmVlIDY0LWJpdCBpZGxlIGNvdW50ZXJzIGFuZCB0d28gNjQtYml0IGNvbW1vbiBjb3VudGVy
+cworICogaXQgaXMgbmVlZGVkIGZvciBzbXAgY3B1cworICovCit2b2lkIF9faW9tZW0gKnN1bnhp
+N2lfY2NfYmFzZTsgLypDUFUgQ29uZmlndXJlIEJhc2UqLwogCiBzdGF0aWMgdm9pZCBzdW40aV9y
+ZXN0YXJ0KGVudW0gcmVib290X21vZGUgbW9kZSwgY29uc3QgY2hhciAqY21kKQogewpAQCAtOTgs
+NiArMTA4LDExIEBAIHN0YXRpYyBzdHJ1Y3Qgb2ZfZGV2aWNlX2lkIHN1bnhpX3Jlc3RhcnRfaWRz
+W10gPSB7CiAJeyAvKnNlbnRpbmVsKi8gfQogfTsKIAorc3RhdGljIHN0cnVjdCBvZl9kZXZpY2Vf
+aWQgc3VueGlfY2NfaWRzW10gPSB7CisJeyAuY29tcGF0aWJsZSA9ICJhbGx3aW5uZXIsc3VuN2kt
+YTIwLWNwdWNvbmZpZyJ9LAorCXsgLypzZW50aW5lbCovIH0KK307CisKIHN0YXRpYyB2b2lkIHN1
+bnhpX3NldHVwX3Jlc3RhcnQodm9pZCkKIHsKIAljb25zdCBzdHJ1Y3Qgb2ZfZGV2aWNlX2lkICpv
+Zl9pZDsKQEAgLTEzOCw3ICsxNTMsMjMgQEAgc3RhdGljIGNvbnN0IGNoYXIgKiBjb25zdCBzdW54
+aV9ib2FyZF9kdF9jb21wYXRbXSA9IHsKIAlOVUxMLAogfTsKIAorc3RhdGljIGludCBfX2luaXQg
+c3VueGlfaW5pdF9jcHVjb25maWdfbWFwKHZvaWQpCit7CisJc3RydWN0IGRldmljZV9ub2RlICpu
+cDsKKworCW5wID0gb2ZfZmluZF9tYXRjaGluZ19ub2RlKE5VTEwsIHN1bnhpX2NjX2lkcyk7CisJ
+aWYgKFdBUk4oIW5wLCAidW5hYmxlIHRvIHNldHVwIGN1cCBjb25maWd1cmUiKSkKKwkJcmV0dXJu
+IC1FTk9TWVM7CisJc3VueGk3aV9jY19iYXNlID0gb2ZfaW9tYXAobnAsIDApOworCWlmIChXQVJO
+KCFzdW54aTdpX2NjX2Jhc2UsICJmYWlsZWQgdG8gbWFwIGN1cCBjb25maWd1cmUgYmFzZSBhZGRy
+ZXNzIikpCisJCXJldHVybiAtRU5PU1lTOworCXJldHVybiAwOworfQorCitlYXJseV9pbml0Y2Fs
+bChzdW54aV9pbml0X2NwdWNvbmZpZ19tYXApOworCiBEVF9NQUNISU5FX1NUQVJUKFNVTlhJX0RU
+LCAiQWxsd2lubmVyIEExWCAoRGV2aWNlIFRyZWUpIikKKwkuc21wCT0gc21wX29wcyhzdW43aV9z
+bXBfb3BzKSwKIAkuaW5pdF9tYWNoaW5lCT0gc3VueGlfZHRfaW5pdCwKIAkuaW5pdF90aW1lCT0g
+c3VueGlfdGltZXJfaW5pdCwKIAkuZHRfY29tcGF0CT0gc3VueGlfYm9hcmRfZHRfY29tcGF0LAot
+LSAKMS44LjEuMgoK
+--001a113351940c63a904e6e7937a--
