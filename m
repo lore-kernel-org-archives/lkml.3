@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab3IUSlF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 14:41:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60619 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752605Ab3IUSlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 14:41:03 -0400
-Date: Sat, 21 Sep 2013 20:34:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        codonell <codonell@redhat.com>, Eduard Benes <ebenes@redhat.com>,
-        Karel Srot <ksrot@redhat.com>, Matt Newsome <mnewsome@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tty: disassociate_ctty() sends the extra SIGCONT
-Message-ID: <20130921183436.GA13418@redhat.com>
-References: <20130915155006.GA11913@redhat.com> <20130915155026.GA11917@redhat.com> <5238BDEC.1070400@hurleysoftware.com>
+	id S1752482Ab3IUS6O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 14:58:14 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:32881 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab3IUS6M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Sep 2013 14:58:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5238BDEC.1070400@hurleysoftware.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
+References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
+	<CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
+	<alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
+	<20130920162603.GA30381@localhost.localdomain>
+	<CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
+Date: Sat, 21 Sep 2013 13:58:11 -0500
+Message-ID: <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
+Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter, sorry for delay, I was sick.
-
-On 09/17, Peter Hurley wrote:
->
-> On 09/15/2013 11:50 AM, Oleg Nesterov wrote:
->
->> Put the "!on_exit" check back to restore the old behaviour.
+2013/9/20 Linus Torvalds <torvalds@linux-foundation.org>:
+> On Fri, Sep 20, 2013 at 9:26 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
 >>
->> Cc: stable@vger.kernel.org # v3.10+
->> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
->> Reported-by: Karel Srot <ksrot@redhat.com>
+>> Now just for clarity, what do we then do with inline sofirq executions: on local_bh_enable()
+>> for example, or explicit calls to do_softirq() other than irq exit?
 >
-> Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+> If we do a softirq because it was pending and we did a
+> "local_bh_enable()" in normal code, we need a new stack. The
+> "local_bh_enable()" may be pretty deep in the callchain on a normal
+> process stack, so I think it would be safest to switch to a separate
+> stack for softirq handling.
 
-Thanks!
+Right.
 
-Can I ask the question? tty_signal_session_leader() is probably fine,
-but it _looks_ buggy or at least confusing to me.
+>
+> So you have a few different cases:
+>
+>  - irq_exit(). The irq stack is by definition empty (assuming
+> itq_exit() is done on the irq stack), so doing softirq in that context
+> should be fine. However, that assumes that if we get *another*
+> interrupt, then we'll switch stacks again, so this does mean that we
+> need two irq stacks. No, irq's don't nest, but if we run softirq on
+> the first irq stack, the other irq *can* nest that softirq.
 
-		do_each_pid_task(tty->session, PIDTYPE_SID, p) {
-			spin_lock_irq(&p->sighand->siglock);
-			if (p->signal->tty == tty) {
-				p->signal->tty = NULL;
-				/* We defer the dereferences outside fo
-				   the tasklist lock */
-				refs++;
-			}
-			if (!p->signal->leader) {
-				spin_unlock_irq(&p->sighand->siglock);
-				continue;
-			}
-			__group_send_sig_info(SIGHUP, SEND_SIG_PRIV, p);
-			__group_send_sig_info(SIGCONT, SEND_SIG_PRIV, p);
-			put_pid(p->signal->tty_old_pgrp);  /* A noop */
-			spin_lock(&tty->ctrl_lock);
-			tty_pgrp = get_pid(tty->pgrp);
+Well, most archs don't define __ARCH_IRQ_EXIT_IRQS_DISABLED. It doesn't
+even mean that the majority of them actually run irq_exit() with irqs enabled in
+practice. But there may be thoretically some where hardirqs can nest
+without even the
+help of softirqs.
 
-I guess this can happen only once, so we could even add WARN_ON(tty_pgrp)
-before get_pid(). But this look confusing, as if we can do get_pid()
-multiple times and leak tty->pgrp.
+So it's quite possible to run softirqs on a hardirq stack that is not empty.
 
-			if (tty->pgrp)
-				p->signal->tty_old_pgrp = get_pid(tty->pgrp);
+Now certainly what needs to be fixed then is archs that don't have
+__ARCH_IRQ_EXIT_IRQS_DISABLED
+or archs that have any other significant opportunity to nest interrupt.
 
-else? We already did put_pid(tty_old_pgrp), we should clear it.
+>
+>  - process context doing local_bh_enable, and a bh became pending
+> while it was disabled. See above: this needs a stack switch. Which
+> stack to use is open, again assuming that a hardirq coming in will
+> switch to yet another stack.
 
-IOW, do you think the patch below makes sense or I missed something?
-Just curious.
+Right. Now if we do like Thomas suggested, we can have a common irq
+stack that is big enough for hard and softirqs. After all there should
+never be more than two or three nesting irq contexts:
+hardirq->softirq->hardirq, softirq->hardirq, ...
 
-Oleg.
-
---- x/drivers/tty/tty_io.c
-+++ x/drivers/tty/tty_io.c
-@@ -548,7 +548,7 @@ static int tty_signal_session_leader(str
- {
- 	struct task_struct *p;
- 	int refs = 0;
--	struct pid *tty_pgrp = NULL;
-+	struct pid *tty_pgrp = tty_get_pgrp(tty);
- 
- 	read_lock(&tasklist_lock);
- 	if (tty->session) {
-@@ -560,18 +560,12 @@ static int tty_signal_session_leader(str
- 				   the tasklist lock */
- 				refs++;
- 			}
--			if (!p->signal->leader) {
--				spin_unlock_irq(&p->sighand->siglock);
--				continue;
-+			if (p->signal->leader) {
-+				__group_send_sig_info(SIGHUP, SEND_SIG_PRIV, p);
-+				__group_send_sig_info(SIGCONT, SEND_SIG_PRIV, p);
-+				put_pid(p->signal->tty_old_pgrp);  /* A noop */
-+				p->signal->tty_old_pgrp = get_pid(tty_pgrp);
- 			}
--			__group_send_sig_info(SIGHUP, SEND_SIG_PRIV, p);
--			__group_send_sig_info(SIGCONT, SEND_SIG_PRIV, p);
--			put_pid(p->signal->tty_old_pgrp);  /* A noop */
--			spin_lock(&tty->ctrl_lock);
--			tty_pgrp = get_pid(tty->pgrp);
--			if (tty->pgrp)
--				p->signal->tty_old_pgrp = get_pid(tty->pgrp);
--			spin_unlock(&tty->ctrl_lock);
- 			spin_unlock_irq(&p->sighand->siglock);
- 		} while_each_pid_task(tty->session, PIDTYPE_SID, p);
- 	}
-
+At least if we put aside the unsane archs that can nest irqs somehow.
