@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab3IUPqe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 11:46:34 -0400
-Received: from smtprelay0122.hostedemail.com ([216.40.44.122]:50791 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751857Ab3IUPqd (ORCPT
+	id S1752423Ab3IUPso (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 11:48:44 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:35813 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab3IUPsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 11:46:33 -0400
-X-Greylist: delayed 530 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Sep 2013 11:46:32 EDT
-X-Session-Marker: 726F737465647440676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:152:355:379:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3352:3865:3867:3870:4321:4385:5007:6119:7652:7875:7903:10004:10400:10848:11232:11658:11914:12043:12517:12519:12555:12740:13069:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crib40_7d3f86c256116
-X-Filterd-Recvd-Size: 1661
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130921143255.GS13318@ZenIV.linux.org.uk>
-References: <20130920164732.GA31520@redhat.com> <20130921143255.GS13318@ZenIV.linux.org.uk>
+	Sat, 21 Sep 2013 11:48:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: tracing: don't stuff stale pointers in filp->private_data
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Sat, 21 Sep 2013 11:37:30 -0400
-To: Al Viro <viro@ZenIV.linux.org.uk>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Message-ID: <cd5db43e-160e-448a-9708-3c5e44c0d34c@email.android.com>
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <alpine.SOC.1.00.1309211825490.9193@math.ut.ee>
+References: <alpine.SOC.1.00.1308261610280.25531@math.ut.ee>
+	<alpine.SOC.1.00.1309211825490.9193@math.ut.ee>
+Date: Sat, 21 Sep 2013 17:48:42 +0200
+Message-ID: <CAKMK7uHynzChMurTLAYMfeRF07aDJxes-6eSO1iDbrET8xD84Q@mail.gmail.com>
+Subject: Re: i915 pipe A assertion failure (expected on, current off)
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Meelis Roos <mroos@linux.ee>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Or make the assignment in an else block.
-
--- Steve
-
-
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
->On Fri, Sep 20, 2013 at 12:47:32PM -0400, Dave Jones wrote:
->> Probably harmless, but still not a nice thing to do.
->> 
->> Signed-off-by: Dave Jones <davej@fedoraproject.org>
->> 
->> diff --git a/kernel/trace/trace_events.c
->b/kernel/trace/trace_events.c
->> index 368a4d5..75d3556 100644
->> --- a/kernel/trace/trace_events.c
->> +++ b/kernel/trace/trace_events.c
->> @@ -1124,6 +1124,7 @@ static int system_tr_open(struct inode *inode,
->struct file *filp)
->>  	if (ret < 0) {
->>  		trace_array_put(tr);
->>  		kfree(dir);
->> +		dir = NULL;
->>  	}
->>  
->>  	filp->private_data = dir;
+On Sat, Sep 21, 2013 at 5:29 PM, Meelis Roos <mroos@linux.ee> wrote:
+>> Tried 3.11-rc7 on Thinkpad X30 (first 3-11-rc tried on this hw). Works
+>> but i915 gives strange assertion failure with WARNING stack trace. This
+>> is new since 3.10.
 >
->Er...  Why not simply return ret; instead?
+> It is still there with 3.12-rc1 but now I git around to bisecting it.
+> This is the commit that introduces the warning.
+>
+> commit 9f11a9e4e50006b615ba94722dfc33ced89664cf
+> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Date:   Thu Jun 13 00:54:58 2013 +0200
+>
+>     drm/i915: set up PIPECONF explicitly for i9xx/vlv platforms
 
+My apologies for not responding to your first report, fell through the
+cracks somehow. Can you please boot with drm.debug=0xe, reproduce the
+WARN and grab the full dmesg (please make sure everything from boot-up
+is in there). That's usually enough to figure out what's going wrong
+here.
+
+Thanks, Daniel
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
