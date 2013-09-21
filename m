@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab3IUVrK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 17:47:10 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36333 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751712Ab3IUVrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 17:47:08 -0400
-Message-ID: <1379799901.24090.6.camel@pasglop>
-Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Sun, 22 Sep 2013 07:45:01 +1000
-In-Reply-To: <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
-References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
-	 <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
-	 <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
-	 <20130920162603.GA30381@localhost.localdomain>
-	 <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
-	 <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752002Ab3IUWDv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 18:03:51 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63180 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab3IUWDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Sep 2013 18:03:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys part and Exynos part
+Date: Sun, 22 Sep 2013 00:03:34 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Pratyush Anand <pratyush.anand@st.com>, Jingoo Han <jg1.han@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        Mohit KUMAR DCG <Mohit.KUMAR@st.com>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+References: <000701ce8741$fe47deb0$fad79c10$@samsung.com> <20130912104602.GC5995@pratyush-vbox> <523DB38B.4070307@ti.com>
+In-Reply-To: <523DB38B.4070307@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201309220003.34732.arnd@arndb.de>
+X-Provags-ID: V02:K0:tOXUddivYfrqFrHZSP4iM467I+28YAR7nG7C1JDTdVL
+ QXxyGjgKjfZsrXCzlNOIG3E2NTiVB0KNHyzXFbjoqfBt5PCM1Y
+ /MMeu1WRhwpx99mO+gjQtPZFmU6CGeeWiUBwlXVrIOmnoxvK/9
+ 1PGbAXqsRdTtQQwjpqmvQBcPU55mcW9DCNG9Pm5fQYOHYR9IKg
+ UvwuS8BvB+rsK4Sp7mm+s7yobo4kuE/OFsvxjX3ySVjwibtBH4
+ ALrWJncRH3WthTUpcW5RiGKSZ1gPT9TBsFlQ4OwR27joIYEpgO
+ oj0zy7t4Z0KR80RSum9Y5mXuNOyfzvz/0IAxxWjU8ly4QJ7vS7
+ j8fYLxFldmaLud+KFidk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-09-21 at 13:58 -0500, Frederic Weisbecker wrote:
-
-> Now certainly what needs to be fixed then is archs that don't have
-> __ARCH_IRQ_EXIT_IRQS_DISABLED
-> or archs that have any other significant opportunity to nest interrupt.
-
-Interesting. I notice we don't define it on powerpc but we don't enable
-IRQs in do_IRQ either... our path is very similar to x86 in this regard,
-the only thing that can cause them to become enabled would be if a
-driver interrupt handler did local_irq_enable().
-
-It used to be fairly common for drivers to do spin_unlock_irq() which
-would unconditionally re-enable. Did we add WARNs or lockdep logic to
-catch these nowadays ?
-
-> >  - process context doing local_bh_enable, and a bh became pending
-> > while it was disabled. See above: this needs a stack switch. Which
-> > stack to use is open, again assuming that a hardirq coming in will
-> > switch to yet another stack.
+On Saturday 21 September 2013, Kishon Vijay Abraham I wrote:
+> {
+>         u32 val;
+>         void __iomem *val1;
+>         void __iomem *dbi_base = pp->dbi_base;
 > 
-> Right. Now if we do like Thomas suggested, we can have a common irq
-> stack that is big enough for hard and softirqs. After all there should
-> never be more than two or three nesting irq contexts:
-> hardirq->softirq->hardirq, softirq->hardirq, ...
-> 
-> At least if we put aside the unsane archs that can nest irqs somehow.
+>         /* Program viewport 0 : INBOUND : MEMORY*/
+>         val = PCIE_ATU_REGION_INBOUND | (0 & 0xF);
+>         dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
+>         val1 = ioremap(0x80000000, 0x5fffffff);
 
-I really don't like the "larger" irq stack ... probably because I can't
-make it work easily :-) See my previous comment about how we get to
-thread_info on ppc.
+The ioremap here makes no sense at all, and I suspect it will fail anyway,
+because you exhaust the vmalloc area size, but since the value is not
+used anywhere, it won't matter.
 
-What I *can* do that would help I suppose would be to switch to the irq
-stack before irq_enter/exit which would at least mean that softirq would
-run from the top of the irq stack which is better than the current
-situation.
+>         dw_pcie_writel_rc(pp, 0x80000000, dbi_base + PCIE_ATU_LOWER_BASE);
+>         dw_pcie_writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
+>         /* in_mem_size must be in power of 2 */
+>         dw_pcie_writel_rc(pp, 0x5FFFFFFF, dbi_base + PCIE_ATU_LIMIT);
+>         dw_pcie_writel_rc(pp, 0x80000000, dbi_base + PCIE_ATU_LOWER_TARGET);
+>         dw_pcie_writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
 
-I'm fact I'll whip up a quick fix see if that might be enough of a band
-aid for RHEL7.
+These numbers need to come from somewhere, you shouldn't just hardcode them, 
 
-Cheers,
-Ben.
+I guess you should either program an inbound window covering the entire 64-bit
+address space, or you should look at the top-level "memory" nodes to find
+the location of physical RAM.
 
+I can't see anything wrong with the way it's set up though, unless you have
+an IOMMU. Can you confirm that there is no IOMMU (aka SMMU) in your system
+that handles the PCIe root complex?
+
+> I somehow starting to doubt the DMA address programmed in the ethernet card
+> which is in my RAM address range (0x80000000 to 0xBFFFFFFF). Should this
+> address be programmed in the BAR of the ethernet card? How should it be done?
+
+No, it should not be in the BAR. The ethernet device driver calls dma_map_*
+or pci_map_* interfaces to get a valid token that can be passed into the
+device registers that are starting the DMA. You have to ensure that the
+dma_map_ops for the device return the value that is set up in the translation.
+
+The normal case is an identity mapping between device DMA space and host
+memory space, i.e. PCIE_ATU_LOWER_TARGET == PCIE_ATU_LOWER_BASE, so
+in the dma_map_single implementation, phys_addr_t == dma_addr_t.
+
+If you set up the dma_addr_t space to start at 0 instead, you have to add
+the offset in the dma_map_ops.
+
+	Arnd
