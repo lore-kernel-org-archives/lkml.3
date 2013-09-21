@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab3IUWcr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 18:32:47 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:52442 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab3IUW27 (ORCPT
+	id S1752536Ab3IUW26 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 18:28:58 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:54432 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab3IUW2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 18:28:59 -0400
+	Sat, 21 Sep 2013 18:28:34 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: bzhao@marvell.com
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 11/19] wireless: Change variable type to bool
-Date: Sun, 22 Sep 2013 00:27:43 +0200
-Message-Id: <1379802471-30252-11-git-send-email-peter.senna@gmail.com>
+To: roland@kernel.org
+Cc: sean.hefty@intel.com, hal.rosenstock@gmail.com, bgottumukkala@emulex.com,
+        tj@kernel.org, peter.senna@gmail.com, dan.carpenter@oracle.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 03/19] infiniband: Change variable type to bool
+Date: Sun, 22 Sep 2013 00:27:35 +0200
+Message-Id: <1379802471-30252-3-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1379802471-30252-1-git-send-email-peter.senna@gmail.com>
 References: <1379802471-30252-1-git-send-email-peter.senna@gmail.com>
@@ -23,8 +23,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variables cancel_scan_cmd, enable_data, hs_activate and valid are
-only assigned the values true and false. Change its type to bool.
+The variables found and is_uctx_pd are only assigned the values true
+and false. Change its type to bool.
 
 The simplified semantic patch that find this problem is as
 follows (http://coccinelle.lip6.fr/):
@@ -41,64 +41,36 @@ identifier b;
 
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 ---
- drivers/net/wireless/mwifiex/cmdevt.c  | 2 +-
- drivers/net/wireless/mwifiex/join.c    | 2 +-
- drivers/net/wireless/mwifiex/sta_cmd.c | 2 +-
- drivers/net/wireless/mwifiex/wmm.c     | 2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/infiniband/hw/ocrdma/ocrdma_main.c  | 2 +-
+ drivers/infiniband/hw/ocrdma/ocrdma_verbs.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/cmdevt.c b/drivers/net/wireless/mwifiex/cmdevt.c
-index 2d76147..fb3fa18 100644
---- a/drivers/net/wireless/mwifiex/cmdevt.c
-+++ b/drivers/net/wireless/mwifiex/cmdevt.c
-@@ -1048,7 +1048,7 @@ mwifiex_cancel_pending_ioctl(struct mwifiex_adapter *adapter)
- 	struct cmd_ctrl_node *cmd_node = NULL, *tmp_node = NULL;
- 	unsigned long cmd_flags;
- 	unsigned long scan_pending_q_flags;
--	uint16_t cancel_scan_cmd = false;
-+	bool cancel_scan_cmd = false;
- 
- 	if ((adapter->curr_cmd) &&
- 	    (adapter->curr_cmd->wait_q_enabled)) {
-diff --git a/drivers/net/wireless/mwifiex/join.c b/drivers/net/wireless/mwifiex/join.c
-index 9d7c0e6..717fbe2 100644
---- a/drivers/net/wireless/mwifiex/join.c
-+++ b/drivers/net/wireless/mwifiex/join.c
-@@ -621,7 +621,7 @@ int mwifiex_ret_802_11_associate(struct mwifiex_private *priv,
- 	int ret = 0;
- 	struct ieee_types_assoc_rsp *assoc_rsp;
- 	struct mwifiex_bssdescriptor *bss_desc;
--	u8 enable_data = true;
-+	bool enable_data = true;
- 	u16 cap_info, status_code;
- 
- 	assoc_rsp = (struct ieee_types_assoc_rsp *) &resp->params;
-diff --git a/drivers/net/wireless/mwifiex/sta_cmd.c b/drivers/net/wireless/mwifiex/sta_cmd.c
-index c0268b5..7d66018 100644
---- a/drivers/net/wireless/mwifiex/sta_cmd.c
-+++ b/drivers/net/wireless/mwifiex/sta_cmd.c
-@@ -327,7 +327,7 @@ mwifiex_cmd_802_11_hs_cfg(struct mwifiex_private *priv,
+diff --git a/drivers/infiniband/hw/ocrdma/ocrdma_main.c b/drivers/infiniband/hw/ocrdma/ocrdma_main.c
+index 56e0049..e30e342 100644
+--- a/drivers/infiniband/hw/ocrdma/ocrdma_main.c
++++ b/drivers/infiniband/hw/ocrdma/ocrdma_main.c
+@@ -120,7 +120,7 @@ static bool ocrdma_add_sgid(struct ocrdma_dev *dev, unsigned char *mac_addr,
+ static bool ocrdma_del_sgid(struct ocrdma_dev *dev, unsigned char *mac_addr,
+ 			    bool is_vlan, u16 vlan_id)
  {
- 	struct mwifiex_adapter *adapter = priv->adapter;
- 	struct host_cmd_ds_802_11_hs_cfg_enh *hs_cfg = &cmd->params.opt_hs_cfg;
--	u16 hs_activate = false;
-+	bool hs_activate = false;
+-	int found = false;
++	bool found = false;
+ 	int i;
+ 	union ib_gid sgid;
+ 	unsigned long flags;
+diff --git a/drivers/infiniband/hw/ocrdma/ocrdma_verbs.c b/drivers/infiniband/hw/ocrdma/ocrdma_verbs.c
+index 6e982bb..843d18b 100644
+--- a/drivers/infiniband/hw/ocrdma/ocrdma_verbs.c
++++ b/drivers/infiniband/hw/ocrdma/ocrdma_verbs.c
+@@ -537,7 +537,7 @@ struct ib_pd *ocrdma_alloc_pd(struct ib_device *ibdev,
+ 	struct ocrdma_pd *pd;
+ 	struct ocrdma_ucontext *uctx = NULL;
+ 	int status;
+-	u8 is_uctx_pd = false;
++	bool is_uctx_pd = false;
  
- 	if (!hscfg_param)
- 		/* New Activate command */
-diff --git a/drivers/net/wireless/mwifiex/wmm.c b/drivers/net/wireless/mwifiex/wmm.c
-index 2e8f9cd..8f8fea0 100644
---- a/drivers/net/wireless/mwifiex/wmm.c
-+++ b/drivers/net/wireless/mwifiex/wmm.c
-@@ -708,7 +708,7 @@ int mwifiex_ret_wmm_get_status(struct mwifiex_private *priv,
- {
- 	u8 *curr = (u8 *) &resp->params.get_wmm_status;
- 	uint16_t resp_len = le16_to_cpu(resp->size), tlv_len;
--	int valid = true;
-+	bool valid = true;
- 
- 	struct mwifiex_ie_types_data *tlv_hdr;
- 	struct mwifiex_ie_types_wmm_queue_status *tlv_wmm_qstatus;
+ 	if (udata && context) {
+ 		uctx = get_ocrdma_ucontext(context);
 -- 
 1.8.3.1
 
