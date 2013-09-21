@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab3IVBMj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 21:12:39 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:56074 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab3IVBMg (ORCPT
+	id S1752635Ab3IVBVG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 21:21:06 -0400
+Received: from 60-248-79-20.HINET-IP.hinet.net ([60.248.79.20]:47074 "EHLO
+	mail.iprp.spsh.gov.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab3IVBVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 21:12:36 -0400
+	Sat, 21 Sep 2013 21:21:05 -0400
+X-Greylist: delayed 1939 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Sep 2013 21:21:04 EDT
+From: "Jane Ruba" <jane_ruba@hotmail.com>
+Reply-To: jane_ruba@hotmail.com
+Subject: nice to be your friend
+Date: Sun, 22 Sep 2013 02:43:54 +0300
+Message-Id: <20130921234348.M92803@hotmail.com>
+X-Mailer: OpenWebMail 2.52 20060502
+X-OriginatingIP: 41.82.164.38 (b1219)
 MIME-Version: 1.0
-In-Reply-To: <1379785342-25107-3-git-send-email-m.krawczuk@partner.samsung.com>
-References: <1379785342-25107-1-git-send-email-m.krawczuk@partner.samsung.com>
-	<1379785342-25107-3-git-send-email-m.krawczuk@partner.samsung.com>
-Date: Sun, 22 Sep 2013 06:42:35 +0530
-Message-ID: <CAKohpokEF_+d_G0LX76JK_dNBtYtAKPznWbDcwLen4pgQTOt6w@mail.gmail.com>
-Subject: Re: [PATCH v4 2/3] Cpufreq: s5pv210 cpufreq fixes for CCF
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Cc: Mike Turquette <mturquette@linaro.org>, Rob Landley <rob@landley.net>,
-        ijc+devicetree@hellion.org.uk, Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset=iso-8859-1
+To: undisclosed-recipients:;
+X-TinySoft-3.0-MailScanner-Information: Please contact the ISP for more information
+X-TinySoft-3.0-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-TinySoft-3.0-MailScanner-SpamCheck: 
+X-MailScanner-From: jane_ruba@hotmail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 September 2013 23:12, Mateusz Krawczuk
-<m.krawczuk@partner.samsung.com> wrote:
-> Use common clock framework api to get clock.
->
-> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/cpufreq/s5pv210-cpufreq.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+
+
+Hello dear,
+I am Miss Jane Ruba. I am presently single and searching for a trusted
+and God fearing person. I hope you are fine in perfect condition of
+health. I saw your email today when I was searching for a good
+friend and took interest on it, if you don't mind I will like you to
+contact me true my email address;(jane_ruba@hotmail.com )
+So that we can know about ourselves and to
+share ideas and pictures. Please do not neglect a humble and lonely
+heart that seeks for your attention.
+I wish you
+
