@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab3IURmr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 13:42:47 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:26733 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab3IURmo (ORCPT
+	id S1752778Ab3IURnS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 13:43:18 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:11669 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab3IURnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 13:42:44 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-de-523dda92c79a
+	Sat, 21 Sep 2013 13:43:00 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-c1-523ddaa22d41
 From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
 To: mturquette@linaro.org
 Cc: rob@landley.net, ijc+devicetree@hellion.org.uk, swarren@wwwdotorg.org,
@@ -20,64 +20,62 @@ Cc: rob@landley.net, ijc+devicetree@hellion.org.uk, swarren@wwwdotorg.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Subject: [PATCH v4 0/3] ARM: S5PV210: move to common clk framework
-Date: Sat, 21 Sep 2013 19:42:19 +0200
-Message-id: <1379785342-25107-1-git-send-email-m.krawczuk@partner.samsung.com>
+Subject: [PATCH v4 2/3] Cpufreq: s5pv210 cpufreq fixes for CCF
+Date: Sat, 21 Sep 2013 19:42:21 +0200
+Message-id: <1379785342-25107-3-git-send-email-m.krawczuk@partner.samsung.com>
 X-Mailer: git-send-email 1.8.1.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t9jQd1Jt2yDDN7ekLOYtO4Ak8XTph/s
-	FvOPnGO1OPdqJaNF74KrbBZnm96wW2x6fI3VYmHbEhaLy7vmsFl87j3CaHH7Mq/F6TWnmC2W
-	Xr8I1DrhIpvFhOlrWSz6F/YyWRxeATRu3cvpLBaH37SzWrw62MZisX7GaxaLYzOWMFqs2vWH
-	0WLjVw8HCY8189YwerQ097B5LPh8hd3j76oXzB47Z91l91i5/Aubx6vVM1k97lzbw+axeUm9
-	x8F3e5g8+rasYvR4tLiF0ePzJjmPjXNDA/iiuGxSUnMyy1KL9O0SuDJu71zOUvCMp6Jn9wW2
-	BsaNnF2MnBwSAiYS7xa8YoewxSQu3FvP1sXIxSEkMJ1RYlrfFxYIp51JouVbLyNIFZuAucTE
-	Z5tYQGwRAUmJB5+ngxUxCzxgkZj56DpYkbCAk8TFQ6/AbBYBVYlzz3+zdjFycPAK+Eks3RQL
-	sU1B4uflE2wTGLkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiOkWfSOxhXNVgcYhTg
-	YFTi4RVIsA0SYk0sK67MPcQowcGsJMIrsgsoxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdgq3Wg
-	kEB6YklqdmpqQWoRTJaJg1OqgbH1VsAmsfJ1fQzbf/Hw35BhnJw6R8Ho6JcXc04/SKoJ/6b1
-	aarrpDPKYetSl5U28eqzNcsJMmxZa6WhYzrfSkfJoJJDS9S5chdb/LoNe+8ETr/XddRFoN57
-	ta9s6rRVGzcrNVhsetF8WyXvtc+L4qmeK1VkOvzUliiEH1aa7m35qsr7udB0HSWW4oxEQy3m
-	ouJEADuXD3iNAgAA
+In-reply-to: <1379785342-25107-1-git-send-email-m.krawczuk@partner.samsung.com>
+References: <1379785342-25107-1-git-send-email-m.krawczuk@partner.samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t9jQd1Ft2yDDNr6zS0mrTvAZPG06Qe7
+	xfwj51gtzr1ayWjRu+Aqm8XZpjfsFpseX2O1WNi2hMXi8q45bBafe48wWty+zGtxes0pZoul
+	1y8CtU64yGYxYfpaFov+hb1MFodXAI1b93I6i8XhN+2sFq8OtrFYrJ/xmsXi2IwljBardv1h
+	tNj41cNBwmPNvDWMHi3NPWweCz5fYff4u+oFs8fOWXfZPVYu/8Lm8Wr1TFaPO9f2sHlsXlLv
+	cfDdHiaPvi2rGD0eLW5h9Pi8Sc5j49zQAL4oLpuU1JzMstQifbsEroxZzf3sBS85Klqe3GRv
+	YNzM3sXIySEhYCLx+ehLVghbTOLCvfVsXYxcHEIC0xklDr3/xgThtDNJNFx4xgRSxSZgLjHx
+	2SYWEFtEQFLiwefpLCBFzAIPWCRmPrrOCJIQFrCT2DnlBpjNIqAqcWDuP7BmXgE/iQt7n7JB
+	rFOQ+Hn5BJjNKeAv0bhgAVi9EFDN7AddbBMYeRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vO
+	z93ECI6qZ1I7GFc2WBxiFOBgVOLhzUiyDRJiTSwrrsw9xCjBwawkwiuyCyjEm5JYWZValB9f
+	VJqTWnyIUZqDRUmc90CrdaCQQHpiSWp2ampBahFMlomDU6qB8cjKcO+JLiJS/1M4V/y54MPy
+	UeDz8UMBGd07je2cBKea77GQF7zdXPDW5jqTr2Tqv1VRPzRYZ65ympNab3v+RaY7r8hOLaeb
+	kQf6Z6Yqp6hNexZj1cxRsC439XLo85huw4XC292SD+dNLVj6hTPUoHzNLqnkc1e5tH/E7Thn
+	ZTop9P3bVx7nlViKMxINtZiLihMB0wwdrqYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series is the new s5pv210 clock implementation
-(using common clk framework).
+Use common clock framework api to get clock.
 
-This implementation is compatible with device tree definition and board 
-files.
+Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/cpufreq/s5pv210-cpufreq.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-This patch series is based on linux-next and has been tested on goni and 
-aquila 
-boards using board file.
-
-Since v3:
-
-Replace s5pv210_clk_register_finpll, by creating mux finpll
-with xusbxti and xxti as parrents.
-
-Mateusz Krawczuk (3):
-  clk: samsung: Add clock driver for s5pc110/s5pv210
-  Cpufreq: s5pv210 cpufreq fixes for CCF
-  ARM: s5pv210: Migrate clock handling to Common Clock Framework
-
- .../bindings/clock/samsung,s5pv210-clock.txt       |  75 +++
- arch/arm/mach-s5pv210/Kconfig                      |   9 +
- arch/arm/mach-s5pv210/Makefile                     |   4 +-
- arch/arm/mach-s5pv210/common.c                     |  17 +
- arch/arm/mach-s5pv210/common.h                     |  10 +
- arch/arm/mach-s5pv210/mach-goni.c                  |   2 +-
- arch/arm/mach-s5pv210/mach-smdkv210.c              |   2 +-
- arch/arm/plat-samsung/Kconfig                      |   2 +-
- drivers/clk/samsung/Makefile                       |   3 +
- drivers/clk/samsung/clk-s5pv210.c                  | 673 +++++++++++++++++++++
- drivers/cpufreq/s5pv210-cpufreq.c                  |   6 +-
- include/dt-bindings/clock/samsung,s5pv210-clock.h  | 224 +++++++
- 12 files changed, 1019 insertions(+), 8 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/samsung,s5pv210-clock.txt
- create mode 100644 drivers/clk/samsung/clk-s5pv210.c
- create mode 100644 include/dt-bindings/clock/samsung,s5pv210-clock.h
-
+diff --git a/drivers/cpufreq/s5pv210-cpufreq.c b/drivers/cpufreq/s5pv210-cpufreq.c
+index 5c77570..33948d6 100644
+--- a/drivers/cpufreq/s5pv210-cpufreq.c
++++ b/drivers/cpufreq/s5pv210-cpufreq.c
+@@ -511,17 +511,17 @@ static int __init s5pv210_cpu_init(struct cpufreq_policy *policy)
+ 	unsigned long mem_type;
+ 	int ret;
+ 
+-	cpu_clk = clk_get(NULL, "armclk");
++	cpu_clk = clk_get_sys("s5pv210-cpufreq", "armclk");
+ 	if (IS_ERR(cpu_clk))
+ 		return PTR_ERR(cpu_clk);
+ 
+-	dmc0_clk = clk_get(NULL, "sclk_dmc0");
++	dmc0_clk = clk_get_sys("s5pv210-cpufreq", "sclk_dmc0");
+ 	if (IS_ERR(dmc0_clk)) {
+ 		ret = PTR_ERR(dmc0_clk);
+ 		goto out_dmc0;
+ 	}
+ 
+-	dmc1_clk = clk_get(NULL, "hclk_msys");
++	dmc1_clk = clk_get_sys("s5pv210-cpufreq", "hclk_msys");
+ 	if (IS_ERR(dmc1_clk)) {
+ 		ret = PTR_ERR(dmc1_clk);
+ 		goto out_dmc1;
 -- 
 1.8.1.2
 
