@@ -1,87 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab3IUQTU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 12:19:20 -0400
-Received: from s15283307.onlinehome-server.info ([87.106.208.187]:56622 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab3IUQTT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 12:19:19 -0400
+	id S1752125Ab3IUQlL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 12:41:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751225Ab3IUQlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Sep 2013 12:41:09 -0400
+Date: Sat, 21 Sep 2013 18:34:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130921163404.GA8545@redhat.com>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de> <1378805550-29949-38-git-send-email-mgorman@suse.de> <20130917143003.GA29354@twins.programming.kicks-ass.net> <20130917162050.GK22421@suse.de> <20130917164505.GG12926@twins.programming.kicks-ass.net> <20130918154939.GZ26785@twins.programming.kicks-ass.net> <20130919143241.GB26785@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
-Subject: Re: [PATCH] drivers: bluetooth: btusb: Added support for Belkin F8065bf usb bluetooth device
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1379718623-1845-1-git-send-email-kernel@kenobrien.org>
-Date: Sat, 21 Sep 2013 11:19:10 -0500
-Cc: gustavo@padovan.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <42DC2AB8-3313-42BF-8CFF-9012F16C4C02@holtmann.org>
-References: <1379718623-1845-1-git-send-email-kernel@kenobrien.org>
-To: "Ken O'Brien" <kernel@kenobrien.org>
-X-Mailer: Apple Mail (2.1510)
+Content-Disposition: inline
+In-Reply-To: <20130919143241.GB26785@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ken,
+Sorry for delay, I was sick...
 
-> Adding generic rule for broadcom devices to generic usb bluetooth driver on encountering another instance of Broadcom's BCM20702A0.
-> 
-> Relevant section from /sys/kernel/debug/usb/devices:
-> 
-> T:  Bus=03 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=12   MxCh= 0
-> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-> P:  Vendor=050d ProdID=065a Rev= 1.12
-> S:  Manufacturer=Broadcom Corp
-> S:  Product=BCM20702A0
-> S:  SerialNumber=0002723E2D29
-> C:* #Ifs= 4 Cfg#= 1 Atr=a0 MxPwr=100mA
-> I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-> I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-> I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-> I:  If#= 1 Alt= 2 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-> I:  If#= 1 Alt= 3 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-> I:  If#= 1 Alt= 4 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-> I:  If#= 1 Alt= 5 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-> I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-> E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-> E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-> I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-> 
-> Signed-off-by: Ken O'Brien <kernel@kenobrien.org>
-> ---
-> drivers/bluetooth/btusb.c | 1 +
-> 1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-> index 8e16f0a..6d33dca 100644
-> --- a/drivers/bluetooth/btusb.c
-> +++ b/drivers/bluetooth/btusb.c
-> @@ -111,6 +111,7 @@ static struct usb_device_id btusb_table[] = {
-> 
-> 	/*Broadcom devices with vendor specific id */
-> 	{ USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) },
-> +	{ USB_VENDOR_AND_INTERFACE_INFO(0x050d, 0xff, 0x01, 0x01) },
+On 09/19, Peter Zijlstra wrote:
+>
+> I used a per-cpu spinlock to keep the state check and refcount inc
+> atomic vs the setting of state.
 
-this is not correct. These devices are Broadcom based, but they are actually from Belkin. Same as the controllers from Apple. So it needs its own line and a comment that mentions Belkin.
+I think this could be simpler, see below.
 
-Regards
+> So the slow path is still per-cpu and mostly uncontended even in the
+> pending writer case.
 
-Marcel
+Is it really important? I mean, per-cpu/uncontended even if the writer
+is pending?
+
+Otherwise we could do
+
+	static DEFINE_PER_CPU(long, cpuhp_fast_ctr);
+	static struct task_struct *cpuhp_writer;
+	static DEFINE_MUTEX(cpuhp_slow_lock)
+	static long cpuhp_slow_ctr;
+
+	static bool update_fast_ctr(int inc)
+	{
+		bool success = true;
+
+		preempt_disable();
+		if (likely(!cpuhp_writer))
+			__get_cpu_var(cpuhp_fast_ctr) += inc;
+		else if (cpuhp_writer != current)
+			success = false;
+		preempt_enable();
+
+		return success;
+	}
+
+	void get_online_cpus(void)
+	{
+		if (likely(update_fast_ctr(+1));
+			return;
+
+		mutex_lock(&cpuhp_slow_lock);
+		cpuhp_slow_ctr++;
+		mutex_unlock(&cpuhp_slow_lock);
+	}
+
+	void put_online_cpus(void)
+	{
+		if (likely(update_fast_ctr(-1));
+			return;
+
+		mutex_lock(&cpuhp_slow_lock);
+		if (!--cpuhp_slow_ctr && cpuhp_writer)
+			wake_up_process(cpuhp_writer);
+		mutex_unlock(&cpuhp_slow_lock);
+	}
+
+	static void clear_fast_ctr(void)
+	{
+		long total = 0;
+		int cpu;
+
+		for_each_possible_cpu(cpu) {
+			total += per_cpu(cpuhp_fast_ctr, cpu);
+			per_cpu(cpuhp_fast_ctr, cpu) = 0;
+		}
+
+		return total;
+	}
+
+	static void cpu_hotplug_begin(void)
+	{
+		cpuhp_writer = current;
+		synchronize_sched();
+
+		/* Nobody except us can use can use cpuhp_fast_ctr */
+
+		mutex_lock(&cpuhp_slow_lock);
+		cpuhp_slow_ctr += clear_fast_ctr();
+
+		while (cpuhp_slow_ctr) {
+			__set_current_state(TASK_UNINTERRUPTIBLE);
+			mutex_unlock(&&cpuhp_slow_lock);
+			schedule();
+			mutex_lock(&cpuhp_slow_lock);
+		}
+	}
+
+	static void cpu_hotplug_done(void)
+	{
+		cpuhp_writer = NULL;
+		mutex_unlock(&cpuhp_slow_lock);
+	}
+
+I already sent this code in 2010, it needs some trivial updates.
+
+But. We already have percpu_rw_semaphore, can't we reuse it? In fact
+I thought about this from the very beginning. Just we need
+percpu_down_write_recursive_readers() which does
+
+	bool xxx(brw)
+	{
+		if (down_trylock(&brw->rw_sem))
+			return false;
+		if (!atomic_read(&brw->slow_read_ctr))
+			return true;
+		up_write(&brw->rw_sem);
+			return false;
+	}
+
+	ait_event(brw->write_waitq, xxx(brw));
+
+instead of down_write() + wait_event(!atomic_read(&brw->slow_read_ctr)).
+
+The only problem is the lockdep annotations in percpu_down_read(), but
+this looks simple, just we need down_read_no_lockdep() (like __up_read).
+
+Note also that percpu_down_write/percpu_up_write can be improved wrt
+synchronize_sched(). We can turn the 2nd one into call_rcu(), and the
+1nd one can be avoided if another percpu_down_write() comes "soon after"
+percpu_down_up().
+
+
+As for the patch itself, I am not sure.
+
+> +static void cpuph_wait_refcount(void)
+> +{
+> +	for (;;) {
+> +		unsigned int refcnt = 0;
+> +		int cpu;
+> +
+> +		set_current_state(TASK_UNINTERRUPTIBLE);
+> +
+> +		for_each_possible_cpu(cpu)
+> +			refcnt += per_cpu(__cpuhp_refcount, cpu);
+> +
+> +		if (!refcnt)
+> +			break;
+> +
+> +		schedule();
+> +	}
+> +	__set_current_state(TASK_RUNNING);
+> +}
+
+It seems, this can succeed while it should not, see below.
+
+>  void cpu_hotplug_begin(void)
+>  {
+> -	cpu_hotplug.active_writer = current;
+> +	lockdep_assert_held(&cpu_add_remove_lock);
+>
+> -	for (;;) {
+> -		mutex_lock(&cpu_hotplug.lock);
+> -		if (likely(!cpu_hotplug.refcount))
+> -			break;
+> -		__set_current_state(TASK_UNINTERRUPTIBLE);
+> -		mutex_unlock(&cpu_hotplug.lock);
+> -		schedule();
+> -	}
+> +	__cpuhp_writer = current;
+> +
+> +	/* After this everybody will observe _writer and take the slow path. */
+> +	synchronize_sched();
+
+Yes, the reader should see _writer, but:
+
+> +	/* Wait for no readers -- reader preference */
+> +	cpuhp_wait_refcount();
+
+but how we can ensure the writer sees the results of the reader's updates?
+
+Suppose that we have 2 CPU's, __cpuhp_refcount[0] = 0, __cpuhp_refcount[1] = 1.
+IOW, we have a single R reader which takes this lock on CPU_1 and sleeps.
+
+Now,
+
+	- The writer calls cpuph_wait_refcount()
+
+	- cpuph_wait_refcount() does refcnt += __cpuhp_refcount[0].
+	  refcnt == 0.
+
+	- another reader comes on CPU_0, increments __cpuhp_refcount[0].
+
+	- this reader migrates to CPU_1 and does put_online_cpus(),
+	  this decrements __cpuhp_refcount[1] which becomes zero.
+
+	- cpuph_wait_refcount() continues and reads __cpuhp_refcount[1]
+	  which is zero. refcnt == 0, return.
+
+	- The writer does cpuhp_set_state(1).
+
+	- The reader R (original reader) wakes up, calls get_online_cpus()
+	  recursively, and sleeps in wait_event(!__cpuhp_writer).
+
+Btw, I think that  __sb_start_write/etc is equally wrong. Perhaps it is
+another potential user of percpu_rw_sem.
+
+Oleg.
 
