@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab3IUM02 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 08:26:28 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:33470 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751759Ab3IUM01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 08:26:27 -0400
-Date: Sat, 21 Sep 2013 14:22:26 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/26] ARM: dove: remove custom .init_time hook
-Message-ID: <20130921122226.GB31180@lunn.ch>
-References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1379526839-14798-12-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1752283Ab3IUM1W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 08:27:22 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49850 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759Ab3IUM1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Sep 2013 08:27:20 -0400
+Date: Sat, 21 Sep 2013 14:27:18 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Luciano Coelho <coelho@ti.com>
+Cc: Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, nsekhar@ti.com,
+        mturquette@linaro.org, mark.rutland@arm.com,
+        Felipe Balbi <balbi@ti.com>, grant.likely@linaro.org,
+        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 0/9] wilink: add device tree support
+Message-ID: <20130921122718.GA4431@amd.pavel.ucw.cz>
+References: <1372776948-24840-1-git-send-email-coelho@ti.com>
+ <CANOLnOPBHesTiV61zpQ_QS9c7E91K50EnbMnGhvgaViuA_3=Bw@mail.gmail.com>
+ <1372859132.21065.111.camel@cumari.coelho.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379526839-14798-12-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1372859132.21065.111.camel@cumari.coelho.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 07:53:44PM +0200, Sebastian Hesselbarth wrote:
-> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-> remove custom .init_time hooks. While at it, also remove some obsolete
-> includes.
+Hi!
+
+> > > This is a follow-up on a previous patch set that had a smaller
+> > > audience.  This time, I added the lists and people who were involved
+> > > in the review of the bindings documentation, since most of my changes
+> > > in v2 are coming from discussions there.
+> > >
+> > > This patch series adds device tree support to the wlcore_sdio driver,
+> > > which is used by WiLink6, WiLink7 and WiLink8.
+> > 
+> > Could you perhaps consider doing device tree conversion for wl1251
+> > too? With the knowledge you have from working on this series, it would
+> > be much easier for you to do it than for someone else, and I don't
+> > have much hope someone will do it at all. It's WiLink series chip
+> > after all. Without this pandora and N900 are going to lose wifi
+> > support after the switch to dt-only kernel.
 > 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/mach-dove/board-dt.c |   11 -----------
->  1 file changed, 11 deletions(-)
-
-Hi Sebastian
-
-Boot tested on cubox.
-
-Tested-by: Andrew Lunn <andrew@lunn.ch>
-
-	   Andrew
-
+> Unfortunately I don't have much time to work on wl1251.  I think it
+> wouldn't be too difficult to do though, so patches are welcome. ;)
 > 
-> diff --git a/arch/arm/mach-dove/board-dt.c b/arch/arm/mach-dove/board-dt.c
-> index 49f72a8..ddb8663 100644
-> --- a/arch/arm/mach-dove/board-dt.c
-> +++ b/arch/arm/mach-dove/board-dt.c
-> @@ -10,17 +10,13 @@
->  
->  #include <linux/init.h>
->  #include <linux/clk-provider.h>
-> -#include <linux/clocksource.h>
-> -#include <linux/irqchip.h>
->  #include <linux/of.h>
->  #include <linux/of_platform.h>
-> -#include <linux/platform_data/usb-ehci-orion.h>
->  #include <asm/hardware/cache-tauros2.h>
->  #include <asm/mach/arch.h>
->  #include <mach/dove.h>
->  #include <mach/pm.h>
->  #include <plat/common.h>
-> -#include <plat/irq.h>
->  #include "common.h"
->  
->  /*
-> @@ -45,12 +41,6 @@ static void __init dove_legacy_clk_init(void)
->  			 of_clk_get_from_provider(&clkspec));
->  }
->  
-> -static void __init dove_dt_time_init(void)
-> -{
-> -	of_clk_init(NULL);
-> -	clocksource_of_init();
-> -}
-> -
->  static void __init dove_dt_init_early(void)
->  {
->  	mvebu_mbus_init("marvell,dove-mbus",
-> @@ -84,7 +74,6 @@ static const char * const dove_dt_board_compat[] = {
->  DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
->  	.map_io		= dove_map_io,
->  	.init_early	= dove_dt_init_early,
-> -	.init_time	= dove_dt_time_init,
->  	.init_machine	= dove_dt_init,
->  	.restart	= dove_restart,
->  	.dt_compat	= dove_dt_board_compat,
-> -- 
-> 1.7.10.4
+> Maybe you could try to make this change and I could support you if
+> needed?
 > 
+> 
+> > I can offer you my help testing things on pandora and I'm sure someone
+> > here could try it on N900.
+> 
+> I could try it on the N900, if it is still bootable easily with the
+> mainline. ;)
+
+3.11 should be bootable on mainline, including device tree and
+video. (But excluding some other stuff, like MMC.)
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
