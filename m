@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab3IUMjh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 08:39:37 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:32784 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab3IUMjf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 08:39:35 -0400
+	id S1752033Ab3IUMro (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 08:47:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24211 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751721Ab3IUMrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Sep 2013 08:47:43 -0400
+Date: Sat, 21 Sep 2013 14:47:14 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] perf tools: Use per-file CFLAGS in Makefile
+Message-ID: <20130921124714.GA8304@krava.brq.redhat.com>
+References: <1379297476-20793-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZrjM0cQm8AXNDnaSh2Tp5BVcevDUObFg87cUTEmJxc1w@mail.gmail.com>
-References: <1378294169-22661-1-git-send-email-acourbot@nvidia.com>
- <1378294169-22661-2-git-send-email-acourbot@nvidia.com> <CACRpkdZrjM0cQm8AXNDnaSh2Tp5BVcevDUObFg87cUTEmJxc1w@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Sat, 21 Sep 2013 21:39:14 +0900
-Message-ID: <CAAVeFu+mxhfK1rqO3jcx2FSJ4bCGjHDQ7ouSP1qK99RrMaHXjg@mail.gmail.com>
-Subject: Re: [RFC 1/5] gpiolib: factorize gpiod_get/set functions
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379297476-20793-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 5:36 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Sep 4, 2013 at 1:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->
->> gpiod_get/set functions share common code between their regular and
->> cansleep variants. The exporting of the gpiod interface will make
->> the situation worse. This patch factorizes the common code to avoid code
->> redundancy.
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->
-> I don't see why this patch should be RFC?
->
-> I just rebased and applied it, it's a clean and nice refactoring.
+On Mon, Sep 16, 2013 at 11:11:16AM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Some files need additional compiler flags to be built successfully.
+> Cleanup Makefile by using optional per-file CFLAGS which look like
+> CFLAGS_dir_filename.o
 
-Oh yeah, I just sent it with the others, but please feel free to apply
-it as-is. It should be fine.
+I like it, but I'm getting following error:
 
-Alex.
+  $ make 
+      ...
+      AR libperf.a
+  ar: util/rbtree.o: No such file or directory
+  make: *** [libperf.a] Error 1
+  $
+
+probably because rbtree object is based in kernel lib
+
+
+Also this patch collides with your previous:
+  perf tools: Separate out GTK codes to libperf-gtk.so
+
+which I needed to revert first to get this one applied.
+
+jirka
