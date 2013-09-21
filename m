@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab3IUNgK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 09:36:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32171 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751807Ab3IUNgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 09:36:08 -0400
-Date: Sat, 21 Sep 2013 15:35:57 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] perf: potential underflow in perf_sample_ustack_size()
-Message-ID: <20130921133556.GB8304@krava.brq.redhat.com>
-References: <20130920113736.GB8655@elgon.mountain>
+	id S1752255Ab3IUNii (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 09:38:38 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39722 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab3IUNih (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Sep 2013 09:38:37 -0400
+Date: Sat, 21 Sep 2013 14:31:42 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Fan Rong <cinifr@gmail.com>
+Cc: coosty@163.com, maxime.ripard@free-electrons.com,
+        daniel.lezcano@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mark.rutland@arm.com, pawel.moll@arm.co, rob.herring@calxeda.com,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 1/3] Add smp support for Allwinner A20(sunxi 7i).
+Message-ID: <20130921133141.GL12758@n2100.arm.linux.org.uk>
+References: <1379768716-11672-1-git-send-email-cinifr@gmail.com> <1379768716-11672-2-git-send-email-cinifr@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130920113736.GB8655@elgon.mountain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1379768716-11672-2-git-send-email-cinifr@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 02:37:36PM +0300, Dan Carpenter wrote:
-> The code here is trying to ensure that we don't have a
-> "header_size + stack_size" which is more than USHRT_MAX.  I changed
-> the overflow check a little to make it more clear.
-> 
-> My concern here is that if "header_size + sizeof(u64)" is very large
-> then we could end up with underflow doing the subtraction and end up
-> with a "stack_size" larger than intended.
-> 
-> I don't know perf well enough to say if this is possible.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index dd236b6..eec9e683 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -4217,11 +4217,13 @@ perf_sample_ustack_size(u16 stack_size, u16 header_size,
->  	header_size += 2 * sizeof(u64);
->  
->  	/* Do we fit in with the current stack dump size? */
-> -	if ((u16) (header_size + stack_size) < header_size) {
-> +	if (header_size > USHRT_MAX - stack_size) {
+On Sat, Sep 21, 2013 at 09:05:14PM +0800, Fan Rong wrote:
+> @@ -0,0 +1,12 @@
+> +#include <linux/linkage.h>
+> +#include <linux/init.h>
+> +
+> +        .section ".text.head", "ax"
 
-hum, the original check looks clear enough to me
+Please use a tab instead of 8 spaces.
 
->  		/*
->  		 * If we overflow the maximum size for the sample,
->  		 * we customize the stack dump size to fit in.
->  		 */
-> +		if (header_size + sizeof(u64) > USHRT_MAX)
-> +			return 0;
+> +	__CPUINIT
 
-ok, I wonder if we could practically reach header size
-this big, but it's safer to check
+__CPUINIT has been removed.
 
-thanks,
-jirka
+> +
+> +ENTRY(sun7i_secondary_startup)
+> +	msr	cpsr_fsxc, #0xd3
+> +	mov r0, #0
+> +	ldr r1, =0xffffffff
 
->  		stack_size = USHRT_MAX - header_size - sizeof(u64);
->  		stack_size = round_up(stack_size, sizeof(u64));
->  	}
+You don't  need to set r0 nor r1 here.
+
+> +	b       secondary_startup
+> +ENDPROC(sun7i_secondary_startup)
+> diff --git a/arch/arm/mach-sunxi/platform.h b/arch/arm/mach-sunxi/platform.h
+> new file mode 100644
+> index 0000000..7e127c9
+> --- /dev/null
+> +++ b/arch/arm/mach-sunxi/platform.h
+> @@ -0,0 +1,347 @@
+> +/*
+> + * arch/arm/plat-sunxi/include/plat/platform.h
+> + *
+> + * (C) Copyright 2007-2012
+> + * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
+> + * Benn Huang <benn@allwinnertech.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation; either version 2 of
+> + * the License, or (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+> + * MA 02111-1307 USA
+
+Just the first paragraph is sufficient.  Also are you sure you want the
+"or any later version"?  The kernel is predominantly a GPLv2 only project.
+
+What are the origins of this file - do you have the ability to change this?
+
+> +	/* step3: clear power-off gating */
+> +	pwr_reg = readl(sunxi7i_cc_base + AW_CPU1_PWROFF_REG);
+> +	pwr_reg &= ~(1);
+
+I think I've said this before.  The parens around '1' are not required.
+What do you think you gain by having the additional parens?
+
+> +	writel(pwr_reg, sunxi7i_cc_base + AW_CPU1_PWROFF_REG);
+> +	mdelay(1);
+> +
+> +	/* step4: de-assert core reset */
+> +	writel(3, sunxi7i_cc_base + CPUX_RESET_CTL(cpu));
+> +
+> +	/* step5: assert DBGPWRDUP signal */
+> +	pwr_reg = readl(sunxi7i_cc_base + AW_CPUCFG_DBGCTL1);
+> +	pwr_reg |= (1<<cpu);
+
+The parens around 1<<cpu are not required.  What do you think you gain
+by having them?  Coding style also suggests placing a space before and
+after the "<<" operation as well.  Again, I've said this in my previous
+review.
