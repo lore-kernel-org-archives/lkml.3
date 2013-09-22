@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab3IVQez (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 12:34:55 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:56469 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189Ab3IVQey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 12:34:54 -0400
-From: Avinash kumar <avi.kp.137@gmail.com>
-To: sbhatewara@vmware.com
-Cc: pv-drivers@vmware.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Avinash kumar <avi.kp.137@gmail.com>
-Subject: [PATCH 3/3] drivers: net: vmxnet3: vmxnet3_int.h: removed checkpatch warnings
-Date: Sun, 22 Sep 2013 22:04:37 +0530
-Message-Id: <1379867677-3607-1-git-send-email-avi.kp.137@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752457Ab3IVQiP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 12:38:15 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43314 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752188Ab3IVQiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 12:38:13 -0400
+Date: Sun, 22 Sep 2013 18:38:01 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dave Young <dyoung@redhat.com>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+Message-ID: <20130922163801.GD28718@pd.tnic>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <1379602494-26684-12-git-send-email-bp@alien8.de>
+ <20130921113929.GB1587@pd.tnic>
+ <20130922123515.GA7476@dhcp-16-126.nay.redhat.com>
+ <20130922133722.GC28718@pd.tnic>
+ <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-removed following checkpatch warnings:
-drivers/net/vmxnet3/vmxnet3_int.h:241: WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))
-drivers/net/vmxnet3/vmxnet3_int.h:284: WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))
-drivers/net/vmxnet3/vmxnet3_int.h:413: WARNING: extern prototypes should be avoided in .h files
+On Sun, Sep 22, 2013 at 08:27:34AM -0700, H. Peter Anvin wrote:a
+> The address that faults is interesting in that it is indeed just below
+> -4G. The question at hand is probably what information you are using
+> to build the EFI mappings in the secondary kernel and what could make
+> it not match the primary.
 
-Signed-off-by: Avinash Kumar <avi.kp.137@gmail.com>
----
- drivers/net/vmxnet3/vmxnet3_int.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Yep, so obviously we're not building the pagetable in the second kernel
+the same way as the first or we're missing some pieces.
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
-index a03f358..71ae32b 100644
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -238,7 +238,7 @@ struct vmxnet3_tx_queue {
- 	int                             num_stop;  /* # of times the queue is
- 						    * stopped */
- 	int				qid;
--} __attribute__((__aligned__(SMP_CACHE_BYTES)));
-+} __aligned(SMP_CACHE_BYTES);
- 
- enum vmxnet3_rx_buf_type {
- 	VMXNET3_RX_BUF_NONE = 0,
-@@ -281,7 +281,7 @@ struct vmxnet3_rx_queue {
- 	dma_addr_t                      buf_info_pa;
- 	struct Vmxnet3_RxQueueCtrl            *shared;
- 	struct vmxnet3_rq_driver_stats  stats;
--} __attribute__((__aligned__(SMP_CACHE_BYTES)));
-+} __aligned(SMP_CACHE_BYTES);
- 
- #define VMXNET3_DEVICE_MAX_TX_QUEUES 8
- #define VMXNET3_DEVICE_MAX_RX_QUEUES 8   /* Keep this value as a power of 2 */
-@@ -410,7 +410,7 @@ int
- vmxnet3_create_queues(struct vmxnet3_adapter *adapter,
- 		      u32 tx_ring_size, u32 rx_ring_size, u32 rx_ring2_size);
- 
--extern void vmxnet3_set_ethtool_ops(struct net_device *netdev);
-+void vmxnet3_set_ethtool_ops(struct net_device *netdev);
- 
- extern struct rtnl_link_stats64 *
- vmxnet3_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats);
+Btw, for debugging situations like this one, one could use
+arch/x86/mm/dump_pagetables.c successfully by sticking in the right CR3
+value into *start.
+
+:-)
+
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
