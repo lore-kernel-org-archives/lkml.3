@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab3IVXMV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 19:12:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38116 "EHLO
+	id S1753064Ab3IVXNI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 19:13:08 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38130 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab3IVXMU (ORCPT
+	with ESMTP id S1752716Ab3IVXNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 19:12:20 -0400
-Date: Sun, 22 Sep 2013 17:12:14 -0600
+	Sun, 22 Sep 2013 19:13:05 -0400
+Date: Sun, 22 Sep 2013 17:12:59 -0600
 From: Jens Axboe <axboe@kernel.dk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: [GIT PULL] Block IO fixes for 3.12
-Message-ID: <20130922231214.GF31014@kernel.dk>
-References: <20130922215520.GE31014@kernel.dk>
- <CA+55aFygOYa1aCv02S04PvH+gfWi2GSKQ1PPcYTGVpz8UJs-eA@mail.gmail.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jeff Moyer <jmoyer@redhat.com>,
+        OS Engineering <osengineering@stec-inc.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Akhil Bhansali <abhansali@stec-inc.com>,
+        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
+        Amit Phansalkar <aphansalkar@stec-inc.com>
+Subject: Re: [PATCH] block: Device driver for sTec's PCIe Kronos Card.
+Message-ID: <20130922231259.GG31014@kernel.dk>
+References: <26D762E250385C4D8E9D6EC3C8E47DC11E6FCF20@sambx4.stec-inc.ad>
+ <x49vc2nnwp5.fsf@segfault.boston.devel.redhat.com>
+ <26D762E250385C4D8E9D6EC3C8E47DC11E6FE729@sambx4.stec-inc.ad>
+ <x4938pjbhqk.fsf@segfault.boston.devel.redhat.com>
+ <5228913A.50807@kernel.dk>
+ <CAOesGMhF42=qQLyMyF4-tsTjCxwX0bb10rTQv9sLooyzrEOpHA@mail.gmail.com>
+ <5238B9A7.6040002@kernel.dk>
+ <20130920153128.63244ec2658b7ad3aee0e2e4@linux-foundation.org>
+ <20130921200132.GF2312@kernel.dk>
+ <CAOesGMg2t551P7a1wa=FkTjgDaeXedCej87oi+yF2c3Q-hoP5g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFygOYa1aCv02S04PvH+gfWi2GSKQ1PPcYTGVpz8UJs-eA@mail.gmail.com>
+In-Reply-To: <CAOesGMg2t551P7a1wa=FkTjgDaeXedCej87oi+yF2c3Q-hoP5g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22 2013, Linus Torvalds wrote:
-> On Sun, Sep 22, 2013 at 2:55 PM, Jens Axboe <axboe@kernel.dk> wrote:
+On Sun, Sep 22 2013, Olof Johansson wrote:
+> On Sat, Sep 21, 2013 at 1:01 PM, Jens Axboe <axboe@kernel.dk> wrote:
+> > On Fri, Sep 20 2013, Andrew Morton wrote:
+> >> On Tue, 17 Sep 2013 14:20:55 -0600 Jens Axboe <axboe@kernel.dk> wrote:
+> >>
+> >> > > So, it looks like this driver needs a bunch of work before it's ready
+> >> > > to go in. Or, maybe it's better to submit it with a TODO list for the
+> >> > > staging tree instead?
+> >> >
+> >> > Not disagreeing with you, it definitely needs a bit of cleaning. And so
+> >> > far stec has not been very responsive in fixing those issues.
+> >>
+> >> Geeze.  Here's what I came up with, mainly to make i386 compile:
 > >
-> > Mike Christie (1):
-> >       If the queue is dying then we only call the rq->end_io callout.     This leaves bios setup on the request, because the caller assumes when     the blk_execute_rq_nowait/blk_execute_rq call has completed that     the rq->bios have been cleaned up.
+> > Thanks Andrew. It's not the fixes themselves that are tricky, I would
+> > just have liked a little more proof that the submission wasn't just a
+> > dump'n run.
 > 
-> Christ people.
+> Well, that's what much of the staging process is about, since it needs
+> to come with a todo list (and that list needs to be taken care of
+> before the driver graduates). Honestly, this looks like a prime
+> candidate for that. But it's your tree and your call.
 > 
-> We have rules for commit messages. Those rules have things like
-> "one-line commit summary at the top", because without that things like
-> summary logs (ie "git shortlog") and "gitk" don't do a good job.
-> 
-> How long have we been doing this? I'm used to seeing some odd commit
-> messages outside the kernel repo, but am used to kernel people getting
-> the trivial details right.
-> 
-> That's not the only one. Look at commit 577cee1e8db6 for some other
-> cruddy commit messages. Just because somebody said "Hello" in email
-> doesn't mean that it should remain that way in a commit message.
-> 
-> So out of seven commit messages, two were badly formatted. That's not
-> a sign of good quality control.
+> Thanks for applying the patch from Andrew, that resolves most of it
+> for me right now.
 
-Not necessarily bad quality control, but yeah, the commit messages
-could've been prettier. Those two should have been git ammended, most of
-them are directly applied byt git am fwiw.
+I'm sort-of on the fence. It's minor stuff, but it does need cleaning
+up. So not necessarily something that will prevent it from going into
+3.12, it's more the continued support and development I'm worried about.
 
 -- 
 Jens Axboe
