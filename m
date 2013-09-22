@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab3IVAzM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 20:55:12 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:47636 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab3IVAzK (ORCPT
+	id S1752624Ab3IVBMj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 21:12:39 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:56074 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab3IVBMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 20:55:10 -0400
-Message-ID: <523E3FC6.7020009@huawei.com>
-Date: Sun, 22 Sep 2013 08:54:30 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Sat, 21 Sep 2013 21:12:36 -0400
 MIME-Version: 1.0
-To: Petr Holasek <pholasek@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/ksm: return NULL when doesn't get mergeable page
-References: <5236FC88.6050409@huawei.com> <20130919083329.GA1620@thinkpad-work.brq.redhat.com>
-In-Reply-To: <20130919083329.GA1620@thinkpad-work.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1379785342-25107-3-git-send-email-m.krawczuk@partner.samsung.com>
+References: <1379785342-25107-1-git-send-email-m.krawczuk@partner.samsung.com>
+	<1379785342-25107-3-git-send-email-m.krawczuk@partner.samsung.com>
+Date: Sun, 22 Sep 2013 06:42:35 +0530
+Message-ID: <CAKohpokEF_+d_G0LX76JK_dNBtYtAKPznWbDcwLen4pgQTOt6w@mail.gmail.com>
+Subject: Re: [PATCH v4 2/3] Cpufreq: s5pv210 cpufreq fixes for CCF
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Rob Landley <rob@landley.net>,
+        ijc+devicetree@hellion.org.uk, Stephen Warren <swarren@wwwdotorg.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/9/19 16:33, Petr Holasek wrote:
+On 21 September 2013 23:12, Mateusz Krawczuk
+<m.krawczuk@partner.samsung.com> wrote:
+> Use common clock framework api to get clock.
+>
+> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/cpufreq/s5pv210-cpufreq.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
-> On Mon, 16 Sep 2013, Jianguo Wu wrote:
->> In get_mergeable_page() local variable page is not initialized,
->> it may hold a garbage value, when find_mergeable_vma() return NULL,
->> get_mergeable_page() may return a garbage value to the caller.
->>
->> So initialize page as NULL.
->>
->> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
->> ---
->>  mm/ksm.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/mm/ksm.c b/mm/ksm.c
->> index b6afe0c..87efbae 100644
->> --- a/mm/ksm.c
->> +++ b/mm/ksm.c
->> @@ -460,7 +460,7 @@ static struct page *get_mergeable_page(struct rmap_item *rmap_item)
->>  	struct mm_struct *mm = rmap_item->mm;
->>  	unsigned long addr = rmap_item->address;
->>  	struct vm_area_struct *vma;
->> -	struct page *page;
->> +	struct page *page = NULL;
->>  
->>  	down_read(&mm->mmap_sem);
->>  	vma = find_mergeable_vma(mm, addr);
->> -- 
->> 1.7.1
->>
-> 
-> When find_mergeable_vma returned NULL, NULL is assigned to page in "out"
-> statement.
-> 
-
-Oh, yes, thanks, Petr.
-
-> 
-
-
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
