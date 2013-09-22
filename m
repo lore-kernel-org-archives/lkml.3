@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635Ab3IVBVG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 21:21:06 -0400
-Received: from 60-248-79-20.HINET-IP.hinet.net ([60.248.79.20]:47074 "EHLO
-	mail.iprp.spsh.gov.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab3IVBVF (ORCPT
+	id S1752639Ab3IVBVc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 21:21:32 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:45614 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab3IVBVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 21:21:05 -0400
-X-Greylist: delayed 1939 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Sep 2013 21:21:04 EDT
-From: "Jane Ruba" <jane_ruba@hotmail.com>
-Reply-To: jane_ruba@hotmail.com
-Subject: nice to be your friend
-Date: Sun, 22 Sep 2013 02:43:54 +0300
-Message-Id: <20130921234348.M92803@hotmail.com>
-X-Mailer: OpenWebMail 2.52 20060502
-X-OriginatingIP: 41.82.164.38 (b1219)
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=iso-8859-1
-To: undisclosed-recipients:;
-X-TinySoft-3.0-MailScanner-Information: Please contact the ISP for more information
-X-TinySoft-3.0-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
-X-TinySoft-3.0-MailScanner-SpamCheck: 
-X-MailScanner-From: jane_ruba@hotmail.com
+	Sat, 21 Sep 2013 21:21:23 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, daniel.lezcano@linaro.org
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 00/21] CPUIdle: Minor cleanups for 3.13
+Date: Sun, 22 Sep 2013 06:50:52 +0530
+Message-Id: <cover.1379779777.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Rafael/Daniel,
 
+This is a small cleanup patchset for CPUIdle which can go in 3.13 if it looks
+okay to you guys..
 
+Mostly trivial patches but few are doing good/significant changes. Tested on my
+thinkpad with suspend/resume and didn't found any broken stuff with it.
 
-Hello dear,
-I am Miss Jane Ruba. I am presently single and searching for a trusted
-and God fearing person. I hope you are fine in perfect condition of
-health. I saw your email today when I was searching for a good
-friend and took interest on it, if you don't mind I will like you to
-contact me true my email address;(jane_ruba@hotmail.com )
-So that we can know about ourselves and to
-share ideas and pictures. Please do not neglect a humble and lonely
-heart that seeks for your attention.
-I wish you
+I a not very sure about this patch (As I don't know about all aspects of CPUIdle
+framework):
+  cpuidle: don't call poll_idle_init() for every cpu
+
+--
+viresh
+
+Viresh Kumar (21):
+  cpuidle: fix indentation of cpumask
+  cpuidle: Fix comments in cpuidle core
+  cpuidle: make __cpuidle_get_cpu_driver() inline
+  cpuidle: make __cpuidle_device_init() return void
+  cpuidle: make __cpuidle_driver_init() return void
+  cpuidle: rearrange code in __cpuidle_driver_init()
+  cpuidle: rearrange __cpuidle_register_device() to keep minimal exit
+    points
+  cpuidle: use cpuidle_disabled() instead of "off"
+  cpuidle: merge two if() statements for checking error cases
+  cpuidle: reduce code duplication inside cpuidle_idle_call()
+  cpuidle: replace multiline statements with single line in
+    cpuidle_idle_call()
+  cpuidle: call cpuidle_get_driver() from after taking
+    cpuidle_driver_lock
+  cpuidle: use drv instead of cpuidle_driver in show_current_driver()
+  cpuidle: coupled: don't compare cpu masks unnecessarily
+  cpuidle: free all state kobjects from cpuidle_free_state_kobj()
+  cpuidle: avoid unnecessary kzalloc/free of struct cpuidle_device_kobj
+  cpuidle: avoid unnecessary kzalloc/free of struct cpuidle_driver_kobj
+  cpuidle: don't call poll_idle_init() for every cpu
+  cpuidle: create list of registered drivers
+  cpuidle: don't calculate time-diff if entered_state == 0
+  cpuidle: change governor from within cpuidle_replace_governor()
+
+ drivers/cpuidle/coupled.c  |   9 +--
+ drivers/cpuidle/cpuidle.c  |  95 +++++++------------------
+ drivers/cpuidle/driver.c   | 171 ++++++++++++++++++++-------------------------
+ drivers/cpuidle/governor.c |  24 +++----
+ drivers/cpuidle/sysfs.c    |  74 +++++++-------------
+ include/linux/cpuidle.h    |  25 +++++--
+ 6 files changed, 161 insertions(+), 237 deletions(-)
+
+-- 
+1.7.12.rc2.18.g61b472e
 
