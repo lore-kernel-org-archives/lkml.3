@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab3IVIxD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 04:53:03 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:49490 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab3IVIxA (ORCPT
+	id S1752749Ab3IVJKb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 05:10:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52174 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab3IVJK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 04:53:00 -0400
-Message-ID: <523EAFFA.6060203@redhat.com>
-Date: Sun, 22 Sep 2013 10:53:14 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Sun, 22 Sep 2013 05:10:29 -0400
+Message-ID: <523EB423.7090900@intel.com>
+Date: Sun, 22 Sep 2013 17:10:59 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, kvm@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH 0/3] KVM: Make kvm_lock non-raw
-References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com> <20130922074238.GG25202@redhat.com>
-In-Reply-To: <20130922074238.GG25202@redhat.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+CC: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Subject: Re: [PATCH v2 0/3] Fix Win8 backlight issue
+References: <1379409796-29350-1-git-send-email-aaron.lu@intel.com>   <1379424853.3348.1.camel@ThinkPad-X230.localdomain>   <5238FBF5.8080405@intel.com>  <1379485819.2294.1.camel@ThinkPad-X230.localdomain>  <52399D0B.3010909@intel.com> <1379507774.2294.21.camel@ThinkPad-X230.localdomain>
+In-Reply-To: <1379507774.2294.21.camel@ThinkPad-X230.localdomain>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 22/09/2013 09:42, Gleb Natapov ha scritto:
-> On Mon, Sep 16, 2013 at 04:06:10PM +0200, Paolo Bonzini wrote:
->> Paul Gortmaker reported a BUG on preempt-rt kernels, due to taking the
->> mmu_lock within the raw kvm_lock in mmu_shrink_scan.  He provided a
->> patch that shrunk the kvm_lock critical section so that the mmu_lock
->> critical section does not nest with it, but in the end there is no reason
->> for the vm_list to be protected by a raw spinlock.  Only manipulations
->> of kvm_usage_count and the consequent hardware_enable/disable operations
->> are not preemptable.
+On 09/18/2013 08:36 PM, Igor Gnatenko wrote:
+> On Wed, 2013-09-18 at 20:31 +0800, Aaron Lu wrote:
+>> On 09/18/2013 02:30 PM, Igor Gnatenko wrote:
+>>> On Wed, 2013-09-18 at 09:03 +0800, Aaron Lu wrote:
+>>>> On 09/17/2013 09:34 PM, Igor Gnatenko wrote:
+>>>>>
+>>>>> Aaron, how about fix indicator on ThinkPads ?
+>>>>
+>>>> Can you please describe the problem in detail, is it that when you
+>>>> adjust brightness level through hotkey, there is no GUI indication?
+>>>> Thanks.
+>>>>
+>>>> -Aaron
+>>>
+>>> Yes. On my ThinkPad X230 I pressing backlight hotkeys. Actually
+>>> brightnes changing, but have no indicator in GUI.
 >>
->> This small series thus splits the kvm_lock in the "raw" part and the
->> "non-raw" part.
+>> Oh, that's still the problem of _BCL not getting executed once for
+>> Lenovo thinkpad laptops. I borrowed a Thinkpad X1 this afternoon and can
+>> reproduce this, I'll take a look at this issue. The thinkpad-acpi module
+>> already has a call to _BCL but somehow that doesn't happen.
 >>
->> Paul, could you please provide your Tested-by?
->>
-> Reviewed-by: Gleb Natapov <gleb@redhat.com>
-> 
-> But why should it go to stable?
+>> Since it's national holidays here, I'll check this issue when I got back
+>> to work on this Saturday. Thanks for the quick test :-)
+> Thanks. No problem ;-)
 
-It is a regression from before the kvm_lock was made raw.  Secondarily,
-it takes a much longer time before a patch hits -rt trees (can even be
-as much as a year) and this patch does nothing on non-rt trees.  So
-without putting it into stable it would get no actual coverage.
+Here is a quick fix for thinkpad-acpi.c:
+https://github.com/aaronlu/linux acpi_video_win8
+commit thinkpad-acpi: fix handle locate for video and query of _BCL.
 
-Paolo
+Note that it is a separate issue specifically for thinkpad so I'll
+submit that patch in another thread.
+
+Thanks,
+Aaron
