@@ -1,97 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab3IVIRN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 04:17:13 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53126 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615Ab3IVIRK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 04:17:10 -0400
-Message-ID: <1379837823.5499.34.camel@marge.simpson.net>
-Subject: Re: [PATCH] ipc/sem.c: fix update sem_otime when calling sem_op in
- semaphore initialization
-From: Mike Galbraith <bitbucket@online.de>
-To: Jia He <jiakernel@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Sun, 22 Sep 2013 10:17:03 +0200
-In-Reply-To: <1379815884-11035-1-git-send-email-jiakernel@gmail.com>
-References: <1379815884-11035-1-git-send-email-jiakernel@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:7giO299xtJUZd0aT68WMC9tDKfbvWbcjNCGfstQyJml
- /by2cZ/Emc1d1aWKMwqpN6JzVka31pmwXTmXHU8BQxYQom8Cql
- zQnQlvHvVn5TjAxKJW75IbFnljAZsDdS3BD5K9fGYvK4EmygtS
- MO74/wfuc/eUH5l9OPLx6JnHS096rzovqCQFmrUTgfq0P8JcI5
- Y3/oys5uUDDr3zGMkKGQJI8SQlH9R79Jh1biW02VcINgA3Xfko
- jmKR0F/oMolLguh4Qxk7PuXAzopAdYTP1B17MFa3CN7CdM08ij
- TQDGjAFwEtu6eqt+TNmMWV0xjuBQ+ePmsjaQsl3BIyimYWSclw
- uqgIIy2Mo5moteN4hTJvyZNXEXBXEbzoQHK4z77B6EqiJCHfOm
- 1i0ysaT+v/MWw==
+	id S1752867Ab3IVITT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 04:19:19 -0400
+Received: from mga03.intel.com ([143.182.124.21]:45054 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752737Ab3IVITS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 04:19:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,955,1371106800"; 
+   d="scan'208";a="363881354"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, eranian@google.com,
+        ak@linux.intel.com, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH] perf/x86/intel: add model number for Avoton Silvermont
+Date: Sun, 22 Sep 2013 16:19:13 +0800
+Message-Id: <1379837953-17755-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-09-22 at 10:11 +0800, Jia He wrote: 
-> In commit 0a2b9d4c,the update of semaphore's sem_otime(last semop time)
-> was removed because he wanted to move setting sem->sem_otime to one
-> place. But after that, the initial semop() will not set the otime
-> because its sem_op value is 0(in semtimedop,will not change
-> otime if alter == 1).
-> 
-> the error case:
-> process_a(server)       process_b(client)
-> semget()
-> semctl(SETVAL)
-> semop()
->                         semget()
->                         setctl(IP_STAT)
->                         for(;;) {               <--not successful here
->                           check until sem_otime > 0
->                         }
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-Why not..
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-ipc,sem: Create semaphores with plausible sem_otime.
-
-Signed-off-by: Mike Galbraith <bitbucket@online.de>
-
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 4108889..f2564d7 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -471,19 +471,20 @@ static int newary(struct ipc_namespace *ns, struct
-ipc_params *params)
-ns->used_sems += nsems;
-
-sma->sem_base = (struct sem *) &sma[1];
-+ sma->complex_count = 0;
-+ INIT_LIST_HEAD(&sma->pending_alter);
-+ INIT_LIST_HEAD(&sma->pending_const);
-+ INIT_LIST_HEAD(&sma->list_id);
-+ sma->sem_nsems = nsems;
-+ sma->sem_ctime = get_seconds();
-
-for (i = 0; i < nsems; i++) {
-INIT_LIST_HEAD(&sma->sem_base[i].pending_alter);
-INIT_LIST_HEAD(&sma->sem_base[i].pending_const);
-spin_lock_init(&sma->sem_base[i].lock);
-+ sma->sem_base[i].sem_otime = sma->sem_ctime;
-}
-
-- sma->complex_count = 0;
-- INIT_LIST_HEAD(&sma->pending_alter);
-- INIT_LIST_HEAD(&sma->pending_const);
-- INIT_LIST_HEAD(&sma->list_id);
-- sma->sem_nsems = nsems;
-- sma->sem_ctime = get_seconds();
-sem_unlock(sma, -1);
-rcu_read_unlock();
-
-
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 9db76c3..f31a165 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2325,6 +2325,7 @@ __init int intel_pmu_init(void)
+ 		break;
+ 
+ 	case 55: /* Atom 22nm "Silvermont" */
++	case 77: /* Avoton "Silvermont" */
+ 		memcpy(hw_cache_event_ids, slm_hw_cache_event_ids,
+ 			sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, slm_hw_cache_extra_regs,
+-- 
+1.8.1.4
 
