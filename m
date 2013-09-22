@@ -1,79 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab3IVP2O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 11:28:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33766 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752007Ab3IVP2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 11:28:13 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130922133722.GC28718@pd.tnic>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de> <1379602494-26684-12-git-send-email-bp@alien8.de> <20130921113929.GB1587@pd.tnic> <20130922123515.GA7476@dhcp-16-126.nay.redhat.com> <20130922133722.GC28718@pd.tnic>
+	id S1752220Ab3IVPmw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 11:42:52 -0400
+Received: from nm44-vm9.bullet.mail.bf1.yahoo.com ([216.109.115.45]:41737 "EHLO
+	nm44-vm9.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751665Ab3IVPmv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 11:42:51 -0400
+X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Sep 2013 11:42:50 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 75470.23826.bm@omp1038.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com.au;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=azwQ3dJpL5pOz37cjgbfXmaYYXRDe5VAyjZzK45ZEpQZsOQ/qeh/L4BCYJXzf5o3JU0oYqvpsTj7XFPq5+gBxpUFXfvIdfxkMLilYiPleuIJAfzkSMG5Sgg1wgPtwgNDdyenqesTSqECRF1UOj1vMolfnN9AvJsBGilft1f0GWI=;
+X-YMail-OSG: mnQ6k9kVM1n5txq5uYm9XRukAByGJXe.6EYjvVETPgWZ2GJ
+ k_vHbIpMhDzXmyFsbueTs
+X-Rocket-MIMEInfo: 002.001,R3JlZXRpbmdzIGZyb20gQlVSS0lOQSBGQVNPOg0KTGV0IG1lIHN0YXJ0IGJ5IGludHJvZHVjZSBteXNlbGYsSSBhbSBNcnMgRG9yaXMgT21hciwgQklMTCBBTkQgRVhDSEFOR0UgTUFOQUdFUiAoQmFuayBvZiBBZnJpY2EpIE91YWdhZG91Z291LCBCdXJraW5hIEZhc28uSSBhbSB3cml0dGluZyB5b3UgdGhpcyBsZXR0ZXIgYmFzZWQgb24gdGhlIGxhdGVzdCBkZXZlbG9wbWVudCBhdCBvdXIgYmFuayB3aGljaCBJIHdpbGwgbGlrZSB0byBicmluZyB0byB5b3VyIHBlcnNvbmFsIGVkaWZpY2F0aW9uLiAkMTIsMjUBMAEBAQE-
+X-RocketYMMF: dorisomar952
+X-Mailer: YahooMailClassic/334 YahooMailWebService/0.8.157.561
+Message-ID: <1379864200.94734.YahooMailBasic@web162706.mail.bf1.yahoo.com>
+Date: Sun, 22 Sep 2013 08:36:40 -0700 (PDT)
+From: Doris Omar <1735963831@qq.com>
+Reply-To: doris_mrx@qq.com
+Subject: Re:Very Urgent!!!
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 22 Sep 2013 08:27:34 -0700
-To: Borislav Petkov <bp@alien8.de>, Dave Young <dyoung@redhat.com>
-CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Message-ID: <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The address that faults is interesting in that it is indeed just below -4G.  The question at hand is probably what information you are using to build the EFI mappings in the secondary kernel and what could make it not match the primary.
+Greetings from BURKINA FASO:
+Let me start by introduce myself,I am Mrs Doris Omar, BILL AND EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am writting you this letter based on the latest development at our bank which I will like to bring to your personal edification. $12,250million transfer claims. this is a legitimate transaction and I agreed to offer you 40% of this money as my foreign partner after confirmation of the fund in your bank account,If you are interested, please get back to me for more clarification.
 
-Assuming it isn't as simple as the mappings never get built at all.
-
-
-Borislav Petkov <bp@alien8.de> wrote:
->On Sun, Sep 22, 2013 at 08:35:15PM +0800, Dave Young wrote:
->> I tested your new patch, it works both with efi stub and grub boot in
->> 1st kernel.
->
->Good, thanks!
->
->> But it paniced in kexec boot with my kexec related patcheset, the
->patchset
->
->That's the second kernel, right?
->
->> contains 3 patch:
->> 1. introduce cmdline kexecboot=<0|1|2>; 1 == kexec, 2 == kdump
->> 2. export physical addr fw_vendor, runtime, tables to
->/sys/firmware/efi/systab
->> 3. if kexecboot != 0, use fw_vendor, runtime, tables from bootparams;
->Also do not
->>    call SetVirtualAddressMao in case kexecboot.
->> 
->> The panic happens at the last line of efi_init:
->>         /* clean DUMMY object */
->>         efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
->>                          EFI_VARIABLE_NON_VOLATILE |
->>                          EFI_VARIABLE_BOOTSERVICE_ACCESS |
->>                          EFI_VARIABLE_RUNTIME_ACCESS,
->>                          0, NULL);
->> 
->> Below is the dmesg:
->> [    0.003359] pid_max: default: 32768 minimum: 301
->> [    0.004792] BUG: unable to handle kernel paging request at
->fffffffefde97e70
->> [    0.006666] IP: [<ffffffff8103a1db>]
->virt_efi_set_variable+0x40/0x54
->> [    0.006666] PGD 36981067 PUD 35828063 PMD 0
->
->Here it is - fffffffefde97e70 is not mapped in the pagetable, PMD is 0.
->
->Ok, can you upload your patches somewhere and tell me exactly how to
->reproduce this so that I can take a look too?
->
->Thanks.
-
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Yours faithful,
+Mrs Doris Omar.
