@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab3IVSRf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 14:17:35 -0400
-Received: from mail-ye0-f180.google.com ([209.85.213.180]:34713 "EHLO
-	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab3IVSRd (ORCPT
+	id S1752738Ab3IVSUi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 14:20:38 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:43307 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab3IVSUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 14:17:33 -0400
-From: Felipe Pena <felipensp@gmail.com>
-To: "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Helge Deller <deller@gmx.de>
-Cc: Felipe Pena <felipensp@gmail.com>
-Subject: [PATCH 1/1] arch/parisc: mm: fix uninitialized variable usage
-Date: Sun, 22 Sep 2013 15:17:46 -0300
-Message-Id: <1379873866-29219-1-git-send-email-felipensp@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 22 Sep 2013 14:20:37 -0400
+Message-ID: <523F4319.4010208@kernel.org>
+Date: Sun, 22 Sep 2013 20:20:57 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+CC: jic23@cam.ac.uk, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 2/3] iio: ti_am335x_adc: cleanup trigger related code
+References: <1379838005-15158-1-git-send-email-zubair.lutfullah@gmail.com> <1379838005-15158-3-git-send-email-zubair.lutfullah@gmail.com>
+In-Reply-To: <1379838005-15158-3-git-send-email-zubair.lutfullah@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FAULT_FLAG_WRITE flag has been set based on uninitialized variable
-
-Signed-off-by: Felipe Pena <felipensp@gmail.com>
----
- arch/parisc/mm/fault.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/arch/parisc/mm/fault.c b/arch/parisc/mm/fault.c
-index d10d27a..6b38026 100644
---- a/arch/parisc/mm/fault.c
-+++ b/arch/parisc/mm/fault.c
-@@ -182,8 +182,6 @@ void do_page_fault(struct pt_regs *regs, unsigned long code,
- 
- 	if (user_mode(regs))
- 		flags |= FAULT_FLAG_USER;
--	if (acc_type & VM_WRITE)
--		flags |= FAULT_FLAG_WRITE;
- retry:
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma_prev(mm, address, &prev_vma);
-@@ -201,6 +199,9 @@ good_area:
- 	if ((vma->vm_flags & acc_type) != acc_type)
- 		goto bad_area;
- 
-+	if (acc_type & VM_WRITE)
-+		flags |= FAULT_FLAG_WRITE;
-+
- 	/*
- 	 * If for any reason at all we couldn't handle the fault, make
- 	 * sure we exit gracefully rather than endlessly redo the
--- 
-1.7.10.4
-
+On 09/22/13 09:20, Zubair Lutfullah wrote:
+> Trigger related headers and variables are not needed
+> as driver is now based on INDIO_BUFFER_HARDWARE mode
+> 
+> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+Applied
+> ---
+>  drivers/iio/adc/ti_am335x_adc.c |    4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+> index 91dce1f..4eb63eb 100644
+> --- a/drivers/iio/adc/ti_am335x_adc.c
+> +++ b/drivers/iio/adc/ti_am335x_adc.c
+> @@ -30,9 +30,6 @@
+>  #include <linux/mfd/ti_am335x_tscadc.h>
+>  #include <linux/iio/buffer.h>
+>  #include <linux/iio/kfifo_buf.h>
+> -#include <linux/iio/trigger.h>
+> -#include <linux/iio/trigger_consumer.h>
+> -#include <linux/iio/triggered_buffer.h>
+>  
+>  struct tiadc_device {
+>  	struct ti_tscadc_dev *mfd_tscadc;
+> @@ -40,7 +37,6 @@ struct tiadc_device {
+>  	u8 channel_line[8];
+>  	u8 channel_step[8];
+>  	int buffer_en_ch_steps;
+> -	struct iio_trigger *trig;
+>  	u16 data[8];
+>  };
+>  
+> 
