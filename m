@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab3IVOqV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 10:46:21 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53489 "EHLO mail.skyhub.de"
+	id S1752867Ab3IVOqy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 10:46:54 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53481 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365Ab3IVOpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 10:45:07 -0400
+	id S1752354Ab3IVOpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 10:45:06 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Borislav Petkov <bp@suse.de>, Andre Przywara <andre@andrep.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Joerg Roedel <joro@8bytes.org>,
+Cc: Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Andre Przywara <andre@andrep.de>, Joerg Roedel <joro@8bytes.org>,
         X86 ML <x86@kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 5/6] kvm: Emulate MOVBE
-Date: Sun, 22 Sep 2013 16:44:54 +0200
-Message-Id: <1379861095-628-6-git-send-email-bp@alien8.de>
+Subject: [PATCH 3/6] kvm, emulator: Rename VendorSpecific flag
+Date: Sun, 22 Sep 2013 16:44:52 +0200
+Message-Id: <1379861095-628-4-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1379861095-628-1-git-send-email-bp@alien8.de>
 References: <1379861095-628-1-git-send-email-bp@alien8.de>
@@ -24,145 +24,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-This basically came from the need to be able to boot 32-bit Atom SMP
-guests on an AMD host, i.e. a host which doesn't support MOVBE. As a
-matter of fact, qemu has since recently received MOVBE support but we
-cannot share that with kvm emulation and thus we have to do this in the
-host. We're waay faster in kvm anyway. :-)
+Call it EmulateOnUD which is exactly what we're trying to do with
+vendor-specific instructions.
 
-So, we piggyback on the #UD path and emulate the MOVBE functionality.
-With it, an 8-core SMP guest boots in under 6 seconds.
+Rename ->only_vendor_specific_insn to something shorter, while at it.
 
-Also, requesting MOVBE emulation needs to happen explicitly to work,
-i.e. qemu -cpu n270,+movbe...
-
-Just FYI, a fairly straight-forward boot of a MOVBE-enabled 3.9-rc6+
-kernel in kvm executes MOVBE ~60K times.
-
-Signed-off-by: Andre Przywara <andre@andrep.de>
 Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- arch/x86/kvm/cpuid.c   | 18 ++++++++++++++++-
- arch/x86/kvm/emulate.c | 53 ++++++++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 66 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/kvm_emulate.h |  2 +-
+ arch/x86/kvm/emulate.c             | 14 +++++++-------
+ arch/x86/kvm/x86.c                 |  3 +--
+ 3 files changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index eca357095a49..986cf7cc74f3 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -190,6 +190,22 @@ static bool supported_xcr0_bit(unsigned bit)
- static int __do_cpuid_ent_emulated(struct kvm_cpuid_entry2 *entry,
- 				   u32 func, u32 index, int *nent, int maxnent)
- {
-+	switch (func) {
-+	case 0:
-+		entry->eax = 1;		/* only one leaf currently */
-+		++*nent;
-+		break;
-+	case 1:
-+		entry->ecx = F(MOVBE);
-+		++*nent;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	entry->function = func;
-+	entry->index = index;
-+
- 	return 0;
- }
+diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
+index 92a176ad456c..24ec1216596e 100644
+--- a/arch/x86/include/asm/kvm_emulate.h
++++ b/arch/x86/include/asm/kvm_emulate.h
+@@ -274,7 +274,7 @@ struct x86_emulate_ctxt {
  
-@@ -559,7 +575,7 @@ int kvm_dev_ioctl_get_cpuid(struct kvm_cpuid2 *cpuid,
- 		return -EINVAL;
+ 	bool guest_mode; /* guest running a nested guest */
+ 	bool perm_ok; /* do not check permissions if true */
+-	bool only_vendor_specific_insn;
++	bool ud;	/* inject an #UD if host doesn't support insn */
  
- 	r = -ENOMEM;
--	cpuid_entries = vmalloc(sizeof(struct kvm_cpuid_entry2) * cpuid->nent);
-+	cpuid_entries = vzalloc(sizeof(struct kvm_cpuid_entry2) * cpuid->nent);
- 	if (!cpuid_entries)
- 		goto out;
- 
+ 	bool have_exception;
+ 	struct x86_exception exception;
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 72093d76c769..fba4a75d82cf 100644
+index bfae4a433091..67277bcb377a 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -2950,6 +2950,46 @@ static int em_mov(struct x86_emulate_ctxt *ctxt)
- 	return X86EMUL_CONTINUE;
- }
+@@ -130,7 +130,7 @@
+ #define Mov         (1<<20)
+ /* Misc flags */
+ #define Prot        (1<<21) /* instruction generates #UD if not in prot-mode */
+-#define VendorSpecific (1<<22) /* Vendor specific instruction */
++#define EmulateOnUD (1<<22) /* Emulate if unsupported by the host */
+ #define NoAccess    (1<<23) /* Don't access memory (lea/invlpg/verr etc) */
+ #define Op3264      (1<<24) /* Operand is 64b in long mode, 32b otherwise */
+ #define Undefined   (1<<25) /* No Such Instruction */
+@@ -3491,7 +3491,7 @@ static const struct opcode group7_rm1[] = {
  
-+#define FFL(x) bit(X86_FEATURE_##x)
-+
-+static int em_movbe(struct x86_emulate_ctxt *ctxt)
-+{
-+	u32 ebx, ecx, edx, eax = 1;
-+	u16 tmp;
-+
-+	/*
-+	 * Check MOVBE is set in the guest-visible CPUID leaf.
-+	 */
-+	ctxt->ops->get_cpuid(ctxt, &eax, &ebx, &ecx, &edx);
-+	if (!(ecx & FFL(MOVBE)))
-+		return emulate_ud(ctxt);
-+
-+	switch (ctxt->op_bytes) {
-+	case 2:
-+		/*
-+		 * From MOVBE definition: "...When the operand size is 16 bits,
-+		 * the upper word of the destination register remains unchanged
-+		 * ..."
-+		 *
-+		 * Both casting ->valptr and ->val to u16 breaks strict aliasing
-+		 * rules so we have to do the operation almost per hand.
-+		 */
-+		tmp = (u16)ctxt->src.val;
-+		ctxt->dst.val &= ~0xffffUL;
-+		ctxt->dst.val |= (unsigned long)swab16(tmp);
-+		break;
-+	case 4:
-+		ctxt->dst.val = swab32((u32)ctxt->src.val);
-+		break;
-+	case 8:
-+		ctxt->dst.val = swab64(ctxt->src.val);
-+		break;
-+	default:
-+		return X86EMUL_PROPAGATE_FAULT;
-+	}
-+	return X86EMUL_CONTINUE;
-+}
-+
- static int em_cr_write(struct x86_emulate_ctxt *ctxt)
- {
- 	if (ctxt->ops->set_cr(ctxt, ctxt->modrm_reg, ctxt->src.val))
-@@ -3881,11 +3921,11 @@ static const struct opcode twobyte_table[256] = {
- };
+ static const struct opcode group7_rm3[] = {
+ 	DIP(SrcNone | Prot | Priv,		vmrun,		check_svme_pa),
+-	II(SrcNone  | Prot | VendorSpecific,	em_vmmcall,	vmmcall),
++	II(SrcNone  | Prot | EmulateOnUD,	em_vmmcall,	vmmcall),
+ 	DIP(SrcNone | Prot | Priv,		vmload,		check_svme_pa),
+ 	DIP(SrcNone | Prot | Priv,		vmsave,		check_svme_pa),
+ 	DIP(SrcNone | Prot | Priv,		stgi,		check_svme),
+@@ -3576,7 +3576,7 @@ static const struct group_dual group7 = { {
+ 	II(SrcMem16 | Mov | Priv,		em_lmsw, lmsw),
+ 	II(SrcMem | ByteOp | Priv | NoAccess,	em_invlpg, invlpg),
+ }, {
+-	I(SrcNone | Priv | VendorSpecific,	em_vmcall),
++	I(SrcNone | Priv | EmulateOnUD,	em_vmcall),
+ 	EXT(0, group7_rm1),
+ 	N, EXT(0, group7_rm3),
+ 	II(SrcNone | DstMem | Mov,		em_smsw, smsw), N,
+@@ -3798,7 +3798,7 @@ static const struct opcode opcode_table[256] = {
+ static const struct opcode twobyte_table[256] = {
+ 	/* 0x00 - 0x0F */
+ 	G(0, group6), GD(0, &group7), N, N,
+-	N, I(ImplicitOps | VendorSpecific, em_syscall),
++	N, I(ImplicitOps | EmulateOnUD, em_syscall),
+ 	II(ImplicitOps | Priv, em_clts, clts), N,
+ 	DI(ImplicitOps | Priv, invd), DI(ImplicitOps | Priv, wbinvd), N, N,
+ 	N, D(ImplicitOps | ModRM), N, N,
+@@ -3818,8 +3818,8 @@ static const struct opcode twobyte_table[256] = {
+ 	IIP(ImplicitOps, em_rdtsc, rdtsc, check_rdtsc),
+ 	II(ImplicitOps | Priv, em_rdmsr, rdmsr),
+ 	IIP(ImplicitOps, em_rdpmc, rdpmc, check_rdpmc),
+-	I(ImplicitOps | VendorSpecific, em_sysenter),
+-	I(ImplicitOps | Priv | VendorSpecific, em_sysexit),
++	I(ImplicitOps | EmulateOnUD, em_sysenter),
++	I(ImplicitOps | Priv | EmulateOnUD, em_sysexit),
+ 	N, N,
+ 	N, N, N, N, N, N, N, N,
+ 	/* 0x40 - 0x4F */
+@@ -4256,7 +4256,7 @@ done_prefixes:
+ 	if (ctxt->d == 0 || (ctxt->d & NotImpl))
+ 		return EMULATION_FAILED;
  
- static const struct gprefix third_opcode_byte_0xf0 = {
--	N, N, N, N
-+	I(DstReg | SrcMem | Mov, em_movbe), N, N, N
- };
+-	if (!(ctxt->d & VendorSpecific) && ctxt->only_vendor_specific_insn)
++	if (!(ctxt->d & EmulateOnUD) && ctxt->ud)
+ 		return EMULATION_FAILED;
  
- static const struct gprefix third_opcode_byte_0xf1 = {
--	N, N, N, N
-+	I(DstMem | SrcReg | Mov, em_movbe), N, N, N
- };
+ 	if (mode == X86EMUL_MODE_PROT64 && (ctxt->d & Stack))
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 6f2ea40b80cf..0767d9f4c5bd 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5097,8 +5097,7 @@ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
+ 		ctxt->have_exception = false;
+ 		ctxt->perm_ok = false;
  
- /*
-@@ -3895,8 +3935,13 @@ static const struct gprefix third_opcode_byte_0xf1 = {
- static const struct opcode opcode_map_0f_38[256] = {
- 	/* 0x00 - 0x7f */
- 	X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N),
--	/* 0x80 - 0xff */
--	X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N)
-+	/* 0x80 - 0xef */
-+	X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N),
-+	/* 0xf0 - 0xf1 */
-+	GP(EmulateOnUD | ModRM | Prefix, &third_opcode_byte_0xf0),
-+	GP(EmulateOnUD | ModRM | Prefix, &third_opcode_byte_0xf1),
-+	/* 0xf2 - 0xff */
-+	N, N, X4(N), X8(N)
- };
+-		ctxt->only_vendor_specific_insn
+-			= emulation_type & EMULTYPE_TRAP_UD;
++		ctxt->ud = emulation_type & EMULTYPE_TRAP_UD;
  
- #undef D
+ 		r = x86_decode_insn(ctxt, insn, insn_len);
+ 
 -- 
 1.8.4
 
