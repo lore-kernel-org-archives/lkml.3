@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab3IVTvV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 15:51:21 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:34957 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab3IVTvT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 15:51:19 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Larry.Finger@lwfinger.net
-Cc: chaoming_li@realsil.com.cn, joe@perches.com, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH V2] wireless: rtlwifi: Replace variable with a brake
-Date: Sun, 22 Sep 2013 21:50:10 +0200
-Message-Id: <1379879410-22787-1-git-send-email-peter.senna@gmail.com>
+	id S1753141Ab3IVTwA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 15:52:00 -0400
+Received: from svenfoo.org ([82.94.215.22]:59105 "EHLO mail.zonque.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752268Ab3IVTv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 15:51:57 -0400
+From: Daniel Mack <zonque@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@kernel.org, devicetree@vger.kernel.org,
+        Daniel Mack <zonque@gmail.com>
+Subject: [PATCH 3/4] drivers: misc: ti_dac7512: provide a SPI ID table
+Date: Sun, 22 Sep 2013 21:51:48 +0200
+Message-Id: <1379879509-3608-4-git-send-email-zonque@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1379879509-3608-1-git-send-email-zonque@gmail.com>
+References: <1379879509-3608-1-git-send-email-zonque@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the variable continual, and change the while loop
-to break when efuse_data == 0xFF.
+This way, the module can be autoloaded by the SPI core.
 
-Tested by compilation only.
-
-CC: Joe Perches <joe@perches.com>
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
 ---
-Changes from V1:
- - Fix the indetation
- - Remove remaining } from removed else
+ drivers/misc/ti_dac7512.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Please ignore the patch:
-[PATCH 12/19] wireless: Change variable type to bool
-
-And apply this one instead.
-
-The variable continual was declared as int, but was used as bool. I
-sent previous patch changing the variable type to bool, but Joe Perches
-proposed that removing the variable and adding a brake would be better.
-
- drivers/net/wireless/rtlwifi/efuse.c | 18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/net/wireless/rtlwifi/efuse.c b/drivers/net/wireless/rtlwifi/efuse.c
-index 838a1ed..2aedd9f 100644
---- a/drivers/net/wireless/rtlwifi/efuse.c
-+++ b/drivers/net/wireless/rtlwifi/efuse.c
-@@ -1203,20 +1203,18 @@ static void efuse_power_switch(struct ieee80211_hw *hw, u8 write, u8 pwrstate)
+diff --git a/drivers/misc/ti_dac7512.c b/drivers/misc/ti_dac7512.c
+index 46dfbf3..6393a68 100644
+--- a/drivers/misc/ti_dac7512.c
++++ b/drivers/misc/ti_dac7512.c
+@@ -72,6 +72,12 @@ static int dac7512_remove(struct spi_device *spi)
+ 	return 0;
+ }
  
- static u16 efuse_get_current_size(struct ieee80211_hw *hw)
- {
--	int continual = true;
- 	u16 efuse_addr = 0;
- 	u8 hworden;
- 	u8 efuse_data, word_cnts;
- 
--	while (continual && efuse_one_byte_read(hw, efuse_addr, &efuse_data)
--	       && (efuse_addr < EFUSE_MAX_SIZE)) {
--		if (efuse_data != 0xFF) {
--			hworden = efuse_data & 0x0F;
--			word_cnts = efuse_calculate_word_cnts(hworden);
--			efuse_addr = efuse_addr + (word_cnts * 2) + 1;
--		} else {
--			continual = false;
--		}
-+	while (efuse_one_byte_read(hw, efuse_addr, &efuse_data) &&
-+					(efuse_addr < EFUSE_MAX_SIZE)) {
-+		if (efuse_data == 0xFF)
-+			break;
++static const struct spi_device_id dac7512_id_table[] = {
++	{ "dac7512", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(spi, dac7512_id_table);
 +
-+		hworden = efuse_data & 0x0F;
-+		word_cnts = efuse_calculate_word_cnts(hworden);
-+		efuse_addr = efuse_addr + (word_cnts * 2) + 1;
- 	}
+ static struct spi_driver dac7512_driver = {
+ 	.driver = {
+ 		.name	= "dac7512",
+@@ -79,6 +85,7 @@ static struct spi_driver dac7512_driver = {
+ 	},
+ 	.probe	= dac7512_probe,
+ 	.remove	= dac7512_remove,
++	.id_table = dac7512_id_table,
+ };
  
- 	return efuse_addr;
+ module_spi_driver(dac7512_driver);
 -- 
 1.8.3.1
 
