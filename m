@@ -1,152 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab3IVUk5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 16:40:57 -0400
-Received: from imap.thunk.org ([74.207.234.97]:35976 "EHLO imap.thunk.org"
+	id S1753508Ab3IVUll (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 16:41:41 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:43094 "EHLO dcvr.yhbt.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752669Ab3IVUjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 16:39:18 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: hpa@zytor.com, joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
-        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
-        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de,
-        "H. Peter Anvin" <hpa@linux.intel.com>, <stable@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH, RFC 02/12] random: Statically compute poolbitshift, poolbytes, poolbits
-Date: Sun, 22 Sep 2013 16:38:48 -0400
-Message-Id: <1379882338-7209-3-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 1.7.12.rc0.22.gcdd159b
-In-Reply-To: <1379882338-7209-1-git-send-email-tytso@mit.edu>
-References: <1379882338-7209-1-git-send-email-tytso@mit.edu>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1752183Ab3IVUli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 16:41:38 -0400
+Date: Sun, 22 Sep 2013 20:41:37 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Jason Baron <jbaron@akamai.com>
+Cc: Nathan Zimmer <nzimmer@sgi.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC] eventpoll: Move a kmem_cache_alloc and kmem_cache_free
+Message-ID: <20130922204137.GA1612@dcvr.yhbt.net>
+References: <1379087642-131349-1-git-send-email-nzimmer@sgi.com>
+ <5239FA69.8030202@akamai.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5239FA69.8030202@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+Jason Baron <jbaron@akamai.com> wrote:
+>     epoll: reduce usage of global 'epmutex' lock
+>
+>     Epoll file descriptors that are 1 link from a wakeup source and
+>     are not nested within other epoll descriptors, or pointing to
+>     other epoll descriptors, don't need to check for loop creation or
+>     the creation of wakeup storms. Because of this we can avoid taking
+>     the global 'epmutex' in these cases. This state for the epoll file
+>     descriptor is marked as 'EVENTPOLL_BASIC'. Once the epoll file
+>     descriptor is attached to another epoll file descriptor it is
+>     labeled as 'EVENTPOLL_COMPLEX', and full loop checking and wakeup
+>     storm creation are checked using the the global 'epmutex'. It does
+>     not transition back. Hopefully, this is a common usecase...
 
-Use a macro to statically compute poolbitshift (will be used in a
-subsequent patch), poolbytes, and poolbits.  On virtually all
-architectures the cost of a memory load with an offset is the same as
-the one of a memory load.
+Cool.  I was thinking about doing the same thing down the line (for
+EPOLL_CTL_ADD, too)
 
-It is still possible for this to generate worse code since the C
-compiler doesn't know the fixed relationship between these fields, but
-that is somewhat unlikely.
+> @@ -166,6 +167,14 @@ struct epitem {
+>  
+>  	/* The structure that describe the interested events and the source fd */
+>  	struct epoll_event event;
+> +
+> +	/* TODO: really necessary? */
+> +	int on_list;
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
----
- drivers/char/random.c | 39 +++++++++++++++++++--------------------
- 1 file changed, 19 insertions(+), 20 deletions(-)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 92e6c67..e973658 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -309,46 +309,45 @@ static DEFINE_PER_CPU(int, trickle_count);
-  * scaled squared error sum) except for the last tap, which is 1 to
-  * get the twisting happening as fast as possible.
-  */
-+
- static struct poolinfo {
--	int poolwords;
-+	int poolbitshift, poolwords, poolbytes, poolbits;
-+#define S(x) ilog2(x)+5, (x), (x)*4, (x)*32
- 	int tap1, tap2, tap3, tap4, tap5;
- } poolinfo_table[] = {
- 	/* x^128 + x^103 + x^76 + x^51 +x^25 + x + 1 -- 105 */
--	{ 128,	103,	76,	51,	25,	1 },
-+	{ S(128),	103,	76,	51,	25,	1 },
- 	/* x^32 + x^26 + x^20 + x^14 + x^7 + x + 1 -- 15 */
--	{ 32,	26,	20,	14,	7,	1 },
-+	{ S(32),	26,	20,	14,	7,	1 },
- #if 0
- 	/* x^2048 + x^1638 + x^1231 + x^819 + x^411 + x + 1  -- 115 */
--	{ 2048,	1638,	1231,	819,	411,	1 },
-+	{ S(2048),	1638,	1231,	819,	411,	1 },
- 
- 	/* x^1024 + x^817 + x^615 + x^412 + x^204 + x + 1 -- 290 */
--	{ 1024,	817,	615,	412,	204,	1 },
-+	{ S(1024),	817,	615,	412,	204,	1 },
- 
- 	/* x^1024 + x^819 + x^616 + x^410 + x^207 + x^2 + 1 -- 115 */
--	{ 1024,	819,	616,	410,	207,	2 },
-+	{ S(1024),	819,	616,	410,	207,	2 },
- 
- 	/* x^512 + x^411 + x^308 + x^208 + x^104 + x + 1 -- 225 */
--	{ 512,	411,	308,	208,	104,	1 },
-+	{ S(512),	411,	308,	208,	104,	1 },
- 
- 	/* x^512 + x^409 + x^307 + x^206 + x^102 + x^2 + 1 -- 95 */
--	{ 512,	409,	307,	206,	102,	2 },
-+	{ S(512),	409,	307,	206,	102,	2 },
- 	/* x^512 + x^409 + x^309 + x^205 + x^103 + x^2 + 1 -- 95 */
--	{ 512,	409,	309,	205,	103,	2 },
-+	{ S(512),	409,	309,	205,	103,	2 },
- 
- 	/* x^256 + x^205 + x^155 + x^101 + x^52 + x + 1 -- 125 */
--	{ 256,	205,	155,	101,	52,	1 },
-+	{ S(256),	205,	155,	101,	52,	1 },
- 
- 	/* x^128 + x^103 + x^78 + x^51 + x^27 + x^2 + 1 -- 70 */
--	{ 128,	103,	78,	51,	27,	2 },
-+	{ S(128),	103,	78,	51,	27,	2 },
- 
- 	/* x^64 + x^52 + x^39 + x^26 + x^14 + x + 1 -- 15 */
--	{ 64,	52,	39,	26,	14,	1 },
-+	{ S(64),	52,	39,	26,	14,	1 },
- #endif
- };
- 
--#define POOLBITS	poolwords*32
--#define POOLBYTES	poolwords*4
--
- /*
-  * For the purposes of better mixing, we use the CRC-32 polynomial as
-  * well to make a twisted Generalized Feedback Shift Reigster
-@@ -599,8 +598,8 @@ retry:
- 	if (entropy_count < 0) {
- 		DEBUG_ENT("negative entropy/overflow\n");
- 		entropy_count = 0;
--	} else if (entropy_count > r->poolinfo->POOLBITS)
--		entropy_count = r->poolinfo->POOLBITS;
-+	} else if (entropy_count > r->poolinfo->poolbits)
-+		entropy_count = r->poolinfo->poolbits;
- 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
- 		goto retry;
- 
-@@ -815,7 +814,7 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- 	__u32	tmp[OUTPUT_POOL_WORDS];
- 
- 	if (r->pull && r->entropy_count < nbytes * 8 &&
--	    r->entropy_count < r->poolinfo->POOLBITS) {
-+	    r->entropy_count < r->poolinfo->poolbits) {
- 		/* If we're limited, always leave two wakeup worth's BITS */
- 		int rsvd = r->limit ? 0 : random_read_wakeup_thresh/4;
- 		int bytes = nbytes;
-@@ -857,7 +856,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 	/* Hold lock while accounting */
- 	spin_lock_irqsave(&r->lock, flags);
- 
--	BUG_ON(r->entropy_count > r->poolinfo->POOLBITS);
-+	BUG_ON(r->entropy_count > r->poolinfo->poolbits);
- 	DEBUG_ENT("trying to extract %zu bits from %s\n",
- 		  nbytes * 8, r->name);
- 
-@@ -1112,7 +1111,7 @@ static void init_std_data(struct entropy_store *r)
- 	r->entropy_total = 0;
- 	r->last_data_init = false;
- 	mix_pool_bytes(r, &now, sizeof(now), NULL);
--	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof(rv)) {
-+	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
- 		if (!arch_get_random_long(&rv))
- 			break;
- 		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
--- 
-1.7.12.rc0.22.gcdd159b
-
+There's some things we can overload to avoid increasing epitem size
+(.ep, .ffd.fd, ...), so on_list should be unnecessary.
