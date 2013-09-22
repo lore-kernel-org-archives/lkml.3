@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab3IVKzE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 06:55:04 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51336 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752858Ab3IVKzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 06:55:02 -0400
-Date: Sun, 22 Sep 2013 12:54:53 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Nick Warne <nick@linicks.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Samsung laptop - missing documentation
-Message-ID: <20130922105453.GA28909@pd.tnic>
-References: <20130920195939.GA2353@sauron>
- <20130922104023.GA2332@sauron>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130922104023.GA2332@sauron>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752965Ab3IVLGY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 07:06:24 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:44081 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab3IVLGX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 07:06:23 -0400
+From: Hanjun Guo <hanjun.guo@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiang Liu <jiang.liu@huawei.com>,
+        Toshi Kani <toshi.kani@hp.com>, linux-acpi@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        linaro-acpi@lists.linaro.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Hanjun Guo <hanjun.guo@linaro.org>
+Subject: [PATCH] Staging / quickstart: remove reduplicate if(acpi_disabled) check
+Date: Sun, 22 Sep 2013 19:05:47 +0800
+Message-Id: <1379847947-32366-1-git-send-email-hanjun.guo@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 11:40:23AM +0100, Nick Warne wrote:
-> running 3.11.12-rc1, config help refers:
-> 
-> Documentation/ABI/testing/sysfs-driver-samsung-laptop
-> 
-> But this is now missing - by design? but I can't find any patch that removed it.
+In acpi_bus_register_driver(), there is an if (acpi_disabled) check,
+so the if(acpi_disabled) before it is reduplicate, remove it.
 
-You mean this one:
+Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+---
+ drivers/staging/quickstart/quickstart.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/ABI/testing/sysfs-driver-samsung-laptop
-
-
-It is there, maybe check your repo?
-
+diff --git a/drivers/staging/quickstart/quickstart.c b/drivers/staging/quickstart/quickstart.c
+index 4247d60..9f6ebdb 100644
+--- a/drivers/staging/quickstart/quickstart.c
++++ b/drivers/staging/quickstart/quickstart.c
+@@ -390,10 +390,6 @@ static int __init quickstart_init(void)
+ {
+ 	int ret;
+ 
+-	/* ACPI Check */
+-	if (acpi_disabled)
+-		return -ENODEV;
+-
+ 	/* ACPI driver register */
+ 	ret = acpi_bus_register_driver(&quickstart_acpi_driver);
+ 	if (ret)
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
