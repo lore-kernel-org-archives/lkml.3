@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab3IVBXS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 21:23:18 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:40492 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753304Ab3IVBXN (ORCPT
+	id S1753373Ab3IVBXY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 21:23:24 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:60313 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753304Ab3IVBXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 21:23:13 -0400
+	Sat, 21 Sep 2013 21:23:20 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl, daniel.lezcano@linaro.org
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 17/21] cpuidle: avoid unnecessary kzalloc/free of struct cpuidle_driver_kobj
-Date: Sun, 22 Sep 2013 06:51:09 +0530
-Message-Id: <b9855839a2067249d5992acd46140e834737c1b7.1379779777.git.viresh.kumar@linaro.org>
+Subject: [PATCH 18/21] cpuidle: don't call poll_idle_init() for every cpu
+Date: Sun, 22 Sep 2013 06:51:10 +0530
+Message-Id: <495ffb1175175b0180ca3da96eb5ed72a8280364.1379779777.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379779777.git.viresh.kumar@linaro.org>
 References: <cover.1379779777.git.viresh.kumar@linaro.org>
@@ -24,115 +24,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For CONFIG_CPU_IDLE_MULTIPLE_DRIVERS, struct cpuidle_device always needs to
-allocate struct cpuidle_driver_kobj for all CPUs and so there is no real need to
-have a pointer to it inside struct cpuidle_device.
-
-This patch makes a object instance of struct cpuidle_driver_kobj inside struct
-cpuidle_device instead of a pointer.
-
-It also makes kobj_driver dependent on CONFIG_CPU_IDLE_MULTIPLE_DRIVERS.
-
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpuidle/sysfs.c | 20 +++-----------------
- include/linux/cpuidle.h | 11 +++++++++--
- 2 files changed, 12 insertions(+), 19 deletions(-)
+ drivers/cpuidle/cpuidle.c | 41 -----------------------------------------
+ drivers/cpuidle/driver.c  | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-index db0aac3..3386d64 100644
---- a/drivers/cpuidle/sysfs.c
-+++ b/drivers/cpuidle/sysfs.c
-@@ -439,12 +439,6 @@ static void cpuidle_remove_state_sysfs(struct cpuidle_device *device)
- 	static struct cpuidle_driver_attr attr_driver_##_name = \
- 		__ATTR(_name, 0644, show, NULL)
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 43d5836..bf80236 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -226,45 +226,6 @@ void cpuidle_resume(void)
+ 	mutex_unlock(&cpuidle_lock);
+ }
  
--struct cpuidle_driver_kobj {
--	struct cpuidle_driver *drv;
--	struct completion kobj_unregister;
--	struct kobject kobj;
--};
+-#ifdef CONFIG_ARCH_HAS_CPU_RELAX
+-static int poll_idle(struct cpuidle_device *dev,
+-		struct cpuidle_driver *drv, int index)
+-{
+-	ktime_t	t1, t2;
+-	s64 diff;
 -
- struct cpuidle_driver_attr {
- 	struct attribute attr;
- 	ssize_t (*show)(struct cpuidle_driver *, char *);
-@@ -518,27 +512,20 @@ static struct kobj_type ktype_driver_cpuidle = {
-  */
- static int cpuidle_add_driver_sysfs(struct cpuidle_device *dev)
- {
--	struct cpuidle_driver_kobj *kdrv;
-+	struct cpuidle_driver_kobj *kdrv = &dev->kobj_driver;
- 	struct cpuidle_device_kobj *kdev = &dev->kobj_dev;
- 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
- 	int ret;
- 
--	kdrv = kzalloc(sizeof(*kdrv), GFP_KERNEL);
--	if (!kdrv)
--		return -ENOMEM;
+-	t1 = ktime_get();
+-	local_irq_enable();
+-	while (!need_resched())
+-		cpu_relax();
 -
- 	kdrv->drv = drv;
- 	init_completion(&kdrv->kobj_unregister);
+-	t2 = ktime_get();
+-	diff = ktime_to_us(ktime_sub(t2, t1));
+-	if (diff > INT_MAX)
+-		diff = INT_MAX;
+-
+-	dev->last_residency = (int) diff;
+-
+-	return index;
+-}
+-
+-static void poll_idle_init(struct cpuidle_driver *drv)
+-{
+-	struct cpuidle_state *state = &drv->states[0];
+-
+-	snprintf(state->name, CPUIDLE_NAME_LEN, "POLL");
+-	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
+-	state->exit_latency = 0;
+-	state->target_residency = 0;
+-	state->power_usage = -1;
+-	state->flags = 0;
+-	state->enter = poll_idle;
+-	state->disabled = false;
+-}
+-#else
+-static void poll_idle_init(struct cpuidle_driver *drv) {}
+-#endif /* CONFIG_ARCH_HAS_CPU_RELAX */
+-
+ /**
+  * cpuidle_enable_device - enables idle PM for a CPU
+  * @dev: the CPU
+@@ -294,8 +255,6 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
+ 	if (!dev->state_count)
+ 		dev->state_count = drv->state_count;
  
- 	ret = kobject_init_and_add(&kdrv->kobj, &ktype_driver_cpuidle,
- 				   &kdev->kobj, "driver");
--	if (ret) {
--		kfree(kdrv);
-+	if (ret)
+-	poll_idle_init(drv);
+-
+ 	ret = cpuidle_add_device_sysfs(dev);
+ 	if (ret)
  		return ret;
--	}
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index 7b2510a..a4a93b4 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -10,6 +10,7 @@
  
- 	kobject_uevent(&kdrv->kobj, KOBJ_ADD);
--	dev->kobj_driver = kdrv;
- 
- 	return ret;
+ #include <linux/mutex.h>
+ #include <linux/module.h>
++#include <linux/sched.h>
+ #include <linux/cpuidle.h>
+ #include <linux/cpumask.h>
+ #include <linux/clockchips.h>
+@@ -179,6 +180,45 @@ static void __cpuidle_driver_init(struct cpuidle_driver *drv)
+ 	}
  }
-@@ -549,10 +536,9 @@ static int cpuidle_add_driver_sysfs(struct cpuidle_device *dev)
-  */
- static void cpuidle_remove_driver_sysfs(struct cpuidle_device *dev)
- {
--	struct cpuidle_driver_kobj *kdrv = dev->kobj_driver;
-+	struct cpuidle_driver_kobj *kdrv = &dev->kobj_driver;
- 	kobject_put(&kdrv->kobj);
- 	wait_for_completion(&kdrv->kobj_unregister);
--	kfree(kdrv);
- }
- #else
- static inline int cpuidle_add_driver_sysfs(struct cpuidle_device *dev)
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 1fc5cb5..0f0da17 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -62,7 +62,6 @@ struct cpuidle_state {
- #define CPUIDLE_DRIVER_FLAGS_MASK (0xFFFF0000)
  
- struct cpuidle_state_kobj;
--struct cpuidle_driver_kobj;
- 
- struct cpuidle_device_kobj {
- 	struct cpuidle_device *dev;
-@@ -70,6 +69,12 @@ struct cpuidle_device_kobj {
- 	struct kobject kobj;
- };
- 
-+struct cpuidle_driver_kobj {
-+	struct cpuidle_driver *drv;
-+	struct completion kobj_unregister;
-+	struct kobject kobj;
-+};
++#ifdef CONFIG_ARCH_HAS_CPU_RELAX
++static int poll_idle(struct cpuidle_device *dev,
++		struct cpuidle_driver *drv, int index)
++{
++	ktime_t	t1, t2;
++	s64 diff;
 +
- struct cpuidle_device {
- 	unsigned int		registered:1;
- 	unsigned int		enabled:1;
-@@ -79,7 +84,9 @@ struct cpuidle_device {
- 	int			state_count;
- 	struct cpuidle_state_usage	states_usage[CPUIDLE_STATE_MAX];
- 	struct cpuidle_state_kobj *kobjs[CPUIDLE_STATE_MAX];
--	struct cpuidle_driver_kobj *kobj_driver;
-+#ifdef CONFIG_CPU_IDLE_MULTIPLE_DRIVERS
-+	struct cpuidle_driver_kobj kobj_driver;
-+#endif
- 	struct cpuidle_device_kobj kobj_dev;
- 	struct list_head 	device_list;
++	t1 = ktime_get();
++	local_irq_enable();
++	while (!need_resched())
++		cpu_relax();
++
++	t2 = ktime_get();
++	diff = ktime_to_us(ktime_sub(t2, t1));
++	if (diff > INT_MAX)
++		diff = INT_MAX;
++
++	dev->last_residency = (int) diff;
++
++	return index;
++}
++
++static void poll_idle_init(struct cpuidle_driver *drv)
++{
++	struct cpuidle_state *state = &drv->states[0];
++
++	snprintf(state->name, CPUIDLE_NAME_LEN, "POLL");
++	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
++	state->exit_latency = 0;
++	state->target_residency = 0;
++	state->power_usage = -1;
++	state->flags = 0;
++	state->enter = poll_idle;
++	state->disabled = false;
++}
++#else
++static void poll_idle_init(struct cpuidle_driver *drv) {}
++#endif /* !CONFIG_ARCH_HAS_CPU_RELAX */
++
+ /**
+  * __cpuidle_register_driver: register the driver
+  * @drv: a valid pointer to a struct cpuidle_driver
+@@ -212,6 +252,8 @@ static int __cpuidle_register_driver(struct cpuidle_driver *drv)
+ 		on_each_cpu_mask(drv->cpumask, cpuidle_setup_broadcast_timer,
+ 				 (void *)CLOCK_EVT_NOTIFY_BROADCAST_ON, 1);
+ 
++	poll_idle_init(drv);
++
+ 	return 0;
+ }
  
 -- 
 1.7.12.rc2.18.g61b472e
