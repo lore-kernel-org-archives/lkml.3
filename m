@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab3IVKAi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 06:00:38 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54026 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618Ab3IVKAh (ORCPT
+	id S1752866Ab3IVKMn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 06:12:43 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:45190 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab3IVKMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 06:00:37 -0400
-Message-ID: <1379844021.5598.8.camel@marge.simpson.net>
-Subject: Re: [PATCH] ipc/sem.c: fix update sem_otime when calling sem_op in
- semaphore initialization
-From: Mike Galbraith <bitbucket@online.de>
-To: Jia He <jiakernel@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Sun, 22 Sep 2013 12:00:21 +0200
-In-Reply-To: <523EB997.9090107@gmail.com>
-References: <1379815884-11035-1-git-send-email-jiakernel@gmail.com>
-	 <1379837823.5499.34.camel@marge.simpson.net>
-	 <1379838364.5499.39.camel@marge.simpson.net> <523EB997.9090107@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Sun, 22 Sep 2013 06:12:41 -0400
+Message-ID: <523EDEB0.1060601@gmail.com>
+Date: Sun, 22 Sep 2013 14:12:32 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Barry Song <21cnbao@gmail.com>
+CC: Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>, Barry Song <baohua.song@csr.com>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 04/26] clk: prima2: declare OF clock provider
+References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com> <1379526839-14798-5-git-send-email-sebastian.hesselbarth@gmail.com> <CAGsJ_4xC_g1C-pGQGrcLOBhKLSMG3D8369DRPoFgNZhKqs-aTQ@mail.gmail.com> <523ABA7A.50305@gmail.com>
+In-Reply-To: <523ABA7A.50305@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:uE8Ov1kK+9HSmc3y5su8vbzUJLz+Ti03iSdnI3/0ToO
- nrNsrKvp7D+VX5eVY1ocw3H/uxIzR5ur4Gr+MbkLe1fibhp07m
- 6wknnhfGR/bvmVjbIckk98OiyWLWtRdaDANVRKegKXWLdlb9pN
- M1ojPd/eAzftpUxEljCYyXfRZSuQokSi+EPW39MA+8tVHHB+E6
- EqPJdaQMeXvhGQbRaoHqWdsF0B1liV0Z3lxT1JZMjshr8Yx9hs
- tzXTXeXfC8CrsN/+SFVBdbema85dmP/LE48ttM5CdwCQO9ex4t
- QgEpE897T6T5nRgSdVy0beLJL+syucx8M2qrKUIKXP0hYvN9Dd
- gd8MN/6fBwunDAOkO19+9a+EsglNnkVUJ2YkLwA0PyDuoK9E+9
- WDNErsXR9/yLQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-09-22 at 17:34 +0800, Jia He wrote: 
-> Thanks for the comments, but pls add my email as "from jiakernel@gmail.com"
-> if you have a better implementation.U know, it is my first kernel patch, maybe
-> will give me a brilliant memory in the future :)
+On 09/19/2013 10:48 AM, Sebastian Hesselbarth wrote:
+> On 09/19/13 10:45, Barry Song wrote:
+>>> @@ -1124,3 +1106,4 @@ void __init sirfsoc_of_clk_init(void)
+>>>
+>>>          of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
+>>>   }
+>>> +CLK_OF_DECLARE(sirfsoc_clk, "sirf,prima2-clkc", sirfsoc_clk_init);
+>>
+>> hi Sebastian,
+>> what if the driver is compatible with multiple clk controllers and we
+>> want to add another compatible string here except "sirf,prima2-clkc"?
+>>
+>> -barry
+>>
+>
+> Just add
+> CLK_OF_DECLARE(other_fancy_clk, "sirf,different-compatible",
+> sirfsoc_clk_init);
 
-You can have the blame if you like :)
+Barry, BTW, do I get your Acked-By for this and the corresponding
+removal patch?
 
-> Anyway, your implementation looks not correct to me. Because from "man semop"
-> sem_otime will record the last sem operation time of semop. If you change the
-> otime in semget(), it changes the meanings in stardard, doesn't it?
-
-A Linux kernel doing a semop in 1970 would be a kinda neat trick :)
-
--Mike
+Sebastian
 
