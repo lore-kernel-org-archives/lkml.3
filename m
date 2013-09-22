@@ -1,118 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab3IVWiJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 18:38:09 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:45549 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab3IVWiI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 18:38:08 -0400
-MIME-Version: 1.0
-Date: Mon, 23 Sep 2013 08:38:06 +1000
-Message-ID: <CAPM=9twXzs1KJ_YC_K2s3=gE8EV238S0=QUvv_rERJcSxp2MAA@mail.gmail.com>
-Subject: [git pull] drm fixes
-From: Dave Airlie <airlied@gmail.com>
+	id S1752936Ab3IVWjV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 18:39:21 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43210 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752319Ab3IVWjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 18:39:20 -0400
+Message-ID: <1379889489.24090.34.camel@pasglop>
+Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dri-devel <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 23 Sep 2013 08:38:09 +1000
+In-Reply-To: <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
+References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
+	 <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
+	 <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
+	 <20130920162603.GA30381@localhost.localdomain>
+	 <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
+	 <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
+	 <1379799901.24090.6.camel@pasglop> <523E4F8A.7020708@zytor.com>
+	 <1379824754.24090.11.camel@pasglop> <1379824861.24090.12.camel@pasglop>
+	 <20130922162410.GA10649@laptop.programming.kicks-ass.net>
+	 <1379887000.24090.19.camel@pasglop>
+	 <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, 2013-09-22 at 15:22 -0700, Linus Torvalds wrote:
+> On Sun, Sep 22, 2013 at 2:56 PM, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org> wrote:
+> > On Sun, 2013-09-22 at 18:24 +0200, Peter Zijlstra wrote:
+> >>
+> >> We use a segment offset. Something like:
+> >>
+> >>   inc %gs:var;
+> >>
+> >
+> > And gcc makes no stupid assumptions that this gs doesn't change ? That's
+> > the main problem we have with using r13 for PACA.
+> 
+> Since gcc doesn't really know about segment registers at all (modulo
+> %fs as TLS on x86), we do everything like that using inline asm.
+> 
+> It's not *too* painful if you have a number of macro helpers to build
+> up all the different versions.
+> 
+> And r13 isn't volatile if you are preempt-safe, so I'm wondering if
+> you could just make the preempt disable code mark %r13 as modified
+> ("+r"). Then gcc won't ever cache r13 across one of those. And if you
+> don't have preemption disabled, then you cannot do multiple ops using
+> %r13 anyway, since on a load-store architecture it might change even
+> between the load and store, so a per-cpu "add" operation *has* to
+> cache the %r13 value in *another* register anyway, because using
+> memory ops with just an offset off %r13 would be buggy.
 
-some small fixes for msm and exynos,
-a regression revert affecting nouveau users with old userspace,
-intel pageflip deadlock and gpu hang fixes, hsw modesetting hangs,
+The only other one is our soft-disable of irqs which is a byte off r13,
+so technically a simple:
 
-Dave.
+	li	r0,0
+	stb	r0,PACASOFTIRQEN(r13)
 
-The following changes since commit 928c2f0c006bf7f381f58af2b2786d2a858ae311:
+Is a perfectly valid implementation of local_irq_disable() ;-) But that
+sort of special case I think we can handle with special cases.
 
-  drm/fb-helper: don't sleep for screen unblank when an oops is in
-progress (2013-09-19 11:54:34 +1000)
+Right, using an r13 clobber in a dummy asm in things like
+preempt_disable and local_irq_disable is so far the most interesting
+option left on our table.
 
-are available in the git repository at:
+> So I don't think this is a gcc issue. gcc can't fix those kinds of problems.
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
+Well, it would help if we had a way to tell gcc that a global register
+variable is volatile. But it doesn't understand that concept.
 
-for you to fetch changes up to 6ddf2ed6e00396883b3123032ccb4416205aac7c:
+> Personally, I'd suggest something like:
+> 
+>  - the paca stuff is just insane. Try to get rid of it.
 
-  Merge branch 'msm-fixes-3.12' of
-git://people.freedesktop.org/~robclark/linux into drm-fixes
-(2013-09-20 09:06:48 +1000)
+I wish I could... it dig deep. The problem is fundamentally because with
+MMU off (aka "real" mode), under a hypervisor, we have only access to a
+portion of the partition memory (it's a fake real mode if you want, and
+on older systems it's implemented as a physically contiguous chunk of
+memory reserved by the hypervisor for the partition, and as such cannot
+be arbitrarily large, newer CPUs support something smarter but with
+still with some limitations).
 
-----------------------------------------------------------------
+That combined with the fact that all interrupts are delivered in real
+mode, and you get the picture. KVM "userspace" (the variant that
+emulates the guest as a user process) makes it worse as it needs to
+maintain much more state in a place that is "real mode accessible".
 
-Chris Wilson (1):
-      drm/i915: Track pfit enable state separately from size
+We *might* be bale to repurpose r13 as our per-cpu offset and move a
+chunk of stuff from the paca to per-cpu variables, but we will still
+need "something" akin to the PACA for the guts of the exception
+entry/exit and KVM.
 
-Daniel Vetter (5):
-      drm/i915: fix wait_for_pending_flips vs gpu hang deadlock
-      drm/i915/sdvo: Fully translate sync flags in the dtd->mode conversion
-      drm/i915/sdvo: Robustify the dtd<->drm_mode conversions
-      drm/i915/dvo: set crtc timings again for panel fixed modes
-      drm/i915: kill set_need_resched
+>  - use %r13 for the per-thread thread-info pointer instead. A
+> per-thread pointer is *not* volatile like the per-cpu base is.
 
-Dave Airlie (4):
-      Revert "drm: mark context support as a legacy subsystem"
-      Merge tag 'drm-intel-fixes-2013-09-19' of
-git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-      Merge branch 'exynos-drm-fixes' of
-git://git.kernel.org/.../daeinki/drm-exynos into drm-fixes
-      Merge branch 'msm-fixes-3.12' of
-git://people.freedesktop.org/~robclark/linux into drm-fixes
+Yes, use it as a TLS, that would be an option I've been considering. It
+could also be the task struct but thread_info might be slightly hotter.
 
-Jani Nikula (1):
-      drm/i915: do not update cursor in crtc mode set
+That's what I had in mind when I mentioned using it as a TLS for
+"current".
 
-Rob Clark (6):
-      drm/msm: handle read vs write fences
-      drm/msm: hangcheck harder
-      drm/msm: fix cmdstream size check
-      drm/msm: return -EBUSY if bo still active
-      drm/msm: workaround for missing irq
-      drm/msm: drop unnecessary set_need_resched()
+>  - Now you can make the per-cpu offset be loaded off the per-thread
+> pointer (update it at context switch). gcc knows to not cache it
+> across function calls, since it's a memory access. Use ACCESS_ONCE()
+> or something to make sure it's only loaded once for the cpu offset
+> ops.
 
-Sachin Kamat (3):
-      drm/exynos: Remove redundant OF dependency
-      drm/exynos: Fix address space warning in exynos_drm_buf.c
-      drm/exynos: Fix address space warnings in exynos_drm_fbdev.c
+I have seen gcc completely disregard ACCESS_ONCE in the past though, at
+least in the context of PACA relative accesses...
 
-Takashi Iwai (1):
-      drm/i915: Use proper print format for debug prints
+> Alternatively, make %r13 point to the percpu side, but make sure that
+> you always use an asm accessor to fetch the value. In particular, I
+> think you need to make __my_cpu_offset be an inline asm that fetches
+> %r13 into some other register. Otherwise you can never get it right.
 
-Ville Syrjälä (1):
-      drm/i915: Don't enable the cursor on a disable pipe
+Yes, that's my plan B, at least for PACA but it would work for per-cpu
+as well. Use a get_paca/put_paca style construct which fetches is in
+another register (and does the preempt enable/disable while at it) and
+for the handful of cases where we do want direct and faster access such
+as manipulating the soft-irq flag, an inline asm load or store which is
+what we do today.
 
-Wei Yongjun (3):
-      drm/msm: fix return value check in ERR_PTR()
-      drm/msm: fix potential NULL pointer dereference
-      drm/exynos: fix return value check in lowlevel_buffer_allocate()
+Also with LE, we still have a bit of potential for tweaking the ABI and
+the compiler, so that's something I want to put on the table.
 
- drivers/gpu/drm/drm_context.c             | 73 ++++---------------------------
- drivers/gpu/drm/drm_fops.c                | 21 ++++++++-
- drivers/gpu/drm/drm_stub.c                | 10 ++++-
- drivers/gpu/drm/exynos/Kconfig            |  2 +-
- drivers/gpu/drm/exynos/exynos_drm_buf.c   |  7 +--
- drivers/gpu/drm/exynos/exynos_drm_fbdev.c |  5 ++-
- drivers/gpu/drm/i915/i915_gem.c           | 11 ++---
- drivers/gpu/drm/i915/i915_irq.c           | 68 ++++++++++++++++++++++------
- drivers/gpu/drm/i915/intel_ddi.c          |  2 +-
- drivers/gpu/drm/i915/intel_display.c      | 42 +++++++++---------
- drivers/gpu/drm/i915/intel_drv.h          |  1 +
- drivers/gpu/drm/i915/intel_dvo.c          |  2 +
- drivers/gpu/drm/i915/intel_panel.c        |  1 +
- drivers/gpu/drm/i915/intel_pm.c           |  6 +--
- drivers/gpu/drm/i915/intel_sdvo.c         | 63 ++++++++++++++------------
- drivers/gpu/drm/msm/adreno/adreno_gpu.c   | 10 ++++-
- drivers/gpu/drm/msm/msm_drv.c             | 50 ++++++++++++++-------
- drivers/gpu/drm/msm/msm_drv.h             |  8 +++-
- drivers/gpu/drm/msm/msm_gem.c             | 34 +++++++++-----
- drivers/gpu/drm/msm/msm_gem.h             |  2 +-
- drivers/gpu/drm/msm/msm_gem_submit.c      | 24 +++++-----
- drivers/gpu/drm/msm/msm_gpu.c             | 24 ++++++++--
- include/drm/drmP.h                        |  7 ++-
- 23 files changed, 276 insertions(+), 197 deletions(-)
+Cheers,
+Ben.
+
+
