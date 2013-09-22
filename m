@@ -1,55 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab3IVQiP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 12:38:15 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43314 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752188Ab3IVQiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 12:38:13 -0400
-Date: Sun, 22 Sep 2013 18:38:01 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dave Young <dyoung@redhat.com>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-Message-ID: <20130922163801.GD28718@pd.tnic>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
- <1379602494-26684-12-git-send-email-bp@alien8.de>
- <20130921113929.GB1587@pd.tnic>
- <20130922123515.GA7476@dhcp-16-126.nay.redhat.com>
- <20130922133722.GC28718@pd.tnic>
- <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752393Ab3IVQqH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 12:46:07 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:44044 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab3IVQqF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 12:46:05 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 02/26] clk: nomadik: move src init out of nomadik_clk_init
+Date: Sun, 22 Sep 2013 18:45:32 +0200
+Message-Id: <1379868332-2808-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1379526839-14798-3-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1379526839-14798-3-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 08:27:34AM -0700, H. Peter Anvin wrote:a
-> The address that faults is interesting in that it is indeed just below
-> -4G. The question at hand is probably what information you are using
-> to build the EFI mappings in the secondary kernel and what could make
-> it not match the primary.
+nomadik_clk_init currently also maps system reset controller base address
+used by clocks and registers a reboot notifier. To allow further cleanup of
+nomadik clk setup, this moves system reset controller setup from
+nomadik_clk_init to its own function.
 
-Yep, so obviously we're not building the pagetable in the second kernel
-the same way as the first or we're missing some pieces.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+Changelog:
+v1->v2:
+- adapt to clk-nomadik changes
 
-Btw, for debugging situations like this one, one could use
-arch/x86/mm/dump_pagetables.c successfully by sticking in the right CR3
-value into *start.
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Alessandro Rubini <rubini@unipv.it>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/clk/clk-nomadik.c |  144 +++++++++++++++++++++++----------------------
+ 1 file changed, 74 insertions(+), 70 deletions(-)
 
-:-)
-
+diff --git a/drivers/clk/clk-nomadik.c b/drivers/clk/clk-nomadik.c
+index 4d978a3..06b29c26 100644
+--- a/drivers/clk/clk-nomadik.c
++++ b/drivers/clk/clk-nomadik.c
+@@ -62,6 +62,79 @@ static DEFINE_SPINLOCK(src_lock);
+ /* Base address of the SRC */
+ static void __iomem *src_base;
+ 
++static int nomadik_clk_reboot_handler(struct notifier_block *this,
++				unsigned long code,
++				void *unused)
++{
++	u32 val;
++
++	/* The main chrystal need to be enabled for reboot to work */
++	val = readl(src_base + SRC_XTALCR);
++	val &= ~SRC_XTALCR_MXTALOVER;
++	val |= SRC_XTALCR_MXTALEN;
++	pr_crit("force-enabling MXTALO\n");
++	writel(val, src_base + SRC_XTALCR);
++	return NOTIFY_OK;
++}
++
++static struct notifier_block nomadik_clk_reboot_notifier = {
++	.notifier_call = nomadik_clk_reboot_handler,
++};
++
++static const struct of_device_id nomadik_src_match[] __initconst = {
++	{ .compatible = "stericsson,nomadik-src" },
++	{ /* sentinel */ }
++};
++
++static void nomadik_src_init(void)
++{
++	struct device_node *np;
++	u32 val;
++
++	np = of_find_matching_node(NULL, nomadik_src_match);
++	if (!np) {
++		pr_crit("no matching node for SRC, aborting clock init\n");
++		return;
++	}
++	src_base = of_iomap(np, 0);
++	if (!src_base) {
++		pr_err("%s: must have src parent node with REGS (%s)\n",
++		       __func__, np->name);
++		return;
++	}
++
++	/* Set all timers to use the 2.4 MHz TIMCLK */
++	val = readl(src_base + SRC_CR);
++	val |= SRC_CR_T0_ENSEL;
++	val |= SRC_CR_T1_ENSEL;
++	val |= SRC_CR_T2_ENSEL;
++	val |= SRC_CR_T3_ENSEL;
++	val |= SRC_CR_T4_ENSEL;
++	val |= SRC_CR_T5_ENSEL;
++	val |= SRC_CR_T6_ENSEL;
++	val |= SRC_CR_T7_ENSEL;
++	writel(val, src_base + SRC_CR);
++
++	val = readl(src_base + SRC_XTALCR);
++	pr_info("SXTALO is %s\n",
++		(val & SRC_XTALCR_SXTALDIS) ? "disabled" : "enabled");
++	pr_info("MXTAL is %s\n",
++		(val & SRC_XTALCR_MXTALSTAT) ? "enabled" : "disabled");
++	if (of_property_read_bool(np, "disable-sxtalo")) {
++		/* The machine uses an external oscillator circuit */
++		val |= SRC_XTALCR_SXTALDIS;
++		pr_info("disabling SXTALO\n");
++	}
++	if (of_property_read_bool(np, "disable-mxtalo")) {
++		/* Disable this too: also run by external oscillator */
++		val |= SRC_XTALCR_MXTALOVER;
++		val &= ~SRC_XTALCR_MXTALEN;
++		pr_info("disabling MXTALO\n");
++	}
++	writel(val, src_base + SRC_XTALCR);
++	register_reboot_notifier(&nomadik_clk_reboot_notifier);
++}
++
+ /**
+  * struct clk_pll1 - Nomadik PLL1 clock
+  * @hw: corresponding clock hardware entry
+@@ -487,11 +560,6 @@ static void __init of_nomadik_src_clk_setup(struct device_node *np)
+ 		of_clk_add_provider(np, of_clk_src_simple_get, clk);
+ }
+ 
+-static const struct of_device_id nomadik_src_match[] __initconst = {
+-	{ .compatible = "stericsson,nomadik-src" },
+-	{ /* sentinel */ }
+-};
+-
+ static const struct of_device_id nomadik_src_clk_match[] __initconst = {
+ 	{
+ 		.compatible = "fixed-clock",
+@@ -516,72 +584,8 @@ static const struct of_device_id nomadik_src_clk_match[] __initconst = {
+ 	{ /* sentinel */ }
+ };
+ 
+-static int nomadik_clk_reboot_handler(struct notifier_block *this,
+-				unsigned long code,
+-				void *unused)
+-{
+-	u32 val;
+-
+-	/* The main chrystal need to be enabled for reboot to work */
+-	val = readl(src_base + SRC_XTALCR);
+-	val &= ~SRC_XTALCR_MXTALOVER;
+-	val |= SRC_XTALCR_MXTALEN;
+-	pr_crit("force-enabling MXTALO\n");
+-	writel(val, src_base + SRC_XTALCR);
+-	return NOTIFY_OK;
+-}
+-
+-static struct notifier_block nomadik_clk_reboot_notifier = {
+-	.notifier_call = nomadik_clk_reboot_handler,
+-};
+-
+ void __init nomadik_clk_init(void)
+ {
+-	struct device_node *np;
+-	u32 val;
+-
+-	np = of_find_matching_node(NULL, nomadik_src_match);
+-	if (!np) {
+-		pr_crit("no matching node for SRC, aborting clock init\n");
+-		return;
+-	}
+-	src_base = of_iomap(np, 0);
+-	if (!src_base) {
+-		pr_err("%s: must have src parent node with REGS (%s)\n",
+-		       __func__, np->name);
+-		return;
+-	}
+-
+-	/* Set all timers to use the 2.4 MHz TIMCLK */
+-	val = readl(src_base + SRC_CR);
+-	val |= SRC_CR_T0_ENSEL;
+-	val |= SRC_CR_T1_ENSEL;
+-	val |= SRC_CR_T2_ENSEL;
+-	val |= SRC_CR_T3_ENSEL;
+-	val |= SRC_CR_T4_ENSEL;
+-	val |= SRC_CR_T5_ENSEL;
+-	val |= SRC_CR_T6_ENSEL;
+-	val |= SRC_CR_T7_ENSEL;
+-	writel(val, src_base + SRC_CR);
+-
+-	val = readl(src_base + SRC_XTALCR);
+-	pr_info("SXTALO is %s\n",
+-		(val & SRC_XTALCR_SXTALDIS) ? "disabled" : "enabled");
+-	pr_info("MXTAL is %s\n",
+-		(val & SRC_XTALCR_MXTALSTAT) ? "enabled" : "disabled");
+-	if (of_property_read_bool(np, "disable-sxtalo")) {
+-		/* The machine uses an external oscillator circuit */
+-		val |= SRC_XTALCR_SXTALDIS;
+-		pr_info("disabling SXTALO\n");
+-	}
+-	if (of_property_read_bool(np, "disable-mxtalo")) {
+-		/* Disable this too: also run by external oscillator */
+-		val |= SRC_XTALCR_MXTALOVER;
+-		val &= ~SRC_XTALCR_MXTALEN;
+-		pr_info("disabling MXTALO\n");
+-	}
+-	writel(val, src_base + SRC_XTALCR);
+-	register_reboot_notifier(&nomadik_clk_reboot_notifier);
+-
++	nomadik_src_init();
+ 	of_clk_init(nomadik_src_clk_match);
+ }
 -- 
-Regards/Gruss,
-    Boris.
+1.7.10.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
