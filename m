@@ -1,95 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab3IVOcD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 10:32:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32918 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753133Ab3IVOcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 10:32:00 -0400
-Date: Sun, 22 Sep 2013 22:31:27 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-Message-ID: <20130922143127.GC7476@dhcp-16-126.nay.redhat.com>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
- <1379602494-26684-12-git-send-email-bp@alien8.de>
- <20130921113929.GB1587@pd.tnic>
- <20130922123515.GA7476@dhcp-16-126.nay.redhat.com>
- <20130922133722.GC28718@pd.tnic>
- <20130922140038.GB7476@dhcp-16-126.nay.redhat.com>
+	id S1753310Ab3IVOfw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 10:35:52 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56264 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab3IVOfu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 10:35:50 -0400
+Message-ID: <523F0040.6050900@ti.com>
+Date: Sun, 22 Sep 2013 23:35:44 +0900
+From: Milo Kim <milo.kim@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130922140038.GB7476@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pwm@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 4/4] Documentation: add LP3943 DT bindings and document
+References: <1378949700-6384-1-git-send-email-milo.kim@ti.com> <20130912152455.GN11227@lee--X1>
+In-Reply-To: <20130912152455.GN11227@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/13 at 10:00pm, Dave Young wrote:
-> On 09/22/13 at 03:37pm, Borislav Petkov wrote:
-> > On Sun, Sep 22, 2013 at 08:35:15PM +0800, Dave Young wrote:
-> > > I tested your new patch, it works both with efi stub and grub boot in
-> > > 1st kernel.
-> > 
-> > Good, thanks!
-> > 
-> > > But it paniced in kexec boot with my kexec related patcheset, the patchset
-> > 
-> > That's the second kernel, right?
-> 
-> Yes, it's 2nd kernel.
-> 
-> > 
-> > > contains 3 patch:
-> > > 1. introduce cmdline kexecboot=<0|1|2>; 1 == kexec, 2 == kdump
-> > > 2. export physical addr fw_vendor, runtime, tables to /sys/firmware/efi/systab
-> > > 3. if kexecboot != 0, use fw_vendor, runtime, tables from bootparams; Also do not
-> > >    call SetVirtualAddressMao in case kexecboot.
-> > > 
-> > > The panic happens at the last line of efi_init:
-> > >         /* clean DUMMY object */
-> > >         efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
-> > >                          EFI_VARIABLE_NON_VOLATILE |
-> > >                          EFI_VARIABLE_BOOTSERVICE_ACCESS |
-> > >                          EFI_VARIABLE_RUNTIME_ACCESS,
-> > >                          0, NULL);
-> > > 
-> > > Below is the dmesg:
-> > > [    0.003359] pid_max: default: 32768 minimum: 301
-> > > [    0.004792] BUG: unable to handle kernel paging request at fffffffefde97e70
-> > > [    0.006666] IP: [<ffffffff8103a1db>] virt_efi_set_variable+0x40/0x54
-> > > [    0.006666] PGD 36981067 PUD 35828063 PMD 0
-> > 
-> > Here it is - fffffffefde97e70 is not mapped in the pagetable, PMD is 0.
-> > 
-> > Ok, can you upload your patches somewhere and tell me exactly how to
-> > reproduce this so that I can take a look too?
-> 
-> Ok, will put somewhere after a little cleanup today.
 
-Here it is:
-https://people.redhat.com/ruyang/kexec-efi/for-bp/
+Hi Lee,
 
-userspace patches are also necessary, they are under kexec-tools-patches/
+On 09/13/2013 12:24 AM, Lee Jones wrote:
+> On Thu, 12 Sep 2013, Milo Kim wrote:
 
-Just test with below steps:
-kexec -l /boot/vmlinuz-3.12.0-rc1+ --reuse-cmdline --append "kexecboot=1"
-kexec -e
+...
 
-> 
-> > 
-> > Thanks.
-> > 
-> > -- 
-> > Regards/Gruss,
-> >     Boris.
-> > 
-> > Sent from a fat crate under my desk. Formatting is fine.
-> > --
+>> new file mode 100644
+>> index 0000000..576ebd0
+>> --- /dev/null
+>> +++ b/Documentation/lp3943.txt
+>> @@ -0,0 +1,62 @@
+>> +TI/National Semiconductor LP3943 MFD driver
+>> +===========================================
+>> +
+>> +LP3943 is an integrated device capable of driving 16 output channels.
+>> +It can be used for GPIO expander and PWM generators.
+>> +LP3493 registers are controlled via the I2C interface.
+>> +
+>> +Driver structure
+>> +----------------
+>> +                                  LED control    General usage for a device
+>> +                                  ___________   ____________________________
+>> +
+>> +  LP3943 MFD ---- GPIO expander    leds-gpio        eg) HW enable pin
+>> +              |
+>> +              --- PWM generator    leds-pwm         eg) PWM input
+>> +
+>> +
+>> +Why do we need GPIO and PWM drivers instead of LED driver?
+>> +To support LED control and general usage, GPIO and PWM drivers are necessary.
+>> +
+>> +According to the datasheet(1), it's just a LED driver which has 16 channels.
+>> +But here is another application, a GPIO expander.(2)
+>> +
+>> +  (1) http://www.ti.com/lit/ds/snvs256b/snvs256b.pdf
+>> +  (2) http://www.ti.com/lit/an/snva287a/snva287a.pdf
+>> +
+>> +Internal two PWM channels are used for LED dimming effect.
+>> +And each output pin can be used as a GPIO as well.
+>> +LED functionality can work with GPIOs or PWMs.
+>> +LEDs can be controlled with legacy leds-gpio(static brightness) or
+>> +leds-pwm drivers(dynamic brightness control).
+>> +Additionally, it can be used for generic GPIO and PWM controller.
+>> +For example, a GPIO is HW enable pin of a device.
+>> +PWM is input pin of a backlight device.
+>> +
+>> +
+>> +LP3943 PWM port map
+>> +-------------------
+>> +Each PWM channel can be mapped to one or multiple output pins.
+>> +
+>> +For example, PWM 0 is used for a backlight device.
+>> +PWM 1 is for RGB LEDs.
+>> +
+>> +  PWM channel    Output pins    PWM consumer
+>> +  ___________    ___________    ____________
+>> +  PWM 0          pin 1          backlight
+>> +  PWM 1          pin 7, 8, 9    RGB LEDs
+>> +
+>> +Then, PWM port map is as below.
+>> +PWM 0: num_outputs = 1, output = pin 1
+>> +PWM 1: num_outputs = 3, output = pin 7, 8, 9
+>> +
+>> +The 'lp3943_pwm_map' structure is used for this feature.
+>> +
+>> +
+>> +Device tree supported
+>> +---------------------
+>> +Please refer to the documents below.
+>> +
+>> +Documentation/devicetree/bindings/mfd/lp3943.txt
+>> +Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
+>> +Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
+>
+> Why do you need to document your driver in this way?
+>
+> If this stuff is really important (and most of it really isn't), then
+> put it either in the commit log or in the driver.
+
+Unnecessary documentation makes it noisy, but I think the LP3943 still 
+needs the driver documentation for better understanding.
+
+Many people think LP3943 is just LED driver, but I really want to share 
+the application usages - PWM generators and GPIO expanders.
+If the driver just supports LED functionality, then it would be created 
+as LED class driver. However, this patch-set enables more generic driver 
+usages.
+So, this documentation would be helpful.
+
+And I want to keep the code and the documentation separate.
+If the link address is changed, then only documentation file will be 
+modified, not source file.
+
+So, I'd like to create the fifth patch-set with new MFD documentation 
+subdirectory.
+Additionally, LP3943 platform data example code will be added in the 
+'Documentation/mfd/lp3943.txt'. It's for a platform which doesn't 
+support the device tree.
+
+Best regards,
+Milo
