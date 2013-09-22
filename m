@@ -1,98 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab3IVIWU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 04:22:20 -0400
-Received: from smtprelay0008.hostedemail.com ([216.40.44.8]:40055 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752743Ab3IVIWP (ORCPT
+	id S1752817Ab3IVI0U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 04:26:20 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53467 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076Ab3IVI0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 04:22:15 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3871:3872:4321:4605:5007:7652:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12438:12517:12519:12555:12679:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: road86_12d5abd6f850e
-X-Filterd-Recvd-Size: 2770
-Message-ID: <1379838128.2086.6.camel@joe-AO722>
-Subject: Re: [PATCH 12/19] wireless: Change variable type to bool
-From: Joe Perches <joe@perches.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Larry.Finger@lwfinger.net, chaoming_li@realsil.com.cn,
-        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Date: Sun, 22 Sep 2013 01:22:08 -0700
-In-Reply-To: <1379802471-30252-12-git-send-email-peter.senna@gmail.com>
-References: <1379802471-30252-1-git-send-email-peter.senna@gmail.com>
-	 <1379802471-30252-12-git-send-email-peter.senna@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Sun, 22 Sep 2013 04:26:15 -0400
+Message-ID: <1379838364.5499.39.camel@marge.simpson.net>
+Subject: Re: [PATCH] ipc/sem.c: fix update sem_otime when calling sem_op in
+ semaphore initialization
+From: Mike Galbraith <bitbucket@online.de>
+To: Jia He <jiakernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Date: Sun, 22 Sep 2013 10:26:04 +0200
+In-Reply-To: <1379837823.5499.34.camel@marge.simpson.net>
+References: <1379815884-11035-1-git-send-email-jiakernel@gmail.com>
+	 <1379837823.5499.34.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:kxIlArGnSy4L47ZPGIiU01ysMIlp5um8bp0/KaAHMlb
+ fK52YwSlujsLM3toQcC5yKmHOOVVh6CZmWVuCkKIbGQLM+wZrq
+ pLRck8R4y9EVBx+M3hkUv97yp9KMGGXOzhSKOzPPgvZyYReHoc
+ A2DQwzmdRoxel6QLpNzD3WQ9htHiA8kzkgE1rvy62nrgJ0etKa
+ Rs6nlwqaVYzL6NrgFBGrdx4c3BzEiKIywB5k/w2tVIGM7XSjcf
+ Yv/q8OeQm2BVy2Ia1K4YYSYu7XAYqu/N3y7vDZnLU+rbczO28J
+ gYvLAvKPMDnCftqWaQtuwuwlO45VfsrAXmRElBTD3qv1QDhmoZ
+ eKYhVPYPqi0iVtPs0gZ06bp//3NgYnZyAnv2hvlLnsS0WZ6Jyv
+ C2dRgpIhxebJQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-09-22 at 00:27 +0200, Peter Senna Tschudin wrote:
-> The variable continual is only assigned the values true and false.
-> Change its type to bool.
-[]
-> diff --git a/drivers/net/wireless/rtlwifi/efuse.c b/drivers/net/wireless/rtlwifi/efuse.c
-[]
-> @@ -1203,7 +1203,7 @@ static void efuse_power_switch(struct ieee80211_hw *hw, u8 write, u8 pwrstate)
->  
->  static u16 efuse_get_current_size(struct ieee80211_hw *hw)
->  {
-> -	int continual = true;
-> +	bool continual = true;
->  	u16 efuse_addr = 0;
->  	u8 hworden;
->  	u8 efuse_data, word_cnts;
+On Sun, 2013-09-22 at 10:17 +0200, Mike Galbraith wrote: 
+> On Sun, 2013-09-22 at 10:11 +0800, Jia He wrote: 
+> > In commit 0a2b9d4c,the update of semaphore's sem_otime(last semop time)
+> > was removed because he wanted to move setting sem->sem_otime to one
+> > place. But after that, the initial semop() will not set the otime
+> > because its sem_op value is 0(in semtimedop,will not change
+> > otime if alter == 1).
+> > 
+> > the error case:
+> > process_a(server)       process_b(client)
+> > semget()
+> > semctl(SETVAL)
+> > semop()
+> >                         semget()
+> >                         setctl(IP_STAT)
+> >                         for(;;) {               <--not successful here
+> >                           check until sem_otime > 0
+> >                         }
+> 
+> Why not..
 
-Yes, this could use bool, but would probably be better
-written without continual at all
+(pokes evolution's don't-munge-me button)
 
-as it is before this patch:
+ipc,sem: Create semaphores with plausible sem_otime.
 
-static u16 efuse_get_current_size(struct ieee80211_hw *hw)
-{
-	int continual = true;
-	u16 efuse_addr = 0;
-	u8 hworden;
-	u8 efuse_data, word_cnts;
+Signed-off-by: Mike Galbraith <bitbucket@online.de>
 
-	while (continual && efuse_one_byte_read(hw, efuse_addr, &efuse_data)
-	       && (efuse_addr < EFUSE_MAX_SIZE)) {
-		if (efuse_data != 0xFF) {
-			hworden = efuse_data & 0x0F;
-			word_cnts = efuse_calculate_word_cnts(hworden);
-			efuse_addr = efuse_addr + (word_cnts * 2) + 1;
-		} else {
-			continual = false;
-		}
-	}
+diff --git a/ipc/sem.c b/ipc/sem.c
+index 4108889..f2564d7 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -471,19 +471,20 @@ static int newary(struct ipc_namespace *ns, struct ipc_params *params)
+ 	ns->used_sems += nsems;
+ 
+ 	sma->sem_base = (struct sem *) &sma[1];
++	sma->complex_count = 0;
++	INIT_LIST_HEAD(&sma->pending_alter);
++	INIT_LIST_HEAD(&sma->pending_const);
++	INIT_LIST_HEAD(&sma->list_id);
++	sma->sem_nsems = nsems;
++	sma->sem_ctime = get_seconds();
+ 
+ 	for (i = 0; i < nsems; i++) {
+ 		INIT_LIST_HEAD(&sma->sem_base[i].pending_alter);
+ 		INIT_LIST_HEAD(&sma->sem_base[i].pending_const);
+ 		spin_lock_init(&sma->sem_base[i].lock);
++		sma->sem_base[i].sem_otime = sma->sem_ctime;
+ 	}
+ 
+-	sma->complex_count = 0;
+-	INIT_LIST_HEAD(&sma->pending_alter);
+-	INIT_LIST_HEAD(&sma->pending_const);
+-	INIT_LIST_HEAD(&sma->list_id);
+-	sma->sem_nsems = nsems;
+-	sma->sem_ctime = get_seconds();
+ 	sem_unlock(sma, -1);
+ 	rcu_read_unlock();
+ 
 
-	return efuse_addr;
-}
-
-I think writing it without continual, which is effectively
-an ersatz "break", would be better
-
-Something like:
-
-static u16 efuse_get_current_size(struct ieee80211_hw *hw)
-{
-	u16 efuse_addr = 0;
-	u8 hworden;
-	u8 efuse_data, word_cnts;
-
-	while (efuse_one_byte_read(hw, efuse_addr, &efuse_data) &&
-	       (efuse_addr < EFUSE_MAX_SIZE) {
-		if (efuse_data == 0xff)
-			break;
-		hworden = efuse_data & 0x0F;
-		word_cnts = efuse_calculate_word_cnts(hworden);
-		efuse_addr = efuse_addr + (word_cnts * 2) + 1;
-	}
-
-	return efuse_addr;
-}
 
