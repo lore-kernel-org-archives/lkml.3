@@ -1,128 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab3IVOqy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 10:46:54 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53481 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752354Ab3IVOpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 10:45:06 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Andre Przywara <andre@andrep.de>, Joerg Roedel <joro@8bytes.org>,
-        X86 ML <x86@kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 3/6] kvm, emulator: Rename VendorSpecific flag
-Date: Sun, 22 Sep 2013 16:44:52 +0200
-Message-Id: <1379861095-628-4-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1379861095-628-1-git-send-email-bp@alien8.de>
-References: <1379861095-628-1-git-send-email-bp@alien8.de>
+	id S1752220Ab3IVPOx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 11:14:53 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:53388 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab3IVPOw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 11:14:52 -0400
+Message-ID: <523F0953.3070505@gmail.com>
+Date: Sun, 22 Sep 2013 23:14:27 +0800
+From: Jia He <jiakernel@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Manfred Spraul <manfred@colorfullife.com>,
+        Mike Galbraith <bitbucket@online.de>
+CC: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] ipc/sem.c: fix update sem_otime when calling sem_op in
+ semaphore initialization
+References: <1379815884-11035-1-git-send-email-jiakernel@gmail.com> <1379837823.5499.34.camel@marge.simpson.net> <1379838364.5499.39.camel@marge.simpson.net> <523EC97D.8020707@colorfullife.com>
+In-Reply-To: <523EC97D.8020707@colorfullife.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+ Hi Manfred
 
-Call it EmulateOnUD which is exactly what we're trying to do with
-vendor-specific instructions.
-
-Rename ->only_vendor_specific_insn to something shorter, while at it.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/include/asm/kvm_emulate.h |  2 +-
- arch/x86/kvm/emulate.c             | 14 +++++++-------
- arch/x86/kvm/x86.c                 |  3 +--
- 3 files changed, 9 insertions(+), 10 deletions(-)
-
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index 92a176ad456c..24ec1216596e 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -274,7 +274,7 @@ struct x86_emulate_ctxt {
- 
- 	bool guest_mode; /* guest running a nested guest */
- 	bool perm_ok; /* do not check permissions if true */
--	bool only_vendor_specific_insn;
-+	bool ud;	/* inject an #UD if host doesn't support insn */
- 
- 	bool have_exception;
- 	struct x86_exception exception;
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index bfae4a433091..67277bcb377a 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -130,7 +130,7 @@
- #define Mov         (1<<20)
- /* Misc flags */
- #define Prot        (1<<21) /* instruction generates #UD if not in prot-mode */
--#define VendorSpecific (1<<22) /* Vendor specific instruction */
-+#define EmulateOnUD (1<<22) /* Emulate if unsupported by the host */
- #define NoAccess    (1<<23) /* Don't access memory (lea/invlpg/verr etc) */
- #define Op3264      (1<<24) /* Operand is 64b in long mode, 32b otherwise */
- #define Undefined   (1<<25) /* No Such Instruction */
-@@ -3491,7 +3491,7 @@ static const struct opcode group7_rm1[] = {
- 
- static const struct opcode group7_rm3[] = {
- 	DIP(SrcNone | Prot | Priv,		vmrun,		check_svme_pa),
--	II(SrcNone  | Prot | VendorSpecific,	em_vmmcall,	vmmcall),
-+	II(SrcNone  | Prot | EmulateOnUD,	em_vmmcall,	vmmcall),
- 	DIP(SrcNone | Prot | Priv,		vmload,		check_svme_pa),
- 	DIP(SrcNone | Prot | Priv,		vmsave,		check_svme_pa),
- 	DIP(SrcNone | Prot | Priv,		stgi,		check_svme),
-@@ -3576,7 +3576,7 @@ static const struct group_dual group7 = { {
- 	II(SrcMem16 | Mov | Priv,		em_lmsw, lmsw),
- 	II(SrcMem | ByteOp | Priv | NoAccess,	em_invlpg, invlpg),
- }, {
--	I(SrcNone | Priv | VendorSpecific,	em_vmcall),
-+	I(SrcNone | Priv | EmulateOnUD,	em_vmcall),
- 	EXT(0, group7_rm1),
- 	N, EXT(0, group7_rm3),
- 	II(SrcNone | DstMem | Mov,		em_smsw, smsw), N,
-@@ -3798,7 +3798,7 @@ static const struct opcode opcode_table[256] = {
- static const struct opcode twobyte_table[256] = {
- 	/* 0x00 - 0x0F */
- 	G(0, group6), GD(0, &group7), N, N,
--	N, I(ImplicitOps | VendorSpecific, em_syscall),
-+	N, I(ImplicitOps | EmulateOnUD, em_syscall),
- 	II(ImplicitOps | Priv, em_clts, clts), N,
- 	DI(ImplicitOps | Priv, invd), DI(ImplicitOps | Priv, wbinvd), N, N,
- 	N, D(ImplicitOps | ModRM), N, N,
-@@ -3818,8 +3818,8 @@ static const struct opcode twobyte_table[256] = {
- 	IIP(ImplicitOps, em_rdtsc, rdtsc, check_rdtsc),
- 	II(ImplicitOps | Priv, em_rdmsr, rdmsr),
- 	IIP(ImplicitOps, em_rdpmc, rdpmc, check_rdpmc),
--	I(ImplicitOps | VendorSpecific, em_sysenter),
--	I(ImplicitOps | Priv | VendorSpecific, em_sysexit),
-+	I(ImplicitOps | EmulateOnUD, em_sysenter),
-+	I(ImplicitOps | Priv | EmulateOnUD, em_sysexit),
- 	N, N,
- 	N, N, N, N, N, N, N, N,
- 	/* 0x40 - 0x4F */
-@@ -4256,7 +4256,7 @@ done_prefixes:
- 	if (ctxt->d == 0 || (ctxt->d & NotImpl))
- 		return EMULATION_FAILED;
- 
--	if (!(ctxt->d & VendorSpecific) && ctxt->only_vendor_specific_insn)
-+	if (!(ctxt->d & EmulateOnUD) && ctxt->ud)
- 		return EMULATION_FAILED;
- 
- 	if (mode == X86EMUL_MODE_PROT64 && (ctxt->d & Stack))
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 6f2ea40b80cf..0767d9f4c5bd 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5097,8 +5097,7 @@ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
- 		ctxt->have_exception = false;
- 		ctxt->perm_ok = false;
- 
--		ctxt->only_vendor_specific_insn
--			= emulation_type & EMULTYPE_TRAP_UD;
-+		ctxt->ud = emulation_type & EMULTYPE_TRAP_UD;
- 
- 		r = x86_decode_insn(ctxt, insn, insn_len);
- 
--- 
-1.8.4
+On Sun, 22 Sep 2013 12:42:05 +0200 from manfred@colorfullife.com wrote:
+> Hi all,
+>
+> On 09/22/2013 10:26 AM, Mike Galbraith wrote:
+>> On Sun, 2013-09-22 at 10:17 +0200, Mike Galbraith wrote:
+>>> On Sun, 2013-09-22 at 10:11 +0800, Jia He wrote:
+>>>> In commit 0a2b9d4c,the update of semaphore's sem_otime(last semop time)
+>>>> was removed because he wanted to move setting sem->sem_otime to one
+>>>> place. But after that, the initial semop() will not set the otime
+>>>> because its sem_op value is 0(in semtimedop,will not change
+>>>> otime if alter == 1).
+>>>>
+>>>> the error case:
+>>>> process_a(server)       process_b(client)
+>>>> semget()
+>>>> semctl(SETVAL)
+>>>> semop()
+>>>>                          semget()
+>>>>                          setctl(IP_STAT)
+>>>>                          for(;;) {               <--not successful here
+>>>>                            check until sem_otime > 0
+>>>>                          }
+> Good catch:
+> Since commit 0a2b9d4c, wait-for-zero semops do not update sem_otime anymore.
+>
+> Let's reverse that part of my commit and move the update of sem_otime back
+> into perform_atomic_semop().
+>
+> Jia: If perform_atomic_semop() updates sem_otime, then the update in
+> do_smart_update() is not necessary anymore.
+> Thus the whole logic with passing arround "semop_completed" can be removed, too.
+> Are you interested in writing that patch?
+>
+Not all perform_atomic_semop() can cover the points of do_smart_update()
+after I move the parts of updating otime.
+Eg. in semctl_setval/exit_sem/etc.    That is, it seems I need to write some
+other codes to update sem_otime outside perform_atomic_semop(). That
+still violate your original goal---let one function do all the update otime
+things.
+IMO, what if just remove the condition alter in sys_semtimedop:
+-        if (alter && error == 0)
++       if (error == 0)
+            do_smart_update(sma, sops, nsops, 1, &tasks);
+In old codes, it would set the otime even when sem_op == 0
+>
+>>> Why not..
+>> (pokes evolution's don't-munge-me button)
+>>
+>> ipc,sem: Create semaphores with plausible sem_otime.
+> Mike: no, your patch makes it worse:
+> - wait-for-zero semops still don't update sem_otime
+> - sem_otime is initialized to sem_ctime. That's not mentioned in the sysv
+> standard.
+>
+> -- 
+>     Manfred
+>
 
