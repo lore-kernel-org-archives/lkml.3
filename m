@@ -1,134 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab3IVOMD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 10:12:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24743 "EHLO mx1.redhat.com"
+	id S1753211Ab3IVOTM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 10:19:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34438 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753071Ab3IVOMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 10:12:00 -0400
-Date: Sun, 22 Sep 2013 17:14:10 +0300
+	id S1752922Ab3IVOTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 10:19:10 -0400
+Date: Sun, 22 Sep 2013 17:20:54 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: "Barnes, Jesse" <jbarnes@virtuousgeek.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        DRI <dri-devel@lists.freedesktop.org>, Dave Airlie <airlied@gmail.com>
-Subject: Re: Fwd: linux-next: Tree for Jul 1 [ drm-intel-next: Several
- call-traces ]
-Message-ID: <20130922141410.GA1974@redhat.com>
-References: <CA+icZUXyizuCR3YDfFXD5hCkgycFYGzMHaJxg=m9UackT7uzGQ@mail.gmail.com>
- <CAKMK7uFzwiztE8H1rvSDWQmw08JGoKdnTs5BYqxdrHwb=pK50A@mail.gmail.com>
- <CA+icZUXnHaT75NhhSx+AhcMEKybHugH9+hV_mS5h5-cimFdz6A@mail.gmail.com>
- <CA+icZUVQ_UO_VnN9+Q7B3hhuFmw4XPEw19rhO+T4jU5hLGWaTQ@mail.gmail.com>
- <CA+icZUW3K7RyUcfdos7aOkrEOd3To0kSns+G3GSfkPqqwo7z=w@mail.gmail.com>
- <20130826130511.GA21082@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Olivier Langlois <olivier@trillion01.com>
+Subject: [PATCH] sched: drop un-necessary task_rq calls
+Message-ID: <20130922142054.GA11499@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130826130511.GA21082@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 04:05:11PM +0300, Michael S. Tsirkin wrote:
-> On Wed, Aug 21, 2013 at 11:22:58AM +0200, Sedat Dilek wrote:
-> > [ Re: [Intel-gfx] i915 producing warnings with kernel 3.11-rc5 ]
-> > 
-> > Hi,
-> > 
-> > saw your posting in [1]... can you try the patches below?
-> > Not sure if they apply.
-> > Did you try v3.11-rc6(+)... or drm-intel-nightly?
-> > 
-> > Regards,
-> > - Sedat -
-> > 
-> > [1] http://lists.freedesktop.org/archives/intel-gfx/2013-August/032154.html
-> 
-> Same thing observed with v3.11-rc7.
+We always know the rq used, let's just pass it around.
+This seems to cut the size of scheduler core down a tiny bit.
 
-I still see this with 3.11.
-Following this message, my VGA monitor goes blank and
-shows an error suggesting a wrong resolution or frequency are set.
-Anyone?
+Before:
+[linux]$ size kernel/sched/core-old.o 
+   text    data     bss     dec     hex filename
+  62760   16130    3876   82766   1434e kernel/sched/core.o
+After:
+[linux]$ size kernel/sched/core-rq.o 
+   text    data     bss     dec     hex filename
+  62566   16130    3876   82572   1428c kernel/sched/core-rq.o
 
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ kernel/sched/core.c  |  6 +++---
+ kernel/sched/stats.h | 46 ++++++++++++++++++++++++----------------------
+ 2 files changed, 27 insertions(+), 25 deletions(-)
 
-> 
-> > 
-> > ---------- Forwarded message ----------
-> > From: Sedat Dilek <sedat.dilek@gmail.com>
-> > Date: Tue, Jul 2, 2013 at 7:31 AM
-> > Subject: Re: linux-next: Tree for Jul 1 [ drm-intel-next: Several call-traces ]
-> > To: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > Cc: "Barnes, Jesse" <jbarnes@virtuousgeek.org>, Stephen Rothwell
-> > <sfr@canb.auug.org.au>, linux-next <linux-next@vger.kernel.org>, Linux
-> > Kernel Mailing List <linux-kernel@vger.kernel.org>, intel-gfx
-> > <intel-gfx@lists.freedesktop.org>, DRI
-> > <dri-devel@lists.freedesktop.org>, Dave Airlie <airlied@gmail.com>
-> > 
-> > 
-> > On Mon, Jul 1, 2013 at 11:03 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> > > On Mon, Jul 1, 2013 at 10:52 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> > >> On Mon, Jul 1, 2013 at 10:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> > >>> On Mon, Jul 1, 2013 at 9:59 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > >>>> Hi all,
-> > >>>>
-> > >>>> Changes since 20130628:
-> > >>>>
-> > >>>> The regulator tree gained a build failure so I used the version from
-> > >>>> next-20130628.
-> > >>>>
-> > >>>> The trivial tree gained a conflict against the fbdev tree.
-> > >>>>
-> > >>>> The arm-soc tree gained a conflict against the net-next tree.
-> > >>>>
-> > >>>> The akpm tree lost a few patches that turned up elsewhere and I removed 2
-> > >>>> that were causing run time problems.
-> > >>>>
-> > >>>
-> > >>> [ CC drm and drm-intel folks ]
-> > >>>
-> > >>> [ Did not check any relevant MLs ]
-> > >>>
-> > >>> Please, see attached dmesg output.
-> > >>
-> > >> Clock mismatch, one for Jesse to figure out. Note that this patch is
-> > >> for 3.12, I simply haven't yet gotten around to properly split my
-> > >> patch queue so a few spilled into -next. I'll do that now.
-> > >
-> > > I like lightspeed-fast replies :-).
-> > >
-> > > Guess "drm/i915: get mode clock when reading the pipe config v9" [1]
-> > > is the cause.
-> > >
-> > 
-> > Problem solved by applying these patches to next-20130701 from
-> > intel-gfx patchwork-service [0]:
-> > 
-> >    [1/2] drm/i915: fixup messages in pipe_config_compare
-> >    [2/2] drm/i915: get clock config when checking CRTC state too
-> > 
-> > AFAICS 2/2 was folded into updated "drm/i915: get mode clock when
-> > reading the pipe config v9" [3].
-> > 
-> > It would be kind to be CCed on the patches and get also some credits.
-> > Also a CC to the report in linux-next should IMHO be done.
-> > 
-> > - Sedat -
-> > 
-> > [0] https://patchwork.kernel.org/project/intel-gfx/list/
-> > [1] https://patchwork.kernel.org/patch/2809031/
-> > [2] https://patchwork.kernel.org/patch/2809021/
-> > [3] http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-nightly&id=f1f644dc66cbaf5a4c7dcde683361536b41885b9
-> > 
-> > > - Sedat -
-> > >
-> > > [1] http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-next-queued&id=d325d8b4f351f9d45e7c8baabf581fd21f343133
-> > >
-> > >> -Daniel
-> > >> --
-> > >> Daniel Vetter
-> > >> Software Engineer, Intel Corporation
-> > >> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 05c39f0..8558187 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -767,14 +767,14 @@ static void set_load_weight(struct task_struct *p)
+ static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
+ {
+ 	update_rq_clock(rq);
+-	sched_info_queued(p);
++	sched_info_queued(rq, p);
+ 	p->sched_class->enqueue_task(rq, p, flags);
+ }
+ 
+ static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
+ {
+ 	update_rq_clock(rq);
+-	sched_info_dequeued(p);
++	sched_info_dequeued(rq, p);
+ 	p->sched_class->dequeue_task(rq, p, flags);
+ }
+ 
+@@ -1853,7 +1853,7 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
+ 		    struct task_struct *next)
+ {
+ 	trace_sched_switch(prev, next);
+-	sched_info_switch(prev, next);
++	sched_info_switch(rq, prev, next);
+ 	perf_event_task_sched_out(prev, next);
+ 	fire_sched_out_preempt_notifiers(prev, next);
+ 	prepare_lock_switch(rq, next);
+diff --git a/kernel/sched/stats.h b/kernel/sched/stats.h
+index 5aef494..a3802d6 100644
+--- a/kernel/sched/stats.h
++++ b/kernel/sched/stats.h
+@@ -59,9 +59,9 @@ static inline void sched_info_reset_dequeued(struct task_struct *t)
+  * from dequeue_task() to account for possible rq->clock skew across cpus. The
+  * delta taken on each cpu would annul the skew.
+  */
+-static inline void sched_info_dequeued(struct task_struct *t)
++static inline void sched_info_dequeued(struct rq *rq, struct task_struct *t)
+ {
+-	unsigned long long now = rq_clock(task_rq(t)), delta = 0;
++	unsigned long long now = rq_clock(rq), delta = 0;
+ 
+ 	if (unlikely(sched_info_on()))
+ 		if (t->sched_info.last_queued)
+@@ -69,7 +69,7 @@ static inline void sched_info_dequeued(struct task_struct *t)
+ 	sched_info_reset_dequeued(t);
+ 	t->sched_info.run_delay += delta;
+ 
+-	rq_sched_info_dequeued(task_rq(t), delta);
++	rq_sched_info_dequeued(rq, delta);
+ }
+ 
+ /*
+@@ -77,9 +77,9 @@ static inline void sched_info_dequeued(struct task_struct *t)
+  * long it was waiting to run.  We also note when it began so that we
+  * can keep stats on how long its timeslice is.
+  */
+-static void sched_info_arrive(struct task_struct *t)
++static void sched_info_arrive(struct rq *rq, struct task_struct *t)
+ {
+-	unsigned long long now = rq_clock(task_rq(t)), delta = 0;
++	unsigned long long now = rq_clock(rq), delta = 0;
+ 
+ 	if (t->sched_info.last_queued)
+ 		delta = now - t->sched_info.last_queued;
+@@ -88,7 +88,7 @@ static void sched_info_arrive(struct task_struct *t)
+ 	t->sched_info.last_arrival = now;
+ 	t->sched_info.pcount++;
+ 
+-	rq_sched_info_arrive(task_rq(t), delta);
++	rq_sched_info_arrive(rq, delta);
+ }
+ 
+ /*
+@@ -96,11 +96,11 @@ static void sched_info_arrive(struct task_struct *t)
+  * the timestamp if it is already not set.  It's assumed that
+  * sched_info_dequeued() will clear that stamp when appropriate.
+  */
+-static inline void sched_info_queued(struct task_struct *t)
++static inline void sched_info_queued(struct rq *rq, struct task_struct *t)
+ {
+ 	if (unlikely(sched_info_on()))
+ 		if (!t->sched_info.last_queued)
+-			t->sched_info.last_queued = rq_clock(task_rq(t));
++			t->sched_info.last_queued = rq_clock(rq);
+ }
+ 
+ /*
+@@ -110,15 +110,15 @@ static inline void sched_info_queued(struct task_struct *t)
+  * sched_info_queued() to mark that it has now again started waiting on
+  * the runqueue.
+  */
+-static inline void sched_info_depart(struct task_struct *t)
++static inline void sched_info_depart(struct rq *rq, struct task_struct *t)
+ {
+-	unsigned long long delta = rq_clock(task_rq(t)) -
++	unsigned long long delta = rq_clock(rq) -
+ 					t->sched_info.last_arrival;
+ 
+-	rq_sched_info_depart(task_rq(t), delta);
++	rq_sched_info_depart(rq, delta);
+ 
+ 	if (t->state == TASK_RUNNING)
+-		sched_info_queued(t);
++		sched_info_queued(rq, t);
+ }
+ 
+ /*
+@@ -127,32 +127,34 @@ static inline void sched_info_depart(struct task_struct *t)
+  * the idle task.)  We are only called when prev != next.
+  */
+ static inline void
+-__sched_info_switch(struct task_struct *prev, struct task_struct *next)
++__sched_info_switch(struct rq *rq,
++		    struct task_struct *prev, struct task_struct *next)
+ {
+-	struct rq *rq = task_rq(prev);
+-
+ 	/*
+ 	 * prev now departs the cpu.  It's not interesting to record
+ 	 * stats about how efficient we were at scheduling the idle
+ 	 * process, however.
+ 	 */
+ 	if (prev != rq->idle)
+-		sched_info_depart(prev);
++		sched_info_depart(rq, prev);
+ 
+ 	if (next != rq->idle)
+-		sched_info_arrive(next);
++		sched_info_arrive(rq, next);
+ }
+ static inline void
+-sched_info_switch(struct task_struct *prev, struct task_struct *next)
++sched_info_switch(struct rq *rq,
++		  struct task_struct *prev, struct task_struct *next)
+ {
+ 	if (unlikely(sched_info_on()))
+-		__sched_info_switch(prev, next);
++		__sched_info_switch(rq, prev, next);
+ }
+ #else
+-#define sched_info_queued(t)			do { } while (0)
++#define sched_info_queued(rq, t)		do { } while (0)
+ #define sched_info_reset_dequeued(t)	do { } while (0)
+-#define sched_info_dequeued(t)			do { } while (0)
+-#define sched_info_switch(t, next)		do { } while (0)
++#define sched_info_dequeued(rq, t)		do { } while (0)
++#define sched_info_depart(rq, t)		do { } while (0)
++#define sched_info_arrive(rq, next)		do { } while (0)
++#define sched_info_switch(rq, t, next)		do { } while (0)
+ #endif /* CONFIG_SCHEDSTATS || CONFIG_TASK_DELAY_ACCT */
+ 
+ /*
+-- 
+MST
