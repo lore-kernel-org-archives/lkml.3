@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab3IVQYf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 12:24:35 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34026 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab3IVQYe (ORCPT
+	id S1752340Ab3IVQez (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 12:34:55 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:56469 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab3IVQey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 12:24:34 -0400
-Date: Sun, 22 Sep 2013 18:24:10 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
-Message-ID: <20130922162410.GA10649@laptop.programming.kicks-ass.net>
-References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
- <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
- <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
- <20130920162603.GA30381@localhost.localdomain>
- <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
- <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
- <1379799901.24090.6.camel@pasglop>
- <523E4F8A.7020708@zytor.com>
- <1379824754.24090.11.camel@pasglop>
- <1379824861.24090.12.camel@pasglop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379824861.24090.12.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Sun, 22 Sep 2013 12:34:54 -0400
+From: Avinash kumar <avi.kp.137@gmail.com>
+To: sbhatewara@vmware.com
+Cc: pv-drivers@vmware.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Avinash kumar <avi.kp.137@gmail.com>
+Subject: [PATCH 3/3] drivers: net: vmxnet3: vmxnet3_int.h: removed checkpatch warnings
+Date: Sun, 22 Sep 2013 22:04:37 +0530
+Message-Id: <1379867677-3607-1-git-send-email-avi.kp.137@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 02:41:01PM +1000, Benjamin Herrenschmidt wrote:
-> On Sun, 2013-09-22 at 14:39 +1000, Benjamin Herrenschmidt wrote:
-> > How do you do your per-cpu on x86 ? 
+removed following checkpatch warnings:
+drivers/net/vmxnet3/vmxnet3_int.h:241: WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))
+drivers/net/vmxnet3/vmxnet3_int.h:284: WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))
+drivers/net/vmxnet3/vmxnet3_int.h:413: WARNING: extern prototypes should be avoided in .h files
 
-We use a segment offset. Something like:
+Signed-off-by: Avinash Kumar <avi.kp.137@gmail.com>
+---
+ drivers/net/vmxnet3/vmxnet3_int.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-  inc %gs:var;
-
-would be a per-cpu increment. The actual memory location used for the
-memop is the variable address + GS offset.
-
-And our GS offset is per cpu and points to the base of the per cpu
-segment for that cpu.
-
-> Also, do you have a half-decent way of getting to per-cpu from asm ?
-
-Yes, see above :-)
-
-Assuming we repurpose r13 as per-cpu base, you could do the whole
-this_cpu_* stuff which is locally atomic -- ie. safe against IRQs and
-preemption as:
-
-loop:
-	lwarx	rt, var, r13
-	inc	rt
-	stwcx	rt, var, r13
-	bne-	loop
-
-Except, I think your ll/sc pair is actually slower than doing:
-
-  local_irq_save(flags)
-  var++;
-  local_irq_restore(flags)
-
-Esp. with the lazy irq disable you have.
-
-And I'm fairly sure using them as generic per cpu accessors isn't sane,
-but I'm not sure PPC64 has other memops with implicit addition like
-that.
-
-As to the problem of GCC moving r13 about, some archs have some
-exceptions in the register allocator and leave some registers alone.
-IIRC MIPS has this and uses one of those (istr there's 2) for the
-per cpu base address.
-
-
-
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index a03f358..71ae32b 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -238,7 +238,7 @@ struct vmxnet3_tx_queue {
+ 	int                             num_stop;  /* # of times the queue is
+ 						    * stopped */
+ 	int				qid;
+-} __attribute__((__aligned__(SMP_CACHE_BYTES)));
++} __aligned(SMP_CACHE_BYTES);
+ 
+ enum vmxnet3_rx_buf_type {
+ 	VMXNET3_RX_BUF_NONE = 0,
+@@ -281,7 +281,7 @@ struct vmxnet3_rx_queue {
+ 	dma_addr_t                      buf_info_pa;
+ 	struct Vmxnet3_RxQueueCtrl            *shared;
+ 	struct vmxnet3_rq_driver_stats  stats;
+-} __attribute__((__aligned__(SMP_CACHE_BYTES)));
++} __aligned(SMP_CACHE_BYTES);
+ 
+ #define VMXNET3_DEVICE_MAX_TX_QUEUES 8
+ #define VMXNET3_DEVICE_MAX_RX_QUEUES 8   /* Keep this value as a power of 2 */
+@@ -410,7 +410,7 @@ int
+ vmxnet3_create_queues(struct vmxnet3_adapter *adapter,
+ 		      u32 tx_ring_size, u32 rx_ring_size, u32 rx_ring2_size);
+ 
+-extern void vmxnet3_set_ethtool_ops(struct net_device *netdev);
++void vmxnet3_set_ethtool_ops(struct net_device *netdev);
+ 
+ extern struct rtnl_link_stats64 *
+ vmxnet3_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats);
+-- 
+1.7.9.5
 
