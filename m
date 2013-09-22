@@ -1,73 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab3IVVlD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 17:41:03 -0400
-Received: from imap.thunk.org ([74.207.234.97]:36070 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752210Ab3IVVlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 17:41:02 -0400
-Date: Sun, 22 Sep 2013 17:40:39 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
-        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
-        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de
-Subject: Re: [PATCH, RFC 10/12] random: cap the rate which the /dev/urandom
- pool gets reseeded
-Message-ID: <20130922214039.GC7321@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
-	dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
-	smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de
-References: <1379882338-7209-1-git-send-email-tytso@mit.edu>
- <1379882338-7209-11-git-send-email-tytso@mit.edu>
- <e665f20c-9154-4dbd-bb93-cf144922bf29@email.android.com>
+	id S1752850Ab3IVVm5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 17:42:57 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:44543 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab3IVVmz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 17:42:55 -0400
+Date: Sun, 22 Sep 2013 17:42:50 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pata_isapnp: Don't use invalid I/O ports
+Message-ID: <20130922214250.GA27616@mtj.dyndns.org>
+References: <1379019689-21467-1-git-send-email-linux@rainbow-software.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <e665f20c-9154-4dbd-bb93-cf144922bf29@email.android.com>
+In-Reply-To: <1379019689-21467-1-git-send-email-linux@rainbow-software.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 02:21:48PM -0700, H. Peter Anvin wrote:
-> Is this really an improvement on a system with plenty of entropy? Would it not make more sense to modulate this bad on entropy production rates?
+On Thu, Sep 12, 2013 at 11:01:29PM +0200, Ondrej Zary wrote:
+> The test for 2nd I/O port validity is broken (reversed):
+> On devices with no control port, the driver attempts to use invalid port 0,
+> resulting in logs full of bad_io_access errors.
+> On devices with control port, the driver does not use it.
 > 
-> Also, the urandom pool is only reseeded once per read, no matter how large...
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-I added this after observing using the random driver's tracepoints to
-measure how the entropy pool behaves on a desktop system.  It turns
-outs the Chrome browser requests a truly amazing amount of entropy
-using /dev/urandom.  Enough so that while you are reading GMail or
-using G+, the available entropy in the input pool is always running at
-minimum levels.  (i.e., it never gets above 192 bits before we do a
-catatrophic reseed and it drops down to 128 bits.)
+Applied to libata/for-3.13.
 
-I'm not sure what the heck it is doing --- maybe it is using
-/dev/urandom to generate random padding values?  I can't believe it is
-opening new SSL connetions that quickly.  So this might be a Chrome
-bug, and I can talk to some Chrome developers when I get into work
-tomorrow.  But in the case of badly behaved applications, this is
-useful.
+Thanks.
 
-It results in more entropy building up in the input pool before we do
-a reseed, so it should result in better "catastrophic reseeding", and
-it means that there is more entropy available in the input pool for
-use by the /dev/random pool, even if /dev/urandom is being used in
-what might be arguably considered an abusive fashion.
-
-You can test this by applying the patch, and observing the value of
-/proc/sys/kernel/random/entropy_avail over time while running a Chrome
-browser (and there may be other userspace applications which are as
-aggressive in the use of /dev/urandom).  The compare it after running
-the command "echo 0 > /proc/sys/kernel/random/urandom_min_reseed_secs",
-which will restore the original pre-patch behaviour.
-
-						- Ted
+-- 
+tejun
