@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab3IVKQH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 06:16:07 -0400
+	id S1753205Ab3IVKQM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 06:16:12 -0400
 Received: from mga01.intel.com ([192.55.52.88]:37121 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753052Ab3IVKQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 06:16:05 -0400
+	id S1753052Ab3IVKQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 06:16:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,956,1371106800"; 
-   d="scan'208";a="405354103"
+   d="scan'208";a="405354125"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V2 05/10] perf tools: add map__find_other_map_symbol()
-Date: Sun, 22 Sep 2013 13:22:13 +0300
-Message-Id: <1379845338-29637-6-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V2 06/10] perf tools: fix annotate_browser__callq()
+Date: Sun, 22 Sep 2013 13:22:14 +0300
+Message-Id: <1379845338-29637-7-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1379845338-29637-1-git-send-email-adrian.hunter@intel.com>
 References: <1379845338-29637-1-git-send-email-adrian.hunter@intel.com>
@@ -28,66 +28,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to find a symbol using an ip that
-might be on a different map.
+When following a call, annotate_browser__callq()
+uses the current symbol's map to look up the
+target ip.  That will not work if the target ip
+is on a map with a different mapping (i.e.
+start - pgoff is different).
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/map.c | 27 +++++++++++++++++++++++++++
- tools/perf/util/map.h |  2 ++
- 2 files changed, 29 insertions(+)
+ tools/perf/ui/browsers/annotate.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 4f6680d..beedeef 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -213,6 +213,33 @@ struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
- 	return dso__find_symbol_by_name(map->dso, map->type, name);
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index 08545ae..d9edb35 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -445,14 +445,16 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
+ 	struct symbol *sym = ms->sym;
+ 	struct annotation *notes;
+ 	struct symbol *target;
++	struct map *map;
+ 	u64 ip;
+ 	char title[SYM_TITLE_MAX_SIZE];
+ 
+ 	if (!ins__is_call(dl->ins))
+ 		return false;
+ 
+-	ip = ms->map->map_ip(ms->map, dl->ops.target.addr);
+-	target = map__find_symbol(ms->map, ip, NULL);
++	map = ms->map;
++	ip = dl->ops.target.addr;
++	target = map__find_other_map_symbol(&map, &ip, NULL);
+ 	if (target == NULL) {
+ 		ui_helpline__puts("The called function was not found.");
+ 		return true;
+@@ -469,8 +471,8 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
+ 	}
+ 
+ 	pthread_mutex_unlock(&notes->lock);
+-	symbol__tui_annotate(target, ms->map, evsel, hbt);
+-	sym_title(sym, ms->map, title, sizeof(title));
++	symbol__tui_annotate(target, map, evsel, hbt);
++	sym_title(sym, map, title, sizeof(title));
+ 	ui_browser__show_title(&browser->b, title);
+ 	return true;
  }
- 
-+struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
-+					  symbol_filter_t filter)
-+{
-+	struct map *map = *map_ptr;
-+	u64 ip = *ip_ptr;
-+	struct map *sym_map = NULL;
-+	struct symbol *sym;
-+
-+	if (ip >= map->start && ip <= map->end)
-+		sym_map = map;
-+	else if (map->groups)
-+		sym_map = map_groups__find(map->groups, map->type, ip);
-+
-+	if (!sym_map)
-+		return NULL;
-+
-+	ip = sym_map->map_ip(sym_map, ip);
-+
-+	sym = map__find_symbol(sym_map, ip, filter);
-+	if (sym) {
-+		*map_ptr = sym_map;
-+		*ip_ptr = ip;
-+	}
-+
-+	return sym;
-+}
-+
- struct map *map__clone(struct map *map)
- {
- 	return memdup(map, sizeof(*map));
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 4886ca2..b7b494c 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -106,6 +106,8 @@ struct symbol *map__find_symbol(struct map *map,
- 				u64 addr, symbol_filter_t filter);
- struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
- 					symbol_filter_t filter);
-+struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
-+					  symbol_filter_t filter);
- void map__fixup_start(struct map *map);
- void map__fixup_end(struct map *map);
- 
 -- 
 1.7.11.7
 
