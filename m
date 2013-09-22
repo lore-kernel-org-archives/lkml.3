@@ -1,103 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab3IVUkw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 16:40:52 -0400
-Received: from imap.thunk.org ([74.207.234.97]:35980 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753011Ab3IVUjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 16:39:18 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: hpa@zytor.com, joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
-        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
-        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH, RFC 10/12] random: cap the rate which the /dev/urandom pool gets reseeded
-Date: Sun, 22 Sep 2013 16:38:56 -0400
-Message-Id: <1379882338-7209-11-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 1.7.12.rc0.22.gcdd159b
-In-Reply-To: <1379882338-7209-1-git-send-email-tytso@mit.edu>
-References: <1379882338-7209-1-git-send-email-tytso@mit.edu>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1752654Ab3IVUuH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 16:50:07 -0400
+Received: from dkim1.fusionio.com ([66.114.96.53]:60524 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab3IVUuF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 16:50:05 -0400
+X-ASG-Debug-ID: 1379883003-0421b50f51044e0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Message-ID: <20130922205002.29199.88359@localhost.localdomain>
+From: Chris Mason <chris.mason@fusionio.com>
+User-Agent: alot/0.3.4
+Subject: [GIT PULL] Btrfs
+Date: Sun, 22 Sep 2013 16:50:02 -0400
+X-ASG-Orig-Subj: [GIT PULL] Btrfs
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
+X-Barracuda-Start-Time: 1379883003
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140830
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to avoid draining the input pool of its entropy at too high
-of a rate, enforce a minimum time interval between reseedings of the
-urandom pool.  This is set to 60 seconds by default.
+Hi Linus,
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
----
- drivers/char/random.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+Please pull my for-linus branch:
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 292e717..3439b1c 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -306,6 +306,13 @@ static int random_read_wakeup_thresh = 64;
- static int random_write_wakeup_thresh = 128;
- 
- /*
-+ * The minimum number of seconds between urandom pool resending.  We
-+ * do this to limit the amount of entropy that can be drained from the
-+ * input pool even if there are heavy demands on /dev/urandom.
-+ */
-+static int random_min_urandom_seed = 60;
-+
-+/*
-  * When the input pool goes over trickle_thresh, start dropping most
-  * samples to avoid wasting CPU time and reduce lock contention.
-  */
-@@ -437,6 +444,7 @@ struct entropy_store {
- 	struct entropy_store *pull;
- 
- 	/* read-write data: */
-+	unsigned long last_pulled;
- 	spinlock_t lock;
- 	unsigned short add_ptr;
- 	unsigned short input_rotate;
-@@ -885,6 +893,15 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- {
- 	__u32	tmp[OUTPUT_POOL_WORDS];
- 
-+	if (r->limit == 0 && random_min_urandom_seed) {
-+		unsigned long now = jiffies;
-+
-+		if (time_before(now,
-+				r->last_pulled + random_min_urandom_seed * HZ)) {
-+			return;
-+		}
-+		r->last_pulled = now;
-+	}
- 	if (r->pull &&
- 	    r->entropy_count < (nbytes << (ENTROPY_SHIFT + 3)) &&
- 	    r->entropy_count < r->poolinfo->poolfracbits) {
-@@ -1188,6 +1205,7 @@ static void init_std_data(struct entropy_store *r)
- 	r->entropy_count = 0;
- 	r->entropy_total = 0;
- 	r->last_data_init = 0;
-+	r->last_pulled = jiffies;
- 	mix_pool_bytes(r, &now, sizeof(now), NULL);
- 	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
- 		if (!arch_get_random_long(&rv))
-@@ -1539,6 +1557,13 @@ struct ctl_table random_table[] = {
- 		.extra2		= &max_write_thresh,
- 	},
- 	{
-+		.procname	= "urandom_min_reseed_secs",
-+		.data		= &random_min_urandom_seed,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "boot_id",
- 		.data		= &sysctl_bootid,
- 		.maxlen		= 16,
--- 
-1.7.12.rc0.22.gcdd159b
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
+These are mostly bug fixes and a two small performance fixes.  The most
+important of the bunch are Josef's fix for a snapshotting regression and
+Mark's update to fix compile problems on arm.
+
+These are on top of 3.11 + my first pull, but they were also tested
+against your master as of last night.
+
+Josef Bacik (13) commits (+219/-102):
+    Btrfs: check roots last log commit when checking if an inode has been logged (+4/-1)
+    Revert "Btrfs: rework the overcommit logic to be based on the total size" (+3/-12)
+    Btrfs: kill delay_iput arg to the wait_ordered functions (+14/-33)
+    Btrfs: drop dir i_size when adding new names on replay (+27/-0)
+    Btrfs: replay dir_index items before other items (+12/-3)
+    Btrfs: fix worst case calculator for space usage (+1/-1)
+    Btrfs: actually log directory we are fsync()'ing (+9/-1)
+    Btrfs: actually limit the size of delalloc range (+5/-3)
+    Btrfs: fixup error handling in btrfs_reloc_cow (+32/-22)
+    Btrfs: remove space_info->reservation_progress (+0/-12)
+    Btrfs: create the uuid tree on remount rw (+10/-0)
+    Btrfs: improve replacing nocow extents (+98/-14)
+    Btrfs: iput inode on allocation failure (+4/-0)
+
+Stefan Behrens (2) commits (+4/-0):
+    btrfs: show compiled-in config features at module load time (+3/-0)
+    Btrfs: add the missing mutex unlock in write_all_supers() (+1/-0)
+
+Filipe David Borba Manana (2) commits (+7/-7):
+    Btrfs: don't leak transaction in btrfs_sync_file() (+2/-2)
+    Btrfs: more efficient inode tree replace operation (+5/-5)
+
+David Sterba (2) commits (+8/-0):
+    btrfs: add lockdep and tracing annotations for uuid tree (+2/-0)
+    btrfs: refuse to remount read-write after abort (+6/-0)
+
+Guangyu Sun (1) commits (+2/-0):
+    Btrfs: dir_inode_operations should use btrfs_update_time also
+
+Mark Fasheh (1) commits (+45/-31):
+    btrfs: change extent-same to copy entire argument struct
+
+Ilya Dryomov (1) commits (+2/-1):
+    Btrfs: do not add replace target to the alloc_list
+
+Frank Holton (1) commits (+2/-2):
+    btrfs: Add btrfs: prefix to kernel log output
+
+chandan (1) commits (+1/-1):
+    Btrfs: btrfs_ioctl_default_subvol: Revert back to toplevel subvolume when arg is 0
+
+Miao Xie (1) commits (+74/-31):
+    Btrfs: allocate the free space by the existed max extent size when ENOSPC
+
+Total: (25) commits
+
+ fs/btrfs/btrfs_inode.h       |   5 +-
+ fs/btrfs/ctree.c             |   7 ++-
+ fs/btrfs/ctree.h             |  17 ++-----
+ fs/btrfs/dev-replace.c       |   4 +-
+ fs/btrfs/disk-io.c           |   2 +
+ fs/btrfs/extent-tree.c       |  57 +++++++++++-----------
+ fs/btrfs/extent_io.c         |   8 ++--
+ fs/btrfs/file.c              |   4 +-
+ fs/btrfs/free-space-cache.c  |  67 ++++++++++++++++++--------
+ fs/btrfs/free-space-cache.h  |   5 +-
+ fs/btrfs/inode.c             |  16 +++++--
+ fs/btrfs/ioctl.c             |  80 ++++++++++++++++++-------------
+ fs/btrfs/ordered-data.c      |  24 ++--------
+ fs/btrfs/ordered-data.h      |   5 +-
+ fs/btrfs/relocation.c        |  43 ++++++++++-------
+ fs/btrfs/scrub.c             | 112 +++++++++++++++++++++++++++++++++++++------
+ fs/btrfs/super.c             |  21 +++++++-
+ fs/btrfs/transaction.c       |   2 +-
+ fs/btrfs/tree-log.c          |  52 ++++++++++++++++++--
+ fs/btrfs/volumes.c           |   7 +--
+ include/trace/events/btrfs.h |   1 +
+ 21 files changed, 364 insertions(+), 175 deletions(-)
