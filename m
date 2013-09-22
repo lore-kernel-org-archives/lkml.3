@@ -1,101 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab3IVBXn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 21:23:43 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:61342 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375Ab3IVBXk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 21:23:40 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, daniel.lezcano@linaro.org
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 21/21] cpuidle: change governor from within cpuidle_replace_governor()
-Date: Sun, 22 Sep 2013 06:51:13 +0530
-Message-Id: <5b758e21eeb97f5f68191819c0820673692b6b75.1379779777.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1379779777.git.viresh.kumar@linaro.org>
-References: <cover.1379779777.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1379779777.git.viresh.kumar@linaro.org>
-References: <cover.1379779777.git.viresh.kumar@linaro.org>
+	id S1752652Ab3IVCDq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 22:03:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57706 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752531Ab3IVCDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Sep 2013 22:03:46 -0400
+Message-ID: <523E4F8A.7020708@zytor.com>
+Date: Sat, 21 Sep 2013 19:01:46 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>  <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>  <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>  <20130920162603.GA30381@localhost.localdomain>  <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>  <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com> <1379799901.24090.6.camel@pasglop>
+In-Reply-To: <1379799901.24090.6.camel@pasglop>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I first read cpuidle_replace_governor()'s name I thought it will replace
-the governor (as per its name) but then found that it just returns the next best
-governor. And cpuidle_unregister_governor() actually replaces it.
+On 09/21/2013 02:45 PM, Benjamin Herrenschmidt wrote:
+> 
+> I really don't like the "larger" irq stack ... probably because I can't
+> make it work easily :-) See my previous comment about how we get to
+> thread_info on ppc.
+> 
 
-We always replace current governor with the next best and this information is
-already present with cpuidle_replace_governor() and so we don't really need to
-send an additional argument for it.
+For the record, I intend to remove thread_info from the stack on x86 and
+instead merge it with task_struct as a single structure pointed to with
+a percpu variable.
 
-Also, it makes sense to actually call cpuidle_switch_governor() from within
-cpuidle_replace_governor() instead.
+	-hpa
 
-Along with this ret_gov is now renamed as new_gov to better suit its purpose.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpuidle/governor.c | 24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/cpuidle/governor.c b/drivers/cpuidle/governor.c
-index ea2f8e7..deb6e50 100644
---- a/drivers/cpuidle/governor.c
-+++ b/drivers/cpuidle/governor.c
-@@ -98,26 +98,27 @@ int cpuidle_register_governor(struct cpuidle_governor *gov)
- }
- 
- /**
-- * cpuidle_replace_governor - find a replacement governor
-- * @exclude_rating: the rating that will be skipped while looking for
-- * new governor.
-+ * cpuidle_replace_governor - replace governor with highest rating one
-+ *
-+ * Finds governor (excluding cpuidle_curr_governor) with highest rating and
-+ * replaces cpuidle_curr_governor with it.
-  */
--static struct cpuidle_governor *cpuidle_replace_governor(int exclude_rating)
-+static inline void cpuidle_replace_governor(void)
- {
- 	struct cpuidle_governor *gov;
--	struct cpuidle_governor *ret_gov = NULL;
-+	struct cpuidle_governor *new_gov = NULL;
- 	unsigned int max_rating = 0;
- 
- 	list_for_each_entry(gov, &cpuidle_governors, governor_list) {
--		if (gov->rating == exclude_rating)
-+		if (gov == cpuidle_curr_governor)
- 			continue;
- 		if (gov->rating > max_rating) {
- 			max_rating = gov->rating;
--			ret_gov = gov;
-+			new_gov = gov;
- 		}
- 	}
- 
--	return ret_gov;
-+	cpuidle_switch_governor(new_gov);
- }
- 
- /**
-@@ -130,11 +131,8 @@ void cpuidle_unregister_governor(struct cpuidle_governor *gov)
- 		return;
- 
- 	mutex_lock(&cpuidle_lock);
--	if (gov == cpuidle_curr_governor) {
--		struct cpuidle_governor *new_gov;
--		new_gov = cpuidle_replace_governor(gov->rating);
--		cpuidle_switch_governor(new_gov);
--	}
-+	if (gov == cpuidle_curr_governor)
-+		cpuidle_replace_governor();
- 	list_del(&gov->governor_list);
- 	mutex_unlock(&cpuidle_lock);
- }
--- 
-1.7.12.rc2.18.g61b472e
 
