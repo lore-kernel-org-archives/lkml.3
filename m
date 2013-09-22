@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab3IVBX3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 21:23:29 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:51198 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375Ab3IVBX1 (ORCPT
+	id S1753418Ab3IVBXi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 21:23:38 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:49440 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375Ab3IVBXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 21:23:27 -0400
+	Sat, 21 Sep 2013 21:23:33 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl, daniel.lezcano@linaro.org
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 19/21] cpuidle: create list of registered drivers
-Date: Sun, 22 Sep 2013 06:51:11 +0530
-Message-Id: <7e9565e323c1e065eeb2a2a1075967bd21ee6066.1379779777.git.viresh.kumar@linaro.org>
+Subject: [PATCH 20/21] cpuidle: don't calculate time-diff if entered_state == 0
+Date: Sun, 22 Sep 2013 06:51:12 +0530
+Message-Id: <acd1cc837f969a50582d2b25a73c5e247f40f843.1379779777.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379779777.git.viresh.kumar@linaro.org>
 References: <cover.1379779777.git.viresh.kumar@linaro.org>
@@ -24,212 +24,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we have multiple definitions of few routines based on following config
-option: CONFIG_CPU_IDLE_MULTIPLE_DRIVERS.
+If entered_state == 0, we don't need to set dev->last_residency to 'diff' as we
+will be setting it to zero without using its new value.
 
-These are present to save space by not creating per-cpu variable for platforms
-which need only one cpuidle driver to be registered for all CPUs.
-
-But this setup has a problem. For ARM multi-platform kernel use case this option
-will get enabled and so we will have per-cpu variables even for platforms that
-don't need it.
-
-The bigger problem is two separate code paths for such platforms for single &
-multi platform kernels. Which doesn't sound good.
-
-A better way of solving this problem would be to create cpuidle driver's list
-that can be used to manage all information we need. Then we don't really have to
-write any special code for handling platforms with
-CONFIG_CPU_IDLE_MULTIPLE_DRIVERS option set.
-
-This patch does it.
+And so move calculation of diff also inside the "if" statement.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpuidle/driver.c | 106 ++++++++++++-----------------------------------
- include/linux/cpuidle.h  |   1 +
- 2 files changed, 27 insertions(+), 80 deletions(-)
+ drivers/cpuidle/cpuidle.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
-index a4a93b4..320b4ec 100644
---- a/drivers/cpuidle/driver.c
-+++ b/drivers/cpuidle/driver.c
-@@ -18,10 +18,19 @@
- #include "cpuidle.h"
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index bf80236..cb81689 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -77,23 +77,22 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
  
- DEFINE_SPINLOCK(cpuidle_driver_lock);
-+static LIST_HEAD(cpuidle_detected_drivers);
+ 	struct cpuidle_state *target_state = &drv->states[index];
+ 	ktime_t time_start, time_end;
+-	s64 diff;
  
--#ifdef CONFIG_CPU_IDLE_MULTIPLE_DRIVERS
-+static inline struct cpuidle_driver *
-+__cpuidle_get_driver(const struct cpumask *cpumask)
-+{
-+	struct cpuidle_driver *drv;
-+
-+	list_for_each_entry(drv, &cpuidle_detected_drivers, driver_list)
-+		if (cpumask_intersects(drv->cpumask, cpumask))
-+			return drv;
+ 	time_start = ktime_get();
  
--static DEFINE_PER_CPU(struct cpuidle_driver *, cpuidle_drivers);
-+	return NULL;
-+}
+ 	entered_state = target_state->enter(dev, drv, index);
  
- /**
-  * __cpuidle_get_cpu_driver - return the cpuidle driver tied to a CPU.
-@@ -32,103 +41,39 @@ static DEFINE_PER_CPU(struct cpuidle_driver *, cpuidle_drivers);
-  */
- static inline struct cpuidle_driver *__cpuidle_get_cpu_driver(int cpu)
- {
--	return per_cpu(cpuidle_drivers, cpu);
-+	return __cpuidle_get_driver(cpumask_of(cpu));
- }
+-	time_end = ktime_get();
++	if (entered_state >= 0) {
++		s64 diff;
  
- /**
-- * __cpuidle_unset_driver - unset per CPU driver variables.
-+ * __cpuidle_add_driver - adds a cpuidle driver to list.
-  * @drv: a valid pointer to a struct cpuidle_driver
-  *
-- * For each CPU in the driver's CPU mask, unset the registered driver per CPU
-- * variable. If @drv is different from the registered driver, the corresponding
-- * variable is not cleared.
-- */
--static inline void __cpuidle_unset_driver(struct cpuidle_driver *drv)
--{
--	int cpu;
--
--	for_each_cpu(cpu, drv->cpumask) {
--
--		if (drv != __cpuidle_get_cpu_driver(cpu))
--			continue;
--
--		per_cpu(cpuidle_drivers, cpu) = NULL;
--	}
--}
--
--/**
-- * __cpuidle_set_driver - set per CPU driver variables for the given driver.
-- * @drv: a valid pointer to a struct cpuidle_driver
-- *
-- * For each CPU in the driver's cpumask, unset the registered driver per CPU
-- * to @drv.
-+ * Adds cpuidle driver to cpuidle_detected_drivers list if no driver is already
-+ * registered for any CPUs present in drv->cpumask.
-  *
-  * Returns 0 on success, -EBUSY if the CPUs have driver(s) already.
-  */
--static inline int __cpuidle_set_driver(struct cpuidle_driver *drv)
--{
--	int cpu;
--
--	for_each_cpu(cpu, drv->cpumask) {
--
--		if (__cpuidle_get_cpu_driver(cpu)) {
--			__cpuidle_unset_driver(drv);
--			return -EBUSY;
--		}
--
--		per_cpu(cpuidle_drivers, cpu) = drv;
--	}
--
--	return 0;
--}
--
--#else
--
--static struct cpuidle_driver *cpuidle_curr_driver;
--
--/**
-- * __cpuidle_get_cpu_driver - return the global cpuidle driver pointer.
-- * @cpu: ignored without the multiple driver support
-- *
-- * Return a pointer to a struct cpuidle_driver object or NULL if no driver was
-- * previously registered.
-- */
--static inline struct cpuidle_driver *__cpuidle_get_cpu_driver(int cpu)
--{
--	return cpuidle_curr_driver;
--}
--
--/**
-- * __cpuidle_set_driver - assign the global cpuidle driver variable.
-- * @drv: pointer to a struct cpuidle_driver object
-- *
-- * Returns 0 on success, -EBUSY if the driver is already registered.
-- */
--static inline int __cpuidle_set_driver(struct cpuidle_driver *drv)
-+static inline int __cpuidle_add_driver(struct cpuidle_driver *drv)
- {
--	if (cpuidle_curr_driver)
-+	if (__cpuidle_get_driver(drv->cpumask))
- 		return -EBUSY;
+-	local_irq_enable();
++		time_end = ktime_get();
++		diff = ktime_to_us(ktime_sub(time_end, time_start));
  
--	cpuidle_curr_driver = drv;
-+	list_add(&drv->driver_list, &cpuidle_detected_drivers);
+-	diff = ktime_to_us(ktime_sub(time_end, time_start));
+-	if (diff > INT_MAX)
+-		diff = INT_MAX;
++		if (diff > INT_MAX)
++			diff = INT_MAX;
  
- 	return 0;
- }
+-	dev->last_residency = (int) diff;
++		dev->last_residency = (int) diff;
  
- /**
-- * __cpuidle_unset_driver - unset the global cpuidle driver variable.
-- * @drv: a pointer to a struct cpuidle_driver
-+ * __cpuidle_remove_driver - remove cpuidle driver from list.
-+ * @drv: a valid pointer to a struct cpuidle_driver
-  *
-- * Reset the global cpuidle variable to NULL.  If @drv does not match the
-- * registered driver, do nothing.
-+ * Removes cpuidle driver from cpuidle_detected_drivers list.
-  */
--static inline void __cpuidle_unset_driver(struct cpuidle_driver *drv)
-+static inline void __cpuidle_remove_driver(struct cpuidle_driver *drv)
- {
--	if (drv == cpuidle_curr_driver)
--		cpuidle_curr_driver = NULL;
-+	list_del(&drv->driver_list);
- }
- 
--#endif
--
- /**
-  * cpuidle_setup_broadcast_timer - enable/disable the broadcast timer
-  * @arg: a void pointer used to match the SMP cross call API
-@@ -158,6 +103,7 @@ static void __cpuidle_driver_init(struct cpuidle_driver *drv)
- 	int i;
- 
- 	drv->refcnt = 0;
-+	INIT_LIST_HEAD(&drv->driver_list);
- 
- 	/*
- 	 * Use all possible CPUs as the default, because if the kernel boots
-@@ -244,7 +190,7 @@ static int __cpuidle_register_driver(struct cpuidle_driver *drv)
- 
- 	__cpuidle_driver_init(drv);
- 
--	ret = __cpuidle_set_driver(drv);
-+	ret = __cpuidle_add_driver(drv);
- 	if (ret)
- 		return ret;
- 
-@@ -277,7 +223,7 @@ static void __cpuidle_unregister_driver(struct cpuidle_driver *drv)
- 				 (void *)CLOCK_EVT_NOTIFY_BROADCAST_OFF, 1);
+-	if (entered_state >= 0) {
+ 		/* Update cpuidle counters */
+ 		/* This can be moved to within driver enter routine
+ 		 * but that results in multiple copies of same code.
+@@ -104,6 +103,8 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+ 		dev->last_residency = 0;
  	}
  
--	__cpuidle_unset_driver(drv);
-+	__cpuidle_remove_driver(drv);
++	local_irq_enable();
++
+ 	return entered_state;
  }
  
- /**
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 0f0da17..81b74d2 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -129,6 +129,7 @@ struct cpuidle_driver {
- 
- 	/* the driver handles the cpus in cpumask */
- 	struct cpumask		*cpumask;
-+	struct list_head	driver_list;
- };
- 
- #ifdef CONFIG_CPU_IDLE
 -- 
 1.7.12.rc2.18.g61b472e
 
