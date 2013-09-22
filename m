@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab3IVVtG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 17:49:06 -0400
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:33047 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab3IVVtD (ORCPT
+	id S1753217Ab3IVVty (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 17:49:54 -0400
+Received: from longford.logfs.org ([213.229.74.203]:57935 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab3IVVtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 17:49:03 -0400
-Date: Sun, 22 Sep 2013 17:48:59 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Roger Quadros <rogerq@ti.com>, balbi@ti.com, bcousson@baylibre.com,
-        tony@atomide.com, balajitk@ti.com, kishon@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [RFC PATCH 08/15] ata: ahci_platform: Manage SATA PHY
-Message-ID: <20130922214859.GC27616@mtj.dyndns.org>
-References: <1379595943-14622-1-git-send-email-rogerq@ti.com>
- <1379595943-14622-9-git-send-email-rogerq@ti.com>
- <523F3567.80303@cogentembedded.com>
+	Sun, 22 Sep 2013 17:49:53 -0400
+Date: Sun, 22 Sep 2013 16:31:25 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Stephan Mueller <smueller@chronox.de>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH,RFC] random: make fast_mix() honor its name
+Message-ID: <20130922203125.GB4584@logfs.org>
+References: <20130910211009.GI29237@thunk.org>
+ <522F984C.2070909@linaro.org>
+ <20130910223326.GD11063@thunk.org>
+ <522FB9F1.3070905@linaro.org>
+ <20130911005047.GA13315@thunk.org>
+ <20130912210717.GC3809@logfs.org>
+ <20130912233155.GB5279@thunk.org>
+ <20130916154026.GA23345@logfs.org>
+ <20130921212510.GD8606@thunk.org>
+ <20130921214118.GE8606@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <523F3567.80303@cogentembedded.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130921214118.GE8606@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Sun, Sep 22, 2013 at 10:22:31PM +0400, Sergei Shtylyov wrote:
-> >@@ -37,6 +37,7 @@
-> >
-> >  #include <linux/clk.h>
-> >  #include <linux/libata.h>
-> >+#include <linux/phy/phy.h>
+On Sat, 21 September 2013 17:41:18 -0400, Theodore Ts'o wrote:
 > 
-> struct phy;
-> 
-> should suffice.
+> BTW, just to give another example of the difference between the mixing
+> funtions, try compiling the following with and without ORIG_MIX defined...
 
-Unless it's actually likely to cause inclusion loop, I think it's
-better to include the header than adding explicit declarations.
+Garbage in, garbage out again.  If there is absolutely no randomness
+in the input (all bits zero), my mixing function will simply shift the
+pool.  And because the shifting has a period of 128, there are only
+128 possible pool states.  Your mixing function is doing slightly
+better, it effectively becomes an interrupt counter with a silly
+output format.
 
-Thanks.
+But who cares?  If there is absolutely no randomness in the input, you
+have lost.  That case isn't worth contemplating.  The question is
+whether any randomness present in the input will get accumulated.
 
--- 
-tejun
+Without the shifting, a single unpredictable bit on, say, the lowest
+position of the timestamp will be xor'ed into the same pool bit every
+time.  The rest of the pool would always be predictable and the
+resulting mixing function would clearly be bad.
+
+With the shifting and using the same example, after 128 rounds every
+bit of the pool is unpredictable.  Job done, we can go home now.  You
+cannot achieve anything better than 128 unpredictable bits, no matter
+how much you try.
+
+Jörn
+
+--
+Those who come seeking peace without a treaty are plotting.
+-- Sun Tzu
