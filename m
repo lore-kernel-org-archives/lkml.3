@@ -1,201 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab3IVWyP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 18:54:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37154 "EHLO mail.zytor.com"
+	id S1753041Ab3IVW6R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 18:58:17 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:55636 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab3IVWyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 18:54:14 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1379889942-3135-11-git-send-email-roy.franz@linaro.org>
-References: <1379889942-3135-1-git-send-email-roy.franz@linaro.org> <1379889942-3135-11-git-send-email-roy.franz@linaro.org>
+	id S1752261Ab3IVW6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 18:58:16 -0400
+Date: Sun, 22 Sep 2013 18:58:09 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Felipe Pena <felipensp@gmail.com>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        linux-parisc@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Helge Deller <deller@gmx.de>
+Subject: Re: [PATCH 1/1] arch/parisc: mm: fix uninitialized variable usage
+Message-ID: <20130922225809.GL856@cmpxchg.org>
+References: <1379873866-29219-1-git-send-email-felipensp@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 10/18] Do proper conversion from UTF-16 to UTF-8
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 22 Sep 2013 15:54:03 -0700
-To: Roy Franz <roy.franz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, matt.fleming@intel.com
-CC: leif.lindholm@linaro.org, grant.likely@linaro.org, msalter@redhat.com
-Message-ID: <e69e8c38-b195-4797-8ae2-65d69ed9d7aa@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379873866-29219-1-git-send-email-felipensp@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry this version is broken and doesn't even compile due to remaining options_size references.
+Hello Felipe,
 
-Roy Franz <roy.franz@linaro.org> wrote:
->From: "H. Peter Anvin" <hpa@zytor.com>
->
->Improve the conversion of the UTF-16 EFI command line
->to UTF-8 for passing to the kernel.
->
->Signed-off-by: Roy Franz <roy.franz@linaro.org>
->---
-> arch/x86/boot/compressed/eboot.c       |    3 +-
->drivers/firmware/efi/efi-stub-helper.c |   92
->++++++++++++++++++++++++--------
-> 2 files changed, 72 insertions(+), 23 deletions(-)
->
->diff --git a/arch/x86/boot/compressed/eboot.c
->b/arch/x86/boot/compressed/eboot.c
->index 5e708c0..4723dc89 100644
->--- a/arch/x86/boot/compressed/eboot.c
->+++ b/arch/x86/boot/compressed/eboot.c
->@@ -486,8 +486,7 @@ struct boot_params *make_boot_params(void *handle,
->efi_system_table_t *_table)
-> 	hdr->type_of_loader = 0x21;
-> 
-> 	/* Convert unicode cmdline to ascii */
->-	cmdline_ptr = efi_convert_cmdline_to_ascii(sys_table, image,
->-						   &options_size);
->+	cmdline_ptr = efi_convert_cmdline(sys_table, image, &options_size);
-> 	if (!cmdline_ptr)
-> 		goto fail;
-> 	hdr->cmd_line_ptr = (unsigned long)cmdline_ptr;
->diff --git a/drivers/firmware/efi/efi-stub-helper.c
->b/drivers/firmware/efi/efi-stub-helper.c
->index 335d17d..8331892 100644
->--- a/drivers/firmware/efi/efi-stub-helper.c
->+++ b/drivers/firmware/efi/efi-stub-helper.c
->@@ -548,61 +548,111 @@ static efi_status_t
->efi_relocate_kernel(efi_system_table_t *sys_table_arg,
-> 
-> 	return status;
-> }
->-/* Convert the unicode UEFI command line to ASCII to pass to kernel.
->+
->+/*
->+ * Get the number of UTF-8 bytes corresponding to an UTF-16 character.
->+ * This overestimates for surrogates, but that is okay.
->+ */
->+static int efi_utf8_bytes(u16 c)
->+{
->+	return 1 + (c >= 0x80) + (c >= 0x800);
->+}
->+
->+/*
->+ * Convert an UTF-16 string, not necessarily null terminated, to
->UTF-8.
->+ */
->+static u8 *efi_utf16_to_utf8(u8 *dst, const u16 *src, int n)
->+{
->+	unsigned int c;
->+
->+	while (n--) {
->+		c = *src++;
->+		if (n && c >= 0xd800 && c <= 0xdbff &&
->+		    *src >= 0xdc00 && *src <= 0xdfff) {
->+			c = 0x10000 + ((c & 0x3ff) << 10) + (*src & 0x3ff);
->+			src++;
->+			n--;
->+		}
->+		if (c >= 0xd800 && c <= 0xdfff)
->+			c = 0xfffd; /* Unmatched surrogate */
->+		if (c < 0x80) {
->+			*dst++ = c;
->+			continue;
->+		}
->+		if (c < 0x800) {
->+			*dst++ = 0xc0 + (c >> 6);
->+			goto t1;
->+		}
->+		if (c < 0x10000) {
->+			*dst++ = 0xe0 + (c >> 12);
->+			goto t2;
->+		}
->+		*dst++ = 0xf0 + (c >> 18);
->+		*dst++ = 0x80 + ((c >> 12) & 0x3f);
->+t2:
->+		*dst++ = 0x80 + ((c >> 6) & 0x3f);
->+t1:
->+		*dst++ = 0x80 + (c & 0x3f);
->+	}
->+
->+	return dst;
->+}
->+
->+/*
->+ * Convert the unicode UEFI command line to ASCII to pass to kernel.
->  * Size of memory allocated return in *cmd_line_len.
->  * Returns NULL on error.
->  */
->-static char *efi_convert_cmdline_to_ascii(efi_system_table_t
->*sys_table_arg,
->-				      efi_loaded_image_t *image,
->-				      int *cmd_line_len)
->+static char *efi_convert_cmdline(efi_system_table_t *sys_table_arg,
->+				 efi_loaded_image_t *image,
->+				 int *cmd_line_len)
-> {
->-	u16 *s2;
->+	const u16 *s2;
-> 	u8 *s1 = NULL;
-> 	unsigned long cmdline_addr = 0;
-> 	int load_options_size = image->load_options_size / 2; /* ASCII */
->-	void *options = image->load_options;
->-	int options_size = 0;
->+	const u16 *options = image->load_options;
->+	int options_bytes = 0;	/* UTF-8 bytes */
->+	int options_chars = 0;	/* UTF-16 chars */
-> 	efi_status_t status;
->-	int i;
-> 	u16 zero = 0;
-> 
-> 	if (options) {
-> 		s2 = options;
->-		while (*s2 && *s2 != '\n' && options_size < load_options_size) {
->+		while (*s2 && *s2 != '\n' && options_bytes < load_options_size) {
->+			options_bytes += efi_utf8_bytes(*s2);
-> 			s2++;
->-			options_size++;
-> 		}
->+		options_chars = s2 - options;
-> 	}
-> 
->-	if (options_size == 0) {
->-		/* No command line options, so return empty string*/
->-		options_size = 1;
->+	if (!options_chars) {
->+		/* No command line options, so return empty string */
-> 		options = &zero;
-> 	}
-> 
->-	options_size++;  /* NUL termination */
->+	options_bytes++;	/* NUL termination */
->+
-> #ifdef CONFIG_ARM
-> 	/* For ARM, allocate at a high address to avoid reserved
-> 	 * regions at low addresses that we don't know the specfics of
-> 	 * at the time we are processing the command line.
-> 	 */
->-	status = efi_high_alloc(sys_table_arg, options_size, 0,
->+	status = efi_high_alloc(sys_table_arg, options_bytes, 0,
-> 			    &cmdline_addr, 0xfffff000);
-> #else
->-	status = efi_low_alloc(sys_table_arg, options_size, 0,
->+	status = efi_low_alloc(sys_table_arg, options_bytes, 0,
-> 			    &cmdline_addr);
-> #endif
-> 	if (status != EFI_SUCCESS)
-> 		return NULL;
-> 
-> 	s1 = (u8 *)cmdline_addr;
->-	s2 = (u16 *)options;
->-
->-	for (i = 0; i < options_size - 1; i++)
->-		*s1++ = *s2++;
->+	s2 = (const u16 *)options;
-> 
->+	s1 = efi_utf16_to_utf8(s1, s2, options_chars);
-> 	*s1 = '\0';
-> 
->-	*cmd_line_len = options_size;
->+	*cmd_line_len = options_bytes;
-> 	return (char *)cmdline_addr;
-> }
+On Sun, Sep 22, 2013 at 03:17:46PM -0300, Felipe Pena wrote:
+> The FAULT_FLAG_WRITE flag has been set based on uninitialized variable
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Oops, you are right.
+
+> Signed-off-by: Felipe Pena <felipensp@gmail.com>
+> ---
+>  arch/parisc/mm/fault.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/parisc/mm/fault.c b/arch/parisc/mm/fault.c
+> index d10d27a..6b38026 100644
+> --- a/arch/parisc/mm/fault.c
+> +++ b/arch/parisc/mm/fault.c
+> @@ -182,8 +182,6 @@ void do_page_fault(struct pt_regs *regs, unsigned long code,
+>  
+>  	if (user_mode(regs))
+>  		flags |= FAULT_FLAG_USER;
+> -	if (acc_type & VM_WRITE)
+> -		flags |= FAULT_FLAG_WRITE;
+>  retry:
+>  	down_read(&mm->mmap_sem);
+>  	vma = find_vma_prev(mm, address, &prev_vma);
+> @@ -201,6 +199,9 @@ good_area:
+>  	if ((vma->vm_flags & acc_type) != acc_type)
+>  		goto bad_area;
+>  
+> +	if (acc_type & VM_WRITE)
+> +		flags |= FAULT_FLAG_WRITE;
+
+Can acc_type actually change between between the first round and a
+retry?  Otherwise, it might make sense to pull this up and place it
+next to the flag initialization instead of pulling one flag down.
