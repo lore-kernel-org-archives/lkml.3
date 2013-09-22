@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab3IVLGY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 07:06:24 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:44081 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab3IVLGX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 07:06:23 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiang Liu <jiang.liu@huawei.com>,
-        Toshi Kani <toshi.kani@hp.com>, linux-acpi@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        linaro-acpi@lists.linaro.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH] Staging / quickstart: remove reduplicate if(acpi_disabled) check
-Date: Sun, 22 Sep 2013 19:05:47 +0800
-Message-Id: <1379847947-32366-1-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752999Ab3IVLQU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 07:16:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7598 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752387Ab3IVLQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 07:16:19 -0400
+Date: Sun, 22 Sep 2013 13:15:59 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 1/3] perf callchain: Convert children list to rbtree
+Message-ID: <20130922111559.GC1036@krava.brq.redhat.com>
+References: <1378801458-2515-1-git-send-email-namhyung@kernel.org>
+ <1378801458-2515-2-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378801458-2515-2-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In acpi_bus_register_driver(), there is an if (acpi_disabled) check,
-so the if(acpi_disabled) before it is reduplicate, remove it.
+On Tue, Sep 10, 2013 at 05:24:16PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- drivers/staging/quickstart/quickstart.c |    4 ----
- 1 file changed, 4 deletions(-)
+SNIP
 
-diff --git a/drivers/staging/quickstart/quickstart.c b/drivers/staging/quickstart/quickstart.c
-index 4247d60..9f6ebdb 100644
---- a/drivers/staging/quickstart/quickstart.c
-+++ b/drivers/staging/quickstart/quickstart.c
-@@ -390,10 +390,6 @@ static int __init quickstart_init(void)
- {
- 	int ret;
- 
--	/* ACPI Check */
--	if (acpi_disabled)
--		return -ENODEV;
--
- 	/* ACPI driver register */
- 	ret = acpi_bus_register_driver(&quickstart_acpi_driver);
- 	if (ret)
--- 
-1.7.9.5
+> index 2b585bc308cf..1b22b6269213 100644
+> --- a/tools/perf/util/callchain.h
+> +++ b/tools/perf/util/callchain.h
+> @@ -21,10 +21,9 @@ enum chain_order {
+>  
+>  struct callchain_node {
+>  	struct callchain_node	*parent;
+> -	struct list_head	siblings;
+> -	struct list_head	children;
+>  	struct list_head	val;
+>  	struct rb_node		rb_node; /* to sort nodes in an rbtree */
+> +	struct rb_root		rb_root_in; /* sorted tree of children */
+>  	struct rb_root		rb_root; /* sorted tree of children */
+>  	unsigned int		val_nr;
+>  	u64			hit;
+> @@ -86,8 +85,6 @@ extern __thread struct callchain_cursor callchain_cursor;
+>  
+>  static inline void callchain_init(struct callchain_root *root)
+>  {
+> -	INIT_LIST_HEAD(&root->node.siblings);
+> -	INIT_LIST_HEAD(&root->node.children);
+>  	INIT_LIST_HEAD(&root->node.val);
 
+don't we miss rb_root_in init here, like:
+
+	root->node.rb_root_in = RB_ROOT;
+
+jirka
