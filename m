@@ -1,83 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab3IVOBI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 10:01:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33764 "EHLO mx1.redhat.com"
+	id S1753217Ab3IVOMD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 10:12:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24743 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752918Ab3IVOBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 10:01:05 -0400
-Date: Sun, 22 Sep 2013 22:00:39 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-Message-ID: <20130922140038.GB7476@dhcp-16-126.nay.redhat.com>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
- <1379602494-26684-12-git-send-email-bp@alien8.de>
- <20130921113929.GB1587@pd.tnic>
- <20130922123515.GA7476@dhcp-16-126.nay.redhat.com>
- <20130922133722.GC28718@pd.tnic>
+	id S1753071Ab3IVOMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 10:12:00 -0400
+Date: Sun, 22 Sep 2013 17:14:10 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: "Barnes, Jesse" <jbarnes@virtuousgeek.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        DRI <dri-devel@lists.freedesktop.org>, Dave Airlie <airlied@gmail.com>
+Subject: Re: Fwd: linux-next: Tree for Jul 1 [ drm-intel-next: Several
+ call-traces ]
+Message-ID: <20130922141410.GA1974@redhat.com>
+References: <CA+icZUXyizuCR3YDfFXD5hCkgycFYGzMHaJxg=m9UackT7uzGQ@mail.gmail.com>
+ <CAKMK7uFzwiztE8H1rvSDWQmw08JGoKdnTs5BYqxdrHwb=pK50A@mail.gmail.com>
+ <CA+icZUXnHaT75NhhSx+AhcMEKybHugH9+hV_mS5h5-cimFdz6A@mail.gmail.com>
+ <CA+icZUVQ_UO_VnN9+Q7B3hhuFmw4XPEw19rhO+T4jU5hLGWaTQ@mail.gmail.com>
+ <CA+icZUW3K7RyUcfdos7aOkrEOd3To0kSns+G3GSfkPqqwo7z=w@mail.gmail.com>
+ <20130826130511.GA21082@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130922133722.GC28718@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130826130511.GA21082@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/13 at 03:37pm, Borislav Petkov wrote:
-> On Sun, Sep 22, 2013 at 08:35:15PM +0800, Dave Young wrote:
-> > I tested your new patch, it works both with efi stub and grub boot in
-> > 1st kernel.
-> 
-> Good, thanks!
-> 
-> > But it paniced in kexec boot with my kexec related patcheset, the patchset
-> 
-> That's the second kernel, right?
-
-Yes, it's 2nd kernel.
-
-> 
-> > contains 3 patch:
-> > 1. introduce cmdline kexecboot=<0|1|2>; 1 == kexec, 2 == kdump
-> > 2. export physical addr fw_vendor, runtime, tables to /sys/firmware/efi/systab
-> > 3. if kexecboot != 0, use fw_vendor, runtime, tables from bootparams; Also do not
-> >    call SetVirtualAddressMao in case kexecboot.
+On Mon, Aug 26, 2013 at 04:05:11PM +0300, Michael S. Tsirkin wrote:
+> On Wed, Aug 21, 2013 at 11:22:58AM +0200, Sedat Dilek wrote:
+> > [ Re: [Intel-gfx] i915 producing warnings with kernel 3.11-rc5 ]
 > > 
-> > The panic happens at the last line of efi_init:
-> >         /* clean DUMMY object */
-> >         efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
-> >                          EFI_VARIABLE_NON_VOLATILE |
-> >                          EFI_VARIABLE_BOOTSERVICE_ACCESS |
-> >                          EFI_VARIABLE_RUNTIME_ACCESS,
-> >                          0, NULL);
+> > Hi,
 > > 
-> > Below is the dmesg:
-> > [    0.003359] pid_max: default: 32768 minimum: 301
-> > [    0.004792] BUG: unable to handle kernel paging request at fffffffefde97e70
-> > [    0.006666] IP: [<ffffffff8103a1db>] virt_efi_set_variable+0x40/0x54
-> > [    0.006666] PGD 36981067 PUD 35828063 PMD 0
+> > saw your posting in [1]... can you try the patches below?
+> > Not sure if they apply.
+> > Did you try v3.11-rc6(+)... or drm-intel-nightly?
+> > 
+> > Regards,
+> > - Sedat -
+> > 
+> > [1] http://lists.freedesktop.org/archives/intel-gfx/2013-August/032154.html
 > 
-> Here it is - fffffffefde97e70 is not mapped in the pagetable, PMD is 0.
-> 
-> Ok, can you upload your patches somewhere and tell me exactly how to
-> reproduce this so that I can take a look too?
+> Same thing observed with v3.11-rc7.
 
-Ok, will put somewhere after a little cleanup today.
+I still see this with 3.11.
+Following this message, my VGA monitor goes blank and
+shows an error suggesting a wrong resolution or frequency are set.
+Anyone?
+
 
 > 
-> Thanks.
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+> > 
+> > ---------- Forwarded message ----------
+> > From: Sedat Dilek <sedat.dilek@gmail.com>
+> > Date: Tue, Jul 2, 2013 at 7:31 AM
+> > Subject: Re: linux-next: Tree for Jul 1 [ drm-intel-next: Several call-traces ]
+> > To: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > Cc: "Barnes, Jesse" <jbarnes@virtuousgeek.org>, Stephen Rothwell
+> > <sfr@canb.auug.org.au>, linux-next <linux-next@vger.kernel.org>, Linux
+> > Kernel Mailing List <linux-kernel@vger.kernel.org>, intel-gfx
+> > <intel-gfx@lists.freedesktop.org>, DRI
+> > <dri-devel@lists.freedesktop.org>, Dave Airlie <airlied@gmail.com>
+> > 
+> > 
+> > On Mon, Jul 1, 2013 at 11:03 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> > > On Mon, Jul 1, 2013 at 10:52 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> > >> On Mon, Jul 1, 2013 at 10:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> > >>> On Mon, Jul 1, 2013 at 9:59 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > >>>> Hi all,
+> > >>>>
+> > >>>> Changes since 20130628:
+> > >>>>
+> > >>>> The regulator tree gained a build failure so I used the version from
+> > >>>> next-20130628.
+> > >>>>
+> > >>>> The trivial tree gained a conflict against the fbdev tree.
+> > >>>>
+> > >>>> The arm-soc tree gained a conflict against the net-next tree.
+> > >>>>
+> > >>>> The akpm tree lost a few patches that turned up elsewhere and I removed 2
+> > >>>> that were causing run time problems.
+> > >>>>
+> > >>>
+> > >>> [ CC drm and drm-intel folks ]
+> > >>>
+> > >>> [ Did not check any relevant MLs ]
+> > >>>
+> > >>> Please, see attached dmesg output.
+> > >>
+> > >> Clock mismatch, one for Jesse to figure out. Note that this patch is
+> > >> for 3.12, I simply haven't yet gotten around to properly split my
+> > >> patch queue so a few spilled into -next. I'll do that now.
+> > >
+> > > I like lightspeed-fast replies :-).
+> > >
+> > > Guess "drm/i915: get mode clock when reading the pipe config v9" [1]
+> > > is the cause.
+> > >
+> > 
+> > Problem solved by applying these patches to next-20130701 from
+> > intel-gfx patchwork-service [0]:
+> > 
+> >    [1/2] drm/i915: fixup messages in pipe_config_compare
+> >    [2/2] drm/i915: get clock config when checking CRTC state too
+> > 
+> > AFAICS 2/2 was folded into updated "drm/i915: get mode clock when
+> > reading the pipe config v9" [3].
+> > 
+> > It would be kind to be CCed on the patches and get also some credits.
+> > Also a CC to the report in linux-next should IMHO be done.
+> > 
+> > - Sedat -
+> > 
+> > [0] https://patchwork.kernel.org/project/intel-gfx/list/
+> > [1] https://patchwork.kernel.org/patch/2809031/
+> > [2] https://patchwork.kernel.org/patch/2809021/
+> > [3] http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-nightly&id=f1f644dc66cbaf5a4c7dcde683361536b41885b9
+> > 
+> > > - Sedat -
+> > >
+> > > [1] http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-next-queued&id=d325d8b4f351f9d45e7c8baabf581fd21f343133
+> > >
+> > >> -Daniel
+> > >> --
+> > >> Daniel Vetter
+> > >> Software Engineer, Intel Corporation
+> > >> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
