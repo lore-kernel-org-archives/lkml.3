@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab3IVBVc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 21:21:32 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:45614 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab3IVBVX (ORCPT
+	id S1752794Ab3IVBVi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 21:21:38 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:44496 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab3IVBVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 21:21:23 -0400
+	Sat, 21 Sep 2013 21:21:36 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl, daniel.lezcano@linaro.org
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 00/21] CPUIdle: Minor cleanups for 3.13
-Date: Sun, 22 Sep 2013 06:50:52 +0530
-Message-Id: <cover.1379779777.git.viresh.kumar@linaro.org>
+Subject: [PATCH 02/21] cpuidle: Fix comments in cpuidle core
+Date: Sun, 22 Sep 2013 06:50:54 +0530
+Message-Id: <d1c32a0a0d8da4b262f49b681d1473f446a84081.1379779777.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1379779777.git.viresh.kumar@linaro.org>
+References: <cover.1379779777.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1379779777.git.viresh.kumar@linaro.org>
+References: <cover.1379779777.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael/Daniel,
+Few comments in cpuidle core files have trivial mistakes. This patch fixes them.
 
-This is a small cleanup patchset for CPUIdle which can go in 3.13 if it looks
-okay to you guys..
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpuidle/coupled.c | 2 +-
+ drivers/cpuidle/cpuidle.c | 2 +-
+ drivers/cpuidle/driver.c  | 6 +++---
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-Mostly trivial patches but few are doing good/significant changes. Tested on my
-thinkpad with suspend/resume and didn't found any broken stuff with it.
-
-I a not very sure about this patch (As I don't know about all aspects of CPUIdle
-framework):
-  cpuidle: don't call poll_idle_init() for every cpu
-
---
-viresh
-
-Viresh Kumar (21):
-  cpuidle: fix indentation of cpumask
-  cpuidle: Fix comments in cpuidle core
-  cpuidle: make __cpuidle_get_cpu_driver() inline
-  cpuidle: make __cpuidle_device_init() return void
-  cpuidle: make __cpuidle_driver_init() return void
-  cpuidle: rearrange code in __cpuidle_driver_init()
-  cpuidle: rearrange __cpuidle_register_device() to keep minimal exit
-    points
-  cpuidle: use cpuidle_disabled() instead of "off"
-  cpuidle: merge two if() statements for checking error cases
-  cpuidle: reduce code duplication inside cpuidle_idle_call()
-  cpuidle: replace multiline statements with single line in
-    cpuidle_idle_call()
-  cpuidle: call cpuidle_get_driver() from after taking
-    cpuidle_driver_lock
-  cpuidle: use drv instead of cpuidle_driver in show_current_driver()
-  cpuidle: coupled: don't compare cpu masks unnecessarily
-  cpuidle: free all state kobjects from cpuidle_free_state_kobj()
-  cpuidle: avoid unnecessary kzalloc/free of struct cpuidle_device_kobj
-  cpuidle: avoid unnecessary kzalloc/free of struct cpuidle_driver_kobj
-  cpuidle: don't call poll_idle_init() for every cpu
-  cpuidle: create list of registered drivers
-  cpuidle: don't calculate time-diff if entered_state == 0
-  cpuidle: change governor from within cpuidle_replace_governor()
-
- drivers/cpuidle/coupled.c  |   9 +--
- drivers/cpuidle/cpuidle.c  |  95 +++++++------------------
- drivers/cpuidle/driver.c   | 171 ++++++++++++++++++++-------------------------
- drivers/cpuidle/governor.c |  24 +++----
- drivers/cpuidle/sysfs.c    |  74 +++++++-------------
- include/linux/cpuidle.h    |  25 +++++--
- 6 files changed, 161 insertions(+), 237 deletions(-)
-
+diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+index f8a8636..e952936 100644
+--- a/drivers/cpuidle/coupled.c
++++ b/drivers/cpuidle/coupled.c
+@@ -147,7 +147,7 @@ static cpumask_t cpuidle_coupled_poked;
+  * has returned from this function, the barrier is immediately available for
+  * reuse.
+  *
+- * The atomic variable a must be initialized to 0 before any cpu calls
++ * The atomic variable must be initialized to 0 before any cpu calls
+  * this function, will be reset to 0 before any cpu returns from this function.
+  *
+  * Must only be called from within a coupled idle state handler
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index d75040d..8827c02 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -516,7 +516,7 @@ int cpuidle_register(struct cpuidle_driver *drv,
+ 
+ #ifdef CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED
+ 		/*
+-		 * On multiplatform for ARM, the coupled idle states could
++		 * On multiplatform for ARM, the coupled idle states could be
+ 		 * enabled in the kernel even if the cpuidle driver does not
+ 		 * use it. Note, coupled_cpus is a struct copy.
+ 		 */
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index 6e11701..ced1df6 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -56,7 +56,7 @@ static inline void __cpuidle_unset_driver(struct cpuidle_driver *drv)
+ }
+ 
+ /**
+- * __cpuidle_set_driver - set per CPU driver variables the the given driver.
++ * __cpuidle_set_driver - set per CPU driver variables for the given driver.
+  * @drv: a valid pointer to a struct cpuidle_driver
+  *
+  * For each CPU in the driver's cpumask, unset the registered driver per CPU
+@@ -132,7 +132,7 @@ static inline void __cpuidle_unset_driver(struct cpuidle_driver *drv)
+  * cpuidle_setup_broadcast_timer - enable/disable the broadcast timer
+  * @arg: a void pointer used to match the SMP cross call API
+  *
+- * @arg is used as a value of type 'long' with on of the two values:
++ * @arg is used as a value of type 'long' with one of the two values:
+  * - CLOCK_EVT_NOTIFY_BROADCAST_ON
+  * - CLOCK_EVT_NOTIFY_BROADCAST_OFF
+  *
+@@ -169,7 +169,7 @@ static int __cpuidle_driver_init(struct cpuidle_driver *drv)
+ 	/*
+ 	 * Look for the timer stop flag in the different states, so that we know
+ 	 * if the broadcast timer has to be set up.  The loop is in the reverse
+-	 * order, because usually on of the the deeper states has this flag set.
++	 * order, because usually one of the deeper states have this flag set.
+ 	 */
+ 	for (i = drv->state_count - 1; i >= 0 ; i--) {
+ 
 -- 
 1.7.12.rc2.18.g61b472e
 
