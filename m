@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab3IVUWB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 16:22:01 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:51356 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3IVUWA (ORCPT
+	id S1752962Ab3IVUXT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 16:23:19 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51251 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab3IVUXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 16:22:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.03.1309201946430.8379@linux-mips.org>
-References: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>
-	<6f500d88eb23fd9a4cfc5583f5ca17bc5f58fe24.1379641901.git.joe@perches.com>
-	<CAMuHMdW6R5qTJ0uvsUUaYBZAqFcNshPsXeMbz5hwqq5UOkJr-g@mail.gmail.com>
-	<alpine.LFD.2.03.1309201907380.8379@linux-mips.org>
-	<1379702587.2301.12.camel@joe-AO722>
-	<alpine.LFD.2.03.1309201946430.8379@linux-mips.org>
-Date: Sun, 22 Sep 2013 22:21:59 +0200
-X-Google-Sender-Auth: ieO-E5hC-Bs7I5-UphDRdWXimyc
-Message-ID: <CAMuHMdXCTo4keP6vcXzxS1OQcdPC48eMu3H=D7mW-bWgrSsN6w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] framebuffer: Remove pmag-aa-fb
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Maciej W. Rozycki" <macro@linux-mips.org>
-Cc: Joe Perches <joe@perches.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 22 Sep 2013 16:23:17 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Larry.Finger@lwfinger.net
+Cc: joe@perches.com, sergei.shtylyov@cogentembedded.com,
+        chaoming_li@realsil.com.cn, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH V3] wireless: rtlwifi: Replace variable with a break
+Date: Sun, 22 Sep 2013 22:22:46 +0200
+Message-Id: <1379881366-25487-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 10:09 PM, Maciej W. Rozycki
-<macro@linux-mips.org> wrote:
->  Thanks, but the changes required are actually much more than that -- the
-> driver has never been converted to the modern TURBOchannel API.  I have
-> now dug out an old patch I was working on back in 2006 to convert this
-> driver as well as drivers/video/maxinefb.c.  I'll try to complete the two
-> drivers as soon as possible (unfortunately I can't test the latter at all;
-> it's for an onboard graphics adapter of another DECstation model),
-> although I now remember the main reason I didn't complete them back then
-> was they used an old internal API that was removed and no suitable
-> replacement provided.  I need to investigate again what that actually was
-> though (hw cursor probably).
+This patch removes the variable continual, and change the while loop
+to break when efuse_data == 0xFF.
 
-pmag-aa-fb.c still has struct display_switch (for the old drawing API) and the
-old fb_ops (with get_var()/get_fix()), instead of the new fb_ops (rectangular
-drawing API and var/fix as member data).
+Tested by compilation only.
 
-Gr{oetje,eeting}s,
+CC: Joe Perches <joe@perches.com>
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+Changes from V2:
+ - Fix typo in the subject
+ - Fix indentation
 
-                        Geert
+Changes from V1:
+ - Fix the indetation
+ - Remove remaining } from removed else
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Please ignore the patch:
+[PATCH 12/19] wireless: Change variable type to bool
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+And apply this one instead.
+
+The variable continual was declared as int, but was used as bool. I
+sent previous patch changing the variable type to bool, but Joe Perches
+proposed that removing the variable and adding a break would be better.
+
+ drivers/net/wireless/rtlwifi/efuse.c | 18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/wireless/rtlwifi/efuse.c b/drivers/net/wireless/rtlwifi/efuse.c
+index 838a1ed..ae13fb9 100644
+--- a/drivers/net/wireless/rtlwifi/efuse.c
++++ b/drivers/net/wireless/rtlwifi/efuse.c
+@@ -1203,20 +1203,18 @@ static void efuse_power_switch(struct ieee80211_hw *hw, u8 write, u8 pwrstate)
+ 
+ static u16 efuse_get_current_size(struct ieee80211_hw *hw)
+ {
+-	int continual = true;
+ 	u16 efuse_addr = 0;
+ 	u8 hworden;
+ 	u8 efuse_data, word_cnts;
+ 
+-	while (continual && efuse_one_byte_read(hw, efuse_addr, &efuse_data)
+-	       && (efuse_addr < EFUSE_MAX_SIZE)) {
+-		if (efuse_data != 0xFF) {
+-			hworden = efuse_data & 0x0F;
+-			word_cnts = efuse_calculate_word_cnts(hworden);
+-			efuse_addr = efuse_addr + (word_cnts * 2) + 1;
+-		} else {
+-			continual = false;
+-		}
++	while (efuse_one_byte_read(hw, efuse_addr, &efuse_data) &&
++	       efuse_addr < EFUSE_MAX_SIZE) {
++		if (efuse_data == 0xFF)
++			break;
++
++		hworden = efuse_data & 0x0F;
++		word_cnts = efuse_calculate_word_cnts(hworden);
++		efuse_addr = efuse_addr + (word_cnts * 2) + 1;
+ 	}
+ 
+ 	return efuse_addr;
+-- 
+1.8.3.1
+
