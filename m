@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab3IVOpJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 10:45:09 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53474 "EHLO mail.skyhub.de"
+	id S1752350Ab3IVOpM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 10:45:12 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53478 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338Ab3IVOpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752353Ab3IVOpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Sep 2013 10:45:06 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: LKML <linux-kernel@vger.kernel.org>
@@ -12,9 +12,9 @@ Cc: Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
         Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
         Andre Przywara <andre@andrep.de>, Joerg Roedel <joro@8bytes.org>,
         X86 ML <x86@kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 2/6] kvm, emulator: Use opcode length
-Date: Sun, 22 Sep 2013 16:44:51 +0200
-Message-Id: <1379861095-628-3-git-send-email-bp@alien8.de>
+Subject: [PATCH 4/6] kvm, emulator: Add initial three-byte insns support
+Date: Sun, 22 Sep 2013 16:44:53 +0200
+Message-Id: <1379861095-628-5-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1379861095-628-1-git-send-email-bp@alien8.de>
 References: <1379861095-628-1-git-send-email-bp@alien8.de>
@@ -24,81 +24,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-Add a field to the current emulation context which contains the
-instruction opcode length. This will streamline handling of opcodes of
-different length.
+Add initial support for handling three-byte instructions in the
+emulator.
 
 Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- arch/x86/include/asm/kvm_emulate.h | 8 ++++++--
- arch/x86/kvm/emulate.c             | 5 +++--
- arch/x86/kvm/x86.c                 | 4 ++--
- 3 files changed, 11 insertions(+), 6 deletions(-)
+ arch/x86/kvm/emulate.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index 15f960c06ff7..92a176ad456c 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -279,8 +279,12 @@ struct x86_emulate_ctxt {
- 	bool have_exception;
- 	struct x86_exception exception;
- 
--	/* decode cache */
--	u8 twobyte;
-+	/*
-+	 * decode cache
-+	 */
-+
-+	/* current opcode length in bytes */
-+	u8 opcode_len;
- 	u8 b;
- 	u8 intercept;
- 	u8 lock_prefix;
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 2bc1e81045b0..bfae4a433091 100644
+index 67277bcb377a..72093d76c769 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -4114,6 +4114,7 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len)
- 	ctxt->_eip = ctxt->eip;
- 	ctxt->fetch.start = ctxt->_eip;
- 	ctxt->fetch.end = ctxt->fetch.start + insn_len;
-+	ctxt->opcode_len = 1;
- 	if (insn_len > 0)
- 		memcpy(ctxt->fetch.data, insn, insn_len);
+@@ -3880,6 +3880,25 @@ static const struct opcode twobyte_table[256] = {
+ 	N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N
+ };
  
-@@ -4196,7 +4197,7 @@ done_prefixes:
- 	opcode = opcode_table[ctxt->b];
- 	/* Two-byte opcode? */
- 	if (ctxt->b == 0x0f) {
--		ctxt->twobyte = 1;
-+		ctxt->opcode_len = 2;
++static const struct gprefix third_opcode_byte_0xf0 = {
++	N, N, N, N
++};
++
++static const struct gprefix third_opcode_byte_0xf1 = {
++	N, N, N, N
++};
++
++/*
++ * Insns below are selected by the prefix which indexed by the third opcode
++ * byte.
++ */
++static const struct opcode opcode_map_0f_38[256] = {
++	/* 0x00 - 0x7f */
++	X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N),
++	/* 0x80 - 0xff */
++	X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N)
++};
++
+ #undef D
+ #undef N
+ #undef G
+@@ -4200,6 +4219,13 @@ done_prefixes:
+ 		ctxt->opcode_len = 2;
  		ctxt->b = insn_fetch(u8, ctxt);
  		opcode = twobyte_table[ctxt->b];
++
++		/* 0F_38 opcode map */
++		if (ctxt->b == 0x38) {
++			ctxt->opcode_len = 3;
++			ctxt->b = insn_fetch(u8, ctxt);
++			opcode = opcode_map_0f_38[ctxt->b];
++		}
  	}
-@@ -4528,7 +4529,7 @@ special_insn:
- 		goto writeback;
- 	}
+ 	ctxt->d = opcode.flags;
  
--	if (ctxt->twobyte)
-+	if (ctxt->opcode_len == 2)
+@@ -4531,6 +4557,8 @@ special_insn:
+ 
+ 	if (ctxt->opcode_len == 2)
  		goto twobyte_insn;
++	else if (ctxt->opcode_len == 3)
++		goto threebyte_insn;
  
  	switch (ctxt->b) {
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 8dfde7a52dab..6f2ea40b80cf 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4778,8 +4778,8 @@ static void inject_emulated_exception(struct kvm_vcpu *vcpu)
+ 	case 0x63:		/* movsxd */
+@@ -4715,6 +4743,8 @@ twobyte_insn:
+ 		goto cannot_emulate;
+ 	}
  
- static void init_decode_cache(struct x86_emulate_ctxt *ctxt)
- {
--	memset(&ctxt->twobyte, 0,
--	       (void *)&ctxt->_regs - (void *)&ctxt->twobyte);
-+	memset(&ctxt->opcode_len, 0,
-+	       (void *)&ctxt->_regs - (void *)&ctxt->opcode_len);
++threebyte_insn:
++
+ 	if (rc != X86EMUL_CONTINUE)
+ 		goto done;
  
- 	ctxt->fetch.start = 0;
- 	ctxt->fetch.end = 0;
 -- 
 1.8.4
 
