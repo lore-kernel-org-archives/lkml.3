@@ -1,111 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab3IVVWq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 17:22:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36542 "EHLO mail.zytor.com"
+	id S1752643Ab3IVV2I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 17:28:08 -0400
+Received: from imap.thunk.org ([74.207.234.97]:36057 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752137Ab3IVVWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 17:22:45 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1379882338-7209-11-git-send-email-tytso@mit.edu>
-References: <1379882338-7209-1-git-send-email-tytso@mit.edu> <1379882338-7209-11-git-send-email-tytso@mit.edu>
+	id S1752261Ab3IVV2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 17:28:06 -0400
+Date: Sun, 22 Sep 2013 17:27:52 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: =?iso-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>
+Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Stephan Mueller <smueller@chronox.de>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH,RFC] random: make fast_mix() honor its name
+Message-ID: <20130922212752.GB7321@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	=?iso-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>,
+	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+	John Stultz <john.stultz@linaro.org>,
+	Stephan Mueller <smueller@chronox.de>,
+	LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <20130910223326.GD11063@thunk.org>
+ <522FB9F1.3070905@linaro.org>
+ <20130911005047.GA13315@thunk.org>
+ <20130912210717.GC3809@logfs.org>
+ <20130912233155.GB5279@thunk.org>
+ <20130916154026.GA23345@logfs.org>
+ <20130921212510.GD8606@thunk.org>
+ <20130921214118.GE8606@thunk.org>
+ <20130922030553.GA21422@thunk.org>
+ <523F5AB6.8070107@web.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH, RFC 10/12] random: cap the rate which the /dev/urandom pool gets reseeded
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 22 Sep 2013 14:21:48 -0700
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-CC: joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
-        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
-        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de
-Message-ID: <e665f20c-9154-4dbd-bb93-cf144922bf29@email.android.com>
+In-Reply-To: <523F5AB6.8070107@web.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is this really an improvement on a system with plenty of entropy? Would it not make more sense to modulate this bad on entropy production rates?
-
-Also, the urandom pool is only reseeded once per read, no matter how large...
-
-Theodore Ts'o <tytso@mit.edu> wrote:
->In order to avoid draining the input pool of its entropy at too high
->of a rate, enforce a minimum time interval between reseedings of the
->urandom pool.  This is set to 60 seconds by default.
->
->Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
->---
-> drivers/char/random.c | 25 +++++++++++++++++++++++++
-> 1 file changed, 25 insertions(+)
->
->diff --git a/drivers/char/random.c b/drivers/char/random.c
->index 292e717..3439b1c 100644
->--- a/drivers/char/random.c
->+++ b/drivers/char/random.c
->@@ -306,6 +306,13 @@ static int random_read_wakeup_thresh = 64;
-> static int random_write_wakeup_thresh = 128;
+On Sun, Sep 22, 2013 at 11:01:42PM +0200, Jörg-Volker Peetz wrote:
+> just out of interest I would like to ask why this mixing function has to be that
+> complicated. For example, even if the input is always 0 and the pool is seeded
+> with pool[0] = 1 (as in your test program) this algorithm generates some
+> (predictable) pseudo-random numbers in the pool. Is this necessary?
 > 
-> /*
->+ * The minimum number of seconds between urandom pool resending.  We
->+ * do this to limit the amount of entropy that can be drained from the
->+ * input pool even if there are heavy demands on /dev/urandom.
->+ */
->+static int random_min_urandom_seed = 60;
->+
->+/*
->  * When the input pool goes over trickle_thresh, start dropping most
->  * samples to avoid wasting CPU time and reduce lock contention.
->  */
->@@ -437,6 +444,7 @@ struct entropy_store {
-> 	struct entropy_store *pull;
+> To just mix in some random input filling the whole pool (seeded again with
+> pool[0] = 1) something as "simple" as
 > 
-> 	/* read-write data: */
->+	unsigned long last_pulled;
-> 	spinlock_t lock;
-> 	unsigned short add_ptr;
-> 	unsigned short input_rotate;
->@@ -885,6 +893,15 @@ static void xfer_secondary_pool(struct
->entropy_store *r, size_t nbytes)
-> {
-> 	__u32	tmp[OUTPUT_POOL_WORDS];
+>           f->pool[0] = rol32(input[0], f->pool[2] & 31) ^ f->pool[1];
+>           f->pool[1] = rol32(input[1], f->pool[3] & 31) ^ f->pool[2];
+>           f->pool[2] = rol32(input[2], f->pool[0] & 31) ^ f->pool[3];
+>           f->pool[3] = rol32(input[3], f->pool[1] & 31) ^ f->pool[0];
 > 
->+	if (r->limit == 0 && random_min_urandom_seed) {
->+		unsigned long now = jiffies;
->+
->+		if (time_before(now,
->+				r->last_pulled + random_min_urandom_seed * HZ)) {
->+			return;
->+		}
->+		r->last_pulled = now;
->+	}
-> 	if (r->pull &&
-> 	    r->entropy_count < (nbytes << (ENTROPY_SHIFT + 3)) &&
-> 	    r->entropy_count < r->poolinfo->poolfracbits) {
->@@ -1188,6 +1205,7 @@ static void init_std_data(struct entropy_store
->*r)
-> 	r->entropy_count = 0;
-> 	r->entropy_total = 0;
-> 	r->last_data_init = 0;
->+	r->last_pulled = jiffies;
-> 	mix_pool_bytes(r, &now, sizeof(now), NULL);
-> 	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
-> 		if (!arch_get_random_long(&rv))
->@@ -1539,6 +1557,13 @@ struct ctl_table random_table[] = {
-> 		.extra2		= &max_write_thresh,
-> 	},
-> 	{
->+		.procname	= "urandom_min_reseed_secs",
->+		.data		= &random_min_urandom_seed,
->+		.maxlen		= sizeof(int),
->+		.mode		= 0644,
->+		.proc_handler	= proc_dointvec,
->+	},
->+	{
-> 		.procname	= "boot_id",
-> 		.data		= &sysctl_bootid,
-> 		.maxlen		= 16,
+> would suffice, although I didn't do any statistical tests.
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+The structure of the mixing functions in /dev/random has been well
+studied, and validatetd in a number of different academic papers.  So
+I prefer to stick with the basic architecture, even as it is scaled
+down for speed reasons and beause the pool is smaller.
+
+One of the important things about the mixing function is that if the
+attacker knows the input values (of which the simplest example for
+analytic purposes is if the input values are all zero), we want there
+to be ample mixing across the pool.
+
+If you look at your proposed mixing function, in the case where the
+input values are all zero, it devolves into:
+
+           f->pool[0] = f->pool[1];
+           f->pool[1] = f->pool[2];
+           f->pool[2] = f->pool[3];
+           f->pool[3] = f->pool[0];
+
+Yes, I know the input values will never be all zero, but in the case
+where the attacker knows what the input values are[1], but does not know
+the contents of the entropy pool, a very simplistic mixing function
+becomes relatively easy to analyze in the case where attacker knows
+the inputs and then outputs, and is trying to determine the internal
+state of the random driver.
+
+Measuring the speed of the fast_mix function which I put together,
+it's already been speeded up compard to the original fast_mix function
+by a factor of six.  On my x86 laptop, I can run 10 million
+iterations in 0.14 seconds, so that translates to 14ns per fast_mix
+call.   (The original fast_mix function runs in 84 nanoseconds.)
+
+So there is a cost-benefit tradeoff that we need to balance here.  If
+you have a system with 100k interrupts per second, performance is
+going to be poor no matter what, and it's not clear how common such
+systems really are.  Most modern hardware do have some kind of NAPI or
+other interrupt mitigation in place --- heck, even back in 1980's
+people had figured out how to improve the 8250 UART with the 16550A
+UART, which introdued a FIFO to decrease the interrupt load caused by
+serial ports, and things have only gotten better since then.
+
+Out of curiosity, on your profiles, how many nanonseconds total is the
+total interrupt code path chewing up per interrupt?
+
+Regards,
+
+						- Ted
+
+[1] And on systems where we don't have get_cycles() or
+random_get_entropy(), it becomes much easier for the attacker to guess
+what at least half of the input values will be!
