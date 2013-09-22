@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab3IVVy4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 17:54:56 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:57284 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752583Ab3IVVyz (ORCPT
+	id S1753153Ab3IVVzY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 17:55:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37293 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab3IVVzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 17:54:55 -0400
-Date: Sun, 22 Sep 2013 22:54:54 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Joe Perches <joe@perches.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>
-Subject: Re: [PATCH 2/2] framebuffer: Remove pmag-aa-fb
-In-Reply-To: <CAMuHMdXCTo4keP6vcXzxS1OQcdPC48eMu3H=D7mW-bWgrSsN6w@mail.gmail.com>
-Message-ID: <alpine.LFD.2.03.1309222244170.16797@linux-mips.org>
-References: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>        <6f500d88eb23fd9a4cfc5583f5ca17bc5f58fe24.1379641901.git.joe@perches.com>        <CAMuHMdW6R5qTJ0uvsUUaYBZAqFcNshPsXeMbz5hwqq5UOkJr-g@mail.gmail.com>       
- <alpine.LFD.2.03.1309201907380.8379@linux-mips.org>        <1379702587.2301.12.camel@joe-AO722>        <alpine.LFD.2.03.1309201946430.8379@linux-mips.org> <CAMuHMdXCTo4keP6vcXzxS1OQcdPC48eMu3H=D7mW-bWgrSsN6w@mail.gmail.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Sun, 22 Sep 2013 17:55:22 -0400
+Date: Sun, 22 Sep 2013 15:55:20 -0600
+From: Jens Axboe <axboe@kernel.dk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Block IO fixes for 3.12
+Message-ID: <20130922215520.GE31014@kernel.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 Sep 2013, Geert Uytterhoeven wrote:
+Hi Linus,
 
-> >  Thanks, but the changes required are actually much more than that -- the
-> > driver has never been converted to the modern TURBOchannel API.  I have
-> > now dug out an old patch I was working on back in 2006 to convert this
-> > driver as well as drivers/video/maxinefb.c.  I'll try to complete the two
-> > drivers as soon as possible (unfortunately I can't test the latter at all;
-> > it's for an onboard graphics adapter of another DECstation model),
-> > although I now remember the main reason I didn't complete them back then
-> > was they used an old internal API that was removed and no suitable
-> > replacement provided.  I need to investigate again what that actually was
-> > though (hw cursor probably).
-> 
-> pmag-aa-fb.c still has struct display_switch (for the old drawing API) and the
-> old fb_ops (with get_var()/get_fix()), instead of the new fb_ops (rectangular
-> drawing API and var/fix as member data).
+After merge window, no new stuff this time only a collection of neatly
+confined and simple fixes. Please pull!
 
- That I got covered already in the old patch, but there was something 
-else.  Otherwise I would have pushed it along updates for pmag-ba-fb.c and 
-pmagb-b-fb.c long ago.
 
-  Maciej
+  git://git.kernel.dk/linux-block.git for-3.12/core
+
+for you to fetch changes up to f3cff25f05f2ac29b2ee355e611b0657482f6f1d:
+
+  cfq: explicitly use 64bit divide operation for 64bit arguments (2013-09-22 12:43:47 -0600)
+
+----------------------------------------------------------------
+Anatol Pomozov (1):
+      cfq: explicitly use 64bit divide operation for 64bit arguments
+
+Bjorn Helgaas (1):
+      bio-integrity: Fix use of bs->bio_integrity_pool after free
+
+Jianpeng Ma (1):
+      block: trace all devices plug operation
+
+Joe Perches (1):
+      block: Convert kmalloc_node(...GFP_ZERO...) to kzalloc_node(...)
+
+Jun'ichi Nomura (1):
+      block: Add nr_bios to block_rq_remap tracepoint
+
+Mike Christie (1):
+      If the queue is dying then we only call the rq->end_io callout.     This leaves bios setup on the request, because the caller assumes when     the blk_execute_rq_nowait/blk_execute_rq call has completed that     the rq->bios have been cleaned up.
+
+Tejun Heo (1):
+      blkcg: relocate root_blkg setting and clearing
+
+ block/blk-cgroup.c           | 25 +++++++++++++++----------
+ block/blk-core.c             |  6 ++----
+ block/blk-exec.c             |  4 ++--
+ block/cfq-iosched.c          |  4 ++--
+ block/deadline-iosched.c     |  2 +-
+ block/elevator.c             |  2 +-
+ block/genhd.c                |  3 +--
+ fs/bio-integrity.c           |  2 +-
+ include/linux/blkdev.h       | 11 +++++++++++
+ include/trace/events/block.h |  6 ++++--
+ 10 files changed, 40 insertions(+), 25 deletions(-)
+
+-- 
+Jens Axboe
+
