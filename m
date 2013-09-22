@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab3IVIQj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 04:16:39 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:42593 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076Ab3IVIQg (ORCPT
+	id S1752825Ab3IVIRN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 04:17:13 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:53126 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615Ab3IVIRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 04:16:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <201309210928.JCF90671.OtOFLFQSOJVFMH@I-love.SAKURA.ne.jp>
-References: <201309191756.BCF65661.MQFOLSJOFHFtOV@I-love.SAKURA.ne.jp>
-	<CAGXu5jK_D1BJOQr=1A-UFrpM5Ad+Qu894HT_XjkZh4EmsbCkTQ@mail.gmail.com>
-	<201309201309.GFB52620.OQOtSFLMJVHOFF@I-love.SAKURA.ne.jp>
-	<523C0268.20404@suse.cz>
-	<CAGXu5jLENb+x6b9XOY7-pWMT7GsFgnLr0=A8VNFLkqMi0BX4=w@mail.gmail.com>
-	<201309210928.JCF90671.OtOFLFQSOJVFMH@I-love.SAKURA.ne.jp>
-Date: Sun, 22 Sep 2013 10:16:36 +0200
-X-Google-Sender-Auth: yrNsx4eqhX3y50wvZAqwoO20_do
-Message-ID: <CAMuHMdVdgmio-VGhLRZBZBP8GL1bHDtu4z23z5jqSJKoOj4iXg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] remove all uses of printf's %n
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: Kees Cook <keescook@chromium.org>, Jiri Slaby <jslaby@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>, xemul@openvz.org,
-        remi.denis-courmont@nokia.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-sctp@vger.kernel.org, George Spelvin <linux@horizon.com>,
+	Sun, 22 Sep 2013 04:17:10 -0400
+Message-ID: <1379837823.5499.34.camel@marge.simpson.net>
+Subject: Re: [PATCH] ipc/sem.c: fix update sem_otime when calling sem_op in
+ semaphore initialization
+From: Mike Galbraith <bitbucket@online.de>
+To: Jia He <jiakernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jan Beulich <JBeulich@suse.com>, Joe Perches <joe@perches.com>,
-        Motohiro KOSAKI <kosaki.motohiro@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Date: Sun, 22 Sep 2013 10:17:03 +0200
+In-Reply-To: <1379815884-11035-1-git-send-email-jiakernel@gmail.com>
+References: <1379815884-11035-1-git-send-email-jiakernel@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:7giO299xtJUZd0aT68WMC9tDKfbvWbcjNCGfstQyJml
+ /by2cZ/Emc1d1aWKMwqpN6JzVka31pmwXTmXHU8BQxYQom8Cql
+ zQnQlvHvVn5TjAxKJW75IbFnljAZsDdS3BD5K9fGYvK4EmygtS
+ MO74/wfuc/eUH5l9OPLx6JnHS096rzovqCQFmrUTgfq0P8JcI5
+ Y3/oys5uUDDr3zGMkKGQJI8SQlH9R79Jh1biW02VcINgA3Xfko
+ jmKR0F/oMolLguh4Qxk7PuXAzopAdYTP1B17MFa3CN7CdM08ij
+ TQDGjAFwEtu6eqt+TNmMWV0xjuBQ+ePmsjaQsl3BIyimYWSclw
+ uqgIIy2Mo5moteN4hTJvyZNXEXBXEbzoQHK4z77B6EqiJCHfOm
+ 1i0ysaT+v/MWw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 21, 2013 at 2:28 AM, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
-> Kees Cook wrote:
->> >> -                     seq_printf(seq, "%*s\n", 127 - len, "");
->> >> +                     seq_pad(seq, '\n');
->> >
->> > Hmm, seq_pad is unintuitive. I would say it pads the string by '\n'. Of
->> > course it does not, but...
->>
->> I don't think this is a very serious problem. Currently, the padding
->> character is always ' ' for all existing callers, so it only makes
->> sense to make the trailing character an argument.
->
-> If you want, we can rename seq_pad() to seq_pad_and_putc(). Also we can pass
-> both the padding character (e.g. ' ') and the trailing character (e.g. '\n')
-> like seq_pad_and_putc((' ' << 8) | '\n'), though I wonder someone wants to
-> use '\0', '\t', '\n' etc. as the padding character...
+On Sun, 2013-09-22 at 10:11 +0800, Jia He wrote: 
+> In commit 0a2b9d4c,the update of semaphore's sem_otime(last semop time)
+> was removed because he wanted to move setting sem->sem_otime to one
+> place. But after that, the initial semop() will not set the otime
+> because its sem_op value is 0(in semtimedop,will not change
+> otime if alter == 1).
+> 
+> the error case:
+> process_a(server)       process_b(client)
+> semget()
+> semctl(SETVAL)
+> semop()
+>                         semget()
+>                         setctl(IP_STAT)
+>                         for(;;) {               <--not successful here
+>                           check until sem_otime > 0
+>                         }
 
-Not those special characters. '-' could be useful for tables (doh,
-text-mode graphics
-log output).
+Why not..
 
-Gr{oetje,eeting}s,
+ipc,sem: Create semaphores with plausible sem_otime.
 
-                        Geert
+Signed-off-by: Mike Galbraith <bitbucket@online.de>
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+diff --git a/ipc/sem.c b/ipc/sem.c
+index 4108889..f2564d7 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -471,19 +471,20 @@ static int newary(struct ipc_namespace *ns, struct
+ipc_params *params)
+ns->used_sems += nsems;
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+sma->sem_base = (struct sem *) &sma[1];
++ sma->complex_count = 0;
++ INIT_LIST_HEAD(&sma->pending_alter);
++ INIT_LIST_HEAD(&sma->pending_const);
++ INIT_LIST_HEAD(&sma->list_id);
++ sma->sem_nsems = nsems;
++ sma->sem_ctime = get_seconds();
+
+for (i = 0; i < nsems; i++) {
+INIT_LIST_HEAD(&sma->sem_base[i].pending_alter);
+INIT_LIST_HEAD(&sma->sem_base[i].pending_const);
+spin_lock_init(&sma->sem_base[i].lock);
++ sma->sem_base[i].sem_otime = sma->sem_ctime;
+}
+
+- sma->complex_count = 0;
+- INIT_LIST_HEAD(&sma->pending_alter);
+- INIT_LIST_HEAD(&sma->pending_const);
+- INIT_LIST_HEAD(&sma->list_id);
+- sma->sem_nsems = nsems;
+- sma->sem_ctime = get_seconds();
+sem_unlock(sma, -1);
+rcu_read_unlock();
+
+
+
