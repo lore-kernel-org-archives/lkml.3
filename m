@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab3IVUkx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 16:40:53 -0400
-Received: from imap.thunk.org ([74.207.234.97]:35981 "EHLO imap.thunk.org"
+	id S1753375Ab3IVUkw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 16:40:52 -0400
+Received: from imap.thunk.org ([74.207.234.97]:35980 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753023Ab3IVUjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753011Ab3IVUjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Sep 2013 16:39:18 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
 To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
@@ -12,15 +12,12 @@ Cc: hpa@zytor.com, joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
         dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
         smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de,
         "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH, RFC 11/12] random: speed up the fast_mix function by a factor of four
-Date: Sun, 22 Sep 2013 16:38:57 -0400
-Message-Id: <1379882338-7209-12-git-send-email-tytso@mit.edu>
+Subject: [PATCH, RFC 10/12] random: cap the rate which the /dev/urandom pool gets reseeded
+Date: Sun, 22 Sep 2013 16:38:56 -0400
+Message-Id: <1379882338-7209-11-git-send-email-tytso@mit.edu>
 X-Mailer: git-send-email 1.7.12.rc0.22.gcdd159b
 In-Reply-To: <1379882338-7209-1-git-send-email-tytso@mit.edu>
 References: <1379882338-7209-1-git-send-email-tytso@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: tytso@thunk.org
 X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
@@ -28,71 +25,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By mixing the entropy in chunks of 32-bit words instead of byte by
-byte, we can speed up the fast_mix function significantly.  Since it
-is called on every single interrupt, on systems with a very heavy
-interrupt load, this can make a noticeable different.
+In order to avoid draining the input pool of its entropy at too high
+of a rate, enforce a minimum time interval between reseedings of the
+urandom pool.  This is set to 60 seconds by default.
 
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reported-by: Jörn Engel <joern@logfs.org>
 ---
- drivers/char/random.c | 30 +++++++++++++++++-------------
- 1 file changed, 17 insertions(+), 13 deletions(-)
+ drivers/char/random.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 3439b1c..86879d1 100644
+index 292e717..3439b1c 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -583,21 +583,26 @@ struct fast_pool {
-  * collector.  It's hardcoded for an 128 bit pool and assumes that any
-  * locks that might be needed are taken by the caller.
-  */
--static void fast_mix(struct fast_pool *f, const void *in, int nbytes)
-+static void fast_mix(struct fast_pool *f, __u32 input[4])
- {
--	const char	*bytes = in;
- 	__u32		w;
--	unsigned	i = f->count;
- 	unsigned	input_rotate = f->rotate;
- 
--	while (nbytes--) {
--		w = rol32(*bytes++, input_rotate & 31) ^ f->pool[i & 3] ^
--			f->pool[(i + 1) & 3];
--		f->pool[i & 3] = (w >> 3) ^ twist_table[w & 7];
--		input_rotate += (i++ & 3) ? 7 : 14;
--	}
--	f->count = i;
-+	w = rol32(input[0], input_rotate) ^ f->pool[0] ^ f->pool[3];
-+	f->pool[0] = (w >> 3) ^ twist_table[w & 7];
-+	input_rotate = (input_rotate + 14) & 31;
-+	w = rol32(input[1], input_rotate) ^ f->pool[1] ^ f->pool[0];
-+	f->pool[1] = (w >> 3) ^ twist_table[w & 7];
-+	input_rotate = (input_rotate + 7) & 31;
-+	w = rol32(input[2], input_rotate) ^ f->pool[2] ^ f->pool[1];
-+	f->pool[2] = (w >> 3) ^ twist_table[w & 7];
-+	input_rotate = (input_rotate + 7) & 31;
-+	w = rol32(input[3], input_rotate) ^ f->pool[3] ^ f->pool[2];
-+	f->pool[3] = (w >> 3) ^ twist_table[w & 7];
-+	input_rotate = (input_rotate + 7) & 31;
-+
- 	f->rotate = input_rotate;
-+	f->count++;
- }
+@@ -306,6 +306,13 @@ static int random_read_wakeup_thresh = 64;
+ static int random_write_wakeup_thresh = 128;
  
  /*
-@@ -836,10 +841,9 @@ void add_interrupt_randomness(int irq, int irq_flags)
- 		input[3] = ip >> 32;
- 	}
++ * The minimum number of seconds between urandom pool resending.  We
++ * do this to limit the amount of entropy that can be drained from the
++ * input pool even if there are heavy demands on /dev/urandom.
++ */
++static int random_min_urandom_seed = 60;
++
++/*
+  * When the input pool goes over trickle_thresh, start dropping most
+  * samples to avoid wasting CPU time and reduce lock contention.
+  */
+@@ -437,6 +444,7 @@ struct entropy_store {
+ 	struct entropy_store *pull;
  
--	fast_mix(fast_pool, input, sizeof(input));
-+	fast_mix(fast_pool, input);
+ 	/* read-write data: */
++	unsigned long last_pulled;
+ 	spinlock_t lock;
+ 	unsigned short add_ptr;
+ 	unsigned short input_rotate;
+@@ -885,6 +893,15 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+ {
+ 	__u32	tmp[OUTPUT_POOL_WORDS];
  
--	if ((fast_pool->count & 1023) &&
--	    !time_after(now, fast_pool->last + HZ))
-+	if ((fast_pool->count & 63) && !time_after(now, fast_pool->last + HZ))
- 		return;
- 
- 	fast_pool->last = now;
++	if (r->limit == 0 && random_min_urandom_seed) {
++		unsigned long now = jiffies;
++
++		if (time_before(now,
++				r->last_pulled + random_min_urandom_seed * HZ)) {
++			return;
++		}
++		r->last_pulled = now;
++	}
+ 	if (r->pull &&
+ 	    r->entropy_count < (nbytes << (ENTROPY_SHIFT + 3)) &&
+ 	    r->entropy_count < r->poolinfo->poolfracbits) {
+@@ -1188,6 +1205,7 @@ static void init_std_data(struct entropy_store *r)
+ 	r->entropy_count = 0;
+ 	r->entropy_total = 0;
+ 	r->last_data_init = 0;
++	r->last_pulled = jiffies;
+ 	mix_pool_bytes(r, &now, sizeof(now), NULL);
+ 	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
+ 		if (!arch_get_random_long(&rv))
+@@ -1539,6 +1557,13 @@ struct ctl_table random_table[] = {
+ 		.extra2		= &max_write_thresh,
+ 	},
+ 	{
++		.procname	= "urandom_min_reseed_secs",
++		.data		= &random_min_urandom_seed,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "boot_id",
+ 		.data		= &sysctl_bootid,
+ 		.maxlen		= 16,
 -- 
 1.7.12.rc0.22.gcdd159b
 
