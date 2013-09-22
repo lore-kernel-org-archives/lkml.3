@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab3IVRcf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 13:32:35 -0400
-Received: from smtprelay0157.hostedemail.com ([216.40.44.157]:52663 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752446Ab3IVRcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 13:32:33 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3870:3871:5007:6261:7903:10004:10026:10848:11658:11914:12438:12517:12519:12555:13161:13229:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: glove01_16186fd1c3d38
-X-Filterd-Recvd-Size: 1900
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/12] psnap.h: Remove extern from function prototypes
-Date: Sun, 22 Sep 2013 10:32:18 -0700
-Message-Id: <90994e6e96300c1594ad5de59dae90c4f20e314c.1379870986.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <b692aba58032f629907ea2d462c99b87906645ca.1379870986.git.joe@perches.com>
-References: <b692aba58032f629907ea2d462c99b87906645ca.1379870986.git.joe@perches.com>
+	id S1752434Ab3IVRsy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 13:48:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34577 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752188Ab3IVRsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 13:48:53 -0400
+Message-ID: <523F2D21.5070505@zytor.com>
+Date: Sun, 22 Sep 2013 10:47:13 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com> <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com> <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de> <20130920162603.GA30381@localhost.localdomain> <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com> <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com> <1379799901.24090.6.camel@pasglop> <523E4F8A.7020708@zytor.com> <1379824754.24090.11.camel@pasglop> <1379824861.24090.12.camel@pasglop> <20130922162410.GA10649@laptop.programming.kicks-ass.net>
+In-Reply-To: <20130922162410.GA10649@laptop.programming.kicks-ass.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a mix of function prototypes with and without extern
-in the kernel sources.  Standardize on not using extern for
-function prototypes.
+On 09/22/2013 09:24 AM, Peter Zijlstra wrote:
+> 
+> As to the problem of GCC moving r13 about, some archs have some
+> exceptions in the register allocator and leave some registers alone.
+> IIRC MIPS has this and uses one of those (istr there's 2) for the
+> per cpu base address.
+> 
 
-Function prototypes don't need to be written with extern.
-extern is assumed by the compiler.  Its use is as unnecessary as
-using auto to declare automatic/local variables in a block.
+You can force gcc to leave a register alone with the command line option
+-ffixed-r13.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/net/psnap.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/net/psnap.h b/include/net/psnap.h
-index fe456c2..78db4cc 100644
---- a/include/net/psnap.h
-+++ b/include/net/psnap.h
-@@ -1,11 +1,11 @@
- #ifndef _NET_PSNAP_H
- #define _NET_PSNAP_H
- 
--extern struct datalink_proto *
-+struct datalink_proto *
- register_snap_client(const unsigned char *desc,
- 		     int (*rcvfunc)(struct sk_buff *, struct net_device *,
- 				    struct packet_type *,
- 				    struct net_device *orig_dev));
--extern void unregister_snap_client(struct datalink_proto *proto);
-+void unregister_snap_client(struct datalink_proto *proto);
- 
- #endif
--- 
-1.8.1.2.459.gbcd45b4.dirty
+	-hpa
 
