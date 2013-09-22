@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab3IVIth (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 04:49:37 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:53806 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab3IVItf (ORCPT
+	id S1752863Ab3IVIxD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 04:53:03 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:49490 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab3IVIxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 04:49:35 -0400
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@redhat.com
-Cc: Wei Yang <weiyang@linux.vnet.ibm.com>
-Subject: [PATCH] perf: fix two warning in bench/numa
-Date: Sun, 22 Sep 2013 16:49:24 +0800
-Message-Id: <1379839764-9245-1-git-send-email-weiyang@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 22 Sep 2013 04:53:00 -0400
+Message-ID: <523EAFFA.6060203@redhat.com>
+Date: Sun, 22 Sep 2013 10:53:14 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092208-3864-0000-0000-00000A2EDB0B
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, kvm@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH 0/3] KVM: Make kvm_lock non-raw
+References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com> <20130922074238.GG25202@redhat.com>
+In-Reply-To: <20130922074238.GG25202@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There two warnings in bench/numa, when buiding this on 32-bit machine. 
+Il 22/09/2013 09:42, Gleb Natapov ha scritto:
+> On Mon, Sep 16, 2013 at 04:06:10PM +0200, Paolo Bonzini wrote:
+>> Paul Gortmaker reported a BUG on preempt-rt kernels, due to taking the
+>> mmu_lock within the raw kvm_lock in mmu_shrink_scan.  He provided a
+>> patch that shrunk the kvm_lock critical section so that the mmu_lock
+>> critical section does not nest with it, but in the end there is no reason
+>> for the vm_list to be protected by a raw spinlock.  Only manipulations
+>> of kvm_usage_count and the consequent hardware_enable/disable operations
+>> are not preemptable.
+>>
+>> This small series thus splits the kvm_lock in the "raw" part and the
+>> "non-raw" part.
+>>
+>> Paul, could you please provide your Tested-by?
+>>
+> Reviewed-by: Gleb Natapov <gleb@redhat.com>
+> 
+> But why should it go to stable?
 
-The warning output is attached:
+It is a regression from before the kvm_lock was made raw.  Secondarily,
+it takes a much longer time before a patch hits -rt trees (can even be
+as much as a year) and this patch does nothing on non-rt trees.  So
+without putting it into stable it would get no actual coverage.
 
-bench/numa.c:1113:20: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
-bench/numa.c:1161:6: error: format ‘%lx’ expects argument of t'long unsigned int’, but argument 5 has type ‘u64’ [-Werror=format]
-
-This patch fixs these two warnings.
-
-Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
----
- tools/perf/bench/numa.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
-index 30d1c32..a73c4ed 100644
---- a/tools/perf/bench/numa.c
-+++ b/tools/perf/bench/numa.c
-@@ -1110,7 +1110,7 @@ static void *worker_thread(void *__tdata)
- 		/* Check whether our max runtime timed out: */
- 		if (g->p.nr_secs) {
- 			timersub(&stop, &start0, &diff);
--			if (diff.tv_sec >= g->p.nr_secs) {
-+			if (diff.tv_sec >= (time_t)g->p.nr_secs) {
- 				g->stop_work = true;
- 				break;
- 			}
-@@ -1157,7 +1157,7 @@ static void *worker_thread(void *__tdata)
- 			runtime_ns_max += diff.tv_usec * 1000;
- 
- 			if (details >= 0) {
--				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016lx]\n",
-+				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016"PRIu64"]\n",
- 					process_nr, thread_nr, runtime_ns_max / bytes_done, val);
- 			}
- 			fflush(stdout);
--- 
-1.7.5.4
-
+Paolo
