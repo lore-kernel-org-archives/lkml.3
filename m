@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab3IVEmc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 00:42:32 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:34032 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306Ab3IVEma (ORCPT
+	id S1752751Ab3IVEqc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 00:46:32 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:56212 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab3IVEqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 00:42:30 -0400
-Date: Sun, 22 Sep 2013 09:42:16 +0500
+	Sun, 22 Sep 2013 00:46:31 -0400
+Date: Sun, 22 Sep 2013 09:46:18 +0500
 From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
 To: Jonathan Cameron <jic23@kernel.org>
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bigeasy@linutronix.de, gregkh@linuxfoundation.org
-Subject: Re: [PATCH V11 0/3] iio: input: ti_am335x_adc: Add continuous
- sampling support
-Message-ID: <20130922044214.GA2989@gmail.com>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, dmitry.torokhov@gmail.com,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 3/3] iio: ti_am335x_adc: Add continuous sampling support
+Message-ID: <20130922044616.GB2989@gmail.com>
 References: <1379571876-12420-1-git-send-email-zubair.lutfullah@gmail.com>
- <523D7A65.5010303@kernel.org>
+ <1379571876-12420-4-git-send-email-zubair.lutfullah@gmail.com>
+ <523DE550.4070107@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <523D7A65.5010303@kernel.org>
+In-Reply-To: <523DE550.4070107@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 21, 2013 at 11:52:21AM +0100, Jonathan Cameron wrote:
-> Hi Zubair,
+On Sat, Sep 21, 2013 at 07:28:32PM +0100, Jonathan Cameron wrote:
+> On 09/19/13 07:24, Zubair Lutfullah wrote:
+> > Previously the driver had only one-shot reading functionality.
+> > This patch adds continuous sampling support to the driver.
+...
+> I've added a SELECT IIO_KFIFO_BUF after the autobuilders picked
+> up that was missing.
 > 
-> Thanks for persevering with this patch set.  Now this
-> gets to be the example for dealing with hardware buffer
-> equipped devices ;)
-> 
-> Applied to the togreg branch of
->  git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
+Thank-you.
 
-Thank-you very much for the quick feedbacks and accepting these patches!
-:)
+> One other thing I'd missed until I was reviewing the updated patch.
+> Do you still need the trigger headers?  I can't immediately see why.
+> If not, could you post a follow up patch to drop them?
+> 
+
+Sure.
 
 Zubair
 
+> Thanks,
 > 
-> On 09/19/13 07:24, Zubair Lutfullah wrote:
-> > Hi,
-> > 
-> > These apply to the togreg branch in iio.
-> > 
-> > Round 11
-> > - Optimized memory usage based on list feedback
-> > - Changed devm_*_irq to normal *_irq functions
-> > 
-> > Round 10 updates
-> > - Removed devm_free as not needed
-> > 
-> > Round 9 updates
-> > 
-> > - Removed Trigger.
-> > - Restructured everything for INDIO_BUFFERED_HARDWARE mode.
-> > - Threaded IRQ with top/bottom halfs. Top half HW IRQ wakes
-> > bottom half threaded worker that pushes samples to iio/userspace.
-> > - Removed some of the patchwork to the driver that was irrelevant to the
-> > continuous sampling patch.
-> > 
-> > Cleanup will be done separately once this goes through.
-> > Hope these patches meet the mighty kernel standards :)
-> > 
-> > Zubair
-> > 
-> > Zubair Lutfullah (3):
-> >   input: ti_am335x_tsc: Enable shared IRQ for TSC
-> >   iio: ti_am335x_adc: optimize memory usage.
-> >   iio: ti_am335x_adc: Add continuous sampling support
-> > 
-> >  drivers/iio/adc/ti_am335x_adc.c           |  217 ++++++++++++++++++++++++++++-
-> >  drivers/input/touchscreen/ti_am335x_tsc.c |   12 +-
-> >  include/linux/mfd/ti_am335x_tscadc.h      |    9 ++
-> >  3 files changed, 228 insertions(+), 10 deletions(-)
-> > 
+> Jonathan
+> > ---
+> >  drivers/iio/adc/ti_am335x_adc.c      |  213 +++++++++++++++++++++++++++++++++-
+> >  include/linux/mfd/ti_am335x_tscadc.h |    9 ++
