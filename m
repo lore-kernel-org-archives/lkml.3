@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab3IVVty (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 17:49:54 -0400
-Received: from longford.logfs.org ([213.229.74.203]:57935 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab3IVVtx (ORCPT
+	id S1753233Ab3IVVu4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 17:50:56 -0400
+Received: from smtp.fireflyinternet.com ([109.228.6.236]:11499 "EHLO
+	fireflyinternet.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752137Ab3IVVuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 17:49:53 -0400
-Date: Sun, 22 Sep 2013 16:31:25 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Stephan Mueller <smueller@chronox.de>,
-        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH,RFC] random: make fast_mix() honor its name
-Message-ID: <20130922203125.GB4584@logfs.org>
-References: <20130910211009.GI29237@thunk.org>
- <522F984C.2070909@linaro.org>
- <20130910223326.GD11063@thunk.org>
- <522FB9F1.3070905@linaro.org>
- <20130911005047.GA13315@thunk.org>
- <20130912210717.GC3809@logfs.org>
- <20130912233155.GB5279@thunk.org>
- <20130916154026.GA23345@logfs.org>
- <20130921212510.GD8606@thunk.org>
- <20130921214118.GE8606@thunk.org>
+	Sun, 22 Sep 2013 17:50:55 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=87.106.93.118;
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
+Date: Sun, 22 Sep 2013 22:50:48 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Thomas Richter <thor@math.tu-berlin.de>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] i835GM flicker on panning
+Message-ID: <20130922215048.GA6986@nuc-i3427.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Thomas Richter <thor@math.tu-berlin.de>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <alpine.SOC.1.00.1308261610280.25531@math.ut.ee>
+ <alpine.SOC.1.00.1309211825490.9193@math.ut.ee>
+ <4319_1379778790_523DC0E3_4319_13540_1_CAKMK7uHynzChMurTLAYMfeRF07aDJxes-6eSO1iDbrET8xD84Q@mail.gmail.com>
+ <523F2390.5030702@math.tu-berlin.de>
+ <CAKMK7uFNAhahpURH-LFj=x+8D2W7Z8y_-9OKhnJ_O4g7hyqu1Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130921214118.GE8606@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAKMK7uFNAhahpURH-LFj=x+8D2W7Z8y_-9OKhnJ_O4g7hyqu1Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 78.156.73.22
+X-To-Not-Matched: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 September 2013 17:41:18 -0400, Theodore Ts'o wrote:
-> 
-> BTW, just to give another example of the difference between the mixing
-> funtions, try compiling the following with and without ORIG_MIX defined...
+On Sun, Sep 22, 2013 at 10:03:21PM +0200, Daniel Vetter wrote:
+> Hm, that sounds a bit more like the ddx is having fun with rendering.
+> Have you tried switching the backed from to either SNA or UXA? Also
+> adding relevant mailing lists ...
 
-Garbage in, garbage out again.  If there is absolutely no randomness
-in the input (all bits zero), my mixing function will simply shift the
-pool.  And because the shifting has a period of 128, there are only
-128 possible pool states.  Your mixing function is doing slightly
-better, it effectively becomes an interrupt counter with a silly
-output format.
+If it was just the ddx, you would observe the same tearing with the
+rotated setup as well. The question here would be whether it is tearing
+or flicker?  Tearing would just be the usual frontbuffer rendering
+artifact. However,  flicker could be misrendering of a DRI client (seeing
+the backbuffer etc) or a clock timing issue (pipe underruns and whatnot).
+Using a rotated framebuffer would disable pageflipping, and prevent the
+historically common glitches when flipping. (Historically? That's
+hysterical!)
+-Chris
 
-But who cares?  If there is absolutely no randomness in the input, you
-have lost.  That case isn't worth contemplating.  The question is
-whether any randomness present in the input will get accumulated.
-
-Without the shifting, a single unpredictable bit on, say, the lowest
-position of the timestamp will be xor'ed into the same pool bit every
-time.  The rest of the pool would always be predictable and the
-resulting mixing function would clearly be bad.
-
-With the shifting and using the same example, after 128 rounds every
-bit of the pool is unpredictable.  Job done, we can go home now.  You
-cannot achieve anything better than 128 unpredictable bits, no matter
-how much you try.
-
-Jörn
-
---
-Those who come seeking peace without a treaty are plotting.
--- Sun Tzu
+-- 
+Chris Wilson, Intel Open Source Technology Centre
