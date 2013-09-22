@@ -1,80 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab3IVMxv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 08:53:51 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:65508 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab3IVMxu (ORCPT
+	id S1753083Ab3IVNHt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 09:07:49 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39779 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752890Ab3IVNHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 08:53:50 -0400
-Message-ID: <523EE855.1030100@gmail.com>
-Date: Sun, 22 Sep 2013 20:53:41 +0800
-From: Jia He <jiakernel@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 22 Sep 2013 09:07:48 -0400
+Date: Sun, 22 Sep 2013 14:00:56 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Fan Rong <cinifr@gmail.com>
+Cc: coosty@163.com, maxime.ripard@free-electrons.com,
+        daniel.lezcano@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mark.rutland@arm.com, pawel.moll@arm.co, rob.herring@calxeda.com,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH V3: Add Smp support for Allwinner A20. 1/3] Add smp
+	support for Allwinner A20(sunxi 7i).
+Message-ID: <20130922130056.GQ12758@n2100.arm.linux.org.uk>
+References: <1379852488-32147-1-git-send-email-cinifr@gmail.com> <1379852488-32147-2-git-send-email-cinifr@gmail.com>
 MIME-Version: 1.0
-To: Manfred Spraul <manfred@colorfullife.com>,
-        Mike Galbraith <bitbucket@online.de>
-CC: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] ipc/sem.c: fix update sem_otime when calling sem_op in
- semaphore initialization
-References: <1379815884-11035-1-git-send-email-jiakernel@gmail.com> <1379837823.5499.34.camel@marge.simpson.net> <1379838364.5499.39.camel@marge.simpson.net> <523EC97D.8020707@colorfullife.com>
-In-Reply-To: <523EC97D.8020707@colorfullife.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379852488-32147-2-git-send-email-cinifr@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On Sun, Sep 22, 2013 at 08:21:26PM +0800, Fan Rong wrote:
+> +.section ".text.head", "ax" ENTRY(sun7i_secondary_startup)
+> +msr cpsr_fsxc,
+> +#0xd3
+> +b secondary_startup ENDPROC(sun7i_secondary_startup)
 
-On Sun, 22 Sep 2013 12:42:05 +0200 from manfred@colorfullife.com wrote:
-> Hi all,
->
-> On 09/22/2013 10:26 AM, Mike Galbraith wrote:
->> On Sun, 2013-09-22 at 10:17 +0200, Mike Galbraith wrote:
->>> On Sun, 2013-09-22 at 10:11 +0800, Jia He wrote:
->>>> In commit 0a2b9d4c,the update of semaphore's sem_otime(last semop time)
->>>> was removed because he wanted to move setting sem->sem_otime to one
->>>> place. But after that, the initial semop() will not set the otime
->>>> because its sem_op value is 0(in semtimedop,will not change
->>>> otime if alter == 1).
->>>>
->>>> the error case:
->>>> process_a(server)       process_b(client)
->>>> semget()
->>>> semctl(SETVAL)
->>>> semop()
->>>>                          semget()
->>>>                          setctl(IP_STAT)
->>>>                          for(;;) {               <--not successful here
->>>>                            check until sem_otime > 0
->>>>                          }
-> Good catch:
-> Since commit 0a2b9d4c, wait-for-zero semops do not update sem_otime anymore.
->
-> Let's reverse that part of my commit and move the update of sem_otime back
-> into perform_atomic_semop().
->
-> Jia: If perform_atomic_semop() updates sem_otime, then the update in
-> do_smart_update() is not necessary anymore.
-> Thus the whole logic with passing arround "semop_completed" can be removed, too.
-> Are you interested in writing that patch?
->
-With pleasure.
->
->>> Why not..
->> (pokes evolution's don't-munge-me button)
->>
->> ipc,sem: Create semaphores with plausible sem_otime.
-> Mike: no, your patch makes it worse:
-> - wait-for-zero semops still don't update sem_otime
-> - sem_otime is initialized to sem_ctime. That's not mentioned in the sysv
-> standard.
->
-Agree.
-> -- 
->     Manfred
->
+This looks like it's been messed up somehow.
 
