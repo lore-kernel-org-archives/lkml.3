@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab3IVWBJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 18:01:09 -0400
-Received: from gate.crashing.org ([63.228.1.57]:48068 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752210Ab3IVWBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 18:01:07 -0400
-Message-ID: <1379887206.24090.22.camel@pasglop>
-Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 23 Sep 2013 08:00:06 +1000
-In-Reply-To: <523F2D21.5070505@zytor.com>
-References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
-	 <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
-	 <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
-	 <20130920162603.GA30381@localhost.localdomain>
-	 <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
-	 <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
-	 <1379799901.24090.6.camel@pasglop> <523E4F8A.7020708@zytor.com>
-	 <1379824754.24090.11.camel@pasglop> <1379824861.24090.12.camel@pasglop>
-	 <20130922162410.GA10649@laptop.programming.kicks-ass.net>
-	 <523F2D21.5070505@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752562Ab3IVWGg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 18:06:36 -0400
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:49892 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab3IVWGf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 18:06:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130922215520.GE31014@kernel.dk>
+References: <20130922215520.GE31014@kernel.dk>
+Date: Sun, 22 Sep 2013 15:06:34 -0700
+X-Google-Sender-Auth: L9Punbecz3CdNkni4jhsTBRBXlc
+Message-ID: <CA+55aFygOYa1aCv02S04PvH+gfWi2GSKQ1PPcYTGVpz8UJs-eA@mail.gmail.com>
+Subject: Re: [GIT PULL] Block IO fixes for 3.12
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Mike Christie <michaelc@cs.wisc.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-09-22 at 10:47 -0700, H. Peter Anvin wrote:
-> On 09/22/2013 09:24 AM, Peter Zijlstra wrote:
-> > 
-> > As to the problem of GCC moving r13 about, some archs have some
-> > exceptions in the register allocator and leave some registers alone.
-> > IIRC MIPS has this and uses one of those (istr there's 2) for the
-> > per cpu base address.
-> > 
-> 
-> You can force gcc to leave a register alone with the command line option
-> -ffixed-r13.
+On Sun, Sep 22, 2013 at 2:55 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>
+> Mike Christie (1):
+>       If the queue is dying then we only call the rq->end_io callout.     This leaves bios setup on the request, because the caller assumes when     the blk_execute_rq_nowait/blk_execute_rq call has completed that     the rq->bios have been cleaned up.
 
-Haven't tried that in a while but iirc, from the discussions I had with
-the gcc folks, it didn't work the way we wanted.
+Christ people.
 
-Basically, it still assumes that it's not going to change at random
-points, I can't have something like
+We have rules for commit messages. Those rules have things like
+"one-line commit summary at the top", because without that things like
+summary logs (ie "git shortlog") and "gitk" don't do a good job.
 
-register volatile unsigned long pre_cpu_offset asm("r13")
+How long have we been doing this? I'm used to seeing some odd commit
+messages outside the kernel repo, but am used to kernel people getting
+the trivial details right.
 
-It will barf on the "volatile" and if I don't have it, it will make
-assumptions that r13 doesn't change, and thus might copy its value
-in another cpu accross preempt_enable/disable.
+That's not the only one. Look at commit 577cee1e8db6 for some other
+cruddy commit messages. Just because somebody said "Hello" in email
+doesn't mean that it should remain that way in a commit message.
 
-I think I need another sessions with gcc folks on that one.
+So out of seven commit messages, two were badly formatted. That's not
+a sign of good quality control.
 
-Cheers,
-Ben.
-
-
+               Linus
