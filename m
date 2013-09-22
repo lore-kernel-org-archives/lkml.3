@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab3IVJxx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 05:53:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36350 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752615Ab3IVJxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 05:53:52 -0400
-Date: Sun, 22 Sep 2013 12:53:48 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, kvm@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH 0/3] KVM: Make kvm_lock non-raw
-Message-ID: <20130922095348.GJ25202@redhat.com>
-References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com>
- <20130922074238.GG25202@redhat.com>
- <523EAFFA.6060203@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <523EAFFA.6060203@redhat.com>
+	id S1752823Ab3IVKAi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 06:00:38 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54026 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752618Ab3IVKAh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 06:00:37 -0400
+Message-ID: <1379844021.5598.8.camel@marge.simpson.net>
+Subject: Re: [PATCH] ipc/sem.c: fix update sem_otime when calling sem_op in
+ semaphore initialization
+From: Mike Galbraith <bitbucket@online.de>
+To: Jia He <jiakernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Date: Sun, 22 Sep 2013 12:00:21 +0200
+In-Reply-To: <523EB997.9090107@gmail.com>
+References: <1379815884-11035-1-git-send-email-jiakernel@gmail.com>
+	 <1379837823.5499.34.camel@marge.simpson.net>
+	 <1379838364.5499.39.camel@marge.simpson.net> <523EB997.9090107@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:uE8Ov1kK+9HSmc3y5su8vbzUJLz+Ti03iSdnI3/0ToO
+ nrNsrKvp7D+VX5eVY1ocw3H/uxIzR5ur4Gr+MbkLe1fibhp07m
+ 6wknnhfGR/bvmVjbIckk98OiyWLWtRdaDANVRKegKXWLdlb9pN
+ M1ojPd/eAzftpUxEljCYyXfRZSuQokSi+EPW39MA+8tVHHB+E6
+ EqPJdaQMeXvhGQbRaoHqWdsF0B1liV0Z3lxT1JZMjshr8Yx9hs
+ tzXTXeXfC8CrsN/+SFVBdbema85dmP/LE48ttM5CdwCQO9ex4t
+ QgEpE897T6T5nRgSdVy0beLJL+syucx8M2qrKUIKXP0hYvN9Dd
+ gd8MN/6fBwunDAOkO19+9a+EsglNnkVUJ2YkLwA0PyDuoK9E+9
+ WDNErsXR9/yLQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 10:53:14AM +0200, Paolo Bonzini wrote:
-> Il 22/09/2013 09:42, Gleb Natapov ha scritto:
-> > On Mon, Sep 16, 2013 at 04:06:10PM +0200, Paolo Bonzini wrote:
-> >> Paul Gortmaker reported a BUG on preempt-rt kernels, due to taking the
-> >> mmu_lock within the raw kvm_lock in mmu_shrink_scan.  He provided a
-> >> patch that shrunk the kvm_lock critical section so that the mmu_lock
-> >> critical section does not nest with it, but in the end there is no reason
-> >> for the vm_list to be protected by a raw spinlock.  Only manipulations
-> >> of kvm_usage_count and the consequent hardware_enable/disable operations
-> >> are not preemptable.
-> >>
-> >> This small series thus splits the kvm_lock in the "raw" part and the
-> >> "non-raw" part.
-> >>
-> >> Paul, could you please provide your Tested-by?
-> >>
-> > Reviewed-by: Gleb Natapov <gleb@redhat.com>
-> > 
-> > But why should it go to stable?
-> 
-> It is a regression from before the kvm_lock was made raw.  Secondarily,
-It was made raw in 2.6.39 and commit message claims that it is done for
--rt sake, why regression was noticed only now?
+On Sun, 2013-09-22 at 17:34 +0800, Jia He wrote: 
+> Thanks for the comments, but pls add my email as "from jiakernel@gmail.com"
+> if you have a better implementation.U know, it is my first kernel patch, maybe
+> will give me a brilliant memory in the future :)
 
-> it takes a much longer time before a patch hits -rt trees (can even be
-> as much as a year) and this patch does nothing on non-rt trees.  So
-> without putting it into stable it would get no actual coverage.
-> 
-The change is not completely trivial, it splits lock. There is no
-obvious problem of course, otherwise you wouldn't send it and I
-would ack it :), but it does not mean that the chance for problem is
-zero, so why risk stability of stable even a little bit if the patch
-does not fix anything in stable?
+You can have the blame if you like :)
 
-I do not know how -rt development goes and how it affects decisions for
-stable acceptance, why can't they carry the patch in their tree until
-they move to 3.12?
+> Anyway, your implementation looks not correct to me. Because from "man semop"
+> sem_otime will record the last sem operation time of semop. If you change the
+> otime in semget(), it changes the meanings in stardard, doesn't it?
 
---
-			Gleb.
+A Linux kernel doing a semop in 1970 would be a kinda neat trick :)
+
+-Mike
+
