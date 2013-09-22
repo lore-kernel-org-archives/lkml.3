@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab3IVSot (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 14:44:49 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:49378 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab3IVSoq (ORCPT
+	id S1753113Ab3IVSpX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 14:45:23 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:39747 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab3IVSpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 14:44:46 -0400
+	Sun, 22 Sep 2013 14:45:01 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: JBottomley@parallels.com
-Cc: naresh@chelsio.com, davem@davemloft.net, jj@chaosbits.net,
-        arvindb@chelsio.com, hare@suse.de, michaelc@cs.wisc.edu,
-        vijay.chauhan@netapp.com, bvanassche@acm.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: nsankar@broadcom.com
+Cc: jarod@wilsonet.com, davilla@4pi.com, abraham.manu@gmail.com,
+        gregkh@linuxfoundation.org, amarjargal16@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 1/5] scsi: Fix assignment of 0/1 to bool variables
-Date: Sun, 22 Sep 2013 20:44:09 +0200
-Message-Id: <1379875453-20083-1-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 5/5] Staging: crystalhd: Fix assignment of 0/1 to bool variables
+Date: Sun, 22 Sep 2013 20:44:13 +0200
+Message-Id: <1379875453-20083-5-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1379875453-20083-1-git-send-email-peter.senna@gmail.com>
+References: <1379875453-20083-1-git-send-email-peter.senna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -43,72 +44,46 @@ bool b;
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/scsi/csiostor/csio_hw.c            |    4 ++--
- drivers/scsi/cxgbi/libcxgbi.c              |    4 ++--
- drivers/scsi/device_handler/scsi_dh_alua.c |    4 ++--
- 3 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/staging/crystalhd/crystalhd_hw.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff -u -p a/drivers/scsi/cxgbi/libcxgbi.c b/drivers/scsi/cxgbi/libcxgbi.c
---- a/drivers/scsi/cxgbi/libcxgbi.c
-+++ b/drivers/scsi/cxgbi/libcxgbi.c
-@@ -1603,7 +1603,7 @@ static int skb_read_pdu_data(struct iscs
- 			     struct sk_buff *skb, unsigned int offset)
+diff -u -p a/drivers/staging/crystalhd/crystalhd_hw.c b/drivers/staging/crystalhd/crystalhd_hw.c
+--- a/drivers/staging/crystalhd/crystalhd_hw.c
++++ b/drivers/staging/crystalhd/crystalhd_hw.c
+@@ -1517,7 +1517,7 @@ static void crystalhd_rx_isr(struct crys
+ 	uint32_t i, list_avail = 0;
+ 	enum BC_STATUS comp_sts = BC_STS_NO_DATA;
+ 	uint32_t y_err_sts, uv_err_sts, y_dn_sz = 0, uv_dn_sz = 0;
+-	bool ret = 0;
++	bool ret = false;
+ 
+ 	if (!hw) {
+ 		BCMLOG_ERR("Invalid Arguments\n");
+@@ -1852,7 +1852,7 @@ bool crystalhd_hw_interrupt(struct cryst
  {
- 	struct iscsi_tcp_conn *tcp_conn = conn->dd_data;
--	bool offloaded = 0;
-+	bool offloaded = false;
- 	int opcode = tcp_conn->in.hdr->opcode & ISCSI_OPCODE_MASK;
+ 	uint32_t intr_sts = 0;
+ 	uint32_t deco_intr = 0;
+-	bool rc = 0;
++	bool rc = false;
  
- 	log_debug(1 << CXGBI_DBG_PDU_RX,
-@@ -1626,7 +1626,7 @@ static int skb_read_pdu_data(struct iscs
- 		offset += ISCSI_DIGEST_SIZE;
+ 	if (!adp || !hw->dev_started)
+ 		return rc;
+@@ -1865,7 +1865,7 @@ bool crystalhd_hw_interrupt(struct cryst
  
- 	if (cxgbi_skcb_test_flag(lskb, SKCBF_RX_DATA_DDPD))
--		offloaded = 1;
-+		offloaded = true;
+ 	if (intr_sts) {
+ 		/* let system know we processed interrupt..*/
+-		rc = 1;
++		rc = true;
+ 		hw->stats.dev_interrupts++;
+ 	}
  
- 	if (opcode == ISCSI_OP_SCSI_DATA_IN)
- 		log_debug(1 << CXGBI_DBG_PDU_RX,
-diff -u -p a/drivers/scsi/device_handler/scsi_dh_alua.c b/drivers/scsi/device_handler/scsi_dh_alua.c
---- a/drivers/scsi/device_handler/scsi_dh_alua.c
-+++ b/drivers/scsi/device_handler/scsi_dh_alua.c
-@@ -528,7 +528,7 @@ static int alua_rtpg(struct scsi_device
- 	int len, k, off, valid_states = 0;
- 	unsigned char *ucp;
- 	unsigned err;
--	bool rtpg_ext_hdr_req = 1;
-+	bool rtpg_ext_hdr_req = true;
- 	unsigned long expiry, interval = 0;
- 	unsigned int tpg_desc_tbl_off;
- 	unsigned char orig_transition_tmo;
-@@ -558,7 +558,7 @@ static int alua_rtpg(struct scsi_device
- 		if (rtpg_ext_hdr_req == 1 &&
- 		    sense_hdr.sense_key == ILLEGAL_REQUEST &&
- 		    sense_hdr.asc == 0x24 && sense_hdr.ascq == 0) {
--			rtpg_ext_hdr_req = 0;
-+			rtpg_ext_hdr_req = false;
- 			goto retry;
- 		}
+@@ -1886,7 +1886,7 @@ bool crystalhd_hw_interrupt(struct cryst
+ 		/* FIXME: jarod: No udelay? might this be
+ 		 the real reason mini pci-e cards were stalling out? */
+ 		bc_dec_reg_wr(adp, Stream2Host_Intr_Sts, 0);
+-		rc = 1;
++		rc = true;
+ 	}
  
-diff -u -p a/drivers/scsi/csiostor/csio_hw.c b/drivers/scsi/csiostor/csio_hw.c
---- a/drivers/scsi/csiostor/csio_hw.c
-+++ b/drivers/scsi/csiostor/csio_hw.c
-@@ -3476,7 +3476,7 @@ csio_process_fwevtq_entry(struct csio_hw
- 	__u8 op;
- 	void *msg = NULL;
- 	uint32_t msg_len = 0;
--	bool msg_sg = 0;
-+	bool msg_sg = false;
- 
- 	op = ((struct rss_header *) wr)->opcode;
- 	if (op == CPL_FW6_PLD) {
-@@ -3488,7 +3488,7 @@ csio_process_fwevtq_entry(struct csio_hw
- 
- 		msg = (void *) flb;
- 		msg_len = flb->totlen;
--		msg_sg = 1;
-+		msg_sg = true;
- 	} else if (op == CPL_FW6_MSG || op == CPL_FW4_MSG) {
- 
- 		CSIO_INC_STATS(hw, n_cpl_fw6_msg);
+ 	/* Rx interrupts */
 
