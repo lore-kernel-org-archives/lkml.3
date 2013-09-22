@@ -1,88 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab3IVSpT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 14:45:19 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:53836 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662Ab3IVSox (ORCPT
+	id S1753242Ab3IVSqE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 14:46:04 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:43166 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205Ab3IVSqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 14:44:53 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: tomi.valkeinen@ti.com
-Cc: plagnioj@jcrosoft.com, archit@ti.com, linux-omap@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 3/5] OMAPDSS: DISPC: Fix assignment of 0/1 to bool variables
-Date: Sun, 22 Sep 2013 20:44:11 +0200
-Message-Id: <1379875453-20083-3-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1379875453-20083-1-git-send-email-peter.senna@gmail.com>
-References: <1379875453-20083-1-git-send-email-peter.senna@gmail.com>
+	Sun, 22 Sep 2013 14:46:01 -0400
+Message-ID: <523F3AE4.5050709@cogentembedded.com>
+Date: Sun, 22 Sep 2013 22:45:56 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>
+CC: balbi@ti.com, bcousson@baylibre.com, tony@atomide.com, balajitk@ti.com,
+        kishon@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [RFC PATCH 15/15] arm: dts: dra7: add sata node
+References: <1379595943-14622-1-git-send-email-rogerq@ti.com> <1379597059-15405-1-git-send-email-rogerq@ti.com> <523B05FD.7020200@cogentembedded.com> <523C214A.30406@ti.com>
+In-Reply-To: <523C214A.30406@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert 0 to false and 1 to true when assigning values to bool
-variables. Inspired by commit 3db1cd5c05f35fb43eb134df6f321de4e63141f2.
+On 09/20/2013 02:19 PM, Roger Quadros wrote:
 
-The simplified semantic patch that find this problem is as
-follows (http://coccinelle.lip6.fr/):
+>>> From: Balaji T K <balajitk@ti.com>
 
-@@
-bool b;
-@@
-(
--b = 0
-+b = false
-|
--b = 1
-+b = true
-)
+>>> Add support for sata controller.
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>>> [Roger Q] Clean up.
 
----
- drivers/video/omap2/dss/dispc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+>>> CC: Benoit Cousson <bcousson@baylibre.com>
+>>> Signed-off-by: Balaji T K <balajitk@ti.com>
+>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>> ---
+>>>    arch/arm/boot/dts/dra7.dtsi |   49 +++++++++++++++++++++++++++++++++++++++++++
+>>>    1 files changed, 49 insertions(+), 0 deletions(-)
 
-diff -u -p a/drivers/video/omap2/dss/dispc.c b/drivers/video/omap2/dss/dispc.c
---- a/drivers/video/omap2/dss/dispc.c
-+++ b/drivers/video/omap2/dss/dispc.c
-@@ -2352,7 +2352,7 @@ int dispc_ovl_check(enum omap_plane plan
- {
- 	enum omap_overlay_caps caps = dss_feat_get_overlay_caps(plane);
- 	bool five_taps = true;
--	bool fieldmode = 0;
-+	bool fieldmode = false;
- 	u16 in_height = oi->height;
- 	u16 in_width = oi->width;
- 	bool ilace = timings->interlace;
-@@ -2365,7 +2365,7 @@ int dispc_ovl_check(enum omap_plane plan
- 	out_height = oi->out_height == 0 ? oi->height : oi->out_height;
- 
- 	if (ilace && oi->height == out_height)
--		fieldmode = 1;
-+		fieldmode = true;
- 
- 	if (ilace) {
- 		if (fieldmode)
-@@ -2396,7 +2396,7 @@ static int dispc_ovl_setup_common(enum o
- 		bool mem_to_mem)
- {
- 	bool five_taps = true;
--	bool fieldmode = 0;
-+	bool fieldmode = false;
- 	int r, cconv = 0;
- 	unsigned offset0, offset1;
- 	s32 row_inc;
-@@ -2417,7 +2417,7 @@ static int dispc_ovl_setup_common(enum o
- 	out_height = out_height == 0 ? height : out_height;
- 
- 	if (ilace && height == out_height)
--		fieldmode = 1;
-+		fieldmode = true;
- 
- 	if (ilace) {
- 		if (fieldmode)
+>>> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+>>> index ce9a0f0..545545d 100644
+>>> --- a/arch/arm/boot/dts/dra7.dtsi
+>>> +++ b/arch/arm/boot/dts/dra7.dtsi
+>>> @@ -426,6 +426,55 @@
+[...]
+
+>>> +        sata: sata@4a141100 {
+>>> +            compatible = "ti,sata";
+>>> +            ti,hwmods = "sata";
+>>> +            reg = <0x4a141100 0x7>;
+
+    Not 0x8 BTW?
+
+>>> +            #address-cells = <1>;
+>>> +            #size-cells = <1>;
+>>> +            ranges;
+>>> +            dwc-ahci@4a140000 {
+
+>>     Hm, ePAPR spec. [1] says that "the name of a node should be somewhat generic, reflecting the function of the device and not its precise programming model", so it looks like the name should be "sata" as well. I'm a bit at a loss here, not sure why you had to use the nested device nodes.
+
+> ok. will fix it to sata.
+> I've nested it because the wrapper registers are not part of the AHCI sata controller.
+> They are TI specific registers for power management.
+> Similar setup is on the USB controller. Please see omap_dwc3 node.
+
+> But if you have better idea, please let me know.
+
+     Don't know, it seems to me that you're over-complicating it by using the 
+nested nodes. You could just have AHCI regs as a first tuple of the "regs" 
+prop, and PM regs as a second tuple.
+
+>>> +                  compatible = "snps,dwc-ahci";
+>>> +                  reg = <0x4a140000 0x1100>;
+>>> +                  interrupts = <0 54 0x4>;
+>>> +                  phys = <&sata_phy>;
+
+>>     Hm, it's the third PHY related generic property I'm encountering. First, there was "phy-handle", then "phy", now "phys"... Seems like a bit too much. :-)
+
+> I'm afraid but this is how the designers have made it.
+
+> 1) control-phy-pipe3 is that part of the PHY which sits in control module space and is different
+> from the sata-phy space and hence needs a different node. If it were to me, I would just put this
+> resource in sata-phy node, but there was a discussion about this earlier to do it otherwise [1].
+
+> 2) sata-phy (sataphy) is the actual SATA PHY device.
+
+> 3) phys is just a reference to the sata_phy and is used via the generic PHY framework.
+> It is upto the sata driver to power up/down the phy.
+
+    I understand that it's a reference but why have 3 variants of such phandle 
+containing prop? Is it really possible for a device to have multiple PHYs? 
+Well, remembering our customer's USB, it's indeed possible, however, there 2 
+PHYs out of 3 are not software controllable...
+
+>>> +                  phy-names = "sata-phy";
+>>> +                  clocks = <&sata_ref_clk>;
+>>> +                  clock-names = "optclk";
+>>> +            };
+>>> +        };
+
+>> [1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
+
+> cheers,
+> -roger
+
+> [1] - https://lkml.org/lkml/2012/9/10/399
+
+WBR, Sergei
 
