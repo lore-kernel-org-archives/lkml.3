@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421Ab3IVWqD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 18:46:03 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:43724 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753363Ab3IVWpk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 18:45:40 -0400
-From: Roy Franz <roy.franz@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        matt.fleming@intel.com
-Cc: leif.lindholm@linaro.org, grant.likely@linaro.org, msalter@redhat.com,
-        Roy Franz <roy.franz@linaro.org>
-Subject: [PATCH 17/18] Fix types in EFI calls to match EFI function definitions.
-Date: Sun, 22 Sep 2013 15:45:41 -0700
-Message-Id: <1379889942-3135-18-git-send-email-roy.franz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1379889942-3135-1-git-send-email-roy.franz@linaro.org>
-References: <1379889942-3135-1-git-send-email-roy.franz@linaro.org>
+	id S1752892Ab3IVWqI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 18:46:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37080 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753363Ab3IVWqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 18:46:05 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130922214039.GC7321@thunk.org>
+References: <1379882338-7209-1-git-send-email-tytso@mit.edu> <1379882338-7209-11-git-send-email-tytso@mit.edu> <e665f20c-9154-4dbd-bb93-cf144922bf29@email.android.com> <20130922214039.GC7321@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH, RFC 10/12] random: cap the rate which the /dev/urandom pool gets reseeded
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 22 Sep 2013 15:45:11 -0700
+To: "Theodore Ts'o" <tytso@mit.edu>
+CC: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
+        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
+        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de
+Message-ID: <a3890544-745e-462d-8647-68c5abf78e9e@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EFI calls can made directly on ARM, so the function pointers
-are directly invoked.  This allows types to be checked at
-compile time, so here we ensure that the parameters match
-the function signature. The wrappers used by x86 prevent
-any type checking.
-Correct the type of chunksize to be based on native
-width as specified by the EFI_FILE_PROTOCOL read()
-function.
+I understand the motivation, but I question basing it in a fixed amount of time.
 
-Signed-off-by: Roy Franz <roy.franz@linaro.org>
----
- drivers/firmware/efi/efi-stub-helper.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+Theodore Ts'o <tytso@mit.edu> wrote:
+>On Sun, Sep 22, 2013 at 02:21:48PM -0700, H. Peter Anvin wrote:
+>> Is this really an improvement on a system with plenty of entropy?
+>Would it not make more sense to modulate this bad on entropy production
+>rates?
+>> 
+>> Also, the urandom pool is only reseeded once per read, no matter how
+>large...
+>
+>I added this after observing using the random driver's tracepoints to
+>measure how the entropy pool behaves on a desktop system.  It turns
+>outs the Chrome browser requests a truly amazing amount of entropy
+>using /dev/urandom.  Enough so that while you are reading GMail or
+>using G+, the available entropy in the input pool is always running at
+>minimum levels.  (i.e., it never gets above 192 bits before we do a
+>catatrophic reseed and it drops down to 128 bits.)
+>
+>I'm not sure what the heck it is doing --- maybe it is using
+>/dev/urandom to generate random padding values?  I can't believe it is
+>opening new SSL connetions that quickly.  So this might be a Chrome
+>bug, and I can talk to some Chrome developers when I get into work
+>tomorrow.  But in the case of badly behaved applications, this is
+>useful.
+>
+>It results in more entropy building up in the input pool before we do
+>a reseed, so it should result in better "catastrophic reseeding", and
+>it means that there is more entropy available in the input pool for
+>use by the /dev/random pool, even if /dev/urandom is being used in
+>what might be arguably considered an abusive fashion.
+>
+>You can test this by applying the patch, and observing the value of
+>/proc/sys/kernel/random/entropy_avail over time while running a Chrome
+>browser (and there may be other userspace applications which are as
+>aggressive in the use of /dev/urandom).  The compare it after running
+>the command "echo 0 > /proc/sys/kernel/random/urandom_min_reseed_secs",
+>which will restore the original pre-patch behaviour.
+>
+>						- Ted
 
-diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-index e2ff076..4e4127b 100644
---- a/drivers/firmware/efi/efi-stub-helper.c
-+++ b/drivers/firmware/efi/efi-stub-helper.c
-@@ -322,7 +322,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 	status = efi_call_phys3(sys_table_arg->boottime->allocate_pool,
- 				EFI_LOADER_DATA,
- 				nr_files * sizeof(*files),
--				&files);
-+				(void **)&files);
- 	if (status != EFI_SUCCESS) {
- 		efi_printk(sys_table_arg, "Failed to alloc mem for file handle list\n");
- 		goto fail;
-@@ -373,7 +373,8 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 			boottime = sys_table_arg->boottime;
- 
- 			status = efi_call_phys3(boottime->handle_protocol,
--					image->device_handle, &fs_proto, &io);
-+					image->device_handle, &fs_proto,
-+						(void **)&io);
- 			if (status != EFI_SUCCESS) {
- 				efi_printk(sys_table_arg, "Failed to handle fs_proto\n");
- 				goto free_files;
-@@ -407,7 +408,8 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 
- grow:
- 		status = efi_call_phys3(sys_table_arg->boottime->allocate_pool,
--					EFI_LOADER_DATA, info_sz, &info);
-+					EFI_LOADER_DATA, info_sz,
-+					(void **)&info);
- 		if (status != EFI_SUCCESS) {
- 			efi_printk(sys_table_arg, "Failed to alloc mem for file info\n");
- 			goto close_handles;
-@@ -457,18 +459,19 @@ grow:
- 
- 		addr = file_addr;
- 		for (j = 0; j < nr_files; j++) {
--			u64 size;
-+			unsigned long size;
- 
- 			size = files[j].size;
- 			while (size) {
--				u64 chunksize;
-+				unsigned long chunksize;
- 				if (size > EFI_READ_CHUNK_SIZE)
- 					chunksize = EFI_READ_CHUNK_SIZE;
- 				else
- 					chunksize = size;
- 				status = efi_call_phys3(fh->read,
- 							files[j].handle,
--							&chunksize, addr);
-+							&chunksize,
-+							(void *)addr);
- 				if (status != EFI_SUCCESS) {
- 					efi_printk(sys_table_arg, "Failed to read file\n");
- 					goto free_file_total;
 -- 
-1.7.10.4
-
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
