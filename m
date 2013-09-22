@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab3IVI0U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 04:26:20 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53467 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076Ab3IVI0P (ORCPT
+	id S1752706Ab3IVIth (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 04:49:37 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:53806 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab3IVItf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 04:26:15 -0400
-Message-ID: <1379838364.5499.39.camel@marge.simpson.net>
-Subject: Re: [PATCH] ipc/sem.c: fix update sem_otime when calling sem_op in
- semaphore initialization
-From: Mike Galbraith <bitbucket@online.de>
-To: Jia He <jiakernel@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Sun, 22 Sep 2013 10:26:04 +0200
-In-Reply-To: <1379837823.5499.34.camel@marge.simpson.net>
-References: <1379815884-11035-1-git-send-email-jiakernel@gmail.com>
-	 <1379837823.5499.34.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:kxIlArGnSy4L47ZPGIiU01ysMIlp5um8bp0/KaAHMlb
- fK52YwSlujsLM3toQcC5yKmHOOVVh6CZmWVuCkKIbGQLM+wZrq
- pLRck8R4y9EVBx+M3hkUv97yp9KMGGXOzhSKOzPPgvZyYReHoc
- A2DQwzmdRoxel6QLpNzD3WQ9htHiA8kzkgE1rvy62nrgJ0etKa
- Rs6nlwqaVYzL6NrgFBGrdx4c3BzEiKIywB5k/w2tVIGM7XSjcf
- Yv/q8OeQm2BVy2Ia1K4YYSYu7XAYqu/N3y7vDZnLU+rbczO28J
- gYvLAvKPMDnCftqWaQtuwuwlO45VfsrAXmRElBTD3qv1QDhmoZ
- eKYhVPYPqi0iVtPs0gZ06bp//3NgYnZyAnv2hvlLnsS0WZ6Jyv
- C2dRgpIhxebJQ==
+	Sun, 22 Sep 2013 04:49:35 -0400
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@redhat.com
+Cc: Wei Yang <weiyang@linux.vnet.ibm.com>
+Subject: [PATCH] perf: fix two warning in bench/numa
+Date: Sun, 22 Sep 2013 16:49:24 +0800
+Message-Id: <1379839764-9245-1-git-send-email-weiyang@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092208-3864-0000-0000-00000A2EDB0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-09-22 at 10:17 +0200, Mike Galbraith wrote: 
-> On Sun, 2013-09-22 at 10:11 +0800, Jia He wrote: 
-> > In commit 0a2b9d4c,the update of semaphore's sem_otime(last semop time)
-> > was removed because he wanted to move setting sem->sem_otime to one
-> > place. But after that, the initial semop() will not set the otime
-> > because its sem_op value is 0(in semtimedop,will not change
-> > otime if alter == 1).
-> > 
-> > the error case:
-> > process_a(server)       process_b(client)
-> > semget()
-> > semctl(SETVAL)
-> > semop()
-> >                         semget()
-> >                         setctl(IP_STAT)
-> >                         for(;;) {               <--not successful here
-> >                           check until sem_otime > 0
-> >                         }
-> 
-> Why not..
+There two warnings in bench/numa, when buiding this on 32-bit machine. 
 
-(pokes evolution's don't-munge-me button)
+The warning output is attached:
 
-ipc,sem: Create semaphores with plausible sem_otime.
+bench/numa.c:1113:20: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+bench/numa.c:1161:6: error: format ‘%lx’ expects argument of t'long unsigned int’, but argument 5 has type ‘u64’ [-Werror=format]
 
-Signed-off-by: Mike Galbraith <bitbucket@online.de>
+This patch fixs these two warnings.
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 4108889..f2564d7 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -471,19 +471,20 @@ static int newary(struct ipc_namespace *ns, struct ipc_params *params)
- 	ns->used_sems += nsems;
+Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
+---
+ tools/perf/bench/numa.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
+index 30d1c32..a73c4ed 100644
+--- a/tools/perf/bench/numa.c
++++ b/tools/perf/bench/numa.c
+@@ -1110,7 +1110,7 @@ static void *worker_thread(void *__tdata)
+ 		/* Check whether our max runtime timed out: */
+ 		if (g->p.nr_secs) {
+ 			timersub(&stop, &start0, &diff);
+-			if (diff.tv_sec >= g->p.nr_secs) {
++			if (diff.tv_sec >= (time_t)g->p.nr_secs) {
+ 				g->stop_work = true;
+ 				break;
+ 			}
+@@ -1157,7 +1157,7 @@ static void *worker_thread(void *__tdata)
+ 			runtime_ns_max += diff.tv_usec * 1000;
  
- 	sma->sem_base = (struct sem *) &sma[1];
-+	sma->complex_count = 0;
-+	INIT_LIST_HEAD(&sma->pending_alter);
-+	INIT_LIST_HEAD(&sma->pending_const);
-+	INIT_LIST_HEAD(&sma->list_id);
-+	sma->sem_nsems = nsems;
-+	sma->sem_ctime = get_seconds();
- 
- 	for (i = 0; i < nsems; i++) {
- 		INIT_LIST_HEAD(&sma->sem_base[i].pending_alter);
- 		INIT_LIST_HEAD(&sma->sem_base[i].pending_const);
- 		spin_lock_init(&sma->sem_base[i].lock);
-+		sma->sem_base[i].sem_otime = sma->sem_ctime;
- 	}
- 
--	sma->complex_count = 0;
--	INIT_LIST_HEAD(&sma->pending_alter);
--	INIT_LIST_HEAD(&sma->pending_const);
--	INIT_LIST_HEAD(&sma->list_id);
--	sma->sem_nsems = nsems;
--	sma->sem_ctime = get_seconds();
- 	sem_unlock(sma, -1);
- 	rcu_read_unlock();
- 
-
+ 			if (details >= 0) {
+-				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016lx]\n",
++				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016"PRIu64"]\n",
+ 					process_nr, thread_nr, runtime_ns_max / bytes_done, val);
+ 			}
+ 			fflush(stdout);
+-- 
+1.7.5.4
 
