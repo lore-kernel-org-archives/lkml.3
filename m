@@ -1,179 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab3IVQqz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 12:46:55 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:52276 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332Ab3IVQqy (ORCPT
+	id S1752624Ab3IVQts (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 12:49:48 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:49752 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188Ab3IVQtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 12:46:54 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        STEricsson <STEricsson_nomadik_linux@list.st.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 03/26] clk: nomadik: declare OF clock provider
-Date: Sun, 22 Sep 2013 18:46:22 +0200
-Message-Id: <1379868382-2877-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1379526839-14798-4-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1379526839-14798-4-git-send-email-sebastian.hesselbarth@gmail.com>
+	Sun, 22 Sep 2013 12:49:46 -0400
+Date: Sun, 22 Sep 2013 12:49:42 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pata_isapnp: Don't use invalid I/O ports
+Message-ID: <20130922164942.GA30946@htj.dyndns.org>
+References: <1379019689-21467-1-git-send-email-linux@rainbow-software.org>
+ <201309132054.38278.linux@rainbow-software.org>
+ <201309132344.27778.linux@rainbow-software.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201309132344.27778.linux@rainbow-software.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Common clock framework allows to register clock providers to get called
-on of_clk_init() by using CLK_OF_DECLARE. This converts nomadik clock
-provider to make use of it and get rid of the mach specific clk init
-call. As clocks require system reset controller base address to be
-initialized each clock driver checks src_base and calls new
-nomadik_src_init if required.
+Hello, Ondrej.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
-Changelog:
-v1->v2:
-- adapt to clk-nomadik changes
+On Fri, Sep 13, 2013 at 11:44:27PM +0200, Ondrej Zary wrote:
+> This is caused by skipping ata_sff_softreset() when ap->ioaddr.ctl_addr is
+> unset so ata_devchk() is never called. This patch seems to fix the problem.
+> Is it OK or can it cause more problems?
+> 
+> --- a/drivers/ata/libata-sff.c
+> +++ b/drivers/ata/libata-sff.c
+> @@ -2008,13 +2008,15 @@ static int ata_bus_softreset(struct ata_port *ap, unsigned int devmask,
+>  
+>  	DPRINTK("ata%u: bus reset via SRST\n", ap->print_id);
+>  
+> -	/* software reset.  causes dev0 to be selected */
+> -	iowrite8(ap->ctl, ioaddr->ctl_addr);
+> -	udelay(20);	/* FIXME: flush */
+> -	iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
+> -	udelay(20);	/* FIXME: flush */
+> -	iowrite8(ap->ctl, ioaddr->ctl_addr);
+> -	ap->last_ctl = ap->ctl;
+> +	if (ap->ioaddr.ctl_addr) {
+> +		/* software reset.  causes dev0 to be selected */
+> +		iowrite8(ap->ctl, ioaddr->ctl_addr);
+> +		udelay(20);	/* FIXME: flush */
+> +		iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
+> +		udelay(20);	/* FIXME: flush */
+> +		iowrite8(ap->ctl, ioaddr->ctl_addr);
+> +		ap->last_ctl = ap->ctl;
+> +	}
+>  
+>  	/* wait the port to become ready */
+>  	return ata_sff_wait_after_reset(&ap->link, devmask, deadline);
+> @@ -2215,10 +2217,6 @@ void ata_sff_error_handler(struct ata_port *ap)
+>  
+>  	spin_unlock_irqrestore(ap->lock, flags);
+>  
+> -	/* ignore ata_sff_softreset if ctl isn't accessible */
+> -	if (softreset == ata_sff_softreset && !ap->ioaddr.ctl_addr)
+> -		softreset = NULL;
+> -
+>  	/* ignore built-in hardresets if SCR access is not available */
+>  	if ((hardreset == sata_std_hardreset ||
+>  	     hardreset == sata_sff_hardreset) && !sata_scr_valid(&ap->link))
 
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Alessandro Rubini <rubini@unipv.it>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-nomadik/cpu-8815.c          |    5 ++--
- drivers/clk/clk-nomadik.c                 |   45 ++++++++++-------------------
- include/linux/platform_data/clk-nomadik.h |    2 --
- 3 files changed, 17 insertions(+), 35 deletions(-)
- delete mode 100644 include/linux/platform_data/clk-nomadik.h
+Hmm... I'm unsure what to do with these patches.  It's a mostly dead
+driver, so I don't wanna mess with it too much unless it's an obvious
+fix.  What hardware are you playing with?
 
-diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
-index 0fcb149..2be38a0 100644
---- a/arch/arm/mach-nomadik/cpu-8815.c
-+++ b/arch/arm/mach-nomadik/cpu-8815.c
-@@ -25,7 +25,7 @@
- #include <linux/slab.h>
- #include <linux/irq.h>
- #include <linux/dma-mapping.h>
--#include <linux/platform_data/clk-nomadik.h>
-+#include <linux/clk-provider.h>
- #include <linux/clocksource.h>
- #include <linux/of_irq.h>
- #include <linux/of_gpio.h>
-@@ -115,8 +115,7 @@ static void cpu8815_restart(enum reboot_mode mode, const char *cmd)
- 
- static void __init cpu8815_timer_init_of(void)
- {
--	/* We need this to be up now */
--	nomadik_clk_init();
-+	of_clk_init(NULL);
- 	clocksource_of_init();
- }
- 
-diff --git a/drivers/clk/clk-nomadik.c b/drivers/clk/clk-nomadik.c
-index 06b29c26..ce2d6b3 100644
---- a/drivers/clk/clk-nomadik.c
-+++ b/drivers/clk/clk-nomadik.c
-@@ -512,6 +512,9 @@ static void __init of_nomadik_pll_setup(struct device_node *np)
- 	const char *parent_name;
- 	u32 pll_id;
- 
-+	if (!src_base)
-+		nomadik_src_init();
-+
- 	if (of_property_read_u32(np, "pll-id", &pll_id)) {
- 		pr_err("%s: PLL \"%s\" missing pll-id property\n",
- 			__func__, clk_name);
-@@ -522,6 +525,8 @@ static void __init of_nomadik_pll_setup(struct device_node *np)
- 	if (!IS_ERR(clk))
- 		of_clk_add_provider(np, of_clk_src_simple_get, clk);
- }
-+CLK_OF_DECLARE(nomadik_pll_clk,
-+	"st,nomadik-pll-clock", of_nomadik_pll_setup);
- 
- static void __init of_nomadik_hclk_setup(struct device_node *np)
- {
-@@ -529,6 +534,9 @@ static void __init of_nomadik_hclk_setup(struct device_node *np)
- 	const char *clk_name = np->name;
- 	const char *parent_name;
- 
-+	if (!src_base)
-+		nomadik_src_init();
-+
- 	parent_name = of_clk_get_parent_name(np, 0);
- 	/*
- 	 * The HCLK divides PLL1 with 1 (passthru), 2, 3 or 4.
-@@ -541,6 +549,8 @@ static void __init of_nomadik_hclk_setup(struct device_node *np)
- 	if (!IS_ERR(clk))
- 		of_clk_add_provider(np, of_clk_src_simple_get, clk);
- }
-+CLK_OF_DECLARE(nomadik_hclk_clk,
-+	"st,nomadik-hclk-clock", of_nomadik_hclk_setup);
- 
- static void __init of_nomadik_src_clk_setup(struct device_node *np)
- {
-@@ -549,6 +559,9 @@ static void __init of_nomadik_src_clk_setup(struct device_node *np)
- 	const char *parent_name;
- 	u32 clk_id;
- 
-+	if (!src_base)
-+		nomadik_src_init();
-+
- 	if (of_property_read_u32(np, "clock-id", &clk_id)) {
- 		pr_err("%s: SRC clock \"%s\" missing clock-id property\n",
- 			__func__, clk_name);
-@@ -559,33 +572,5 @@ static void __init of_nomadik_src_clk_setup(struct device_node *np)
- 	if (!IS_ERR(clk))
- 		of_clk_add_provider(np, of_clk_src_simple_get, clk);
- }
--
--static const struct of_device_id nomadik_src_clk_match[] __initconst = {
--	{
--		.compatible = "fixed-clock",
--		.data = of_fixed_clk_setup,
--	},
--	{
--		.compatible = "fixed-factor-clock",
--		.data = of_fixed_factor_clk_setup,
--	},
--	{
--		.compatible = "st,nomadik-pll-clock",
--		.data = of_nomadik_pll_setup,
--	},
--	{
--		.compatible = "st,nomadik-hclk-clock",
--		.data = of_nomadik_hclk_setup,
--	},
--	{
--		.compatible = "st,nomadik-src-clock",
--		.data = of_nomadik_src_clk_setup,
--	},
--	{ /* sentinel */ }
--};
--
--void __init nomadik_clk_init(void)
--{
--	nomadik_src_init();
--	of_clk_init(nomadik_src_clk_match);
--}
-+CLK_OF_DECLARE(nomadik_src_clk,
-+	"st,nomadik-src-clock", of_nomadik_src_clk_setup);
-diff --git a/include/linux/platform_data/clk-nomadik.h b/include/linux/platform_data/clk-nomadik.h
-deleted file mode 100644
-index 5713c87..0000000
---- a/include/linux/platform_data/clk-nomadik.h
-+++ /dev/null
-@@ -1,2 +0,0 @@
--/* Minimal platform data header */
--void nomadik_clk_init(void);
+Thanks.
+
 -- 
-1.7.10.4
-
+tejun
