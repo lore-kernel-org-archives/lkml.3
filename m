@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab3IVElw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 00:41:52 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:15336 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306Ab3IVElv (ORCPT
+	id S1752857Ab3IVEmc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 00:42:32 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:34032 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306Ab3IVEma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 00:41:51 -0400
-X-Spam-Score: -100.9
-Message-ID: <523E74CE.9010904@asianux.com>
-Date: Sun, 22 Sep 2013 12:40:46 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 22 Sep 2013 00:42:30 -0400
+Date: Sun, 22 Sep 2013 09:42:16 +0500
+From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bigeasy@linutronix.de, gregkh@linuxfoundation.org
+Subject: Re: [PATCH V11 0/3] iio: input: ti_am335x_adc: Add continuous
+ sampling support
+Message-ID: <20130922044214.GA2989@gmail.com>
+References: <1379571876-12420-1-git-send-email-zubair.lutfullah@gmail.com>
+ <523D7A65.5010303@kernel.org>
 MIME-Version: 1.0
-To: "vgupta@synopsys.com" <vgupta@synopsys.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arc: include: asm: add generic cmpxchg64(), cmpxchg64_local(),
- and cmpxchg_local() in cmpxchg.h
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <523D7A65.5010303@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of sub-systems may need cmpxchg64() or another cmpxchg*local()
-functions, need implement them, or can not pass compiling.
+On Sat, Sep 21, 2013 at 11:52:21AM +0100, Jonathan Cameron wrote:
+> Hi Zubair,
+> 
+> Thanks for persevering with this patch set.  Now this
+> gets to be the example for dealing with hardware buffer
+> equipped devices ;)
+> 
+> Applied to the togreg branch of
+>  git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
 
-The related error (allmodconfig for arc):
+Thank-you very much for the quick feedbacks and accepting these patches!
+:)
 
-    CC      drivers/block/blockconsole.o
-  drivers/block/blockconsole.c: In function ‘bcon_advance_console_bytes’:
-  drivers/block/blockconsole.c:164: error: implicit declaration of function ‘cmpxchg64’
+Zubair
 
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/arc/include/asm/cmpxchg.h |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arc/include/asm/cmpxchg.h b/arch/arc/include/asm/cmpxchg.h
-index 03cd689..db251f3 100644
---- a/arch/arc/include/asm/cmpxchg.h
-+++ b/arch/arc/include/asm/cmpxchg.h
-@@ -140,4 +140,17 @@ static inline unsigned long __xchg(unsigned long val, volatile void *ptr,
-  */
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
- 
-+#include <asm-generic/cmpxchg-local.h>
-+
-+/*
-+ * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
-+ * them available.
-+ */
-+#define cmpxchg_local(ptr, o, n)                                               \
-+	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr), (unsigned long)(o),\
-+			(unsigned long)(n), sizeof(*(ptr))))
-+#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
-+#define cmpxchg64(ptr, o, n)    cmpxchg64_local((ptr), (o), (n))
-+
-+
- #endif
--- 
-1.7.7.6
+> 
+> On 09/19/13 07:24, Zubair Lutfullah wrote:
+> > Hi,
+> > 
+> > These apply to the togreg branch in iio.
+> > 
+> > Round 11
+> > - Optimized memory usage based on list feedback
+> > - Changed devm_*_irq to normal *_irq functions
+> > 
+> > Round 10 updates
+> > - Removed devm_free as not needed
+> > 
+> > Round 9 updates
+> > 
+> > - Removed Trigger.
+> > - Restructured everything for INDIO_BUFFERED_HARDWARE mode.
+> > - Threaded IRQ with top/bottom halfs. Top half HW IRQ wakes
+> > bottom half threaded worker that pushes samples to iio/userspace.
+> > - Removed some of the patchwork to the driver that was irrelevant to the
+> > continuous sampling patch.
+> > 
+> > Cleanup will be done separately once this goes through.
+> > Hope these patches meet the mighty kernel standards :)
+> > 
+> > Zubair
+> > 
+> > Zubair Lutfullah (3):
+> >   input: ti_am335x_tsc: Enable shared IRQ for TSC
+> >   iio: ti_am335x_adc: optimize memory usage.
+> >   iio: ti_am335x_adc: Add continuous sampling support
+> > 
+> >  drivers/iio/adc/ti_am335x_adc.c           |  217 ++++++++++++++++++++++++++++-
+> >  drivers/input/touchscreen/ti_am335x_tsc.c |   12 +-
+> >  include/linux/mfd/ti_am335x_tscadc.h      |    9 ++
+> >  3 files changed, 228 insertions(+), 10 deletions(-)
+> > 
