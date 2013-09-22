@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab3IVW6R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 18:58:17 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:55636 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752261Ab3IVW6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 18:58:16 -0400
-Date: Sun, 22 Sep 2013 18:58:09 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Felipe Pena <felipensp@gmail.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Helge Deller <deller@gmx.de>
-Subject: Re: [PATCH 1/1] arch/parisc: mm: fix uninitialized variable usage
-Message-ID: <20130922225809.GL856@cmpxchg.org>
-References: <1379873866-29219-1-git-send-email-felipensp@gmail.com>
+	id S1752773Ab3IVXCk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 19:02:40 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:52009 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424Ab3IVXCi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 19:02:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379873866-29219-1-git-send-email-felipensp@gmail.com>
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20130921200132.GF2312@kernel.dk>
+References: <26D762E250385C4D8E9D6EC3C8E47DC11E6FCF20@sambx4.stec-inc.ad>
+	<x49vc2nnwp5.fsf@segfault.boston.devel.redhat.com>
+	<26D762E250385C4D8E9D6EC3C8E47DC11E6FE729@sambx4.stec-inc.ad>
+	<x4938pjbhqk.fsf@segfault.boston.devel.redhat.com>
+	<5228913A.50807@kernel.dk>
+	<CAOesGMhF42=qQLyMyF4-tsTjCxwX0bb10rTQv9sLooyzrEOpHA@mail.gmail.com>
+	<5238B9A7.6040002@kernel.dk>
+	<20130920153128.63244ec2658b7ad3aee0e2e4@linux-foundation.org>
+	<20130921200132.GF2312@kernel.dk>
+Date: Sun, 22 Sep 2013 16:02:37 -0700
+Message-ID: <CAOesGMg2t551P7a1wa=FkTjgDaeXedCej87oi+yF2c3Q-hoP5g@mail.gmail.com>
+Subject: Re: [PATCH] block: Device driver for sTec's PCIe Kronos Card.
+From: Olof Johansson <olof@lixom.net>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jeff Moyer <jmoyer@redhat.com>,
+        OS Engineering <osengineering@stec-inc.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Akhil Bhansali <abhansali@stec-inc.com>,
+        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
+        Amit Phansalkar <aphansalkar@stec-inc.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Felipe,
+On Sat, Sep 21, 2013 at 1:01 PM, Jens Axboe <axboe@kernel.dk> wrote:
+> On Fri, Sep 20 2013, Andrew Morton wrote:
+>> On Tue, 17 Sep 2013 14:20:55 -0600 Jens Axboe <axboe@kernel.dk> wrote:
+>>
+>> > > So, it looks like this driver needs a bunch of work before it's ready
+>> > > to go in. Or, maybe it's better to submit it with a TODO list for the
+>> > > staging tree instead?
+>> >
+>> > Not disagreeing with you, it definitely needs a bit of cleaning. And so
+>> > far stec has not been very responsive in fixing those issues.
+>>
+>> Geeze.  Here's what I came up with, mainly to make i386 compile:
+>
+> Thanks Andrew. It's not the fixes themselves that are tricky, I would
+> just have liked a little more proof that the submission wasn't just a
+> dump'n run.
 
-On Sun, Sep 22, 2013 at 03:17:46PM -0300, Felipe Pena wrote:
-> The FAULT_FLAG_WRITE flag has been set based on uninitialized variable
+Well, that's what much of the staging process is about, since it needs
+to come with a todo list (and that list needs to be taken care of
+before the driver graduates). Honestly, this looks like a prime
+candidate for that. But it's your tree and your call.
 
-Oops, you are right.
+Thanks for applying the patch from Andrew, that resolves most of it
+for me right now.
 
-> Signed-off-by: Felipe Pena <felipensp@gmail.com>
-> ---
->  arch/parisc/mm/fault.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/parisc/mm/fault.c b/arch/parisc/mm/fault.c
-> index d10d27a..6b38026 100644
-> --- a/arch/parisc/mm/fault.c
-> +++ b/arch/parisc/mm/fault.c
-> @@ -182,8 +182,6 @@ void do_page_fault(struct pt_regs *regs, unsigned long code,
->  
->  	if (user_mode(regs))
->  		flags |= FAULT_FLAG_USER;
-> -	if (acc_type & VM_WRITE)
-> -		flags |= FAULT_FLAG_WRITE;
->  retry:
->  	down_read(&mm->mmap_sem);
->  	vma = find_vma_prev(mm, address, &prev_vma);
-> @@ -201,6 +199,9 @@ good_area:
->  	if ((vma->vm_flags & acc_type) != acc_type)
->  		goto bad_area;
->  
-> +	if (acc_type & VM_WRITE)
-> +		flags |= FAULT_FLAG_WRITE;
 
-Can acc_type actually change between between the first round and a
-retry?  Otherwise, it might make sense to pull this up and place it
-next to the flag initialization instead of pulling one flag down.
+-Olof
