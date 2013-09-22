@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab3IVUk7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 16:40:59 -0400
-Received: from imap.thunk.org ([74.207.234.97]:35975 "EHLO imap.thunk.org"
+	id S1753454Ab3IVUk5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 16:40:57 -0400
+Received: from imap.thunk.org ([74.207.234.97]:35976 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752093Ab3IVUjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752669Ab3IVUjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Sep 2013 16:39:18 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
 To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
@@ -13,9 +13,9 @@ Cc: hpa@zytor.com, joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
         smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de,
         "H. Peter Anvin" <hpa@linux.intel.com>, <stable@vger.kernel.org>,
         "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH, RFC 03/12] random: Allow fractional bits to be tracked
-Date: Sun, 22 Sep 2013 16:38:49 -0400
-Message-Id: <1379882338-7209-4-git-send-email-tytso@mit.edu>
+Subject: [PATCH, RFC 02/12] random: Statically compute poolbitshift, poolbytes, poolbits
+Date: Sun, 22 Sep 2013 16:38:48 -0400
+Message-Id: <1379882338-7209-3-git-send-email-tytso@mit.edu>
 X-Mailer: git-send-email 1.7.12.rc0.22.gcdd159b
 In-Reply-To: <1379882338-7209-1-git-send-email-tytso@mit.edu>
 References: <1379882338-7209-1-git-send-email-tytso@mit.edu>
@@ -26,270 +26,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-Allow fractional bits of entropy to be tracked by scaling the entropy
-counter (fixed point).  This will be used in a subsequent patch that
-accounts for entropy lost due to overwrites.
+Use a macro to statically compute poolbitshift (will be used in a
+subsequent patch), poolbytes, and poolbits.  On virtually all
+architectures the cost of a memory load with an offset is the same as
+the one of a memory load.
+
+It is still possible for this to generate worse code since the C
+compiler doesn't know the fixed relationship between these fields, but
+that is somewhat unlikely.
 
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Cc: <stable@vger.kernel.org>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 ---
- drivers/char/random.c | 118 ++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 81 insertions(+), 37 deletions(-)
+ drivers/char/random.c | 39 +++++++++++++++++++--------------------
+ 1 file changed, 19 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index e973658..1547338 100644
+index 92e6c67..e973658 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -280,6 +280,14 @@
- #define LONGS(x) (((x) + sizeof(unsigned long) - 1)/sizeof(unsigned long))
- 
- /*
-+ * To allow fractional bits to be tracked, the following fields contain
-+ * this many fractional bits:
-+ *
-+ * entropy_count, trickle_thresh
-+ */
-+#define ENTROPY_SHIFT 3
+@@ -309,46 +309,45 @@ static DEFINE_PER_CPU(int, trickle_count);
+  * scaled squared error sum) except for the last tap, which is 1 to
+  * get the twisting happening as fast as possible.
+  */
 +
-+/*
-  * The minimum number of bits of entropy before we wake up a read on
-  * /dev/random.  Should be enough to do a significant reseed.
-  */
-@@ -296,8 +304,7 @@ static int random_write_wakeup_thresh = 128;
-  * When the input pool goes over trickle_thresh, start dropping most
-  * samples to avoid wasting CPU time and reduce lock contention.
-  */
--
--static int trickle_thresh __read_mostly = INPUT_POOL_WORDS * 28;
-+static const int trickle_thresh = (INPUT_POOL_WORDS * 28) << ENTROPY_SHIFT;
- 
- static DEFINE_PER_CPU(int, trickle_count);
- 
-@@ -311,8 +318,8 @@ static DEFINE_PER_CPU(int, trickle_count);
-  */
- 
  static struct poolinfo {
--	int poolbitshift, poolwords, poolbytes, poolbits;
--#define S(x) ilog2(x)+5, (x), (x)*4, (x)*32
-+	int poolbitshift, poolwords, poolbytes, poolbits, poolfracbits;
-+#define S(x) ilog2(x)+5, (x), (x)*4, (x)*32, (x) << (ENTROPY_SHIFT+5)
+-	int poolwords;
++	int poolbitshift, poolwords, poolbytes, poolbits;
++#define S(x) ilog2(x)+5, (x), (x)*4, (x)*32
  	int tap1, tap2, tap3, tap4, tap5;
  } poolinfo_table[] = {
  	/* x^128 + x^103 + x^76 + x^51 +x^25 + x + 1 -- 105 */
-@@ -581,7 +588,9 @@ static void fast_mix(struct fast_pool *f, const void *in, int nbytes)
- }
+-	{ 128,	103,	76,	51,	25,	1 },
++	{ S(128),	103,	76,	51,	25,	1 },
+ 	/* x^32 + x^26 + x^20 + x^14 + x^7 + x + 1 -- 15 */
+-	{ 32,	26,	20,	14,	7,	1 },
++	{ S(32),	26,	20,	14,	7,	1 },
+ #if 0
+ 	/* x^2048 + x^1638 + x^1231 + x^819 + x^411 + x + 1  -- 115 */
+-	{ 2048,	1638,	1231,	819,	411,	1 },
++	{ S(2048),	1638,	1231,	819,	411,	1 },
  
+ 	/* x^1024 + x^817 + x^615 + x^412 + x^204 + x + 1 -- 290 */
+-	{ 1024,	817,	615,	412,	204,	1 },
++	{ S(1024),	817,	615,	412,	204,	1 },
+ 
+ 	/* x^1024 + x^819 + x^616 + x^410 + x^207 + x^2 + 1 -- 115 */
+-	{ 1024,	819,	616,	410,	207,	2 },
++	{ S(1024),	819,	616,	410,	207,	2 },
+ 
+ 	/* x^512 + x^411 + x^308 + x^208 + x^104 + x + 1 -- 225 */
+-	{ 512,	411,	308,	208,	104,	1 },
++	{ S(512),	411,	308,	208,	104,	1 },
+ 
+ 	/* x^512 + x^409 + x^307 + x^206 + x^102 + x^2 + 1 -- 95 */
+-	{ 512,	409,	307,	206,	102,	2 },
++	{ S(512),	409,	307,	206,	102,	2 },
+ 	/* x^512 + x^409 + x^309 + x^205 + x^103 + x^2 + 1 -- 95 */
+-	{ 512,	409,	309,	205,	103,	2 },
++	{ S(512),	409,	309,	205,	103,	2 },
+ 
+ 	/* x^256 + x^205 + x^155 + x^101 + x^52 + x + 1 -- 125 */
+-	{ 256,	205,	155,	101,	52,	1 },
++	{ S(256),	205,	155,	101,	52,	1 },
+ 
+ 	/* x^128 + x^103 + x^78 + x^51 + x^27 + x^2 + 1 -- 70 */
+-	{ 128,	103,	78,	51,	27,	2 },
++	{ S(128),	103,	78,	51,	27,	2 },
+ 
+ 	/* x^64 + x^52 + x^39 + x^26 + x^14 + x + 1 -- 15 */
+-	{ 64,	52,	39,	26,	14,	1 },
++	{ S(64),	52,	39,	26,	14,	1 },
+ #endif
+ };
+ 
+-#define POOLBITS	poolwords*32
+-#define POOLBYTES	poolwords*4
+-
  /*
-- * Credit (or debit) the entropy store with n bits of entropy
-+ * Credit (or debit) the entropy store with n bits of entropy.
-+ * Use credit_entropy_bits_safe() if the value comes from userspace
-+ * or otherwise should be checked for extreme values.
-  */
- static void credit_entropy_bits(struct entropy_store *r, int nbits)
- {
-@@ -593,13 +602,13 @@ static void credit_entropy_bits(struct entropy_store *r, int nbits)
- 	DEBUG_ENT("added %d entropy credits to %s\n", nbits, r->name);
- retry:
- 	entropy_count = orig = ACCESS_ONCE(r->entropy_count);
--	entropy_count += nbits;
-+	entropy_count += nbits << ENTROPY_SHIFT;
- 
+  * For the purposes of better mixing, we use the CRC-32 polynomial as
+  * well to make a twisted Generalized Feedback Shift Reigster
+@@ -599,8 +598,8 @@ retry:
  	if (entropy_count < 0) {
  		DEBUG_ENT("negative entropy/overflow\n");
  		entropy_count = 0;
--	} else if (entropy_count > r->poolinfo->poolbits)
--		entropy_count = r->poolinfo->poolbits;
-+	} else if (entropy_count > r->poolinfo->poolfracbits)
-+		entropy_count = r->poolinfo->poolfracbits;
+-	} else if (entropy_count > r->poolinfo->POOLBITS)
+-		entropy_count = r->poolinfo->POOLBITS;
++	} else if (entropy_count > r->poolinfo->poolbits)
++		entropy_count = r->poolinfo->poolbits;
  	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
  		goto retry;
  
-@@ -613,12 +622,24 @@ retry:
- 				  r->entropy_total, _RET_IP_);
- 
- 	/* should we wake readers? */
--	if (r == &input_pool && entropy_count >= random_read_wakeup_thresh) {
-+	if (r == &input_pool &&
-+	    (entropy_count >> ENTROPY_SHIFT) >= random_read_wakeup_thresh) {
- 		wake_up_interruptible(&random_read_wait);
- 		kill_fasync(&fasync, SIGIO, POLL_IN);
- 	}
- }
- 
-+static void credit_entropy_bits_safe(struct entropy_store *r, int nbits)
-+{
-+	const int nbits_max = (int)(~0U >> (ENTROPY_SHIFT + 1));
-+
-+	/* Cap the value to avoid overflows */
-+	nbits = min(nbits,  nbits_max);
-+	nbits = max(nbits, -nbits_max);
-+
-+	credit_entropy_bits(r, nbits);
-+}
-+
- /*********************************************************************
-  *
-  * Entropy input management
-@@ -813,8 +834,9 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- {
+@@ -815,7 +814,7 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
  	__u32	tmp[OUTPUT_POOL_WORDS];
  
--	if (r->pull && r->entropy_count < nbytes * 8 &&
--	    r->entropy_count < r->poolinfo->poolbits) {
-+	if (r->pull &&
-+	    r->entropy_count < (nbytes << (ENTROPY_SHIFT + 3)) &&
-+	    r->entropy_count < r->poolinfo->poolfracbits) {
+ 	if (r->pull && r->entropy_count < nbytes * 8 &&
+-	    r->entropy_count < r->poolinfo->POOLBITS) {
++	    r->entropy_count < r->poolinfo->poolbits) {
  		/* If we're limited, always leave two wakeup worth's BITS */
  		int rsvd = r->limit ? 0 : random_read_wakeup_thresh/4;
  		int bytes = nbytes;
-@@ -826,7 +848,8 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- 
- 		DEBUG_ENT("going to reseed %s with %d bits "
- 			  "(%zu of %d requested)\n",
--			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
-+			  r->name, bytes * 8, nbytes * 8,
-+			  r->entropy_count >> ENTROPY_SHIFT);
- 
- 		bytes = extract_entropy(r->pull, tmp, bytes,
- 					random_read_wakeup_thresh / 8, rsvd);
-@@ -852,41 +875,44 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- {
- 	unsigned long flags;
- 	int wakeup_write = 0;
-+	int have_bytes;
-+	int entropy_count, orig;
-+	size_t ibytes;
- 
+@@ -857,7 +856,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
  	/* Hold lock while accounting */
  	spin_lock_irqsave(&r->lock, flags);
  
--	BUG_ON(r->entropy_count > r->poolinfo->poolbits);
-+	BUG_ON(r->entropy_count > r->poolinfo->poolfracbits);
+-	BUG_ON(r->entropy_count > r->poolinfo->POOLBITS);
++	BUG_ON(r->entropy_count > r->poolinfo->poolbits);
  	DEBUG_ENT("trying to extract %zu bits from %s\n",
  		  nbytes * 8, r->name);
  
- 	/* Can we pull enough? */
--	if (r->entropy_count / 8 < min + reserved) {
--		nbytes = 0;
--	} else {
--		int entropy_count, orig;
- retry:
--		entropy_count = orig = ACCESS_ONCE(r->entropy_count);
-+	entropy_count = orig = ACCESS_ONCE(r->entropy_count);
-+	have_bytes = entropy_count >> (ENTROPY_SHIFT + 3);
-+	ibytes = nbytes;
-+	if (have_bytes < min + reserved) {
-+		ibytes = 0;
-+	} else {
- 		/* If limited, never pull more than available */
--		if (r->limit && nbytes + reserved >= entropy_count / 8)
--			nbytes = entropy_count/8 - reserved;
--
--		if (entropy_count / 8 >= nbytes + reserved) {
--			entropy_count -= nbytes*8;
--			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
--				goto retry;
--		} else {
--			entropy_count = reserved;
--			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
--				goto retry;
--		}
-+		if (r->limit && ibytes + reserved >= have_bytes)
-+			ibytes = have_bytes - reserved;
-+
-+		if (have_bytes >= ibytes + reserved)
-+			entropy_count -= ibytes << (ENTROPY_SHIFT + 3);
-+		else
-+			entropy_count = reserved << (ENTROPY_SHIFT + 3);
- 
--		if (entropy_count < random_write_wakeup_thresh)
-+		if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+			goto retry;
-+
-+		if ((r->entropy_count >> ENTROPY_SHIFT)
-+		    < random_write_wakeup_thresh)
- 			wakeup_write = 1;
- 	}
- 
- 	DEBUG_ENT("debiting %zu entropy credits from %s%s\n",
--		  nbytes * 8, r->name, r->limit ? "" : " (unlimited)");
-+		  ibytes * 8, r->name, r->limit ? "" : " (unlimited)");
- 
- 	spin_unlock_irqrestore(&r->lock, flags);
- 
-@@ -895,7 +921,7 @@ retry:
- 		kill_fasync(&fasync, SIGIO, POLL_OUT);
- 	}
- 
--	return nbytes;
-+	return ibytes;
- }
- 
- static void extract_buf(struct entropy_store *r, __u8 *out)
-@@ -1277,7 +1303,8 @@ static long random_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
- 	switch (cmd) {
- 	case RNDGETENTCNT:
- 		/* inherently racy, no point locking */
--		if (put_user(input_pool.entropy_count, p))
-+		ent_count = input_pool.entropy_count >> ENTROPY_SHIFT;
-+		if (put_user(ent_count, p))
- 			return -EFAULT;
- 		return 0;
- 	case RNDADDTOENTCNT:
-@@ -1285,7 +1312,7 @@ static long random_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
- 			return -EPERM;
- 		if (get_user(ent_count, p))
- 			return -EFAULT;
--		credit_entropy_bits(&input_pool, ent_count);
-+		credit_entropy_bits_safe(&input_pool, ent_count);
- 		return 0;
- 	case RNDADDENTROPY:
- 		if (!capable(CAP_SYS_ADMIN))
-@@ -1300,7 +1327,7 @@ static long random_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
- 				    size);
- 		if (retval < 0)
- 			return retval;
--		credit_entropy_bits(&input_pool, ent_count);
-+		credit_entropy_bits_safe(&input_pool, ent_count);
- 		return 0;
- 	case RNDZAPENTCNT:
- 	case RNDCLEARPOOL:
-@@ -1407,6 +1434,23 @@ static int proc_do_uuid(struct ctl_table *table, int write,
- 	return proc_dostring(&fake_table, write, buffer, lenp, ppos);
- }
- 
-+/*
-+ * Return entropy available scaled to integral bits
-+ */
-+static int proc_do_entropy(ctl_table *table, int write,
-+			   void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	ctl_table fake_table;
-+	int entropy_count;
-+
-+	entropy_count = *(int *)table->data >> ENTROPY_SHIFT;
-+
-+	fake_table.data = &entropy_count;
-+	fake_table.maxlen = sizeof(entropy_count);
-+
-+	return proc_dointvec(&fake_table, write, buffer, lenp, ppos);
-+}
-+
- static int sysctl_poolsize = INPUT_POOL_WORDS * 32;
- extern struct ctl_table random_table[];
- struct ctl_table random_table[] = {
-@@ -1421,7 +1465,7 @@ struct ctl_table random_table[] = {
- 		.procname	= "entropy_avail",
- 		.maxlen		= sizeof(int),
- 		.mode		= 0444,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_do_entropy,
- 		.data		= &input_pool.entropy_count,
- 	},
- 	{
+@@ -1112,7 +1111,7 @@ static void init_std_data(struct entropy_store *r)
+ 	r->entropy_total = 0;
+ 	r->last_data_init = false;
+ 	mix_pool_bytes(r, &now, sizeof(now), NULL);
+-	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof(rv)) {
++	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
+ 		if (!arch_get_random_long(&rv))
+ 			break;
+ 		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
 -- 
 1.7.12.rc0.22.gcdd159b
 
