@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab3IVS7B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 14:59:01 -0400
-Received: from s15283307.onlinehome-server.info ([87.106.208.187]:55088 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab3IVS7A (ORCPT
+	id S1752706Ab3IVTZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 15:25:56 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:56484 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab3IVTZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 14:59:00 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
-Subject: Re: [PATCH 2/5] Bluetooth: Fix assignment of 0/1 to bool variables
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1379875453-20083-2-git-send-email-peter.senna@gmail.com>
-Date: Sun, 22 Sep 2013 13:58:56 -0500
-Cc: gustavo@padovan.org, johan.hedberg@gmail.com, davem@davemloft.net,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <B0200EA6-8CDA-41BE-9DD1-0A0E9CFDB2B5@holtmann.org>
-References: <1379875453-20083-1-git-send-email-peter.senna@gmail.com> <1379875453-20083-2-git-send-email-peter.senna@gmail.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-X-Mailer: Apple Mail (2.1510)
+	Sun, 22 Sep 2013 15:25:55 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Larry.Finger@lwfinger.net
+Cc: chaoming_li@realsil.com.cn, joe@perches.com, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH] wireless: rtlwifi: Replace variable with a brake
+Date: Sun, 22 Sep 2013 21:24:42 +0200
+Message-Id: <1379877882-21254-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+This patch removes the variable continual, and change the while loop
+to break when efuse_data == 0xFF.
 
-> Convert 0 to false and 1 to true when assigning values to bool
-> variables. Inspired by commit 3db1cd5c05f35fb43eb134df6f321de4e63141f2.
-> 
-> The simplified semantic patch that find this problem is as
-> follows (http://coccinelle.lip6.fr/):
-> 
-> @@
-> bool b;
-> @@
-> (
-> -b = 0
-> +b = false
-> |
-> -b = 1
-> +b = true
-> )
-> 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> 
-> ---
-> net/bluetooth/l2cap_core.c |   16 ++++++++--------
-> 1 file changed, 8 insertions(+), 8 deletions(-)
+CC: Joe Perches <joe@perches.com>
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+Please ignore the patch:
+[PATCH 12/19] wireless: Change variable type to bool
 
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
+And apply this one instead.
 
-Regards
+The variable continual was declared as int, but was used as bool. I
+sent previous patch changing the variable type to bool, but Joe Perches
+proposed that removing the variable and adding a brake would be better.
 
-Marcel
+ drivers/net/wireless/rtlwifi/efuse.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/wireless/rtlwifi/efuse.c b/drivers/net/wireless/rtlwifi/efuse.c
+index 838a1ed..d1328fc 100644
+--- a/drivers/net/wireless/rtlwifi/efuse.c
++++ b/drivers/net/wireless/rtlwifi/efuse.c
+@@ -1203,19 +1203,18 @@ static void efuse_power_switch(struct ieee80211_hw *hw, u8 write, u8 pwrstate)
+ 
+ static u16 efuse_get_current_size(struct ieee80211_hw *hw)
+ {
+-	int continual = true;
+ 	u16 efuse_addr = 0;
+ 	u8 hworden;
+ 	u8 efuse_data, word_cnts;
+ 
+-	while (continual && efuse_one_byte_read(hw, efuse_addr, &efuse_data)
+-	       && (efuse_addr < EFUSE_MAX_SIZE)) {
+-		if (efuse_data != 0xFF) {
++	while (efuse_one_byte_read(hw, efuse_addr, &efuse_data) &&
++					(efuse_addr < EFUSE_MAX_SIZE)) {
++		if (efuse_data == 0xFF)
++			break;
++
+ 			hworden = efuse_data & 0x0F;
+ 			word_cnts = efuse_calculate_word_cnts(hworden);
+ 			efuse_addr = efuse_addr + (word_cnts * 2) + 1;
+-		} else {
+-			continual = false;
+ 		}
+ 	}
+ 
+-- 
+1.8.3.1
 
