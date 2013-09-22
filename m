@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab3IVXX6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 19:23:58 -0400
-Received: from imap.thunk.org ([74.207.234.97]:36118 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752354Ab3IVXX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 19:23:57 -0400
-Date: Sun, 22 Sep 2013 19:23:37 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
-        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
-        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de
-Subject: Re: [PATCH, RFC 10/12] random: cap the rate which the /dev/urandom
- pool gets reseeded
-Message-ID: <20130922232337.GD7321@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
-	dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
-	smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de
-References: <1379882338-7209-1-git-send-email-tytso@mit.edu>
- <1379882338-7209-11-git-send-email-tytso@mit.edu>
- <e665f20c-9154-4dbd-bb93-cf144922bf29@email.android.com>
- <20130922214039.GC7321@thunk.org>
- <a3890544-745e-462d-8647-68c5abf78e9e@email.android.com>
+	id S1752841Ab3IVX1y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 19:27:54 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:62328 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219Ab3IVX1x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 19:27:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a3890544-745e-462d-8647-68c5abf78e9e@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20130922231214.GF31014@kernel.dk>
+References: <20130922215520.GE31014@kernel.dk>
+	<CA+55aFygOYa1aCv02S04PvH+gfWi2GSKQ1PPcYTGVpz8UJs-eA@mail.gmail.com>
+	<20130922231214.GF31014@kernel.dk>
+Date: Sun, 22 Sep 2013 16:27:52 -0700
+X-Google-Sender-Auth: fvnw8f39R5Dt3id0kx3PAtpVnUw
+Message-ID: <CA+55aFxm5EvebWkHCJMrULSTHQskCFTswhNPPRf_jsc+KgSQTA@mail.gmail.com>
+Subject: Re: [GIT PULL] Block IO fixes for 3.12
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Mike Christie <michaelc@cs.wisc.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 03:45:11PM -0700, H. Peter Anvin wrote:
-> I understand the motivation, but I question basing it in a fixed amount of time.
+On Sun, Sep 22, 2013 at 4:12 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>
+> Not necessarily bad quality control, but yeah, the commit messages
+> could've been prettier. Those two should have been git ammended, most of
+> them are directly applied byt git am fwiw.
 
-We already have a threshold based on the amount of the entropy in the
-input pool.  I could increase that threshold, but then instead of
-having the entropy hover between say, 192 and 128, it would hover
-between say, 576 and 512.  What that means in practice is that there
-will be a higher baseline, but we will still end up reseeding every 10
-seconds or so (that being approximately how much entropy I've seen
-flowing into the input pool on my laptop system --- 64 bits every 10
-seconds or so).
+No, one of them was clearly *not* done with git am, because git am
+uses the subject like to create that summary message.
 
-By basing it on a time-based threshold, it means that the input pool
-can build up faster such that over time, such that entropy pool ends
-up hovering around 3400 bits.
+And the other one you should have edited the mbox before feeding it to
+git am - or pushed back on the submitter to write email in a format
+where no such editing is necessary.
 
-What is your concern is about having it being time-based --- or more
-accurately, being partially time-based, since we also keep the entorpy
-count based threshold?  I'll note that the Fortuna Random Number
-Generator, devised by Bruce Schneier and Niels Ferguson also uses as
-part of its design a time-based reseed limit.
+"I used git am" is not an excuse for bad formatting of commits. It's
+just a tool, you need to make sure the tool is fed valid data.
 
-						- Ted
+            Linus
