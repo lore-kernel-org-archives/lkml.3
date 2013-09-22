@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab3IVBW4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Sep 2013 21:22:56 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:57246 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab3IVBWy (ORCPT
+	id S1753301Ab3IVBXF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Sep 2013 21:23:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55792 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab3IVBXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Sep 2013 21:22:54 -0400
+	Sat, 21 Sep 2013 21:23:00 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl, daniel.lezcano@linaro.org
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 14/21] cpuidle: coupled: don't compare cpu masks unnecessarily
-Date: Sun, 22 Sep 2013 06:51:06 +0530
-Message-Id: <564c8b1f073dc396b54866a2220b09b7869289f4.1379779777.git.viresh.kumar@linaro.org>
+Subject: [PATCH 15/21] cpuidle: free all state kobjects from cpuidle_free_state_kobj()
+Date: Sun, 22 Sep 2013 06:51:07 +0530
+Message-Id: <503b7472308007b4c233b33d19f5a54c138212e7.1379779777.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379779777.git.viresh.kumar@linaro.org>
 References: <cover.1379779777.git.viresh.kumar@linaro.org>
@@ -24,47 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In cpuidle_coupled_register_device() we do following:
-	if (WARN_ON(!cpumask_equal(&dev->coupled_cpus, &coupled->coupled_cpus)))
-		coupled->prevent++;
+Loop for states is currently present on callers side and so is replicated at
+several places. It would be better to move that inside cpuidle_free_state_kobj()
+instead.
 
-This is only required to be done when we are using 'coupled' from an existing
-cpuidle_device and not when we have just done this:
-
-	coupled->coupled_cpus = dev->coupled_cpus
-
-So, move this compare statement to the right place.
+This patch does it.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpuidle/coupled.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/cpuidle/sysfs.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-index e952936..19a89eb 100644
---- a/drivers/cpuidle/coupled.c
-+++ b/drivers/cpuidle/coupled.c
-@@ -642,6 +642,10 @@ int cpuidle_coupled_register_device(struct cpuidle_device *dev)
- 		other_dev = per_cpu(cpuidle_devices, cpu);
- 		if (other_dev && other_dev->coupled) {
- 			coupled = other_dev->coupled;
+diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+index e918b6d..ade31a9 100644
+--- a/drivers/cpuidle/sysfs.c
++++ b/drivers/cpuidle/sysfs.c
+@@ -378,12 +378,17 @@ static struct kobj_type ktype_state_cpuidle = {
+ 	.release = cpuidle_state_sysfs_release,
+ };
+ 
+-static inline void cpuidle_free_state_kobj(struct cpuidle_device *device, int i)
++static inline void cpuidle_free_state_kobj(struct cpuidle_device *device,
++		int count)
+ {
+-	kobject_put(&device->kobjs[i]->kobj);
+-	wait_for_completion(&device->kobjs[i]->kobj_unregister);
+-	kfree(device->kobjs[i]);
+-	device->kobjs[i] = NULL;
++	int i;
 +
-+			if (WARN_ON(!cpumask_equal(&dev->coupled_cpus,
-+						&coupled->coupled_cpus)))
-+				coupled->prevent++;
- 			goto have_coupled;
- 		}
- 	}
-@@ -655,9 +659,6 @@ int cpuidle_coupled_register_device(struct cpuidle_device *dev)
++	for (i = 0; i < count; i++) {
++		kobject_put(&device->kobjs[i]->kobj);
++		wait_for_completion(&device->kobjs[i]->kobj_unregister);
++		kfree(device->kobjs[i]);
++		device->kobjs[i] = NULL;
++	}
+ }
  
- have_coupled:
- 	dev->coupled = coupled;
--	if (WARN_ON(!cpumask_equal(&dev->coupled_cpus, &coupled->coupled_cpus)))
--		coupled->prevent++;
+ /**
+@@ -419,8 +424,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
+ 	return 0;
+ 
+ error_state:
+-	for (i = i - 1; i >= 0; i--)
+-		cpuidle_free_state_kobj(device, i);
++	cpuidle_free_state_kobj(device, i);
+ 	return ret;
+ }
+ 
+@@ -430,10 +434,7 @@ error_state:
+  */
+ static void cpuidle_remove_state_sysfs(struct cpuidle_device *device)
+ {
+-	int i;
 -
- 	cpuidle_coupled_update_online_cpus(coupled);
+-	for (i = 0; i < device->state_count; i++)
+-		cpuidle_free_state_kobj(device, i);
++	cpuidle_free_state_kobj(device, device->state_count);
+ }
  
- 	coupled->refcnt++;
+ #ifdef CONFIG_CPU_IDLE_MULTIPLE_DRIVERS
 -- 
 1.7.12.rc2.18.g61b472e
 
