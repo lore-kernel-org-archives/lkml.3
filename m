@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab3IVKPw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 06:15:52 -0400
+	id S1753059Ab3IVKP4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 06:15:56 -0400
 Received: from mga01.intel.com ([192.55.52.88]:37121 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752858Ab3IVKPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 06:15:50 -0400
+	id S1753020Ab3IVKPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 06:15:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,956,1371106800"; 
-   d="scan'208";a="405354044"
+   d="scan'208";a="405354049"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
@@ -17,59 +17,49 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V2 00/10] perf tools: kcore improvements
-Date: Sun, 22 Sep 2013 13:22:08 +0300
-Message-Id: <1379845338-29637-1-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V2 01/10] perf tools: fix path unpopulated in machine__create_modules()
+Date: Sun, 22 Sep 2013 13:22:09 +0300
+Message-Id: <1379845338-29637-2-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1379845338-29637-1-git-send-email-adrian.hunter@intel.com>
+References: <1379845338-29637-1-git-send-email-adrian.hunter@intel.com>
 Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+In machine__create_modules() the 'path' char array
+was used in a call to symbol__restricted_filename()
+without always being populated.
 
-Here are some improvements for using kcore (version 2).  There are 3
-improvements:
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/machine.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-	- validate that kcore matches the perf.data modules
-	- workaround objdump difficulties with kcore
-	- add kcore to the build-id cache
-
-Changes in V2:
-	perf tools: fix buildid cache handling of kallsyms with kcore
-		Dropped because it has been applied
-	perf tools: fix path unpopulated in machine__create_modules()
-		Use 'modules' pointer
-
-
-Adrian Hunter (10):
-      perf tools: fix path unpopulated in machine__create_modules()
-      perf tools: make a separate function to parse /proc/modules
-      perf tools: validate kcore module addresses
-      perf tools: workaround objdump difficulties with kcore
-      perf tools: add map__find_other_map_symbol()
-      perf tools: fix annotate_browser__callq()
-      perf tools: find kcore symbols on other maps
-      perf tools: add copyfile_mode()
-      perf buildid-cache: add ability to add kcore to the cache
-      perf tools: add ability to find kcore in build-id cache
-
- tools/perf/Documentation/perf-buildid-cache.txt |  12 +
- tools/perf/builtin-buildid-cache.c              | 146 +++++-
- tools/perf/ui/browsers/annotate.c               |  10 +-
- tools/perf/util/annotate.c                      |  36 +-
- tools/perf/util/machine.c                       |  75 +--
- tools/perf/util/map.c                           |  27 ++
- tools/perf/util/map.h                           |   2 +
- tools/perf/util/symbol-elf.c                    | 579 ++++++++++++++++++++++++
- tools/perf/util/symbol-minimal.c                |  15 +
- tools/perf/util/symbol.c                        | 431 +++++++++++++++---
- tools/perf/util/symbol.h                        |  20 +
- tools/perf/util/util.c                          |  18 +-
- tools/perf/util/util.h                          |   1 +
- 13 files changed, 1234 insertions(+), 138 deletions(-)
-
-
-Regards
-Adrian
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 933d14f..ddf917b 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -785,14 +785,14 @@ static int machine__create_modules(struct machine *machine)
+ 	const char *modules;
+ 	char path[PATH_MAX];
+ 
+-	if (machine__is_default_guest(machine))
++	if (machine__is_default_guest(machine)) {
+ 		modules = symbol_conf.default_guest_modules;
+-	else {
+-		sprintf(path, "%s/proc/modules", machine->root_dir);
++	} else {
++		snprintf(path, PATH_MAX, "%s/proc/modules", machine->root_dir);
+ 		modules = path;
+ 	}
+ 
+-	if (symbol__restricted_filename(path, "/proc/modules"))
++	if (symbol__restricted_filename(modules, "/proc/modules"))
+ 		return -1;
+ 
+ 	file = fopen(modules, "r");
+-- 
+1.7.11.7
 
