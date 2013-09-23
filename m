@@ -1,156 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab3IWJaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 05:30:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44867 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440Ab3IWJaV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 05:30:21 -0400
-Date: Mon, 23 Sep 2013 11:29:55 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130923092955.GV9326@twins.programming.kicks-ass.net>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
- <1378805550-29949-38-git-send-email-mgorman@suse.de>
- <20130917143003.GA29354@twins.programming.kicks-ass.net>
- <20130917162050.GK22421@suse.de>
- <20130917164505.GG12926@twins.programming.kicks-ass.net>
- <20130918154939.GZ26785@twins.programming.kicks-ass.net>
- <20130919143241.GB26785@twins.programming.kicks-ass.net>
- <20130921163404.GA8545@redhat.com>
+	id S1753464Ab3IWJgT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 05:36:19 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:57173 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753053Ab3IWJgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 05:36:18 -0400
+Message-ID: <52400B92.7000300@ti.com>
+Date: Mon, 23 Sep 2013 15:06:18 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130921163404.GA8545@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Arun Joseph <arunjoseph@ti.com>
+CC: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] iio: ti_am335x_adc: Take touchscreen steps into account
+ for conversion timeout
+References: <20130916211749.GG24058@raspi> <523D9046.7010305@kernel.org> <20130922175145.GB27515@raspi> <5240027C.9040804@ti.com>
+In-Reply-To: <5240027C.9040804@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 21, 2013 at 06:34:04PM +0200, Oleg Nesterov wrote:
-> > So the slow path is still per-cpu and mostly uncontended even in the
-> > pending writer case.
+On Monday 23 September 2013 02:27 PM, Arun Joseph wrote:
 > 
-> Is it really important? I mean, per-cpu/uncontended even if the writer
-> is pending?
+> On Sunday 22 September 2013 11:21 PM, Matthias Kaehlcke wrote:
+>> Hi,
+>>
+>> El Sat, Sep 21, 2013 at 01:25:42PM +0100 Jonathan Cameron ha dit:
+>>
+>>> On 09/16/13 22:17, Matthias Kaehlcke wrote:
+>>>> The calculation of the old conversion timeout value was based on the
+>>>> number of
+>>>> steps used by this driver. This doesn't take into account that other
+>>>> steps
+>>>> can be used by the touchscreen driver. Select the timeout value
+>>>> based on the
+>>>> steps used by both drivers
+>>>>
+>>>> Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
+>>> Looks fine to me but I'd like an Ack from someone more familiar with
+>>> the device
+>>> if possible.
+>> Arun, do you feel entitled to Ack or can you suggest someone from TI
+>> who is?
+>>
+> Adding Sekhar Nori
 
-I think so, once we make {get,put}_online_cpus() really cheap they'll
-get in more and more places, and the global count with pending writer
-will make things crawl on bigger machines.
+I have not really worked on this driver. It should be Sebastian who
+should ack once he is back from his vacation. It looks like this is
+v3.13 material so hopefully it can wait for him to be back.
 
-> Otherwise we could do
+Thanks,
+Sekhar
 
-<snip>
-
-> I already sent this code in 2010, it needs some trivial updates.
-
-Yeah, I found that a few days ago.. but per the above I didn't like the
-pending writer case.
-
-> But. We already have percpu_rw_semaphore,
-
-Oh urgh, forgot about that one. /me goes read.
-
-/me curses loudly.. that thing has an _expedited() call in it, those
-should die.
-
-Also, it suffers the same problem. I think esp. for hotplug we should be
-100% geared towards readers and pretty much damn writers.
-
-I'd dread to think what would happen if a 4k cpu machine were to land in
-the slow path on that global mutex. Readers would never go-away and
-progress would make a glacier seem fast.
-
-> Note also that percpu_down_write/percpu_up_write can be improved wrt
-> synchronize_sched(). We can turn the 2nd one into call_rcu(), and the
-> 1nd one can be avoided if another percpu_down_write() comes "soon after"
-> percpu_down_up().
-
-Write side be damned ;-)
-
-It is anyway with a pure read bias and a large machine..
-
-> As for the patch itself, I am not sure.
-> 
-> > +static void cpuph_wait_refcount(void)
-> 
-> It seems, this can succeed while it should not, see below.
-> 
-> >  void cpu_hotplug_begin(void)
-> >  {
-> > +	lockdep_assert_held(&cpu_add_remove_lock);
-> >
-> > +	__cpuhp_writer = current;
-> > +
-> > +	/* After this everybody will observe _writer and take the slow path. */
-> > +	synchronize_sched();
-> 
-> Yes, the reader should see _writer, but:
-> 
-> > +	/* Wait for no readers -- reader preference */
-> > +	cpuhp_wait_refcount();
-> 
-> but how we can ensure the writer sees the results of the reader's updates?
-> 
-> Suppose that we have 2 CPU's, __cpuhp_refcount[0] = 0, __cpuhp_refcount[1] = 1.
-> IOW, we have a single R reader which takes this lock on CPU_1 and sleeps.
-> 
-> Now,
-> 
-> 	- The writer calls cpuph_wait_refcount()
-> 
-> 	- cpuph_wait_refcount() does refcnt += __cpuhp_refcount[0].
-> 	  refcnt == 0.
-> 
-> 	- another reader comes on CPU_0, increments __cpuhp_refcount[0].
-> 
-> 	- this reader migrates to CPU_1 and does put_online_cpus(),
-> 	  this decrements __cpuhp_refcount[1] which becomes zero.
-> 
-> 	- cpuph_wait_refcount() continues and reads __cpuhp_refcount[1]
-> 	  which is zero. refcnt == 0, return.
-> 
-> 	- The writer does cpuhp_set_state(1).
-> 
-> 	- The reader R (original reader) wakes up, calls get_online_cpus()
-> 	  recursively, and sleeps in wait_event(!__cpuhp_writer).
-
-Ah indeed.. 
-
-The best I can come up with is something like:
-
-static unsigned int cpuhp_refcount(void)
-{
-	unsigned int refcount = 0;
-	int cpu;
-
-	for_each_possible_cpu(cpu)
-		refcount += per_cpu(__cpuhp_refcount, cpu);
-}
-
-static void cpuhp_wait_refcount(void)
-{
-	for (;;) {
-		unsigned int rc1, rc2;
-
-		rc1 = cpuhp_refcount();
-		set_current_state(TASK_UNINTERRUPTIBLE); /* MB */
-		rc2 = cpuhp_refcount();
-
-		if (rc1 == rc2 && !rc1)
-			break;
-
-		schedule();
-	}
-	__set_current_state(TASK_RUNNING);
-}
