@@ -1,63 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab3IWNNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 09:13:37 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:55357 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753452Ab3IWNNf (ORCPT
+	id S1753591Ab3IWNSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 09:18:01 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32427 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab3IWNSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 09:13:35 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v6] fat: additions to support fat_fallocate
-References: <1378822553-2587-1-git-send-email-linkinjeon@gmail.com>
-	<87a9j6y5zv.fsf@devron.myhome.or.jp>
-	<CAKYAXd9VCOtG52w34hgun5VY6wACfUCjo2pvgmUmSt65yOSuTA@mail.gmail.com>
-Date: Mon, 23 Sep 2013 22:13:29 +0900
-In-Reply-To: <CAKYAXd9VCOtG52w34hgun5VY6wACfUCjo2pvgmUmSt65yOSuTA@mail.gmail.com>
-	(Namjae Jeon's message of "Mon, 23 Sep 2013 17:13:59 +0900")
-Message-ID: <87r4cfbs06.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Mon, 23 Sep 2013 09:18:00 -0400
+Date: Mon, 23 Sep 2013 09:17:43 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: xen-devel@lists.xen.org, david.vrabel@citrix.com, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 2/5] xen/PMU: Sysfs interface for setting Xen PMU mode
+Message-ID: <20130923131743.GC3175@phenom.dumpdata.com>
+References: <1378827110-4192-1-git-send-email-boris.ostrovsky@oracle.com>
+ <1378827110-4192-3-git-send-email-boris.ostrovsky@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378827110-4192-3-git-send-email-boris.ostrovsky@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Tue, Sep 10, 2013 at 11:31:47AM -0400, Boris Ostrovsky wrote:
+> Set Xen's PMU mode via /sys/hypervisor/pmu/pmu_mode. Add XENPMU hypercall.
+> 
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> ---
+>  arch/x86/include/asm/xen/hypercall.h |   6 ++
+>  arch/x86/xen/xen-head.S              |   5 +-
+>  drivers/xen/sys-hypervisor.c         | 118 +++++++++++++++++++++++++++++++++++
+>  include/xen/interface/xen.h          |   1 +
+>  include/xen/interface/xenpmu.h       |  44 +++++++++++++
+>  5 files changed, 173 insertions(+), 1 deletion(-)
+>  create mode 100644 include/xen/interface/xenpmu.h
+> 
+> diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
+> index e709884..f022cef 100644
+> --- a/arch/x86/include/asm/xen/hypercall.h
+> +++ b/arch/x86/include/asm/xen/hypercall.h
+> @@ -465,6 +465,12 @@ HYPERVISOR_tmem_op(
+>  	return _hypercall1(int, tmem_op, op);
+>  }
+>  
+> +static inline int
+> +HYPERVISOR_xenpmu_op(unsigned int op, void *arg)
+> +{
+> +	return _hypercall2(int, xenpmu_op, op, arg);
+> +}
+> +
+>  static inline void
+>  MULTI_fpu_taskswitch(struct multicall_entry *mcl, int set)
+>  {
+> diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
+> index 7faed58..f2415e6 100644
+> --- a/arch/x86/xen/xen-head.S
+> +++ b/arch/x86/xen/xen-head.S
+> @@ -73,8 +73,11 @@ NEXT_HYPERCALL(sysctl)
+>  NEXT_HYPERCALL(domctl)
+>  NEXT_HYPERCALL(kexec_op)
+>  NEXT_HYPERCALL(tmem_op) /* 38 */
+> +ENTRY(xenclient_rsvd)
+> +	.skip 32
+> +NEXT_HYPERCALL(xenpmu_op) /* 40 */
+>  ENTRY(xen_hypercall_rsvr)
+> -	.skip 320
+> +	.skip 256
+>  NEXT_HYPERCALL(mca) /* 48 */
+>  NEXT_HYPERCALL(arch_1)
+>  NEXT_HYPERCALL(arch_2)
+> diff --git a/drivers/xen/sys-hypervisor.c b/drivers/xen/sys-hypervisor.c
+> index 96453f8..2218154 100644
+> --- a/drivers/xen/sys-hypervisor.c
+> +++ b/drivers/xen/sys-hypervisor.c
+> @@ -20,6 +20,7 @@
+>  #include <xen/xenbus.h>
+>  #include <xen/interface/xen.h>
+>  #include <xen/interface/version.h>
+> +#include <xen/interface/xenpmu.h>
+>  
+>  #define HYPERVISOR_ATTR_RO(_name) \
+>  static struct hyp_sysfs_attr  _name##_attr = __ATTR_RO(_name)
+> @@ -368,6 +369,115 @@ static void xen_properties_destroy(void)
+>  	sysfs_remove_group(hypervisor_kobj, &xen_properties_group);
+>  }
+>  
+> +struct pmu_mode {
+> +	const char *name;
+> +	uint32_t mode;
+> +};
+> +struct pmu_mode pmu_modes[] = {
+> +	{"enable", VPMU_ON},
+> +	{"priv_enable", VPMU_PRIV},
+> +	{"disable", 0}
+> +};
+> +static ssize_t pmu_mode_store(struct hyp_sysfs_attr *attr,
+> +			      const char *buffer, size_t len)
+> +{
+> +	int ret;
+> +	struct xenpmu_params xp;
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(pmu_modes); i++) {
+> +		if (!strncmp(buffer, pmu_modes[i].name,
+> +			     strlen(pmu_modes[i].name))) {
+> +			xp.control = pmu_modes[i].mode;
+> +			break;
+> +		}
+> +	}
+> +
+> +	if (i == ARRAY_SIZE(pmu_modes))
+> +		return -EINVAL;
+> +
+> +	ret = HYPERVISOR_xenpmu_op(XENPMU_mode_set, &xp);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return len;
+> +}
+> +
+> +static ssize_t pmu_mode_show(struct hyp_sysfs_attr *attr, char *buffer)
+> +{
+> +	int ret;
+> +	struct xenpmu_params xp;
+> +	int i;
+> +	uint32_t mode;
+> +
+> +	ret = HYPERVISOR_xenpmu_op(XENPMU_mode_get, &xp);
+> +	if (ret)
+> +		return ret;
+> +
+> +	mode = (uint32_t)xp.control & VPMU_MODE_MASK;
+> +	for (i = 0; i < ARRAY_SIZE(pmu_modes); i++) {
+> +		if (mode == pmu_modes[i].mode)
+> +			return sprintf(buffer, "%s\n", pmu_modes[i].name);
+> +	}
+> +
+> +	return -EINVAL;
+> +}
+> +HYPERVISOR_ATTR_RW(pmu_mode);
+> +
+> +
+> +static ssize_t pmu_flags_store(struct hyp_sysfs_attr *attr,
+> +			      const char *buffer, size_t len)
+> +{
+> +	int ret;
+> +	uint32_t flags;
+> +	struct xenpmu_params xp;
+> +
+> +	ret = kstrtou32(buffer, 0, &flags);
+> +	if (ret)
+> +		return ret;
+> +
+> +	xp.control = flags;
+> +	ret = HYPERVISOR_xenpmu_op(XENPMU_flags_set, &xp);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return len;
+> +}
+> +
+> +static ssize_t pmu_flags_show(struct hyp_sysfs_attr *attr, char *buffer)
+> +{
+> +	int ret;
+> +	struct xenpmu_params xp;
+> +
+> +	ret = HYPERVISOR_xenpmu_op(XENPMU_flags_get, &xp);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return sprintf(buffer, "0x%x\n", (uint32_t)xp.control);
+> +}
+> +HYPERVISOR_ATTR_RW(pmu_flags);
+> +
+> +static struct attribute *xen_pmu_attrs[] = {
+> +	&pmu_mode_attr.attr,
+> +	&pmu_flags_attr.attr,
+> +	NULL
+> +};
+> +
+> +static const struct attribute_group xen_pmu_group = {
+> +	.name = "pmu",
+> +	.attrs = xen_pmu_attrs,
+> +};
+> +
+> +static int __init xen_pmu_init(void)
+> +{
+> +	return sysfs_create_group(hypervisor_kobj, &xen_pmu_group);
+> +}
+> +
+> +static void xen_pmu_destroy(void)
+> +{
+> +	sysfs_remove_group(hypervisor_kobj, &xen_pmu_group);
+> +}
+> +
+>  static int __init hyper_sysfs_init(void)
+>  {
+>  	int ret;
+> @@ -390,9 +500,16 @@ static int __init hyper_sysfs_init(void)
+>  	ret = xen_properties_init();
+>  	if (ret)
+>  		goto prop_out;
+> +	if (xen_initial_domain()) {
+> +		ret = xen_pmu_init();
+> +		if (ret)
+> +			goto pmu_out;
+> +	}
+>  
+>  	goto out;
+>  
+> +pmu_out:
+> +	xen_properties_destroy();
+>  prop_out:
+>  	xen_sysfs_uuid_destroy();
+>  uuid_out:
+> @@ -407,6 +524,7 @@ out:
+>  
+>  static void __exit hyper_sysfs_exit(void)
+>  {
+> +	xen_pmu_destroy();
+>  	xen_properties_destroy();
+>  	xen_compilation_destroy();
+>  	xen_sysfs_uuid_destroy();
+> diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
+> index 53ec416..c29d427 100644
+> --- a/include/xen/interface/xen.h
+> +++ b/include/xen/interface/xen.h
+> @@ -58,6 +58,7 @@
+>  #define __HYPERVISOR_physdev_op           33
+>  #define __HYPERVISOR_hvm_op               34
+>  #define __HYPERVISOR_tmem_op              38
+> +#define __HYPERVISOR_xenpmu_op            40
+>  
+>  /* Architecture-specific hypercall definitions. */
+>  #define __HYPERVISOR_arch_0               48
+> diff --git a/include/xen/interface/xenpmu.h b/include/xen/interface/xenpmu.h
+> new file mode 100644
+> index 0000000..63c42b1
+> --- /dev/null
+> +++ b/include/xen/interface/xenpmu.h
+> @@ -0,0 +1,44 @@
+> +#ifndef __XEN_PUBLIC_XENPMU_H__
+> +#define __XEN_PUBLIC_XENPMU_H__
+> +
+> +#include <asm/msr.h>
+> +
+> +#include "xen.h"
+> +
+> +#define XENPMU_VER_MAJ    0
+> +#define XENPMU_VER_MIN    0
+> +
+> +/* HYPERVISOR_xenpmu_op commands */
+> +#define XENPMU_mode_get        0
+> +#define XENPMU_mode_set        1
+> +#define XENPMU_flags_get       2
+> +#define XENPMU_flags_set       3
+> +
+> +/* Parameter structure for HYPERVISOR_xenpmu_op call */
+> +struct xenpmu_params {
+> +	union {
+> +		struct version {
+> +			uint8_t maj;
+> +			uint8_t min;
+> +		} version;
+> +		uint64_t pad;
+> +	};
+> +	uint64_t control;
+> +};
+> +
+> +/* VPMU modes */
+> +#define VPMU_MODE_MASK     0xff
+> +#define VPMU_OFF           0
+> +/* guests can profile themselves, (dom0 profiles itself and Xen) */
+> +#define VPMU_ON            (1<<0)
+> +/*
+> + * Only dom0 has access to VPMU and it profiles everyone: itself,
+> + * the hypervisor and the guests.
+> + */
+> +#define VPMU_PRIV          (1<<1)
+> +
+> +/* VPMU flags */
+> +#define VPMU_FLAGS_MASK    ((uint32_t)(~VPMU_MODE_MASK))
+> +#define VPMU_INTEL_BTS     (1<<8) /* Ignored on AMD */
+> +
+> +#endif /* __XEN_PUBLIC_XENPMU_H__ */
 
->>> +	if (MSDOS_I(inode)->mmu_private > round_up(i_size, sb->s_blocksize)
->>> +			&& pos > i_size) {
->>> +		err = fat_zero_falloc_area(file, mapping, pos);
->>> +		if (err) {
->>> +			fat_msg(sb, KERN_ERR,
->>> +				"Error (%d) zeroing fallocated area", err);
->>> +			return err;
->>> +		}
->>> +	}
->>
->> Again, I'm not fan of this way.
->>
->> Normally, get_block() returns with buffer_new(). Then, caller checks
->> blockdev buffer with
->>
->> 	unmap_underlying_metadata(bh->b_bdev, bh->b_blocknr);
->>
->> then, zeroed buffer. Do we really don't need to check this race?
-> We considered after your advice before. we reach for the conclusion
-> that use this method.
-> because, Cluster is already allocated in fat fallocate and
-> when we write with radom offset over i_size on fallocated region, It
-> will be hit by fat cache in fat_bmap of get_block, which mean buffer
-> is not set to new.
-
-Hm, how does it hit to fat cache? I think fat_alloc_clusters() and
-fat_chain_add() doesn't update fat cache, right? I.e. initial write
-after fallocate() should not hit fat cache over i_size?
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Looks OK to me if there are no changes to the hypervisor ABI.
+> -- 
+> 1.8.1.4
+> 
