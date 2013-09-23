@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab3IWQ63 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 12:58:29 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:62654 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab3IWQ60 (ORCPT
+	id S1753340Ab3IWQ6h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 12:58:37 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56351 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab3IWQ6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 12:58:26 -0400
-Message-ID: <5240731B.9070906@gmail.com>
-Date: Tue, 24 Sep 2013 00:58:03 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Mon, 23 Sep 2013 12:58:34 -0400
+Message-ID: <52407335.3030403@wwwdotorg.org>
+Date: Mon, 23 Sep 2013 10:58:29 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, toshi.kani@hp.com,
-        zhangyanfei@cn.fujitsu.com, liwanp@linux.vnet.ibm.com, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 5/5] mem-hotplug: Introduce movablenode boot option
- to control memblock allocation direction.
-References: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com> <1379064655-20874-6-git-send-email-tangchen@cn.fujitsu.com> <20130923155713.GF14547@htj.dyndns.org>
-In-Reply-To: <20130923155713.GF14547@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: lee.jones@linaro.org, sameo@linux.intel.com, broonie@kernel.org,
+        linus.walleij@linaro.org, akpm@linux-foundation.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        rtc-linux@googlegroups.com, rob.herring@calxeda.com,
+        mark.rutland@arm.com, pawel.moll@arm.com, rob@landley.net,
+        ijc+devicetree@hellion.org.uk, grant.likely@linaro.org,
+        florian.lobmaier@ams.com
+Subject: Re: [PATCH 3/4] regulator: as3722: add regulator driver for AMS AS3722
+References: <1379400338-20704-1-git-send-email-ldewangan@nvidia.com> <1379400338-20704-4-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1379400338-20704-4-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello tejun,
-
-On 09/23/2013 11:57 PM, Tejun Heo wrote:
-> Hello,
+On 09/17/2013 12:45 AM, Laxman Dewangan wrote:
+> The AS3722 is a compact system PMU suitable for Mobile Phones,
+> Tablet etc. It has 4 DCDC step down regulators, 3 DCDC step down
+> controller, 11 LDOs.
 > 
-> On Fri, Sep 13, 2013 at 05:30:55PM +0800, Tang Chen wrote:
->> +#ifdef CONFIG_MOVABLE_NODE
->> +	if (movablenode_enable_srat) {
->> +		/*
->> +		 * When ACPI SRAT is parsed, which is done in initmem_init(),
->> +		 * set memblock back to the default behavior.
->> +		 */
->> +		memblock_set_current_direction(MEMBLOCK_DIRECTION_DEFAULT);
->> +	}
->> +#endif /* CONFIG_MOVABLE_NODE */
-> 
-> It's kinda weird to have ifdef around the above when all the actual
-> code would be compiled and linked regardless of the above ifdef.
-> Wouldn't it make more sense to conditionalize
-> memblock_direction_bottom_up() so that it's constant false to allow
-> the compiler to drop unnecessary code?
+> Add a driver to support accessing the DCDC/LDOs found on the AMS
+> AS3722 PMIC using regulators.
 
-you mean we define memblock_set_bottom_up and memblock_bottom_up like below:
+> diff --git a/Documentation/devicetree/bindings/regulator/as3722-reguator.txt b/Documentation/devicetree/bindings/regulator/as3722-reguator.txt
 
-#ifdef CONFIG_MOVABLE_NODE
-void memblock_set_bottom_up(bool enable)
-{
-        /* do something */
-}
+The filename is typo'd
 
-bool memblock_bottom_up()
-{
-        return  direction == bottom_up;
-}
-#else
-void memblock_set_bottom_up(bool enable)
-{
-        /* empty */
-}
+> +AMS AS3722 regulator devicetree bindings.
+> +The regulator node is sub node of the AS3722 node.
 
-bool memblock_bottom_up()
-{
-        return false;
-}
-#endif
+You probably want a blank line to separate the document title from the
+body text.
 
-right?
+> +Optional nodes:
+> +- regulators : Must contain a sub-node per regulator from the list below.
+> +	       Each sub-node should contain the constraints and initialization
+> +	       information for that regulator. See regulator.txt for a
+> +	       description of standard properties for these sub-nodes.
+> +	       Additional custom properties  are listed below.
+> +	       sd[0-6], ldo[0-7], ldo[9-11].
 
-thanks.
+I think you want to prefix that last line with something like: "Valid
+regulator names are: ".
 
-> 
-> Thanks.
-> 
+> +		ams,ext-control: External control of the rail. The option of
+> +			this properties will tell which external input is
+> +			controlling this rail. Valid values are 0, 1, 2 ad 3.
+> +			0: There is no external control of this rail.
+> +			1: Rail is controlled by ENABLE1 input pin.
+> +			2: Rail is controlled by ENABLE1 input pin.
+> +			3: Rail is controlled by ENABLE1 input pin.
 
+Those last 3 lines all say the same thing.
 
--- 
-Thanks.
-Zhang Yanfei
