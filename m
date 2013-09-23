@@ -1,128 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab3IWGwg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 02:52:36 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44528 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab3IWGwf (ORCPT
+	id S1753395Ab3IWGys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 02:54:48 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:2317 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab3IWGyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 02:52:35 -0400
-X-AuditID: 9c930179-b7c8bae000006c65-b6-523fe531ac52
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] perf bench sched: Add --threaded 0/1 option
-References: <20130917114256.GA31159@gmail.com>
-Date: Mon, 23 Sep 2013 15:52:33 +0900
-In-Reply-To: <20130917114256.GA31159@gmail.com> (Ingo Molnar's message of
-	"Tue, 17 Sep 2013 13:42:56 +0200")
-Message-ID: <87hadcqbbi.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 23 Sep 2013 02:54:47 -0400
+X-Spam-Score: -100.6
+Message-ID: <523FE578.5060801@asianux.com>
+Date: Mon, 23 Sep 2013 14:53:44 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        joern Rennecke <joern.rennecke@embecosm.com>
+Subject: Re: [Suggestion] arc: compiler: bug: about an arc compiler's bug
+ which is not in gcc main source code.
+References: <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com>
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On 09/23/2013 02:39 PM, Vineet Gupta wrote:
+> Hi Chen,
+> 
+> Thanks for the problem report. Please note that we have moved on to gcc 4.8 based
+> tool-chain so I would suggest you switch over to it too (4.4 support is really
+> phased out).
+> 
+> With current 4.8 tools, I don't see the error you report.
+> 
+> Please use the arc-4.8-dev branch of toolchain repo on github for building the
+> tools, assuming that is where you got the sources for 4.4 tools too.
+> 
 
-Just a few nitpicks...
+OK, thanks, I should try 4.8.  :-)
 
-On Tue, 17 Sep 2013 13:42:56 +0200, Ingo Molnar wrote:
-> Allow the measurement of thread versus process context switch performance.
->
-> The default stays at 'process' based measurement, like lmbench's lat_ctx 
-> benchmark.
->
-> Sample output:
->
->  comet:~/tip/tools/perf> taskset 1 ./perf bench sched pipe --threaded 0
->  # Running sched/pipe benchmark...
->  # Executed 1000000 pipe operations between two processes
->
->      Total time: 4.138 [sec]
->
->        4.138729 usecs/op
->          241620 ops/sec
->  comet:~/tip/tools/perf> taskset 1 ./perf bench sched pipe --threaded 1
+> Jeremy, Claudiu, Joern maintain the gcc and rest of GNU toolchain ports for ARC so
+> please add them to any future posting on toolchain issues.
+> 
 
-Why not just make it boolean?  IMHO the integer argument can confuse
-users as they can think it a number of threads..
+Thank you very much for your information.
 
-
->  # Running sched/pipe benchmark...
->  # Executed 1000000 pipe operations between two threads
->
->      Total time: 3.667 [sec]
->
->        3.667667 usecs/op
->          272652 ops/sec
->
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
->
-> diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
-> index 69cfba8..7630dc6 100644
-> --- a/tools/perf/bench/sched-pipe.c
-> +++ b/tools/perf/bench/sched-pipe.c
-> @@ -28,12 +28,25 @@
->  #include <sys/time.h>
->  #include <sys/types.h>
->  
-> +#include <pthread.h>
-> +
-> +struct thread_data {
-> +	int			nr;
-> +	int			pipe_read;
-> +	int			pipe_write;
-> +	pthread_t		pthread;
-> +};
-> +
->  #define LOOPS_DEFAULT 1000000
->  static int loops = LOOPS_DEFAULT;
->  
-> +static int threaded = 0;
-> +
->  static const struct option options[] = {
->  	OPT_INTEGER('l', "loop", &loops,
->  		    "Specify number of loops"),
-> +	OPT_INTEGER('T', "threaded", &threaded,
-> +		    "Specify threaded/process based task setup"),
->  	OPT_END()
->  };
->  
-> @@ -42,13 +55,38 @@ static const char * const bench_sched_pipe_usage[] = {
->  	NULL
->  };
->  
-> +static void *worker_thread(void *__tdata)
-> +{
-> +        struct thread_data *td = __tdata;
-
-Whitespace damaged.  Otherwise looks good to me!
-
-Thanks,
-Namhyung
+> Thx,
+> -Vineet
 
 
-> +	int m = 0, i;
-> +	int ret;
-> +
-> +	for (i = 0; i < loops; i++) {
-> +		if (!td->nr) {
-> +			ret = read(td->pipe_read, &m, sizeof(int));
-> +			BUG_ON(ret != sizeof(int));
-> +			ret = write(td->pipe_write, &m, sizeof(int));
-> +			BUG_ON(ret != sizeof(int));
-> +		} else {
-> +			ret = write(td->pipe_write, &m, sizeof(int));
-> +			BUG_ON(ret != sizeof(int));
-> +			ret = read(td->pipe_read, &m, sizeof(int));
-> +			BUG_ON(ret != sizeof(int));
-> +		}
-> +	}
-> +
-> +	return NULL;
-> +}
+Thanks.
+-- 
+Chen Gang
