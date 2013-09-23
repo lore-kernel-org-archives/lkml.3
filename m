@@ -1,45 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab3IWO4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 10:56:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32403 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751947Ab3IWO4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 10:56:32 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vaughan Cao <vaughan.cao@oracle.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] block: register_blkdev doesn't check name against NULL
-References: <1378809614-17490-1-git-send-email-vaughan.cao@oracle.com>
-	<1378866250-22679-1-git-send-email-vaughan.cao@oracle.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 23 Sep 2013 10:56:27 -0400
-In-Reply-To: <1378866250-22679-1-git-send-email-vaughan.cao@oracle.com>
-	(Vaughan Cao's message of "Wed, 11 Sep 2013 10:24:10 +0800")
-Message-ID: <x49mwn3y4bo.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753164Ab3IWO5L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 10:57:11 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:55060 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982Ab3IWO5J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 10:57:09 -0400
+Message-ID: <524056B8.4020208@linaro.org>
+Date: Mon, 23 Sep 2013 10:56:56 -0400
+From: Matt Porter <matt.porter@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Pawel Moll <pawel.moll@arm.com>, Rob Herring <rob.herring@calxeda.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH] ARM: dts: add initial VF610 Cosmic/Cosmic+ board support
+References: <1379594444-11268-1-git-send-email-matt.porter@linaro.org> <20130922070138.GC31787@S2101-09.ap.freescale.net>
+In-Reply-To: <20130922070138.GC31787@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vaughan Cao <vaughan.cao@oracle.com> writes:
+On 09/22/2013 03:01 AM, Shawn Guo wrote:
+> On Thu, Sep 19, 2013 at 08:40:44AM -0400, Matt Porter wrote:
+>> Add initial PHYTEC VF610 Cosmic/Cosmic+ board support with
+>> UART and FEC enabled.
+>>
+>> Signed-off-by: Matt Porter <matt.porter@linaro.org>
+>> ---
+>>   arch/arm/boot/dts/Makefile         |  1 +
+>>   arch/arm/boot/dts/vf610-cosmic.dts | 46 ++++++++++++++++++++++++++++++++++++++
+>>   2 files changed, 47 insertions(+)
+>>   create mode 100644 arch/arm/boot/dts/vf610-cosmic.dts
+>>
+>> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+>> index cc0f1fb..b0d6156 100644
+>> --- a/arch/arm/boot/dts/Makefile
+>> +++ b/arch/arm/boot/dts/Makefile
+>> @@ -142,6 +142,7 @@ dtb-$(CONFIG_ARCH_MXC) += \
+>>   	imx6q-sbc6x.dtb \
+>>   	imx6q-wandboard.dtb \
+>>   	imx6sl-evk.dtb \
+>> +	vf610-cosmic.dtb \
+>>   	vf610-twr.dtb
+>>   dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
+>>   	imx23-olinuxino.dtb \
+>> diff --git a/arch/arm/boot/dts/vf610-cosmic.dts b/arch/arm/boot/dts/vf610-cosmic.dts
+>> new file mode 100644
+>> index 0000000..c3bd4d4f
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/vf610-cosmic.dts
+>> @@ -0,0 +1,46 @@
+>> +/*
+>> + * Copyright 2013 Freescale Semiconductor, Inc.
+>> + * Copyright 2013 Linaro Limited
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + */
+>> +
+>> +/dts-v1/;
+>> +#include "vf610.dtsi"
+>> +
+>> +/ {
+>> +	model = "PHYTEC Cosmic/Cosmic+ Board";
+>> +	compatible = "phytec,vf610-cosmic", "fsl,vf610";
+>> +
+>> +	chosen {
+>> +		bootargs = "console=ttyLP1,115200";
+>> +	};
+>> +
+>> +	memory {
+>> +		reg = <0x80000000 0x10000000>;
+>> +	};
+>> +
+>> +	clocks {
+>> +		enet_ext {
+>> +			compatible = "fixed-clock";
+>> +			clock-frequency = <50000000>;
+>> +		};
+>
+> This is probably copied from vf610-twr.dts.  But per
+> Documentation/devicetree/bindings/clock/fixed-clock.txt, #clock-cells is
+> a required property.
 
-> register_blkdev(0, NULL) can result kernel Oops by copying from NULL
-> in strlcpy(). Fix it by checking NULL pointer at the beginning and
-> WARN when encountered in unregister_blkdev.
+Indeed, will update it.
 
-Uhh, so yeah, this is an exported function, so I could see maybe wanting
-to do the argument checking.  But honestly, if your driver can't even
-get this right, is there any hope of it actually working?
+>
+>> +	};
+>> +
+>> +};
+>> +
+>> +&uart1 {
+>> +	pinctrl-names = "default";
+>> +	pinctrl-0 = <&pinctrl_uart1_1>;
+>> +	status = "okay";
+>> +};
+>> +
+>> +&fec1 {
+>
+> Please sort the nodes alphabetically in label name.
 
-This seems like a pointless patch to me, but ultimately it's up to Jens.
+Will do.
 
-Cheers,
-Jeff
+Thanks,
+Matt
 
-p.s. the kerneldoc tells you what to put there:
- * @name: the name of the new block device as a zero terminated string
