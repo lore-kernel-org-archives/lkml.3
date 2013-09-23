@@ -1,96 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3IWQxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 12:53:33 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:2963 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab3IWQxa (ORCPT
+	id S1753397Ab3IWQym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 12:54:42 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:33243 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716Ab3IWQyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 12:53:30 -0400
-Message-ID: <52407208.1060300@atmel.com>
-Date: Mon, 23 Sep 2013 18:53:28 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 23 Sep 2013 12:54:38 -0400
 MIME-Version: 1.0
-To: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Grant Likely <grant.likely@linaro.org>, Mark Brown <broonie@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <linux-pcmcia@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH 4/7] pcmcia: at91_cf: fix deferred probe from __init
-References: <20130923134028.GF21013@sirena.org.uk> <1379946452-25649-1-git-send-email-jhovold@gmail.com> <1379946452-25649-5-git-send-email-jhovold@gmail.com>
-In-Reply-To: <1379946452-25649-5-git-send-email-jhovold@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <1379918525.2231.0.camel@buesod1.americas.hpqcorp.net>
+References: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
+	<1379625742.2145.19.camel@buesod1.americas.hpqcorp.net>
+	<1379700524.5434.22.camel@flatline.rdu.redhat.com>
+	<1379788235.2145.48.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFwQp6Fm9-Zrn3uue9bFe9tERCbVv5Z-z9r4ZgOmS0VB+Q@mail.gmail.com>
+	<1379918525.2231.0.camel@buesod1.americas.hpqcorp.net>
+Date: Mon, 23 Sep 2013 09:54:37 -0700
+X-Google-Sender-Auth: _IBK06VTS81UEtXAUEKExBMeyo0
+Message-ID: <CA+55aFzVnivKb=nwzeTjGvi=LvnBLGnr=NZE+Ns6kLSm=WCN4w@mail.gmail.com>
+Subject: Re: [PATCH 0/4] ipc: shm and msg fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Eric Paris <eparis@parisplace.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/09/2013 16:27, Johan Hovold :
-> Move probe out of __init section and don't use platform_driver_probe
-> which cannot be used with deferred probing.
+On Sun, Sep 22, 2013 at 11:42 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+>>
+>> More importantly, it's wrong. You do the call_rcu() unconditionally,
+>> but it might not be the last use! You need to do it with the same
+>> logic ipc_rcu_putref(), namely at the dropping of the last reference.
 >
-> Since commit e9354576 ("gpiolib: Defer failed gpio requests by default")
-> this driver might return -EPROBE_DEFER if a gpio_request fails.
->
-> Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> This is the way IPC has handled things for a long time, no? Security
+> does not depend on the reference counter, as we unconditionally free
+> security structs.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Yes, but that was ok back when the logic was idem-potent and you could
+call it multiple times. Modulo races (I didn't check if we held a
+lock).
 
-Thanks Johan.
+You can't do "call_rcu()" more than once, because you'll corrupt the
+rcu list if you do another call_rcu() while the first one is still
+active (and that's a pretty big race window to hit).
 
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
-> ---
->   drivers/pcmcia/at91_cf.c | 11 +++++------
->   1 file changed, 5 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/pcmcia/at91_cf.c b/drivers/pcmcia/at91_cf.c
-> index b8f5acf..de24232 100644
-> --- a/drivers/pcmcia/at91_cf.c
-> +++ b/drivers/pcmcia/at91_cf.c
-> @@ -245,7 +245,7 @@ static int at91_cf_dt_init(struct platform_device *pdev)
->   }
->   #endif
->
-> -static int __init at91_cf_probe(struct platform_device *pdev)
-> +static int at91_cf_probe(struct platform_device *pdev)
->   {
->   	struct at91_cf_socket	*cf;
->   	struct at91_cf_data	*board = pdev->dev.platform_data;
-> @@ -354,7 +354,7 @@ fail0a:
->   	return status;
->   }
->
-> -static int __exit at91_cf_remove(struct platform_device *pdev)
-> +static int at91_cf_remove(struct platform_device *pdev)
->   {
->   	struct at91_cf_socket	*cf = platform_get_drvdata(pdev);
->
-> @@ -404,14 +404,13 @@ static struct platform_driver at91_cf_driver = {
->   		.owner		= THIS_MODULE,
->   		.of_match_table = of_match_ptr(at91_cf_dt_ids),
->   	},
-> -	.remove		= __exit_p(at91_cf_remove),
-> +	.probe		= at91_cf_probe,
-> +	.remove		= at91_cf_remove,
->   	.suspend	= at91_cf_suspend,
->   	.resume		= at91_cf_resume,
->   };
->
-> -/*--------------------------------------------------------------------------*/
-> -
-> -module_platform_driver_probe(at91_cf_driver, at91_cf_probe);
-> +module_platform_driver(at91_cf_driver);
->
->   MODULE_DESCRIPTION("AT91 Compact Flash Driver");
->   MODULE_AUTHOR("David Brownell");
->
+That said, the old behavior was suspect for another reason too: having
+the security blob go away from under a user sounds like it could cause
+various other problems anyway, so I think the old code was at least
+_prone_ to bugs even if it didn't have catastrophic behavior.
 
+(In reality, I suspect the reference count is never elevated in
+practice, so there is only one case that calls the security freeing
+thing, so this may all be pretty much theoretical, but at least from a
+logic standpoint the code clearly makes a big deal about the whole
+refcount and "last user turns off the lights").
 
--- 
-Nicolas Ferre
+> What you're suggesting, is (i) freeing security will now depend on the
+> refcount (wouldn't this cause cases where we actually never end up
+> freeing?)
+
+The security layer better not have any refcounted backpointers to the
+shm, so I don't see why that would be a new issue.
+
+>  and (ii) in the scenarios we actually need to free the
+> security, delay it along with freeing the actual ipc_rcu stuff.
+
+Well, that's the whole point. The security blob should have the same
+lifetime as the ipc blob it is associated with.
+
+Getting rid of the security blob before the thing it is supposed to
+protect sounds like  a bug to me. In fact, it's the bug that this
+whole thread has been about. No?
+
+> If I understand correctly, then we'd have:
+>
+> void ipc_rcu_putref(void *ptr, void (*func)(struct rcu_head *head))
+> {
+>         struct ipc_rcu *p = ((struct ipc_rcu *)ptr) - 1;
+>
+>         if (!atomic_dec_and_test(&p->refcount))
+>                 return;
+>
+>         call_rcu(&p->rcu, func);
+> }
+
+Exactly.
+
+            Linus
