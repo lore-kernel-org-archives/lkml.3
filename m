@@ -1,127 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab3IWGmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 02:42:12 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:27288 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab3IWGmK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 02:42:10 -0400
-Message-ID: <1379918525.2231.0.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 0/4] ipc: shm and msg fixes
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Paris <eparis@parisplace.org>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Date: Sun, 22 Sep 2013 23:42:05 -0700
-In-Reply-To: <CA+55aFwQp6Fm9-Zrn3uue9bFe9tERCbVv5Z-z9r4ZgOmS0VB+Q@mail.gmail.com>
-References: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
-	 <1379625742.2145.19.camel@buesod1.americas.hpqcorp.net>
-	 <1379700524.5434.22.camel@flatline.rdu.redhat.com>
-	 <1379788235.2145.48.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFwQp6Fm9-Zrn3uue9bFe9tERCbVv5Z-z9r4ZgOmS0VB+Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753212Ab3IWGs0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 02:48:26 -0400
+Received: from sauhun.de ([89.238.76.85]:51244 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752335Ab3IWGsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 02:48:24 -0400
+Date: Mon, 23 Sep 2013 08:48:16 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Kim Phillips <kim.phillips@linaro.org>
+Cc: linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: s3c2410: fix clk_disable/clk_unprepare warnings
+Message-ID: <20130923064816.GA3051@katana>
+References: <20130917113153.41b0305d6892170ba8e1ecf7@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
+Content-Disposition: inline
+In-Reply-To: <20130917113153.41b0305d6892170ba8e1ecf7@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-09-21 at 11:58 -0700, Linus Torvalds wrote:
-> On Sat, Sep 21, 2013 at 11:30 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> >
-> > IPC uses security_xxx_free() at two levels: for freeing the structure
-> > (ie: shm_destroy()) and cleaning up upon error when creating the
-> > structure (ie: newseg()). For both I believe we can actually use RCU.
-> > What do you think of the below change, it is specific for shm, and we'd
-> > need an equivalent for msq and sems.
-> 
-> Ugh.
-> 
-> This code already has rcu-delaying, usign the existing "rcu" list
-> entry. I hate how you add a *new* rcu list entry, and we basically
-> case two callbacks.
-> 
-> More importantly, it's wrong. You do the call_rcu() unconditionally,
-> but it might not be the last use! You need to do it with the same
-> logic ipc_rcu_putref(), namely at the dropping of the last reference.
 
-This is the way IPC has handled things for a long time, no? Security
-does not depend on the reference counter, as we unconditionally free
-security structs.
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> So how about just making ipc_rcu_putref() have a RCU callback
-> argument, and make the code look something like
-> 
->     ipc_rcu_putref(shp, shm_rcu_free);
+On Tue, Sep 17, 2013 at 11:31:53AM -0500, Kim Phillips wrote:
+> commit d16933b33914a6dff38a4ecbe8edce44a17898e8 "i2c: s3c2410: Move
+> location of clk_prepare_enable() call in probe function" refactored
+> clk_enable and clk_disable calls yet neglected to remove the
+> clk_disable_unprepare call in the module's remove().
 
-What you're suggesting, is (i) freeing security will now depend on the
-refcount (wouldn't this cause cases where we actually never end up
-freeing?) and (ii) in the scenarios we actually need to free the
-security, delay it along with freeing the actual ipc_rcu stuff.
-
-> 
-> and then shm_rcu_free() just does
-> 
->     #define ipc_rcu_to_struct(p)  ((void *)(p+1))
-> 
->     void shm_rcu_free(struct rcu_head *head)
->     {
->         struct ipc_rcu *p = container_of(head, struct ipc_rcu, rcu);
->         struct shmid_kernel *shp = ipc_rcu_to_struct(p);
-> 
->         security_shm_free(shp);
->         ipc_rcu_free(head);
->     }
-
-If I understand correctly, then we'd have:
-
-void ipc_rcu_putref(void *ptr, void (*func)(struct rcu_head *head))
-{
-	struct ipc_rcu *p = ((struct ipc_rcu *)ptr) - 1;
-
-	if (!atomic_dec_and_test(&p->refcount))
-		return;
-
-	call_rcu(&p->rcu, func);
-}
-
-> 
-> (that "ipc_rcu_free()" would do the current vfree-vs-kfree, just not
-> rcu-delayed, so it would look something like
-
-The vfree/free would still be rcu delayed from whatever was passed to
-ipc_rcu_putref(), but yes, the function wouldn't explicitly be calling
-call_rcu/kfree_rcu.
-
-> 
->     void ipc_rcu_free(struct rcu_head *head)
->     {
->         struct ipc_rcu *p = container_of(head, struct ipc_rcu, rcu);
->         if (is_vmalloc_addr(p))
->             vfree(p);
->         else
->             kfree(p);
->     }
-> 
-> Other users would then just use
-> 
->     ipc_rcu_putref(shp, ipc_rcu_free);
-> until they too decide that they want to do something extra at RCU freeing time..
-
-I like this flexibility.
-
-Thanks,
-Davidlohr
+Applied to for-current, thanks!
 
 
+--J2SCkAp4GZ/dPZZf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSP+QwAAoJEBQN5MwUoCm2mEsQAKEpcOn4TWEgAqqmdZfmoerp
+W4j7k2MyF/JtFz9f2ynwtjdslutSIwHVrPv0eS6xxclIzhuEupOQ+yBSd4wQbogU
+9KpZlds621VEpGT15DDlbjkF2Dgr0BHvaHWl7Efu5R61KNLFsdnf8QIElTfDJvXx
+OLoXFnLqhNC+wpAwZgrPYGYi3lUyrf73k8eY1ofe2oMe3bTFzMSewE9+5MivgNkG
+wEuJ063QZqlULIBEGUZOggQQ03YGjfxbGsDTGo+hOeWGgHu92Zu3IMm+omc4KbEz
+4CYyyS96OW9aQbQPaS2jVevnHkjtxkyjk36oCkwFbQpYSqhZWGkzqgzBB6K+QQhf
+yYCLZicrQgPXkfaB33W+2yRR4dBoob/xiHLn9C0hJSpxsrqViOWTN3HmnkTiFHpx
+HS0mlkkfE45x08i1nWam+7ylWjZAFkGHiLBoAj5aC4CBR+XMU1aE/XwJboY9kUOT
+AXliVuF/RQHNbT7zROXHNkftvOaAqcYzGqjR21aZZZJB/Qu+zTZrpTKDSilejECf
+rEw5f1Gc2BOoxAQAikN3VCVkJHe2lKjVoe2k7GMchWMfJD+6gjn/eC3ox7Q2FIdv
+BOSJS1FdkYkcfHijJBWHod2HNFw4ZrU/EeltBpsnFzhLnPECmaIjH/jaXDvDMmcV
+RZkipqux0nM4s62DVb8n
+=CgPl
+-----END PGP SIGNATURE-----
+
+--J2SCkAp4GZ/dPZZf--
