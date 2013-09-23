@@ -1,77 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab3IWLBs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 07:01:48 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37795 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314Ab3IWLBr (ORCPT
+	id S1753828Ab3IWLDa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 07:03:30 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:27638 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777Ab3IWLD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 07:01:47 -0400
-Date: Mon, 23 Sep 2013 12:01:40 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org
-Message-ID: <20130923110140.GB21013@sirena.org.uk>
-References: <1379926127-8935-1-git-send-email-jhovold@gmail.com>
+	Mon, 23 Sep 2013 07:03:28 -0400
+Date: Mon, 23 Sep 2013 13:58:42 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Dominik Paulus <dominik.paulus@fau.de>
+Cc: usbip-devel@lists.sourceforge.net,
+        Anthony Foiani <anthony.foiani@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@i4.cs.fau.de,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
+        Tobias Polzer <tobias.polzer@fau.de>,
+        Harvey Yang <harvey.huawei.yang@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Bart Westgeest <bart@elbrys.com>, Joe Perches <joe@perches.com>,
+        Jake Champlin <jake.champlin.27@gmail.com>,
+        Stefan Reif <ke42caxa@cip.cs.fau.de>,
+        Bernard Blackham <b-linuxgit@largestprime.net>
+Subject: Re: [PATCH 5/7] staging: usbip: Add encryption support to kernel
+Message-ID: <20130923105842.GH6192@mwanda>
+References: <1379599919-24763-1-git-send-email-dominik.paulus@fau.de>
+ <1379599919-24763-6-git-send-email-dominik.paulus@fau.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NwQOVL9IuL7Lgg8R"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379926127-8935-1-git-send-email-jhovold@gmail.com>
-X-Cookie: Give him an evasive answer.
+In-Reply-To: <1379599919-24763-6-git-send-email-dominik.paulus@fau.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] driver core: prevent deferred probe with
- platform_driver_probe
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 19, 2013 at 04:11:57PM +0200, Dominik Paulus wrote:
+> +/*
+> + * Perform encryption/decryption on one chunk of data.
+> + * Uses global crypto state stored in usbip_device.
+> + * Parameters:
+> + * encrypt: 1 to perform encryption, 0 to perform decryption operation
 
---NwQOVL9IuL7Lgg8R
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Make this a define:
+#define USBIP_ENCRYPT 1
+#define USBIP_ENCRYPT 0
 
-On Mon, Sep 23, 2013 at 10:48:47AM +0200, Johan Hovold wrote:
-> Prevent drivers relying on platform_driver_probe from requesting
-> deferred probing in order to avoid further futile probe attempts (either
-> the driver has been unregistered or its probe function has been set to
-> platform_drv_probe_fail when probing is retried).
->=20
-> Note that several platform drivers currently return subsystem errors
-> from probe and that these can include -EPROBE_DEFER (e.g. if a gpio
-> request fails).
+> + * packetsize: Size of the encrypted packet, including the authentication tag,
+> + * not including the associated data (length field).
+> + * plaintext and ciphertext have to be appropiately managed by the caller
+> + * (i.e. they must be at least packetsize bytes long).
+> + * Returns: 0 on success
+> + */
+> +static int usbip_crypt(struct usbip_device *ud, int encrypt, uint32_t
+> +		packetsize, unsigned char *plaintext, unsigned char
+> +		*ciphertext)
 
-This doesn't seem like the right end to address the problem from, it
-seems like it would be better to move these drivers over to being normal
-plaform drivers.  Using module_platform_driver() means relying on init
-ordering which is the sort of thing we're trying to get away from.
+Don't break put line breaks between the type and the variable name.  It
+should be:
 
---NwQOVL9IuL7Lgg8R
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+static int usbip_crypt(struct usbip_device *ud, int encrypt,
+		uint32_t packetsize, unsigned char *plaintext,
+		unsigned char *ciphertext)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+This applies to earlier patches in this series as well.
 
-iQIcBAEBAgAGBQJSQB+RAAoJELSic+t+oim9SksQAJy9hPRJKP/nqcpH4Sx64QBg
-JHvDQPBjjX7bkLC0ZOH9EeOatfc0UV6KmEJ9iIjQkruOF7LpQk5TEJ4XzVxiN0RS
-7+iee/7OCcttWRExV7ZS1eMU9rd6Guv0rx2LKs34VJG2qVItfxWQ8dAj8jiX50+r
-2awH39jcn0W7gInmfavpyWh/ug6yU0FyWvK4qNLzvk/k11a3eNPY5AH52mwMyq/k
-aUoC1kqW4JhtfOLFTw3CJe1xJakLfU5tYb3ItNajKZWr/g+n1ksaS5DQ2bidc8dQ
-on1FNOI0UnmGoTIdnqhKonKg5vyU2cRyP+G2I1gi8uppQJHjNAEIVGoAN0dhEZaq
-Ze1qXQH4prvCR+QagMAmd1Na+VyEyHxI+QSAIWY8LwIh/KzOxRFzEUHYoMJWHcrX
-Owx94JadgR7lFr/S8gsmZ7YaXslnaSkyDwLswYpjTvgz5oFzjJtfvcDz6M0qhs6L
-ZuHE5DulF6UVwk5UTtFNEj7ZhReFSAhR8uavf8BFLsf/SCItVbDjRVGg/LLU46xM
-Wh4yfDrbOYo3EKRE7VCXZg1B5R+jgw/4jXDA3/J1SwdzZcfDenjhM7OUK2CKRJ8R
-iDmlriLMxh4X82fjd8rpQC0VjlLHow3/oofxlZRKeTzOjvAEpKu39VCQaSN1OK72
-jJDfg/5UO7V8T+Duj6SE
-=fsoh
------END PGP SIGNATURE-----
+> +{
+> +	struct crypto_aead *tfm;
+> +	struct aead_request *req;
+> +	struct tcrypt_result result;
+> +	struct scatterlist plain, cipher, assoc;
+> +	char iv[16];
+> +	u64 *iv_num;
+> +	u64 iv_net;
+> +	const int plainsize = packetsize - USBIP_AUTHSIZE;
 
---NwQOVL9IuL7Lgg8R--
+Is it possible that packetsize is less than USBIP_AUTHSIZE?
+
+> +	int ret;
+> +
+> +	memset(iv, 0, sizeof(iv));
+> +	if (encrypt) {
+> +		tfm = ud->tfm_send;
+> +		iv_num = &ud->ctr_send;
+> +	} else {
+> +		tfm = ud->tfm_recv;
+> +		iv_num = &ud->ctr_recv;
+> +	}
+> +	iv_net = cpu_to_be64(*iv_num);
+> +	memcpy(iv, &iv_net, sizeof(iv_net));
+> +
+> +	req = aead_request_alloc(tfm, GFP_KERNEL);
+> +	if (IS_ERR(req))
+> +		return -PTR_ERR(req);
+> +
+> +	init_completion(&result.completion);
+> +	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+> +			tcrypt_complete, &result);
+
+Align this up like:
+
+	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+				  tcrypt_complete, &result);
+
+
+> +
+> +	sg_init_one(&cipher, ciphertext, packetsize);
+> +	sg_init_one(&plain, plaintext, plainsize);
+> +	crypto_aead_clear_flags(tfm, ~0);
+> +
+> +	if (encrypt)
+> +		aead_request_set_crypt(req, &plain, &cipher, plainsize, iv);
+> +	else
+> +		aead_request_set_crypt(req, &cipher, &plain, packetsize, iv);
+> +	packetsize = cpu_to_be32(packetsize);
+> +	sg_init_one(&assoc, &packetsize, sizeof(packetsize));
+> +	/* Associated data: Unencrypted length tag */
+> +	aead_request_set_assoc(req, &assoc, sizeof(packetsize));
+> +
+> +	if (encrypt)
+> +		ret = crypto_aead_encrypt(req);
+> +	else
+> +		ret = crypto_aead_decrypt(req);
+> +
+
+Good on you for figuring out what crypto_aead_en/decrypt() returns.
+Where are these functions documented?
+
+> +	switch (ret) {
+> +	case 0: /* Success */
+> +		break;
+> +	case -EINPROGRESS:
+> +	case -EBUSY:
+> +		wait_for_completion(&result.completion);
+> +		break;
+> +	default:
+> +		aead_request_free(req);
+> +		return ret;
+> +	}
+> +
+
+regards,
+dan carpenter
+
