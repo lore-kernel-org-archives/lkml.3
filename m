@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab3IWJof (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 05:44:35 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:16568 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441Ab3IWJoe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 05:44:34 -0400
-X-AuditID: cbfee68f-b7f1e6d000004e8d-d4-52400d803b72
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <001801ceb840$9a81ab10$cf850130$%han@samsung.com>
-In-reply-to: <001801ceb840$9a81ab10$cf850130$%han@samsung.com>
-Subject: [PATCH 06/15] rtc: rtc-ds1307: use dev_get_platdata()
-Date: Mon, 23 Sep 2013 18:44:32 +0900
-Message-id: <002201ceb841$818c8ca0$84a5a5e0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac64QJVrtN1IW24fTFCn/tCGU7Py3AAANIKQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t8zY90GXocgg555GhZLLl5lt5izfg2b
-	xeWFl1gtLu+aw2axv7OD0YHVY8/Ek2weJ2b8ZvHo27KK0WP6vJ9MHp83yQWwRnHZpKTmZJal
-	FunbJXBlTH9+ha1gJXvF1+Vf2BoY+9i6GDk5JARMJJa/+sUMYYtJXLi3HijOxSEksIxR4v3d
-	Z+xdjBxgRe8ua0HEpzNK7DjXwQrSICTwi1FiQXc+iM0moCbx5cthsHoRAX2JthYNkHpmgV5G
-	iTO9u9kh6m0lJk77ygRicwrYSaz5vIwJpF4YyD6wowAkzCKgKvHt4ntWkDAvUPnFB5YgYV4B
-	QYkfk++xgNjMAloSm7c1sULY8hKb17xlhrhSXeLRX12QsIiAkcSKOb/YIEpEJPa9eMcIco2E
-	wD12iUmrD7FDrBKQ+Db5EAtEr6zEpgPQUJCUOLjiBssERolZSDbPQrJ5FpLNs5CsWMDIsopR
-	NLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjJEb7dzDePWB9iDEZaP1EZinR5HxgjOeVxBsamxlZ
-	mJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgXG7OW9b0/z6GWtC
-	JrjlTrqxmnmV9uvfdoqJM4+0l89f8/9gnXrpHUkhDjEJfs+du5uuvZrg1LU05GyAdOu7C4+3
-	hPJncG5b8Z3BvanCZqvAl9WsoROmvnoo9ab0YvQzlqQyWcXatq0BPvzR29xPX93runmu5Qme
-	0zv7T4XPPlPRnNXx4xrzHmMlluKMREMt5qLiRAA3PEEF5wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t9jQd0GXocgg30nVCyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzJj+/ApbwUr2iq/Lv7A1MPaxdTFycEgImEi8
-	u6zVxcgJZIpJXLi3HijMxSEkMJ1RYse5DlaQhJDAL0aJBd35IDabgJrEly+H2UF6RQT0Jdpa
-	NEDqmQV6GSXO9O5mh6i3lZg47SsTiM0pYCex5vMyJpB6YSD7wI4CkDCLgKrEt4vvWUHCvEDl
-	Fx9YgoR5BQQlfky+xwJiMwtoSWze1sQKYctLbF7zlhniYnWJR391QcIiAkYSK+b8YoMoEZHY
-	9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRGcAJ5J
-	7WBc2WBxiFGAg1GJhzci0T5IiDWxrLgy9xCjBAezkgivH6tDkBBvSmJlVWpRfnxRaU5q8SHG
-	ZKA/JzJLiSbnA5NTXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFw
-	SjUwpsy6ai4dza7uV3fOwol31mqWffm9dZM5Ipp78yqMt08Q0Vr7eoFug52h6GrGUhfN98G9
-	ShYHbHlX15SJBbxzFckv2fdq7uw/5zIjRHx/PHn/OjsqROv9uYceDy5dWrpF5TXHAm3GgM/N
-	vCa3T85lco3lCufOrH9ayp9R3fs/3253gtStZ01KLMUZiYZazEXFiQCiq9R9RAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753643Ab3IWJps (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 05:45:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64657 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753197Ab3IWJpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 05:45:46 -0400
+From: Bart Kuivenhoven <bemk@redhat.com>
+To: matt.fleming@intel.com
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jcm@redhat.com, msalter@redhat.com, Bart Kuivenhoven <bemk@redhat.com>
+Subject: [PATCH] x86 efi: bugfix interrupt disabling sequence
+Date: Mon, 23 Sep 2013 11:45:28 +0200
+Message-Id: <1379929528-7534-1-git-send-email-bemk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the wrapper function for retrieving the platform data instead of
-accessing dev->platform_data directly. This is a cosmetic change
-to make the code simpler and enhance the readability.
+The problem in efi_main was that the idt was cleared before the
+interrupts were disabled.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+The UEFI spec states that interrupts aren't used so this shouldn't be
+too much of a problem. Peripherals however don't necessarily know about
+this and thus might cause interrupts to happen anyway. Even if
+ExitBootServices() has been called.
+
+This means there is a risk of an interrupt being triggered while the IDT
+register is nullified and the interrupt bit hasn't been cleared,
+allowing for a triple fault.
+
+This patch disables the interrupt flag, while leaving the existing IDT
+in place. The CPU won't care about the IDT at all as long as the
+interrupt bit is off, so it's safe to leave it in place as nothing will
+ever happen to it.
+
+Signed-off-by: Bart Kuivenhoven <bemk@redhat.com>
 ---
- drivers/rtc/rtc-ds1307.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/boot/compressed/eboot.c | 15 +--------------
+ 1 file changed, 1 insertion(+), 14 deletions(-)
 
-diff --git a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
-index e8ac439..bd94920 100644
---- a/drivers/rtc/rtc-ds1307.c
-+++ b/drivers/rtc/rtc-ds1307.c
-@@ -672,7 +672,7 @@ static int ds1307_probe(struct i2c_client *client,
- 	struct i2c_adapter	*adapter = to_i2c_adapter(client->dev.parent);
- 	int			want_irq = false;
- 	unsigned char		*buf;
--	struct ds1307_platform_data *pdata = client->dev.platform_data;
-+	struct ds1307_platform_data *pdata = dev_get_platdata(&client->dev);
- 	static const int	bbsqi_bitpos[] = {
- 		[ds_1337] = 0,
- 		[ds_1339] = DS1339_BIT_BBSQI,
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index b7388a4..689b1ba 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -1188,17 +1188,6 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
+ 		goto fail;
+ 	}
+ 
+-	status = efi_call_phys3(sys_table->boottime->allocate_pool,
+-				EFI_LOADER_DATA, sizeof(*idt),
+-				(void **)&idt);
+-	if (status != EFI_SUCCESS) {
+-		efi_printk("Failed to alloc mem for idt structure\n");
+-		goto fail;
+-	}
+-
+-	idt->size = 0;
+-	idt->address = 0;
+-
+ 	/*
+ 	 * If the kernel isn't already loaded at the preferred load
+ 	 * address, relocate it.
+@@ -1267,10 +1256,8 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
+ 	desc->base2 = 0x00;
+ #endif /* CONFIG_X86_64 */
+ 
+-	asm volatile ("lidt %0" : : "m" (*idt));
+-	asm volatile ("lgdt %0" : : "m" (*gdt));
+-
+ 	asm volatile("cli");
++	asm volatile ("lgdt %0" : : "m" (*gdt));
+ 
+ 	return boot_params;
+ fail:
 -- 
-1.7.10.4
-
+1.8.4
 
