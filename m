@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab3IWVZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:25:07 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:38756 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753004Ab3IWVZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754207Ab3IWVZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:25:11 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:65349 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752809Ab3IWVZD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Sep 2013 17:25:03 -0400
-Message-Id: <20130923212501.185052551@asylum.americas.sgi.com>
-References: <20130923212459.544517569@asylum.americas.sgi.com>
-User-Agent: quilt/0.46-1
-Date: Mon, 23 Sep 2013 16:25:06 -0500
-From: Mike Travis <travis@sgi.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7] x86/UV: Add uvtrace support
-Content-Disposition: inline; filename=uv-add-trace-support.patch
+MIME-Version: 1.0
+In-Reply-To: <20130921235217.GB12132@localhost.localdomain>
+References: <20130920153400.GA32516@www.outflux.net>
+	<20130921235217.GB12132@localhost.localdomain>
+Date: Mon, 23 Sep 2013 14:25:01 -0700
+X-Google-Sender-Auth: 7YOTbVmWPz7Cz8N2YbPy-uGa5Jk
+Message-ID: <CAGXu5jJcMjh+_40rFgY3+J3w1p_PfHWNjv_NP5U79teHJDfqYg@mail.gmail.com>
+Subject: Re: [PATCH RESEND] printk: report boot console names during cut-over
+From: Kees Cook <keescook@chromium.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the uvtrace module by providing a skeleton
-call to the registered trace function.  It also provides another separate
-'NMI' tracer that is triggered by the system wide 'power nmi' command.
+On Sat, Sep 21, 2013 at 4:52 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Fri, Sep 20, 2013 at 08:34:01AM -0700, Kees Cook wrote:
+>> This reports the names of boot consoles as they're being disabled to
+>> help identify which is which during cut-over. Helps answer the question
+>> "which boot console actually got activated?" once the regular console
+>> is running, mostly when debugging boot console failures.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  kernel/printk/printk.c |   16 ++++++++++------
+>>  1 file changed, 10 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+>> index b4e8500..0dc54c9 100644
+>> --- a/kernel/printk/printk.c
+>> +++ b/kernel/printk/printk.c
+>> @@ -2361,14 +2361,18 @@ void register_console(struct console *newcon)
+>>       if (bcon &&
+>>           ((newcon->flags & (CON_CONSDEV | CON_BOOT)) == CON_CONSDEV) &&
+>>           !keep_bootcon) {
+>> -             /* we need to iterate through twice, to make sure we print
+>> -              * everything out, before we unregister the console(s)
+>> +             /* We need to iterate through all boot consoles, to make
+>> +              * sure we print everything out, before we unregister them.
+>>                */
+>> -             printk(KERN_INFO "console [%s%d] enabled, bootconsole disabled\n",
+>> -                     newcon->name, newcon->index);
+>> -             for_each_console(bcon)
+>> -                     if (bcon->flags & CON_BOOT)
+>> +             for_each_console(bcon) {
+>> +                     if (bcon->flags & CON_BOOT) {
+>> +                             printk(KERN_INFO "console [%s%d] enabled, "
+>> +                                     "bootconsole [%s%d] disabled\n",
+>> +                                     newcon->name, newcon->index,
+>> +                                     bcon->name, bcon->index);
+>>                               unregister_console(bcon);
+>
+> Looks useful! But I think the "console %foo disabled" message should move to unregister_console()
+> instead. That way it also handles printk_late_init() and all other console unregisters.
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
-Reviewed-by: Hedi Berriche <hedi@sgi.com>
----
- arch/x86/include/asm/uv/uv.h  |    8 ++++++++
- arch/x86/platform/uv/uv_nmi.c |   13 ++++++++++++-
- 2 files changed, 20 insertions(+), 1 deletion(-)
+Yeah, that's a much cleaner way to do this. I'll send a new patch. Thanks!
 
---- linux.orig/arch/x86/include/asm/uv/uv.h
-+++ linux/arch/x86/include/asm/uv/uv.h
-@@ -14,6 +14,13 @@ extern void uv_cpu_init(void);
- extern void uv_nmi_init(void);
- extern void uv_register_nmi_notifier(void);
- extern void uv_system_init(void);
-+extern void (*uv_trace_nmi_func)(unsigned int reason, struct pt_regs *regs);
-+extern void (*uv_trace_func)(const char *f, const int l, const char *fmt, ...);
-+#define uv_trace(fmt, ...)						\
-+do {									\
-+	if (unlikely(uv_trace_func))					\
-+		(uv_trace_func)(__func__, __LINE__, fmt, ##__VA_ARGS__);\
-+} while (0)
- extern const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 						 struct mm_struct *mm,
- 						 unsigned long start,
-@@ -26,6 +33,7 @@ static inline enum uv_system_type get_uv
- static inline int is_uv_system(void)	{ return 0; }
- static inline void uv_cpu_init(void)	{ }
- static inline void uv_system_init(void)	{ }
-+static inline void uv_trace(void *fmt, ...)	{ }
- static inline void uv_register_nmi_notifier(void) { }
- static inline const struct cpumask *
- uv_flush_tlb_others(const struct cpumask *cpumask, struct mm_struct *mm,
---- linux.orig/arch/x86/platform/uv/uv_nmi.c
-+++ linux/arch/x86/platform/uv/uv_nmi.c
-@@ -1,5 +1,5 @@
- /*
-- * SGI NMI support routines
-+ * SGI NMI/TRACE support routines
-  *
-  *  This program is free software; you can redistribute it and/or modify
-  *  it under the terms of the GNU General Public License as published by
-@@ -39,6 +39,13 @@
- #include <asm/uv/uv_hub.h>
- #include <asm/uv/uv_mmrs.h>
- 
-+void (*uv_trace_func)(const char *f, const int l, const char *fmt, ...);
-+EXPORT_SYMBOL(uv_trace_func);
-+
-+void (*uv_trace_nmi_func)(unsigned int reason, struct pt_regs *regs);
-+EXPORT_SYMBOL(uv_trace_nmi_func);
-+
-+
- /*
-  * UV handler for NMI
-  *
-@@ -592,6 +599,10 @@ int uv_handle_nmi(unsigned int reason, s
- 		return NMI_DONE;
- 	}
- 
-+	/* Call possible NMI trace function */
-+	if (unlikely(uv_trace_nmi_func))
-+		(uv_trace_nmi_func)(reason, regs);
-+
- 	/* Indicate we are the first CPU into the NMI handler */
- 	master = (atomic_read(&uv_nmi_cpu) == cpu);
- 
+-Kees
 
 -- 
+Kees Cook
+Chrome OS Security
