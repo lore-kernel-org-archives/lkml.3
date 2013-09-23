@@ -1,138 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab3IWKo2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 06:44:28 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:55628 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab3IWKo1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 06:44:27 -0400
-Message-ID: <52401AB2.8000605@huawei.com>
-Date: Mon, 23 Sep 2013 18:40:50 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1753603Ab3IWKqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 06:46:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56845 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752597Ab3IWKqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 06:46:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,961,1371106800"; 
+   d="scan'208";a="364240272"
+Date: Mon, 23 Sep 2013 13:52:18 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 1/2] gpio / ACPI: register to ACPI events automatically
+Message-ID: <20130923105218.GD28875@intel.com>
+References: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CACRpkdZ4WNmt5ZO_+Wtpm0+GD4EMAK5VscV-cTN+43heF17FJg@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Ralf Baechle <ralf@linux-mips.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-mips@linux-mips.org>,
-        <linux-s390@vger.kernel.org>, <sparclinux@vger.kernel.org>,
-        <x86@kernel.org>, <linux-parisc@vger.kernel.org>
-Subject: [Resend with ACK][PATCH] mm/arch: use NUMA_NO_NODE
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZ4WNmt5ZO_+Wtpm0+GD4EMAK5VscV-cTN+43heF17FJg@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use more appropriate NUMA_NO_NODE instead of -1 in all archs' module_alloc()
+On Fri, Sep 20, 2013 at 09:08:57PM +0200, Linus Walleij wrote:
+> On Fri, Sep 13, 2013 at 5:14 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> 
+> > Instead of asking each driver to register to the ACPI events we can just
+> > call acpi_gpiochip_register_interrupts() for each chip that has ACPI
+> > handle. It checks chip->to_irq and if it is set to NULL (a GPIO driver that
+> > doesn't do interrupts) the function does nothing.
+> >
+> > Also make the event interface to be private to gpiolib-acpi and remove call
+> > to the API from the one existing user (pinctrl-baytrail.c).
+> >
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> The concept looks sane...
+> 
+> > +void acpi_gpiochip_add(struct gpio_chip *chip)
+> > +{
+> > +       acpi_gpiochip_request_interrupts(chip);
+> > +}
+> > +EXPORT_SYMBOL_GPL(acpi_gpiochip_add);
+> > +
+> > +void acpi_gpiochip_remove(struct gpio_chip *chip)
+> > +{
+> > +       acpi_gpiochip_free_interrupts(chip);
+> > +}
+> > +EXPORT_SYMBOL_GPL(acpi_gpiochip_remove);
+> 
+> If you're only going to call this from within gpiolib, why are
+> you EXPORTing the APIs?
+> 
+> I think we should maybe create drivers/gpio/gpiolib.h
+> for such subsystem-local headers.
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
----
- arch/arm/kernel/module.c    |    2 +-
- arch/arm64/kernel/module.c  |    2 +-
- arch/mips/kernel/module.c   |    2 +-
- arch/parisc/kernel/module.c |    2 +-
- arch/s390/kernel/module.c   |    2 +-
- arch/sparc/kernel/module.c  |    2 +-
- arch/x86/kernel/module.c    |    2 +-
- 7 files changed, 7 insertions(+), 7 deletions(-)
+Good point. Will do that in the next version.
 
-diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
-index 85c3fb6..8f4cff3 100644
---- a/arch/arm/kernel/module.c
-+++ b/arch/arm/kernel/module.c
-@@ -40,7 +40,7 @@
- void *module_alloc(unsigned long size)
- {
- 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
--				GFP_KERNEL, PAGE_KERNEL_EXEC, -1,
-+				GFP_KERNEL, PAGE_KERNEL_EXEC, NUMA_NO_NODE,
- 				__builtin_return_address(0));
- }
- #endif
-diff --git a/arch/arm64/kernel/module.c b/arch/arm64/kernel/module.c
-index ca0e3d5..8f898bd 100644
---- a/arch/arm64/kernel/module.c
-+++ b/arch/arm64/kernel/module.c
-@@ -29,7 +29,7 @@
- void *module_alloc(unsigned long size)
- {
- 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
--				    GFP_KERNEL, PAGE_KERNEL_EXEC, -1,
-+				    GFP_KERNEL, PAGE_KERNEL_EXEC, NUMA_NO_NODE,
- 				    __builtin_return_address(0));
- }
- 
-diff --git a/arch/mips/kernel/module.c b/arch/mips/kernel/module.c
-index 977a623..b507e07 100644
---- a/arch/mips/kernel/module.c
-+++ b/arch/mips/kernel/module.c
-@@ -46,7 +46,7 @@ static DEFINE_SPINLOCK(dbe_lock);
- void *module_alloc(unsigned long size)
- {
- 	return __vmalloc_node_range(size, 1, MODULE_START, MODULE_END,
--				GFP_KERNEL, PAGE_KERNEL, -1,
-+				GFP_KERNEL, PAGE_KERNEL, NUMA_NO_NODE,
- 				__builtin_return_address(0));
- }
- #endif
-diff --git a/arch/parisc/kernel/module.c b/arch/parisc/kernel/module.c
-index 2a625fb..50dfafc 100644
---- a/arch/parisc/kernel/module.c
-+++ b/arch/parisc/kernel/module.c
-@@ -219,7 +219,7 @@ void *module_alloc(unsigned long size)
- 	 * init_data correctly */
- 	return __vmalloc_node_range(size, 1, VMALLOC_START, VMALLOC_END,
- 				    GFP_KERNEL | __GFP_HIGHMEM,
--				    PAGE_KERNEL_RWX, -1,
-+				    PAGE_KERNEL_RWX, NUMA_NO_NODE,
- 				    __builtin_return_address(0));
- }
- 
-diff --git a/arch/s390/kernel/module.c b/arch/s390/kernel/module.c
-index 7845e15..b89b591 100644
---- a/arch/s390/kernel/module.c
-+++ b/arch/s390/kernel/module.c
-@@ -50,7 +50,7 @@ void *module_alloc(unsigned long size)
- 	if (PAGE_ALIGN(size) > MODULES_LEN)
- 		return NULL;
- 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
--				    GFP_KERNEL, PAGE_KERNEL, -1,
-+				    GFP_KERNEL, PAGE_KERNEL, NUMA_NO_NODE,
- 				    __builtin_return_address(0));
- }
- #endif
-diff --git a/arch/sparc/kernel/module.c b/arch/sparc/kernel/module.c
-index 4435488..97655e0 100644
---- a/arch/sparc/kernel/module.c
-+++ b/arch/sparc/kernel/module.c
-@@ -29,7 +29,7 @@ static void *module_map(unsigned long size)
- 	if (PAGE_ALIGN(size) > MODULES_LEN)
- 		return NULL;
- 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
--				GFP_KERNEL, PAGE_KERNEL, -1,
-+				GFP_KERNEL, PAGE_KERNEL, NUMA_NO_NODE,
- 				__builtin_return_address(0));
- }
- #else
-diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
-index 216a4d7..18be189 100644
---- a/arch/x86/kernel/module.c
-+++ b/arch/x86/kernel/module.c
-@@ -49,7 +49,7 @@ void *module_alloc(unsigned long size)
- 		return NULL;
- 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
- 				GFP_KERNEL | __GFP_HIGHMEM, PAGE_KERNEL_EXEC,
--				-1, __builtin_return_address(0));
-+				NUMA_NO_NODE, __builtin_return_address(0));
- }
- 
- #ifdef CONFIG_X86_32
--- 
-1.7.1
+> > @@ -1221,6 +1222,7 @@ int gpiochip_add(struct gpio_chip *chip)
+> >  #endif
+> >
+> >         of_gpiochip_add(chip);
+> > +       acpi_gpiochip_add(chip);
+> >
+> >         if (status)
+> >                 goto fail;
+> > @@ -1262,6 +1264,7 @@ int gpiochip_remove(struct gpio_chip *chip)
+> >
+> >         gpiochip_remove_pin_ranges(chip);
+> >         of_gpiochip_remove(chip);
+> > +       acpi_gpiochip_remove(chip);
+> 
+> What happens on a platform that is not using CONFIG_GPIO_ACPI
+> when they try to compile this?
+> 
+> You forgot to add static inline stubs for the non-ACPI case.
 
-
+This patch adds them to <linux/acpi_gpio.h> which is included from
+gpiolib.c.
