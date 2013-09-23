@@ -1,154 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab3IWMqk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 08:46:40 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:53370 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab3IWMqj (ORCPT
+	id S1753761Ab3IWMrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 08:47:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55970 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753641Ab3IWMrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 08:46:39 -0400
+	Mon, 23 Sep 2013 08:47:04 -0400
+Message-ID: <52403845.5020002@free-electrons.com>
+Date: Mon, 23 Sep 2013 14:47:01 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20130923090100.GE6192@mwanda>
-References: <20130923090100.GE6192@mwanda>
-Date: Mon, 23 Sep 2013 14:46:38 +0200
-Message-ID: <CA+MoWDpwx_2kh9bEARh4D5xzyYhWekAceipf0YN=3a+Q5W4eNQ@mail.gmail.com>
-Subject: Re: checkpatch guide for newbies
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hector Palacios <hector.palacios@digi.com>
+CC: Jonathan Cameron <jic23@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        "marex@denx.de" <marex@denx.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: [PATCH v3 2/5] ARM: dts: add reference voltage property for MXS
+ LRADC
+References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com>  <1374501843-19651-3-git-send-email-hector.palacios@digi.com>  <520AA3CD.1040008@kernel.org> <1376491467.18617.41.camel@hornet>  <52153B8E.7050309@free-electrons.com>  <df6d000d-c918-48ec-958c-c8529ae1b75f@email.android.com> <1377190299.2626.9.camel@hornet> <5217E999.7020408@kernel.org>
+In-Reply-To: <5217E999.7020408@kernel.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 11:01 AM, Dan Carpenter
-<dan.carpenter@oracle.com> wrote:
-> I've written a checkpatch guide for newbies because it seems like they
-> make the same mistakes over and over.  I intend to put it under
-> Documentation/.  Could you look it over?
->
->
->                 Introduction
->
-> This document is aimed at new kernel contributors using "checkpatch.pl --file".
->
-> The first thing to remember is that the aim is not to get rid of every
-> checkpatch.pl warning; the aim is to make the code cleaner and more readable.
-> The other thing to remember is that checkpatch.pl is not a very smart tool and
-> there are mistakes that it misses so keep your eyes open for those as well.
->
-> For example, checkpatch.pl could warn about a badly formatted warning message.
-> Ask yourself, is the warning message is clear?  Is it needed?  Could a
-> non-privileged user trigger the warning and flood the syslog?  Are there
-> spelling mistakes?  Since Checkpatch.pl has flagged the line as sloppy code,
-> there may be multiple mistakes.
->
-> In the Linux kernel, we take an enormous pride in our work and we want clean
-> code.  But the one major drawback to cleanup patches is that they break
-> "git blame" so it's not a good idea for newbies to send very trivial cleanup
-> patches to the kernel/ directory.  It's better to get a little experience in the
-> drivers/ directory first.  The drivers/staging/ directory in particular always
-> needs cleanup patches.
->
->
->                 General Hints
->
-> 1)  Don't put too many things in one patch because it makes it hard to review.
-> Break the patch up into a patch series like this made up example:
->
-> [PATCH 1/4] subsystem: driver: Use tabs to indent instead of spaces
-> [PATCH 2/4] subsystem: driver: Add spaces around math operations
-> [PATCH 3/4] subsystem: driver: Remove extra braces
-> [PATCH 4/4] subsystem: driver: Delete LINUX_VERSION_CODE related code
->
->
->                 Long Lines
->
-> Historically screens were 80 characters wide and it was annoying when code went
-> over the edge.  These days we have larger screens, but we keep the 80 character
-> limit because it forces us to write simpler code.
->
-> One way to remove indent levels is using functions.  If you find yourself
-> writing a loop or a switch statement and you're already indented several tabs
-> then probably it should be a new function instead.
->
-> Whenever possible return immediately.
-> Bad:
-> -       foo = kmalloc();
-> -       if (foo) {
-> -               /* code indent 2 tabs */
-> -       }
-> -       return foo;
-> Good:
-> +       foo = kmalloc();
-> +       if (!foo)
-> +               return NULL;
-> +       /* code indented 1 tab */
-> +       return foo;
->
-> Choose shorter names.
-> Bad:
-> -       for(uiIpv6AddIndex = 0; uiIpv6AddIndex < uiIpv6AddrNoLongWords;
-> -           uiIpv6AddIndex++) {
-> Good:
-> +       for (i = 0; i < long_words; i++) {
->
-> Use temporary variable names:
-> Bad:
-> -       dev->backdev[count]->bitlistsize =
-> -               dev->backdev[count]->devmagic->bitlistsize;
-> Good:
-> +       back = dev->backdev[count];
-> +       back->bitlistsize = back->devmagic->bitlistsize;
->
-> Don't do complicated things in the initializer:
-> Bad:
-> -       struct binder_ref_death *tmp_death = container_of(w,
-> -                                               struct binder_ref_death, work);
-> Good:
-> +       struct binder_ref_death *tmp_death;
-> +
-> +       tmp_death = container_of(w, struct binder_ref_death, work);
->
-> If you must break up a long line then align it nicely.  Use spaces if needed.
-> Bad:
-> -       if (adapter->flowcontrol == FLOW_RXONLY ||
-> -                       adapter->flowcontrol == FLOW_BOTH) {
-> Good:
-> +       if (adapter->flowcontrol == FLOW_RXONLY ||
-> +           adapter->flowcontrol == FLOW_BOTH) {
+Hector,
 
-I needed this yesterday. I was not comfortable using spaces and I did
-not know where the second line should begin.
+I'd like to go forward with this and have a chance to see that included
+in 3.13. Do you mind if I rework your patch series by removing the DT
+part and then resubmit ?
+
+Regards,
 
 
+On 24/08/2013 01:00, Jonathan Cameron wrote:
+> On 08/22/13 17:51, Pawel Moll wrote:
+>> On Thu, 2013-08-22 at 07:17 +0100, Jonathan Cameron wrote:
+>>> I would favour option 2 though some of the discussions going on at the moment about
+>>> bindings might result in a generic description of this and any other bits of
+>>>  analog front end.
+>> Any link to this discussion? devicetree@vger.kernel.org doesn't seem to
+>> be involved (of course I may have simply missed the thread ;-)
+> Some cc's dropped off the discussion at some point that should have been there
+> and the topic has 'wandered' somewhat from where it started.
 >
-> It's preferred if the operator goes at the end of the first line instead of at
-> the start of the second line:
-> Bad:
-> -       PowerData = (1 << 31) | (0 << 30) | (24 << 24)
-> -                   | BitReverse(w89rf242_txvga_data[i][0], 24);
-> Good:
-> +       PowerData = (1 << 31) | (0 << 30) | (24 << 24) |
-> +                   BitReverse(w89rf242_txvga_data[i][0], 24);
-What is the rule for where to start the second line here?
-
-
+> https://lkml.org/lkml/2013/8/21/409
 >
+> and the couple of messages after that are probably the most relevant.
 >
->                 Writing the Changelog
->
-> Use the word "cleanup" instead of "fix".  "Fix" implies the runtime changed and
-> it fixes a bug.  "Cleanup" implies that runtime stayed exactly the same.
->
+> Speaking of which the devicetree list on here was the old one, I've just switched
+> to the vger list you suggest above.
 >
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+>> Paweł
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
 
 
 -- 
-Peter
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
