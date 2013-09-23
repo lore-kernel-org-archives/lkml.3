@@ -1,51 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab3IWV6j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:58:39 -0400
-Received: from void.printf.net ([89.145.121.20]:35556 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571Ab3IWV6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:58:38 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Grant Grundler <grundler@chromium.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, Seungwon Jeon <tgih.jun@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: core: remove dead function mmc_try_claim_host
-References: <1379640096-32383-1-git-send-email-grundler@chromium.org>
-	<CAPDyKFrLpVGp4qmObJ1w2pufDTPQ0ssLRxFpRYHUtMq9Vu9KMA@mail.gmail.com>
-	<CANEJEGvEx9YFJ5iFwzqY1jQG9Y+7Fsk1GJqbx6hvveJQ-w2rPQ@mail.gmail.com>
-Date: Mon, 23 Sep 2013 22:58:34 +0100
-In-Reply-To: <CANEJEGvEx9YFJ5iFwzqY1jQG9Y+7Fsk1GJqbx6hvveJQ-w2rPQ@mail.gmail.com>
-	(Grant Grundler's message of "Mon, 23 Sep 2013 14:56:47 -0700")
-Message-ID: <86zjr3ci9h.fsf@void.printf.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753380Ab3IWWBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 18:01:50 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:16260 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406Ab3IWWBs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 18:01:48 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 23 Sep 2013 14:58:14 -0700
+Message-ID: <5240BA4A.4010007@nvidia.com>
+Date: Mon, 23 Sep 2013 18:01:46 -0400
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
+        Manish Badarkhe <badarkhe.manish@gmail.com>,
+        Darbha Sriharsha <dsriharsha@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [Patch V2] drivers: power: Add support for bq24735 charger
+References: <1379607514-11200-1-git-send-email-rklein@nvidia.com> <5240B85D.3050803@wwwdotorg.org>
+In-Reply-To: <5240B85D.3050803@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On 9/23/2013 5:53 PM, Stephen Warren wrote:
+> On 09/19/2013 10:18 AM, Rhyland Klein wrote:
+>> Adding driver support for bq24735 charger chipset.
+> 
+>> diff --git a/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt b/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt
+> 
+>> +Optional properties :
+>> + - ti,ac-detect: This gpio is optionally used to read the ac adapter
+>> +   presence.
+> 
+> GPIO property names ought to end in "-gpios", i.e. "ti,ac-detect-gpios".
 
-On Mon, Sep 23 2013, Grant Grundler wrote:
-> On Fri, Sep 20, 2013 at 12:35 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->> On 20 September 2013 03:21, Grant Grundler <grundler@chromium.org> wrote:
->>> cscsope says there are no callers for mmc_try_claim_host in the kernel.
->>> No reason to keep it.
->>>
->>> Signed-off-by: Grant Grundler <grundler@chromium.org>
->>
->> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
->
-> Thank you Ulf!
->
-> In which maintainer's git tree/branch should I expect this patch to land?
->
-> Just looking for some confirmation that it was applied.
+V3 (still in the process of finishing up and testing, will have this change.
 
-I'll take this into mmc-next soon.  Thanks!
+> 
+>> + - ti,charge-current : Used to control and set the charging current. This value
+>> +   must follow the below guidelines:
+>> +	bit 0 - 5:	Not used
+>> +	bit 6:		1 = Adds 64mA of charger current
+>> +	bit 7:		1 = Adds 128mA of charger current
+>> +	bit 8:		1 = Adds 256mA of charger current
+>> +	bit 9:		1 = Adds 512mA of charger current
+>> +	bit 10:		1 = Adds 1024mA of charger current
+>> +	bit 11:		1 = Adds 2048mA of charger current
+>> +	bit 12:		1 = Adds 4096mA of charger current
+>> +	bit 13 - 15:	Not used
+> 
+> That's a little odd. Why not just put the number of mA directly into the
+> property unshifted?
 
-- Chris.
+This is how the hw register is defined, its the literal number of mA.
+This is cleaned up in the upcoming revision.
+
+> 
+>> +   Setting the value to < 128mA or > 8.128A terminates charging.
+> 
+> "terminates charging" is a driver action, not a description of HW. It's
+> fine to say that what min/max value should be specified in the property
+> for it to be valid, but not what action SW should take in response to that.
+
+This isn't sw. This is defined in the HW documentation as to what
+happens if an invalid value is used.
+
+> 
+> Those same two comments apply to other properties too.
+> 
+>> + - ti,input-current:	Used to control and set the charger input current. This
+>> +   value must follow the below guidelines:
+> 
+> What if this value is inconsistent with the charger's power consumption
+> derived from the other two properties? Is it really necessary to include
+> this property in the DT and hence create the potential for mismatch?
+> 
+
+This is a field which can be set in the device's registers. I think it
+is being used in our downstream kernel. I maintained support for these 3
+fields for the sake of completely defining the dt binding up front.
+
+-rhyland
+
+
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+nvpublic
