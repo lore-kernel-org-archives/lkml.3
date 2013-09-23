@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab3IWNfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 09:35:32 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:36694 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553Ab3IWNfb (ORCPT
+	id S1753783Ab3IWNh4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 09:37:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43200 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab3IWNhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 09:35:31 -0400
-Message-ID: <524043C5.70700@windriver.com>
-Date: Mon, 23 Sep 2013 09:36:05 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 23 Sep 2013 09:37:55 -0400
+Date: Mon, 23 Sep 2013 06:37:30 -0700
+From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
+Message-ID: <tip-cf3b425dd8d99e01214515a6754f9e69ecc6dce8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        zheng.z.yan@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        zheng.z.yan@intel.com, tglx@linutronix.de
+In-Reply-To: <1379837953-17755-1-git-send-email-zheng.z.yan@intel.com>
+References: <1379837953-17755-1-git-send-email-zheng.z.yan@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf/x86/intel:
+  Add model number for Avoton Silvermont
+Git-Commit-ID: cf3b425dd8d99e01214515a6754f9e69ecc6dce8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <kvm@vger.kernel.org>, <jan.kiszka@siemens.com>
-Subject: Re: [PATCH 0/3] KVM: Make kvm_lock non-raw
-References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com> <20130922074238.GG25202@redhat.com> <523EAFFA.6060203@redhat.com> <20130922095348.GJ25202@redhat.com>
-In-Reply-To: <20130922095348.GJ25202@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 23 Sep 2013 06:37:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-09-22 05:53 AM, Gleb Natapov wrote:
-> On Sun, Sep 22, 2013 at 10:53:14AM +0200, Paolo Bonzini wrote:
->> Il 22/09/2013 09:42, Gleb Natapov ha scritto:
->>> On Mon, Sep 16, 2013 at 04:06:10PM +0200, Paolo Bonzini wrote:
->>>> Paul Gortmaker reported a BUG on preempt-rt kernels, due to taking the
->>>> mmu_lock within the raw kvm_lock in mmu_shrink_scan.  He provided a
->>>> patch that shrunk the kvm_lock critical section so that the mmu_lock
->>>> critical section does not nest with it, but in the end there is no reason
->>>> for the vm_list to be protected by a raw spinlock.  Only manipulations
->>>> of kvm_usage_count and the consequent hardware_enable/disable operations
->>>> are not preemptable.
->>>>
->>>> This small series thus splits the kvm_lock in the "raw" part and the
->>>> "non-raw" part.
->>>>
->>>> Paul, could you please provide your Tested-by?
->>>>
->>> Reviewed-by: Gleb Natapov <gleb@redhat.com>
->>>
->>> But why should it go to stable?
->>
->> It is a regression from before the kvm_lock was made raw.  Secondarily,
-> It was made raw in 2.6.39 and commit message claims that it is done for
-> -rt sake, why regression was noticed only now?
-> 
->> it takes a much longer time before a patch hits -rt trees (can even be
->> as much as a year) and this patch does nothing on non-rt trees.  So
->> without putting it into stable it would get no actual coverage.
->>
-> The change is not completely trivial, it splits lock. There is no
-> obvious problem of course, otherwise you wouldn't send it and I
-> would ack it :), but it does not mean that the chance for problem is
-> zero, so why risk stability of stable even a little bit if the patch
-> does not fix anything in stable?
-> 
-> I do not know how -rt development goes and how it affects decisions for
-> stable acceptance, why can't they carry the patch in their tree until
-> they move to 3.12?
+Commit-ID:  cf3b425dd8d99e01214515a6754f9e69ecc6dce8
+Gitweb:     http://git.kernel.org/tip/cf3b425dd8d99e01214515a6754f9e69ecc6dce8
+Author:     Yan, Zheng <zheng.z.yan@intel.com>
+AuthorDate: Sun, 22 Sep 2013 16:19:13 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 23 Sep 2013 10:22:00 +0200
 
-The -rt tree regularly carries mainline backports that are of interest
-to -rt but perhaps not of interest to stable, so there is no problem
-doing the same with content like this, if desired.
+perf/x86/intel: Add model number for Avoton Silvermont
 
-Thanks,
-Paul.
---
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Cc: a.p.zijlstra@chello.nl
+Cc: eranian@google.com
+Cc: ak@linux.intel.com
+Link: http://lkml.kernel.org/r/1379837953-17755-1-git-send-email-zheng.z.yan@intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-> 
-> --
-> 			Gleb.
-> 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 9db76c3..f31a165 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2325,6 +2325,7 @@ __init int intel_pmu_init(void)
+ 		break;
+ 
+ 	case 55: /* Atom 22nm "Silvermont" */
++	case 77: /* Avoton "Silvermont" */
+ 		memcpy(hw_cache_event_ids, slm_hw_cache_event_ids,
+ 			sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, slm_hw_cache_extra_regs,
