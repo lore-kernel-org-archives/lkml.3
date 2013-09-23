@@ -1,72 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab3IWU6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 16:58:38 -0400
-Received: from gate.crashing.org ([63.228.1.57]:45053 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752832Ab3IWU6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 16:58:37 -0400
-Message-ID: <1379969837.11249.24.camel@pasglop>
-Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 24 Sep 2013 06:57:17 +1000
-In-Reply-To: <5240819F.4050903@tilera.com>
-References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
-	 <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
-	 <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
-	 <20130920162603.GA30381@localhost.localdomain>
-	 <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
-	 <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
-	 <1379799901.24090.6.camel@pasglop>	<523E4F8A.7020708@zytor.com>
-	 <1379824754.24090.11.camel@pasglop>	<1379824861.24090.12.camel@pasglop>
-	 <20130922162410.GA10649@laptop.programming.kicks-ass.net>
-	 <1379887000.24090.19.camel@pasglop>
-	 <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
-	 <5240819F.4050903@tilera.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753848Ab3IWVBO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:01:14 -0400
+Received: from mail-ye0-f171.google.com ([209.85.213.171]:41838 "EHLO
+	mail-ye0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab3IWVBM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 17:01:12 -0400
+Date: Mon, 23 Sep 2013 18:00:49 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth 2013-09-23
+Message-ID: <20130923210049.GG18215@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-23 at 13:59 -0400, Chris Metcalf wrote:
-> We just came up against this on tilegx with a customer bug report in a
-> PREEMPT environment.  On tile, %tp is a GPR that points to the percpu area.
-> The following seems to be the right abstraction -- though I'd also argue
-> that letting barrier() clobber not just memory, but %tp, might be a better
-> solution, but it's not clear what the best way is to do per-architecture
-> overrides of per-compiler definitions like barrier().  See also the ARM v7
-> code, which has to do something similar, though their percpu pointer is
-> not a GPR, which changes the tradeoffs somewhat.
 
-Hrm, if I read correctly what you did is that you read "tp" into another
-register *and* also mark that action as clobbering the top int on the stack ?
+--y0ulUmNC+osPPQO6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I don't quite get what the stack clobber brings you here and how it works
-around the fact that gcc might still cache that copy of tp into another
-register accross preempt_enable/disable...
+Hi John,
 
-It's hard to tell with gcc ... the best I've had so far as an option was
-something that would mark my per-cpu register (r13) *itself* as clobbered...
+First Bluetooth fixes to 3.12, it includes:
 
-Cheers,
-Ben.
+* 3 patches to add device id for 3 new hardwares.
+
+* 2 patches from Johan to fix the rfkill behaviour during setup stage
+
+* a small clean up in the rfcomm TTY code that fixes a potential racy
+condition (by Gianluca Anzolin)
+
+* 2 fixes to proper set encryption key size and security level in the
+peripheral role of Bluetooth LE devices. (by Andre Guedes)
+
+* a fix for dealing devices where pairing is not necessary, we were keeping
+the Bluetooth ACL connection alive for too much time. (by Syam Sidhardhan)
+
+Please pull or let me know of any problems! Thanks!
 
 
+	Gustavo
+
+---
+The following changes since commit f4e1a4d3ecbb9e42bdf8e7869ee8a4ebfa27fb20:
+
+  rt2800: change initialization sequence to fix system freeze (2013-09-09 14:44:34 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+
+for you to fetch changes up to 5bcecf325378218a8e248bb6bcae96ec7362f8ef:
+
+  Bluetooth: btusb: Add support for Belkin F8065bf (2013-09-23 17:44:25 -0300)
+
+----------------------------------------------------------------
+Andre Guedes (2):
+      Bluetooth: Fix security level for peripheral role
+      Bluetooth: Fix encryption key size for peripheral role
+
+Gianluca Anzolin (1):
+      Bluetooth: don't release the port in rfcomm_dev_state_change()
+
+Johan Hedberg (2):
+      Bluetooth: Introduce a new HCI_RFKILLED flag
+      Bluetooth: Fix rfkill functionality during the HCI setup stage
+
+Ken O'Brien (1):
+      Bluetooth: btusb: Add support for Belkin F8065bf
+
+Peng Chen (1):
+      Bluetooth: Add a new PID/VID 0cf3/e005 for AR3012.
+
+Raphael Kubo da Costa (1):
+      Bluetooth: Add support for BCM20702A0 [0b05, 17cb]
+
+Syam Sidhardhan (1):
+      Bluetooth: Fix ACL alive for long in case of non pariable devices
+
+ drivers/bluetooth/ath3k.c   |  2 ++
+ drivers/bluetooth/btusb.c   |  5 +++++
+ include/net/bluetooth/hci.h |  1 +
+ net/bluetooth/hci_core.c    | 26 ++++++++++++++++++++------
+ net/bluetooth/hci_event.c   |  6 +++++-
+ net/bluetooth/l2cap_core.c  |  7 +++++++
+ net/bluetooth/rfcomm/tty.c  | 35 ++---------------------------------
+ 7 files changed, 42 insertions(+), 40 deletions(-)
+
+
+--y0ulUmNC+osPPQO6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSQKwBAAoJEPs3PUX4s20oo6QP/0R2LOHl5VRFKx7TJfKFLMLe
+ZeFGBxK2jKTA1xRGhJ4dUJ6Li6K8QpfA0TMkINk5HGmA9QMc2fO2IUF6o+I0jjlx
+j+A43w54bvG0I0xCG23sl+a3vkMUXWCXOCycZPE3a3GUCyphFwBxal6vEt3AlOQl
+gXhDzO/+DPxzTW3wPS6Am3z33q8d2IFbPZFQYC6TEPKgJw3og7Sc60pcBiZl8r0v
+8TeaT/n40IY2lBKHyhkTB3MnUJVV07F0FAnzgfg/Lp7Up5FQkPSgvq07aHYbSE6M
+S969jaNy0jN8KJk7gXF/1arwit566d1ymZRtk0At2AtUFyyaC2kLmAIS1LG8o8aB
++IZylN0N7SEstn3yjPitBEbEWjxBEJyeLn++SmHsMSspKxj0R3VKKpjogZ6jxpHY
+twhpUeIx4Ls3r3+I6u0hOornF6QydymcUs+thgEjyf+GaYj8M9OlOq3m6WDC1UL7
+64RTfq3KXQjpOw6A3ayessbmZHS7qIncfh+kcNO73+903/KyBmdDZVsnrwRrs07V
+E9m9cHiQg+TRzuncHDrD55jLKN4tICx3yf1oESBT4UrpsWlbP/9rE+nif8eQkJCj
+l4HnAA0KzsCy08zqlYh7XMMC9navDoyYR+AIZ1p1MtjNRKgXZJxT1Q5JhasAC3gr
+Gt+C8CMWPA6rH//aCnWW
+=TPFZ
+-----END PGP SIGNATURE-----
+
+--y0ulUmNC+osPPQO6--
