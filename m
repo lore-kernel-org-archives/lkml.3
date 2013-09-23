@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab3IWAXc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 20:23:32 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:44682 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210Ab3IWAXa (ORCPT
+	id S1752902Ab3IWAXu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 20:23:50 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:51373 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3IWAXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 20:23:30 -0400
-Date: Sun, 22 Sep 2013 18:23:28 -0600
-From: Linn Crosetto <linn@hp.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: matt.fleming@intel.com, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, yinghai@kernel.org,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] x86: EFI stub support for large memory maps
-Message-ID: <20130923002328.GC24764@oranje.fc.hp.com>
-References: <1377291771-21302-1-git-send-email-linn@hp.com>
- <1378487056-9857-1-git-send-email-linn@hp.com>
- <20130917201452.GI3409@console-pimps.org>
+	Sun, 22 Sep 2013 20:23:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130917201452.GI3409@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130922225809.GL856@cmpxchg.org>
+References: <1379873866-29219-1-git-send-email-felipensp@gmail.com> <20130922225809.GL856@cmpxchg.org>
+From: Felipe Pena <felipensp@gmail.com>
+Date: Sun, 22 Sep 2013 21:23:09 -0300
+Message-ID: <CA+5g0SKx-xGs1RiyDGYsCKMCzQN3QoEt+n=+Yiguk5iZs=0=oA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] arch/parisc: mm: fix uninitialized variable usage
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        linux-parisc@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Helge Deller <deller@gmx.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 09:14:52PM +0100, Matt Fleming wrote:
-> > +static efi_status_t alloc_e820ext(u32 nr_desc, struct setup_data **e820ext,
-> > +				  u32 *e820ext_size)
-> > +{
-> > +	efi_status_t status;
-> > +	unsigned long size;
-> > +
-> > +	size = sizeof(struct setup_data) +
-> > +		sizeof(struct e820entry) * nr_desc;
-> > +
-> > +	if (*e820ext && size <= *e820ext_size)
-> > +		return EFI_SUCCESS; /* Already allocated */
-> 
-> Do we actually need this check? I thought the 'prev_nr_desc' below
-> ensures we only allocate 'e820ext' if we need more memory.
+Hello Johannes,
 
-I am okay with removing the check. There is another bug in exit_boot, when
-jumping to get_map the call to get the memory map is passed the previous map
-size instead of the size of the allocated buffer. I'll make the changes and
-resend.
+On Sun, Sep 22, 2013 at 7:58 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> Hello Felipe,
+>
+> On Sun, Sep 22, 2013 at 03:17:46PM -0300, Felipe Pena wrote:
+>> The FAULT_FLAG_WRITE flag has been set based on uninitialized variable
+>
+> Oops, you are right.
+>
+>> Signed-off-by: Felipe Pena <felipensp@gmail.com>
+>> ---
+>>  arch/parisc/mm/fault.c |    5 +++--
+>>  1 file changed, 3 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/parisc/mm/fault.c b/arch/parisc/mm/fault.c
+>> index d10d27a..6b38026 100644
+>> --- a/arch/parisc/mm/fault.c
+>> +++ b/arch/parisc/mm/fault.c
+>> @@ -182,8 +182,6 @@ void do_page_fault(struct pt_regs *regs, unsigned long code,
+>>
+>>       if (user_mode(regs))
+>>               flags |= FAULT_FLAG_USER;
+>> -     if (acc_type & VM_WRITE)
+>> -             flags |= FAULT_FLAG_WRITE;
+>>  retry:
+>>       down_read(&mm->mmap_sem);
+>>       vma = find_vma_prev(mm, address, &prev_vma);
+>> @@ -201,6 +199,9 @@ good_area:
+>>       if ((vma->vm_flags & acc_type) != acc_type)
+>>               goto bad_area;
+>>
+>> +     if (acc_type & VM_WRITE)
+>> +             flags |= FAULT_FLAG_WRITE;
+>
+> Can acc_type actually change between between the first round and a
+> retry?  Otherwise, it might make sense to pull this up and place it
+> next to the flag initialization instead of pulling one flag down.
 
-> 
-> [...]
-> 
-> > @@ -1016,6 +1157,19 @@ get_map:
-> >  	if (status != EFI_SUCCESS)
-> >  		goto free_mem_map;
-> >  
-> > +	prev_nr_desc = nr_desc;
-> > +	nr_desc = size / desc_size;
-> > +	if (nr_desc > prev_nr_desc &&
-> > +	    nr_desc > ARRAY_SIZE(boot_params->e820_map)) {
-> > +		u32 nr_e820ext = nr_desc - ARRAY_SIZE(boot_params->e820_map);
-> > +
-> > +		status = alloc_e820ext(nr_e820ext, &e820ext, &e820ext_size);
-> > +		if (status != EFI_SUCCESS)
-> > +			goto free_mem_map;
-> > +
-> > +		goto get_map; /* Allocated memory, get map again */
-> > +	}
-> > +
+>From what I've analyzed, this make sense. I'll make the suggested
+changes and send another patch.
+
+Thanks.
+
+-- 
+Regards,
+Felipe Pena
