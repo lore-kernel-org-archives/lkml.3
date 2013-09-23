@@ -1,98 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab3IWUVl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 16:21:41 -0400
-Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:56212 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752378Ab3IWUVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 16:21:40 -0400
-X-TM-IMSS-Message-ID: <0a1a2d4b0000ec05@nsa.gov>
-Message-ID: <5240A2A3.4040102@tycho.nsa.gov>
-Date: Mon, 23 Sep 2013 16:20:51 -0400
-From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1753610Ab3IWUVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 16:21:48 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42744 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab3IWUVp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 16:21:45 -0400
+Message-ID: <5240A2D3.20105@wwwdotorg.org>
+Date: Mon, 23 Sep 2013 14:21:39 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: tpmdd-devel@lists.sourceforge.net,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
-        Sirrix AG <tpmdd@sirrix.com>
-Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to sysfs
- into tpm-sysfs.c
-References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com> <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com> <52408E5D.4020904@tycho.nsa.gov> <20130923193633.GA9194@obsidianresearch.com>
-In-Reply-To: <20130923193633.GA9194@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Lars Poeschel <poeschel@lemonage.de>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mark Brown <broonie@kernel.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
+        joelf@ti.com,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <522FBED9.9000305@collabora.co.uk> <5230C7F6.3080803@wwwdotorg.org> <3653629.tapNZSuWhS@lem-wkst-02> <52373B34.4060709@wwwdotorg.org> <CACRpkdY=cgtf6_eypfAAv-fvmiNgAYyz4StTgDie5THsbrcumg@mail.gmail.com>
+In-Reply-To: <CACRpkdY=cgtf6_eypfAAv-fvmiNgAYyz4StTgDie5THsbrcumg@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 03:36 PM, Jason Gunthorpe wrote:
-> On Mon, Sep 23, 2013 at 02:54:21PM -0400, Daniel De Graaf wrote:
->> On 09/23/2013 02:14 PM, Jason Gunthorpe wrote:
->>> CLASS-sysfs.c is a common idiom for linux subsystems.
->>>
->>> This pulls all the sysfs attribute functions and related code
->>> into tpm-sysfs.c. To support this change some constants are moved
->> >from tpm.c to tpm.h and __tpm_pcr_read is made non-static and is
->>> called tpm_pcr_read_dev.
->>>
->>> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
->> [...]
->>> diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
->>> index 12a4ab2..7892557 100644
->>> +++ b/drivers/char/tpm/xen-tpmfront.c
->> [...]
->>> -static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
->>> -static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
->>> -static DEVICE_ATTR(locality, S_IRUGO | S_IWUSR, tpm_show_locality,
->>> -		tpm_store_locality);
+On 09/23/2013 02:01 PM, Linus Walleij wrote:
+> On Mon, Sep 16, 2013 at 7:09 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> 
+>> Put another way, I don't believe
+>> there's any rule when writing DT bindings that states that bindings must
+>> not describe the same pin as both a GPIO and an IRQ, although admittedly
+>> that may be unusual.
+> 
+> Actually I think you've won me over here.
+> 
+> But I do not think that this shall be done at the expense of letting
+> DT-based drivers do nasty things like setting up the same GPIO
+> line as an IRQ (hammering the hardware to do that) and then
+> request the same line to be an output line and drive it, for
+> example.
+> 
+> So the state of the GPIO line has to be tracked: if it is set as
+> input and tied to an IRQ it should *not* be possible for the
+> other code path to request it and set it as output. But it should
+> be possible to set it as input again and read the value.
+> 
+> Laurent deascribed exactly the latter usecase, which is OK.
+> 
+>>> I agree with you that it would be the best if the only call would be
+>>> request_irq and the chip driver programs the HW appropriately. It would be a
+>>> dream, but unfortunately this is not possible at the moment. This is something
+>>> that Linus pointed out very very early in this whole discussion. The gpio and
+>>> irq frameworks don't share any information. The irq framework has no chance to
+>>> program the HW, because it will never find the related gpio.
+>>> For this to work the frameworks have to change (and possibly all drivers/board
+>>> files/whatever using request_irq() and/or request_gpio()) have to change.
+>>> That is something that I do not dare to do alone.
 >>
->> This patch drops the "locality" sysfs attribute from xen-tpmfront. Since
->> that attribute is currently only implemented for the xen TPM driver, it
->> is best to leave it there for now (and its show/store functions could
->> also be made static, an oversight I just noticed now). If this attribute
->> is later made available on other TPM drivers, it may need to contain
->> device-specific logic, but such an implementation is well outside the
->> scope of this series.
->
-> Okay, I see what you are talking about, the compiler didn't warn
-> because of the missing static.
->
-> This really is a core functionality. Lots of other drivers support
-> locality, but none have dared actually expose the functionality. IHMO,
-> it is a mistake to just jam a locality attribute in one driver.
->
-> Sorry, I would have said something when the driver was posted if it
-> was obvious this was hiding in there :|
+>> This is a controller-specific issue, and has nothing to do with the GPIO
+>> or IRQ frameworks. The driver for the combined irq/gpio_chip simply
+>> needs to program the HW when the IRQ is requested or set up. The Tegra
+>> driver already works this way, so there's actual proof that it is
+>> possible to do this in practice.
+> 
+> And how to you block the same line from being gpio_request()ed
+> and set as output?
 
-That's fine; it wasn't really advertised in the description, and was
-mostly added in order to demonstrate the locality security label binding
-in Xen's vtpm-stubdom.
-  
-> It looks like this driver was introduced in the 3.12 merge window, we
-> could drop the attribute, and try to merge a core supported locality
-> API in 3.13? What do you think?
->
-> But, if you say it is needed, it is easy enough to adjust this patch
-> series.
->
-> Thanks,
-> Jason
+To be honest, I really don't think this problem is terribly likely to
+occur, so I'm really not convinced that it's worth putting a lot of
+effort into solving it.
 
-If it's replaced with an alternative, I don't think the sysfs attribute
-will need to remain.  I am not aware of any clients that currently use
-this attribute.  The sysfs attribute could remain as the common interface
-for changing locality, unless you think an ioctl on /dev/tpm0 or
-something else would be preferable (the attribute was just the simplest
-way to implement locality switching at the time).
+If the problem does occur, it's trivial to see that this has happened by
+looking at /proc/interrupts and /sys/kernel/debug/gpio, assuming the
+system doesn't hang when this happens due to an interrupt storm, and if
+it does, it should be pretty easy to track down the problematic register
+write.
 
-Do you already have an idea on what the core-supported API's interface
-would be?  Making the current locality a part of the TPM device state
-would suffice for TIS and xen-tpmfront with minimal changes, but I
-haven't checked the other drivers.
+That said, I'm not outright against the kernel checking for this
+situation. I think it'd work as follows:
 
--- 
-Daniel De Graaf
-National Security Agency
+The only code that knows the correlation between the IRQ and GPIO in
+question is the combined gpio_chip/irq_chip driver. Everything /has/ to
+be driven through that driver. In some cases, an IRQ may not be related
+to any GPIO at all; there are certainly IRQ controllers which take
+inputs directly from outside the chip, but have no GPIO functionality at
+all on those signals.
+
+That driver needs to maintain some state that indicates which of its
+IRQs have been requested. Any time a GPIO request (I mean e.g.
+set_output() not request_gpio)) comes in, the request needs to be
+validated against that IRQ usage state. If there's a conflict, deny the
+GPIO request.
+
+Now, it's quite possible that the code to maintain this state and
+perform the checks will be similar/common across multiple drivers. If
+so, by all means implement the code somewhere common, and have the
+various irq_chip/gpio_chip drivers call into it.
+
+The main thing is that all of this has to be driven/controlled/enabled
+by the gpio_chip/irq_chip driver itself, not as some global/blanket
+feature of the GPIO or IRQ subsystems.
+
+Perhaps rather than having the gpio_chip/irq_chip drivers physically
+implement a function which calls this common code, they could set some
+flags/data/... in the struct gpio_chip/irq_chip indicating that they
+desire the core code that implements the error-checking to be enabled.
+That might save some levels of stack. But the key is still that the
+whole scenario is controlled by the end driver, not always assumed to
+apply by the core code.
