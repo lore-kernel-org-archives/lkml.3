@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab3IWUcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 16:32:20 -0400
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:54527 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423Ab3IWUcS (ORCPT
+	id S1753630Ab3IWUeL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 16:34:11 -0400
+Received: from smtprelay0191.hostedemail.com ([216.40.44.191]:41650 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752850Ab3IWUeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 16:32:18 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Paolo Pisati <paolo.pisati@canonical.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
+	Mon, 23 Sep 2013 16:34:09 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2540:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6119:7652:7875:9010:9108:10004:10400:10848:11232:11658:11914:12114:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: boot25_41027bb191817
+X-Filterd-Recvd-Size: 1904
+Message-ID: <1379968445.3575.60.camel@joe-AO722>
+Subject: Re: [PATCH] stable_kernel_rules.txt: Exclude networking from stable
+ rules
+From: Joe Perches <joe@perches.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: David Miller <davem@davemloft.net>, stephen@networkplumber.org,
+        netdev@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH] TTY: hvc_dcc: probe for a JTAG connection before registering
-Date: Mon, 23 Sep 2013 15:30:34 -0500
-Message-Id: <1379968234-23373-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Date: Mon, 23 Sep 2013 13:34:05 -0700
+In-Reply-To: <20130922185104.GA7515@infradead.org>
+References: <alpine.LRH.2.02.1309191229480.32035@file01.intranet.prod.int.rdu2.redhat.com>
+	 <20130919.135628.1201613770803318193.davem@davemloft.net>
+	 <alpine.LRH.2.02.1309191359300.12162@file01.intranet.prod.int.rdu2.redhat.com>
+	 <1379615474.22168.13.camel@joe-AO722> <20130922185104.GA7515@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Sun, 2013-09-22 at 11:51 -0700, Christoph Hellwig wrote:
+> This is also the preferred way to do it for XFS.  Maybe word it in a way
+> that we can easily add subsystems.
+> 
+> To me it generally seems to be the best way to do it - having random Ccs
+> and lots of stable trees doesn't seem like a very good way of handling
+> it.
 
-Enabling the ARM DCC console and using without a JTAG connection will
-simply hang the system. Since distros like to turn on all options, this
-is a reoccurring problem to debug. We can do better by checking if
-anything is attached and handling characters. There is no way to probe
-this, so send a newline and check that it is handled.
+Maybe adding a mechanism to MAINTAINERS would be better.
+Maybe a default B: (backport?) of stable@vger.kernel.org
+with a per-subsystem override?
 
-Cc: Paolo Pisati <paolo.pisati@canonical.com>
-Cc: Tim Gardner <tim.gardner@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
----
- drivers/tty/hvc/hvc_dcc.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+SUBSYSTEM TYPE
+M:	maintainer@email.address
+L:	list@email.address
+S:	Supported
+F:	file/pattern/
+B:	stable@email.address
 
-diff --git a/drivers/tty/hvc/hvc_dcc.c b/drivers/tty/hvc/hvc_dcc.c
-index 44fbeba..44c8aff 100644
---- a/drivers/tty/hvc/hvc_dcc.c
-+++ b/drivers/tty/hvc/hvc_dcc.c
-@@ -86,6 +86,21 @@ static int hvc_dcc_get_chars(uint32_t vt, char *buf, int count)
- 	return i;
- }
- 
-+static bool hvc_dcc_check(void)
-+{
-+	unsigned long time = jiffies;
-+
-+	/* Write a test character to check if it is handled */
-+	__dcc_putchar('\n');
-+
-+	while (jiffies < time + (HZ / 10)) {
-+		if (!(__dcc_getstatus() & DCC_STATUS_TX))
-+			return true;
-+	}
-+
-+	return false;
-+}
-+
- static const struct hv_ops hvc_dcc_get_put_ops = {
- 	.get_chars = hvc_dcc_get_chars,
- 	.put_chars = hvc_dcc_put_chars,
-@@ -93,6 +108,9 @@ static const struct hv_ops hvc_dcc_get_put_ops = {
- 
- static int __init hvc_dcc_console_init(void)
- {
-+	if (!hvc_dcc_check())
-+		return -ENODEV;
-+
- 	hvc_instantiate(0, 0, &hvc_dcc_get_put_ops);
- 	return 0;
- }
-@@ -100,6 +118,9 @@ console_initcall(hvc_dcc_console_init);
- 
- static int __init hvc_dcc_init(void)
- {
-+	if (!hvc_dcc_check())
-+		return -ENODEV;
-+
- 	hvc_alloc(0, 0, &hvc_dcc_get_put_ops, 128);
- 	return 0;
- }
--- 
-1.8.1.2
 
