@@ -1,69 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab3IWKPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 06:15:09 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:22043 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab3IWKPG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 06:15:06 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-9b-524014a971a9
-From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-To: kgene.kim@samsung.com
-Cc: ben-linux@fluff.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        t.figa@samsung.com, m.szyprowski@samsung.com,
-        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] DT: if dt is available don't use s3c_arch_init
-Date: Mon, 23 Sep 2013 12:14:49 +0200
-Message-id: <1379931289-29384-1-git-send-email-m.krawczuk@partner.samsung.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjluLIzCtJLcpLzFFi42I5/e+xoO5KEYcgg58fdC0mrTvAZNG74Cqb
-	xdmmN+wWmx5fY7W4vGsOm8WM8/uYLG5f5rU4veYUs8XaI3fZLdbPeM3iwOXR0tzD5vF31Qtm
-	j81L6j0OvtvD5NG3ZRWjx+dNcgFsUVw2Kak5mWWpRfp2CVwZ3zZ2MxW8Z6uY3b2XqYHxHmsX
-	IyeHhICJxPsZh1ggbDGJC/fWs3UxcnEICUxnlPiz6iErhNPOJLHk6kImkCo2AXOJic82gXWI
-	CEhKNDX8YQaxmQVWMUm8nRUCYgsL2Ev8PfmODcRmEVCV+NnyjRHE5hXwk/j5rJMdYpuCxM/L
-	J9gmMHIvYGRYxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREcSs+kdjCubLA4xCjAwajEwxuR
-	aB8kxJpYVlyZe4hRgoNZSYTXj9UhSIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS
-	1OzU1ILUIpgsEwenVAPjpBYrjzgtRpMdhjc1/i6U/mV3cfP7/TuFPR5veZOhm6bZv8PygPHp
-	dsNwv545KknC18WMpLf/vxyrOsFU9W5q6R7lyU5fWv5Pl38qzr6n5qSuNk/SjogDG+er7hXb
-	v57LZtd1CzGnmeWXZ02QtUttvnOCn7ngzmL7/s1H9gY8LOM6+Pji61BxJZbijERDLeai4kQA
-	4PPVMSECAAA=
+	id S1753862Ab3IWKPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 06:15:19 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46828 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753725Ab3IWKPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 06:15:16 -0400
+Message-ID: <1379931214.11249.10.camel@pasglop>
+Subject: Re: [PATCH] powerpc/irq: Run softirqs off the top of the irq stack
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Helge Deller <deller@gmx.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Mackerras <paulus@au1.ibm.com>
+Date: Mon, 23 Sep 2013 20:13:34 +1000
+In-Reply-To: <20130923175621.e9bab9ff0e6545457666602f@canb.auug.org.au>
+References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
+	 <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
+	 <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
+	 <20130920162603.GA30381@localhost.localdomain>
+	 <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
+	 <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
+	 <1379799901.24090.6.camel@pasglop> <523E4F8A.7020708@zytor.com>
+	 <1379824754.24090.11.camel@pasglop> <1379824861.24090.12.camel@pasglop>
+	 <20130922162410.GA10649@laptop.programming.kicks-ass.net>
+	 <1379887000.24090.19.camel@pasglop>
+	 <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
+	 <1379889489.24090.34.camel@pasglop> <1379910958.6625.3.camel@pasglop>
+	 <20130923175621.e9bab9ff0e6545457666602f@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It prevents from executing platform code, when booting from device tree.
+On Mon, 2013-09-23 at 17:56 +1000, Stephen Rothwell wrote:
+> Hi Ben,
+> 
+> On Mon, 23 Sep 2013 14:35:58 +1000 Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+> >
+> > diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
+> > index c69440c..0c9646f 100644
+> > --- a/arch/powerpc/kernel/irq.c
+> > +++ b/arch/powerpc/kernel/irq.c
+> > @@ -443,46 +443,7 @@ void migrate_irqs(void)
+> >  
+> >  static inline void handle_one_irq(unsigned int irq)
+> >  {
+> > -	struct thread_info *curtp, *irqtp;
+> > -	unsigned long saved_sp_limit;
+> > -	struct irq_desc *desc;
+> > -
+> > -	desc = irq_to_desc(irq);
+> > -	if (!desc)
+> > -		return;
+> > -
+> > -	/* Switch to the irq stack to handle this */
+> > -	curtp = current_thread_info();
+> > -	irqtp = hardirq_ctx[smp_processor_id()];
+> > -
+> > -	if (curtp == irqtp) {
+> > -		/* We're already on the irq stack, just handle it */
+> > -		desc->handle_irq(irq, desc);
+> > -		return;
+> > -	}
+> > -
+> > -	saved_sp_limit = current->thread.ksp_limit;
+> > -
+> > -	irqtp->task = curtp->task;
+> > -	irqtp->flags = 0;
+> > -
+> > -	/* Copy the softirq bits in preempt_count so that the
+> > -	 * softirq checks work in the hardirq context. */
+> > -	irqtp->preempt_count = (irqtp->preempt_count & ~SOFTIRQ_MASK) |
+> > -			       (curtp->preempt_count & SOFTIRQ_MASK);
+> >  
+> > -	current->thread.ksp_limit = (unsigned long)irqtp +
+> > -		_ALIGN_UP(sizeof(struct thread_info), 16);
+> > -
+> > -	call_handle_irq(irq, desc, irqtp, desc->handle_irq);
+> > -	current->thread.ksp_limit = saved_sp_limit;
+> > -	irqtp->task = NULL;
+> > -
+> > -	/* Set any flag that may have been set on the
+> > -	 * alternate stack
+> > -	 */
+> > -	if (irqtp->flags)
+> > -		set_bits(irqtp->flags, &curtp->flags);
+> >  }
+> 
+> This function ends up as a single blank line ...
+> 
+> > @@ -519,18 +480,64 @@ void do_IRQ(struct pt_regs *regs)
+> >  	 */
+> >  	irq = ppc_md.get_irq();
+> >  
+> > -	/* We can hard enable interrupts now */
+> > +	/* We can hard enable interrupts now to allow perf interrupts */
+> >  	may_hard_irq_enable();
+> >  
+> >  	/* And finally process it */
+> > -	if (irq != NO_IRQ)
+> > -		handle_one_irq(irq);
+> 
+> then you remove the only call, so why not just remove the function
+> completely?
 
-Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/plat-samsung/init.c | 3 +++
- 1 file changed, 3 insertions(+)
+Because I'm an idiot ? :-)
 
-diff --git a/arch/arm/plat-samsung/init.c b/arch/arm/plat-samsung/init.c
-index aa9511b..0ace02d 100644
---- a/arch/arm/plat-samsung/init.c
-+++ b/arch/arm/plat-samsung/init.c
-@@ -20,6 +20,7 @@
- #include <linux/module.h>
- #include <linux/interrupt.h>
- #include <linux/ioport.h>
-+#include <linux/of.h>
- #include <linux/serial_core.h>
- #include <linux/platform_device.h>
- #include <linux/of.h>
-@@ -152,6 +153,8 @@ static int __init s3c_arch_init(void)
- {
- 	int ret;
- 
-+	if (of_have_populated_dt())
-+		return 0;
- 	// do the correct init for cpu
- 
- 	if (cpu == NULL) {
--- 
-1.8.1.2
+I moved bits and pieces to do_IRQ and forgot to remove the remainder
+(and gcc didn't warn :-)
+
+Cheers,
+Ben.
+
+
 
