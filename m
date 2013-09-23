@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab3IWTZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 15:25:58 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:63652 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab3IWTZ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 15:25:56 -0400
+	id S1752633Ab3IWTaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 15:30:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39378 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751835Ab3IWTah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 15:30:37 -0400
+Date: Mon, 23 Sep 2013 14:30:30 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Behan Webster <behanw@converseincode.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH] usb: gadget LLVMLinux: Removing the use of VLAIS from
+ the gadget driver
+Message-ID: <20130923193030.GM30811@radagast>
+Reply-To: <balbi@ti.com>
+References: <1375407344-30120-1-git-send-email-behanw@converseincode.com>
+ <52291CAF.1000504@converseincode.com>
 MIME-Version: 1.0
-In-Reply-To: <1379320326-13241-10-git-send-email-treding@nvidia.com>
-References: <1379320326-13241-1-git-send-email-treding@nvidia.com>
-	<1379320326-13241-10-git-send-email-treding@nvidia.com>
-Date: Mon, 23 Sep 2013 21:25:53 +0200
-Message-ID: <CACRpkdbLGThUTteqmEcfda7Tvc08ZFWwe=WpKMyxALQe=LZLVA@mail.gmail.com>
-Subject: Re: [PATCH 9/9] gpio: tegra: Use module_platform_driver()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zHDeOHGDnzKksZSU"
+Content-Disposition: inline
+In-Reply-To: <52291CAF.1000504@converseincode.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 10:32 AM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> With the driver core now resolving interrupt references at probe time,
-> it is no longer necessary to force explicit probe ordering using
-> initcalls.
->
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
-> Note that there are potentially many more drivers that can be switched
-> to the generic module_*_driver() interfaces now that interrupts can be
-> resolved later and deferred probe should be able to handle all the
-> ordering issues.
+--zHDeOHGDnzKksZSU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Let me see if I get this right: so this would be all GPIO/pinctrl
-drivers which are probed exclusively from the device tree
-so anything that depends explicitly on CONFIG_OF would
-be a candidate?
+Hi,
 
-I think we have a bit of a problem that some drivers depend
-only on a certain arch or compiles directly for a certain arch
-without any specific Kconfig option so that this may be a
-bit hard to spot, so we should keep an eye out for this
-once this probing scheme is in place.
+On Thu, Sep 05, 2013 at 08:07:11PM -0400, Behan Webster wrote:
+> Replying to my patch email just in case it was missed before.
 
-Yours,
-Linus Walleij
+I remember there was a discussion of not dropping variable length array
+support, wasn't there ?
+
+--=20
+balbi
+
+--zHDeOHGDnzKksZSU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSQJbWAAoJEIaOsuA1yqREIlAP/2FIdcR19mbqzFors7hEV5N8
+p1kW4HN/pTNmQiFThQ7lWHyS/dVzrOTcaG4IixaMME28CXEZTGoAfn31XB3h3q7k
+PeM4WwSDkW7DDG/EK9SUq1TsSeQiinHNWy5gUHFKHhbjyIAXDD+iGNwWFyffRYxX
+XCxp9HHWVnkYJB5O5ZYqu4snu9TmbSiA2XgMn+x1gCthsFAH4dNDP09dyRLG4moW
+Tnox2LM+ze2gHbNeP3TBX4/OJioucg90lw6286KjnqOHd85VFhNa7Mq2TKkhrwPf
+pykBTIVcF44nPJogignFqWUCP0Vgaz5TH0VuC7Q4M7yCsmVM6oWlr1L19FuVq7Z0
+5Adfug9m5+WjENk8BHA+wKMnY/36I/CHsqmkIFg3TJx9ooCngQ5KH6eLkmJwQKL1
+Y9o3W3MT/HL8iJHebfGTU8MpqmcoDZZnNdQQU63vHFKkCPTK7Vx7BwBgyVrPTDQX
+1Gh8pffgfOqTlEEIDnmFMgjM36hCJyTD7EELhfJ1zXLnSzwUfFm6WfsaNssx31OJ
+3PqYAmO5/yBziY0rope6VYWz8dmTi1ndsDKdfYSg9yih+FbfuKgEgCacFfeNVHPo
+tex8YAaVF8o7cGLEQtplKYe4GcDGPnxnc6wIycmtIdiNF1cuk90K9Xe/oYHOjOKu
+KzSjgSibCYqZj6rn5pgW
+=Q+IP
+-----END PGP SIGNATURE-----
+
+--zHDeOHGDnzKksZSU--
