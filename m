@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab3IWTOd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 15:14:33 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:37386 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab3IWTOa (ORCPT
+	id S1753021Ab3IWTPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 15:15:36 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:36828 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab3IWTPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 15:14:30 -0400
+	Mon, 23 Sep 2013 15:15:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <1379320326-13241-3-git-send-email-treding@nvidia.com>
+In-Reply-To: <52377568.6010204@gmail.com>
 References: <1379320326-13241-1-git-send-email-treding@nvidia.com>
-	<1379320326-13241-3-git-send-email-treding@nvidia.com>
-Date: Mon, 23 Sep 2013 21:14:30 +0200
-Message-ID: <CACRpkdYo8knzZ+Z-tc7fyEGwX5bt4RvMU3TR3k3UrOj0KRJocw@mail.gmail.com>
-Subject: Re: [PATCH 2/9] irqdomain: Introduce __irq_create_mapping()
+	<1379320326-13241-4-git-send-email-treding@nvidia.com>
+	<52377568.6010204@gmail.com>
+Date: Mon, 23 Sep 2013 21:15:32 +0200
+Message-ID: <CACRpkdans_2QFyjgFT-HMMG_H1o3ZUYXP9GvXuSqr-0R1Nhfbw@mail.gmail.com>
+Subject: Re: [PATCH 3/9] irqdomain: Introduce __irq_create_of_mapping()
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+To: Rob Herring <robherring2@gmail.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Wolfram Sang <wsa@the-dreams.de>,
         Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -33,33 +34,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 10:31 AM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-
-> This is a version of irq_create_mapping() that propagates the precise
-> error code instead of returning 0 for all errors. It will be used in
-> subsequent patches to allow further propagation of error codes.
+On Mon, Sep 16, 2013 at 11:17 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On 09/16/2013 03:32 AM, Thierry Reding wrote:
+>> This is a version of irq_create_of_mapping() that propagates the precise
+>> error code instead of returning 0 for all errors. It will be used in
+>> subsequent patches to allow further propagation of error codes.
+>>
+>> To avoid code duplication, implement irq_create_of_mapping() as a
+>> wrapper around the new __irq_create_of_mapping().
 >
-> To avoid code duplication, implement irq_create_mapping() as a wrapper
-> around the new __irq_create_mapping().
->
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> This function is a manageable number of callers that the callers should
+> just be updated and avoid the wrapper.
 
-Surprise! I don't like this.
-
-I think it is better to first go over the call sites and make them
-all handle negative return numbers rather than pushing the
-obscure __interface.
-
-I know from patch 0 that you think it's too much to change these
-127 call sites but I don't think so, and I'm happy to merge one
-big patch changing all the 20 users in drivers/gpio.
-
-Likewise with the 11 consumers in drivers/pinctrl.
-
-It's just a a few archs+subsystems and it's just plain work.
-
-So do that first.
+I second this and also don't want the first patch to use a wrapper.
 
 Yours,
 Linus Walleij
