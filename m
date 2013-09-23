@@ -1,124 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab3IWC3M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 22:29:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50446 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab3IWC3J (ORCPT
+	id S1753338Ab3IWCaL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 22:30:11 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:63643 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611Ab3IWCaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 22:29:09 -0400
-Date: Mon, 23 Sep 2013 12:28:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Subject: linux-next: manual merge of the omap_dss2 tree with the fbdev tree
-Message-Id: <20130923122856.0a3dbf72a44dfef1238d7a1c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__23_Sep_2013_12_28_56_+1000_aoHLZ.OH/kjfJaJ="
+	Sun, 22 Sep 2013 22:30:10 -0400
+MIME-Version: 1.0
+Date: Sun, 22 Sep 2013 22:30:08 -0400
+Message-ID: <CAHFgRy86OnOTorc8FPza4Vk4bnQL-J4JZho-GL2HZV=nCfYDRw@mail.gmail.com>
+Subject: Linus GIT - kernel BUG at include/linux/scatterlist.h:115! CPU: 1
+ PID: 1203 Comm: apparmor_parser Not tainted 3.12.0-rc1+
+From: Miles Lane <miles.lane@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        John Johansen <john.johansen@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__23_Sep_2013_12_28_56_+1000_aoHLZ.OH/kjfJaJ=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Tomi,
-
-Today's linux-next merge of the omap_dss2 tree got a conflict in
-drivers/video/atmel_lcdfb.c between commits a17c2e7b704f ("video:
-atmel_lcdfb: fix platform data struct") and 5e8be022fb5b ("video:
-atmel_lcdfb: add device tree suport") from the fbdev tree and commit
-a5d58be0796a ("video: atmel_lcdfb: use dev_get_platdata()") from the
-omap_dss2 tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/video/atmel_lcdfb.c
-index bf9c5d0,df05550..0000000
---- a/drivers/video/atmel_lcdfb.c
-+++ b/drivers/video/atmel_lcdfb.c
-@@@ -1157,30 -934,19 +1157,30 @@@ static int __init atmel_lcdfb_probe(str
-  	}
- =20
-  	sinfo =3D info->par;
- +	sinfo->pdev =3D pdev;
- +	sinfo->info =3D info;
- =20
- -	if (dev_get_platdata(dev)) {
- -		pdata_sinfo =3D dev_get_platdata(dev);
- -		sinfo->default_bpp =3D pdata_sinfo->default_bpp;
- -		sinfo->default_dmacon =3D pdata_sinfo->default_dmacon;
- -		sinfo->default_lcdcon2 =3D pdata_sinfo->default_lcdcon2;
- -		sinfo->default_monspecs =3D pdata_sinfo->default_monspecs;
- -		sinfo->atmel_lcdfb_power_control =3D pdata_sinfo->atmel_lcdfb_power_con=
-trol;
- -		sinfo->guard_time =3D pdata_sinfo->guard_time;
- -		sinfo->smem_len =3D pdata_sinfo->smem_len;
- -		sinfo->lcdcon_is_backlight =3D pdata_sinfo->lcdcon_is_backlight;
- -		sinfo->lcdcon_pol_negative =3D pdata_sinfo->lcdcon_pol_negative;
- -		sinfo->lcd_wiring_mode =3D pdata_sinfo->lcd_wiring_mode;
- +	INIT_LIST_HEAD(&info->modelist);
- +
- +	if (pdev->dev.of_node) {
- +		ret =3D atmel_lcdfb_of_init(sinfo);
- +		if (ret)
- +			goto free_info;
-- 	} else if (dev->platform_data) {
-++	} else if (dev_get_platdata(dev)) {
- +		struct fb_monspecs *monspecs;
- +		int i;
- +
-- 		pdata =3D dev->platform_data;
-++		pdata =3D dev_get_platdata(dev);
- +		monspecs =3D pdata->default_monspecs;
- +		sinfo->pdata =3D *pdata;
- +
- +		for (i =3D 0; i < monspecs->modedb_len; i++)
- +			fb_add_videomode(&monspecs->modedb[i], &info->modelist);
- +
- +		sinfo->config =3D atmel_lcdfb_get_config(pdev);
- +
- +		info->var.bits_per_pixel =3D pdata->default_bpp ? pdata->default_bpp : =
-16;
- +		memcpy(&info->monspecs, pdata->default_monspecs, sizeof(info->monspecs)=
-);
-  	} else {
-  		dev_err(dev, "cannot get default configuration\n");
-  		goto free_info;
-
---Signature=_Mon__23_Sep_2013_12_28_56_+1000_aoHLZ.OH/kjfJaJ=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSP6dtAAoJEECxmPOUX5FEAzUP/2UURG6Q8bxflQQKj6Dx+1Qd
-UyuEcnnxoYoGtthuWVYlnhM/eysu+0qIAdkjKhv48LEZaAh5NoaceihJvq+62+Th
-03i4x8hvtmCafM8CflctR5j4Az2D3BpOCW2rlTm0JXxdPXil6Y9I4WvivPgBJGdL
-kE4vsdIXBKO3MX6cjbf5nM3tS9BXxPQj9RXebIAb8WCSjAZruKDd/JpskWdRslVB
-3QWPoncBjiRU+yUEbVlJdJaIfmaCECOjfthJc3EWoe3eJ6cOtyXKIaYB02jho5gF
-6Ch3D7rZp9TNLEcC6O2MkXVgZGbT5XjnzYtWbL2PRz75WwUSxYHDhAHd9OthF0lw
-fEHqv8aPp8EgyfYIUOdgQ5UXvChTsNw92yrE/AUoVQF7XpiwLpgQMThc1gLAzCAA
-Xu5ueyxkv93rY+cwuBhDTyqz68lQOjDJiuWs3N3iBjEOptoolS3vL3uVNIBT//Fl
-FdKE5yBUxuOcIEe34Kr2CVhktkhEEiA/Z2Wlrbe619dnl3V5X2+qTFoBw4YfJuxy
-P7PlbfkPijmuQWOrr0yseFbordDBbItWjHEJeL1Y4bgvUQXN1WOgol4/EiVlPkeZ
-IGHawyIHQWefI1t2i/olBgI00Ryh1WUsKCDlkf38nuYYRtThqN1edn8JhOswYvnq
-W3j68c2y2lsVKryrrUAq
-=Wxz2
------END PGP SIGNATURE-----
-
---Signature=_Mon__23_Sep_2013_12_28_56_+1000_aoHLZ.OH/kjfJaJ=--
+[   27.190017] kernel BUG at include/linux/scatterlist.h:115!
+[   27.190017] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[   27.190017] Modules linked in: mxm_wmi iwldvm mac80211 iwlwifi
+cfg80211 snd_hda_intel(+) snd_hda_codec snd_hwdep snd_pcm_oss
+snd_mixer_oss hwmon snd_pcm ttm snd_seq_dummy snd_page_alloc
+snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_timer
+i915(+) snd i2c_algo_bit drm_kms_helper wmi ac drm soundcore evdev
+mac_hid i2c_core battery acpi_cpufreq ehci_pci(+) ehci_hcd asus_laptop
+rfkill intel_agp intel_gtt agpgart processor sr_mod cdrom atl1c
+uhci_hcd thermal
+[   27.190017] CPU: 1 PID: 1203 Comm: apparmor_parser Not tainted 3.12.0-rc1+ #8
+[   27.190017] Hardware name: ASUSTeK Computer Inc.         UL50VT
+         /UL50VT    , BIOS 217     03/01/2010
+[   27.190017] task: ffff8800bd99ea80 ti: ffff8800baf5a000 task.ti:
+ffff8800baf5a000
+[   27.190017] RIP: 0010:[<ffffffff811f9e71>]  [<ffffffff811f9e71>]
+sg_set_buf+0x20/0x7e
+[   27.190017] RSP: 0018:ffff8800baf5bcf8  EFLAGS: 00010246
+[   27.190017] RAX: 0000000000000000 RBX: ffff8800baf5bd70 RCX: 0000000000000024
+[   27.190017] RDX: 0000000000000410 RSI: ffffc900108ca010 RDI: 00004100108ca010
+[   27.190017] RBP: ffff8800baf5bd18 R08: ffff880138eec290 R09: 0000000000000000
+[   27.190017] R10: ffff880138ee2148 R11: 0000000000000e12 R12: ffffc900108ca010
+[   27.190017] R13: 0000000000008649 R14: ffffc900108ca010 R15: ffff880138ee0000
+[   27.190017] FS:  00007f96aaf6c740(0000) GS:ffff88013f300000(0000)
+knlGS:0000000000000000
+[   27.190017] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   27.190017] CR2: 00007f96aaf5d00f CR3: 00000000b9e7a000 CR4: 00000000000407e0
+[   27.190017] Stack:
+[   27.190017]  ffff8800b9d55520 ffff8800baf5bd70 0000000000008649
+ffffc900108ca010
+[   27.190017]  ffff8800baf5bdb8 ffffffff811f9f50 ffffffff811f3eef
+0000000538ee8000
+[   27.190017]  ffff880138c42000 ffff880000000000 0000000087654321
+ffffea0002ebd6c0
+[   27.190017] Call Trace:
+[   27.190017]  [<ffffffff811f9f50>] aa_calc_profile_hash+0x75/0x11d
+[   27.190017]  [<ffffffff811f3eef>] ? __aa_kvmalloc+0x39/0x51
+[   27.190017]  [<ffffffff811f7e34>] aa_unpack+0x929/0x969
+[   27.190017]  [<ffffffff811f6a21>] aa_replace_profiles+0x38/0x57c
+[   27.190017]  [<ffffffff811f249b>] profile_replace+0x35/0x4c
+[   27.190017]  [<ffffffff81121477>] vfs_write+0xad/0x113
+[   27.190017]  [<ffffffff81121add>] SyS_write+0x44/0x7a
+[   27.190017]  [<ffffffff8145f3e2>] system_call_fastpath+0x16/0x1b
+[   27.190017] Code: 66 89 45 fc e8 6a fc ff ff c9 c3 55 48 89 e5 41
+56 41 55 41 89 d5 41 54 49 89 f4 53 48 89 fb 48 89 f7 e8 1b 9e e3 ff
+84 c0 75 02 <0f> 0b 4c 89 e7 45 89 e6 e8 96 9e e3 ff 48 8b 53 08 41 81
+e6 ff
+[   27.190017] RIP  [<ffffffff811f9e71>] sg_set_buf+0x20/0x7e
+[   27.190017]  RSP <ffff8800baf5bcf8>
