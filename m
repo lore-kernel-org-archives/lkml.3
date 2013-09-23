@@ -1,150 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab3IWLdG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 07:33:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30374 "EHLO mga09.intel.com"
+	id S1753684Ab3IWLh2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 07:37:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56185 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753212Ab3IWLdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 07:33:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,961,1371106800"; 
-   d="scan'208";a="382177326"
-Date: Mon, 23 Sep 2013 16:12:36 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH 30/51] DMA-API: dma: dw_dmac.c: convert to use
- dma_coerce_mask_and_coherent()
-Message-ID: <20130923104236.GJ17188@intel.com>
-References: <20130919212235.GD12758@n2100.arm.linux.org.uk>
- <E1VMmBi-0007iw-MP@rmk-PC.arm.linux.org.uk>
- <1379687206.10899.5.camel@smile>
- <20130920144027.GG12758@n2100.arm.linux.org.uk>
- <CAHp75VdviE_FpEHub=W=f3reb6Dd2VVxtRkd_kYw5XC3772cTQ@mail.gmail.com>
+	id S1753212Ab3IWLh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 07:37:26 -0400
+Date: Mon, 23 Sep 2013 13:37:23 +0200
+From: Jan Kara <jack@suse.cz>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH] blktrace: Send BLK_TN_PROCESS events to all running
+ traces
+Message-ID: <20130923113723.GA9623@quack.suse.cz>
+References: <1379449831-6710-1-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHp75VdviE_FpEHub=W=f3reb6Dd2VVxtRkd_kYw5XC3772cTQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1379449831-6710-1-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 06:26:16PM +0300, Andy Shevchenko wrote:
-> On Fri, Sep 20, 2013 at 5:40 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Fri, Sep 20, 2013 at 05:26:46PM +0300, Andy Shevchenko wrote:
-> >> On Thu, 2013-09-19 at 22:55 +0100, Russell King wrote:
-> >> > This code sequence:
-> >> >     if (!pdev->dev.dma_mask) {
-> >> >             pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
-> >> >             pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-> >> >     }
-> >> > bypasses the architectures check on the DMA mask.  It can be replaced
-> >> > with dma_coerce_mask_and_coherent(), avoiding the direct initialization
-> >> > of this mask.
-> >> >
-> >> > Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> >> > ---
-> >> >  drivers/dma/dw/platform.c |    8 +++-----
-> >> >  1 files changed, 3 insertions(+), 5 deletions(-)
-> >> >
-> >> > diff --git a/drivers/dma/dw/platform.c b/drivers/dma/dw/platform.c
-> >> > index e35d975..453822c 100644
-> >> > --- a/drivers/dma/dw/platform.c
-> >> > +++ b/drivers/dma/dw/platform.c
-> >> > @@ -191,11 +191,9 @@ static int dw_probe(struct platform_device *pdev)
-> >> >     if (IS_ERR(chip->regs))
-> >> >             return PTR_ERR(chip->regs);
-> >> >
-> >> > -   /* Apply default dma_mask if needed */
-> >> > -   if (!dev->dma_mask) {
-> >> > -           dev->dma_mask = &dev->coherent_dma_mask;
-> >> > -           dev->coherent_dma_mask = DMA_BIT_MASK(32);
-> >> > -   }
-> >> > +   err = dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
-> >> > +   if (err)
-> >> > +           return err;
-> >>
-> >> I have at least one question.
-> >>
-> >> In case of new code you always assign dev->dma_mask.
-> >>
-> >> static inline int dma_coerce_mask_and_coherent(struct device *dev, u64
-> >> mask)
-> >> {
-> >>        dev->dma_mask = &dev->coherent_dma_mask;
-> >>        return dma_set_mask_and_coherent(dev, mask);
-> >> }
-> >>
-> >> So, the question is how keep the initialized dma_mask (and should we do
-> >> so by your opinion)?
-> >
-> > Well, the way the DMA mask stuff is supposed to operate is:
-> >
-> > - The device creator initializes the DMA mask to some default value.
-> > - The driver then uses dma_set_mask() / dma_set_coherent_mask() /
-> >   dma_set_mask_and_coherent() to adjust the mask according to the
-> >   capabilities of the device, *even* if the mask is the same as the
-> >   default.
-> >
-> > This is specified in the various DMA API documents.
-> >
-> > So, in PCI land, it works like this:
-> > - When a PCI device is created, it has its mask set to 32-bit.
-> > - When a driver comes along
-> >   - if the device is capable of 64-bit addressing, it tries to set a
-> >     64-bit mask.  If this fails, it tries to set a 32-bit mask and
-> >     turns off 64-bit DMA.
-> >   - if a device is not capable of 32-bit addressing but of a smaller
-> >     space (there are some PCI devices which can only do 31-bit) then
-> >     it tries to set that mask.
-> >   If the driver can't successfully set a mask, it should fail to
-> >   initialise.
-> >
+On Tue 17-09-13 22:30:31, Jan Kara wrote:
+> Currently each task sends BLK_TN_PROCESS event to the first traced
+> device it interacts with after a new trace is started. When there are
+> several traced devices and the task accesses more devices, this logic
+> can result in BLK_TN_PROCESS being sent several times to some devices
+> while it is never sent to other devices. Thus blkparse doesn't display
+> command name when parsing some blktrace files.
 > 
-> Thanks for explanation.
-> 
-> > This is where we should be headed with all drivers, and I would welcome
-> > a patch for this driver to make it conform wrt the DMA API and DMA masks
-> > in place of this patch.
-> 
-> I see.
-> 
-> > Think of the coerse stuff as a middle-step to bring these types of issues
-> > up to the fore.
-> 
-> I will check your patches on next week, though I think it will neglect
-> dma_mask set by PCI part of the code in PCI case of the driver.
-> 
-> Well, there are a lot of drivers that are designed like:
-> - core part as library *or* separate driver
-> - platform driver
-> - pci driver
-> - acpi driver
-> - ... whatever bus driver for this device
-> 
-> Core part doesn't know what the upper layer (bus layer) sets, and
-> approaches to set that may differ from bus to bus (e.g. PCI vs. ACPI
-> ).
-> So, ACPI could set the proper values from its own guts and in core
-> driver we have to respect those values.
-> 
-> Tioday is Friday, and I'm too lazy now to think a bit how this could
-> be solved in case of your helper involved.
-okay its monday now :)
+> Fix the problem by sending BLK_TN_PROCESS event to all traced devices
+> when a task interacts with any of them.
+  Jens, any opinion about this?
 
-for dw_dmac where you have core part and platform part, since the capablties of
-the *device* are known to the core part, IMO it is the job of core to set the
-correct value as Russell described.
+								Honza
 
-The platform or device creator may have set somthing else but when driver loads
-in the core part of you understand the device and should reset the values...
-
-~Vinod
-
+> 
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  include/linux/blktrace_api.h |  2 ++
+>  kernel/trace/blktrace.c      | 33 +++++++++++++++++++++++++++------
+>  2 files changed, 29 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/linux/blktrace_api.h b/include/linux/blktrace_api.h
+> index 7c2e030..a12f6ed 100644
+> --- a/include/linux/blktrace_api.h
+> +++ b/include/linux/blktrace_api.h
+> @@ -5,6 +5,7 @@
+>  #include <linux/relay.h>
+>  #include <linux/compat.h>
+>  #include <uapi/linux/blktrace_api.h>
+> +#include <linux/list.h>
+>  
+>  #if defined(CONFIG_BLK_DEV_IO_TRACE)
+>  
+> @@ -23,6 +24,7 @@ struct blk_trace {
+>  	struct dentry *dir;
+>  	struct dentry *dropped_file;
+>  	struct dentry *msg_file;
+> +	struct list_head running_list;
+>  	atomic_t dropped;
+>  };
+>  
+> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+> index b8b8560..7f727b3 100644
+> --- a/kernel/trace/blktrace.c
+> +++ b/kernel/trace/blktrace.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/export.h>
+>  #include <linux/time.h>
+>  #include <linux/uaccess.h>
+> +#include <linux/list.h>
+>  
+>  #include <trace/events/block.h>
+>  
+> @@ -38,6 +39,9 @@ static unsigned int blktrace_seq __read_mostly = 1;
+>  static struct trace_array *blk_tr;
+>  static bool blk_tracer_enabled __read_mostly;
+>  
+> +static LIST_HEAD(running_trace_list);
+> +static __cacheline_aligned_in_smp DEFINE_SPINLOCK(running_trace_lock);
+> +
+>  /* Select an alternative, minimalistic output than the original one */
+>  #define TRACE_BLK_OPT_CLASSIC	0x1
+>  
+> @@ -107,10 +111,18 @@ record_it:
+>   * Send out a notify for this process, if we haven't done so since a trace
+>   * started
+>   */
+> -static void trace_note_tsk(struct blk_trace *bt, struct task_struct *tsk)
+> +static void trace_note_tsk(struct task_struct *tsk)
+>  {
+> +	unsigned long flags;
+> +	struct blk_trace *bt;
+> +
+>  	tsk->btrace_seq = blktrace_seq;
+> -	trace_note(bt, tsk->pid, BLK_TN_PROCESS, tsk->comm, sizeof(tsk->comm));
+> +	spin_lock_irqsave(&running_trace_lock, flags);
+> +	list_for_each_entry(bt, &running_trace_list, running_list) {
+> +		trace_note(bt, tsk->pid, BLK_TN_PROCESS, tsk->comm,
+> +			   sizeof(tsk->comm));
+> +	}
+> +	spin_unlock_irqrestore(&running_trace_lock, flags);
+>  }
+>  
+>  static void trace_note_time(struct blk_trace *bt)
+> @@ -229,16 +241,15 @@ static void __blk_add_trace(struct blk_trace *bt, sector_t sector, int bytes,
+>  		goto record_it;
+>  	}
+>  
+> +	if (unlikely(tsk->btrace_seq != blktrace_seq))
+> +		trace_note_tsk(tsk);
+> +
+>  	/*
+>  	 * A word about the locking here - we disable interrupts to reserve
+>  	 * some space in the relay per-cpu buffer, to prevent an irq
+>  	 * from coming in and stepping on our toes.
+>  	 */
+>  	local_irq_save(flags);
+> -
+> -	if (unlikely(tsk->btrace_seq != blktrace_seq))
+> -		trace_note_tsk(bt, tsk);
+> -
+>  	t = relay_reserve(bt->rchan, sizeof(*t) + pdu_len);
+>  	if (t) {
+>  		sequence = per_cpu_ptr(bt->sequence, cpu);
+> @@ -477,6 +488,7 @@ int do_blk_trace_setup(struct request_queue *q, char *name, dev_t dev,
+>  	bt->dir = dir;
+>  	bt->dev = dev;
+>  	atomic_set(&bt->dropped, 0);
+> +	INIT_LIST_HEAD(&bt->running_list);
+>  
+>  	ret = -EIO;
+>  	bt->dropped_file = debugfs_create_file("dropped", 0444, dir, bt,
+> @@ -601,6 +613,9 @@ int blk_trace_startstop(struct request_queue *q, int start)
+>  			blktrace_seq++;
+>  			smp_mb();
+>  			bt->trace_state = Blktrace_running;
+> +			spin_lock_irq(&running_trace_lock);
+> +			list_add(&bt->running_list, &running_trace_list);
+> +			spin_unlock_irq(&running_trace_lock);
+>  
+>  			trace_note_time(bt);
+>  			ret = 0;
+> @@ -608,6 +623,9 @@ int blk_trace_startstop(struct request_queue *q, int start)
+>  	} else {
+>  		if (bt->trace_state == Blktrace_running) {
+>  			bt->trace_state = Blktrace_stopped;
+> +			spin_lock_irq(&running_trace_lock);
+> +			list_del_init(&bt->running_list);
+> +			spin_unlock_irq(&running_trace_lock);
+>  			relay_flush(bt->rchan);
+>  			ret = 0;
+>  		}
+> @@ -1472,6 +1490,9 @@ static int blk_trace_remove_queue(struct request_queue *q)
+>  	if (atomic_dec_and_test(&blk_probes_ref))
+>  		blk_unregister_tracepoints();
+>  
+> +	spin_lock_irq(&running_trace_lock);
+> +	list_del(&bt->running_list);
+> +	spin_unlock_irq(&running_trace_lock);
+>  	blk_trace_free(bt);
+>  	return 0;
+>  }
+> -- 
+> 1.8.1.4
+> 
 -- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
