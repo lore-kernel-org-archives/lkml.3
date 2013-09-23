@@ -1,114 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab3IWWve (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 18:51:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32561 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752716Ab3IWWvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 18:51:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,966,1371106800"; 
-   d="scan'208";a="399975158"
-Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
-From: Rob Gittins <rob.gittins@linux.intel.com>
-Reply-To: rob.gittins@linux.intel.com
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@veger.org,
-        linux-pmfs@lists.infradead.org
-In-Reply-To: <522AB5AD.6070206@vlnb.net>
-References: <1378331689.9210.11.camel@Virt-Centos-6.lm.intel.com>
-	 <522AB5AD.6070206@vlnb.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Opensource Technology Center
-Date: Mon, 23 Sep 2013 16:51:28 -0600
-Message-ID: <1379976688.5886.12.camel@Virt-Centos-6.lm.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 8bit
+	id S1753136Ab3IWWzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 18:55:06 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:54336 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab3IWWzE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 18:55:04 -0400
+From: charlebm@gmail.com
+To: balbi@ti.com
+Cc: Mark Charlebois <charlebm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Subject: [PATCH] usb: LLVMLinux: Remove VLAIS from USB gadget
+Date: Mon, 23 Sep 2013 15:53:53 -0700
+Message-Id: <1379976833-20859-1-git-send-email-charlebm@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-06 at 22:12 -0700, Vladislav Bolkhovitin wrote:
-> Rob Gittins, on 09/04/2013 02:54 PM wrote:
-> > Non-volatile DIMMs have started to become available.  A NVDIMMs is a
-> > DIMM that does not lose data across power interruptions.  Some of the
-> > NVDIMMs act like memory, while others are more like a block device
-> > on the memory bus. Application uses vary from being used to cache
-> > critical data, to being a boot device.
-> > 
-> > There are two access classes of NVDIMMs,  block mode and
-> > “load/store” mode DIMMs which are referred to as Direct Memory
-> > Mappable.
-> > 
-> > The block mode is where the DIMM provides IO ports for read or write
-> > of data.  These DIMMs reside on the memory bus but do not appear in the
-> > application address space.  Block mode DIMMs do not require any changes
-> > to the current infrastructure, since they provide IO type of interface.
-> > 
-> > Direct Memory Mappable DIMMs (DMMD) appear in the system address space
-> > and are accessed via load and store instructions.  These NVDIMMs
-> > are part of the system physical address space (SPA) as memory with
-> > the attribute that data survives a power interruption.  As such this
-> > memory is managed by the kernel which can  assign virtual addresses and
-> > mapped into application’s address space as well as being accessible
-> > by the kernel.  The area mapped into the system address space is
-> > being referred to as persistent memory (PMEM).
-> > 
-> > PMEM introduces the need for new operations in the
-> > block_device_operations to support the specific characteristics of
-> > the media.
-> > 
-> > First data may not propagate all the way through the memory pipeline
-> > when store instructions are executed.  Data may stay in the CPU cache
-> > or in other buffers in the processor and memory complex.  In order to
-> > ensure the durability of data there needs to be a driver entry point
-> > to force a byte range out to media.  The methods of doing this are
-> > specific to the PMEM technology and need to be handled by the driver
-> > that is supporting the DMMDs.  To provide a way to ensure that data is
-> > durable adding a commit function to the block_device_operations vector.
-> > 
-> >    void (*commitpmem)(struct block_device *bdev, void *addr);
-> 
-> Why to glue to the block concept for apparently not block class of devices? By pushing
-> NVDIMMs into the block model you both limiting them to block devices capabilities as
-> well as have to expand block devices by alien to them properties
-Hi Vlad,
-
-We chose to extent the block operations for a couple of reasons.  The
-majority of NVDIMM usage is by emulating block mode.  We figure that
-over time usages will appear that use them directly and then we can
-design interfaces to enable direct use.  
-
-Since a range of NVDIMM needs a name, security and other attributes mmap
-is a really good model to build on.  This quickly takes us into the
-realm of a file systems, which are easiest to build on the existing
-block infrastructure.  
-
-Another reason to extend block is that all of the existing
-administrative interfaces and tools such as mkfs still work and we have
-not added some new management tools and requirements that may inhibit
-the adoption of the technology.  Basically if it works today for block
-the same cli commands will work for NVDIMMs.
-
-The extensions are so minimal that they don't negatively impact the
-existing interfaces.
-
-Thanks,
-Rob
+From: Mark Charlebois <charlebm@gmail.com>
 
 
+The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
+precludes the use of compilers which don't implement VLAIS (for instance the
+Clang compiler). This patch removes the use of VLAIS in the gadget driver.
 
-> .
-> 
-> NVDIMMs are, apparently, a new class of devices, so better to have a new class of
-> kernel devices for them. If you then need to put file systems on top of them, just
-> write one-fit-all blk_nvmem driver, which can create a block device for all types of
-> NVDIMM devices and drivers.
-> 
-> This way you will clearly and gracefully get the best from NVDIMM devices as well as
-> won't soil block devices.
-> 
-> Vlad
+This version has been tested to compile cleanly. 
 
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+---
+ drivers/usb/gadget/f_fs.c | 128 +++++++++++++++++++++++++++-------------------
+ 1 file changed, 76 insertions(+), 52 deletions(-)
 
+--- linux.orig/drivers/usb/gadget/f_fs.c
++++ linux/drivers/usb/gadget/f_fs.c
+@@ -30,7 +30,6 @@
+ 
+ #define FUNCTIONFS_MAGIC	0xa647361 /* Chosen by a honest dice roll ;) */
+ 
+-
+ /* Debugging ****************************************************************/
+ 
+ #ifdef VERBOSE_DEBUG
+@@ -214,6 +213,8 @@
+ 	/* ids in stringtabs are set in functionfs_bind() */
+ 	const void			*raw_strings;
+ 	struct usb_gadget_strings	**stringtabs;
++	struct usb_gadget_strings	*stringtab;
++	struct usb_string		*strings;
+ 
+ 	/*
+ 	 * File system's super block, write once when file system is
+@@ -263,7 +264,10 @@
+ 
+ 	struct ffs_ep			*eps;
+ 	u8				eps_revmap[16];
++	struct usb_descriptor_header	**fs_descs;
++	struct usb_descriptor_header	**hs_descs;
+ 	short				*interfaces_nums;
++	char				*raw_descs;
+ 
+ 	struct usb_function		function;
+ };
+@@ -1345,6 +1349,8 @@
+ 	kfree(ffs->raw_descs);
+ 	kfree(ffs->raw_strings);
+ 	kfree(ffs->stringtabs);
++	kfree(ffs->stringtab);
++	kfree(ffs->strings);
+ }
+ 
+ static void ffs_data_reset(struct ffs_data *ffs)
+@@ -1357,6 +1363,8 @@
+ 	ffs->raw_descs = NULL;
+ 	ffs->raw_strings = NULL;
+ 	ffs->stringtabs = NULL;
++	ffs->stringtab = NULL;
++	ffs->strings = NULL;
+ 
+ 	ffs->raw_descs_length = 0;
+ 	ffs->raw_fs_descs_length = 0;
+@@ -1528,12 +1536,10 @@
+ 	ffs_data_put(func->ffs);
+ 
+ 	kfree(func->eps);
+-	/*
+-	 * eps and interfaces_nums are allocated in the same chunk so
+-	 * only one free is required.  Descriptors are also allocated
+-	 * in the same chunk.
+-	 */
+-
++	kfree(func->fs_descs);
++	kfree(func->hs_descs);
++	kfree(func->interfaces_nums);
++	kfree(func->raw_descs);
+ 	kfree(func);
+ }
+ 
+@@ -1877,8 +1883,9 @@
+ 				  char *const _data, size_t len)
+ {
+ 	u32 str_count, needed_count, lang_count;
+-	struct usb_gadget_strings **stringtabs, *t;
+-	struct usb_string *strings, *s;
++	struct usb_gadget_strings *t, **stringtabs = NULL;
++	struct usb_gadget_strings *stringtab = NULL;
++	struct usb_string *s, *strings = NULL;
+ 	const char *data = _data;
+ 
+ 	ENTER();
+@@ -1907,33 +1914,33 @@
+ 		return 0;
+ 	}
+ 
+-	/* Allocate everything in one chunk so there's less maintenance. */
+ 	{
+-		struct {
+-			struct usb_gadget_strings *stringtabs[lang_count + 1];
+-			struct usb_gadget_strings stringtab[lang_count];
+-			struct usb_string strings[lang_count*(needed_count+1)];
+-		} *d;
+ 		unsigned i = 0;
+-
+-		d = kmalloc(sizeof *d, GFP_KERNEL);
+-		if (unlikely(!d)) {
++		struct usb_gadget_strings **b;
++
++		stringtabs = kmalloc(sizeof(*stringtabs)*(lang_count + 1),
++			GFP_KERNEL);
++		stringtab = kmalloc(sizeof(*stringtab)*(lang_count),
++			GFP_KERNEL);
++		strings = kmalloc(sizeof(*strings)
++			* (lang_count * (needed_count + 1)), GFP_KERNEL);
++		if (unlikely(!stringtabs || !stringtab || !strings)) {
++			kfree(stringtabs);
++			kfree(stringtab);
++			kfree(strings);
+ 			kfree(_data);
+ 			return -ENOMEM;
+ 		}
+-
+-		stringtabs = d->stringtabs;
+-		t = d->stringtab;
++		b = stringtabs;
++		t = stringtab;
+ 		i = lang_count;
+ 		do {
+-			*stringtabs++ = t++;
++			*b++ = t++;
+ 		} while (--i);
+-		*stringtabs = NULL;
++		*b = NULL;
+ 
+-		stringtabs = d->stringtabs;
+-		t = d->stringtab;
+-		s = d->strings;
+-		strings = s;
++		t = stringtab;
++		s = strings;
+ 	}
+ 
+ 	/* For each language */
+@@ -1991,12 +1998,16 @@
+ 
+ 	/* Done! */
+ 	ffs->stringtabs = stringtabs;
++	ffs->stringtab = stringtab;
++	ffs->strings = strings;
+ 	ffs->raw_strings = _data;
+ 
+ 	return 0;
+ 
+ error_free:
+ 	kfree(stringtabs);
++	kfree(stringtab);
++	kfree(strings);
+ error:
+ 	kfree(_data);
+ 	return -EINVAL;
+@@ -2207,17 +2218,12 @@
+ 
+ 	int ret;
+ 
+-	/* Make it a single chunk, less management later on */
+-	struct {
+-		struct ffs_ep eps[ffs->eps_count];
+-		struct usb_descriptor_header
+-			*fs_descs[full ? ffs->fs_descs_count + 1 : 0];
+-		struct usb_descriptor_header
+-			*hs_descs[high ? ffs->hs_descs_count + 1 : 0];
+-		short inums[ffs->interfaces_count];
+-		char raw_descs[high ? ffs->raw_descs_length
+-				    : ffs->raw_fs_descs_length];
+-	} *data;
++	struct ffs_ep *eps = NULL;
++	struct usb_descriptor_header **fs_descs = NULL;
++	struct usb_descriptor_header **hs_descs = NULL;
++	short *inums = NULL;
++	char *raw_descs = NULL;
++
+ 
+ 	ENTER();
+ 
+@@ -2225,21 +2231,40 @@
+ 	if (unlikely(!(full | high)))
+ 		return -ENOTSUPP;
+ 
+-	/* Allocate */
+-	data = kmalloc(sizeof *data, GFP_KERNEL);
+-	if (unlikely(!data))
++	size_t eps_sz = sizeof(*eps)*ffs->eps_count;
++	eps = kmalloc(eps_sz, GFP_KERNEL);
++	fs_descs = kmalloc(sizeof(*fs_descs)*
++			   (full ? ffs->fs_descs_count + 1 : 0), GFP_KERNEL);
++	hs_descs = kmalloc(sizeof(*hs_descs)*
++			   (high ? ffs->hs_descs_count + 1 : 0), GFP_KERNEL);
++	size_t inums_sz = sizeof(*inums)*ffs->interfaces_count;
++	inums = kmalloc(inums_sz, GFP_KERNEL);
++	size_t raw_descs_sz = sizeof(*raw_descs)*(high ? ffs->raw_descs_length :
++					ffs->raw_fs_descs_length);
++	raw_descs = kmalloc(raw_descs_sz, GFP_KERNEL);
++
++	if (unlikely(!eps || !fs_descs || !hs_descs || !inums || !raw_descs)) {
++		kfree(eps);
++		kfree(fs_descs);
++		kfree(hs_descs);
++		kfree(inums);
++		kfree(raw_descs);
+ 		return -ENOMEM;
++	}
+ 
+ 	/* Zero */
+-	memset(data->eps, 0, sizeof data->eps);
+-	memcpy(data->raw_descs, ffs->raw_descs + 16, sizeof data->raw_descs);
+-	memset(data->inums, 0xff, sizeof data->inums);
++	memset(eps, 0, eps_sz);
++	memcpy(raw_descs, ffs->raw_descs + 16, raw_descs_sz);
++	memset(inums, 0xff, inums_sz);
+ 	for (ret = ffs->eps_count; ret; --ret)
+-		data->eps[ret].num = -1;
++		eps[ret].num = -1;
+ 
+ 	/* Save pointers */
+-	func->eps             = data->eps;
+-	func->interfaces_nums = data->inums;
++	func->eps             = eps;
++	func->fs_descs        = fs_descs;
++	func->hs_descs        = hs_descs;
++	func->interfaces_nums = inums;
++	func->raw_descs       = raw_descs;
+ 
+ 	/*
+ 	 * Go through all the endpoint descriptors and allocate
+@@ -2247,10 +2272,9 @@
+ 	 * numbers without worrying that it may be described later on.
+ 	 */
+ 	if (likely(full)) {
+-		func->function.fs_descriptors = data->fs_descs;
++		func->function.fs_descriptors = fs_descs;
+ 		ret = ffs_do_descs(ffs->fs_descs_count,
+-				   data->raw_descs,
+-				   sizeof data->raw_descs,
++				   raw_descs, raw_descs_sz,
+ 				   __ffs_func_bind_do_descs, func);
+ 		if (unlikely(ret < 0))
+ 			goto error;
+@@ -2259,10 +2283,9 @@
+ 	}
+ 
+ 	if (likely(high)) {
+-		func->function.hs_descriptors = data->hs_descs;
++		func->function.hs_descriptors = hs_descs;
+ 		ret = ffs_do_descs(ffs->hs_descs_count,
+-				   data->raw_descs + ret,
+-				   (sizeof data->raw_descs) - ret,
++				   raw_descs + ret, raw_descs_sz - ret,
+ 				   __ffs_func_bind_do_descs, func);
+ 	}
+ 
+@@ -2273,7 +2296,7 @@
+ 	 */
+ 	ret = ffs_do_descs(ffs->fs_descs_count +
+ 			   (high ? ffs->hs_descs_count : 0),
+-			   data->raw_descs, sizeof data->raw_descs,
++			   raw_descs, raw_descs_sz,
+ 			   __ffs_func_bind_do_nums, func);
+ 	if (unlikely(ret < 0))
+ 		goto error;
