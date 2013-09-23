@@ -1,91 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab3IWN3R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 09:29:17 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39737 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753879Ab3IWN3P (ORCPT
+	id S1753719Ab3IWNbY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 09:31:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50574 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493Ab3IWNbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 09:29:15 -0400
-Date: Mon, 23 Sep 2013 09:29:03 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: xen-devel@lists.xen.org, david.vrabel@citrix.com, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 5/5] xen/PMU: Cache MSR accesses during interrupt
- handling
-Message-ID: <20130923132903.GF3175@phenom.dumpdata.com>
-References: <1378827110-4192-1-git-send-email-boris.ostrovsky@oracle.com>
- <1378827110-4192-6-git-send-email-boris.ostrovsky@oracle.com>
+	Mon, 23 Sep 2013 09:31:22 -0400
+Message-ID: <524042A2.2070005@linutronix.de>
+Date: Mon, 23 Sep 2013 15:31:14 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130821 Icedove/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378827110-4192-6-git-send-email-boris.ostrovsky@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
+        Jonathan Cameron <jic23@cam.ac.uk>, "Patil, Rachna" <rachna@ti.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] iio: ti_am335x_adc: Take touchscreen channels into
+ account for conversion timeout
+References: <f1830a7d0debce351966d2f3232158313d87dcc0.1378846446.git.matthias@kaehlcke.net> <20130910210228.GC30481@raspi>
+In-Reply-To: <20130910210228.GC30481@raspi>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 11:31:50AM -0400, Boris Ostrovsky wrote:
-> Avoid trapping to hypervisor on each MSR access during interrupt handling.
-> Instead, use cached MSR values provided in shared xenpmu_data by Xen. When
-> handling is completed, flush the registers to hypervisor who will load them
-> into HW.
+On 09/10/2013 11:02 PM, Matthias Kaehlcke wrote:
+> The calculation of the old conversion timeout value was based on the number of
+> channels used by this driver. This doesn't take into account that other channels
+> can be used by the touchscreen driver. Adjust the timeout value to the maximum
+> if the touchscreen driver is enabled
 
-Looks OK.
-> 
-> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> ---
->  arch/x86/xen/pmu.c             | 15 ++++++++++++++-
->  include/xen/interface/xenpmu.h |  1 +
->  2 files changed, 15 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/xen/pmu.c b/arch/x86/xen/pmu.c
-> index d8b059b..bdd7c4a 100644
-> --- a/arch/x86/xen/pmu.c
-> +++ b/arch/x86/xen/pmu.c
-> @@ -345,14 +345,27 @@ static void xen_convert_regs(struct cpu_user_regs *xen_regs,
->  
->  irqreturn_t xen_pmu_irq_handler(int irq, void *dev_id)
->  {
-> -	int ret = IRQ_NONE;
-> +	int err, ret = IRQ_NONE;
->  	struct pt_regs regs;
->  	struct xenpmu_data *xenpmu_data = per_cpu(xenpmu_shared,
->  						  smp_processor_id());
->  
-> +	/*
-> +	 * While handling the interrupt MSR accesses will be cached
-> +	 * in PMU context
-> +	 */
-> +	xenpmu_data->pmu_flags |= PMU_CACHED;
->  	xen_convert_regs(&xenpmu_data->regs, &regs);
->  	if (x86_pmu.handle_irq(&regs))
->  		ret = IRQ_HANDLED;
-> +	xenpmu_data->pmu_flags &= ~PMU_CACHED;
-> +
-> +	/* Write out cached context to HW */
-> +	err = HYPERVISOR_xenpmu_op(XENPMU_flush, NULL);
-> +	if (err) {
-> +		WARN(1, "%s failed hypercall, err: %d\n", __func__, err);
-> +		return IRQ_NONE;
-> +	}
->  
->  	return ret;
->  }
-> diff --git a/include/xen/interface/xenpmu.h b/include/xen/interface/xenpmu.h
-> index 16fe1ab..ec0e802 100644
-> --- a/include/xen/interface/xenpmu.h
-> +++ b/include/xen/interface/xenpmu.h
-> @@ -16,6 +16,7 @@
->  #define XENPMU_init            4
->  #define XENPMU_finish          5
->  #define XENPMU_lvtpc_set       6
-> +#define XENPMU_flush           7 /* Write cached MSR values to HW */
->  
->  /* Parameter structure for HYPERVISOR_xenpmu_op call */
->  struct xenpmu_params {
-> -- 
-> 1.8.1.4
-> 
+What bug / miss behave are you trying to fix?
+The difference in timming is minimal and therefore I would prefer to get
+rid of this ifdef and assume the max value of those two instead.
+
+Sebastian
