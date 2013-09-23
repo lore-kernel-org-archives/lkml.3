@@ -1,136 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab3IWIY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 04:24:26 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:57406 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab3IWIYY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 04:24:24 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-82-523ffab795b6
-From: Weijie Yang <weijie.yang@samsung.com>
-To: akpm@linux-foundation.org
-Cc: sjenning@linux.vnet.ibm.com, bob.liu@oracle.com, minchan@kernel.org,
-        weijie.yang.kh@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        d.j.shin@samsung.com, heesub.shin@samsung.com,
-        kyungmin.park@samsung.com, hau.chen@samsung.com,
-        bifeng.tong@samsung.com, rui.xie@samsung.com
-Subject: [PATCH v3 2/3] mm/zswap: bugfix: memory leak when invalidate and
- reclaim occur concurrently
-Date: Mon, 23 Sep 2013 16:21:49 +0800
-Message-id: <000201ceb836$4c549740$e4fdc5c0$%yang@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac64NeGGhImMztsRQey0939UCK6wew==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t9jQd3tv+yDDL4fEbWYs34Nm8Wb1tts
-	Fl2nprJYnLhYa3H18jJGi4OzlzBZnG16w25xedccNot7a/6zWiz7+p7d4uHT6+wWh/atYrdY
-	sPERo8WTE/9ZHPg8ds66y+6xaVUnm8emT5PYPU7M+M3i8eDQZhaPj09vsXj0bVnF6PF5k1wA
-	RxSXTUpqTmZZapG+XQJXxv5/+1gKfkpWvHvQz9LAOFm0i5GTQ0LAROLi5QlsELaYxIV764Fs
-	Lg4hgemMEhP6DrFDOH8YJX6t38cIUsUmoC1xt38jK4gtIiArMfXveRYQm1ngIJPE3E38ILaw
-	QJrEydXHwepZBFQl5v3fBWRzcPAK2En8/hMAEuYVEJT4MfkeC0iYWUBdYsqUXIgp8hKb17xl
-	BglLAIUf/dWFWKQn0fnpASNEibjExiO3WCYwCsxCMmgWwqBZSAbNQtKxgJFlFaNoakFyQXFS
-	eq6hXnFibnFpXrpecn7uJkZwZD2T2sG4ssHiEKMAB6MSD29Eon2QEGtiWXFl7iFGCQ5mJRHe
-	pk6gEG9KYmVValF+fFFpTmrxIUZpDhYlcd4DrdaBQgLpiSWp2ampBalFMFkmDk6pBkbGlsTz
-	IomHzrfueKPpWblzylOpOl85I5XJF8yePml7INTy/pd/yS/zqRuOTfhl2XykyUmEO1nxleDR
-	Z8f7Cw4EpC1ftPN5nYdHQNnDfT9Wdtke3NCQEsvuxcxed+tomcmUaReV9mreLzXbu9vexDsv
-	92/l/slmcn+ZjlfdmBC6dI9IkxCr3i8lluKMREMt5qLiRACis6WtqAIAAA==
+	id S1753516Ab3IWIYo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 04:24:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50511 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752638Ab3IWIYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 04:24:41 -0400
+Message-ID: <523FFAAC.3050907@ti.com>
+Date: Mon, 23 Sep 2013 11:24:12 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, <kishon@ti.com>
+CC: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <balajitk@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [RFC PATCH 15/15] arm: dts: dra7: add sata node
+References: <1379595943-14622-1-git-send-email-rogerq@ti.com> <1379597059-15405-1-git-send-email-rogerq@ti.com> <523B05FD.7020200@cogentembedded.com> <523C214A.30406@ti.com> <523F3AE4.5050709@cogentembedded.com>
+In-Reply-To: <523F3AE4.5050709@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consider the following scenario:
-thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
-thread 1: call zswap_frontswap_invalidate_page to invalidate entry x.
-	finished, entry x and its zbud is not freed as its refcount != 0
-	now, the swap_map[x] = 0
-thread 0: now call zswap_get_swap_cache_page
-	swapcache_prepare return -ENOENT because entry x is not used any more
-	zswap_get_swap_cache_page return ZSWAP_SWAPCACHE_NOMEM
-	zswap_writeback_entry do nothing except put refcount
-Now, the memory of zswap_entry x and its zpage leak.
+On 09/22/2013 09:45 PM, Sergei Shtylyov wrote:
+> On 09/20/2013 02:19 PM, Roger Quadros wrote:
+> 
+>>>> From: Balaji T K <balajitk@ti.com>
+> 
+>>>> Add support for sata controller.
+> 
+>>>> [Roger Q] Clean up.
+> 
+>>>> CC: Benoit Cousson <bcousson@baylibre.com>
+>>>> Signed-off-by: Balaji T K <balajitk@ti.com>
+>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>> ---
+>>>>    arch/arm/boot/dts/dra7.dtsi |   49 +++++++++++++++++++++++++++++++++++++++++++
+>>>>    1 files changed, 49 insertions(+), 0 deletions(-)
+> 
+>>>> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+>>>> index ce9a0f0..545545d 100644
+>>>> --- a/arch/arm/boot/dts/dra7.dtsi
+>>>> +++ b/arch/arm/boot/dts/dra7.dtsi
+>>>> @@ -426,6 +426,55 @@
+> [...]
+> 
+>>>> +        sata: sata@4a141100 {
+>>>> +            compatible = "ti,sata";
+>>>> +            ti,hwmods = "sata";
+>>>> +            reg = <0x4a141100 0x7>;
+> 
+>    Not 0x8 BTW?
 
-Modify:
- - check the refcount in fail path, free memory if it is not referenced.
- - use ZSWAP_SWAPCACHE_FAIL instead of ZSWAP_SWAPCACHE_NOMEM as the fail path
-can be not only caused by nomem but also by invalidate.
+You are right. Two 32 bit registers are used.
+However, in the instance summary, the reference manual says 256 bytes.
+So I think we should use 0x100.
 
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Reviewed-by: Bob Liu <bob.liu@oracle.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: stable@vger.kernel.org
-Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- mm/zswap.c |   21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+> 
+>>>> +            #address-cells = <1>;
+>>>> +            #size-cells = <1>;
+>>>> +            ranges;
+>>>> +            dwc-ahci@4a140000 {
+> 
+>>>     Hm, ePAPR spec. [1] says that "the name of a node should be somewhat generic, reflecting the function of the device and not its precise programming model", so it looks like the name should be "sata" as well. I'm a bit at a loss here, not sure why you had to use the nested device nodes.
+> 
+>> ok. will fix it to sata.
+>> I've nested it because the wrapper registers are not part of the AHCI sata controller.
+>> They are TI specific registers for power management.
+>> Similar setup is on the USB controller. Please see omap_dwc3 node.
+> 
+>> But if you have better idea, please let me know.
+> 
+>     Don't know, it seems to me that you're over-complicating it by using the nested nodes. You could just have AHCI regs as a first tuple of the "regs" prop, and PM regs as a second tuple.
+> 
 
-diff --git a/mm/zswap.c b/mm/zswap.c
-index cbd9578..1be7b90 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -387,7 +387,7 @@ static void zswap_free_entry(struct zswap_tree *tree, struct zswap_entry *entry)
- enum zswap_get_swap_ret {
- 	ZSWAP_SWAPCACHE_NEW,
- 	ZSWAP_SWAPCACHE_EXIST,
--	ZSWAP_SWAPCACHE_NOMEM
-+	ZSWAP_SWAPCACHE_FAIL,
- };
- 
- /*
-@@ -401,9 +401,9 @@ enum zswap_get_swap_ret {
-  * added to the swap cache, and returned in retpage.
-  *
-  * If success, the swap cache page is returned in retpage
-- * Returns 0 if page was already in the swap cache, page is not locked
-- * Returns 1 if the new page needs to be populated, page is locked
-- * Returns <0 on error
-+ * Returns ZSWAP_SWAPCACHE_EXIST if page was already in the swap cache
-+ * Returns ZSWAP_SWAPCACHE_NEW if the new page needs to be populated, page is locked
-+ * Returns ZSWAP_SWAPCACHE_FAIL on error
-  */
- static int zswap_get_swap_cache_page(swp_entry_t entry,
- 				struct page **retpage)
-@@ -475,7 +475,7 @@ static int zswap_get_swap_cache_page(swp_entry_t entry,
- 	if (new_page)
- 		page_cache_release(new_page);
- 	if (!found_page)
--		return ZSWAP_SWAPCACHE_NOMEM;
-+		return ZSWAP_SWAPCACHE_FAIL;
- 	*retpage = found_page;
- 	return ZSWAP_SWAPCACHE_EXIST;
- }
-@@ -529,11 +529,11 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 
- 	/* try to allocate swap cache page */
- 	switch (zswap_get_swap_cache_page(swpentry, &page)) {
--	case ZSWAP_SWAPCACHE_NOMEM: /* no memory */
-+	case ZSWAP_SWAPCACHE_FAIL: /* no memory or invalidate happened */
- 		ret = -ENOMEM;
- 		goto fail;
- 
--	case ZSWAP_SWAPCACHE_EXIST: /* page is unlocked */
-+	case ZSWAP_SWAPCACHE_EXIST:
- 		/* page is already in the swap cache, ignore for now */
- 		page_cache_release(page);
- 		ret = -EEXIST;
-@@ -591,7 +591,12 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 
- fail:
- 	spin_lock(&tree->lock);
--	zswap_entry_put(entry);
-+	refcount = zswap_entry_put(entry);
-+	if (refcount <= 0) {
-+		/* invalidate happened, consider writeback as success */
-+		zswap_free_entry(tree, entry);
-+		ret = 0;
-+	}
- 	spin_unlock(&tree->lock);
- 	return ret;
- }
--- 
-1.7.10.4
+Yes that is possible, and in fact it was that way in Balaji's original code.
+However in that case, won't TI specific handling be need to be done in the ahci_platform driver?
 
+As of now, that is limited to using pm_runtime to enable/disable the hardware module so it is generic enough.
+However in the future it would mean reading/writing to the TI wrapper register. If this can be done in ahci_platform
+driver then I don't see any issue and can combine the 2 nodes.
 
+>>>> +                  compatible = "snps,dwc-ahci";
+>>>> +                  reg = <0x4a140000 0x1100>;
+>>>> +                  interrupts = <0 54 0x4>;
+>>>> +                  phys = <&sata_phy>;
+> 
+>>>     Hm, it's the third PHY related generic property I'm encountering. First, there was "phy-handle", then "phy", now "phys"... Seems like a bit too much. :-)
+> 
+>> I'm afraid but this is how the designers have made it.
+> 
+>> 1) control-phy-pipe3 is that part of the PHY which sits in control module space and is different
+>> from the sata-phy space and hence needs a different node. If it were to me, I would just put this
+>> resource in sata-phy node, but there was a discussion about this earlier to do it otherwise [1].
+> 
+>> 2) sata-phy (sataphy) is the actual SATA PHY device.
+> 
+>> 3) phys is just a reference to the sata_phy and is used via the generic PHY framework.
+>> It is upto the sata driver to power up/down the phy.
+> 
+>    I understand that it's a reference but why have 3 variants of such phandle containing prop? Is it really possible for a device to have multiple PHYs? Well, remembering our customer's USB, it's indeed possible, however, there 2 PHYs out of 3 are not software controllable...
+> 
+
+If I understand right, are you asking that we don't need "phy-names" property if there can be only one PHY?
+I too think it is redundant. Maybe the PHY framework should be modified to allow users to use phy_get() whithout
+any phy name string. In such case it should return the first PHY. 
+Kishon, any thoughts?
+
+>>>> +                  phy-names = "sata-phy";
+>>>> +                  clocks = <&sata_ref_clk>;
+>>>> +                  clock-names = "optclk";
+>>>> +            };
+>>>> +        };
+> 
+>>> [1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
+> 
+
+cheers,
+-roger
