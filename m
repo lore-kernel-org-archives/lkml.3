@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab3IWVxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:53:38 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42355 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab3IWVxh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:53:37 -0400
-Message-ID: <5240B85D.3050803@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 15:53:33 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753987Ab3IWVzY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:55:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63919 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752648Ab3IWVzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 17:55:23 -0400
+Date: Mon, 23 Sep 2013 17:55:15 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Steve Grubb <sgrubb@redhat.com>,
+        Zach Levis <zml@linux.vnet.ibm.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] audit_alloc: clear TIF_SYSCALL_AUDIT if
+ !audit_context
+Message-ID: <20130923215515.GW13968@madcap2.tricolour.ca>
+References: <20130915171038.GA15410@redhat.com>
+ <20130915171109.GA15418@redhat.com>
+ <1379693282.5434.10.camel@flatline.rdu.redhat.com>
 MIME-Version: 1.0
-To: Rhyland Klein <rklein@nvidia.com>
-CC: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
-        Manish Badarkhe <badarkhe.manish@gmail.com>,
-        Darbha Sriharsha <dsriharsha@nvidia.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [Patch V2] drivers: power: Add support for bq24735 charger
-References: <1379607514-11200-1-git-send-email-rklein@nvidia.com>
-In-Reply-To: <1379607514-11200-1-git-send-email-rklein@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379693282.5434.10.camel@flatline.rdu.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2013 10:18 AM, Rhyland Klein wrote:
-> Adding driver support for bq24735 charger chipset.
+On Fri, Sep 20, 2013 at 12:08:02PM -0400, Eric Paris wrote:
+> On Sun, 2013-09-15 at 19:11 +0200, Oleg Nesterov wrote:
+> > If audit_filter_task() nacks the new thread it makes sense
+> > to clear TIF_SYSCALL_AUDIT which can be copied from parent
+> > by dup_task_struct().
+> > 
+> > A wrong TIF_SYSCALL_AUDIT is not really bad but it triggers
+> > the "slow" audit paths in entry.S to ensure the task can not
+> > miss audit_syscall_*() calls, this is pointless if the task
+> > has no ->audit_context.
+> > 
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > Acked-by: Steve Grubb <sgrubb@redhat.com>
+> 
+> Acked-by: Eric Paris <eparis@redhat.com>
+> 
+> Richard, please pick this up into your tree.
 
-> diff --git a/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt b/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt
+Ack.
 
-> +Optional properties :
-> + - ti,ac-detect: This gpio is optionally used to read the ac adapter
-> +   presence.
+> > ---
+> >  kernel/auditsc.c |    4 +++-
+> >  1 files changed, 3 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> > index 9845cb3..95293ab 100644
+> > --- a/kernel/auditsc.c
+> > +++ b/kernel/auditsc.c
+> > @@ -943,8 +943,10 @@ int audit_alloc(struct task_struct *tsk)
+> >  		return 0; /* Return if not auditing. */
+> >  
+> >  	state = audit_filter_task(tsk, &key);
+> > -	if (state == AUDIT_DISABLED)
+> > +	if (state == AUDIT_DISABLED) {
+> > +		clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
+> >  		return 0;
+> > +	}
+> >  
+> >  	if (!(context = audit_alloc_context(state))) {
+> >  		kfree(key);
 
-GPIO property names ought to end in "-gpios", i.e. "ti,ac-detect-gpios".
+- RGB
 
-> + - ti,charge-current : Used to control and set the charging current. This value
-> +   must follow the below guidelines:
-> +	bit 0 - 5:	Not used
-> +	bit 6:		1 = Adds 64mA of charger current
-> +	bit 7:		1 = Adds 128mA of charger current
-> +	bit 8:		1 = Adds 256mA of charger current
-> +	bit 9:		1 = Adds 512mA of charger current
-> +	bit 10:		1 = Adds 1024mA of charger current
-> +	bit 11:		1 = Adds 2048mA of charger current
-> +	bit 12:		1 = Adds 4096mA of charger current
-> +	bit 13 - 15:	Not used
-
-That's a little odd. Why not just put the number of mA directly into the
-property unshifted?
-
-> +   Setting the value to < 128mA or > 8.128A terminates charging.
-
-"terminates charging" is a driver action, not a description of HW. It's
-fine to say that what min/max value should be specified in the property
-for it to be valid, but not what action SW should take in response to that.
-
-Those same two comments apply to other properties too.
-
-> + - ti,input-current:	Used to control and set the charger input current. This
-> +   value must follow the below guidelines:
-
-What if this value is inconsistent with the charger's power consumption
-derived from the other two properties? Is it really necessary to include
-this property in the DT and hence create the potential for mismatch?
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer
+Kernel Security
+AMER ENG Base Operating Systems
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635
+Internal: (81) 32635
+Alt: +1.613.693.0684x3545
