@@ -1,112 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab3IWPZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 11:25:23 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:48479 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab3IWPZU (ORCPT
+	id S1753010Ab3IWP1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 11:27:46 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:52190 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab3IWP1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 11:25:20 -0400
+	Mon, 23 Sep 2013 11:27:44 -0400
+Date: Mon, 23 Sep 2013 08:27:38 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] modpost: Optionally ignore secondary errors seen if a
+ single module build fails
+Message-ID: <20130923152738.GA22100@roeck-us.net>
+References: <1379785496-20209-1-git-send-email-linux@roeck-us.net>
+ <87fvswxeuy.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <20130916162926.GA12926@twins.programming.kicks-ass.net>
-References: <CAMsRxfLEO15kKrbmtKKXuW-JTtCCgiuXS6wFs9kiLmG1wge24A@mail.gmail.com>
-	<20130910115306.GA6091@gmail.com>
-	<CAMsRxfLvbExOzjz8tQu7AchQgKBh5S4b7VMQmFtr1RxK4ksAvA@mail.gmail.com>
-	<20130910133845.GB7537@gmail.com>
-	<CAMsRxfJ5HG+0AiooOUFh8TzvCoK3YcBFpeAF0eTzdkDm=wB84g@mail.gmail.com>
-	<20130910142942.GB8388@gmail.com>
-	<CAMsRxf+18qz_vOkEZ1a8D9Z7BywWZPNB=qEn0bHXMFg96sALTQ@mail.gmail.com>
-	<20130910171449.GA10812@gmail.com>
-	<CAMsRxfKdpK7Mmt=BSPnGCGGERTFbqTG0qe_cFDTvxsdLCO-A9g@mail.gmail.com>
-	<20130916154146.GA6470@gmail.com>
-	<20130916162926.GA12926@twins.programming.kicks-ass.net>
-Date: Mon, 23 Sep 2013 17:25:19 +0200
-Message-ID: <CAMsRxfKyXnep+uAyJcjy0SKVQkA6M-QCogVYnq4+PrCtw8B20Q@mail.gmail.com>
-Subject: Re: PEBS bug on HSW: "Unexpected number of pebs records 10" (was: Re:
- [GIT PULL] perf changes for v3.12)
-From: Stephane Eranian <eranian@googlemail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fvswxeuy.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 6:29 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Sep 16, 2013 at 05:41:46PM +0200, Ingo Molnar wrote:
->>
->> * Stephane Eranian <eranian@googlemail.com> wrote:
->>
->> > Hi,
->> >
->> > Some updates on this problem.
->> > I have been running tests all week-end long on my HSW.
->> > I can reproduce the problem. What I know:
->> >
->> > - It is not linked with callchain
->> > - The extra entries are valid
->> > - The reset values are still zeroes
->> > - The problem does not happen on SNB with the same test case
->> > - The PMU state looks sane when that happens.
->> > - The problem occurs even when restricting to one CPU/core (taskset -c 0-3)
->> >
->> > So it seems like the threshold is ignored. But I don't understand where
->> > there reset values are coming from. So it looks more like a bug in
->> > micro-code where under certain circumstances multiple entries get
->> > written.
->>
->> Either multiple entries are written, or the PMI/NMI is not asserted as it
->> should be?
->
-> No, both :-)
->
->> > Something must be happening with the interrupt or HT. I will disable HT
->> > next and also disable the NMI watchdog.
->>
->> Yes, interaction with the NMI watchdog events might also be possible.
->>
->> If it's truly just the threshold that is broken occasionally in a
->> statistically insignificant manner then the bug is relatively benign and
->> we could work it around in the kernel by ignoring excess entries.
->>
->> In that case we should probably not annoy users with the scary kernel
->> warning and instead increase a debug count somewhere so that it's still
->> detectable.
->
-> Its not just a broken threshold. When a PEBS event happens it can re-arm
-> itself but only if you program a RESET value !0. We don't do that, so
-> each counter should only ever fire once.
->
-> We must do this because PEBS is broken on NHM+ in that the
-> pebs_record::status is a direct copy of the overflow status field at
-> time of the assist and if you use the RESET thing nothing will clear the
-> status bits and you cannot demux the PEBS events back to the event that
-> generated them.
->
-Trying to understand this problem better. You are saying that in case you
-are sampling multiple PEBS events there is a problem if you allow more
-than one record per PEBS buffer because the overflow status is not reset
-properly.
+On Mon, Sep 23, 2013 at 03:24:13PM +0930, Rusty Russell wrote:
+> Guenter Roeck <linux@roeck-us.net> writes:
+> > Commit ea4054a23 (modpost: handle huge numbers of modules) added
+> > support for building a large number of modules.
+> 
+> Wow, this is a lot of work for a trivial fix.
+> 
+I agree, but it was important for me to get the problem fixed,
+as it affects my automated testing quite seriously. This one
+may be overkill, but the other attempts seemed to go nowhere.
 
-For instance, if first record is caused by counter 0, ovfl_status=0x1,
-then counter
-is reset. Then, if counter 1 is the cause of the next record, then
-that record has the
-ovfl_status=0x3 instead of ovfl_status=0x2? Is that what you are saying?
+> I was happy with any of the approaches, but I'll accept this.  I'm not
+> even going to bikeshed over the abuse of '-n' :)
+> 
+> Applied,
 
-If so then yes, I agree this is a serious bug and we need to have Intel fix it.
+Thanks a lot!
 
-> Worse, since its the overflow that arms the assist, and the assist
-> happens at some undefined amount of cycles after this event it is
-> possible for another assist to happen first.
->
-> That is, suppose both CNT0 and CNT1 have PEBS enabled and CNT0 overflows
-> first it is possible to find the CNT1 entry first in the buffer with
-> both of them having status := 0x03.
->
-> Complete and utter trainwreck.
+Guenter
+
+> Rusty.
+> 
+> > Unfortunately, the commit changed the semantics of the makefile: Instead of
+> > passing only existing object files to modpost, make now passes all expected
+> > object files. If make was started with option -i, this results in a modpost
+> > error if a single file failed to build.
+> >
+> > Example with the current btrfs build falure on m68k:
+> >
+> > fs/btrfs/btrfs.o: No such file or directory
+> > make[1]: [__modpost] Error 1 (ignored)
+> >
+> > This error is followed by lots of errors such as:
+> >
+> > m68k-linux-gcc: error: arch/m68k/emu/nfcon.mod.c: No such file or directory
+> > m68k-linux-gcc: fatal error: no input files
+> > compilation terminated.
+> > make[1]: [arch/m68k/emu/nfcon.mod.o] Error 1 (ignored)
+> >
+> > This doesn't matter much for normal builds, but it is annoying for builds
+> > started with "make -i" due to the large number of secondary errors.
+> > Those errors unnececessarily clog any error log and make it difficult
+> > to find the real errors in the build.
+> >
+> > Fix the problem by adding a new parameter '-n' to modpost. If this parameter
+> > is specified, modpost reports but ignores missing object files.
+> >
+> > With this patch, error output from above problem is (with make -i):
+> >
+> > m68k-linux-ld: cannot find fs/btrfs/ioctl.o: No such file or directory
+> > make[2]: [fs/btrfs/btrfs.o] Error 1 (ignored)
+> > ...
+> > fs/btrfs/btrfs.o: No such file or directory (ignored)
+> >
+> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > Cc: Michael Marek <mmarek@suse.cz>
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > ---
+> > Yet another attempt to fix this problem. I'll be happy to change the modpost
+> > flag to something else if so desired. Note that -i is already taken, though.
+> >
+> > I also did not change any of the existing object name filtering in
+> > Makefile.modpost. This is on purpose; I am concerned about introducing
+> > some other problem.
+> >
+> >  scripts/Makefile.modpost |    4 +++-
+> >  scripts/mod/modpost.c    |   13 ++++++++++++-
+> >  2 files changed, 15 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
+> > index 8dcdca2..69f0a14 100644
+> > --- a/scripts/Makefile.modpost
+> > +++ b/scripts/Makefile.modpost
+> > @@ -79,9 +79,11 @@ modpost = scripts/mod/modpost                    \
+> >   $(if $(CONFIG_DEBUG_SECTION_MISMATCH),,-S)      \
+> >   $(if $(KBUILD_EXTMOD)$(KBUILD_MODPOST_WARN),-w)
+> >  
+> > +MODPOST_OPT=$(subst -i,-n,$(filter -i,$(MAKEFLAGS)))
+> > +
+> >  # We can go over command line length here, so be careful.
+> >  quiet_cmd_modpost = MODPOST $(words $(filter-out vmlinux FORCE, $^)) modules
+> > -      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$$/.o/' | $(modpost) -s -T -
+> > +      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$$/.o/' | $(modpost) $(MODPOST_OPT) -s -T -
+> >  
+> >  PHONY += __modpost
+> >  __modpost: $(modules:.ko=.o) FORCE
+> > diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+> > index 8247979..393706b 100644
+> > --- a/scripts/mod/modpost.c
+> > +++ b/scripts/mod/modpost.c
+> > @@ -17,6 +17,7 @@
+> >  #include <string.h>
+> >  #include <limits.h>
+> >  #include <stdbool.h>
+> > +#include <errno.h>
+> >  #include "modpost.h"
+> >  #include "../../include/generated/autoconf.h"
+> >  #include "../../include/linux/license.h"
+> > @@ -37,6 +38,8 @@ static int warn_unresolved = 0;
+> >  /* How a symbol is exported */
+> >  static int sec_mismatch_count = 0;
+> >  static int sec_mismatch_verbose = 1;
+> > +/* ignore missing files */
+> > +static int ignore_missing_files;
+> >  
+> >  enum export {
+> >  	export_plain,      export_unused,     export_gpl,
+> > @@ -407,6 +410,11 @@ static int parse_elf(struct elf_info *info, const char *filename)
+> >  
+> >  	hdr = grab_file(filename, &info->size);
+> >  	if (!hdr) {
+> > +		if (ignore_missing_files) {
+> > +			fprintf(stderr, "%s: %s (ignored)\n", filename,
+> > +				strerror(errno));
+> > +			return 0;
+> > +		}
+> >  		perror(filename);
+> >  		exit(1);
+> >  	}
+> > @@ -2119,7 +2127,7 @@ int main(int argc, char **argv)
+> >  	struct ext_sym_list *extsym_iter;
+> >  	struct ext_sym_list *extsym_start = NULL;
+> >  
+> > -	while ((opt = getopt(argc, argv, "i:I:e:msST:o:awM:K:")) != -1) {
+> > +	while ((opt = getopt(argc, argv, "i:I:e:mnsST:o:awM:K:")) != -1) {
+> >  		switch (opt) {
+> >  		case 'i':
+> >  			kernel_read = optarg;
+> > @@ -2139,6 +2147,9 @@ int main(int argc, char **argv)
+> >  		case 'm':
+> >  			modversions = 1;
+> >  			break;
+> > +		case 'n':
+> > +			ignore_missing_files = 1;
+> > +			break;
+> >  		case 'o':
+> >  			dump_write = optarg;
+> >  			break;
+> > -- 
+> > 1.7.9.7
+> 
