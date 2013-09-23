@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3IWMGp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 08:06:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58723 "EHLO mga02.intel.com"
+	id S1754121Ab3IWMGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 08:06:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58705 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754053Ab3IWMGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 08:06:24 -0400
+	id S1753698Ab3IWMGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 08:06:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,962,1371106800"; 
-   d="scan'208";a="382188990"
+   d="scan'208";a="382188961"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -23,9 +23,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv6 16/22] thp, mm: handle transhuge pages in do_generic_file_read()
-Date: Mon, 23 Sep 2013 15:05:44 +0300
-Message-Id: <1379937950-8411-17-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv6 02/22] radix-tree: implement preload for multiple contiguous elements
+Date: Mon, 23 Sep 2013 15:05:30 +0300
+Message-Id: <1379937950-8411-3-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,197 +33,264 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a transhuge page is already in page cache (up to date and not
-readahead) we go usual path: read from relevant subpage (head or tail).
+The radix tree is variable-height, so an insert operation not only has
+to build the branch to its corresponding item, it also has to build the
+branch to existing items if the size has to be increased (by
+radix_tree_extend).
 
-If page is not cached (sparse file in ramfs case) and the mapping can
-have hugepage we try allocate a new one and read it.
+The worst case is a zero height tree with just a single item at index 0,
+and then inserting an item at index ULONG_MAX. This requires 2 new branches
+of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
 
-If a page is not up to date or in readahead, we have to move 'page' to
-head page of the compound page, since it represents state of whole
-transhuge page. We will switch back to relevant subpage when page is
-ready to be read ('page_ok' label).
+Radix tree is usually protected by spin lock. It means we want to
+pre-allocate required memory before taking the lock.
 
+Currently radix_tree_preload() only guarantees enough nodes to insert
+one element. It's a hard limit. For transparent huge page cache we want
+to insert HPAGE_PMD_NR (512 on x86-64) entries to address_space at once.
+
+This patch introduces radix_tree_preload_count(). It allows to
+preallocate nodes enough to insert a number of *contiguous* elements.
+The feature costs about 9.5KiB per-CPU on x86_64, details below.
+
+Preload uses per-CPU array to store nodes. The total cost of preload is
+"array size" * sizeof(void*) * NR_CPUS. We want to increase array size
+to be able to handle 512 entries at once.
+
+Size of array depends on system bitness and on RADIX_TREE_MAP_SHIFT.
+
+We have three possible RADIX_TREE_MAP_SHIFT:
+
+ #ifdef __KERNEL__
+ #define RADIX_TREE_MAP_SHIFT	(CONFIG_BASE_SMALL ? 4 : 6)
+ #else
+ #define RADIX_TREE_MAP_SHIFT	3	/* For more stressful testing */
+ #endif
+
+We are not going to use transparent huge page cache on small machines or
+in userspace, so we are interested in RADIX_TREE_MAP_SHIFT=6.
+
+On 64-bit system old array size is 21, new is 37. Per-CPU feature
+overhead is
+ for preload array:
+   (38 - 21) * sizeof(void*) = 136 bytes
+ plus, if the preload array is full
+   (38 - 21) * sizeof(struct radix_tree_node) = 17 * 560 = 9520 bytes
+ total: 9656 bytes
+
+On 32-bit system old array size is 11, new is 22. Per-CPU feature
+overhead is
+ for preload array:
+   (23 - 11) * sizeof(void*) = 48 bytes
+ plus, if the preload array is full
+   (23 - 11) * sizeof(struct radix_tree_node) = 12 * 296 = 3552 bytes
+ total: 3600 bytes
+
+Since only THP uses batched preload at the moment, we disable (set max
+preload to 1) it if !CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE. This can be
+changed in the future.
+
+Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- mm/filemap.c | 91 +++++++++++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 66 insertions(+), 25 deletions(-)
+ include/linux/radix-tree.h | 11 ++++++
+ lib/radix-tree.c           | 94 +++++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 96 insertions(+), 9 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 38d6856737..9bbc024e4c 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1122,6 +1122,27 @@ static void shrink_readahead_size_eio(struct file *filp,
- 	ra->ra_pages /= 4;
- }
+diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+index 403940787b..3bf0b3e594 100644
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -83,6 +83,16 @@ do {									\
+ 	(root)->rnode = NULL;						\
+ } while (0)
  
-+static unsigned long page_cache_mask(struct page *page)
-+{
-+	if (PageTransHugeCache(page))
-+		return HPAGE_PMD_MASK;
-+	else
-+		return PAGE_CACHE_MASK;
-+}
-+
-+static unsigned long pos_to_off(struct page *page, loff_t pos)
-+{
-+	return pos & ~page_cache_mask(page);
-+}
-+
-+static unsigned long pos_to_index(struct page *page, loff_t pos)
-+{
-+	if (PageTransHugeCache(page))
-+		return pos >> HPAGE_PMD_SHIFT;
-+	else
-+		return pos >> PAGE_CACHE_SHIFT;
-+}
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
++/*
++ * At the moment only THP uses preload for more then on item for batched
++ * pagecache manipulations.
++ */
++#define RADIX_TREE_PRELOAD_NR	512
++#else
++#define RADIX_TREE_PRELOAD_NR	1
++#endif
 +
  /**
-  * do_generic_file_read - generic file read routine
-  * @filp:	the file to read
-@@ -1143,17 +1164,12 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
- 	struct file_ra_state *ra = &filp->f_ra;
- 	pgoff_t index;
- 	pgoff_t last_index;
--	pgoff_t prev_index;
--	unsigned long offset;      /* offset into pagecache page */
--	unsigned int prev_offset;
- 	int error;
+  * Radix-tree synchronization
+  *
+@@ -232,6 +242,7 @@ unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
+ 				unsigned long index, unsigned long max_scan);
+ int radix_tree_preload(gfp_t gfp_mask);
+ int radix_tree_maybe_preload(gfp_t gfp_mask);
++int radix_tree_maybe_preload_contig(unsigned size, gfp_t gfp_mask);
+ void radix_tree_init(void);
+ void *radix_tree_tag_set(struct radix_tree_root *root,
+ 			unsigned long index, unsigned int tag);
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index 7811ed3b4e..544a00a93b 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -84,14 +84,51 @@ static struct kmem_cache *radix_tree_node_cachep;
+  * of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
+  * Hence:
+  */
+-#define RADIX_TREE_PRELOAD_SIZE (RADIX_TREE_MAX_PATH * 2 - 1)
++#define RADIX_TREE_PRELOAD_MIN (RADIX_TREE_MAX_PATH * 2 - 1)
++
++/*
++ * Inserting N contiguous items is more complex. To simplify calculation, let's
++ * limit N (validated in radix_tree_init()):
++ *  - N is multiplier of RADIX_TREE_MAP_SIZE (or 1);
++ *  - N <= number of items 2-level tree can contain:
++ *    1UL << (2 * RADIX_TREE_MAP_SHIFT).
++ *
++ * No limitation on insert index alignment.
++ *
++ * Then the worst case is tree with only one element at index 0 and we add N
++ * items which cross boundary between items in root node.
++ *
++ * Basically, at least one index is less then
++ *
++ * 1UL << ((RADIX_TREE_MAX_PATH - 1) * RADIX_TREE_MAP_SHIFT + 1)
++ *
++ * and one is equal to.
++ *
++ * In this case we need:
++ *
++ * - RADIX_TREE_MAX_PATH nodes to build new path to item with index 0;
++ * - N / RADIX_TREE_MAP_SIZE + 1 nodes for last level nodes for new items:
++ *    - +1 is for misalinged case;
++ * - 2 * (RADIX_TREE_MAX_PATH - 2) - 1 nodes to build path to last level nodes:
++ *    - -2, because root node and last level nodes are already accounted).
++ *
++ * Hence:
++ */
++#if RADIX_TREE_PRELOAD_NR > 1
++#define RADIX_TREE_PRELOAD_MAX \
++	( RADIX_TREE_MAX_PATH + \
++	  RADIX_TREE_PRELOAD_NR / RADIX_TREE_MAP_SIZE + 1 + \
++	  2 * (RADIX_TREE_MAX_PATH - 2))
++#else
++#define RADIX_TREE_PRELOAD_MAX RADIX_TREE_PRELOAD_MIN
++#endif
  
- 	index = *ppos >> PAGE_CACHE_SHIFT;
--	prev_index = ra->prev_pos >> PAGE_CACHE_SHIFT;
--	prev_offset = ra->prev_pos & (PAGE_CACHE_SIZE-1);
- 	last_index = (*ppos + desc->count + PAGE_CACHE_SIZE-1) >> PAGE_CACHE_SHIFT;
--	offset = *ppos & ~PAGE_CACHE_MASK;
+ /*
+  * Per-cpu pool of preloaded nodes
+  */
+ struct radix_tree_preload {
+ 	int nr;
+-	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_SIZE];
++	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_MAX];
+ };
+ static DEFINE_PER_CPU(struct radix_tree_preload, radix_tree_preloads) = { 0, };
  
-+	i_split_down_read(inode);
- 	for (;;) {
- 		struct page *page;
- 		pgoff_t end_index;
-@@ -1172,8 +1188,12 @@ find_page:
- 					ra, filp,
- 					index, last_index - index);
- 			page = find_get_page(mapping, index);
--			if (unlikely(page == NULL))
--				goto no_cached_page;
-+			if (unlikely(page == NULL)) {
-+				if (mapping_can_have_hugepages(mapping))
-+					goto no_cached_page_thp;
-+				else
-+					goto no_cached_page;
-+			}
- 		}
- 		if (PageReadahead(page)) {
- 			page_cache_async_readahead(mapping,
-@@ -1190,7 +1210,7 @@ find_page:
- 			if (!page->mapping)
- 				goto page_not_up_to_date_locked;
- 			if (!mapping->a_ops->is_partially_uptodate(page,
--								desc, offset))
-+						desc, pos_to_off(page, *ppos)))
- 				goto page_not_up_to_date_locked;
- 			unlock_page(page);
- 		}
-@@ -1206,21 +1226,25 @@ page_ok:
+@@ -263,29 +300,43 @@ radix_tree_node_free(struct radix_tree_node *node)
  
- 		isize = i_size_read(inode);
- 		end_index = (isize - 1) >> PAGE_CACHE_SHIFT;
-+		if (PageTransHugeCache(page)) {
-+			index &= ~HPAGE_CACHE_INDEX_MASK;
-+			end_index &= ~HPAGE_CACHE_INDEX_MASK;
-+		}
- 		if (unlikely(!isize || index > end_index)) {
- 			page_cache_release(page);
+ /*
+  * Load up this CPU's radix_tree_node buffer with sufficient objects to
+- * ensure that the addition of a single element in the tree cannot fail.  On
+- * success, return zero, with preemption disabled.  On error, return -ENOMEM
++ * ensure that the addition of *contiguous* items in the tree cannot fail.
++ * On success, return zero, with preemption disabled.  On error, return -ENOMEM
+  * with preemption not disabled.
+  *
+  * To make use of this facility, the radix tree must be initialised without
+  * __GFP_WAIT being passed to INIT_RADIX_TREE().
+  */
+-static int __radix_tree_preload(gfp_t gfp_mask)
++static int __radix_tree_preload_contig(unsigned size, gfp_t gfp_mask)
+ {
+ 	struct radix_tree_preload *rtp;
+ 	struct radix_tree_node *node;
+ 	int ret = -ENOMEM;
++	int preload_target = RADIX_TREE_PRELOAD_MIN;
+ 
++	if (size > 1) {
++		size = round_up(size, RADIX_TREE_MAP_SIZE);
++		if (WARN_ONCE(size > RADIX_TREE_PRELOAD_NR,
++					"too large preload requested"))
++			return -ENOMEM;
++
++		/* The same math as with RADIX_TREE_PRELOAD_MAX */
++		preload_target = RADIX_TREE_MAX_PATH +
++			size / RADIX_TREE_MAP_SIZE + 1 +
++			2 * (RADIX_TREE_MAX_PATH - 2);
++	}
++
++	BUG_ON(preload_target > RADIX_TREE_PRELOAD_MAX);
+ 	preempt_disable();
+ 	rtp = &__get_cpu_var(radix_tree_preloads);
+-	while (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
++	while (rtp->nr < preload_target) {
+ 		preempt_enable();
+ 		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
+ 		if (node == NULL)
  			goto out;
- 		}
- 
- 		/* nr is the maximum number of bytes to copy from this page */
--		nr = PAGE_CACHE_SIZE;
-+		nr = PAGE_CACHE_SIZE << compound_order(page);
- 		if (index == end_index) {
--			nr = ((isize - 1) & ~PAGE_CACHE_MASK) + 1;
--			if (nr <= offset) {
-+			nr = ((isize - 1) & ~page_cache_mask(page)) + 1;
-+			if (nr <= pos_to_off(page, *ppos)) {
- 				page_cache_release(page);
- 				goto out;
- 			}
- 		}
--		nr = nr - offset;
-+		nr = nr - pos_to_off(page, *ppos);
- 
- 		/* If users can be writing to this page using arbitrary
- 		 * virtual addresses, take care about potential aliasing
-@@ -1233,9 +1257,10 @@ page_ok:
- 		 * When a sequential read accesses a page several times,
- 		 * only mark it as accessed the first time.
- 		 */
--		if (prev_index != index || offset != prev_offset)
-+		if (pos_to_index(page, ra->prev_pos) != index ||
-+				pos_to_off(page, *ppos) !=
-+				pos_to_off(page, ra->prev_pos))
- 			mark_page_accessed(page);
--		prev_index = index;
- 
- 		/*
- 		 * Ok, we have the page, and it's up-to-date, so
-@@ -1247,11 +1272,10 @@ page_ok:
- 		 * "pos" here (the actor routine has to update the user buffer
- 		 * pointers and the remaining count).
- 		 */
--		ret = actor(desc, page, offset, nr);
--		offset += ret;
--		index += offset >> PAGE_CACHE_SHIFT;
--		offset &= ~PAGE_CACHE_MASK;
--		prev_offset = offset;
-+		ret = actor(desc, page, pos_to_off(page, *ppos), nr);
-+		ra->prev_pos = *ppos;
-+		*ppos += ret;
-+		index = *ppos >> PAGE_CACHE_SHIFT;
- 
- 		page_cache_release(page);
- 		if (ret == nr && desc->count)
-@@ -1325,6 +1349,27 @@ readpage_error:
- 		page_cache_release(page);
- 		goto out;
- 
-+no_cached_page_thp:
-+		page = alloc_pages(mapping_gfp_mask(mapping) | __GFP_COLD,
-+				HPAGE_PMD_ORDER);
-+		if (!page) {
-+			count_vm_event(THP_READ_ALLOC_FAILED);
-+			goto no_cached_page;
-+		}
-+		count_vm_event(THP_READ_ALLOC);
-+
-+		error = add_to_page_cache_lru(page, mapping,
-+				pos_to_index(page, *ppos), GFP_KERNEL);
-+		if (!error)
-+			goto readpage;
-+
-+		page_cache_release(page);
-+		if (error != -EEXIST && error != -ENOSPC) {
-+			desc->error = error;
-+			goto out;
-+		}
-+
-+		/* Fallback to small page */
- no_cached_page:
- 		/*
- 		 * Ok, it wasn't cached, so we need to create a new
-@@ -1348,11 +1393,7 @@ no_cached_page:
- 	}
- 
- out:
--	ra->prev_pos = prev_index;
--	ra->prev_pos <<= PAGE_CACHE_SHIFT;
--	ra->prev_pos |= prev_offset;
--
--	*ppos = ((loff_t)index << PAGE_CACHE_SHIFT) + offset;
-+	i_split_up_read(inode);
- 	file_accessed(filp);
+ 		preempt_disable();
+ 		rtp = &__get_cpu_var(radix_tree_preloads);
+-		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
++		if (rtp->nr < preload_target)
+ 			rtp->nodes[rtp->nr++] = node;
+ 		else
+ 			kmem_cache_free(radix_tree_node_cachep, node);
+@@ -308,7 +359,7 @@ int radix_tree_preload(gfp_t gfp_mask)
+ {
+ 	/* Warn on non-sensical use... */
+ 	WARN_ON_ONCE(!(gfp_mask & __GFP_WAIT));
+-	return __radix_tree_preload(gfp_mask);
++	return __radix_tree_preload_contig(1, gfp_mask);
  }
+ EXPORT_SYMBOL(radix_tree_preload);
  
+@@ -320,13 +371,22 @@ EXPORT_SYMBOL(radix_tree_preload);
+ int radix_tree_maybe_preload(gfp_t gfp_mask)
+ {
+ 	if (gfp_mask & __GFP_WAIT)
+-		return __radix_tree_preload(gfp_mask);
++		return __radix_tree_preload_contig(1, gfp_mask);
+ 	/* Preloading doesn't help anything with this gfp mask, skip it */
+ 	preempt_disable();
+ 	return 0;
+ }
+ EXPORT_SYMBOL(radix_tree_maybe_preload);
+ 
++int radix_tree_maybe_preload_contig(unsigned size, gfp_t gfp_mask)
++{
++	if (gfp_mask & __GFP_WAIT)
++		return __radix_tree_preload_contig(size, gfp_mask);
++	/* Preloading doesn't help anything with this gfp mask, skip it */
++	preempt_disable();
++	return 0;
++}
++
+ /*
+  *	Return the maximum key which can be store into a
+  *	radix tree with height HEIGHT.
+@@ -1483,6 +1543,22 @@ static int radix_tree_callback(struct notifier_block *nfb,
+ 
+ void __init radix_tree_init(void)
+ {
++	/*
++	 * Restrictions on RADIX_TREE_PRELOAD_NR simplify RADIX_TREE_PRELOAD_MAX
++	 * calculation, it's already complex enough:
++	 *  - it must be multiplier of RADIX_TREE_MAP_SIZE, otherwise we will
++	 *    have to round it up to next RADIX_TREE_MAP_SIZE multiplier and we
++	 *    don't win anything;
++	 *  - must be less then number of items 2-level tree can contain.
++	 *    It's easier to calculate number of internal nodes required
++	 *    this way.
++	 */
++	if (RADIX_TREE_PRELOAD_NR != 1) {
++		BUILD_BUG_ON(RADIX_TREE_PRELOAD_NR % RADIX_TREE_MAP_SIZE != 0);
++		BUILD_BUG_ON(RADIX_TREE_PRELOAD_NR >
++				1UL << (2 * RADIX_TREE_MAP_SHIFT));
++	}
++
+ 	radix_tree_node_cachep = kmem_cache_create("radix_tree_node",
+ 			sizeof(struct radix_tree_node), 0,
+ 			SLAB_PANIC | SLAB_RECLAIM_ACCOUNT,
 -- 
 1.8.4.rc3
 
