@@ -1,110 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab3IWOaL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 10:30:11 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:41836 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab3IWO14 (ORCPT
+	id S1753602Ab3IWOct (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 10:32:49 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:17252 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab3IWOcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 10:27:56 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Mark Brown <broonie@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-pcmcia@lists.infradead.org,
-        linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 1/7] driver core: prevent deferred probe with platform_driver_probe
-Date: Mon, 23 Sep 2013 16:27:26 +0200
-Message-Id: <1379946452-25649-2-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1379946452-25649-1-git-send-email-jhovold@gmail.com>
-References: <20130923134028.GF21013@sirena.org.uk>
- <1379946452-25649-1-git-send-email-jhovold@gmail.com>
+	Mon, 23 Sep 2013 10:32:47 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 23 Sep 2013 07:29:14 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: [PATCH v2 05/12] clk: tegra: add header for common tegra clock IDs
+Date: Mon, 23 Sep 2013 17:24:57 +0300
+Message-ID: <1379946381-20125-6-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1379946381-20125-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1379946381-20125-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent drivers relying on platform_driver_probe from requesting
-deferred probing in order to avoid further futile probe attempts (either
-the driver has been unregistered or its probe function has been set to
-platform_drv_probe_fail when probing is retried).
+Many clocks are common between several Tegra SoCs. Define an enum to list
+them so we can move them to separate files which can be shared between
+SoCs. Each SoC specific file will provide an array with the common clocks
+which are present on the SoC and their DT binding ID.
 
-Note that several platform drivers currently return subsystem errors
-from probe and that these can include -EPROBE_DEFER (e.g. if a gpio
-request fails).
-
-Add a warning to platform_drv_probe that can be used to catch drivers
-that inadvertently request probe deferral while using
-platform_driver_probe.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- drivers/base/platform.c         | 17 +++++++++++++----
- include/linux/platform_device.h |  1 +
- 2 files changed, 14 insertions(+), 4 deletions(-)
+ drivers/clk/tegra/clk-id.h |  197 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 197 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/clk/tegra/clk-id.h
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 4f8bef3..47051cd 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -488,6 +488,11 @@ static int platform_drv_probe(struct device *_dev)
- 	if (ret && ACPI_HANDLE(_dev))
- 		acpi_dev_pm_detach(_dev, true);
- 
-+	if (drv->prevent_deferred_probe && ret == -EPROBE_DEFER) {
-+		dev_warn(_dev, "probe deferral not supported\n");
-+		ret = -ENXIO;
-+	}
+diff --git a/drivers/clk/tegra/clk-id.h b/drivers/clk/tegra/clk-id.h
+new file mode 100644
+index 0000000..b2a4d45
+--- /dev/null
++++ b/drivers/clk/tegra/clk-id.h
+@@ -0,0 +1,197 @@
++/*
++ * This header provides IDs for clocks common between several Tegra SoCs
++ */
 +
- 	return ret;
- }
- 
-@@ -553,8 +558,7 @@ EXPORT_SYMBOL_GPL(platform_driver_unregister);
- /**
-  * platform_driver_probe - register driver for non-hotpluggable device
-  * @drv: platform driver structure
-- * @probe: the driver probe routine, probably from an __init section,
-- *         must not return -EPROBE_DEFER.
-+ * @probe: the driver probe routine, probably from an __init section
-  *
-  * Use this instead of platform_driver_register() when you know the device
-  * is not hotpluggable and has already been registered, and you want to
-@@ -565,8 +569,7 @@ EXPORT_SYMBOL_GPL(platform_driver_unregister);
-  * into system-on-chip processors, where the controller devices have been
-  * configured as part of board setup.
-  *
-- * This is incompatible with deferred probing so probe() must not
-- * return -EPROBE_DEFER.
-+ * Note that this is incompatible with deferred probing.
-  *
-  * Returns zero if the driver registered and bound to a device, else returns
-  * a negative error code and with the driver not registered.
-@@ -576,6 +579,12 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
- {
- 	int retval, code;
- 
-+	/*
-+	 * Prevent driver from requesting probe deferral to avoid further
-+	 * futile probe attempts.
-+	 */
-+	drv->prevent_deferred_probe = true;
++#ifndef _TEGRA_CLK_ID_H
++#define _TEGRA_CLK_ID_H
 +
- 	/* make sure driver won't have bind/unbind attributes */
- 	drv->driver.suppress_bind_attrs = true;
- 
-diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-index ce8e4ff..16f6654 100644
---- a/include/linux/platform_device.h
-+++ b/include/linux/platform_device.h
-@@ -178,6 +178,7 @@ struct platform_driver {
- 	int (*resume)(struct platform_device *);
- 	struct device_driver driver;
- 	const struct platform_device_id *id_table;
-+	bool prevent_deferred_probe;
- };
- 
- #define to_platform_driver(drv)	(container_of((drv), struct platform_driver, \
++enum clk_id {
++	tegra_clk_rtc,
++	tegra_clk_timer,
++	tegra_clk_uarta,
++	tegra_clk_uartd,
++	tegra_clk_sdmmc2,
++	tegra_clk_i2s1,
++	tegra_clk_i2c1,
++	tegra_clk_ndflash,
++	tegra_clk_sdmmc1,
++	tegra_clk_sdmmc4,
++	tegra_clk_pwm,
++	tegra_clk_i2s0,
++	tegra_clk_i2s2,
++	tegra_clk_epp,
++	tegra_clk_gr_2d,
++	tegra_clk_usbd,
++	tegra_clk_isp,
++	tegra_clk_gr_3d,
++	tegra_clk_disp2,
++	tegra_clk_disp1,
++	tegra_clk_host1x,
++	tegra_clk_vcp,
++
++	tegra_clk_apbdma,
++	tegra_clk_kbc,
++	tegra_clk_kfuse,
++	tegra_clk_sbc1,
++	tegra_clk_nor,
++	tegra_clk_sbc2,
++	tegra_clk_sbc3,
++	tegra_clk_i2c5,
++	tegra_clk_dsia,
++	tegra_clk_mipi,
++	tegra_clk_hdmi,
++	tegra_clk_csi,
++	tegra_clk_i2c2,
++	tegra_clk_uartc,
++	tegra_clk_mipi_cal,
++	tegra_clk_emc,
++	tegra_clk_usb2,
++	tegra_clk_usb3,
++	tegra_clk_vde,
++	tegra_clk_bsea,
++	tegra_clk_bsev,
++
++	tegra_clk_i2c3,
++	tegra_clk_sbc4,
++	tegra_clk_sdmmc3,
++	tegra_clk_owr,
++	tegra_clk_csite,
++	tegra_clk_la,
++	tegra_clk_trace,
++	tegra_clk_soc_therm,
++	tegra_clk_dtv,
++	tegra_clk_ndspeed,
++	tegra_clk_i2cslow,
++	tegra_clk_dsib,
++	tegra_clk_tsec,
++	tegra_clk_xusb_host,
++	tegra_clk_msenc,
++	tegra_clk_csus,
++
++	tegra_clk_mselect,
++	tegra_clk_tsensor,
++	tegra_clk_i2s3,
++	tegra_clk_i2s4,
++	tegra_clk_i2c4,
++	tegra_clk_sbc5,
++	tegra_clk_sbc6,
++	tegra_clk_d_audio,
++	tegra_clk_apbif,
++	tegra_clk_dam0,
++	tegra_clk_dam1,
++	tegra_clk_dam2,
++	tegra_clk_hda2codec_2x,
++	tegra_clk_audio0_2x,
++	tegra_clk_audio1_2x,
++	tegra_clk_audio2_2x,
++	tegra_clk_audio3_2x,
++	tegra_clk_audio4_2x,
++	tegra_clk_spdif_2x,
++	tegra_clk_actmon,
++	tegra_clk_extern1,
++	tegra_clk_extern2,
++	tegra_clk_extern3,
++	tegra_clk_hda,
++	tegra_clk_se,
++
++	tegra_clk_hda2hdmi,
++	tegra_clk_cilab,
++	tegra_clk_cilcd,
++	tegra_clk_cile,
++	tegra_clk_dsialp,
++	tegra_clk_dsiblp,
++	tegra_clk_dds,
++	tegra_clk_dp2,
++	tegra_clk_amx,
++	tegra_clk_adx,
++	tegra_clk_xusb_ss,
++
++	tegra_clk_uartb,
++	tegra_clk_vfir,
++	tegra_clk_spdif_in,
++	tegra_clk_spdif_out,
++	tegra_clk_vi,
++	tegra_clk_vi_sensor,
++	tegra_clk_fuse,
++	tegra_clk_fuse_burn,
++	tegra_clk_clk_32k,
++	tegra_clk_clk_m,
++	tegra_clk_clk_m_div2,
++	tegra_clk_clk_m_div4,
++	tegra_clk_pll_ref,
++	tegra_clk_pll_c,
++	tegra_clk_pll_c_out1,
++	tegra_clk_pll_c2,
++	tegra_clk_pll_c3,
++	tegra_clk_pll_m,
++	tegra_clk_pll_m_out1,
++	tegra_clk_pll_p,
++	tegra_clk_pll_p_out1,
++	tegra_clk_pll_p_out2,
++	tegra_clk_pll_p_out3,
++	tegra_clk_pll_p_out4,
++	tegra_clk_pll_a,
++	tegra_clk_pll_a_out0,
++	tegra_clk_pll_d,
++	tegra_clk_pll_d_out0,
++	tegra_clk_pll_d2,
++	tegra_clk_pll_d2_out0,
++	tegra_clk_pll_u,
++	tegra_clk_pll_u_480m,
++
++	tegra_clk_pll_u_60m,
++	tegra_clk_pll_u_48m,
++	tegra_clk_pll_u_12m,
++	tegra_clk_pll_x,
++	tegra_clk_pll_x_out0,
++	tegra_clk_pll_re_vco,
++	tegra_clk_pll_re_out,
++	tegra_clk_pll_e_out0,
++	tegra_clk_spdif_in_sync,
++	tegra_clk_i2s0_sync,
++	tegra_clk_i2s1_sync,
++	tegra_clk_i2s2_sync,
++	tegra_clk_i2s3_sync,
++	tegra_clk_i2s4_sync,
++	tegra_clk_vimclk_sync,
++	tegra_clk_audio0,
++	tegra_clk_audio1,
++	tegra_clk_audio2,
++	tegra_clk_audio3,
++	tegra_clk_audio4,
++	tegra_clk_spdif,
++	tegra_clk_clk_out_1,
++	tegra_clk_clk_out_2,
++	tegra_clk_clk_out_3,
++	tegra_clk_blink,
++	tegra_clk_xusb_host_src,
++	tegra_clk_xusb_falcon_src,
++	tegra_clk_xusb_fs_src,
++	tegra_clk_xusb_ss_src,
++
++	tegra_clk_xusb_dev_src,
++	tegra_clk_xusb_dev,
++	tegra_clk_xusb_hs_src,
++	tegra_clk_sclk,
++	tegra_clk_hclk,
++	tegra_clk_pclk,
++	tegra_clk_cclk_g,
++	tegra_clk_cclk_lp,
++	tegra_clk_dfll_ref,
++	tegra_clk_dfll_soc,
++
++	tegra_clk_audio0_mux,
++	tegra_clk_audio1_mux,
++	tegra_clk_audio2_mux,
++	tegra_clk_audio3_mux,
++	tegra_clk_audio4_mux,
++	tegra_clk_spdif_mux,
++	tegra_clk_clk_out_1_mux,
++	tegra_clk_clk_out_2_mux,
++	tegra_clk_clk_out_3_mux,
++	tegra_clk_dsia_mux,
++	tegra_clk_dsib_mux,
++	tegra_clk_max,
++};
++
++#endif	/* _TEGRA_CLK_ID_H */
 -- 
-1.8.3.2
+1.7.7.rc0.72.g4b5ea.dirty
 
