@@ -1,56 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab3IWD6A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 23:58:00 -0400
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:38954
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753064Ab3IWD57 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 23:57:59 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h1de097h8275bhz31h87h2a8h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h129fi1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        <adi-buildroot-devel@lists.sourceforge.net>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH] pinctrl: pinctrl-adi2-bf60x: remove useless and duplicated GPIO definition for PPI2.
-Date: Mon, 23 Sep 2013 12:07:52 +0800
-Message-ID: <1379909272-5048-1-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.8.2.3
+	id S1752288Ab3IWECN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 00:02:13 -0400
+Received: from imap.thunk.org ([74.207.234.97]:36236 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750703Ab3IWECL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 00:02:11 -0400
+Date: Mon, 23 Sep 2013 00:01:48 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: hpa@zytor.com, joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
+        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
+        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de,
+        "H. Peter Anvin" <hpa@linux.intel.com>, stable@vger.kernel.org
+Subject: Re: [PATCH, RFC 03/12] random: Allow fractional bits to be tracked
+Message-ID: <20130923040148.GG7321@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+	hpa@zytor.com, joern@logfs.org, macro@linux-mips.org,
+	ralf@linux-mips.org, dave.taht@gmail.com, blogic@openwrt.org,
+	andrewmcgr@gmail.com, smueller@chronox.de, geert@linux-m68k.org,
+	tg@mirbsd.de, "H. Peter Anvin" <hpa@linux.intel.com>,
+	stable@vger.kernel.org
+References: <1379882338-7209-1-git-send-email-tytso@mit.edu>
+ <1379882338-7209-4-git-send-email-tytso@mit.edu>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379882338-7209-4-git-send-email-tytso@mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+I've added the following changes to this patch since upon testing,
+there were some uses of r->entropy_count that were not properly
+converted from using fractional bits to bits.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- drivers/pinctrl/pinctrl-adi2-bf60x.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+					- Ted
 
-diff --git a/drivers/pinctrl/pinctrl-adi2-bf60x.c b/drivers/pinctrl/pinctrl-adi2-bf60x.c
-index e90cb80..bf57aea 100644
---- a/drivers/pinctrl/pinctrl-adi2-bf60x.c
-+++ b/drivers/pinctrl/pinctrl-adi2-bf60x.c
-@@ -236,8 +236,7 @@ static const unsigned ppi2_8b_pins[] = {
- static const unsigned ppi2_16b_pins[] = {
- 	GPIO_PA0, GPIO_PA1, GPIO_PA2, GPIO_PA3, GPIO_PA4, GPIO_PA5, GPIO_PA6,
- 	GPIO_PA7, GPIO_PA8, GPIO_PA9, GPIO_PA10, GPIO_PA11, GPIO_PA12,
--	GPIO_PA13, GPIO_PA14, GPIO_PA15,
--	GPIO_PA7, GPIO_PB0, GPIO_PB1, GPIO_PB2, GPIO_PB3,
-+	GPIO_PA13, GPIO_PA14, GPIO_PA15, GPIO_PB0, GPIO_PB1, GPIO_PB2,
- };
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 1547338..8654b7e 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -286,6 +286,7 @@
+  * entropy_count, trickle_thresh
+  */
+ #define ENTROPY_SHIFT 3
++#define ENTROPY_BITS(r) ((r)->entropy_count >> ENTROPY_SHIFT)
  
- static const unsigned lp0_pins[] = {
--- 
-1.8.2.3
-
-
+ /*
+  * The minimum number of bits of entropy before we wake up a read on
+@@ -618,7 +619,8 @@ retry:
+ 			r->initialized = 1;
+ 	}
+ 
+-	trace_credit_entropy_bits(r->name, nbits, entropy_count,
++	trace_credit_entropy_bits(r->name, nbits,
++				  entropy_count >> ENTROPY_SHIFT,
+ 				  r->entropy_total, _RET_IP_);
+ 
+ 	/* should we wake readers? */
+@@ -695,7 +697,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
+ 
+ 	preempt_disable();
+ 	/* if over the trickle threshold, use only 1 in 4096 samples */
+-	if (input_pool.entropy_count > trickle_thresh &&
++	if (ENTROPY_BITS(&input_pool) > trickle_thresh &&
+ 	    ((__this_cpu_inc_return(trickle_count) - 1) & 0xfff))
+ 		goto out;
+ 
+@@ -999,7 +1001,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+ 			r->last_data_init = true;
+ 			spin_unlock_irqrestore(&r->lock, flags);
+ 			trace_extract_entropy(r->name, EXTRACT_SIZE,
+-					      r->entropy_count, _RET_IP_);
++					      ENTROPY_BITS(r), _RET_IP_);
+ 			xfer_secondary_pool(r, EXTRACT_SIZE);
+ 			extract_buf(r, tmp);
+ 			spin_lock_irqsave(&r->lock, flags);
+@@ -1008,7 +1010,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+ 		spin_unlock_irqrestore(&r->lock, flags);
+ 	}
+ 
+-	trace_extract_entropy(r->name, nbytes, r->entropy_count, _RET_IP_);
++	trace_extract_entropy(r->name, nbytes, ENTROPY_BITS(r), _RET_IP_);
+ 	xfer_secondary_pool(r, nbytes);
+ 	nbytes = account(r, nbytes, min, reserved);
+ 
+@@ -1041,7 +1043,7 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
+ 	ssize_t ret = 0, i;
+ 	__u8 tmp[EXTRACT_SIZE];
+ 
+-	trace_extract_entropy_user(r->name, nbytes, r->entropy_count, _RET_IP_);
++	trace_extract_entropy_user(r->name, nbytes, ENTROPY_BITS(r), _RET_IP_);
+ 	xfer_secondary_pool(r, nbytes);
+ 	nbytes = account(r, nbytes, 0, 0);
+ 
+@@ -1213,8 +1215,8 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ 			DEBUG_ENT("sleeping?\n");
+ 
+ 			wait_event_interruptible(random_read_wait,
+-				input_pool.entropy_count >=
+-						 random_read_wakeup_thresh);
++				ENTROPY_BITS(&input_pool) >=
++				random_read_wakeup_thresh);
+ 
+ 			DEBUG_ENT("awake\n");
+ 
+@@ -1250,9 +1252,9 @@ random_poll(struct file *file, poll_table * wait)
+ 	poll_wait(file, &random_read_wait, wait);
+ 	poll_wait(file, &random_write_wait, wait);
+ 	mask = 0;
+-	if (input_pool.entropy_count >= random_read_wakeup_thresh)
++	if (ENTROPY_BITS(&input_pool) >= random_read_wakeup_thresh)
+ 		mask |= POLLIN | POLLRDNORM;
+-	if (input_pool.entropy_count < random_write_wakeup_thresh)
++	if (ENTROPY_BITS(&input_pool) < random_write_wakeup_thresh)
+ 		mask |= POLLOUT | POLLWRNORM;
+ 	return mask;
+ }
+@@ -1303,7 +1305,7 @@ static long random_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+ 	switch (cmd) {
+ 	case RNDGETENTCNT:
+ 		/* inherently racy, no point locking */
+-		ent_count = input_pool.entropy_count >> ENTROPY_SHIFT;
++		ent_count = ENTROPY_BITS(&input_pool);
+ 		if (put_user(ent_count, p))
+ 			return -EFAULT;
+ 		return 0;
