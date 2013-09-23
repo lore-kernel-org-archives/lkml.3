@@ -1,104 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab3IWSTH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:19:07 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:58638 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab3IWSTF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:19:05 -0400
-Message-ID: <5240943E.5080707@kernel.org>
-Date: Mon, 23 Sep 2013 20:19:26 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH 17/20] iio: pressure-core: st: Provide support for the
- Vdd_IO power supply
-References: <1379347346-823-1-git-send-email-lee.jones@linaro.org> <1379347346-823-18-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1379347346-823-18-git-send-email-lee.jones@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754065Ab3IWSTY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:19:24 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:41727 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753152Ab3IWSTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 14:19:21 -0400
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: tpmdd-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>,
+        Rajiv Andrade <mail@srajiv.net>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 11/13] tpm: Use the ops structure instead of a copy in tpm_vendor_specific
+Date: Mon, 23 Sep 2013 12:14:41 -0600
+Message-Id: <1379960083-8942-12-git-send-email-jgunthorpe@obsidianresearch.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/13 17:02, Lee Jones wrote:
-> The power to some of the sensors are controlled by regulators. In most
-> cases these are 'always on', but if not they will fail to work until
-> the regulator is enabled using the relevant APIs. This patch allows for
-> the Vdd_IO power supply to be specified by either platform data or
-> Device Tree.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Applied to the togreg branch of iio.git
+This builds on the last commit to use the ops structure in the core
+and reduce the size of tpm_vendor_specific.
 
-Thanks - just the DT patches to go once that discussion is cleanly finished.
-> ---
->  drivers/iio/pressure/st_pressure_core.c | 13 ++++++++++++-
->  include/linux/iio/common/st_sensors.h   |  2 ++
->  2 files changed, 14 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
-> index c801c80..e3f3888 100644
-> --- a/drivers/iio/pressure/st_pressure_core.c
-> +++ b/drivers/iio/pressure/st_pressure_core.c
-> @@ -319,7 +319,7 @@ void st_press_power_enable(struct iio_dev *indio_dev)
->  	struct st_sensor_data *pdata = iio_priv(indio_dev);
->  	int err;
->  
-> -	/* Regulators not mandatory, but if requested we should enable it. */
-> +	/* Regulators not mandatory, but if requested we should enable them. */
->  	pdata->vdd = devm_regulator_get_optional(&indio_dev->dev, "vdd");
->  	if (!IS_ERR(pdata->vdd)) {
->  		err = regulator_enable(pdata->vdd);
-> @@ -327,6 +327,14 @@ void st_press_power_enable(struct iio_dev *indio_dev)
->  			dev_warn(&indio_dev->dev,
->  				 "Failed to enable specified Vdd supply\n");
->  	}
-> +
-> +	pdata->vdd_io = devm_regulator_get_optional(&indio_dev->dev, "vddio");
-> +	if (!IS_ERR(pdata->vdd_io)) {
-> +		err = regulator_enable(pdata->vdd_io);
-> +		if (err != 0)
-> +			dev_warn(&indio_dev->dev,
-> +				 "Failed to enable specified Vdd_IO supply\n");
-> +	}
->  }
->  
->  void st_press_power_disable(struct iio_dev *indio_dev)
-> @@ -335,6 +343,9 @@ void st_press_power_disable(struct iio_dev *indio_dev)
->  
->  	if (!IS_ERR(pdata->vdd))
->  		regulator_disable(pdata->vdd);
-> +
-> +	if (!IS_ERR(pdata->vdd_io))
-> +		regulator_disable(pdata->vdd_io);
->  }
->  
->  int st_press_common_probe(struct iio_dev *indio_dev,
-> diff --git a/include/linux/iio/common/st_sensors.h b/include/linux/iio/common/st_sensors.h
-> index 968b84e..3c005eb 100644
-> --- a/include/linux/iio/common/st_sensors.h
-> +++ b/include/linux/iio/common/st_sensors.h
-> @@ -203,6 +203,7 @@ struct st_sensors {
->   * @sensor: Pointer to the current sensor struct in use.
->   * @current_fullscale: Maximum range of measure by the sensor.
->   * @vdd: Pointer to sensor's Vdd power supply
-> + * @vdd_io: Pointer to sensor's Vdd-IO power supply
->   * @enabled: Status of the sensor (false->off, true->on).
->   * @multiread_bit: Use or not particular bit for [I2C/SPI] multiread.
->   * @buffer_data: Data used by buffer part.
-> @@ -219,6 +220,7 @@ struct st_sensor_data {
->  	struct st_sensors *sensor;
->  	struct st_sensor_fullscale_avl *current_fullscale;
->  	struct regulator *vdd;
-> +	struct regulator *vdd_io;
->  
->  	bool enabled;
->  	bool multiread_bit;
-> 
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ drivers/char/tpm/tpm-sysfs.c        |  2 +-
+ drivers/char/tpm/tpm.c              | 35 +++++++++++++----------------------
+ drivers/char/tpm/tpm.h              |  9 +--------
+ drivers/char/tpm/tpm_i2c_stm_st33.c |  4 ++--
+ drivers/char/tpm/tpm_spi_stm_st33.c |  4 ++--
+ 5 files changed, 19 insertions(+), 35 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
+index 3bcfed0..d2a8bca 100644
+--- a/drivers/char/tpm/tpm-sysfs.c
++++ b/drivers/char/tpm/tpm-sysfs.c
+@@ -245,7 +245,7 @@ static ssize_t cancel_store(struct device *dev, struct device_attribute *attr,
+ 	if (chip == NULL)
+ 		return 0;
+ 
+-	chip->vendor.cancel(chip);
++	chip->ops->cancel(chip);
+ 	return count;
+ }
+ static DEVICE_ATTR_WO(cancel);
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index 60b04df..eef2edd 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -353,7 +353,8 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+ 
+ 	mutex_lock(&chip->tpm_mutex);
+ 
+-	if ((rc = chip->vendor.send(chip, (u8 *) buf, count)) < 0) {
++	rc = chip->ops->send(chip, (u8 *) buf, count);
++	if (rc < 0) {
+ 		dev_err(chip->dev,
+ 			"tpm_transmit: tpm_send: error %zd\n", rc);
+ 		goto out;
+@@ -364,12 +365,12 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+ 
+ 	stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
+ 	do {
+-		u8 status = chip->vendor.status(chip);
+-		if ((status & chip->vendor.req_complete_mask) ==
+-		    chip->vendor.req_complete_val)
++		u8 status = chip->ops->status(chip);
++		if ((status & chip->ops->req_complete_mask) ==
++		    chip->ops->req_complete_val)
+ 			goto out_recv;
+ 
+-		if (chip->vendor.req_canceled(chip, status)) {
++		if (chip->ops->req_canceled(chip, status)) {
+ 			dev_err(chip->dev, "Operation Canceled\n");
+ 			rc = -ECANCELED;
+ 			goto out;
+@@ -379,13 +380,13 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+ 		rmb();
+ 	} while (time_before(jiffies, stop));
+ 
+-	chip->vendor.cancel(chip);
++	chip->ops->cancel(chip);
+ 	dev_err(chip->dev, "Operation Timed out\n");
+ 	rc = -ETIME;
+ 	goto out;
+ 
+ out_recv:
+-	rc = chip->vendor.recv(chip, (u8 *) buf, bufsiz);
++	rc = chip->ops->recv(chip, (u8 *) buf, bufsiz);
+ 	if (rc < 0)
+ 		dev_err(chip->dev,
+ 			"tpm_transmit: tpm_recv: error %zd\n", rc);
+@@ -807,12 +808,12 @@ EXPORT_SYMBOL_GPL(tpm_send);
+ static bool wait_for_tpm_stat_cond(struct tpm_chip *chip, u8 mask, bool check_cancel,
+ 				   bool *canceled)
+ {
+-	u8 status = chip->vendor.status(chip);
++	u8 status = chip->ops->status(chip);
+ 
+ 	*canceled = false;
+ 	if ((status & mask) == mask)
+ 		return true;
+-	if (check_cancel && chip->vendor.req_canceled(chip, status)) {
++	if (check_cancel && chip->ops->req_canceled(chip, status)) {
+ 		*canceled = true;
+ 		return true;
+ 	}
+@@ -828,7 +829,7 @@ int wait_for_tpm_stat(struct tpm_chip *chip, u8 mask, unsigned long timeout,
+ 	bool canceled = false;
+ 
+ 	/* check current status */
+-	status = chip->vendor.status(chip);
++	status = chip->ops->status(chip);
+ 	if ((status & mask) == mask)
+ 		return 0;
+ 
+@@ -855,7 +856,7 @@ again:
+ 	} else {
+ 		do {
+ 			msleep(TPM_TIMEOUT);
+-			status = chip->vendor.status(chip);
++			status = chip->ops->status(chip);
+ 			if ((status & mask) == mask)
+ 				return 0;
+ 		} while (time_before(jiffies, stop));
+@@ -1027,9 +1028,6 @@ void tpm_dev_vendor_release(struct tpm_chip *chip)
+ 	if (!chip)
+ 		return;
+ 
+-	if (chip->vendor.release)
+-		chip->vendor.release(chip->dev);
+-
+ 	clear_bit(chip->dev_num, dev_mask);
+ }
+ EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
+@@ -1074,14 +1072,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+ 	mutex_init(&chip->tpm_mutex);
+ 	INIT_LIST_HEAD(&chip->list);
+ 
+-	chip->vendor.req_complete_mask = ops->req_complete_mask;
+-	chip->vendor.req_complete_val = ops->req_complete_val;
+-	chip->vendor.req_canceled = ops->req_canceled;
+-	chip->vendor.recv = ops->recv;
+-	chip->vendor.send = ops->send;
+-	chip->vendor.cancel = ops->cancel;
+-	chip->vendor.status = ops->status;
+-
++	chip->ops = ops;
+ 	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
+ 
+ 	if (chip->dev_num >= TPM_NUM_DEVICES) {
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index a56af2c..7b0a46e 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -64,9 +64,6 @@ enum tpm_duration {
+ struct tpm_chip;
+ 
+ struct tpm_vendor_specific {
+-	u8 req_complete_mask;
+-	u8 req_complete_val;
+-	bool (*req_canceled)(struct tpm_chip *chip, u8 status);
+ 	void __iomem *iobase;		/* ioremapped address */
+ 	unsigned long base;		/* TPM base address */
+ 
+@@ -76,11 +73,6 @@ struct tpm_vendor_specific {
+ 	int region_size;
+ 	int have_region;
+ 
+-	int (*recv) (struct tpm_chip *, u8 *, size_t);
+-	int (*send) (struct tpm_chip *, u8 *, size_t);
+-	void (*cancel) (struct tpm_chip *);
+-	u8 (*status) (struct tpm_chip *);
+-	void (*release) (struct device *);
+ 	struct miscdevice miscdev;
+ 	struct list_head list;
+ 	int locality;
+@@ -104,6 +96,7 @@ struct tpm_vendor_specific {
+ 
+ struct tpm_chip {
+ 	struct device *dev;	/* Device stuff */
++	const struct tpm_class_ops *ops;
+ 
+ 	int dev_num;		/* /dev/tpm# */
+ 	char devname[7];
+diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
+index 0ef5d94..cd8c3e3 100644
+--- a/drivers/char/tpm/tpm_i2c_stm_st33.c
++++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
+@@ -559,7 +559,7 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
+ 	}
+ 
+ out:
+-	chip->vendor.cancel(chip);
++	chip->ops->cancel(chip);
+ 	release_locality(chip);
+ 	return size;
+ }
+@@ -808,7 +808,7 @@ static int tpm_st33_i2c_pm_resume(struct device *dev)
+ 	if (power_mgt) {
+ 		gpio_set_value(pin_infos->io_lpcpd, 1);
+ 		ret = wait_for_serirq_timeout(chip,
+-					  (chip->vendor.status(chip) &
++					  (chip->ops->status(chip) &
+ 					  TPM_STS_VALID) == TPM_STS_VALID,
+ 					  chip->vendor.timeout_b);
+ 	} else {
+diff --git a/drivers/char/tpm/tpm_spi_stm_st33.c b/drivers/char/tpm/tpm_spi_stm_st33.c
+index 619545f..22f6e83 100644
+--- a/drivers/char/tpm/tpm_spi_stm_st33.c
++++ b/drivers/char/tpm/tpm_spi_stm_st33.c
+@@ -586,7 +586,7 @@ static int tpm_stm_spi_recv(struct tpm_chip *chip, unsigned char *buf,
+ 	}
+ 
+ out:
+-	chip->vendor.cancel(chip);
++	chip->ops->cancel(chip);
+ 	release_locality(chip);
+ 	return size;
+ }
+@@ -843,7 +843,7 @@ static int tpm_st33_spi_pm_resume(struct device *dev)
+ 	if (power_mgt) {
+ 		gpio_set_value(pin_infos->io_lpcpd, 1);
+ 		ret = wait_for_serirq_timeout(chip,
+-					 (chip->vendor.status(chip) &
++					 (chip->ops->status(chip) &
+ 					  TPM_STS_VALID) == TPM_STS_VALID,
+ 					  chip->vendor.timeout_b);
+ 	} else {
+-- 
+1.8.1.2
+
