@@ -1,99 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab3IWVnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:43:55 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:40771 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543Ab3IWVnx (ORCPT
+	id S1754564Ab3IWVoT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:44:19 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:50518 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753983Ab3IWVmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:43:53 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        James Hogan <james.hogan@imgtec.com>
-References: <878uzmhkqg.fsf@xmission.com> <874naahkng.fsf@xmission.com>
-	<524018EA.9070202@imgtec.com>
-Date: Mon, 23 Sep 2013 14:41:17 -0700
-In-Reply-To: <524018EA.9070202@imgtec.com> (James Hogan's message of "Mon, 23
-	Sep 2013 11:33:14 +0100")
-Message-ID: <87ioxrrzb6.fsf_-_@tw-ebiederman.twitter.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+PvmxKWjSZom8l5drB3Y6wMMq+/FLf/hw=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH] sysfs: Allow mounting without CONFIG_NET
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Mon, 23 Sep 2013 17:42:49 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        openezx-devel@lists.openezx.org, linux-samsung-soc@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 08/10] pwm-backlight: Use new enable_gpio field
+Date: Mon, 23 Sep 2013 23:41:05 +0200
+Message-Id: <1379972467-11243-9-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1379972467-11243-1-git-send-email-treding@nvidia.com>
+References: <1379972467-11243-1-git-send-email-treding@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Make use of the new enable_gpio field and allow it to be set from DT as
+well. Now that all legacy users of platform data have been converted to
+initialize this field to an invalid value, it is safe to use the field
+from the driver.
 
-In kobj_ns_current_may_mount the default should be to allow the
-mount.  The test is only for a single kobj_ns_type at a time, and unless
-there is a reason to prevent it the mounting sysfs should be allowed.
-Subsystems that are not registered can't have are not involved so can't
-have a reason to prevent mounting sysfs.
-
-This is a bug-fix to:
-    commit 7dc5dbc879bd0779924b5132a48b731a0bc04a1e
-    Author: Eric W. Biederman <ebiederm@xmission.com>
-    Date:   Mon Mar 25 20:07:01 2013 -0700
-    
-        sysfs: Restrict mounting sysfs
-        
-        Don't allow mounting sysfs unless the caller has CAP_SYS_ADMIN rights
-        over the net namespace.  The principle here is if you create or have
-        capabilities over it you can mount it, otherwise you get to live with
-        what other people have mounted.
-        
-        Instead of testing this with a straight forward ns_capable call,
-        perform this check the long and torturous way with kobject helpers,
-        this keeps direct knowledge of namespaces out of sysfs, and preserves
-        the existing sysfs abstractions.
-        
-        Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-        Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-
-That came in via the userns tree during the 3.12 merge window.
-    
-Reported-by: James Hogan <james.hogan@imgtec.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
+ .../bindings/video/backlight/pwm-backlight.txt     |  3 ++
+ drivers/video/backlight/pwm_bl.c                   | 54 +++++++++++++++++++---
+ 2 files changed, 50 insertions(+), 7 deletions(-)
 
- lib/kobject.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
-
-diff --git a/lib/kobject.c b/lib/kobject.c
-index 9621751..669bf19 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -933,10 +933,7 @@ const struct kobj_ns_type_operations *kobj_ns_ops(struct kobject *kobj)
+diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+index 1e4fc72..052eb03 100644
+--- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
++++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+@@ -14,6 +14,7 @@ Required properties:
+ Optional properties:
+   - pwm-names: a list of names for the PWM devices specified in the
+                "pwms" property (see PWM binding[0])
++  - enable-gpios: a list of GPIOs to enable and disable the backlight
  
- bool kobj_ns_current_may_mount(enum kobj_ns_type type)
+ [0]: Documentation/devicetree/bindings/pwm/pwm.txt
+ 
+@@ -25,4 +26,6 @@ Example:
+ 
+ 		brightness-levels = <0 4 8 16 32 64 128 255>;
+ 		default-brightness-level = <6>;
++
++		enable-gpios = <&gpio 58 0>;
+ 	};
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 8a49b30..506810c 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -10,6 +10,8 @@
+  * published by the Free Software Foundation.
+  */
+ 
++#include <linux/gpio.h>
++#include <linux/of_gpio.h>
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+@@ -27,6 +29,8 @@ struct pwm_bl_data {
+ 	unsigned int		period;
+ 	unsigned int		lth_brightness;
+ 	unsigned int		*levels;
++	int			enable_gpio;
++	unsigned long		enable_gpio_flags;
+ 	int			(*notify)(struct device *,
+ 					  int brightness);
+ 	void			(*notify_after)(struct device *,
+@@ -51,12 +55,27 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb, int brightness,
+ 		     pb->lth_brightness;
+ 
+ 	pwm_config(pb->pwm, duty_cycle, pb->period);
++
++	if (gpio_is_valid(pb->enable_gpio)) {
++		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
++			gpio_set_value(pb->enable_gpio, 0);
++		else
++			gpio_set_value(pb->enable_gpio, 1);
++	}
++
+ 	pwm_enable(pb->pwm);
+ }
+ 
+ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
  {
--	bool may_mount = false;
--
--	if (type == KOBJ_NS_TYPE_NONE)
--		return true;
-+	bool may_mount = true;
+ 	pwm_disable(pb->pwm);
++
++	if (gpio_is_valid(pb->enable_gpio)) {
++		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
++			gpio_set_value(pb->enable_gpio, 1);
++		else
++			gpio_set_value(pb->enable_gpio, 0);
++	}
+ }
  
- 	spin_lock(&kobj_ns_type_lock);
- 	if ((type > KOBJ_NS_TYPE_NONE) && (type < KOBJ_NS_TYPES) &&
+ static int pwm_backlight_update_status(struct backlight_device *bl)
+@@ -108,6 +127,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 				  struct platform_pwm_backlight_data *data)
+ {
+ 	struct device_node *node = dev->of_node;
++	enum of_gpio_flags flags;
+ 	struct property *prop;
+ 	int length;
+ 	u32 value;
+@@ -148,11 +168,10 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 		data->max_brightness--;
+ 	}
+ 
+-	/*
+-	 * TODO: Most users of this driver use a number of GPIOs to control
+-	 *       backlight power. Support for specifying these needs to be
+-	 *       added.
+-	 */
++	data->enable_gpio = of_get_named_gpio_flags(node, "enable-gpios", 0,
++						    &flags);
++	if (gpio_is_valid(data->enable_gpio) && (flags & OF_GPIO_ACTIVE_LOW))
++		data->enable_gpio_flags |= PWM_BACKLIGHT_GPIO_ACTIVE_LOW;
+ 
+ 	return 0;
+ }
+@@ -210,12 +229,30 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	} else
+ 		max = data->max_brightness;
+ 
++	pb->enable_gpio = data->enable_gpio;
++	pb->enable_gpio_flags = data->enable_gpio_flags;
+ 	pb->notify = data->notify;
+ 	pb->notify_after = data->notify_after;
+ 	pb->check_fb = data->check_fb;
+ 	pb->exit = data->exit;
+ 	pb->dev = &pdev->dev;
+ 
++	if (gpio_is_valid(pb->enable_gpio)) {
++		unsigned long flags;
++
++		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
++			flags = GPIOF_OUT_INIT_HIGH;
++		else
++			flags = GPIOF_OUT_INIT_LOW;
++
++		ret = gpio_request_one(pb->enable_gpio, flags, "enable");
++		if (ret < 0) {
++			dev_err(&pdev->dev, "failed to request GPIO#%d: %d\n",
++				pb->enable_gpio, ret);
++			goto err_alloc;
++		}
++	}
++
+ 	pb->pwm = devm_pwm_get(&pdev->dev, NULL);
+ 	if (IS_ERR(pb->pwm)) {
+ 		dev_err(&pdev->dev, "unable to request PWM, trying legacy API\n");
+@@ -224,7 +261,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 		if (IS_ERR(pb->pwm)) {
+ 			dev_err(&pdev->dev, "unable to request legacy PWM\n");
+ 			ret = PTR_ERR(pb->pwm);
+-			goto err_alloc;
++			goto err_gpio;
+ 		}
+ 	}
+ 
+@@ -249,7 +286,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	if (IS_ERR(bl)) {
+ 		dev_err(&pdev->dev, "failed to register backlight\n");
+ 		ret = PTR_ERR(bl);
+-		goto err_alloc;
++		goto err_gpio;
+ 	}
+ 
+ 	if (data->dft_brightness > data->max_brightness) {
+@@ -265,6 +302,9 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, bl);
+ 	return 0;
+ 
++err_gpio:
++	if (gpio_is_valid(pb->enable_gpio))
++		gpio_free(pb->enable_gpio);
+ err_alloc:
+ 	if (data->exit)
+ 		data->exit(&pdev->dev);
 -- 
-1.7.10.4
+1.8.4
 
