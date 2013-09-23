@@ -1,82 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab3IWSG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:06:56 -0400
-Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:55024 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753252Ab3IWSGy (ORCPT
+	id S1753527Ab3IWSHd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:07:33 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:42165 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613Ab3IWSHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:06:54 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6691:7652:8527:10004:10400:10848:11232:11473:11658:11914:12043:12296:12438:12517:12519:12679:12740:13095:13137:13150:13230:13231,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cork12_59358d7fa464b
-X-Filterd-Recvd-Size: 2751
-Message-ID: <1379959611.3575.40.camel@joe-AO722>
-Subject: Re: checkpatch guide for newbies
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 23 Sep 2013 11:06:51 -0700
-In-Reply-To: <20130923090100.GE6192@mwanda>
-References: <20130923090100.GE6192@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Mon, 23 Sep 2013 14:07:30 -0400
+Message-ID: <52408351.8080400@gmail.com>
+Date: Tue, 24 Sep 2013 02:07:13 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, toshi.kani@hp.com,
+        zhangyanfei@cn.fujitsu.com, liwanp@linux.vnet.ibm.com, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 2/5] memblock: Improve memblock to support allocation
+ from lower address.
+References: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com> <1379064655-20874-3-git-send-email-tangchen@cn.fujitsu.com> <20130923155027.GD14547@htj.dyndns.org>
+In-Reply-To: <20130923155027.GD14547@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-23 at 12:01 +0300, Dan Carpenter wrote:
-> I've written a checkpatch guide for newbies because it seems like they
-> make the same mistakes over and over.  I intend to put it under
-> Documentation/.  Could you look it over?
+Hello tejun,
+
+On 09/23/2013 11:50 PM, Tejun Heo wrote:
+> Hello,
 > 
+> Please separate out factoring out of top-down allocation.  That change
+> is an equivalent conversion which shouldn't involve any functional
+> difference.  Mixing that with introduction of new feature isn't a good
+> idea, so the patch split should be 1. split out top-down allocation
+> from memblock_find_in_range_node() 2. introduce bottom-up flag and
+> implement the feature.
 > 
-> 		Introduction
+> On Fri, Sep 13, 2013 at 05:30:52PM +0800, Tang Chen wrote:
+>> +/**
+>>   * memblock_find_in_range_node - find free area in given range and node
+>> - * @start: start of candidate range
+>> + * @start: start of candidate range, can be %MEMBLOCK_ALLOC_ACCESSIBLE
 > 
-> This document is aimed at new kernel contributors using "checkpatch.pl --file".
+> The only reason @end has special ACCESSIBLE flag is because we don't
+> know how high is actually accessible and it needs to be distinguished
+> from ANYWHERE.  We assume that the lower addresses are always mapped,
+> so using ACCESSIBLE for @start is weird.  I think it'd be clearer to
+> make the memblock interface to set the direction explicitly state what
+> it's doing - ie. something like set_memblock_alloc_above_kernel(bool
+> enable).  We clearly don't want pure bottom-up allocation and the
+> @start/@end params in memblock interface are used to impose extra
+> limitations for each allocation, not the overall allocator behavior.
+
+Forgot this one...
+
+Yes, I am following your advice in principle but kind of confused by
+something you said above. Where should the set_memblock_alloc_above_kernel
+be used? IMO, the function is like:
+
+find_in_range_node()
+{
+     if (ok) {
+           /* bottom-up */
+           ret = __memblock_find_in_range(max(start, _end_of_kernel), end...);
+           if (!ret)
+                 return ret;
+     }
+
+     /* top-down retry */
+     return __memblock_find_in_range_rev(start, end...)
+}
+
+For bottom-up allocation, we always start from max(start, _end_of_kernel).
+
+Thanks.
+
 > 
-> The first thing to remember is that the aim is not to get rid of every
-> checkpatch.pl warning; the aim is to make the code cleaner and more readable.
-> The other thing to remember is that checkpatch.pl is not a very smart tool and
-> there are mistakes that it misses so keep your eyes open for those as well.
-
-Maybe suggest using
-
-	checkpatch.pl --file --fix --strict --types=<specific_type> <file>
-	mv <file>.EXPERIMENTAL-checkpatch-fixes <file>
-	git diff <file>
-
-where <specific_types> is one of
-
-For whitespace only changes
-	SPACING
-	SPACE_BEFORE_TAB
-	POINTER_LOCATION
-For code changes:
-	C99_COMMENTS
-	PREFER_PACKED
-	PREFER_ALIGNED
-	AVOID_EXTERNS
-	PARENTHESIS_ALIGNMENT
-
-> For example, checkpatch.pl could warn about a badly formatted warning message.
-> Ask yourself, is the warning message is clear?  Is it needed?  Could a
-> non-privileged user trigger the warning and flood the syslog?  Are there
-> spelling mistakes?  Since Checkpatch.pl has flagged the line as sloppy code,
-> there may be multiple mistakes.
+>> @@ -100,8 +180,7 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>>  					phys_addr_t end, phys_addr_t size,
+>>  					phys_addr_t align, int nid)
+>>  {
+>> -	phys_addr_t this_start, this_end, cand;
+>> -	u64 i;
+>> +	phys_addr_t ret;
+>>  
+>>  	/* pump up @end */
+>>  	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+>> @@ -111,18 +190,22 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>>  	start = max_t(phys_addr_t, start, PAGE_SIZE);
+>>  	end = max(start, end);
+>>  
+>> -	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
+>> -		this_start = clamp(this_start, start, end);
+>> -		this_end = clamp(this_end, start, end);
+>> +	if (memblock_direction_bottom_up()) {
+>> +		/*
+>> +		 * MEMBLOCK_ALLOC_ACCESSIBLE is 0, which is less than the end
+>> +		 * of kernel image. So callers specify MEMBLOCK_ALLOC_ACCESSIBLE
+>> +		 * as @start is OK.
+>> +		 */
+>> +		start =	max(start, __pa_symbol(_end)); /* End of kernel image. */
+>>  
+>> -		if (this_end < size)
+>> -			continue;
+>> +		ret = __memblock_find_range(start, end, size, align, nid);
+>> +		if (ret)
+>> +			return ret;
+>>  
+>> -		cand = round_down(this_end - size, align);
+>> -		if (cand >= this_start)
+>> -			return cand;
+>> +		pr_warn("memblock: Failed to allocate memory in bottom up direction. Now try top down direction.\n");
 > 
-> In the Linux kernel, we take an enormous pride in our work and we want clean
-> code.  But the one major drawback to cleanup patches is that they break
-> "git blame" so it's not a good idea for newbies to send very trivial cleanup
-> patches to the kernel/ directory.  It's better to get a little experience in the
-> drivers/ directory first.  The drivers/staging/ directory in particular always
-> needs cleanup patches.
+> You probably wanna explain why retrying top-down allocation may
+> succeed when bottom-up failed.
+> 
+> Thanks.
+> 
 
-I think suggesting working _only_ in the drivers/staging/
-directory tree might be better.
 
-Maybe I'll submit some auto-neatening script eventually
-and see what you think.
-
+-- 
+Thanks.
+Zhang Yanfei
