@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab3IWAXu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 20:23:50 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:51373 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab3IWAXb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 20:23:31 -0400
+	id S1753101Ab3IWAZW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 20:25:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37671 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752773Ab3IWAZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 20:25:20 -0400
+Message-ID: <523F8A3C.7010209@zytor.com>
+Date: Sun, 22 Sep 2013 17:24:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130922225809.GL856@cmpxchg.org>
-References: <1379873866-29219-1-git-send-email-felipensp@gmail.com> <20130922225809.GL856@cmpxchg.org>
-From: Felipe Pena <felipensp@gmail.com>
-Date: Sun, 22 Sep 2013 21:23:09 -0300
-Message-ID: <CA+5g0SKx-xGs1RiyDGYsCKMCzQN3QoEt+n=+Yiguk5iZs=0=oA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] arch/parisc: mm: fix uninitialized variable usage
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Helge Deller <deller@gmx.de>
+To: Roy Franz <roy.franz@linaro.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org, matt.fleming@intel.com,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH 10/18] Do proper conversion from UTF-16 to UTF-8
+References: <1379889942-3135-1-git-send-email-roy.franz@linaro.org> <1379889942-3135-11-git-send-email-roy.franz@linaro.org> <e69e8c38-b195-4797-8ae2-65d69ed9d7aa@email.android.com> <CAFECyb_8hqLFajMUfwctVee8e8UvErmu4jmbPguWaeMc-MZuNA@mail.gmail.com>
+In-Reply-To: <CAFECyb_8hqLFajMUfwctVee8e8UvErmu4jmbPguWaeMc-MZuNA@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Johannes,
+On 09/22/2013 04:07 PM, Roy Franz wrote:
+> On Sun, Sep 22, 2013 at 3:54 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> Sorry this version is broken and doesn't even compile due to remaining options_size references.
+> 
+> I compiled and tested this series on both x86_64 (using OVMF) and on
+> the ARM simulator.  I just doubled checked
+> my kernel .config to verify this was not being omitted and I'm pretty
+> sure this doesn't have any compilation problems.
+> I did make a few changes to get the untested version you sent out to
+> compile, but they all seemed to be straightforward typo type fixes.
+> I'll gladly address any defects in this patch, but I don't see an
+> compilation problems.
+> 
 
-On Sun, Sep 22, 2013 at 7:58 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> Hello Felipe,
->
-> On Sun, Sep 22, 2013 at 03:17:46PM -0300, Felipe Pena wrote:
->> The FAULT_FLAG_WRITE flag has been set based on uninitialized variable
->
-> Oops, you are right.
->
->> Signed-off-by: Felipe Pena <felipensp@gmail.com>
->> ---
->>  arch/parisc/mm/fault.c |    5 +++--
->>  1 file changed, 3 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/parisc/mm/fault.c b/arch/parisc/mm/fault.c
->> index d10d27a..6b38026 100644
->> --- a/arch/parisc/mm/fault.c
->> +++ b/arch/parisc/mm/fault.c
->> @@ -182,8 +182,6 @@ void do_page_fault(struct pt_regs *regs, unsigned long code,
->>
->>       if (user_mode(regs))
->>               flags |= FAULT_FLAG_USER;
->> -     if (acc_type & VM_WRITE)
->> -             flags |= FAULT_FLAG_WRITE;
->>  retry:
->>       down_read(&mm->mmap_sem);
->>       vma = find_vma_prev(mm, address, &prev_vma);
->> @@ -201,6 +199,9 @@ good_area:
->>       if ((vma->vm_flags & acc_type) != acc_type)
->>               goto bad_area;
->>
->> +     if (acc_type & VM_WRITE)
->> +             flags |= FAULT_FLAG_WRITE;
->
-> Can acc_type actually change between between the first round and a
-> retry?  Otherwise, it might make sense to pull this up and place it
-> next to the flag initialization instead of pulling one flag down.
+Ah yes, I see now... you fixed up the compile problem but did so
+incorrectly.
 
->From what I've analyzed, this make sense. I'll make the suggested
-changes and send another patch.
+      int load_options_size = image->load_options_size / 2; /* ASCII */
 
-Thanks.
+This is a number of UTF-16 chars, the comment is completely wrong;
 
--- 
-Regards,
-Felipe Pena
+-              while (*s2 && *s2 != '\n' && options_size <
+load_options_size) {
++              while (*s2 && *s2 != '\n' && options_bytes <
+load_options_size) {
++                      options_bytes += efi_utf8_bytes(*s2);
+                      s2++;
+-                      options_size++;
+              }
++              options_chars = s2 - options;
+
+You can't compare options_bytes against load_options_size; the latter
+being a UTF-16 shortword count.
+
+So the loop really needs to update options_chars in the loop to compare
+it against load_options_size:
+
+	while (*s2 && *s2 != '\n' && options_chars < load_options_size) {
+		options_bytes += efi_utf8_bytes(*s2++);
+		option_chars++;
+	}
+
+	-hpa
+
