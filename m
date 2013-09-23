@@ -1,102 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab3IWWui (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 18:50:38 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:43309 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095Ab3IWWuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 18:50:35 -0400
-Message-ID: <5240C5B5.4090702@gmail.com>
-Date: Tue, 24 Sep 2013 00:50:29 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>
-CC: Tomasz Figa <tomasz.figa@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        linux-doc@vger.kernel.org, Padmavathi Venna <padma.v@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rahul Sharma <rahul.sharma@samsung.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 1/6] clk: exynos-audss: convert to platform device
-References: <1379711637-5226-1-git-send-email-abrestic@chromium.org> <1530327.jvk44KuFQA@flatron> <CAL1qeaGjUTrfDaAr1rgsgDaZscjaV7tqi3Jd_-zo2sMtCCFSAQ@mail.gmail.com>
-In-Reply-To: <CAL1qeaGjUTrfDaAr1rgsgDaZscjaV7tqi3Jd_-zo2sMtCCFSAQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753329Ab3IWWve (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 18:51:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32561 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752716Ab3IWWvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 18:51:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,966,1371106800"; 
+   d="scan'208";a="399975158"
+Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
+From: Rob Gittins <rob.gittins@linux.intel.com>
+Reply-To: rob.gittins@linux.intel.com
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@veger.org,
+        linux-pmfs@lists.infradead.org
+In-Reply-To: <522AB5AD.6070206@vlnb.net>
+References: <1378331689.9210.11.camel@Virt-Centos-6.lm.intel.com>
+	 <522AB5AD.6070206@vlnb.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Opensource Technology Center
+Date: Mon, 23 Sep 2013 16:51:28 -0600
+Message-ID: <1379976688.5886.12.camel@Virt-Centos-6.lm.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 2013-09-06 at 22:12 -0700, Vladislav Bolkhovitin wrote:
+> Rob Gittins, on 09/04/2013 02:54 PM wrote:
+> > Non-volatile DIMMs have started to become available.  A NVDIMMs is a
+> > DIMM that does not lose data across power interruptions.  Some of the
+> > NVDIMMs act like memory, while others are more like a block device
+> > on the memory bus. Application uses vary from being used to cache
+> > critical data, to being a boot device.
+> > 
+> > There are two access classes of NVDIMMs,  block mode and
+> > “load/store” mode DIMMs which are referred to as Direct Memory
+> > Mappable.
+> > 
+> > The block mode is where the DIMM provides IO ports for read or write
+> > of data.  These DIMMs reside on the memory bus but do not appear in the
+> > application address space.  Block mode DIMMs do not require any changes
+> > to the current infrastructure, since they provide IO type of interface.
+> > 
+> > Direct Memory Mappable DIMMs (DMMD) appear in the system address space
+> > and are accessed via load and store instructions.  These NVDIMMs
+> > are part of the system physical address space (SPA) as memory with
+> > the attribute that data survives a power interruption.  As such this
+> > memory is managed by the kernel which can  assign virtual addresses and
+> > mapped into application’s address space as well as being accessible
+> > by the kernel.  The area mapped into the system address space is
+> > being referred to as persistent memory (PMEM).
+> > 
+> > PMEM introduces the need for new operations in the
+> > block_device_operations to support the specific characteristics of
+> > the media.
+> > 
+> > First data may not propagate all the way through the memory pipeline
+> > when store instructions are executed.  Data may stay in the CPU cache
+> > or in other buffers in the processor and memory complex.  In order to
+> > ensure the durability of data there needs to be a driver entry point
+> > to force a byte range out to media.  The methods of doing this are
+> > specific to the PMEM technology and need to be handled by the driver
+> > that is supporting the DMMDs.  To provide a way to ensure that data is
+> > durable adding a commit function to the block_device_operations vector.
+> > 
+> >    void (*commitpmem)(struct block_device *bdev, void *addr);
+> 
+> Why to glue to the block concept for apparently not block class of devices? By pushing
+> NVDIMMs into the block model you both limiting them to block devices capabilities as
+> well as have to expand block devices by alien to them properties
+Hi Vlad,
 
-On 09/23/2013 11:25 PM, Andrew Bresticker wrote:
->>> +static int exynos_audss_clk_remove(struct platform_device *pdev)
->>> +{
->>> +     of_clk_del_provider(pdev->dev.of_node);
->>> +
->>> +     return 0;
->>>   }
->>
->> Don't we need to unregister all the registered clocks in remove? This also
->> leads to another question: Do we even need removal support for this
->> driver?
->
-> Agreed - I don't think we should support removal of this device, but
-> it looks like __device_release_driver() just ignores the lack of a
-> remove callback or the return value from remove.  I suppose we could
-> just yell that removal is not supported if it is ever attempted.
+We chose to extent the block operations for a couple of reasons.  The
+majority of NVDIMM usage is by emulating block mode.  We figure that
+over time usages will appear that use them directly and then we can
+design interfaces to enable direct use.  
 
-That might be a good idea, without proper remove() method deferred
-probing will also not work. I'd assume there should be only, e.g.
-WARN() in the remove() callback or it should be properly implemented,
-with clk_unregister() call for each currently registered clock.
+Since a range of NVDIMM needs a name, security and other attributes mmap
+is a really good model to build on.  This quickly takes us into the
+realm of a file systems, which are easiest to build on the existing
+block infrastructure.  
 
-Note that clk_unregister() is currently not implemented and removal
-of this driver cannot be properly supported at the moment anyway.
+Another reason to extend block is that all of the existing
+administrative interfaces and tools such as mkfs still work and we have
+not added some new management tools and requirements that may inhibit
+the adoption of the technology.  Basically if it works today for block
+the same cli commands will work for NVDIMMs.
 
-Not sure what's more appropriate, it's probably better to add
-clk_unregister() calls. This would be effectively a dead code though,
-as long as core_initcall is used.
+The extensions are so minimal that they don't negatively impact the
+existing interfaces.
 
->>> +static int __init exynos_audss_clk_init(void)
->>> +{
->>> +     return platform_driver_register(&exynos_audss_clk_driver);
->>> +}
->>> +core_initcall(exynos_audss_clk_init);
->>
->> Does it need to be core_initcall? Drivers depending on clocks provided by
->> this driver should be able to defer probing if they are probed before this
->> driver.
->
-> Unfortunately there are a couple of issues with making this a module_initcall:
->      1. On the Exynos5420, the AudioSS block provides the apb_pclk gate
-> for the ADMA bus, which is probed at postcore_initcall time and does
-> not support deferred probing, and
->      2. the common clock framework doesn't differentiate between the
-> clock not being specified at all and the clock being specified, but
-> the provider not being registered yet (i.e. the case where probe
-> deferral would be appropriate) - it just returns ENOENT in both cases.
+Thanks,
+Rob
 
-AFAICS this shouldn't be difficult to improve. I guess it has not been
-properly addressed so far because there is currently no properly working
-modular clock provider drivers, using the common clock framework, yet.
-Unless someone bits me to it, I might have a look at that, as I also found
-it a bit it inconvenient.
 
---
-Regards,
-Sylwester
+
+> .
+> 
+> NVDIMMs are, apparently, a new class of devices, so better to have a new class of
+> kernel devices for them. If you then need to put file systems on top of them, just
+> write one-fit-all blk_nvmem driver, which can create a block device for all types of
+> NVDIMM devices and drivers.
+> 
+> This way you will clearly and gracefully get the best from NVDIMM devices as well as
+> won't soil block devices.
+> 
+> Vlad
+
+
