@@ -1,264 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab3IWSU3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:20:29 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:44377 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400Ab3IWSU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:20:26 -0400
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: tpmdd-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>,
-        Rajiv Andrade <mail@srajiv.net>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 13/13] tpm: Make tpm-dev allocate a per-file structure
-Date: Mon, 23 Sep 2013 12:14:43 -0600
-Message-Id: <1379960083-8942-14-git-send-email-jgunthorpe@obsidianresearch.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
-References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1754045Ab3IWSTV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:19:21 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57716 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753152Ab3IWSTT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 14:19:19 -0400
+Date: Mon, 23 Sep 2013 21:19:17 +0300
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Fan Rong <cinifr@gmail.com>, coosty@163.com, daniel.lezcano@linaro.org,
+        linux@arm.linux.org.uk, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mark.rutland@arm.com, pawel.moll@arm.co, rob.herring@calxeda.com,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 1/3] Add smp support for Allwinner A20(sunxi 7i).
+Message-ID: <20130923181917.GS2779@lukather>
+References: <1379768716-11672-1-git-send-email-cinifr@gmail.com>
+ <1379768716-11672-2-git-send-email-cinifr@gmail.com>
+ <20130921140059.GA2779@lukather>
+ <523FB773.4050408@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GFHULmA0mO3kKGOo"
+Content-Disposition: inline
+In-Reply-To: <523FB773.4050408@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This consolidates everything that is only used within tpm-dev.c
-into tpm-dev.c and out of the publicly visible struct tpm_chip.
 
-The per-file allocation lays the ground work for someday fixing the
-strange forced O_EXCL behaviour of the current code.
+--GFHULmA0mO3kKGOo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
----
- drivers/char/tpm/tpm-dev.c | 100 ++++++++++++++++++++++++++-------------------
- drivers/char/tpm/tpm.h     |   7 ----
- 2 files changed, 57 insertions(+), 50 deletions(-)
+Hi Guenter,
 
-diff --git a/drivers/char/tpm/tpm-dev.c b/drivers/char/tpm/tpm-dev.c
-index 8d94e97..f492eb6 100644
---- a/drivers/char/tpm/tpm-dev.c
-+++ b/drivers/char/tpm/tpm-dev.c
-@@ -22,21 +22,34 @@
- #include <linux/uaccess.h>
- #include "tpm.h"
- 
-+struct file_priv {
-+	struct tpm_chip *chip;
-+
-+	/* Data passed to and from the tpm via the read/write calls */
-+	atomic_t data_pending;
-+	struct mutex buffer_mutex;
-+
-+	struct timer_list user_read_timer;      /* user needs to claim result */
-+	struct work_struct work;
-+
-+	u8 data_buffer[TPM_BUFSIZE];
-+};
-+
- static void user_reader_timeout(unsigned long ptr)
- {
--	struct tpm_chip *chip = (struct tpm_chip *) ptr;
-+	struct file_priv *priv = (struct file_priv *)ptr;
- 
--	schedule_work(&chip->work);
-+	schedule_work(&priv->work);
- }
- 
- static void timeout_work(struct work_struct *work)
- {
--	struct tpm_chip *chip = container_of(work, struct tpm_chip, work);
-+	struct file_priv *priv = container_of(work, struct file_priv, work);
- 
--	mutex_lock(&chip->buffer_mutex);
--	atomic_set(&chip->data_pending, 0);
--	memset(chip->data_buffer, 0, TPM_BUFSIZE);
--	mutex_unlock(&chip->buffer_mutex);
-+	mutex_lock(&priv->buffer_mutex);
-+	atomic_set(&priv->data_pending, 0);
-+	memset(priv->data_buffer, 0, sizeof(priv->data_buffer));
-+	mutex_unlock(&priv->buffer_mutex);
- }
- 
- static int tpm_open(struct inode *inode, struct file *file)
-@@ -44,6 +57,7 @@ static int tpm_open(struct inode *inode, struct file *file)
- 	struct miscdevice *misc = file->private_data;
- 	struct tpm_chip *chip = container_of(misc, struct tpm_chip,
- 					     vendor.miscdev);
-+	struct file_priv *priv;
- 
- 	/* It's assured that the chip will be opened just once,
- 	 * by the check of is_open variable, which is protected
-@@ -53,15 +67,20 @@ static int tpm_open(struct inode *inode, struct file *file)
- 		return -EBUSY;
- 	}
- 
--	chip->data_buffer = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
--	if (chip->data_buffer == NULL) {
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (priv == NULL) {
- 		clear_bit(0, &chip->is_open);
- 		return -ENOMEM;
- 	}
- 
--	atomic_set(&chip->data_pending, 0);
-+	priv->chip = chip;
-+	atomic_set(&priv->data_pending, 0);
-+	mutex_init(&priv->buffer_mutex);
-+	setup_timer(&priv->user_read_timer, user_reader_timeout,
-+			(unsigned long)priv);
-+	INIT_WORK(&priv->work, timeout_work);
- 
--	file->private_data = chip;
-+	file->private_data = priv;
- 	get_device(chip->dev);
- 	return 0;
- }
-@@ -69,28 +88,28 @@ static int tpm_open(struct inode *inode, struct file *file)
- static ssize_t tpm_read(struct file *file, char __user *buf,
- 			size_t size, loff_t *off)
- {
--	struct tpm_chip *chip = file->private_data;
-+	struct file_priv *priv = file->private_data;
- 	ssize_t ret_size;
- 	int rc;
- 
--	del_singleshot_timer_sync(&chip->user_read_timer);
--	flush_work(&chip->work);
--	ret_size = atomic_read(&chip->data_pending);
-+	del_singleshot_timer_sync(&priv->user_read_timer);
-+	flush_work(&priv->work);
-+	ret_size = atomic_read(&priv->data_pending);
- 	if (ret_size > 0) {	/* relay data */
- 		ssize_t orig_ret_size = ret_size;
- 		if (size < ret_size)
- 			ret_size = size;
- 
--		mutex_lock(&chip->buffer_mutex);
--		rc = copy_to_user(buf, chip->data_buffer, ret_size);
--		memset(chip->data_buffer, 0, orig_ret_size);
-+		mutex_lock(&priv->buffer_mutex);
-+		rc = copy_to_user(buf, priv->data_buffer, ret_size);
-+		memset(priv->data_buffer, 0, orig_ret_size);
- 		if (rc)
- 			ret_size = -EFAULT;
- 
--		mutex_unlock(&chip->buffer_mutex);
-+		mutex_unlock(&priv->buffer_mutex);
- 	}
- 
--	atomic_set(&chip->data_pending, 0);
-+	atomic_set(&priv->data_pending, 0);
- 
- 	return ret_size;
- }
-@@ -98,7 +117,7 @@ static ssize_t tpm_read(struct file *file, char __user *buf,
- static ssize_t tpm_write(struct file *file, const char __user *buf,
- 			 size_t size, loff_t *off)
- {
--	struct tpm_chip *chip = file->private_data;
-+	struct file_priv *priv = file->private_data;
- 	size_t in_size = size;
- 	ssize_t out_size;
- 
-@@ -106,32 +125,33 @@ static ssize_t tpm_write(struct file *file, const char __user *buf,
- 	   either via tpm_read or a user_read_timer timeout.
- 	   This also prevents splitted buffered writes from blocking here.
- 	*/
--	if (atomic_read(&chip->data_pending) != 0)
-+	if (atomic_read(&priv->data_pending) != 0)
- 		return -EBUSY;
- 
- 	if (in_size > TPM_BUFSIZE)
- 		return -E2BIG;
- 
--	mutex_lock(&chip->buffer_mutex);
-+	mutex_lock(&priv->buffer_mutex);
- 
- 	if (copy_from_user
--	    (chip->data_buffer, (void __user *) buf, in_size)) {
--		mutex_unlock(&chip->buffer_mutex);
-+	    (priv->data_buffer, (void __user *) buf, in_size)) {
-+		mutex_unlock(&priv->buffer_mutex);
- 		return -EFAULT;
- 	}
- 
- 	/* atomic tpm command send and result receive */
--	out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
-+	out_size = tpm_transmit(priv->chip, priv->data_buffer,
-+				sizeof(priv->data_buffer));
- 	if (out_size < 0) {
--		mutex_unlock(&chip->buffer_mutex);
-+		mutex_unlock(&priv->buffer_mutex);
- 		return out_size;
- 	}
- 
--	atomic_set(&chip->data_pending, out_size);
--	mutex_unlock(&chip->buffer_mutex);
-+	atomic_set(&priv->data_pending, out_size);
-+	mutex_unlock(&priv->buffer_mutex);
- 
- 	/* Set a timeout by which the reader must come claim the result */
--	mod_timer(&chip->user_read_timer, jiffies + (60 * HZ));
-+	mod_timer(&priv->user_read_timer, jiffies + (60 * HZ));
- 
- 	return in_size;
- }
-@@ -141,15 +161,15 @@ static ssize_t tpm_write(struct file *file, const char __user *buf,
-  */
- static int tpm_release(struct inode *inode, struct file *file)
- {
--	struct tpm_chip *chip = file->private_data;
-+	struct file_priv *priv = file->private_data;
- 
--	del_singleshot_timer_sync(&chip->user_read_timer);
--	flush_work(&chip->work);
-+	del_singleshot_timer_sync(&priv->user_read_timer);
-+	flush_work(&priv->work);
- 	file->private_data = NULL;
--	atomic_set(&chip->data_pending, 0);
--	kzfree(chip->data_buffer);
--	clear_bit(0, &chip->is_open);
--	put_device(chip->dev);
-+	atomic_set(&priv->data_pending, 0);
-+	clear_bit(0, &priv->chip->is_open);
-+	put_device(priv->chip->dev);
-+	kfree(priv);
- 	return 0;
- }
- 
-@@ -166,12 +186,6 @@ int tpm_dev_add_device(struct tpm_chip *chip)
- {
- 	int rc;
- 
--	mutex_init(&chip->buffer_mutex);
--	INIT_WORK(&chip->work, timeout_work);
--
--	setup_timer(&chip->user_read_timer, user_reader_timeout,
--			(unsigned long)chip);
--
- 	chip->vendor.miscdev.fops = &tpm_fops;
- 	if (chip->dev_num == 0)
- 		chip->vendor.miscdev.minor = TPM_MINOR;
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 7b0a46e..e4d0888 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -103,13 +103,6 @@ struct tpm_chip {
- 	unsigned long is_open;	/* only one allowed */
- 	int time_expired;
- 
--	/* Data passed to and from the tpm via the read/write calls */
--	u8 *data_buffer;
--	atomic_t data_pending;
--	struct mutex buffer_mutex;
--
--	struct timer_list user_read_timer;	/* user needs to claim result */
--	struct work_struct work;
- 	struct mutex tpm_mutex;	/* tpm is processing */
- 
- 	struct tpm_vendor_specific vendor;
--- 
-1.8.1.2
+On Sun, Sep 22, 2013 at 08:37:23PM -0700, Guenter Roeck wrote:
+> On 09/21/2013 07:00 AM, Maxime Ripard wrote:
+>=20
+> [ ... ]
+>=20
+> >>+	/* assert cpu core reset */
+> >>+	writel(0, sunxi7i_cc_base + CPUX_RESET_CTL(cpu));
+> >>+	/* L1RSTDISABLE hold low */
+> >>+	pwr_reg =3D readl(sunxi7i_cc_base + AW_CPUCFG_GENCTL);
+> >>+	pwr_reg &=3D ~(1<<cpu);
+> >>+	writel(pwr_reg, sunxi7i_cc_base + AW_CPUCFG_GENCTL);
+> >>+	/* DBGPWRDUP hold low */
+> >>+	pwr_reg =3D readl(sunxi7i_cc_base + AW_CPUCFG_DBGCTL1);
+> >>+	pwr_reg &=3D ~(1<<cpu);
+> >
+> >Use BIT(cpu) here. And you should run scripts/checkpatch.pl on your
+> >patches before sending them.
+> >
+>=20
+> For the record:
+>=20
+> $ scripts/checkpatch.pl --strict allwinner.patch
+> total: 0 errors, 0 warnings, 0 checks, 527 lines checked
+>=20
+> allwinner.patch has no obvious style problems and is ready for submission.
+>=20
+> This is on top of "v3.12-rc1-336-gd8524ae".
+>=20
+> checkpatch.pl does not complain as long as the number of spaces before
+> and after an operator is the same. There is a patch pending to change
+> this with the --strict option, but it will still not complain in 'normal'
+> operation.
 
+Hmmm, ok. Somehow, I was convinced that it was triggering a warning.
+Thanks for the heads up :)
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--GFHULmA0mO3kKGOo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSQIYkAAoJEBx+YmzsjxAgun0QAKMTAzJdrkU7jBcflkfuAr94
+P1oHjts5kL14BXUb5pgVj2lzW+WzGHYS9vBZGfKiBZpdXeuSliy5FKyku1QipRQW
+zSJfMVYRiRVUzVsqxnVJtkgwGhq5YFZyNdimPCaF8TboHwvzHFdx3tgyGeu3NbaN
+Q8kzg613mK2Ezx1YqUbpdham6UJvMpNIVPr37E0mJVUrWMISJWraqrBWMOOWpWRb
+v/lE7luILGAnU/5JTOYRt6kT0BudVGAoYFV8x66YmphNP1eTOiiVtLWrPZSM99+r
+51CpMNBXV80YRSYQcwuhVnKd6mCBbpymt4ktBhSNhKpz/Wi2Q/7SX6W0XADbxSAt
+h6OzeJS42Td42LrzUdYQY7mTaiT9+8LCKDhoz4XLWOCsRUl5AwN3RTgt68vPFKAz
+P7E99tzgSnjE6c1dnTIamZfqK16caSMifYdaMMAZtFga0O1whY28aOsbQhs1LLra
+We/+aql3pUc9WUszxUc/f9sJwDrixm4ddorojgFim+tdWug990QUazuW0uHCfuVa
+ayFyS241VmckdnehdhxAXHW3paOiwhcQVhafluAlscHUsmbartL8sbcQ5hd/7zVR
+aNLLP+fE29dMFAXaHxOBBU7i/wG+KtYb/KZaOfFz7XBmH3HXBWgNez++jTb1CSfJ
+2LQhyZYwuo8BxAtKg51T
+=W6if
+-----END PGP SIGNATURE-----
+
+--GFHULmA0mO3kKGOo--
