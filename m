@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab3IWUmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 16:42:43 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:32801 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223Ab3IWUmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 16:42:42 -0400
-Date: Mon, 23 Sep 2013 14:42:32 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-Cc: tpmdd-devel@lists.sourceforge.net,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
-        Sirrix AG <tpmdd@sirrix.com>
-Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to
- sysfs into tpm-sysfs.c
-Message-ID: <20130923204232.GB16345@obsidianresearch.com>
-References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
- <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com>
- <52408E5D.4020904@tycho.nsa.gov>
- <20130923193633.GA9194@obsidianresearch.com>
- <5240A2A3.4040102@tycho.nsa.gov>
+	id S1753956Ab3IWUni (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 16:43:38 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:39896 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753731Ab3IWUng (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 16:43:36 -0400
+X-Originating-IP: 83.160.107.163
+Date: Mon, 23 Sep 2013 22:43:29 +0200
+From: Matthias Kaehlcke <matthias.list@kaehlcke.net>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] mfd: ti_am335x_tscadc: Restore clock divider on resume
+Message-ID: <20130923204329.GG27515@raspi>
+Mail-Followup-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
+	Samuel Ortiz <sameo@linux.intel.com>,
+	Lee Jones <lee.jones@linaro.org>,
+	Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5240A2A3.4040102@tycho.nsa.gov>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 04:20:51PM -0400, Daniel De Graaf wrote:
+The ADC clock divider needs to be restored on resume as the register content
+is lost when the ADC is powered down
 
-> That's fine; it wasn't really advertised in the description, and was
-> mostly added in order to demonstrate the locality security label binding
-> in Xen's vtpm-stubdom.
+Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
 
-Ok, lets take it out for now then? I'll send a patch.
+---
+ drivers/mfd/ti_am335x_tscadc.c       |   10 ++++++----
+ include/linux/mfd/ti_am335x_tscadc.h |    1 +
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
-> >It looks like this driver was introduced in the 3.12 merge window, we
-> >could drop the attribute, and try to merge a core supported locality
-> >API in 3.13? What do you think?
-> >
-> >But, if you say it is needed, it is easy enough to adjust this patch
-> >series.
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+index baaf5a8..a3685d6 100644
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -95,7 +95,7 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+ 	const __be32            *cur;
+ 	u32			val;
+ 	int			err, ctrl;
+-	int			clk_value, clock_rate;
++	int			clock_rate;
+ 	int			tsc_wires = 0, adc_channels = 0, total_channels;
+ 	int			readouts = 0;
+ 
+@@ -196,11 +196,11 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+ 	}
+ 	clock_rate = clk_get_rate(clk);
+ 	clk_put(clk);
+-	clk_value = clock_rate / ADC_CLK;
++	tscadc->clk_div = clock_rate / ADC_CLK;
+ 
+ 	/* TSCADC_CLKDIV needs to be configured to the value minus 1 */
+-	clk_value = clk_value - 1;
+-	tscadc_writel(tscadc, REG_CLKDIV, clk_value);
++	tscadc->clk_div--;
++	tscadc_writel(tscadc, REG_CLKDIV, tscadc->clk_div);
+ 
+ 	/* Set the control register bits */
+ 	ctrl = CNTRLREG_STEPCONFIGWRT |
+@@ -303,6 +303,8 @@ static int tscadc_resume(struct device *dev)
+ 	tscadc_writel(tscadc_dev, REG_CTRL,
+ 			(restore | CNTRLREG_TSCSSENB));
+ 
++	tscadc_writel(tscadc_dev, REG_CLKDIV, tscadc_dev->clk_div);
++
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+index 25f2c61..f03281d 100644
+--- a/include/linux/mfd/ti_am335x_tscadc.h
++++ b/include/linux/mfd/ti_am335x_tscadc.h
+@@ -146,6 +146,7 @@ struct ti_tscadc_dev {
+ 	struct mfd_cell cells[TSCADC_CELLS];
+ 	u32 reg_se_cache;
+ 	spinlock_t reg_lock;
++	unsigned int clk_div;
+ 
+ 	/* tsc device */
+ 	struct titsc *tsc;
+-- 
+1.7.9.5
 
-> If it's replaced with an alternative, I don't think the sysfs attribute
-> will need to remain.  I am not aware of any clients that currently use
-> this attribute.  The sysfs attribute could remain as the common interface
-> for changing locality, unless you think an ioctl on /dev/tpm0 or
-> something else would be preferable (the attribute was just the simplest
-> way to implement locality switching at the time).
-
-Off the very top of my head:
-
-I suspect that a good API would be a sysfs attribute
-'default_locality' and an IOCTL to change localities.  The
-default_locality would only take effect when the /dev/tpmX is opened,
-so fiddling with sysfs doesn't break active users.
-
-The struct ops I've added would have a function to change localities,
-some of the generic TPM functions should be revised to have a locality
-argument.
-
-Some thought is needed to determine what locality in-kernel users
-should be using. I suspect userspace and kernel space should not be
-forced to the same locality.
-
-Should user space be restricted to a subset of localities?
-
-What use models do you see with the security label binding mechanism
-you have on the hypervisor side?
-
-Jason
