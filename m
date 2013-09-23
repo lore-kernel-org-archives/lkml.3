@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab3IWRVy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 13:21:54 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33858 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179Ab3IWRVw (ORCPT
+	id S1753159Ab3IWRZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 13:25:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55660 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab3IWRZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 13:21:52 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/MRg6tM++j1UEm0uZS5KCZ
-Date: Mon, 23 Sep 2013 10:21:47 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ADP1653 board code for Nokia RX-51
-Message-ID: <20130923172146.GH2684@atomide.com>
-References: <201302171616.50152@pali>
- <20130907230252.GA10700@blackmetal.musicnaut.iki.fi>
- <20130918131644.GA2953@amd.pavel.ucw.cz>
- <201309181800.10486@pali>
- <20130918174211.GU9994@atomide.com>
- <20130921123732.GB4652@amd.pavel.ucw.cz>
+	Mon, 23 Sep 2013 13:25:28 -0400
+Date: Mon, 23 Sep 2013 19:24:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: eranian@gmail.com
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: PEBS bug on HSW: "Unexpected number of pebs records 10" (was:
+ Re: [GIT PULL] perf changes for v3.12)
+Message-ID: <20130923172458.GE9326@twins.programming.kicks-ass.net>
+References: <CAMsRxfJ5HG+0AiooOUFh8TzvCoK3YcBFpeAF0eTzdkDm=wB84g@mail.gmail.com>
+ <20130910142942.GB8388@gmail.com>
+ <CAMsRxf+18qz_vOkEZ1a8D9Z7BywWZPNB=qEn0bHXMFg96sALTQ@mail.gmail.com>
+ <20130910171449.GA10812@gmail.com>
+ <CAMsRxfKdpK7Mmt=BSPnGCGGERTFbqTG0qe_cFDTvxsdLCO-A9g@mail.gmail.com>
+ <20130916154146.GA6470@gmail.com>
+ <20130916162926.GA12926@twins.programming.kicks-ass.net>
+ <CAMsRxfKyXnep+uAyJcjy0SKVQkA6M-QCogVYnq4+PrCtw8B20Q@mail.gmail.com>
+ <20130923153357.GB9326@twins.programming.kicks-ass.net>
+ <CAMsRxfJxbnoFFkwCc3geOb579UpSaVxLc-Cp7mQES250daci-A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130921123732.GB4652@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAMsRxfJxbnoFFkwCc3geOb579UpSaVxLc-Cp7mQES250daci-A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pavel Machek <pavel@ucw.cz> [130921 05:45]:
-> Hi!
+On Mon, Sep 23, 2013 at 07:11:21PM +0200, Stephane Eranian wrote:
+> Ok so what you are saying is that the ovfl_status is not maintained private
+> to each counter but shared among all PEBS counters by ucode. That's
+> how you end up leaking between counters like that.
+
+I only remember asking for clarification because the SDM isn't clear on
+this subject; the answer was that it simply copies whatever is in
+MSR_CORE_PERF_GLOBAL_STATUS.
+
+I explained how this would be a problem and it was agreed this needed
+fixing -- not sure if that ever happened.
+
+> But the other thing I remember is that if two PEBS events overflow
+> at the same time, PEBS only write one record with 2 bits set  in the
+> ovfl_status field. No point in creating two because the machine state
+> will be the same for both. The kernel would just need to dispatch the
+> same PEBS record to all the events that overflowed.
+
+Hurm.. that makes life more interesting still. The current code only
+delivers the event to the first bit set. Changing this would be simple
+though.
+
+> Now, your case appears like that, except this is not what happened.
+> So you're misled to believe both counter overflowed at the same time
+> when they did not in reality.
 > 
-> > > > > > > --- /dev/null
-> > > > > > > +++ b/arch/arm/mach-omap2/board-rx51-camera.c
-> > > > > 
-> > > > > [...]
-> > > > > 
-> > > > > > Ping, can you review this patch v2?
-> > > > > 
-> > > > > I don't think Tony will accept any new board stuff for
-> > > > > RX-51/N900. See for example:
-> > > > > http://marc.info/?l=linux-kernel&m=137629626213187&w=2
-> > > > > 
-> > > > > There should be initial Nokia N900 DTS file in 3.12-rc1, and
-> > > > > we should continue converting this board fully to DT.
-> > > > 
-> > > > That's not reasonable. N900 is pretty far away from working
-> > > > with device tree. Yes, I was able to get some bits merged,
-> > > > but that should not be excuse to halt other N900 development.
-> > > > 									Pavel
-> > > 
-> > > Right. So Tony, will you accept future patches for board files?
-> > 
-> > Only fixes to board-*.c files please unless there's a _really_
-> > good reason to make things more complex with the platform data.
-> > Let's not make the DT conversion any more complex than it
-> > already is.
-> > 
-> > Getting things working with DT for the devices is pretty trivial
-> > in most cases. And we can also still initialize the legacy devices
-> > using platform data the same way as earlier.
-> 
-> Well... It was quite a struggle to get video working with device tree
-> in 3.10, and now it is broken in 3.12-rc1, again.
+> I'd like to have a test case where I could reproduce this.
 
-Hmm didn't Aaro reply that you just need to change the Kconfig
-option for the panel to fix it?
- 
-> "Now, here, you see, it takes all the running you can do, to keep in
-> the same place. If you want to get somewhere else, you must run at
-> least twice as fast as that! "
-
-True at least for reading the mailing lists :)
-
-Regards,
-
-Tony
+Agreed, I've never tried to actually reproduce this. I suppose it would
+be easiest to trigger where the one event is very rare and controlled.
