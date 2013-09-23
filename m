@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab3IWJIz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 05:08:55 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:45815 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab3IWJIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 05:08:54 -0400
+	id S1753456Ab3IWJOd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 05:14:33 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:33779 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752994Ab3IWJOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 05:14:32 -0400
+Date: Mon, 23 Sep 2013 11:10:36 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/26] ARM: dove: remove custom .init_time hook
+Message-ID: <20130923091036.GE4999@lunn.ch>
+References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1379526839-14798-12-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130921122226.GB31180@lunn.ch>
+ <523EE08C.60309@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJxxZ0ORrqjKB0ZHYz=-F2XMDv3TDiQWLwt=jWJTW0JaB2UX8w@mail.gmail.com>
-References: <1378196941-23390-1-git-send-email-sonic.adi@gmail.com>
-	<1378196941-23390-2-git-send-email-sonic.adi@gmail.com>
-	<CACRpkdaZNd55GLb+kx6ieZRbm=S+8s=izrzew2xH+vkYvdjOpQ@mail.gmail.com>
-	<CAJxxZ0ORrqjKB0ZHYz=-F2XMDv3TDiQWLwt=jWJTW0JaB2UX8w@mail.gmail.com>
-Date: Mon, 23 Sep 2013 11:08:53 +0200
-Message-ID: <CACRpkdb54Oob-n7rbg28A_JHebOZxKPwV54kyU_Q_otvpXWAtQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3 v4] blackfin: gpio: Remove none gpio lib code.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Steven Miao <realmz6@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <523EE08C.60309@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 10:17 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
-> On Mon, Sep 23, 2013 at 3:48 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+On Sun, Sep 22, 2013 at 02:20:28PM +0200, Sebastian Hesselbarth wrote:
+> On 09/21/2013 02:22 PM, Andrew Lunn wrote:
+> >On Wed, Sep 18, 2013 at 07:53:44PM +0200, Sebastian Hesselbarth wrote:
+> >>With arch/arm calling of_clk_init(NULL) from time_init(), we can now
+> >>remove custom .init_time hooks. While at it, also remove some obsolete
+> >>includes.
+> >>
+> >>Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> >>---
+> >>Cc: Olof Johansson <olof@lixom.net>
+> >>Cc: Arnd Bergmann <arnd@arndb.de>
+> >>Cc: Jason Cooper <jason@lakedaemon.net>
+> >>Cc: Andrew Lunn <andrew@lunn.ch>
+> >>Cc: Russell King <linux@arm.linux.org.uk>
+> >>Cc: linux-arm-kernel@lists.infradead.org
+> >>Cc: linux-kernel@vger.kernel.org
+> >>---
+> >>  arch/arm/mach-dove/board-dt.c |   11 -----------
+> >>  1 file changed, 11 deletions(-)
+> [...]
+> >Boot tested on cubox.
+> >
+> >Tested-by: Andrew Lunn <andrew@lunn.ch>
+> 
+> Thanks Andrew!
+> 
+> Aren't you giving any Acks for dove/kirkwood anymore?
 
->> Hi Sonic, I tried to apply this but it doesn't apply cleanly on
->> my pinctrl "devel" branch based off v3.12-rc1.
->>
->> Can you rebase patch 2+3 and resend?
->
-> The patch 2 is already in your "devel" branch of kernel v3.12-rc1.
-> Please apply patch 3 only.
+Hi Sebastian
 
-Yes sorry I was confusing myself by missing to check my own trees,
-what a mess. Applied #3 now.
+In my opinion, a Tested-by: has more weight than an Acked-by. I could
+of given you an Acked-by in about 60 seconds, given the simplicity of
+the patch. It took a lot more effort to get your tree, build it, fix
+my binutils, since it was the first 3.12 tree i had tried and my
+binutils was too old, and boot it.
 
-Yours,
-Linus Walleij
+	 Andrew
