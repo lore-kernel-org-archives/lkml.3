@@ -1,131 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab3IWDWM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 23:22:12 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:53744 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab3IWDWK (ORCPT
+	id S1753242Ab3IWDh2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 23:37:28 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50358 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab3IWDh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 23:22:10 -0400
+	Sun, 22 Sep 2013 23:37:27 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <523FB773.4050408@roeck-us.net>
+Date: Sun, 22 Sep 2013 20:37:23 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1378196941-23390-3-git-send-email-sonic.adi@gmail.com>
-References: <1378196941-23390-1-git-send-email-sonic.adi@gmail.com>
-	<1378196941-23390-3-git-send-email-sonic.adi@gmail.com>
-Date: Mon, 23 Sep 2013 11:22:10 +0800
-Message-ID: <CAMk6uB=D0ChRi6-J+wBSKFEMrzko1RHMeSSxaFn+gzmEGE3uYw@mail.gmail.com>
-Subject: Re: [PATCH 3/3 v4] blackfin: pinctrl-adi2: Enable PINCTRL framework
- for BF54x and BF60x.
-From: Steven Miao <realmz6@gmail.com>
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=UTF-8
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Fan Rong <cinifr@gmail.com>, coosty@163.com, daniel.lezcano@linaro.org,
+        linux@arm.linux.org.uk, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mark.rutland@arm.com, pawel.moll@arm.co, rob.herring@calxeda.com,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 1/3] Add smp support for Allwinner A20(sunxi 7i).
+References: <1379768716-11672-1-git-send-email-cinifr@gmail.com> <1379768716-11672-2-git-send-email-cinifr@gmail.com> <20130921140059.GA2779@lukather>
+In-Reply-To: <20130921140059.GA2779@lukather>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Steven Miao <realmz6@gmail.com>
+On 09/21/2013 07:00 AM, Maxime Ripard wrote:
 
-On Tue, Sep 3, 2013 at 4:29 PM, Sonic Zhang <sonic.adi@gmail.com> wrote:
-> From: Sonic Zhang <sonic.zhang@analog.com>
+[ ... ]
+
+>> +	/* assert cpu core reset */
+>> +	writel(0, sunxi7i_cc_base + CPUX_RESET_CTL(cpu));
+>> +	/* L1RSTDISABLE hold low */
+>> +	pwr_reg = readl(sunxi7i_cc_base + AW_CPUCFG_GENCTL);
+>> +	pwr_reg &= ~(1<<cpu);
+>> +	writel(pwr_reg, sunxi7i_cc_base + AW_CPUCFG_GENCTL);
+>> +	/* DBGPWRDUP hold low */
+>> +	pwr_reg = readl(sunxi7i_cc_base + AW_CPUCFG_DBGCTL1);
+>> +	pwr_reg &= ~(1<<cpu);
 >
-> - Remove unused macro MAX_RESOURCES
-> - Override blackfin legacy peripheral pinmux request and free APIs by
-> devm_pinctrl_get_select_default() to init the peripheral portmux setting.
+> Use BIT(cpu) here. And you should run scripts/checkpatch.pl on your
+> patches before sending them.
 >
-> v3-chagnes:
-> - Move pinctrl soc data out of blackfin arch folder.
->
-> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-> ---
->  arch/blackfin/Kconfig                           |  4 ++++
->  arch/blackfin/include/asm/portmux.h             | 19 +++++++++++++++++--
->  arch/blackfin/mach-bf548/include/mach/portmux.h |  2 --
->  arch/blackfin/mach-bf609/include/mach/portmux.h |  2 --
->  4 files changed, 21 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-> index 9eff25b..ed7157f 100644
-> --- a/arch/blackfin/Kconfig
-> +++ b/arch/blackfin/Kconfig
-> @@ -324,6 +324,10 @@ config GPIO_ADI
->         def_bool y
->         depends on (BF51x || BF52x || BF53x || BF538 || BF539 || BF561)
->
-> +config PINCTRL
-> +       def_bool y
-> +       depends on BF54x || BF60x
-> +
->  config MEM_MT48LC64M4A2FB_7E
->         bool
->         depends on (BFIN533_STAMP)
-> diff --git a/arch/blackfin/include/asm/portmux.h b/arch/blackfin/include/asm/portmux.h
-> index 9b1e2c3..7aa2043 100644
-> --- a/arch/blackfin/include/asm/portmux.h
-> +++ b/arch/blackfin/include/asm/portmux.h
-> @@ -17,14 +17,29 @@
->  #define P_MAYSHARE     0x2000
->  #define P_DONTCARE     0x1000
->
-> -
-> +#ifdef CONFIG_PINCTRL
-> +#include <asm/irq_handler.h>
-> +
-> +#define gpio_pint_regs bfin_pint_regs
-> +#define adi_internal_set_wake bfin_internal_set_wake
-> +
-> +#define peripheral_request(per, label) 0
-> +#define peripheral_free(per)
-> +#define peripheral_request_list(per, label) \
-> +       (pdev ? (IS_ERR(devm_pinctrl_get_select_default(&pdev->dev)) \
-> +       ? -EINVAL : 0) : 0)
-> +#define peripheral_free_list(per)
-> +#else
->  int peripheral_request(unsigned short per, const char *label);
->  void peripheral_free(unsigned short per);
->  int peripheral_request_list(const unsigned short per[], const char *label);
->  void peripheral_free_list(const unsigned short per[]);
-> +#endif
->
-> -#include <asm/gpio.h>
-> +#include <linux/err.h>
-> +#include <linux/pinctrl/pinctrl.h>
->  #include <mach/portmux.h>
-> +#include <linux/gpio.h>
->
->  #ifndef P_SPORT2_TFS
->  #define P_SPORT2_TFS P_UNDEF
-> diff --git a/arch/blackfin/mach-bf548/include/mach/portmux.h b/arch/blackfin/mach-bf548/include/mach/portmux.h
-> index e222462..d9f8632 100644
-> --- a/arch/blackfin/mach-bf548/include/mach/portmux.h
-> +++ b/arch/blackfin/mach-bf548/include/mach/portmux.h
-> @@ -7,8 +7,6 @@
->  #ifndef _MACH_PORTMUX_H_
->  #define _MACH_PORTMUX_H_
->
-> -#define MAX_RESOURCES  MAX_BLACKFIN_GPIOS
-> -
->  #define P_SPORT2_TFS   (P_DEFINED | P_IDENT(GPIO_PA0) | P_FUNCT(0))
->  #define P_SPORT2_DTSEC (P_DEFINED | P_IDENT(GPIO_PA1) | P_FUNCT(0))
->  #define P_SPORT2_DTPRI (P_DEFINED | P_IDENT(GPIO_PA2) | P_FUNCT(0))
-> diff --git a/arch/blackfin/mach-bf609/include/mach/portmux.h b/arch/blackfin/mach-bf609/include/mach/portmux.h
-> index 2e1a51c..fe34191 100644
-> --- a/arch/blackfin/mach-bf609/include/mach/portmux.h
-> +++ b/arch/blackfin/mach-bf609/include/mach/portmux.h
-> @@ -7,8 +7,6 @@
->  #ifndef _MACH_PORTMUX_H_
->  #define _MACH_PORTMUX_H_
->
-> -#define MAX_RESOURCES  MAX_BLACKFIN_GPIOS
-> -
->  /* EMAC RMII Port Mux */
->  #define P_MII0_MDC     (P_DEFINED | P_IDENT(GPIO_PC6) | P_FUNCT(0))
->  #define P_MII0_MDIO    (P_DEFINED | P_IDENT(GPIO_PC7) | P_FUNCT(0))
-> --
-> 1.8.2.3
->
->
+
+For the record:
+
+$ scripts/checkpatch.pl --strict allwinner.patch
+total: 0 errors, 0 warnings, 0 checks, 527 lines checked
+
+allwinner.patch has no obvious style problems and is ready for submission.
+
+This is on top of "v3.12-rc1-336-gd8524ae".
+
+checkpatch.pl does not complain as long as the number of spaces before
+and after an operator is the same. There is a patch pending to change
+this with the --strict option, but it will still not complain in 'normal'
+operation.
+
+Guenter
+
