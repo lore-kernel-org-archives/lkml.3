@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab3IWSQe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:16:34 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:44902 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730Ab3IWSQ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:16:27 -0400
-Date: Mon, 23 Sep 2013 10:04:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130923170400.GA1390@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130917143003.GA29354@twins.programming.kicks-ass.net>
- <20130917162050.GK22421@suse.de>
- <20130917164505.GG12926@twins.programming.kicks-ass.net>
- <20130918154939.GZ26785@twins.programming.kicks-ass.net>
- <20130919143241.GB26785@twins.programming.kicks-ass.net>
- <20130923105017.030e0aef@gandalf.local.home>
- <20130923145446.GX9326@twins.programming.kicks-ass.net>
- <20130923111303.04b99db8@gandalf.local.home>
- <20130923155059.GO9093@linux.vnet.ibm.com>
- <20130923160130.GC9326@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130923160130.GC9326@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092318-9332-0000-0000-00000182DF48
+	id S1753691Ab3IWSQQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:16:16 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:50987 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753588Ab3IWSQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 14:16:08 -0400
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: tpmdd-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>,
+        Rajiv Andrade <mail@srajiv.net>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 04/13] tpm: Store devname in the tpm_chip
+Date: Mon, 23 Sep 2013 12:14:34 -0600
+Message-Id: <1379960083-8942-5-git-send-email-jgunthorpe@obsidianresearch.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 06:01:30PM +0200, Peter Zijlstra wrote:
-> On Mon, Sep 23, 2013 at 08:50:59AM -0700, Paul E. McKenney wrote:
-> > Not a problem, just stuff the idx into some per-task thing.  Either
-> > task_struct or taskinfo will work fine.
-> 
-> Still not seeing the point of using srcu though..
-> 
-> srcu_read_lock() vs synchronize_srcu() is the same but far more
-> expensive than preempt_disable() vs synchronize_sched().
+Just put the memory directly in the chip structure, rather than
+in a 2nd dedicated kmalloc.
 
-Heh!  You want the old-style SRCU.  ;-)
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ drivers/char/tpm/tpm.c | 17 ++++++-----------
+ drivers/char/tpm/tpm.h |  1 +
+ 2 files changed, 7 insertions(+), 11 deletions(-)
 
-> > Or to put it another way, if the underlying slow-path mutex is
-> > reader-preference, then the whole thing will be reader-preference.
-> 
-> Right, so 1) we have no such mutex so we're going to have to open-code
-> that anyway, and 2) like I just explained in the other email, I want the
-> pending writer case to be _fast_ as well.
-
-At some point I suspect that we will want some form of fairness, but in
-the meantime, good point.
-
-							Thanx, Paul
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index e3c974a..71eb8c7 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1463,7 +1463,6 @@ void tpm_dev_vendor_release(struct tpm_chip *chip)
+ 		chip->vendor.release(chip->dev);
+ 
+ 	clear_bit(chip->dev_num, dev_mask);
+-	kfree(chip->vendor.miscdev.name);
+ }
+ EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
+ 
+@@ -1496,17 +1495,13 @@ EXPORT_SYMBOL_GPL(tpm_dev_release);
+ struct tpm_chip *tpm_register_hardware(struct device *dev,
+ 					const struct tpm_vendor_specific *entry)
+ {
+-#define DEVNAME_SIZE 7
+-
+-	char *devname;
+ 	struct tpm_chip *chip;
+ 
+ 	/* Driver specific per-device data */
+ 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+-	devname = kmalloc(DEVNAME_SIZE, GFP_KERNEL);
+ 
+-	if (chip == NULL || devname == NULL)
+-		goto out_free;
++	if (chip == NULL)
++		return NULL;
+ 
+ 	mutex_init(&chip->buffer_mutex);
+ 	mutex_init(&chip->tpm_mutex);
+@@ -1531,8 +1526,9 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+ 
+ 	set_bit(chip->dev_num, dev_mask);
+ 
+-	scnprintf(devname, DEVNAME_SIZE, "%s%d", "tpm", chip->dev_num);
+-	chip->vendor.miscdev.name = devname;
++	scnprintf(chip->devname, sizeof(chip->devname), "%s%d", "tpm",
++		  chip->dev_num);
++	chip->vendor.miscdev.name = chip->devname;
+ 
+ 	chip->vendor.miscdev.parent = dev;
+ 	chip->dev = get_device(dev);
+@@ -1558,7 +1554,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+ 		goto put_device;
+ 	}
+ 
+-	chip->bios_dir = tpm_bios_log_setup(devname);
++	chip->bios_dir = tpm_bios_log_setup(chip->devname);
+ 
+ 	/* Make chip available */
+ 	spin_lock(&driver_lock);
+@@ -1571,7 +1567,6 @@ put_device:
+ 	put_device(chip->dev);
+ out_free:
+ 	kfree(chip);
+-	kfree(devname);
+ 	return NULL;
+ }
+ EXPORT_SYMBOL_GPL(tpm_register_hardware);
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index a7bfc17..0df18b5 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -122,6 +122,7 @@ struct tpm_chip {
+ 	struct device *dev;	/* Device stuff */
+ 
+ 	int dev_num;		/* /dev/tpm# */
++	char devname[7];
+ 	unsigned long is_open;	/* only one allowed */
+ 	int time_expired;
+ 
+-- 
+1.8.1.2
 
