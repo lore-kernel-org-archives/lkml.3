@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab3IWXSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 19:18:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56750 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752901Ab3IWXSH (ORCPT
+	id S1753374Ab3IWX3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 19:29:09 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46240 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833Ab3IWX3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 19:18:07 -0400
-Date: Mon, 23 Sep 2013 16:18:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, iamjoonsoo.kim@lge.com,
-        rientjes@google.com, zhangyanfei@cn.fujitsu.com, linux-mm@kvack.org,
+	Mon, 23 Sep 2013 19:29:07 -0400
+Date: Tue, 24 Sep 2013 00:28:32 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>, lee.jones@linaro.org,
+        sameo@linux.intel.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk, rob@landley.net,
+        patches@opensource.wolfsonmicro.com, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH v5 1/4] mm/vmalloc: don't set area->caller twice
-Message-Id: <20130923161805.4b4b570241224b673e5c3b1b@linux-foundation.org>
-In-Reply-To: <5237946f.4815440a.094e.ffff8c29SMTPIN_ADDED_BROKEN@mx.google.com>
-References: <1379202342-23140-1-git-send-email-liwanp@linux.vnet.ibm.com>
-	<5237617F.6010107@jp.fujitsu.com>
-	<5237946f.4815440a.094e.ffff8c29SMTPIN_ADDED_BROKEN@mx.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Message-ID: <20130923232832.GM21013@sirena.org.uk>
+References: <1379961043-23762-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1379961043-23762-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <5240B4C2.2080600@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6tPBpOxN+lFhHURE"
+Content-Disposition: inline
+In-Reply-To: <5240B4C2.2080600@wwwdotorg.org>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/5] mfd: arizona: Add device tree binding for
+ max_channels_clocked
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Sep 2013 07:29:41 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
 
-> >> to set it again in __vmalloc_area_node.
-> >> 
-> >> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> >> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> >> ---
-> >>  mm/vmalloc.c | 1 -
-> >>  1 file changed, 1 deletion(-)
-> >> 
-> >> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> >> index 1074543..d78d117 100644
-> >> --- a/mm/vmalloc.c
-> >> +++ b/mm/vmalloc.c
-> >> @@ -1566,7 +1566,6 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
-> >>  		pages = kmalloc_node(array_size, nested_gfp, node);
-> >>  	}
-> >>  	area->pages = pages;
-> >> -	area->caller = caller;
-> >>  	if (!area->pages) {
-> >>  		remove_vm_area(area->addr);
-> >>  		kfree(area);
-> >
-> >Then, __vmalloc_area_node() no longer need "caller" argument. It can use area->caller instead.
-> >
-> 
-> Thanks for pointing out, I will update it in next version. 
+--6tPBpOxN+lFhHURE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I've seen so many versions of this patchset that my head has spun right
-off.  I'm not at all confident that I have the latest version and I'm
-certainly not confident that I've kept up with the ack/nack trail.
+On Mon, Sep 23, 2013 at 03:38:10PM -0600, Stephen Warren wrote:
+> On 09/23/2013 12:30 PM, Charles Keepax wrote:
 
-So I think I'll drop everything and will await that "next version". 
-Please be careful to Cc everyone who was involved and that the
-acked/reviewed-by paperwork is up to date.
+> > +  - wlf,max-channels-clocked : The maximum number of channels to be clocked on
+> > +    each AIF, useful for I2S systems with multiple data lines being mastered.
+> > +    If specified three cells must supplied one for each AIF, specify zero for
+> > +    AIFs that should be handled normally.
 
-Thanks.
+> What determines the value of this property? Is it really a definition of
+> HW, or some kind of run-time configuration/limit? What goes into each of
+> the 3 cells?
+
+It's hardware, it's other devices wired in parallel on the bus that use
+the CODEC as a clock master.  Personally I'd have this be set by the
+ASoC machine driver so it's invisible from a DT point of view, that's
+what it's really a property of.
+
+--6tPBpOxN+lFhHURE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSQM6dAAoJELSic+t+oim9p5UP/0Ly4KU+DYlk4DxtcqQQmr5d
+Q1FZTh+FEDRu6WqPgEXkQIbwOyr73vUSbzHkQ52qp3ISiENUqznps4FNQjYJTLTt
+c+UZWqoF4ywXCl04s65ltaY+ntdCxdMQX7amFSaaNRqddnZxKSsn4y1L0bRnq7jV
+pegn5P3gY4atV5OMDC3sQESl2HQIhb3SvhCW+nCiVha6P1WsRQUw/5nTrhyOZSGi
+5B8bIvpm2KzVmY0YUNKDnMZyS5axUKW7yDD2XVfZfZFeDECkOK131od9pUhucxhi
+ItzM8w2qtf100uUKUvmgpKYKJLVGn9toia1SD5BEsmWUDUEDlFL9GNhRsYHAu+e1
+AeLYXUoDbzNIqIFwuD/ZXZNCCqafg63yQp0fB1Xw/Hn8wxUSvdkKFTzueYvRfUhF
+abqBjNTm6tysbPTglmFojEEYz321HxRr7eHW1SzOSgTcuwNbv+d2m4cdnCFCS6+A
+Ccbt47e1ZaS42hbmhcQWaCKZVquqqXE0Z8sSSdOboslA3gyyOxFM1jcSPVab6C0U
+Tz1DgDPN/4a2LbGdNomV2idM4bAoExZkXNOqpgaqA5xg4LE8ci84MIsGVdil5N87
+tSm4lGmLWmvxE8DxZFc+08L1kuv2bH71eG5cvnGFz2DbArnK0o6a1TSEQSEpu5ft
+7xBwYzyjJ8OPY99yW/aC
+=I6ps
+-----END PGP SIGNATURE-----
+
+--6tPBpOxN+lFhHURE--
