@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab3IWTlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 15:41:45 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:54117 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab3IWTlo (ORCPT
+	id S1753435Ab3IWTmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 15:42:54 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:42415 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab3IWTmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 15:41:44 -0400
+	Mon, 23 Sep 2013 15:42:52 -0400
+Message-ID: <524099BA.5020303@cogentembedded.com>
+Date: Mon, 23 Sep 2013 23:42:50 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <5230C7F6.3080803@wwwdotorg.org>
-References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de>
-	<52279524.8090006@wwwdotorg.org>
-	<20130909161924.GT29403@sirena.org.uk>
-	<2052193.CMUEUJFRgS@lem-wkst-02>
-	<522F78CB.2020507@wwwdotorg.org>
-	<20130910213718.GH29403@sirena.org.uk>
-	<522F9E6C.2010905@wwwdotorg.org>
-	<522FBED9.9000305@collabora.co.uk>
-	<5230C7F6.3080803@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 21:41:43 +0200
-Message-ID: <CACRpkdZxFpw=EYB4A4nZu7LWjQb6QppVctUsBBDiCMsCBbqm5A@mail.gmail.com>
-Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mark Brown <broonie@kernel.org>, Lars Poeschel <poeschel@lemonage.de>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
-        joelf@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alexander Frolkin <avf@eldamar.org.uk>
+CC: Julian Anastasov <ja@ssi.bg>, lvs-devel@vger.kernel.org,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Simon Horman <horms@verge.net.au>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipvs: improved SH fallback strategy
+References: <20130923115139.GA15034@eldamar.org.uk>
+In-Reply-To: <20130923115139.GA15034@eldamar.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 9:43 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 09/10/2013 06:52 PM, Javier Martinez Canillas wrote:
+Hello.
 
->> I'm a bit confused now. Doesn't the fact that gpio_request() prevents
->> double-requests mean that the use-case that you say that have not been covered
->> by this patch can't actually happen?
->>
->> I mean, if when using board files an explicit call to gpio_request() is made by
->> platform code then a driver can't call gpio_request() for the same gpio. So this
->> patch shouldn't cause any regression since is just auto-requesting a GPIO when
->> is mapped as an IRQ in a DT which basically will be the same that was made by
->> board files before.
+On 09/23/2013 03:51 PM, Alexander Frolkin wrote:
+
+> Improve the SH fallback realserver selection strategy.
+
+> With sh and sh-fallback, if a realserver is down, this attempts to
+> distribute the traffic that would have gone to that server evenly
+> among the remaining servers.
+
+> Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
+> ---
+> diff --git a/net/netfilter/ipvs/ip_vs_sh.c b/net/netfilter/ipvs/ip_vs_sh.c
+> index f16c027..1676354 100644
+> --- a/net/netfilter/ipvs/ip_vs_sh.c
+> +++ b/net/netfilter/ipvs/ip_vs_sh.c
+> @@ -120,22 +120,35 @@ static inline struct ip_vs_dest *
+>   ip_vs_sh_get_fallback(struct ip_vs_service *svc, struct ip_vs_sh_state *s,
+>   		      const union nf_inet_addr *addr, __be16 port)
+>   {
+> -	unsigned int offset;
+> -	unsigned int hash;
+> +	unsigned int offset, roffset;
+> +	unsigned int hash, ihash;
+>   	struct ip_vs_dest *dest;
 >
-> I'm not familiar with the board file path; Linus describe this.
+> -	for (offset = 0; offset < IP_VS_SH_TAB_SIZE; offset++) {
+> -		hash = ip_vs_sh_hashkey(svc->af, addr, port, offset);
+> -		dest = rcu_dereference(s->buckets[hash].dest);
+> -		if (!dest)
+> -			break;
+> -		if (is_unavailable(dest))
+> -			IP_VS_DBG_BUF(6, "SH: selected unavailable server "
+> -				      "%s:%d (offset %d)",
+> +	ihash = ip_vs_sh_hashkey(svc->af, addr, port, 0);
+> +	dest = rcu_dereference(s->buckets[ihash].dest);
+> +
 
-Oh um? Not following, that stuff is right above, what is unclear
-about this that I need to describe?
+    Empty line net needed here (and it wasn't there in the original code).
 
-Yours,
-Linus Walleij
+> +	if (!dest)
+> +		return NULL;
+> +
+
+    Here too.
+
+> +	if (is_unavailable(dest)) {
+> +		IP_VS_DBG_BUF(6, "SH: selected unavailable server "
+> +		      "%s:%d, reselecting",
+> +		      IP_VS_DBG_ADDR(svc->af, &dest->addr),
+> +		      ntohs(dest->port));
+> +		for (offset = 0; offset < IP_VS_SH_TAB_SIZE; offset++) {
+> +			roffset = (offset + ihash) % IP_VS_SH_TAB_SIZE;
+> +			hash = ip_vs_sh_hashkey(svc->af, addr, port, roffset);
+> +			dest = rcu_dereference(s->buckets[hash].dest);
+> +			if (is_unavailable(dest))
+> +				IP_VS_DBG_BUF(6, "SH: selected unavailable "
+> +				      "server %s:%d (offset %d), reselecting",
+>   				      IP_VS_DBG_ADDR(svc->af, &dest->addr),
+
+WBR, Sergei
+
