@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab3IWSQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:16:11 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:58369 "EHLO quartz.orcorp.ca"
+	id S1753960Ab3IWSSH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:18:07 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:58647 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab3IWSQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:16:08 -0400
+	id S1753628Ab3IWSQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 14:16:11 -0400
 From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 To: tpmdd-devel@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>,
         Rajiv Andrade <mail@srajiv.net>,
         Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
         Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 01/13] tpm: ibmvtpm: Use %zd formatting for size_t format arguments
-Date: Mon, 23 Sep 2013 12:14:31 -0600
-Message-Id: <1379960083-8942-2-git-send-email-jgunthorpe@obsidianresearch.com>
+        Peter Huewe <peterhuewe@gmx.de>,
+        Daniel De Graaf <dgdegra@tycho.nsa.gov>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 03/13] tpm: xen-tpmfront: Fix default durations
+Date: Mon, 23 Sep 2013 12:14:33 -0600
+Message-Id: <1379960083-8942-4-git-send-email-jgunthorpe@obsidianresearch.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
 References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
@@ -24,35 +26,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This suppresses compile warnings on 32 bit builds.
+All the default durations were being set to 10 minutes which is
+way too long for the timeouts. Normal values for the longest
+duration are around 5 mins, and short duration ar around .5s.
 
+Further, these are just the default, tpm_get_timeouts will set
+them to values from the TPM (or throw an error).
+
+Just remove them.
+
+Cc: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 ---
- drivers/char/tpm/tpm_ibmvtpm.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/char/tpm/xen-tpmfront.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
-index 56b07c3..838f043 100644
---- a/drivers/char/tpm/tpm_ibmvtpm.c
-+++ b/drivers/char/tpm/tpm_ibmvtpm.c
-@@ -98,7 +98,7 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
+index 7a7929b..6f2fe2b 100644
+--- a/drivers/char/tpm/xen-tpmfront.c
++++ b/drivers/char/tpm/xen-tpmfront.c
+@@ -210,8 +210,6 @@ static struct attribute_group vtpm_attr_grp = {
+ 	.attrs = vtpm_attrs,
+ };
  
- 	if (count < len) {
- 		dev_err(ibmvtpm->dev,
--			"Invalid size in recv: count=%ld, crq_size=%d\n",
-+			"Invalid size in recv: count=%zd, crq_size=%d\n",
- 			count, len);
- 		return -EIO;
- 	}
-@@ -136,7 +136,7 @@ static int tpm_ibmvtpm_send(struct tpm_chip *chip, u8 *buf, size_t count)
+-#define TPM_LONG_TIMEOUT   (10 * 60 * HZ)
+-
+ static const struct tpm_vendor_specific tpm_vtpm = {
+ 	.status = vtpm_status,
+ 	.recv = vtpm_recv,
+@@ -224,11 +222,6 @@ static const struct tpm_vendor_specific tpm_vtpm = {
+ 	.miscdev = {
+ 		.fops = &vtpm_ops,
+ 	},
+-	.duration = {
+-		TPM_LONG_TIMEOUT,
+-		TPM_LONG_TIMEOUT,
+-		TPM_LONG_TIMEOUT,
+-	},
+ };
  
- 	if (count > ibmvtpm->rtce_size) {
- 		dev_err(ibmvtpm->dev,
--			"Invalid size in send: count=%ld, rtce_size=%d\n",
-+			"Invalid size in send: count=%zd, rtce_size=%d\n",
- 			count, ibmvtpm->rtce_size);
- 		return -EIO;
- 	}
+ static irqreturn_t tpmif_interrupt(int dummy, void *dev_id)
 -- 
 1.8.1.2
 
