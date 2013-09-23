@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab3IWACc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 20:02:32 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45986 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab3IWACb (ORCPT
+	id S1752710Ab3IWAXc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 20:23:32 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:44682 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210Ab3IWAXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 20:02:31 -0400
-Date: Mon, 23 Sep 2013 10:02:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: old trees
-Message-Id: <20130923100214.7e28c4203211bcfa9e07a2b3@canb.auug.org.au>
-In-Reply-To: <20130920183517.GH5707@phenom.dumpdata.com>
-References: <20130917170124.0afa2e103a9977355ad7c72c@canb.auug.org.au>
-	<20130920183517.GH5707@phenom.dumpdata.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__23_Sep_2013_10_02_14_+1000_9_Z9/AfSi05/vbfg"
+	Sun, 22 Sep 2013 20:23:30 -0400
+Date: Sun, 22 Sep 2013 18:23:28 -0600
+From: Linn Crosetto <linn@hp.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: matt.fleming@intel.com, hpa@zytor.com, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, yinghai@kernel.org,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] x86: EFI stub support for large memory maps
+Message-ID: <20130923002328.GC24764@oranje.fc.hp.com>
+References: <1377291771-21302-1-git-send-email-linn@hp.com>
+ <1378487056-9857-1-git-send-email-linn@hp.com>
+ <20130917201452.GI3409@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130917201452.GI3409@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__23_Sep_2013_10_02_14_+1000_9_Z9/AfSi05/vbfg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 17, 2013 at 09:14:52PM +0100, Matt Fleming wrote:
+> > +static efi_status_t alloc_e820ext(u32 nr_desc, struct setup_data **e820ext,
+> > +				  u32 *e820ext_size)
+> > +{
+> > +	efi_status_t status;
+> > +	unsigned long size;
+> > +
+> > +	size = sizeof(struct setup_data) +
+> > +		sizeof(struct e820entry) * nr_desc;
+> > +
+> > +	if (*e820ext && size <= *e820ext_size)
+> > +		return EFI_SUCCESS; /* Already allocated */
+> 
+> Do we actually need this check? I thought the 'prev_nr_desc' below
+> ensures we only allocate 'e820ext' if we need more memory.
 
-Hi Konrad,
+I am okay with removing the check. There is another bug in exit_boot, when
+jumping to get_map the call to get the memory map is passed the previous map
+size instead of the size of the allocated buffer. I'll make the changes and
+resend.
 
-On Fri, 20 Sep 2013 14:35:17 -0400 Konrad Rzeszutek Wilk <konrad.wilk@oracl=
-e.com> wrote:
->
-> > ibft		1 year, 9 months ago
->=20
-> Can go away.
->=20
-> > swiotlb		11 months ago
->=20
-> Need it. Don't remove it pls.
->=20
-> > tmem		11 months ago
->=20
-> Can go away.
-
-OK, 2 removed.  Thanks.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__23_Sep_2013_10_02_14_+1000_9_Z9/AfSi05/vbfg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSP4ULAAoJEECxmPOUX5FEHE8P/1dVVaDp48rrL6gj2GSkahrQ
-ZtzzJ1lMfw8u7j7F1DmX7vdVeiOAwJJ6IMmlROhxngfOaV3d2VnRvs4dLN4HZezP
-1dngxW7APEwhoMsOoof7T8m+elAn0qvU+5BZ+XIw0jpRmGqOo70xhxuuZyT3by32
-K1osB79dLVr55NT28TVnFT11ykFTvvV0JRm0n8Zd94D2xqW4YvpUaXkdaKjGLCyA
-1j8LFULrlqRKUkfIrieEUdWyp0wKM+tWEbwvncqcqgPUK+5Z0qLpRGa/XpQW2N2y
-J6aKmpW5xCYcxfRd67IOqSNW9i4kMWISsP8cddrKR3EQ6xT1JJWFj/N31vaGJnJa
-Y3QJKS2ui20/6VRO8WrTaR4QJpOENfdZUb7rZRDZxzsSlumvEiAvsKOE4RvOpr/T
-9mZB0oGt2n3OKPDwOvI1ApRc/FPk7smfBFi2OsPNoSEoQQHpt7M9aGC5uAohvOAW
-Q7DHKBmUPClidzHAjVLeq1BXkPji3PAv966CLBSlfM5euPgEZiDZk7WKEsM0wr2d
-/7YJmHnaaLsjd9WuA0L2pKiYhbfzxMAfO6XxTEh4qMsZENDhxi3/7o+serD5wE8w
-ZulGD4CMntgGjz0Px/x4YP2PLZqxlzu946nwLgpLTnUvvKrbMSXZqx3KPuT87sX8
-ri7h+6g5vxpWZ+/D+SE5
-=5dK4
------END PGP SIGNATURE-----
-
---Signature=_Mon__23_Sep_2013_10_02_14_+1000_9_Z9/AfSi05/vbfg--
+> 
+> [...]
+> 
+> > @@ -1016,6 +1157,19 @@ get_map:
+> >  	if (status != EFI_SUCCESS)
+> >  		goto free_mem_map;
+> >  
+> > +	prev_nr_desc = nr_desc;
+> > +	nr_desc = size / desc_size;
+> > +	if (nr_desc > prev_nr_desc &&
+> > +	    nr_desc > ARRAY_SIZE(boot_params->e820_map)) {
+> > +		u32 nr_e820ext = nr_desc - ARRAY_SIZE(boot_params->e820_map);
+> > +
+> > +		status = alloc_e820ext(nr_e820ext, &e820ext, &e820ext_size);
+> > +		if (status != EFI_SUCCESS)
+> > +			goto free_mem_map;
+> > +
+> > +		goto get_map; /* Allocated memory, get map again */
+> > +	}
+> > +
