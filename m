@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab3IWXPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 19:15:46 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47907 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007Ab3IWXPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 19:15:45 -0400
-Date: Tue, 24 Sep 2013 01:15:43 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ADP1653 board code for Nokia RX-51
-Message-ID: <20130923231543.GA10094@amd.pavel.ucw.cz>
-References: <201302171616.50152@pali>
- <20130907230252.GA10700@blackmetal.musicnaut.iki.fi>
- <20130918131644.GA2953@amd.pavel.ucw.cz>
- <201309181800.10486@pali>
- <20130918174211.GU9994@atomide.com>
- <20130921123732.GB4652@amd.pavel.ucw.cz>
- <20130923172146.GH2684@atomide.com>
+	id S1753465Ab3IWXRU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 19:17:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44483 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752394Ab3IWXRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 19:17:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,966,1371106800"; 
+   d="scan'208";a="382510092"
+Message-ID: <5240CDED.40501@linux.intel.com>
+Date: Mon, 23 Sep 2013 16:25:33 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130923172146.GH2684@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Jean Delvare <khali@linux-fr.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        "Artem S. Tashkinov" <t.artem@mailcity.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v5 2/2] hwmon: (coretemp) Report power and energy consumption
+References: <1379968489-13781-1-git-send-email-linux@roeck-us.net> <1379968489-13781-2-git-send-email-linux@roeck-us.net> <5240C145.6080104@linux.intel.com> <20130923224541.GA25966@roeck-us.net>
+In-Reply-To: <20130923224541.GA25966@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 09/23/2013 03:45 PM, Guenter Roeck wrote:
+> On Mon, Sep 23, 2013 at 03:31:33PM -0700, Srinivas Pandruvada wrote:
+>> On 09/23/2013 01:34 PM, Guenter Roeck wrote:
+>>> Supported by SandyBridge and newer CPUs.
+>>>
+>>> Cc: Fenghua Yu <fenghua.yu@intel.com>
+>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>>> ---
+>>> v5: Merged to 3.12-rc1
+>>> v4: Replaced INIT_DELAYED_WORK with INIT_DEFERRABLE_WORK
+>>> v3: Added Cc:
+>>> v2: Fix missing symbol error on i386 builds
+>>>      Dropped leftover pr_info from debugging
+>>>
+>>> I am inclined to drop this patch set, as I received neither test nor code
+>>> review feedback even though the patch set has been out there for a long time.
+>>> Also, I am concerned that it overlaps or even conflicts with the proposed
+>>> Power Cap/RAPL driver (https://lkml.org/lkml/2013/9/19/260).
+>> <We feel that the power capping framework is the right place to show
+>> the RAPL data. This is not just monitoring but also control.
+>> There are other drivers getting developed using this framework to
+>> expose an uniform sysfs interface.
+> Thought so. Have you thought about providing a hwmon bridge ?
+<Good idea. I think after base version is accepted, we can add this. >
+>
+> Thanks,
+> Guenter
 
-> > > > Right. So Tony, will you accept future patches for board files?
-> > > 
-> > > Only fixes to board-*.c files please unless there's a _really_
-> > > good reason to make things more complex with the platform data.
-> > > Let's not make the DT conversion any more complex than it
-> > > already is.
-> > > 
-> > > Getting things working with DT for the devices is pretty trivial
-> > > in most cases. And we can also still initialize the legacy devices
-> > > using platform data the same way as earlier.
-> > 
-> > Well... It was quite a struggle to get video working with device tree
-> > in 3.10, and now it is broken in 3.12-rc1, again.
-> 
-> Hmm didn't Aaro reply that you just need to change the Kconfig
-> option for the panel to fix it?
+Thanks,
+Srinivas
 
-Aha, spam filters playing games :-(. Sorry about that.
-
-> > "Now, here, you see, it takes all the running you can do, to keep in
-> > the same place. If you want to get somewhere else, you must run at
-> > least twice as fast as that! "
-> 
-> True at least for reading the mailing lists :)
-
-:-).
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
