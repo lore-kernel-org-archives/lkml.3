@@ -1,98 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab3IWQcX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 12:32:23 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:58877 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab3IWQcU (ORCPT
+	id S1752838Ab3IWQgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 12:36:42 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:38546 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab3IWQgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 12:32:20 -0400
-Message-ID: <52406CF6.3040807@collabora.co.uk>
-Date: Mon, 23 Sep 2013 18:31:50 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Mon, 23 Sep 2013 12:36:40 -0400
+Message-ID: <52406E03.5060004@gmail.com>
+Date: Tue, 24 Sep 2013 00:36:19 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Jon Hunter <jgchunter@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] gpio/omap: auto-setup a GPIO when used as an IRQ
-References: <1379860848-29020-1-git-send-email-javier.martinez@collabora.co.uk> <524068D4.5040909@wwwdotorg.org>
-In-Reply-To: <524068D4.5040909@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, toshi.kani@hp.com,
+        zhangyanfei@cn.fujitsu.com, liwanp@linux.vnet.ibm.com, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 1/5] memblock: Introduce allocation direction to memblock.
+References: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com> <1379064655-20874-2-git-send-email-tangchen@cn.fujitsu.com> <20130923153853.GC14547@htj.dyndns.org>
+In-Reply-To: <20130923153853.GC14547@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 06:14 PM, Stephen Warren wrote:
-> On 09/22/2013 08:40 AM, Javier Martinez Canillas wrote:
->> To use a GPIO pin as an interrupt line, two previous configurations
->> have to be made:
->> 
->> a) Map the GPIO pin as an interrupt line into the Linux irq space
->> b) Enable the GPIO bank and configure the GPIO direction as input
->> 
->> Most GPIO/IRQ chip drivers just create a mapping for every single
->> GPIO pin with irq_create_mapping() on .probe so users usually can
->> assume a) and only have to do b) by using the following sequence:
->> 
->> gpio_request(gpio, "foo IRQ");
->> gpio_direction_input(gpio);
->> 
->> and then request a IRQ with:
->> 
->> irq = gpio_to_irq(gpio);
->> request_irq(irq, ...);
->> 
->> Some drivers know that their IRQ line is being driven by a GPIO
->> and use a similar sequence as the described above but others are
->> not aware or don't care wether their IRQ is a real line from an
->> interrupt controller or a GPIO pin acting as an IRQ.
->> ...
+Hello tejun,
+
+On 09/23/2013 11:38 PM, Tejun Heo wrote:
+> Hello,
 > 
-> I think that explanation is a bit like retro-actively implying that
-> drivers /should/ be aware of whether their IRQ is a GPIO or not, and
-> should be acting differently. However, they should not.
->
+> Sorry about the delay.  Was traveling.
 
-I know the patch description is rather verbose but since we have been discussing
-this a lot and people have different opinions I wanted to explain some context
-and the motivation for the patch.
+hoho~ I guess you did have a good time.
 
-> I would much rather see a simpler patch description along the lines of:
 > 
-> The OMAP GPIO controller HW requires that a pin be configured in GPIO
-> mode in order to operate as an interrupt input. Since drivers should not
-> be aware of whether an interrupt pin is also a GPIO or not, the HW
-> should be fully configured/enabled as an IRQ if a driver solely uses IRQ
-> APIs such as request_irq, and never calls any GPIO-related APIs. As
-> such, add the missing HW setup to the OMAP GPIO controller's irq_chip
-> driver.
+> On Fri, Sep 13, 2013 at 05:30:51PM +0800, Tang Chen wrote:
+>> +/* Allocation order. */
+>> +#define MEMBLOCK_DIRECTION_HIGH_TO_LOW	0
+>> +#define MEMBLOCK_DIRECTION_LOW_TO_HIGH	1
+>> +#define MEMBLOCK_DIRECTION_DEFAULT	MEMBLOCK_DIRECTION_HIGH_TO_LOW
+> 
+> Can we please settle on either top_down/bottom_up or
+> high_to_low/low_to_high?  The two seem to be used interchangeably in
+> the patch series.  Also, it'd be more customary to use enum for things
+> like above, but more on the interface below.
+
+OK. let's use top_down/bottom_up. And using enum is also ok.
+
+> 
+>> +static inline bool memblock_direction_bottom_up(void)
+>> +{
+>> +	return memblock.current_direction == MEMBLOCK_DIRECTION_LOW_TO_HIGH;
+>> +}
+> 
+> Maybe just memblock_bottom_up() would be enough?
+
+Agreed.
+
+> 
+> Also, why not also have memblock_set_bottom_up(bool enable) as the
+> 'set' interface?
+
+hmmm, ok. So we will use memblock_set_bottom_up to replace
+memblock_set_current_direction below.
+
+> 
+>>  /**
+>> + * memblock_set_current_direction - Set current allocation direction to allow
+>> + *                                  allocating memory from higher to lower
+>> + *                                  address or from lower to higher address
+>> + *
+>> + * @direction: In which order to allocate memory. Could be
+>> + *             MEMBLOCK_DIRECTION_{HIGH_TO_LOW|LOW_TO_HIGH}
+>> + */
+>> +void memblock_set_current_direction(int direction);
+> 
+> Function comments should go with the function definition.  Dunno what
+> happened with set_current_limit but let's please not spread it.
+> 
+>> +void __init_memblock memblock_set_current_direction(int direction)
+>> +{
+>> +	if (direction != MEMBLOCK_DIRECTION_HIGH_TO_LOW &&
+>> +	    direction != MEMBLOCK_DIRECTION_LOW_TO_HIGH) {
+>> +		pr_warn("memblock: Failed to set allocation order. "
+>> +			"Invalid order type: %d\n", direction);
+>> +		return;
+>> +	}
+>> +
+>> +	memblock.current_direction = direction;
+>> +}
+> 
+> If set_bottom_up() style interface is used, the above will be a lot
+> simpler, right?  Also, it's kinda weird to have two separate patches
+> to introduce the flag and actually implement bottom up allocation.
+
+Yeah, right, that'd be much simpler. And it is ok to put the two in
+one patch.
+
+Thanks.
+
+> 
+> Thanks.
 > 
 
-Thanks for the suggestion, I'll use something like that when I do a proper post
-as a PATCH and not RFC.
 
-> The code change looks like it does what I would expect though.
-> 
-
-Great, let's see what is the feedback from Santosh and Kevin about the
-implementation since they are the maintainers of this driver.
-
-I really hope we can find a solution to this long standing issue.
-
-Thanks a lot and best regards,
-Javier
+-- 
+Thanks.
+Zhang Yanfei
