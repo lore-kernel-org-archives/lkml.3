@@ -1,99 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab3IWQym (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 12:54:42 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:33243 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab3IWQyi (ORCPT
+	id S1753188Ab3IWQ63 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 12:58:29 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:62654 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab3IWQ60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 12:54:38 -0400
+	Mon, 23 Sep 2013 12:58:26 -0400
+Message-ID: <5240731B.9070906@gmail.com>
+Date: Tue, 24 Sep 2013 00:58:03 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-In-Reply-To: <1379918525.2231.0.camel@buesod1.americas.hpqcorp.net>
-References: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
-	<1379625742.2145.19.camel@buesod1.americas.hpqcorp.net>
-	<1379700524.5434.22.camel@flatline.rdu.redhat.com>
-	<1379788235.2145.48.camel@buesod1.americas.hpqcorp.net>
-	<CA+55aFwQp6Fm9-Zrn3uue9bFe9tERCbVv5Z-z9r4ZgOmS0VB+Q@mail.gmail.com>
-	<1379918525.2231.0.camel@buesod1.americas.hpqcorp.net>
-Date: Mon, 23 Sep 2013 09:54:37 -0700
-X-Google-Sender-Auth: _IBK06VTS81UEtXAUEKExBMeyo0
-Message-ID: <CA+55aFzVnivKb=nwzeTjGvi=LvnBLGnr=NZE+Ns6kLSm=WCN4w@mail.gmail.com>
-Subject: Re: [PATCH 0/4] ipc: shm and msg fixes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Eric Paris <eparis@parisplace.org>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, toshi.kani@hp.com,
+        zhangyanfei@cn.fujitsu.com, liwanp@linux.vnet.ibm.com, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 5/5] mem-hotplug: Introduce movablenode boot option
+ to control memblock allocation direction.
+References: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com> <1379064655-20874-6-git-send-email-tangchen@cn.fujitsu.com> <20130923155713.GF14547@htj.dyndns.org>
+In-Reply-To: <20130923155713.GF14547@htj.dyndns.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 11:42 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->>
->> More importantly, it's wrong. You do the call_rcu() unconditionally,
->> but it might not be the last use! You need to do it with the same
->> logic ipc_rcu_putref(), namely at the dropping of the last reference.
->
-> This is the way IPC has handled things for a long time, no? Security
-> does not depend on the reference counter, as we unconditionally free
-> security structs.
+Hello tejun,
 
-Yes, but that was ok back when the logic was idem-potent and you could
-call it multiple times. Modulo races (I didn't check if we held a
-lock).
+On 09/23/2013 11:57 PM, Tejun Heo wrote:
+> Hello,
+> 
+> On Fri, Sep 13, 2013 at 05:30:55PM +0800, Tang Chen wrote:
+>> +#ifdef CONFIG_MOVABLE_NODE
+>> +	if (movablenode_enable_srat) {
+>> +		/*
+>> +		 * When ACPI SRAT is parsed, which is done in initmem_init(),
+>> +		 * set memblock back to the default behavior.
+>> +		 */
+>> +		memblock_set_current_direction(MEMBLOCK_DIRECTION_DEFAULT);
+>> +	}
+>> +#endif /* CONFIG_MOVABLE_NODE */
+> 
+> It's kinda weird to have ifdef around the above when all the actual
+> code would be compiled and linked regardless of the above ifdef.
+> Wouldn't it make more sense to conditionalize
+> memblock_direction_bottom_up() so that it's constant false to allow
+> the compiler to drop unnecessary code?
 
-You can't do "call_rcu()" more than once, because you'll corrupt the
-rcu list if you do another call_rcu() while the first one is still
-active (and that's a pretty big race window to hit).
+you mean we define memblock_set_bottom_up and memblock_bottom_up like below:
 
-That said, the old behavior was suspect for another reason too: having
-the security blob go away from under a user sounds like it could cause
-various other problems anyway, so I think the old code was at least
-_prone_ to bugs even if it didn't have catastrophic behavior.
+#ifdef CONFIG_MOVABLE_NODE
+void memblock_set_bottom_up(bool enable)
+{
+        /* do something */
+}
 
-(In reality, I suspect the reference count is never elevated in
-practice, so there is only one case that calls the security freeing
-thing, so this may all be pretty much theoretical, but at least from a
-logic standpoint the code clearly makes a big deal about the whole
-refcount and "last user turns off the lights").
+bool memblock_bottom_up()
+{
+        return  direction == bottom_up;
+}
+#else
+void memblock_set_bottom_up(bool enable)
+{
+        /* empty */
+}
 
-> What you're suggesting, is (i) freeing security will now depend on the
-> refcount (wouldn't this cause cases where we actually never end up
-> freeing?)
+bool memblock_bottom_up()
+{
+        return false;
+}
+#endif
 
-The security layer better not have any refcounted backpointers to the
-shm, so I don't see why that would be a new issue.
+right?
 
->  and (ii) in the scenarios we actually need to free the
-> security, delay it along with freeing the actual ipc_rcu stuff.
+thanks.
 
-Well, that's the whole point. The security blob should have the same
-lifetime as the ipc blob it is associated with.
+> 
+> Thanks.
+> 
 
-Getting rid of the security blob before the thing it is supposed to
-protect sounds like  a bug to me. In fact, it's the bug that this
-whole thread has been about. No?
 
-> If I understand correctly, then we'd have:
->
-> void ipc_rcu_putref(void *ptr, void (*func)(struct rcu_head *head))
-> {
->         struct ipc_rcu *p = ((struct ipc_rcu *)ptr) - 1;
->
->         if (!atomic_dec_and_test(&p->refcount))
->                 return;
->
->         call_rcu(&p->rcu, func);
-> }
-
-Exactly.
-
-            Linus
+-- 
+Thanks.
+Zhang Yanfei
