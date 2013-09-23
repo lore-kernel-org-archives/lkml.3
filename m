@@ -1,147 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab3IWOIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 10:08:30 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41965 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753493Ab3IWOI2 (ORCPT
+	id S1753946Ab3IWOKq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 10:10:46 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:37186 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab3IWOKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 10:08:28 -0400
-Date: Mon, 23 Sep 2013 15:08:23 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Cc: "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "t.figa@samsung.com" <t.figa@samsung.com>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "b.zolnierkie@samsung.com" <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2] MTD: Onenand: Add device tree support for samsung
- onenand
-Message-ID: <20130923140823.GC16069@e106331-lin.cambridge.arm.com>
-References: <1379941608-5068-1-git-send-email-m.krawczuk@partner.samsung.com>
+	Mon, 23 Sep 2013 10:10:44 -0400
+Message-ID: <52404BD6.9070101@cogentembedded.com>
+Date: Mon, 23 Sep 2013 18:10:30 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379941608-5068-1-git-send-email-m.krawczuk@partner.samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: Roger Quadros <rogerq@ti.com>, balbi@ti.com, bcousson@baylibre.com,
+        tony@atomide.com, balajitk@ti.com, kishon@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [RFC PATCH 08/15] ata: ahci_platform: Manage SATA PHY
+References: <1379595943-14622-1-git-send-email-rogerq@ti.com> <1379595943-14622-9-git-send-email-rogerq@ti.com> <523F3567.80303@cogentembedded.com> <20130922214859.GC27616@mtj.dyndns.org>
+In-Reply-To: <20130922214859.GC27616@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 02:06:48PM +0100, Mateusz Krawczuk wrote:
-> This patch add clk and device tree nodes for samsung onenand driver.
-> 
-> since v1:
-> Updated Documentation according to Mark Rutland notes.
-> 
-> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  .../devicetree/bindings/mtd/samsung-onenand.txt    | 44 ++++++++++++++++++++++
->  drivers/mtd/onenand/samsung.c                      | 37 +++++++++++++++++-
->  2 files changed, 80 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/devicetree/bindings/mtd/samsung-onenand.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/mtd/samsung-onenand.txt b/Documentation/devicetree/bindings/mtd/samsung-onenand.txt
-> new file mode 100644
-> index 0000000..5bf931c
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mtd/samsung-onenand.txt
-> @@ -0,0 +1,44 @@
-> +Device tree bindings for Samsung Onenand
-> +
-> +Required properties:
-> +  - compatible: value should be either of the following.
-> +      (a) "samsung,s3c6400-onenand",
-> +		for onenand controller compatible with s3c6400.
-> +      (b) "samsung,s3c6410-onenand",
-> +		for onenand controller compatible with s3c6410.
-> +      (c) "samsung,s5pc100-onenand",
-> +		for onenand controller compatible with s5pc100.
-> +      (d) "samsung,s5pc110-onenand",
-> +      for s5pc100-like onenand controller used on s5pc110 which supports DMA.
-> +
+Hello.
 
-As I asked on the last posting, what are the differences between these
-implementations?
+On 09/23/2013 01:48 AM, Tejun Heo wrote:
 
-> +Required properties for s5pc110:
-> +
-> + - reg: the offset and length of the control registers. First region describes
-> +	OneNAND interface, second control registers.
+>>> @@ -37,6 +37,7 @@
 
-Also, the complete reg description is a bit confusing. How about
-something like:
+>>>   #include <linux/clk.h>
+>>>   #include <linux/libata.h>
+>>> +#include <linux/phy/phy.h>
 
- - reg: two register specifiers:
-        [0] - The OneNAND interface
-	[1] - The control registers
+>> struct phy;
 
-Do we expect future OneNAND devices which may require more reg entries
-to describe?
+>> should suffice.
 
-> + - interrupt-parent, interrupts		Onenand memory interrupts
+> Unless it's actually likely to cause inclusion loop, I think it's
+> better to include the header than adding explicit declarations.
 
-As it's a common property, I don't think interrupt-parent needs to
-be described.
+    Apparently, tastes differ here. E.g. Greg KH would have also told Roger to 
+use forward declaration in such case. :-)
 
-Is there more than one interrupt? What's it called on the manual?
+> Thanks.
 
-> +
-> +Required properties for others:
-> +
-> + - reg: the offset and length of the control registers. First region describes
-> +	control registers, second OneNAND interface.
+WBR, Sergei
 
-Why does the s5pc110 OneNAND binding take its registers in the opposite
-order to the rest of these? Can we not fix up the driver first to make
-it consistent? Then we only need to describe this once and it's going to
-be far less of a headache to support.
-
-> +
-> +Clocks:
-> + - gate - clock which output is supplied to external OneNAND flash memory.
-
-How about the following (without the Clocks header):
-
-- clocks: clock-specifiers for the clocks named in clock-names, per the
-          common clock bindings.
-
-- clock-names: should contain "gate" for the clock to the OneNAND flash
-               memory.
-
-Is this the only clock that might be necessary on all platforms?
-
-> +
-> +
-> +For partiton table parsing (optional) please refer to:
-> + [1] Documentation/devicetree/bindings/mtd/partition.txt
-> +
-> +Example for an s5pv210 board:
-> +
-> +		onenand@b0000000 {
-> +			compatible = "samsung,s5pc110-onenand";
-> +			reg = <0xb0000000 0x20000>, <0xb0600000 0x2000>;
-> +			interrupt-parent = <&vic1>;
-> +			interrupts = <31>;
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +			clocks = <&clocks NANDXL>;
-> +			clock-names = "gate";
-> +			status = "okay";
-> +		};
-
-Cheers,
-Mark.
