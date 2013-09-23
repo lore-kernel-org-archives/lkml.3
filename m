@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab3IWXL0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 19:11:26 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:47954 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753029Ab3IWXLZ (ORCPT
+	id S1753235Ab3IWXPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 19:15:46 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47907 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab3IWXPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 19:11:25 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+yL7tT+MPK1Ct1B25YQYZG
-Date: Mon, 23 Sep 2013 16:11:19 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz
-Subject: Re: [PATCH 4/4] RX-51: Add platform function and data for bq24150a
- charger
-Message-ID: <20130923231119.GK2684@atomide.com>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <201309232116.19161@pali>
- <20130923200008.GA21808@earth.universe>
- <201309232206.47391@pali>
- <20130923204714.GB22995@earth.universe>
+	Mon, 23 Sep 2013 19:15:45 -0400
+Date: Tue, 24 Sep 2013 01:15:43 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ADP1653 board code for Nokia RX-51
+Message-ID: <20130923231543.GA10094@amd.pavel.ucw.cz>
+References: <201302171616.50152@pali>
+ <20130907230252.GA10700@blackmetal.musicnaut.iki.fi>
+ <20130918131644.GA2953@amd.pavel.ucw.cz>
+ <201309181800.10486@pali>
+ <20130918174211.GU9994@atomide.com>
+ <20130921123732.GB4652@amd.pavel.ucw.cz>
+ <20130923172146.GH2684@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130923204714.GB22995@earth.universe>
+In-Reply-To: <20130923172146.GH2684@atomide.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Reichel <sre@ring0.de> [130923 13:55]:
-> On Mon, Sep 23, 2013 at 10:06:46PM +0200, Pali Rohár wrote:
-> > On Monday 23 September 2013 22:00:09 Sebastian Reichel wrote:
-> > > On Mon, Sep 23, 2013 at 09:16:18PM +0200, Pali Rohár wrote:
-> > > > It is not as simple as it looks. This is reason why I
-> > > > submited this patch long time after I submited bq2415x
-> > > > driver.
-> > > > 
-> > > > Problem is that for rx51 is needed specific function which
-> > > > connect to two drivers (bq2415x and isp1704) plus it call
-> > > > specific rx51 board functions.
-> > > > 
-> > > > Something which cannot be in DT (unless DT support C/ASM
-> > > > code).
+Hi!
+
+> > > > Right. So Tony, will you accept future patches for board files?
 > > > 
-> > > mh could isp1704 driver expose the data via the regulator
-> > > framework?
+> > > Only fixes to board-*.c files please unless there's a _really_
+> > > good reason to make things more complex with the platform data.
+> > > Let's not make the DT conversion any more complex than it
+> > > already is.
+> > > 
+> > > Getting things working with DT for the devices is pretty trivial
+> > > in most cases. And we can also still initialize the legacy devices
+> > > using platform data the same way as earlier.
 > > 
-> > No, isp1704 is power supply driver and export data via power 
-> > supply (sysfs) interface. It is not regulator but charger driver.
+> > Well... It was quite a struggle to get video working with device tree
+> > in 3.10, and now it is broken in 3.12-rc1, again.
 > 
-> well it does not charge the battery directly, but just provides a
-> power line with 5 Volt and a specified amount of current to the
-> system, doesn't it?
+> Hmm didn't Aaro reply that you just need to change the Kconfig
+> option for the panel to fix it?
+
+Aha, spam filters playing games :-(. Sorry about that.
+
+> > "Now, here, you see, it takes all the running you can do, to keep in
+> > the same place. If you want to get somewhere else, you must run at
+> > least twice as fast as that! "
 > 
-> From my POV this is a candiate for the regulator framework:
-> 
-> https://www.kernel.org/doc/Documentation/power/regulator/overview.txt
+> True at least for reading the mailing lists :)
 
-Yes I think we should be able handle that rail with the
-regulator framework.
-
-Regards,
-
-Tony
+:-).
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
