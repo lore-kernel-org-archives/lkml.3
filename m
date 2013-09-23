@@ -1,100 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab3IWIvM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 04:51:12 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:42689 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab3IWIvL (ORCPT
+	id S1753553Ab3IWIwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 04:52:49 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:51316 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998Ab3IWIwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 04:51:11 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Mark Brown <broonie@linaro.org>,
-        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH] driver core: prevent deferred probe with platform_driver_probe
-Date: Mon, 23 Sep 2013 10:48:47 +0200
-Message-Id: <1379926127-8935-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Mon, 23 Sep 2013 04:52:47 -0400
+Message-ID: <5240014E.1080804@huawei.com>
+Date: Mon, 23 Sep 2013 16:52:30 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: David Woodhouse <David.Woodhouse@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>
+Subject: [PATCH] jffs2: fix unbalanced locking
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent drivers relying on platform_driver_probe from requesting
-deferred probing in order to avoid further futile probe attempts (either
-the driver has been unregistered or its probe function has been set to
-platform_drv_probe_fail when probing is retried).
+In the failure path in jffs2_do_crccheck_inode() the lock isn't released
+before returning.
 
-Note that several platform drivers currently return subsystem errors
-from probe and that these can include -EPROBE_DEFER (e.g. if a gpio
-request fails).
+This probably won't cause real bug, because the structure that contains
+the lock is freed in this case.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- drivers/base/platform.c         | 17 +++++++++++++----
- include/linux/platform_device.h |  1 +
- 2 files changed, 14 insertions(+), 4 deletions(-)
+ fs/jffs2/readinode.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 4f8bef3..47051cd 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -488,6 +488,11 @@ static int platform_drv_probe(struct device *_dev)
- 	if (ret && ACPI_HANDLE(_dev))
- 		acpi_dev_pm_detach(_dev, true);
- 
-+	if (drv->prevent_deferred_probe && ret == -EPROBE_DEFER) {
-+		dev_warn(_dev, "probe deferral not supported\n");
-+		ret = -ENXIO;
-+	}
-+
+diff --git a/fs/jffs2/readinode.c b/fs/jffs2/readinode.c
+index ae81b01..55cf63d 100644
+--- a/fs/jffs2/readinode.c
++++ b/fs/jffs2/readinode.c
+@@ -1425,7 +1425,8 @@ int jffs2_do_crccheck_inode(struct jffs2_sb_info *c, struct jffs2_inode_cache *i
+ 		jffs2_do_clear_inode(c, f);
+ 	}
+ 	jffs2_xattr_do_crccheck_inode(c, ic);
+-	kfree (f);
++	mutex_unlock(&f->sem);
++	kfree(f);
  	return ret;
  }
  
-@@ -553,8 +558,7 @@ EXPORT_SYMBOL_GPL(platform_driver_unregister);
- /**
-  * platform_driver_probe - register driver for non-hotpluggable device
-  * @drv: platform driver structure
-- * @probe: the driver probe routine, probably from an __init section,
-- *         must not return -EPROBE_DEFER.
-+ * @probe: the driver probe routine, probably from an __init section
-  *
-  * Use this instead of platform_driver_register() when you know the device
-  * is not hotpluggable and has already been registered, and you want to
-@@ -565,8 +569,7 @@ EXPORT_SYMBOL_GPL(platform_driver_unregister);
-  * into system-on-chip processors, where the controller devices have been
-  * configured as part of board setup.
-  *
-- * This is incompatible with deferred probing so probe() must not
-- * return -EPROBE_DEFER.
-+ * Note that this is incompatible with deferred probing.
-  *
-  * Returns zero if the driver registered and bound to a device, else returns
-  * a negative error code and with the driver not registered.
-@@ -576,6 +579,12 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
- {
- 	int retval, code;
- 
-+	/*
-+	 * Prevent driver from requesting probe deferral to avoid further
-+	 * futile probe attempts.
-+	 */
-+	drv->prevent_deferred_probe = true;
-+
- 	/* make sure driver won't have bind/unbind attributes */
- 	drv->driver.suppress_bind_attrs = true;
- 
-diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-index ce8e4ff..16f6654 100644
---- a/include/linux/platform_device.h
-+++ b/include/linux/platform_device.h
-@@ -178,6 +178,7 @@ struct platform_driver {
- 	int (*resume)(struct platform_device *);
- 	struct device_driver driver;
- 	const struct platform_device_id *id_table;
-+	bool prevent_deferred_probe;
- };
- 
- #define to_platform_driver(drv)	(container_of((drv), struct platform_driver, \
 -- 
-1.8.3.2
-
+1.8.0.2
