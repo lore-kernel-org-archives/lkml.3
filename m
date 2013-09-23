@@ -1,196 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab3IWCGI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 22:06:08 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:40736 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab3IWCGG (ORCPT
+	id S1753310Ab3IWCHD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 22:07:03 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:27909 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752434Ab3IWCHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 22:06:06 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf record: mmap output file - RFC
-Date: Sun, 22 Sep 2013 20:05:59 -0600
-Message-Id: <1379901959-5285-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Sun, 22 Sep 2013 22:07:01 -0400
+Message-ID: <523FA230.3020902@oracle.com>
+Date: Mon, 23 Sep 2013 10:06:40 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Weijie Yang <weijie.yang@samsung.com>, minchan@kernel.org,
+        weijie.yang.kh@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] mm/zswap: avoid unnecessary page scanning
+References: <000701ceaac0$71c43590$554ca0b0$%yang@samsung.com> <20130909162909.GB4701@variantweb.net>
+In-Reply-To: <20130909162909.GB4701@variantweb.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When recording raw_syscalls for the entire system, e.g.,
-    perf record -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
 
-you end up with a negative feedback loop as perf itself calls
-write() fairly often. This patch mmap's the file in chunks of 64M
-at a time and copies events from the event buffers to the file
-avoiding write system calls.
+On 09/10/2013 12:29 AM, Seth Jennings wrote:
+> On Fri, Sep 06, 2013 at 01:16:45PM +0800, Weijie Yang wrote:
+>> add SetPageReclaim before __swap_writepage so that page can be moved to the
+>> tail of the inactive list, which can avoid unnecessary page scanning as this
+>> page was reclaimed by swap subsystem before.
+>>
+>> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> 
+> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> 
 
-Before (with write syscall):
+Below is a reply from Mel in original thread "[PATCHv11 3/4] zswap: add
+to mm/"
+------------------
+> +     /* start writeback */
+> +     SetPageReclaim(page);
+> +     __swap_writepage(page, &wbc, end_swap_bio_write);
+> +     page_cache_release(page);
+> +     zswap_written_back_pages++;
+> +
 
-perf record -o /tmp/perf.data -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
-[ perf record: Woken up 0 times to write data ]
-[ perf record: Captured and wrote 81.843 MB /tmp/perf.data (~3575786 samples) ]
+SetPageReclaim? Why?. If the page is under writeback then why do you not
+mark it as that? Do not free pages that are currently under writeback
+obviously. It's likely that it was PageWriteback you wanted in zbud.c too.
+--------------------
 
-After (using mmap):
-
-perf record -o /tmp/perf.data -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
-[ perf record: Woken up 31 times to write data ]
-[ perf record: Captured and wrote 8.203 MB /tmp/perf.data (~358388 samples) ]
-
-Before I get too far down this path I wanted to get comments on the approach.
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/builtin-record.c |   87 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 87 insertions(+)
-
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index da13840..45bb565 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -29,6 +29,9 @@
- #include <sched.h>
- #include <sys/mman.h>
- 
-+/* mmap file big chunks at a time */
-+#define MMAP_OUTPUT_SIZE   (64*1024*1024)
-+
- #ifndef HAVE_ON_EXIT
- #ifndef ATEXIT_MAX
- #define ATEXIT_MAX 32
-@@ -64,6 +67,14 @@ static void __handle_on_exit_funcs(void)
- struct perf_record {
- 	struct perf_tool	tool;
- 	struct perf_record_opts	opts;
-+
-+	/* for MMAP based file writes */
-+	void			*mmap_addr;
-+	u64			bytes_at_mmap_start; /* bytes in file when mmap use starts */
-+	u64			mmap_offset;    /* current location within mmap */
-+	size_t			mmap_size;      /* size of mmap segments */
-+	bool			use_mmap;
-+
- 	u64			bytes_written;
- 	const char		*output_name;
- 	struct perf_evlist	*evlist;
-@@ -82,8 +93,66 @@ static void advance_output(struct perf_record *rec, size_t size)
- 	rec->bytes_written += size;
- }
- 
-+static int do_mmap_output(struct perf_record *rec, void *buf, size_t size)
-+{
-+	u64 remaining;
-+	off_t offset;
-+
-+	if (rec->mmap_addr == NULL) {
-+do_mmap:
-+		offset = rec->bytes_at_mmap_start + rec->bytes_written;
-+		if (offset < (ssize_t) rec->mmap_size) {
-+			rec->mmap_offset = offset;
-+			offset = 0;
-+		} else
-+			rec->mmap_offset = 0;
-+
-+		rec->mmap_addr = mmap(NULL, rec->mmap_size,
-+				     PROT_WRITE | PROT_READ,
-+				     MAP_SHARED,
-+				     rec->output,
-+				     offset);
-+
-+		if (rec->mmap_addr == MAP_FAILED) {
-+			pr_err("mmap failed: %d: %s\n", errno, strerror(errno));
-+			return -1;
-+		}
-+
-+		/* expand file to include this mmap segment */
-+		if (ftruncate(rec->output, offset + rec->mmap_size) != 0) {
-+			pr_err("ftruncate failed\n");
-+			return -1;
-+		}
-+	}
-+
-+	remaining = rec->mmap_size - rec->mmap_offset;
-+
-+	if (size > remaining) {
-+		memcpy(rec->mmap_addr + rec->mmap_offset, buf, remaining);
-+		rec->bytes_written += remaining;
-+
-+		size -= remaining;
-+		buf  += remaining;
-+
-+		msync(rec->mmap_addr, rec->mmap_size, MS_ASYNC);
-+		munmap(rec->mmap_addr, rec->mmap_size);
-+		goto do_mmap;
-+	}
-+
-+	if (size) {
-+		memcpy(rec->mmap_addr + rec->mmap_offset, buf, size);
-+		rec->bytes_written += size;
-+		rec->mmap_offset += size;
-+	}
-+
-+	return 0;
-+}
-+
- static int write_output(struct perf_record *rec, void *buf, size_t size)
- {
-+	if (rec->use_mmap)
-+		return do_mmap_output(rec, buf, size);
-+
- 	while (size) {
- 		int ret = write(rec->output, buf, size);
- 
-@@ -546,6 +615,11 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	if (forks)
- 		perf_evlist__start_workload(evsel_list);
- 
-+	if (!rec->opts.pipe_output && stat(output_name, &st) == 0) {
-+		rec->use_mmap = true;
-+		rec->bytes_at_mmap_start = st.st_size - rec->bytes_written;
-+	}
-+
- 	for (;;) {
- 		int hits = rec->samples;
- 
-@@ -572,6 +646,18 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		}
- 	}
- 
-+	if (rec->use_mmap) {
-+		off_t len = rec->bytes_at_mmap_start + rec->bytes_written;
-+
-+		rec->use_mmap = false;
-+		msync(rec->mmap_addr, rec->mmap_size, MS_ASYNC);
-+		munmap(rec->mmap_addr, rec->mmap_size);
-+		rec->mmap_addr = NULL;
-+
-+		if (ftruncate(rec->output, len) != 0)
-+			pr_err("ftruncate failed\n");
-+	}
-+
- 	if (quiet || signr == SIGUSR1)
- 		return 0;
- 
-@@ -804,6 +890,7 @@ static struct perf_record record = {
- 			.uses_mmap   = true,
- 		},
- 	},
-+	.mmap_size = MMAP_OUTPUT_SIZE,
- };
- 
- #define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
 -- 
-1.7.10.1
-
+Regards,
+-Bob
