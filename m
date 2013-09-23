@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab3IWMD6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 08:03:58 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:40944 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777Ab3IWMD4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 08:03:56 -0400
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: kgene.kim@samsung.com, thomas.abraham@linaro.org, tglx@linutronix.de,
-        t.figa@samsung.com, Chander Kashyap <chander.kashyap@linaro.org>
-Subject: [PATCH v2] irqchip: exynos-combiner: remove hard-coded irq_base value
-Date: Mon, 23 Sep 2013 17:33:35 +0530
-Message-Id: <1379937815-21746-1-git-send-email-chander.kashyap@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753934Ab3IWMEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 08:04:38 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:4084 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753456Ab3IWMEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 08:04:37 -0400
+X-IronPort-AV: E=Sophos;i="4.90,938,1371052800"; 
+   d="scan'208";a="8595929"
+From: chaiwen <chaiw.fnst@cn.fujitsu.com>
+To: npiggin@kernel.dk
+Cc: linux-kernel@vger.kernel.org, chaiwen <chaiw.fnst@cn.fujitsu.com>
+Subject: [PATCH] brd: return register_blkdev err code when it fails
+Date: Mon, 23 Sep 2013 20:04:00 +0800
+Message-Id: <1379937840-9041-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/23 20:02:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/23 20:02:55,
+	Serialize complete at 2013/09/23 20:02:55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace irq_domain_add_simple with "irq_domain_add_linear" in order to use
-linear irq domain, and to remove hardcoded irq_base_value.
 
-Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+Hi Nick
+
+when register_blk fails,no matter what reasons,brd_init always
+returns a "-EIO" error code. if brd_init returns the error code
+returned by register_blkdev,the formatted error info reported
+when module inserting failed(caused by register_blkdev failing)
+could be more meaningfull.
+
+Signed-off-by: chaiwen <chaiw.fnst@cn.fujitsu.com>
 ---
-Changes since v1:
-	- Replaced irq_domain_add_simple with irq_domain_add_linear,
-	  as suggested by Tomasz
+ drivers/block/brd.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
- drivers/irqchip/exynos-combiner.c |   15 +++------------
- 1 file changed, 3 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/irqchip/exynos-combiner.c b/drivers/irqchip/exynos-combiner.c
-index 4c68265..2551046 100644
---- a/drivers/irqchip/exynos-combiner.c
-+++ b/drivers/irqchip/exynos-combiner.c
-@@ -206,8 +206,7 @@ static unsigned int combiner_lookup_irq(int group)
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 9bf4371..361204d 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -557,6 +557,7 @@ static int __init brd_init(void)
+ 	int i, nr;
+ 	unsigned long range;
+ 	struct brd_device *brd, *next;
++	int ret;
  
- static void __init combiner_init(void __iomem *combiner_base,
- 				 struct device_node *np,
--				 unsigned int max_nr,
--				 int irq_base)
-+				 unsigned int max_nr)
- {
- 	int i, irq;
- 	unsigned int nr_irq;
-@@ -221,7 +220,7 @@ static void __init combiner_init(void __iomem *combiner_base,
- 		return;
+ 	/*
+ 	 * brd module now has a feature to instantiate underlying device
+@@ -602,8 +603,8 @@ static int __init brd_init(void)
+ 		range = 1UL << MINORBITS;
  	}
  
--	combiner_irq_domain = irq_domain_add_simple(np, nr_irq, irq_base,
-+	combiner_irq_domain = irq_domain_add_linear(np, nr_irq,
- 				&combiner_irq_domain_ops, combiner_data);
- 	if (WARN_ON(!combiner_irq_domain)) {
- 		pr_warning("%s: irq domain init failed\n", __func__);
-@@ -248,7 +247,6 @@ static int __init combiner_of_init(struct device_node *np,
- {
- 	void __iomem *combiner_base;
- 	unsigned int max_nr = 20;
--	int irq_base = -1;
+-	if (register_blkdev(RAMDISK_MAJOR, "ramdisk"))
+-		return -EIO;
++	if (ret = register_blkdev(RAMDISK_MAJOR, "ramdisk"))
++		return ret;
  
- 	combiner_base = of_iomap(np, 0);
- 	if (!combiner_base) {
-@@ -262,14 +260,7 @@ static int __init combiner_of_init(struct device_node *np,
- 			__func__, max_nr);
- 	}
- 
--	/* 
--	 * FIXME: This is a hardwired COMBINER_IRQ(0,0). Once all devices
--	 * get their IRQ from DT, remove this in order to get dynamic
--	 * allocation.
--	 */
--	irq_base = 160;
--
--	combiner_init(combiner_base, np, max_nr, irq_base);
-+	combiner_init(combiner_base, np, max_nr);
- 
- 	return 0;
- }
+ 	for (i = 0; i < nr; i++) {
+ 		brd = brd_alloc(i);
 -- 
-1.7.9.5
+1.7.1
 
