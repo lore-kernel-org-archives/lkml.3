@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab3IWSgV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:36:21 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42625 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754091Ab3IWSgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:36:16 -0400
-Message-ID: <524089DF.600@ti.com>
-Date: Mon, 23 Sep 2013 14:35:11 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Balaji T K <balajitk@ti.com>, Jon Hunter <jgchunter@gmail.com>,
-        <linux-gpio@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] gpio/omap: auto-setup a GPIO when used as an IRQ
-References: <1379860848-29020-1-git-send-email-javier.martinez@collabora.co.uk> <20130923164519.GF2684@atomide.com> <524073BC.9080907@collabora.co.uk> <20130923170724.GG2684@atomide.com>
-In-Reply-To: <20130923170724.GG2684@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1754247Ab3IWShp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:37:45 -0400
+Received: from smtprelay0200.hostedemail.com ([216.40.44.200]:48539 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754220Ab3IWShn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 14:37:43 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1540:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3870:3871:5007:6261:7903:10004:10026:10848:11026:11473:11658:11914:12517:12519:12555:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: jump89_433c2511cb51b
+X-Filterd-Recvd-Size: 1729
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>
+Subject: [PATCH 09/12] caif_hsi.h: Remove extern from function prototypes
+Date: Mon, 23 Sep 2013 11:37:40 -0700
+Message-Id: <40537362e8ba86fa727226ddfeb75c205c63ecaf.1379961014.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <445209f8885ccd8234fa787c30d63e63fc7917d7.1379961014.git.joe@perches.com>
+References: <445209f8885ccd8234fa787c30d63e63fc7917d7.1379961014.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Javier,
+There are a mix of function prototypes with and without extern
+in the kernel sources.  Standardize on not using extern for
+function prototypes.
 
-On Monday 23 September 2013 01:07 PM, Tony Lindgren wrote:
-> * Javier Martinez Canillas <javier.martinez@collabora.co.uk> [130923 10:09]:
->> On 09/23/2013 06:45 PM, Tony Lindgren wrote:
->>>
->>> Hmm does this still work for legacy platform data based
->>> drivers that are doing gpio_request() first?
->>>
->>
->> Yes it still work when booting using board files. I tested on my OMAP3 board and
->> it worked in both DT and legacy booting mode.
-> 
-> OK great.
->  
->>> And what's the path for clearing things for PM when free_irq()
->>> gets called? It seems that this would leave the GPIO bank
->>> enabled causing a PM regression?
->>>
->>
->> Indeed, I did set bank->mod_usage |= 1 << offset so the bank is enabled if the
->> device goes to suspended and then resumed but I completely forget about the
->> clearing path when the IRQ is freed.
->>
->> Which makes me think that we should probably maintain two usage variables, one
->> for GPIO and another one for IRQ and check both of them on the suspend/resume pm
->> functions.
-> 
-> Yes that it seems that they should be treated separately.
-> 
-As discussed on IRC, the patch as such is fine after the mentioned fixup,
-I would like to hear back if Linus W/Grant is fine with the approach. Not sure
-if I missed the discussion, but the proposed patch is deviation from
-traditional method of doing gpio_request() first up to perform other
-gpio operations.
+Function prototypes don't need to be written with extern.
+extern is assumed by the compiler.  Its use is as unnecessary as
+using auto to declare automatic/local variables in a block.
 
-Regards,
-Santosh
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/net/caif/caif_hsi.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/include/net/caif/caif_hsi.h b/include/net/caif/caif_hsi.h
+index 4795e81..097f69c 100644
+--- a/include/net/caif/caif_hsi.h
++++ b/include/net/caif/caif_hsi.h
+@@ -195,6 +195,6 @@ enum ifla_caif_hsi {
+ 	__IFLA_CAIF_HSI_MAX
+ };
+ 
+-extern struct cfhsi_ops *cfhsi_get_ops(void);
++struct cfhsi_ops *cfhsi_get_ops(void);
+ 
+ #endif		/* CAIF_HSI_H_ */
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
