@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab3IWTw7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 15:52:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55267 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3IWTw6 (ORCPT
+	id S1753292Ab3IWTxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 15:53:12 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58268 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423Ab3IWTxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 15:52:58 -0400
-Date: Mon, 23 Sep 2013 12:52:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: P J P <ppandit@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Export initial ramdisk compression config
-Message-Id: <20130923125256.e53b51a137a19a972c6026a2@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.03.1309151434580.7830@erqung.pbz>
-References: <alpine.LFD.2.03.1309151434580.7830@erqung.pbz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Sep 2013 15:53:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <5230C7F6.3080803@wwwdotorg.org>
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de>
+	<52279524.8090006@wwwdotorg.org>
+	<20130909161924.GT29403@sirena.org.uk>
+	<2052193.CMUEUJFRgS@lem-wkst-02>
+	<522F78CB.2020507@wwwdotorg.org>
+	<20130910213718.GH29403@sirena.org.uk>
+	<522F9E6C.2010905@wwwdotorg.org>
+	<522FBED9.9000305@collabora.co.uk>
+	<5230C7F6.3080803@wwwdotorg.org>
+Date: Mon, 23 Sep 2013 21:53:07 +0200
+Message-ID: <CACRpkdacx-e01i_h4cj1qMX2zNOiiDshbTV__wi_LfQrLkrL6g@mail.gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mark Brown <broonie@kernel.org>, Lars Poeschel <poeschel@lemonage.de>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
+        joelf@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Sep 2013 14:49:05 +0530 (IST) P J P <ppandit@redhat.com> wrote:
+On Wed, Sep 11, 2013 at 9:43 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-> Make menuconfig allows one to choose compression format of an
-> initial ramdisk image. But this choice does not result in duly
-> compressed ramdisk image. Because - $ make install - does not
-> pass on the selected compression choice to the dracut(8) tool,
-> which creates the initramfs file. dracut(8) generates the image
-> with the default compression, ie. gzip(1).
-> 
-> This patch exports the selected compression option to a sub-shell
-> environment, so that it could be used by dracut(8) tool to generate
-> appropriately compressed initramfs images.
-> 
-> There isn't a straight forward way to pass on options to dracut(8)
-> via positional parameters. Because it is indirectly invoked at the
-> end of a $ make install sequence.
-> 
->  # make install
->    -> arch/$arch/boot/Makefile
->     -> arch/$arch/boot/install.sh
->      -> /sbing/installkernel ...
->       -> /sbin/new-kernel-pkg ...
->        -> /sbin/dracut ...
-> 
+> I believe this situation is exactly what cause the original patch to the
+> OMAP driver to be reverted; that patch should have touched the HW
+> directly to solve the problem when the IRQ was requested, rather than
+> calling into the GPIO subsystem (which also has the side-effect of
+> touching the HW in the same way as desired).
 
-It's a bit confusing whether all this appiles to initrd, to initramfs
-or to both.  Can you please clarify all this and be sure that it's all
-consistent?
+And that has the side-effect that this line, which is now set up
+in the HW as an input line, can be gpio_request()ed by some other
+code path and set up as output, screwing around with the very
+same registers.
 
-> --- a/arch/x86/Makefile
-> +++ b/arch/x86/Makefile
-> @@ -11,6 +11,23 @@ else
->          KBUILD_DEFCONFIG := $(ARCH)_defconfig
->  endif
->  
-> +# Select initial ramdisk compression format, default is gzip(1).
-> +# This shall be used by the dracut(8) tool while creating an initramfs image.
-> +#
-> +INITRD_COMPRESS=gzip
-> +ifeq ($(CONFIG_RD_BZIP2), y)
-> +        INITRD_COMPRESS=bzip2
-> +else ifeq ($(CONFIG_RD_LZMA), y)
-> +        INITRD_COMPRESS=lzma
-> +else ifeq ($(CONFIG_RD_XZ), y)
-> +        INITRD_COMPRESS=xz
-> +else ifeq ($(CONFIG_RD_LZO), y)
-> +        INITRD_COMPRESS=lzo
-> +else ifeq ($(CONFIG_RD_LZ4), y)
-> +        INITRD_COMPRESS=lz4
-> +endif
-> +export INITRD_COMPRESS
+I think the kernel should prevent such things.
 
-A few things...
+But I think you're making it sound like the kernel should not prevent
+such things, but instead give the drivers enough rope to shoot itself
+in the foot if it so desires.
 
-- Why is it specific to x86?  Other architcetures use initramfs?
+But a third solution is possible: the driver keep track of whether
+a line is already requested as IRQ and if that happens, will not
+allow gpio_set_direction_output() and other incompatible uses,
+but still allow gpio_set_direction_input() and gpio_get_value(),
+that would be OK.
 
-- People add new compression schemes fairly regularly.  We should add
-  a code comment somewhere in a place where such people are sure to
-  find it.  That comment should explain what's going on, remind them to
-  update this environment varlaible and should explain to them the
-  process by which they get dracut(8) updated if needed.
+In the GPIO descriptor we can flag this, so it would be preferable
+to have that tracking in the gpiolib core rather than the driver
+though.
 
-- Can we avoid having to update dracut each time a new compression
-  scheme is added?  I assume your dracut changes will just exec
-  "$INITRD_COMPRESS -d", so as long as any new decompression
-  application uses the expected -d argument in the expected way, it
-  should work seamlessly?
+> As we discussed on IRC (so mainly for the record in the mailing list
+> archive), I believe that if a driver wants to use a pin as an interrupt
+> and only an interrupt, even if the pin has the capability in HW to be a
+> GPIO (or absolutely anything else at all), then the only call in the
+> entire kernel (board code, DT core code, IRQ core, driver, ...) should
+> be a single request_irq(), and the IRQ chip driver needs to program the
+> HW appropriately to make that work.
+
+I agree with this, but also think that the kernel should prevent the
+same resource for being used in an incompatible way.
+
+Yours,
+Linus Walleij
