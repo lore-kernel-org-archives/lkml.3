@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab3IWJOd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 05:14:33 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:33779 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab3IWJOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 05:14:32 -0400
-Date: Mon, 23 Sep 2013 11:10:36 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/26] ARM: dove: remove custom .init_time hook
-Message-ID: <20130923091036.GE4999@lunn.ch>
-References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1379526839-14798-12-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130921122226.GB31180@lunn.ch>
- <523EE08C.60309@gmail.com>
+	id S1753495Ab3IWJPM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 05:15:12 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58325 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab3IWJPL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 05:15:11 -0400
+X-AuditID: 9c930179-b7c8bae000006c65-1a-5240069ddc02
+From: Namhyung Kim <namhyung@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH] perf tools: Use per-file CFLAGS in Makefile
+References: <1379297476-20793-1-git-send-email-namhyung@kernel.org>
+	<20130920230132.GK9574@pd.tnic>
+Date: Mon, 23 Sep 2013 18:15:09 +0900
+In-Reply-To: <20130920230132.GK9574@pd.tnic> (Borislav Petkov's message of
+	"Sat, 21 Sep 2013 01:01:32 +0200")
+Message-ID: <878uynrjaa.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <523EE08C.60309@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 02:20:28PM +0200, Sebastian Hesselbarth wrote:
-> On 09/21/2013 02:22 PM, Andrew Lunn wrote:
-> >On Wed, Sep 18, 2013 at 07:53:44PM +0200, Sebastian Hesselbarth wrote:
-> >>With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-> >>remove custom .init_time hooks. While at it, also remove some obsolete
-> >>includes.
-> >>
-> >>Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> >>---
-> >>Cc: Olof Johansson <olof@lixom.net>
-> >>Cc: Arnd Bergmann <arnd@arndb.de>
-> >>Cc: Jason Cooper <jason@lakedaemon.net>
-> >>Cc: Andrew Lunn <andrew@lunn.ch>
-> >>Cc: Russell King <linux@arm.linux.org.uk>
-> >>Cc: linux-arm-kernel@lists.infradead.org
-> >>Cc: linux-kernel@vger.kernel.org
-> >>---
-> >>  arch/arm/mach-dove/board-dt.c |   11 -----------
-> >>  1 file changed, 11 deletions(-)
-> [...]
-> >Boot tested on cubox.
-> >
-> >Tested-by: Andrew Lunn <andrew@lunn.ch>
-> 
-> Thanks Andrew!
-> 
-> Aren't you giving any Acks for dove/kirkwood anymore?
+Hi Borislav,
 
-Hi Sebastian
+On Sat, 21 Sep 2013 01:01:32 +0200, Borislav Petkov wrote:
+> On Mon, Sep 16, 2013 at 11:11:16AM +0900, Namhyung Kim wrote:
+>> -$(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
+>> -	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow -Wno-undef -Wno-switch-default $<
+>> -
+>> -$(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o: scripts/perl/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
+>> -	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs -Wno-undef -Wno-switch-default $<
+>> -
+>> -$(OUTPUT)util/scripting-engines/trace-event-python.o: util/scripting-engines/trace-event-python.c $(OUTPUT)PERF-CFLAGS
+>> -	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
+>> -
+>> -$(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
+>> -	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
+>
+> What happened with the trailing -W options in each target above?
+> Looks like they've been dropped because I can't find them in the new
+> definitions...
 
-In my opinion, a Tested-by: has more weight than an Acked-by. I could
-of given you an Acked-by in about 60 seconds, given the simplicity of
-the patch. It took a lot more effort to get your tree, build it, fix
-my binutils, since it was the first 3.12 tree i had tried and my
-binutils was too old, and boot it.
+I replaced them to a single -w option since all we want to do is
+suppress any warning, right?
 
-	 Andrew
+Thanks,
+Namhyung
