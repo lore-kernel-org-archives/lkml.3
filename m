@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab3IWMIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 08:08:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58714 "EHLO mga02.intel.com"
+	id S1754011Ab3IWMGS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 08:06:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23103 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038Ab3IWMGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 08:06:23 -0400
+	id S1753405Ab3IWMGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 08:06:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,962,1371106800"; 
-   d="scan'208";a="407649404"
+   d="scan'208";a="405796213"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -23,9 +23,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv6 20/22] thp: wait_split_huge_page(): serialize over i_mmap_mutex too
-Date: Mon, 23 Sep 2013 15:05:48 +0300
-Message-Id: <1379937950-8411-21-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv6 06/22] thp: represent file thp pages in meminfo and friends
+Date: Mon, 23 Sep 2013 15:05:34 +0300
+Message-Id: <1379937950-8411-7-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,99 +33,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're going to have huge pages backed by files, so we need to modify
-wait_split_huge_page() to support that.
+The patch adds new zone stat to count file transparent huge pages and
+adjust related places.
 
-We have two options for:
- - check whether the page anon or not and serialize only over required
-   lock;
- - always serialize over both locks;
+For now we don't count mapped or dirty file thp pages separately.
 
-Current implementation, in fact, guarantees that *all* pages on the vma
-is not splitting, not only the pages pmd is pointing on.
-
-For now I prefer the second option since it's the safest: we provide the
-same level of guarantees.
+The patch depends on patch
+ thp: account anon transparent huge pages into NR_ANON_PAGES
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
- include/linux/huge_mm.h | 15 ++++++++++++---
- mm/huge_memory.c        |  4 ++--
- mm/memory.c             |  4 ++--
- 3 files changed, 16 insertions(+), 7 deletions(-)
+ drivers/base/node.c    | 4 ++++
+ fs/proc/meminfo.c      | 3 +++
+ include/linux/mmzone.h | 1 +
+ mm/vmstat.c            | 1 +
+ 4 files changed, 9 insertions(+)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index ce9fcae8ef..9bc9937498 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -111,11 +111,20 @@ extern void __split_huge_page_pmd(struct vm_area_struct *vma,
- 			__split_huge_page_pmd(__vma, __address,		\
- 					____pmd);			\
- 	}  while (0)
--#define wait_split_huge_page(__anon_vma, __pmd)				\
-+#define wait_split_huge_page(__vma, __pmd)				\
- 	do {								\
- 		pmd_t *____pmd = (__pmd);				\
--		anon_vma_lock_write(__anon_vma);			\
--		anon_vma_unlock_write(__anon_vma);			\
-+		struct address_space *__mapping = (__vma)->vm_file ?	\
-+				(__vma)->vm_file->f_mapping : NULL;	\
-+		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
-+		if (__mapping)						\
-+			mutex_lock(&__mapping->i_mmap_mutex);		\
-+		if (__anon_vma) {					\
-+			anon_vma_lock_write(__anon_vma);		\
-+			anon_vma_unlock_write(__anon_vma);		\
-+		}							\
-+		if (__mapping)						\
-+			mutex_unlock(&__mapping->i_mmap_mutex);		\
- 		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
- 		       pmd_trans_huge(*____pmd));			\
- 	} while (0)
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 3c45c62cde..d0798e5122 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -913,7 +913,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		spin_unlock(&dst_mm->page_table_lock);
- 		pte_free(dst_mm, pgtable);
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index bc9f43bf7e..de261f5722 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -119,6 +119,7 @@ static ssize_t node_read_meminfo(struct device *dev,
+ 		       "Node %d SUnreclaim:     %8lu kB\n"
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 		       "Node %d AnonHugePages:  %8lu kB\n"
++		       "Node %d FileHugePages:  %8lu kB\n"
+ #endif
+ 			,
+ 		       nid, K(node_page_state(nid, NR_FILE_DIRTY)),
+@@ -140,6 +141,9 @@ static ssize_t node_read_meminfo(struct device *dev,
+ 		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
+ 			, nid,
+ 			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
++			HPAGE_PMD_NR)
++			, nid,
++			K(node_page_state(nid, NR_FILE_TRANSPARENT_HUGEPAGES) *
+ 			HPAGE_PMD_NR));
+ #else
+ 		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
+diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+index 59d85d6088..a62952cd4f 100644
+--- a/fs/proc/meminfo.c
++++ b/fs/proc/meminfo.c
+@@ -104,6 +104,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ #endif
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 		"AnonHugePages:  %8lu kB\n"
++		"FileHugePages:  %8lu kB\n"
+ #endif
+ 		,
+ 		K(i.totalram),
+@@ -158,6 +159,8 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 		,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+ 		   HPAGE_PMD_NR)
++		,K(global_page_state(NR_FILE_TRANSPARENT_HUGEPAGES) *
++		   HPAGE_PMD_NR)
+ #endif
+ 		);
  
--		wait_split_huge_page(vma->anon_vma, src_pmd); /* src_vma */
-+		wait_split_huge_page(vma, src_pmd); /* src_vma */
- 		goto out;
- 	}
- 	src_page = pmd_page(pmd);
-@@ -1497,7 +1497,7 @@ int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
- 	if (likely(pmd_trans_huge(*pmd))) {
- 		if (unlikely(pmd_trans_splitting(*pmd))) {
- 			spin_unlock(&vma->vm_mm->page_table_lock);
--			wait_split_huge_page(vma->anon_vma, pmd);
-+			wait_split_huge_page(vma, pmd);
- 			return -1;
- 		} else {
- 			/* Thp mapped by 'pmd' is stable, so we can
-diff --git a/mm/memory.c b/mm/memory.c
-index e5f74cd634..dc5a56cab7 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -584,7 +584,7 @@ int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (new)
- 		pte_free(mm, new);
- 	if (wait_split_huge_page)
--		wait_split_huge_page(vma->anon_vma, pmd);
-+		wait_split_huge_page(vma, pmd);
- 	return 0;
- }
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index bd791e452a..8b4525bd4f 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -143,6 +143,7 @@ enum zone_stat_item {
+ 	NUMA_OTHER,		/* allocation from other node */
+ #endif
+ 	NR_ANON_TRANSPARENT_HUGEPAGES,
++	NR_FILE_TRANSPARENT_HUGEPAGES,
+ 	NR_FREE_CMA_PAGES,
+ 	NR_VM_ZONE_STAT_ITEMS };
  
-@@ -1520,7 +1520,7 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
- 		if (likely(pmd_trans_huge(*pmd))) {
- 			if (unlikely(pmd_trans_splitting(*pmd))) {
- 				spin_unlock(&mm->page_table_lock);
--				wait_split_huge_page(vma->anon_vma, pmd);
-+				wait_split_huge_page(vma, pmd);
- 			} else {
- 				page = follow_trans_huge_pmd(vma, address,
- 							     pmd, flags);
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 9bb3145779..9af0d8536b 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -771,6 +771,7 @@ const char * const vmstat_text[] = {
+ 	"numa_other",
+ #endif
+ 	"nr_anon_transparent_hugepages",
++	"nr_file_transparent_hugepages",
+ 	"nr_free_cma",
+ 	"nr_dirty_threshold",
+ 	"nr_dirty_background_threshold",
 -- 
 1.8.4.rc3
 
