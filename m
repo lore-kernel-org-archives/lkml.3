@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab3IWS4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:56:19 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:61705 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179Ab3IWS4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:56:18 -0400
-Date: Mon, 23 Sep 2013 11:56:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Fan Rong <cinifr@gmail.com>, coosty@163.com, daniel.lezcano@linaro.org,
-        linux@arm.linux.org.uk, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mark.rutland@arm.com, pawel.moll@arm.co, rob.herring@calxeda.com,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 1/3] Add smp support for Allwinner A20(sunxi 7i).
-Message-ID: <20130923185613.GA30198@roeck-us.net>
-References: <1379768716-11672-1-git-send-email-cinifr@gmail.com>
- <1379768716-11672-2-git-send-email-cinifr@gmail.com>
- <20130921140059.GA2779@lukather>
- <523FB773.4050408@roeck-us.net>
- <20130923181917.GS2779@lukather>
+	id S1753023Ab3IWTKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 15:10:33 -0400
+Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:56908 "EHLO nsa.gov"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752635Ab3IWTKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 15:10:32 -0400
+X-Greylist: delayed 932 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Sep 2013 15:10:32 EDT
+X-TM-IMSS-Message-ID: <2d96b76b000242f0@nsa.gov>
+Message-ID: <52408E5D.4020904@tycho.nsa.gov>
+Date: Mon, 23 Sep 2013 14:54:21 -0400
+From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Organization: National Security Agency
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130923181917.GS2779@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: tpmdd-devel@lists.sourceforge.net,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to sysfs
+ into tpm-sysfs.c
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com> <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com>
+In-Reply-To: <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 09:19:17PM +0300, Maxime Ripard wrote:
-> Hi Guenter,
-> 
-> On Sun, Sep 22, 2013 at 08:37:23PM -0700, Guenter Roeck wrote:
-> > On 09/21/2013 07:00 AM, Maxime Ripard wrote:
-> > 
-> > [ ... ]
-> > 
-> > >>+	/* assert cpu core reset */
-> > >>+	writel(0, sunxi7i_cc_base + CPUX_RESET_CTL(cpu));
-> > >>+	/* L1RSTDISABLE hold low */
-> > >>+	pwr_reg = readl(sunxi7i_cc_base + AW_CPUCFG_GENCTL);
-> > >>+	pwr_reg &= ~(1<<cpu);
-> > >>+	writel(pwr_reg, sunxi7i_cc_base + AW_CPUCFG_GENCTL);
-> > >>+	/* DBGPWRDUP hold low */
-> > >>+	pwr_reg = readl(sunxi7i_cc_base + AW_CPUCFG_DBGCTL1);
-> > >>+	pwr_reg &= ~(1<<cpu);
-> > >
-> > >Use BIT(cpu) here. And you should run scripts/checkpatch.pl on your
-> > >patches before sending them.
-> > >
-> > 
-> > For the record:
-> > 
-> > $ scripts/checkpatch.pl --strict allwinner.patch
-> > total: 0 errors, 0 warnings, 0 checks, 527 lines checked
-> > 
-> > allwinner.patch has no obvious style problems and is ready for submission.
-> > 
-> > This is on top of "v3.12-rc1-336-gd8524ae".
-> > 
-> > checkpatch.pl does not complain as long as the number of spaces before
-> > and after an operator is the same. There is a patch pending to change
-> > this with the --strict option, but it will still not complain in 'normal'
-> > operation.
-> 
-> Hmmm, ok. Somehow, I was convinced that it was triggering a warning.
-> Thanks for the heads up :)
-> 
-Yes, me too until I realized that it doesn't :(.
+On 09/23/2013 02:14 PM, Jason Gunthorpe wrote:
+> CLASS-sysfs.c is a common idiom for linux subsystems.
+>
+> This pulls all the sysfs attribute functions and related code
+> into tpm-sysfs.c. To support this change some constants are moved
+> from tpm.c to tpm.h and __tpm_pcr_read is made non-static and is
+> called tpm_pcr_read_dev.
+>
+> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+[...]
+> diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
+> index 12a4ab2..7892557 100644
+> --- a/drivers/char/tpm/xen-tpmfront.c
+> +++ b/drivers/char/tpm/xen-tpmfront.c
+[...]
+> -static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
+> -static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
+> -static DEVICE_ATTR(locality, S_IRUGO | S_IWUSR, tpm_show_locality,
+> -		tpm_store_locality);
 
-Guenter
+This patch drops the "locality" sysfs attribute from xen-tpmfront. Since
+that attribute is currently only implemented for the xen TPM driver, it
+is best to leave it there for now (and its show/store functions could
+also be made static, an oversight I just noticed now). If this attribute
+is later made available on other TPM drivers, it may need to contain
+device-specific logic, but such an implementation is well outside the
+scope of this series.
+
+-- 
+Daniel De Graaf
+National Security Agency
