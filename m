@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab3IWVf4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:35:56 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:51194 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab3IWVfz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:35:55 -0400
-Message-ID: <5240B437.9090201@gmail.com>
-Date: Mon, 23 Sep 2013 16:35:51 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753654Ab3IWVgf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:36:35 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:34881 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751835Ab3IWVgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 17:36:33 -0400
+Date: Mon, 23 Sep 2013 14:35:24 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Joe Perches <joe@perches.com>, Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v2] printk: report console names during cut-over
+Message-ID: <20130923213523.GA23478@www.outflux.net>
 MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Paolo Pisati <paolo.pisati@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] TTY: hvc_dcc: probe for a JTAG connection before registering
-References: <1379968234-23373-1-git-send-email-robherring2@gmail.com> <5240AE43.6070708@canonical.com>
-In-Reply-To: <5240AE43.6070708@canonical.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 04:10 PM, Tim Gardner wrote:
-> On 09/23/2013 01:30 PM, Rob Herring wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> Enabling the ARM DCC console and using without a JTAG connection will
->> simply hang the system. Since distros like to turn on all options, this
->> is a reoccurring problem to debug. We can do better by checking if
->> anything is attached and handling characters. There is no way to probe
->> this, so send a newline and check that it is handled.
->>
->> Cc: Paolo Pisati <paolo.pisati@canonical.com>
->> Cc: Tim Gardner <tim.gardner@canonical.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Jiri Slaby <jslaby@suse.cz>
->> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->> ---
->>  drivers/tty/hvc/hvc_dcc.c | 21 +++++++++++++++++++++
->>  1 file changed, 21 insertions(+)
->>
->> diff --git a/drivers/tty/hvc/hvc_dcc.c b/drivers/tty/hvc/hvc_dcc.c
->> index 44fbeba..44c8aff 100644
->> --- a/drivers/tty/hvc/hvc_dcc.c
->> +++ b/drivers/tty/hvc/hvc_dcc.c
->> @@ -86,6 +86,21 @@ static int hvc_dcc_get_chars(uint32_t vt, char *buf, int count)
->>  	return i;
->>  }
->>  
->> +static bool hvc_dcc_check(void)
->> +{
->> +	unsigned long time = jiffies;
->> +
->> +	/* Write a test character to check if it is handled */
->> +	__dcc_putchar('\n');
->> +
->> +	while (jiffies < time + (HZ / 10)) {
->> +		if (!(__dcc_getstatus() & DCC_STATUS_TX))
->> +			return true;
->> +	}
-> 
-> I think you should use one of the jiffies time comparison functions, e.g.,
-> 
-> 	time = jiffies + (HZ / 10);
-> 	while (time_before(jiffies,time) {
-> 		...
-> 	}
+This reports the names of consoles as they're being disabled to help
+identify which is which during cut-over. Helps answer the question
+"which boot console actually got activated?" once the regular console
+is running, mostly when debugging boot console failures.
 
-Yes.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+v2:
+ - move disable message into unregister_console, suggested by Frederic
+   Weisbecker.
+---
+ kernel/printk/printk.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-> 
-> What is the possibility that __dcc_getstatus() will return garbage if no
-> JTAG is connected ? In that event you're likely to get a false positive
-> on DCC_STATUS_TX.
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index b4e8500..555ad2d 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -2358,21 +2358,18 @@ void register_console(struct console *newcon)
+ 	 * users know there might be something in the kernel's log buffer that
+ 	 * went to the bootconsole (that they do not see on the real console)
+ 	 */
++	printk(KERN_INFO "%sconsole [%s%d] enabled\n",
++		(newcon->flags & CON_BOOT) ? "boot" : "" ,
++		newcon->name, newcon->index);
+ 	if (bcon &&
+ 	    ((newcon->flags & (CON_CONSDEV | CON_BOOT)) == CON_CONSDEV) &&
+ 	    !keep_bootcon) {
+-		/* we need to iterate through twice, to make sure we print
+-		 * everything out, before we unregister the console(s)
++		/* We need to iterate through all boot consoles, to make
++		 * sure we print everything out, before we unregister them.
+ 		 */
+-		printk(KERN_INFO "console [%s%d] enabled, bootconsole disabled\n",
+-			newcon->name, newcon->index);
+ 		for_each_console(bcon)
+ 			if (bcon->flags & CON_BOOT)
+ 				unregister_console(bcon);
+-	} else {
+-		printk(KERN_INFO "%sconsole [%s%d] enabled\n",
+-			(newcon->flags & CON_BOOT) ? "boot" : "" ,
+-			newcon->name, newcon->index);
+ 	}
+ }
+ EXPORT_SYMBOL(register_console);
+@@ -2382,6 +2379,10 @@ int unregister_console(struct console *console)
+         struct console *a, *b;
+ 	int res;
+ 
++	printk(KERN_INFO "%sconsole [%s%d] disabled\n",
++		(console->flags & CON_BOOT) ? "boot" : "" ,
++		console->name, console->index);
++
+ 	res = _braille_unregister_console(console);
+ 	if (res)
+ 		return res;
+@@ -2421,8 +2422,6 @@ static int __init printk_late_init(void)
+ 
+ 	for_each_console(con) {
+ 		if (!keep_bootcon && con->flags & CON_BOOT) {
+-			printk(KERN_INFO "turn off boot console %s%d\n",
+-				con->name, con->index);
+ 			unregister_console(con);
+ 		}
+ 	}
+-- 
+1.7.9.5
 
-That probably would not be architecturally compliant. The status bits
-are cleared by JTAG reading the read side of the register. If the bit
-stays set, we'll return false. If the bit is always clear, then we
-wouldn't hang in the first place and should be fine. If you get random
-values, then I'm sorry and good luck. You are still no worse off than
-before this patch.
 
-Rob
-
+-- 
+Kees Cook
+Chrome OS Security
