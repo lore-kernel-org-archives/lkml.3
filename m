@@ -1,81 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3IWHJG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 03:09:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20049 "EHLO mx1.redhat.com"
+	id S1753430Ab3IWHOK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 03:14:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37713 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453Ab3IWHJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 03:09:04 -0400
-Date: Mon, 23 Sep 2013 15:08:41 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-Message-ID: <20130923070841.GE7007@dhcp-16-126.nay.redhat.com>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
- <1379602494-26684-12-git-send-email-bp@alien8.de>
- <20130921113929.GB1587@pd.tnic>
- <20130923054741.GC7007@dhcp-16-126.nay.redhat.com>
- <20130923062947.GA2527@pd.tnic>
+	id S1753385Ab3IWHOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 03:14:08 -0400
+Date: Mon, 23 Sep 2013 10:16:20 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 4/6] vhost_net: determine whether or not to use
+ zerocopy at one time
+Message-ID: <20130923071620.GB31886@redhat.com>
+References: <1378111261-14826-1-git-send-email-jasowang@redhat.com>
+ <1378111261-14826-5-git-send-email-jasowang@redhat.com>
+ <20130904115929.GA9393@redhat.com>
+ <5227F274.9040506@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130923062947.GA2527@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5227F274.9040506@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/13 at 08:29am, Borislav Petkov wrote:
-> On Mon, Sep 23, 2013 at 01:47:41PM +0800, Dave Young wrote:
-> > > +	unsigned long size = md->num_pages << PAGE_SHIFT;
-> > > +
-> > > +	efi_va -= size;
-> > > +	if (efi_va < EFI_VA_END) {
-> > > +		pr_warning(FW_WARN "VA address range overflow!\n");
-> > > +		return;
-> > > +	}
-> > > +
-> > > +	/* Do the 1:1 map */
-> > > +	__map_region(md, md->phys_addr);
-> > > +
-> > > +	/* Do the VA map */
-> > > +	__map_region(md, efi_va);
-> > 
-> > 
-> > Could you add comment for above code? It's hard to understand the
-> > twice mapping if one did not follow the old thread.
+On Thu, Sep 05, 2013 at 10:54:44AM +0800, Jason Wang wrote:
+> On 09/04/2013 07:59 PM, Michael S. Tsirkin wrote:
+> > On Mon, Sep 02, 2013 at 04:40:59PM +0800, Jason Wang wrote:
+> >> Currently, even if the packet length is smaller than VHOST_GOODCOPY_LEN, if
+> >> upend_idx != done_idx we still set zcopy_used to true and rollback this choice
+> >> later. This could be avoided by determining zerocopy once by checking all
+> >> conditions at one time before.
+> >>
+> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> >> ---
+> >>  drivers/vhost/net.c |   47 ++++++++++++++++++++---------------------------
+> >>  1 files changed, 20 insertions(+), 27 deletions(-)
+> >>
+> >> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> >> index 8a6dd0d..3f89dea 100644
+> >> --- a/drivers/vhost/net.c
+> >> +++ b/drivers/vhost/net.c
+> >> @@ -404,43 +404,36 @@ static void handle_tx(struct vhost_net *net)
+> >>  			       iov_length(nvq->hdr, s), hdr_size);
+> >>  			break;
+> >>  		}
+> >> -		zcopy_used = zcopy && (len >= VHOST_GOODCOPY_LEN ||
+> >> -				       nvq->upend_idx != nvq->done_idx);
+> >> +
+> >> +		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
+> >> +				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
+> >> +				      nvq->done_idx
+> > Thinking about this, this looks strange.
+> > The original idea was that once we start doing zcopy, we keep
+> > using the heads ring even for short packets until no zcopy is outstanding.
 > 
-> Does that suffice:
-> 
-> /*
->  * Make sure the 1:1 mappings are present as a catch-all for b0rked firmware
->  * which doesn't update all internal pointers after switching to virtual mode
->  * and would otherwise crap on us.
->  */
-> 
-> ?
+> What's the reason for keep using the heads ring?
 
-Yes, looks good. Thanks
+To keep completions in order.
 
+> >
+> > What's the logic behind (nvq->upend_idx + 1) % UIO_MAXIOV != nvq->done_idx
+> > here?
 > 
-> Btw, when you reply to a mail, please remove that quoted portion of it
-> which you're not replying to - I had to scroll a bunch of screens down
-> and I almost missed your reply. :)
+> Because we initialize both upend_idx and done_idx to zero, so upend_idx
+> != done_idx could not be used to check whether or not the heads ring
+> were full.
 
-Will do. I did notice the problem after I enter 'y' in mutt, sorry about it.
+But what does ring full have to do with zerocopy use?
 
-> 
-> Thanks.
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+> >> +				   && vhost_net_tx_select_zcopy(net);
+> >>  
+> >>  		/* use msg_control to pass vhost zerocopy ubuf info to skb */
+> >>  		if (zcopy_used) {
+> >> +			struct ubuf_info *ubuf;
+> >> +			ubuf = nvq->ubuf_info + nvq->upend_idx;
+> >> +
+> >>  			vq->heads[nvq->upend_idx].id = head;
+> >> -			if (!vhost_net_tx_select_zcopy(net) ||
+> >> -			    len < VHOST_GOODCOPY_LEN) {
+> >> -				/* copy don't need to wait for DMA done */
+> >> -				vq->heads[nvq->upend_idx].len =
+> >> -							VHOST_DMA_DONE_LEN;
+> >> -				msg.msg_control = NULL;
+> >> -				msg.msg_controllen = 0;
+> >> -				ubufs = NULL;
+> >> -			} else {
+> >> -				struct ubuf_info *ubuf;
+> >> -				ubuf = nvq->ubuf_info + nvq->upend_idx;
+> >> -
+> >> -				vq->heads[nvq->upend_idx].len =
+> >> -					VHOST_DMA_IN_PROGRESS;
+> >> -				ubuf->callback = vhost_zerocopy_callback;
+> >> -				ubuf->ctx = nvq->ubufs;
+> >> -				ubuf->desc = nvq->upend_idx;
+> >> -				msg.msg_control = ubuf;
+> >> -				msg.msg_controllen = sizeof(ubuf);
+> >> -				ubufs = nvq->ubufs;
+> >> -				kref_get(&ubufs->kref);
+> >> -			}
+> >> +			vq->heads[nvq->upend_idx].len = VHOST_DMA_IN_PROGRESS;
+> >> +			ubuf->callback = vhost_zerocopy_callback;
+> >> +			ubuf->ctx = nvq->ubufs;
+> >> +			ubuf->desc = nvq->upend_idx;
+> >> +			msg.msg_control = ubuf;
+> >> +			msg.msg_controllen = sizeof(ubuf);
+> >> +			ubufs = nvq->ubufs;
+> >> +			kref_get(&ubufs->kref);
+> >>  			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
+> >> -		} else
+> >> +		} else {
+> >>  			msg.msg_control = NULL;
+> >> +			ubufs = NULL;
+> >> +		}
+> >>  		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+> >>  		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+> >>  		if (unlikely(err < 0)) {
+> >>  			if (zcopy_used) {
+> >> -				if (ubufs)
+> >> -					vhost_net_ubuf_put(ubufs);
+> >> +				vhost_net_ubuf_put(ubufs);
+> >>  				nvq->upend_idx = ((unsigned)nvq->upend_idx - 1)
+> >>  					% UIO_MAXIOV;
+> >>  			}
+> >> -- 
+> >> 1.7.1
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kvm" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
