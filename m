@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab3IWNC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 09:02:27 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:47874 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753889Ab3IWNCZ (ORCPT
+	id S1754028Ab3IWNDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 09:03:13 -0400
+Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:58844
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753486Ab3IWNDM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 09:02:25 -0400
-Message-ID: <52403BD0.5080807@monstr.eu>
-Date: Mon, 23 Sep 2013 15:02:08 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 23 Sep 2013 09:03:12 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Gleb Natapov <gleb@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
+Subject: RE: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+ from the hypervisor
+Thread-Topic: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer
+ frequency from the hypervisor
+Thread-Index: AQHOqM30I+mkPB2b1kKq/5YqjRysqJnC17CggAAG+ACAABQ5UIAAikAAgABK5hCABkKSgIAAYOzQgACm54CACFRvYA==
+Date: Mon, 23 Sep 2013 13:02:42 +0000
+Message-ID: <2d39849c011b4cc794686a41e45db87a@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+ <dd29077371564a14b2d317d2291db8a9@SN2PR03MB061.namprd03.prod.outlook.com>
+ <52325C1E.90101@zytor.com>
+ <50f92d9c16a54e5bb6fa14ef72e5fdfb@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130913095526.GE18381@redhat.com>
+ <7737cb643a664b6fb39021b4d364b5cf@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130917135918.GY17294@redhat.com>
+ <2b4a9a0cff5143c59a0802a2e425c4db@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130918054335.GE5657@redhat.com>
+In-Reply-To: <20130918054335.GE5657@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [109.174.139.136]
+x-forefront-prvs: 09781D4C35
+x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(377454003)(51704005)(13464003)(189002)(199002)(33646001)(77982001)(76576001)(65816001)(74366001)(56816003)(51856001)(81686001)(76796001)(74316001)(54356001)(76786001)(47736001)(74876001)(66066001)(81342001)(69226001)(81542001)(74706001)(4396001)(76482001)(15975445006)(63696002)(31966008)(47976001)(54316002)(49866001)(47446002)(74502001)(74662001)(19580405001)(77096001)(19580395003)(46102001)(80022001)(83072001)(80976001)(56776001)(53806001)(59766001)(15202345003)(79102001)(81816001)(83322001)(50986001)(15583001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:109.174.139.136;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Yves Vandervennet <rocket.yvanderv@gmail.com>
-CC: Alan Tull <atull@altera.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-References: <cover.1379519753.git.michal.simek@xilinx.com> <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com> <20130918191517.GQ19937@titan.lakedaemon.net> <20130918203247.GA11181@obsidianresearch.com> <1379539063.31417.23.camel@atx-linux-37> <523AD814.1060406@monstr.eu> <CADuitaCjNv2HFCg_y2qpkvXmUmO-jKUVQ2Ra8ACOne1hwAmKJA@mail.gmail.com>
-In-Reply-To: <CADuitaCjNv2HFCg_y2qpkvXmUmO-jKUVQ2Ra8ACOne1hwAmKJA@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="SCNVSsrFlioklJMvqAFjJB6fVQi9HNulS"
+X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---SCNVSsrFlioklJMvqAFjJB6fVQi9HNulS
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 09/19/2013 05:18 PM, Yves Vandervennet wrote:
-> On Thu, Sep 19, 2013 at 5:55 AM, Michal Simek <monstr@monstr.eu> wrote:=
-
->=20
->>> Is there some way a per-device userspace helper can be added that can=
-
->>> handle adding the headers?  Such that different fpga types get differ=
-ent
->>> helpers?
->>
->> What do you exactly mean by that? Any example what do you want to achi=
-eve?
-> Bit streams may not be in raw format, so using 'cat' is not possible.
-> Xilinx and Altera have their own bit stream "richer" format, that need
-> to be processed before they are presented to the driver(s). So, a
-> hotplug helper per manufacturer/FPGA is required. Assuming 'cat' will
-> be used is too limiting.
-> Does it make sense to you?
-
-Definitely this make sense to me but the point is if this should be
-the part of this patch or just separate altera.c/xilinx.c file which
-is able to detect and check this format.
-I am not saying that it can't be there but currently without
-any code I can't see any reason why there should be hook for code
-which doesn't exist.
-
-M
 
 
+> -----Original Message-----
+> From: Gleb Natapov [mailto:gleb@redhat.com]
+> Sent: Tuesday, September 17, 2013 10:44 PM
+> To: KY Srinivasan
+> Cc: H. Peter Anvin; x86@kernel.org; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de;
+> JBeulich@suse.com; bp@alien8.de
+> Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+> from the hypervisor
+> 
+> On Tue, Sep 17, 2013 at 07:53:36PM +0000, KY Srinivasan wrote:
+> > > > Thanks Gleb. Here is the link for the latest Hyper-V specification:
+> > > > http://www.microsoft.com/en-us/download/details.aspx?id=39289
+> > > >
+> > > > This spec talks about how migration is handled with regards to TSC.
+> > > >
+> > > All I can see is "15.4.3 Partition Reference TSC Mechanism". I see
+> > > nothing about HV_X64_MSR_TSC_FREQUENCY specifically. To access this MSR
+> > > a partition needs AccessFrequencyMsrs privilege, may be partition that
+> > > cab be migrated does not have this privilege?
+> >
+> > If you use the MSR to read the TSC frequency, then indeed when you migrate
+> then there
+> > is no guarantee that the TSC frequency won't change when you migrate. The
+> approach
+> > described in section 15.4.3 is the preferred approach that can accommodate
+> migration.
+> >
+> Thanks.
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Peter,
+Please let me know if there are other issues I need to address here. Now that Dmitry has queued up the
+Hyper-V keyboard driver, with this patch we can fully support Linux on our uefi firmware.
 
+Regards,
 
-
---SCNVSsrFlioklJMvqAFjJB6fVQi9HNulS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlJAO9AACgkQykllyylKDCE6FwCfQrmsjmt1ku56/DRoXBlI/ZI8
-fy8An3rVnPkawZQnn+B4nMJfs/aLWYqI
-=wkZK
------END PGP SIGNATURE-----
-
---SCNVSsrFlioklJMvqAFjJB6fVQi9HNulS--
+K. Y 
