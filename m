@@ -1,110 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab3IWVOO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:14:14 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49021 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab3IWVOM (ORCPT
+	id S1753788Ab3IWVSf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:18:35 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:35012 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab3IWVSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:14:12 -0400
-Message-ID: <5240AF20.8030301@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 15:14:08 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 23 Sep 2013 17:18:34 -0400
+Date: Mon, 23 Sep 2013 14:18:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [PATCH 02/11] sched, rcu: Make RCU use resched_cpu()
+Message-ID: <20130923211827.GA7032@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130917082838.218329307@infradead.org>
+ <20130917091143.449530904@infradead.org>
+ <20130917144012.GC29354@twins.programming.kicks-ass.net>
+ <20130923165540.GP9093@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Rhyland Klein <rklein@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Simon Glass <sjg@chromium.org>, Olof Johansson <olof@lixom.net>
-Subject: Re: [RESEND] spi/tegra114: Correct support for cs_change
-References: <1379528245-6283-1-git-send-email-rklein@nvidia.com> <52408DC8.3020407@wwwdotorg.org> <52409B1E.3030405@nvidia.com> <52409D63.3020909@wwwdotorg.org> <5240AC3A.9060206@nvidia.com>
-In-Reply-To: <5240AC3A.9060206@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130923165540.GP9093@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092321-6688-0000-0000-000001ECEBFE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 03:01 PM, Rhyland Klein wrote:
-> On 9/23/2013 3:58 PM, Stephen Warren wrote:
->> On 09/23/2013 01:48 PM, Rhyland Klein wrote:
->>> On 9/23/2013 2:51 PM, Stephen Warren wrote:
->>>> On 09/18/2013 12:17 PM, Rhyland Klein wrote:
->>>>> The tegra114 driver wasn't currently handling the cs_change functionality.
->>>>> It is meant to invert normal behavior, and we were only using it to possibly
->>>>> delay at the end of a transfer.
->> ...
->>>>> diff --git a/drivers/spi/spi-tegra114.c b/drivers/spi/spi-tegra114.c
->> ...
->>>>> @@ -717,7 +718,12 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
->>>>>  		else if (req_mode == SPI_MODE_3)
->>>>>  			command1 |= SPI_CONTROL_MODE_3;
->>>>>  
->>>>> -		tegra_spi_writel(tspi, command1, SPI_COMMAND1);
->>>>> +		if (tspi->cs_control) {
->>>>> +			if (tspi->cs_control != spi)
->>>>> +				tegra_spi_writel(tspi, command1, SPI_COMMAND1);
->>>>
->>>> Do you really need a separate write call there? The value of command1
->>>> isn't fully set up there (the CS bits are all set up immediately after),
->>>> so won't that glitch the CS lines in some cases?
->>>
->>> On our hardware (as far as I've seen), the CS line is normally low. We
->>
->> I assume you meant "normally *active* low", not "normally low"?
+On Mon, Sep 23, 2013 at 09:55:40AM -0700, Paul E. McKenney wrote:
+> On Tue, Sep 17, 2013 at 04:40:12PM +0200, Peter Zijlstra wrote:
+> > Thomas Meyer reported a UP build fail, should be fixed.
+> > 
+> > ---
+> > Subject: sched, rcu: Make RCU use resched_cpu()
+> > From: Peter Zijlstra <peterz@infradead.org>
+> > Date: Tue Sep 17 09:30:55 CEST 2013
+> > 
+> > We're going to deprecate and remove set_need_resched() for it will do
+> > the wrong thing. Make an exception for RCU and allow it to use
+> > resched_cpu() which will do the right thing.
+> > 
+> > Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 > 
-> I mean that when I look at CS, before a transaction starts, the line is
-> low. Then we do a write like this (default SPI_COMMAND1) you see CS rise
-> and fall very soon after. This is purely how we generate the edge
-> triggers (as far as I can tell on all Tegra hw, though Laxman can
-> correct me if I am wrong).
+> Queued for 3.13, thank you!
 
-That sounds broken. Normally, shouldn't CS assert before a transaction,
-stay asserted during a transaction, then deassert after the transaction?
-It shouldn't rise and fall very quickly in between parts of the transaction.
+Passes light testing, but I am confused about why the change to
+resched_task() when only resched_cpu() is invoked elsewhere in the patch.
+Enlightenment?
 
->>> need to generate a falling-edge to trigger the beginning of a SPI
->>> transaction. Doing this write with the default value of SPI_COMMAND1
->>> causes a brief rise and fall of CS, giving us our falling-edge.
->>
->> That sounds like exactly the glitch I was talking about.
->>
->> Assuming CS isn't held constantly asserted (low), isn't CS de-asserted
->> (rises) at the end of transaction n-1, and re-asserted (falls) at the
->> start of transaction n? If so, I'm not sure why the setup for
->> transaction n needs to both de-assert and then re-assert it? It seems
->> like cs_control should be handled at the end of a transaction, not at
->> the start of the next one.
-> 
-> cs_change has to maintain state over spi_message boundries, not just
-> between spi_transfers within a spi_message.
-> 
-> In this specific case, this is a safe guard.
-> 
->>>>> +		if (tspi->cs_control) {
-> This sees that the previous transfer stored its spi_device pointer,
-> meaning it had cs_change set on the last part of the last spi_message
-> (I.E. CS hasn't been deasserted, so the SPI transaction is still on-going).
-> 
->>>>> +			if (tspi->cs_control != spi)
-> This however finds that the device trying to send a SPI message isn't
-> the same one that was in the middle of its transaction. This is a
-> collision between 2 clients on 1 bus. This simply ends the previous
-> transaction (the ongoing one) in favor of starting a new transaction.
-> 
-> Otherwise, this logic allows us to skip the spi of COMMAND1 which would
-> normally be used to create the falling edge to start a new transaction,
-> leaving the previous one open for more transfers.
+							Thanx, Paul
 
-This sounds like something the SPI core should be managing. If a driver
-is using the SPI bus to communicate with a device in a way that needs CS
-left active while outside a transaction, it shouldn't be possible for
-another driver to come along and communicate with another device before
-the first transaction is all complete. The bus should be locked.
-Allowing anything else could corrupt the protocol that required specific
-CS states outside the transaction.
+> > ---
+> >  kernel/rcutree.c    |   15 ++++++++++++++-
+> >  kernel/sched/core.c |   10 ++--------
+> >  2 files changed, 16 insertions(+), 9 deletions(-)
+> > 
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -898,6 +898,12 @@ static void print_other_cpu_stall(struct
+> >  	force_quiescent_state(rsp);  /* Kick them all. */
+> >  }
+> > 
+> > +/*
+> > + * This function really isn't for public consumption, but RCU is special in
+> > + * that context switches can allow the state machine to make progress.
+> > + */
+> > +extern void resched_cpu(int cpu);
+> > +
+> >  static void print_cpu_stall(struct rcu_state *rsp)
+> >  {
+> >  	int cpu;
+> > @@ -927,7 +933,14 @@ static void print_cpu_stall(struct rcu_s
+> >  				     3 * rcu_jiffies_till_stall_check() + 3;
+> >  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> > 
+> > -	set_need_resched();  /* kick ourselves to get things going. */
+> > +	/*
+> > +	 * Attempt to revive the RCU machinery by forcing a context switch.
+> > +	 *
+> > +	 * A context switch would normally allow the RCU state machine to make
+> > +	 * progress and it could be we're stuck in kernel space without context
+> > +	 * switches for an entirely unreasonable amount of time.
+> > +	 */
+> > +	resched_cpu(smp_processor_id());
+> >  }
+> > 
+> >  static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -513,12 +513,11 @@ static inline void init_hrtick(void)
+> >   * might also involve a cross-CPU call to trigger the scheduler on
+> >   * the target CPU.
+> >   */
+> > -#ifdef CONFIG_SMP
+> >  void resched_task(struct task_struct *p)
+> >  {
+> >  	int cpu;
+> > 
+> > -	assert_raw_spin_locked(&task_rq(p)->lock);
+> > +	lockdep_assert_held(&task_rq(p)->lock);
+> > 
+> >  	if (test_tsk_need_resched(p))
+> >  		return;
+> > @@ -546,6 +545,7 @@ void resched_cpu(int cpu)
+> >  	raw_spin_unlock_irqrestore(&rq->lock, flags);
+> >  }
+> > 
+> > +#ifdef CONFIG_SMP
+> >  #ifdef CONFIG_NO_HZ_COMMON
+> >  /*
+> >   * In the semi idle case, use the nearest busy cpu for migrating timers
+> > @@ -693,12 +693,6 @@ void sched_avg_update(struct rq *rq)
+> >  	}
+> >  }
+> > 
+> > -#else /* !CONFIG_SMP */
+> > -void resched_task(struct task_struct *p)
+> > -{
+> > -	assert_raw_spin_locked(&task_rq(p)->lock);
+> > -	set_tsk_need_resched(p);
+> > -}
+> >  #endif /* CONFIG_SMP */
+> > 
+> >  #if defined(CONFIG_RT_GROUP_SCHED) || (defined(CONFIG_FAIR_GROUP_SCHED) && \
+> > 
+> > 
+
