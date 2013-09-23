@@ -1,134 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab3IWECN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 00:02:13 -0400
-Received: from imap.thunk.org ([74.207.234.97]:36236 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab3IWECL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 00:02:11 -0400
-Date: Mon, 23 Sep 2013 00:01:48 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: hpa@zytor.com, joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
-        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
-        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de,
-        "H. Peter Anvin" <hpa@linux.intel.com>, stable@vger.kernel.org
-Subject: Re: [PATCH, RFC 03/12] random: Allow fractional bits to be tracked
-Message-ID: <20130923040148.GG7321@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	hpa@zytor.com, joern@logfs.org, macro@linux-mips.org,
-	ralf@linux-mips.org, dave.taht@gmail.com, blogic@openwrt.org,
-	andrewmcgr@gmail.com, smueller@chronox.de, geert@linux-m68k.org,
-	tg@mirbsd.de, "H. Peter Anvin" <hpa@linux.intel.com>,
-	stable@vger.kernel.org
-References: <1379882338-7209-1-git-send-email-tytso@mit.edu>
- <1379882338-7209-4-git-send-email-tytso@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379882338-7209-4-git-send-email-tytso@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1752604Ab3IWEEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 00:04:16 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41762 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab3IWEEP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 00:04:15 -0400
+Date: Mon, 23 Sep 2013 14:04:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: linux-next: manual merge of the random tree with Linus' tree
+Message-Id: <20130923140401.67e7bb4560620a561d4dfe6e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__23_Sep_2013_14_04_01_+1000_4u81gCCd1BIAt8cd"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've added the following changes to this patch since upon testing,
-there were some uses of r->entropy_count that were not properly
-converted from using fractional bits to bits.
+--Signature=_Mon__23_Sep_2013_14_04_01_+1000_4u81gCCd1BIAt8cd
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-					- Ted
+Hi Theodore,
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 1547338..8654b7e 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -286,6 +286,7 @@
-  * entropy_count, trickle_thresh
-  */
- #define ENTROPY_SHIFT 3
-+#define ENTROPY_BITS(r) ((r)->entropy_count >> ENTROPY_SHIFT)
- 
- /*
-  * The minimum number of bits of entropy before we wake up a read on
-@@ -618,7 +619,8 @@ retry:
- 			r->initialized = 1;
- 	}
- 
--	trace_credit_entropy_bits(r->name, nbits, entropy_count,
-+	trace_credit_entropy_bits(r->name, nbits,
-+				  entropy_count >> ENTROPY_SHIFT,
- 				  r->entropy_total, _RET_IP_);
- 
- 	/* should we wake readers? */
-@@ -695,7 +697,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 
- 	preempt_disable();
- 	/* if over the trickle threshold, use only 1 in 4096 samples */
--	if (input_pool.entropy_count > trickle_thresh &&
-+	if (ENTROPY_BITS(&input_pool) > trickle_thresh &&
- 	    ((__this_cpu_inc_return(trickle_count) - 1) & 0xfff))
- 		goto out;
- 
-@@ -999,7 +1001,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
- 			r->last_data_init = true;
- 			spin_unlock_irqrestore(&r->lock, flags);
- 			trace_extract_entropy(r->name, EXTRACT_SIZE,
--					      r->entropy_count, _RET_IP_);
-+					      ENTROPY_BITS(r), _RET_IP_);
- 			xfer_secondary_pool(r, EXTRACT_SIZE);
- 			extract_buf(r, tmp);
- 			spin_lock_irqsave(&r->lock, flags);
-@@ -1008,7 +1010,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
- 		spin_unlock_irqrestore(&r->lock, flags);
- 	}
- 
--	trace_extract_entropy(r->name, nbytes, r->entropy_count, _RET_IP_);
-+	trace_extract_entropy(r->name, nbytes, ENTROPY_BITS(r), _RET_IP_);
- 	xfer_secondary_pool(r, nbytes);
- 	nbytes = account(r, nbytes, min, reserved);
- 
-@@ -1041,7 +1043,7 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
- 	ssize_t ret = 0, i;
- 	__u8 tmp[EXTRACT_SIZE];
- 
--	trace_extract_entropy_user(r->name, nbytes, r->entropy_count, _RET_IP_);
-+	trace_extract_entropy_user(r->name, nbytes, ENTROPY_BITS(r), _RET_IP_);
- 	xfer_secondary_pool(r, nbytes);
- 	nbytes = account(r, nbytes, 0, 0);
- 
-@@ -1213,8 +1215,8 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
- 			DEBUG_ENT("sleeping?\n");
- 
- 			wait_event_interruptible(random_read_wait,
--				input_pool.entropy_count >=
--						 random_read_wakeup_thresh);
-+				ENTROPY_BITS(&input_pool) >=
-+				random_read_wakeup_thresh);
- 
- 			DEBUG_ENT("awake\n");
- 
-@@ -1250,9 +1252,9 @@ random_poll(struct file *file, poll_table * wait)
- 	poll_wait(file, &random_read_wait, wait);
- 	poll_wait(file, &random_write_wait, wait);
- 	mask = 0;
--	if (input_pool.entropy_count >= random_read_wakeup_thresh)
-+	if (ENTROPY_BITS(&input_pool) >= random_read_wakeup_thresh)
- 		mask |= POLLIN | POLLRDNORM;
--	if (input_pool.entropy_count < random_write_wakeup_thresh)
-+	if (ENTROPY_BITS(&input_pool) < random_write_wakeup_thresh)
- 		mask |= POLLOUT | POLLWRNORM;
- 	return mask;
- }
-@@ -1303,7 +1305,7 @@ static long random_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
- 	switch (cmd) {
- 	case RNDGETENTCNT:
- 		/* inherently racy, no point locking */
--		ent_count = input_pool.entropy_count >> ENTROPY_SHIFT;
-+		ent_count = ENTROPY_BITS(&input_pool);
- 		if (put_user(ent_count, p))
- 			return -EFAULT;
- 		return 0;
+Today's linux-next merge of the random tree got a conflict in init/main.c
+between commit 65f382fd0c8f ("context_tracking: Ground setup for static
+key use") from Linus' tree and commit 382521d2478b ("random: run
+random_int_secret_init() run after all late_initcalls") from the random
+tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc init/main.c
+index af310af,586cd33..0000000
+--- a/init/main.c
++++ b/init/main.c
+@@@ -75,7 -75,7 +75,8 @@@
+  #include <linux/blkdev.h>
+  #include <linux/elevator.h>
+  #include <linux/sched_clock.h>
+ +#include <linux/context_tracking.h>
++ #include <linux/random.h>
+ =20
+  #include <asm/io.h>
+  #include <asm/bugs.h>
+
+--Signature=_Mon__23_Sep_2013_14_04_01_+1000_4u81gCCd1BIAt8cd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSP722AAoJEECxmPOUX5FEMQkQAJ1cYJYtrjEOu/67vCUYp2eq
+OlEiVPEhZu6fpP/X9bymZrdsW3pwHQU82zgoTRaE2WBsNarIQcNoqjpCN/5rL6XW
+M0RuQYnq1K+kkM1E+A78285hhFbx/gTAkvDxjEKnXtrN/jD7Kt1IM7pObAbgjBnH
+Rpcr/oTaPdchxVrUgSDAGyO5M+ja+L+3e/MGfzyLiDLIpAtET+STvfI+fEpamp62
+QveY6dXaq4CRqHSsWfvOv89Uz9lAJvK1P1OFYey8GLStnACPZmorBS6IZttEE9WC
+GIEUGnssOo62UQN27+6ljDb5LUA9Sfg8jEQIYZ2X+M+e7XCa2bfqfvQpCJrcwKbZ
+aFdIgJJ+660w2+us5JBAB8CvmTEedrghiyZmBtUWTInpg/McMoJWO9L+kgtezzie
+9FzcpDIh0st+Q6/7DnSMvSm9gfWaWBBbLXuQ5TGGMZuSmaJLi0uI3cjzNyeqktgK
+81+rLNV4K3p7XmzKMoyREc/TWcn6RDA5VC/vHaRgvrjsntvynuAiEhvcGpv22f+Z
+owovIedXSF5CThI+A8txOmBLX2YNoc70YNzWbq/VXRIF7o0+oi3TA668BDtzxFXp
+IMxdGkJautCj8xSKULIblSLqfcHR/2B3TqI8XHTSQSpzYkbuQxdYeTJ35tjyqVk6
+wCsCp0P6DwoeVU2zQpw2
+=htev
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__23_Sep_2013_14_04_01_+1000_4u81gCCd1BIAt8cd--
