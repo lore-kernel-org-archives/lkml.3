@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab3IWKLu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 06:11:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62189 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753601Ab3IWKKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 06:10:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,961,1371106800"; 
-   d="scan'208";a="405750943"
-From: Jenny TC <jenny.tc@intel.com>
-To: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Jenny TC <jenny.tc@intel.com>
-Subject: [PATCH 3/7] power_supply: add throttle state
-Date: Mon, 23 Sep 2013 23:34:01 +0530
-Message-Id: <1379959445-28207-4-git-send-email-jenny.tc@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1379959445-28207-1-git-send-email-jenny.tc@intel.com>
-References: <1379959445-28207-1-git-send-email-jenny.tc@intel.com>
+	id S1753756Ab3IWKN6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 06:13:58 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:21843 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab3IWKN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 06:13:56 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-48-524014628f84
+From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+To: kgene.kim@samsung.com
+Cc: ben-linux@fluff.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        t.figa@samsung.com, m.szyprowski@samsung.com,
+        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH] DT: S5P: If detected device tree skip irq init
+Date: Mon, 23 Sep 2013 12:13:42 +0200
+Message-id: <1379931222-29307-1-git-send-email-m.krawczuk@partner.samsung.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e+xoG6SiEOQwdn51haT1h1gsuhdcJXN
+	4mzTG3aLTY+vsVpc3jWHzWLG+X1MFrcv81qcXnOK2WLtkbvsFutnvGZx4PJoae5h8/i76gWz
+	x+Yl9R4H3+1h8ujbsorR4/MmuQC2KC6blNSczLLUIn27BK6Me6evshVMZK/4vDe2gbGJrYuR
+	k0NCwETi/9F2VghbTOLCvfVAcS4OIYHpjBILP7SzgCSEBNqZJN78EQax2QTMJSY+2wQWFxGQ
+	lGhq+MMMYjMLrGKSeDsrBMQWFrCX6OlaD1bDIqAqsf7RPLBlvAJ+EqeX3YFarCDx8/IJtgmM
+	3AsYGVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBIfRM+kdjKsaLA4xCnAwKvHwRibaBwmx
+	JpYVV+YeYpTgYFYS4fVjdQgS4k1JrKxKLcqPLyrNSS0+xCjNwaIkznuw1TpQSCA9sSQ1OzW1
+	ILUIJsvEwSnVwBjya6HV+sMyAsdsWHXlDNJeiXMstsp0YVeKkZb7dfw3Z+2e+kJD1V031hxy
+	UhM1teR5Uyx8e+KnGrHNMheYTZ/lb6nbuvH86aT8b9aiPHdjA389Ze1TnCa/47/hguX6ezZp
+	72IQ/fhvRkx6kvnNvcY5TbEK/82vXb17uOFjRE4Hn6blioDHGkosxRmJhlrMRcWJAGBEQoof	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The charger and battery temperature contribute to the
-platform thermal. The only way to control the temperature
-is to control the charging. The charging can be controlled in different
-way. This could be disabling charger, disabling charging, adjusting CC,
-or by adjusting the INLMT. This patch adds a structure to define the
-charger throttle actions. Also this patch adds a throttle_states
-field to the struct power_supply which can be used by the charger
-driver to define it's throttle actions for different states
+It prevents from executing code already called by device tree.
 
-Change-Id: I390a4c7479df4a7e17f73682802e4be05ea58541
-Signed-off-by: Jenny TC <jenny.tc@intel.com>
+Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- include/linux/power_supply.h |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ arch/arm/plat-samsung/s5p-irq-eint.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index c3ce514a..e99c78d 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -210,6 +210,18 @@ union power_supply_propval {
+diff --git a/arch/arm/plat-samsung/s5p-irq-eint.c b/arch/arm/plat-samsung/s5p-irq-eint.c
+index faa6516..ebee4dc 100644
+--- a/arch/arm/plat-samsung/s5p-irq-eint.c
++++ b/arch/arm/plat-samsung/s5p-irq-eint.c
+@@ -16,6 +16,7 @@
+ #include <linux/device.h>
+ #include <linux/gpio.h>
+ #include <linux/irqchip/arm-vic.h>
++#include <linux/of.h>
  
- struct device_node;
+ #include <plat/regs-irqtype.h>
  
-+enum psy_throttle_action {
-+
-+	PSY_THROTTLE_DISABLE_CHARGER = 0,
-+	PSY_THROTTLE_DISABLE_CHARGING,
-+	PSY_THROTTLE_CC_LIMIT,
-+	PSY_THROTTLE_INPUT_LIMIT,
-+};
-+
-+struct psy_throttle_state {
-+	enum psy_throttle_action throttle_action;
-+	unsigned throttle_val;
-+};
- struct power_supply {
- 	const char *name;
- 	enum power_supply_type type;
-@@ -224,6 +236,9 @@ struct power_supply {
- 	size_t num_supplies;
- 	struct device_node *of_node;
+@@ -202,6 +203,9 @@ static int __init s5p_init_irq_eint(void)
+ {
+ 	int irq;
  
-+	struct psy_throttle_state *throttle_states;
-+	size_t num_throttle_states;
++	if (of_have_populated_dt())
++		return -ENODEV;
 +
- 	int (*get_property)(struct power_supply *psy,
- 			    enum power_supply_property psp,
- 			    union power_supply_propval *val);
+ 	for (irq = IRQ_EINT(0); irq <= IRQ_EINT(15); irq++)
+ 		irq_set_chip(irq, &s5p_irq_vic_eint);
+ 
 -- 
-1.7.9.5
+1.8.1.2
 
