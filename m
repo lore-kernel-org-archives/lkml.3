@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab3IWNs7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 09:48:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53309 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab3IWNs5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 09:48:57 -0400
-Date: Mon, 23 Sep 2013 06:49:51 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 0/4] dac7512: some cleanups and DT bindings
-Message-ID: <20130923134951.GA18964@kroah.com>
-References: <1379879509-3608-1-git-send-email-zonque@gmail.com>
- <20130923101940.GZ21013@sirena.org.uk>
- <52401884.2070509@gmail.com>
+	id S1753887Ab3IWNud (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 09:50:33 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:59968 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753418Ab3IWNub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 09:50:31 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v2] Input: add driver for Neonode zForce based touchscreens
+Date: Mon, 23 Sep 2013 15:50:26 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+References: <201309070133.11671.heiko@sntech.de>
+In-Reply-To: <201309070133.11671.heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52401884.2070509@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201309231550.27313.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 12:31:32PM +0200, Daniel Mack wrote:
-> On 23.09.2013 12:19, Mark Brown wrote:
-> > On Sun, Sep 22, 2013 at 09:51:45PM +0200, Daniel Mack wrote:
-> >> Here are some trivial things for the ti_dac7512 driver.
-> >>
-> >> Mark, can you take them through your spi tree?
-> > 
-> > I can but it's normally Greg who looks after drivers/misc - probably
-> > best to at least run these by him.
+Am Samstag, 7. September 2013, 01:33:11 schrieb Heiko Stübner:
+> This adds a driver for touchscreens using the zforce infrared
+> technology from Neonode connected via i2c to the host system.
 > 
-> Alright. Greg, I posted the series to LKML yesterday. Can you pick the
-> patches from there or do you want me to resend?
+> It supports multitouch with up to two fingers and tracking of the
+> contacts in hardware.
+> 
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> ---
+> changes since v1:
+> - address comments from Dmitry Torokhov
+>   but I kept the access_mutex due to the possible race I described in the
+> mail:
+>   - touch -> interrupt
+>   - isr reads first packet
+>   - user closes device -> stop command sent
+>   - isr reads payload
+> - address comments from Henrik Rydberg, letting the input system collect
+>   singletouch from the multitouch data using the appropriate functions
 
-I'll pick them up from there, thanks for pointing them out to me.
+ping?
 
-greg k-h
+
+Thanks
+Heiko
