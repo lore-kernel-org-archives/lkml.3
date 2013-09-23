@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3IWMGM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 08:06:12 -0400
+	id S1754450Ab3IWMM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 08:12:28 -0400
 Received: from mga14.intel.com ([143.182.124.37]:59137 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753789Ab3IWMGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 08:06:09 -0400
+	id S1753959Ab3IWMGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 08:06:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,962,1371106800"; 
-   d="scan'208";a="298196452"
+   d="scan'208";a="364269193"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -23,9 +23,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv6 11/22] thp, mm: warn if we try to use replace_page_cache_page() with THP
-Date: Mon, 23 Sep 2013 15:05:39 +0300
-Message-Id: <1379937950-8411-12-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv6 08/22] mm: trace filemap: dump page order
+Date: Mon, 23 Sep 2013 15:05:36 +0300
+Message-Id: <1379937950-8411-9-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,32 +33,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-replace_page_cache_page() is only used by FUSE. It's unlikely that we
-will support THP in FUSE page cache any soon.
-
-Let's pospone implemetation of THP handling in replace_page_cache_page()
-until any will use it. -EINVAL and WARN_ONCE() for now.
+Dump page order to trace to be able to distinguish between small page
+and huge page in page cache.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
- mm/filemap.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ include/trace/events/filemap.h | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 60478ebeda..3421bcaed4 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -417,6 +417,10 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- {
- 	int error;
+diff --git a/include/trace/events/filemap.h b/include/trace/events/filemap.h
+index 0421f49a20..7e14b13470 100644
+--- a/include/trace/events/filemap.h
++++ b/include/trace/events/filemap.h
+@@ -21,6 +21,7 @@ DECLARE_EVENT_CLASS(mm_filemap_op_page_cache,
+ 		__field(struct page *, page)
+ 		__field(unsigned long, i_ino)
+ 		__field(unsigned long, index)
++		__field(int, order)
+ 		__field(dev_t, s_dev)
+ 	),
  
-+	if (WARN_ONCE(PageTransHuge(old) || PageTransHuge(new),
-+		     "unexpected transhuge page\n"))
-+		return -EINVAL;
-+
- 	VM_BUG_ON(!PageLocked(old));
- 	VM_BUG_ON(!PageLocked(new));
- 	VM_BUG_ON(new->mapping);
+@@ -28,18 +29,20 @@ DECLARE_EVENT_CLASS(mm_filemap_op_page_cache,
+ 		__entry->page = page;
+ 		__entry->i_ino = page->mapping->host->i_ino;
+ 		__entry->index = page->index;
++		__entry->order = compound_order(page);
+ 		if (page->mapping->host->i_sb)
+ 			__entry->s_dev = page->mapping->host->i_sb->s_dev;
+ 		else
+ 			__entry->s_dev = page->mapping->host->i_rdev;
+ 	),
+ 
+-	TP_printk("dev %d:%d ino %lx page=%p pfn=%lu ofs=%lu",
++	TP_printk("dev %d:%d ino %lx page=%p pfn=%lu ofs=%lu order=%d",
+ 		MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
+ 		__entry->i_ino,
+ 		__entry->page,
+ 		page_to_pfn(__entry->page),
+-		__entry->index << PAGE_SHIFT)
++		__entry->index << PAGE_SHIFT,
++		__entry->order)
+ );
+ 
+ DEFINE_EVENT(mm_filemap_op_page_cache, mm_filemap_delete_from_page_cache,
 -- 
 1.8.4.rc3
 
