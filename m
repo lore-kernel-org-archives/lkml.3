@@ -1,37 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab3IWCnn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 22:43:43 -0400
-Received: from smtprelay0095.hostedemail.com ([216.40.44.95]:59355 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753053Ab3IWCnm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 22:43:42 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1533:1534:1536:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3876:3877:4321:5007:6114:6642:7652:10004:10400:10848:11232:11658:11914:12196:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pull83_20049dd0fa605
-X-Filterd-Recvd-Size: 1036
-Message-ID: <1379904217.3575.10.camel@joe-AO722>
-Subject: Re: [PATCH 01/12] ping.h: Remove extern from function prototypes
-From: Joe Perches <joe@perches.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 22 Sep 2013 19:43:37 -0700
-In-Reply-To: <523FA98E.4080908@gmail.com>
-References: <b692aba58032f629907ea2d462c99b87906645ca.1379870986.git.joe@perches.com>
-	 <523FA098.9050200@gmail.com> <1379902599.3575.9.camel@joe-AO722>
-	 <523FA98E.4080908@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753359Ab3IWCnx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 22:43:53 -0400
+Received: from imap.thunk.org ([74.207.234.97]:36205 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753064Ab3IWCnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 22:43:51 -0400
+Date: Sun, 22 Sep 2013 22:43:38 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: =?iso-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Stephan Mueller <smueller@chronox.de>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH,RFC] random: make fast_mix() honor its name
+Message-ID: <20130923024338.GF7321@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+	=?iso-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>,
+	John Stultz <john.stultz@linaro.org>,
+	Stephan Mueller <smueller@chronox.de>,
+	LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <20130912233155.GB5279@thunk.org>
+ <20130916154026.GA23345@logfs.org>
+ <20130921212510.GD8606@thunk.org>
+ <20130921214118.GE8606@thunk.org>
+ <20130922030553.GA21422@thunk.org>
+ <523F5AB6.8070107@web.de>
+ <20130922212752.GB7321@thunk.org>
+ <20130922205334.GC4584@logfs.org>
+ <20130922233641.GE7321@thunk.org>
+ <20130923001623.GD4584@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130923001623.GD4584@logfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-23 at 12:38 +1000, Ryan Mallon wrote:
-> A checkpatch rule might help,
+On Sun, Sep 22, 2013 at 08:16:23PM -0400, Jörn Engel wrote:
+> How about we switch between the two mixing functions depending on the
+> interrupt load?  If this CPU has seen fewer than 1000 interrupts in
+> the last second, use the better one, otherwise us the cheaper one?
 
-Extant.
+I guess the question here is whether it's worth it.  On a 2.8 GHz
+laptop Ivy Bridge chip the numbers are:
 
+Original fast_mix: 84 ns
+tytso's fast_mix:  14 ns
+joern's fast_mix:   8 ns
+
+In terms of absolute overhead if you are running at an insane 100k
+interrupts per second, it's still only 0.84%, 0.14%, and 0.08%,
+respectively.  Granted, an embedded CPU will be (much) slower, but so
+will the overall overhead of the rest of the interrupt handling code
+path plus whatever the overhead of the device driver will be.  The
+real bug is the 100k interrupts per second workload.
+
+How about this as a compromise?  We can add an #ifdef in the random.c
+code which has the alternate fast_mix algorithm in the very rare case
+that some embedded software engineer under time-pressure and suffering
+under the need to use a pathetically broken hardware design, and who
+starts looking in the random.c code, will find the an alternate
+version.  That way, we avoid the complexity of an dynamic switching
+system, plus the overhead of measuring the number of interrupts per
+second.
+
+I am very strongly of the opinion that the number of systems where you
+have an embedded system with that kind of inane interrupt rate is the
+0.00000000001% case.  So IMHO it's not even worth having a dynamic
+switching system, especially when it's only going to improve things
+slightly.
+
+						- Ted
+
+P.S.  The real reason for the original fast_mix() function is because
+it has a separate pool for each CPU, so there's no spinlock contention
+and no cache line bouncing.  And that's why the fast_mix pool is so
+small --- so that the entire struct fast_pool can fit in a single CPU
+cache line.  So on normal, common systems --- even mobile handsets
+have multiple cores these days --- fast_mix() *is* actually much
+faster than the standard entropy pool, even before any optimizations.
