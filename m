@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab3IWAZW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 20:25:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37671 "EHLO mail.zytor.com"
+	id S1753202Ab3IWA1d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 20:27:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37689 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752773Ab3IWAZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 20:25:20 -0400
-Message-ID: <523F8A3C.7010209@zytor.com>
-Date: Sun, 22 Sep 2013 17:24:28 -0700
+	id S1752802Ab3IWA1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 20:27:32 -0400
+Message-ID: <523F8AA6.7040406@zytor.com>
+Date: Sun, 22 Sep 2013 17:26:14 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Roy Franz <roy.franz@linaro.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org, matt.fleming@intel.com,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH 10/18] Do proper conversion from UTF-16 to UTF-8
-References: <1379889942-3135-1-git-send-email-roy.franz@linaro.org> <1379889942-3135-11-git-send-email-roy.franz@linaro.org> <e69e8c38-b195-4797-8ae2-65d69ed9d7aa@email.android.com> <CAFECyb_8hqLFajMUfwctVee8e8UvErmu4jmbPguWaeMc-MZuNA@mail.gmail.com>
-In-Reply-To: <CAFECyb_8hqLFajMUfwctVee8e8UvErmu4jmbPguWaeMc-MZuNA@mail.gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
+        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
+        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de
+Subject: Re: [PATCH, RFC 10/12] random: cap the rate which the /dev/urandom
+ pool gets reseeded
+References: <1379882338-7209-1-git-send-email-tytso@mit.edu> <1379882338-7209-11-git-send-email-tytso@mit.edu> <e665f20c-9154-4dbd-bb93-cf144922bf29@email.android.com> <20130922214039.GC7321@thunk.org> <a3890544-745e-462d-8647-68c5abf78e9e@email.android.com> <20130922232337.GD7321@thunk.org>
+In-Reply-To: <20130922232337.GD7321@thunk.org>
 X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2013 04:07 PM, Roy Franz wrote:
-> On Sun, Sep 22, 2013 at 3:54 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> Sorry this version is broken and doesn't even compile due to remaining options_size references.
+On 09/22/2013 04:23 PM, Theodore Ts'o wrote:
+> On Sun, Sep 22, 2013 at 03:45:11PM -0700, H. Peter Anvin wrote:
+>> I understand the motivation, but I question basing it in a fixed amount of time.
 > 
-> I compiled and tested this series on both x86_64 (using OVMF) and on
-> the ARM simulator.  I just doubled checked
-> my kernel .config to verify this was not being omitted and I'm pretty
-> sure this doesn't have any compilation problems.
-> I did make a few changes to get the untested version you sent out to
-> compile, but they all seemed to be straightforward typo type fixes.
-> I'll gladly address any defects in this patch, but I don't see an
-> compilation problems.
+> We already have a threshold based on the amount of the entropy in the
+> input pool.  I could increase that threshold, but then instead of
+> having the entropy hover between say, 192 and 128, it would hover
+> between say, 576 and 512.  What that means in practice is that there
+> will be a higher baseline, but we will still end up reseeding every 10
+> seconds or so (that being approximately how much entropy I've seen
+> flowing into the input pool on my laptop system --- 64 bits every 10
+> seconds or so).
+> 
+> By basing it on a time-based threshold, it means that the input pool
+> can build up faster such that over time, such that entropy pool ends
+> up hovering around 3400 bits.
 > 
 
-Ah yes, I see now... you fixed up the compile problem but did so
-incorrectly.
+So make it a threshold around 2048-3072 bits.  A.k.a. "if the input pool
+is filling up fast enough, take advantage of it."
 
-      int load_options_size = image->load_options_size / 2; /* ASCII */
+> What is your concern is about having it being time-based --- or more
+> accurately, being partially time-based, since we also keep the entorpy
+> count based threshold?  I'll note that the Fortuna Random Number
+> Generator, devised by Bruce Schneier and Niels Ferguson also uses as
+> part of its design a time-based reseed limit.
 
-This is a number of UTF-16 chars, the comment is completely wrong;
-
--              while (*s2 && *s2 != '\n' && options_size <
-load_options_size) {
-+              while (*s2 && *s2 != '\n' && options_bytes <
-load_options_size) {
-+                      options_bytes += efi_utf8_bytes(*s2);
-                      s2++;
--                      options_size++;
-              }
-+              options_chars = s2 - options;
-
-You can't compare options_bytes against load_options_size; the latter
-being a UTF-16 shortword count.
-
-So the loop really needs to update options_chars in the loop to compare
-it against load_options_size:
-
-	while (*s2 && *s2 != '\n' && options_chars < load_options_size) {
-		options_bytes += efi_utf8_bytes(*s2++);
-		option_chars++;
-	}
+Just that it is unnecessary in a scenario when entropy is plentiful.
 
 	-hpa
+
 
