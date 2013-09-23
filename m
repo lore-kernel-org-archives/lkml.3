@@ -1,44 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3IWViQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:38:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33761 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab3IWViO (ORCPT
+	id S1754214Ab3IWVil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:38:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45864 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab3IWVij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:38:14 -0400
-Message-ID: <5240B4C2.2080600@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 15:38:10 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-CC: lee.jones@linaro.org, sameo@linux.intel.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, rob@landley.net, broonie@kernel.org,
-        patches@opensource.wolfsonmicro.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] mfd: arizona: Add device tree binding for max_channels_clocked
-References: <1379961043-23762-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <1379961043-23762-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-In-Reply-To: <1379961043-23762-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 23 Sep 2013 17:38:39 -0400
+Date: Mon, 23 Sep 2013 17:38:37 -0400 (EDT)
+Message-Id: <20130923.173837.1100130860877105243.davem@davemloft.net>
+To: peter.senna@gmail.com
+Cc: eilong@broadcom.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 09/19] net: Change variable type to bool
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1379802471-30252-9-git-send-email-peter.senna@gmail.com>
+References: <1379802471-30252-1-git-send-email-peter.senna@gmail.com>
+	<1379802471-30252-9-git-send-email-peter.senna@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 23 Sep 2013 14:38:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 12:30 PM, Charles Keepax wrote:
-> Add device tree bindings for the pdata max_channels_clocked, that allows
-> the user to limit the number of channels clocked on a single AIF.
 
-> diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+Using the same prefix, "net: " for several patches gives no information
+to the person reading the shortlog.
 
-> +  - wlf,max-channels-clocked : The maximum number of channels to be clocked on
-> +    each AIF, useful for I2S systems with multiple data lines being mastered.
-> +    If specified three cells must supplied one for each AIF, specify zero for
-> +    AIFs that should be handled normally.
-
-What determines the value of this property? Is it really a definition of
-HW, or some kind of run-time configuration/limit? What goes into each of
-the 3 cells?
+Use more specific subsystem prefixes, such as "bnx2x: "myri10ge: ",
+"ipv6: ", etc.
