@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736Ab3IWNoL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 09:44:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6505 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753605Ab3IWNoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 09:44:10 -0400
-Message-ID: <524045B5.5020308@redhat.com>
-Date: Mon, 23 Sep 2013 15:44:21 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH 0/3] KVM: Make kvm_lock non-raw
-References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com> <20130922074238.GG25202@redhat.com> <523EAFFA.6060203@redhat.com> <20130922095348.GJ25202@redhat.com> <524043C5.70700@windriver.com>
-In-Reply-To: <524043C5.70700@windriver.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753967Ab3IWNoz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 09:44:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55027 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753889Ab3IWNox (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 09:44:53 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: myungjoo.ham@samsung.com, cw00.choi@samsung.com
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] extcon: arizona: Don't require micbias to be shifted in pdata
+Date: Mon, 23 Sep 2013 14:33:59 +0100
+Message-Id: <1379943239-2779-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1379943239-2779-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1379943239-2779-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 23/09/2013 15:36, Paul Gortmaker ha scritto:
->> > The change is not completely trivial, it splits lock. There is no
->> > obvious problem of course, otherwise you wouldn't send it and I
->> > would ack it :), but it does not mean that the chance for problem is
->> > zero, so why risk stability of stable even a little bit if the patch
->> > does not fix anything in stable?
->> > 
->> > I do not know how -rt development goes and how it affects decisions for
->> > stable acceptance, why can't they carry the patch in their tree until
->> > they move to 3.12?
-> The -rt tree regularly carries mainline backports that are of interest
-> to -rt but perhaps not of interest to stable, so there is no problem
-> doing the same with content like this, if desired.
+Every other pdata field is specified unshifted the patch handles
+shifting for the MICBIAS from the microphone detection polarity
+configurations in the extcon driver rather than demanding it in
+pdata to match other fields.
 
-Perfect, I'll queue [v2 of] these patches for 3.12 then.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/extcon/extcon-arizona.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-Paolo
+diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+index 5096919..3c55ec8 100644
+--- a/drivers/extcon/extcon-arizona.c
++++ b/drivers/extcon/extcon-arizona.c
+@@ -86,8 +86,8 @@ struct arizona_extcon_info {
+ };
+ 
+ static const struct arizona_micd_config micd_default_modes[] = {
+-	{ ARIZONA_ACCDET_SRC, 1 << ARIZONA_MICD_BIAS_SRC_SHIFT, 0 },
+-	{ 0,                  2 << ARIZONA_MICD_BIAS_SRC_SHIFT, 1 },
++	{ ARIZONA_ACCDET_SRC, 1, 0 },
++	{ 0,                  2, 1 },
+ };
+ 
+ static const struct arizona_micd_range micd_default_ranges[] = {
+@@ -182,7 +182,8 @@ static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
+ 					info->micd_modes[mode].gpio);
+ 	regmap_update_bits(arizona->regmap, ARIZONA_MIC_DETECT_1,
+ 			   ARIZONA_MICD_BIAS_SRC_MASK,
+-			   info->micd_modes[mode].bias);
++			   info->micd_modes[mode].bias <<
++			   ARIZONA_MICD_BIAS_SRC_SHIFT);
+ 	regmap_update_bits(arizona->regmap, ARIZONA_ACCESSORY_DETECT_MODE_1,
+ 			   ARIZONA_ACCDET_SRC, info->micd_modes[mode].src);
+ 
+@@ -193,7 +194,7 @@ static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
+ 
+ static const char *arizona_extcon_get_micbias(struct arizona_extcon_info *info)
+ {
+-	switch (info->micd_modes[0].bias >> ARIZONA_MICD_BIAS_SRC_SHIFT) {
++	switch (info->micd_modes[0].bias) {
+ 	case 1:
+ 		return "MICBIAS1";
+ 	case 2:
+-- 
+1.7.2.5
+
