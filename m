@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab3IWSiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:38:07 -0400
-Received: from smtprelay0197.hostedemail.com ([216.40.44.197]:50646 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754319Ab3IWSiD (ORCPT
+	id S1754440Ab3IWSjA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:39:00 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:39629 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754420Ab3IWSi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:38:03 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:800:960:966:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3870:3871:4321:4385:4605:5007:6261:7903:10004:10026:10848:11026:11657:11658:11914:12043:12296:12438:12517:12519:12555:13161:13229:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: stem14_45f756075d950
-X-Filterd-Recvd-Size: 2721
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-sctp@vger.kernel.org
-Subject: [PATCH 12/12] sctp: Remove extern from function prototypes
-Date: Mon, 23 Sep 2013 11:37:59 -0700
-Message-Id: <6738b115d30d40f33c688863f5421d84d2aa706c.1379961014.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <445209f8885ccd8234fa787c30d63e63fc7917d7.1379961014.git.joe@perches.com>
-References: <445209f8885ccd8234fa787c30d63e63fc7917d7.1379961014.git.joe@perches.com>
+	Mon, 23 Sep 2013 14:38:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <bug-61811-41252@https.bugzilla.kernel.org/>
+References: <bug-61811-41252@https.bugzilla.kernel.org/>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 23 Sep 2013 13:33:05 -0500
+Message-ID: <CAErSpo6m+gR6Ycumfy4CwQzWwd-wHiWjeVH9259oH6X+yyF6AQ@mail.gmail.com>
+Subject: Re: [Bug 61811] New: kms mode breaks and using radeon.agpmode=-1
+To: bruno@wolff.to
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a mix of function prototypes with and without extern
-in the kernel sources.  Standardize on not using extern for
-function prototypes.
+[+cc linux-pci, linux-kernel, dri-devel]
 
-Function prototypes don't need to be written with extern.
-extern is assumed by the compiler.  Its use is as unnecessary as
-using auto to declare automatic/local variables in a block.
+On Sat, Sep 21, 2013 at 11:39 AM,  <bugzilla-daemon@bugzilla.kernel.org> wrote:
+> https://bugzilla.kernel.org/show_bug.cgi?id=61811
+>
+>             Bug ID: 61811
+>            Summary: kms mode breaks and using radeon.agpmode=-1
+>            Product: Drivers
+>            Version: 2.5
+>     Kernel Version: 3.12
+>           Hardware: All
+>                 OS: Linux
+>               Tree: Fedora
+>             Status: NEW
+>           Severity: normal
+>           Priority: P1
+>          Component: PCI
+>           Assignee: drivers_pci@kernel-bugs.osdl.org
+>           Reporter: bruno@wolff.to
+>         Regression: No
+>
+> I need to use radeon.agpmode=-1 with my rv280 based graphics card due to a long
+> (2+ years) standing bug with the driver. Recently I was no longer able to start
+> X because modesetting is no longer working. At boot I no longer see the
+> resolution change and I got log entries later in Xor.0.log saying "[KMS] drm
+> report modesetting isn't supported."
+> If I boot without radeon.agpmode=-1 X starts, though becomes unusable shortly
+> due to the pre-existing but. kernel-PAE-3.12.0-0.rc0.git22.2.fc21.i686 works
+> for me. kernel-PAE-3.12.0-0.rc0.git24.1.fc21.i686 doesn't work. (git23's build
+> failed so I didn't test that one.)
+> I did a git whatchanged d5d04bb..3711d86 which I think should have showed me
+> the commits that were in git24 and not git22 and I didn't see any specifically
+> directed at the radeon driver. I did see some PCI related commits.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/net/sctp/sctp.h | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+Thanks for the report!  Can you attach the complete dmesg logs from
+the working kernel and the failing one (booted with
+"radeon.agpmode=-1") to the bugzilla?  Also the output of "lspci -vv".
 
-diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
-index 3794c5a..c5fe806 100644
---- a/include/net/sctp/sctp.h
-+++ b/include/net/sctp/sctp.h
-@@ -90,12 +90,11 @@
- /*
-  * sctp/protocol.c
-  */
--extern int sctp_copy_local_addr_list(struct net *, struct sctp_bind_addr *,
--				     sctp_scope_t, gfp_t gfp,
--				     int flags);
--extern struct sctp_pf *sctp_get_pf_specific(sa_family_t family);
--extern int sctp_register_pf(struct sctp_pf *, sa_family_t);
--extern void sctp_addr_wq_mgmt(struct net *, struct sctp_sockaddr_entry *, int);
-+int sctp_copy_local_addr_list(struct net *, struct sctp_bind_addr *,
-+			      sctp_scope_t, gfp_t gfp, int flags);
-+struct sctp_pf *sctp_get_pf_specific(sa_family_t family);
-+int sctp_register_pf(struct sctp_pf *, sa_family_t);
-+void sctp_addr_wq_mgmt(struct net *, struct sctp_sockaddr_entry *, int);
- 
- /*
-  * sctp/socket.c
-@@ -110,7 +109,7 @@ void sctp_sock_rfree(struct sk_buff *skb);
- void sctp_copy_sock(struct sock *newsk, struct sock *sk,
- 		    struct sctp_association *asoc);
- extern struct percpu_counter sctp_sockets_allocated;
--extern int sctp_asconf_mgmt(struct sctp_sock *, struct sctp_sockaddr_entry *);
-+int sctp_asconf_mgmt(struct sctp_sock *, struct sctp_sockaddr_entry *);
- 
- /*
-  * sctp/primitive.c
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
+Bjorn
