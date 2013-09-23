@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab3IWMJh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 08:09:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:43998 "EHLO mga14.intel.com"
+	id S1754293Ab3IWMKl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 08:10:41 -0400
+Received: from mga14.intel.com ([143.182.124.37]:25582 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753981Ab3IWMGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 08:06:14 -0400
+	id S1753969Ab3IWMGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 08:06:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,962,1371106800"; 
-   d="scan'208";a="298196490"
+   d="scan'208";a="364269202"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -23,9 +23,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv6 22/22] ramfs: enable transparent huge page cache
-Date: Mon, 23 Sep 2013 15:05:50 +0300
-Message-Id: <1379937950-8411-23-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv6 12/22] thp, mm: add event counters for huge page alloc on file write or read
+Date: Mon, 23 Sep 2013 15:05:40 +0300
+Message-Id: <1379937950-8411-13-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,50 +33,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ramfs is the most simple fs from page cache point of view. Let's start
-transparent huge page cache enabling here.
+Existing stats specify source of thp page: fault or collapse. We're
+going allocate a new huge page with write(2) and read(2). It's nither
+fault nor collapse.
 
-ramfs pages are not movable[1] and switching to transhuge pages doesn't
-affect that. We need to fix this eventually.
-
-[1] http://lkml.org/lkml/2013/4/2/720
+Let's introduce new events for that.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- fs/ramfs/file-mmu.c | 2 +-
- fs/ramfs/inode.c    | 6 +++++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ Documentation/vm/transhuge.txt | 7 +++++++
+ include/linux/huge_mm.h        | 5 +++++
+ include/linux/vm_event_item.h  | 4 ++++
+ mm/vmstat.c                    | 4 ++++
+ 4 files changed, 20 insertions(+)
 
-diff --git a/fs/ramfs/file-mmu.c b/fs/ramfs/file-mmu.c
-index 4884ac5ae9..ae787bf9ba 100644
---- a/fs/ramfs/file-mmu.c
-+++ b/fs/ramfs/file-mmu.c
-@@ -32,7 +32,7 @@
+diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
+index 4cc15c40f4..a78f738403 100644
+--- a/Documentation/vm/transhuge.txt
++++ b/Documentation/vm/transhuge.txt
+@@ -202,6 +202,10 @@ thp_collapse_alloc is incremented by khugepaged when it has found
+ 	a range of pages to collapse into one huge page and has
+ 	successfully allocated a new huge page to store the data.
  
- const struct address_space_operations ramfs_aops = {
- 	.readpage	= simple_readpage,
--	.write_begin	= simple_write_begin,
-+	.write_begin	= simple_thp_write_begin,
- 	.write_end	= simple_write_end,
- 	.set_page_dirty = __set_page_dirty_no_writeback,
- };
-diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
-index 39d14659a8..5dafdfcd86 100644
---- a/fs/ramfs/inode.c
-+++ b/fs/ramfs/inode.c
-@@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
- 		inode_init_owner(inode, dir, mode);
- 		inode->i_mapping->a_ops = &ramfs_aops;
- 		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
--		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
-+		/*
-+		 * TODO: make ramfs pages movable
-+		 */
-+		mapping_set_gfp_mask(inode->i_mapping,
-+				GFP_TRANSHUGE & ~__GFP_MOVABLE);
- 		mapping_set_unevictable(inode->i_mapping);
- 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
- 		switch (mode & S_IFMT) {
++thp_write_alloc and thp_read_alloc are incremented every time a huge
++	page is	successfully allocated to handle write(2) to a file or
++	read(2) from file.
++
+ thp_fault_fallback is incremented if a page fault fails to allocate
+ 	a huge page and instead falls back to using small pages.
+ 
+@@ -209,6 +213,9 @@ thp_collapse_alloc_failed is incremented if khugepaged found a range
+ 	of pages that should be collapsed into one huge page but failed
+ 	the allocation.
+ 
++thp_write_alloc_failed and thp_read_alloc_failed are incremented if
++	huge page allocation failed when tried on write(2) or read(2).
++
+ thp_split is incremented every time a huge page is split into base
+ 	pages. This can happen for a variety of reasons but a common
+ 	reason is that a huge page is old and is being reclaimed.
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 9747af1117..3700ada4d2 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -183,6 +183,11 @@ extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vm
+ #define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
+ #define HPAGE_PMD_SIZE ({ BUILD_BUG(); 0; })
+ 
++#define THP_WRITE_ALLOC		({ BUILD_BUG(); 0; })
++#define THP_WRITE_ALLOC_FAILED	({ BUILD_BUG(); 0; })
++#define THP_READ_ALLOC		({ BUILD_BUG(); 0; })
++#define THP_READ_ALLOC_FAILED	({ BUILD_BUG(); 0; })
++
+ #define hpage_nr_pages(x) 1
+ 
+ #define transparent_hugepage_enabled(__vma) 0
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 1855f0a22a..8e071bbaa0 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -66,6 +66,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		THP_FAULT_FALLBACK,
+ 		THP_COLLAPSE_ALLOC,
+ 		THP_COLLAPSE_ALLOC_FAILED,
++		THP_WRITE_ALLOC,
++		THP_WRITE_ALLOC_FAILED,
++		THP_READ_ALLOC,
++		THP_READ_ALLOC_FAILED,
+ 		THP_SPLIT,
+ 		THP_ZERO_PAGE_ALLOC,
+ 		THP_ZERO_PAGE_ALLOC_FAILED,
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 9af0d8536b..5d1eb7dbf1 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -847,6 +847,10 @@ const char * const vmstat_text[] = {
+ 	"thp_fault_fallback",
+ 	"thp_collapse_alloc",
+ 	"thp_collapse_alloc_failed",
++	"thp_write_alloc",
++	"thp_write_alloc_failed",
++	"thp_read_alloc",
++	"thp_read_alloc_failed",
+ 	"thp_split",
+ 	"thp_zero_page_alloc",
+ 	"thp_zero_page_alloc_failed",
 -- 
 1.8.4.rc3
 
