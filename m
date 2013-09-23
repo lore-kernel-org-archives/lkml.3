@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268Ab3IWTdK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 15:33:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46057 "EHLO arroyo.ext.ti.com"
+	id S1752765Ab3IWTgo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 15:36:44 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:45502 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753207Ab3IWTdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 15:33:07 -0400
-Date: Mon, 23 Sep 2013 14:32:51 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: <balbi@ti.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>,
-        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
-        <idos@codeaurora.org>, <mgautam@codeaurora.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v5 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
- for DW PHY's
-Message-ID: <20130923193251.GP30811@radagast>
-Reply-To: <balbi@ti.com>
-References: <1377091786-5613-1-git-send-email-iivanov@mm-sol.com>
- <1377091786-5613-3-git-send-email-iivanov@mm-sol.com>
+	id S1752341Ab3IWTgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 15:36:43 -0400
+Date: Mon, 23 Sep 2013 13:36:33 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Cc: tpmdd-devel@lists.sourceforge.net,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to
+ sysfs into tpm-sysfs.c
+Message-ID: <20130923193633.GA9194@obsidianresearch.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+ <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com>
+ <52408E5D.4020904@tycho.nsa.gov>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Sk71+Upln2BLuDmg"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377091786-5613-3-git-send-email-iivanov@mm-sol.com>
+In-Reply-To: <52408E5D.4020904@tycho.nsa.gov>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sk71+Upln2BLuDmg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Sep 23, 2013 at 02:54:21PM -0400, Daniel De Graaf wrote:
+> On 09/23/2013 02:14 PM, Jason Gunthorpe wrote:
+> >CLASS-sysfs.c is a common idiom for linux subsystems.
+> >
+> >This pulls all the sysfs attribute functions and related code
+> >into tpm-sysfs.c. To support this change some constants are moved
+> >from tpm.c to tpm.h and __tpm_pcr_read is made non-static and is
+> >called tpm_pcr_read_dev.
+> >
+> >Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> [...]
+> >diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
+> >index 12a4ab2..7892557 100644
+> >+++ b/drivers/char/tpm/xen-tpmfront.c
+> [...]
+> >-static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
+> >-static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
+> >-static DEVICE_ATTR(locality, S_IRUGO | S_IWUSR, tpm_show_locality,
+> >-		tpm_store_locality);
+> 
+> This patch drops the "locality" sysfs attribute from xen-tpmfront. Since
+> that attribute is currently only implemented for the xen TPM driver, it
+> is best to leave it there for now (and its show/store functions could
+> also be made static, an oversight I just noticed now). If this attribute
+> is later made available on other TPM drivers, it may need to contain
+> device-specific logic, but such an implementation is well outside the
+> scope of this series.
 
-Hi,
+Okay, I see what you are talking about, the compiler didn't warn
+because of the missing static.
 
-On Wed, Aug 21, 2013 at 04:29:45PM +0300, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->=20
-> These drivers handles control and configuration of the HS
-> and SS USB PHY transceivers. They are part of the driver
-> which manage Synopsys DesignWare USB3 controller stack
-> inside Qualcomm SoC's.
->=20
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+This really is a core functionality. Lots of other drivers support
+locality, but none have dared actually expose the functionality. IHMO,
+it is a mistake to just jam a locality attribute in one driver.
 
-I can take this one if DT folks agree with bindings proposed on previous
-patch.
+Sorry, I would have said something when the driver was posted if it
+was obvious this was hiding in there :|
 
---=20
-balbi
+It looks like this driver was introduced in the 3.12 merge window, we
+could drop the attribute, and try to merge a core supported locality
+API in 3.13? What do you think?
 
---Sk71+Upln2BLuDmg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+But, if you say it is needed, it is easy enough to adjust this patch
+series.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSQJdjAAoJEIaOsuA1yqREvbAP/0M8TMSx2bqjHn7K/wUowbP6
-00piB7uQ8xkarDOba0Xo4Dmb45F6SlXwuQLbsKRHgu16vyWdR9lNwrNiHutj1PqK
-VNnBs4UYidpi/DmoAiAztYMzGTvyjr8XjDDuUzQxmRdt6LGpCyIcDeNYLU8tQr+b
-ZDohRNmQvImWj8nNIaSk4Je32LcCJ8EQY+rEcAIMukBQMhiz63SQ9AVySInXFQSf
-fSakwe3MVDYTG3bzmADbCqGhQmYTb28Jox+uBcL6UsMUZR87RKho9QQKCP2eu8E3
-lfgcQmKEqIHUoyFXUjijifPRSY+2+V3+3dcJB3ZoX1yoKTnDv91BCLtJ9zXzx+86
-3EG+l/ANNaVsFYuQQpj/aYoDzS8qchz1znhV+HRuomn1Frs0saw4I8SwvUAf+Sp1
-kfGO+lo2hhHuR4/cHGc5QJlgMjsvD4HDQgcN1tThikmOnbTma4r3F2L8FCjr6aRt
-BHybwhqfl+yJR9fVqKRBYAWMOH1xqE1e+eHn2D3eSl3V6boueo1RUHl3nF9YCL8W
-EF17FzND58bm2YCh3Kpn3ZU939zNBetKwLsFapIo6GDYQFSuxlFtWz2w1V5LKtS7
-0g3679pGRNWgwMCeE6GTV6/u96zxqlB0q5RrR+3Eb+dgerUXT5mueCP+aJX9O/Dh
-lhBDU0eiX8XYvPrneJpS
-=pvDZ
------END PGP SIGNATURE-----
-
---Sk71+Upln2BLuDmg--
+Thanks,
+Jason
