@@ -1,41 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab3IWVIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:08:17 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:52292 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab3IWVIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:08:16 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5r/cwapwKA==
-X-RZG-CLASS-ID: mo00
-Date: Mon, 23 Sep 2013 23:08:12 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        apw@canonical.com, jasowang@redhat.com, dan.carpenter@oracle.com,
-        linux-input@vger.kernel.org, vojtech@suse.cz
-Subject: Re: [PATCH V2 1/1] Drivers: input: serio: New driver to support
- Hyper-V synthetic keyboard
-Message-ID: <20130923210812.GA19953@aepfle.de>
-References: <1379460418-1523-1-git-send-email-kys@microsoft.com>
- <20130918210107.GA32320@core.coreip.homeip.net>
+	id S1754009Ab3IWVKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:10:30 -0400
+Received: from mail.tpi.com ([74.45.170.26]:46592 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753947Ab3IWVK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 17:10:27 -0400
+Message-ID: <5240AE43.6070708@canonical.com>
+Date: Mon, 23 Sep 2013 14:10:27 -0700
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130918210107.GA32320@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21.rev5641 (2013-02-23)
+To: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: Rob Herring <rob.herring@calxeda.com>,
+        Paolo Pisati <paolo.pisati@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] TTY: hvc_dcc: probe for a JTAG connection before registering
+References: <1379968234-23373-1-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1379968234-23373-1-git-send-email-robherring2@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, Dmitry Torokhov wrote:
+On 09/23/2013 01:30 PM, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> Enabling the ARM DCC console and using without a JTAG connection will
+> simply hang the system. Since distros like to turn on all options, this
+> is a reoccurring problem to debug. We can do better by checking if
+> anything is attached and handling characters. There is no way to probe
+> this, so send a newline and check that it is handled.
+> 
+> Cc: Paolo Pisati <paolo.pisati@canonical.com>
+> Cc: Tim Gardner <tim.gardner@canonical.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> ---
+>  drivers/tty/hvc/hvc_dcc.c | 21 +++++++++++++++++++++
+>  1 file changed, 21 insertions(+)
+> 
+> diff --git a/drivers/tty/hvc/hvc_dcc.c b/drivers/tty/hvc/hvc_dcc.c
+> index 44fbeba..44c8aff 100644
+> --- a/drivers/tty/hvc/hvc_dcc.c
+> +++ b/drivers/tty/hvc/hvc_dcc.c
+> @@ -86,6 +86,21 @@ static int hvc_dcc_get_chars(uint32_t vt, char *buf, int count)
+>  	return i;
+>  }
+>  
+> +static bool hvc_dcc_check(void)
+> +{
+> +	unsigned long time = jiffies;
+> +
+> +	/* Write a test character to check if it is handled */
+> +	__dcc_putchar('\n');
+> +
+> +	while (jiffies < time + (HZ / 10)) {
+> +		if (!(__dcc_getstatus() & DCC_STATUS_TX))
+> +			return true;
+> +	}
 
-> This looks much better. Could you tell me if the patch below (on top of
-> yours) still works?
+I think you should use one of the jiffies time comparison functions, e.g.,
 
-The help text is slightly incorrect, its a dash not underscore:
-drivers/input/serio/hyperv-keyboard.ko
+	time = jiffies + (HZ / 10);
+	while (time_before(jiffies,time) {
+		...
+	}
 
-Olaf
+What is the possibility that __dcc_getstatus() will return garbage if no
+JTAG is connected ? In that event you're likely to get a false positive
+on DCC_STATUS_TX.
+
+rtg
+
+
+-- 
+Tim Gardner tim.gardner@canonical.com
