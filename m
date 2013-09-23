@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab3IWVMy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:12:54 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:58686 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab3IWVMx (ORCPT
+	id S1753789Ab3IWVOO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:14:14 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49021 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396Ab3IWVOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:12:53 -0400
-X-Nat-Received: from [202.181.97.72]:60097 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1379970759.15244
-To: akpm@linux-foundation.org
-Cc: oleg@redhat.com, viro@zeniv.linux.org.uk, rostedt@goodmis.org,
-        fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201309152323.GDG73435.VLOQFHOJtOFFSM@I-love.SAKURA.ne.jp>
-	<20130915163157.GB13344@redhat.com>
-	<201309160202.FBC60981.FQOHSLFMFtOJVO@I-love.SAKURA.ne.jp>
-	<20130915171549.GA15346@redhat.com>
-	<201309160226.DGH90134.QLSFtOJOOMFHVF@I-love.SAKURA.ne.jp>
-In-Reply-To: <201309160226.DGH90134.QLSFtOJOOMFHVF@I-love.SAKURA.ne.jp>
-Message-Id: <201309240612.ADE82877.MSFHVtOOFLFOQJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 24 Sep 2013 06:12:34 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 23092013 #11062479, status: clean
+	Mon, 23 Sep 2013 17:14:12 -0400
+Message-ID: <5240AF20.8030301@wwwdotorg.org>
+Date: Mon, 23 Sep 2013 15:14:08 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Rhyland Klein <rklein@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Simon Glass <sjg@chromium.org>, Olof Johansson <olof@lixom.net>
+Subject: Re: [RESEND] spi/tegra114: Correct support for cs_change
+References: <1379528245-6283-1-git-send-email-rklein@nvidia.com> <52408DC8.3020407@wwwdotorg.org> <52409B1E.3030405@nvidia.com> <52409D63.3020909@wwwdotorg.org> <5240AC3A.9060206@nvidia.com>
+In-Reply-To: <5240AC3A.9060206@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew, would you pick up this patch?
+On 09/23/2013 03:01 PM, Rhyland Klein wrote:
+> On 9/23/2013 3:58 PM, Stephen Warren wrote:
+>> On 09/23/2013 01:48 PM, Rhyland Klein wrote:
+>>> On 9/23/2013 2:51 PM, Stephen Warren wrote:
+>>>> On 09/18/2013 12:17 PM, Rhyland Klein wrote:
+>>>>> The tegra114 driver wasn't currently handling the cs_change functionality.
+>>>>> It is meant to invert normal behavior, and we were only using it to possibly
+>>>>> delay at the end of a transfer.
+>> ...
+>>>>> diff --git a/drivers/spi/spi-tegra114.c b/drivers/spi/spi-tegra114.c
+>> ...
+>>>>> @@ -717,7 +718,12 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
+>>>>>  		else if (req_mode == SPI_MODE_3)
+>>>>>  			command1 |= SPI_CONTROL_MODE_3;
+>>>>>  
+>>>>> -		tegra_spi_writel(tspi, command1, SPI_COMMAND1);
+>>>>> +		if (tspi->cs_control) {
+>>>>> +			if (tspi->cs_control != spi)
+>>>>> +				tegra_spi_writel(tspi, command1, SPI_COMMAND1);
+>>>>
+>>>> Do you really need a separate write call there? The value of command1
+>>>> isn't fully set up there (the CS bits are all set up immediately after),
+>>>> so won't that glitch the CS lines in some cases?
+>>>
+>>> On our hardware (as far as I've seen), the CS line is normally low. We
+>>
+>> I assume you meant "normally *active* low", not "normally low"?
+> 
+> I mean that when I look at CS, before a transaction starts, the line is
+> low. Then we do a write like this (default SPI_COMMAND1) you see CS rise
+> and fall very soon after. This is purely how we generate the edge
+> triggers (as far as I can tell on all Tegra hw, though Laxman can
+> correct me if I am wrong).
 
-Regards.
-----------
->From d6ff218545060c5f8b75b15d5b34bffcf625508f Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 16 Sep 2013 02:19:10 +0900
-Subject: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
+That sounds broken. Normally, shouldn't CS assert before a transaction,
+stay asserted during a transaction, then deassert after the transaction?
+It shouldn't rise and fall very quickly in between parts of the transaction.
 
-If /proc/sys/kernel/core_pattern contains only "|", NULL pointer dereference
-happens upon core dump because argv_split("") returns argv[0] == NULL.
+>>> need to generate a falling-edge to trigger the beginning of a SPI
+>>> transaction. Doing this write with the default value of SPI_COMMAND1
+>>> causes a brief rise and fall of CS, giving us our falling-edge.
+>>
+>> That sounds like exactly the glitch I was talking about.
+>>
+>> Assuming CS isn't held constantly asserted (low), isn't CS de-asserted
+>> (rises) at the end of transaction n-1, and re-asserted (falls) at the
+>> start of transaction n? If so, I'm not sure why the setup for
+>> transaction n needs to both de-assert and then re-assert it? It seems
+>> like cs_control should be handled at the end of a transaction, not at
+>> the start of the next one.
+> 
+> cs_change has to maintain state over spi_message boundries, not just
+> between spi_transfers within a spi_message.
+> 
+> In this specific case, this is a safe guard.
+> 
+>>>>> +		if (tspi->cs_control) {
+> This sees that the previous transfer stored its spi_device pointer,
+> meaning it had cs_change set on the last part of the last spi_message
+> (I.E. CS hasn't been deasserted, so the SPI transaction is still on-going).
+> 
+>>>>> +			if (tspi->cs_control != spi)
+> This however finds that the device trying to send a SPI message isn't
+> the same one that was in the middle of its transaction. This is a
+> collision between 2 clients on 1 bus. This simply ends the previous
+> transaction (the ongoing one) in favor of starting a new transaction.
+> 
+> Otherwise, this logic allows us to skip the spi of COMMAND1 which would
+> normally be used to create the falling edge to start a new transaction,
+> leaving the previous one open for more transfers.
 
-This bug was once fixed by commit 264b83c0 "usermodehelper: check
-subprocess_info->path != NULL" but was by error reintroduced by commit
-7f57cfa4 "usermodehelper: kill the sub_info->path[0] check".
-
-This bug seems to exist since 2.6.19 (the version which core dump to pipe was
-added). Depending on kernel version and config, some side effect might happen
-immediately after this oops (e.g. kernel panic with 2.6.32-358.18.1.el6).
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/kmod.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index fb32636..a962470 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -571,6 +571,10 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
- 	DECLARE_COMPLETION_ONSTACK(done);
- 	int retval = 0;
- 
-+	if (!sub_info->path) {
-+		call_usermodehelper_freeinfo(sub_info);
-+		return -ENOENT;
-+	}
- 	helper_lock();
- 	if (!khelper_wq || usermodehelper_disabled) {
- 		retval = -EBUSY;
--- 
-1.7.1
+This sounds like something the SPI core should be managing. If a driver
+is using the SPI bus to communicate with a device in a way that needs CS
+left active while outside a transaction, it shouldn't be possible for
+another driver to come along and communicate with another device before
+the first transaction is all complete. The bus should be locked.
+Allowing anything else could corrupt the protocol that required specific
+CS states outside the transaction.
