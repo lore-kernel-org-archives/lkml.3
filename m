@@ -1,174 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3IWJTY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 05:19:24 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:36394
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753373Ab3IWJTW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 05:19:22 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h1de097h8275bhz31h87h2a8h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h129fi1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>, <dan.carpenter@oracle.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        <adi-buildroot-devel@lists.sourceforge.net>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH] pinctrl: pinctrl-adi2: Remove nested lock+irqsave that resue flags.
-Date: Mon, 23 Sep 2013 17:29:48 +0800
-Message-ID: <1379928588-12627-1-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.8.2.3
+	id S1753510Ab3IWJ0H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 05:26:07 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59447 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753395Ab3IWJ0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 05:26:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,961,1371106800"; 
+   d="scan'208";a="298145151"
+Date: Mon, 23 Sep 2013 12:31:27 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [RFC 4/5] gpiolib: add gpiod_get() and gpiod_put() functions
+Message-ID: <20130923093127.GA28875@intel.com>
+References: <1378294169-22661-1-git-send-email-acourbot@nvidia.com>
+ <1378294169-22661-5-git-send-email-acourbot@nvidia.com>
+ <52279082.5010105@wwwdotorg.org>
+ <CACRpkdY70r8mL8PSDmexr+_0Ddi-Y8x0RaDF-WWucZM9V8n=yw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdY70r8mL8PSDmexr+_0Ddi-Y8x0RaDF-WWucZM9V8n=yw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+On Fri, Sep 20, 2013 at 08:40:48PM +0200, Linus Walleij wrote:
+> On Wed, Sep 4, 2013 at 9:56 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> > On 09/04/2013 05:29 AM, Alexandre Courbot wrote:
+> >> Add gpiod_get() and gpiod_put() functions that provide safer handling of
+> >> GPIOs.
+> >>
+> >> These functions put the GPIO framework in line with the conventions of
+> >> other frameworks in the kernel, and help ensure every GPIO is declared
+> >> properly and valid while it is used.
+> >
+> >> diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
+> >
+> >> +struct gpio_desc *__must_check gpiod_get(struct device *dev,
+> >> +                                      const char *con_id);
+> >> +void gpiod_put(struct gpio_desc *desc);
+> >
+> > It might be nice to add an "int index" parameter to this function. For
+> > example, a bit-banged parallel bus protocol driver might have 1
+> > chip-select GPIO, 1 clock GPIO, and 8 data GPIOs. gpiod_get(dev, "bus",
+> > 0)..gpiod_get(dev, "bus", 7) might be nicer than gpiod_get(dev,
+> > "bus0")..gpiod_get(dev, "bus7")? Possibly for client-simplicity,
+> > implement both gpiod_get(dev, con_id) (as an inline wrapper for ...) and
+> > gpiod_get_index(dev, con_id, index)?
+> >
+> > In DT terms, this would map to:
+> >
+> > cs-gpios = <&gpio 3 0>;
+> > clock-gpios = <&gpio 5 0>;
+> > bus-gpios = <&gpio 10 0 ... &gpio 17 0>;
+> >
+> > ... and with the mapping table registration mechanism, we could
+> > presumably add "int index" to struct gpiod_lookup.
+> 
+> This is an interesting usability aspect of the API, so I'd especially
+> like some input from the ACPI people on this as well.
 
-Also avoid use NULL pointer in error message.
+The index fits well with ACPI as that's the only way we can use to
+distinguish different GPIOs.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- drivers/pinctrl/pinctrl-adi2.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+However, in ACPI world the con_id doesn't have any correspondence. For
+example given a DT description:
 
-diff --git a/drivers/pinctrl/pinctrl-adi2.c b/drivers/pinctrl/pinctrl-adi2.c
-index 7a24e59..6940612 100644
---- a/drivers/pinctrl/pinctrl-adi2.c
-+++ b/drivers/pinctrl/pinctrl-adi2.c
-@@ -247,7 +247,7 @@ static void adi_gpio_ack_irq(struct irq_data *d)
- 	unsigned pintbit = hwirq_to_pintbit(port, d->hwirq);
- 
- 	spin_lock_irqsave(&port->lock, flags);
--	spin_lock_irqsave(&port->pint->lock, flags);
-+	spin_lock(&port->pint->lock);
- 
- 	if (irqd_get_trigger_type(d) == IRQ_TYPE_EDGE_BOTH) {
- 		if (readl(&regs->invert_set) & pintbit)
-@@ -258,7 +258,7 @@ static void adi_gpio_ack_irq(struct irq_data *d)
- 
- 	writel(pintbit, &regs->request);
- 
--	spin_unlock_irqrestore(&port->pint->lock, flags);
-+	spin_unlock(&port->pint->lock);
- 	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
-@@ -270,7 +270,7 @@ static void adi_gpio_mask_ack_irq(struct irq_data *d)
- 	unsigned pintbit = hwirq_to_pintbit(port, d->hwirq);
- 
- 	spin_lock_irqsave(&port->lock, flags);
--	spin_lock_irqsave(&port->pint->lock, flags);
-+	spin_lock(&port->pint->lock);
- 
- 	if (irqd_get_trigger_type(d) == IRQ_TYPE_EDGE_BOTH) {
- 		if (readl(&regs->invert_set) & pintbit)
-@@ -282,7 +282,7 @@ static void adi_gpio_mask_ack_irq(struct irq_data *d)
- 	writel(pintbit, &regs->request);
- 	writel(pintbit, &regs->mask_clear);
- 
--	spin_unlock_irqrestore(&port->pint->lock, flags);
-+	spin_unlock(&port->pint->lock);
- 	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
-@@ -293,11 +293,11 @@ static void adi_gpio_mask_irq(struct irq_data *d)
- 	struct gpio_pint_regs *regs = port->pint->regs;
- 
- 	spin_lock_irqsave(&port->lock, flags);
--	spin_lock_irqsave(&port->pint->lock, flags);
-+	spin_lock(&port->pint->lock);
- 
- 	writel(hwirq_to_pintbit(port, d->hwirq), &regs->mask_clear);
- 
--	spin_unlock_irqrestore(&port->pint->lock, flags);
-+	spin_unlock(&port->pint->lock);
- 	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
-@@ -308,11 +308,11 @@ static void adi_gpio_unmask_irq(struct irq_data *d)
- 	struct gpio_pint_regs *regs = port->pint->regs;
- 
- 	spin_lock_irqsave(&port->lock, flags);
--	spin_lock_irqsave(&port->pint->lock, flags);
-+	spin_lock(&port->pint->lock);
- 
- 	writel(hwirq_to_pintbit(port, d->hwirq), &regs->mask_set);
- 
--	spin_unlock_irqrestore(&port->pint->lock, flags);
-+	spin_unlock(&port->pint->lock);
- 	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
-@@ -323,12 +323,12 @@ static unsigned int adi_gpio_irq_startup(struct irq_data *d)
- 	struct gpio_pint_regs *regs = port->pint->regs;
- 
- 	if (!port) {
--		dev_err(port->dev, "GPIO IRQ %d :Not exist\n", d->irq);
-+		pr_err("GPIO IRQ %d :Not exist\n", d->irq);
- 		return -ENODEV;
- 	}
- 
- 	spin_lock_irqsave(&port->lock, flags);
--	spin_lock_irqsave(&port->pint->lock, flags);
-+	spin_lock(&port->pint->lock);
- 
- 	port_setup(port, d->hwirq, true);
- 	writew(BIT(d->hwirq), &port->regs->dir_clear);
-@@ -336,7 +336,7 @@ static unsigned int adi_gpio_irq_startup(struct irq_data *d)
- 
- 	writel(hwirq_to_pintbit(port, d->hwirq), &regs->mask_set);
- 
--	spin_unlock_irqrestore(&port->pint->lock, flags);
-+	spin_unlock(&port->pint->lock);
- 	spin_unlock_irqrestore(&port->lock, flags);
- 
- 	return 0;
-@@ -349,11 +349,11 @@ static void adi_gpio_irq_shutdown(struct irq_data *d)
- 	struct gpio_pint_regs *regs = port->pint->regs;
- 
- 	spin_lock_irqsave(&port->lock, flags);
--	spin_lock_irqsave(&port->pint->lock, flags);
-+	spin_lock(&port->pint->lock);
- 
- 	writel(hwirq_to_pintbit(port, d->hwirq), &regs->mask_clear);
- 
--	spin_unlock_irqrestore(&port->pint->lock, flags);
-+	spin_unlock(&port->pint->lock);
- 	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
-@@ -368,14 +368,14 @@ static int adi_gpio_irq_type(struct irq_data *d, unsigned int type)
- 	char buf[16];
- 
- 	if (!port) {
--		dev_err(port->dev, "GPIO IRQ %d :Not exist\n", irq);
-+		pr_err("GPIO IRQ %d :Not exist\n", d->irq);
- 		return -ENODEV;
- 	}
- 
- 	pintmask = hwirq_to_pintbit(port, d->hwirq);
- 
- 	spin_lock_irqsave(&port->lock, flags);
--	spin_lock_irqsave(&port->pint->lock, flags);
-+	spin_lock(&port->pint->lock);
- 
- 	/* In case of interrupt autodetect, set irq type to edge sensitive. */
- 	if (type == IRQ_TYPE_PROBE)
-@@ -416,7 +416,7 @@ static int adi_gpio_irq_type(struct irq_data *d, unsigned int type)
- 	}
- 
- out:
--	spin_unlock_irqrestore(&port->pint->lock, flags);
-+	spin_unlock(&port->pint->lock);
- 	spin_unlock_irqrestore(&port->lock, flags);
- 
- 	return ret;
--- 
-1.8.2.3
+	power-gpios = <&gpio 28 GPIO_ACTIVE_LOW>;
 
+would be something like this in the ACPI ASL code:
 
+	GpioIo (Exclusive, PullDefault, 0x0000, 0x0000, IoRestrictionNone,
+        	"\\_SB.PCI0.GPI0", 0x00, ResourceConsumer,,)
+        {   
+                28
+        }
+
+I'm thinking that in order to get ACPI implementation work with this we can
+do something like:
+
+	gpiod_get_index(dev, "bus", 0)
+
+	  Here we ignore the con_id and use only the index.
+
+	gpiod_get(dev, "bus")
+
+	  Since we can't map the "bus" to anything, we default to index 0.
+
+We have pretty much similar in the DMA slave helpers where passing "tx"
+gives us the first DMA channel and "rx" the second.
