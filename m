@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252Ab3IWWLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 18:11:45 -0400
-Received: from smtprelay0014.hostedemail.com ([216.40.44.14]:55030 "EHLO
+	id S1754452Ab3IWWLy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 18:11:54 -0400
+Received: from smtprelay0002.hostedemail.com ([216.40.44.2]:48430 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752406Ab3IWWLm (ORCPT
+	by vger.kernel.org with ESMTP id S1754412Ab3IWWLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 18:11:42 -0400
+	Mon, 23 Sep 2013 18:11:51 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1345:1437:1534:1543:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:3870:3871:4321:4384:4605:5007:6261:7903:8603:10004:10026:10848:11026:11657:11658:11914:12043:12294:12296:12438:12517:12519:12555:13161:13229:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: range32_2ba65a05a1c3d
-X-Filterd-Recvd-Size: 3926
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3353:3865:3866:3867:3868:3870:3871:5007:6261:7903:10004:10026:10848:11473:11657:11658:11914:12043:12438:12517:12519:12555:13161:13229:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: field77_2d0d8b606315c
+X-Filterd-Recvd-Size: 3732
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
-Subject: [PATCH 01/10] can: Remove extern from function prototypes
-Date: Mon, 23 Sep 2013 15:11:28 -0700
-Message-Id: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
+        Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>
+Subject: [PATCH 05/10] atheros: Remove extern from function prototypes
+Date: Mon, 23 Sep 2013 15:11:32 -0700
+Message-Id: <b7bf26665e0378a3ec9d4450daf60dc115f75e49.1379974101.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
+References: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,77 +35,60 @@ using auto to declare automatic/local variables in a block.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/can/mscan/mscan.h     |  6 +++---
- drivers/net/can/softing/softing.h | 24 ++++++++++++------------
- 2 files changed, 15 insertions(+), 15 deletions(-)
+ drivers/net/ethernet/atheros/atl1c/atl1c.h |  6 +++---
+ drivers/net/ethernet/atheros/atl1e/atl1e.h | 12 ++++++------
+ drivers/net/ethernet/atheros/atlx/atl2.h   |  2 +-
+ 3 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/net/can/mscan/mscan.h b/drivers/net/can/mscan/mscan.h
-index 9c24d60..e98abb9 100644
---- a/drivers/net/can/mscan/mscan.h
-+++ b/drivers/net/can/mscan/mscan.h
-@@ -297,8 +297,8 @@ struct mscan_priv {
- 	struct napi_struct napi;
- };
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c.h b/drivers/net/ethernet/atheros/atl1c/atl1c.h
+index 0f05565..7f9369a 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c.h
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c.h
+@@ -600,7 +600,7 @@ struct atl1c_adapter {
+ extern char atl1c_driver_name[];
+ extern char atl1c_driver_version[];
  
--extern struct net_device *alloc_mscandev(void);
--extern int register_mscandev(struct net_device *dev, int mscan_clksrc);
--extern void unregister_mscandev(struct net_device *dev);
-+struct net_device *alloc_mscandev(void);
-+int register_mscandev(struct net_device *dev, int mscan_clksrc);
-+void unregister_mscandev(struct net_device *dev);
+-extern void atl1c_reinit_locked(struct atl1c_adapter *adapter);
+-extern s32 atl1c_reset_hw(struct atl1c_hw *hw);
+-extern void atl1c_set_ethtool_ops(struct net_device *netdev);
++void atl1c_reinit_locked(struct atl1c_adapter *adapter);
++s32 atl1c_reset_hw(struct atl1c_hw *hw);
++void atl1c_set_ethtool_ops(struct net_device *netdev);
+ #endif /* _ATL1C_H_ */
+diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e.h b/drivers/net/ethernet/atheros/atl1e/atl1e.h
+index b5fd934..1b0fe2d 100644
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e.h
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e.h
+@@ -499,10 +499,10 @@ struct atl1e_adapter {
+ extern char atl1e_driver_name[];
+ extern char atl1e_driver_version[];
  
- #endif /* __MSCAN_H__ */
-diff --git a/drivers/net/can/softing/softing.h b/drivers/net/can/softing/softing.h
-index afd7d85..35f0622 100644
---- a/drivers/net/can/softing/softing.h
-+++ b/drivers/net/can/softing/softing.h
-@@ -71,34 +71,34 @@ struct softing {
- 	} id;
- };
+-extern void atl1e_check_options(struct atl1e_adapter *adapter);
+-extern int atl1e_up(struct atl1e_adapter *adapter);
+-extern void atl1e_down(struct atl1e_adapter *adapter);
+-extern void atl1e_reinit_locked(struct atl1e_adapter *adapter);
+-extern s32 atl1e_reset_hw(struct atl1e_hw *hw);
+-extern void atl1e_set_ethtool_ops(struct net_device *netdev);
++void atl1e_check_options(struct atl1e_adapter *adapter);
++int atl1e_up(struct atl1e_adapter *adapter);
++void atl1e_down(struct atl1e_adapter *adapter);
++void atl1e_reinit_locked(struct atl1e_adapter *adapter);
++s32 atl1e_reset_hw(struct atl1e_hw *hw);
++void atl1e_set_ethtool_ops(struct net_device *netdev);
+ #endif /* _ATL1_E_H_ */
+diff --git a/drivers/net/ethernet/atheros/atlx/atl2.h b/drivers/net/ethernet/atheros/atlx/atl2.h
+index 3ebe19f..2f27d4c 100644
+--- a/drivers/net/ethernet/atheros/atlx/atl2.h
++++ b/drivers/net/ethernet/atheros/atlx/atl2.h
+@@ -42,7 +42,7 @@
+ #include "atlx.h"
  
--extern int softing_default_output(struct net_device *netdev);
-+int softing_default_output(struct net_device *netdev);
+ #ifdef ETHTOOL_OPS_COMPAT
+-extern int ethtool_ioctl(struct ifreq *ifr);
++int ethtool_ioctl(struct ifreq *ifr);
+ #endif
  
--extern ktime_t softing_raw2ktime(struct softing *card, u32 raw);
-+ktime_t softing_raw2ktime(struct softing *card, u32 raw);
- 
--extern int softing_chip_poweron(struct softing *card);
-+int softing_chip_poweron(struct softing *card);
- 
--extern int softing_bootloader_command(struct softing *card, int16_t cmd,
--		const char *msg);
-+int softing_bootloader_command(struct softing *card, int16_t cmd,
-+			       const char *msg);
- 
- /* Load firmware after reset */
--extern int softing_load_fw(const char *file, struct softing *card,
--			__iomem uint8_t *virt, unsigned int size, int offset);
-+int softing_load_fw(const char *file, struct softing *card,
-+		    __iomem uint8_t *virt, unsigned int size, int offset);
- 
- /* Load final application firmware after bootloader */
--extern int softing_load_app_fw(const char *file, struct softing *card);
-+int softing_load_app_fw(const char *file, struct softing *card);
- 
- /*
-  * enable or disable irq
-  * only called with fw.lock locked
-  */
--extern int softing_enable_irq(struct softing *card, int enable);
-+int softing_enable_irq(struct softing *card, int enable);
- 
- /* start/stop 1 bus on card */
--extern int softing_startstop(struct net_device *netdev, int up);
-+int softing_startstop(struct net_device *netdev, int up);
- 
- /* netif_rx() */
--extern int softing_netdev_rx(struct net_device *netdev,
--		const struct can_frame *msg, ktime_t ktime);
-+int softing_netdev_rx(struct net_device *netdev, const struct can_frame *msg,
-+		      ktime_t ktime);
- 
- /* SOFTING DPRAM mappings */
- #define DPRAM_RX		0x0000
+ #define PCI_COMMAND_REGISTER	PCI_COMMAND
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
