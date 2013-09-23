@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab3IWCHD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 22:07:03 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:27909 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab3IWCHB (ORCPT
+	id S1753191Ab3IWCQp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 22:16:45 -0400
+Received: from smtprelay0192.hostedemail.com ([216.40.44.192]:46688 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753020Ab3IWCQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 22:07:01 -0400
-Message-ID: <523FA230.3020902@oracle.com>
-Date: Mon, 23 Sep 2013 10:06:40 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Weijie Yang <weijie.yang@samsung.com>, minchan@kernel.org,
-        weijie.yang.kh@gmail.com, linux-mm@kvack.org,
+	Sun, 22 Sep 2013 22:16:44 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3653:3743:3865:3866:3867:3868:3870:3871:3873:3874:4321:5007:7652:7903:7904:8604:9393:10004:10400:10848:11232:11658:11914:12043:12049:12517:12519:12555:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: beast58_5788333437c31
+X-Filterd-Recvd-Size: 1968
+Message-ID: <1379902599.3575.9.camel@joe-AO722>
+Subject: Re: [PATCH 01/12] ping.h: Remove extern from function prototypes
+From: Joe Perches <joe@perches.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/4] mm/zswap: avoid unnecessary page scanning
-References: <000701ceaac0$71c43590$554ca0b0$%yang@samsung.com> <20130909162909.GB4701@variantweb.net>
-In-Reply-To: <20130909162909.GB4701@variantweb.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Sun, 22 Sep 2013 19:16:39 -0700
+In-Reply-To: <523FA098.9050200@gmail.com>
+References: <b692aba58032f629907ea2d462c99b87906645ca.1379870986.git.joe@perches.com>
+	 <523FA098.9050200@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 09/10/2013 12:29 AM, Seth Jennings wrote:
-> On Fri, Sep 06, 2013 at 01:16:45PM +0800, Weijie Yang wrote:
->> add SetPageReclaim before __swap_writepage so that page can be moved to the
->> tail of the inactive list, which can avoid unnecessary page scanning as this
->> page was reclaimed by swap subsystem before.
->>
->> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+On Mon, 2013-09-23 at 11:59 +1000, Ryan Mallon wrote:
+> This seems like a lot of code churn for very little benefit. At a quick
+> glance:
 > 
-> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+>   git grep extern include/ | wc -l
+>   11427
 > 
+> Not all of those will need to be removed, but that is still a huge
+> number to change, and doesn't include extern usage in C files or local
+> headers. You are probably never going to remove all the instances, so
+> what is the point of just randomly doing a handful?
 
-Below is a reply from Mel in original thread "[PATCHv11 3/4] zswap: add
-to mm/"
-------------------
-> +     /* start writeback */
-> +     SetPageReclaim(page);
-> +     __swap_writepage(page, &wbc, end_swap_bio_write);
-> +     page_cache_release(page);
-> +     zswap_written_back_pages++;
-> +
+Rather more than a handful.
 
-SetPageReclaim? Why?. If the page is under writeback then why do you not
-mark it as that? Do not free pages that are currently under writeback
-obviously. It's likely that it was PageWriteback you wanted in zbud.c too.
---------------------
+The ratio of function prototypes without extern to
+function prototypes with extern is currently ~2.5:1
 
--- 
-Regards,
--Bob
+So:
+
+Standardization without extern
+Line count reduction (~10%)
+Miscellaneous neatening at the same time
+Removal of all unnecessary externs from include/net
+
+There are ~8500 instances in include/
+There are ~1500 instances in include/net/
+
+After this series, 0 in include/net/
+
+Start somewhere, go from there...
+
+$ git grep -E "^\s*\bextern(\s+\w+){1,4}\s*\(\s*[^\*]" include/ | wc -l
+8395
+$ git grep -E "^\s*\bextern(\s+\w+){1,4}\s*\(\s*[^\*]" include/net/ | wc -l
+1471
+
+
