@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab3IWUwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 16:52:07 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:35132 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab3IWUwD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 16:52:03 -0400
-Date: Mon, 23 Sep 2013 22:50:39 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	id S1754042Ab3IWUwy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 16:52:54 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51595 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752925Ab3IWUwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 16:52:51 -0400
+Message-ID: <1379969467.11249.21.camel@pasglop>
+Subject: Re: [PATCH] powerpc/irq: Run softirqs off the top of the irq stack
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 5/9] of/irq: Introduce __of_irq_to_resource()
-Message-ID: <20130923205038.GD5216@ulmo>
-References: <1379320326-13241-1-git-send-email-treding@nvidia.com>
- <1379320326-13241-6-git-send-email-treding@nvidia.com>
- <5237782B.3030804@gmail.com>
- <CACRpkdadFct8iXSaRRQ3a2YQryfMjJwVaq+8wgWXS1Ymj3M_WA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u65IjBhB3TIa72Vp"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdadFct8iXSaRRQ3a2YQryfMjJwVaq+8wgWXS1Ymj3M_WA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 24 Sep 2013 06:51:07 +1000
+In-Reply-To: <CA+55aFwcPU+fAqDGp0QhSYip7MYPBB+kQiU4GHEdgMo82i7RVg@mail.gmail.com>
+References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
+	 <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
+	 <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
+	 <20130920162603.GA30381@localhost.localdomain>
+	 <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
+	 <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
+	 <1379799901.24090.6.camel@pasglop> <523E4F8A.7020708@zytor.com>
+	 <1379824754.24090.11.camel@pasglop> <1379824861.24090.12.camel@pasglop>
+	 <20130922162410.GA10649@laptop.programming.kicks-ass.net>
+	 <1379887000.24090.19.camel@pasglop>
+	 <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
+	 <1379889489.24090.34.camel@pasglop> <1379910958.6625.3.camel@pasglop>
+	 <CA+55aFwcPU+fAqDGp0QhSYip7MYPBB+kQiU4GHEdgMo82i7RVg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---u65IjBhB3TIa72Vp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Sep 23, 2013 at 09:20:37PM +0200, Linus Walleij wrote:
-> On Mon, Sep 16, 2013 at 11:29 PM, Rob Herring <robherring2@gmail.com> wro=
-te:
-> > On 09/16/2013 03:32 AM, Thierry Reding wrote:
-> >> This is a version of of_irq_to_resource() that propagates the precise
-> >> error code instead of returning 0 for all errors. It will be used in
-> >> subsequent patches to allow further propagation of error codes.
-> >>
-> >> To avoid code duplication, implement of_irq_to_resource() as a wrapper
-> >> around the new __of_irq_to_resource().
+On Mon, 2013-09-23 at 09:47 -0700, Linus Torvalds wrote:
+> On Sun, Sep 22, 2013 at 9:35 PM, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org> wrote:
 > >
-> > I think the callers in this case are manageable to update as well.
-> > Several cases could simply use irq_of_parse_and_map instead as they just
-> > pass in a NULL resource.
->=20
-> I second this comment.
+> > This is the "band aid" discussed so far for the stack overflow
+> > problem for powerpc.
+> 
+> I don't think it's a "band-aid" in any way, except perhaps in the
+> sense that there are certainly other things we can also do in this
+> series (ie I liked Frederic's cleanups etc).
 
-That should be fixed in v2 of the series that I posted a few days ago.
+Ah yes, I thought of it as a band-aid in the sense that a better
+approach would be to switch to the irq stack earlier like x86_64 does
+but that would be a lot more invasive. Definitely something I would look
+into if I was to tackle changing how we do per-cpu and the PACA though.
 
-Thierry
+Cheers,
+Ben.
 
---u65IjBhB3TIa72Vp
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSQKmeAAoJEN0jrNd/PrOhpsYP/2xzs3k69Qi+gWUntP1If6vS
-9gqRbcx8LT4ESsT94HHYieEF/P821YGLviE3Hi3LRSCZwR8mEYmFXHdf24Y4Z6wC
-zexH3VxggvAe6RtDx5I8+0vyia4UV8N5Hx3xBqPkBRsQYIdMkEf5mCjqfs71RntT
-kQu4jCeaznIiMMn18YkqwpJqHuCeHn3u6HmuKn1xSEbxcf8etXEE5bANehkdPyNO
-7E7NTSDrmCnXhwJRlALlAee1TmEaV8TmF7mYtVM3QmjP+PX7hkSk6rbJ08XuWUCS
-DCOiOMTuGlyRkRVJZJiWQO/ajmZT5bWXMUoOzYuV5RzDsUzbQjw9oFEbzs6ww5zi
-7CtHnlNS3r98BDMb+jk9+CJ55xm0+BIyhuq540Dmn8nGuV50LniQF0ViHTBc9JBQ
-vQA+I5PtruaiJbDokA8KVn+Q7VbPStSMgvrUuPOQudVJICfUvsc3df81BVAgD4zW
-kZzBOVtb+PZwNFyYC5u8Dnx9yJqjQebkOccYYKESI1RzJW9YSPtMGe/XXZmqNsVG
-pHI196XlHrih3fbPKD6J1unERKfmDcXswYtcU2NJNMeMCjlBDq+PJZLsbc2mwL/l
-aGhf2Wx13qqHid+cBo7P75/frWEQU/wpUKugLCGs7UeFYKk/D3Ofr4BeRDYMAr0K
-Geb6Q+K8bx8LJGDUpDKG
-=gApM
------END PGP SIGNATURE-----
-
---u65IjBhB3TIa72Vp--
