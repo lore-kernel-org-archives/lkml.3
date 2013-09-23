@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab3IWNh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 09:37:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43200 "EHLO
+	id S1754015Ab3IWNiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 09:38:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43208 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab3IWNhz (ORCPT
+	with ESMTP id S1753742Ab3IWNiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 09:37:55 -0400
-Date: Mon, 23 Sep 2013 06:37:30 -0700
-From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
-Message-ID: <tip-cf3b425dd8d99e01214515a6754f9e69ecc6dce8@git.kernel.org>
+	Mon, 23 Sep 2013 09:38:11 -0400
+Date: Mon, 23 Sep 2013 06:37:51 -0700
+From: tip-bot for Li Zefan <tipbot@zytor.com>
+Message-ID: <tip-cd64647f043e3fd3569bcf068f47f030198ff93a@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        zheng.z.yan@intel.com, tglx@linutronix.de
+        tglx@linutronix.de, lizefan@huawei.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        zheng.z.yan@intel.com, tglx@linutronix.de
-In-Reply-To: <1379837953-17755-1-git-send-email-zheng.z.yan@intel.com>
-References: <1379837953-17755-1-git-send-email-zheng.z.yan@intel.com>
+        tglx@linutronix.de, lizefan@huawei.com
+In-Reply-To: <523FFF4E.9050401@huawei.com>
+References: <523FFF4E.9050401@huawei.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86/intel:
-  Add model number for Avoton Silvermont
-Git-Commit-ID: cf3b425dd8d99e01214515a6754f9e69ecc6dce8
+Subject: [tip:core/locking] hung_task:
+  Change sysctl_hung_task_check_count to 'int'
+Git-Commit-ID: cd64647f043e3fd3569bcf068f47f030198ff93a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,39 +28,81 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 23 Sep 2013 06:37:37 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 23 Sep 2013 06:37:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cf3b425dd8d99e01214515a6754f9e69ecc6dce8
-Gitweb:     http://git.kernel.org/tip/cf3b425dd8d99e01214515a6754f9e69ecc6dce8
-Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Sun, 22 Sep 2013 16:19:13 +0800
+Commit-ID:  cd64647f043e3fd3569bcf068f47f030198ff93a
+Gitweb:     http://git.kernel.org/tip/cd64647f043e3fd3569bcf068f47f030198ff93a
+Author:     Li Zefan <lizefan@huawei.com>
+AuthorDate: Mon, 23 Sep 2013 16:43:58 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 23 Sep 2013 10:22:00 +0200
+CommitDate: Mon, 23 Sep 2013 11:10:49 +0200
 
-perf/x86/intel: Add model number for Avoton Silvermont
+hung_task: Change sysctl_hung_task_check_count to 'int'
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Cc: a.p.zijlstra@chello.nl
-Cc: eranian@google.com
-Cc: ak@linux.intel.com
-Link: http://lkml.kernel.org/r/1379837953-17755-1-git-send-email-zheng.z.yan@intel.com
+As 'sysctl_hung_task_check_count' is 'unsigned long' when this
+value is assigned to max_count in check_hung_uninterruptible_tasks(),
+it's truncated to 'int' type.
+
+This causes a minor artifact: if we write 2^32 to sysctl.hung_task_check_count,
+hung task detection will be effectively disabled.
+
+With this fix, it will still truncate the user input to 32 bits, but
+reading sysctl.hung_task_check_count reflects the actual truncated value.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/523FFF4E.9050401@huawei.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c | 1 +
- 1 file changed, 1 insertion(+)
+ include/linux/sched/sysctl.h | 2 +-
+ kernel/hung_task.c           | 2 +-
+ kernel/sysctl.c              | 5 +++--
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 9db76c3..f31a165 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2325,6 +2325,7 @@ __init int intel_pmu_init(void)
- 		break;
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index bf8086b..9552afa 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -2,8 +2,8 @@
+ #define _SCHED_SYSCTL_H
  
- 	case 55: /* Atom 22nm "Silvermont" */
-+	case 77: /* Avoton "Silvermont" */
- 		memcpy(hw_cache_event_ids, slm_hw_cache_event_ids,
- 			sizeof(hw_cache_event_ids));
- 		memcpy(hw_cache_extra_regs, slm_hw_cache_extra_regs,
+ #ifdef CONFIG_DETECT_HUNG_TASK
++extern int	     sysctl_hung_task_check_count;
+ extern unsigned int  sysctl_hung_task_panic;
+-extern unsigned long sysctl_hung_task_check_count;
+ extern unsigned long sysctl_hung_task_timeout_secs;
+ extern unsigned long sysctl_hung_task_warnings;
+ extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
+diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+index 3e97fb1..0422523 100644
+--- a/kernel/hung_task.c
++++ b/kernel/hung_task.c
+@@ -20,7 +20,7 @@
+ /*
+  * The number of tasks checked:
+  */
+-unsigned long __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
++int __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
+ 
+ /*
+  * Limit number of tasks checked in a batch.
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index b2f06f3..b24ed7f 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -962,9 +962,10 @@ static struct ctl_table kern_table[] = {
+ 	{
+ 		.procname	= "hung_task_check_count",
+ 		.data		= &sysctl_hung_task_check_count,
+-		.maxlen		= sizeof(unsigned long),
++		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_doulongvec_minmax,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
+ 	},
+ 	{
+ 		.procname	= "hung_task_timeout_secs",
