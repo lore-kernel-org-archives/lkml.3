@@ -1,181 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab3IWC2D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 22:28:03 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:47180 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753069Ab3IWC2B (ORCPT
+	id S1753310Ab3IWC3M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 22:29:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50446 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab3IWC3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 22:28:01 -0400
-Date: Sun, 22 Sep 2013 22:28:00 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Kurt Garloff <kurt@garloff.de>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] usb/core/devio.c:tolerate wrong direction flag in control
- endpoints
-In-Reply-To: <2dd04636-8439-4823-9383-a82583849b53@email.android.com>
-Message-ID: <Pine.LNX.4.44L0.1309222206520.7047-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 22 Sep 2013 22:29:09 -0400
+Date: Mon, 23 Sep 2013 12:28:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: linux-next: manual merge of the omap_dss2 tree with the fbdev tree
+Message-Id: <20130923122856.0a3dbf72a44dfef1238d7a1c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__23_Sep_2013_12_28_56_+1000_aoHLZ.OH/kjfJaJ="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 Sep 2013, Kurt Garloff wrote:
+--Signature=_Mon__23_Sep_2013_12_28_56_+1000_aoHLZ.OH/kjfJaJ=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hi Alan,
-> 
-> thanks for your review and your constructive comments!
+Hi Tomi,
 
-You're welcome.
+Today's linux-next merge of the omap_dss2 tree got a conflict in
+drivers/video/atmel_lcdfb.c between commits a17c2e7b704f ("video:
+atmel_lcdfb: fix platform data struct") and 5e8be022fb5b ("video:
+atmel_lcdfb: add device tree suport") from the fbdev tree and commit
+a5d58be0796a ("video: atmel_lcdfb: use dev_get_platdata()") from the
+omap_dss2 tree.
 
-> >> Hi,
-> >> 
-> >> USB devio rejects control messages when the index does not have the
-> >> direction bit set correctly.
-> >
-> >I wouldn't describe it that way.  It would be more accurate to say that
-> >the message is rejected when wIndex contains an invalid endpoint
-> >address.
-> 
-> Well, this seems to be a question of terminology, no?
-> I saw the endpoint byte as consisting of endpoint index plus the direction bit.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-See the entry for "Endpoint Address" in Chapter 2 (Terms and 
-Abbreviations) of the USB 2.0 specification.  The definition says:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-	The combination of an endpoint number and an endpoint direction
-	on a USB device. Each endpoint address supports data transfer
-	in one direction.
+diff --cc drivers/video/atmel_lcdfb.c
+index bf9c5d0,df05550..0000000
+--- a/drivers/video/atmel_lcdfb.c
++++ b/drivers/video/atmel_lcdfb.c
+@@@ -1157,30 -934,19 +1157,30 @@@ static int __init atmel_lcdfb_probe(str
+  	}
+ =20
+  	sinfo =3D info->par;
+ +	sinfo->pdev =3D pdev;
+ +	sinfo->info =3D info;
+ =20
+ -	if (dev_get_platdata(dev)) {
+ -		pdata_sinfo =3D dev_get_platdata(dev);
+ -		sinfo->default_bpp =3D pdata_sinfo->default_bpp;
+ -		sinfo->default_dmacon =3D pdata_sinfo->default_dmacon;
+ -		sinfo->default_lcdcon2 =3D pdata_sinfo->default_lcdcon2;
+ -		sinfo->default_monspecs =3D pdata_sinfo->default_monspecs;
+ -		sinfo->atmel_lcdfb_power_control =3D pdata_sinfo->atmel_lcdfb_power_con=
+trol;
+ -		sinfo->guard_time =3D pdata_sinfo->guard_time;
+ -		sinfo->smem_len =3D pdata_sinfo->smem_len;
+ -		sinfo->lcdcon_is_backlight =3D pdata_sinfo->lcdcon_is_backlight;
+ -		sinfo->lcdcon_pol_negative =3D pdata_sinfo->lcdcon_pol_negative;
+ -		sinfo->lcd_wiring_mode =3D pdata_sinfo->lcd_wiring_mode;
+ +	INIT_LIST_HEAD(&info->modelist);
+ +
+ +	if (pdev->dev.of_node) {
+ +		ret =3D atmel_lcdfb_of_init(sinfo);
+ +		if (ret)
+ +			goto free_info;
+- 	} else if (dev->platform_data) {
+++	} else if (dev_get_platdata(dev)) {
+ +		struct fb_monspecs *monspecs;
+ +		int i;
+ +
+- 		pdata =3D dev->platform_data;
+++		pdata =3D dev_get_platdata(dev);
+ +		monspecs =3D pdata->default_monspecs;
+ +		sinfo->pdata =3D *pdata;
+ +
+ +		for (i =3D 0; i < monspecs->modedb_len; i++)
+ +			fb_add_videomode(&monspecs->modedb[i], &info->modelist);
+ +
+ +		sinfo->config =3D atmel_lcdfb_get_config(pdev);
+ +
+ +		info->var.bits_per_pixel =3D pdata->default_bpp ? pdata->default_bpp : =
+16;
+ +		memcpy(&info->monspecs, pdata->default_monspecs, sizeof(info->monspecs)=
+);
+  	} else {
+  		dev_err(dev, "cannot get default configuration\n");
+  		goto free_info;
 
-> >> This breaks windows apps in KVM -- and might be overly strict
-> >according
-> >> to my reading of USB HID spec.
-> >
-> >It is not overly strict.
-> 
-> OK, you certainly know the USB specs better than I do.
-> 
-> If the message is not according to spec because the windex byte (which
-> should reference the endpoint) has the endpoint direction flag wrong,
-> then the question may become whether the kernel should reject it or
-> leave that to the device.
-> Rejecting by the kernel has the risk that somewhat non-compliant devices
-> with somewhat non-compliant (userspace) drivers are prevented from working.
-> While not rejecting has the risk that overly sensitive devices might freak out
-> on receiving a non-compliant transfer. The fact that Win does not not seem to
-> filter here however might make that risk rather small.
-> (Long years have taught us that companies don't test against the spec but this
->  "OS" from Redmond.)
+--Signature=_Mon__23_Sep_2013_12_28_56_+1000_aoHLZ.OH/kjfJaJ=
+Content-Type: application/pgp-signature
 
-This is a good explanation of why the patch should be accepted.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-> >>     From: Kurt Garloff <kurt@garloff.de>
-> >>     Subject: Tolerate wrong direction bit endpoint index for control messages
-> >>     Signed-off-by: Kurt Garloff <kurt@garloff.de>
-> >>     
-> >>     Trying to read data from the Pegasus Technologies NoteTaker (0e20:0101)
-> >>     [1] with the Windows App (EasyNote) works natively but fails when
-> >>     WIndows is running under KVM (and the USB device handed to KVM).
-> >>     
-> >>     The reason is a USB control message
-> >>      usb 4-2.2: control urb: bRequestType=22 bRequest=09 wValue=0200 wIndex=0001 wLength=0008
-> >>     This goes to endpoint 1 (wIndex), however, the endpoint is an input
-> >>     endpoint and thus enumerated 0x81.
-> >>     
-> >>     The kernel thus rejects the IO and thus we see the failure.
-> >>     
-> >>     Apparently, Linux is more strict here than Windows ... we can't change
-> >>     the Win app easily, so that's a problem.
-> >
-> >Indeed, this indicates that the device itself is also buggy.  If it 
-> >worked correctly, it would reject the incorrect control message.
-> 
-> It seems to interpret wIndex differently indeed. Not sure whether
-> that qualifies as a bug or not. Maybe it should not claim to be a
-> HID device then?
+iQIcBAEBCAAGBQJSP6dtAAoJEECxmPOUX5FEAzUP/2UURG6Q8bxflQQKj6Dx+1Qd
+UyuEcnnxoYoGtthuWVYlnhM/eysu+0qIAdkjKhv48LEZaAh5NoaceihJvq+62+Th
+03i4x8hvtmCafM8CflctR5j4Az2D3BpOCW2rlTm0JXxdPXil6Y9I4WvivPgBJGdL
+kE4vsdIXBKO3MX6cjbf5nM3tS9BXxPQj9RXebIAb8WCSjAZruKDd/JpskWdRslVB
+3QWPoncBjiRU+yUEbVlJdJaIfmaCECOjfthJc3EWoe3eJ6cOtyXKIaYB02jho5gF
+6Ch3D7rZp9TNLEcC6O2MkXVgZGbT5XjnzYtWbL2PRz75WwUSxYHDhAHd9OthF0lw
+fEHqv8aPp8EgyfYIUOdgQ5UXvChTsNw92yrE/AUoVQF7XpiwLpgQMThc1gLAzCAA
+Xu5ueyxkv93rY+cwuBhDTyqz68lQOjDJiuWs3N3iBjEOptoolS3vL3uVNIBT//Fl
+FdKE5yBUxuOcIEe34Kr2CVhktkhEEiA/Z2Wlrbe619dnl3V5X2+qTFoBw4YfJuxy
+P7PlbfkPijmuQWOrr0yseFbordDBbItWjHEJeL1Y4bgvUQXN1WOgol4/EiVlPkeZ
+IGHawyIHQWefI1t2i/olBgI00Ryh1WUsKCDlkf38nuYYRtThqN1edn8JhOswYvnq
+W3j68c2y2lsVKryrrUAq
+=Wxz2
+-----END PGP SIGNATURE-----
 
-Maybe not.  This particular combination of bRequestType and bRequest 
-values (0x22, 0x09) is not defined in the HID 1.11 spec.  Do you know 
-if it is defined somewhere else?
-
-> Looking at the code, it seems that printers do something strange
-> here, and it might be that the device in question here is not 100%
-> HID in that it also assumes a non-standard meaning to this byte.
-> 
-> Strange enough, the app does want to talk to the control interface it seems:
-> Sep 19 09:47:21 nehalem kernel: [44539.730269] usb 4-2.2: usbdev_do_ioctl: SUBMITURB
-> Sep 19 09:47:21 nehalem kernel: [44539.730276] usb 4-2.2: proc_submiturb: URB 02 00 0 00000000 0000000001a83420 16 0
-> Sep 19 09:47:21 nehalem kernel: [44539.730280] usb 4-2.2: control urb: bRequestType=22 bRequest=09 wValue=0200 wIndex=0001 wLength=0008
-> Sep 19 09:47:21 nehalem kernel: [44539.730285] usb 4-2.2: check_ctrlrecip: process 13073 (qemu-kvm) requesting ep 01 but needs 81 (or 00)
-> Sep 19 09:47:21 nehalem kernel: [44539.730290] usb 4-2.2: userurb 0000000001b56f00, ep0 ctrl-out, length 8
-> Sep 19 09:47:21 nehalem kernel: [44539.730294] data: 02 01 b5 00 00 00 00 00                                                                          ........
-> Sep 19 09:47:21 nehalem kernel: [44539.730301] usb 4-2.2: proc_submiturb: return 0
-> 
-> The second line here comes from instrumentation I have inserted in proc_submiturb():
-> 
->         snoop(&ps->dev->dev, "%s: URB %02x %02x %i %08x %p %i %i\n",
->                 __func__, uurb.type, uurb.endpoint, uurb.status,
->                 uurb.flags, uurb.buffer, uurb.buffer_length,
->                 uurb.actual_length);
-> 
-> and it shows that uurb.endpoint actually is set to 0.
-
-That's right.  The URB is sent to endpoint 0.  The value in
-bRequestType indicates that the recipient of the request is an
-endpoint, and the value of wIndex indicates which endpoint.  So even
-though the request is sent to endpoint 0, it actually refers to
-endpoint 0x01 (or 0x81, as the case may be).
-
-As an analogy, consider the Clear-Halt request.  This request is sent 
-to endpoint 0, and it tells the device to clear the Halt feature for 
-some other endpoint -- that other endpoint is specified in wIndex.
-
-> >>     - We don't risk sending to a wrong endpoint, as there can't be two
-> >>       endpoints with same index and just different direction.
-> >
-> >Of course there can be.  It is entirely possible to have one endpoint
-> >with address 0x01 and another with address 0x81.
-> 
-> Hmmm, none of the devices I have show this.
-> My impression was that the EP byte is composed of 
->   ep = epindex | (dir==in? 0x80: 0)
-> and that index alone must be unique already. But then again, I'm in no
-> way an expert in USB specs and may just have jumped to conclusions
-> from the wording.
-
-The spec is pretty clear about this.  For example, it says that in
-addition to endpoint 0, a device can have up to 15 input endpoints and 
-up to 15 output endpoints (section 5.3.1.2).
-
-> (And again the behavior might not be enforced by the spec, but maybe
-> by Windows?)
-
-More likely the behavior isn't enforced at all.  The device may simply 
-be buggy.
-
-> >> +				dev_info(&ps->dev->dev , 
-> >> +					"%s: process %i (%s) requesting ep %02x but needs %02x (or
-> >00)\n",
-> >
-> >Why do you have the "(or 00)" part?  It doesn't seem to make any sense.
-> 
-> Based on the observation that uurb.endpoint = 0 (see above), I have
-> changed my code in the Linux program (at [2]) to use 0x00 as wIndex 
-> instead of 0x81 (or formerly 0x01). It still worked.
-> So it's questionable, whether wIndex should even point to an EP ...
-> and the hardware might just ignore it.
-
-It looks that way.  The request claims to be class-specific, so it 
-would be nice to know which class document defines the request's 
-format.
-
-> Thanks for the review! I will submit a new patch.
-
-Good.
-
-Alan Stern
-
-
+--Signature=_Mon__23_Sep_2013_12_28_56_+1000_aoHLZ.OH/kjfJaJ=--
