@@ -1,141 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab3IWWKr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 18:10:47 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:42534 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab3IWWKp (ORCPT
+	id S1754252Ab3IWWLp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 18:11:45 -0400
+Received: from smtprelay0014.hostedemail.com ([216.40.44.14]:55030 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752406Ab3IWWLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 18:10:45 -0400
-Message-ID: <5240BC62.9040102@converseincode.com>
-Date: Mon, 23 Sep 2013 18:10:42 -0400
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH] USB: Removing the use of VLAIS from the gadget driver
-References: <1375407344-30120-1-git-send-email-behanw@converseincode.com> <20130923202428.GG309@radagast>
-In-Reply-To: <20130923202428.GG309@radagast>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Sep 2013 18:11:42 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1345:1437:1534:1543:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:3870:3871:4321:4384:4605:5007:6261:7903:8603:10004:10026:10848:11026:11657:11658:11914:12043:12294:12296:12438:12517:12519:12555:13161:13229:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: range32_2ba65a05a1c3d
+X-Filterd-Recvd-Size: 3926
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
+Subject: [PATCH 01/10] can: Remove extern from function prototypes
+Date: Mon, 23 Sep 2013 15:11:28 -0700
+Message-Id: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/13 16:24, Felipe Balbi wrote:
-> Hi,
->
-> On Thu, Aug 01, 2013 at 09:35:44PM -0400, behanw@converseincode.com wrote:
->> From: Behan Webster <behanw@converseincode.com>
->>
->> The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
->> precludes the use of compilers which don't implement VLAIS (for instance the
->> Clang compiler). This patch removes the use of VLAIS in the gadget driver.
->>
->> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
->> Signed-off-by: Behan Webster <behanw@converseincode.com>
->> ---
->>   drivers/usb/gadget/f_fs.c | 128 +++++++++++++++++++++++++++-------------------
->>   1 file changed, 76 insertions(+), 52 deletions(-)
->>
->> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
->> index f394f29..4b872c4 100644
->> --- a/drivers/usb/gadget/f_fs.c
->> +++ b/drivers/usb/gadget/f_fs.c
->> @@ -30,7 +30,6 @@
->>   
->>   #define FUNCTIONFS_MAGIC	0xa647361 /* Chosen by a honest dice roll ;) */
->>   
->> -
->>   /* Debugging ****************************************************************/
->>   
->>   #ifdef VERBOSE_DEBUG
->> @@ -214,6 +213,8 @@ struct ffs_data {
->>   	/* ids in stringtabs are set in functionfs_bind() */
->>   	const void			*raw_strings;
->>   	struct usb_gadget_strings	**stringtabs;
->> +	struct usb_gadget_strings	*stringtab;
->> +	struct usb_string		*strings;
->>   
->>   	/*
->>   	 * File system's super block, write once when file system is
->> @@ -263,7 +264,10 @@ struct ffs_function {
->>   
->>   	struct ffs_ep			*eps;
->>   	u8				eps_revmap[16];
->> +	struct usb_descriptor_header	**fs_descs;
->> +	struct usb_descriptor_header	**hs_descs;
->>   	short				*interfaces_nums;
->> +	char				*raw_descs;
->>   
->>   	struct usb_function		function;
->>   };
->> @@ -1345,6 +1349,8 @@ static void ffs_data_clear(struct ffs_data *ffs)
->>   	kfree(ffs->raw_descs);
->>   	kfree(ffs->raw_strings);
->>   	kfree(ffs->stringtabs);
->> +	kfree(ffs->stringtab);
->> +	kfree(ffs->strings);
->>   }
->>   
->>   static void ffs_data_reset(struct ffs_data *ffs)
->> @@ -1357,6 +1363,8 @@ static void ffs_data_reset(struct ffs_data *ffs)
->>   	ffs->raw_descs = NULL;
->>   	ffs->raw_strings = NULL;
->>   	ffs->stringtabs = NULL;
->> +	ffs->stringtab = NULL;
->> +	ffs->strings = NULL;
->>   
->>   	ffs->raw_descs_length = 0;
->>   	ffs->raw_fs_descs_length = 0;
->> @@ -1528,12 +1536,10 @@ static void ffs_func_free(struct ffs_function *func)
->>   	ffs_data_put(func->ffs);
->>   
->>   	kfree(func->eps);
->> -	/*
->> -	 * eps and interfaces_nums are allocated in the same chunk so
->> -	 * only one free is required.  Descriptors are also allocated
->> -	 * in the same chunk.
->> -	 */
->> -
->> +	kfree(func->fs_descs);
->> +	kfree(func->hs_descs);
->> +	kfree(func->interfaces_nums);
->> +	kfree(func->raw_descs);
->>   	kfree(func);
->>   }
->>   
->> @@ -1907,33 +1913,35 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
->>   		return 0;
->>   	}
->>   
->> -	/* Allocate everything in one chunk so there's less maintenance. */
->>   	{
->> -		struct {
->> -			struct usb_gadget_strings *stringtabs[lang_count + 1];
->> -			struct usb_gadget_strings stringtab[lang_count];
->> -			struct usb_string strings[lang_count*(needed_count+1)];
->> -		} *d;
->>   		unsigned i = 0;
->> -
->> -		d = kmalloc(sizeof *d, GFP_KERNEL);
->> -		if (unlikely(!d)) {
->> +		usb_gadget_strings **stringtabs = NULL;
->> +		usb_gadget_strings *stringtab = NULL;
->> +		usb_string *strings = NULL;
-> did you compile this patch ?
->
-Appologies. The patch as posted has a bug which was fixed after sending 
-it to the list.
+There are a mix of function prototypes with and without extern
+in the kernel sources.  Standardize on not using extern for
+function prototypes.
 
-Andrzej Pietrasiewicz <andrzej.p@samsung.com> has the fixed one. Will 
-send the fixed one to the list too.
+Function prototypes don't need to be written with extern.
+extern is assumed by the compiler.  Its use is as unnecessary as
+using auto to declare automatic/local variables in a block.
 
-Behan
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/can/mscan/mscan.h     |  6 +++---
+ drivers/net/can/softing/softing.h | 24 ++++++++++++------------
+ 2 files changed, 15 insertions(+), 15 deletions(-)
 
+diff --git a/drivers/net/can/mscan/mscan.h b/drivers/net/can/mscan/mscan.h
+index 9c24d60..e98abb9 100644
+--- a/drivers/net/can/mscan/mscan.h
++++ b/drivers/net/can/mscan/mscan.h
+@@ -297,8 +297,8 @@ struct mscan_priv {
+ 	struct napi_struct napi;
+ };
+ 
+-extern struct net_device *alloc_mscandev(void);
+-extern int register_mscandev(struct net_device *dev, int mscan_clksrc);
+-extern void unregister_mscandev(struct net_device *dev);
++struct net_device *alloc_mscandev(void);
++int register_mscandev(struct net_device *dev, int mscan_clksrc);
++void unregister_mscandev(struct net_device *dev);
+ 
+ #endif /* __MSCAN_H__ */
+diff --git a/drivers/net/can/softing/softing.h b/drivers/net/can/softing/softing.h
+index afd7d85..35f0622 100644
+--- a/drivers/net/can/softing/softing.h
++++ b/drivers/net/can/softing/softing.h
+@@ -71,34 +71,34 @@ struct softing {
+ 	} id;
+ };
+ 
+-extern int softing_default_output(struct net_device *netdev);
++int softing_default_output(struct net_device *netdev);
+ 
+-extern ktime_t softing_raw2ktime(struct softing *card, u32 raw);
++ktime_t softing_raw2ktime(struct softing *card, u32 raw);
+ 
+-extern int softing_chip_poweron(struct softing *card);
++int softing_chip_poweron(struct softing *card);
+ 
+-extern int softing_bootloader_command(struct softing *card, int16_t cmd,
+-		const char *msg);
++int softing_bootloader_command(struct softing *card, int16_t cmd,
++			       const char *msg);
+ 
+ /* Load firmware after reset */
+-extern int softing_load_fw(const char *file, struct softing *card,
+-			__iomem uint8_t *virt, unsigned int size, int offset);
++int softing_load_fw(const char *file, struct softing *card,
++		    __iomem uint8_t *virt, unsigned int size, int offset);
+ 
+ /* Load final application firmware after bootloader */
+-extern int softing_load_app_fw(const char *file, struct softing *card);
++int softing_load_app_fw(const char *file, struct softing *card);
+ 
+ /*
+  * enable or disable irq
+  * only called with fw.lock locked
+  */
+-extern int softing_enable_irq(struct softing *card, int enable);
++int softing_enable_irq(struct softing *card, int enable);
+ 
+ /* start/stop 1 bus on card */
+-extern int softing_startstop(struct net_device *netdev, int up);
++int softing_startstop(struct net_device *netdev, int up);
+ 
+ /* netif_rx() */
+-extern int softing_netdev_rx(struct net_device *netdev,
+-		const struct can_frame *msg, ktime_t ktime);
++int softing_netdev_rx(struct net_device *netdev, const struct can_frame *msg,
++		      ktime_t ktime);
+ 
+ /* SOFTING DPRAM mappings */
+ #define DPRAM_RX		0x0000
 -- 
-Behan Webster
-behanw@converseincode.com
+1.8.1.2.459.gbcd45b4.dirty
 
