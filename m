@@ -1,102 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab3IWOzO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 10:55:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51862 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288Ab3IWOzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 10:55:12 -0400
-Date: Mon, 23 Sep 2013 16:54:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130923145446.GX9326@twins.programming.kicks-ass.net>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
- <1378805550-29949-38-git-send-email-mgorman@suse.de>
- <20130917143003.GA29354@twins.programming.kicks-ass.net>
- <20130917162050.GK22421@suse.de>
- <20130917164505.GG12926@twins.programming.kicks-ass.net>
- <20130918154939.GZ26785@twins.programming.kicks-ass.net>
- <20130919143241.GB26785@twins.programming.kicks-ass.net>
- <20130923105017.030e0aef@gandalf.local.home>
+	id S1752854Ab3IWO4d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 10:56:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32403 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751947Ab3IWO4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 10:56:32 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vaughan Cao <vaughan.cao@oracle.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] block: register_blkdev doesn't check name against NULL
+References: <1378809614-17490-1-git-send-email-vaughan.cao@oracle.com>
+	<1378866250-22679-1-git-send-email-vaughan.cao@oracle.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 23 Sep 2013 10:56:27 -0400
+In-Reply-To: <1378866250-22679-1-git-send-email-vaughan.cao@oracle.com>
+	(Vaughan Cao's message of "Wed, 11 Sep 2013 10:24:10 +0800")
+Message-ID: <x49mwn3y4bo.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130923105017.030e0aef@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 10:50:17AM -0400, Steven Rostedt wrote:
-> On Thu, 19 Sep 2013 16:32:41 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> 
-> > +extern void __get_online_cpus(void);
-> > +
-> > +static inline void get_online_cpus(void)
-> > +{
-> > +	might_sleep();
-> > +
-> > +	preempt_disable();
-> > +	if (likely(!__cpuhp_writer || __cpuhp_writer == current))
-> > +		this_cpu_inc(__cpuhp_refcount);
-> > +	else
-> > +		__get_online_cpus();
-> > +	preempt_enable();
-> > +}
-> 
-> 
-> This isn't much different than srcu_read_lock(). What about doing
-> something like this:
-> 
-> static inline void get_online_cpus(void)
-> {
-> 	might_sleep();
-> 
-> 	srcu_read_lock(&cpuhp_srcu);
-> 	if (unlikely(__cpuhp_writer || __cpuhp_writer != current)) {
-> 		srcu_read_unlock(&cpuhp_srcu);
-> 		__get_online_cpus();
-> 		current->online_cpus_held++;
-> 	}
-> }
+Vaughan Cao <vaughan.cao@oracle.com> writes:
 
-There's a full memory barrier in srcu_read_lock(), while there was no
-such thing in the previous fast path.
+> register_blkdev(0, NULL) can result kernel Oops by copying from NULL
+> in strlcpy(). Fix it by checking NULL pointer at the beginning and
+> WARN when encountered in unregister_blkdev.
 
-Also, why current->online_cpus_held()? That would make the write side
-O(nr_tasks) instead of O(nr_cpus).
+Uhh, so yeah, this is an exported function, so I could see maybe wanting
+to do the argument checking.  But honestly, if your driver can't even
+get this right, is there any hope of it actually working?
 
-> static inline void put_online_cpus(void)
-> {
-> 	if (unlikely(current->online_cpus_held)) {
-> 		current->online_cpus_held--;
-> 		__put_online_cpus();
-> 		return;
-> 	}
-> 
-> 	srcu_read_unlock(&cpuhp_srcu);
-> }
+This seems like a pointless patch to me, but ultimately it's up to Jens.
 
-Also, you might not have noticed but, srcu_read_{,un}lock() have an
-extra idx thing to pass about. That doesn't fit with the hotplug api.
+Cheers,
+Jeff
 
-> 
-> Then have the writer simply do:
-> 
-> 	__cpuhp_write = current;
-> 	synchronize_srcu(&cpuhp_srcu);
-> 
-> 	<grab the mutex here>
-
-How does that do reader preference?
+p.s. the kerneldoc tells you what to put there:
+ * @name: the name of the new block device as a zero terminated string
