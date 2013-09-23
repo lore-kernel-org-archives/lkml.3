@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab3IWKQN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 06:16:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44193 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406Ab3IWKQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 06:16:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,961,1371106800"; 
-   d="scan'208";a="407606146"
-Date: Mon, 23 Sep 2013 13:21:35 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [RFC 0/5] New descriptor-based GPIO interface
-Message-ID: <20130923102134.GB28875@intel.com>
-References: <1378294169-22661-1-git-send-email-acourbot@nvidia.com>
- <CACRpkdYjkDf7c9VxfDTHtFx_upWWRAK8vpXTkrkrRsMjErq1dQ@mail.gmail.com>
+	id S1753938Ab3IWKQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 06:16:17 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34137 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab3IWKQP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 06:16:15 -0400
+Date: Mon, 23 Sep 2013 11:15:51 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130923101551.GY21013@sirena.org.uk>
+References: <1379846854-11746-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="b4c2lVEA12mfheYj"
 Content-Disposition: inline
-In-Reply-To: <CACRpkdYjkDf7c9VxfDTHtFx_upWWRAK8vpXTkrkrRsMjErq1dQ@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <1379846854-11746-1-git-send-email-lars@metafoo.de>
+X-Cookie: Give him an evasive answer.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: of_get_regulation_constraints: Use node name
+ as fallback
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 08:06:00PM +0200, Linus Walleij wrote:
-> On Wed, Sep 4, 2013 at 1:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> 
-> > Here is a first RFC for the new GPIO interface.
-> 
-> I'm quite happy with this, and given that all DT-implementations will start
-> to use it from day 1 I'll happily merge it when you think it's tested enough.
-> 
-> On my wishlist is to also switch over the ACPI GPIO driver:
-> drivers/gpio/gpiolib-acpi.c to use the descriptors directly, so
-> I'd like one of the ACPI folks to have a look at this patch set
-> and see how it looks from their angle.
-> 
-> Mika, Rafael, Mathias, and either of you guys have a look
-> at this?
 
-Apart from the con_id thing I commented, I don't see huge problems
-converting the ACPI GPIO helpers to this new interface.
+--b4c2lVEA12mfheYj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-One thing that is special to ACPI is that we have two kind of GPIO
-"connections":
+On Sun, Sep 22, 2013 at 12:47:34PM +0200, Lars-Peter Clausen wrote:
+> If the "regulator-name" property is not present use the name of the devicetree
+> node as a fallback.
 
-	GpioIo - a normal GPIO that the driver can toggle or read values
+You're not supposed to use the node name for anything, the goal is that
+it's entirely ornamental noise.  Which is a bit annoying but there we
+are.
 
-	GpioInt - this is specifically used as a GPIO interrupt
+--b4c2lVEA12mfheYj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The drivers should be able to distinguish between the two. Currently we
-have an extra parameter in acpi_get_gpio_by_index(..., &info) that can be
-used for this. However, with the new gpiod_get() I'm not sure how we are
-supposed to do this now?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-Anyway, that shouldn't prevent merging this patch set. I'm sure that we can
-come up with some working solution :-)
+iQIcBAEBAgAGBQJSQBTUAAoJELSic+t+oim9PrQP/jwRlzHsXPkEYA5zR9pe15SD
+g/CLN1u3C6UYkj3r8L161YZfvzNkjUEiR90eryplciV7HlyUy5Y1z7XO6jyoHztc
+UHIxeS/BESXl4kMDVx2LPHUxLmVHueUCZiUOgopyGTyMhJQaNrt5R5q+GI0m+0gM
+1fO6fiURUpQ7hNgOjDadFtOxzEip7WII5FN7kT3K5zmnIcxc44vgPH/saoonx8zG
+oLMMhvH1l6PgRwwQ7RnxPi5shw9dJKLG/C9s2huA116715KbRaJ+xJq+wJ2i+Scw
+w60hHpBmI1mGkP+535MHicbQye3sAhdGVJuIki+QhyhmDqHqdnqJlEXom2Zusx1u
+y7FDC3kmnx2iMVQ4qm5R7hdiFClIoJazkMiU1W7UL6etzTiPFB9WfcDEtO53kLIm
+Rx7L9EqKZBmYUEoHm5fJ8RaVsq2vSCVEo6LhexCokOrM23LSGthY3TP4gViS5SEG
+vlSiIZDqHgAMgOchKXyRvIC+j6uTkvtWLo3YtOyQX3VoZIj6CbNtFxtk+KYEBWTG
+NNDKt7aBMpVZqWsaSlmWWVONmPI4UiLtIfPFppVLnbLrzkEiDaDHwK0I7nPqdEfn
+Mp0e/v5AFAZYdJe1PM0L1AGMv83Sq4fz3AIVK0vtdK/1WtnlLwYBYb0oxs63mIPr
+y6GlRyQs9EZ+GY9QG/uu
+=oIot
+-----END PGP SIGNATURE-----
+
+--b4c2lVEA12mfheYj--
