@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab3IWUkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 16:40:41 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50185 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab3IWUkh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 16:40:37 -0400
-Message-ID: <5240A740.7000407@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 14:40:32 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753917Ab3IWUmn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 16:42:43 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:32801 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753223Ab3IWUmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 16:42:42 -0400
+Date: Mon, 23 Sep 2013 14:42:32 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Cc: tpmdd-devel@lists.sourceforge.net,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to
+ sysfs into tpm-sysfs.c
+Message-ID: <20130923204232.GB16345@obsidianresearch.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+ <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com>
+ <52408E5D.4020904@tycho.nsa.gov>
+ <20130923193633.GA9194@obsidianresearch.com>
+ <5240A2A3.4040102@tycho.nsa.gov>
 MIME-Version: 1.0
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-CC: linux-media@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] media: st-rc: Add ST remote control driver
-References: <1379581176-25078-1-git-send-email-srinivas.kandagatla@st.com>
-In-Reply-To: <1379581176-25078-1-git-send-email-srinivas.kandagatla@st.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5240A2A3.4040102@tycho.nsa.gov>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2013 02:59 AM, Srinivas KANDAGATLA wrote:
-> This patch adds support to ST RC driver, which is basically a IR/UHF
-> receiver and transmitter. This IP (IRB) is common across all the ST
-> parts for settop box platforms. IRB is embedded in ST COMMS IP block.
-> It supports both Rx & Tx functionality.
-> 
-> In this driver adds only Rx functionality via LIRC codec.
+On Mon, Sep 23, 2013 at 04:20:51PM -0400, Daniel De Graaf wrote:
 
-> diff --git a/Documentation/devicetree/bindings/media/st-rc.txt b/Documentation/devicetree/bindings/media/st-rc.txt
+> That's fine; it wasn't really advertised in the description, and was
+> mostly added in order to demonstrate the locality security label binding
+> in Xen's vtpm-stubdom.
 
-> +Required properties:
-> +	- compatible: should contain "st,comms-irb".
-> +	- reg: base physical address of the controller and length of memory
-> +	mapped  region.
+Ok, lets take it out for now then? I'll send a patch.
 
-Nits:
+> >It looks like this driver was introduced in the 3.12 merge window, we
+> >could drop the attribute, and try to merge a core supported locality
+> >API in 3.13? What do you think?
+> >
+> >But, if you say it is needed, it is easy enough to adjust this patch
+> >series.
 
-The indentation is a little odd here; I'd expect the - to be in column
-1, at least that's how most other binding docs are written. Not a big
-deal though.
+> If it's replaced with an alternative, I don't think the sysfs attribute
+> will need to remain.  I am not aware of any clients that currently use
+> this attribute.  The sysfs attribute could remain as the common interface
+> for changing locality, unless you think an ioctl on /dev/tpm0 or
+> something else would be preferable (the attribute was just the simplest
+> way to implement locality switching at the time).
 
-It'd be nice to indent the continuation lines (e.g. "mapped region") a
-bit more so it's easier to see where each new entry starts.
+Off the very top of my head:
 
-There are two spaces in "mapped  region".
+I suspect that a good API would be a sysfs attribute
+'default_locality' and an IOCTL to change localities.  The
+default_locality would only take effect when the /dev/tpmX is opened,
+so fiddling with sysfs doesn't break active users.
 
-> +	- rx-mode: can be "infrared" or "uhf". rx-mode should be present iff the
-> +	  rx pins are wired up.
-> +	- tx-mode: should be "infrared". tx-mode should be present iff the tx
-> +	  pins are wired up.
+The struct ops I've added would have a function to change localities,
+some of the generic TPM functions should be revised to have a locality
+argument.
 
-Should those property names be prefixed with "st,"; I assume they're
-specific to this binding rather than something generic that applies to
-all IR controller bindings? If you expect them to be generic, it's fine.
+Some thought is needed to determine what locality in-kernel users
+should be using. I suspect userspace and kernel space should not be
+forced to the same locality.
 
-> +	- clocks : phandle with clock-specifier pair.
+Should user space be restricted to a subset of localities?
 
-For what clock?
+What use models do you see with the security label binding mechanism
+you have on the hypervisor side?
+
+Jason
