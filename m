@@ -1,35 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab3IWPF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 11:05:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28072 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751947Ab3IWPF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 11:05:26 -0400
-Message-ID: <524058C1.3050006@redhat.com>
-Date: Mon, 23 Sep 2013 17:05:37 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1752749Ab3IWPGc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 11:06:32 -0400
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:58765 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab3IWPGb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 11:06:31 -0400
+Date: Mon, 23 Sep 2013 11:06:25 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info' in
+ all related extern functions
+Message-ID: <20130923150625.GB14547@htj.dyndns.org>
+References: <5212DBFA.8030805@asianux.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH 0/3] KVM: Make kvm_lock non-raw
-References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com> <20130922074238.GG25202@redhat.com> <523EAFFA.6060203@redhat.com> <20130922095348.GJ25202@redhat.com> <524043C5.70700@windriver.com> <524045B5.5020308@redhat.com> <20130923145925.GA10353@redhat.com>
-In-Reply-To: <20130923145925.GA10353@redhat.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5212DBFA.8030805@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 23/09/2013 16:59, Gleb Natapov ha scritto:
-> > Perfect, I'll queue [v2 of] these patches for 3.12 then.
+Hello,
+
+(I have no idea about this but Andrew tagged me, probably thinking it
+was related to cgroups, so here it goes ;)
+
+On Tue, Aug 20, 2013 at 11:01:14AM +0800, Chen Gang wrote:
+> groups_alloc() can return NULL for 'group_info', also group_search()
+> already considers about NULL for 'group_info', so can assume the caller
+> has right to use all related extern functions when 'group_info' is NULL.
 > 
-> Why 3.12 if it is not going to stable?
+> For groups_free(), need check NULL to match groups_alloc(), just like
+> kmalloc/free().
 
-Off-by-one. :)
+While it is somewhat customary to make free routines handle NULL
+inputs, the convention isn't a very strong one and given that the
+above change doesn't actually benefit any of the existing use cases,
+it seems gratuituous.
 
-Paolo
+> For set_groups(), can allow the caller to set NULL parameter to new
+> 'cred'.
+> 
+> For system call getgroups(), if 'cred->group_info' is NULL, need return
+> the related error code (no related data), also need change the related
+> man page ("man 2 getgroups") to complete the return value.
+
+How can cred->group_info be NULL?  Can you please describe what issue
+this patch is trying to solve / improve?  The patch description
+explains what's being changed but doesn't really offer why such
+changes are being made.  Can you please explain why this change is
+beneficial?
+
+Thanks.
+
+-- 
+tejun
