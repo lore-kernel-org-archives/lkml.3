@@ -1,48 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab3IWPwM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 11:52:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44381 "EHLO mail.zytor.com"
+	id S1753310Ab3IWPw3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 11:52:29 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38199 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613Ab3IWPwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 11:52:10 -0400
-Message-ID: <5240632F.5070709@zytor.com>
-Date: Mon, 23 Sep 2013 08:50:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1753279Ab3IWPw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 11:52:28 -0400
+Date: Mon, 23 Sep 2013 08:50:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130923155059.GO9093@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-38-git-send-email-mgorman@suse.de>
+ <20130917143003.GA29354@twins.programming.kicks-ass.net>
+ <20130917162050.GK22421@suse.de>
+ <20130917164505.GG12926@twins.programming.kicks-ass.net>
+ <20130918154939.GZ26785@twins.programming.kicks-ass.net>
+ <20130919143241.GB26785@twins.programming.kicks-ass.net>
+ <20130923105017.030e0aef@gandalf.local.home>
+ <20130923145446.GX9326@twins.programming.kicks-ass.net>
+ <20130923111303.04b99db8@gandalf.local.home>
 MIME-Version: 1.0
-To: KY Srinivasan <kys@microsoft.com>
-CC: Gleb Natapov <gleb@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
- from the hypervisor
-References: <1378233023-4512-1-git-send-email-kys@microsoft.com> <dd29077371564a14b2d317d2291db8a9@SN2PR03MB061.namprd03.prod.outlook.com> <52325C1E.90101@zytor.com> <50f92d9c16a54e5bb6fa14ef72e5fdfb@SN2PR03MB061.namprd03.prod.outlook.com> <20130913095526.GE18381@redhat.com> <7737cb643a664b6fb39021b4d364b5cf@SN2PR03MB061.namprd03.prod.outlook.com> <20130917135918.GY17294@redhat.com> <2b4a9a0cff5143c59a0802a2e425c4db@SN2PR03MB061.namprd03.prod.outlook.com> <20130918054335.GE5657@redhat.com> <2d39849c011b4cc794686a41e45db87a@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <2d39849c011b4cc794686a41e45db87a@SN2PR03MB061.namprd03.prod.outlook.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130923111303.04b99db8@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092315-5806-0000-0000-000022D1FF9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 06:02 AM, KY Srinivasan wrote:
+On Mon, Sep 23, 2013 at 11:13:03AM -0400, Steven Rostedt wrote:
+> On Mon, 23 Sep 2013 16:54:46 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> Peter,
-> Please let me know if there are other issues I need to address here. Now that Dmitry has queued up the
-> Hyper-V keyboard driver, with this patch we can fully support Linux on our uefi firmware.
+> > On Mon, Sep 23, 2013 at 10:50:17AM -0400, Steven Rostedt wrote:
+
+[ . . . ]
+
+> ?? I'm not sure I understand this. The online_cpus_held++ was there for
+> recursion. Can't get_online_cpus() nest? I was thinking it can. If so,
+> once the "__cpuhp_writer" is set, we need to do __put_online_cpus() as
+> many times as we did a __get_online_cpus(). I don't know where the
+> O(nr_tasks) comes from. The ref here was just to account for doing the
+> old "get_online_cpus" instead of a srcu_read_lock().
 > 
+> > 
+> > > static inline void put_online_cpus(void)
+> > > {
+> > > 	if (unlikely(current->online_cpus_held)) {
+> > > 		current->online_cpus_held--;
+> > > 		__put_online_cpus();
+> > > 		return;
+> > > 	}
+> > > 
+> > > 	srcu_read_unlock(&cpuhp_srcu);
+> > > }
+> > 
+> > Also, you might not have noticed but, srcu_read_{,un}lock() have an
+> > extra idx thing to pass about. That doesn't fit with the hotplug api.
+> 
+> I'll have to look a that, as I'm not exactly sure about the idx thing.
 
-I just got back from Plumber's -- this is on my short list of things to
-look at.  If you haven't heard anything by Wednesday, ping me.
+Not a problem, just stuff the idx into some per-task thing.  Either
+task_struct or taskinfo will work fine.
 
-	-hpa
+> > > 
+> > > Then have the writer simply do:
+> > > 
+> > > 	__cpuhp_write = current;
+> > > 	synchronize_srcu(&cpuhp_srcu);
+> > > 
+> > > 	<grab the mutex here>
+> > 
+> > How does that do reader preference?
+> 
+> Well, the point I was trying to do was to let readers go very fast
+> (well, with a mb instead of a mutex), and then when the CPU hotplug
+> happens, it goes back to the current method.
+> 
+> That is, once we set __cpuhp_write, and then run synchronize_srcu(),
+> the system will be in a state that does what it does today (grabbing
+> mutexes, and upping refcounts).
+> 
+> I thought the whole point was to speed up the get_online_cpus() when no
+> hotplug is happening. This does that, and is rather simple. It only
+> gets slow when hotplug is in effect.
 
+Or to put it another way, if the underlying slow-path mutex is
+reader-preference, then the whole thing will be reader-preference.
+
+							Thanx, Paul
 
