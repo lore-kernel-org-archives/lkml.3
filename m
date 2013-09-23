@@ -1,127 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab3IWSQA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:16:00 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:37313 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753141Ab3IWSPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:15:04 -0400
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: tpmdd-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>,
-        Rajiv Andrade <mail@srajiv.net>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 00/13] TPM cleanup
-Date: Mon, 23 Sep 2013 12:14:30 -0600
-Message-Id: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1753726Ab3IWSWh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:22:37 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60666 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab3IWSWf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 14:22:35 -0400
+Message-ID: <524086E7.3020903@wwwdotorg.org>
+Date: Mon, 23 Sep 2013 12:22:31 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 07/12] clk: tegra: move audio clk to common file
+References: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com> <1379515331-19427-8-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1379515331-19427-8-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While writing two new TPM drivers I noticed that there was a big and growing
-mess in drivers/char/tpm. This series of patches is the first batch of patches
-containing my attempt to fix it.
+On 09/18/2013 08:40 AM, Peter De Schrijver wrote:
+> Move audio clocks and PLLA initialization to a common file so it can be used by
+> multiple Tegra SoCs.
 
-This series makes several small repetitive changes to all the drivers. These
-are bundled in with the commits changing the core, because the core API is
-changed and everything must be kept together to retain bisect-ability.
+> diff --git a/drivers/clk/tegra/clk-tegra-audio.c b/drivers/clk/tegra/clk-tegra-audio.c
 
-I have decided not to tackle the lifetime issues in this series. My
-first attempt was flawed.
+> +static struct div_nmp pllp_nmp = {
+> +	.divm_shift = 0,
+> +	.divm_width = 5,
+> +	.divn_shift = 8,
+> +	.divn_width = 10,
+> +	.divp_shift = 20,
+> +	.divp_width = 3,
+> +};
+> +
+> +static struct tegra_clk_pll_freq_table pll_a_freq_table[] = {
+> +	{9600000, 282240000, 147, 5, 0, 4},
+> +	{9600000, 368640000, 192, 5, 0, 4},
+> +	{9600000, 240000000, 200, 8, 0, 8},
+> +
+> +	{28800000, 282240000, 245, 25, 0, 8},
+> +	{28800000, 368640000, 320, 25, 0, 8},
+> +	{28800000, 240000000, 200, 24, 0, 8},
+> +	{0, 0, 0, 0, 0, 0},
+> +};
+> +
+> +static struct tegra_clk_pll_params pll_a_params = {
+> +	.input_min = 2000000,
+> +	.input_max = 31000000,
+> +	.cf_min = 1000000,
+> +	.cf_max = 6000000,
+> +	.vco_min = 200000000,
+> +	.vco_max = 700000000,
+> +	.base_reg = PLLA_BASE,
+> +	.misc_reg = PLLA_MISC,
+> +	.lock_mask = PLL_BASE_LOCK,
+> +	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+> +	.lock_delay = 300,
+> +	.div_nmp = &pllp_nmp,
+> +};
 
-I have presented the series in the full linear format. It is available on
-my github:
-  https://github.com/jgunthorpe/linux/commits/tpm-devel
-The branch is not stable, I will rebase and rewrite history as needed.
-
-All patches have been compile tested on x86-64 (including vtpm, I have a hack
-to make that happen) and all patches are checkpatch.pl clean.
-
-I have tested tpm_tis (PPC32), tpm_i2c_atmel and tpm_i2c_nuvoton (ARM32) on my
-hardware here.
-
-There is very little new code here, the majority of lines is just code motion
-to remove duplication.
-
-Patches 1 -> 6, 12
- - These are just simple cleanups that I discovered while doing the other
-   work.
-
-Patch 7
- - This is important to unify the sysfs code. I've choosen to simplify
-   and not make the TPM version bus-dependent.
-
-Patch 8-9
- - The drivers have this duplication of the file_operations
-   and sysfs code. This series pulls all of that code out of the drivers
-   and into the core
-
-Patches 10->11
- - This is the first step in making the TPM subsystem be like other
-   subsystems in the kernel.
-
-Patches 13
- - This cleans up the struct tpm_chip by hiding stuff that isn't
-   public
-
-This is already a fair clean up, but there is still more to do someday:
- * The lifetime issues around struct tpm_chip/etc and the way userspace
-   can hold /dev/tpmX open even after the driver has detached.
- * struct tpm_chip and struct tpm_vendor_specific need to be merged
- * The above two structs have many members that are never used by the
-   core code. These members need to be migrated into driver
-   private structures
- * The resulting merged struct should live in linux/include/tpm.h
-   like all other device classes in the kernel.
- * Several drivers need clean up to move singleton static
-   variables into dynamic structures
- * Consolidate TCG defined constants that are duplicated in many
-   drivers
- * Consolidate device startup (tpm_startup, tpm_get_timeoutes)
-   into core code
-
-If this series is successful I may be able to do some of the above as well.
-
-Jason Gunthorpe (13):
-  tpm: ibmvtpm: Use %zd formatting for size_t format arguments
-  tpm atmel: Call request_region with the correct base
-  tpm: xen-tpmfront: Fix default durations
-  tpm: Store devname in the tpm_chip
-  tpm: Use container_of to locate the tpm_chip in tpm_open
-  tpm: Remove redundant dev_set_drvdata
-  tpm: Remove tpm_show_caps_1_2
-  tpm: Pull everything related to /dev/tpmX into tpm-dev.c
-  tpm: Pull everything related to sysfs into tpm-sysfs.c
-  tpm: Create a tpm_class_ops structure and use it in the drivers
-  tpm: Use the ops structure instead of a copy in tpm_vendor_specific
-  tpm: st33: Remove chip->data_buffer access from this driver
-  tpm: Make tpm-dev allocate a per-file structure
-
- drivers/char/tpm/Makefile           |   2 +-
- drivers/char/tpm/tpm-dev.c          | 213 +++++++++++++++
- drivers/char/tpm/tpm-sysfs.c        | 318 ++++++++++++++++++++++
- drivers/char/tpm/tpm.c              | 524 +++---------------------------------
- drivers/char/tpm/tpm.h              |  86 +++---
- drivers/char/tpm/tpm_atmel.c        |  30 +--
- drivers/char/tpm/tpm_i2c_atmel.c    |  42 +--
- drivers/char/tpm/tpm_i2c_infineon.c |  44 +--
- drivers/char/tpm/tpm_i2c_nuvoton.c  |  42 +--
- drivers/char/tpm/tpm_i2c_stm_st33.c |  51 +---
- drivers/char/tpm/tpm_ibmvtpm.c      |  44 +--
- drivers/char/tpm/tpm_infineon.c     |  28 +-
- drivers/char/tpm/tpm_nsc.c          |  28 +-
- drivers/char/tpm/tpm_spi_stm_st33.c |  50 +---
- drivers/char/tpm/tpm_tis.c          |  43 +--
- drivers/char/tpm/xen-tpmfront.c     |  57 +---
- include/linux/tpm.h                 |  15 ++
- 17 files changed, 638 insertions(+), 979 deletions(-)
- create mode 100644 drivers/char/tpm/tpm-dev.c
- create mode 100644 drivers/char/tpm/tpm-sysfs.c
-
--- 
-1.8.1.2
-
+I'm not convinced any of those tables are common across SoCs. In fact, I
+can see definite differences in those tables between the 3 SoCs we
+already have upstream... How will this be handled once you've enhanced
+this series to handle all supported SoCs?
