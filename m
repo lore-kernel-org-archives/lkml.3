@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab3IWPOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 11:14:49 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:55593 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab3IWPOs (ORCPT
+	id S1753194Ab3IWPOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 11:14:52 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:42097 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab3IWPOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 11:14:48 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Liam Girdwood <lgirdwood@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Date: Mon, 23 Sep 2013 16:14:43 +0100
-Message-Id: <1379949283-5885-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.4.rc3
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] regulator: core: Always use return value when regulator_dev_lookup() fails
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 23 Sep 2013 11:14:50 -0400
+From: Matt Porter <matt.porter@linaro.org>
+To: Shawn Guo <shawn.guo@linaro.org>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Devicetree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: [PATCH v2] ARM: dts: add initial VF610 Cosmic/Cosmic+ board support
+Date: Mon, 23 Sep 2013 11:14:44 -0400
+Message-Id: <1379949284-19936-1-git-send-email-matt.porter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+Add initial PHYTEC VF610 Cosmic/Cosmic+ board support with
+UART and FEC enabled.
 
-Ensure that the return value is always set when we return now that the
-logic has changed for regulator_get_optional() so we don't get missing
-codes leaking out.
-
-Reported-by: Thierry Reding <treding@nvidia.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Matt Porter <matt.porter@linaro.org>
 ---
- drivers/regulator/core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Changes since v1:
+	- Add #clocks to the enet clock to comply with fixed-clock binding
+	- Peripheral nodes in alphabetical order
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index fabbf32..6333080 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1281,12 +1281,13 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
- 	if (rdev)
- 		goto found;
- 
-+	regulator = ERR_PTR(ret);
+ arch/arm/boot/dts/Makefile         |  1 +
+ arch/arm/boot/dts/vf610-cosmic.dts | 47 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+)
+ create mode 100644 arch/arm/boot/dts/vf610-cosmic.dts
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index cc0f1fb..b0d6156 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -142,6 +142,7 @@ dtb-$(CONFIG_ARCH_MXC) += \
+ 	imx6q-sbc6x.dtb \
+ 	imx6q-wandboard.dtb \
+ 	imx6sl-evk.dtb \
++	vf610-cosmic.dtb \
+ 	vf610-twr.dtb
+ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
+ 	imx23-olinuxino.dtb \
+diff --git a/arch/arm/boot/dts/vf610-cosmic.dts b/arch/arm/boot/dts/vf610-cosmic.dts
+new file mode 100644
+index 0000000..c42e4f9
+--- /dev/null
++++ b/arch/arm/boot/dts/vf610-cosmic.dts
+@@ -0,0 +1,47 @@
++/*
++ * Copyright 2013 Freescale Semiconductor, Inc.
++ * Copyright 2013 Linaro Limited
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
 +
- 	/*
- 	 * If we have return value from dev_lookup fail, we do not expect to
- 	 * succeed, so, quit with appropriate error value
- 	 */
- 	if (ret && ret != -ENODEV) {
--		regulator = ERR_PTR(ret);
- 		goto out;
- 	}
- 
++/dts-v1/;
++#include "vf610.dtsi"
++
++/ {
++	model = "PHYTEC Cosmic/Cosmic+ Board";
++	compatible = "phytec,vf610-cosmic", "fsl,vf610";
++
++	chosen {
++		bootargs = "console=ttyLP1,115200";
++	};
++
++	memory {
++		reg = <0x80000000 0x10000000>;
++	};
++
++	clocks {
++		enet_ext {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <50000000>;
++		};
++	};
++
++};
++
++&fec1 {
++	phy-mode = "rmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_fec1_1>;
++	status = "okay";
++};
++
++&uart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart1_1>;
++	status = "okay";
++};
 -- 
-1.8.4.rc3
+1.8.4
 
