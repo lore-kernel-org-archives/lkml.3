@@ -1,109 +1,581 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab3IWGPv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 02:15:51 -0400
-Received: from nm22-vm6.access.bullet.mail.gq1.yahoo.com ([216.39.63.170]:36305
-	"EHLO nm22-vm6.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751944Ab3IWGPu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 02:15:50 -0400
-X-Yahoo-Newman-Id: 484410.43093.bm@smtp120.sbc.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: MsM_vnUVM1kpMEVlt1y4X4Ngdp90sO4pPagXMswS53s35lX
- CseakqPW10y9MbVKxOFm5q7ncyVRzC76wIKVpJ2Ug2qANKLEllgqJ1qlaJLh
- AdjtemN3SqbUThEkIyrYgrUk9EjesQbjqHt.4L.oWu8ZVfAWLxUK_xlkWSGk
- DnP0gcWJphAbZTWf73QbBMx.jjWvgCpLn4dujGO5yWAfpg0zfvG_pZWijATl
- t80CHPfnamKLTVuadKpA0BHXBVQBX_W7rzQRCnMzWmzylsEoGIKcXn43_IIQ
- o.GILrxMS314qDV4ztG276Q9pHriRPiGIx_Rt0qVuQdckVV5Sc1Ac1cPFGhk
- 82_.aOUU7FVfTmwtAunF8tNXGrSBsnrIwmiAbDVUTNQehtiZ.l1Vm13Yncj_
- hWVF5g242KUV0V8N5miXRvzyj83LDpDpEnW0phaGZJ8lnGi1PaxrMwb_Vq1w
- 6QwlBGqBZLEvncIi4gMbFE9wceH8HCP_vhlEdts1c.lW8cvux8xYqxADa1hN
- 6tJRUIY5_IIyxV0RkgeRkIFQ3hIlB_oG84wDiWfwJvsNBKRc1iNc56vpasoe
- ngJ0-
-X-Yahoo-SMTP: 0h0Q7euswBD_g.kcEqbzJWRFfrba801gq1M1
-X-Rocket-Received: from mistral.localnet (stilor@108.252.240.182 with )
-        by smtp120.sbc.mail.gq1.yahoo.com with SMTP; 23 Sep 2013 06:15:48 +0000 UTC
-From: Alexey Neyman <stilor@att.net>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Feng Tang <feng.tang@intel.com>, Yijing Wang <wangyijing@huawei.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix coalescing host bridge windows in arch/x86/pci/acpi.c
-Date: Sun, 22 Sep 2013 23:15:46 -0700
-Message-ID: <6362938.J7ZtNEOFpc@mistral>
-User-Agent: KMail/4.10.4 (Linux/3.8.0-25-generic; KDE/4.10.5; x86_64; ; )
+	id S1753367Ab3IWGU1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 02:20:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13916 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752335Ab3IWGUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 02:20:23 -0400
+Date: Mon, 23 Sep 2013 13:47:41 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+Message-ID: <20130923054741.GC7007@dhcp-16-126.nay.redhat.com>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <1379602494-26684-12-git-send-email-bp@alien8.de>
+ <20130921113929.GB1587@pd.tnic>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="nextPart2146602.P7lzYueRtG"
-Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130921113929.GB1587@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On 09/21/13 at 01:39pm, Borislav Petkov wrote:
+> On Thu, Sep 19, 2013 at 04:54:54PM +0200, Borislav Petkov wrote:
+> > From: Borislav Petkov <bp@suse.de>
+> > 
+> > We map the EFI regions needed for runtime services contiguously on
+> > virtual addresses starting from -4G down for a total max space of 64G.
+> > This way, we provide for stable runtime services addresses across
+> > kernels so that a kexec'd kernel can still use them.
+> > 
+> > This way, they're mapped in a separate pagetable so that we don't
+> > pollute the kernel namespace (you can see how the whole ioremapping and
+> > saving and restoring of PGDs is gone now).
+> 
+> Ok, this one was not so good, let's try again:
+> 
+> This time I saved 32-bit and am switching the pagetable only after
+> having built it properly. This boots fine again on baremetal and on OVMF
+> with Matt's handover flags fix from yesterday.
+> 
+> Also, I've uploaded the whole series to
+> git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git, branch
+> efi-experimental
+> 
+> ("-experimental" doesn't trigger Fengguang's robot :-))
+> 
+> Good luck! :-)
+> 
+> ---
+> From 880fcee20209a122eda846e7f109776ed1c56de5 Mon Sep 17 00:00:00 2001
+> From: Borislav Petkov <bp@suse.de>
+> Date: Wed, 18 Sep 2013 17:35:42 +0200
+> Subject: [PATCH] EFI: Runtime services virtual mapping
+> 
+> We map the EFI regions needed for runtime services contiguously on
+> virtual addresses starting from -4G down for a total max space of 64G.
+> This way, we provide for stable runtime services addresses across
+> kernels so that a kexec'd kernel can still use them.
+> 
+> This way, they're mapped in a separate pagetable so that we don't
+> pollute the kernel namespace (you can see how the whole ioremapping and
+> saving and restoring of PGDs is gone now).
+> 
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  arch/x86/include/asm/efi.h           | 43 ++++++++++--------
+>  arch/x86/include/asm/pgtable_types.h |  3 +-
+>  arch/x86/platform/efi/efi.c          | 68 ++++++++++++-----------------
+>  arch/x86/platform/efi/efi_32.c       | 29 +++++++++++-
+>  arch/x86/platform/efi/efi_64.c       | 85 +++++++++++++++++++-----------------
+>  arch/x86/platform/efi/efi_stub_64.S  | 53 ++++++++++++++++++++++
+>  6 files changed, 181 insertions(+), 100 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+> index 0062a0125041..9a99e0499e4b 100644
+> --- a/arch/x86/include/asm/efi.h
+> +++ b/arch/x86/include/asm/efi.h
+> @@ -69,24 +69,31 @@ extern u64 efi_call6(void *fp, u64 arg1, u64 arg2, u64 arg3,
+>  	efi_call6((f), (u64)(a1), (u64)(a2), (u64)(a3),		\
+>  		  (u64)(a4), (u64)(a5), (u64)(a6))
+>  
+> +#define _efi_call_virtX(x, f, ...)					\
+> +({									\
+> +	efi_status_t __s;						\
+> +									\
+> +	efi_sync_low_kernel_mappings();					\
+> +	preempt_disable();						\
+> +	__s = efi_call##x((void *)efi.systab->runtime->f, __VA_ARGS__);	\
+> +	preempt_enable();						\
+> +	__s;								\
+> +})
+> +
+>  #define efi_call_virt0(f)				\
+> -	efi_call0((efi.systab->runtime->f))
+> -#define efi_call_virt1(f, a1)					\
+> -	efi_call1((efi.systab->runtime->f), (u64)(a1))
+> -#define efi_call_virt2(f, a1, a2)					\
+> -	efi_call2((efi.systab->runtime->f), (u64)(a1), (u64)(a2))
+> -#define efi_call_virt3(f, a1, a2, a3)					\
+> -	efi_call3((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
+> -		  (u64)(a3))
+> -#define efi_call_virt4(f, a1, a2, a3, a4)				\
+> -	efi_call4((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
+> -		  (u64)(a3), (u64)(a4))
+> -#define efi_call_virt5(f, a1, a2, a3, a4, a5)				\
+> -	efi_call5((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
+> -		  (u64)(a3), (u64)(a4), (u64)(a5))
+> -#define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)			\
+> -	efi_call6((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
+> -		  (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
+> +	_efi_call_virtX(0, f)
+> +#define efi_call_virt1(f, a1)				\
+> +	_efi_call_virtX(1, f, (u64)(a1))
+> +#define efi_call_virt2(f, a1, a2)			\
+> +	_efi_call_virtX(2, f, (u64)(a1), (u64)(a2))
+> +#define efi_call_virt3(f, a1, a2, a3)			\
+> +	_efi_call_virtX(3, f, (u64)(a1), (u64)(a2), (u64)(a3))
+> +#define efi_call_virt4(f, a1, a2, a3, a4)		\
+> +	_efi_call_virtX(4, f, (u64)(a1), (u64)(a2), (u64)(a3), (u64)(a4))
+> +#define efi_call_virt5(f, a1, a2, a3, a4, a5)		\
+> +	_efi_call_virtX(5, f, (u64)(a1), (u64)(a2), (u64)(a3), (u64)(a4), (u64)(a5))
+> +#define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)	\
+> +	_efi_call_virtX(6, f, (u64)(a1), (u64)(a2), (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
+>  
+>  extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
+>  				 u32 type, u64 attribute);
+> @@ -101,6 +108,8 @@ extern void efi_call_phys_prelog(void);
+>  extern void efi_call_phys_epilog(void);
+>  extern void efi_unmap_memmap(void);
+>  extern void efi_memory_uc(u64 addr, unsigned long size);
+> +extern void __init efi_map_region(efi_memory_desc_t *md);
+> +extern void efi_sync_low_kernel_mappings(void);
+>  
+>  #ifdef CONFIG_EFI
+>  
+> diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+> index 0ecac257fb26..a83aa44bb1fb 100644
+> --- a/arch/x86/include/asm/pgtable_types.h
+> +++ b/arch/x86/include/asm/pgtable_types.h
+> @@ -382,7 +382,8 @@ static inline void update_page_count(int level, unsigned long pages) { }
+>   */
+>  extern pte_t *lookup_address(unsigned long address, unsigned int *level);
+>  extern phys_addr_t slow_virt_to_phys(void *__address);
+> -
+> +extern int kernel_map_pages_in_pgd(pgd_t *pgd, u64 pfn, unsigned long address,
+> +				   unsigned numpages, unsigned long page_flags);
+>  #endif	/* !__ASSEMBLY__ */
+>  
+>  #endif /* _ASM_X86_PGTABLE_DEFS_H */
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index 538c1e6b7b2c..90459f5f587c 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -12,6 +12,8 @@
+>   *	Bibo Mao <bibo.mao@intel.com>
+>   *	Chandramouli Narayanan <mouli@linux.intel.com>
+>   *	Huang Ying <ying.huang@intel.com>
+> + * Copyright (C) 2013 SuSE Labs
+> + * 	Borislav Petkov <bp@suse.de> - runtime services VA mapping
+>   *
+>   * Copied from efi_32.c to eliminate the duplicated code between EFI
+>   * 32/64 support code. --ying 2007-10-26
+> @@ -81,6 +83,17 @@ static efi_system_table_t efi_systab __initdata;
+>  unsigned long x86_efi_facility;
+>  
+>  /*
+> + * Scratch space used for switching the pagetable in the EFI stub
+> + */
+> +struct efi_scratch {
+> +	u64 r15;
+> +	u64 prev_cr3;
+> +	pgd_t *efi_pgt;
+> +	bool use_pgd;
+> +};
+> +extern struct efi_scratch efi_scratch;
+> +
+> +/*
+>   * Returns 1 if 'facility' is enabled, 0 otherwise.
+>   */
+>  int efi_enabled(int facility)
+> @@ -797,22 +810,6 @@ void __init efi_set_executable(efi_memory_desc_t *md, bool executable)
+>  		set_memory_nx(addr, npages);
+>  }
+>  
+> -static void __init runtime_code_page_mkexec(void)
+> -{
+> -	efi_memory_desc_t *md;
+> -	void *p;
+> -
+> -	/* Make EFI runtime service code area executable */
+> -	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+> -		md = p;
+> -
+> -		if (md->type != EFI_RUNTIME_SERVICES_CODE)
+> -			continue;
+> -
+> -		efi_set_executable(md, true);
+> -	}
+> -}
+> -
+>  /*
+>   * We can't ioremap data in EFI boot services RAM, because we've already mapped
+>   * it as RAM.  So, look it up in the existing EFI memory map instead.  Only
+> @@ -862,10 +859,10 @@ void efi_memory_uc(u64 addr, unsigned long size)
+>  void __init efi_enter_virtual_mode(void)
+>  {
+>  	efi_memory_desc_t *md, *prev_md = NULL;
+> -	efi_status_t status;
+> +	void *p, *new_memmap = NULL;
+>  	unsigned long size;
+> -	u64 end, systab, start_pfn, end_pfn;
+> -	void *p, *va, *new_memmap = NULL;
+> +	efi_status_t status;
+> +	u64 end, systab;
+>  	int count = 0;
+>  
+>  	efi.systab = NULL;
+> @@ -874,7 +871,6 @@ void __init efi_enter_virtual_mode(void)
+>  	 * We don't do virtual mode, since we don't do runtime services, on
+>  	 * non-native EFI
+>  	 */
+> -
+>  	if (!efi_is_native()) {
+>  		efi_unmap_memmap();
+>  		return;
+> @@ -914,33 +910,18 @@ void __init efi_enter_virtual_mode(void)
+>  		    md->type != EFI_BOOT_SERVICES_DATA)
+>  			continue;
+>  
+> +		efi_map_region(md);
+> +
+>  		size = md->num_pages << PAGE_SHIFT;
+>  		end = md->phys_addr + size;
+>  
+> -		start_pfn = PFN_DOWN(md->phys_addr);
+> -		end_pfn = PFN_UP(end);
+> -		if (pfn_range_is_mapped(start_pfn, end_pfn)) {
+> -			va = __va(md->phys_addr);
+> -
+> -			if (!(md->attribute & EFI_MEMORY_WB))
+> -				efi_memory_uc((u64)(unsigned long)va, size);
+> -		} else
+> -			va = efi_ioremap(md->phys_addr, size,
+> -					 md->type, md->attribute);
+> -
+> -		md->virt_addr = (u64) (unsigned long) va;
+> -
+> -		if (!va) {
+> -			pr_err("ioremap of 0x%llX failed!\n",
+> -			       (unsigned long long)md->phys_addr);
+> -			continue;
+> -		}
+> -
+>  		systab = (u64) (unsigned long) efi_phys.systab;
+>  		if (md->phys_addr <= systab && systab < end) {
+>  			systab += md->virt_addr - md->phys_addr;
+> +
+>  			efi.systab = (efi_system_table_t *) (unsigned long) systab;
+>  		}
+> +
+>  		new_memmap = krealloc(new_memmap,
+>  				      (count + 1) * memmap.desc_size,
+>  				      GFP_KERNEL);
+> @@ -949,8 +930,15 @@ void __init efi_enter_virtual_mode(void)
+>  		count++;
+>  	}
+>  
+> +#ifdef CONFIG_X86_64
+> +	efi_scratch.efi_pgt = (pgd_t *)(unsigned long)real_mode_header->trampoline_pgd;
+> +	efi_scratch.use_pgd = true;
+> +#endif
+> +
+>  	BUG_ON(!efi.systab);
+>  
+> +	efi_sync_low_kernel_mappings();
+> +
+>  	status = phys_efi_set_virtual_address_map(
+>  		memmap.desc_size * count,
+>  		memmap.desc_size,
+> @@ -983,8 +971,6 @@ void __init efi_enter_virtual_mode(void)
+>  	efi.query_variable_info = virt_efi_query_variable_info;
+>  	efi.update_capsule = virt_efi_update_capsule;
+>  	efi.query_capsule_caps = virt_efi_query_capsule_caps;
+> -	if (__supported_pte_mask & _PAGE_NX)
+> -		runtime_code_page_mkexec();
+>  
+>  	kfree(new_memmap);
+>  
+> diff --git a/arch/x86/platform/efi/efi_32.c b/arch/x86/platform/efi/efi_32.c
+> index 40e446941dd7..661663b08eaf 100644
+> --- a/arch/x86/platform/efi/efi_32.c
+> +++ b/arch/x86/platform/efi/efi_32.c
+> @@ -37,9 +37,36 @@
+>   * claim EFI runtime service handler exclusively and to duplicate a memory in
+>   * low memory space say 0 - 3G.
+>   */
+> -
+>  static unsigned long efi_rt_eflags;
+>  
+> +void efi_sync_low_kernel_mappings(void) {}
+> +
+> +void __init efi_map_region(efi_memory_desc_t *md)
+> +{
+> +	u64 start_pfn, end_pfn, end;
+> +	unsigned long size;
+> +	void *va;
+> +
+> +	start_pfn = PFN_DOWN(md->phys_addr);
+> +	size	  = md->num_pages << PAGE_SHIFT;
+> +	end	  = md->phys_addr + size;
+> +	end_pfn   = PFN_UP(end);
+> +
+> +	if (pfn_range_is_mapped(start_pfn, end_pfn)) {
+> +		va = __va(md->phys_addr);
+> +
+> +		if (!(md->attribute & EFI_MEMORY_WB))
+> +			efi_memory_uc((u64)(unsigned long)va, size);
+> +	} else
+> +		va = efi_ioremap(md->phys_addr, size,
+> +				 md->type, md->attribute);
+> +
+> +	md->virt_addr = (u64) (unsigned long) va;
+> +	if (!va)
+> +		pr_err("ioremap of 0x%llX failed!\n",
+> +		       (unsigned long long)md->phys_addr);
+> +}
+> +
+>  void efi_call_phys_prelog(void)
+>  {
+>  	struct desc_ptr gdt_descr;
+> diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+> index 39a0e7f1f0a3..db5230dd350e 100644
+> --- a/arch/x86/platform/efi/efi_64.c
+> +++ b/arch/x86/platform/efi/efi_64.c
+> @@ -39,59 +39,64 @@
+>  #include <asm/cacheflush.h>
+>  #include <asm/fixmap.h>
+>  
+> -static pgd_t *save_pgd __initdata;
+> -static unsigned long efi_flags __initdata;
+> +void __init efi_call_phys_prelog(void) {}
+> +void __init efi_call_phys_epilog(void) {}
+>  
+> -static void __init early_code_mapping_set_exec(int executable)
+> +/*
+> + * Add low kernel mappings for passing arguments to EFI functions.
+> + */
+> +void efi_sync_low_kernel_mappings(void)
+>  {
+> -	efi_memory_desc_t *md;
+> -	void *p;
+> +	unsigned num_pgds;
+> +	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
+>  
+> -	if (!(__supported_pte_mask & _PAGE_NX))
+> -		return;
+> +	num_pgds = pgd_index(VMALLOC_START - 1) - pgd_index(PAGE_OFFSET);
+>  
+> -	/* Make EFI service code area executable */
+> -	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+> -		md = p;
+> -		if (md->type == EFI_RUNTIME_SERVICES_CODE ||
+> -		    md->type == EFI_BOOT_SERVICES_CODE)
+> -			efi_set_executable(md, executable);
+> -	}
+> +	memcpy(pgd + pgd_index(PAGE_OFFSET),
+> +		init_mm.pgd + pgd_index(PAGE_OFFSET),
+> +		sizeof(pgd_t) * num_pgds);
+>  }
+>  
+> -void __init efi_call_phys_prelog(void)
+> +/*
+> + * We allocate runtime services regions top-down, starting from -4G, i.e.
+> + * 0xffff_ffff_0000_0000 and limit EFI VA mapping space to 64G.
+> + */
+> +static u64 efi_va	 = -4 * (1UL << 30);
+> +#define EFI_VA_END	 (-68 * (1UL << 30))
+> +
+> +static void __init __map_region(efi_memory_desc_t *md, u64 va)
+>  {
+> -	unsigned long vaddress;
+> -	int pgd;
+> -	int n_pgds;
+> +	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
+> +	unsigned long pf = 0, size;
+> +	u64 end;
+>  
+> -	early_code_mapping_set_exec(1);
+> -	local_irq_save(efi_flags);
+> +	if (!(md->attribute & EFI_MEMORY_WB))
+> +		pf |= _PAGE_PCD;
+>  
+> -	n_pgds = DIV_ROUND_UP((max_pfn << PAGE_SHIFT), PGDIR_SIZE);
+> -	save_pgd = kmalloc(n_pgds * sizeof(pgd_t), GFP_KERNEL);
+> +	size = md->num_pages << PAGE_SHIFT;
+> +	end  = va + size;
+>  
+> -	for (pgd = 0; pgd < n_pgds; pgd++) {
+> -		save_pgd[pgd] = *pgd_offset_k(pgd * PGDIR_SIZE);
+> -		vaddress = (unsigned long)__va(pgd * PGDIR_SIZE);
+> -		set_pgd(pgd_offset_k(pgd * PGDIR_SIZE), *pgd_offset_k(vaddress));
+> -	}
+> -	__flush_tlb_all();
+> +	if(kernel_map_pages_in_pgd(pgd, md->phys_addr, va, md->num_pages, pf))
+> +		pr_warning("Error mapping PA 0x%llx -> VA 0x%llx!\n",
+> +			   md->phys_addr, va);
+>  }
+>  
+> -void __init efi_call_phys_epilog(void)
+> +void __init efi_map_region(efi_memory_desc_t *md)
+>  {
+> -	/*
+> -	 * After the lock is released, the original page table is restored.
+> -	 */
+> -	int pgd;
+> -	int n_pgds = DIV_ROUND_UP((max_pfn << PAGE_SHIFT) , PGDIR_SIZE);
+> -	for (pgd = 0; pgd < n_pgds; pgd++)
+> -		set_pgd(pgd_offset_k(pgd * PGDIR_SIZE), save_pgd[pgd]);
+> -	kfree(save_pgd);
+> -	__flush_tlb_all();
+> -	local_irq_restore(efi_flags);
+> -	early_code_mapping_set_exec(0);
+> +	unsigned long size = md->num_pages << PAGE_SHIFT;
+> +
+> +	efi_va -= size;
+> +	if (efi_va < EFI_VA_END) {
+> +		pr_warning(FW_WARN "VA address range overflow!\n");
+> +		return;
+> +	}
+> +
+> +	/* Do the 1:1 map */
+> +	__map_region(md, md->phys_addr);
+> +
+> +	/* Do the VA map */
+> +	__map_region(md, efi_va);
 
---nextPart2146602.P7lzYueRtG
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
 
-[Resending due to no response to the original message in a week]
+Could you add comment for above code? It's hard to understand the
+twice mapping if one did not follow the old thread.
 
-Hi all,
 
-I have a board with a BIOS bug that reports the following I/O port regions in 
-_CRS on one of the host bridges:
-
-0x0000-0x03af // #0
-0x03e0-0x0cf7 // #1
-0x03b0-0x03bb // #2
-0x03c0-0x03df // #3
-0x0000-0xdfff // #4
-0xf000-0xffff // #5
-
-Obviously, region number #4 is erroneous as it overlaps with regions #0..3. 
-The code in coalesce_windows() in arch/x86/pci/acpi.c attempts to recover from 
-such kind of BIOS bugs by merging the overlapping regions. Current code 
-expands region #0 to 0x0000-0xdffff and makes region #4 ignored. As a result, 
-overlap of the expanded region #0 with regions #1..3 remains undetected (as 
-the inner loop already compared them with region #0). As a result, regions 
-#1..3 are inserted into the resource tree even though they overlap with 
-adjusted region #0 - which later results in resource conflicts for PCI devices 
-with IO ports in one of those regions (e.g., for an PCI IDE controller in 
-legacy mode - which has port 0x3f6). The kernel then refuses to initialize 
-these devices.
-
-The fix: instead of expanding res1 and ignoring res2, do the opposite. The 
-res2 window is yet to be compared against all windows between res1 and res2 
-(regions #1..3 in the above example), so the resulting resource map will 
-include just the expanded region - and will ignore any overlapping ones.
-
-Signed-off-by: Alexey Neyman <stilor@att.net>
---nextPart2146602.P7lzYueRtG
-Content-Disposition: attachment; filename="acpi.c.diff"
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/x-patch; charset="UTF-8"; name="acpi.c.diff"
-
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index b30e937..7fb24e5 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -354,12 +354,12 @@ static void coalesce_windows(struct pci_root_info *info, unsigned long type)
- 			 * the kernel resource tree doesn't allow overlaps.
- 			 */
- 			if (resource_overlaps(res1, res2)) {
--				res1->start = min(res1->start, res2->start);
--				res1->end = max(res1->end, res2->end);
-+				res2->start = min(res1->start, res2->start);
-+				res2->end = max(res1->end, res2->end);
- 				dev_info(&info->bridge->dev,
- 					 "host bridge window expanded to %pR; %pR ignored\n",
--					 res1, res2);
--				res2->flags = 0;
-+					 res2, res1);
-+				res1->flags = 0;
- 			}
- 		}
- 	}
-
---nextPart2146602.P7lzYueRtG--
-
+> +	md->virt_addr = efi_va;
+>  }
+>  
+>  void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+> diff --git a/arch/x86/platform/efi/efi_stub_64.S b/arch/x86/platform/efi/efi_stub_64.S
+> index 4c07ccab8146..2bb9714bf713 100644
+> --- a/arch/x86/platform/efi/efi_stub_64.S
+> +++ b/arch/x86/platform/efi/efi_stub_64.S
+> @@ -34,10 +34,47 @@
+>  	mov %rsi, %cr0;			\
+>  	mov (%rsp), %rsp
+>  
+> +	/* stolen from gcc */
+> +	.macro FLUSH_TLB_ALL
+> +	movq %r15, efi_scratch(%rip)
+> +	movq %r14, efi_scratch+8(%rip)
+> +	movq %cr4, %r15
+> +	movq %r15, %r14
+> +	andb $0x7f, %r14b
+> +	movq %r14, %cr4
+> +	movq %r15, %cr4
+> +	movq efi_scratch+8(%rip), %r14
+> +	movq efi_scratch(%rip), %r15
+> +	.endm
+> +
+> +	.macro SWITCH_PGT
+> +	cmpb $0, efi_scratch+24(%rip)
+> +	je 1f
+> +	movq %r15, efi_scratch(%rip)		# r15
+> +	# save previous CR3
+> +	movq %cr3, %r15
+> +	movq %r15, efi_scratch+8(%rip)		# prev_cr3
+> +	movq efi_scratch+16(%rip), %r15		# EFI pgt
+> +	movq %r15, %cr3
+> +	1:
+> +	.endm
+> +
+> +	.macro RESTORE_PGT
+> +	cmpb $0, efi_scratch+24(%rip)
+> +	je 2f
+> +	movq efi_scratch+8(%rip), %r15
+> +	movq %r15, %cr3
+> +	movq efi_scratch(%rip), %r15
+> +	FLUSH_TLB_ALL
+> +	2:
+> +	.endm
+> +
+>  ENTRY(efi_call0)
+>  	SAVE_XMM
+>  	subq $32, %rsp
+> +	SWITCH_PGT
+>  	call *%rdi
+> +	RESTORE_PGT
+>  	addq $32, %rsp
+>  	RESTORE_XMM
+>  	ret
+> @@ -47,7 +84,9 @@ ENTRY(efi_call1)
+>  	SAVE_XMM
+>  	subq $32, %rsp
+>  	mov  %rsi, %rcx
+> +	SWITCH_PGT
+>  	call *%rdi
+> +	RESTORE_PGT
+>  	addq $32, %rsp
+>  	RESTORE_XMM
+>  	ret
+> @@ -57,7 +96,9 @@ ENTRY(efi_call2)
+>  	SAVE_XMM
+>  	subq $32, %rsp
+>  	mov  %rsi, %rcx
+> +	SWITCH_PGT
+>  	call *%rdi
+> +	RESTORE_PGT
+>  	addq $32, %rsp
+>  	RESTORE_XMM
+>  	ret
+> @@ -68,7 +109,9 @@ ENTRY(efi_call3)
+>  	subq $32, %rsp
+>  	mov  %rcx, %r8
+>  	mov  %rsi, %rcx
+> +	SWITCH_PGT
+>  	call *%rdi
+> +	RESTORE_PGT
+>  	addq $32, %rsp
+>  	RESTORE_XMM
+>  	ret
+> @@ -80,7 +123,9 @@ ENTRY(efi_call4)
+>  	mov %r8, %r9
+>  	mov %rcx, %r8
+>  	mov %rsi, %rcx
+> +	SWITCH_PGT
+>  	call *%rdi
+> +	RESTORE_PGT
+>  	addq $32, %rsp
+>  	RESTORE_XMM
+>  	ret
+> @@ -93,7 +138,9 @@ ENTRY(efi_call5)
+>  	mov %r8, %r9
+>  	mov %rcx, %r8
+>  	mov %rsi, %rcx
+> +	SWITCH_PGT
+>  	call *%rdi
+> +	RESTORE_PGT
+>  	addq $48, %rsp
+>  	RESTORE_XMM
+>  	ret
+> @@ -109,8 +156,14 @@ ENTRY(efi_call6)
+>  	mov %r8, %r9
+>  	mov %rcx, %r8
+>  	mov %rsi, %rcx
+> +	SWITCH_PGT
+>  	call *%rdi
+> +	RESTORE_PGT
+>  	addq $48, %rsp
+>  	RESTORE_XMM
+>  	ret
+>  ENDPROC(efi_call6)
+> +
+> +	.data
+> +ENTRY(efi_scratch)
+> +	.fill 3,8,0
+> -- 
+> 1.8.4
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
