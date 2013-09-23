@@ -1,83 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab3IWRjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 13:39:00 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:55851 "EHLO e8.ny.us.ibm.com"
+	id S1753210Ab3IWRjJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 13:39:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40772 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab3IWRi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 13:38:59 -0400
-Date: Mon, 23 Sep 2013 12:19:16 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v2 0/5] mm: migrate zbud pages
-Message-ID: <20130923171916.GA23643@variantweb.net>
-References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
- <5237FDCC.5010109@oracle.com>
+	id S1752984Ab3IWRjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 13:39:05 -0400
+Date: Mon, 23 Sep 2013 19:32:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130923173203.GA20392@redhat.com>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de> <1378805550-29949-38-git-send-email-mgorman@suse.de> <20130917143003.GA29354@twins.programming.kicks-ass.net> <20130917162050.GK22421@suse.de> <20130917164505.GG12926@twins.programming.kicks-ass.net> <20130918154939.GZ26785@twins.programming.kicks-ass.net> <20130919143241.GB26785@twins.programming.kicks-ass.net> <20130921163404.GA8545@redhat.com> <20130923092955.GV9326@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5237FDCC.5010109@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092317-0320-0000-0000-00000118E0EC
+In-Reply-To: <20130923092955.GV9326@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 02:59:24PM +0800, Bob Liu wrote:
-> Hi Krzysztof,
-> 
-> On 09/11/2013 04:58 PM, Krzysztof Kozlowski wrote:
-> > Hi,
-> > 
-> > Currently zbud pages are not movable and they cannot be allocated from CMA
-> > (Contiguous Memory Allocator) region. These patches add migration of zbud pages.
-> > 
-> 
-> I agree that the migration of zbud pages is important so that system
-> will not enter order-0 page fragmentation and can be helpful for page
-> compaction/huge pages etc..
-> 
-> But after I looked at the [patch 4/5], I found it will make zbud very
-> complicated.
-> I'd prefer to add this migration feature later until current version
-> zswap/zbud becomes better enough and more stable.
+On 09/23, Peter Zijlstra wrote:
+>
+> On Sat, Sep 21, 2013 at 06:34:04PM +0200, Oleg Nesterov wrote:
+> > > So the slow path is still per-cpu and mostly uncontended even in the
+> > > pending writer case.
+> >
+> > Is it really important? I mean, per-cpu/uncontended even if the writer
+> > is pending?
+>
+> I think so, once we make {get,put}_online_cpus() really cheap they'll
+> get in more and more places, and the global count with pending writer
+> will make things crawl on bigger machines.
 
-I agree with this.  We are also looking to add zsmalloc as an option too.  It
-would be nice to come up with a solution that worked for both (any) allocator
-that zswap used.
+Hmm. But the writers should be rare.
 
-> 
-> Mel mentioned several problems about zswap/zbud in thread "[PATCH v6
-> 0/5] zram/zsmalloc promotion".
-> 
-> Like "it's clunky as hell and the layering between zswap and zbud is
-> twisty" and "I think I brought up its stalling behaviour during review
-> when it was being merged. It would have been preferable if writeback
-> could be initiated in batches and then waited on at the very least..
->  It's worse that it uses _swap_writepage directly instead of going
-> through a writepage ops.  It would have been better if zbud pages
-> existed on the LRU and written back with an address space ops and
-> properly handled asynchonous writeback."
+> > But. We already have percpu_rw_semaphore,
+>
+> Oh urgh, forgot about that one. /me goes read.
+>
+> /me curses loudly.. that thing has an _expedited() call in it, those
+> should die.
 
-Yes, the laying in zswap vs zbud is wonky and should be addressed before adding
-new layers.
+Probably yes, the original reason for _expedited() has gone away.
 
-> 
-> So I think it would be better if we can address those issues at first
-> and it would be easier to address these issues before adding more new
-> features. Welcome any ideas.
+> I'd dread to think what would happen if a 4k cpu machine were to land in
+> the slow path on that global mutex. Readers would never go-away and
+> progress would make a glacier seem fast.
 
-Agreed.
+Another problem is that write-lock can never succeed unless it
+prevents the new readers, but this needs the per-task counter.
 
-Seth
+> > Note also that percpu_down_write/percpu_up_write can be improved wrt
+> > synchronize_sched(). We can turn the 2nd one into call_rcu(), and the
+> > 1nd one can be avoided if another percpu_down_write() comes "soon after"
+> > percpu_down_up().
+>
+> Write side be damned ;-)
+
+Suppose that a 4k cpu machine does disable_nonboot_cpus(), every
+_cpu_down() does synchronize_sched()... OK, perhaps the locking can be
+changed so that cpu_hotplug_begin/end is called only once in this case.
+
+> > 	- The writer calls cpuph_wait_refcount()
+> >
+> > 	- cpuph_wait_refcount() does refcnt += __cpuhp_refcount[0].
+> > 	  refcnt == 0.
+> >
+> > 	- another reader comes on CPU_0, increments __cpuhp_refcount[0].
+> >
+> > 	- this reader migrates to CPU_1 and does put_online_cpus(),
+> > 	  this decrements __cpuhp_refcount[1] which becomes zero.
+> >
+> > 	- cpuph_wait_refcount() continues and reads __cpuhp_refcount[1]
+> > 	  which is zero. refcnt == 0, return.
+>
+> Ah indeed..
+>
+> The best I can come up with is something like:
+>
+> static unsigned int cpuhp_refcount(void)
+> {
+> 	unsigned int refcount = 0;
+> 	int cpu;
+>
+> 	for_each_possible_cpu(cpu)
+> 		refcount += per_cpu(__cpuhp_refcount, cpu);
+> }
+>
+> static void cpuhp_wait_refcount(void)
+> {
+> 	for (;;) {
+> 		unsigned int rc1, rc2;
+>
+> 		rc1 = cpuhp_refcount();
+> 		set_current_state(TASK_UNINTERRUPTIBLE); /* MB */
+> 		rc2 = cpuhp_refcount();
+>
+> 		if (rc1 == rc2 && !rc1)
+
+But this only makes the race above "theoretical ** 2". Both
+cpuhp_refcount()'s can be equally fooled.
+
+Looks like, cpuhp_refcount() should take all per-cpu cpuhp_lock's
+before it reads __cpuhp_refcount.
+
+Oleg.
 
