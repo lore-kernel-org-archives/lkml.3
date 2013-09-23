@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab3IWNiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 09:38:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43208 "EHLO
+	id S1754037Ab3IWNia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 09:38:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43226 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742Ab3IWNiL (ORCPT
+	with ESMTP id S1754016Ab3IWNi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 09:38:11 -0400
-Date: Mon, 23 Sep 2013 06:37:51 -0700
-From: tip-bot for Li Zefan <tipbot@zytor.com>
-Message-ID: <tip-cd64647f043e3fd3569bcf068f47f030198ff93a@git.kernel.org>
+	Mon, 23 Sep 2013 09:38:26 -0400
+Date: Mon, 23 Sep 2013 06:37:40 -0700
+From: tip-bot for Masoud Sharbiani <tipbot@zytor.com>
+Message-ID: <tip-4f0acd31c31f03ba42494c8baf6c0465150e2621@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, lizefan@huawei.com
+        rmk+kernel@arm.linux.org.uk, holt@sgi.com, stable@vger.kernel.org,
+        tglx@linutronix.de, gxt@mprc.pku.edu.cn, msharbiani@twitter.com,
+        vlee@twitter.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, lizefan@huawei.com
-In-Reply-To: <523FFF4E.9050401@huawei.com>
-References: <523FFF4E.9050401@huawei.com>
+        holt@sgi.com, rmk+kernel@arm.linux.org.uk, stable@vger.kernel.org,
+        tglx@linutronix.de, gxt@mprc.pku.edu.cn, vlee@twitter.com,
+        msharbiani@twitter.com
+In-Reply-To: <1379717947-18042-1-git-send-email-vlee@freedesktop.org>
+References: <1379717947-18042-1-git-send-email-vlee@freedesktop.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] hung_task:
-  Change sysctl_hung_task_check_count to 'int'
-Git-Commit-ID: cd64647f043e3fd3569bcf068f47f030198ff93a
+Subject: [tip:x86/urgent] x86/reboot:
+  Add quirk to make Dell C6100 use reboot=pci automatically
+Git-Commit-ID: 4f0acd31c31f03ba42494c8baf6c0465150e2621
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,81 +32,58 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 23 Sep 2013 06:37:57 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 23 Sep 2013 06:37:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cd64647f043e3fd3569bcf068f47f030198ff93a
-Gitweb:     http://git.kernel.org/tip/cd64647f043e3fd3569bcf068f47f030198ff93a
-Author:     Li Zefan <lizefan@huawei.com>
-AuthorDate: Mon, 23 Sep 2013 16:43:58 +0800
+Commit-ID:  4f0acd31c31f03ba42494c8baf6c0465150e2621
+Gitweb:     http://git.kernel.org/tip/4f0acd31c31f03ba42494c8baf6c0465150e2621
+Author:     Masoud Sharbiani <msharbiani@twitter.com>
+AuthorDate: Fri, 20 Sep 2013 15:59:07 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 23 Sep 2013 11:10:49 +0200
+CommitDate: Mon, 23 Sep 2013 10:26:08 +0200
 
-hung_task: Change sysctl_hung_task_check_count to 'int'
+x86/reboot: Add quirk to make Dell C6100 use reboot=pci automatically
 
-As 'sysctl_hung_task_check_count' is 'unsigned long' when this
-value is assigned to max_count in check_hung_uninterruptible_tasks(),
-it's truncated to 'int' type.
+Dell PowerEdge C6100 machines fail to completely reboot about 20% of the time.
 
-This causes a minor artifact: if we write 2^32 to sysctl.hung_task_check_count,
-hung task detection will be effectively disabled.
-
-With this fix, it will still truncate the user input to 32 bits, but
-reading sysctl.hung_task_check_count reflects the actual truncated value.
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/523FFF4E.9050401@huawei.com
+Signed-off-by: Masoud Sharbiani <msharbiani@twitter.com>
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: <stable@vger.kernel.org>
+Link: http://lkml.kernel.org/r/1379717947-18042-1-git-send-email-vlee@freedesktop.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched/sysctl.h | 2 +-
- kernel/hung_task.c           | 2 +-
- kernel/sysctl.c              | 5 +++--
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ arch/x86/kernel/reboot.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-index bf8086b..9552afa 100644
---- a/include/linux/sched/sysctl.h
-+++ b/include/linux/sched/sysctl.h
-@@ -2,8 +2,8 @@
- #define _SCHED_SYSCTL_H
- 
- #ifdef CONFIG_DETECT_HUNG_TASK
-+extern int	     sysctl_hung_task_check_count;
- extern unsigned int  sysctl_hung_task_panic;
--extern unsigned long sysctl_hung_task_check_count;
- extern unsigned long sysctl_hung_task_timeout_secs;
- extern unsigned long sysctl_hung_task_warnings;
- extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
-diff --git a/kernel/hung_task.c b/kernel/hung_task.c
-index 3e97fb1..0422523 100644
---- a/kernel/hung_task.c
-+++ b/kernel/hung_task.c
-@@ -20,7 +20,7 @@
- /*
-  * The number of tasks checked:
-  */
--unsigned long __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
-+int __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
- 
- /*
-  * Limit number of tasks checked in a batch.
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index b2f06f3..b24ed7f 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -962,9 +962,10 @@ static struct ctl_table kern_table[] = {
- 	{
- 		.procname	= "hung_task_check_count",
- 		.data		= &sysctl_hung_task_check_count,
--		.maxlen		= sizeof(unsigned long),
-+		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_doulongvec_minmax,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 563ed91..5f4ad27 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -358,6 +358,22 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
+ 		},
  	},
- 	{
- 		.procname	= "hung_task_timeout_secs",
++	{	/* Handle problems with rebooting on the Dell PowerEdge C6100. */
++		.callback = set_pci_reboot,
++		.ident = "Dell PowerEdge C6100",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
++		},
++	},
++	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
++		.callback = set_pci_reboot,
++		.ident = "Dell PowerEdge C6100",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
++		},
++	},
+ 	{ }
+ };
+ 
