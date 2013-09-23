@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab3IWTcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 15:32:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39522 "EHLO comal.ext.ti.com"
+	id S1753268Ab3IWTdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 15:33:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46057 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752976Ab3IWTcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 15:32:42 -0400
-Date: Mon, 23 Sep 2013 14:32:24 -0500
+	id S1753207Ab3IWTdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 15:33:07 -0400
+Date: Mon, 23 Sep 2013 14:32:51 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 CC: <balbi@ti.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
@@ -16,191 +16,66 @@ CC: <balbi@ti.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
         <idos@codeaurora.org>, <mgautam@codeaurora.org>,
         <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v5 1/3] usb: dwc3: msm: Add device tree binding
- information
-Message-ID: <20130923193224.GO30811@radagast>
+        <linux-omap@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v5 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
+ for DW PHY's
+Message-ID: <20130923193251.GP30811@radagast>
 Reply-To: <balbi@ti.com>
 References: <1377091786-5613-1-git-send-email-iivanov@mm-sol.com>
- <1377091786-5613-2-git-send-email-iivanov@mm-sol.com>
+ <1377091786-5613-3-git-send-email-iivanov@mm-sol.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TYjWXklH5JTzT8n9"
+	protocol="application/pgp-signature"; boundary="Sk71+Upln2BLuDmg"
 Content-Disposition: inline
-In-Reply-To: <1377091786-5613-2-git-send-email-iivanov@mm-sol.com>
+In-Reply-To: <1377091786-5613-3-git-send-email-iivanov@mm-sol.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---TYjWXklH5JTzT8n9
+--Sk71+Upln2BLuDmg
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-On Wed, Aug 21, 2013 at 04:29:44PM +0300, Ivan T. Ivanov wrote:
+On Wed, Aug 21, 2013 at 04:29:45PM +0300, Ivan T. Ivanov wrote:
 > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 >=20
-> MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
-> (SNPS) and HS, SS PHY's control and configuration registers.
->=20
-> It could operate in device mode (SS, HS, FS) and host
-> mode (SS, HS, FS, LS).
+> These drivers handles control and configuration of the HS
+> and SS USB PHY transceivers. They are part of the driver
+> which manage Synopsys DesignWare USB3 controller stack
+> inside Qualcomm SoC's.
 >=20
 > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 
-and here's a new version from same patch
-
-> ---
->  .../devicetree/bindings/usb/msm-ssusb.txt          |  104 ++++++++++++++=
-++++++
->  1 file changed, 104 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/usb/msm-ssusb.txt
->=20
-> diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Docume=
-ntation/devicetree/bindings/usb/msm-ssusb.txt
-> new file mode 100644
-> index 0000000..f57ba8d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-> @@ -0,0 +1,104 @@
-> +MSM SuperSpeed DWC3 USB SoC controller
-> +
-> +
-> +MSM DW Highspeed USB PHY
-> +=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> +Required properities :
-> +- compatible : sould be "qcom,dw-hsphy";
-> +- reg : offset and length of the register set in the memory map
-> +- clocks : phandles to clock instances of the device tree nodes
-> +- clock-names :
-> +	"xo" : External reference clock 19 MHz
-> +	"sleep_a" : Sleep clock, used when USB3 core goes into low
-> +	power mode (U3).
-> +<supply-name>-supply : phandle to the regulator device tree node
-> +Required "supply-name" are:
-> +	"v1p8" : 1.8v supply for HSPHY
-> +	"v3p3" : 3.3v supply for HSPHY
-> +	"vbus" : vbus supply for host mode
-> +	"vddcx" : vdd supply for HS-PHY digital circuit operation
-> +
-> +MSM DW Superspeed USB PHY
-> +=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D
-> +Required properities :
-> +- compatible : sould be "qcom,dw-ssphy";
-> +- reg : offset and length of the register set in the memory map
-> +- clocks : phandles to clock instances of the device tree nodes
-> +- clock-names :
-> +	"xo" : External reference clock 19 MHz
-> +	"ref" : Reference clock - used in host mode.
-> +<supply-name>-supply : phandle to the regulator device tree node
-> +Required "supply-name" are:
-> +	"v1p8" : 1.8v supply for SS-PHY
-> +	"vddcx" : vdd supply for SS-PHY digital circuit operation
-> +
-> +MSM DWC3 controller wrapper
-> +=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D
-> +Required properties :
-> +- compatible : should be "qcom,dwc3"
-> +- reg : offset and length of the register set in the memory map
-> +	offset and length of the TCSR register for routing USB
-> +	signals to either picoPHY0 or picoPHY1.
-> +- clocks : phandles to clock instances of the device tree nodes
-> +- clock-names :
-> +	"core" : Master/Core clock, have to be >=3D 125 MHz for SS
-> +	operation and >=3D 60MHz for HS operation
-> +	"iface" : System bus AXI clock
-> +	"sleep" : Sleep clock, used when USB3 core goes into low
-> +	power mode (U3).
-> +	"utmi" : Generated by HS-PHY. Used to clock the low power
-> +	parts of thr HS Link layer.
-> +Optional properties :
-> +- gdsc-supply : phandle to the globally distributed switch controller
-> +  regulator node to the USB controller.
-> +Required child node:
-> +A child node must exist to represent the core DWC3 IP block. The name of
-> +the node is not important. The content of the node is defined in dwc3.tx=
-t.
-> +
-> +Example device nodes:
-> +
-> +	dw_hsphy: phy@f92f8800 {
-> +		compatible =3D "qcom,dw-hsphy";
-> +		reg =3D <0xf92f8800 0x30>;
-> +
-> +		clocks =3D <&cxo>, <&usb2a_phy_sleep_cxc>;
-> +		clock-names =3D "xo", "sleep_a";
-> +
-> +		vbus-supply =3D <&supply>;
-> +		vddcx-supply =3D <&supply>;
-> +		v1p8-supply =3D <&supply>;
-> +		v3p3-supply =3D <&supply>;
-> +	};
-> +
-> +	dw_ssphy: phy@f92f8830 {
-> +		compatible =3D "qcom,dw-ssphy";
-> +		reg =3D <0xf92f8830 0x30>;
-> +
-> +		clocks =3D <&cxo>, <&usb30_mock_utmi_cxc>;
-> +		clock-names =3D "xo", "ref";
-> +
-> +		vddcx-supply =3D <&supply>;
-> +		v1p8-supply =3D <&supply>;
-> +	};
-> +
-> +	usb@fd4ab000 {
-> +		compatible =3D "qcom,dwc3";
-> +		#address-cells =3D <1>;
-> +		#size-cells =3D <1>;
-> +		reg =3D <0xfd4ab000 0x4>;
-> +
-> +		clocks =3D <&usb30_master_cxc>, <&sys_noc_usb3_axi_cxc>,
-> +				<&usb30_sleep_cxc>, <&usb30_mock_utmi_cxc>;
-> +		clock-names =3D "core", "iface", "sleep", "utmi";
-> +
-> +		gdsc-supply =3D <&supply>;
-> +
-> +		ranges;
-> +		dwc3@f9200000 {
-> +			compatible =3D "snps,dwc3";
-> +			reg =3D <0xf9200000 0xcd00>;
-> +			interrupts =3D <0 131 0>;
-> +			usb-phy =3D <&dw_hsphy>, <&dw_ssphy>;
-> +			tx-fifo-resize;
-> +		};
-> +	};
-> --=20
-> 1.7.9.5
->=20
+I can take this one if DT folks agree with bindings proposed on previous
+patch.
 
 --=20
 balbi
 
---TYjWXklH5JTzT8n9
+--Sk71+Upln2BLuDmg
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSQJdIAAoJEIaOsuA1yqREqVwQAJGOg2mo9AXvVy0PIAraxvFD
-P+QrqBUiu36Xt7Wr+asFmCWiErAWiyXlVWuYXNWil1Rf7xMc3iko0hkl0MxKksxW
-ZNbwCAVoxFcvWm7Ev1R0UEYz1mesN30Yfa1oLGRgW04DgYZb/Rh7CgifzWADfL2Q
-SYPEXPdZ5yh/9i8Vs8OADMLjgw7wJjcPfufizn9Jq3kW66vvU8HyDsI0GLn0bbZT
-teOeq1qF4LHWlIGPEfuZH/JYeIlQ/8LNZ4PQ7QaeF5jRz3GphkXNIJamHNNffK0Z
-UQkoo0neRtLZH4Ofb2u7DdNeUhe7DZmsK+TDaelWwKWiAVXx+F6AZWnbUFQI468p
-ZRZb0fTGeA47VGtm/1igtMxOv+k7ZTkmduoICpyVWU5DeFxmY9jGRz/RnFKX8UHB
-lU3ekrfpxLcFVECET3JbIj8g6KFijmSGimDU5oVyYXPemYsOL7ojFhovBRVyT8Vr
-3VVw/Fk5EUcx6K/sLUaVyiK611CsPEZ/KJ1q2TKshx8mGpBbdbLoS/+18ujnravZ
-FLfdMbFjjgelSevV7WWizjrlISWlXXvIEzR24ym0pYeeZaC01WsSEGQvlh5X2WOB
-XffFiOoAi95mFCHUJZM0BPgEgnRwiLRdyNxzzuluqEuuUUriU6PVi/NH/9ZPsWTQ
-RGUDPyuttjcO+WaJ4XJu
-=+V+B
+iQIcBAEBAgAGBQJSQJdjAAoJEIaOsuA1yqREvbAP/0M8TMSx2bqjHn7K/wUowbP6
+00piB7uQ8xkarDOba0Xo4Dmb45F6SlXwuQLbsKRHgu16vyWdR9lNwrNiHutj1PqK
+VNnBs4UYidpi/DmoAiAztYMzGTvyjr8XjDDuUzQxmRdt6LGpCyIcDeNYLU8tQr+b
+ZDohRNmQvImWj8nNIaSk4Je32LcCJ8EQY+rEcAIMukBQMhiz63SQ9AVySInXFQSf
+fSakwe3MVDYTG3bzmADbCqGhQmYTb28Jox+uBcL6UsMUZR87RKho9QQKCP2eu8E3
+lfgcQmKEqIHUoyFXUjijifPRSY+2+V3+3dcJB3ZoX1yoKTnDv91BCLtJ9zXzx+86
+3EG+l/ANNaVsFYuQQpj/aYoDzS8qchz1znhV+HRuomn1Frs0saw4I8SwvUAf+Sp1
+kfGO+lo2hhHuR4/cHGc5QJlgMjsvD4HDQgcN1tThikmOnbTma4r3F2L8FCjr6aRt
+BHybwhqfl+yJR9fVqKRBYAWMOH1xqE1e+eHn2D3eSl3V6boueo1RUHl3nF9YCL8W
+EF17FzND58bm2YCh3Kpn3ZU939zNBetKwLsFapIo6GDYQFSuxlFtWz2w1V5LKtS7
+0g3679pGRNWgwMCeE6GTV6/u96zxqlB0q5RrR+3Eb+dgerUXT5mueCP+aJX9O/Dh
+lhBDU0eiX8XYvPrneJpS
+=pvDZ
 -----END PGP SIGNATURE-----
 
---TYjWXklH5JTzT8n9--
+--Sk71+Upln2BLuDmg--
