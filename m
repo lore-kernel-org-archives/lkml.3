@@ -1,104 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab3IWIGK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 04:06:10 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:51423 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab3IWIGH (ORCPT
+	id S1753468Ab3IWIHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 04:07:10 -0400
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:62630 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab3IWIHH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 04:06:07 -0400
+	Mon, 23 Sep 2013 04:07:07 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Chen Gang <gang.chen@asianux.com>
+CC: "vgupta@synopsys.com" <Vineet.Gupta1@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arc: include: asm: uaccess.h: include
+ "asm-generic/uaccess-unaligned.h"
+Thread-Topic: [PATCH] arc: include: asm: uaccess.h: include
+ "asm-generic/uaccess-unaligned.h"
+Thread-Index: AQHOt0Mgb3GioDtXqkmFohpzAwJj1g==
+Date: Mon, 23 Sep 2013 08:07:02 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514DF30@IN01WEMBXA.internal.synopsys.com>
+References: <523E6274.3030602@asianux.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.239.235]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1379680214-9143-4-git-send-email-ldewangan@nvidia.com>
-References: <1379680214-9143-1-git-send-email-ldewangan@nvidia.com>
-	<1379680214-9143-4-git-send-email-ldewangan@nvidia.com>
-Date: Mon, 23 Sep 2013 10:06:07 +0200
-Message-ID: <CACRpkdbJ6N-5RET+cmF=14jKVDnuAZtZwjcKym75ySER2gCpBQ@mail.gmail.com>
-Subject: Re: [rtc-linux] [PATCH V2 3/5] gpio: add support for AMS AS3722 gpio driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: rtc-linux@googlegroups.com
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Rob Landley <rob@landley.net>,
-        ijc+devicetree@hellion.org.uk, Grant Likely <grant.likely@linaro.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Florian Lobmaier <florian.lobmaier@ams.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 2:30 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-
-> The AS3722 is a compact system PMU suitable for mobile phones, tablets etc.
+On 09/22/2013 08:53 AM, Chen Gang wrote:
+> Need include the default implementation, just like another platforms
+> (e.g. parisc, tile ...), or can not pass compiling.
 >
-> Add a driver to support accessing the 8 GPIOs found on the AMS AS3722
-> PMIC using gpiolib.
+> The related error (with allmodconfig for arc):
 >
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> Signed-off-by: Florian Lobmaier <florian.lobmaier@ams.com>
-
-OK...
-
-> +Required subnode properties:
-> +---------------------------
-> +reg: The GPIO number on which the properties need to be applied.
-> +
-> +Optional subnode properties:
-> +---------------------------
-> +bias-pull-up: The Pull-up for the pin to be enable.
-> +bias-pull-down: Pull down of the pins to be enable.
-> +bias-high-impedance: High impedance of the pin to be enable.
-> +open-drain: Pin is open drain type.
-> +function: IO functionality of the pins. The valid options are:
-> +       gpio, intrrupt-output, vsup-vbat-low-undeb, interrupt-input,
-> +       pwm-input, voltage-stby, oc-powergood-sd0, powergood-output,
-> +       clk32k-output, watchdog-input, soft-reset-input, pwm-output,
-> +       vsup-vbat-low-deb, oc-powergood-sd6
-> +    Missing the function property will set the pin in GPIO mode.
-
-This is pin control. Do not try to shoehorn pin control drivers into
-the GPIO subsystem. Take a good day off, read through
-Documentation/pinctrl.txt and come back with a thoroughly rewritten
-driver in drivers/pinctrl/pinctrl-as3722.c.
-
-We already have generic device tree bindings for all of the above
-properties, and a library for generic pin config in the pin control
-subsystem to handle them. Look at recent drivers for
-inspiration.
-
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-
-Move this driver to the pinctrl subsystem.
-
-> index b6ed304..544a612 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -368,6 +368,12 @@ config GPIO_ARIZONA
->         help
->           Support for GPIOs on Wolfson Arizona class devices.
+>     CC [M]  fs/btrfs/ioctl.o
+>   fs/btrfs/ioctl.c: In function ‘btrfs_ioctl_file_extent_same’:
+>   fs/btrfs/ioctl.c:2802: error: implicit declaration of function ‘__put_user_unaligned’
 >
-> +config GPIO_AS3722
-> +       bool "AMS AS3722 PMICs GPIO"
-> +       depends on MFD_AS3722
-> +       help
-> +         Select this option to enable GPIO driver for the AMS AS3722 PMIC.
+>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-It should
-select PINMUX
-select GENERIC_PINCONF
+Acked-by: Vineet Gupta <vgupta@synopsys.com>
 
-> +static char const *as3722_gpio_iosf[] = {
-> +       "gpio",
-> +       "intrrupt-output",
-
-intrrupt?
-
-Yours,
-Linus Walleij
+Thx,
+-Vineet
