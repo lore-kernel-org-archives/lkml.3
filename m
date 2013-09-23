@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab3IWMGm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 08:06:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58714 "EHLO mga02.intel.com"
+	id S1754059Ab3IWMGY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 08:06:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58705 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753783Ab3IWMGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 08:06:25 -0400
+	id S1753783Ab3IWMGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 08:06:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,962,1371106800"; 
-   d="scan'208";a="382188977"
+   d="scan'208";a="407649334"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -23,9 +23,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv6 07/22] thp, mm: rewrite add_to_page_cache_locked() to support huge pages
-Date: Mon, 23 Sep 2013 15:05:35 +0300
-Message-Id: <1379937950-8411-8-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv6 14/22] thp, mm: allocate huge pages in grab_cache_page_write_begin()
+Date: Mon, 23 Sep 2013 15:05:42 +0300
+Message-Id: <1379937950-8411-15-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,161 +33,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For huge page we add to radix tree HPAGE_CACHE_NR pages at once: head
-page for the specified index and HPAGE_CACHE_NR-1 tail pages for
-following indexes.
+Try to allocate huge page if flags has AOP_FLAG_TRANSHUGE.
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+If, for some reason, it's not possible allocate a huge page at this
+possition, it returns NULL. Caller should take care of fallback to
+small pages.
+
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/huge_mm.h    | 24 ++++++++++++++++++++++++
- include/linux/page-flags.h | 13 +++++++++++++
- mm/filemap.c               | 45 +++++++++++++++++++++++++++++++++++----------
- 3 files changed, 72 insertions(+), 10 deletions(-)
+ include/linux/fs.h |  1 +
+ mm/filemap.c       | 23 +++++++++++++++++++++--
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index fb0847572c..9747af1117 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -230,6 +230,20 @@ static inline int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_str
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 26801f0bb1..42ccdeddd9 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -282,6 +282,7 @@ enum positive_aop_returns {
+ #define AOP_FLAG_NOFS			0x0004 /* used by filesystem to direct
+ 						* helper code (eg buffer layer)
+ 						* to clear GFP_FS from alloc */
++#define AOP_FLAG_TRANSHUGE		0x0008 /* allocate transhuge page */
  
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
-+
-+#define HPAGE_CACHE_ORDER      (HPAGE_SHIFT - PAGE_CACHE_SHIFT)
-+#define HPAGE_CACHE_NR         (1L << HPAGE_CACHE_ORDER)
-+#define HPAGE_CACHE_INDEX_MASK (HPAGE_CACHE_NR - 1)
-+
-+#else
-+
-+#define HPAGE_CACHE_ORDER      ({ BUILD_BUG(); 0; })
-+#define HPAGE_CACHE_NR         ({ BUILD_BUG(); 0; })
-+#define HPAGE_CACHE_INDEX_MASK ({ BUILD_BUG(); 0; })
-+
-+#endif
-+
- static inline bool transparent_hugepage_pagecache(void)
- {
- 	if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE))
-@@ -243,4 +257,14 @@ static inline bool transparent_hugepage_pagecache(void)
-                  return false;
- 	return transparent_hugepage_flags & (1<<TRANSPARENT_HUGEPAGE_PAGECACHE);
- }
-+
-+static inline int hpagecache_nr_pages(struct page *page)
-+{
-+	if (IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE))
-+		return hpage_nr_pages(page);
-+
-+	BUG_ON(PageTransHuge(page));
-+	return 1;
-+}
-+
- #endif /* _LINUX_HUGE_MM_H */
-diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index 6d53675c2b..6d2d7ce3e1 100644
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -452,6 +452,19 @@ static inline int PageTransTail(struct page *page)
- }
- #endif
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
-+static inline int PageTransHugeCache(struct page *page)
-+{
-+	return PageTransHuge(page);
-+}
-+#else
-+
-+static inline int PageTransHugeCache(struct page *page)
-+{
-+	return 0;
-+}
-+#endif
-+
  /*
-  * If network-based swap is enabled, sl*b must keep track of whether pages
-  * were allocated from pfmemalloc reserves.
+  * oh the beauties of C type declarations.
 diff --git a/mm/filemap.c b/mm/filemap.c
-index c7e42aee5c..d2d6c0ebe9 100644
+index 3421bcaed4..410879a801 100644
 --- a/mm/filemap.c
 +++ b/mm/filemap.c
-@@ -460,38 +460,63 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 		pgoff_t offset, gfp_t gfp_mask)
- {
- 	int error;
-+	int i, nr;
+@@ -2322,18 +2322,37 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
+ 	gfp_t gfp_mask;
+ 	struct page *page;
+ 	gfp_t gfp_notmask = 0;
++	bool must_use_thp = (flags & AOP_FLAG_TRANSHUGE) &&
++		IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE);
  
- 	VM_BUG_ON(!PageLocked(page));
- 	VM_BUG_ON(PageSwapBacked(page));
- 
-+	/* memory cgroup controller handles thp pages on its side */
- 	error = mem_cgroup_cache_charge(page, current->mm,
- 					gfp_mask & GFP_RECLAIM_MASK);
- 	if (error)
- 		return error;
- 
--	error = radix_tree_maybe_preload(gfp_mask & ~__GFP_HIGHMEM);
-+	if (PageTransHugeCache(page))
-+		BUILD_BUG_ON(HPAGE_CACHE_NR > RADIX_TREE_PRELOAD_NR);
-+
-+	nr = hpagecache_nr_pages(page);
-+
-+	error = radix_tree_maybe_preload_contig(nr, gfp_mask & ~__GFP_HIGHMEM);
- 	if (error) {
- 		mem_cgroup_uncharge_cache_page(page);
- 		return error;
- 	}
- 
-+	spin_lock_irq(&mapping->tree_lock);
- 	page_cache_get(page);
--	page->mapping = mapping;
- 	page->index = offset;
--
--	spin_lock_irq(&mapping->tree_lock);
--	error = radix_tree_insert(&mapping->page_tree, offset, page);
-+	page->mapping = mapping;
-+	for (i = 0; i < nr; i++) {
-+		error = radix_tree_insert(&mapping->page_tree,
-+				offset + i, page);
-+		/*
-+		 * In the midle of THP we can collide with small page which was
-+		 * established before THP page cache is enabled or by other VMA
-+		 * with bad alignement (most likely MAP_FIXED).
-+		 */
-+		if (error) {
-+			i--; /* failed to insert anything at offset + i */
-+			goto err_insert;
-+		}
+ 	gfp_mask = mapping_gfp_mask(mapping);
++	if (must_use_thp) {
++		BUG_ON(index & HPAGE_CACHE_INDEX_MASK);
++		BUG_ON(!(gfp_mask & __GFP_COMP));
 +	}
- 	radix_tree_preload_end();
--	if (unlikely(error))
--		goto err_insert;
--	mapping->nrpages++;
--	__inc_zone_page_state(page, NR_FILE_PAGES);
-+	mapping->nrpages += nr;
-+	__mod_zone_page_state(page_zone(page), NR_FILE_PAGES, nr);
-+	if (PageTransHuge(page))
-+		__inc_zone_page_state(page, NR_FILE_TRANSPARENT_HUGEPAGES);
- 	spin_unlock_irq(&mapping->tree_lock);
- 	trace_mm_filemap_add_to_page_cache(page);
- 	return 0;
- err_insert:
--	page->mapping = NULL;
-+	radix_tree_preload_end();
-+	if (i != 0)
-+		error = -ENOSPC; /* no space for a huge page */
-+
- 	/* Leave page->index set: truncation relies upon it */
-+	page->mapping = NULL;
-+	for (; i >= 0; i--)
-+		radix_tree_delete(&mapping->page_tree, offset + i);
-+
- 	spin_unlock_irq(&mapping->tree_lock);
- 	mem_cgroup_uncharge_cache_page(page);
- 	page_cache_release(page);
+ 	if (mapping_cap_account_dirty(mapping))
+ 		gfp_mask |= __GFP_WRITE;
+ 	if (flags & AOP_FLAG_NOFS)
+ 		gfp_notmask = __GFP_FS;
+ repeat:
+ 	page = find_lock_page(mapping, index);
+-	if (page)
++	if (page) {
++		if (must_use_thp && !PageTransHuge(page)) {
++			unlock_page(page);
++			page_cache_release(page);
++			return NULL;
++		}
+ 		goto found;
++	}
+ 
+-	page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
++	if (must_use_thp) {
++		page = alloc_pages(gfp_mask & ~gfp_notmask, HPAGE_PMD_ORDER);
++		if (page)
++			count_vm_event(THP_WRITE_ALLOC);
++		else
++			count_vm_event(THP_WRITE_ALLOC_FAILED);
++	} else
++		page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
+ 	if (!page)
+ 		return NULL;
+ 	status = add_to_page_cache_lru(page, mapping, index,
 -- 
 1.8.4.rc3
 
