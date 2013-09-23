@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab3IWTM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 15:12:56 -0400
-Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:63988 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751838Ab3IWTMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 15:12:54 -0400
-X-TM-IMSS-Message-ID: <09cda8cf0000dc8d@nsa.gov>
-Message-ID: <52408F0C.4020107@tycho.nsa.gov>
-Date: Mon, 23 Sep 2013 14:57:16 -0400
-From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>,
-        Rajiv Andrade <mail@srajiv.net>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: Re: [PATCH 03/13] tpm: xen-tpmfront: Fix default durations
-References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com> <1379960083-8942-4-git-send-email-jgunthorpe@obsidianresearch.com> <20130923185158.GA2507@phenom.dumpdata.com>
-In-Reply-To: <20130923185158.GA2507@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753551Ab3IWTNP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 15:13:15 -0400
+Received: from a194-110.smtp-out.amazonses.com ([199.255.194.110]:43547 "EHLO
+	a194-110.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753430Ab3IWTMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 15:12:51 -0400
+Message-Id: <000001414c3d064a-ebe0610b-6951-4a74-bd33-8480e3e1e364-000000@email.amazonses.com>
+User-Agent: quilt/0.50-1
+Date: Mon, 23 Sep 2013 19:12:50 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Subject: [pchecks v1 2/4] Use raw cpu ops for calls that would trigger with checks
+References: <20130923191256.584672290@linux.com>
+X-SES-Outgoing: 199.255.194.110
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 02:51 PM, Konrad Rzeszutek Wilk wrote:
-> On Mon, Sep 23, 2013 at 12:14:33PM -0600, Jason Gunthorpe wrote:
->> All the default durations were being set to 10 minutes which is
->> way too long for the timeouts. Normal values for the longest
->> duration are around 5 mins, and short duration ar around .5s.
->>
->> Further, these are just the default, tpm_get_timeouts will set
->> them to values from the TPM (or throw an error).
->>
->> Just remove them.
->
-> Sounds sensible.
->
-> Daniel?
+These location triggered during testing with KVM.
 
-Also sounds good to me. I believe this was just a remnant of the old
-xen-tpmfront code that didn't get removed once the timeouts were being
-read from the backend.
+These are fetches without preemption off where we judged that
+to be more performance efficient or where other means of
+providing synchronization (BH handling) are available.
 
->>
->> Cc: Daniel De Graaf <dgdegra@tycho.nsa.gov>
->> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
->> ---
->>   drivers/char/tpm/xen-tpmfront.c | 7 -------
->>   1 file changed, 7 deletions(-)
->>
->> diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
->> index 7a7929b..6f2fe2b 100644
->> --- a/drivers/char/tpm/xen-tpmfront.c
->> +++ b/drivers/char/tpm/xen-tpmfront.c
->> @@ -210,8 +210,6 @@ static struct attribute_group vtpm_attr_grp = {
->>   	.attrs = vtpm_attrs,
->>   };
->>
->> -#define TPM_LONG_TIMEOUT   (10 * 60 * HZ)
->> -
->>   static const struct tpm_vendor_specific tpm_vtpm = {
->>   	.status = vtpm_status,
->>   	.recv = vtpm_recv,
->> @@ -224,11 +222,6 @@ static const struct tpm_vendor_specific tpm_vtpm = {
->>   	.miscdev = {
->>   		.fops = &vtpm_ops,
->>   	},
->> -	.duration = {
->> -		TPM_LONG_TIMEOUT,
->> -		TPM_LONG_TIMEOUT,
->> -		TPM_LONG_TIMEOUT,
->> -	},
->>   };
->>
->>   static irqreturn_t tpmif_interrupt(int dummy, void *dev_id)
->> --
->> 1.8.1.2
->>
->
->
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
+Index: linux/include/linux/topology.h
+===================================================================
+--- linux.orig/include/linux/topology.h	2013-09-12 13:26:29.216103951 -0500
++++ linux/include/linux/topology.h	2013-09-12 13:41:30.762358687 -0500
+@@ -182,7 +182,7 @@ DECLARE_PER_CPU(int, numa_node);
+ /* Returns the number of the current Node. */
+ static inline int numa_node_id(void)
+ {
+-	return __this_cpu_read(numa_node);
++	return raw_cpu_read(numa_node);
+ }
+ #endif
+ 
+@@ -239,7 +239,7 @@ static inline void set_numa_mem(int node
+ /* Returns the number of the nearest Node with memory */
+ static inline int numa_mem_id(void)
+ {
+-	return __this_cpu_read(_numa_mem_);
++	return raw_cpu_read(_numa_mem_);
+ }
+ #endif
+ 
+Index: linux/include/net/snmp.h
+===================================================================
+--- linux.orig/include/net/snmp.h	2013-09-12 13:26:29.216103951 -0500
++++ linux/include/net/snmp.h	2013-09-12 13:26:29.208104037 -0500
+@@ -126,7 +126,7 @@ struct linux_xfrm_mib {
+ 	extern __typeof__(type) __percpu *name[SNMP_ARRAY_SZ]
+ 
+ #define SNMP_INC_STATS_BH(mib, field)	\
+-			__this_cpu_inc(mib[0]->mibs[field])
++			raw_cpu_inc(mib[0]->mibs[field])
+ 
+ #define SNMP_INC_STATS_USER(mib, field)	\
+ 			this_cpu_inc(mib[0]->mibs[field])
+@@ -141,7 +141,7 @@ struct linux_xfrm_mib {
+ 			this_cpu_dec(mib[0]->mibs[field])
+ 
+ #define SNMP_ADD_STATS_BH(mib, field, addend)	\
+-			__this_cpu_add(mib[0]->mibs[field], addend)
++			raw_cpu_add(mib[0]->mibs[field], addend)
+ 
+ #define SNMP_ADD_STATS_USER(mib, field, addend)	\
+ 			this_cpu_add(mib[0]->mibs[field], addend)
+Index: linux/kernel/hrtimer.c
+===================================================================
+--- linux.orig/kernel/hrtimer.c	2013-09-12 13:26:29.216103951 -0500
++++ linux/kernel/hrtimer.c	2013-09-12 13:26:29.212103994 -0500
+@@ -538,7 +538,7 @@ static inline int hrtimer_is_hres_enable
+  */
+ static inline int hrtimer_hres_active(void)
+ {
+-	return __this_cpu_read(hrtimer_bases.hres_active);
++	return raw_cpu_read(hrtimer_bases.hres_active);
+ }
+ 
+ /*
 
--- 
-Daniel De Graaf
-National Security Agency
