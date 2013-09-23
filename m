@@ -1,49 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab3IWMij (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 08:38:39 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40548 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab3IWMii (ORCPT
+	id S1753598Ab3IWMqk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 08:46:40 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:53370 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab3IWMqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 08:38:38 -0400
-Date: Mon, 23 Sep 2013 15:38:22 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: Re: [PATCH] pinctrl: pinctrl-adi2: Remove nested lock+irqsave that
- resue flags.
-Message-ID: <20130923123822.GG6247@mwanda>
-References: <1379928588-12627-1-git-send-email-sonic.adi@gmail.com>
+	Mon, 23 Sep 2013 08:46:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379928588-12627-1-git-send-email-sonic.adi@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20130923090100.GE6192@mwanda>
+References: <20130923090100.GE6192@mwanda>
+Date: Mon, 23 Sep 2013 14:46:38 +0200
+Message-ID: <CA+MoWDpwx_2kh9bEARh4D5xzyYhWekAceipf0YN=3a+Q5W4eNQ@mail.gmail.com>
+Subject: Re: checkpatch guide for newbies
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 05:29:48PM +0800, Sonic Zhang wrote:
-> @@ -323,12 +323,12 @@ static unsigned int adi_gpio_irq_startup(struct irq_data *d)
->  	struct gpio_pint_regs *regs = port->pint->regs;
-                                      ^^^^^^^^^^^^^^^^
-Dereference.
+On Mon, Sep 23, 2013 at 11:01 AM, Dan Carpenter
+<dan.carpenter@oracle.com> wrote:
+> I've written a checkpatch guide for newbies because it seems like they
+> make the same mistakes over and over.  I intend to put it under
+> Documentation/.  Could you look it over?
+>
+>
+>                 Introduction
+>
+> This document is aimed at new kernel contributors using "checkpatch.pl --file".
+>
+> The first thing to remember is that the aim is not to get rid of every
+> checkpatch.pl warning; the aim is to make the code cleaner and more readable.
+> The other thing to remember is that checkpatch.pl is not a very smart tool and
+> there are mistakes that it misses so keep your eyes open for those as well.
+>
+> For example, checkpatch.pl could warn about a badly formatted warning message.
+> Ask yourself, is the warning message is clear?  Is it needed?  Could a
+> non-privileged user trigger the warning and flood the syslog?  Are there
+> spelling mistakes?  Since Checkpatch.pl has flagged the line as sloppy code,
+> there may be multiple mistakes.
+>
+> In the Linux kernel, we take an enormous pride in our work and we want clean
+> code.  But the one major drawback to cleanup patches is that they break
+> "git blame" so it's not a good idea for newbies to send very trivial cleanup
+> patches to the kernel/ directory.  It's better to get a little experience in the
+> drivers/ directory first.  The drivers/staging/ directory in particular always
+> needs cleanup patches.
+>
+>
+>                 General Hints
+>
+> 1)  Don't put too many things in one patch because it makes it hard to review.
+> Break the patch up into a patch series like this made up example:
+>
+> [PATCH 1/4] subsystem: driver: Use tabs to indent instead of spaces
+> [PATCH 2/4] subsystem: driver: Add spaces around math operations
+> [PATCH 3/4] subsystem: driver: Remove extra braces
+> [PATCH 4/4] subsystem: driver: Delete LINUX_VERSION_CODE related code
+>
+>
+>                 Long Lines
+>
+> Historically screens were 80 characters wide and it was annoying when code went
+> over the edge.  These days we have larger screens, but we keep the 80 character
+> limit because it forces us to write simpler code.
+>
+> One way to remove indent levels is using functions.  If you find yourself
+> writing a loop or a switch statement and you're already indented several tabs
+> then probably it should be a new function instead.
+>
+> Whenever possible return immediately.
+> Bad:
+> -       foo = kmalloc();
+> -       if (foo) {
+> -               /* code indent 2 tabs */
+> -       }
+> -       return foo;
+> Good:
+> +       foo = kmalloc();
+> +       if (!foo)
+> +               return NULL;
+> +       /* code indented 1 tab */
+> +       return foo;
+>
+> Choose shorter names.
+> Bad:
+> -       for(uiIpv6AddIndex = 0; uiIpv6AddIndex < uiIpv6AddrNoLongWords;
+> -           uiIpv6AddIndex++) {
+> Good:
+> +       for (i = 0; i < long_words; i++) {
+>
+> Use temporary variable names:
+> Bad:
+> -       dev->backdev[count]->bitlistsize =
+> -               dev->backdev[count]->devmagic->bitlistsize;
+> Good:
+> +       back = dev->backdev[count];
+> +       back->bitlistsize = back->devmagic->bitlistsize;
+>
+> Don't do complicated things in the initializer:
+> Bad:
+> -       struct binder_ref_death *tmp_death = container_of(w,
+> -                                               struct binder_ref_death, work);
+> Good:
+> +       struct binder_ref_death *tmp_death;
+> +
+> +       tmp_death = container_of(w, struct binder_ref_death, work);
+>
+> If you must break up a long line then align it nicely.  Use spaces if needed.
+> Bad:
+> -       if (adapter->flowcontrol == FLOW_RXONLY ||
+> -                       adapter->flowcontrol == FLOW_BOTH) {
+> Good:
+> +       if (adapter->flowcontrol == FLOW_RXONLY ||
+> +           adapter->flowcontrol == FLOW_BOTH) {
 
->  
->  	if (!port) {
-            ^^^^^
-Too late to check here.
+I needed this yesterday. I was not comfortable using spaces and I did
+not know where the second line should begin.
 
-> -		dev_err(port->dev, "GPIO IRQ %d :Not exist\n", d->irq);
-> +		pr_err("GPIO IRQ %d :Not exist\n", d->irq);
->  		return -ENODEV;
->  	}
 
-regards,
-dan carpenter
-> 
+>
+> It's preferred if the operator goes at the end of the first line instead of at
+> the start of the second line:
+> Bad:
+> -       PowerData = (1 << 31) | (0 << 30) | (24 << 24)
+> -                   | BitReverse(w89rf242_txvga_data[i][0], 24);
+> Good:
+> +       PowerData = (1 << 31) | (0 << 30) | (24 << 24) |
+> +                   BitReverse(w89rf242_txvga_data[i][0], 24);
+What is the rule for where to start the second line here?
+
+
+>
+>
+>                 Writing the Changelog
+>
+> Use the word "cleanup" instead of "fix".  "Fix" implies the runtime changed and
+> it fixes a bug.  "Cleanup" implies that runtime stayed exactly the same.
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+Peter
