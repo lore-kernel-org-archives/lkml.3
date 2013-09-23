@@ -1,133 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab3IWHOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 03:14:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37713 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753385Ab3IWHOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 03:14:08 -0400
-Date: Mon, 23 Sep 2013 10:16:20 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 4/6] vhost_net: determine whether or not to use
- zerocopy at one time
-Message-ID: <20130923071620.GB31886@redhat.com>
-References: <1378111261-14826-1-git-send-email-jasowang@redhat.com>
- <1378111261-14826-5-git-send-email-jasowang@redhat.com>
- <20130904115929.GA9393@redhat.com>
- <5227F274.9040506@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5227F274.9040506@redhat.com>
+	id S1753280Ab3IWHTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 03:19:09 -0400
+Received: from benson.vm.bytemark.co.uk ([212.110.190.137]:58285 "EHLO
+	benson.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558Ab3IWHTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 03:19:08 -0400
+Message-ID: <1379920736.30708.26.camel@dagon.hellion.org.uk>
+Subject: Re: [PATCH 1/3] Add smp support for Allwinner A20(sunxi 7i).
+From: Ian Campbell <ijc@hellion.org.uk>
+To: cinifr <cinifr@gmail.com>
+Cc: "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        "coosty@163.com" <coosty@163.com>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.co" <pawel.moll@arm.co>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Date: Mon, 23 Sep 2013 08:18:56 +0100
+In-Reply-To: <CAK3cCBzMXdeeSPC-OpWcHAuef=ocpy5n0=Fc2yBECPnU=2OTXw@mail.gmail.com>
+References: <1379852488-32147-1-git-send-email-cinifr@gmail.com>
+	 <1379852488-32147-2-git-send-email-cinifr@gmail.com>
+	 <1379861045.30708.22.camel@dagon.hellion.org.uk>
+	 <CAK3cCBzMXdeeSPC-OpWcHAuef=ocpy5n0=Fc2yBECPnU=2OTXw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 10:54:44AM +0800, Jason Wang wrote:
-> On 09/04/2013 07:59 PM, Michael S. Tsirkin wrote:
-> > On Mon, Sep 02, 2013 at 04:40:59PM +0800, Jason Wang wrote:
-> >> Currently, even if the packet length is smaller than VHOST_GOODCOPY_LEN, if
-> >> upend_idx != done_idx we still set zcopy_used to true and rollback this choice
-> >> later. This could be avoided by determining zerocopy once by checking all
-> >> conditions at one time before.
-> >>
-> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> >> ---
-> >>  drivers/vhost/net.c |   47 ++++++++++++++++++++---------------------------
-> >>  1 files changed, 20 insertions(+), 27 deletions(-)
-> >>
-> >> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> >> index 8a6dd0d..3f89dea 100644
-> >> --- a/drivers/vhost/net.c
-> >> +++ b/drivers/vhost/net.c
-> >> @@ -404,43 +404,36 @@ static void handle_tx(struct vhost_net *net)
-> >>  			       iov_length(nvq->hdr, s), hdr_size);
-> >>  			break;
-> >>  		}
-> >> -		zcopy_used = zcopy && (len >= VHOST_GOODCOPY_LEN ||
-> >> -				       nvq->upend_idx != nvq->done_idx);
-> >> +
-> >> +		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
-> >> +				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
-> >> +				      nvq->done_idx
-> > Thinking about this, this looks strange.
-> > The original idea was that once we start doing zcopy, we keep
-> > using the heads ring even for short packets until no zcopy is outstanding.
+On Sun, 2013-09-22 at 23:31 +0800, cinifr wrote:
 > 
-> What's the reason for keep using the heads ring?
-
-To keep completions in order.
-
+> 
+> On Sunday, 22 September 2013, Ian Campbell <ijc@hellion.org.uk> wrote:
+> > On Sun, 2013-09-22 at 20:21 +0800, Fan Rong wrote:
 > >
-> > What's the logic behind (nvq->upend_idx + 1) % UIO_MAXIOV != nvq->done_idx
-> > here?
-> 
-> Because we initialize both upend_idx and done_idx to zero, so upend_idx
-> != done_idx could not be used to check whether or not the heads ring
-> were full.
+> >> +     /* Set boot addr */
+> >> +     paddr = virt_to_phys(sun7i_secondary_startup);
+> >> +     writel(paddr, sunxi7i_cc_base + SUN7I_CPUCFG_BOOTADDR);
+> >
+> > This means that the secondary cores will miss out on any setup which
+> the
+> > bootloader might have done for the primary CPU, e.g. switching to NS
+> HYP
+> > mode, setting the CNTFRQ etc.
+> Yes, I think that is what bootloader should do.
 
-But what does ring full have to do with zerocopy use?
+In which case this kernel patch needs instead to speak the bootloader
+wakeup protocol instead of speaking to the h/w directly like you've done
+here, right?
 
-> >> +				   && vhost_net_tx_select_zcopy(net);
-> >>  
-> >>  		/* use msg_control to pass vhost zerocopy ubuf info to skb */
-> >>  		if (zcopy_used) {
-> >> +			struct ubuf_info *ubuf;
-> >> +			ubuf = nvq->ubuf_info + nvq->upend_idx;
-> >> +
-> >>  			vq->heads[nvq->upend_idx].id = head;
-> >> -			if (!vhost_net_tx_select_zcopy(net) ||
-> >> -			    len < VHOST_GOODCOPY_LEN) {
-> >> -				/* copy don't need to wait for DMA done */
-> >> -				vq->heads[nvq->upend_idx].len =
-> >> -							VHOST_DMA_DONE_LEN;
-> >> -				msg.msg_control = NULL;
-> >> -				msg.msg_controllen = 0;
-> >> -				ubufs = NULL;
-> >> -			} else {
-> >> -				struct ubuf_info *ubuf;
-> >> -				ubuf = nvq->ubuf_info + nvq->upend_idx;
-> >> -
-> >> -				vq->heads[nvq->upend_idx].len =
-> >> -					VHOST_DMA_IN_PROGRESS;
-> >> -				ubuf->callback = vhost_zerocopy_callback;
-> >> -				ubuf->ctx = nvq->ubufs;
-> >> -				ubuf->desc = nvq->upend_idx;
-> >> -				msg.msg_control = ubuf;
-> >> -				msg.msg_controllen = sizeof(ubuf);
-> >> -				ubufs = nvq->ubufs;
-> >> -				kref_get(&ubufs->kref);
-> >> -			}
-> >> +			vq->heads[nvq->upend_idx].len = VHOST_DMA_IN_PROGRESS;
-> >> +			ubuf->callback = vhost_zerocopy_callback;
-> >> +			ubuf->ctx = nvq->ubufs;
-> >> +			ubuf->desc = nvq->upend_idx;
-> >> +			msg.msg_control = ubuf;
-> >> +			msg.msg_controllen = sizeof(ubuf);
-> >> +			ubufs = nvq->ubufs;
-> >> +			kref_get(&ubufs->kref);
-> >>  			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
-> >> -		} else
-> >> +		} else {
-> >>  			msg.msg_control = NULL;
-> >> +			ubufs = NULL;
-> >> +		}
-> >>  		/* TODO: Check specific error and bomb out unless ENOBUFS? */
-> >>  		err = sock->ops->sendmsg(NULL, sock, &msg, len);
-> >>  		if (unlikely(err < 0)) {
-> >>  			if (zcopy_used) {
-> >> -				if (ubufs)
-> >> -					vhost_net_ubuf_put(ubufs);
-> >> +				vhost_net_ubuf_put(ubufs);
-> >>  				nvq->upend_idx = ((unsigned)nvq->upend_idx - 1)
-> >>  					% UIO_MAXIOV;
-> >>  			}
-> >> -- 
-> >> 1.7.1
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kvm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Or is it possible for the bootloader to set these things up and then put
+the CPU back to sleep such that it both retains any settings and is
+wakable by this patch? This code contains core resets and power control,
+which makes me suspect not.
+
+> > Wouldn't it be better to do all this stuff in the bootloader and
+> either
+> > implement PSCI or have the bootloader do the traditional holding pen
+> and
+> > mbox address thing?
+> >
+> I have modified uboot to set cntfrq and cntvoff in all smp cpus,and it
+> works well. I guess kernel should believe all cpu should be all same
+> when kernel boot. Bootloader should do it to ensure that.
+
+Yes, I think all CPUs must be in the same state at boot.
+
+But if you've done all that then what is this patch for?
+
+Do you have links to your u-boot patches?
+
+Ian.
+
