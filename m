@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab3IWX67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 19:58:59 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:39352 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab3IWX65 convert rfc822-to-8bit (ORCPT
+	id S1753538Ab3IWX7Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 19:59:25 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48451 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280Ab3IWX7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 19:58:57 -0400
-Date: Mon, 23 Sep 2013 18:58:52 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] Documentation: Update x86_64/boot-options.txt
-To: Richard Weinberger <richard@nod.at>
-Cc: x86@kernel.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, bp@suse.de,
-        dave.hansen@linux.intel.com, tony.luck@intel.com,
-        naveen.n.rao@linux.vnet.ibm.com, Richard Weinberger <richard@nod.at>
-References: <1379965017-29776-1-git-send-email-richard@nod.at>
-In-Reply-To: <1379965017-29776-1-git-send-email-richard@nod.at> (from
-	richard@nod.at on Mon Sep 23 14:36:57 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1379980732.1974.62@driftwood>
+	Mon, 23 Sep 2013 19:59:19 -0400
+Date: Tue, 24 Sep 2013 01:59:17 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Will Deacon <will.deacon@arm.com>,
+        Trivial patch monkey <trivial@kernel.org>,
+        Andrew Morton <akpm@osdl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: new binutils needed for arm in  3.12-rc1
+Message-ID: <20130923235917.GA30967@amd.pavel.ucw.cz>
+References: <20130919093002.GA23806@amd.pavel.ucw.cz>
+ <20130919093627.GB24866@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130919093627.GB24866@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 02:36:57 PM, Richard Weinberger wrote:
-> Removed obsolte parameters from boot-options.txt.
-> Verified by grepping around in arch/x86/.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
+During 3.12-rc, Will Deacon introduced code into arch/arm that
+requires binutils 2.22.
+    
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+    
+---
+    
+Or that changes should be reverted. I have updated my buildsystem on main
+machine, but ... it seems that debian-cross repository does not
+contain new enough bintuils for kernel now. We are talking
+    
+    62cbbc42e0019aff6310259f275ae812463f8836
+    6af396a6b6c698eb3834184518fc9a59bc22c817
+    73a6fdc48bf52e93c26874dc8c0f0f8d5585a809
+    6abdd491698a27f7df04a32ca12cc453810e4396
 
-Acked-by: Rob Landley <rob@landley.net>
+diff --git a/Documentation/Changes b/Documentation/Changes
+index b175808..0f8deaf 100644
+--- a/Documentation/Changes
++++ b/Documentation/Changes
+@@ -23,7 +23,7 @@ you probably needn't concern yourself with isdn4k-utils.
+ 
+ o  Gnu C                  3.2                     # gcc --version
+ o  Gnu make               3.80                    # make --version
+-o  binutils               2.12                    # ld -v
++o  binutils               2.22                    # ld -v
+ o  util-linux             2.10o                   # fdformat --version
+ o  module-init-tools      0.9.10                  # depmod -V
+ o  e2fsprogs              1.41.4                  # e2fsck -V
 
-And added it as patch #33 to my documentation todo heap. Now the merge  
-window's worked its way through I should filter out the ones other  
-people sent upstream and flush the queue. (Since everybody and their  
-dog grabs documentation patches, forwarding 'em promptly just causes  
-dupes, but it's about time to see what didn't already make it...)
-
-Rob
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
