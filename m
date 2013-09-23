@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab3IWRHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 13:07:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54366 "EHLO
+	id S1753499Ab3IWRIH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 13:08:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54371 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab3IWRHo (ORCPT
+	with ESMTP id S1753435Ab3IWRIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 13:07:44 -0400
-Date: Mon, 23 Sep 2013 10:07:42 -0700
+	Mon, 23 Sep 2013 13:08:04 -0400
+Date: Mon, 23 Sep 2013 10:08:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] Staging driver fixes for 3.12-rc2
-Message-ID: <20130923170742.GA4721@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for 3.12-rc2
+Message-ID: <20130923170803.GA4763@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,127 +29,101 @@ The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.12-rc2
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.12-rc2
 
-for you to fetch changes up to 617408101362c830779b8b4c7eca9efefe0beab1:
+for you to fetch changes up to 42f4891ca29a3c1535692a24acefb7015bbbc077:
 
-  Merge tag 'iio-fixes-for-3.12a' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into staging-linus (2013-09-21 16:45:36 -0700)
+  Merge tag 'fixes-for-v3.12-rc2' of git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb into usb-linus (2013-09-17 13:00:43 -0700)
 
 ----------------------------------------------------------------
 
-Staging fixes for 3.12-rc2
+USB fixes for 3.12-rc2
 
-Here are a number of small staging tree and iio driver fixes.  Nothing major,
-just lots of little things.
+Here are a number of small USB fixes for 3.12-rc2.
+
+One is a revert of a EHCI change that isn't quite ready for 3.12.  Others are
+minor things, gadget fixes, Kconfig fixes, and some quirks and documentation
+updates.
+
+All have been in linux-next for a bit.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Aaro Koskinen (3):
-      staging: octeon-ethernet: make dropped packets to consume NAPI budget
-      staging: octeon-ethernet: remove skb alloc failure warnings
-      staging: octeon-ethernet: rgmii: enable interrupts that we can handle
+Alan Stern (1):
+      usb: gadget: fix a bug and a WARN_ON in dummy-hcd
 
-Andrew Morton (1):
-      drivers/staging/lustre/lustre/ptlrpc/sec_bulk.c: rename PTRS_PER_PAGE
+Alexey Khoroshilov (1):
+      usb: gadget: mv_u3d_core: fix violation of locking discipline in mv_u3d_ep_disable()
 
-Ben Hutchings (1):
-      Staging: comedi: Fix dependencies for drivers misclassified as PCI
+Andrzej Pietrasiewicz (1):
+      usb: gadget: cdc2: fix conversion to new interface of f_ecm
 
-Dan Carpenter (1):
-      staging: line6: add bounds check in snd_toneport_source_put()
+Chanho Park (1):
+      usb: s3c-hsotg: do not disconnect gadget when receiving ErlySusp intr
+
+Chen Gang (1):
+      usb: gadget: add '__ref' for rndis_config_register() and cdc_config_register()
 
 Dave Jones (2):
-      staging/rtl8188eu: pass channel list by reference instead of copying struct.
-      staging/vt6656: Fix screwed up indentation in swGetOFDMControlRate
+      USB: fix typo in usb serial simple driver Kconfig
+      USB: Faraday fotg210: fix email addresses
 
-Derek Basehore (1):
-      iio: isl29018: Fix uninitialized value
+David Cohen (1):
+      usb: dwc3: gadget: avoid memory leak when failing to allocate all eps
 
-Geert Uytterhoeven (2):
-      staging/lustre: Correct default for LUSTRE_TRANSLATE_ERRNOS
-      staging: r8188eu: Fix uninitialized variable change_inx
+Frank Schäfer (1):
+      USB: pl2303: distinguish between original and cloned HX chips
 
 Greg Kroah-Hartman (2):
-      Revert "staging: zram: Add auto loading of module if user opens /dev/zram."
-      Merge tag 'iio-fixes-for-3.12a' of git://git.kernel.org/.../jic23/iio into staging-linus
+      Revert "USB: EHCI: support running URB giveback in tasklet context"
+      Merge tag 'fixes-for-v3.12-rc2' of git://git.kernel.org/.../balbi/usb into usb-linus
 
-Guenter Roeck (1):
-      staging: Disable lustre file system for MIPS, SH, and XTENSA
+Heikki Krogerus (2):
+      usb: dwc3: pci: add support for BayTrail
+      usb: dwc3: remove extcon dependency
 
-Jonathan Cameron (1):
-      staging:iio:dummy fix kfifo_buf kconfig dependency issue if kfifo modular and buffer enabled for built in dummy driver.
+Marek Szyprowski (1):
+      usb: s3c-hsotg: fix unregistration function
 
-Josh Wu (1):
-      iio: at91: fix adc_clk overflow
+Peter Oh (1):
+      usb: gadget: f_mass_storage: reset endpoint driver data when disabled
 
-Kees Cook (4):
-      staging: xillybus: fix format string usage
-      staging: dgap: fix overflows and format strings
-      staging: lustre: clean up format string usages
-      staging: dgnc: fix potential format string flaw
+Sachin Kamat (4):
+      usb: phy: omap-usb3: Fix return value
+      usb: gadget: f_ecm: Staticize ecm_alloc
+      usb: gadget: f_eem: Staticize eem_alloc
+      usb: host: fsl-mph-dr-of: Staticize local symbols
 
-Larry Finger (4):
-      staging: r8188eu: Fix Smatch off-by-one warning in hal/rtl8188e_hal_init.c
-      staging: r8188eu: Fix smatch error in core/rtw_mlme_ext.c
-      staging: r8188eu: Fix smatch warning in core/rtw_ieee80211.
-      staging: r8188eu: Adjust RX gain
-
-Lars-Peter Clausen (4):
-      iio: Stop sampling when the device is removed
-      iio: fix: Keep a reference to the IIO device for open file descriptors
-      iio: Prevent race between IIO chardev opening and IIO device free
-      iio:buffer_cb: Add missing iio_buffer_init()
-
-Lukasz Czerwinski (1):
-      iio: iio_device_add_event_sysfs() bugfix
-
-Peter Meerwald (5):
-      staging:iio:hmc5843: Fix measurement conversion
-      iio: Fix tmp006 dev-to-indio_dev conversion in suspend/resume
-      iio: Fix bma180 dev-to-indio_dev conversion in suspend/resume
-      iio: Fix mcp4725 dev-to-indio_dev conversion in suspend/resume
-      iio: Fix crash when scan_bytes is computed with active_scan_mask == NULL
-
-Sachin Kamat (1):
-      staging: iio: ade7854-spi: Fix return value
-
- drivers/iio/accel/bma180.c                         |  4 +--
- drivers/iio/adc/at91_adc.c                         | 11 ++++----
- drivers/iio/buffer_cb.c                            |  2 ++
- drivers/iio/dac/mcp4725.c                          | 12 ++++----
- drivers/iio/iio_core.h                             |  4 +++
- drivers/iio/industrialio-buffer.c                  | 30 ++++++++++++++++++--
- drivers/iio/industrialio-core.c                    | 31 +++++++++++++-------
- drivers/iio/industrialio-event.c                   | 20 +++++++++----
- drivers/iio/temperature/tmp006.c                   |  6 ++--
- drivers/staging/comedi/Kconfig                     | 33 +++++++++++-----------
- drivers/staging/dgap/dgap_driver.c                 | 17 ++++++-----
- drivers/staging/dgnc/dgnc_driver.c                 |  4 +--
- drivers/staging/iio/Kconfig                        |  2 +-
- drivers/staging/iio/light/isl29018.c               |  1 +
- drivers/staging/iio/magnetometer/hmc5843.c         |  2 +-
- drivers/staging/iio/meter/ade7854-spi.c            |  2 +-
- drivers/staging/line6/toneport.c                   | 10 +++++--
- .../staging/lustre/lnet/klnds/o2iblnd/o2iblnd_cb.c |  2 +-
- .../staging/lustre/lnet/klnds/socklnd/socklnd_cb.c |  2 +-
- drivers/staging/lustre/lustre/Kconfig              |  4 +--
- drivers/staging/lustre/lustre/ldlm/ldlm_lockd.c    |  4 +--
- drivers/staging/lustre/lustre/libcfs/workitem.c    |  2 +-
- drivers/staging/lustre/lustre/ptlrpc/pinger.c      |  4 +--
- drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c     |  8 +++---
- drivers/staging/lustre/lustre/ptlrpc/sec_bulk.c    |  4 +--
- drivers/staging/lustre/lustre/ptlrpc/service.c     |  6 ++--
- drivers/staging/octeon/ethernet-mem.c              |  7 +----
- drivers/staging/octeon/ethernet-rgmii.c            |  4 +--
- drivers/staging/octeon/ethernet-rx.c               |  5 +---
- drivers/staging/rtl8188eu/core/rtw_ieee80211.c     |  2 +-
- drivers/staging/rtl8188eu/core/rtw_mlme_ext.c      | 14 ++++-----
- drivers/staging/rtl8188eu/core/rtw_wlan_util.c     |  2 +-
- drivers/staging/rtl8188eu/include/odm.h            |  2 +-
- drivers/staging/rtl8188eu/include/rtl8188e_hal.h   |  2 +-
- drivers/staging/rtl8188eu/include/rtw_mlme_ext.h   |  1 +
- drivers/staging/vt6656/card.c                      |  4 +--
- drivers/staging/xillybus/xillybus_core.c           |  2 +-
- drivers/staging/zram/zram_drv.c                    |  1 -
- 38 files changed, 163 insertions(+), 110 deletions(-)
+ drivers/usb/dwc3/Kconfig            |  1 -
+ drivers/usb/dwc3/dwc3-pci.c         |  2 ++
+ drivers/usb/dwc3/gadget.c           |  6 ++----
+ drivers/usb/gadget/cdc2.c           | 19 +---------------
+ drivers/usb/gadget/dummy_hcd.c      |  7 +++---
+ drivers/usb/gadget/f_ecm.c          |  2 +-
+ drivers/usb/gadget/f_eem.c          |  2 +-
+ drivers/usb/gadget/f_mass_storage.c |  2 ++
+ drivers/usb/gadget/fotg210-udc.c    |  2 +-
+ drivers/usb/gadget/fusb300_udc.c    |  2 +-
+ drivers/usb/gadget/multi.c          |  8 +++----
+ drivers/usb/gadget/mv_u3d_core.c    |  3 +++
+ drivers/usb/gadget/s3c-hsotg.c      | 13 ++++-------
+ drivers/usb/host/ehci-fsl.c         |  2 +-
+ drivers/usb/host/ehci-grlib.c       |  2 +-
+ drivers/usb/host/ehci-hcd.c         |  2 +-
+ drivers/usb/host/ehci-mv.c          |  2 +-
+ drivers/usb/host/ehci-octeon.c      |  2 +-
+ drivers/usb/host/ehci-pmcmsp.c      |  2 +-
+ drivers/usb/host/ehci-ppc-of.c      |  2 +-
+ drivers/usb/host/ehci-ps3.c         |  2 +-
+ drivers/usb/host/ehci-q.c           |  5 +++++
+ drivers/usb/host/ehci-sead3.c       |  2 +-
+ drivers/usb/host/ehci-sh.c          |  2 +-
+ drivers/usb/host/ehci-tilegx.c      |  2 +-
+ drivers/usb/host/ehci-w90x900.c     |  2 +-
+ drivers/usb/host/ehci-xilinx-of.c   |  2 +-
+ drivers/usb/host/fsl-mph-dr-of.c    |  6 +++---
+ drivers/usb/phy/phy-omap-usb3.c     |  2 +-
+ drivers/usb/serial/Kconfig          |  2 +-
+ drivers/usb/serial/pl2303.c         | 43 +++++++++++++++++++++++++++----------
+ 31 files changed, 81 insertions(+), 72 deletions(-)
