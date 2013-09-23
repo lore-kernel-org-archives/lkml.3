@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab3IWTgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 15:36:44 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:45502 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752341Ab3IWTgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 15:36:43 -0400
-Date: Mon, 23 Sep 2013 13:36:33 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-Cc: tpmdd-devel@lists.sourceforge.net,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
-        Sirrix AG <tpmdd@sirrix.com>
-Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to
- sysfs into tpm-sysfs.c
-Message-ID: <20130923193633.GA9194@obsidianresearch.com>
-References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
- <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com>
- <52408E5D.4020904@tycho.nsa.gov>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52408E5D.4020904@tycho.nsa.gov>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1752835Ab3IWThS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 15:37:18 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:62408 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab3IWThR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 15:37:17 -0400
+From: Richard Weinberger <richard@nod.at>
+To: x86@kernel.org
+Cc: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, rob@landley.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, bp@suse.de,
+        dave.hansen@linux.intel.com, tony.luck@intel.com,
+        naveen.n.rao@linux.vnet.ibm.com, Richard Weinberger <richard@nod.at>
+Subject: [PATCH] Documentation: Update x86_64/boot-options.txt
+Date: Mon, 23 Sep 2013 21:36:57 +0200
+Message-Id: <1379965017-29776-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 02:54:21PM -0400, Daniel De Graaf wrote:
-> On 09/23/2013 02:14 PM, Jason Gunthorpe wrote:
-> >CLASS-sysfs.c is a common idiom for linux subsystems.
-> >
-> >This pulls all the sysfs attribute functions and related code
-> >into tpm-sysfs.c. To support this change some constants are moved
-> >from tpm.c to tpm.h and __tpm_pcr_read is made non-static and is
-> >called tpm_pcr_read_dev.
-> >
-> >Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> [...]
-> >diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
-> >index 12a4ab2..7892557 100644
-> >+++ b/drivers/char/tpm/xen-tpmfront.c
-> [...]
-> >-static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
-> >-static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
-> >-static DEVICE_ATTR(locality, S_IRUGO | S_IWUSR, tpm_show_locality,
-> >-		tpm_store_locality);
-> 
-> This patch drops the "locality" sysfs attribute from xen-tpmfront. Since
-> that attribute is currently only implemented for the xen TPM driver, it
-> is best to leave it there for now (and its show/store functions could
-> also be made static, an oversight I just noticed now). If this attribute
-> is later made available on other TPM drivers, it may need to contain
-> device-specific logic, but such an implementation is well outside the
-> scope of this series.
+Removed obsolte parameters from boot-options.txt.
+Verified by grepping around in arch/x86/.
 
-Okay, I see what you are talking about, the compiler didn't warn
-because of the missing static.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ Documentation/x86/x86_64/boot-options.txt | 23 -----------------------
+ 1 file changed, 23 deletions(-)
 
-This really is a core functionality. Lots of other drivers support
-locality, but none have dared actually expose the functionality. IHMO,
-it is a mistake to just jam a locality attribute in one driver.
+diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
+index 1228b22..5223479 100644
+--- a/Documentation/x86/x86_64/boot-options.txt
++++ b/Documentation/x86/x86_64/boot-options.txt
+@@ -78,14 +78,6 @@ APICs
+ 
+    no_timer_check Don't check the IO-APIC timer. This can work around
+ 		 problems with incorrect timer initialization on some boards.
+-
+-   apicmaintimer Run time keeping from the local APIC timer instead
+-                 of using the PIT/HPET interrupt for this. This is useful
+-                 when the PIT/HPET interrupts are unreliable.
+-
+-   noapicmaintimer  Don't do time keeping using the APIC timer.
+-		 Useful when this option was auto selected, but doesn't work.
+-
+    apicpmtimer
+ 		 Do APIC timer calibration using the pmtimer. Implies
+ 		 apicmaintimer. Useful when your PIT timer is totally
+@@ -144,11 +136,6 @@ Non Executable Mappings
+   on      Enable(default)
+   off     Disable
+ 
+-SMP
+-
+-  additional_cpus=NUM Allow NUM more CPUs for hotplug
+-		 (defaults are specified by the BIOS, see Documentation/x86/x86_64/cpu-hotplug-spec)
+-
+ NUMA
+ 
+   numa=off	Only set up a single NUMA node spanning all memory.
+@@ -289,16 +276,6 @@ Debugging
+ 
+   kstack=N	Print N words from the kernel stack in oops dumps.
+ 
+-  pagefaulttrace  Dump all page faults. Only useful for extreme debugging
+-		and will create a lot of output.
+-
+-  call_trace=[old|both|newfallback|new]
+-		old: use old inexact backtracer
+-		new: use new exact dwarf2 unwinder
+- 		both: print entries from both
+-		newfallback: use new unwinder but fall back to old if it gets
+-			stuck (default)
+-
+ Miscellaneous
+ 
+ 	nogbpages
+-- 
+1.8.3.1
 
-Sorry, I would have said something when the driver was posted if it
-was obvious this was hiding in there :|
-
-It looks like this driver was introduced in the 3.12 merge window, we
-could drop the attribute, and try to merge a core supported locality
-API in 3.13? What do you think?
-
-But, if you say it is needed, it is easy enough to adjust this patch
-series.
-
-Thanks,
-Jason
