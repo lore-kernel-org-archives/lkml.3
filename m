@@ -1,110 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab3IWHj4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 03:39:56 -0400
-Received: from mailout06.t-online.de ([194.25.134.19]:40558 "EHLO
-	mailout06.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab3IWHjz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 03:39:55 -0400
-Message-ID: <523FF03F.3040208@web.de>
-Date: Mon, 23 Sep 2013 09:39:43 +0200
-From: =?ISO-8859-1?Q?J=F6rg-Volker_Peetz?= <jvpeetz@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130821 Icedove/17.0.8
+	id S1753373Ab3IWHnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 03:43:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47265 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752544Ab3IWHnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 03:43:15 -0400
+Message-ID: <523FF0F5.50504@ti.com>
+Date: Mon, 23 Sep 2013 10:42:45 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Stephan Mueller <smueller@chronox.de>,
-        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH,RFC] random: make fast_mix() honor its name
-References: <20130910223326.GD11063@thunk.org> <522FB9F1.3070905@linaro.org> <20130911005047.GA13315@thunk.org> <20130912210717.GC3809@logfs.org> <20130912233155.GB5279@thunk.org> <20130916154026.GA23345@logfs.org> <20130921212510.GD8606@thunk.org> <20130921214118.GE8606@thunk.org> <20130922030553.GA21422@thunk.org> <523F5AB6.8070107@web.de> <20130922212752.GB7321@thunk.org>
-In-Reply-To: <20130922212752.GB7321@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-ID: ZXTMFwZYwhpg3VqMbiBNrzlzTC2MlVyTohjbohl+BgGnlMr6BOxLxGxXwMJegT1g4c@t-dialin.net
-X-TOI-MSGID: 5b5dcfc8-3a3d-42b7-9748-cc488f0a65b8
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <balajitk@ti.com>, <kishon@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC PATCH 08/15] ata: ahci_platform: Manage SATA PHY
+References: <1379595943-14622-1-git-send-email-rogerq@ti.com> <1379595943-14622-9-git-send-email-rogerq@ti.com> <523F3567.80303@cogentembedded.com>
+In-Reply-To: <523F3567.80303@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your patience and elaborated answer.
+Hi,
 
-Theodore Ts'o wrote, on 09/22/2013 23:27:
-> On Sun, Sep 22, 2013 at 11:01:42PM +0200, Jörg-Volker Peetz wrote:
->> just out of interest I would like to ask why this mixing function has to be that
->> complicated. For example, even if the input is always 0 and the pool is seeded
->> with pool[0] = 1 (as in your test program) this algorithm generates some
->> (predictable) pseudo-random numbers in the pool. Is this necessary?
+On 09/22/2013 09:22 PM, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 09/19/2013 05:05 PM, Roger Quadros wrote:
+> 
+>> From: Balaji T K <balajitk@ti.com>
+> 
+>> Some platforms have a PHY hooked up to the
+>> SATA controller. The PHY needs to be initialized
+>> and powered up for SATA to work. We do that
+>> using the PHY framework.
+> 
+>> [Roger Q] Cleaned up.
+> 
+>> CC: Tejun Heo <tj@kernel.org>
+>> Signed-off-by: Balaji T K <balajitk@ti.com>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> [...]
+> 
+>> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+>> index 1145637..94484cb 100644
+>> --- a/drivers/ata/ahci.h
+>> +++ b/drivers/ata/ahci.h
+>> @@ -37,6 +37,7 @@
 >>
->> To just mix in some random input filling the whole pool (seeded again with
->> pool[0] = 1) something as "simple" as
+>>   #include <linux/clk.h>
+>>   #include <linux/libata.h>
+>> +#include <linux/phy/phy.h>
+> 
+> struct phy;
+> 
+> should suffice.
+> 
+>> @@ -322,6 +323,7 @@ struct ahci_host_priv {
+>>       u32            em_buf_sz;    /* EM buffer size in byte */
+>>       u32            em_msg_type;    /* EM message type */
+>>       struct clk        *clk;        /* Only for platforms supporting clk */
+>> +    struct phy        *phy;        /* If platforms use phy */
+>>       void            *plat_data;    /* Other platform data */
+>>   };
 >>
->>           f->pool[0] = rol32(input[0], f->pool[2] & 31) ^ f->pool[1];
->>           f->pool[1] = rol32(input[1], f->pool[3] & 31) ^ f->pool[2];
->>           f->pool[2] = rol32(input[2], f->pool[0] & 31) ^ f->pool[3];
->>           f->pool[3] = rol32(input[3], f->pool[1] & 31) ^ f->pool[0];
+>> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+>> index 2daaee0..f812ffa 100644
+>> --- a/drivers/ata/ahci_platform.c
+>> +++ b/drivers/ata/ahci_platform.c
+>> @@ -23,6 +23,7 @@
+>>   #include <linux/platform_device.h>
+>>   #include <linux/libata.h>
+>>   #include <linux/ahci_platform.h>
+>> +#include <linux/phy/phy.h>
+> 
+>    Why include it from both ahci.h and here?
+> 
+OK. will move it to just .c file.
+
+>>   #include "ahci.h"
 >>
->> would suffice, although I didn't do any statistical tests.
+>>   static void ahci_host_stop(struct ata_host *host);
+>> @@ -141,16 +142,32 @@ static int ahci_probe(struct platform_device *pdev)
+>>           }
+>>       }
+>>
+>> +    hpriv->phy = devm_phy_get(dev, "sata-phy");
+>> +    if (IS_ERR(hpriv->phy)) {
+>> +        dev_err(dev, "can't get phy\n");
 > 
-> The structure of the mixing functions in /dev/random has been well
-> studied, and validatetd in a number of different academic papers.  So
-> I prefer to stick with the basic architecture, even as it is scaled
-> down for speed reasons and beause the pool is smaller.
+>    Don't think it's a good idea to complain about missing PHY when the driver doesn't even use it.
 
-I'm not arguing so much for speed but for simplicity and comprehensibility of
-code. As far as I understand the task of fast_mix() is just to collect random
-bits in a small buffer separated from the random pool?
-Once in a while these collected bits are then mixed into the main random pool.
-For that purpose, justifiably, a strong mixing function is used.
+OK. will change it to dev_dbg() instead.
+> 
+>> +        /* return only if -EPROBE_DEFER */
+>> +        if (PTR_ERR(hpriv->phy) == -EPROBE_DEFER) {
+>> +            rc = -EPROBE_DEFER;
+>> +            goto disable_unprepare_clk;
+>> +        }
+>> +    }
+>> +
+>>       /*
+>>        * Some platforms might need to prepare for mmio region access,
+>>        * which could be done in the following init call. So, the mmio
+>>        * region shouldn't be accessed before init (if provided) has
+>>        * returned successfully.
+>>        */
+>> +
+>> +    if (!(IS_ERR(hpriv->phy))) {
+> 
+>    () not needed around IS_ERR() invocation.
 
-> One of the important things about the mixing function is that if the
-> attacker knows the input values (of which the simplest example for
-> analytic purposes is if the input values are all zero), we want there
-> to be ample mixing across the pool.
+OK.
+
 > 
-> If you look at your proposed mixing function, in the case where the
-> input values are all zero, it devolves into:
+>> +        phy_init(hpriv->phy);
+>> +        phy_power_on(hpriv->phy);
+>> +    }
+>> +
 > 
->            f->pool[0] = f->pool[1];
->            f->pool[1] = f->pool[2];
->            f->pool[2] = f->pool[3];
->            f->pool[3] = f->pool[0];
-> 
-> Yes, I know the input values will never be all zero, but in the case
-> where the attacker knows what the input values are[1], but does not know
-> the contents of the entropy pool, a very simplistic mixing function
-> becomes relatively easy to analyze in the case where attacker knows
-> the inputs and then outputs, and is trying to determine the internal
-> state of the random driver.
-> 
-> Measuring the speed of the fast_mix function which I put together,
-> it's already been speeded up compard to the original fast_mix function
-> by a factor of six.  On my x86 laptop, I can run 10 million
-> iterations in 0.14 seconds, so that translates to 14ns per fast_mix
-> call.   (The original fast_mix function runs in 84 nanoseconds.)
-> 
-> So there is a cost-benefit tradeoff that we need to balance here.  If
-> you have a system with 100k interrupts per second, performance is
-> going to be poor no matter what, and it's not clear how common such
-> systems really are.  Most modern hardware do have some kind of NAPI or
-> other interrupt mitigation in place --- heck, even back in 1980's
-> people had figured out how to improve the 8250 UART with the 16550A
-> UART, which introdued a FIFO to decrease the interrupt load caused by
-> serial ports, and things have only gotten better since then.
-> 
-> Out of curiosity, on your profiles, how many nanonseconds total is the
-> total interrupt code path chewing up per interrupt?
-> 
-> Regards,
-> 
-> 						- Ted
-> 
-> [1] And on systems where we don't have get_cycles() or
-> random_get_entropy(), it becomes much easier for the attacker to guess
-> what at least half of the input values will be!
+>    I think this is misplaced, i.e. it should precede the comment.
 > 
 
+OK.
+
+>>       if (pdata && pdata->init) {
+>>           rc = pdata->init(dev, hpriv->mmio);
+>>           if (rc)
+>> -            goto disable_unprepare_clk;
+>> +            goto disable_phy;
+>>       }
+>>
+>>       ahci_save_initial_config(dev, hpriv,
+> [...]
+>> @@ -328,6 +356,7 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
+>>   static const struct of_device_id ahci_of_match[] = {
+>>       { .compatible = "snps,spear-ahci", },
+>>       { .compatible = "snps,exynos5440-ahci", },
+>> +    { .compatible = "snps,dwc-ahci", },
+> 
+>    Looks like the binding documentation is incomplete -- it doesn't list "snps,exynos5440-ahci"...
+
+OK, I'll update it. Thanks for review.
+
+cheers,
+-roger
