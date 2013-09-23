@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3IWSQQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:16:16 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:50987 "EHLO quartz.orcorp.ca"
+	id S1753667Ab3IWSQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:16:14 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:59862 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753588Ab3IWSQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753597Ab3IWSQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Sep 2013 14:16:08 -0400
 From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 To: tpmdd-devel@lists.sourceforge.net
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>,
         Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
         Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
         Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 04/13] tpm: Store devname in the tpm_chip
-Date: Mon, 23 Sep 2013 12:14:34 -0600
-Message-Id: <1379960083-8942-5-git-send-email-jgunthorpe@obsidianresearch.com>
+Subject: [PATCH 06/13] tpm: Remove redundant dev_set_drvdata
+Date: Mon, 23 Sep 2013 12:14:36 -0600
+Message-Id: <1379960083-8942-7-git-send-email-jgunthorpe@obsidianresearch.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
 References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
@@ -24,87 +24,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just put the memory directly in the chip structure, rather than
-in a 2nd dedicated kmalloc.
+TPM drivers should not call dev_set_drvdata (or aliases), only the core
+code is allowed to call dev_set_drvdata, and it does it during
+tpm_register_hardware.
+
+These extra sets are harmless, but are an anti-pattern that many drivers
+have copied.
 
 Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 ---
- drivers/char/tpm/tpm.c | 17 ++++++-----------
- drivers/char/tpm/tpm.h |  1 +
- 2 files changed, 7 insertions(+), 11 deletions(-)
+ drivers/char/tpm/tpm_i2c_infineon.c | 2 --
+ drivers/char/tpm/tpm_i2c_stm_st33.c | 2 --
+ drivers/char/tpm/tpm_spi_stm_st33.c | 1 -
+ drivers/char/tpm/xen-tpmfront.c     | 2 --
+ 4 files changed, 7 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index e3c974a..71eb8c7 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -1463,7 +1463,6 @@ void tpm_dev_vendor_release(struct tpm_chip *chip)
- 		chip->vendor.release(chip->dev);
- 
- 	clear_bit(chip->dev_num, dev_mask);
--	kfree(chip->vendor.miscdev.name);
+diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
+index b8735de..e33d8e5 100644
+--- a/drivers/char/tpm/tpm_i2c_infineon.c
++++ b/drivers/char/tpm/tpm_i2c_infineon.c
+@@ -685,7 +685,6 @@ out_vendor:
+ 	chip->dev->release = NULL;
+ 	chip->release = NULL;
+ 	tpm_dev.client = NULL;
+-	dev_set_drvdata(chip->dev, chip);
+ out_err:
+ 	return rc;
  }
- EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
+@@ -766,7 +765,6 @@ static int tpm_tis_i2c_remove(struct i2c_client *client)
+ 	chip->dev->release = NULL;
+ 	chip->release = NULL;
+ 	tpm_dev.client = NULL;
+-	dev_set_drvdata(chip->dev, chip);
  
-@@ -1496,17 +1495,13 @@ EXPORT_SYMBOL_GPL(tpm_dev_release);
- struct tpm_chip *tpm_register_hardware(struct device *dev,
- 					const struct tpm_vendor_specific *entry)
- {
--#define DEVNAME_SIZE 7
+ 	return 0;
+ }
+diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
+index 5bb8e2d..1c68d93 100644
+--- a/drivers/char/tpm/tpm_i2c_stm_st33.c
++++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
+@@ -746,8 +746,6 @@ tpm_st33_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 
+ 	tpm_get_timeouts(chip);
+ 
+-	i2c_set_clientdata(client, chip);
 -
--	char *devname;
- 	struct tpm_chip *chip;
+ 	dev_info(chip->dev, "TPM I2C Initialized\n");
+ 	return 0;
+ _irq_set:
+diff --git a/drivers/char/tpm/tpm_spi_stm_st33.c b/drivers/char/tpm/tpm_spi_stm_st33.c
+index 8d3e8e2..f5e3cd6 100644
+--- a/drivers/char/tpm/tpm_spi_stm_st33.c
++++ b/drivers/char/tpm/tpm_spi_stm_st33.c
+@@ -779,7 +779,6 @@ tpm_st33_spi_probe(struct spi_device *dev)
+ 	tpm_get_timeouts(chip);
  
- 	/* Driver specific per-device data */
- 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
--	devname = kmalloc(DEVNAME_SIZE, GFP_KERNEL);
+ 	/* attach chip datas to client */
+-	spi_set_drvdata(dev, chip);
+ 	platform_data->bchipf = false;
  
--	if (chip == NULL || devname == NULL)
--		goto out_free;
-+	if (chip == NULL)
-+		return NULL;
+ 	pr_info("TPM SPI Initialized\n");
+diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
+index 6f2fe2b..7711928 100644
+--- a/drivers/char/tpm/xen-tpmfront.c
++++ b/drivers/char/tpm/xen-tpmfront.c
+@@ -379,8 +379,6 @@ static int tpmfront_probe(struct xenbus_device *dev,
  
- 	mutex_init(&chip->buffer_mutex);
- 	mutex_init(&chip->tpm_mutex);
-@@ -1531,8 +1526,9 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+ 	tpm_get_timeouts(priv->chip);
  
- 	set_bit(chip->dev_num, dev_mask);
- 
--	scnprintf(devname, DEVNAME_SIZE, "%s%d", "tpm", chip->dev_num);
--	chip->vendor.miscdev.name = devname;
-+	scnprintf(chip->devname, sizeof(chip->devname), "%s%d", "tpm",
-+		  chip->dev_num);
-+	chip->vendor.miscdev.name = chip->devname;
- 
- 	chip->vendor.miscdev.parent = dev;
- 	chip->dev = get_device(dev);
-@@ -1558,7 +1554,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
- 		goto put_device;
- 	}
- 
--	chip->bios_dir = tpm_bios_log_setup(devname);
-+	chip->bios_dir = tpm_bios_log_setup(chip->devname);
- 
- 	/* Make chip available */
- 	spin_lock(&driver_lock);
-@@ -1571,7 +1567,6 @@ put_device:
- 	put_device(chip->dev);
- out_free:
- 	kfree(chip);
--	kfree(devname);
- 	return NULL;
+-	dev_set_drvdata(&dev->dev, priv->chip);
+-
+ 	return rv;
  }
- EXPORT_SYMBOL_GPL(tpm_register_hardware);
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index a7bfc17..0df18b5 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -122,6 +122,7 @@ struct tpm_chip {
- 	struct device *dev;	/* Device stuff */
- 
- 	int dev_num;		/* /dev/tpm# */
-+	char devname[7];
- 	unsigned long is_open;	/* only one allowed */
- 	int time_expired;
  
 -- 
 1.8.1.2
