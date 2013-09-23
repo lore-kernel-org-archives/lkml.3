@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab3IWMEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 08:04:38 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:4084 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753456Ab3IWMEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 08:04:37 -0400
-X-IronPort-AV: E=Sophos;i="4.90,938,1371052800"; 
-   d="scan'208";a="8595929"
-From: chaiwen <chaiw.fnst@cn.fujitsu.com>
-To: npiggin@kernel.dk
-Cc: linux-kernel@vger.kernel.org, chaiwen <chaiw.fnst@cn.fujitsu.com>
-Subject: [PATCH] brd: return register_blkdev err code when it fails
-Date: Mon, 23 Sep 2013 20:04:00 +0800
-Message-Id: <1379937840-9041-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/23 20:02:55,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/23 20:02:55,
-	Serialize complete at 2013/09/23 20:02:55
+	id S1753732Ab3IWMGG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 08:06:06 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59137 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753405Ab3IWMGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 08:06:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,962,1371106800"; 
+   d="scan'208";a="298196410"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Ning Qu <quning@google.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCHv6 03/22] memcg, thp: charge huge cache pages
+Date: Mon, 23 Sep 2013 15:05:31 +0300
+Message-Id: <1379937950-8411-4-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+mem_cgroup_cache_charge() has check for PageCompound(). The check
+prevents charging huge cache pages.
 
-Hi Nick
+I don't see a reason why the check is present. Looks like it's just
+legacy (introduced in 52d4b9a memcg: allocate all page_cgroup at boot).
 
-when register_blk fails,no matter what reasons,brd_init always
-returns a "-EIO" error code. if brd_init returns the error code
-returned by register_blkdev,the formatted error info reported
-when module inserting failed(caused by register_blkdev failing)
-could be more meaningfull.
+Let's just drop it.
 
-Signed-off-by: chaiwen <chaiw.fnst@cn.fujitsu.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
 ---
- drivers/block/brd.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ mm/memcontrol.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index 9bf4371..361204d 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -557,6 +557,7 @@ static int __init brd_init(void)
- 	int i, nr;
- 	unsigned long range;
- 	struct brd_device *brd, *next;
-+	int ret;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index d5ff3ce130..0b87a1bd25 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3963,8 +3963,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
  
- 	/*
- 	 * brd module now has a feature to instantiate underlying device
-@@ -602,8 +603,8 @@ static int __init brd_init(void)
- 		range = 1UL << MINORBITS;
- 	}
+ 	if (mem_cgroup_disabled())
+ 		return 0;
+-	if (PageCompound(page))
+-		return 0;
++	VM_BUG_ON(PageCompound(page) && !PageTransHuge(page));
  
--	if (register_blkdev(RAMDISK_MAJOR, "ramdisk"))
--		return -EIO;
-+	if (ret = register_blkdev(RAMDISK_MAJOR, "ramdisk"))
-+		return ret;
- 
- 	for (i = 0; i < nr; i++) {
- 		brd = brd_alloc(i);
+ 	if (!PageSwapCache(page))
+ 		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
 -- 
-1.7.1
+1.8.4.rc3
 
