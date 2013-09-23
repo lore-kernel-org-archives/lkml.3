@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3IWUni (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 16:43:38 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:39896 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731Ab3IWUng (ORCPT
+	id S1753980Ab3IWUoH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 16:44:07 -0400
+Received: from smtprelay0005.hostedemail.com ([216.40.44.5]:37103 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753062Ab3IWUoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 16:43:36 -0400
-X-Originating-IP: 83.160.107.163
-Date: Mon, 23 Sep 2013 22:43:29 +0200
-From: Matthias Kaehlcke <matthias.list@kaehlcke.net>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: ti_am335x_tscadc: Restore clock divider on resume
-Message-ID: <20130923204329.GG27515@raspi>
-Mail-Followup-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
-	Samuel Ortiz <sameo@linux.intel.com>,
-	Lee Jones <lee.jones@linaro.org>,
-	Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Sep 2013 16:44:05 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3866:3868:3870:4321:4385:5007:6117:6119:6609:7652:7903:10004:10400:10848:11232:11657:11658:11914:12043:12517:12519:12555:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: cat75_664e488a8f2b
+X-Filterd-Recvd-Size: 1953
+Message-ID: <1379969042.3575.65.camel@joe-AO722>
+Subject: Re: [PATCH 01/12] tcp.h: Remove extern from function prototypes
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 23 Sep 2013 13:44:02 -0700
+In-Reply-To: <20130923.163010.976299939444640897.davem@davemloft.net>
+References: <445209f8885ccd8234fa787c30d63e63fc7917d7.1379961014.git.joe@perches.com>
+	 <20130923.163010.976299939444640897.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ADC clock divider needs to be restored on resume as the register content
-is lost when the ADC is powered down
+On Mon, 2013-09-23 at 16:30 -0400, David Miller wrote:
+> Series applied,
 
-Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
+How about the same changes for the .h files in drivers/net ?
 
----
- drivers/mfd/ti_am335x_tscadc.c       |   10 ++++++----
- include/linux/mfd/ti_am335x_tscadc.h |    1 +
- 2 files changed, 7 insertions(+), 4 deletions(-)
+(slowly of course, and by maintained subsystem)
 
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index baaf5a8..a3685d6 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -95,7 +95,7 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
- 	const __be32            *cur;
- 	u32			val;
- 	int			err, ctrl;
--	int			clk_value, clock_rate;
-+	int			clock_rate;
- 	int			tsc_wires = 0, adc_channels = 0, total_channels;
- 	int			readouts = 0;
- 
-@@ -196,11 +196,11 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
- 	}
- 	clock_rate = clk_get_rate(clk);
- 	clk_put(clk);
--	clk_value = clock_rate / ADC_CLK;
-+	tscadc->clk_div = clock_rate / ADC_CLK;
- 
- 	/* TSCADC_CLKDIV needs to be configured to the value minus 1 */
--	clk_value = clk_value - 1;
--	tscadc_writel(tscadc, REG_CLKDIV, clk_value);
-+	tscadc->clk_div--;
-+	tscadc_writel(tscadc, REG_CLKDIV, tscadc->clk_div);
- 
- 	/* Set the control register bits */
- 	ctrl = CNTRLREG_STEPCONFIGWRT |
-@@ -303,6 +303,8 @@ static int tscadc_resume(struct device *dev)
- 	tscadc_writel(tscadc_dev, REG_CTRL,
- 			(restore | CNTRLREG_TSCSSENB));
- 
-+	tscadc_writel(tscadc_dev, REG_CLKDIV, tscadc_dev->clk_div);
-+
- 	return 0;
- }
- 
-diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index 25f2c61..f03281d 100644
---- a/include/linux/mfd/ti_am335x_tscadc.h
-+++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -146,6 +146,7 @@ struct ti_tscadc_dev {
- 	struct mfd_cell cells[TSCADC_CELLS];
- 	u32 reg_se_cache;
- 	spinlock_t reg_lock;
-+	unsigned int clk_div;
- 
- 	/* tsc device */
- 	struct titsc *tsc;
--- 
-1.7.9.5
+$ git grep -E "^\s*\bextern(\s+\w+){1,4}\s*\(\s*[^\*]" drivers/net/ | wc -l
+1445
+
+Maybe something like groups of:
+$ git grep -E --name-only "^\s*\bextern(\s+\w+){1,4}\s*\(\s*[^\*]" drivers/net/  | \
+	cut -f3- -d"/" | cut -f1,2 -d"/" | uniq | \
+	while read file ; do if [ -d drivers/net/$file ] ; then echo $file ; fi ; done
+can/mscan
+can/softing
+ethernet/8390
+ethernet/adi
+ethernet/amd
+ethernet/atheros
+ethernet/broadcom
+ethernet/brocade
+ethernet/chelsio
+ethernet/cirrus
+ethernet/emulex
+ethernet/freescale
+ethernet/ibm
+ethernet/intel
+ethernet/mellanox
+ethernet/natsemi
+ethernet/octeon
+ethernet/oki-semi
+ethernet/qlogic
+ethernet/sfc
+ethernet/stmicro
+ethernet/ti
+ethernet/toshiba
+fddi/skfp
+wimax/i2400m
+wireless/ath
+wireless/brcm80211
+wireless/ipw2x00
+wireless/iwlegacy
+wireless/iwlwifi
+wireless/mwifiex
+wireless/orinoco
+wireless/rtlwifi
+
 
