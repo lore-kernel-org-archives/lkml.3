@@ -1,95 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab3IWPjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 11:39:25 -0400
-Received: from mail-ye0-f180.google.com ([209.85.213.180]:43695 "EHLO
-	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729Ab3IWPjA (ORCPT
+	id S1752970Ab3IWPi2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 11:38:28 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:62409 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab3IWPiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 11:39:00 -0400
-Date: Mon, 23 Sep 2013 11:38:53 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, toshi.kani@hp.com,
-        zhangyanfei@cn.fujitsu.com, liwanp@linux.vnet.ibm.com, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 1/5] memblock: Introduce allocation direction to
- memblock.
-Message-ID: <20130923153853.GC14547@htj.dyndns.org>
-References: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com>
- <1379064655-20874-2-git-send-email-tangchen@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379064655-20874-2-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Sep 2013 11:38:25 -0400
+From: Richard Weinberger <richard@nod.at>
+To: user-mode-linux-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH 2/4] um: Make stack trace reliable against kernel mode faults
+Date: Mon, 23 Sep 2013 17:38:02 +0200
+Message-Id: <1379950684-18710-2-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1379950684-18710-1-git-send-email-richard@nod.at>
+References: <1379950684-18710-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+As UML uses an alternative signal stack we cannot use
+the current stack pointer for stack dumping if UML itself
+dies by SIGSEGV. To bypass this issue we save regs taken
+from mcontext in our segv handler into thread_struct and
+use these regs to obtain the stack pointer in show_stack().
 
-Sorry about the delay.  Was traveling.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/um/include/asm/processor-generic.h |  1 +
+ arch/um/include/shared/os.h             |  1 +
+ arch/um/kernel/sysrq.c                  | 32 +++++++++++++++++++++++---------
+ arch/um/kernel/trap.c                   | 14 +++++++++++---
+ arch/um/os-Linux/signal.c               |  8 ++++++++
+ 5 files changed, 44 insertions(+), 12 deletions(-)
 
-On Fri, Sep 13, 2013 at 05:30:51PM +0800, Tang Chen wrote:
-> +/* Allocation order. */
-> +#define MEMBLOCK_DIRECTION_HIGH_TO_LOW	0
-> +#define MEMBLOCK_DIRECTION_LOW_TO_HIGH	1
-> +#define MEMBLOCK_DIRECTION_DEFAULT	MEMBLOCK_DIRECTION_HIGH_TO_LOW
-
-Can we please settle on either top_down/bottom_up or
-high_to_low/low_to_high?  The two seem to be used interchangeably in
-the patch series.  Also, it'd be more customary to use enum for things
-like above, but more on the interface below.
-
-> +static inline bool memblock_direction_bottom_up(void)
-> +{
-> +	return memblock.current_direction == MEMBLOCK_DIRECTION_LOW_TO_HIGH;
-> +}
-
-Maybe just memblock_bottom_up() would be enough?
-
-Also, why not also have memblock_set_bottom_up(bool enable) as the
-'set' interface?
-
->  /**
-> + * memblock_set_current_direction - Set current allocation direction to allow
-> + *                                  allocating memory from higher to lower
-> + *                                  address or from lower to higher address
-> + *
-> + * @direction: In which order to allocate memory. Could be
-> + *             MEMBLOCK_DIRECTION_{HIGH_TO_LOW|LOW_TO_HIGH}
-> + */
-> +void memblock_set_current_direction(int direction);
-
-Function comments should go with the function definition.  Dunno what
-happened with set_current_limit but let's please not spread it.
-
-> +void __init_memblock memblock_set_current_direction(int direction)
-> +{
-> +	if (direction != MEMBLOCK_DIRECTION_HIGH_TO_LOW &&
-> +	    direction != MEMBLOCK_DIRECTION_LOW_TO_HIGH) {
-> +		pr_warn("memblock: Failed to set allocation order. "
-> +			"Invalid order type: %d\n", direction);
-> +		return;
-> +	}
-> +
-> +	memblock.current_direction = direction;
-> +}
-
-If set_bottom_up() style interface is used, the above will be a lot
-simpler, right?  Also, it's kinda weird to have two separate patches
-to introduce the flag and actually implement bottom up allocation.
-
-Thanks.
-
+diff --git a/arch/um/include/asm/processor-generic.h b/arch/um/include/asm/processor-generic.h
+index c03cd5a..9046903 100644
+--- a/arch/um/include/asm/processor-generic.h
++++ b/arch/um/include/asm/processor-generic.h
+@@ -21,6 +21,7 @@ struct mm_struct;
+ struct thread_struct {
+ 	struct task_struct *saved_task;
+ 	struct pt_regs regs;
++	struct pt_regs *segv_regs;
+ 	int singlestep_syscall;
+ 	void *fault_addr;
+ 	jmp_buf *fault_catcher;
+diff --git a/arch/um/include/shared/os.h b/arch/um/include/shared/os.h
+index 021104d..75298d3 100644
+--- a/arch/um/include/shared/os.h
++++ b/arch/um/include/shared/os.h
+@@ -227,6 +227,7 @@ extern void block_signals(void);
+ extern void unblock_signals(void);
+ extern int get_signals(void);
+ extern int set_signals(int enable);
++extern int os_is_signal_stack(void);
+ 
+ /* util.c */
+ extern void stack_protections(unsigned long address);
+diff --git a/arch/um/kernel/sysrq.c b/arch/um/kernel/sysrq.c
+index 33cc72e..7122bf9 100644
+--- a/arch/um/kernel/sysrq.c
++++ b/arch/um/kernel/sysrq.c
+@@ -12,6 +12,7 @@
+ #include <linux/module.h>
+ #include <linux/sched.h>
+ #include <asm/sysrq.h>
++#include <os.h>
+ 
+ struct stack_frame {
+ 	struct stack_frame *next_frame;
+@@ -48,29 +49,42 @@ static void print_stack_trace(unsigned long *sp, unsigned long bp)
+ /*Stolen from arch/i386/kernel/traps.c */
+ static const int kstack_depth_to_print = 24;
+ 
+-static unsigned long get_frame_pointer(struct task_struct *task)
++static unsigned long get_frame_pointer(struct task_struct *task,
++				       struct pt_regs *segv_regs)
+ {
+ 	if (!task || task == current)
+-		return current_bp();
++		return segv_regs ? PT_REGS_BP(segv_regs) : current_bp();
+ 	else
+ 		return KSTK_EBP(task);
+ }
+ 
++static unsigned long *get_stack_pointer(struct task_struct *task,
++					struct pt_regs *segv_regs)
++{
++	if (!task || task == current)
++		return segv_regs ? (unsigned long *)PT_REGS_SP(segv_regs) : current_sp();
++	else
++		return (unsigned long *)KSTK_ESP(task);
++}
++
+ void show_stack(struct task_struct *task, unsigned long *stack)
+ {
+ 	unsigned long *sp = stack, bp = 0;
++	struct pt_regs *segv_regs = current->thread.segv_regs;
+ 	int i;
+ 
++	if (!segv_regs && os_is_signal_stack()) {
++		printk(KERN_ERR "Received SIGSEGV in SIGSEGV handler,"
++				" aborting stack trace!\n");
++		return;
++	}
++
+ #ifdef CONFIG_FRAME_POINTER
+-	bp = get_frame_pointer(task);
++	bp = get_frame_pointer(task, segv_regs);
+ #endif
+ 
+-	if (!stack) {
+-		if (!task || task == current)
+-			sp = current_sp();
+-		else
+-			sp = (unsigned long *)KSTK_ESP(task);
+-	}
++	if (!stack)
++		sp = get_stack_pointer(task, segv_regs);
+ 
+ 	printk(KERN_INFO "Stack:\n");
+ 	stack = sp;
+diff --git a/arch/um/kernel/trap.c b/arch/um/kernel/trap.c
+index 5c3aef7..974b874 100644
+--- a/arch/um/kernel/trap.c
++++ b/arch/um/kernel/trap.c
+@@ -206,9 +206,12 @@ unsigned long segv(struct faultinfo fi, unsigned long ip, int is_user,
+ 	int is_write = FAULT_WRITE(fi);
+ 	unsigned long address = FAULT_ADDRESS(fi);
+ 
++	if (regs)
++		current->thread.segv_regs = container_of(regs, struct pt_regs, regs);
++
+ 	if (!is_user && (address >= start_vm) && (address < end_vm)) {
+ 		flush_tlb_kernel_vm();
+-		return 0;
++		goto out;
+ 	}
+ 	else if (current->mm == NULL) {
+ 		show_regs(container_of(regs, struct pt_regs, regs));
+@@ -230,7 +233,7 @@ unsigned long segv(struct faultinfo fi, unsigned long ip, int is_user,
+ 
+ 	catcher = current->thread.fault_catcher;
+ 	if (!err)
+-		return 0;
++		goto out;
+ 	else if (catcher != NULL) {
+ 		current->thread.fault_addr = (void *) address;
+ 		UML_LONGJMP(catcher, 1);
+@@ -238,7 +241,7 @@ unsigned long segv(struct faultinfo fi, unsigned long ip, int is_user,
+ 	else if (current->thread.fault_addr != NULL)
+ 		panic("fault_addr set but no fault catcher");
+ 	else if (!is_user && arch_fixup(ip, regs))
+-		return 0;
++		goto out;
+ 
+ 	if (!is_user) {
+ 		show_regs(container_of(regs, struct pt_regs, regs));
+@@ -262,6 +265,11 @@ unsigned long segv(struct faultinfo fi, unsigned long ip, int is_user,
+ 		current->thread.arch.faultinfo = fi;
+ 		force_sig_info(SIGSEGV, &si, current);
+ 	}
++
++out:
++	if (regs)
++		current->thread.segv_regs = NULL;
++
+ 	return 0;
+ }
+ 
+diff --git a/arch/um/os-Linux/signal.c b/arch/um/os-Linux/signal.c
+index 905924b..7b605e4 100644
+--- a/arch/um/os-Linux/signal.c
++++ b/arch/um/os-Linux/signal.c
+@@ -304,3 +304,11 @@ int set_signals(int enable)
+ 
+ 	return ret;
+ }
++
++int os_is_signal_stack(void)
++{
++	stack_t ss;
++	sigaltstack(NULL, &ss);
++
++	return ss.ss_flags & SS_ONSTACK;
++}
 -- 
-tejun
+1.8.3.1
+
