@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab3IWKIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 06:08:34 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56558 "EHLO mga14.intel.com"
+	id S1753577Ab3IWKKN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 06:10:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62189 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753390Ab3IWKId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 06:08:33 -0400
+	id S1753385Ab3IWKKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 06:10:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,961,1371106800"; 
-   d="scan'208";a="364226038"
+   d="scan'208";a="405750924"
 From: Jenny TC <jenny.tc@intel.com>
 To: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>,
         Anton Vorontsov <anton.vorontsov@linaro.org>
 Cc: Jenny TC <jenny.tc@intel.com>
 Subject: [PATCH 0/7] power_supply: Introduce Power Supply Charging Framework
-Date: Mon, 23 Sep 2013 23:32:49 +0530
-Message-Id: <1379959369-28102-1-git-send-email-jenny.tc@intel.com>
+Date: Mon, 23 Sep 2013 23:33:58 +0530
+Message-Id: <1379959445-28207-1-git-send-email-jenny.tc@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
