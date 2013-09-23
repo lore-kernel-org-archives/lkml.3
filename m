@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab3IWTS6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 15:18:58 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:50436 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab3IWTS4 (ORCPT
+	id S1752983Ab3IWTUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 15:20:41 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:64496 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab3IWTUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 15:18:56 -0400
+	Mon, 23 Sep 2013 15:20:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130917132834.GC6757@ulmo>
+In-Reply-To: <5237782B.3030804@gmail.com>
 References: <1379320326-13241-1-git-send-email-treding@nvidia.com>
-	<1379320326-13241-5-git-send-email-treding@nvidia.com>
-	<5237771F.1060908@gmail.com>
-	<20130917132834.GC6757@ulmo>
-Date: Mon, 23 Sep 2013 21:18:52 +0200
-Message-ID: <CACRpkdYQxD_GAeym7D=npBfrmn88MRYOFh9i2V0xeByiEiWKGQ@mail.gmail.com>
-Subject: Re: [PATCH 4/9] of/irq: Introduce of_irq_get()
+	<1379320326-13241-6-git-send-email-treding@nvidia.com>
+	<5237782B.3030804@gmail.com>
+Date: Mon, 23 Sep 2013 21:20:37 +0200
+Message-ID: <CACRpkdadFct8iXSaRRQ3a2YQryfMjJwVaq+8wgWXS1Ymj3M_WA@mail.gmail.com>
+Subject: Re: [PATCH 5/9] of/irq: Introduce __of_irq_to_resource()
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>,
+To: Rob Herring <robherring2@gmail.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Wolfram Sang <wsa@the-dreams.de>,
@@ -35,26 +34,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 3:28 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Mon, Sep 16, 2013 at 04:24:47PM -0500, Rob Herring wrote:
-
->> *_get typically also implies some reference counting which I don't
->> believe this does. I don't think having 2 functions with completely
->> different names doing the same thing with only a different calling
->> convention is good either. So I would keep the old name and the names
->> aligned.
+On Mon, Sep 16, 2013 at 11:29 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On 09/16/2013 03:32 AM, Thierry Reding wrote:
+>> This is a version of of_irq_to_resource() that propagates the precise
+>> error code instead of returning 0 for all errors. It will be used in
+>> subsequent patches to allow further propagation of error codes.
+>>
+>> To avoid code duplication, implement of_irq_to_resource() as a wrapper
+>> around the new __of_irq_to_resource().
 >
-> Okay, I'll make the new function __irq_of_parse_and_map().
+> I think the callers in this case are manageable to update as well.
+> Several cases could simply use irq_of_parse_and_map instead as they just
+> pass in a NULL resource.
 
-I don't know why i detest __prefixing so much but I think it's
-really nasty.
-
-Usually this is reserved for compiler- and linker related things,
-like __packed;  or __init.
-
-I would prefer irq_of_parse_and_map_strict() or something
-like that.
+I second this comment.
 
 Yours,
 Linus Walleij
