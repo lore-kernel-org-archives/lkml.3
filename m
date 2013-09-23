@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab3IWA1d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 20:27:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37689 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802Ab3IWA1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 20:27:32 -0400
-Message-ID: <523F8AA6.7040406@zytor.com>
-Date: Sun, 22 Sep 2013 17:26:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
-        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
-        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de
-Subject: Re: [PATCH, RFC 10/12] random: cap the rate which the /dev/urandom
- pool gets reseeded
-References: <1379882338-7209-1-git-send-email-tytso@mit.edu> <1379882338-7209-11-git-send-email-tytso@mit.edu> <e665f20c-9154-4dbd-bb93-cf144922bf29@email.android.com> <20130922214039.GC7321@thunk.org> <a3890544-745e-462d-8647-68c5abf78e9e@email.android.com> <20130922232337.GD7321@thunk.org>
-In-Reply-To: <20130922232337.GD7321@thunk.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752825Ab3IWA3g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 20:29:36 -0400
+Received: from smtprelay0178.hostedemail.com ([216.40.44.178]:33426 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752219Ab3IWA3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 20:29:35 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3867:3868:3873:4321:5007:7652:7903:10004:10400:10848:11232:11658:11914:12043:12438:12517:12519:12555:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache
+X-HE-Tag: work16_18ebd2b832746
+X-Filterd-Recvd-Size: 1388
+Message-ID: <1379896169.3575.1.camel@joe-AO722>
+Subject: Re: [PATCH 1/5] scsi: Fix assignment of 0/1 to bool variables
+From: Joe Perches <joe@perches.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: JBottomley@parallels.com, naresh@chelsio.com, davem@davemloft.net,
+        jj@chaosbits.net, arvindb@chelsio.com, hare@suse.de,
+        michaelc@cs.wisc.edu, vijay.chauhan@netapp.com, bvanassche@acm.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Date: Sun, 22 Sep 2013 17:29:29 -0700
+In-Reply-To: <1379875453-20083-1-git-send-email-peter.senna@gmail.com>
+References: <1379875453-20083-1-git-send-email-peter.senna@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2013 04:23 PM, Theodore Ts'o wrote:
-> On Sun, Sep 22, 2013 at 03:45:11PM -0700, H. Peter Anvin wrote:
->> I understand the motivation, but I question basing it in a fixed amount of time.
-> 
-> We already have a threshold based on the amount of the entropy in the
-> input pool.  I could increase that threshold, but then instead of
-> having the entropy hover between say, 192 and 128, it would hover
-> between say, 576 and 512.  What that means in practice is that there
-> will be a higher baseline, but we will still end up reseeding every 10
-> seconds or so (that being approximately how much entropy I've seen
-> flowing into the input pool on my laptop system --- 64 bits every 10
-> seconds or so).
-> 
-> By basing it on a time-based threshold, it means that the input pool
-> can build up faster such that over time, such that entropy pool ends
-> up hovering around 3400 bits.
-> 
+On Sun, 2013-09-22 at 20:44 +0200, Peter Senna Tschudin wrote:
+> Convert 0 to false and 1 to true when assigning values to bool
+> variables. Inspired by commit 3db1cd5c05f35fb43eb134df6f321de4e63141f2.
+[]
+> @@
+> bool b;
+> @@
+> -b = 1
+> +b = true
 
-So make it a threshold around 2048-3072 bits.  A.k.a. "if the input pool
-is filling up fast enough, take advantage of it."
-
-> What is your concern is about having it being time-based --- or more
-> accurately, being partially time-based, since we also keep the entorpy
-> count based threshold?  I'll note that the Fortuna Random Number
-> Generator, devised by Bruce Schneier and Niels Ferguson also uses as
-> part of its design a time-based reseed limit.
-
-Just that it is unnecessary in a scenario when entropy is plentiful.
-
-	-hpa
+You might also look for non-zero values other than 1
+and convert those true too.
 
 
