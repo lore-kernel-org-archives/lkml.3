@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab3IWURD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 16:17:03 -0400
-Received: from nm7-vm1.access.bullet.mail.bf1.yahoo.com ([216.109.114.160]:30241
-	"EHLO nm7-vm1.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752628Ab3IWURC (ORCPT
+	id S1753609Ab3IWURa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 16:17:30 -0400
+Received: from smtprelay0094.hostedemail.com ([216.40.44.94]:37893 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753537Ab3IWUR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 16:17:02 -0400
-X-Yahoo-Newman-Id: 373744.46059.bm@smtp115.sbc.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: vDF6XS0VM1nr00MjMprDhHJY3aYy2c0ZzQaxaKPpDwEuqqz
- WWGnGZKeQGFGtzaFbuTUxdnJtOJ3vGUQrfn.nUaMlr1zbiFeRQs1TC_HKJLj
- sFswtXdG2I8KEodvsLLoJsfUgQq_dxTLrYIYiJp5utlOqy0b2wS9WPZ5SVMs
- eWeFBd3ObDkGaa.eLlul4yuVbbAPs5kJnW40YNN.8N0B3HIbMa8xBOf4XILg
- czV_p67YFfKNSaeWHO1yBBoL3JYhiQwFbM3JbGouEgLPtL1.D3s0_sXXyVYH
- MQ09ZK6lshTDBJy1o3J12WXfmHvdtjhiX.nO6aZEiPUOGIT1elwoMDwMvJEo
- iBwKuz2JQ3_8DPgkOYh9ipZpqtS5Mw4ImPEr4rrIgSbZyhhHfs33mItZKqs_
- 1FK4geEl1fjhf5hNQswVrU6SM_1G2nlbiq6cCB3trkd72.i9uSdkZzIZj3iW
- 8xB_XPOZ3jmYHdA9yBSVb_H33quSODzmbLyNUXmrQ6nnAW.u.2rUG4A1V0ov
- y201hKmXVphOivRwcrQHRira3GiG9UxH6XasxeeGAaQsJKUw9s_OqF41DkkK
- Ff.dvSQ--
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with )
-        by smtp115.sbc.mail.bf1.yahoo.com with SMTP; 23 Sep 2013 13:17:00 -0700 PDT
-Message-ID: <5240A1DB.6020906@att.net>
-Date: Mon, 23 Sep 2013 15:17:31 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130730 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Joe Perches <joe@perches.com>, Daniel Santos <daniel.santos@pobox.com>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        George Spelvin <linux@horizon.com>
-Subject: Re: [PATCH 5/5] lib: Add error string support to printks
-References: <1379677551.2021.25.camel@joe-AO722> <1379482610.1787.7.camel@joe-AO722> <1379459317-13046-1-git-send-email-daniel.santos@pobox.com> <1379459317-13046-6-git-send-email-daniel.santos@pobox.com> <22238.1379502295@warthog.procyon.org.uk> <523A5316.50405@att.net> <1379639226.5862.9.camel@joe-AO722> <523BDB55.2000008@att.net> <23301.1379682458@warthog.procyon.org.uk>
-In-Reply-To: <23301.1379682458@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 23 Sep 2013 16:17:28 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:2898:3138:3139:3140:3141:3142:3353:3622:3653:3867:3868:3870:3871:3873:4321:5007:7576:7652:7903:9545:10004:10026:10400:10848:11232:11658:11914:12043:12291:12296:12438:12517:12519:12555:12679:12683:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: night75_40ebe6823d152
+X-Filterd-Recvd-Size: 2751
+Message-ID: <1379967444.3575.56.camel@joe-AO722>
+Subject: Re: checkpatch guide for newbies
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 23 Sep 2013 13:17:24 -0700
+In-Reply-To: <1379959611.3575.40.camel@joe-AO722>
+References: <20130923090100.GE6192@mwanda>
+	 <1379959611.3575.40.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2013 08:07 AM, David Howells wrote:
-> I suspect he doesn't really need to implement a "strerror()" function but
-> should rather build it straight into printk()/vsprintf().
->
-> David
+On Mon, 2013-09-23 at 11:06 -0700, Joe Perches wrote:
+> Maybe I'll submit some auto-neatening script eventually
+> and see what you think.
 
-Indeed we don't necessarily *need* a strerror() function per-se, but it 
-is an addition to the libc support in the kernel.  I'll leave it up to 
-the community to decide rather or not it should be separate or 
-integrated into vsprintf.c.  Also, there is no POSIX or GNU libc 
-extension (that I am aware of) to print an error name -- a real shame 
-imho, so the name strerror_name() is pretty much artificial. Is there a 
-significant overhead in having these functions exported?
+Maybe something like:
 
-Personally, I would think that the only reason to have interest in an 
-error name or message in the kernel is to output via printk, but I like 
-to allow room for the conditions that I may not have thought of.
+From: Joe Perches <joe@perches.com>
+Subject: [PATCH] scripts/fix_with_checkpatch.sh: Add a trivial script to fix simple style defects
 
-Daniel
+Add a few whitespace and style corrections to individual files.
+
+Create git commits for those changes too.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/fix_with_checkpatch.sh | 52 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
+ create mode 100755 scripts/fix_with_checkpatch.sh
+
+diff --git a/scripts/fix_with_checkpatch.sh b/scripts/fix_with_checkpatch.sh
+new file mode 100755
+index 0000000..c47b111b
+--- /dev/null
++++ b/scripts/fix_with_checkpatch.sh
+@@ -0,0 +1,50 @@
++#/bin/sh
++
++whitespace_types="spacing space_before_tab pointer_location"
++changecode_types="c99_comments prefer_packed prefer_aligned avoid_externs parenthesis_alignment"
++
++checkpatch_update ()
++{
++    local file="$1"
++    type="$2"
++
++    ./scripts/checkpatch.pl --file --fix --strict --types=$type $file
++    if [ ! -f $file.EXPERIMENTAL-checkpatch-fixes ] ; then
++	return;
++    fi
++
++    mv $file.EXPERIMENTAL-checkpatch-fixes $file
++
++    git diff --stat -p $file | cat
++
++    obj="$(echo $file|sed 's/\.c$/\.o/')"
++
++    make $obj
++
++    tmpfile=$(mktemp git_commit.XXXXXX)
++    echo "$file: checkpatch neatening for $2" > $tmpfile
++    echo "" >> $tmpfile
++    echo "" >> $tmpfile
++
++    git commit -s -F $tmpfile -e $file
++
++    rm -f $tmpfile
++}
++
++for file in "$@"
++do
++
++    if [ ! -f $file ] ; then 
++	echo "Argument '$file' is not a file"
++	continue
++    fi
++
++    for type in $whitespace_types ; do
++	checkpatch_update $file $type
++    done
++
++    for type in $changecode_types ; do
++	checkpatch_update $file $type
++    done
++
++done
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
+
+
