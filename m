@@ -1,123 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab3IWUfo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 16:35:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44054 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab3IWUfl (ORCPT
+	id S1753535Ab3IWUhl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 16:37:41 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:35393 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716Ab3IWUhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 16:35:41 -0400
-Message-ID: <5240A617.1010208@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 14:35:35 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 23 Sep 2013 16:37:38 -0400
 MIME-Version: 1.0
-To: Sebastian Reichel <sre@debian.org>
-CC: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>,
+In-Reply-To: <87d2o4edus.fsf@linaro.org>
+References: <1379238028-7960-1-git-send-email-acourbot@nvidia.com>
+ <1379238028-7960-2-git-send-email-acourbot@nvidia.com> <87d2o4edus.fsf@linaro.org>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 24 Sep 2013 05:37:17 +0900
+Message-ID: <CAAVeFuLs5SPic-khRG87TxuAVcC3nJeAhjSHyESKRQXvfMzQ5w@mail.gmail.com>
+Subject: Re: [PATCH v6 1/5] ARM: add basic support for Trusted Foundations
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        =?ISO-8859-1?Q?=27Beno=EEt_Cousson=27?= <bcousson@baylibre.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [RFCv2 3/3] ARM: dts: N900: Add SSI information
-References: <1379277856-24571-1-git-send-email-sre@debian.org> <1379277856-24571-4-git-send-email-sre@debian.org>
-In-Reply-To: <1379277856-24571-4-git-send-email-sre@debian.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2013 02:44 PM, Sebastian Reichel wrote:
-> Add SSI device tree data for OMAP34xx and Nokia N900.
+On Fri, Sep 20, 2013 at 5:49 AM, Kevin Hilman <khilman@linaro.org> wrote:
+> Alexandre Courbot <acourbot@nvidia.com> writes:
+>
+>> Trusted Foundations is a TrustZone-based secure monitor for ARM that
+>> can be invoked using the same SMC-based API on all supported
+>> platforms. This patch adds initial basic support for Trusted
+>> Foundations using the ARM firmware API. Current features are limited
+>> to the ability to boot secondary processors.
+>
+> [...]
+>
+>> +#if IS_ENABLED(CONFIG_OF)
+>> +void of_register_trusted_foundations(void)
+>> +{
+>> +     struct device_node *node;
+>> +     struct trusted_foundations_platform_data pdata;
+>> +     int err;
+>> +
+>> +     node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
+>> +     if (!node)
+>> +             return;
+>> +
+>> +     err = of_property_read_u32(node, "version-major", &pdata.version_major);
+>> +     if (err != 0)
+>> +             panic("Trusted Foundation: missing version-major property\n");
+>
+> Do really need to panic() the whole kernel for a missing property?
+> Surely this can more gracefully recover, or assume some defaults?
+>
+> Same comment for the other uses of panic() in this patch.
 
-What is an "SSI" device, ...
+For something as essential as the secure monitor (for which there
+cannot be "safe" defaults) it makes sense to have the version
+explicitly mentioned. Version is a mandatory property in the bindings,
+its implementors just need to follow it.
 
-> diff --git a/Documentation/devicetree/bindings/hsi/omap_ssi.txt b/Documentation/devicetree/bindings/hsi/omap_ssi.txt
+As for the other uses of panic(), that's because you just cannot
+reasonably continue booting the system if trusted foundations is
+required but not support for it is built into the kernel. Once again,
+I don't feel this is out of place.
 
-... and what is the "HSI" subsystem?
-
-> +OMAP SSI controller bindings
-> +
-> +Required properties:
-> +- compatible:		Should be set to the following value
-> +                        ti,omap3-ssi (applicable to OMAP34xx devices)
-
-I think that'd be better phrased as:
-
-	Should include "ti,omap3-ssi".
-
-The binding should not preclude other compatibel values being present
-(e.g. a SoC-specific compatible value, to allow SoC-specific quirks to
-be enabled later).
-
-> +- ti,hwmods:		Name of the hwmod associated to the controller, which
-> +			is "ssi".
-
-I don't think we should add any more of that, for new bindings.
-
-> +- reg:			Contains SSI register address range (base address and
-> +			length).
-> +- reg-names:		Contains the names of the address ranges. It's
-> +                        expected, that "sys" and "gdd" address ranges are
-> +			provided.
-
-Why two entries in reg-names but only one in reg?
-
-I think it'd be better to write:
-
-reg-names:	Contains the values "sys" and "gdd".
-reg:		Contains a register specifier for each entry in
-		reg-names.
-
-A similar re-ordering/-wording would apply to interrupts/interrupt-names.
-
-> +- ranges		Required as an empty node
-
-s/node/property/
-
-Why must ranges be empty? As long as the content correctly represents
-the bus setup, why does the content matter at all. How about:
-
-ranges		Represents the bus address mapping between the main
-		controller node and the child nodes below.
-
-> +Each port is represented as a sub-node of the ti,omap3-ssi device.
-> +
-> +Required Port sub-node properties:
-> +- compatible:		Should be set to the following value
-> +                        ti,omap3-ssi-port (applicable to OMAP34xx devices)
-
-Hmm. Is it really the case that there is 1 controller with n ports? Are
-the ports really dependent upon some shared resource? Couldn't the ports
-be represented as separate top-level SSI controllers?
-
-> +- interrupts:		Contains the interrupt information for the port.
-> +- interrupt-names:	Contains the names of the interrupts. It's expected,
-> +			that "mpu_irq0" and "mpu_irq1" are provided.
-
-What exactly are those interrupts? "MPU" sounds like an external
-micro-controller/processor...
-
-> +- ti,ssi-cawake-gpio:	Defines which GPIO pin is used to signify CAWAKE
-> +			events for the port. This is an optional board-specific
-> +			property. If it's missing the port will not be
-> +			enabled.
-
-That also sounds like something that's a higher-level protocol, rather
-than whatever low-level transport "SSI" implements. Should this be part
-of a child node that represents the device attached to the SSI controller?
-
-Does the SSI controller (or its ports) not need any clocks, resets,
-regulators, ...?
-
+Alex.
