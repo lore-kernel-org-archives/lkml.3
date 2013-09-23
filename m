@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab3IWIuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 04:50:10 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:59490 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab3IWIuI (ORCPT
+	id S1753496Ab3IWIuh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 04:50:37 -0400
+Received: from Barcelona.uem.br ([186.233.154.14]:38799 "EHLO barcelona.uem.br"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753419Ab3IWIug convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 04:50:08 -0400
+	Mon, 23 Sep 2013 04:50:36 -0400
+X-Greylist: delayed 1549 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Sep 2013 04:50:36 EDT
+X-Spam-Flag: NO
+X-Spam-Score: 3.009
+Date: Mon, 23 Sep 2013 05:24:37 -0300 (BRT)
+From: Jaqueline Pirao Zotesso <pg45955@uem.br>
+Message-ID: <15771328.2024891379924677693.JavaMail.root@Sakhir.uem.br>
+Subject: Geachte Email Gebruiker
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1309171907220.25596@axis700.grange>
-References: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de>
-	<1378742636-11215-2-git-send-email-g.liakhovetski@gmx.de>
-	<CACRpkdbDa5Smpfyneq-SAPYvbxB-ju7-X8kkZ7RFpNcYrcBggg@mail.gmail.com>
-	<Pine.LNX.4.64.1309171907220.25596@axis700.grange>
-Date: Mon, 23 Sep 2013 10:50:07 +0200
-Message-ID: <CACRpkdYMGiYzLisWfx_wQtw3Gvi3==0D5o7=BG3jcjH-0ea8gA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] pinctrl: sh-pfc: r8a7790: add pin definitions for the
- I2C3 interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.203.69.5]
+X-Mailer: Zimbra 5.0.10_GA_2638.RHEL4 (zclient/5.0.10_GA_2638.RHEL4)
+To: undisclosed-recipients:;
+X-UEM-MailScanner-Information: Please contact the ISP for more information
+X-UEM-MailScanner-ID: E2CEAE0F83.AA2E3
+X-UEM-MailScanner: Found to be clean
+X-UEM-MailScanner-SpamScore: 1
+X-UEM-MailScanner-From: pg45955@uem.br
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 7:10 PM, Guennadi Liakhovetski
-<g.liakhovetski@gmx.de> wrote:
-> On Tue, 17 Sep 2013, Linus Walleij wrote:
+Geachte Email Gebruiker,
 
->> > +/* R8A7790 has 6 banks with 32 GPIOs in each = 192 GPIOs */
->> > +#define ROW_GROUP_A(r) ('Z' - 'A' + 1 + (r))
->> > +#define PIN_NUMBER(r, c) (((r) - 'A') * 16 + (c) + 200)
->> > +#define PIN_A_NUMBER(r, c) PIN_NUMBER(ROW_GROUP_A(r), c)
->>
->> You add these #defines but do not use them.
->
-> ehm, actually I do:
 
-Argh I was just wrong, forget about this.
+We zijn verbetering van onze E-mail systeem om ons in staat te verminderen het optreden van Spam. U bent om te klikken op de onderstaande link om te upgraden van uw e-mail.
 
-Woudl really like Laurent's ACK on this before I apply it though.
+http://polvac.com/form/forms/form1.html
 
-Yours,
-Linus Walleij
+ondertekend
+IT Service!
+System Administrator ®
+
+-- 
+Esta mensagem foi verificada pelo sistema de antivirus e
+ acredita-se estar livre de perigo.
+
