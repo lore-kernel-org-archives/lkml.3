@@ -1,81 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab3IWEEQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 00:04:16 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41762 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3IWEEP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 00:04:15 -0400
-Date: Mon, 23 Sep 2013 14:04:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: linux-next: manual merge of the random tree with Linus' tree
-Message-Id: <20130923140401.67e7bb4560620a561d4dfe6e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__23_Sep_2013_14_04_01_+1000_4u81gCCd1BIAt8cd"
+	id S1752944Ab3IWEFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 00:05:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39183 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750703Ab3IWEE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 00:04:59 -0400
+Message-ID: <523FBD9F.7080704@zytor.com>
+Date: Sun, 22 Sep 2013 21:03:43 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
+        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
+        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de,
+        "H. Peter Anvin" <hpa@linux.intel.com>, stable@vger.kernel.org
+Subject: Re: [PATCH, RFC 03/12] random: Allow fractional bits to be tracked
+References: <1379882338-7209-1-git-send-email-tytso@mit.edu> <1379882338-7209-4-git-send-email-tytso@mit.edu> <20130923040148.GG7321@thunk.org>
+In-Reply-To: <20130923040148.GG7321@thunk.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__23_Sep_2013_14_04_01_+1000_4u81gCCd1BIAt8cd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/22/2013 09:01 PM, Theodore Ts'o wrote:
+> I've added the following changes to this patch since upon testing,
+> there were some uses of r->entropy_count that were not properly
+> converted from using fractional bits to bits.
+> 
 
-Hi Theodore,
+Thanks for catching that.
 
-Today's linux-next merge of the random tree got a conflict in init/main.c
-between commit 65f382fd0c8f ("context_tracking: Ground setup for static
-key use") from Linus' tree and commit 382521d2478b ("random: run
-random_int_secret_init() run after all late_initcalls") from the random
-tree.
+	-hpa
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc init/main.c
-index af310af,586cd33..0000000
---- a/init/main.c
-+++ b/init/main.c
-@@@ -75,7 -75,7 +75,8 @@@
-  #include <linux/blkdev.h>
-  #include <linux/elevator.h>
-  #include <linux/sched_clock.h>
- +#include <linux/context_tracking.h>
-+ #include <linux/random.h>
- =20
-  #include <asm/io.h>
-  #include <asm/bugs.h>
-
---Signature=_Mon__23_Sep_2013_14_04_01_+1000_4u81gCCd1BIAt8cd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSP722AAoJEECxmPOUX5FEMQkQAJ1cYJYtrjEOu/67vCUYp2eq
-OlEiVPEhZu6fpP/X9bymZrdsW3pwHQU82zgoTRaE2WBsNarIQcNoqjpCN/5rL6XW
-M0RuQYnq1K+kkM1E+A78285hhFbx/gTAkvDxjEKnXtrN/jD7Kt1IM7pObAbgjBnH
-Rpcr/oTaPdchxVrUgSDAGyO5M+ja+L+3e/MGfzyLiDLIpAtET+STvfI+fEpamp62
-QveY6dXaq4CRqHSsWfvOv89Uz9lAJvK1P1OFYey8GLStnACPZmorBS6IZttEE9WC
-GIEUGnssOo62UQN27+6ljDb5LUA9Sfg8jEQIYZ2X+M+e7XCa2bfqfvQpCJrcwKbZ
-aFdIgJJ+660w2+us5JBAB8CvmTEedrghiyZmBtUWTInpg/McMoJWO9L+kgtezzie
-9FzcpDIh0st+Q6/7DnSMvSm9gfWaWBBbLXuQ5TGGMZuSmaJLi0uI3cjzNyeqktgK
-81+rLNV4K3p7XmzKMoyREc/TWcn6RDA5VC/vHaRgvrjsntvynuAiEhvcGpv22f+Z
-owovIedXSF5CThI+A8txOmBLX2YNoc70YNzWbq/VXRIF7o0+oi3TA668BDtzxFXp
-IMxdGkJautCj8xSKULIblSLqfcHR/2B3TqI8XHTSQSpzYkbuQxdYeTJ35tjyqVk6
-wCsCp0P6DwoeVU2zQpw2
-=htev
------END PGP SIGNATURE-----
-
---Signature=_Mon__23_Sep_2013_14_04_01_+1000_4u81gCCd1BIAt8cd--
