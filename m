@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab3IWSv6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:51:58 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34656 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723Ab3IWSv4 (ORCPT
+	id S1753879Ab3IWSwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:52:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38693 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602Ab3IWSwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:51:56 -0400
-Message-ID: <52408DC8.3020407@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 12:51:52 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 23 Sep 2013 14:52:45 -0400
+Date: Mon, 23 Sep 2013 14:51:58 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, david.vrabel@citrix.com,
+        boris.ostrovsky@oracle.com
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
+        Peter Huewe <peterhuewe@gmx.de>,
+        Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Subject: Re: [PATCH 03/13] tpm: xen-tpmfront: Fix default durations
+Message-ID: <20130923185158.GA2507@phenom.dumpdata.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+ <1379960083-8942-4-git-send-email-jgunthorpe@obsidianresearch.com>
 MIME-Version: 1.0
-To: Rhyland Klein <rklein@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Simon Glass <sjg@chromium.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [RESEND] spi/tegra114: Correct support for cs_change
-References: <1379528245-6283-1-git-send-email-rklein@nvidia.com>
-In-Reply-To: <1379528245-6283-1-git-send-email-rklein@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379960083-8942-4-git-send-email-jgunthorpe@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2013 12:17 PM, Rhyland Klein wrote:
-> The tegra114 driver wasn't currently handling the cs_change functionality.
-> It is meant to invert normal behavior, and we were only using it to possibly
-> delay at the end of a transfer.
-
-I don't really follow this patch description well. It may help if you
-fully spelled out the definition of normal behaviour, what the driver
-was doing, and what it should be doing (which is presumable what it does
-do after this patch).
-
-> This patch modifies the logic so that the cs state will be toggled after
-> every individual transfer or NOT toggled at the end of the last transfer
-> if cs_change is set in that transfer struct.
+On Mon, Sep 23, 2013 at 12:14:33PM -0600, Jason Gunthorpe wrote:
+> All the default durations were being set to 10 minutes which is
+> way too long for the timeouts. Normal values for the longest
+> duration are around 5 mins, and short duration ar around .5s.
 > 
-> Also, this builds in logic so that if a different device tries to start
-> a transfer while CS is active from a different device, it will abort the
-> previous transfer and start a new one for the new device.
+> Further, these are just the default, tpm_get_timeouts will set
+> them to values from the TPM (or throw an error).
+> 
+> Just remove them.
 
-What user-visible impact does this patch have. Does it solve a bug, or
-improve performance, or ...? In other words, how would I test this
-patch, other that testing for regressions in SPI functionality that I
-know already works.
+Sounds sensible.
 
-BTW, I don't think you're using get_maintainer.pl, since Mark Brown is
-the SPI maintainer now, not Grant Likely.
+Daniel?
 
-> diff --git a/drivers/spi/spi-tegra114.c b/drivers/spi/spi-tegra114.c
-> index 145dd43..a9973de 100644
-> --- a/drivers/spi/spi-tegra114.c
-> +++ b/drivers/spi/spi-tegra114.c
-> @@ -182,6 +182,7 @@ struct tegra_spi_data {
->  	u32					cur_speed;
+> 
+> Cc: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> ---
+>  drivers/char/tpm/xen-tpmfront.c | 7 -------
+>  1 file changed, 7 deletions(-)
+> 
+> diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
+> index 7a7929b..6f2fe2b 100644
+> --- a/drivers/char/tpm/xen-tpmfront.c
+> +++ b/drivers/char/tpm/xen-tpmfront.c
+> @@ -210,8 +210,6 @@ static struct attribute_group vtpm_attr_grp = {
+>  	.attrs = vtpm_attrs,
+>  };
 >  
->  	struct spi_device			*cur_spi;
-> +	struct spi_device			*cs_control;
->  	unsigned				cur_pos;
->  	unsigned				cur_len;
->  	unsigned				words_per_32bit;
-> @@ -717,7 +718,12 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
->  		else if (req_mode == SPI_MODE_3)
->  			command1 |= SPI_CONTROL_MODE_3;
+> -#define TPM_LONG_TIMEOUT   (10 * 60 * HZ)
+> -
+>  static const struct tpm_vendor_specific tpm_vtpm = {
+>  	.status = vtpm_status,
+>  	.recv = vtpm_recv,
+> @@ -224,11 +222,6 @@ static const struct tpm_vendor_specific tpm_vtpm = {
+>  	.miscdev = {
+>  		.fops = &vtpm_ops,
+>  	},
+> -	.duration = {
+> -		TPM_LONG_TIMEOUT,
+> -		TPM_LONG_TIMEOUT,
+> -		TPM_LONG_TIMEOUT,
+> -	},
+>  };
 >  
-> -		tegra_spi_writel(tspi, command1, SPI_COMMAND1);
-> +		if (tspi->cs_control) {
-> +			if (tspi->cs_control != spi)
-> +				tegra_spi_writel(tspi, command1, SPI_COMMAND1);
-
-Do you really need a separate write call there? The value of command1
-isn't fully set up there (the CS bits are all set up immediately after),
-so won't that glitch the CS lines in some cases?
-
-> +			tspi->cs_control = NULL;
-> +		} else
-> +			tegra_spi_writel(tspi, command1, SPI_COMMAND1);
->  
->  		command1 |= SPI_CS_SW_HW;
->  		if (spi->mode & SPI_CS_HIGH)
-> @@ -732,6 +738,9 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
->  		command1 |= SPI_BIT_LENGTH(bits_per_word - 1);
->  	}
->  
-> +	if (t->len == 0 && !t->tx_buf && !t->rx_buf)
-> +		return 0;
-
-What if !t->len, but t->tx_buf || t->rx_buf ?
-
-This code is also duplicated in tegra_spi_transfer_one_message() after
-this patch. Instead, perhaps the first N lines of
-tegra_spi_start_transfer_one() should be split out into e.g.
-tegra_spi_setup_transfer_one(), such that
-tegra_spi_transfer_one_message() can always call it, plus have
-tegra_spi_transfer_one_message() only call
-tegra_spi_start_transfer_one() if (t->len != 0).
-
+>  static irqreturn_t tpmif_interrupt(int dummy, void *dev_id)
+> -- 
+> 1.8.1.2
+> 
