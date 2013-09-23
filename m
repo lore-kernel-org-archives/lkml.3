@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab3IWT6d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 15:58:33 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60906 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3IWT6b (ORCPT
+	id S1753233Ab3IWT7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 15:59:13 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:61272 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778Ab3IWT7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 15:58:31 -0400
-Message-ID: <52409D63.3020909@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 13:58:27 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 23 Sep 2013 15:59:11 -0400
+Message-ID: <52409D8A.7010400@converseincode.com>
+Date: Mon, 23 Sep 2013 14:59:06 -0500
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Rhyland Klein <rklein@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Simon Glass <sjg@chromium.org>, Olof Johansson <olof@lixom.net>
-Subject: Re: [RESEND] spi/tegra114: Correct support for cs_change
-References: <1379528245-6283-1-git-send-email-rklein@nvidia.com> <52408DC8.3020407@wwwdotorg.org> <52409B1E.3030405@nvidia.com>
-In-Reply-To: <52409B1E.3030405@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: balbi@ti.com
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Charlebois <charlebm@gmail.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] usb: gadget LLVMLinux: Removing the use of VLAIS from
+ the gadget driver
+References: <1375407344-30120-1-git-send-email-behanw@converseincode.com> <52291CAF.1000504@converseincode.com> <20130923193030.GM30811@radagast>
+In-Reply-To: <20130923193030.GM30811@radagast>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 01:48 PM, Rhyland Klein wrote:
-> On 9/23/2013 2:51 PM, Stephen Warren wrote:
->> On 09/18/2013 12:17 PM, Rhyland Klein wrote:
->>> The tegra114 driver wasn't currently handling the cs_change functionality.
->>> It is meant to invert normal behavior, and we were only using it to possibly
->>> delay at the end of a transfer.
-...
->>> diff --git a/drivers/spi/spi-tegra114.c b/drivers/spi/spi-tegra114.c
-...
->>> @@ -717,7 +718,12 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
->>>  		else if (req_mode == SPI_MODE_3)
->>>  			command1 |= SPI_CONTROL_MODE_3;
->>>  
->>> -		tegra_spi_writel(tspi, command1, SPI_COMMAND1);
->>> +		if (tspi->cs_control) {
->>> +			if (tspi->cs_control != spi)
->>> +				tegra_spi_writel(tspi, command1, SPI_COMMAND1);
->>
->> Do you really need a separate write call there? The value of command1
->> isn't fully set up there (the CS bits are all set up immediately after),
->> so won't that glitch the CS lines in some cases?
-> 
-> On our hardware (as far as I've seen), the CS line is normally low. We
+On 09/23/13 14:30, Felipe Balbi wrote:
+> Hi,
+>
+> On Thu, Sep 05, 2013 at 08:07:11PM -0400, Behan Webster wrote:
+>> Replying to my patch email just in case it was missed before.
+> I remember there was a discussion of not dropping variable length array
+> support, wasn't there ?
+There was mostly an objection to the implementation of that patch. The 
+new patch follows the advice given by the linux-usb list members at that 
+time.
 
-I assume you meant "normally *active* low", not "normally low"?
+There is increasing interest from various kernel devs (including 
+maintainers and above) to be able to use clang to compile the Linux 
+kernel. The removal of the use of VLAIS in the kernel is a step in 
+allowing that to happen.
 
-> need to generate a falling-edge to trigger the beginning of a SPI
-> transaction. Doing this write with the default value of SPI_COMMAND1
-> causes a brief rise and fall of CS, giving us our falling-edge.
+Andrzej Pietrasiewicz attended the LLVM microconference at Plumbers last 
+week and accepted the USB gadget patch.
 
-That sounds like exactly the glitch I was talking about.
+Thanks,
 
-Assuming CS isn't held constantly asserted (low), isn't CS de-asserted
-(rises) at the end of transaction n-1, and re-asserted (falls) at the
-start of transaction n? If so, I'm not sure why the setup for
-transaction n needs to both de-assert and then re-assert it? It seems
-like cs_control should be handled at the end of a transaction, not at
-the start of the next one.
+Behan
+
+-- 
+Behan Webster
+behanw@converseincode.com
+
