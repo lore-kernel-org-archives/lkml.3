@@ -1,72 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359Ab3IWV1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:27:15 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:34997 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754338Ab3IWV1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:27:13 -0400
-Message-ID: <5240B22B.5060406@linux.vnet.ibm.com>
-Date: Mon, 23 Sep 2013 16:27:07 -0500
-From: Joel Schopp <jschopp@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        tpmdd-devel@lists.sourceforge.net
-CC: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
-        Sirrix AG <tpmdd@sirrix.com>
-Subject: Re: [tpmdd-devel] [PATCH 00/13] TPM cleanup
-References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
-In-Reply-To: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092321-7182-0000-0000-0000087FC4CB
+	id S1754310Ab3IWV04 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:26:56 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:47222 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753281Ab3IWVZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 17:25:03 -0400
+Message-Id: <20130923212500.660567460@asylum.americas.sgi.com>
+References: <20130923212459.544517569@asylum.americas.sgi.com>
+User-Agent: quilt/0.46-1
+Date: Mon, 23 Sep 2013 16:25:03 -0500
+From: Mike Travis <travis@sgi.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/7] x86/UV: Add kdump to UV NMI handler
+Content-Disposition: inline; filename=uv-add-kdump-on-nmi.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If a system has hung and it no longer responds to external events, this
+patch adds the capability of doing a standard kdump and system reboot
+then triggered by the system NMI command.
 
-> Jason Gunthorpe (13):
->   tpm: ibmvtpm: Use %zd formatting for size_t format arguments
->   tpm atmel: Call request_region with the correct base
->   tpm: xen-tpmfront: Fix default durations
->   tpm: Store devname in the tpm_chip
->   tpm: Use container_of to locate the tpm_chip in tpm_open
->   tpm: Remove redundant dev_set_drvdata
->   tpm: Remove tpm_show_caps_1_2
->   tpm: Pull everything related to /dev/tpmX into tpm-dev.c
->   tpm: Pull everything related to sysfs into tpm-sysfs.c
->   tpm: Create a tpm_class_ops structure and use it in the drivers
->   tpm: Use the ops structure instead of a copy in tpm_vendor_specific
->   tpm: st33: Remove chip->data_buffer access from this driver
->   tpm: Make tpm-dev allocate a per-file structure
-> 
->  drivers/char/tpm/Makefile           |   2 +-
->  drivers/char/tpm/tpm-dev.c          | 213 +++++++++++++++
->  drivers/char/tpm/tpm-sysfs.c        | 318 ++++++++++++++++++++++
->  drivers/char/tpm/tpm.c              | 524 +++---------------------------------
->  drivers/char/tpm/tpm.h              |  86 +++---
->  drivers/char/tpm/tpm_atmel.c        |  30 +--
->  drivers/char/tpm/tpm_i2c_atmel.c    |  42 +--
->  drivers/char/tpm/tpm_i2c_infineon.c |  44 +--
->  drivers/char/tpm/tpm_i2c_nuvoton.c  |  42 +--
->  drivers/char/tpm/tpm_i2c_stm_st33.c |  51 +---
->  drivers/char/tpm/tpm_ibmvtpm.c      |  44 +--
->  drivers/char/tpm/tpm_infineon.c     |  28 +-
->  drivers/char/tpm/tpm_nsc.c          |  28 +-
->  drivers/char/tpm/tpm_spi_stm_st33.c |  50 +---
->  drivers/char/tpm/tpm_tis.c          |  43 +--
->  drivers/char/tpm/xen-tpmfront.c     |  57 +---
->  include/linux/tpm.h                 |  15 ++
->  17 files changed, 638 insertions(+), 979 deletions(-)
->  create mode 100644 drivers/char/tpm/tpm-dev.c
->  create mode 100644 drivers/char/tpm/tpm-sysfs.c
-> 
+It is enabled when the nmi action is changed to "kdump" and the
+kernel is built with CONFIG_KEXEC enabled.
 
-For what it's worth I have nothing to say except the cleanups look sane
-to me.
-Reviewed-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
+Signed-off-by: Mike Travis <travis@sgi.com>
+Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
+Reviewed-by: Hedi Berriche <hedi@sgi.com>
+---
+ arch/x86/platform/uv/uv_nmi.c |   41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
+--- linux.orig/arch/x86/platform/uv/uv_nmi.c
++++ linux/arch/x86/platform/uv/uv_nmi.c
+@@ -21,6 +21,7 @@
+ 
+ #include <linux/cpu.h>
+ #include <linux/delay.h>
++#include <linux/kexec.h>
+ #include <linux/module.h>
+ #include <linux/nmi.h>
+ #include <linux/sched.h>
+@@ -70,6 +71,7 @@ static atomic_t	uv_in_nmi;
+ static atomic_t uv_nmi_cpu = ATOMIC_INIT(-1);
+ static atomic_t uv_nmi_cpus_in_nmi = ATOMIC_INIT(-1);
+ static atomic_t uv_nmi_slave_continue;
++static atomic_t uv_nmi_kexec_failed;
+ static cpumask_var_t uv_nmi_cpu_mask;
+ 
+ /* Values for uv_nmi_slave_continue */
+@@ -143,6 +145,7 @@ module_param_named(retry_count, uv_nmi_r
+  * Valid NMI Actions:
+  *  "dump"	- dump process stack for each cpu
+  *  "ips"	- dump IP info for each cpu
++ *  "kdump"	- do crash dump
+  */
+ static char uv_nmi_action[8] = "dump";
+ module_param_string(action, uv_nmi_action, sizeof(uv_nmi_action), 0644);
+@@ -496,6 +499,40 @@ static void uv_nmi_touch_watchdogs(void)
+ 	touch_nmi_watchdog();
+ }
+ 
++#if defined(CONFIG_KEXEC)
++static void uv_nmi_kdump(int cpu, int master, struct pt_regs *regs)
++{
++	/* Call crash to dump system state */
++	if (master) {
++		pr_emerg("UV: NMI executing crash_kexec on CPU%d\n", cpu);
++		crash_kexec(regs);
++
++		pr_emerg("UV: crash_kexec unexpectedly returned, ");
++		if (!kexec_crash_image) {
++			pr_cont("crash kernel not loaded\n");
++			atomic_set(&uv_nmi_kexec_failed, 1);
++			uv_nmi_sync_exit(1);
++			return;
++		}
++		pr_cont("kexec busy, stalling cpus while waiting\n");
++	}
++
++	/* If crash exec fails the slaves should return, otherwise stall */
++	while (atomic_read(&uv_nmi_kexec_failed) == 0)
++		mdelay(10);
++
++	/* Crash kernel most likely not loaded, return in an orderly fashion */
++	uv_nmi_sync_exit(0);
++}
++
++#else /* !CONFIG_KEXEC */
++static inline void uv_nmi_kdump(int cpu, int master, struct pt_regs *regs)
++{
++	if (master)
++		pr_err("UV: NMI kdump: KEXEC not supported in this kernel\n");
++}
++#endif /* !CONFIG_KEXEC */
++
+ /*
+  * UV NMI handler
+  */
+@@ -517,6 +554,10 @@ int uv_handle_nmi(unsigned int reason, s
+ 	/* Indicate we are the first CPU into the NMI handler */
+ 	master = (atomic_read(&uv_nmi_cpu) == cpu);
+ 
++	/* If NMI action is "kdump", then attempt to do it */
++	if (uv_nmi_action_is("kdump"))
++		uv_nmi_kdump(cpu, master, regs);
++
+ 	/* Pause as all cpus enter the NMI handler */
+ 	uv_nmi_wait(master);
+ 
+
+-- 
