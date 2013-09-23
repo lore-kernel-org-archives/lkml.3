@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678Ab3IWUuz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 16:50:55 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39503 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab3IWUuv (ORCPT
+	id S1753909Ab3IWUu5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 16:50:57 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:33230 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752938Ab3IWUuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 16:50:51 -0400
-Message-ID: <5240A9A7.8080307@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 14:50:47 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 23 Sep 2013 16:50:52 -0400
+Date: Mon, 23 Sep 2013 22:49:28 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 4/9] of/irq: Introduce of_irq_get()
+Message-ID: <20130923204928.GC5216@ulmo>
+References: <1379320326-13241-1-git-send-email-treding@nvidia.com>
+ <1379320326-13241-5-git-send-email-treding@nvidia.com>
+ <5237771F.1060908@gmail.com>
+ <20130917132834.GC6757@ulmo>
+ <CACRpkdYQxD_GAeym7D=npBfrmn88MRYOFh9i2V0xeByiEiWKGQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: lee.jones@linaro.org, sameo@linux.intel.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, rob@landley.net,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, broonie@kernel.org
-Subject: Re: [PATCH] mfd: core: introduce of_node_name for mfd sub devices
-References: <1379579392-1794-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1379579392-1794-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="O3RTKUHj+75w1tg5"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYQxD_GAeym7D=npBfrmn88MRYOFh9i2V0xeByiEiWKGQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2013 02:29 AM, Laxman Dewangan wrote:
 
-> diff --git a/Documentation/devicetree/bindings/mfd/mfd-core.txt b/Documentation/devicetree/bindings/mfd/mfd-core.txt
+--O3RTKUHj+75w1tg5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +MFD DT binding document
-> +-----------------------
-> +
-> +Multi Function Devices (MFDs) have multiple sub module whose driver is developed
-> +in different sub-system like GPIO, regulators, RTC, clock etc. The device
-> +tree of such device contains multiple sub-node which contains the properties
-> +of these sub-modules.
-> +The sub modules get of_node handle either by the dev->of_node or by getting
-> +the child node handle from parent DT handle by finding child name on parent's
-> +of_node.
-> +To provide the of_node of sub-module directly, there is two approach:
-> +- Add compatible value when defining the sub-module in mfd core and
-> +  add this properties when adding DT.
-> +- Add the of_node_name when defining the sub-module in mfd core and
-> +  add keep same name of child node when adding DT.
-> +
-> +If none of above matches then sub-module driver will not get their of_node
-> +and they need to derive the method to get their node from parent node.
+On Mon, Sep 23, 2013 at 09:18:52PM +0200, Linus Walleij wrote:
+> On Tue, Sep 17, 2013 at 3:28 PM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+> > On Mon, Sep 16, 2013 at 04:24:47PM -0500, Rob Herring wrote:
+>=20
+> >> *_get typically also implies some reference counting which I don't
+> >> believe this does. I don't think having 2 functions with completely
+> >> different names doing the same thing with only a different calling
+> >> convention is good either. So I would keep the old name and the names
+> >> aligned.
+> >
+> > Okay, I'll make the new function __irq_of_parse_and_map().
+>=20
+> I don't know why i detest __prefixing so much but I think it's
+> really nasty.
+>=20
+> Usually this is reserved for compiler- and linker related things,
+> like __packed;  or __init.
+>=20
+> I would prefer irq_of_parse_and_map_strict() or something
+> like that.
 
-That's all *far* too specific to Linux's internals for a DT binding
-document.
+Following from the discussion on one of the other patches, perhaps this
+could also be converted to return int (instead of unsigned int), convert
+all callers to cope with negative or 0 (instead of only 0) as errors and
+then modify it to actually start returning negative error codes once all
+users have been updated. Eventually I think we should get rid of using 0
+as an error indicator altogether, but as I already mentioned it might be
+difficult to do because new users can always come along and use the then
+deprecated 0 return on error.
 
-I think it's fine for DT bindings for aggregate devices to be written to
-require a separate node (with a specific name) for various
-sub-components of the HW, if it makes sense to do so from a purely DT
-binding perspective. However, the fact that some DT bindings might be
-written that way implies nothing about any other particular DT binding,
-nor about all other DT bindings.
+I'm somewhat worried about the amount of work that this is turning into.
 
-And indeed if you find that there are a bunch of DT bindings that share
-this structure, by all means create some common code to simplify the
-drivers for those bindings. However, that still doesn't mean that every
-driver or binding has to be structured like that.
+Thierry
+
+--O3RTKUHj+75w1tg5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSQKlYAAoJEN0jrNd/PrOhfigP/A9vkmaGmnFbDaEUHcQeQMgD
+bYPSjvnwttsW3G077yqa1V7L80idYd0rzB/1TuG2mD3pREv28DKQFzHmQpY7wdSY
+EiHorEkSLxZI1o0hkRnJLfFLDP4XUFT3qY7OyDU6o/c5TkPep1+CinDpSWSF0kpD
++pqMCbvJHDGtbxvQpxhB3RXWsH1u1ljHARSjg9mog0d44D0LAzcOp9v0ssGsHAMZ
+q9or1XBRe5FplDA/kW5X2Gax1j44DVIYshENgNbW1g/r3KA1974bUBokSYT2qXOx
+wFAFiAeQ4pJbt3CnKFUuYwmrBmdRyZ67KSD5XncaXloQdpOsT+g7E9JY4cCB19h4
+CWHIuQj7FIrdgccXeUURF35wsSd62gZ0dYVJ+5DvjJMcuDxGmePKnjaEuVWi97U1
+HdfBOwEoK79vwtQ5wJDnKmRlrdF7HP/8D6348zvkwlf8K2EQl1tiLvqGfxCUHn+Z
+cIE3NAmWIGIa9WPZSRPSIKghJNOO0xKd85SnjdWAkJhrC39kkzU/m6/Q7WZ1uVb8
+j1Og8wA7Drv0Z2P2LhG15ArIfVGuwkxXD2QdV13zJ74oEomeBfKo5rAeCWqJZELr
+JnkynFIRH9WGn4Zw3oDsLQcaBbaB76tnhxdQ4MAjQ54tHSAU/vCxbt6C0Aoule/L
++Pw6sRgcgozufQxOoy4X
+=GVED
+-----END PGP SIGNATURE-----
+
+--O3RTKUHj+75w1tg5--
