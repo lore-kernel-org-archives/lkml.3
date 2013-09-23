@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab3IWFMH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 01:12:07 -0400
-Received: from mga14.intel.com ([143.182.124.37]:37737 "EHLO mga14.intel.com"
+	id S1753292Ab3IWFQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 01:16:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57411 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751973Ab3IWFMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 01:12:06 -0400
+	id S1753159Ab3IWFQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 01:16:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,960,1371106800"; 
-   d="scan'208";a="364128788"
-Date: Mon, 23 Sep 2013 09:51:43 +0530
+   d="scan'208";a="298072094"
+Date: Mon, 23 Sep 2013 09:55:49 +0530
 From: Vinod Koul <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] DMA: ste_dma40: use a power of 2 check
-Message-ID: <20130923042143.GB17188@intel.com>
-References: <Pine.LNX.4.64.1309180919470.30215@axis700.grange>
+To: Lu Jingchang-B35083 <B35083@freescale.com>
+Cc: "djbw@fb.com" <djbw@fb.com>, "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 3/3] dma: Add Freescale eDMA engine driver support
+Message-ID: <20130923042549.GC17188@intel.com>
+References: <1378374799-16357-1-git-send-email-b35083@freescale.com>
+ <20130917045359.GN17188@intel.com>
+ <B56CDBE15CE27145A4B77D2D24263E85223E21@039-SN1MPN1-003.039d.mgd.msft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1309180919470.30215@axis700.grange>
+In-Reply-To: <B56CDBE15CE27145A4B77D2D24263E85223E21@039-SN1MPN1-003.039d.mgd.msft.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 09:33:08AM +0200, Guennadi Liakhovetski wrote:
-> dst_addr_width and src_addr_width should be a power of 2. Currently the 
-> driver checks, that they both lie between 1 and 8 and that they are eqal 
-typo								     ^^^^^
-> to 1 or even. This however leaves an invalid value of 6 uncaught. Use an 
-> explicit power of 2 check instead.
-> 
-Applied, with typo fix above..
+On Tue, Sep 17, 2013 at 08:08:46AM +0000, Lu Jingchang-B35083 wrote:
+> > > +	case DMA_PAUSE:
+> > > +		if (fsl_chan->edesc)
+> > > +			fsl_edma_disable_request(fsl_chan);
+> > racy here too...
+> It only set the channel HW register, no list is handled, 
+> is lock needed here? Thanks!
+well thats the point while you are terminating the current trasnaction can
+complete and then start another one. You want to try and prevent these case
+also. Here you are neither locking the HW access nor the the list, so its juts
+waiting to crash!
 
 ~Vinod
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> ---
-> 
-> Compile tested only. I think 6 is an invalid value in this case, and since 
-> you check for odd calues, it seems to me that any value can be supplied 
-> here, so, looks like a power of 2 test is a better match for this.
-> 
-> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-> index 82d2b97..3d5e4ee 100644
-> --- a/drivers/dma/ste_dma40.c
-> +++ b/drivers/dma/ste_dma40.c
-> @@ -14,6 +14,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/clk.h>
->  #include <linux/delay.h>
-> +#include <linux/log2.h>
->  #include <linux/pm.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/err.h>
-> @@ -2796,8 +2797,8 @@ static int d40_set_runtime_config(struct dma_chan *chan,
->  	    src_addr_width >  DMA_SLAVE_BUSWIDTH_8_BYTES   ||
->  	    dst_addr_width <= DMA_SLAVE_BUSWIDTH_UNDEFINED ||
->  	    dst_addr_width >  DMA_SLAVE_BUSWIDTH_8_BYTES   ||
-> -	    ((src_addr_width > 1) && (src_addr_width & 1)) ||
-> -	    ((dst_addr_width > 1) && (dst_addr_width & 1)))
-> +	    !is_power_of_2(src_addr_width) ||
-> +	    !is_power_of_2(dst_addr_width))
->  		return -EINVAL;
->  
->  	cfg->src_info.data_width = src_addr_width;
-
 -- 
