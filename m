@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab3IWVZJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:25:09 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:59558 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab3IWVZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754263Ab3IWV0H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:26:07 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:47223 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753958Ab3IWVZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Sep 2013 17:25:03 -0400
-Message-Id: <20130923212459.544517569@asylum.americas.sgi.com>
+Message-Id: <20130923212500.507922930@asylum.americas.sgi.com>
+References: <20130923212459.544517569@asylum.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Mon, 23 Sep 2013 16:24:59 -0500
+Date: Mon, 23 Sep 2013 16:25:02 -0500
 From: Mike Travis <travis@sgi.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>,
@@ -18,39 +19,109 @@ To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/7] x86/UV/KDB/NMI: Updates for NMI/KDB handler for SGI UV
+Subject: [PATCH 3/7] x86/UV: Add summary of cpu activity to UV NMI handler
+Content-Disposition: inline; filename=uv-dump-ips-on-nmi.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The standard NMI handler dumps the states of all the cpus.  This includes
+a full register dump and stack trace.  This can be way more information
+than what is needed.  This patch adds a "summary" dump that is basically
+a form of the "ps" command.  It includes the symbolic IP address as well
+as the command field and basic process information.
 
-V3:  Reduce number of changes to KGDB/KDB code to simplify special
-     handling of SYSTEM NMI.  Remove disable UV NMI function.
+It is enabled when the nmi action is changed to "ips".
 
-V2:  Split KDB updates from NMI updates.  Broke up the big patch to
-     uv_nmi.c into smaller patches.  Updated to the latest linux
-     kernel version.
+Signed-off-by: Mike Travis <travis@sgi.com>
+Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
+Reviewed-by: Hedi Berriche <hedi@sgi.com>
+---
+ arch/x86/platform/uv/uv_nmi.c |   48 ++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 44 insertions(+), 4 deletions(-)
 
-The current UV NMI handler has not been updated for the changes in the
-system NMI handler and the perf operations.  The UV NMI handler reads
-an MMR in the UV Hub to check to see if the NMI event was caused by
-the external 'system NMI' that the operator can initiate on the System
-Mgmt Controller.
-
-The problem arises when the perf tools are running, causing millions of
-perf events per second on very large CPU count systems.  Previously this
-was okay because the perf NMI handler ran at a higher priority on the
-NMI call chain and if the NMI was a perf event, it would stop calling
-other NMI handlers remaining on the NMI call chain.
-
-Now the system NMI handler calls all the handlers on the NMI call
-chain including the UV NMI handler.  This causes the UV NMI handler
-to read the MMRs at the same millions per second rate.  This can lead
-to significant performance loss and possible system failures.  It also
-can cause thousands of 'Dazed and Confused' messages being sent to the
-system console.  This effectively makes perf tools unusable on UV systems.
-
-This patch set addresses this problem and allows the perf tools to run on
-UV without impacting performance and causing system failures.
+--- linux.orig/arch/x86/platform/uv/uv_nmi.c
++++ linux/arch/x86/platform/uv/uv_nmi.c
+@@ -139,6 +139,19 @@ module_param_named(wait_count, uv_nmi_wa
+ static int uv_nmi_retry_count = 500;
+ module_param_named(retry_count, uv_nmi_retry_count, int, 0644);
+ 
++/*
++ * Valid NMI Actions:
++ *  "dump"	- dump process stack for each cpu
++ *  "ips"	- dump IP info for each cpu
++ */
++static char uv_nmi_action[8] = "dump";
++module_param_string(action, uv_nmi_action, sizeof(uv_nmi_action), 0644);
++
++static inline bool uv_nmi_action_is(const char *action)
++{
++	return (strncmp(uv_nmi_action, action, strlen(action)) == 0);
++}
++
+ /* Setup which NMI support is present in system */
+ static void uv_nmi_setup_mmrs(void)
+ {
+@@ -367,13 +380,38 @@ static void uv_nmi_wait(int master)
+ 		atomic_read(&uv_nmi_cpus_in_nmi), num_online_cpus());
+ }
+ 
++static void uv_nmi_dump_cpu_ip_hdr(void)
++{
++	printk(KERN_DEFAULT
++		"\nUV: %4s %6s %-32s %s   (Note: PID 0 not listed)\n",
++		"CPU", "PID", "COMMAND", "IP");
++}
++
++static void uv_nmi_dump_cpu_ip(int cpu, struct pt_regs *regs)
++{
++	printk(KERN_DEFAULT "UV: %4d %6d %-32.32s ",
++		cpu, current->pid, current->comm);
++
++	printk_address(regs->ip, 1);
++}
++
+ /* Dump this cpu's state */
+ static void uv_nmi_dump_state_cpu(int cpu, struct pt_regs *regs)
+ {
+ 	const char *dots = " ................................. ";
+ 
+-	printk(KERN_DEFAULT "UV:%sNMI process trace for CPU %d\n", dots, cpu);
+-	show_regs(regs);
++	if (uv_nmi_action_is("ips")) {
++		if (cpu == 0)
++			uv_nmi_dump_cpu_ip_hdr();
++
++		if (current->pid != 0)
++			uv_nmi_dump_cpu_ip(cpu, regs);
++
++	} else if (uv_nmi_action_is("dump")) {
++		printk(KERN_DEFAULT
++			"UV:%sNMI process trace for CPU %d\n", dots, cpu);
++		show_regs(regs);
++	}
+ 	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_DUMP_DONE);
+ }
+ 
+@@ -420,7 +458,8 @@ static void uv_nmi_dump_state(int cpu, s
+ 		int ignored = 0;
+ 		int saved_console_loglevel = console_loglevel;
+ 
+-		pr_alert("UV: tracing processes for %d CPUs from CPU %d\n",
++		pr_alert("UV: tracing %s for %d CPUs from CPU %d\n",
++			uv_nmi_action_is("ips") ? "IPs" : "processes",
+ 			atomic_read(&uv_nmi_cpus_in_nmi), cpu);
+ 
+ 		console_loglevel = uv_nmi_loglevel;
+@@ -482,7 +521,8 @@ int uv_handle_nmi(unsigned int reason, s
+ 	uv_nmi_wait(master);
+ 
+ 	/* Dump state of each cpu */
+-	uv_nmi_dump_state(cpu, regs, master);
++	if (uv_nmi_action_is("ips") || uv_nmi_action_is("dump"))
++		uv_nmi_dump_state(cpu, regs, master);
+ 
+ 	/* Clear per_cpu "in nmi" flag */
+ 	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_OUT);
 
 -- 
