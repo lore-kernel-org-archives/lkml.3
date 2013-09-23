@@ -1,100 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345Ab3IWENK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 00:13:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39313 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835Ab3IWENJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 00:13:09 -0400
-Message-ID: <523FBF8E.3000600@zytor.com>
-Date: Sun, 22 Sep 2013 21:11:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1752733Ab3IWEOx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 00:14:53 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:43598 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750712Ab3IWEOv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 00:14:51 -0400
+Date: Mon, 23 Sep 2013 09:44:28 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        Mohit KUMAR DCG <Mohit.KUMAR@st.com>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys
+ part and Exynos part
+Message-ID: <20130923041427.GC2246@pratyush-vbox>
+References: <000701ce8741$fe47deb0$fad79c10$@samsung.com>
+ <20130912104602.GC5995@pratyush-vbox>
+ <523DB38B.4070307@ti.com>
+ <201309220003.34732.arnd@arndb.de>
+ <523ED192.901@ti.com>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>
-CC: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        joern@logfs.org, macro@linux-mips.org, ralf@linux-mips.org,
-        dave.taht@gmail.com, blogic@openwrt.org, andrewmcgr@gmail.com,
-        smueller@chronox.de, geert@linux-m68k.org, tg@mirbsd.de
-Subject: Re: [PATCH, RFC 08/12] random: mix in architectural randomness earlier
- in extract_buf()
-References: <1379882338-7209-1-git-send-email-tytso@mit.edu> <1379882338-7209-9-git-send-email-tytso@mit.edu>
-In-Reply-To: <1379882338-7209-9-git-send-email-tytso@mit.edu>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <523ED192.901@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2013 01:38 PM, Theodore Ts'o wrote:
-> Previously if CPU chip had a built-in random number generator (i.e.,
-> RDRAND on newer x86 chips), we mixed it in at the very end of
-> extract_buf() using an XOR operation.
+Hi Kishon,
+
+
+On Sun, Sep 22, 2013 at 07:16:34PM +0800, Kishon Vijay Abraham I wrote:
+> Hi Arnd,
 > 
-> We now mix it in right after the calculate a hash across the entire
-> pool.  This has the advantage that any contribution of entropy from
-> the CPU's HWRNG will get mixed back into the pool.  In addition, it
-> means that if the HWRNG has any defects (either accidentally or
-> maliciously introduced), this will be mitigated via the non-linear
-> transform of the SHA-1 hash function before we hand out generated
-> output.
+> Thanks for replying :-)
 > 
-> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> On Sunday 22 September 2013 03:33 AM, Arnd Bergmann wrote:
+> > On Saturday 21 September 2013, Kishon Vijay Abraham I wrote:
+> >> {
+> >>         u32 val;
+> >>         void __iomem *val1;
+> >>         void __iomem *dbi_base = pp->dbi_base;
+> >>
+> >>         /* Program viewport 0 : INBOUND : MEMORY*/
+> >>         val = PCIE_ATU_REGION_INBOUND | (0 & 0xF);
+> >>         dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
+> >>         val1 = ioremap(0x80000000, 0x5fffffff);
+> > 
+> > The ioremap here makes no sense at all, and I suspect it will fail anyway,
+> > because you exhaust the vmalloc area size, but since the value is not
+> > used anywhere, it won't matter.
+> > 
+> >>         dw_pcie_writel_rc(pp, 0x80000000, dbi_base + PCIE_ATU_LOWER_BASE);
+> >>         dw_pcie_writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
+> >>         /* in_mem_size must be in power of 2 */
+> >>         dw_pcie_writel_rc(pp, 0x5FFFFFFF, dbi_base + PCIE_ATU_LIMIT);
 
+This is wrong. You should program here 0xBFFFFFFF.
 
-This doesn't mix in across the entire width of the hash (my original
-motivation for putting this at the end was to do it after the hash is
-folded in half -- which is still believe is cryptographically dubious,
-but please don't take my word for it, as I'm not a professional
-cryptographer.)  As such, this change should *probably* have
-EXTRACT_SIZE changed to 2*EXTRACT_SIZE (or simply "20") both in the for
-loop and in the declaration of the union.
+Translation rule is as follows:
 
-	-hpa
+Region between "Start Address" and "End Address" is translated to
+"Target Address" with region size = "End Address" - "Start Address".
+Where: Start Address = (PCIE_ATU_UPPER_BASE | PCIE_ATU_LOWER_BASE)
+        End Address = (PCIE_ATU_UPPER_BASE | PCIE_ATU_LIMIT)
+        Target Address = (PCIE_ATU_UPPER_TARGET | PCIE_ATU_LOWER_TARGET) 
 
->  drivers/char/random.c | 22 +++++++++++-----------
->  1 file changed, 11 insertions(+), 11 deletions(-)
+> >>         dw_pcie_writel_rc(pp, 0x80000000, dbi_base + PCIE_ATU_LOWER_TARGET);
+> >>         dw_pcie_writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
+> > 
+> > These numbers need to come from somewhere, you shouldn't just hardcode them, 
 > 
-> diff --git a/drivers/char/random.c b/drivers/char/random.c
-> index ba23d5c..6d5e8e6 100644
-> --- a/drivers/char/random.c
-> +++ b/drivers/char/random.c
-> @@ -993,6 +993,17 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
->  		sha_transform(hash.w, (__u8 *)(r->pool + i), workspace);
->  
->  	/*
-> +	 * If we have a architectural hardware random number
-> +	 * generator, mix that in, too.
-> +	 */
-> +	for (i = 0; i < LONGS(EXTRACT_SIZE); i++) {
-> +		unsigned long v;
-> +		if (!arch_get_random_long(&v))
-> +			break;
-> +		hash.l[i] ^= v;
-> +	}
-> +
-> +	/*
->  	 * We mix the hash back into the pool to prevent backtracking
->  	 * attacks (where the attacker knows the state of the pool
->  	 * plus the current outputs, and attempts to find previous
-> @@ -1021,17 +1032,6 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
->  	hash.w[1] ^= hash.w[4];
->  	hash.w[2] ^= rol32(hash.w[2], 16);
->  
-> -	/*
-> -	 * If we have a architectural hardware random number
-> -	 * generator, mix that in, too.
-> -	 */
-> -	for (i = 0; i < LONGS(EXTRACT_SIZE); i++) {
-> -		unsigned long v;
-> -		if (!arch_get_random_long(&v))
-> -			break;
-> -		hash.l[i] ^= v;
-> -	}
-> -
->  	memcpy(out, &hash, EXTRACT_SIZE);
->  	memset(&hash, 0, sizeof(hash));
->  }
+> right. I'm still in the process of getting it work ;-)
+> > 
+> > I guess you should either program an inbound window covering the entire 64-bit
+> > address space, or you should look at the top-level "memory" nodes to find
+> > the location of physical RAM.
+> > 
+> > I can't see anything wrong with the way it's set up though, unless you have
+> > an IOMMU. Can you confirm that there is no IOMMU (aka SMMU) in your system
+> > that handles the PCIe root complex?
 > 
+> There is a MMU for PCIe root complex but that's disabled.
+> > 
+> >> I somehow starting to doubt the DMA address programmed in the ethernet card
+> >> which is in my RAM address range (0x80000000 to 0xBFFFFFFF). Should this
+> >> address be programmed in the BAR of the ethernet card? How should it be done?
+> > 
+> > No, it should not be in the BAR. The ethernet device driver calls dma_map_*
+> > or pci_map_* interfaces to get a valid token that can be passed into the
+> > device registers that are starting the DMA. You have to ensure that the
+> > dma_map_ops for the device return the value that is set up in the translation.
+> > 
+> > The normal case is an identity mapping between device DMA space and host
+> > memory space, i.e. PCIE_ATU_LOWER_TARGET == PCIE_ATU_LOWER_BASE, so
+> > in the dma_map_single implementation, phys_addr_t == dma_addr_t.
+> > 
+> > If you set up the dma_addr_t space to start at 0 instead, you have to add
+> > the offset in the dma_map_ops.
+> 
+> My DMA address is in 0x80000000 to 0xBFFFFFFF range and I program my inbound
+> translation for this range. Not sure what is missing still :-(
 
+Hope, above modification helps. Let me know.
+
+Regards
+Pratyush
+> 
+> Thanks
+> Kishon
