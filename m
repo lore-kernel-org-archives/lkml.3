@@ -1,122 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab3IWEOx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 00:14:53 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:43598 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750712Ab3IWEOv (ORCPT
+	id S1752345Ab3IWEYf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 00:24:35 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57058 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab3IWEYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 00:14:51 -0400
-Date: Mon, 23 Sep 2013 09:44:28 +0530
-From: Pratyush Anand <pratyush.anand@st.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        Mohit KUMAR DCG <Mohit.KUMAR@st.com>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys
- part and Exynos part
-Message-ID: <20130923041427.GC2246@pratyush-vbox>
-References: <000701ce8741$fe47deb0$fad79c10$@samsung.com>
- <20130912104602.GC5995@pratyush-vbox>
- <523DB38B.4070307@ti.com>
- <201309220003.34732.arnd@arndb.de>
- <523ED192.901@ti.com>
+	Mon, 23 Sep 2013 00:24:34 -0400
+X-AuditID: 9c930197-b7b7aae000005bd9-18-523fc2808c73
+Date: Mon, 23 Sep 2013 13:24:56 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] staging: zram: fix handle_pending_slot_free() and
+ zram_reset_device() race
+Message-ID: <20130923042456.GC23940@bbox>
+References: <20130909123329.GZ19256@mwanda>
+ <20130909124942.GA2221@swordfish.minsk.epam.com>
+ <20130909132124.GY6329@mwanda>
+ <522DD125.1030607@redhat.com>
+ <522DF2DF.5060407@redhat.com>
+ <20130910143416.GC2270@swordfish>
+ <20130910145802.GD19256@mwanda>
+ <20130910231250.GA2450@swordfish>
+ <20130916000217.GA18616@bbox>
+ <20130917172445.GA2289@swordfish>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <523ED192.901@ti.com>
+In-Reply-To: <20130917172445.GA2289@swordfish>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
-
-
-On Sun, Sep 22, 2013 at 07:16:34PM +0800, Kishon Vijay Abraham I wrote:
-> Hi Arnd,
+On Tue, Sep 17, 2013 at 08:24:45PM +0300, Sergey Senozhatsky wrote:
 > 
-> Thanks for replying :-)
+> Hello,
 > 
-> On Sunday 22 September 2013 03:33 AM, Arnd Bergmann wrote:
-> > On Saturday 21 September 2013, Kishon Vijay Abraham I wrote:
-> >> {
-> >>         u32 val;
-> >>         void __iomem *val1;
-> >>         void __iomem *dbi_base = pp->dbi_base;
-> >>
-> >>         /* Program viewport 0 : INBOUND : MEMORY*/
-> >>         val = PCIE_ATU_REGION_INBOUND | (0 & 0xF);
-> >>         dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> >>         val1 = ioremap(0x80000000, 0x5fffffff);
+> On (09/16/13 09:02), Minchan Kim wrote:
+> > Hello Sergey,
 > > 
-> > The ioremap here makes no sense at all, and I suspect it will fail anyway,
-> > because you exhaust the vmalloc area size, but since the value is not
-> > used anywhere, it won't matter.
+> > Sorry for really slow response. I was really busy by internal works
+> > and Thanks for pointing the BUG, Dan, Jerome and Sergey.
+> > I read your threads roughly so I may miss something. If so, sorry
+> > for that. Anyway I will put my opinion.
 > > 
-> >>         dw_pcie_writel_rc(pp, 0x80000000, dbi_base + PCIE_ATU_LOWER_BASE);
-> >>         dw_pcie_writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
-> >>         /* in_mem_size must be in power of 2 */
-> >>         dw_pcie_writel_rc(pp, 0x5FFFFFFF, dbi_base + PCIE_ATU_LIMIT);
-
-This is wrong. You should program here 0xBFFFFFFF.
-
-Translation rule is as follows:
-
-Region between "Start Address" and "End Address" is translated to
-"Target Address" with region size = "End Address" - "Start Address".
-Where: Start Address = (PCIE_ATU_UPPER_BASE | PCIE_ATU_LOWER_BASE)
-        End Address = (PCIE_ATU_UPPER_BASE | PCIE_ATU_LIMIT)
-        Target Address = (PCIE_ATU_UPPER_TARGET | PCIE_ATU_LOWER_TARGET) 
-
-> >>         dw_pcie_writel_rc(pp, 0x80000000, dbi_base + PCIE_ATU_LOWER_TARGET);
-> >>         dw_pcie_writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
+> > On Wed, Sep 11, 2013 at 02:12:50AM +0300, Sergey Senozhatsky wrote:
+> > > Dan Carpenter noted that handle_pending_slot_free() is racy with
+> > > zram_reset_device(). Take write init_lock in zram_slot_free(), thus
 > > 
-> > These numbers need to come from somewhere, you shouldn't just hardcode them, 
+> > Right but "init_lock" is what I really want to remove.
+> > Yes. It's just read-side lock so most of time it doesn't hurt us but it
+> > makes code very complicated and deadlock prone so I'd like to replace
+> > it with RCU. Yeah, It's off topic but just let me put my opinion in
+> > future direction.
+> > 
+> > Abought the bug, how about moving flush_work below down_write(init_lock)?
+> > zram_make_request is already closed by init_lock and we have a rule about
+> > lock ordering as following so I don't see any problem.
+> > 
+> >   init_lock
+> >     zram->lock
+> > 
+> > > preventing any concurrent zram_slot_free(), zram_bvec_rw() or
+> > > zram_reset_device(). This also allows to safely check zram->init_done
+> > > in handle_pending_slot_free().
+> > > 
+> > > Initial intention was to minimze number of handle_pending_slot_free()
+> > > call from zram_bvec_rw(), which were slowing down READ requests due to
+> > > slot_free_lock spin lock. Jerome Marchand suggested to remove
+> > > handle_pending_slot_free() from zram_bvec_rw().
+> > > 
+> > > Link: https://lkml.org/lkml/2013/9/9/172
+> > > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > > 
+> > > ---
+> > > 
+> > >  drivers/staging/zram/zram_drv.c | 13 +++++--------
+> > >  1 file changed, 5 insertions(+), 8 deletions(-)
+> > > 
+> > > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> > > index 91d94b5..7a2d4de 100644
+> > > --- a/drivers/staging/zram/zram_drv.c
+> > > +++ b/drivers/staging/zram/zram_drv.c
+> > > @@ -521,7 +521,8 @@ static void handle_pending_slot_free(struct zram *zram)
+> > >  	while (zram->slot_free_rq) {
+> > >  		free_rq = zram->slot_free_rq;
+> > >  		zram->slot_free_rq = free_rq->next;
+> > > -		zram_free_page(zram, free_rq->index);
+> > > +		if (zram->init_done)
+> > > +			zram_free_page(zram, free_rq->index);
+> > >  		kfree(free_rq);
+> > >  	}
+> > >  	spin_unlock(&zram->slot_free_lock);
+> > > @@ -534,16 +535,13 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+> > >  
+> > >  	if (rw == READ) {
+> > >  		down_read(&zram->lock);
+> > > -		handle_pending_slot_free(zram);
+> > 
+> > Read side is okay but actually I have a nitpick.
+> > If someone poll a block in zram-swap device, he would see a block
+> > has zero value suddenly although there was no I/O.(I don't want to argue
+> > it's sane user or not, anyway) it never happens on real block device and
+> > it never happens on zram-block device. Only it can happen zram-swap device.
+> > And such behavior was there since we introduced swap_slot_free_notify.
+> > (off-topic: I'd like to remove it because it makes tight coupling between
+> > zram and swap and obviously, it was layering violation function)
+> > so now, I don't have strong objection. 
+> > 
+> > The idea is to remove swap_slot_free_notify is to use frontswap when
+> > user want to use zram as swap so zram can be notified when the block
+> > lose the owner but still we should solve the mutex problem in notify
+> > handler.
+> > 
+> > 
+> > >  		ret = zram_bvec_read(zram, bvec, index, offset, bio);
+> > >  		up_read(&zram->lock);
+> > >  	} else {
+> > >  		down_write(&zram->lock);
+> > > -		handle_pending_slot_free(zram);
+> > 
+> > Why did you remove this in write-side?
+> > We can't expect when the work will trigger. It means the work could remove
+> > valid block under the us.
+> > 
 > 
-> right. I'm still in the process of getting it work ;-)
-> > 
-> > I guess you should either program an inbound window covering the entire 64-bit
-> > address space, or you should look at the top-level "memory" nodes to find
-> > the location of physical RAM.
-> > 
-> > I can't see anything wrong with the way it's set up though, unless you have
-> > an IOMMU. Can you confirm that there is no IOMMU (aka SMMU) in your system
-> > that handles the PCIe root complex?
 > 
-> There is a MMU for PCIe root complex but that's disabled.
-> > 
-> >> I somehow starting to doubt the DMA address programmed in the ethernet card
-> >> which is in my RAM address range (0x80000000 to 0xBFFFFFFF). Should this
-> >> address be programmed in the BAR of the ethernet card? How should it be done?
-> > 
-> > No, it should not be in the BAR. The ethernet device driver calls dma_map_*
-> > or pci_map_* interfaces to get a valid token that can be passed into the
-> > device registers that are starting the DMA. You have to ensure that the
-> > dma_map_ops for the device return the value that is set up in the translation.
-> > 
-> > The normal case is an identity mapping between device DMA space and host
-> > memory space, i.e. PCIE_ATU_LOWER_TARGET == PCIE_ATU_LOWER_BASE, so
-> > in the dma_map_single implementation, phys_addr_t == dma_addr_t.
-> > 
-> > If you set up the dma_addr_t space to start at 0 instead, you have to add
-> > the offset in the dma_map_ops.
-> 
-> My DMA address is in 0x80000000 to 0xBFFFFFFF range and I program my inbound
-> translation for this range. Not sure what is missing still :-(
+> not sure I understand how.
+> zram_slot_free() takes down_write(&zram->init_lock) and zram_make_request() takes
+> down_read(&zram->init_lock), thus zram_slot_free() can not concurrently work with
+> any RW requests. RW requests are under read() lock and zram_slot_free() is under
+> write() lock.
 
-Hope, above modification helps. Let me know.
+Let's consider example.
+Swap subsystem asked to zram "A" block free from now by swap_slot_free_notify
+but zram had been pended it without real freeing.
+Swap reused "A" block for new data because "A" block was free but request pended
+for a long time just handled and zram blindly free new data on the "A" block. :(
+That's why we should handle pending free request right before zram-write.
 
-Regards
-Pratyush
+Another try to optimize the lock overhead is to check the block is pending for free
+right before zram_free_page in write path. If so, we should remove pending reuqest
+from slot_free_rq list to prevent valid block later. But for that case, we need
+more complex data structure to find the block fast and many checking code right
+before zram_free_page so that it would make code rather complicated.
+
+So, do you have any real workload for us to consider it's really troublesome?
+Otherwise, I'd like to keep the code simple.
+
 > 
-> Thanks
-> Kishon
+> > >  		ret = zram_bvec_write(zram, bvec, index, offset);
+> > >  		up_write(&zram->lock);
+> > >  	}
+> > > -
+> > >  	return ret;
+> > >  }
+> > >  
+> > > @@ -750,12 +748,11 @@ error:
+> > >  
+> > >  static void zram_slot_free(struct work_struct *work)
+> > >  {
+> > > -	struct zram *zram;
+> > > +	struct zram *zram = container_of(work, struct zram, free_work);
+> > >  
+> > > -	zram = container_of(work, struct zram, free_work);
+> > > -	down_write(&zram->lock);
+> > > +	down_write(&zram->init_lock);
+> > 
+> > I don't like this.
+> > Primary problem is we should handle it as atomic so that we should use
+> > spinlock instead of mutex. Yeah, /me kicks his ass. From the beginning,
+> > I should solve this problem as that way.
+> > 
+> > The simple solution popped from my mind is that
+> > 
+> > 
+> > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> > index 91d94b5..b23bf0e 100644
+> > --- a/drivers/staging/zram/zram_drv.c
+> > +++ b/drivers/staging/zram/zram_drv.c
+> > @@ -534,11 +534,14 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >  
+> >  	if (rw == READ) {
+> >  		down_read(&zram->lock);
+> > -		handle_pending_slot_free(zram);
+> >  		ret = zram_bvec_read(zram, bvec, index, offset, bio);
+> >  		up_read(&zram->lock);
+> >  	} else {
+> >  		down_write(&zram->lock);
+> > +		/*
+> > +		 * We should free pending slot. Otherwise it would
+> > +		 * free valid blocks under the us.
+> > +		 */
+> >  		handle_pending_slot_free(zram);
+> >  		ret = zram_bvec_write(zram, bvec, index, offset);
+> >  		up_write(&zram->lock);
+> > @@ -552,7 +555,6 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> >  	size_t index;
+> >  	struct zram_meta *meta;
+> >  
+> > -	flush_work(&zram->free_work);
+> >  
+> >  	down_write(&zram->init_lock);
+> >  	if (!zram->init_done) {
+> > @@ -560,6 +562,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> >  		return;
+> >  	}
+> >  
+> > +	flush_work(&zram->free_work);
+> >  	meta = zram->meta;
+> >  	zram->init_done = 0;
+> 
+> this one looks ok to me.
+
+If you don't mind, I'd like to go with this.
+Thanks.
+
+
+> 
+> 	-ss
+> 
+> >  But more ideal way I am thinking now is 
+> > 
+> > 1) replace init_lock with RCU lock
+> > 2) introduce new meta atmoic lock instead of zram->mutex, which is very coarse-grained.
+> > 3) use atmoic lock in notify handler.
+> > 
+> > -- 
+> > Kind regards,
+> > Minchan Kim
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
