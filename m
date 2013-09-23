@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab3IWWD0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 18:03:26 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42514 "EHLO
+	id S1753971Ab3IWWFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 18:05:36 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39694 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab3IWWDX (ORCPT
+	with ESMTP id S1751650Ab3IWWFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 18:03:23 -0400
-Message-ID: <5240BAA6.9090509@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 16:03:18 -0600
+	Mon, 23 Sep 2013 18:05:34 -0400
+Message-ID: <5240BB2A.8060705@wwwdotorg.org>
+Date: Mon, 23 Sep 2013 16:05:30 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, ian.campbell@citrix.com,
-        rob@landley.net, gregkh@linuxfoundation.org, grant.likely@linaro.org,
-        idos@codeaurora.org, mgautam@codeaurora.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v5 1/3] usb: dwc3: msm: Add device tree binding information
-References: <1377091786-5613-1-git-send-email-iivanov@mm-sol.com> <1377091786-5613-2-git-send-email-iivanov@mm-sol.com> <20130923193224.GO30811@radagast>
-In-Reply-To: <20130923193224.GO30811@radagast>
+To: Rhyland Klein <rklein@nvidia.com>
+CC: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
+        Manish Badarkhe <badarkhe.manish@gmail.com>,
+        Darbha Sriharsha <dsriharsha@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [Patch V2] drivers: power: Add support for bq24735 charger
+References: <1379607514-11200-1-git-send-email-rklein@nvidia.com> <5240B85D.3050803@wwwdotorg.org> <5240BA4A.4010007@nvidia.com>
+In-Reply-To: <5240BA4A.4010007@nvidia.com>
 X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -31,35 +29,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 01:32 PM, Felipe Balbi wrote:
-> Hi,
+On 09/23/2013 04:01 PM, Rhyland Klein wrote:
+> On 9/23/2013 5:53 PM, Stephen Warren wrote:
+>> On 09/19/2013 10:18 AM, Rhyland Klein wrote:
+>>> Adding driver support for bq24735 charger chipset.
+>>
+>>> diff --git a/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt b/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt
+
+>>> + - ti,charge-current : Used to control and set the charging current. This value
+>>> +   must follow the below guidelines:
+>>> +	bit 0 - 5:	Not used
+>>> +	bit 6:		1 = Adds 64mA of charger current
+>>> +	bit 7:		1 = Adds 128mA of charger current
+>>> +	bit 8:		1 = Adds 256mA of charger current
+>>> +	bit 9:		1 = Adds 512mA of charger current
+>>> +	bit 10:		1 = Adds 1024mA of charger current
+>>> +	bit 11:		1 = Adds 2048mA of charger current
+>>> +	bit 12:		1 = Adds 4096mA of charger current
+>>> +	bit 13 - 15:	Not used
+>>
+>> That's a little odd. Why not just put the number of mA directly into the
+>> property unshifted?
 > 
-> On Wed, Aug 21, 2013 at 04:29:44PM +0300, Ivan T. Ivanov wrote:
->> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->> 
->> MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys (SNPS)
->> and HS, SS PHY's control and configuration registers.
->> 
->> It could operate in device mode (SS, HS, FS) and host mode (SS,
->> HS, FS, LS).
->> 
->> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> This is how the hw register is defined, its the literal number of mA.
+> This is cleaned up in the upcoming revision.
+
+OK. If you still want to use the raw register encoding, which seems
+reasonable, why not just say:
+
+ti,charge-current: Value for charge current register as described in the
+HW documentation.
+
+>>> +   Setting the value to < 128mA or > 8.128A terminates charging.
+>>
+>> "terminates charging" is a driver action, not a description of HW. It's
+>> fine to say that what min/max value should be specified in the property
+>> for it to be valid, but not what action SW should take in response to that.
 > 
-> and here's a new version from same patch
+> This isn't sw. This is defined in the HW documentation as to what
+> happens if an invalid value is used.
 
-The binding looks pretty simple, so I don't think it's too contentious.
-
->> diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt
->> b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-
->> +MSM DWC3 controller wrapper
-
->> +Optional properties : +- gdsc-supply : phandle to the globally
->> distributed switch controller +  regulator node to the USB
->> controller.
-
-If that's a regulator node, why not use xxx-supply properties to
-interface with it?
-
-Aside from that, the binding,
-Acked-by: Stephen Warren <swarren@nvidia.com>
+OK, if the HW documentation already says that, I don't see the need for
+the DT binding to also say it; I would suggest just removing that text.
