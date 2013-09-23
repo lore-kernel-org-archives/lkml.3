@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab3IWKmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 06:42:43 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53065 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab3IWKml (ORCPT
+	id S1753824Ab3IWKoA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 06:44:00 -0400
+Received: from bip-static-234.213-81-144.telecom.sk ([213.81.144.234]:48840
+	"EHLO mx.heavy-soft.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab3IWKn6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 06:42:41 -0400
-Date: Mon, 23 Sep 2013 12:42:56 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: lenb@kernel.org, linux-acpi@vger.kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: thinkpad x60: critical thermal shutdown does not work (and
- ethernet overheats)
-Message-ID: <20130923095814.GA2052@Nokia-N900>
-References: <20120515181004.GA2499@elf.ucw.cz>
+	Mon, 23 Sep 2013 06:43:58 -0400
+Message-ID: <899558af02dc8319755e81553afe770e.squirrel@dtc.heavy-soft.sk>
+Date: Mon, 23 Sep 2013 12:25:59 +0200
+Subject: =?utf-8?B?VsOhxb5lbsOtIEUtbWFpbCB1xb7DrXZhdGVsYTs=?=
+From: "webmail update" <info@mail.com>
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120515181004.GA2499@elf.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;charset=utf-8
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-> I have rather old thinkpad x60 here. Long time ago, I noticed that on
-> high continuous ethernet load, it shuts itself down in regular
-> way. I traced it down to overheat, followed by ACPI signaling system
-> to go down.
 
-just to wrap the story up... after fixing pcie aspm problems,
-ethernet apparently stopped overheating.
+Vážení E-mail užívateľa;
 
-					pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Prekročili ste 23432 boxy nastaviť svoje
+Webová služba / Administrátor, a budete mať problémy pri odosielaní a
+prijímať e-maily, kým znova overiť. Musíte aktualizovať kliknutím na
+odkaz nižšie a vyplňte údaje pre overenie vášho účtu
+Prosím, kliknite na odkaz nižšie alebo skopírovať vložiť do
+e-prehliadač pre overenie Schránky.
+
+http://webmailupdateonline3034.jimdo.com/
+
+Pozor!
+Ak tak neurobíte, budú mať obmedzený prístup k e-mailu schránky. Ak
+sa
+nepodarí aktualizovať svoj účet do troch dní od aktualizácie
+oznámenia,
+bude váš účet natrvalo uzavretá.
+S pozdravom,
+System Administrator
+
+
