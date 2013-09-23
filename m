@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab3IWPYI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 11:24:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4019 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752597Ab3IWPYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 11:24:06 -0400
-Message-ID: <52405D24.1010708@redhat.com>
-Date: Mon, 23 Sep 2013 17:24:20 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1753366Ab3IWPY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 11:24:57 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37016 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854Ab3IWPYz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 11:24:55 -0400
+Date: Mon, 23 Sep 2013 17:24:27 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Brown <broonie@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-mtd@lists.infradead.org,
+        linux-pcmcia@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 0/7] driver core: prevent deferred probe with
+ platform_driver_probe
+Message-ID: <20130923152427.GX30088@pengutronix.de>
+References: <20130923134028.GF21013@sirena.org.uk>
+ <1379946452-25649-1-git-send-email-jhovold@gmail.com>
+ <20130923145029.GV30088@pengutronix.de>
+ <20130923152018.GB1454@localhost>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] KVM: x86: prevent setting unsupported XSAVE states
-References: <1379341591-6538-1-git-send-email-pbonzini@redhat.com> <1379341591-6538-3-git-send-email-pbonzini@redhat.com> <20130922093353.GI25202@redhat.com> <5240166D.5020401@redhat.com> <20130923150955.GB10353@redhat.com>
-In-Reply-To: <20130923150955.GB10353@redhat.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130923152018.GB1454@localhost>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:23:48 up 30 days, 54 min, 47 users,  load average: 0.00, 0.05,
+ 0.09
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 23/09/2013 17:09, Gleb Natapov ha scritto:
-> On Mon, Sep 23, 2013 at 12:22:37PM +0200, Paolo Bonzini wrote:
->>>> @@ -6940,6 +6948,9 @@ int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
->>>>  
->>>>  	vcpu->arch.ia32_tsc_adjust_msr = 0x0;
->>>>  	vcpu->arch.pv_time_enabled = false;
->>>> +
->>>> +	vcpu->arch.supported_xcr0 = XSTATE_FPSSE;
->>>> +
->>> Why is this needed? It will make make __kvm_set_xcr() succeed if attempt
->>> is made to set SSE bit when it is not supported in cpuid. This may not
->>> be an issue in practice, but for clarity it is better for supported_xcr0
->>> to contain only what is supported in guest's cpuid bits and handle the
->>> fact that FP/SSE state should always be copied to/from userspace in
->>> kvm_vcpu_ioctl_x86_(set|get)_xsave functions.
->>
->> I don't think it makes sense to disable SSE but not XSAVE.  Linux even
->> has this:
->>
->>         if ((pcntxt_mask & XSTATE_FPSSE) != XSTATE_FPSSE) {
->>                 pr_err("FP/SSE not shown under xsave features 0x%llx\n",
->>                        pcntxt_mask);
->>                 BUG();
->>         }
->>
-> That's why I said it may not be an issue in practice. What makes the
-> code confusing to me is that it is not clear what .supported_xcr0
-> contains. Why not make it contain only guest cpuid bits and use
-> XSTATE_FPSSE explicitly in get_xsave. I mean drop this from next patch:
+On Mon, Sep 23, 2013 at 05:20:18PM +0200, Johan Hovold wrote:
+> On Mon, Sep 23, 2013 at 04:50:29PM +0200, Sascha Hauer wrote:
+> > On Mon, Sep 23, 2013 at 04:27:25PM +0200, Johan Hovold wrote:
+> > > Deferred probing cannot be used with platform_driver_probe as by the
+> > > time probing is retried either the driver has been unregistered or its
+> > > probe function has been set to platform_drv_probe_fail.
+> > > 
+> > > With commit e9354576 ("gpiolib: Defer failed gpio requests by default")
+> > > the gpio subsystem started returning -EPROBE_DEFER, which in turn
+> > > several platform drivers using platform_driver_probe return to driver
+> > > core. Other subsystems (e.g. regulator) has since started doing the
+> > > same.
+> > > 
+> > > The first patch in this series prevents platform drivers using
+> > > platform_driver_probe from requesting probe deferral while warning that
+> > > it is not supported.
+> > > 
+> > > The remaining patches move six platform-driver probe functions that rely
+> > > on gpio_request out of __init. There are likely other probe functions
+> > > that might return -EPROBE_DEFER and should be moved out of __init as
+> > > well.
+> > 
+> > As usually when I read this I wonder why platform_driver_probe exists
+> > anyway. The only advantage I can think off is that the probe functions
+> > are in __init and thus can be disposed of later. Now you remove the
+> > __init annotations from these probe functions. Wouldn't it be better to
+> > convert the drivers to regular platform_driver_register instead?
 > 
->         vcpu->arch.supported_xcr0 =
-> -               (best->eax | ((u64)best->edx << 32)) &
-> +               (best->eax | ((u64)best->edx << 32) | XSTATE_FPSSE) &
->                 host_xcr0 & KVM_SUPPORTED_XCR0;
-> 
-> And change
-> *(u64 *)&guest_xsave->region[XSAVE_HDR_OFFSET / sizeof(u32)] !=  vcpu->arch.supported_xcr0;
-> to
-> *(u64 *)&guest_xsave->region[XSAVE_HDR_OFFSET / sizeof(u32)] != (vcpu->arch.supported_xcr0 | XSTATE_FPSSE);
+> Perhaps that paragraph was a bit unclear: I move them out of __init
+> _and_ use platform_driver_register instead of platform_driver_probe as
+> well.
 
-Ok.
+Oh yes, I should have looked closer. Sorry for the noise.
 
-> 
->> I preferred this to adding dubiously-testable code that probed CPUID for
->> SSE support (or should I check FXSR instead?)
+Sascha
 
-I didn't understand you wanted the "| XSTATE_FPSSE" moved, I thought you
-wanted to check for SSE bits in userspace (similar to AVX).  I wasn't
-sure whether to tie this to the SSE bit, or to FXSR.  But what you
-propose makes sense, I'll test it.
-
-Paolo
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
