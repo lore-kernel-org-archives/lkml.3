@@ -1,72 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab3IWQ6h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 12:58:37 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56351 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540Ab3IWQ6e (ORCPT
+	id S1753417Ab3IWRA7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 13:00:59 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:40433 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662Ab3IWRA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 12:58:34 -0400
-Message-ID: <52407335.3030403@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 10:58:29 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 23 Sep 2013 13:00:56 -0400
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: lee.jones@linaro.org, sameo@linux.intel.com, broonie@kernel.org,
-        linus.walleij@linaro.org, akpm@linux-foundation.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        rtc-linux@googlegroups.com, rob.herring@calxeda.com,
-        mark.rutland@arm.com, pawel.moll@arm.com, rob@landley.net,
-        ijc+devicetree@hellion.org.uk, grant.likely@linaro.org,
-        florian.lobmaier@ams.com
-Subject: Re: [PATCH 3/4] regulator: as3722: add regulator driver for AMS AS3722
-References: <1379400338-20704-1-git-send-email-ldewangan@nvidia.com> <1379400338-20704-4-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1379400338-20704-4-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <20130920150902.16220.32737.stgit@warthog.procyon.org.uk>
+References: <20130920150902.16220.32737.stgit@warthog.procyon.org.uk>
+Date: Mon, 23 Sep 2013 13:00:55 -0400
+Message-ID: <CANP1eJFH234+98DORsQub+6kXuuYfN93=bCjVK8Q5gMWbohtCg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/3] FS-Cache: NFS(/CIFS/Ceph/9P): Fix start-caching
+ whilst writing race
+From: Milosz Tanski <milosz@adfin.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, steved@redhat.com,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        ceph-devel <ceph-devel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2013 12:45 AM, Laxman Dewangan wrote:
-> The AS3722 is a compact system PMU suitable for Mobile Phones,
-> Tablet etc. It has 4 DCDC step down regulators, 3 DCDC step down
-> controller, 11 LDOs.
-> 
-> Add a driver to support accessing the DCDC/LDOs found on the AMS
-> AS3722 PMIC using regulators.
+This should not be a problem with Ceph as the MDS (the metadata
+server) hands out cache capability bit for an inode. In this schema
+there's no need to worry about the count of of local file pointers
+open for write (or even across the cluster).
 
-> diff --git a/Documentation/devicetree/bindings/regulator/as3722-reguator.txt b/Documentation/devicetree/bindings/regulator/as3722-reguator.txt
+As an aside, the Ceph code checks if we can perform the requested VMA
+operation by checking the valid_fscache generation (compared to the
+current cache generation). This way we only create the cookie the
+first time the file is open. This has greatly simplified the code and
+got rid of a lot of races.
 
-The filename is typo'd
+Best,
+- Milosz
 
-> +AMS AS3722 regulator devicetree bindings.
-> +The regulator node is sub node of the AS3722 node.
-
-You probably want a blank line to separate the document title from the
-body text.
-
-> +Optional nodes:
-> +- regulators : Must contain a sub-node per regulator from the list below.
-> +	       Each sub-node should contain the constraints and initialization
-> +	       information for that regulator. See regulator.txt for a
-> +	       description of standard properties for these sub-nodes.
-> +	       Additional custom properties  are listed below.
-> +	       sd[0-6], ldo[0-7], ldo[9-11].
-
-I think you want to prefix that last line with something like: "Valid
-regulator names are: ".
-
-> +		ams,ext-control: External control of the rail. The option of
-> +			this properties will tell which external input is
-> +			controlling this rail. Valid values are 0, 1, 2 ad 3.
-> +			0: There is no external control of this rail.
-> +			1: Rail is controlled by ENABLE1 input pin.
-> +			2: Rail is controlled by ENABLE1 input pin.
-> +			3: Rail is controlled by ENABLE1 input pin.
-
-Those last 3 lines all say the same thing.
-
+On Fri, Sep 20, 2013 at 11:09 AM, David Howells <dhowells@redhat.com> wrote:
+>
+>
+> Following this mail is a series of patches to fix an issue with NFS whereby
+> caching can be enabled on a file that is open for writing by subsequently
+> opening it for reading.  This can be made to crash by opening it for writing
+> again if you're quick enough.
+>
+> The patches mailed here may not apply directly.  They are based on top of three
+> fix patches as can be seen in the GIT branch here:
+>
+>   http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=fscache
+>
+>
+> The gist of the patchset is that the cookie should be acquired at inode
+> creation only and subsequently enabled and disabled as appropriate (which
+> dispenses with the backing objects when they're not needed).
+>
+> The extra synchronisation that NFS does can then be dispensed with as it is
+> thenceforth managed by FS-Cache.
+>
+> This likely will need applying to CIFS, Ceph and 9P also once this is okayed
+> for NFS.  AFS is probably safe.
+>
+> David
+> ---
+> David Howells (3):
+>       FS-Cache: Add use/unuse/wake cookie wrappers
+>       FS-Cache: Provide the ability to enable/disable cookies
+>       NFS: Use i_writecount to control whether to get an fscache cookie in nfs_open()
+>
+>
+>  Documentation/filesystems/caching/netfs-api.txt |   73 +++++++--
+>  fs/9p/cache.c                                   |    6 -
+>  fs/afs/cell.c                                   |    2
+>  fs/afs/inode.c                                  |    2
+>  fs/afs/vlocation.c                              |    3
+>  fs/afs/volume.c                                 |    2
+>  fs/cachefiles/interface.c                       |    2
+>  fs/ceph/cache.c                                 |    4
+>  fs/cifs/fscache.c                               |    8 -
+>  fs/fscache/cookie.c                             |  193 +++++++++++++++++------
+>  fs/fscache/fsdef.c                              |    1
+>  fs/fscache/netfs.c                              |    1
+>  fs/fscache/object.c                             |    7 +
+>  fs/fscache/page.c                               |   59 +++++--
+>  fs/nfs/dir.c                                    |    2
+>  fs/nfs/fscache.c                                |  196 +++++++----------------
+>  fs/nfs/fscache.h                                |   18 +-
+>  fs/nfs/inode.c                                  |    6 -
+>  fs/nfs/nfs4file.c                               |    2
+>  include/linux/fs.h                              |    5 +
+>  include/linux/fscache-cache.h                   |   50 ++----
+>  include/linux/fscache.h                         |  113 ++++++++++++-
+>  include/linux/nfs_fs.h                          |    8 +
+>  23 files changed, 462 insertions(+), 301 deletions(-)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
