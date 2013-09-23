@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3IWRxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 13:53:00 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3816 "EHLO mms1.broadcom.com"
+	id S1753192Ab3IWR6e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 13:58:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63534 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753422Ab3IWRw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 13:52:57 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Wendy Ng" <wendy.ng@broadcom.com>
-To: "Rob Herring" <rob.herring@calxeda.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>
-cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Christian Daudt" <bcm@fixthebug.org>,
-        "Markus Mayer" <mmayer@broadcom.com>,
-        "Wendy Ng" <wendy.ng@broadcom.com>
-Subject: [PATCH 2/3] ARM: bcm281xx: Turn on Thermal and HWMON drivers.
-Date: Mon, 23 Sep 2013 10:51:37 -0700
-Message-ID: <1379958698-7554-3-git-send-email-wendy.ng@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1379958698-7554-1-git-send-email-wendy.ng@broadcom.com>
-References: <1379958698-7554-1-git-send-email-wendy.ng@broadcom.com>
+	id S1752529Ab3IWR6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 13:58:33 -0400
+Date: Mon, 23 Sep 2013 19:50:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130923175052.GA20991@redhat.com>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de> <1378805550-29949-38-git-send-email-mgorman@suse.de> <20130917143003.GA29354@twins.programming.kicks-ass.net> <20130917162050.GK22421@suse.de> <20130917164505.GG12926@twins.programming.kicks-ass.net> <20130918154939.GZ26785@twins.programming.kicks-ass.net> <20130919143241.GB26785@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-X-WSS-ID: 7E5EA1750UO10122505-01-01
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130919143241.GB26785@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables the thermal and HWMON drivers for Broadcom bcm281xx SoCs.
+And somehow I didn't notice that cpuhp_set_state() doesn't look right,
 
-Signed-off-by: Wendy Ng <wendy.ng@broadcom.com>
-Reviewed-by: Markus Mayer <mmayer@broadcom.com>
-Reviewed-by: Christian Daudt <csd@broadcom.com>
----
- arch/arm/configs/bcm_defconfig |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+On 09/19, Peter Zijlstra wrote:
+>  void cpu_hotplug_begin(void)
+>  {
+> -	cpu_hotplug.active_writer = current;
+> +	lockdep_assert_held(&cpu_add_remove_lock);
+>  
+> -	for (;;) {
+> -		mutex_lock(&cpu_hotplug.lock);
+> -		if (likely(!cpu_hotplug.refcount))
+> -			break;
+> -		__set_current_state(TASK_UNINTERRUPTIBLE);
+> -		mutex_unlock(&cpu_hotplug.lock);
+> -		schedule();
+> -	}
+> +	__cpuhp_writer = current;
+> +
+> +	/* After this everybody will observe _writer and take the slow path. */
+> +	synchronize_sched();
+> +
+> +	/* Wait for no readers -- reader preference */
+> +	cpuhp_wait_refcount();
+> +
+> +	/* Stop new readers. */
+> +	cpuhp_set_state(1);
 
-diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
-index 6e49310..1474661 100644
---- a/arch/arm/configs/bcm_defconfig
-+++ b/arch/arm/configs/bcm_defconfig
-@@ -83,7 +83,8 @@ CONFIG_SERIAL_8250_DW=y
- CONFIG_HW_RANDOM=y
- CONFIG_I2C=y
- CONFIG_I2C_CHARDEV=y
--# CONFIG_HWMON is not set
-+CONFIG_THERMAL=y
-+CONFIG_HWMON=y
- CONFIG_VIDEO_OUTPUT_CONTROL=y
- CONFIG_FB=y
- CONFIG_BACKLIGHT_LCD_SUPPORT=y
--- 
-1.7.9.5
+But this stops all readers, not only new. Even if cpuhp_wait_refcount()
+was correct, a new reader can come right before cpuhp_set_state(1) and
+then it can call another recursive get_online_cpus() right after.
 
+Oleg.
 
