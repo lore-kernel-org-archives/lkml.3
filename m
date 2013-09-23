@@ -1,263 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab3IWXGy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 19:06:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49908 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482Ab3IWXGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 19:06:09 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Matt Porter <matt@ohporter.com>, Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@linaro.org>, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <djbw@fb.com>, Jyri Sarha <jsarha@ti.com>,
-        Lars Peter-Clausen <lars@metafoo.de>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 2/3] dma: edma: Add support for Cyclic DMA
-Date: Mon, 23 Sep 2013 18:05:14 -0500
-Message-ID: <1379977515-3794-3-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379977515-3794-1-git-send-email-joelf@ti.com>
-References: <1379977515-3794-1-git-send-email-joelf@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753567Ab3IWXH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 19:07:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56723 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab3IWXH0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 19:07:26 -0400
+Date: Mon, 23 Sep 2013 16:07:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: oleg@redhat.com, security@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] kthread: Make kthread_create() killable.
+Message-Id: <20130923160725.49093c565dcf6df7037dcc6b@linux-foundation.org>
+In-Reply-To: <201309160953.IGI12418.FOQHOFVJLOMFSt@I-love.SAKURA.ne.jp>
+References: <201309132318.HEC05218.OtVOFOFMLJHFQS@I-love.SAKURA.ne.jp>
+	<20130914160515.GA8627@redhat.com>
+	<201309150846.HED51521.tJOFOMVFSOHQFL@I-love.SAKURA.ne.jp>
+	<20130915163919.GC13344@redhat.com>
+	<201309160953.IGI12418.FOQHOFVJLOMFSt@I-love.SAKURA.ne.jp>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the PaRAM configuration function that we split for reuse by the
-different DMA types, we implement Cyclic DMA support.
-For the cyclic case, we pass different configuration parameters to this
-function, and handle all the Cyclic-specific functionality separately.
+On Mon, 16 Sep 2013 09:53:59 +0900 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
 
-Callbacks to the DMA users are handled using vchan_cyclic_callback in
-the virt-dma layer. Linking is handled the same way as the slave SG case
-except for the last slot where we link it back to the first one in a
-cyclic fashion.
+> Subject: [PATCH v2] kthread: Make kthread_create() killable.
+> 
+> Any users of wait_for_completion() might be chosen by the OOM killer while
+> waiting for completion() call by some process which does memory allocation.
+> kthread_create() is one of such users.
+> 
+> When such users are chosen by the OOM killer when they are waiting for
+> completion() in TASK_UNINTERRUPTIBLE, problem similar to CVE-2012-4398
+> "kernel: request_module() OOM local DoS" can happen.
+> 
+> This patch makes kthread_create() killable, using the same approach used for
+> fixing CVE-2012-4398.
 
-For continuity, we check for cases where no.of periods is great than the
-MAX number of slots the driver can allocate for a particular descriptor
-and error out on such cases.
+That's a pretty big patch.  What's the status of this?  Do you think
+it's ready to go?  Oleg?
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
+I don't like the changelog much - it doesn't really describe the bug. 
+I can google "CVE-2012-4398" and that turns up a bunch of stuff but
+it's more oriented toward sysadmins etc, rather than kernel developers.
+
+Can we please have a conventional description?  When the user does A,
+the kernel does B because C, so we fix it via D?
+
+
+
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Subject: kthread: make kthread_create() killable
+
+Any users of wait_for_completion() might be chosen by the OOM killer while
+waiting for completion() call by some process which does memory
+allocation.  kthread_create() is one of such users.
+
+When such users are chosen by the OOM killer when they are waiting for
+completion() in TASK_UNINTERRUPTIBLE, problem similar to CVE-2012-4398
+"kernel: request_module() OOM local DoS" can happen.
+
+This patch makes kthread_create() killable, using the same approach used for
+fixing CVE-2012-4398.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/dma/edma.c | 159 ++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 151 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 725b00c..9b63e1e 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -54,6 +54,7 @@
- struct edma_desc {
- 	struct virt_dma_desc		vdesc;
- 	struct list_head		node;
-+	int				cyclic;
- 	int				absync;
- 	int				pset_nr;
- 	int				processed;
-@@ -167,8 +168,13 @@ static void edma_execute(struct edma_chan *echan)
- 	 * then setup a link to the dummy slot, this results in all future
- 	 * events being absorbed and that's OK because we're done
- 	 */
--	if (edesc->processed == edesc->pset_nr)
--		edma_link(echan->slot[nslots-1], echan->ecc->dummy_slot);
-+	if (edesc->processed == edesc->pset_nr) {
-+		if (edesc->cyclic)
-+			edma_link(echan->slot[nslots-1], echan->slot[1]);
-+		else
-+			edma_link(echan->slot[nslots-1],
-+				  echan->ecc->dummy_slot);
+ kernel/kthread.c |   73 +++++++++++++++++++++++++++++++++------------
+ 1 file changed, 55 insertions(+), 18 deletions(-)
+
+diff -puN kernel/kthread.c~kthread-make-kthread_create-killable kernel/kthread.c
+--- a/kernel/kthread.c~kthread-make-kthread_create-killable
++++ a/kernel/kthread.c
+@@ -33,7 +33,7 @@ struct kthread_create_info
+ 
+ 	/* Result passed back to kthread_create() from kthreadd. */
+ 	struct task_struct *result;
+-	struct completion done;
++	struct completion *done;
+ 
+ 	struct list_head list;
+ };
+@@ -178,6 +178,7 @@ static int kthread(void *_create)
+ 	struct kthread_create_info *create = _create;
+ 	int (*threadfn)(void *data) = create->threadfn;
+ 	void *data = create->data;
++	struct completion *done;
+ 	struct kthread self;
+ 	int ret;
+ 
+@@ -187,10 +188,16 @@ static int kthread(void *_create)
+ 	init_completion(&self.parked);
+ 	current->vfork_done = &self.exited;
+ 
++	/* If user was SIGKILLed, I release the structure. */
++	done = xchg(&create->done, NULL);
++	if (!done) {
++		kfree(create);
++		do_exit(-EINTR);
 +	}
+ 	/* OK, tell user we're spawned, wait for stop or wakeup */
+ 	__set_current_state(TASK_UNINTERRUPTIBLE);
+ 	create->result = current;
+-	complete(&create->done);
++	complete(done);
+ 	schedule();
  
- 	edma_resume(echan->ch_num);
- 
-@@ -449,6 +455,138 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 	return vchan_tx_prep(&echan->vchan, &edesc->vdesc, tx_flags);
+ 	ret = -EINTR;
+@@ -223,8 +230,15 @@ static void create_kthread(struct kthrea
+ 	/* We want our own signal handler (we take no signals by default). */
+ 	pid = kernel_thread(kthread, create, CLONE_FS | CLONE_FILES | SIGCHLD);
+ 	if (pid < 0) {
++		/* If user was SIGKILLed, I release the structure. */
++		struct completion *done = xchg(&create->done, NULL);
++
++		if (!done) {
++			kfree(create);
++			return;
++		}
+ 		create->result = ERR_PTR(pid);
+-		complete(&create->done);
++		complete(done);
+ 	}
  }
  
-+static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
-+	struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
-+	size_t period_len, enum dma_transfer_direction direction,
-+	unsigned long tx_flags, void *context)
-+{
-+	struct edma_chan *echan = to_edma_chan(chan);
-+	struct device *dev = chan->device->dev;
-+	struct edma_desc *edesc;
-+	dma_addr_t src_addr, dst_addr;
-+	enum dma_slave_buswidth dev_width;
-+	u32 burst;
-+	int i, ret, nr_periods;
-+
-+	if (unlikely(!echan || !buf_len || !period_len))
-+		return NULL;
-+
-+	if (direction == DMA_DEV_TO_MEM) {
-+		src_addr = echan->cfg.src_addr;
-+		dst_addr = buf_addr;
-+		dev_width = echan->cfg.src_addr_width;
-+		burst = echan->cfg.src_maxburst;
-+	} else if (direction == DMA_MEM_TO_DEV) {
-+		src_addr = buf_addr;
-+		dst_addr = echan->cfg.dst_addr;
-+		dev_width = echan->cfg.dst_addr_width;
-+		burst = echan->cfg.dst_maxburst;
-+	} else {
-+		dev_err(dev, "%s: bad direction?\n", __func__);
-+		return NULL;
-+	}
-+
-+	if (dev_width == DMA_SLAVE_BUSWIDTH_UNDEFINED) {
-+		dev_err(dev, "Undefined slave buswidth\n");
-+		return NULL;
-+	}
-+
-+	if (unlikely(buf_len % period_len)) {
-+		dev_err(dev, "Period should be multiple of Buffer length\n");
-+		return NULL;
-+	}
-+
-+	nr_periods = (buf_len / period_len) + 1;
-+
-+	/*
-+	 * Cyclic DMA users such as audio cannot tolerate delays introduced
-+	 * by cases where the number of periods is more than the maximum
-+	 * number of SGs the EDMA driver can handle at a time. For DMA types
-+	 * such as Slave SGs, such delays are tolerable and synchronized,
-+	 * but the synchronization is difficult to achieve with Cyclic and
-+	 * cannot be guaranteed, so we error out early.
-+	 */
-+	if (nr_periods > MAX_NR_SG)
-+		return NULL;
-+
-+	edesc = kzalloc(sizeof(*edesc) + nr_periods *
-+		sizeof(edesc->pset[0]), GFP_ATOMIC);
-+	if (!edesc) {
-+		dev_dbg(dev, "Failed to allocate a descriptor\n");
-+		return NULL;
-+	}
-+
-+	edesc->cyclic = 1;
-+	edesc->pset_nr = nr_periods;
-+
-+	dev_dbg(dev, "%s: nr_periods=%d\n", __func__, nr_periods);
-+	dev_dbg(dev, "%s: period_len=%d\n", __func__, period_len);
-+	dev_dbg(dev, "%s: buf_len=%d\n", __func__, buf_len);
-+
-+	for (i = 0; i < nr_periods; i++) {
-+		/* Allocate a PaRAM slot, if needed */
-+		if (echan->slot[i] < 0) {
-+			echan->slot[i] =
-+				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
-+						EDMA_SLOT_ANY);
-+			if (echan->slot[i] < 0) {
-+				dev_err(dev, "Failed to allocate slot\n");
-+				return NULL;
-+			}
-+		}
-+
-+		if (i == nr_periods - 1) {
-+			memcpy(&edesc->pset[i], &edesc->pset[0],
-+			       sizeof(edesc->pset[0]));
-+			break;
-+		}
-+
-+		ret = edma_config_pset(chan, &edesc->pset[i], src_addr,
-+				       dst_addr, burst, dev_width, period_len,
-+				       direction);
-+		if (ret < 0)
-+			return NULL;
-+
-+		if (direction == DMA_DEV_TO_MEM)
-+			dst_addr += period_len;
-+		else
-+			src_addr += period_len;
-+
-+		dev_dbg(dev, "%s: Configure period %d of buf:\n", __func__, i);
-+		dev_dbg(dev,
-+			"\n pset[%d]:\n"
-+			"  chnum\t%d\n"
-+			"  slot\t%d\n"
-+			"  opt\t%08x\n"
-+			"  src\t%08x\n"
-+			"  dst\t%08x\n"
-+			"  abcnt\t%08x\n"
-+			"  ccnt\t%08x\n"
-+			"  bidx\t%08x\n"
-+			"  cidx\t%08x\n"
-+			"  lkrld\t%08x\n",
-+			i, echan->ch_num, echan->slot[i],
-+			edesc->pset[i].opt,
-+			edesc->pset[i].src,
-+			edesc->pset[i].dst,
-+			edesc->pset[i].a_b_cnt,
-+			edesc->pset[i].ccnt,
-+			edesc->pset[i].src_dst_bidx,
-+			edesc->pset[i].src_dst_cidx,
-+			edesc->pset[i].link_bcntrld);
-+
-+		edesc->absync = ret;
-+
-+		/*
-+		 * Enable interrupts for every period because callback
-+		 * has to be called for every period.
-+		 */
-+		edesc->pset[i].opt |= TCINTEN;
-+	}
-+
-+	return vchan_tx_prep(&echan->vchan, &edesc->vdesc, tx_flags);
-+}
-+
- static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
+@@ -255,36 +269,59 @@ struct task_struct *kthread_create_on_no
+ 					   const char namefmt[],
+ 					   ...)
  {
- 	struct edma_chan *echan = data;
-@@ -457,24 +595,28 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
- 	unsigned long flags;
- 	struct edmacc_param p;
- 
--	/* Pause the channel */
--	edma_pause(echan->ch_num);
-+	edesc = echan->edesc;
-+
-+	/* Pause the channel for non-cyclic */
-+	if (!edesc || (edesc && !edesc->cyclic))
-+		edma_pause(echan->ch_num);
- 
- 	switch (ch_status) {
- 	case DMA_COMPLETE:
- 		spin_lock_irqsave(&echan->vchan.lock, flags);
- 
--		edesc = echan->edesc;
- 		if (edesc) {
--			if (edesc->processed == edesc->pset_nr) {
-+			if (edesc->cyclic) {
-+				vchan_cyclic_callback(&edesc->vdesc);
-+			} else if (edesc->processed == edesc->pset_nr) {
- 				dev_dbg(dev, "Transfer complete, stopping channel %d\n", ch_num);
- 				edma_stop(echan->ch_num);
- 				vchan_cookie_complete(&edesc->vdesc);
-+				edma_execute(echan);
- 			} else {
- 				dev_dbg(dev, "Intermediate transfer complete on channel %d\n", ch_num);
-+				edma_execute(echan);
- 			}
+-	struct kthread_create_info create;
 -
--			edma_execute(echan);
- 		}
+-	create.threadfn = threadfn;
+-	create.data = data;
+-	create.node = node;
+-	init_completion(&create.done);
++	DECLARE_COMPLETION_ONSTACK(done);
++	struct task_struct *task;
++	struct kthread_create_info *create = kmalloc(sizeof(*create),
++						     GFP_KERNEL);
++
++	if (!create)
++		return ERR_PTR(-ENOMEM);
++	create->threadfn = threadfn;
++	create->data = data;
++	create->node = node;
++	create->done = &done;
  
- 		spin_unlock_irqrestore(&echan->vchan.lock, flags);
-@@ -670,6 +812,7 @@ static void edma_dma_init(struct edma_cc *ecc, struct dma_device *dma,
- 			  struct device *dev)
- {
- 	dma->device_prep_slave_sg = edma_prep_slave_sg;
-+	dma->device_prep_dma_cyclic = edma_prep_dma_cyclic;
- 	dma->device_alloc_chan_resources = edma_alloc_chan_resources;
- 	dma->device_free_chan_resources = edma_free_chan_resources;
- 	dma->device_issue_pending = edma_issue_pending;
--- 
-1.8.1.2
+ 	spin_lock(&kthread_create_lock);
+-	list_add_tail(&create.list, &kthread_create_list);
++	list_add_tail(&create->list, &kthread_create_list);
+ 	spin_unlock(&kthread_create_lock);
+ 
+ 	wake_up_process(kthreadd_task);
+-	wait_for_completion(&create.done);
+-
+-	if (!IS_ERR(create.result)) {
++	/*
++	 * Wait for completion in killable state, for I might be chosen by
++	 * the OOM killer while kthreadd is trying to allocate memory for
++	 * new kernel thread.
++	 */
++	if (unlikely(wait_for_completion_killable(&done))) {
++		/*
++		 * If I was SIGKILLed before kthreadd (or new kernel thread)
++		 * calls complete(), leave the cleanup of this structure to
++		 * that thread.
++		 */
++		if (xchg(&create->done, NULL))
++			return ERR_PTR(-ENOMEM);
++		/*
++		 * kthreadd (or new kernel thread) will call complete()
++		 * shortly.
++		 */
++		wait_for_completion(&done);
++	}
++	task = create->result;
++	if (!IS_ERR(task)) {
+ 		static const struct sched_param param = { .sched_priority = 0 };
+ 		va_list args;
+ 
+ 		va_start(args, namefmt);
+-		vsnprintf(create.result->comm, sizeof(create.result->comm),
+-			  namefmt, args);
++		vsnprintf(task->comm, sizeof(task->comm), namefmt, args);
+ 		va_end(args);
+ 		/*
+ 		 * root may have changed our (kthreadd's) priority or CPU mask.
+ 		 * The kernel thread should not inherit these properties.
+ 		 */
+-		sched_setscheduler_nocheck(create.result, SCHED_NORMAL, &param);
+-		set_cpus_allowed_ptr(create.result, cpu_all_mask);
++		sched_setscheduler_nocheck(task, SCHED_NORMAL, &param);
++		set_cpus_allowed_ptr(task, cpu_all_mask);
+ 	}
+-	return create.result;
++	kfree(create);
++	return task;
+ }
+ EXPORT_SYMBOL(kthread_create_on_node);
+ 
+_
 
