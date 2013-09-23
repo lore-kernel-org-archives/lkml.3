@@ -1,124 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab3IWVBO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:01:14 -0400
-Received: from mail-ye0-f171.google.com ([209.85.213.171]:41838 "EHLO
-	mail-ye0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab3IWVBM (ORCPT
+	id S1753970Ab3IWVBs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:01:48 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:18996 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab3IWVBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:01:12 -0400
-Date: Mon, 23 Sep 2013 18:00:49 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth 2013-09-23
-Message-ID: <20130923210049.GG18215@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	Mon, 23 Sep 2013 17:01:46 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 23 Sep 2013 14:01:45 -0700
+Message-ID: <5240AC3A.9060206@nvidia.com>
+Date: Mon, 23 Sep 2013 17:01:46 -0400
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Simon Glass <sjg@chromium.org>, Olof Johansson <olof@lixom.net>
+Subject: Re: [RESEND] spi/tegra114: Correct support for cs_change
+References: <1379528245-6283-1-git-send-email-rklein@nvidia.com> <52408DC8.3020407@wwwdotorg.org> <52409B1E.3030405@nvidia.com> <52409D63.3020909@wwwdotorg.org>
+In-Reply-To: <52409D63.3020909@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 9/23/2013 3:58 PM, Stephen Warren wrote:
+> On 09/23/2013 01:48 PM, Rhyland Klein wrote:
+>> On 9/23/2013 2:51 PM, Stephen Warren wrote:
+>>> On 09/18/2013 12:17 PM, Rhyland Klein wrote:
+>>>> The tegra114 driver wasn't currently handling the cs_change functionality.
+>>>> It is meant to invert normal behavior, and we were only using it to possibly
+>>>> delay at the end of a transfer.
+> ...
+>>>> diff --git a/drivers/spi/spi-tegra114.c b/drivers/spi/spi-tegra114.c
+> ...
+>>>> @@ -717,7 +718,12 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
+>>>>  		else if (req_mode == SPI_MODE_3)
+>>>>  			command1 |= SPI_CONTROL_MODE_3;
+>>>>  
+>>>> -		tegra_spi_writel(tspi, command1, SPI_COMMAND1);
+>>>> +		if (tspi->cs_control) {
+>>>> +			if (tspi->cs_control != spi)
+>>>> +				tegra_spi_writel(tspi, command1, SPI_COMMAND1);
+>>>
+>>> Do you really need a separate write call there? The value of command1
+>>> isn't fully set up there (the CS bits are all set up immediately after),
+>>> so won't that glitch the CS lines in some cases?
+>>
+>> On our hardware (as far as I've seen), the CS line is normally low. We
+> 
+> I assume you meant "normally *active* low", not "normally low"?
 
---y0ulUmNC+osPPQO6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I mean that when I look at CS, before a transaction starts, the line is
+low. Then we do a write like this (default SPI_COMMAND1) you see CS rise
+and fall very soon after. This is purely how we generate the edge
+triggers (as far as I can tell on all Tegra hw, though Laxman can
+correct me if I am wrong).
 
-Hi John,
+> 
+>> need to generate a falling-edge to trigger the beginning of a SPI
+>> transaction. Doing this write with the default value of SPI_COMMAND1
+>> causes a brief rise and fall of CS, giving us our falling-edge.
+> 
+> That sounds like exactly the glitch I was talking about.
+> 
+> Assuming CS isn't held constantly asserted (low), isn't CS de-asserted
+> (rises) at the end of transaction n-1, and re-asserted (falls) at the
+> start of transaction n? If so, I'm not sure why the setup for
+> transaction n needs to both de-assert and then re-assert it? It seems
+> like cs_control should be handled at the end of a transaction, not at
+> the start of the next one.
 
-First Bluetooth fixes to 3.12, it includes:
+cs_change has to maintain state over spi_message boundries, not just
+between spi_transfers within a spi_message.
 
-* 3 patches to add device id for 3 new hardwares.
+In this specific case, this is a safe guard.
 
-* 2 patches from Johan to fix the rfkill behaviour during setup stage
+>>>> +		if (tspi->cs_control) {
+This sees that the previous transfer stored its spi_device pointer,
+meaning it had cs_change set on the last part of the last spi_message
+(I.E. CS hasn't been deasserted, so the SPI transaction is still on-going).
 
-* a small clean up in the rfcomm TTY code that fixes a potential racy
-condition (by Gianluca Anzolin)
+>>>> +			if (tspi->cs_control != spi)
+This however finds that the device trying to send a SPI message isn't
+the same one that was in the middle of its transaction. This is a
+collision between 2 clients on 1 bus. This simply ends the previous
+transaction (the ongoing one) in favor of starting a new transaction.
 
-* 2 fixes to proper set encryption key size and security level in the
-peripheral role of Bluetooth LE devices. (by Andre Guedes)
+Otherwise, this logic allows us to skip the spi of COMMAND1 which would
+normally be used to create the falling edge to start a new transaction,
+leaving the previous one open for more transfers.
 
-* a fix for dealing devices where pairing is not necessary, we were keeping
-the Bluetooth ACL connection alive for too much time. (by Syam Sidhardhan)
+-rhyland
 
-Please pull or let me know of any problems! Thanks!
-
-
-	Gustavo
-
----
-The following changes since commit f4e1a4d3ecbb9e42bdf8e7869ee8a4ebfa27fb20:
-
-  rt2800: change initialization sequence to fix system freeze (2013-09-09 14:44:34 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
-
-for you to fetch changes up to 5bcecf325378218a8e248bb6bcae96ec7362f8ef:
-
-  Bluetooth: btusb: Add support for Belkin F8065bf (2013-09-23 17:44:25 -0300)
-
-----------------------------------------------------------------
-Andre Guedes (2):
-      Bluetooth: Fix security level for peripheral role
-      Bluetooth: Fix encryption key size for peripheral role
-
-Gianluca Anzolin (1):
-      Bluetooth: don't release the port in rfcomm_dev_state_change()
-
-Johan Hedberg (2):
-      Bluetooth: Introduce a new HCI_RFKILLED flag
-      Bluetooth: Fix rfkill functionality during the HCI setup stage
-
-Ken O'Brien (1):
-      Bluetooth: btusb: Add support for Belkin F8065bf
-
-Peng Chen (1):
-      Bluetooth: Add a new PID/VID 0cf3/e005 for AR3012.
-
-Raphael Kubo da Costa (1):
-      Bluetooth: Add support for BCM20702A0 [0b05, 17cb]
-
-Syam Sidhardhan (1):
-      Bluetooth: Fix ACL alive for long in case of non pariable devices
-
- drivers/bluetooth/ath3k.c   |  2 ++
- drivers/bluetooth/btusb.c   |  5 +++++
- include/net/bluetooth/hci.h |  1 +
- net/bluetooth/hci_core.c    | 26 ++++++++++++++++++++------
- net/bluetooth/hci_event.c   |  6 +++++-
- net/bluetooth/l2cap_core.c  |  7 +++++++
- net/bluetooth/rfcomm/tty.c  | 35 ++---------------------------------
- 7 files changed, 42 insertions(+), 40 deletions(-)
-
-
---y0ulUmNC+osPPQO6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSQKwBAAoJEPs3PUX4s20oo6QP/0R2LOHl5VRFKx7TJfKFLMLe
-ZeFGBxK2jKTA1xRGhJ4dUJ6Li6K8QpfA0TMkINk5HGmA9QMc2fO2IUF6o+I0jjlx
-j+A43w54bvG0I0xCG23sl+a3vkMUXWCXOCycZPE3a3GUCyphFwBxal6vEt3AlOQl
-gXhDzO/+DPxzTW3wPS6Am3z33q8d2IFbPZFQYC6TEPKgJw3og7Sc60pcBiZl8r0v
-8TeaT/n40IY2lBKHyhkTB3MnUJVV07F0FAnzgfg/Lp7Up5FQkPSgvq07aHYbSE6M
-S969jaNy0jN8KJk7gXF/1arwit566d1ymZRtk0At2AtUFyyaC2kLmAIS1LG8o8aB
-+IZylN0N7SEstn3yjPitBEbEWjxBEJyeLn++SmHsMSspKxj0R3VKKpjogZ6jxpHY
-twhpUeIx4Ls3r3+I6u0hOornF6QydymcUs+thgEjyf+GaYj8M9OlOq3m6WDC1UL7
-64RTfq3KXQjpOw6A3ayessbmZHS7qIncfh+kcNO73+903/KyBmdDZVsnrwRrs07V
-E9m9cHiQg+TRzuncHDrD55jLKN4tICx3yf1oESBT4UrpsWlbP/9rE+nif8eQkJCj
-l4HnAA0KzsCy08zqlYh7XMMC9navDoyYR+AIZ1p1MtjNRKgXZJxT1Q5JhasAC3gr
-Gt+C8CMWPA6rH//aCnWW
-=TPFZ
------END PGP SIGNATURE-----
-
---y0ulUmNC+osPPQO6--
+-- 
+nvpublic
