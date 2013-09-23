@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab3IWV0H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:26:07 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:47223 "EHLO relay.sgi.com"
+	id S1754240Ab3IWV0E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:26:04 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:47250 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753958Ab3IWVZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753976Ab3IWVZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Sep 2013 17:25:03 -0400
-Message-Id: <20130923212500.507922930@asylum.americas.sgi.com>
+Message-Id: <20130923212501.026092045@asylum.americas.sgi.com>
 References: <20130923212459.544517569@asylum.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Mon, 23 Sep 2013 16:25:02 -0500
+Date: Mon, 23 Sep 2013 16:25:05 -0500
 From: Mike Travis <travis@sgi.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>,
@@ -19,109 +19,123 @@ To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] x86/UV: Add summary of cpu activity to UV NMI handler
-Content-Disposition: inline; filename=uv-dump-ips-on-nmi.patch
+Subject: [PATCH 6/7] x86/UV: Add call to KGDB/KDB from NMI handler
+Content-Disposition: inline; filename=uv-add-nmi-call-kdb.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The standard NMI handler dumps the states of all the cpus.  This includes
-a full register dump and stack trace.  This can be way more information
-than what is needed.  This patch adds a "summary" dump that is basically
-a form of the "ps" command.  It includes the symbolic IP address as well
-as the command field and basic process information.
+This patch restores the capability to enter KDB (and KGDB) from the UV NMI
+handler.  This is needed because the UV system console is not capable of
+sending the 'break' signal to the serial console port.  It is also useful
+when the kernel is hung in such a way that it isn't responding to normal
+external I/O, so sending 'g' to sysreq-trigger does not work either.
 
-It is enabled when the nmi action is changed to "ips".
+Another benefit of the external NMI command is that all the cpus receive
+the NMI signal at roughly the same time so they are more closely aligned
+timewise.
+
+It utilizes the newly added kgdb_nmicallin function to gain entry
+to KGDB/KDB by the master.  The slaves still enter via the standard
+kgdb_nmicallback function.  It also uses the new 'send_ready' pointer
+to tell KGDB/KDB to signal the slaves when to proceed into the KGDB
+slave loop.
+
+It is enabled when the nmi action is set to "kdb" and the kernel is
+built with CONFIG_KDB enabled.
 
 Signed-off-by: Mike Travis <travis@sgi.com>
 Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
 Reviewed-by: Hedi Berriche <hedi@sgi.com>
 ---
- arch/x86/platform/uv/uv_nmi.c |   48 ++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 44 insertions(+), 4 deletions(-)
+ arch/x86/platform/uv/uv_nmi.c |   47 +++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 46 insertions(+), 1 deletion(-)
 
 --- linux.orig/arch/x86/platform/uv/uv_nmi.c
 +++ linux/arch/x86/platform/uv/uv_nmi.c
-@@ -139,6 +139,19 @@ module_param_named(wait_count, uv_nmi_wa
- static int uv_nmi_retry_count = 500;
- module_param_named(retry_count, uv_nmi_retry_count, int, 0644);
+@@ -21,7 +21,9 @@
  
-+/*
-+ * Valid NMI Actions:
-+ *  "dump"	- dump process stack for each cpu
-+ *  "ips"	- dump IP info for each cpu
-+ */
-+static char uv_nmi_action[8] = "dump";
-+module_param_string(action, uv_nmi_action, sizeof(uv_nmi_action), 0644);
-+
-+static inline bool uv_nmi_action_is(const char *action)
-+{
-+	return (strncmp(uv_nmi_action, action, strlen(action)) == 0);
-+}
-+
- /* Setup which NMI support is present in system */
- static void uv_nmi_setup_mmrs(void)
- {
-@@ -367,13 +380,38 @@ static void uv_nmi_wait(int master)
- 		atomic_read(&uv_nmi_cpus_in_nmi), num_online_cpus());
+ #include <linux/cpu.h>
+ #include <linux/delay.h>
++#include <linux/kdb.h>
+ #include <linux/kexec.h>
++#include <linux/kgdb.h>
+ #include <linux/module.h>
+ #include <linux/nmi.h>
+ #include <linux/sched.h>
+@@ -32,6 +34,7 @@
+ #include <asm/kdebug.h>
+ #include <asm/local64.h>
+ #include <asm/nmi.h>
++#include <asm/traps.h>
+ #include <asm/uv/uv.h>
+ #include <asm/uv/uv_hub.h>
+ #include <asm/uv/uv_mmrs.h>
+@@ -146,8 +149,9 @@ module_param_named(retry_count, uv_nmi_r
+  *  "dump"	- dump process stack for each cpu
+  *  "ips"	- dump IP info for each cpu
+  *  "kdump"	- do crash dump
++ *  "kdb"	- enter KDB/KGDB (default)
+  */
+-static char uv_nmi_action[8] = "dump";
++static char uv_nmi_action[8] = "kdb";
+ module_param_string(action, uv_nmi_action, sizeof(uv_nmi_action), 0644);
+ 
+ static inline bool uv_nmi_action_is(const char *action)
+@@ -533,6 +537,43 @@ static inline void uv_nmi_kdump(int cpu,
  }
+ #endif /* !CONFIG_KEXEC */
  
-+static void uv_nmi_dump_cpu_ip_hdr(void)
++#ifdef CONFIG_KGDB_KDB
++/* Call KDB from NMI handler */
++static void uv_call_kdb(int cpu, struct pt_regs *regs, int master)
 +{
-+	printk(KERN_DEFAULT
-+		"\nUV: %4s %6s %-32s %s   (Note: PID 0 not listed)\n",
-+		"CPU", "PID", "COMMAND", "IP");
-+}
++	int ret;
 +
-+static void uv_nmi_dump_cpu_ip(int cpu, struct pt_regs *regs)
-+{
-+	printk(KERN_DEFAULT "UV: %4d %6d %-32.32s ",
-+		cpu, current->pid, current->comm);
++	if (master) {
++		/* call KGDB NMI handler as MASTER */
++		ret = kgdb_nmicallin(cpu, X86_TRAP_NMI, regs,
++					&uv_nmi_slave_continue);
++		if (ret) {
++			pr_alert("KDB returned error, is kgdboc set?\n");
++			atomic_set(&uv_nmi_slave_continue, SLAVE_EXIT);
++		}
++	} else {
++		/* wait for KGDB signal that it's ready for slaves to enter */
++		int sig;
 +
-+	printk_address(regs->ip, 1);
-+}
++		do {
++			cpu_relax();
++			sig = atomic_read(&uv_nmi_slave_continue);
++		} while (!sig);
 +
- /* Dump this cpu's state */
- static void uv_nmi_dump_state_cpu(int cpu, struct pt_regs *regs)
- {
- 	const char *dots = " ................................. ";
- 
--	printk(KERN_DEFAULT "UV:%sNMI process trace for CPU %d\n", dots, cpu);
--	show_regs(regs);
-+	if (uv_nmi_action_is("ips")) {
-+		if (cpu == 0)
-+			uv_nmi_dump_cpu_ip_hdr();
-+
-+		if (current->pid != 0)
-+			uv_nmi_dump_cpu_ip(cpu, regs);
-+
-+	} else if (uv_nmi_action_is("dump")) {
-+		printk(KERN_DEFAULT
-+			"UV:%sNMI process trace for CPU %d\n", dots, cpu);
-+		show_regs(regs);
++		/* call KGDB as slave */
++		if (sig == SLAVE_CONTINUE)
++			ret = kgdb_nmicallback(cpu, regs);
 +	}
- 	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_DUMP_DONE);
- }
++	uv_nmi_sync_exit(master);
++}
++
++#else /* !CONFIG_KGDB_KDB */
++static inline void uv_call_kdb(int cpu, struct pt_regs *regs, int master)
++{
++	pr_err("UV: NMI error: KGDB/KDB is not enabled in this kernel\n");
++}
++#endif /* !CONFIG_KGDB_KDB */
++
+ /*
+  * UV NMI handler
+  */
+@@ -565,6 +606,10 @@ int uv_handle_nmi(unsigned int reason, s
+ 	if (uv_nmi_action_is("ips") || uv_nmi_action_is("dump"))
+ 		uv_nmi_dump_state(cpu, regs, master);
  
-@@ -420,7 +458,8 @@ static void uv_nmi_dump_state(int cpu, s
- 		int ignored = 0;
- 		int saved_console_loglevel = console_loglevel;
- 
--		pr_alert("UV: tracing processes for %d CPUs from CPU %d\n",
-+		pr_alert("UV: tracing %s for %d CPUs from CPU %d\n",
-+			uv_nmi_action_is("ips") ? "IPs" : "processes",
- 			atomic_read(&uv_nmi_cpus_in_nmi), cpu);
- 
- 		console_loglevel = uv_nmi_loglevel;
-@@ -482,7 +521,8 @@ int uv_handle_nmi(unsigned int reason, s
- 	uv_nmi_wait(master);
- 
- 	/* Dump state of each cpu */
--	uv_nmi_dump_state(cpu, regs, master);
-+	if (uv_nmi_action_is("ips") || uv_nmi_action_is("dump"))
-+		uv_nmi_dump_state(cpu, regs, master);
- 
++	/* Call KDB if enabled */
++	else if (uv_nmi_action_is("kdb"))
++		uv_call_kdb(cpu, regs, master);
++
  	/* Clear per_cpu "in nmi" flag */
  	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_OUT);
+ 
 
 -- 
