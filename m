@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab3IWQOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 12:14:20 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33712 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332Ab3IWQOS (ORCPT
+	id S1752810Ab3IWQUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 12:20:55 -0400
+Received: from longford.logfs.org ([213.229.74.203]:57961 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab3IWQUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 12:14:18 -0400
-Message-ID: <524068D4.5040909@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 10:14:12 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 23 Sep 2013 12:20:54 -0400
+Date: Mon, 23 Sep 2013 11:02:22 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: =?utf-8?Q?J=C3=B6rg-Volker?= Peetz <jvpeetz@web.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Stephan Mueller <smueller@chronox.de>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH,RFC] random: make fast_mix() honor its name
+Message-ID: <20130923150222.GA13764@logfs.org>
+References: <20130916154026.GA23345@logfs.org>
+ <20130921212510.GD8606@thunk.org>
+ <20130921214118.GE8606@thunk.org>
+ <20130922030553.GA21422@thunk.org>
+ <523F5AB6.8070107@web.de>
+ <20130922212752.GB7321@thunk.org>
+ <20130922205334.GC4584@logfs.org>
+ <20130922233641.GE7321@thunk.org>
+ <20130923001623.GD4584@logfs.org>
+ <20130923024338.GF7321@thunk.org>
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Jon Hunter <jgchunter@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] gpio/omap: auto-setup a GPIO when used as an IRQ
-References: <1379860848-29020-1-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1379860848-29020-1-git-send-email-javier.martinez@collabora.co.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130923024338.GF7321@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2013 08:40 AM, Javier Martinez Canillas wrote:
-> To use a GPIO pin as an interrupt line, two previous configurations
-> have to be made:
+On Sun, 22 September 2013 22:43:38 -0400, Theodore Ts'o wrote:
+> On Sun, Sep 22, 2013 at 08:16:23PM -0400, Jörn Engel wrote:
+> > How about we switch between the two mixing functions depending on the
+> > interrupt load?  If this CPU has seen fewer than 1000 interrupts in
+> > the last second, use the better one, otherwise us the cheaper one?
 > 
-> a) Map the GPIO pin as an interrupt line into the Linux irq space
-> b) Enable the GPIO bank and configure the GPIO direction as input
-> 
-> Most GPIO/IRQ chip drivers just create a mapping for every single
-> GPIO pin with irq_create_mapping() on .probe so users usually can
-> assume a) and only have to do b) by using the following sequence:
-> 
-> gpio_request(gpio, "foo IRQ");
-> gpio_direction_input(gpio);
-> 
-> and then request a IRQ with:
-> 
-> irq = gpio_to_irq(gpio);
-> request_irq(irq, ...);
-> 
-> Some drivers know that their IRQ line is being driven by a GPIO
-> and use a similar sequence as the described above but others are
-> not aware or don't care wether their IRQ is a real line from an
-> interrupt controller or a GPIO pin acting as an IRQ.
-> ...
+> I guess the question here is whether it's worth it.  On a 2.8 GHz
+> laptop Ivy Bridge chip the numbers are:
 
-I think that explanation is a bit like retro-actively implying that
-drivers /should/ be aware of whether their IRQ is a GPIO or not, and
-should be acting differently. However, they should not.
+Then let us assume for now it is not worth it.  When I finally get
+around to generating profiles for my insane system we can revisit the
+issue.
 
-I would much rather see a simpler patch description along the lines of:
+> I am very strongly of the opinion that the number of systems where you
+> have an embedded system with that kind of inane interrupt rate is the
+> 0.00000000001% case.
 
-The OMAP GPIO controller HW requires that a pin be configured in GPIO
-mode in order to operate as an interrupt input. Since drivers should not
-be aware of whether an interrupt pin is also a GPIO or not, the HW
-should be fully configured/enabled as an IRQ if a driver solely uses IRQ
-APIs such as request_irq, and never calls any GPIO-related APIs. As
-such, add the missing HW setup to the OMAP GPIO controller's irq_chip
-driver.
+That would be one machine in 10^13?  I doubt we have reached 10^13
+machines running Linux in all of history, so a single example would
+defeat your very strong opinion. ;)
 
-The code change looks like it does what I would expect though.
+Anyway, let me collect some real numbers before we argue any further.
+And thank you for your maintainership.  It may not appear that way,
+but I have _very_ little to complain about in drivers/char/random.c.
+
+Jörn
+
+--
+One of the painful things about our time is that those who feel certainty
+are stupid, and those with any imagination and understanding are filled
+with doubt and indecision.
+-- Bertrand Russell
