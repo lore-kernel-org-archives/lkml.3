@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab3IWGaB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 02:30:01 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40715 "EHLO mail.skyhub.de"
+	id S1753364Ab3IWGab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 02:30:31 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:19623 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab3IWG37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 02:29:59 -0400
-Date: Mon, 23 Sep 2013 08:29:47 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-Message-ID: <20130923062947.GA2527@pd.tnic>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
- <1379602494-26684-12-git-send-email-bp@alien8.de>
- <20130921113929.GB1587@pd.tnic>
- <20130923054741.GC7007@dhcp-16-126.nay.redhat.com>
+	id S1753302Ab3IWGa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 02:30:29 -0400
+Message-ID: <523FDFFC.8050600@siemens.com>
+Date: Mon, 23 Sep 2013 08:30:20 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130923054741.GC7007@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, kvm@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 0/3] KVM: Make kvm_lock non-raw
+References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com> <20130922074238.GG25202@redhat.com> <523EAFFA.6060203@redhat.com> <20130922095348.GJ25202@redhat.com>
+In-Reply-To: <20130922095348.GJ25202@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 01:47:41PM +0800, Dave Young wrote:
-> > +	unsigned long size = md->num_pages << PAGE_SHIFT;
-> > +
-> > +	efi_va -= size;
-> > +	if (efi_va < EFI_VA_END) {
-> > +		pr_warning(FW_WARN "VA address range overflow!\n");
-> > +		return;
-> > +	}
-> > +
-> > +	/* Do the 1:1 map */
-> > +	__map_region(md, md->phys_addr);
-> > +
-> > +	/* Do the VA map */
-> > +	__map_region(md, efi_va);
+On 2013-09-22 11:53, Gleb Natapov wrote:
+> On Sun, Sep 22, 2013 at 10:53:14AM +0200, Paolo Bonzini wrote:
+>> Il 22/09/2013 09:42, Gleb Natapov ha scritto:
+>>> On Mon, Sep 16, 2013 at 04:06:10PM +0200, Paolo Bonzini wrote:
+>>>> Paul Gortmaker reported a BUG on preempt-rt kernels, due to taking the
+>>>> mmu_lock within the raw kvm_lock in mmu_shrink_scan.  He provided a
+>>>> patch that shrunk the kvm_lock critical section so that the mmu_lock
+>>>> critical section does not nest with it, but in the end there is no reason
+>>>> for the vm_list to be protected by a raw spinlock.  Only manipulations
+>>>> of kvm_usage_count and the consequent hardware_enable/disable operations
+>>>> are not preemptable.
+>>>>
+>>>> This small series thus splits the kvm_lock in the "raw" part and the
+>>>> "non-raw" part.
+>>>>
+>>>> Paul, could you please provide your Tested-by?
+>>>>
+>>> Reviewed-by: Gleb Natapov <gleb@redhat.com>
+>>>
+>>> But why should it go to stable?
+>>
+>> It is a regression from before the kvm_lock was made raw.  Secondarily,
+> It was made raw in 2.6.39 and commit message claims that it is done for
+> -rt sake, why regression was noticed only now?
+
+Probably, the patch is stressed to infrequently. Just checked: the issue
+was present from day #1 one, what a shame.
+
 > 
+>> it takes a much longer time before a patch hits -rt trees (can even be
+>> as much as a year) and this patch does nothing on non-rt trees.  So
+>> without putting it into stable it would get no actual coverage.
+>>
+> The change is not completely trivial, it splits lock. There is no
+> obvious problem of course, otherwise you wouldn't send it and I
+> would ack it :), but it does not mean that the chance for problem is
+> zero, so why risk stability of stable even a little bit if the patch
+> does not fix anything in stable?
 > 
-> Could you add comment for above code? It's hard to understand the
-> twice mapping if one did not follow the old thread.
+> I do not know how -rt development goes and how it affects decisions for
+> stable acceptance, why can't they carry the patch in their tree until
+> they move to 3.12?
 
-Does that suffice:
+I think it would be fair to let stable -rt carry these. -rt requires
+more specific patching anyway due to the waitqueue issue Paul reported.
+But CC'ing Steven to obtain his view.
 
-/*
- * Make sure the 1:1 mappings are present as a catch-all for b0rked firmware
- * which doesn't update all internal pointers after switching to virtual mode
- * and would otherwise crap on us.
- */
-
-?
-
-Btw, when you reply to a mail, please remove that quoted portion of it
-which you're not replying to - I had to scroll a bunch of screens down
-and I almost missed your reply. :)
-
-Thanks.
+Jan
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
