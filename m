@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab3IWM7A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 08:59:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50408 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663Ab3IWM67 (ORCPT
+	id S1753962Ab3IWM7p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 08:59:45 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:42004 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475Ab3IWM7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 08:58:59 -0400
-Message-ID: <52403B0B.1060305@linutronix.de>
-Date: Mon, 23 Sep 2013 14:58:51 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130821 Icedove/17.0.8
+	Mon, 23 Sep 2013 08:59:44 -0400
+Message-ID: <524039E0.2060205@cogentembedded.com>
+Date: Mon, 23 Sep 2013 16:53:52 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: IRQ affinity notifiers vs RT
-References: <1374708683.1732.38.camel@bwh-desktop.uk.level5networks.com> <1377898155.4629.11.camel@bwh-desktop.uk.level5networks.com>
-In-Reply-To: <1377898155.4629.11.camel@bwh-desktop.uk.level5networks.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: Roger Quadros <rogerq@ti.com>, balbi@ti.com, bcousson@baylibre.com,
+        tony@atomide.com, balajitk@ti.com, kishon@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [RFC PATCH 08/15] ata: ahci_platform: Manage SATA PHY
+References: <1379595943-14622-1-git-send-email-rogerq@ti.com> <1379595943-14622-9-git-send-email-rogerq@ti.com> <20130922165817.GD30946@htj.dyndns.org> <523F35E4.6050707@cogentembedded.com> <20130922215107.GD27616@mtj.dyndns.org>
+In-Reply-To: <20130922215107.GD27616@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 11:29 PM, Ben Hutchings wrote:
-> Sebastian, I saw you came up with a fix for this but apparently without
-> seeing my earlier message:
+Hello.
 
-Yes Ben, I haven't seen it. If I was on Cc I very sorry for overlooking
-it.
+On 23-09-2013 1:51, Tejun Heo wrote:
 
-> On Thu, 2013-07-25 at 00:31 +0100, Ben Hutchings wrote:
+>>     Not sure why you asked -- I'm not using this driver, neither I'm
 
->> Workqueue code uses spin_lock_irq() on the workqueue lock, which with
->> PREEMPT_RT enabled doesn't actually block IRQs.
->>
->> In 3.6, the irq_cpu_rmap functions relies on a workqueue flush to finish
->> any outstanding notifications before freeing the cpu_rmap that they use.
->> This won't be reliable if the notification is scheduled after releasing
->> the irq_desc lock.
->>
->> However, following commit 896f97ea95c1 ('lib: cpu_rmap: avoid flushing
->> all workqueues') in 3.8, I think that it is sufficient to do only
->> kref_get(&desc->affinity_notify->kref) in __irq_set_affinity_locked()
->> and then call schedule_work() in irq_set_affinity() after releasing the
->> lock.  Something like this (untested):
-> 
-> Does the following make sense to you?
+> Well, you have better grip of what's going on in the embedded world
+> than me.  I'm mostly curious whether adding dependency on PHY is okay.
 
-This was suggested by the original submitter on rt-users@v.k.o (Joe
-Korty) where I've been made aware of this for the first time. This okay
-except for the part where the workqueue is not scheduled if calling by
-the __ function (i.e. the mips case). If I read the code correctly, the
-CPU goes offline and affinity change should be updated / users notified
-and this is not the case with this patch.
+    This driver already supports optional clock, the optional PHY support
+seems analogous.
 
-It is a valid question why only one mips SoC needs the function. If you
-look at commit 0c3263870f ("MIPS: Octeon: Rewrite interrupt handling
-code.") you can see that tglx himself made this adjustment so it might
-be valid :) Therefore I assume that we may get more callers of this
-function and the workqueue should be executed and I made something
-simple that works on RT.
+> Thanks.
 
-> 
-> Ben.
-> 
+WBR, Sergei
 
-Sebastian
