@@ -1,116 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab3IWBez (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 21:34:55 -0400
-Received: from longford.logfs.org ([213.229.74.203]:57953 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab3IWBex (ORCPT
+	id S1753256Ab3IWBfU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 21:35:20 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:13891 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192Ab3IWBfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 21:34:53 -0400
-Date: Sun, 22 Sep 2013 20:16:23 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: =?utf-8?Q?J=C3=B6rg-Volker?= Peetz <jvpeetz@web.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Stephan Mueller <smueller@chronox.de>,
-        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH,RFC] random: make fast_mix() honor its name
-Message-ID: <20130923001623.GD4584@logfs.org>
-References: <20130912210717.GC3809@logfs.org>
- <20130912233155.GB5279@thunk.org>
- <20130916154026.GA23345@logfs.org>
- <20130921212510.GD8606@thunk.org>
- <20130921214118.GE8606@thunk.org>
- <20130922030553.GA21422@thunk.org>
- <523F5AB6.8070107@web.de>
- <20130922212752.GB7321@thunk.org>
- <20130922205334.GC4584@logfs.org>
- <20130922233641.GE7321@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130922233641.GE7321@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 22 Sep 2013 21:35:07 -0400
+X-AuditID: cbfee68f-b7f1e6d000004e8d-b3-523f9aca2c80
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+Cc: "'Arnd Bergmann'" <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>, "'Alex Dubov'" <oakad@yahoo.com>
+Subject: [PATCH 1/4] misc: tifm: remove unnecessary pci_set_drvdata()
+Date: Mon, 23 Sep 2013 10:35:06 +0900
+Message-id: <003101ceb7fd$21e97540$65bc5fc0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac63/SHKB4kHrvrSQPCGprHejMhtRA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zY91Ts+yDDKZ8VLL4O+kYu0Xz4vVs
+	FpcXXmK1uLxrDpvFw2OrmR1YPX7/msTosX/uGnaPvi2rGD0+b5LzmDXrMFMAaxSXTUpqTmZZ
+	apG+XQJXxtdHz9kLtrFXHF/XwdTAOImti5GTQ0LARGL+1qdQtpjEhXvrgWwuDiGBZYwSNw/t
+	YYYperbrJDtEYhGjxO0nx5ghnF+MEptvfmQBqWITUJP48uUwO4gtImAqsfH9FEaQImaBdkaJ
+	TdM2gBUJC7hKLNl9hxXEZhFQlfi/Yz3YCl4BW4n//z+wQdiCEj8m3wOrZxbQkli/8zgThC0v
+	sXnNW6B6DqCT1CUe/dWF2KUnseXZEagSEYl9L96B7ZUQOMQu8fjKVEaIXQIS3yYfYoHolZXY
+	dADqM0mJgytusExgFJuFZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0ouM9YoTc4tL89L1kvNz
+	NzFCoq9/B+PdA9aHGJOB1k9klhJNzgdGb15JvKGxmZGFqYmpsZG5pRlpwkrivGot1oFCAumJ
+	JanZqakFqUXxRaU5qcWHGJk4OKUaGBvqfIODztyb9NTtPq8Cq3j879mdd9K3801Y4m3xrGJt
+	xl3LzeznPb7Grd3vH5Qp8YBbIChB7IrR/RkBSZsTCh5s+si4p7Qy0MarTT3lqd0ZdsH/AedU
+	9ilYKMtVNvNNCvjLdzJq9utFW9yuGM3J/C73s8nDdDX7TbW4SL266bHx05vzHjzbqcRSnJFo
+	qMVcVJwIABs06/XUAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jAd1Ts+yDDB7Mkbf4O+kYu0Xz4vVs
+	FpcXXmK1uLxrDpvFw2OrmR1YPX7/msTosX/uGnaPvi2rGD0+b5LzmDXrMFMAa1QDo01GamJK
+	apFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0HYlhbLEnFKgUEBi
+	cbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8bXR8/ZC7axVxxf18HUwDiJrYuRk0NCwETi
+	2a6T7BC2mMSFe+uB4lwcQgKLGCVuPznGDOH8YpTYfPMjC0gVm4CaxJcvh8E6RARMJTa+n8II
+	UsQs0M4osWnaBrAiYQFXiSW777CC2CwCqhL/d6xnBrF5BWwl/v//wAZhC0r8mHwPrJ5ZQEti
+	/c7jTBC2vMTmNW+B6jmATlKXePRXF2KXnsSWZ0egSkQk9r14xziBUWAWkkmzkEyahWTSLCQt
+	CxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx/Yz6R2MqxosDjEKcDAq8fBGJtoHCbEm
+	lhVX5h5ilOBgVhLhbeoECvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+MO3klcQbGpuYGVka
+	mVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVANjJoebmGTs5n31UVbRSdwutuFN
+	t/YwvZzS4/IyOu6blv+JZOmkbp8w6QtKlrtsxNrfPr1WsfTQ/d+iUzY8urvZ6Pmbug0n/kg/
+	/nhXarm426mdvQckRSwc0sM0fueuYtA/8Z7P8vS09hPX9/MYbH1bbvVC4Ij7yvnnDrUbPzwd
+	erRK9ElNecFsJZbijERDLeai4kQAbWQj8zEDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 September 2013 19:36:41 -0400, Theodore Ts'o wrote:
-> On Sun, Sep 22, 2013 at 04:53:34PM -0400, Jörn Engel wrote:
-> > 
-> > And I want to keep that function.  Essentially the point of fast_mix()
-> > is to ratelimit _mix_pool_bytes().  Naïve ratelimiting would simply
-> > discard the input once the ratelimit has been reached.  My proposal is
-> > to still use the input bits, but use a really cheap mixing function.
-> 
-> Sure, but how cheap is "cheap"?  There's a balance here.  I don't buy
-> the argument that we must weaken the fast_mix() at all costs because
-> we have to drive the cost of fast_mix() to zero.  If we're going to do
-> that, to the limit fast_mix() should be a no-op, which is ridiculous.
+The driver core clears the driver data to NULL after device_release
+or on probe failure. Thus, it is not needed to manually clear the
+device driver data to NULL.
 
-Agreed.  We always have a tradeoff between quality and cost.  And I
-repeat yet again that driving the cost down is important, because it
-allows us to collect entropy more often.  The schedule is an entropy
-source I would like to tap.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/misc/tifm_7xx1.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-> So what I've suggested already makes fast_mix() much faster.  It's not
-> fast as what you've proposed, but it's pretty clear that my fast_mix()
-> is better at mixing the fast_mix pool.
+diff --git a/drivers/misc/tifm_7xx1.c b/drivers/misc/tifm_7xx1.c
+index f8d66543..ae282a1 100644
+--- a/drivers/misc/tifm_7xx1.c
++++ b/drivers/misc/tifm_7xx1.c
+@@ -378,7 +378,6 @@ err_out_irq:
+ err_out_unmap:
+ 	iounmap(fm->addr);
+ err_out_free:
+-	pci_set_drvdata(dev, NULL);
+ 	tifm_free_adapter(fm);
+ err_out_int:
+ 	pci_intx(dev, 0);
+@@ -405,8 +404,6 @@ static void tifm_7xx1_remove(struct pci_dev *dev)
+ 	for (cnt = 0; cnt < fm->num_sockets; cnt++)
+ 		tifm_7xx1_sock_power_off(tifm_7xx1_sock_addr(fm->addr, cnt));
+ 
+-	pci_set_drvdata(dev, NULL);
+-
+ 	iounmap(fm->addr);
+ 	pci_intx(dev, 0);
+ 	pci_release_regions(dev);
+-- 
+1.7.10.4
 
-Agreed.
 
-> > Your version of fast_mix() failed in the "really cheap" department.
-> > As a result, it showed up in profiles and at least one idiot (me)
-> > reverted to naïve ratelimiting.  It could have been worse, I was
-> > explicitly asked twice to just remove the call to
-> > add_interrupt_randomness().
-> 
-> Sure, but that's not _my_ problem.  If someone stupid adulterates
-> /dev/random, that's not my responsibility.  Most people aren't going
-> to be dealing with systems with truly stupid interrupt rates, and most
-> people aren't going to be tampering with the random driver.
-
-This is where I don't agree.  I very much care even about the plastic
-routers running some variant of Linux modified by some embedded
-engineers under insane time pressure.  If you leave them an incentive
-to cripple the random generator, some of them will.  If you find
-source code with a maliciously crippled random generator, the author
-has plausible deniability.
-
-So this should be _our_ problem.  Maybe not yours specifically, but
-certainly that of kernel developers in general.
-
-> I'm certainly willing to make fast_mix() faster, to reduce the
-> temptation for idiots to tamper with /dev/random, but we need to
-> balance the time of fast_mix() with the quality of its mixing, and to
-> remember what the common case is (and it's not 100k interrupts per
-> second!)
-
-How about we switch between the two mixing functions depending on the
-interrupt load?  If this CPU has seen fewer than 1000 interrupts in
-the last second, use the better one, otherwise us the cheaper one?
-
-I don't really like the idea too much.  But it would cover both the
-common case and my particular degenerated one.
-
-> In practice, we are using randomness in so many places (every single
-> time we start a process for ASLR, in lots of security-related programs
-> that use SSL libraries, etc.), that we are actually practically
-> *never* hitting trickle_thresh.
-> 
-> The trickle_thresh was added originally when add_timer_randomness()
-> was used for interrupts that used SA_SAMPLE_RANDOM.  Given that we
-> don't use add_timer_randomness() for that, but for things that happen
-> much more rarely (i.e., such as keyboard/mouse input), I'm probably
-> going to end up removing the trickle thresh_check altogether.
-
-Makes sense to me.
-
-Jörn
-
---
-Doubt is not a pleasant condition, but certainty is an absurd one.
--- Voltaire
