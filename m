@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3IWSey (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:34:54 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47055 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753848Ab3IWSew (ORCPT
+	id S1754038Ab3IWSfF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:35:05 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:65360 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab3IWSfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:34:52 -0400
-Message-ID: <524089C8.4010108@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 12:34:48 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 23 Sep 2013 14:35:03 -0400
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 10/12] clk: tegra: move fixed clocks to common file
-References: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com> <1379515331-19427-11-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1379515331-19427-11-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130923090100.GE6192@mwanda>
+References: <20130923090100.GE6192@mwanda>
+Date: Mon, 23 Sep 2013 20:35:01 +0200
+Message-ID: <CAOmT4fSi4Rj21nyWQCkqfKiARZL9QXc15Y=OsHJwJ+8OxivaGA@mail.gmail.com>
+Subject: Re: checkpatch guide for newbies
+From: bojan prtvar <prtvar.b@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: kernel-janitors@vger.kernel.org, open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2013 08:41 AM, Peter De Schrijver wrote:
-> Introduce a new file for fixed clocks common between several Tegra
-> SoCs and move Tegra114 to this new infrastructure.
+Hi Dan,
 
-> diff --git a/drivers/clk/tegra/clk-tegra-fixed.c b/drivers/clk/tegra/clk-tegra-fixed.c
+On Mon, Sep 23, 2013 at 11:01 AM, Dan Carpenter
+<dan.carpenter@oracle.com> wrote:
+> I've written a checkpatch guide for newbies because it seems like they
+> make the same mistakes over and over.  I intend to put it under
+> Documentation/.  Could you look it over?
 
-> +void __init tegra_fixed_clk_init(struct tegra_clk *tegra_clks)
+Maybe to add a paragraph about general work flow with linux-next? Or
+is it better to have separate guide for this.
+Myself, I was not able to find a good newbie receipt for it, except [1].
 
-> +	/* clk_m_div2 */
-> +	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_m_div2, tegra_clks);
-> +	if (dt_clk) {
-> +		clk = clk_register_fixed_factor(NULL, "clk_m_div2", "clk_m",
-> +					CLK_SET_RATE_PARENT, 1, 2);
-> +		clk_register_clkdev(clk, "clk_m_div2", NULL);
-> +		*dt_clk = clk;
-> +	}
+[1]
+http://lwn.net/Articles/289245/
 
-I guess "fixed" means "fixed at run-time", not "identical rate in all
-systems"? Since this is the crystal rate, it can vary between boards,
-but I supposed if "fixed" means "fixed at run-time", considering this as
-a fixed clock is fine.
-
-But, isn't clk_m also a fixed clock then? I would expect one or two more
-clocks in this file. What about clk_s, or is that known as clk_32k here?
+Regards,
+Bojan
