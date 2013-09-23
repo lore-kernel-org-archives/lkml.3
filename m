@@ -1,121 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab3IWV04 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:26:56 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:47222 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753281Ab3IWVZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:25:03 -0400
-Message-Id: <20130923212500.660567460@asylum.americas.sgi.com>
-References: <20130923212459.544517569@asylum.americas.sgi.com>
-User-Agent: quilt/0.46-1
-Date: Mon, 23 Sep 2013 16:25:03 -0500
-From: Mike Travis <travis@sgi.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/7] x86/UV: Add kdump to UV NMI handler
-Content-Disposition: inline; filename=uv-add-kdump-on-nmi.patch
+	id S1752875Ab3IWVa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:30:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55904 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab3IWVa6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 17:30:58 -0400
+Date: Mon, 23 Sep 2013 14:30:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: oleg@redhat.com, viro@zeniv.linux.org.uk, rostedt@goodmis.org,
+        fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
+Message-Id: <20130923143057.a6a7ac7d524f890bfef92b72@linux-foundation.org>
+In-Reply-To: <201309240612.ADE82877.MSFHVtOOFLFOQJ@I-love.SAKURA.ne.jp>
+References: <201309152323.GDG73435.VLOQFHOJtOFFSM@I-love.SAKURA.ne.jp>
+	<20130915163157.GB13344@redhat.com>
+	<201309160202.FBC60981.FQOHSLFMFtOJVO@I-love.SAKURA.ne.jp>
+	<20130915171549.GA15346@redhat.com>
+	<201309160226.DGH90134.QLSFtOJOOMFHVF@I-love.SAKURA.ne.jp>
+	<201309240612.ADE82877.MSFHVtOOFLFOQJ@I-love.SAKURA.ne.jp>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a system has hung and it no longer responds to external events, this
-patch adds the capability of doing a standard kdump and system reboot
-then triggered by the system NMI command.
+On Tue, 24 Sep 2013 06:12:34 +0900 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
 
-It is enabled when the nmi action is changed to "kdump" and the
-kernel is built with CONFIG_KEXEC enabled.
+> Andrew, would you pick up this patch?
+> 
+> Regards.
+> ----------
+> >From d6ff218545060c5f8b75b15d5b34bffcf625508f Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Mon, 16 Sep 2013 02:19:10 +0900
+> Subject: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
+> 
+> If /proc/sys/kernel/core_pattern contains only "|", NULL pointer dereference
+> happens upon core dump because argv_split("") returns argv[0] == NULL.
+> 
+> This bug was once fixed by commit 264b83c0 "usermodehelper: check
+> subprocess_info->path != NULL" but was by error reintroduced by commit
+> 7f57cfa4 "usermodehelper: kill the sub_info->path[0] check".
+> 
+> This bug seems to exist since 2.6.19 (the version which core dump to pipe was
+> added). Depending on kernel version and config, some side effect might happen
+> immediately after this oops (e.g. kernel panic with 2.6.32-358.18.1.el6).
+> 
+> ...
+>
+> --- a/kernel/kmod.c
+> +++ b/kernel/kmod.c
+> @@ -571,6 +571,10 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
+>  	DECLARE_COMPLETION_ONSTACK(done);
+>  	int retval = 0;
+>  
+> +	if (!sub_info->path) {
+> +		call_usermodehelper_freeinfo(sub_info);
+> +		return -ENOENT;
+> +	}
+>  	helper_lock();
+>  	if (!khelper_wq || usermodehelper_disabled) {
+>  		retval = -EBUSY;
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
-Reviewed-by: Hedi Berriche <hedi@sgi.com>
----
- arch/x86/platform/uv/uv_nmi.c |   41 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+The error is that the user put a bare "|" into
+/proc/sys/kernel/core_pattern.  Is ENOENT ("No such file or directory")
+the most appropriate error code here?  I think EINVAL ("Invalid
+argument")?
 
---- linux.orig/arch/x86/platform/uv/uv_nmi.c
-+++ linux/arch/x86/platform/uv/uv_nmi.c
-@@ -21,6 +21,7 @@
- 
- #include <linux/cpu.h>
- #include <linux/delay.h>
-+#include <linux/kexec.h>
- #include <linux/module.h>
- #include <linux/nmi.h>
- #include <linux/sched.h>
-@@ -70,6 +71,7 @@ static atomic_t	uv_in_nmi;
- static atomic_t uv_nmi_cpu = ATOMIC_INIT(-1);
- static atomic_t uv_nmi_cpus_in_nmi = ATOMIC_INIT(-1);
- static atomic_t uv_nmi_slave_continue;
-+static atomic_t uv_nmi_kexec_failed;
- static cpumask_var_t uv_nmi_cpu_mask;
- 
- /* Values for uv_nmi_slave_continue */
-@@ -143,6 +145,7 @@ module_param_named(retry_count, uv_nmi_r
-  * Valid NMI Actions:
-  *  "dump"	- dump process stack for each cpu
-  *  "ips"	- dump IP info for each cpu
-+ *  "kdump"	- do crash dump
-  */
- static char uv_nmi_action[8] = "dump";
- module_param_string(action, uv_nmi_action, sizeof(uv_nmi_action), 0644);
-@@ -496,6 +499,40 @@ static void uv_nmi_touch_watchdogs(void)
- 	touch_nmi_watchdog();
- }
- 
-+#if defined(CONFIG_KEXEC)
-+static void uv_nmi_kdump(int cpu, int master, struct pt_regs *regs)
-+{
-+	/* Call crash to dump system state */
-+	if (master) {
-+		pr_emerg("UV: NMI executing crash_kexec on CPU%d\n", cpu);
-+		crash_kexec(regs);
-+
-+		pr_emerg("UV: crash_kexec unexpectedly returned, ");
-+		if (!kexec_crash_image) {
-+			pr_cont("crash kernel not loaded\n");
-+			atomic_set(&uv_nmi_kexec_failed, 1);
-+			uv_nmi_sync_exit(1);
-+			return;
-+		}
-+		pr_cont("kexec busy, stalling cpus while waiting\n");
-+	}
-+
-+	/* If crash exec fails the slaves should return, otherwise stall */
-+	while (atomic_read(&uv_nmi_kexec_failed) == 0)
-+		mdelay(10);
-+
-+	/* Crash kernel most likely not loaded, return in an orderly fashion */
-+	uv_nmi_sync_exit(0);
-+}
-+
-+#else /* !CONFIG_KEXEC */
-+static inline void uv_nmi_kdump(int cpu, int master, struct pt_regs *regs)
-+{
-+	if (master)
-+		pr_err("UV: NMI kdump: KEXEC not supported in this kernel\n");
-+}
-+#endif /* !CONFIG_KEXEC */
-+
- /*
-  * UV NMI handler
-  */
-@@ -517,6 +554,10 @@ int uv_handle_nmi(unsigned int reason, s
- 	/* Indicate we are the first CPU into the NMI handler */
- 	master = (atomic_read(&uv_nmi_cpu) == cpu);
- 
-+	/* If NMI action is "kdump", then attempt to do it */
-+	if (uv_nmi_action_is("kdump"))
-+		uv_nmi_kdump(cpu, master, regs);
-+
- 	/* Pause as all cpus enter the NMI handler */
- 	uv_nmi_wait(master);
- 
-
--- 
