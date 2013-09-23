@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab3IWGNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 02:13:48 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:49369 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582Ab3IWGNq (ORCPT
+	id S1753290Ab3IWGPv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 02:15:51 -0400
+Received: from nm22-vm6.access.bullet.mail.gq1.yahoo.com ([216.39.63.170]:36305
+	"EHLO nm22-vm6.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751944Ab3IWGPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 02:13:46 -0400
-X-Spam-Score: -100.6
-Message-ID: <523FDBD7.4040602@asianux.com>
-Date: Mon, 23 Sep 2013 14:12:39 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 23 Sep 2013 02:15:50 -0400
+X-Yahoo-Newman-Id: 484410.43093.bm@smtp120.sbc.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: MsM_vnUVM1kpMEVlt1y4X4Ngdp90sO4pPagXMswS53s35lX
+ CseakqPW10y9MbVKxOFm5q7ncyVRzC76wIKVpJ2Ug2qANKLEllgqJ1qlaJLh
+ AdjtemN3SqbUThEkIyrYgrUk9EjesQbjqHt.4L.oWu8ZVfAWLxUK_xlkWSGk
+ DnP0gcWJphAbZTWf73QbBMx.jjWvgCpLn4dujGO5yWAfpg0zfvG_pZWijATl
+ t80CHPfnamKLTVuadKpA0BHXBVQBX_W7rzQRCnMzWmzylsEoGIKcXn43_IIQ
+ o.GILrxMS314qDV4ztG276Q9pHriRPiGIx_Rt0qVuQdckVV5Sc1Ac1cPFGhk
+ 82_.aOUU7FVfTmwtAunF8tNXGrSBsnrIwmiAbDVUTNQehtiZ.l1Vm13Yncj_
+ hWVF5g242KUV0V8N5miXRvzyj83LDpDpEnW0phaGZJ8lnGi1PaxrMwb_Vq1w
+ 6QwlBGqBZLEvncIi4gMbFE9wceH8HCP_vhlEdts1c.lW8cvux8xYqxADa1hN
+ 6tJRUIY5_IIyxV0RkgeRkIFQ3hIlB_oG84wDiWfwJvsNBKRc1iNc56vpasoe
+ ngJ0-
+X-Yahoo-SMTP: 0h0Q7euswBD_g.kcEqbzJWRFfrba801gq1M1
+X-Rocket-Received: from mistral.localnet (stilor@108.252.240.182 with )
+        by smtp120.sbc.mail.gq1.yahoo.com with SMTP; 23 Sep 2013 06:15:48 +0000 UTC
+From: Alexey Neyman <stilor@att.net>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Feng Tang <feng.tang@intel.com>, Yijing Wang <wangyijing@huawei.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix coalescing host bridge windows in arch/x86/pci/acpi.c
+Date: Sun, 22 Sep 2013 23:15:46 -0700
+Message-ID: <6362938.J7ZtNEOFpc@mistral>
+User-Agent: KMail/4.10.4 (Linux/3.8.0-25-generic; KDE/4.10.5; x86_64; ; )
 MIME-Version: 1.0
-To: "vgupta@synopsys.com" <vgupta@synopsys.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] arc: compiler: bug: about an arc compiler's bug
- which is not in gcc main source code.
-References: <523FD9E7.3050303@asianux.com>
-In-Reply-To: <523FD9E7.3050303@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="nextPart2146602.P7lzYueRtG"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
 
-Oh, I forgot to supply the related arc cross-compiler's information:
+--nextPart2146602.P7lzYueRtG
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-[root@dhcp122 linux-next]# /usr/local/bin/arc-elf32-gcc -v
-Using built-in specs.
-Target: arc-elf32
-Configured with: /mnt/sda11/src/toolchain_arc/unisrc/configure --target=arc-elf32 --with-cpu=arc700 --disable-werror --disable-multilib --with-pkgversion='ARCompact elf32 toolchain (built 20130922)' --with-bugurl=http://solvnet.synopsys.com --enable-fast-install=N/A --enable-languages=c,c++ --prefix=/usr/local --with-headers=/mnt/sda11/src/toolchain_arc/unisrc/newlib/libc/include
-Thread model: single
-gcc version 4.4.7 (ARCompact elf32 toolchain (built 20130922)) 
+[Resending due to no response to the original message in a week]
 
-[root@dhcp122 linux-next]# /usr/local/bin/arc-elf32-as -v
-GNU assembler version 2.19.50.ARC_4.4 (arc-elf32) using BFD version (ARCompact elf32 toolchain (built 20130922)) 2.19.50.ARC_4.4.20081103
+Hi all,
 
-[root@dhcp122 linux-next]# /usr/local/bin/arc-elf32-ld -v
-GNU ld (ARCompact elf32 toolchain (built 20130922)) 2.19.50.ARC_4.4.20081103
+I have a board with a BIOS bug that reports the following I/O port regions in 
+_CRS on one of the host bridges:
 
+0x0000-0x03af // #0
+0x03e0-0x0cf7 // #1
+0x03b0-0x03bb // #2
+0x03c0-0x03df // #3
+0x0000-0xdfff // #4
+0xf000-0xffff // #5
 
-On 09/23/2013 02:04 PM, Chen Gang wrote:
-> Hello arc members:
-> 
-> It is arc compiler's bug, but can not report to gnu tool chain (it is
-> not integrated into gnu tool chain), so have to report it here (I find
-> this bug here, and I guess, some arc folks are here, too).
-> 
-> 
-> In "drivers/power/wm831x_power.c", all wm831x_bat_get_prop() calling
-> functions are inline, so wm831x_bat_get_prop() size is more than 256,
-> but it uses 1 byte to express related offset (".byte .L61-.L65 + 6").
-> 
-> If let some of wm831x_bat_get_prop() calling functions noinline, it can
-> pass compiling.
-> 
-> The related .s file is in attachment, and the related command and error
-> (for next-20130920 tree) is below:
-> 
->     /usr/local/bin/arc-elf32-gcc -Wp,-MD,drivers/power/.wm831x_power.o.d  -nostdinc -isystem /usr/local/lib/gcc/arc-elf32/4.4.7/include -I/root/linux-next/arch/arc/include -Iarch/arc/include/generated  -Iinclude -I/root/linux-next/arch/arc/include/uapi -Iarch/arc/include/generated/uapi -I/root/linux-next/include/uapi -Iinclude/generated/uapi -include /root/linux-next/include/linux/kconfig.h -include /root/linux-next/arch/arc/include/asm/current.h -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -mA7 -fno-common -pipe -fno-builtin -D__linux__ -fsection-anchors -mlock -mswape -mrtsc -fasynchronous-unwind-tables -mno-sdata -fcall-used-gp -mbig-endian -multcost=16 -fno-reorder-blocks -fno-ipa-cp-clone -Wframe-larger-than=1024 -fno-stack-protector -fomit-frame-pointer -g -femit-struct-debug-baseonly -fno-var-tracking -fno-inline-functions-c
- alled-onc
-e 
-> -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -DDEBUG   -DMODULE -mlong-calls  -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(wm831x_power)"  -D"KBUILD_MODNAME=KBUILD_STR(wm831x_power)" -c -o drivers/power/.tmp_wm831x_power.o drivers/power/wm831x_power.c
->   {standard input}: Assembler messages:
->   {standard input}:934: Error: value of 256 too large for field of 1 bytes at 1987
-> 
-> 
-> Welcome any suggestions or completions (e.g. which location and members
-> this bug should be reported to).
-> 
-> Thanks.
-> 
+Obviously, region number #4 is erroneous as it overlaps with regions #0..3. 
+The code in coalesce_windows() in arch/x86/pci/acpi.c attempts to recover from 
+such kind of BIOS bugs by merging the overlapping regions. Current code 
+expands region #0 to 0x0000-0xdffff and makes region #4 ignored. As a result, 
+overlap of the expanded region #0 with regions #1..3 remains undetected (as 
+the inner loop already compared them with region #0). As a result, regions 
+#1..3 are inserted into the resource tree even though they overlap with 
+adjusted region #0 - which later results in resource conflicts for PCI devices 
+with IO ports in one of those regions (e.g., for an PCI IDE controller in 
+legacy mode - which has port 0x3f6). The kernel then refuses to initialize 
+these devices.
 
+The fix: instead of expanding res1 and ignoring res2, do the opposite. The 
+res2 window is yet to be compared against all windows between res1 and res2 
+(regions #1..3 in the above example), so the resulting resource map will 
+include just the expanded region - and will ignore any overlapping ones.
 
--- 
-Chen Gang
+Signed-off-by: Alexey Neyman <stilor@att.net>
+--nextPart2146602.P7lzYueRtG
+Content-Disposition: attachment; filename="acpi.c.diff"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/x-patch; charset="UTF-8"; name="acpi.c.diff"
+
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index b30e937..7fb24e5 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -354,12 +354,12 @@ static void coalesce_windows(struct pci_root_info *info, unsigned long type)
+ 			 * the kernel resource tree doesn't allow overlaps.
+ 			 */
+ 			if (resource_overlaps(res1, res2)) {
+-				res1->start = min(res1->start, res2->start);
+-				res1->end = max(res1->end, res2->end);
++				res2->start = min(res1->start, res2->start);
++				res2->end = max(res1->end, res2->end);
+ 				dev_info(&info->bridge->dev,
+ 					 "host bridge window expanded to %pR; %pR ignored\n",
+-					 res1, res2);
+-				res2->flags = 0;
++					 res2, res1);
++				res1->flags = 0;
+ 			}
+ 		}
+ 	}
+
+--nextPart2146602.P7lzYueRtG--
+
