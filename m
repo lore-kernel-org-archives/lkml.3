@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab3IWIoy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 04:44:54 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:50397 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab3IWIox (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 04:44:53 -0400
-Date: Mon, 23 Sep 2013 09:44:47 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wang Shilong <wangshilong1991@gmail.com>
-Subject: Re: [PATCH v3] mfd: add STw481x driver
-Message-ID: <20130923084447.GG2185@lee--X1>
-References: <1379879358-7297-1-git-send-email-linus.walleij@linaro.org>
- <20130923080532.GD2185@lee--X1>
- <CACRpkdaytQMhPRK59nrXDFhY7e1UyYC3X461-LS-5xymgM36sw@mail.gmail.com>
+	id S1753528Ab3IWIp0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 04:45:26 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55035 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752335Ab3IWIpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 04:45:24 -0400
+Date: Mon, 23 Sep 2013 10:45:14 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Dave Young <dyoung@redhat.com>,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+Message-ID: <20130923084514.GC2527@pd.tnic>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <1379602494-26684-12-git-send-email-bp@alien8.de>
+ <20130921113929.GB1587@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdaytQMhPRK59nrXDFhY7e1UyYC3X461-LS-5xymgM36sw@mail.gmail.com>
+In-Reply-To: <20130921113929.GB1587@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I'm happy to change it myself, rather that asking you to resubmit.
-> >
-> > Which do you prefer?
-> 
-> Pls fix it if you have time!
+On Sat, Sep 21, 2013 at 01:39:29PM +0200, Borislav Petkov wrote:
+> -void __init efi_call_phys_prelog(void)
+> +/*
+> + * We allocate runtime services regions top-down, starting from -4G, i.e.
+> + * 0xffff_ffff_0000_0000 and limit EFI VA mapping space to 64G.
+> + */
+> +static u64 efi_va	 = -4 * (1UL << 30);
+> +#define EFI_VA_END	 (-68 * (1UL << 30))
 
-Sorry, I should have been more clear.
-
-Which method do you prefer?
+Note to self: add this range to Documentation/x86/x86_64/mm.txt
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
