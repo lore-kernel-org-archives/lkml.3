@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab3IWQDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 12:03:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53776 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab3IWQDK (ORCPT
+	id S1752724Ab3IWQOU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 12:14:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33712 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab3IWQOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 12:03:10 -0400
-Date: Mon, 23 Sep 2013 18:02:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130923160254.GD9326@twins.programming.kicks-ass.net>
-References: <20130917143003.GA29354@twins.programming.kicks-ass.net>
- <20130917162050.GK22421@suse.de>
- <20130917164505.GG12926@twins.programming.kicks-ass.net>
- <20130918154939.GZ26785@twins.programming.kicks-ass.net>
- <20130919143241.GB26785@twins.programming.kicks-ass.net>
- <20130923105017.030e0aef@gandalf.local.home>
- <20130923145446.GX9326@twins.programming.kicks-ass.net>
- <20130923111303.04b99db8@gandalf.local.home>
- <20130923152223.GZ9326@twins.programming.kicks-ass.net>
- <20130923115908.6e710d29@gandalf.local.home>
+	Mon, 23 Sep 2013 12:14:18 -0400
+Message-ID: <524068D4.5040909@wwwdotorg.org>
+Date: Mon, 23 Sep 2013 10:14:12 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130923115908.6e710d29@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Jon Hunter <jgchunter@gmail.com>, linux-gpio@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] gpio/omap: auto-setup a GPIO when used as an IRQ
+References: <1379860848-29020-1-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1379860848-29020-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 11:59:08AM -0400, Steven Rostedt wrote:
-> On Mon, 23 Sep 2013 17:22:23 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
+On 09/22/2013 08:40 AM, Javier Martinez Canillas wrote:
+> To use a GPIO pin as an interrupt line, two previous configurations
+> have to be made:
 > 
-> > Still no point in using srcu for this; preempt_disable +
-> > synchronize_sched() is similar and much faster -- its the rcu_sched
-> > equivalent of what you propose.
+> a) Map the GPIO pin as an interrupt line into the Linux irq space
+> b) Enable the GPIO bank and configure the GPIO direction as input
 > 
-> To be honest, I sent this out last week and it somehow got trashed by
-> my laptop and connecting to my smtp server. Where the last version of
-> your patch still had the memory barrier ;-)
+> Most GPIO/IRQ chip drivers just create a mapping for every single
+> GPIO pin with irq_create_mapping() on .probe so users usually can
+> assume a) and only have to do b) by using the following sequence:
+> 
+> gpio_request(gpio, "foo IRQ");
+> gpio_direction_input(gpio);
+> 
+> and then request a IRQ with:
+> 
+> irq = gpio_to_irq(gpio);
+> request_irq(irq, ...);
+> 
+> Some drivers know that their IRQ line is being driven by a GPIO
+> and use a similar sequence as the described above but others are
+> not aware or don't care wether their IRQ is a real line from an
+> interrupt controller or a GPIO pin acting as an IRQ.
+> ...
 
-Ah, ok, yes in that case things start to make sense again.
+I think that explanation is a bit like retro-actively implying that
+drivers /should/ be aware of whether their IRQ is a GPIO or not, and
+should be acting differently. However, they should not.
+
+I would much rather see a simpler patch description along the lines of:
+
+The OMAP GPIO controller HW requires that a pin be configured in GPIO
+mode in order to operate as an interrupt input. Since drivers should not
+be aware of whether an interrupt pin is also a GPIO or not, the HW
+should be fully configured/enabled as an IRQ if a driver solely uses IRQ
+APIs such as request_irq, and never calls any GPIO-related APIs. As
+such, add the missing HW setup to the OMAP GPIO controller's irq_chip
+driver.
+
+The code change looks like it does what I would expect though.
