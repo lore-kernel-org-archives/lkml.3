@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab3IWOYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 10:24:13 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:18337 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab3IWOYM (ORCPT
+	id S1752669Ab3IWO1D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 10:27:03 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:4232 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab3IWO1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 10:24:12 -0400
-Message-ID: <52404F4B.3000207@oracle.com>
-Date: Mon, 23 Sep 2013 10:25:15 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Mon, 23 Sep 2013 10:27:00 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 23 Sep 2013 07:27:00 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: [PATCH v2 00/12] Introduce common infra for tegra clocks
+Date: Mon, 23 Sep 2013 17:24:52 +0300
+Message-ID: <1379946381-20125-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org, david.vrabel@citrix.com, JBeulich@suse.com,
-        xen-devel@lists.xen.org
-Subject: Re: [Xen-devel] [PATCH v1 3/5] xen/PMU: Initialization code for Xen
- PMU
-References: <1378827110-4192-1-git-send-email-boris.ostrovsky@oracle.com> <1378827110-4192-4-git-send-email-boris.ostrovsky@oracle.com> <20130923132618.GD3175@phenom.dumpdata.com> <52404DBD.6010607@oracle.com>
-In-Reply-To: <52404DBD.6010607@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 10:18 AM, Boris Ostrovsky wrote:
-> On 09/23/2013 09:26 AM, Konrad Rzeszutek Wilk wrote:
->> On Tue, Sep 10, 2013 at 11:31:48AM -0400, Boris Ostrovsky wrote:
->>> Map shared data structure that will hold CPU registers, VPMU context,
->>> VCPU/PCPI IDs of the VCPU interrupted by PMU interrupt. Hypervisor
->>> fills this information in its handler and passes it to the guest for
->>> further processing.
->>>
->>> Set up PMU VIRQ.
->>>
->>> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->>> ---
->>>   arch/x86/xen/Makefile          |   2 +-
->>>   arch/x86/xen/pmu.c             | 122 
->>> +++++++++++++++++++++++++++++++++++++++++
->>>   arch/x86/xen/pmu.h             |  12 ++++
->>>   arch/x86/xen/smp.c             |  31 ++++++++++-
->>>   include/xen/interface/xen.h    |   1 +
->>>   include/xen/interface/xenpmu.h |  77 ++++++++++++++++++++++++++
->>>   6 files changed, 243 insertions(+), 2 deletions(-)
->>>   create mode 100644 arch/x86/xen/pmu.c
->>>   create mode 100644 arch/x86/xen/pmu.h
->>>
->>> diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
->>> index 96ab2c0..b187df5 100644
->>> --- a/arch/x86/xen/Makefile
->>> +++ b/arch/x86/xen/Makefile
->>> @@ -13,7 +13,7 @@ CFLAGS_mmu.o            := $(nostackp)
->>>   obj-y        := enlighten.o setup.o multicalls.o mmu.o irq.o \
->>>               time.o xen-asm.o xen-asm_$(BITS).o \
->>>               grant-table.o suspend.o platform-pci-unplug.o \
->>> -            p2m.o
->>> +            p2m.o pmu.o
->> Perhaps guard the build of this based on CONFIG_PERF_EVENTS?
->>
->> That would of course mean you also have to create in xenpmu.h
->> static inline empy functions for xen_pmu_finish and xen_pmu_init in case
->> CONFIG_PERF_EVENTS is not set.
->
-> This is interface header, am I allowed to do those sorts of things there?
+This patchset introduces common infrastructure for clocks which exist in
+several Tegra SoCs. We also move Tegra114 to this new infrastructure.
+Tegra20 and Tegra30 will be moved later in separate patchsets.
 
-Never mind that, I was thinking of a different file. Sorry.
+Changes since v1:
++ move common clks allocation to patch 2
++ adapt also Tegra20 and Tegra30 to the changes in patch 2
 
->
-> Also, *theoretically* other performance-measuring tools can use this 
-> framework, expect for perf-specific things like callbacks and the 
-> handler call. So maybe I should put CONFIG_PERF_EVENTS in pmu.c?
->
+Boottested on dalmore, beaverboard and seaboard.
 
--boris
+Peter De Schrijver (12):
+  clk: tegra: simplify periph clock data
+  clk: tegra: common periph_clk_enb_refcnt and clks
+  clk: tegra: Add TEGRA_PERIPH_NO_DIV flag
+  clk: tegra: move some PLLC and PLLXC init to clk-pll.c
+  clk: tegra: add header for common tegra clock IDs
+  clk: tegra: add common infra for DT clocks
+  clk: tegra: move audio clk to common file
+  clk: tegra: move periph clocks to common file
+  clk: tegra: move PMC clocks to common file
+  clk: tegra: move fixed clocks to common file
+  clk: tegra: introduce common tegra_osc_clk_init
+  clk: tegra: introduce common gen4 super clock
+
+ drivers/clk/tegra/Makefile               |    7 +-
+ drivers/clk/tegra/clk-id.h               |  197 ++++
+ drivers/clk/tegra/clk-periph.c           |    9 +-
+ drivers/clk/tegra/clk-pll.c              |   95 ++-
+ drivers/clk/tegra/clk-tegra-audio.c      |  260 +++++
+ drivers/clk/tegra/clk-tegra-fixed.c      |   62 ++
+ drivers/clk/tegra/clk-tegra-osc.c        |   81 ++
+ drivers/clk/tegra/clk-tegra-periph.c     |  596 ++++++++++++
+ drivers/clk/tegra/clk-tegra-pmc.c        |  131 +++
+ drivers/clk/tegra/clk-tegra-super-gen4.c |  220 +++++
+ drivers/clk/tegra/clk-tegra114.c         | 1547 +++++-------------------------
+ drivers/clk/tegra/clk-tegra20.c          |   43 +-
+ drivers/clk/tegra/clk-tegra30.c          |   47 +-
+ drivers/clk/tegra/clk.c                  |  149 +++
+ drivers/clk/tegra/clk.h                  |   48 +-
+ 15 files changed, 2095 insertions(+), 1397 deletions(-)
+ create mode 100644 drivers/clk/tegra/clk-id.h
+ create mode 100644 drivers/clk/tegra/clk-tegra-audio.c
+ create mode 100644 drivers/clk/tegra/clk-tegra-fixed.c
+ create mode 100644 drivers/clk/tegra/clk-tegra-osc.c
+ create mode 100644 drivers/clk/tegra/clk-tegra-periph.c
+ create mode 100644 drivers/clk/tegra/clk-tegra-pmc.c
+ create mode 100644 drivers/clk/tegra/clk-tegra-super-gen4.c
+
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
