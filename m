@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023Ab3IWEji (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 00:39:38 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49838 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab3IWEjh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 00:39:37 -0400
-Date: Mon, 23 Sep 2013 14:39:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the random tree
-Message-Id: <20130923143924.730ce3cbffbebdb7f82ce2cf@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+	id S1753137Ab3IWElk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 00:41:40 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34534 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751835Ab3IWElj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 00:41:39 -0400
+Message-ID: <1379911234.6625.7.camel@pasglop>
+Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 23 Sep 2013 14:40:34 +1000
+In-Reply-To: <1379799901.24090.6.camel@pasglop>
+References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
+	 <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
+	 <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
+	 <20130920162603.GA30381@localhost.localdomain>
+	 <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
+	 <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
+	 <1379799901.24090.6.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__23_Sep_2013_14_39_24_+1000_iTaHe_7xUJiZAMzk"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__23_Sep_2013_14_39_24_+1000_iTaHe_7xUJiZAMzk
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 2013-09-22 at 07:45 +1000, Benjamin Herrenschmidt wrote:
+> What I *can* do that would help I suppose would be to switch to the irq
+> stack before irq_enter/exit which would at least mean that softirq would
+> run from the top of the irq stack which is better than the current
+> situation.
+> 
+> I'm fact I'll whip up a quick fix see if that might be enough of a band
+> aid for RHEL7.
 
-Hi Ted,
+OK I've done that, it seems to work so far. Heads up guys: i386 and sparc
+at least seem to need the same treatment. I haven't looked at others except
+ARM which doesn't seem to have irq stacks to begin with.
 
-After merging the random tree, today's linux-next build (powerpc64
-allnoconfig) produced this warning:
+We can also instead apply Fred's series to put back in the switch to the
+softirq stack since this is actually a regression , but then, arguably,
+making sure irq_exit() is called off the irq stack is better and means
+we do one instead of two stack switches.
 
-In file included from include/linux/kernel.h:10:0,
-                 from include/linux/sched.h:15,
-                 from include/linux/utsname.h:5,
-                 from drivers/char/random.c:238:
-drivers/char/random.c: In function 'add_interrupt_randomness':
-include/linux/bitops.h:96:2: warning: 'input[3]' may be used uninitialized =
-in this function [-Wmaybe-uninitialized]
-  return (word << shift) | (word >> (32 - shift));
-  ^
-drivers/char/random.c:827:10: note: 'input[3]' was declared here
-  __u32   input[4], cycles =3D random_get_entropy();
-          ^
-In file included from include/linux/kernel.h:10:0,
-                 from include/linux/sched.h:15,
-                 from include/linux/utsname.h:5,
-                 from drivers/char/random.c:238:
-include/linux/bitops.h:96:2: warning: 'input[2]' may be used uninitialized =
-in this function [-Wmaybe-uninitialized]
-  return (word << shift) | (word >> (32 - shift));
-  ^
-drivers/char/random.c:827:10: note: 'input[2]' was declared here
-  __u32   input[4], cycles =3D random_get_entropy();
-          ^
+Fred: Maybe revert partially under an arch #define/Kconfig so we can get
+the best of both worlds ?
 
-Probably introduced by commit d5693ae494f2 ("random: speed up the
-fast_mix function by a factor of four").
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben.
 
---Signature=_Mon__23_Sep_2013_14_39_24_+1000_iTaHe_7xUJiZAMzk
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSP8YAAAoJEECxmPOUX5FE+m0QAJWgmU9AyaZoUtEDdChgLk4K
-Clv/gM2LGNUL9O2B3UjLbYOjEEtaZ3dlKwAP+GUZ2k+AMNGCrAp65lbdlYmLPYdJ
-A8opNMS5RB9+MwMexhYVK2yPwR4Ualn7Qw+i2rpk2Y3PUcQxXaxO4aSqObgNN4ii
-3hAqQZ32RcCc2ts45Syz5ImENP4W1Dt9ArmL7k366SF/10aZ0IIIioCPx8b5gkoM
-FoMdztFrkEkhI8J8zMzyBY9DvUkGPM0mjgEEpvyJ8BOPXtxMq+f9nWCLqTNDCj2z
-v0iHAFZDGDTmGJsT5nNn7/NeCU/D6Ogrve3SSwUBcg7Kxq3SXfZVK5/xzIoY3Afi
-DwQmWWj/HihWnnb2FhMNCwqWGovIVxrByZ+PMV5OP9TgwPhaQIcP8OoddB0OWSUq
-PRt8bXybefQ2Ypq0F/4W6vItJhpT7fdYdn4MdiVStzGab2dXUiq2V3q2faqc4D7Y
-bfxex3qB1Jy9axMXQGWV8UI7a0NtkJCluKF0W4w/EGIbSwbvFNhNTomF2I0It/kb
-ShRN/0HDDdgOSypb9xr59NXkPTqC8FeMRP3bcMNZuN8LVKu355H3ezcmFD4s5Bkg
-T41SxWp2nxZKJKHmYJxL0XQ4kVoJbNhgghAsCTvBpfPZ7tHq0DPveHob7I/T7s9P
-QPikyuJJjHAzy2GtoIpi
-=PUeG
------END PGP SIGNATURE-----
-
---Signature=_Mon__23_Sep_2013_14_39_24_+1000_iTaHe_7xUJiZAMzk--
