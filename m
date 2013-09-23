@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab3IWJr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 05:47:26 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:29458 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449Ab3IWJrY (ORCPT
+	id S1753767Ab3IWJsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 05:48:12 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:57055 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357Ab3IWJsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 05:47:24 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-55-52400e2b3210
+	Mon, 23 Sep 2013 05:48:10 -0400
+X-AuditID: cbfee691-b7f4a6d0000074fc-fd-52400e5936d6
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Alexander Holler'" <holler@ahsoftware.de>
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <001801ceb840$9a81ab10$cf850130$%han@samsung.com>
 In-reply-to: <001801ceb840$9a81ab10$cf850130$%han@samsung.com>
-Subject: [PATCH 09/15] rtc: hid-sensor-time: use dev_get_platdata()
-Date: Mon, 23 Sep 2013 18:47:23 +0900
-Message-id: <002501ceb841$e7a30a50$b6e91ef0$%han@samsung.com>
+Subject: [PATCH 10/15] rtc: rtc-m48t59: use dev_get_platdata()
+Date: Mon, 23 Sep 2013 18:48:08 +0900
+Message-id: <002601ceb842$028dc1c0$07a94540$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac64QJVrtN1IW24fTFCn/tCGU7Py3AAATXJg
+Thread-index: Ac64QJVrtN1IW24fTFCn/tCGU7Py3AAAVNLg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t8zI11tPocgg+9PzS2WXLzKbjFn/Ro2
-	i3/du5gsLi+8xGpxedccNov9nR2MDmweszsb2Dz2TDzJ5nFixm8Wj74tqxg9ps/7yeTxeZNc
-	AFsUl01Kak5mWWqRvl0CV8b5E53sBUu4Kh6v+MHewPiYo4uRg0NCwERi2jfZLkZOIFNM4sK9
-	9WxdjFwcQgLLGCXWPJrFDpEwkfhy8AojRGI6o8TNmzOZIJxfjBInn28Hq2ITUJP48uUwO8hU
-	EQF9ibYWDZAaZoFdjBKrHu5iAakRErCVmDjtKxOIzSlgJ7Hm8zIwW1jAWWLDopusIDaLgKrE
-	6sfLWUDm8ALVN3+LBgnzCghK/Jh8D2wMs4CWxOZtTawQtrzE5jVvmSGeUZd49FcXJCwiYCRx
-	8N5uNogSEYl9L96B3S8h8JVd4sX1M4wQqwQkvk0+xALRKyux6QAzxL+SEgdX3GCZwCgxC8nm
-	WUg2z0KyeRaSFQsYWVYxiqYWJBcUJ6UXmeoVJ+YWl+al6yXn525ihMTuxB2M9w9YH2JMBlo/
-	kVlKNDkfGPt5JfGGxmZGFqYmpsZG5pZmpAkrifOqt1gHCgmkJ5akZqemFqQWxReV5qQWH2Jk
-	4uCUamBMWzix5/NVHlb9FrXfq73y5D6rmDzgEtjhqvb74bvOKww6Fdcq1kSfEJP8Ne3Jv4qL
-	V3eErI2LaHwo2D17SdOG1UtjFUOPXDPw/M8adZMt7Fq0gvBSK6lP/au8tURcLln6thmdrRFb
-	eGvOYyeG1F81ht7n+mYnycj2LU1fcT0o58RtS5v2UylKLMUZiYZazEXFiQC70u5W8wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHKsWRmVeSWpSXmKPExsVy+t9jQV1tPocgg+3PjS2WXLzKbjFn/Ro2
-	i3/du5gsLi+8xGpxedccNov9nR2MDmweszsb2Dz2TDzJ5nFixm8Wj74tqxg9ps/7yeTxeZNc
-	AFtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtAd
-	SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCOsaM8yc62QuWcFU8XvGDvYHx
-	MUcXIyeHhICJxJeDVxghbDGJC/fWs3UxcnEICUxnlLh5cyYThPOLUeLk8+3sIFVsAmoSX74c
-	BrI5OEQE9CXaWjRAapgFdjFKrHq4iwWkRkjAVmLitK9MIDangJ3Ems/LwGxhAWeJDYtusoLY
-	LAKqEqsfL2cBmcMLVN/8LRokzCsgKPFj8j2wMcwCWhKbtzWxQtjyEpvXvGUGKZcQUJd49FcX
-	JCwiYCRx8N5uNogSEYl9L94xTmAUmoVk0iwkk2YhmTQLScsCRpZVjKKpBckFxUnpuUZ6xYm5
-	xaV56XrJ+bmbGMGp4Zn0DsZVDRaHGAU4GJV4eCMT7YOEWBPLiitzDzFKcDArifD6sToECfGm
-	JFZWpRblxxeV5qQWH2JMBvpzIrOUaHI+MG3llcQbGpuYGVkamVkYmZibkyasJM57sNU6UEgg
-	PbEkNTs1tSC1CGYLEwenVANjsUC6BeveStYveW0tV8wP74hf5JigU+jWWbhJ+brv3GWxe9h1
-	Tt7f+U6nI+PhNJfp7M/Utd8X3tnuvz3/3Xvv/ZEFTv13bhifaupa57nnp2WZWMOOWYs8T7Tc
-	7Hrhl177fosDu9/h7he6XazTAjfkmSX6XH+wqtKglEMqfH90/0/GmJ0398UrsRRnJBpqMRcV
-	JwIA4KDJx1EDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zY91IPocggwfzOCyWXLzKbjFn/Ro2
+	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
+	LdK3S+DKmHGim62gVb1iQu9StgbGaYpdjJwcEgImEvMOr2KDsMUkLtxbD2RzcQgJLGOUmDO1
+	jQ2m6PHdG1CJRYwSd5sbmSCcX4wS8/c2MYFUsQmoSXz5cpi9i5GDQ0RAX6KtRQOkhlmgl1Hi
+	TO9udpAaIQFbiYnTvoLVcwrYSaz5vIwJpF4YyN463xUkzCKgKrFx+1WwEl6g8lcXl0LZghI/
+	Jt9jAbGZBbQkNm9rYoWw5SU2r3nLDDJGQkBd4tFfXZCwiICRxObOiYwQJSIS+168YwQ5R0Lg
+	HrvE1dOv2SF2CUh8m3yIBaJXVmLTAWaIfyUlDq64wTKBUWIWks2zkGyehWTzLCQrFjCyrGIU
+	TS1ILihOSi8y1StOzC0uzUvXS87P3cQIidSJOxjvH7A+xJgMtH4is5Rocj4w0vNK4g2NzYws
+	TE1MjY3MLc1IE1YS51VvsQ4UEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwJiz5XTwoZD3nzoa
+	N4jH3D2/fMnq7Ttu7zF5u7nj4lz5850SnJKr373MWf8/KSLNkO+wX433kz/VsiWdjyq91R9c
+	l7E7FBFSxhlYkhB9e8/TsLaiisuzv3ns8Cl8OYfJm39HQbqio68jx8eJOTs18rPWrPh4VWzZ
+	mw+irydmhvxe1TAngpstarESS3FGoqEWc1FxIgBwHxc86gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jAd1IPocggy/9zBZLLl5lt5izfg2b
+	xeWFl1gtLu+aw2axv7OD0YHVY8/Ek2weJ2b8ZvHo27KK0WP6vJ9MHp83yQWwRjUw2mSkJqak
+	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
+	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZsw40c1W0KpeMaF3KVsD4zTFLkZODgkBE4nH
+	d2+wQdhiEhfurQeyuTiEBBYxStxtbmSCcH4xSszf28QEUsUmoCbx5cth9i5GDg4RAX2JthYN
+	kBpmgV5GiTO9u9lBaoQEbCUmTvsKVs8pYCex5vMyJpB6YSB763xXkDCLgKrExu1XwUp4gcpf
+	XVwKZQtK/Jh8jwXEZhbQkti8rYkVwpaX2LzmLTPIGAkBdYlHf3VBwiICRhKbOycyQpSISOx7
+	8Y5xAqPQLCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECE4Dz6R3
+	MK5qsDjEKMDBqMTDG5loHyTEmlhWXJl7iFGCg1lJhNeP1SFIiDclsbIqtSg/vqg0J7X4EGMy
+	0KMTmaVEk/OBKSqvJN7Q2MTMyNLIzMLIxNycNGElcd6DrdaBQgLpiSWp2ampBalFMFuYODil
+	GhitDCVWBPdcXanHLuLrvnP6S+e/2rsc/nl9mZ//csu5qmTuC/N9ROsq5bu7JdVjHqdYtzTs
+	mOp/u+Z2W66vWtL3ZSyaXhWaVoL1TDYd/NPFLx65brZo/qVHf2KiJr9krrs/45vWPLaWdXbt
+	lRyX9mzYc2DphZj9X5Kmtc6wVuOYLPb1vEW4b4ASS3FGoqEWc1FxIgD4YSSPRwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -63,31 +61,103 @@ to make the code simpler and enhance the readability.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-hid-sensor-time.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-m48t59.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
-index abbf5f3..22254f0 100644
---- a/drivers/rtc/rtc-hid-sensor-time.c
-+++ b/drivers/rtc/rtc-hid-sensor-time.c
-@@ -236,7 +236,7 @@ static const struct rtc_class_ops hid_time_rtc_ops = {
- static int hid_time_probe(struct platform_device *pdev)
+diff --git a/drivers/rtc/rtc-m48t59.c b/drivers/rtc/rtc-m48t59.c
+index fcb0329..11880c1 100644
+--- a/drivers/rtc/rtc-m48t59.c
++++ b/drivers/rtc/rtc-m48t59.c
+@@ -68,7 +68,7 @@ m48t59_mem_readb(struct device *dev, u32 ofs)
+ static int m48t59_rtc_read_time(struct device *dev, struct rtc_time *tm)
  {
- 	int ret = 0;
--	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
-+	struct hid_sensor_hub_device *hsdev = dev_get_platdata(&pdev->dev);
- 	struct hid_time_state *time_state = devm_kzalloc(&pdev->dev,
- 		sizeof(struct hid_time_state), GFP_KERNEL);
- 
-@@ -298,7 +298,7 @@ static int hid_time_probe(struct platform_device *pdev)
- 
- static int hid_time_remove(struct platform_device *pdev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	struct m48t59_plat_data *pdata = pdev->dev.platform_data;
++	struct m48t59_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct m48t59_private *m48t59 = platform_get_drvdata(pdev);
+ 	unsigned long flags;
+ 	u8 val;
+@@ -111,7 +111,7 @@ static int m48t59_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ static int m48t59_rtc_set_time(struct device *dev, struct rtc_time *tm)
  {
--	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
-+	struct hid_sensor_hub_device *hsdev = dev_get_platdata(&pdev->dev);
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	struct m48t59_plat_data *pdata = pdev->dev.platform_data;
++	struct m48t59_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct m48t59_private *m48t59 = platform_get_drvdata(pdev);
+ 	unsigned long flags;
+ 	u8 val = 0;
+@@ -158,7 +158,7 @@ static int m48t59_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ static int m48t59_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	struct m48t59_plat_data *pdata = pdev->dev.platform_data;
++	struct m48t59_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct m48t59_private *m48t59 = platform_get_drvdata(pdev);
+ 	struct rtc_time *tm = &alrm->time;
+ 	unsigned long flags;
+@@ -205,7 +205,7 @@ static int m48t59_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ static int m48t59_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	struct m48t59_plat_data *pdata = pdev->dev.platform_data;
++	struct m48t59_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct m48t59_private *m48t59 = platform_get_drvdata(pdev);
+ 	struct rtc_time *tm = &alrm->time;
+ 	u8 mday, hour, min, sec;
+@@ -266,7 +266,7 @@ static int m48t59_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ static int m48t59_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	struct m48t59_plat_data *pdata = pdev->dev.platform_data;
++	struct m48t59_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct m48t59_private *m48t59 = platform_get_drvdata(pdev);
+ 	unsigned long flags;
  
- 	sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
+@@ -283,7 +283,7 @@ static int m48t59_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ static int m48t59_rtc_proc(struct device *dev, struct seq_file *seq)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	struct m48t59_plat_data *pdata = pdev->dev.platform_data;
++	struct m48t59_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct m48t59_private *m48t59 = platform_get_drvdata(pdev);
+ 	unsigned long flags;
+ 	u8 val;
+@@ -304,7 +304,7 @@ static irqreturn_t m48t59_rtc_interrupt(int irq, void *dev_id)
+ {
+ 	struct device *dev = (struct device *)dev_id;
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	struct m48t59_plat_data *pdata = pdev->dev.platform_data;
++	struct m48t59_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct m48t59_private *m48t59 = platform_get_drvdata(pdev);
+ 	u8 event;
  
+@@ -340,7 +340,7 @@ static ssize_t m48t59_nvram_read(struct file *filp, struct kobject *kobj,
+ {
+ 	struct device *dev = container_of(kobj, struct device, kobj);
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	struct m48t59_plat_data *pdata = pdev->dev.platform_data;
++	struct m48t59_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct m48t59_private *m48t59 = platform_get_drvdata(pdev);
+ 	ssize_t cnt = 0;
+ 	unsigned long flags;
+@@ -360,7 +360,7 @@ static ssize_t m48t59_nvram_write(struct file *filp, struct kobject *kobj,
+ {
+ 	struct device *dev = container_of(kobj, struct device, kobj);
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	struct m48t59_plat_data *pdata = pdev->dev.platform_data;
++	struct m48t59_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct m48t59_private *m48t59 = platform_get_drvdata(pdev);
+ 	ssize_t cnt = 0;
+ 	unsigned long flags;
+@@ -385,7 +385,7 @@ static struct bin_attribute m48t59_nvram_attr = {
+ 
+ static int m48t59_rtc_probe(struct platform_device *pdev)
+ {
+-	struct m48t59_plat_data *pdata = pdev->dev.platform_data;
++	struct m48t59_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct m48t59_private *m48t59 = NULL;
+ 	struct resource *res;
+ 	int ret = -ENOMEM;
 -- 
 1.7.10.4
 
