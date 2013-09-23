@@ -1,147 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab3IWLDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 07:03:30 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:27638 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777Ab3IWLD2 (ORCPT
+	id S1753657Ab3IWLFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 07:05:47 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59090 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab3IWLFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 07:03:28 -0400
-Date: Mon, 23 Sep 2013 13:58:42 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Dominik Paulus <dominik.paulus@fau.de>
-Cc: usbip-devel@lists.sourceforge.net,
-        Anthony Foiani <anthony.foiani@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@i4.cs.fau.de,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
-        Tobias Polzer <tobias.polzer@fau.de>,
-        Harvey Yang <harvey.huawei.yang@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Ilija Hadzic <ihadzic@research.bell-labs.com>,
-        Bart Westgeest <bart@elbrys.com>, Joe Perches <joe@perches.com>,
-        Jake Champlin <jake.champlin.27@gmail.com>,
-        Stefan Reif <ke42caxa@cip.cs.fau.de>,
-        Bernard Blackham <b-linuxgit@largestprime.net>
-Subject: Re: [PATCH 5/7] staging: usbip: Add encryption support to kernel
-Message-ID: <20130923105842.GH6192@mwanda>
-References: <1379599919-24763-1-git-send-email-dominik.paulus@fau.de>
- <1379599919-24763-6-git-send-email-dominik.paulus@fau.de>
+	Mon, 23 Sep 2013 07:05:46 -0400
+Date: Mon, 23 Sep 2013 12:05:43 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130923110543.GC21013@sirena.org.uk>
+References: <1379922860.20251.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BCQW4u8rtOzpP30D"
 Content-Disposition: inline
-In-Reply-To: <1379599919-24763-6-git-send-email-dominik.paulus@fau.de>
+In-Reply-To: <1379922860.20251.1.camel@phoenix>
+X-Cookie: Give him an evasive answer.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: wm831x-ldo: Fix max_uV for gp_ldo and aldo
+ linear range settings
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 04:11:57PM +0200, Dominik Paulus wrote:
-> +/*
-> + * Perform encryption/decryption on one chunk of data.
-> + * Uses global crypto state stored in usbip_device.
-> + * Parameters:
-> + * encrypt: 1 to perform encryption, 0 to perform decryption operation
 
-Make this a define:
-#define USBIP_ENCRYPT 1
-#define USBIP_ENCRYPT 0
+--BCQW4u8rtOzpP30D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> + * packetsize: Size of the encrypted packet, including the authentication tag,
-> + * not including the associated data (length field).
-> + * plaintext and ciphertext have to be appropiately managed by the caller
-> + * (i.e. they must be at least packetsize bytes long).
-> + * Returns: 0 on success
-> + */
-> +static int usbip_crypt(struct usbip_device *ud, int encrypt, uint32_t
-> +		packetsize, unsigned char *plaintext, unsigned char
-> +		*ciphertext)
+On Mon, Sep 23, 2013 at 03:54:20PM +0800, Axel Lin wrote:
+> Fix the linear range settings in commit 5ff26a14c3331
+> "regulator: wm831x-ldo: Convert to use linear ranges".
 
-Don't break put line breaks between the type and the variable name.  It
-should be:
+Applied, thanks.
 
-static int usbip_crypt(struct usbip_device *ud, int encrypt,
-		uint32_t packetsize, unsigned char *plaintext,
-		unsigned char *ciphertext)
+--BCQW4u8rtOzpP30D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This applies to earlier patches in this series as well.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-> +{
-> +	struct crypto_aead *tfm;
-> +	struct aead_request *req;
-> +	struct tcrypt_result result;
-> +	struct scatterlist plain, cipher, assoc;
-> +	char iv[16];
-> +	u64 *iv_num;
-> +	u64 iv_net;
-> +	const int plainsize = packetsize - USBIP_AUTHSIZE;
+iQIcBAEBAgAGBQJSQCCDAAoJELSic+t+oim9mawQAId24/AlJ9UdZK949csPWxxl
+LWvEa1iiduMTDuJ57fMeSV3ztlEKaSXBoJGE+UJ8fYnHX/MVIQ63aIxaN2hJt+Gr
+23EnyzPiMvtahj+6vu4558c/b+aZcHUZrW/lOpNqVmsCRyWv8WftDTgK2KI6YGKD
+wY2oWVW8QX3SQHltgSALbyiCNADRe0wsl79SXvbDTg5GYwLnkiUcvEklb634ZXR3
+WFCbJD+VqTDYEAnnq31wju9JP/k5BKH97oO9YsJ5G2UbsCyI0Th1tdg51vEHr0uP
+9oFh5I9s+HXoNs0pp82Z43xUT4tjkiGITsvQuW2pW0duT4B7LZAPkDKIhpXUArHV
+y+JcK2dQbu6UpnuPWHyLQAKoiMv7zGmgiF6UJkGYMoP8cUbXmihgwAT7xs+h80NM
+1t8pYeHnfBuj2EuFYfHv+ti6OYl27qz+ZJiPyhwOjbP/Jjr1k/Ec6vAKvM0836Nd
+GEDgUz1BMYA7kJOsFoJelbLMYxXdY8Po1isGCilC1l8LQennz017rss9PyrXikgI
+8rHyQqCcl44DmzWLHZyQm3R5rex8X8gXGxtruzqT21nNform8dZ8ExcfID/D9uHg
+pMFMR/5cQN+qolm5ISBwgcKZWg9XyMz/TUkSogbMmCRm5JPRVXvl629AP/GmLgcG
+wf73vzwtAPfzSC6twsw0
+=fS7Y
+-----END PGP SIGNATURE-----
 
-Is it possible that packetsize is less than USBIP_AUTHSIZE?
-
-> +	int ret;
-> +
-> +	memset(iv, 0, sizeof(iv));
-> +	if (encrypt) {
-> +		tfm = ud->tfm_send;
-> +		iv_num = &ud->ctr_send;
-> +	} else {
-> +		tfm = ud->tfm_recv;
-> +		iv_num = &ud->ctr_recv;
-> +	}
-> +	iv_net = cpu_to_be64(*iv_num);
-> +	memcpy(iv, &iv_net, sizeof(iv_net));
-> +
-> +	req = aead_request_alloc(tfm, GFP_KERNEL);
-> +	if (IS_ERR(req))
-> +		return -PTR_ERR(req);
-> +
-> +	init_completion(&result.completion);
-> +	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
-> +			tcrypt_complete, &result);
-
-Align this up like:
-
-	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
-				  tcrypt_complete, &result);
-
-
-> +
-> +	sg_init_one(&cipher, ciphertext, packetsize);
-> +	sg_init_one(&plain, plaintext, plainsize);
-> +	crypto_aead_clear_flags(tfm, ~0);
-> +
-> +	if (encrypt)
-> +		aead_request_set_crypt(req, &plain, &cipher, plainsize, iv);
-> +	else
-> +		aead_request_set_crypt(req, &cipher, &plain, packetsize, iv);
-> +	packetsize = cpu_to_be32(packetsize);
-> +	sg_init_one(&assoc, &packetsize, sizeof(packetsize));
-> +	/* Associated data: Unencrypted length tag */
-> +	aead_request_set_assoc(req, &assoc, sizeof(packetsize));
-> +
-> +	if (encrypt)
-> +		ret = crypto_aead_encrypt(req);
-> +	else
-> +		ret = crypto_aead_decrypt(req);
-> +
-
-Good on you for figuring out what crypto_aead_en/decrypt() returns.
-Where are these functions documented?
-
-> +	switch (ret) {
-> +	case 0: /* Success */
-> +		break;
-> +	case -EINPROGRESS:
-> +	case -EBUSY:
-> +		wait_for_completion(&result.completion);
-> +		break;
-> +	default:
-> +		aead_request_free(req);
-> +		return ret;
-> +	}
-> +
-
-regards,
-dan carpenter
-
+--BCQW4u8rtOzpP30D--
