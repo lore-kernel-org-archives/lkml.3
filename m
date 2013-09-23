@@ -1,86 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab3IWJj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 05:39:27 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:14273 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab3IWJjZ (ORCPT
+	id S1753657Ab3IWJjk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 05:39:40 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:28344 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636Ab3IWJjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 05:39:25 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 23 Sep 2013 02:39:24 -0700
-Message-ID: <5240117C.8060300@nvidia.com>
-Date: Mon, 23 Sep 2013 15:31:32 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Rob Landley <rob@landley.net>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Florian Lobmaier <florian.lobmaier@ams.com>
-Subject: Re: [rtc-linux] [PATCH V2 3/5] gpio: add support for AMS AS3722 gpio
- driver
-References: <1379680214-9143-1-git-send-email-ldewangan@nvidia.com> <1379680214-9143-4-git-send-email-ldewangan@nvidia.com> <CACRpkdbJ6N-5RET+cmF=14jKVDnuAZtZwjcKym75ySER2gCpBQ@mail.gmail.com> <524001F3.3060602@nvidia.com> <CACRpkdYVTdh3+ayy96D4=iNO6ZASfTfeQOHF9vdoPjfLDCtB5Q@mail.gmail.com>
-In-Reply-To: <CACRpkdYVTdh3+ayy96D4=iNO6ZASfTfeQOHF9vdoPjfLDCtB5Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Sep 2013 05:39:39 -0400
+X-AuditID: cbfee68e-b7f756d000004512-78-52400c5a1751
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <001801ceb840$9a81ab10$cf850130$%han@samsung.com>
+In-reply-to: <001801ceb840$9a81ab10$cf850130$%han@samsung.com>
+Subject: [PATCH 01/15] rtc: rtc-88pm80x: use dev_get_platdata()
+Date: Mon, 23 Sep 2013 18:39:38 +0900
+Message-id: <001d01ceb840$d2036a60$760a3f20$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac64QJVrtN1IW24fTFCn/tCGU7Py3AAABDUA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zI90oHocgg2n7BSyWXLzKbjFn/Ro2
+	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
+	LdK3S+DK2Lt3B0vBap6Kgyu+MDcwruLqYuTkkBAwkfi9fDorhC0mceHeerYuRi4OIYFljBIf
+	puxhgil682APC0RiOqNE69LHTBDOL0aJFXvusoBUsQmoSXz5cpi9i5GDQ0RAX6KtRQOkhlmg
+	l1HiTO9udpAaIQFbiYnTvoJN5RSwk1jzeRkTSL2wgL3E7e11IGEWAVWJ76sawEbyApXvOvqY
+	CcIWlPgx+R5YnFlAS2LztiZWCFteYvOat8wgYyQE1CUe/dUFCYsIGEmsu/QdqlxEYt+Ld4wg
+	50gIPGKXOPjwKQvELgGJb5MPsUD0ykpsOsAM8a+kxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJG
+	llWMoqkFyQXFSelFRnrFibnFpXnpesn5uZsYIZHat4Px5gHrQ4zJQOsnMkuJJucDIz2vJN7Q
+	2MzIwtTE1NjI3NKMNGElcV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwGwleu5XDt
+	7LWVL1pz3OLkzWUb8+PjHPJ+8/LEW9eaZ+75UVV/64BCv+KMzA9LOsoFDn9e5ul5zXBv/yvG
+	h+ZevEu+3Xsp7Fdpp/B3iePkvlZpHk6fhuiJj3s3vmh//uxHQeD/fzsC37+JM9pQcuCGof0/
+	83Nqi5xtHr5OTORN/imtt2TltUlKLMUZiYZazEXFiQDIVFdV6gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQd0oHocgg2/3eCyWXLzKbjFn/Ro2
+	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzNi7dwdLwWqeioMrvjA3MK7i6mLk5JAQMJF4
+	82APC4QtJnHh3nq2LkYuDiGB6YwSrUsfM0E4vxglVuy5C1bFJqAm8eXLYfYuRg4OEQF9ibYW
+	DZAaZoFeRokzvbvZQWqEBGwlJk77ygRicwrYSaz5vIwJpF5YwF7i9vY6kDCLgKrE91UNYCN5
+	gcp3HX3MBGELSvyYfA8sziygJbF5WxMrhC0vsXnNW2aQMRIC6hKP/uqChEUEjCTWXfoOVS4i
+	se/FO8YJjEKzkEyahWTSLCSTZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOA08
+	k9rBuLLB4hCjAAejEg9vRKJ9kBBrYllxZe4hRgkOZiURXj9WhyAh3pTEyqrUovz4otKc1OJD
+	jMlAj05klhJNzgemqLySeENjEzMjSyMzCyMTc3PShJXEeQ+0WgcKCaQnlqRmp6YWpBbBbGHi
+	4JRqYJyYcOCLmfGnEye2/Jt14v6TwEPxBk9X5e47yKrYb9t35kRX6roCTlvWg7MkV8TG/Dz6
+	Zp6v9cRrF+8v/X7micsEsSm3kkyO39s3f9qKTIXMH4+SXktNislg917hXXqYuerfrznm0o92
+	2LVfYbbwqNjPILelX/Oc5cSFk6VqvvLUZS/a6GIsMEdXiaU4I9FQi7moOBEAV8kkAEcDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 23 September 2013 02:56 PM, Linus Walleij wrote:
-> On Mon, Sep 23, 2013 at 10:55 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
->> On Monday 23 September 2013 01:36 PM, Linus Walleij wrote:
->>> This is pin control. Do not try to shoehorn pin control drivers into
->>> the GPIO subsystem. Take a good day off, read through
->>> Documentation/pinctrl.txt and come back with a thoroughly rewritten
->>> driver in drivers/pinctrl/pinctrl-as3722.c.
-> (...)
->> Yes, the appropriate location is pin control for pull up/down etc
->> configuration but with this device, the actual issue is with the way it is
->> require to configure the pull up/down and input/output of the pin. There is
->> no separate bits for pull up/down and direction and it is  clubbed together.
->> The register's bits are defined as:
->>
->> Selects the GPIO mode (I, I/O, Tri, Pulls) (BIT 2:0)
->>    0 : Input
->>    1 : Output (push and pull) VSUP_GPIO
->>    2 : Output/Input (open drain, only NMOS is active)
->>    3 : ADC input (Tristate)
->>    4 : Input with pull-up to VDD_GPIO_lv
->>    5 : Input with pull-down
->>    6 : Output/Input open drain (nmos) with pull-up to VDD_GPIO_lv,
->>    7 : Output (push and pull) VDD_GPIO_lv
->>
->> So I can not actually configure the pull up/down, open drain and direction
->> independently until every thing is known.
->> Direction come from gpio driver but pull up/down and open drain
->> configuration come from the pin control.
->> And this is only the reason to make all configuration in single driver.
-> This is nothing special. Create a single combined GPIO and
-> pin control driver using the pin control framework and device
-> tree bindings.
->
+Use the wrapper function for retrieving the platform data instead of
+accessing dev->platform_data directly. This is a cosmetic change
+to make the code simpler and enhance the readability.
 
-Ok, I was thinking that we should not call gpiochip_add() from the pin 
-control driver in any new driver and that's why I developed gpio driver 
-but it seems it is allowed. I saw some of driver in pinctrl are doing 
-pin control and gpio functionality in single driver i.e. 
-pincntrl-nomadik, pinctrl-samsung, pincntrl-st etc.
-So this gpio driver can be moved now to the pincntrl folder and can use 
-pincontrol and gpio framework.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/rtc/rtc-88pm80x.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-I will respin the change.
+diff --git a/drivers/rtc/rtc-88pm80x.c b/drivers/rtc/rtc-88pm80x.c
+index 354c937..0916089 100644
+--- a/drivers/rtc/rtc-88pm80x.c
++++ b/drivers/rtc/rtc-88pm80x.c
+@@ -251,14 +251,15 @@ static SIMPLE_DEV_PM_OPS(pm80x_rtc_pm_ops, pm80x_rtc_suspend, pm80x_rtc_resume);
+ static int pm80x_rtc_probe(struct platform_device *pdev)
+ {
+ 	struct pm80x_chip *chip = dev_get_drvdata(pdev->dev.parent);
+-	struct pm80x_platform_data *pm80x_pdata;
++	struct pm80x_platform_data *pm80x_pdata =
++				dev_get_platdata(pdev->dev.parent);
+ 	struct pm80x_rtc_pdata *pdata = NULL;
+ 	struct pm80x_rtc_info *info;
+ 	struct rtc_time tm;
+ 	unsigned long ticks = 0;
+ 	int ret;
+ 
+-	pdata = pdev->dev.platform_data;
++	pdata = dev_get_platdata(&pdev->dev);
+ 	if (pdata == NULL)
+ 		dev_warn(&pdev->dev, "No platform data!\n");
+ 
+@@ -326,8 +327,7 @@ static int pm80x_rtc_probe(struct platform_device *pdev)
+ 	regmap_update_bits(info->map, PM800_RTC_CONTROL, PM800_RTC1_USE_XO,
+ 			   PM800_RTC1_USE_XO);
+ 
+-	if (pdev->dev.parent->platform_data) {
+-		pm80x_pdata = pdev->dev.parent->platform_data;
++	if (pm80x_pdata) {
+ 		pdata = pm80x_pdata->rtc;
+ 		if (pdata)
+ 			info->rtc_dev->dev.platform_data = &pdata->rtc_wakeup;
+-- 
+1.7.10.4
 
 
