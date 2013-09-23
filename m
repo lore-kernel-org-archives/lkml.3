@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab3IWVKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 17:10:30 -0400
-Received: from mail.tpi.com ([74.45.170.26]:46592 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753947Ab3IWVK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 17:10:27 -0400
-Message-ID: <5240AE43.6070708@canonical.com>
-Date: Mon, 23 Sep 2013 14:10:27 -0700
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-CC: Rob Herring <rob.herring@calxeda.com>,
-        Paolo Pisati <paolo.pisati@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] TTY: hvc_dcc: probe for a JTAG connection before registering
-References: <1379968234-23373-1-git-send-email-robherring2@gmail.com>
-In-Reply-To: <1379968234-23373-1-git-send-email-robherring2@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754046Ab3IWVMy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 17:12:54 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:58686 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749Ab3IWVMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 17:12:53 -0400
+X-Nat-Received: from [202.181.97.72]:60097 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1379970759.15244
+To: akpm@linux-foundation.org
+Cc: oleg@redhat.com, viro@zeniv.linux.org.uk, rostedt@goodmis.org,
+        fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201309152323.GDG73435.VLOQFHOJtOFFSM@I-love.SAKURA.ne.jp>
+	<20130915163157.GB13344@redhat.com>
+	<201309160202.FBC60981.FQOHSLFMFtOJVO@I-love.SAKURA.ne.jp>
+	<20130915171549.GA15346@redhat.com>
+	<201309160226.DGH90134.QLSFtOJOOMFHVF@I-love.SAKURA.ne.jp>
+In-Reply-To: <201309160226.DGH90134.QLSFtOJOOMFHVF@I-love.SAKURA.ne.jp>
+Message-Id: <201309240612.ADE82877.MSFHVtOOFLFOQJ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 24 Sep 2013 06:12:34 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 23092013 #11062479, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 01:30 PM, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> Enabling the ARM DCC console and using without a JTAG connection will
-> simply hang the system. Since distros like to turn on all options, this
-> is a reoccurring problem to debug. We can do better by checking if
-> anything is attached and handling characters. There is no way to probe
-> this, so send a newline and check that it is handled.
-> 
-> Cc: Paolo Pisati <paolo.pisati@canonical.com>
-> Cc: Tim Gardner <tim.gardner@canonical.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> ---
->  drivers/tty/hvc/hvc_dcc.c | 21 +++++++++++++++++++++
->  1 file changed, 21 insertions(+)
-> 
-> diff --git a/drivers/tty/hvc/hvc_dcc.c b/drivers/tty/hvc/hvc_dcc.c
-> index 44fbeba..44c8aff 100644
-> --- a/drivers/tty/hvc/hvc_dcc.c
-> +++ b/drivers/tty/hvc/hvc_dcc.c
-> @@ -86,6 +86,21 @@ static int hvc_dcc_get_chars(uint32_t vt, char *buf, int count)
->  	return i;
->  }
->  
-> +static bool hvc_dcc_check(void)
-> +{
-> +	unsigned long time = jiffies;
-> +
-> +	/* Write a test character to check if it is handled */
-> +	__dcc_putchar('\n');
-> +
-> +	while (jiffies < time + (HZ / 10)) {
-> +		if (!(__dcc_getstatus() & DCC_STATUS_TX))
-> +			return true;
-> +	}
+Andrew, would you pick up this patch?
 
-I think you should use one of the jiffies time comparison functions, e.g.,
+Regards.
+----------
+>From d6ff218545060c5f8b75b15d5b34bffcf625508f Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Mon, 16 Sep 2013 02:19:10 +0900
+Subject: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
 
-	time = jiffies + (HZ / 10);
-	while (time_before(jiffies,time) {
-		...
-	}
+If /proc/sys/kernel/core_pattern contains only "|", NULL pointer dereference
+happens upon core dump because argv_split("") returns argv[0] == NULL.
 
-What is the possibility that __dcc_getstatus() will return garbage if no
-JTAG is connected ? In that event you're likely to get a false positive
-on DCC_STATUS_TX.
+This bug was once fixed by commit 264b83c0 "usermodehelper: check
+subprocess_info->path != NULL" but was by error reintroduced by commit
+7f57cfa4 "usermodehelper: kill the sub_info->path[0] check".
 
-rtg
+This bug seems to exist since 2.6.19 (the version which core dump to pipe was
+added). Depending on kernel version and config, some side effect might happen
+immediately after this oops (e.g. kernel panic with 2.6.32-358.18.1.el6).
 
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/kmod.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index fb32636..a962470 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -571,6 +571,10 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
+ 	DECLARE_COMPLETION_ONSTACK(done);
+ 	int retval = 0;
+ 
++	if (!sub_info->path) {
++		call_usermodehelper_freeinfo(sub_info);
++		return -ENOENT;
++	}
+ 	helper_lock();
+ 	if (!khelper_wq || usermodehelper_disabled) {
+ 		retval = -EBUSY;
 -- 
-Tim Gardner tim.gardner@canonical.com
+1.7.1
