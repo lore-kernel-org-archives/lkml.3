@@ -1,127 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab3IWRlf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 13:41:35 -0400
-Received: from fieldses.org ([174.143.236.118]:41979 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab3IWRld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 13:41:33 -0400
-Date: Mon, 23 Sep 2013 13:41:29 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Cc: Jan Kara <jack@suse.cz>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        linux-ext4@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: Re: Issues with a rather unusual configured NFS server
-Message-ID: <20130923174129.GA19720@fieldses.org>
-References: <52075E01.7030506@gmx.de>
- <20130812143640.GF4596@quack.suse.cz>
- <20130813215313.GH17781@fieldses.org>
- <20130827180655.GE14809@fieldses.org>
- <521E318C.7040401@gmx.de>
- <522B9010.8070902@gmx.de>
- <20130910140937.GD16011@fieldses.org>
- <523F21B5.2050305@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <523F21B5.2050305@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753289Ab3IWRor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 13:44:47 -0400
+Received: from smtprelay0099.hostedemail.com ([216.40.44.99]:51478 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752684Ab3IWRoq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 13:44:46 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1981:2194:2198:2199:2200:2393:2551:2553:2559:2562:2828:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3871:3872:4321:5007:7556:7652:7901:7903:8531:10004:10400:10848:11026:11232:11657:11658:11914:12043:12050:12296:12438:12517:12519:12679:12740:13019:13095,0,RBL:none,CacheIP:none,Bayesian:
+X-HE-Tag: goose56_293eb50a4f835
+X-Filterd-Recvd-Size: 4026
+Message-ID: <1379958282.3575.31.camel@joe-AO722>
+Subject: Re: [PATCH v5 1/4] media: s5p-tv: Replace mxr_ macro by default dev_
+From: Joe Perches <joe@perches.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
+        m.chehab@samsung.com, t.figa@samsung.com, kyungmin.park@samsung.com,
+        s.nawrocki@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 23 Sep 2013 10:44:42 -0700
+In-Reply-To: <13162989.WhfDRzW6dg@amdc1032>
+References: <1379775649-6331-1-git-send-email-m.krawczuk@partner.samsung.com>
+	 <1379775649-6331-2-git-send-email-m.krawczuk@partner.samsung.com>
+	 <52405519.3020504@samsung.com> <13162989.WhfDRzW6dg@amdc1032>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 06:58:29PM +0200, Toralf Förster wrote:
-> On 09/10/2013 04:09 PM, J. Bruce Fields wrote:
-> > On Sat, Sep 07, 2013 at 10:44:00PM +0200, Toralf Förster wrote:
-> >> Today I run latest git tree with a patched UML (this patch + one for xterm issues) and got 2 times a core dump
-> >> when I fuzzy test an UML machine with a nearly identical scenario as already described but just shutdowned
-> >> both UML images instead of shooting one of it in the head.
-> > 
-> > This is a slightly different test case, so for now it sounds like this
-> > could be a preexisting problem, not a regression?
-> > 
-> Yes, pre-existing. I'm trying to bisect it, the issue is already in 7d3107d.
-> 
-> But every attempt to get the first bad commit before that commit id
-> failed till now. I started many attempts between v3.10 and 7d3107d. I
-> could not reproduce that issue 100% in that interval. In that interval
-> either all tested commits doesn't show the issue or the NFS client hangs
-> during the stop of NFS service infinitely - and counting that as a "bad"
-> commit doesn't work.
-> 
-> FWIW a single test case currently takes 2 1/2 hour and even then I do
-> not fully trust the result  (except for a bad commit, that's clear.
+On Mon, 2013-09-23 at 17:48 +0200, Bartlomiej Zolnierkiewicz wrote:
+> On Monday, September 23, 2013 04:50:01 PM Tomasz Stanislawski wrote:
+> > May I ask what is the rationale for this patch?
+> > To reduce a few lines of code?
+> This patch makes source code more generic-like and easier to follow (mxd_r*
+> macros currently only obfuscate the code and make them harder to read for
+> everybody, maybe besides the original driver author ;). Removal of few
+> superfluous lines of code is just a bonus.
 
-Well, we should figure out some other way to narrow down the problem....
+I don't see any significant issue with this change.
+Using generic mechanisms is good.
 
-I was trying to at least work out where exactly this crash was, but I
-don't have a commit 768c9d3.
+Few trivial nits:
 
---b.
+I'd remove the trailing periods from some of the messages
+at the same time.
 
-> 
-> 
-> > --b.
-> > 
-> >>
-> >> I'll probably need time to figure out a test case, but just as a pre-info here's the back trace:
-> >>
-> >> tfoerste@n22 ~ $ gdb --core=/mnt/ramdisk/core /usr/local/bin/linux-v3.11-7550-g768c9d3 -n -batch -ex bt
-> >>
-> >> warning: core file may not match specified executable file.
-> >> [New LWP 7470]
-> >> [New LWP 7479]
-> >> [New LWP 7477]
-> >> [New LWP 7478]
-> >> Core was generated by `/usr/local/bin/linux-v3.11-7550-g768c9d3 earlyprintk ubda=/home/tfoerste/virtua'.
-> >> Program terminated with signal 6, Aborted.
-> >> #0  0xb77be424 in __kernel_vsyscall ()
-> >> #0  0xb77be424 in __kernel_vsyscall ()
-> >> #1  0x083aada5 in kill ()
-> >> #2  0x0807163d in uml_abort () at arch/um/os-Linux/util.c:93
-> >> #3  0x08071925 in os_dump_core () at arch/um/os-Linux/util.c:138
-> >> #4  0x080613a7 in panic_exit (self=0x85b1518 <panic_exit_notifier>, unused1=0, unused2=0x85e76e0 <buf.15920>) at arch/um/kernel/um_arch.c:240
-> >> #5  0x0809a398 in notifier_call_chain (nl=0x0, val=0, v=0x85e76e0 <buf.15920>, nr_to_call=-2, nr_calls=0x0) at kernel/notifier.c:93
-> >> #6  0x0809a4e3 in __atomic_notifier_call_chain (nr_calls=<optimized out>, nr_to_call=<optimized out>, v=<optimized out>, val=<optimized out>, nh=<optimized out>) at kernel/notifier.c:182
-> >> #7  atomic_notifier_call_chain (nh=0x85e76c4 <panic_notifier_list>, val=0, v=0x85e76e0 <buf.15920>) at kernel/notifier.c:191
-> >> #8  0x08408628 in panic (fmt=0x0) at kernel/panic.c:128
-> >> #9  0x081131c9 in shrink_dcache_for_umount_subtree (dentry=0x428028f0) at fs/dcache.c:941
-> >> #10 0x08113948 in shrink_dcache_for_umount (sb=0x463b8000) at fs/dcache.c:1002
-> >> #11 0x08101677 in generic_shutdown_super (sb=0x463b8000) at fs/super.c:404
-> >> #12 0x08102395 in kill_anon_super (sb=0x0) at fs/super.c:875
-> >> #13 0x081d3ff8 in nfs_kill_super (s=0x0) at fs/nfs/super.c:2598
-> >> #14 0x0810153a in deactivate_locked_super (s=0x463b8000) at fs/super.c:294
-> >> #15 0x081015d1 in deactivate_super (s=0x463b8000) at fs/super.c:319
-> >> #16 0x08119c0c in mntfree (mnt=<optimized out>) at fs/namespace.c:891
-> >> #17 mntput_no_expire (mnt=0x0) at fs/namespace.c:929
-> >> #18 0x0811b195 in SYSC_umount (flags=<optimized out>, name=<optimized out>) at fs/namespace.c:1335
-> >> #19 SyS_umount (name=134633856, flags=2) at fs/namespace.c:1305
-> >> #20 0x080618e2 in handle_syscall (r=0x498be5d4) at arch/um/kernel/skas/syscall.c:35
-> >> #21 0x08073c0d in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
-> >> #22 userspace (regs=0x498be5d4) at arch/um/os-Linux/skas/process.c:431
-> >> #23 0x0805e65c in fork_handler () at arch/um/kernel/process.c:160
-> >> #24 0x00000000 in ?? ()
-> >>
-> >>
-> >>
-> >> -- 
-> >> MfG/Sincerely
-> >> Toralf Förster
-> >> pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
-> > 
-> 
-> 
-> -- 
-> MfG/Sincerely
-> Toralf Förster
-> pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Function tracing is better done by the function tracing
+mechanism built in to the kernel.  Removing the
+	dev_dbg(dev, "%s: enter\n", __func__)
+lines would be good too.
+
+Maybe look at the message levels of more of these
+logging messages and determine which are actually
+useful and what is mostly noise and should be dev_dbg
+or deleted altogether.
+
+> > > diff --git a/drivers/media/platform/s5p-tv/mixer_drv.c b/drivers/media/platform/s5p-tv/mixer_drv.c
+
+> > > @@ -59,7 +59,7 @@ void mxr_streamer_get(struct mxr_device *mdev)
+> > >  {
+> > >  	mutex_lock(&mdev->mutex);
+> > >  	++mdev->n_streamer;
+> > > -	mxr_dbg(mdev, "%s(%d)\n", __func__, mdev->n_streamer);
+> > > +	dev_dbg(mdev->dev, "%s(%d)\n", __func__, mdev->n_streamer);
+
+not too useful
+
+[]
+
+> > > @@ -159,42 +159,42 @@ static int mxr_acquire_plat_resources(struct mxr_device *mdev,
+> > >  
+> > >  	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "mxr");
+> > >  	if (res == NULL) {
+> > > -		mxr_err(mdev, "get memory resource failed.\n");
+> > > +		dev_err(mdev->dev, "get memory resource failed.\n");
+
+		dev_err(mdev->dev, "get memory resource failed\n");
+etc... because of:
+
+> > > @@ -252,27 +252,27 @@ static int mxr_acquire_clocks(struct mxr_device *mdev)
+> > >  
+> > >  	res->mixer = clk_get(dev, "mixer");
+> > >  	if (IS_ERR(res->mixer)) {
+> > > -		mxr_err(mdev, "failed to get clock 'mixer'\n");
+> > > +		dev_err(mdev->dev, "failed to get clock 'mixer'\n");
+
+Mixed use of messages with/without periods.
+
+> > > @@ -295,13 +295,13 @@ static int mxr_acquire_resources(struct mxr_device *mdev,
+> > >  	if (ret)
+> > >  		goto fail_plat;
+> > >  
+> > > -	mxr_info(mdev, "resources acquired\n");
+> > > +	dev_info(mdev->dev, "resources acquired\n");
+
+This isn't really a useful message so I'd convert it
+to dev_dbg
+
+> > > @@ -391,7 +391,6 @@ static int mxr_probe(struct platform_device *pdev)
+> > >  	struct mxr_device *mdev;
+> > >  	int ret;
+> > >  
+> > > -	/* mdev does not exist yet so no mxr_dbg is used */
+> > >  	dev_info(dev, "probe start\n");
+
+Same with a lot of these...
+
+Maybe in a separate patch.
+
+
+
