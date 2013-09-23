@@ -1,82 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab3IWSlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:41:31 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4600 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753096Ab3IWSl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:41:28 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <52408B47.3080801@broadcom.com>
-Date: Mon, 23 Sep 2013 11:41:11 -0700
-From: "Christian Daudt" <csd@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-Version: 1.0
-To: "Matt Porter" <matt.porter@linaro.org>
-cc: "Sebastian Hesselbarth" <sebastian.hesselbarth@gmail.com>,
-        "Olof Johansson" <olof@lixom.net>, "Arnd Bergmann" <arnd@arndb.de>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        STEricsson <STEricsson_nomadik_linux@list.st.com>,
-        linux-tegra@vger.kernel.org, linux-rpi-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, kernel@stlinux.com,
-        linux-arm-kernel@lists.infradead.org,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Christian Daudt" <bcm@fixthebug.org>
-Subject: Re: [PATCH 00/26] ARM: provide common arch init for DT clocks
-References: <20130920191613.GA25191@ohporter.com>
- <523EDF16.10102@gmail.com> <52407E2A.7030001@linaro.org>
-In-Reply-To: <52407E2A.7030001@linaro.org>
-X-WSS-ID: 7E5E57412L887621074-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754463Ab3IWSls (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:41:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54311 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753359Ab3IWSlq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 14:41:46 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, rob@landley.net, broonie@kernel.org,
+        patches@opensource.wolfsonmicro.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/5] mfd: arizona: Add device tree helper functions
+Date: Mon, 23 Sep 2013 19:30:39 +0100
+Message-Id: <1379961043-23762-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-09-23 10:45 AM, Matt Porter wrote:
-> On 09/22/2013 08:14 AM, Sebastian Hesselbarth wrote:
->> On 09/20/2013 09:16 PM, Matt Porter wrote:
->>> On Wed, Sep 18, 2013 at 07:53:33PM +0200, Sebastian Hesselbarth wrote:
->>>> This is a patch set based on an RFC [1][2] sent earlier to provide a
->>>> common
->>>> arch/arm init for DT clock providers. Currently, the call to
->>>> of_clk_init(NULL)
->>>> to initialize DT clock providers is spread among several mach-dirs.
->>>> Since most
->>>> machs require DT clocks initialized before timers, no initcall can be
->>>> used.
->> [...]
->>> Could you pick up the following patch for mach-bcm/ into this series?
->>>
->>> Thanks,
->>> Matt
->>>
->>>  From f65d048b3453447bb3e693cb21701c4d0c6375ed Mon Sep 17 00:00:00 2001
->>> From: Matt Porter <matt.porter@linaro.org>
->>> Date: Fri, 20 Sep 2013 13:41:06 -0400
->>> Subject: [PATCH] ARM: bcm: Remove custom .time_init hook
->>>
->>> With arch/arm calling of_clk_init(NULL) and clocksource_of_init()
->>> this is no longer needed. The former is useful because we can make
->>> use of dummy fixed clocks for drivers until the bcm281xx common
->>> clock driver is ready.
->>>
->>> Signed-off-by: Matt Porter <matt.porter@linaro.org>
->>> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
->>> Reviewed-by: Christian Daudt <csd@broadcom.com>
->>
->> As a v2 is required due to calling of_clk_init() breaks non-DT builds,
->> I will include this _if_ Christian actually gives his Acked-By.
->
-> Understood. Ccing Christian's new email as it just changed.
-Old one still works for this week :)
-Acked-by: Christian Daudt <csd@broadcom.com>
+Factor out reading of specific device tree bindings into seperate
+functions in preperation for adding more of them. Whilst we are at is
+fixup a couple of small issues in the existing binding documentation.
 
-  Thanks,
-    csd
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ Documentation/devicetree/bindings/mfd/arizona.txt |   12 +-
+ drivers/mfd/arizona-core.c                        |  121 +++++++++++++++------
+ 2 files changed, 95 insertions(+), 38 deletions(-)
 
-
+diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+index 0e295c9..e2cecfc 100644
+--- a/Documentation/devicetree/bindings/mfd/arizona.txt
++++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+@@ -25,7 +25,7 @@ Required properties:
+   - #gpio-cells : Must be 2. The first cell is the pin number and the
+     second cell is used to specify optional parameters (currently unused).
+ 
+-  - AVDD1-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply, CPVDD-supply,
++  - AVDD-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply, CPVDD-supply,
+     SPKVDDL-supply, SPKVDDR-supply : power supplies for the device, as covered
+     in Documentation/devicetree/bindings/regulator/regulator.txt
+ 
+@@ -53,10 +53,10 @@ codec: wm5102@1a {
+ 	#gpio-cells = <2>;
+ 
+ 	wlf,gpio-defaults = <
+-		0x00000000, /* AIF1TXLRCLK */
+-		0xffffffff,
+-		0xffffffff,
+-		0xffffffff,
+-		0xffffffff,
++		0x00000000 /* AIF1TXLRCLK */
++		0xffffffff
++		0xffffffff
++		0xffffffff
++		0xffffffff
+ 	>;
+ };
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index 5ac3aa4..986abc5 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -512,42 +512,99 @@ int arizona_of_get_type(struct device *dev)
+ }
+ EXPORT_SYMBOL_GPL(arizona_of_get_type);
+ 
+-static int arizona_of_get_core_pdata(struct arizona *arizona)
++static int arizona_of_get_named_gpio(struct arizona *arizona,
++				     const char *prop, bool mandatory,
++				     int *gpio)
+ {
+-	int ret, i;
++	int ret;
+ 
+-	arizona->pdata.reset = of_get_named_gpio(arizona->dev->of_node,
+-						 "wlf,reset", 0);
+-	if (arizona->pdata.reset < 0)
+-		arizona->pdata.reset = 0;
+-
+-	arizona->pdata.ldoena = of_get_named_gpio(arizona->dev->of_node,
+-						  "wlf,ldoena", 0);
+-	if (arizona->pdata.ldoena < 0)
+-		arizona->pdata.ldoena = 0;
+-
+-	ret = of_property_read_u32_array(arizona->dev->of_node,
+-					 "wlf,gpio-defaults",
+-					 arizona->pdata.gpio_defaults,
+-					 ARRAY_SIZE(arizona->pdata.gpio_defaults));
+-	if (ret >= 0) {
+-		/*
+-		 * All values are literal except out of range values
+-		 * which are chip default, translate into platform
+-		 * data which uses 0 as chip default and out of range
+-		 * as zero.
+-		 */
+-		for (i = 0; i < ARRAY_SIZE(arizona->pdata.gpio_defaults); i++) {
+-			if (arizona->pdata.gpio_defaults[i] > 0xffff)
+-				arizona->pdata.gpio_defaults[i] = 0;
+-			if (arizona->pdata.gpio_defaults[i] == 0)
+-				arizona->pdata.gpio_defaults[i] = 0x10000;
+-		}
+-	} else {
+-		dev_err(arizona->dev, "Failed to parse GPIO defaults: %d\n",
+-			ret);
++	ret = of_get_named_gpio(arizona->dev->of_node, prop, 0);
++	*gpio = ret;
++	if (ret >= 0)
++		return ret;
++
++	*gpio = 0;
++
++	if (mandatory)
++		dev_err(arizona->dev,
++			"Mandatory DT gpio %s missing/malformed: %d\n",
++			prop, ret);
++
++	return ret;
++}
++
++static int arizona_of_read_u32_array(struct arizona *arizona,
++				     const char *prop, bool mandatory,
++				     u32 *data, size_t num)
++{
++	int ret;
++
++	ret = of_property_read_u32_array(arizona->dev->of_node, prop,
++					 data, num);
++
++	if (ret >= 0)
++		return 0;
++
++	switch (ret) {
++	case -EINVAL:
++		if (mandatory)
++			dev_err(arizona->dev,
++				"Mandatory DT property %s is missing\n",
++				prop);
++		break;
++	default:
++		dev_err(arizona->dev,
++			"DT property %s is malformed: %d\n",
++			prop, ret);
+ 	}
+ 
++	return ret;
++}
++
++static int arizona_of_read_u32(struct arizona *arizona,
++			       const char* prop, bool mandatory,
++			       u32 *data)
++{
++	return arizona_of_read_u32_array(arizona, prop, mandatory, data, 1);
++}
++
++static int arizona_of_get_gpio_defaults(struct arizona *arizona,
++					const char *prop)
++{
++	struct arizona_pdata *pdata = &arizona->pdata;
++	int i, ret;
++
++	ret = arizona_of_read_u32_array(arizona, prop, false,
++					pdata->gpio_defaults,
++					ARRAY_SIZE(pdata->gpio_defaults));
++	if (ret < 0)
++		return ret;
++
++	/*
++	 * All values are literal except out of range values
++	 * which are chip default, translate into platform
++	 * data which uses 0 as chip default and out of range
++	 * as zero.
++	 */
++	for (i = 0; i < ARRAY_SIZE(pdata->gpio_defaults); i++) {
++		if (pdata->gpio_defaults[i] > 0xffff)
++			pdata->gpio_defaults[i] = 0;
++		if (pdata->gpio_defaults[i] == 0)
++			pdata->gpio_defaults[i] = 0x10000;
++	}
++
++	return ret;
++}
++
++static int arizona_of_get_core_pdata(struct arizona *arizona)
++{
++	struct arizona_pdata *pdata = &arizona->pdata;
++
++	arizona_of_get_named_gpio(arizona, "wlf,reset", true, &pdata->reset);
++	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
++
++	arizona_of_get_gpio_defaults(arizona, "wlf,gpio-defaults");
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.2.5
 
