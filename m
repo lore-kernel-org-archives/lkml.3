@@ -1,102 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab3IWGkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 02:40:05 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:61192 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab3IWGkD convert rfc822-to-8bit (ORCPT
+	id S1753246Ab3IWGmM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 02:42:12 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:27288 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab3IWGmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 02:40:03 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Chen Gang <gang.chen@asianux.com>
-CC: "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Claudiu Zissulescu" <Claudiu.Zissulescu@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        joern Rennecke <joern.rennecke@embecosm.com>
-Subject: Re: [Suggestion] arc: compiler: bug: about an arc compiler's bug
- which is not in gcc main source code.
-Thread-Topic: [Suggestion] arc: compiler: bug: about an arc compiler's bug
- which is not in gcc main source code.
-Thread-Index: AQHOuCLuuJ+I1B5OuE6iMAndydbhgQ==
-Date: Mon, 23 Sep 2013 06:39:52 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com>
-References: <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.239.235]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 23 Sep 2013 02:42:10 -0400
+Message-ID: <1379918525.2231.0.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/4] ipc: shm and msg fixes
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Paris <eparis@parisplace.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Date: Sun, 22 Sep 2013 23:42:05 -0700
+In-Reply-To: <CA+55aFwQp6Fm9-Zrn3uue9bFe9tERCbVv5Z-z9r4ZgOmS0VB+Q@mail.gmail.com>
+References: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
+	 <1379625742.2145.19.camel@buesod1.americas.hpqcorp.net>
+	 <1379700524.5434.22.camel@flatline.rdu.redhat.com>
+	 <1379788235.2145.48.camel@buesod1.americas.hpqcorp.net>
+	 <CA+55aFwQp6Fm9-Zrn3uue9bFe9tERCbVv5Z-z9r4ZgOmS0VB+Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 11:43 AM, Chen Gang wrote:
-> Oh, I forgot to supply the related arc cross-compiler's information:
->
-> [root@dhcp122 linux-next]# /usr/local/bin/arc-elf32-gcc -v
-> Using built-in specs.
-> Target: arc-elf32
-> Configured with: /mnt/sda11/src/toolchain_arc/unisrc/configure --target=arc-elf32 --with-cpu=arc700 --disable-werror --disable-multilib --with-pkgversion='ARCompact elf32 toolchain (built 20130922)' --with-bugurl=http://solvnet.synopsys.com --enable-fast-install=N/A --enable-languages=c,c++ --prefix=/usr/local --with-headers=/mnt/sda11/src/toolchain_arc/unisrc/newlib/libc/include
-> Thread model: single
-> gcc version 4.4.7 (ARCompact elf32 toolchain (built 20130922)) 
->
-> [root@dhcp122 linux-next]# /usr/local/bin/arc-elf32-as -v
-> GNU assembler version 2.19.50.ARC_4.4 (arc-elf32) using BFD version (ARCompact elf32 toolchain (built 20130922)) 2.19.50.ARC_4.4.20081103
->
-> [root@dhcp122 linux-next]# /usr/local/bin/arc-elf32-ld -v
-> GNU ld (ARCompact elf32 toolchain (built 20130922)) 2.19.50.ARC_4.4.20081103
->
->
-> On 09/23/2013 02:04 PM, Chen Gang wrote:
->> Hello arc members:
->>
->> It is arc compiler's bug, but can not report to gnu tool chain (it is
->> not integrated into gnu tool chain), so have to report it here (I find
->> this bug here, and I guess, some arc folks are here, too).
->>
->>
->> In "drivers/power/wm831x_power.c", all wm831x_bat_get_prop() calling
->> functions are inline, so wm831x_bat_get_prop() size is more than 256,
->> but it uses 1 byte to express related offset (".byte .L61-.L65 + 6").
->>
->> If let some of wm831x_bat_get_prop() calling functions noinline, it can
->> pass compiling.
->>
->> The related .s file is in attachment, and the related command and error
->> (for next-20130920 tree) is below:
->>
->>     /usr/local/bin/arc-elf32-gcc -Wp,-MD,drivers/power/.wm831x_power.o.d  -nostdinc -isystem /usr/local/lib/gcc/arc-elf32/4.4.7/include -I/root/linux-next/arch/arc/include -Iarch/arc/include/generated  -Iinclude -I/root/linux-next/arch/arc/include/uapi -Iarch/arc/include/generated/uapi -I/root/linux-next/include/uapi -Iinclude/generated/uapi -include /root/linux-next/include/linux/kconfig.h -include /root/linux-next/arch/arc/include/asm/current.h -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -mA7 -fno-common -pipe -fno-builtin -D__linux__ -fsection-anchors -mlock -mswape -mrtsc -fasynchronous-unwind-tables -mno-sdata -fcall-used-gp -mbig-endian -multcost=16 -fno-reorder-blocks -fno-ipa-cp-clone -Wframe-larger-than=1024 -fno-stack-protector -fomit-frame-pointer -g -femit-struct-debug-baseonly -fno-var-tracking -fno-inline-functions-c
->  alled-onc
-> e 
->> -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -DDEBUG   -DMODULE -mlong-calls  -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(wm831x_power)"  -D"KBUILD_MODNAME=KBUILD_STR(wm831x_power)" -c -o drivers/power/.tmp_wm831x_power.o drivers/power/wm831x_power.c
->>   {standard input}: Assembler messages:
->>   {standard input}:934: Error: value of 256 too large for field of 1 bytes at 1987
->>
->>
->> Welcome any suggestions or completions (e.g. which location and members
->> this bug should be reported to).
->>
->> Thanks.
+On Sat, 2013-09-21 at 11:58 -0700, Linus Torvalds wrote:
+> On Sat, Sep 21, 2013 at 11:30 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> >
+> > IPC uses security_xxx_free() at two levels: for freeing the structure
+> > (ie: shm_destroy()) and cleaning up upon error when creating the
+> > structure (ie: newseg()). For both I believe we can actually use RCU.
+> > What do you think of the below change, it is specific for shm, and we'd
+> > need an equivalent for msq and sems.
+> 
+> Ugh.
+> 
+> This code already has rcu-delaying, usign the existing "rcu" list
+> entry. I hate how you add a *new* rcu list entry, and we basically
+> case two callbacks.
+> 
+> More importantly, it's wrong. You do the call_rcu() unconditionally,
+> but it might not be the last use! You need to do it with the same
+> logic ipc_rcu_putref(), namely at the dropping of the last reference.
 
-Hi Chen,
+This is the way IPC has handled things for a long time, no? Security
+does not depend on the reference counter, as we unconditionally free
+security structs.
 
-Thanks for the problem report. Please note that we have moved on to gcc 4.8 based
-tool-chain so I would suggest you switch over to it too (4.4 support is really
-phased out).
+> 
+> So how about just making ipc_rcu_putref() have a RCU callback
+> argument, and make the code look something like
+> 
+>     ipc_rcu_putref(shp, shm_rcu_free);
 
-With current 4.8 tools, I don't see the error you report.
+What you're suggesting, is (i) freeing security will now depend on the
+refcount (wouldn't this cause cases where we actually never end up
+freeing?) and (ii) in the scenarios we actually need to free the
+security, delay it along with freeing the actual ipc_rcu stuff.
 
-Please use the arc-4.8-dev branch of toolchain repo on github for building the
-tools, assuming that is where you got the sources for 4.4 tools too.
+> 
+> and then shm_rcu_free() just does
+> 
+>     #define ipc_rcu_to_struct(p)  ((void *)(p+1))
+> 
+>     void shm_rcu_free(struct rcu_head *head)
+>     {
+>         struct ipc_rcu *p = container_of(head, struct ipc_rcu, rcu);
+>         struct shmid_kernel *shp = ipc_rcu_to_struct(p);
+> 
+>         security_shm_free(shp);
+>         ipc_rcu_free(head);
+>     }
 
-Jeremy, Claudiu, Joern maintain the gcc and rest of GNU toolchain ports for ARC so
-please add them to any future posting on toolchain issues.
+If I understand correctly, then we'd have:
 
-Thx,
--Vineet
+void ipc_rcu_putref(void *ptr, void (*func)(struct rcu_head *head))
+{
+	struct ipc_rcu *p = ((struct ipc_rcu *)ptr) - 1;
+
+	if (!atomic_dec_and_test(&p->refcount))
+		return;
+
+	call_rcu(&p->rcu, func);
+}
+
+> 
+> (that "ipc_rcu_free()" would do the current vfree-vs-kfree, just not
+> rcu-delayed, so it would look something like
+
+The vfree/free would still be rcu delayed from whatever was passed to
+ipc_rcu_putref(), but yes, the function wouldn't explicitly be calling
+call_rcu/kfree_rcu.
+
+> 
+>     void ipc_rcu_free(struct rcu_head *head)
+>     {
+>         struct ipc_rcu *p = container_of(head, struct ipc_rcu, rcu);
+>         if (is_vmalloc_addr(p))
+>             vfree(p);
+>         else
+>             kfree(p);
+>     }
+> 
+> Other users would then just use
+> 
+>     ipc_rcu_putref(shp, ipc_rcu_free);
+> until they too decide that they want to do something extra at RCU freeing time..
+
+I like this flexibility.
+
+Thanks,
+Davidlohr
 
 
