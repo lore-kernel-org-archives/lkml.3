@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab3IWJnu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 05:43:50 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:28939 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753541Ab3IWJnt (ORCPT
+	id S1753710Ab3IWJof (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 05:44:35 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:16568 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753441Ab3IWJoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 05:43:49 -0400
-X-AuditID: cbfee68f-b7f1e6d000004e8d-30-52400d549e98
+	Mon, 23 Sep 2013 05:44:34 -0400
+X-AuditID: cbfee68f-b7f1e6d000004e8d-d4-52400d803b72
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <001801ceb840$9a81ab10$cf850130$%han@samsung.com>
 In-reply-to: <001801ceb840$9a81ab10$cf850130$%han@samsung.com>
-Subject: [PATCH 05/15] rtc: rtc-ds1305: use dev_get_platdata()
-Date: Mon, 23 Sep 2013 18:43:46 +0900
-Message-id: <002101ceb841$671816a0$354843e0$%han@samsung.com>
+Subject: [PATCH 06/15] rtc: rtc-ds1307: use dev_get_platdata()
+Date: Mon, 23 Sep 2013 18:44:32 +0900
+Message-id: <002201ceb841$818c8ca0$84a5a5e0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac64QJVrtN1IW24fTFCn/tCGU7Py3AAALiEQ
+Thread-index: Ac64QJVrtN1IW24fTFCn/tCGU7Py3AAANIKQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zfd0QXocggy23BCyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
-	LdK3S+DKuPxzAUvBO7aKw33KDYxnWbsYOTkkBEwkXl3cyQhhi0lcuLeerYuRi0NIYBmjxLHz
-	T9jhimY1s0MkpjNK9N98zAaSEBL4xShxq80VxGYTUJP48uUwUBEHh4iAvkRbiwZIPbNAL6PE
-	md7d7BD1thITp31lArE5Bewk1nxeBmYLA9lLfy4Cs1kEVCXmfp/CBjKHF6h+3ys7kDCvgKDE
-	j8n3WEBsZgEtic3bmlghbHmJzWveMoOUSwioSzz6qwsSFhEwkjh2rBGqRERi34t3jCDnSAjc
-	Y5f48vE0C8QqAYlvkw+xQPTKSmw6wAzxrqTEwRU3WCYwSsxCsnkWks2zkGyehWTFAkaWVYyi
-	qQXJBcVJ6UXGesWJucWleel6yfm5mxghUdq/g/HuAetDjMlA6ycyS4km5wOjPK8k3tDYzMjC
-	1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjJVn9KfdqKxT9DrA
-	+bBMTODrlDmZry/fYot9UD2zeKdCzLypE5UvvrJf/v/38xrhtSJT8if7K/5wzeZ02nfpttzh
-	1Y+lWy/Lneud2GZz5+adP0qW1k8/2Hgy5f06Y3fPb5L/lOuSLAkvL/pznnhynd8ppIJtu271
-	JH6BJT+FWd3+n+l5/+2o9kklluKMREMt5qLiRACwIjtm6AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jQd0QXocggxkPeCyWXLzKbjFn/Ro2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t8zY90GXocgg555GhZLLl5lt5izfg2b
+	xeWFl1gtLu+aw2axv7OD0YHVY8/Ek2weJ2b8ZvHo27KK0WP6vJ9MHp83yQWwRnHZpKTmZJal
+	FunbJXBlTH9+ha1gJXvF1+Vf2BoY+9i6GDk5JARMJJa/+sUMYYtJXLi3HijOxSEksIxR4v3d
+	Z+xdjBxgRe8ua0HEpzNK7DjXwQrSICTwi1FiQXc+iM0moCbx5cthsHoRAX2JthYNkHpmgV5G
+	iTO9u9kh6m0lJk77ygRicwrYSaz5vIwJpF4YyD6wowAkzCKgKvHt4ntWkDAvUPnFB5YgYV4B
+	QYkfk++xgNjMAloSm7c1sULY8hKb17xlhrhSXeLRX12QsIiAkcSKOb/YIEpEJPa9eMcIco2E
+	wD12iUmrD7FDrBKQ+Db5EAtEr6zEpgPQUJCUOLjiBssERolZSDbPQrJ5FpLNs5CsWMDIsopR
+	NLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjJEb7dzDePWB9iDEZaP1EZinR5HxgjOeVxBsamxlZ
+	mJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgXG7OW9b0/z6GWtC
+	JrjlTrqxmnmV9uvfdoqJM4+0l89f8/9gnXrpHUkhDjEJfs+du5uuvZrg1LU05GyAdOu7C4+3
+	hPJncG5b8Z3BvanCZqvAl9WsoROmvnoo9ab0YvQzlqQyWcXatq0BPvzR29xPX93runmu5Qme
+	0zv7T4XPPlPRnNXx4xrzHmMlluKMREMt5qLiRAA3PEEF5wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t9jQd0GXocgg30nVCyWXLzKbjFn/Ro2
 	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
 	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzLj8cwFLwTu2isN9yg2MZ1m7GDk5JARMJF7N
-	amaHsMUkLtxbz9bFyMUhJDCdUaL/5mM2kISQwC9GiVttriA2m4CaxJcvh4EaODhEBPQl2lo0
-	QOqZBXoZJc707maHqLeVmDjtKxOIzSlgJ7Hm8zIwWxjIXvpzEZjNIqAqMff7FDaQObxA9fte
-	2YGEeQUEJX5MvscCYjMLaEls3tbECmHLS2xe85YZpFxCQF3i0V9dkLCIgJHEsWONUCUiEvte
-	vGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxglPAM6kd
-	jCsbLA4xCnAwKvHwRiTaBwmxJpYVV+YeYpTgYFYS4fVjdQgS4k1JrKxKLcqPLyrNSS0+xJgM
-	9OdEZinR5HxgesoriTc0NjEzsjQyszAyMTcnTVhJnPdAq3WgkEB6YklqdmpqQWoRzBYmDk6p
-	Bka9NfrN79+cERaeVbJ12ynGBYFCbs5S8qV5OxWffvqz5NHsJP9DIsvOaSqqPpkyabLBrtrF
-	ekdulLkwZxTKvalPj7Wu1/is8Dz+XIZxXpNV3ye5tYe13NW59gidk3t1vKJpUflclRnqURvV
-	zt+Umb4pY/Nk3VlrayL5OtRn+D95rs266s7MM+uVWIozEg21mIuKEwG38ogZRQMAAA==
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzJj+/ApbwUr2iq/Lv7A1MPaxdTFycEgImEi8
+	u6zVxcgJZIpJXLi3HijMxSEkMJ1RYse5DlaQhJDAL0aJBd35IDabgJrEly+H2UF6RQT0Jdpa
+	NEDqmQV6GSXO9O5mh6i3lZg47SsTiM0pYCex5vMyJpB6YSD7wI4CkDCLgKrEt4vvWUHCvEDl
+	Fx9YgoR5BQQlfky+xwJiMwtoSWze1sQKYctLbF7zlhniYnWJR391QcIiAkYSK+b8YoMoEZHY
+	9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRGcAJ5J
+	7WBc2WBxiFGAg1GJhzci0T5IiDWxrLgy9xCjBAezkgivH6tDkBBvSmJlVWpRfnxRaU5q8SHG
+	ZKA/JzJLiSbnA5NTXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFw
+	SjUwpsy6ai4dza7uV3fOwol31mqWffm9dZM5Ipp78yqMt08Q0Vr7eoFug52h6GrGUhfN98G9
+	ShYHbHlX15SJBbxzFckv2fdq7uw/5zIjRHx/PHn/OjsqROv9uYceDy5dWrpF5TXHAm3GgM/N
+	vCa3T85lco3lCufOrH9ayp9R3fs/3253gtStZ01KLMUZiYZazEXFiQCiq9R9RAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,22 +61,22 @@ to make the code simpler and enhance the readability.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-ds1305.c |    2 +-
+ drivers/rtc/rtc-ds1307.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/rtc/rtc-ds1305.c b/drivers/rtc/rtc-ds1305.c
-index dd6170a..80f3237 100644
---- a/drivers/rtc/rtc-ds1305.c
-+++ b/drivers/rtc/rtc-ds1305.c
-@@ -606,7 +606,7 @@ static int ds1305_probe(struct spi_device *spi)
- 	struct ds1305			*ds1305;
- 	int				status;
- 	u8				addr, value;
--	struct ds1305_platform_data	*pdata = spi->dev.platform_data;
-+	struct ds1305_platform_data	*pdata = dev_get_platdata(&spi->dev);
- 	bool				write_ctrl = false;
- 
- 	/* Sanity check board setup data.  This may be hooked up
+diff --git a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
+index e8ac439..bd94920 100644
+--- a/drivers/rtc/rtc-ds1307.c
++++ b/drivers/rtc/rtc-ds1307.c
+@@ -672,7 +672,7 @@ static int ds1307_probe(struct i2c_client *client,
+ 	struct i2c_adapter	*adapter = to_i2c_adapter(client->dev.parent);
+ 	int			want_irq = false;
+ 	unsigned char		*buf;
+-	struct ds1307_platform_data *pdata = client->dev.platform_data;
++	struct ds1307_platform_data *pdata = dev_get_platdata(&client->dev);
+ 	static const int	bbsqi_bitpos[] = {
+ 		[ds_1337] = 0,
+ 		[ds_1339] = DS1339_BIT_BBSQI,
 -- 
 1.7.10.4
 
