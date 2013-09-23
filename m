@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3IWSQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 14:16:17 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:59861 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753593Ab3IWSQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 14:16:08 -0400
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: tpmdd-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>,
-        Rajiv Andrade <mail@srajiv.net>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 02/13] tpm atmel: Call request_region with the correct base
-Date: Mon, 23 Sep 2013 12:14:32 -0600
-Message-Id: <1379960083-8942-3-git-send-email-jgunthorpe@obsidianresearch.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
-References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1753740Ab3IWSQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 14:16:28 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57758 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717Ab3IWSQX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 14:16:23 -0400
+Message-ID: <52408572.2030907@wwwdotorg.org>
+Date: Mon, 23 Sep 2013 12:16:18 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 06/12] clk: tegra: add common infra for DT clocks
+References: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com> <1379515331-19427-7-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1379515331-19427-7-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit e0dd03caf20d040a0a86b6bd74028ec9bda545f5
-changed the code path here so that ateml_get_base_addr
-no longer directly altered the tpm_vendor_specific
-structure, and instead placed the base address on the stack.
+On 09/18/2013 08:40 AM, Peter De Schrijver wrote:
+> Introduce a common infrastructure for registering DT IDs for tegra clocks and
+> sharing clock initialization between SoCs. Move Tegra114 to this new
+> infrastructure.
 
-The commit missed updating the request_region call, which
-would have resulted in request_region being called with 0
-as the base address.
+> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
 
-I don't know if request_region(0, ..) will fail, if so the
-driver has been broken since 2006 and we should remove it
-from the tree as it has no users.
+> +static struct tegra_clk __initdata tegra114_clks[tegra_clk_max] = {
+> +	[tegra_clk_rtc] = { .dt_id = TEGRA114_CLK_RTC, .present = true },
+> +	[tegra_clk_timer] = { .dt_id = TEGRA114_CLK_TIMER, .present = true },
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
----
- drivers/char/tpm/tpm_atmel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/char/tpm/tpm_atmel.c b/drivers/char/tpm/tpm_atmel.c
-index 99d6820..c9a528d 100644
---- a/drivers/char/tpm/tpm_atmel.c
-+++ b/drivers/char/tpm/tpm_atmel.c
-@@ -202,7 +202,7 @@ static int __init init_atmel(void)
- 
- 	have_region =
- 	    (atmel_request_region
--	     (tpm_atmel.base, region_size, "tpm_atmel0") == NULL) ? 0 : 1;
-+	     (base, region_size, "tpm_atmel0") == NULL) ? 0 : 1;
- 
- 	pdev = platform_device_register_simple("tpm_atmel", -1, NULL, 0);
- 	if (IS_ERR(pdev)) {
--- 
-1.8.1.2
-
+It seems rather odd for a patch that adds "common infrastructure" to be
+adding a Tegra114-specific table of clock IDs, especially since this new
+table isn't actually used at all. I think I would expect a separate
+patch for the common infra-structure and the Tegra114-specific table.
+Hopefully there will be Tegra20-/30-specific tables added too in that
+second patch?
