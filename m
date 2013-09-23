@@ -1,89 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab3IWDVa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 23:21:30 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44495 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051Ab3IWDV2 (ORCPT
+	id S1753373Ab3IWDWM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 23:22:12 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:53744 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab3IWDWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 23:21:28 -0400
-Date: Mon, 23 Sep 2013 13:21:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yann Droneaud <ydroneaud@opteya.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: linux-next: manual merge of the staging tree with the
- staging.current tree
-Message-Id: <20130923132122.584a5166d14d0ec6d6f1a3a4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__23_Sep_2013_13_21_22_+1000_9XhKD1TmTMv3bfnu"
+	Sun, 22 Sep 2013 23:22:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1378196941-23390-3-git-send-email-sonic.adi@gmail.com>
+References: <1378196941-23390-1-git-send-email-sonic.adi@gmail.com>
+	<1378196941-23390-3-git-send-email-sonic.adi@gmail.com>
+Date: Mon, 23 Sep 2013 11:22:10 +0800
+Message-ID: <CAMk6uB=D0ChRi6-J+wBSKFEMrzko1RHMeSSxaFn+gzmEGE3uYw@mail.gmail.com>
+Subject: Re: [PATCH 3/3 v4] blackfin: pinctrl-adi2: Enable PINCTRL framework
+ for BF54x and BF60x.
+From: Steven Miao <realmz6@gmail.com>
+To: Sonic Zhang <sonic.adi@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__23_Sep_2013_13_21_22_+1000_9XhKD1TmTMv3bfnu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Steven Miao <realmz6@gmail.com>
 
-Hi Greg,
-
-Today's linux-next merge of the staging tree got a conflict in
-drivers/iio/industrialio-event.c between commit cadc2125e140 ("iio: fix:
-Keep a reference to the IIO device for open file descriptors") from the
-staging.current tree and commit a646fbf0fd11 ("iio: use anon_inode_getfd
-() with O_CLOEXEC flag") from the staging tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/iio/industrialio-event.c
-index 6be65ef,2390e3d..0000000
---- a/drivers/iio/industrialio-event.c
-+++ b/drivers/iio/industrialio-event.c
-@@@ -163,10 -158,8 +163,10 @@@ int iio_event_getfd(struct iio_dev *ind
-  		return -EBUSY;
-  	}
-  	spin_unlock_irq(&ev_int->wait.lock);
- -	fd =3D anon_inode_getfd("iio:event",
- -				&iio_event_chrdev_fileops, ev_int, O_RDONLY | O_CLOEXEC);
- +	iio_device_get(indio_dev);
- +
- +	fd =3D anon_inode_getfd("iio:event", &iio_event_chrdev_fileops,
-- 				indio_dev, O_RDONLY);
-++				indio_dev, O_RDONLY | O_CLOEXEC);
-  	if (fd < 0) {
-  		spin_lock_irq(&ev_int->wait.lock);
-  		__clear_bit(IIO_BUSY_BIT_POS, &ev_int->flags);
-
---Signature=_Mon__23_Sep_2013_13_21_22_+1000_9XhKD1TmTMv3bfnu
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSP7O2AAoJEECxmPOUX5FE9FUP/155Xeg/5ve/SahoD0++N5tA
-JmpxxCHXh+liVdduB29GiNEE6kesew3n/G8O9X+uD6xwtWXbkxzDX8++0T9pWR7A
-Rr/qYemvCbQaDoxngLclcCLwAVYv4XgRZvFxUbCXkbhqLSJxUTVQjtZIln7M8QiE
-UkwB7ZZOX0VMAgQ+p5zkH/h7nJw69AyveJ/aqyEyRnFMhxrhRMisGikk6Adaw5qL
-TWjKTf/nks+GxE97PNPC40fmFAMQ6km3bljp2y5niYYlxzsqWhX78Lgzk2zOl9hp
-ENk1JLEr0AokMixCKvctmM6q9trp4f2cTHIAX/c5fZqcCJh2GqXOHQyFY7BhNPhh
-GteAhic+hZkS6VRwFq/LmS/+t9q5/jon4REbw9Oa48KC3mdNveIFlE8hdinYICdr
-zZYYNDVvSHLi+rDOlj0Kqi0bwaSiBEadx07sOLFupGaCI9TnIRfvaJi/1vUqxaFl
-OO19xJInMGBJJ8/9R+Tuilpfn+Axa0JzXNIKyO8vIP0JYeWPusmguYhN4F9FCgAz
-9PqgxonVhcLoozj0N3Htt64svcZXNiyzqE/gX58xMcuRLlPMQ8u2pZfaC0Fg0jRE
-Vilrdb01BskyfMpp0ULVlwTlR2VvgSTbSfhR3HKOV1mCCBALoE6pdrXRlkiH+bvY
-+Tp6NaZsgeYAF86mk3hN
-=Kvn0
------END PGP SIGNATURE-----
-
---Signature=_Mon__23_Sep_2013_13_21_22_+1000_9XhKD1TmTMv3bfnu--
+On Tue, Sep 3, 2013 at 4:29 PM, Sonic Zhang <sonic.adi@gmail.com> wrote:
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>
+> - Remove unused macro MAX_RESOURCES
+> - Override blackfin legacy peripheral pinmux request and free APIs by
+> devm_pinctrl_get_select_default() to init the peripheral portmux setting.
+>
+> v3-chagnes:
+> - Move pinctrl soc data out of blackfin arch folder.
+>
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+> ---
+>  arch/blackfin/Kconfig                           |  4 ++++
+>  arch/blackfin/include/asm/portmux.h             | 19 +++++++++++++++++--
+>  arch/blackfin/mach-bf548/include/mach/portmux.h |  2 --
+>  arch/blackfin/mach-bf609/include/mach/portmux.h |  2 --
+>  4 files changed, 21 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
+> index 9eff25b..ed7157f 100644
+> --- a/arch/blackfin/Kconfig
+> +++ b/arch/blackfin/Kconfig
+> @@ -324,6 +324,10 @@ config GPIO_ADI
+>         def_bool y
+>         depends on (BF51x || BF52x || BF53x || BF538 || BF539 || BF561)
+>
+> +config PINCTRL
+> +       def_bool y
+> +       depends on BF54x || BF60x
+> +
+>  config MEM_MT48LC64M4A2FB_7E
+>         bool
+>         depends on (BFIN533_STAMP)
+> diff --git a/arch/blackfin/include/asm/portmux.h b/arch/blackfin/include/asm/portmux.h
+> index 9b1e2c3..7aa2043 100644
+> --- a/arch/blackfin/include/asm/portmux.h
+> +++ b/arch/blackfin/include/asm/portmux.h
+> @@ -17,14 +17,29 @@
+>  #define P_MAYSHARE     0x2000
+>  #define P_DONTCARE     0x1000
+>
+> -
+> +#ifdef CONFIG_PINCTRL
+> +#include <asm/irq_handler.h>
+> +
+> +#define gpio_pint_regs bfin_pint_regs
+> +#define adi_internal_set_wake bfin_internal_set_wake
+> +
+> +#define peripheral_request(per, label) 0
+> +#define peripheral_free(per)
+> +#define peripheral_request_list(per, label) \
+> +       (pdev ? (IS_ERR(devm_pinctrl_get_select_default(&pdev->dev)) \
+> +       ? -EINVAL : 0) : 0)
+> +#define peripheral_free_list(per)
+> +#else
+>  int peripheral_request(unsigned short per, const char *label);
+>  void peripheral_free(unsigned short per);
+>  int peripheral_request_list(const unsigned short per[], const char *label);
+>  void peripheral_free_list(const unsigned short per[]);
+> +#endif
+>
+> -#include <asm/gpio.h>
+> +#include <linux/err.h>
+> +#include <linux/pinctrl/pinctrl.h>
+>  #include <mach/portmux.h>
+> +#include <linux/gpio.h>
+>
+>  #ifndef P_SPORT2_TFS
+>  #define P_SPORT2_TFS P_UNDEF
+> diff --git a/arch/blackfin/mach-bf548/include/mach/portmux.h b/arch/blackfin/mach-bf548/include/mach/portmux.h
+> index e222462..d9f8632 100644
+> --- a/arch/blackfin/mach-bf548/include/mach/portmux.h
+> +++ b/arch/blackfin/mach-bf548/include/mach/portmux.h
+> @@ -7,8 +7,6 @@
+>  #ifndef _MACH_PORTMUX_H_
+>  #define _MACH_PORTMUX_H_
+>
+> -#define MAX_RESOURCES  MAX_BLACKFIN_GPIOS
+> -
+>  #define P_SPORT2_TFS   (P_DEFINED | P_IDENT(GPIO_PA0) | P_FUNCT(0))
+>  #define P_SPORT2_DTSEC (P_DEFINED | P_IDENT(GPIO_PA1) | P_FUNCT(0))
+>  #define P_SPORT2_DTPRI (P_DEFINED | P_IDENT(GPIO_PA2) | P_FUNCT(0))
+> diff --git a/arch/blackfin/mach-bf609/include/mach/portmux.h b/arch/blackfin/mach-bf609/include/mach/portmux.h
+> index 2e1a51c..fe34191 100644
+> --- a/arch/blackfin/mach-bf609/include/mach/portmux.h
+> +++ b/arch/blackfin/mach-bf609/include/mach/portmux.h
+> @@ -7,8 +7,6 @@
+>  #ifndef _MACH_PORTMUX_H_
+>  #define _MACH_PORTMUX_H_
+>
+> -#define MAX_RESOURCES  MAX_BLACKFIN_GPIOS
+> -
+>  /* EMAC RMII Port Mux */
+>  #define P_MII0_MDC     (P_DEFINED | P_IDENT(GPIO_PC6) | P_FUNCT(0))
+>  #define P_MII0_MDIO    (P_DEFINED | P_IDENT(GPIO_PC7) | P_FUNCT(0))
+> --
+> 1.8.2.3
+>
+>
