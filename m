@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab3IWXRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 19:17:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44483 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752394Ab3IWXRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 19:17:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,966,1371106800"; 
-   d="scan'208";a="382510092"
-Message-ID: <5240CDED.40501@linux.intel.com>
-Date: Mon, 23 Sep 2013 16:25:33 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Jean Delvare <khali@linux-fr.org>, Fenghua Yu <fenghua.yu@intel.com>,
-        "Artem S. Tashkinov" <t.artem@mailcity.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v5 2/2] hwmon: (coretemp) Report power and energy consumption
-References: <1379968489-13781-1-git-send-email-linux@roeck-us.net> <1379968489-13781-2-git-send-email-linux@roeck-us.net> <5240C145.6080104@linux.intel.com> <20130923224541.GA25966@roeck-us.net>
-In-Reply-To: <20130923224541.GA25966@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753578Ab3IWXSI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 19:18:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56750 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab3IWXSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 19:18:07 -0400
+Date: Mon, 23 Sep 2013 16:18:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, iamjoonsoo.kim@lge.com,
+        rientjes@google.com, zhangyanfei@cn.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH v5 1/4] mm/vmalloc: don't set area->caller twice
+Message-Id: <20130923161805.4b4b570241224b673e5c3b1b@linux-foundation.org>
+In-Reply-To: <5237946f.4815440a.094e.ffff8c29SMTPIN_ADDED_BROKEN@mx.google.com>
+References: <1379202342-23140-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	<5237617F.6010107@jp.fujitsu.com>
+	<5237946f.4815440a.094e.ffff8c29SMTPIN_ADDED_BROKEN@mx.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 03:45 PM, Guenter Roeck wrote:
-> On Mon, Sep 23, 2013 at 03:31:33PM -0700, Srinivas Pandruvada wrote:
->> On 09/23/2013 01:34 PM, Guenter Roeck wrote:
->>> Supported by SandyBridge and newer CPUs.
->>>
->>> Cc: Fenghua Yu <fenghua.yu@intel.com>
->>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>> ---
->>> v5: Merged to 3.12-rc1
->>> v4: Replaced INIT_DELAYED_WORK with INIT_DEFERRABLE_WORK
->>> v3: Added Cc:
->>> v2: Fix missing symbol error on i386 builds
->>>      Dropped leftover pr_info from debugging
->>>
->>> I am inclined to drop this patch set, as I received neither test nor code
->>> review feedback even though the patch set has been out there for a long time.
->>> Also, I am concerned that it overlaps or even conflicts with the proposed
->>> Power Cap/RAPL driver (https://lkml.org/lkml/2013/9/19/260).
->> <We feel that the power capping framework is the right place to show
->> the RAPL data. This is not just monitoring but also control.
->> There are other drivers getting developed using this framework to
->> expose an uniform sysfs interface.
-> Thought so. Have you thought about providing a hwmon bridge ?
-<Good idea. I think after base version is accepted, we can add this. >
->
-> Thanks,
-> Guenter
+On Tue, 17 Sep 2013 07:29:41 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
 
-Thanks,
-Srinivas
+> >> to set it again in __vmalloc_area_node.
+> >> 
+> >> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> >> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> >> ---
+> >>  mm/vmalloc.c | 1 -
+> >>  1 file changed, 1 deletion(-)
+> >> 
+> >> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> >> index 1074543..d78d117 100644
+> >> --- a/mm/vmalloc.c
+> >> +++ b/mm/vmalloc.c
+> >> @@ -1566,7 +1566,6 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+> >>  		pages = kmalloc_node(array_size, nested_gfp, node);
+> >>  	}
+> >>  	area->pages = pages;
+> >> -	area->caller = caller;
+> >>  	if (!area->pages) {
+> >>  		remove_vm_area(area->addr);
+> >>  		kfree(area);
+> >
+> >Then, __vmalloc_area_node() no longer need "caller" argument. It can use area->caller instead.
+> >
+> 
+> Thanks for pointing out, I will update it in next version. 
 
+I've seen so many versions of this patchset that my head has spun right
+off.  I'm not at all confident that I have the latest version and I'm
+certainly not confident that I've kept up with the ack/nack trail.
+
+So I think I'll drop everything and will await that "next version". 
+Please be careful to Cc everyone who was involved and that the
+acked/reviewed-by paperwork is up to date.
+
+Thanks.
