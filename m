@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab3IWQrN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 12:47:13 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:46491 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565Ab3IWQrM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 12:47:12 -0400
+	id S1753425Ab3IWQro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 12:47:44 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:48538 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752565Ab3IWQrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 12:47:42 -0400
+Date: Mon, 23 Sep 2013 11:47:41 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Jason Baron <jbaron@akamai.com>
+Cc: Nathan Zimmer <nzimmer@sgi.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC] eventpoll: Move a kmem_cache_alloc and kmem_cache_free
+Message-ID: <20130923164740.GA43736@asylum.americas.sgi.com>
+References: <1379087642-131349-1-git-send-email-nzimmer@sgi.com> <5239FA69.8030202@akamai.com> <523B2867.7000209@sgi.com> <52405B93.2010206@akamai.com>
 MIME-Version: 1.0
-In-Reply-To: <1379910958.6625.3.camel@pasglop>
-References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
-	<CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
-	<alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
-	<20130920162603.GA30381@localhost.localdomain>
-	<CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
-	<CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
-	<1379799901.24090.6.camel@pasglop>
-	<523E4F8A.7020708@zytor.com>
-	<1379824754.24090.11.camel@pasglop>
-	<1379824861.24090.12.camel@pasglop>
-	<20130922162410.GA10649@laptop.programming.kicks-ass.net>
-	<1379887000.24090.19.camel@pasglop>
-	<CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
-	<1379889489.24090.34.camel@pasglop>
-	<1379910958.6625.3.camel@pasglop>
-Date: Mon, 23 Sep 2013 09:47:11 -0700
-X-Google-Sender-Auth: HAYUEcSAwngR4YcCDoNw6B0_pCM
-Message-ID: <CA+55aFwcPU+fAqDGp0QhSYip7MYPBB+kQiU4GHEdgMo82i7RVg@mail.gmail.com>
-Subject: Re: [PATCH] powerpc/irq: Run softirqs off the top of the irq stack
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52405B93.2010206@akamai.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 9:35 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
->
-> This is the "band aid" discussed so far for the stack overflow
-> problem for powerpc.
+On Mon, Sep 23, 2013 at 11:17:39AM -0400, Jason Baron wrote:
+> On 09/19/2013 12:37 PM, Nathan Zimmer wrote:
+> > On 09/18/2013 02:09 PM, Jason Baron wrote:
+> >> On 09/13/2013 11:54 AM, Nathan Zimmer wrote:
+> >>> We noticed some scaling issue in the SPECjbb benchmark.  Running perf
+> >>> we found that the it was spending lots of time in SYS_epoll_ctl.
+> >>> In particular it is holding the epmutex.
+> >>> This patch helps by moving out the kmem_cache_alloc and kmem_cache_free out
+> >>> from under the lock.  It improves throughput by around 15% on 16 sockets.
+> >>>
+> >>> While this patch should be fine as it is there are probably is more things
+> >>> that can be done out side the lock, like wakeup_source_unregister, but I am
+> >>> not familar with the area and I don't know of many tests.  I did find the
+> >>> one posted by Jason Baron at https://lkml.org/lkml/2011/2/25/297.
+> >>>
+> >>> Any thoughts?
+> >>>
+> >> Hi,
+> >>
+> >> Intersting - I think its also possible to completely drop taking the
+> >> 'epmutex' for EPOLL_CTL_DEL by using rcu, and restricting it on add
+> >> to more 'complex' topologies. That is when we have an epoll descriptor
+> >> that doesn't nest with other epoll descriptors, we don't need the
+> >> global 'epmutex' either. Any chance you can re-run with this? Its a bit
+> >> hacky, but we can clean it up if it makes sense.
+> >>
+> >> Thanks,
+> >>
+> >> -Jason
+> >>
+> > That is working GREAT.  It is scaling to 16 jobs quite well.
+> > I will have to grab a larger machine( to see what the new scaling curve 
+> > will be.
+> > 
+> 
+> Cool. Any specific numbers would be helpful for the changelog in support of these
+> changes. Also, I think the move the alloc/free out of from under the locks still
+> might be nice, since we are still taking the per-ep lock in most cases. If you
+> want I can roll those too into a patch series for this when I resubmit.
+> 
+> Also, if you're still testing I have a small additional optimization on top of the
+> prior patch:
+> 
+> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+> index d98105d..d967fd7 100644
+> --- a/fs/eventpoll.c
+> +++ b/fs/eventpoll.c
+> @@ -857,7 +857,7 @@ static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
+>  	struct eventpoll *ep = file->private_data;
+>  	struct readyevents_params params;
+>  
+> -	params.locked = ((wait->_qproc == ep_ptable_queue_proc) ? 1 : 0);
+> +	params.locked = ((wait && (wait->_qproc == ep_ptable_queue_proc)) ? 1 : 0);
+>  	params.ep = ep;
+>  
+>  	/* Insert inside our poll wait queue */
+> @@ -1907,7 +1907,6 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+>  			} else
+>  				list_add(&tf.file->f_tfile_llink, &tfile_check_list);
+>  			mutex_lock_nested(&ep->mtx, 0);
+> -			ep->type = EVENTPOLL_COMPLEX;
+>  			if (is_file_epoll(tf.file)) {
+>  				mutex_lock_nested(&(((struct eventpoll *)tf.file->private_data)->mtx), 1);
+>  				((struct eventpoll *)tf.file->private_data)->type = EVENTPOLL_COMPLEX;
+> 
+> 
+> Thanks,
+> 
+> -Jason
+> 
+> 
+> 
 
-I don't think it's a "band-aid" in any way, except perhaps in the
-sense that there are certainly other things we can also do in this
-series (ie I liked Frederic's cleanups etc).
+I just finished up run some tests over the weekend.
+The specjbb benchmark went from only scaling 10-12 sockets to scaling to over
+32 sockets.  I don't have an exact point where it stops scaling but it is under
+64 sockets, the size of the machine I had handy.  perf seems to indicate the
+problems are elsewhere, but I will have to rerun and grap some more data.
 
-                     Linus
+Nate
+
