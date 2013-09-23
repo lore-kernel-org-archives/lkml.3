@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338Ab3IWCaL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 22:30:11 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:63643 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611Ab3IWCaK (ORCPT
+	id S1753208Ab3IWCiL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 22:38:11 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:46138 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611Ab3IWCiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 22:30:10 -0400
+	Sun, 22 Sep 2013 22:38:09 -0400
+Message-ID: <523FA98E.4080908@gmail.com>
+Date: Mon, 23 Sep 2013 12:38:06 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Date: Sun, 22 Sep 2013 22:30:08 -0400
-Message-ID: <CAHFgRy86OnOTorc8FPza4Vk4bnQL-J4JZho-GL2HZV=nCfYDRw@mail.gmail.com>
-Subject: Linus GIT - kernel BUG at include/linux/scatterlist.h:115! CPU: 1
- PID: 1203 Comm: apparmor_parser Not tainted 3.12.0-rc1+
-From: Miles Lane <miles.lane@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        John Johansen <john.johansen@canonical.com>
+To: Joe Perches <joe@perches.com>
+CC: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/12] ping.h: Remove extern from function prototypes
+References: <b692aba58032f629907ea2d462c99b87906645ca.1379870986.git.joe@perches.com>  <523FA098.9050200@gmail.com> <1379902599.3575.9.camel@joe-AO722>
+In-Reply-To: <1379902599.3575.9.camel@joe-AO722>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[   27.190017] kernel BUG at include/linux/scatterlist.h:115!
-[   27.190017] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   27.190017] Modules linked in: mxm_wmi iwldvm mac80211 iwlwifi
-cfg80211 snd_hda_intel(+) snd_hda_codec snd_hwdep snd_pcm_oss
-snd_mixer_oss hwmon snd_pcm ttm snd_seq_dummy snd_page_alloc
-snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_timer
-i915(+) snd i2c_algo_bit drm_kms_helper wmi ac drm soundcore evdev
-mac_hid i2c_core battery acpi_cpufreq ehci_pci(+) ehci_hcd asus_laptop
-rfkill intel_agp intel_gtt agpgart processor sr_mod cdrom atl1c
-uhci_hcd thermal
-[   27.190017] CPU: 1 PID: 1203 Comm: apparmor_parser Not tainted 3.12.0-rc1+ #8
-[   27.190017] Hardware name: ASUSTeK Computer Inc.         UL50VT
-         /UL50VT    , BIOS 217     03/01/2010
-[   27.190017] task: ffff8800bd99ea80 ti: ffff8800baf5a000 task.ti:
-ffff8800baf5a000
-[   27.190017] RIP: 0010:[<ffffffff811f9e71>]  [<ffffffff811f9e71>]
-sg_set_buf+0x20/0x7e
-[   27.190017] RSP: 0018:ffff8800baf5bcf8  EFLAGS: 00010246
-[   27.190017] RAX: 0000000000000000 RBX: ffff8800baf5bd70 RCX: 0000000000000024
-[   27.190017] RDX: 0000000000000410 RSI: ffffc900108ca010 RDI: 00004100108ca010
-[   27.190017] RBP: ffff8800baf5bd18 R08: ffff880138eec290 R09: 0000000000000000
-[   27.190017] R10: ffff880138ee2148 R11: 0000000000000e12 R12: ffffc900108ca010
-[   27.190017] R13: 0000000000008649 R14: ffffc900108ca010 R15: ffff880138ee0000
-[   27.190017] FS:  00007f96aaf6c740(0000) GS:ffff88013f300000(0000)
-knlGS:0000000000000000
-[   27.190017] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   27.190017] CR2: 00007f96aaf5d00f CR3: 00000000b9e7a000 CR4: 00000000000407e0
-[   27.190017] Stack:
-[   27.190017]  ffff8800b9d55520 ffff8800baf5bd70 0000000000008649
-ffffc900108ca010
-[   27.190017]  ffff8800baf5bdb8 ffffffff811f9f50 ffffffff811f3eef
-0000000538ee8000
-[   27.190017]  ffff880138c42000 ffff880000000000 0000000087654321
-ffffea0002ebd6c0
-[   27.190017] Call Trace:
-[   27.190017]  [<ffffffff811f9f50>] aa_calc_profile_hash+0x75/0x11d
-[   27.190017]  [<ffffffff811f3eef>] ? __aa_kvmalloc+0x39/0x51
-[   27.190017]  [<ffffffff811f7e34>] aa_unpack+0x929/0x969
-[   27.190017]  [<ffffffff811f6a21>] aa_replace_profiles+0x38/0x57c
-[   27.190017]  [<ffffffff811f249b>] profile_replace+0x35/0x4c
-[   27.190017]  [<ffffffff81121477>] vfs_write+0xad/0x113
-[   27.190017]  [<ffffffff81121add>] SyS_write+0x44/0x7a
-[   27.190017]  [<ffffffff8145f3e2>] system_call_fastpath+0x16/0x1b
-[   27.190017] Code: 66 89 45 fc e8 6a fc ff ff c9 c3 55 48 89 e5 41
-56 41 55 41 89 d5 41 54 49 89 f4 53 48 89 fb 48 89 f7 e8 1b 9e e3 ff
-84 c0 75 02 <0f> 0b 4c 89 e7 45 89 e6 e8 96 9e e3 ff 48 8b 53 08 41 81
-e6 ff
-[   27.190017] RIP  [<ffffffff811f9e71>] sg_set_buf+0x20/0x7e
-[   27.190017]  RSP <ffff8800baf5bcf8>
+On 23/09/13 12:16, Joe Perches wrote:
+> On Mon, 2013-09-23 at 11:59 +1000, Ryan Mallon wrote:
+>> This seems like a lot of code churn for very little benefit. At a quick
+>> glance:
+>>
+>>   git grep extern include/ | wc -l
+>>   11427
+>>
+>> Not all of those will need to be removed, but that is still a huge
+>> number to change, and doesn't include extern usage in C files or local
+>> headers. You are probably never going to remove all the instances, so
+>> what is the point of just randomly doing a handful?
+> 
+> Rather more than a handful.
+> 
+> The ratio of function prototypes without extern to
+> function prototypes with extern is currently ~2.5:1
+> 
+> So:
+> 
+> Standardization without extern
+> Line count reduction (~10%)
+> Miscellaneous neatening at the same time
+> Removal of all unnecessary externs from include/net
+> 
+> There are ~8500 instances in include/
+> There are ~1500 instances in include/net/
+> 
+> After this series, 0 in include/net/
+> 
+> Start somewhere, go from there...
+> 
+> $ git grep -E "^\s*\bextern(\s+\w+){1,4}\s*\(\s*[^\*]" include/ | wc -l
+> 8395
+> $ git grep -E "^\s*\bextern(\s+\w+){1,4}\s*\(\s*[^\*]" include/net/ | wc -l
+> 1471
+
+Right, and:
+
+  $ git grep -E "^\s*\bextern(\s+\w+){1,4}\s*\(\s*[^\*]" | wc -l
+  29104
+
+Since there are lots of local/arch headers, and there are uses of extern
+function prototypes in C files.
+
+I don't see the real benefit though. Its like trying to "clean-up" the
+difference between "unsigned x" and "unsigned int x", or any number of
+other minor style differences. Either version, with or without the
+extern, is correct, valid C code. Plus you will get people adding new
+instances of extern because they don't know any better. A checkpatch
+rule might help, but we all know how often people run that...
+
+~Ryan
+
+
