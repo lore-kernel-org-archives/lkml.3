@@ -1,41 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab3IWCip (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Sep 2013 22:38:45 -0400
-Received: from plane.gmane.org ([80.91.229.3]:46867 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217Ab3IWCio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Sep 2013 22:38:44 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Markus Elfring <Markus.Elfring@web.de>
-Subject: Re: Would an "information module" be useful?
-Date: Mon, 23 Sep 2013 04:38:30 +0200
-Message-ID: <523FA9A6.40600@web.de>
-References: <l1n80j$ofi$1@ger.gmane.org> <CAFLxGvweL_O16TwvERsMSwf1UPa5BFwSyFNNRu6Z1CD4ExZXSg@mail.gmail.com> <523F4A55.3090106@web.de> <523F4C2A.3050207@nod.at> <523F5361.8040906@web.de> <523F551A.20101@nod.at>
+	id S1753301Ab3IWCnn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Sep 2013 22:43:43 -0400
+Received: from smtprelay0095.hostedemail.com ([216.40.44.95]:59355 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753053Ab3IWCnm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Sep 2013 22:43:42 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1533:1534:1536:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3876:3877:4321:5007:6114:6642:7652:10004:10400:10848:11232:11658:11914:12196:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pull83_20049dd0fa605
+X-Filterd-Recvd-Size: 1036
+Message-ID: <1379904217.3575.10.camel@joe-AO722>
+Subject: Re: [PATCH 01/12] ping.h: Remove extern from function prototypes
+From: Joe Perches <joe@perches.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org
+Date: Sun, 22 Sep 2013 19:43:37 -0700
+In-Reply-To: <523FA98E.4080908@gmail.com>
+References: <b692aba58032f629907ea2d462c99b87906645ca.1379870986.git.joe@perches.com>
+	 <523FA098.9050200@gmail.com> <1379902599.3575.9.camel@joe-AO722>
+	 <523FA98E.4080908@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: f048038158.adsl.alicedsl.de
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-In-Reply-To: <523F551A.20101@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In the systemd case we have to ensure that we never ever merge a module named "systemd".
+On Mon, 2013-09-23 at 12:38 +1000, Ryan Mallon wrote:
+> A checkpatch rule might help,
 
-Interesting ...
-
-
-> We have all kinds of strange modules/drivers. Usually you don't have to think
-> whether your module is a "ordinary" driver or not...
-
-Would it become useful to move "drivers" which do not manage hardware to a
-separate directory?
-Should such source files belong to a different software category (or "class")?
-
-Regards,
-Markus
+Extant.
 
