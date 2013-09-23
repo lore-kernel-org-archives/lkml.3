@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab3IWWNv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 18:13:51 -0400
-Received: from smtprelay0253.hostedemail.com ([216.40.44.253]:48427 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752406Ab3IWWLs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 18:11:48 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3870:3871:4321:5007:6261:7903:10004:10026:10848:11026:11473:11657:11658:11914:12043:12438:12517:12519:12555:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: face54_2ca6ddc1a0d56
-X-Filterd-Recvd-Size: 2366
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/10] amd/7990: Remove extern from function prototypes
-Date: Mon, 23 Sep 2013 15:11:31 -0700
-Message-Id: <65ef2eba58fddc268ba0afb4de7757f073d3bb49.1379974101.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
-References: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
+	id S1754433Ab3IWWXg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 18:23:36 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:58642 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754330Ab3IWWXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 18:23:33 -0400
+Date: Mon, 23 Sep 2013 16:23:24 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Cc: tpmdd-devel@lists.sourceforge.net,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to
+ sysfs into tpm-sysfs.c
+Message-ID: <20130923222324.GA9533@obsidianresearch.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+ <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com>
+ <52408E5D.4020904@tycho.nsa.gov>
+ <20130923193633.GA9194@obsidianresearch.com>
+ <5240A2A3.4040102@tycho.nsa.gov>
+ <20130923204232.GB16345@obsidianresearch.com>
+ <5240BA0E.3000304@tycho.nsa.gov>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5240BA0E.3000304@tycho.nsa.gov>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a mix of function prototypes with and without extern
-in the kernel sources.  Standardize on not using extern for
-function prototypes.
+On Mon, Sep 23, 2013 at 06:00:46PM -0400, Daniel De Graaf wrote:
 
-Function prototypes don't need to be written with extern.
-extern is assumed by the compiler.  Its use is as unnecessary as
-using auto to declare automatic/local variables in a block.
+> In a PC client TPM, normal OS code (as opposed to firmware or microcode)
+> is already restricted to locality 0-2. It may make sense to restrict
+> locality 2 to the kernel, which would allow an in-kernel TPM seal
+> command to be able to bind data so that userspace cannot unseal it.
+> However, only allowing localities 0 and 1 to userspace may be too
+> restrictive if userspace also wishes to use locality for separation,
+> since locality 1 does not have the ability to reset any PCRs that
+> locality 0 cannot also reset.
+> The kernel could reserve only locality 1 for its own use, giving it the
+> ability to seal data but not interfering with the ability to reset PCRs.
+> This would be my preference, although it is less intuitive to allow code
+> of lower privilege (userspace) to control the higher numbered locality
+> 2.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/ethernet/amd/7990.h | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+This matches my vague understanding (we don't use localities here)
 
-diff --git a/drivers/net/ethernet/amd/7990.h b/drivers/net/ethernet/amd/7990.h
-index 0a5837b..ae33a99 100644
---- a/drivers/net/ethernet/amd/7990.h
-+++ b/drivers/net/ethernet/amd/7990.h
-@@ -242,14 +242,13 @@ struct lance_private
- #define LANCE_ADDR(x) ((int)(x) & ~0xff000000)
- 
- /* Now the prototypes we export */
--extern int lance_open(struct net_device *dev);
--extern int lance_close (struct net_device *dev);
--extern int lance_start_xmit (struct sk_buff *skb, struct net_device *dev);
--extern void lance_set_multicast (struct net_device *dev);
--extern void lance_tx_timeout(struct net_device *dev);
-+int lance_open(struct net_device *dev);
-+int lance_close(struct net_device *dev);
-+int lance_start_xmit(struct sk_buff *skb, struct net_device *dev);
-+void lance_set_multicast(struct net_device *dev);
-+void lance_tx_timeout(struct net_device *dev);
- #ifdef CONFIG_NET_POLL_CONTROLLER
--extern void lance_poll(struct net_device *dev);
-+void lance_poll(struct net_device *dev);
- #endif
- 
- #endif /* ndef _7990_H */
--- 
-1.8.1.2.459.gbcd45b4.dirty
+>> Perhaps a .config option would be useful to allow the system designer to
+>> choose what, if any, locality to reserve for kernel use?
 
+A runtime sysfs seems reasonable..
+
+Would:
+ user_default_locality
+ kernel_default_locality
+ user_allowed_localities (bitmask)
+ supported_localities (bitmask)
+ a GET_LOCALITY/SET_LOCALITY IOCTL to change localities of an open'd
+  /dev/tpmX
+
+Do the job?
+
+At first glance anyhow. I wonder what in-kernel users would be
+impacted by localities..
+
+Any thoughts on root vs not-root? Would middelware want to use
+localities?
+
+Do you know anyone on the userspace SW side who could look at this?
+
+Jason
