@@ -1,76 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab3IWJ3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 05:29:19 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44043 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409Ab3IWJ3R (ORCPT
+	id S1753663Ab3IWJaX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 05:30:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44867 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab3IWJaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 05:29:17 -0400
-X-AuditID: 9c93016f-b7bc8ae000004e6e-08-524009eb6912
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
+	Mon, 23 Sep 2013 05:30:21 -0400
+Date: Mon, 23 Sep 2013 11:29:55 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 1/3] perf callchain: Convert children list to rbtree
-References: <1378801458-2515-1-git-send-email-namhyung@kernel.org>
-	<1378801458-2515-2-git-send-email-namhyung@kernel.org>
-	<20130922111559.GC1036@krava.brq.redhat.com>
-Date: Mon, 23 Sep 2013 18:29:15 +0900
-In-Reply-To: <20130922111559.GC1036@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Sun, 22 Sep 2013 13:15:59 +0200")
-Message-ID: <87zjr3q42c.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130923092955.GV9326@twins.programming.kicks-ass.net>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-38-git-send-email-mgorman@suse.de>
+ <20130917143003.GA29354@twins.programming.kicks-ass.net>
+ <20130917162050.GK22421@suse.de>
+ <20130917164505.GG12926@twins.programming.kicks-ass.net>
+ <20130918154939.GZ26785@twins.programming.kicks-ass.net>
+ <20130919143241.GB26785@twins.programming.kicks-ass.net>
+ <20130921163404.GA8545@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130921163404.GA8545@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Sep 21, 2013 at 06:34:04PM +0200, Oleg Nesterov wrote:
+> > So the slow path is still per-cpu and mostly uncontended even in the
+> > pending writer case.
+> 
+> Is it really important? I mean, per-cpu/uncontended even if the writer
+> is pending?
 
-On Sun, 22 Sep 2013 13:15:59 +0200, Jiri Olsa wrote:
-> On Tue, Sep 10, 2013 at 05:24:16PM +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->
-> SNIP
->
->> index 2b585bc308cf..1b22b6269213 100644
->> --- a/tools/perf/util/callchain.h
->> +++ b/tools/perf/util/callchain.h
->> @@ -21,10 +21,9 @@ enum chain_order {
->>  
->>  struct callchain_node {
->>  	struct callchain_node	*parent;
->> -	struct list_head	siblings;
->> -	struct list_head	children;
->>  	struct list_head	val;
->>  	struct rb_node		rb_node; /* to sort nodes in an rbtree */
->> +	struct rb_root		rb_root_in; /* sorted tree of children */
->>  	struct rb_root		rb_root; /* sorted tree of children */
->>  	unsigned int		val_nr;
->>  	u64			hit;
->> @@ -86,8 +85,6 @@ extern __thread struct callchain_cursor callchain_cursor;
->>  
->>  static inline void callchain_init(struct callchain_root *root)
->>  {
->> -	INIT_LIST_HEAD(&root->node.siblings);
->> -	INIT_LIST_HEAD(&root->node.children);
->>  	INIT_LIST_HEAD(&root->node.val);
->
-> don't we miss rb_root_in init here, like:
->
-> 	root->node.rb_root_in = RB_ROOT;
+I think so, once we make {get,put}_online_cpus() really cheap they'll
+get in more and more places, and the global count with pending writer
+will make things crawl on bigger machines.
 
-The struct callchain_root in hist entry initialized to zero so
-technically it doesn't need to be set.  But I think it's better to have
-explicit initializer.
+> Otherwise we could do
 
-Thanks,
-Namhyung
+<snip>
+
+> I already sent this code in 2010, it needs some trivial updates.
+
+Yeah, I found that a few days ago.. but per the above I didn't like the
+pending writer case.
+
+> But. We already have percpu_rw_semaphore,
+
+Oh urgh, forgot about that one. /me goes read.
+
+/me curses loudly.. that thing has an _expedited() call in it, those
+should die.
+
+Also, it suffers the same problem. I think esp. for hotplug we should be
+100% geared towards readers and pretty much damn writers.
+
+I'd dread to think what would happen if a 4k cpu machine were to land in
+the slow path on that global mutex. Readers would never go-away and
+progress would make a glacier seem fast.
+
+> Note also that percpu_down_write/percpu_up_write can be improved wrt
+> synchronize_sched(). We can turn the 2nd one into call_rcu(), and the
+> 1nd one can be avoided if another percpu_down_write() comes "soon after"
+> percpu_down_up().
+
+Write side be damned ;-)
+
+It is anyway with a pure read bias and a large machine..
+
+> As for the patch itself, I am not sure.
+> 
+> > +static void cpuph_wait_refcount(void)
+> 
+> It seems, this can succeed while it should not, see below.
+> 
+> >  void cpu_hotplug_begin(void)
+> >  {
+> > +	lockdep_assert_held(&cpu_add_remove_lock);
+> >
+> > +	__cpuhp_writer = current;
+> > +
+> > +	/* After this everybody will observe _writer and take the slow path. */
+> > +	synchronize_sched();
+> 
+> Yes, the reader should see _writer, but:
+> 
+> > +	/* Wait for no readers -- reader preference */
+> > +	cpuhp_wait_refcount();
+> 
+> but how we can ensure the writer sees the results of the reader's updates?
+> 
+> Suppose that we have 2 CPU's, __cpuhp_refcount[0] = 0, __cpuhp_refcount[1] = 1.
+> IOW, we have a single R reader which takes this lock on CPU_1 and sleeps.
+> 
+> Now,
+> 
+> 	- The writer calls cpuph_wait_refcount()
+> 
+> 	- cpuph_wait_refcount() does refcnt += __cpuhp_refcount[0].
+> 	  refcnt == 0.
+> 
+> 	- another reader comes on CPU_0, increments __cpuhp_refcount[0].
+> 
+> 	- this reader migrates to CPU_1 and does put_online_cpus(),
+> 	  this decrements __cpuhp_refcount[1] which becomes zero.
+> 
+> 	- cpuph_wait_refcount() continues and reads __cpuhp_refcount[1]
+> 	  which is zero. refcnt == 0, return.
+> 
+> 	- The writer does cpuhp_set_state(1).
+> 
+> 	- The reader R (original reader) wakes up, calls get_online_cpus()
+> 	  recursively, and sleeps in wait_event(!__cpuhp_writer).
+
+Ah indeed.. 
+
+The best I can come up with is something like:
+
+static unsigned int cpuhp_refcount(void)
+{
+	unsigned int refcount = 0;
+	int cpu;
+
+	for_each_possible_cpu(cpu)
+		refcount += per_cpu(__cpuhp_refcount, cpu);
+}
+
+static void cpuhp_wait_refcount(void)
+{
+	for (;;) {
+		unsigned int rc1, rc2;
+
+		rc1 = cpuhp_refcount();
+		set_current_state(TASK_UNINTERRUPTIBLE); /* MB */
+		rc2 = cpuhp_refcount();
+
+		if (rc1 == rc2 && !rc1)
+			break;
+
+		schedule();
+	}
+	__set_current_state(TASK_RUNNING);
+}
