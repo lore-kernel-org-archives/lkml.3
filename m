@@ -1,75 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab3IXXKZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 19:10:25 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35165 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab3IXXKX (ORCPT
+	id S1754589Ab3IXXW4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 19:22:56 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39061 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab3IXXWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 19:10:23 -0400
-Message-ID: <52421BDB.50303@wwwdotorg.org>
-Date: Tue, 24 Sep 2013 17:10:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 24 Sep 2013 19:22:55 -0400
 MIME-Version: 1.0
-To: Rhyland Klein <rklein@nvidia.com>
-CC: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
-        Manish Badarkhe <badarkhe.manish@gmail.com>,
-        Darbha Sriharsha <dsriharsha@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [Patch V2] drivers: power: Add support for bq24735 charger
-References: <1379607514-11200-1-git-send-email-rklein@nvidia.com> <5240B85D.3050803@wwwdotorg.org> <5240BA4A.4010007@nvidia.com> <5240BB2A.8060705@wwwdotorg.org> <5241C041.7020208@nvidia.com>
-In-Reply-To: <5241C041.7020208@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1380061346.3467.50.camel@schen9-DESK>
+References: <cover.1380057198.git.tim.c.chen@linux.intel.com>
+	<1380061346.3467.50.camel@schen9-DESK>
+Date: Tue, 24 Sep 2013 16:22:53 -0700
+X-Google-Sender-Auth: 6FNuC_0HJ5F7EBx-THjHHy8NSO8
+Message-ID: <CAGQ1y=7okjk0AZaH-WNn33vkpyhT8Z-eNDJr1CiqW4jK9OnVFw@mail.gmail.com>
+Subject: Re: [PATCH v5 1/6] rwsem: check the lock before cpmxchg in down_write_trylock
+From: Jason Low <jason.low2@hp.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 10:39 AM, Rhyland Klein wrote:
-> On 9/23/2013 6:05 PM, Stephen Warren wrote:
->> On 09/23/2013 04:01 PM, Rhyland Klein wrote:
->>> On 9/23/2013 5:53 PM, Stephen Warren wrote:
->>>> On 09/19/2013 10:18 AM, Rhyland Klein wrote:
->>>>> Adding driver support for bq24735 charger chipset.
->>>>
->>>>> diff --git a/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt b/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt
->>
->>>>> + - ti,charge-current : Used to control and set the charging current. This value
->>>>> +   must follow the below guidelines:
->>>>> +	bit 0 - 5:	Not used
->>>>> +	bit 6:		1 = Adds 64mA of charger current
->>>>> +	bit 7:		1 = Adds 128mA of charger current
->>>>> +	bit 8:		1 = Adds 256mA of charger current
->>>>> +	bit 9:		1 = Adds 512mA of charger current
->>>>> +	bit 10:		1 = Adds 1024mA of charger current
->>>>> +	bit 11:		1 = Adds 2048mA of charger current
->>>>> +	bit 12:		1 = Adds 4096mA of charger current
->>>>> +	bit 13 - 15:	Not used
->>>>
->>>> That's a little odd. Why not just put the number of mA directly into the
->>>> property unshifted?
->>>
->>> This is how the hw register is defined, its the literal number of mA.
->>> This is cleaned up in the upcoming revision.
->>
->> OK. If you still want to use the raw register encoding, which seems
->> reasonable, why not just say:
->>
->> ti,charge-current: Value for charge current register as described in the
->> HW documentation.
-> 
-> I had written this for v3:
-> 
-> - ti,charge-current : Used to control and set the charging current. This
-> value must be between 128mA and 8.128A with a 64mA step resolution. The
-> POR value is 0x0000h. See spec for more details.
-> 
-> Do you think the range is unnecessary or is it fine?
+Should we do something similar with __down_read_trylock, such as
+the following?
 
-It's probably fine, although I expect unnecessary. I would mention the
-exact register name from the spec, to make searching for it easier.
 
+Signed-off-by: Jason Low <jason.low2@hp.com>
+---
+ include/asm-generic/rwsem.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+index bb1e2cd..47990dc 100644
+--- a/include/asm-generic/rwsem.h
++++ b/include/asm-generic/rwsem.h
+@@ -42,6 +42,9 @@ static inline int __down_read_trylock(struct
+rw_semaphore *sem)
+        long tmp;
+
+        while ((tmp = sem->count) >= 0) {
++               if (sem->count != tmp)
++                       continue;
++
+                if (tmp == cmpxchg(&sem->count, tmp,
+                                   tmp + RWSEM_ACTIVE_READ_BIAS)) {
+                        return 1;
+-- 
+1.7.1
+
+On Tue, Sep 24, 2013 at 3:22 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> Cmpxchg will cause the cacheline bouning when do the value checking,
+> that cause scalability issue in a large machine (like a 80 core box).
+>
+> So a lock pre-read can relief this contention.
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  include/asm-generic/rwsem.h |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+> index bb1e2cd..5ba80e7 100644
+> --- a/include/asm-generic/rwsem.h
+> +++ b/include/asm-generic/rwsem.h
+> @@ -70,11 +70,11 @@ static inline void __down_write(struct rw_semaphore *sem)
+>
+>  static inline int __down_write_trylock(struct rw_semaphore *sem)
+>  {
+> -       long tmp;
+> +       if (unlikely(sem->count != RWSEM_UNLOCKED_VALUE))
+> +               return 0;
+>
+> -       tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+> -                     RWSEM_ACTIVE_WRITE_BIAS);
+> -       return tmp == RWSEM_UNLOCKED_VALUE;
+> +       return cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+> +                     RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_UNLOCKED_VALUE;
+>  }
+>
+>  /*
+> --
+> 1.7.4.4
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
