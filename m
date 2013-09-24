@@ -1,51 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750778Ab3IXEZE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 00:25:04 -0400
-Received: from s15283307.onlinehome-server.info ([87.106.208.187]:42784 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3IXEZB (ORCPT
+	id S1750813Ab3IXE2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 00:28:43 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:16054 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab3IXE2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 00:25:01 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
-Subject: Re: [PATCH 08/12] bluetooth: Remove extern from function prototypes
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <e9994a2b839277a9237364b59e655060f1fcb957.1379961014.git.joe@perches.com>
-Date: Tue, 24 Sep 2013 06:24:54 +0200
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org
+	Tue, 24 Sep 2013 00:28:42 -0400
+X-Spam-Score: -100.7
+Message-ID: <524114B8.3070903@asianux.com>
+Date: Tue, 24 Sep 2013 12:27:36 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info'
+ in all related extern functions
+References: <5212DBFA.8030805@asianux.com> <20130923150625.GB14547@htj.dyndns.org> <52410A40.1000304@asianux.com> <20130924040601.GA31575@mtj.dyndns.org>
+In-Reply-To: <20130924040601.GA31575@mtj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <D711EDE5-05F9-47F3-9A57-AFCD065D900D@holtmann.org>
-References: <445209f8885ccd8234fa787c30d63e63fc7917d7.1379961014.git.joe@perches.com> <e9994a2b839277a9237364b59e655060f1fcb957.1379961014.git.joe@perches.com>
-To: Joe Perches <joe@perches.com>
-X-Mailer: Apple Mail (2.1510)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
-
-> There are a mix of function prototypes with and without extern
-> in the kernel sources.  Standardize on not using extern for
-> function prototypes.
+On 09/24/2013 12:06 PM, Tejun Heo wrote:
+> Hello,
 > 
-> Function prototypes don't need to be written with extern.
-> extern is assumed by the compiler.  Its use is as unnecessary as
-> using auto to declare automatic/local variables in a block.
+> On Tue, Sep 24, 2013 at 11:42:56AM +0800, Chen Gang wrote:
+>> Hmm... can user be permitted to call other system call (e.g. getgroups)
+>> before call groups_alloc()? (may the user space already give check, but
+>> for our kernel, we can not only depend on their checking).
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> include/net/bluetooth/bluetooth.h | 16 ++++++++--------
-> include/net/bluetooth/hci_core.h  | 23 +++++++++++------------
-> include/net/bluetooth/rfcomm.h    |  4 ++--
-> 3 files changed, 21 insertions(+), 22 deletions(-)
+> I don't think so.
+> 
+>> According to group_alloc() and setgroups() usage in kernel source code,
+>> 'group_info' may be not set if kernel/process is running (although user
+>> space may be sure "if kernel is running, 'group_info' must be set").
+>>
+>> The below is the proof for "kernel itself can not be sure 'group_info'
+>> must be set during kernel/process is running", please check, thanks.
+> ..
+>> The related conclusion:
+>>
+>>   during kernel startup or process creation, kernel does not intend to set 'group_info'.
+> 
+> No, this is not a proof or any meaningful conclusion.  This is just
+> some random suspicions combined with supposedly related grep output.
+> 
 
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
+For real world, /sbin/init will call setgroups, so user space 'help'
+kernel itself to protect this issue, but I think, we don't only depend
+on the user space help checking.
 
-Regards
+The proof is below:
 
-Marcel
+  [root@gchenlinux tmp]# grep setgroups /sbin/*
+  Binary file /sbin/init matches
+  Binary file /sbin/rpc.statd matches
+  Binary file /sbin/rsyslogd matches
+  Binary file /sbin/runuser matches
 
+>From reading kernel source code, kernel itself does not intend to set
+'group_info', it is triggered by user space or another kernel mode
+sub-systems.
+
+
+>> In extern function groups_search (which also called by export function
+>> in_group_p and in_egroup_p), it checks "if 'cred->group_info' is NULL".
+>>
+>> So "kernel/groups.c" have 9 extern/export/system-call functions, and
+>> 4/9 notice about "if 'cred->group_info' is NULL" (e.g. groups_alloc,
+>> groups_search, in_group_p, in_egroup_p).
+>>
+>> So for API self-consistency, all of extern/export/system-call functions
+>> need notice about it.
+> 
+> I'm afraid this isn't useful.  If you want to change the code, you
+> actually need to understand what's going on.  "this seems weird to me"
+> is a good starting point but you need to go way beyond that to
+> actually make changes.
+> 
+
+If some of APIs check the related parameters, but the other not, this
+interface must assume some usage condition from the callers which
+callers can break out (although the callers may not break out, now).
+
+> Thanks.
+> 
+
+
+-- 
+Chen Gang
