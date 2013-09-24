@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab3IXRNp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 13:13:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7647 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753005Ab3IXRNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 13:13:43 -0400
-Date: Tue, 24 Sep 2013 19:06:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130924170631.GB5059@redhat.com>
-References: <1378805550-29949-38-git-send-email-mgorman@suse.de> <20130917143003.GA29354@twins.programming.kicks-ass.net> <20130917162050.GK22421@suse.de> <20130917164505.GG12926@twins.programming.kicks-ass.net> <20130918154939.GZ26785@twins.programming.kicks-ass.net> <20130919143241.GB26785@twins.programming.kicks-ass.net> <20130923175052.GA20991@redhat.com> <20130924123821.GT12926@twins.programming.kicks-ass.net> <20130924160359.GA2739@redhat.com> <20130924124341.64d57912@gandalf.local.home>
+	id S1754287Ab3IXRQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 13:16:33 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:50329 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab3IXRQc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 13:16:32 -0400
+Date: Tue, 24 Sep 2013 14:16:26 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] perf trace: Add mmap2 handler
+Message-ID: <20130924171626.GC2634@ghostprotocols.net>
+References: <1379900700-5186-1-git-send-email-dsahern@gmail.com>
+ <1379900700-5186-4-git-send-email-dsahern@gmail.com>
+ <5240DB4D.100@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130924124341.64d57912@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <5240DB4D.100@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24, Steven Rostedt wrote:
->
-> On Tue, 24 Sep 2013 18:03:59 +0200
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > On 09/24, Peter Zijlstra wrote:
-> > >
-> > > +static inline void get_online_cpus(void)
-> > > +{
-> > > +	might_sleep();
-> > > +
-> > > +	if (current->cpuhp_ref++) {
-> > > +		barrier();
-> > > +		return;
+Em Mon, Sep 23, 2013 at 06:22:37PM -0600, David Ahern escreveu:
+> Arnaldo:
+> 
+> I see this is you perf core tree; the problem exists in Linus' tree
+> so it is needed in your urgent tree as well.
+
+Sure, reproduced the segfault, cherry picked this patch from perf/core,
+segfault fixes, thanks.
+
+- Arnaldo
+ 
+> David
+> 
+> On 9/22/13 7:44 PM, David Ahern wrote:
+> >5c5e854b changed perf_event__synthesize_mmap_events to generate MMAP2
+> >events. Since perf-trace does not have a handler for it it dies with a
+> >segfault when trying to process files:
 > >
-> > I don't undestand this barrier()... we are going to return if we already
-> > hold the lock, do we really need it?
->
-> I'm confused too. Unless gcc moves this after the release, but the
-> release uses preempt_disable() which is its own barrier.
->
-> If anything, it requires a comment.
-
-And I am still confused even after emails from Paul and Peter...
-
-If gcc can actually do something wrong, then I suspect this barrier()
-should be unconditional.
-
-Oleg.
-
+> >perf trace -i /tmp/perf.data
+> >Segmentation fault
+> >
+> >Signed-off-by: David Ahern <dsahern@gmail.com>
+> >---
+> >  tools/perf/builtin-trace.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> >diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+> >index 9c7f017..f61c968 100644
+> >--- a/tools/perf/builtin-trace.c
+> >+++ b/tools/perf/builtin-trace.c
+> >@@ -1383,6 +1383,7 @@ static int trace__replay(struct trace *trace)
+> >
+> >  	trace->tool.sample	  = trace__process_sample;
+> >  	trace->tool.mmap	  = perf_event__process_mmap;
+> >+	trace->tool.mmap2	  = perf_event__process_mmap2;
+> >  	trace->tool.comm	  = perf_event__process_comm;
+> >  	trace->tool.exit	  = perf_event__process_exit;
+> >  	trace->tool.fork	  = perf_event__process_fork;
+> >
