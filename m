@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750972Ab3IXHrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 03:47:45 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:56996 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab3IXHro (ORCPT
+	id S1750792Ab3IXHwR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 03:52:17 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:50308 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab3IXHwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 03:47:44 -0400
-Message-ID: <1380008861.28920.3.camel@phoenix>
-Subject: [PATCH 2/2] pinctrl: adi2: Fix dead lock in
- adi_gpio_direction_output
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sonic Zhang <sonic.zhang@analog.com>, linux-kernel@vger.kernel.org
-Date: Tue, 24 Sep 2013 15:47:41 +0800
-In-Reply-To: <1380008771.28920.1.camel@phoenix>
-References: <1380008771.28920.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Sep 2013 03:52:16 -0400
+Date: Tue, 24 Sep 2013 09:52:12 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mike Travis <travis@sgi.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] x86/UV/KDB/NMI: Updates for NMI/KDB handler for SGI
+ UV
+Message-ID: <20130924075212.GG28538@gmail.com>
+References: <20130923212459.544517569@asylum.americas.sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130923212459.544517569@asylum.americas.sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code hold port->lock spinlock and then try to grab the lock again
-in adi_gpio_set_value(). Fix it.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pinctrl/pinctrl-adi2.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Hm, do you test-build your patches? This series produces the following 
+annoying warning:
 
-diff --git a/drivers/pinctrl/pinctrl-adi2.c b/drivers/pinctrl/pinctrl-adi2.c
-index f2aa877..8089fda 100644
---- a/drivers/pinctrl/pinctrl-adi2.c
-+++ b/drivers/pinctrl/pinctrl-adi2.c
-@@ -776,10 +776,11 @@ static int adi_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
- 	struct gpio_port_t *regs = port->regs;
- 	unsigned long flags;
- 
-+	adi_gpio_set_value(chip, offset, value);
-+
- 	spin_lock_irqsave(&port->lock, flags);
- 
- 	writew(readw(&regs->inen) & ~(1 << offset), &regs->inen);
--	adi_gpio_set_value(chip, offset, value);
- 	writew(1 << offset, &regs->dir_set);
- 
- 	spin_unlock_irqrestore(&port->lock, flags);
--- 
-1.8.1.2
+ arch/x86/platform/uv/uv_nmi.c: In function ‘uv_nmi_setup’:
+ arch/x86/platform/uv/uv_nmi.c:664:2: warning: the address of ‘uv_nmi_cpu_mask’ will always evaluate as ‘true’ [-Waddress]
+
+This:
+
+        alloc_cpumask_var(&uv_nmi_cpu_mask, GFP_KERNEL);
+        BUG_ON(!uv_nmi_cpu_mask);
 
 
+the way to check for allocation failures is by checking the return value 
+of alloc_cpumask_var():
 
+	BUG_ON(!alloc_cpumask_var(&uv_nmi_cpu_mask, GFP_KERNEL));
+
+I've fixed this in the patch.
+
+Thanks,
+
+	Ingo
