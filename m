@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750731Ab3IXEMN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 00:12:13 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5001 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750702Ab3IXEML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 00:12:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,968,1371106800"; 
-   d="scan'208";a="298541864"
-From: Andi Kleen <andi@firstfloor.org>
-To: Marcelo Sousa <marceloabsousa@gmail.com>
-Cc: linux-kernel@vger.kernel.org, msousa@cs.ox.ac.uk
-Subject: Re: Lightweight type analysis for memory safety through verification of API uses
-References: <CACu8kRTN7XoTxvcFHQ=7N-rUGoUePS43EwRKax25mqBjzEXNVg@mail.gmail.com>
-Date: Mon, 23 Sep 2013 21:11:45 -0700
-In-Reply-To: <CACu8kRTN7XoTxvcFHQ=7N-rUGoUePS43EwRKax25mqBjzEXNVg@mail.gmail.com>
-	(Marcelo Sousa's message of "Tue, 17 Sep 2013 14:00:48 +0100")
-Message-ID: <87fvsudfjy.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1750761Ab3IXEMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 00:12:42 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:36227 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab3IXEMk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 00:12:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <87r4cfbs06.fsf@devron.myhome.or.jp>
+References: <1378822553-2587-1-git-send-email-linkinjeon@gmail.com>
+	<87a9j6y5zv.fsf@devron.myhome.or.jp>
+	<CAKYAXd9VCOtG52w34hgun5VY6wACfUCjo2pvgmUmSt65yOSuTA@mail.gmail.com>
+	<87r4cfbs06.fsf@devron.myhome.or.jp>
+Date: Tue, 24 Sep 2013 13:12:39 +0900
+Message-ID: <CAKYAXd_-W_K4=cRDevd8f4WcixT6sQTwbRmHq3brdZzmAVYzRw@mail.gmail.com>
+Subject: Re: [PATCH v6] fat: additions to support fat_fallocate
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marcelo Sousa <marceloabsousa@gmail.com> writes:
+2013/9/23, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>>>> +	if (MSDOS_I(inode)->mmu_private > round_up(i_size, sb->s_blocksize)
+>>>> +			&& pos > i_size) {
+>>>> +		err = fat_zero_falloc_area(file, mapping, pos);
+>>>> +		if (err) {
+>>>> +			fat_msg(sb, KERN_ERR,
+>>>> +				"Error (%d) zeroing fallocated area", err);
+>>>> +			return err;
+>>>> +		}
+>>>> +	}
+>>>
+>>> Again, I'm not fan of this way.
+>>>
+>>> Normally, get_block() returns with buffer_new(). Then, caller checks
+>>> blockdev buffer with
+>>>
+>>> 	unmap_underlying_metadata(bh->b_bdev, bh->b_blocknr);
+>>>
+>>> then, zeroed buffer. Do we really don't need to check this race?
+>> We considered after your advice before. we reach for the conclusion
+>> that use this method.
+>> because, Cluster is already allocated in fat fallocate and
+>> when we write with radom offset over i_size on fallocated region, It
+>> will be hit by fat cache in fat_bmap of get_block, which mean buffer
+>> is not set to new.
+>
+> Hm, how does it hit to fat cache? I think fat_alloc_clusters() and
+> fat_chain_add() doesn't update fat cache, right? I.e. initial write
+> after fallocate() should not hit fat cache over i_size?
 
-> I've designed and implemented a tool similar to sparse and CQUAL that
-> does type inference of user specified type qualifiers, e.g. iomem. It
-> receives an API specification with the type qualifiers and also a
-> partial order, e.g. IOAddr is not compatible with KernelAddr and
-> ioremap returns a pointer to IOAddr while __kmalloc returns a pointer
-> to a KernelAddr.
+Ah.. Sorry for wrong reply. old memory make me confusing.
+By allocating cluster in fat fallocate, when write, fat_bmap of
+get_block return physical sector number.
+So buffer is not set to new in _fat_get_block.
 
-Tracking iomem is ultimatively not very interesting, as in many common
-architectures it's just a normal pointer.
+When we fallocate with keep size on -> only clusters are added to the
+fat chain calling fat_get_cluster(),and add the cluster to cluster
+chain.
+This doesn’t call fat_get_block() .
 
-__user is much more interesting, as that is real security bugs.
-You can probably find some in standard security advisories.
+Now when we try to write in the fallocated region in the
+fat_write_begin() when it is called first time it checks that the
+mismatch is present between the mmu_private and mmu_actual (i.e., the
+file has pre-allocated blocks), and hence zero out the region ;
+Since buffer_new() is not set for fallocated region by fat_get_block()
+, we explicitly  zero out the lseek'ed region using
+“fat_zero_falloc_area” and normal write occurs beyond that,and i_size
+is updated accordingly.
 
-Really interesting would be static lock set tracking for pointers
-and similar.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Thanks :)
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
