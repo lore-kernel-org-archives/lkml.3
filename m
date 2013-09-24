@@ -1,350 +1,452 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab3IXVJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:09:40 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:35363 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351Ab3IXVJi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:09:38 -0400
-Message-ID: <5241FF8D.8000407@colorfullife.com>
-Date: Tue, 24 Sep 2013 23:09:33 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1754754Ab3IXVJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 17:09:58 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:56591 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754353Ab3IXVJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 17:09:53 -0400
+Date: Tue, 24 Sep 2013 14:09:43 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130924210943.GI9093@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1378805550-29949-38-git-send-email-mgorman@suse.de>
+ <20130917143003.GA29354@twins.programming.kicks-ass.net>
+ <20130917162050.GK22421@suse.de>
+ <20130917164505.GG12926@twins.programming.kicks-ass.net>
+ <20130918154939.GZ26785@twins.programming.kicks-ass.net>
+ <20130919143241.GB26785@twins.programming.kicks-ass.net>
+ <20130923175052.GA20991@redhat.com>
+ <20130924123821.GT12926@twins.programming.kicks-ass.net>
+ <20130924144236.GB9093@linux.vnet.ibm.com>
+ <20130924160959.GO9326@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Jia He <jiakernel@gmail.com>
-CC: Mike Galbraith <bitbucket@online.de>, linux-kernel@vger.kernel.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] ipc/sem.c: fix update sem_otime when calling sem_op in
- semaphore initialization
-References: <1379815884-11035-1-git-send-email-jiakernel@gmail.com> <1379837823.5499.34.camel@marge.simpson.net> <1379838364.5499.39.camel@marge.simpson.net> <523EC97D.8020707@colorfullife.com> <523F0953.3070505@gmail.com>
-In-Reply-To: <523F0953.3070505@gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------050909090502070805080603"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130924160959.GO9326@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092421-5806-0000-0000-000022D69234
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050909090502070805080603
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+On Tue, Sep 24, 2013 at 06:09:59PM +0200, Peter Zijlstra wrote:
+> On Tue, Sep 24, 2013 at 07:42:36AM -0700, Paul E. McKenney wrote:
+> > > +#define cpuhp_writer_wake()						\
+> > > +	wake_up_process(cpuhp_writer_task)
+> > > +
+> > > +#define cpuhp_writer_wait(cond)						\
+> > > +do {									\
+> > > +	for (;;) {							\
+> > > +		set_current_state(TASK_UNINTERRUPTIBLE);		\
+> > > +		if (cond)						\
+> > > +			break;						\
+> > > +		schedule();						\
+> > > +	}								\
+> > > +	__set_current_state(TASK_RUNNING);				\
+> > > +} while (0)
+> > 
+> > Why not wait_event()?  Presumably the above is a bit lighter weight,
+> > but is that even something that can be measured?
+> 
+> I didn't want to mix readers and writers on cpuhp_wq, and I suppose I
+> could create a second waitqueue; that might also be a better solution
+> for the NULL thing below.
 
-On 09/22/2013 05:14 PM, Jia He wrote:
->   Hi Manfred
->
-> On Sun, 22 Sep 2013 12:42:05 +0200 from manfred@colorfullife.com wrote:
->> Hi all,
->>
->> On 09/22/2013 10:26 AM, Mike Galbraith wrote:
->>> On Sun, 2013-09-22 at 10:17 +0200, Mike Galbraith wrote:
->>>> On Sun, 2013-09-22 at 10:11 +0800, Jia He wrote:
->>>>> In commit 0a2b9d4c,the update of semaphore's sem_otime(last semop time)
->>>>> was removed because he wanted to move setting sem->sem_otime to one
->>>>> place. But after that, the initial semop() will not set the otime
->>>>> because its sem_op value is 0(in semtimedop,will not change
->>>>> otime if alter == 1).
->>>>>
->>>>> the error case:
->>>>> process_a(server)       process_b(client)
->>>>> semget()
->>>>> semctl(SETVAL)
->>>>> semop()
->>>>>                           semget()
->>>>>                           setctl(IP_STAT)
->>>>>                           for(;;) {               <--not successful here
->>>>>                             check until sem_otime > 0
->>>>>                           }
->> Good catch:
->> Since commit 0a2b9d4c, wait-for-zero semops do not update sem_otime anymore.
->>
->> Let's reverse that part of my commit and move the update of sem_otime back
->> into perform_atomic_semop().
->>
->> Jia: If perform_atomic_semop() updates sem_otime, then the update in
->> do_smart_update() is not necessary anymore.
->> Thus the whole logic with passing arround "semop_completed" can be removed, too.
->> Are you interested in writing that patch?
->>
-> Not all perform_atomic_semop() can cover the points of do_smart_update()
-> after I move the parts of updating otime.
-> Eg. in semctl_setval/exit_sem/etc.    That is, it seems I need to write some
-> other codes to update sem_otime outside perform_atomic_semop(). That
-> still violate your original goal---let one function do all the update otime
-> things.
-No. The original goal was an optimization:
-The common case is one semop that increases a semaphore value - and that 
-allows another semop that is sleeping to proceed.
-Before, this caused two get_seconds() calls.
-The current (buggy) code avoids the 2nd call.
+That would have the advantage of being a bit less racy.
 
-> IMO, what if just remove the condition alter in sys_semtimedop:
-> -        if (alter && error == 0)
-> +       if (error == 0)
->              do_smart_update(sma, sops, nsops, 1, &tasks);
-> In old codes, it would set the otime even when sem_op == 0
-do_smart_update() can be expensive - thus it shouldn't be called if we 
-didn't change anything.
+> > > +	atomic_inc(&cpuhp_waitcount);
+> > > +
+> > > +	/*
+> > > +	 * We either call schedule() in the wait, or we'll fall through
+> > > +	 * and reschedule on the preempt_enable() in get_online_cpus().
+> > > +	 */
+> > > +	preempt_enable_no_resched();
+> > > +	wait_event(cpuhp_wq, !__cpuhp_writer);
+> > 
+> > Finally!  A good use for preempt_enable_no_resched().  ;-)
+> 
+> Hehe, there were a few others, but tglx removed most with the
+> schedule_preempt_disabled() primitive.
 
-Attached is a proposed patch - fully untested. It is intended to be 
-applied on top of Jia's patch.
+;-)
 
-_If_ the performance degradation is too large, then the alternative 
-would be to set sem_otime directly in semtimedop() for successfull 
-non-alter operations.
+> In fact, I considered a wait_event_preempt_disabled() but was too lazy.
+> That whole wait_event macro fest looks like it could use an iteration or
+> two of collapse anyhow.
 
---
-     Manfred
+There are some serious layers there, aren't there?
 
---------------050909090502070805080603
-Content-Type: text/x-patch;
- name="0001-ipc-sem.c-Simplify-sem_otime-handling.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-ipc-sem.c-Simplify-sem_otime-handling.patch"
+> > > +	preempt_disable();
+> > > +
+> > > +	/*
+> > > +	 * It would be possible for cpu_hotplug_done() to complete before
+> > > +	 * the atomic_inc() above; in which case there is no writer waiting
+> > > +	 * and doing a wakeup would be BAD (tm).
+> > > +	 *
+> > > +	 * If however we still observe cpuhp_writer_task here we know
+> > > +	 * cpu_hotplug_done() is currently stuck waiting for cpuhp_waitcount.
+> > > +	 */
+> > > +	if (atomic_dec_and_test(&cpuhp_waitcount) && cpuhp_writer_task)
+> > 
+> > OK, I'll bite...  What sequence of events results in the
+> > atomic_dec_and_test() returning true but there being no
+> > cpuhp_writer_task?
+> > 
+> > Ah, I see it...
+> 
+> <snip>
+> 
+> Indeed, and
+> 
+> > But what prevents the following sequence of events?
+> 
+> <snip>
+> 
+> > o	Task B's call to cpuhp_writer_wake() sees a NULL pointer.
+> 
+> Quite so.. nothing. See there was a reason I kept being confused about
+> it.
+> 
+> > >  void cpu_hotplug_begin(void)
+> > >  {
+> > > +	unsigned int count = 0;
+> > > +	int cpu;
+> > > +
+> > > +	lockdep_assert_held(&cpu_add_remove_lock);
+> > > 
+> > > +	__cpuhp_writer = 1;
+> > > +	cpuhp_writer_task = current;
+> > 
+> > At this point, the value of cpuhp_slowcount can go negative.  Can't see
+> > that this causes a problem, given the atomic_add() below.
+> 
+> Agreed.
+> 
+> > > +
+> > > +	/* After this everybody will observe writer and take the slow path. */
+> > > +	synchronize_sched();
+> > > +
+> > > +	/* Collapse the per-cpu refcount into slowcount */
+> > > +	for_each_possible_cpu(cpu) {
+> > > +		count += per_cpu(__cpuhp_refcount, cpu);
+> > > +		per_cpu(__cpuhp_refcount, cpu) = 0;
+> > >  	}
+> > 
+> > The above is safe because the readers are no longer changing their
+> > __cpuhp_refcount values.
+> 
+> Yes, I'll expand the comment.
+> 
+> So how about something like this?
 
->From 07da483abc88748a666f655f3e1d81a94df88e38 Mon Sep 17 00:00:00 2001
-From: Manfred Spraul <manfred@colorfullife.com>
-Date: Tue, 24 Sep 2013 22:53:27 +0200
-Subject: [PATCH] ipc/sem.c: Simplify sem_otime handling.
+A few memory barriers required, if I am reading the code correctly.
+Some of them, perhaps all of them, called out by Oleg.
 
-The sem_otime handling tries to minimize the number of calls to
-get_seconds().
-This generates some complexity (i.e.: pass around if any operation
-completed) and introduced one bug (See previous commit to ipc/sem.c).
+							Thanx, Paul
 
-Therefore: Remove the whole logic - this removes 25 lines.
+> ---
+> --- a/include/linux/cpu.h
+> +++ b/include/linux/cpu.h
+> @@ -16,6 +16,7 @@
+>  #include <linux/node.h>
+>  #include <linux/compiler.h>
+>  #include <linux/cpumask.h>
+> +#include <linux/percpu.h>
+> 
+>  struct device;
+> 
+> @@ -173,10 +174,50 @@ extern struct bus_type cpu_subsys;
+>  #ifdef CONFIG_HOTPLUG_CPU
+>  /* Stop CPUs going up and down. */
+> 
+> +extern void cpu_hotplug_init_task(struct task_struct *p);
+> +
+>  extern void cpu_hotplug_begin(void);
+>  extern void cpu_hotplug_done(void);
+> -extern void get_online_cpus(void);
+> -extern void put_online_cpus(void);
+> +
+> +extern struct task_struct *__cpuhp_writer;
+> +DECLARE_PER_CPU(unsigned int, __cpuhp_refcount);
+> +
+> +extern void __get_online_cpus(void);
+> +
+> +static inline void get_online_cpus(void)
+> +{
+> +	might_sleep();
+> +
+> +	/* Support reader-in-reader recursion */
+> +	if (current->cpuhp_ref++) {
+> +		barrier();
+> +		return;
+> +	}
+> +
+> +	preempt_disable();
+> +	if (likely(!__cpuhp_writer))
+> +		__this_cpu_inc(__cpuhp_refcount);
 
-Disadvantages:
-- One line of code duplication in exit_sem():
-  The function must now update sem_otime, it can't rely on
-  do_smart_update_queue() to perform that task.
-- Two get_seconds() calls instead of one call for the common
-  case of increasing a semaphore and waking up a sleeping task.
+As Oleg noted, need a barrier here for when a new reader runs concurrently
+with a completing writer.
 
-TODO:
-1) How fast is get_seconds()?
-      Is the optimization worth the effort?
-2) Test it.
+> +	else
+> +		__get_online_cpus();
+> +	preempt_enable();
+> +}
+> +
+> +extern void __put_online_cpus(void);
+> +
+> +static inline void put_online_cpus(void)
+> +{
+> +	barrier();
+> +	if (--current->cpuhp_ref)
+> +		return;
+> +
+> +	preempt_disable();
+> +	if (likely(!__cpuhp_writer))
+> +		__this_cpu_dec(__cpuhp_refcount);
 
----
- ipc/sem.c | 61 ++++++++++++++++++-------------------------------------------
- 1 file changed, 18 insertions(+), 43 deletions(-)
+No barrier needed here because synchronize_sched() covers it.
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 8e01e76..5e5d7b1 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -713,15 +713,13 @@ static int check_restart(struct sem_array *sma, struct sem_queue *q)
-  * semaphore.
-  * The tasks that must be woken up are added to @pt. The return code
-  * is stored in q->pid.
-- * The function returns 1 if at least one operation was completed successfully.
-  */
--static int wake_const_ops(struct sem_array *sma, int semnum,
-+static void wake_const_ops(struct sem_array *sma, int semnum,
- 				struct list_head *pt)
- {
- 	struct sem_queue *q;
- 	struct list_head *walk;
- 	struct list_head *pending_list;
--	int semop_completed = 0;
- 
- 	if (semnum == -1)
- 		pending_list = &sma->pending_const;
-@@ -742,13 +740,9 @@ static int wake_const_ops(struct sem_array *sma, int semnum,
- 			/* operation completed, remove from queue & wakeup */
- 
- 			unlink_queue(sma, q);
--
- 			wake_up_sem_queue_prepare(pt, q, error);
--			if (error == 0)
--				semop_completed = 1;
- 		}
- 	}
--	return semop_completed;
- }
- 
- /**
-@@ -761,13 +755,11 @@ static int wake_const_ops(struct sem_array *sma, int semnum,
-  * do_smart_wakeup_zero() checks all required queue for wait-for-zero
-  * operations, based on the actual changes that were performed on the
-  * semaphore array.
-- * The function returns 1 if at least one operation was completed successfully.
-  */
--static int do_smart_wakeup_zero(struct sem_array *sma, struct sembuf *sops,
-+static void do_smart_wakeup_zero(struct sem_array *sma, struct sembuf *sops,
- 					int nsops, struct list_head *pt)
- {
- 	int i;
--	int semop_completed = 0;
- 	int got_zero = 0;
- 
- 	/* first: the per-semaphore queues, if known */
-@@ -777,7 +769,7 @@ static int do_smart_wakeup_zero(struct sem_array *sma, struct sembuf *sops,
- 
- 			if (sma->sem_base[num].semval == 0) {
- 				got_zero = 1;
--				semop_completed |= wake_const_ops(sma, num, pt);
-+				wake_const_ops(sma, num, pt);
- 			}
- 		}
- 	} else {
-@@ -788,7 +780,7 @@ static int do_smart_wakeup_zero(struct sem_array *sma, struct sembuf *sops,
- 		for (i = 0; i < sma->sem_nsems; i++) {
- 			if (sma->sem_base[i].semval == 0) {
- 				got_zero = 1;
--				semop_completed |= wake_const_ops(sma, i, pt);
-+				wake_const_ops(sma, i, pt);
- 			}
- 		}
- 	}
-@@ -797,9 +789,7 @@ static int do_smart_wakeup_zero(struct sem_array *sma, struct sembuf *sops,
- 	 * then check the global queue, too.
- 	 */
- 	if (got_zero)
--		semop_completed |= wake_const_ops(sma, -1, pt);
--
--	return semop_completed;
-+		wake_const_ops(sma, -1, pt);
- }
- 
- 
-@@ -816,15 +806,12 @@ static int do_smart_wakeup_zero(struct sem_array *sma, struct sembuf *sops,
-  * The tasks that must be woken up are added to @pt. The return code
-  * is stored in q->pid.
-  * The function internally checks if const operations can now succeed.
-- *
-- * The function return 1 if at least one semop was completed successfully.
-  */
--static int update_queue(struct sem_array *sma, int semnum, struct list_head *pt)
-+static void update_queue(struct sem_array *sma, int semnum, struct list_head *pt)
- {
- 	struct sem_queue *q;
- 	struct list_head *walk;
- 	struct list_head *pending_list;
--	int semop_completed = 0;
- 
- 	if (semnum == -1)
- 		pending_list = &sma->pending_alter;
-@@ -861,7 +848,6 @@ again:
- 		if (error) {
- 			restart = 0;
- 		} else {
--			semop_completed = 1;
- 			do_smart_wakeup_zero(sma, q->sops, q->nsops, pt);
- 			restart = check_restart(sma, q);
- 		}
-@@ -870,15 +856,13 @@ again:
- 		if (restart)
- 			goto again;
- 	}
--	return semop_completed;
- }
- 
- /**
-- * do_smart_update(sma, sops, nsops, otime, pt) - optimized update_queue
-+ * do_smart_update(sma, sops, nsops, pt) - optimized update_queue
-  * @sma: semaphore array
-  * @sops: operations that were performed
-  * @nsops: number of operations
-- * @otime: force setting otime
-  * @pt: list head of the tasks that must be woken up.
-  *
-  * do_smart_update() does the required calls to update_queue and wakeup_zero,
-@@ -888,15 +872,15 @@ again:
-  * It is safe to perform this call after dropping all locks.
-  */
- static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsops,
--			int otime, struct list_head *pt)
-+			struct list_head *pt)
- {
- 	int i;
- 
--	otime |= do_smart_wakeup_zero(sma, sops, nsops, pt);
-+	do_smart_wakeup_zero(sma, sops, nsops, pt);
- 
- 	if (!list_empty(&sma->pending_alter)) {
- 		/* semaphore array uses the global queue - just process it. */
--		otime |= update_queue(sma, -1, pt);
-+		update_queue(sma, -1, pt);
- 	} else {
- 		if (!sops) {
- 			/*
-@@ -904,7 +888,7 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
- 			 * known. Check all.
- 			 */
- 			for (i = 0; i < sma->sem_nsems; i++)
--				otime |= update_queue(sma, i, pt);
-+				update_queue(sma, i, pt);
- 		} else {
- 			/*
- 			 * Check the semaphores that were increased:
-@@ -916,21 +900,11 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
- 			 *   value will be too small, too.
- 			 */
- 			for (i = 0; i < nsops; i++) {
--				if (sops[i].sem_op > 0) {
--					otime |= update_queue(sma,
--							sops[i].sem_num, pt);
--				}
-+				if (sops[i].sem_op > 0)
-+					update_queue(sma, sops[i].sem_num, pt);
- 			}
- 		}
- 	}
--	if (otime) {
--		if (sops == NULL) {
--			sma->sem_base[0].sem_otime = get_seconds();
--		} else {
--			sma->sem_base[sops[0].sem_num].sem_otime =
--								get_seconds();
--		}
--	}
- }
- 
- 
-@@ -1238,7 +1212,7 @@ static int semctl_setval(struct ipc_namespace *ns, int semid, int semnum,
- 	curr->sempid = task_tgid_vnr(current);
- 	sma->sem_ctime = get_seconds();
- 	/* maybe some queued-up processes were waiting for this */
--	do_smart_update(sma, NULL, 0, 0, &tasks);
-+	do_smart_update(sma, NULL, 0, &tasks);
- 	sem_unlock(sma, -1);
- 	rcu_read_unlock();
- 	wake_up_sem_queue_do(&tasks);
-@@ -1366,7 +1340,7 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 		}
- 		sma->sem_ctime = get_seconds();
- 		/* maybe some queued-up processes were waiting for this */
--		do_smart_update(sma, NULL, 0, 0, &tasks);
-+		do_smart_update(sma, NULL, 0, &tasks);
- 		err = 0;
- 		goto out_unlock;
- 	}
-@@ -1798,7 +1772,7 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 					task_tgid_vnr(current));
- 	if (error <= 0) {
- 		if (alter && error == 0)
--			do_smart_update(sma, sops, nsops, 1, &tasks);
-+			do_smart_update(sma, sops, nsops, &tasks);
- 
- 		goto out_unlock_free;
- 	}
-@@ -2043,7 +2017,8 @@ void exit_sem(struct task_struct *tsk)
- 		}
- 		/* maybe some queued-up processes were waiting for this */
- 		INIT_LIST_HEAD(&tasks);
--		do_smart_update(sma, NULL, 0, 1, &tasks);
-+		sma->sem_base[0].sem_otime = get_seconds();
-+		do_smart_update(sma, NULL, 0, &tasks);
- 		sem_unlock(sma, -1);
- 		rcu_read_unlock();
- 		wake_up_sem_queue_do(&tasks);
--- 
-1.8.3.1
+> +	else
+> +		__put_online_cpus();
+> +	preempt_enable();
+> +}
+> +
+>  extern void cpu_hotplug_disable(void);
+>  extern void cpu_hotplug_enable(void);
+>  #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
+> @@ -200,6 +241,8 @@ static inline void cpu_hotplug_driver_un
+> 
+>  #else		/* CONFIG_HOTPLUG_CPU */
+> 
+> +static inline void cpu_hotplug_init_task(struct task_struct *p) {}
+> +
+>  static inline void cpu_hotplug_begin(void) {}
+>  static inline void cpu_hotplug_done(void) {}
+>  #define get_online_cpus()	do { } while (0)
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1454,6 +1454,9 @@ struct task_struct {
+>  	unsigned int	sequential_io;
+>  	unsigned int	sequential_io_avg;
+>  #endif
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +	int		cpuhp_ref;
+> +#endif
+>  };
+> 
+>  /* Future-safe accessor for struct task_struct's cpus_allowed. */
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -49,88 +49,100 @@ static int cpu_hotplug_disabled;
+> 
+>  #ifdef CONFIG_HOTPLUG_CPU
+> 
+> -static struct {
+> -	struct task_struct *active_writer;
+> -	struct mutex lock; /* Synchronizes accesses to refcount, */
+> -	/*
+> -	 * Also blocks the new readers during
+> -	 * an ongoing cpu hotplug operation.
+> -	 */
+> -	int refcount;
+> -} cpu_hotplug = {
+> -	.active_writer = NULL,
+> -	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
+> -	.refcount = 0,
+> -};
+> +struct task_struct *__cpuhp_writer;
+> +EXPORT_SYMBOL_GPL(__cpuhp_writer);
+> 
+> -void get_online_cpus(void)
+> -{
+> -	might_sleep();
+> -	if (cpu_hotplug.active_writer == current)
+> -		return;
+> -	mutex_lock(&cpu_hotplug.lock);
+> -	cpu_hotplug.refcount++;
+> -	mutex_unlock(&cpu_hotplug.lock);
+> +DEFINE_PER_CPU(unsigned int, __cpuhp_refcount);
+> +EXPORT_PER_CPU_SYMBOL_GPL(__cpuhp_refcount);
+> +
+> +static atomic_t cpuhp_waitcount;
+> +static atomic_t cpuhp_slowcount;
+> +static DECLARE_WAIT_QUEUE_HEAD(cpuhp_readers);
+> +static DECLARE_WAIT_QUEUE_HEAD(cpuhp_writer);
+> 
+> +void cpu_hotplug_init_task(struct task_struct *p)
+> +{
+> +	p->cpuhp_ref = 0;
+>  }
+> -EXPORT_SYMBOL_GPL(get_online_cpus);
+> 
+> -void put_online_cpus(void)
+> +void __get_online_cpus(void)
+>  {
+> -	if (cpu_hotplug.active_writer == current)
+> +	/* Support reader-in-writer recursion */
+> +	if (__cpuhp_writer == current)
+>  		return;
+> -	mutex_lock(&cpu_hotplug.lock);
+> 
+> -	if (WARN_ON(!cpu_hotplug.refcount))
+> -		cpu_hotplug.refcount++; /* try to fix things up */
+> +	atomic_inc(&cpuhp_waitcount);
+> 
+> -	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
+> -		wake_up_process(cpu_hotplug.active_writer);
+> -	mutex_unlock(&cpu_hotplug.lock);
+> +	/*
+> +	 * We either call schedule() in the wait, or we'll fall through
+> +	 * and reschedule on the preempt_enable() in get_online_cpus().
+> +	 */
+> +	preempt_enable_no_resched();
+> +	wait_event(cpuhp_readers, !__cpuhp_writer);
+> +	preempt_disable();
+> +
+> +	if (atomic_dec_and_test(&cpuhp_waitcount))
 
+This provides the needed memory barrier for concurrent write releases.
 
---------------050909090502070805080603--
+> +		wake_up_all(&cpuhp_writer);
+> +}
+> +EXPORT_SYMBOL_GPL(__get_online_cpus);
+> +
+> +void __put_online_cpus(void)
+> +{
+> +	if (__cpuhp_writer == current)
+> +		return;
+> 
+> +	if (atomic_dec_and_test(&cpuhp_slowcount))
+
+This provides the needed memory barrier for concurrent write acquisitions.
+
+> +		wake_up_all(&cpuhp_writer);
+>  }
+> -EXPORT_SYMBOL_GPL(put_online_cpus);
+> +EXPORT_SYMBOL_GPL(__put_online_cpus);
+> 
+>  /*
+>   * This ensures that the hotplug operation can begin only when the
+>   * refcount goes to zero.
+>   *
+> - * Note that during a cpu-hotplug operation, the new readers, if any,
+> - * will be blocked by the cpu_hotplug.lock
+> - *
+>   * Since cpu_hotplug_begin() is always called after invoking
+>   * cpu_maps_update_begin(), we can be sure that only one writer is active.
+> - *
+> - * Note that theoretically, there is a possibility of a livelock:
+> - * - Refcount goes to zero, last reader wakes up the sleeping
+> - *   writer.
+> - * - Last reader unlocks the cpu_hotplug.lock.
+> - * - A new reader arrives at this moment, bumps up the refcount.
+> - * - The writer acquires the cpu_hotplug.lock finds the refcount
+> - *   non zero and goes to sleep again.
+> - *
+> - * However, this is very difficult to achieve in practice since
+> - * get_online_cpus() not an api which is called all that often.
+> - *
+>   */
+>  void cpu_hotplug_begin(void)
+>  {
+> -	cpu_hotplug.active_writer = current;
+> +	unsigned int count = 0;
+> +	int cpu;
+> +
+> +	lockdep_assert_held(&cpu_add_remove_lock);
+> 
+> -	for (;;) {
+> -		mutex_lock(&cpu_hotplug.lock);
+> -		if (likely(!cpu_hotplug.refcount))
+> -			break;
+> -		__set_current_state(TASK_UNINTERRUPTIBLE);
+> -		mutex_unlock(&cpu_hotplug.lock);
+> -		schedule();
+> +	__cpuhp_writer = current;
+> +
+> +	/* 
+> +	 * After this everybody will observe writer and take the slow path.
+> +	 */
+> +	synchronize_sched();
+> +
+> +	/* 
+> +	 * Collapse the per-cpu refcount into slowcount. This is safe because
+> +	 * readers are now taking the slow path (per the above) which doesn't
+> +	 * touch __cpuhp_refcount.
+> +	 */
+> +	for_each_possible_cpu(cpu) {
+> +		count += per_cpu(__cpuhp_refcount, cpu);
+> +		per_cpu(__cpuhp_refcount, cpu) = 0;
+>  	}
+> +	atomic_add(count, &cpuhp_slowcount);
+> +
+> +	/* Wait for all readers to go away */
+> +	wait_event(cpuhp_writer, !atomic_read(&cpuhp_slowcount));
+
+Oddly enough, there appear to be cases where you need a memory barrier
+here.  Suppose that all the readers finish after the atomic_add() above,
+but before the wait_event().  Then wait_event() just checks the condition
+without any memory barriers.  So smp_mb() needed here.
+
+/me runs off to check RCU's use of wait_event()...
+
+Found one missing.  And some places in need of comments.  And a few
+places that could use an ACCESS_ONCE().
+
+Back to the review...
+
+>  }
+> 
+>  void cpu_hotplug_done(void)
+>  {
+> -	cpu_hotplug.active_writer = NULL;
+> -	mutex_unlock(&cpu_hotplug.lock);
+> +	/* Signal the writer is done */
+
+And I believe we need a memory barrier here to keep the write-side
+critical section confined from the viewpoint of a reader that starts
+just after the NULLing of cpuhp_writer.
+
+Of course, being who I am, I cannot resist pointing out that you have
+the same number of memory barriers as would use of SRCU, and that
+synchronize_srcu() can be quite a bit faster than synchronize_sched()
+in the case where there are no readers.  ;-)
+
+> +	cpuhp_writer = NULL;
+> +	wake_up_all(&cpuhp_readers);
+> +
+> +	/* 
+> +	 * Wait for any pending readers to be running. This ensures readers
+> +	 * after writer and avoids writers starving readers.
+> +	 */
+> +	wait_event(cpuhp_writer, !atomic_read(&cpuhp_waitcount));
+>  }
+> 
+>  /*
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1736,6 +1736,8 @@ static void __sched_fork(unsigned long c
+>  	INIT_LIST_HEAD(&p->numa_entry);
+>  	p->numa_group = NULL;
+>  #endif /* CONFIG_NUMA_BALANCING */
+> +
+> +	cpu_hotplug_init_task(p);
+>  }
+> 
+>  #ifdef CONFIG_NUMA_BALANCING
+> 
+
