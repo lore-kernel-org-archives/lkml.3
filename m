@@ -1,139 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab3IXVKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:10:46 -0400
-Received: from smtprelay0211.hostedemail.com ([216.40.44.211]:49182 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754071Ab3IXVKi (ORCPT
+	id S1754962Ab3IXVLt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 17:11:49 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44362 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948Ab3IXVLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:10:38 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:2:41:355:379:541:800:960:966:973:988:989:1260:1345:1359:1437:1535:1606:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:2904:3138:3139:3140:3141:3142:3355:3865:3866:3867:3868:3870:3871:4117:4321:4385:4605:5007:6261:7903:10004:10026:10848:11026:11473:11657:11658:11914:12043:12294:12296:12438:12517:12519:12555:13161:13229:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: tail19_55884edcbb27
-X-Filterd-Recvd-Size: 6085
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 06/10] stmicro: Remove extern from function prototypes
-Date: Tue, 24 Sep 2013 14:10:00 -0700
-Message-Id: <d6cc64ef73f74edfc485fefb5e6dc2ba625bd675.1380056108.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1380056108.git.joe@perches.com>
-References: <cover.1380056108.git.joe@perches.com>
+	Tue, 24 Sep 2013 17:11:47 -0400
+Date: Tue, 24 Sep 2013 23:11:39 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Marc Pignat <marc.pignat@hevs.ch>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        john.stultz@linaro.org, kernel@pengutronix.de,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Timekeeping on at91rm9200 [Was: [PATCH v2] clockevents: Sanitize
+ ticks to nsec conversion]
+Message-ID: <20130924211139.GE16106@pengutronix.de>
+References: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
+ <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a mix of function prototypes with and without extern
-in the kernel sources.  Standardize on not using extern for
-function prototypes.
+Hello Nicolas, hello Jean-Christophe,
 
-Function prototypes don't need to be written with extern.
-extern is assumed by the compiler.  Its use is as unnecessary as
-using auto to declare automatic/local variables in a block.
+I expect you should be able to revert 
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/ethernet/stmicro/stmmac/common.h    | 12 ++++++------
- drivers/net/ethernet/stmicro/stmmac/dwmac_dma.h | 17 ++++++++---------
- drivers/net/ethernet/stmicro/stmmac/mmc.h       |  6 +++---
- drivers/net/ethernet/stmicro/stmmac/stmmac.h    | 10 +++++-----
- 4 files changed, 22 insertions(+), 23 deletions(-)
+	b7a8ca5 (ARM: at91: rm9200 fix time support)
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h b/drivers/net/ethernet/stmicro/stmmac/common.h
-index 7eb8bab..fc94f20 100644
---- a/drivers/net/ethernet/stmicro/stmmac/common.h
-+++ b/drivers/net/ethernet/stmicro/stmmac/common.h
-@@ -451,14 +451,14 @@ struct mac_device_info {
- struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr);
- struct mac_device_info *dwmac100_setup(void __iomem *ioaddr);
- 
--extern void stmmac_set_mac_addr(void __iomem *ioaddr, u8 addr[6],
--				unsigned int high, unsigned int low);
--extern void stmmac_get_mac_addr(void __iomem *ioaddr, unsigned char *addr,
--				unsigned int high, unsigned int low);
-+void stmmac_set_mac_addr(void __iomem *ioaddr, u8 addr[6],
-+			 unsigned int high, unsigned int low);
-+void stmmac_get_mac_addr(void __iomem *ioaddr, unsigned char *addr,
-+			 unsigned int high, unsigned int low);
- 
--extern void stmmac_set_mac(void __iomem *ioaddr, bool enable);
-+void stmmac_set_mac(void __iomem *ioaddr, bool enable);
- 
--extern void dwmac_dma_flush_tx_fifo(void __iomem *ioaddr);
-+void dwmac_dma_flush_tx_fifo(void __iomem *ioaddr);
- extern const struct stmmac_ring_mode_ops ring_mode_ops;
- extern const struct stmmac_chain_mode_ops chain_mode_ops;
- 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac_dma.h b/drivers/net/ethernet/stmicro/stmmac/dwmac_dma.h
-index 8e5662c..def266d 100644
---- a/drivers/net/ethernet/stmicro/stmmac/dwmac_dma.h
-+++ b/drivers/net/ethernet/stmicro/stmmac/dwmac_dma.h
-@@ -104,14 +104,13 @@
- #define DMA_STATUS_TI	0x00000001	/* Transmit Interrupt */
- #define DMA_CONTROL_FTF		0x00100000	/* Flush transmit FIFO */
- 
--extern void dwmac_enable_dma_transmission(void __iomem *ioaddr);
--extern void dwmac_enable_dma_irq(void __iomem *ioaddr);
--extern void dwmac_disable_dma_irq(void __iomem *ioaddr);
--extern void dwmac_dma_start_tx(void __iomem *ioaddr);
--extern void dwmac_dma_stop_tx(void __iomem *ioaddr);
--extern void dwmac_dma_start_rx(void __iomem *ioaddr);
--extern void dwmac_dma_stop_rx(void __iomem *ioaddr);
--extern int dwmac_dma_interrupt(void __iomem *ioaddr,
--			       struct stmmac_extra_stats *x);
-+void dwmac_enable_dma_transmission(void __iomem *ioaddr);
-+void dwmac_enable_dma_irq(void __iomem *ioaddr);
-+void dwmac_disable_dma_irq(void __iomem *ioaddr);
-+void dwmac_dma_start_tx(void __iomem *ioaddr);
-+void dwmac_dma_stop_tx(void __iomem *ioaddr);
-+void dwmac_dma_start_rx(void __iomem *ioaddr);
-+void dwmac_dma_stop_rx(void __iomem *ioaddr);
-+int dwmac_dma_interrupt(void __iomem *ioaddr, struct stmmac_extra_stats *x);
- 
- #endif /* __DWMAC_DMA_H__ */
-diff --git a/drivers/net/ethernet/stmicro/stmmac/mmc.h b/drivers/net/ethernet/stmicro/stmmac/mmc.h
-index 48ec001..8607488 100644
---- a/drivers/net/ethernet/stmicro/stmmac/mmc.h
-+++ b/drivers/net/ethernet/stmicro/stmmac/mmc.h
-@@ -128,8 +128,8 @@ struct stmmac_counters {
- 	unsigned int mmc_rx_icmp_err_octets;
- };
- 
--extern void dwmac_mmc_ctrl(void __iomem *ioaddr, unsigned int mode);
--extern void dwmac_mmc_intr_all_mask(void __iomem *ioaddr);
--extern void dwmac_mmc_read(void __iomem *ioaddr, struct stmmac_counters *mmc);
-+void dwmac_mmc_ctrl(void __iomem *ioaddr, unsigned int mode);
-+void dwmac_mmc_intr_all_mask(void __iomem *ioaddr);
-+void dwmac_mmc_read(void __iomem *ioaddr, struct stmmac_counters *mmc);
- 
- #endif /* __MMC_H__ */
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-index f16a9bd..22f89ff 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-@@ -110,14 +110,14 @@ struct stmmac_priv {
- 
- extern int phyaddr;
- 
--extern int stmmac_mdio_unregister(struct net_device *ndev);
--extern int stmmac_mdio_register(struct net_device *ndev);
--extern void stmmac_set_ethtool_ops(struct net_device *netdev);
-+int stmmac_mdio_unregister(struct net_device *ndev);
-+int stmmac_mdio_register(struct net_device *ndev);
-+void stmmac_set_ethtool_ops(struct net_device *netdev);
- extern const struct stmmac_desc_ops enh_desc_ops;
- extern const struct stmmac_desc_ops ndesc_ops;
- extern const struct stmmac_hwtimestamp stmmac_ptp;
--extern int stmmac_ptp_register(struct stmmac_priv *priv);
--extern void stmmac_ptp_unregister(struct stmmac_priv *priv);
-+int stmmac_ptp_register(struct stmmac_priv *priv);
-+void stmmac_ptp_unregister(struct stmmac_priv *priv);
- int stmmac_freeze(struct net_device *ndev);
- int stmmac_restore(struct net_device *ndev);
- int stmmac_resume(struct net_device *ndev);
+which reverted 
+
+	838a2ae (ARM: use clockevents_config_and_register() where possible)
+
+for at91rm9200 on top of the patch this mail is a reply to.
+
+Can you please test that?
+
+Best regards
+Uwe
+
 -- 
-1.8.1.2.459.gbcd45b4.dirty
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
