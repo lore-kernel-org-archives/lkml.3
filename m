@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab3IXTTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 15:19:46 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:52405 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab3IXTTo (ORCPT
+	id S1754651Ab3IXTUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 15:20:08 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:33735 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754543Ab3IXTUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 15:19:44 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>, kgene.kim@samsung.com,
-        t.stanislaws@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux@arm.linux.org.uk, s.nawrocki@samsung.com,
-        b.zolnierkie@samsung.com, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>, ben-linux@fluff.org,
-        m.szyprowski@samsung.com
-Subject: Re: [PATCH v2] ARM: SAMSUNG: S5P: If detected device tree skip irq init
-Date: Tue, 24 Sep 2013 21:19:42 +0200
-Message-ID: <2123658.6S6hP57GRg@flatron>
-User-Agent: KMail/4.11.1 (Linux/3.11.1-gentoo; KDE/4.11.1; x86_64; ; )
-In-Reply-To: <1380038363-487-1-git-send-email-m.krawczuk@partner.samsung.com>
-References: <1380038363-487-1-git-send-email-m.krawczuk@partner.samsung.com>
+	Tue, 24 Sep 2013 15:20:04 -0400
+Date: Tue, 24 Sep 2013 12:19:54 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, axboe@kernel.dk,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/22] Immutable biovecs, block layer changes
+Message-ID: <20130924191954.GB2636@kmo-pixel>
+References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
+ <20130808150954.GA30092@infradead.org>
+ <20130808211529.GB15409@kmo-pixel>
+ <20130924110012.GA7160@infradead.org>
+ <20130924132014.GA16165@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130924132014.GA16165@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mateusz,
-
-On Tuesday 24 of September 2013 17:59:23 Mateusz Krawczuk wrote:
-> It prevents from executing things already handled by pinctrl-exynos
-> driver, when device tree is available.
+On Tue, Sep 24, 2013 at 09:20:14AM -0400, Mike Snitzer wrote:
+> On Tue, Sep 24 2013 at  7:00am -0400,
+> Christoph Hellwig <hch@infradead.org> wrote:
 > 
-> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  arch/arm/plat-samsung/s5p-irq-eint.c | 4 ++++
->  1 file changed, 4 insertions(+)
+> > Just curious, what's the state of the remaining immutable bio work?
+> 
+> Hey Christoph,
+> 
+> Have you been over the patchset?  Looks sane to you?
+> 
+> Given how disruptive this patchset is to the block layer I'm wondering
+> how painful this change will be in combination with Jens' blk-mq
+> changes.  I'd prefer to see blk-mq before immutable biovecs; but I have
+> my own selfish reasons for that.
+> 
+> I'm also concerned about DM regressions given that a lot of DM code to
+> handle splitting a bio that spans target boundaries is ripped out, see:
+> https://patchwork.kernel.org/patch/2840657/
 
-Acked-by: Tomasz Figa <t.figa@samsung.com>
+Oh good, you had seen that :)
 
-[as a temporary solution until we move all the users of this code to 
-device tree]
+Are you worried about performance regressions or actual bugs?
 
-Best regards,
-Tomasz
+I _have_ explicitly tested that code path, but I don't know what corner
+cases I may have missed so it definitely needs your eyeballs and testing
+too.
 
+As for performance - this'll be more efficient than what the dm code was
+doing before. Especially when the multipage bvec patches go in.
+
+> But that is just handwaving/FUD at this point cause I haven't put the
+> time to looking at this patchset close enough to feel comfortable.  I
+> can make reviewing this patchset a priority this week though.
+> 
+> Kent, have you rebased this patchset at all?  Do you have a git tree I
+> can clone to save the pain of pulling these patches out my my mbox,
+> etc.
+
+Yeah: git://evilpiepirate.org/~kent/linux-bcache.git for-jens
