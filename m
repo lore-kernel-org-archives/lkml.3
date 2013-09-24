@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab3IXNfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 09:35:20 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:38704 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186Ab3IXNfP (ORCPT
+	id S1753265Ab3IXNhw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 09:37:52 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:40039 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab3IXNht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 09:35:15 -0400
-Message-ID: <524194F6.4000101@gmail.com>
-Date: Tue, 24 Sep 2013 21:34:46 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Tue, 24 Sep 2013 09:37:49 -0400
+Date: Tue, 24 Sep 2013 06:37:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [PATCH 02/11] sched, rcu: Make RCU use resched_cpu()
+Message-ID: <20130924133742.GY9093@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130917082838.218329307@infradead.org>
+ <20130917091143.449530904@infradead.org>
+ <20130917144012.GC29354@twins.programming.kicks-ass.net>
+ <20130923165540.GP9093@linux.vnet.ibm.com>
+ <20130923211827.GA7032@linux.vnet.ibm.com>
+ <20130924080706.GI9326@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com
-Subject: Re: [PATCH 4/6] x86/mem-hotplug: Support initialize page tables bottom
- up
-References: <524162DA.30004@cn.fujitsu.com> <5241649B.3090302@cn.fujitsu.com> <20130924123340.GE2366@htj.dyndns.org> <52419264.3020409@gmail.com> <20130924132727.GI2366@htj.dyndns.org>
-In-Reply-To: <20130924132727.GI2366@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130924080706.GI9326@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092413-9332-0000-0000-000001855415
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 09:27 PM, Tejun Heo wrote:
-> On Tue, Sep 24, 2013 at 09:23:48PM +0800, Zhang Yanfei wrote:
->>> Hmm... so, this is kinda weird.  We're doing it in two chunks and
->>> mapping memory between ISA_END_ADDRESS and kernel_end right on top of
->>> ISA_END_ADDRESS?  Can't you give enough information to the mapping
->>> function so that it can map everything on top of kernel_end in single
->>> go?
->>
->> You mean we should call memory_map_bottom_up like this:
->>
->> memory_map_bottom_up(ISA_END_ADDRESS, end)
->>
->> right?
+On Tue, Sep 24, 2013 at 10:07:06AM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 23, 2013 at 02:18:27PM -0700, Paul E. McKenney wrote:
+> > Passes light testing, but I am confused about why the change to
+> > resched_task() when only resched_cpu() is invoked elsewhere in the patch.
+> > Enlightenment?
+> > > > -#ifdef CONFIG_SMP
+> > > >  void resched_task(struct task_struct *p)
+> > > >  {
+> > > >  	int cpu;
+> > > > 
+> > > > -	assert_raw_spin_locked(&task_rq(p)->lock);
+> > > > +	lockdep_assert_held(&task_rq(p)->lock);
+> > > > 
+> > > >  	if (test_tsk_need_resched(p))
+> > > >  		return;
 > 
-> But that wouldn't be ideal as we want the page tables above kernel
-> image and the above would allocate it above ISA_END_ADDRESS, right?
+> That one? Fly by fixup I suppose.. the lockdep check is cheaper as it
+> compiles away for !lockdep kernels, also its more correct.
 
-The original idea is we will allocate everything above the kernel. So
-the pagetables for [ISA_END_ADDRESS, kernel_end) will be also located
-above the kernel.
+OK, happy to carry it, just wanted to make sure it was supposed to be there.
 
-> Maybe memory_map_bottom_up() should take extra parameters for where to
-> allocate page tables at separately from the mapping range and treat it
-> specially?  Would that make the function a lot more complex?
+							Thanx, Paul
 
-Hmmmm...I will try to see if it is complex.
-
-Thanks.
-
-> 
-> Thanks.
-> 
-
-
--- 
-Thanks.
-Zhang Yanfei
