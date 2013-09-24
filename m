@@ -1,120 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab3IXBLb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 21:11:31 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:36238 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab3IXBLQ convert rfc822-to-8bit (ORCPT
+	id S1753150Ab3IXBTu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 21:19:50 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:51474 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752744Ab3IXBTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 21:11:16 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-0a-5240e6b27513
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Gu Zheng'" <guz.fnst@cn.fujitsu.com>
-Cc: "'Kim Jaegeuk'" <jaegeuk.kim@gmail.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?gb2312?B?J8y35q0n?= <shu.tan@samsung.com>
-References: <000101ceb768$a8b43ff0$fa1cbfd0$@samsung.com>
- <523F9F2D.1080501@cn.fujitsu.com>
-In-reply-to: <523F9F2D.1080501@cn.fujitsu.com>
-Subject: RE: [f2fs-dev] [PATCH] f2fs: remove unneeded write checkpoint in
- recover_fsync_data
-Date: Tue, 24 Sep 2013 09:10:04 +0800
-Message-id: <000101ceb8c2$f47270f0$dd5752d0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQK45DfZauXAgnI68Ijn2dmZNiucwwHZRIp0l/DxqzA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t9jAd1NzxyCDN7e0LF43n6A2eL2lUks
-	FpcWuVvs2XuSxeLyrjlsFq0LzzM7sHn8PziJ2WPnrLvsHrsXfGby6NuyitHj8ya5ANYoLpuU
-	1JzMstQifbsErow/36ayFkwRquib9Za1gXEPXxcjJ4eEgInE3fZWFghbTOLCvfVsXYxcHEIC
-	ixglOp7tYYRwfjBKvJj0lx2kik1ARWJ5x38mEFtEQENi2tT9TCBFzAL7GSUW3HsIViQkECvx
-	9N5SNhCbU0BP4njDdLC4sECcRP+CS2BxFgFViY2vu8HivAKWEqsOzGGGsAUlfky+B3YSM9CC
-	/kUb2CBsbYkn7y6wQpyqILHj7Gug6ziAjrCSmHq0BqJEXGLjkVssExiFZiGZNAvJpFlIJs1C
-	0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnCMPJPewbiqweIQowAHoxIP74UEhyAh
-	1sSy4srcQ4wSHMxKIrxHo4FCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YW
-	pBbBZJk4OKUaGDPVy/wkNXz4vZ699O5qXq4xQWVPSNSeJzLvDZN2vwhLtdjr2ivtKyLfXipY
-	LV3ZqXZtWsnMV21+075McTe4ESmeYLRkaYt/+NKtC3/cWuT/M3XSFfun50wM1FdGF14Ot9pw
-	Xj5+rzD3q65Lj58wMGQnvuBjetk8IcrBSeEVz3HZFoG/BaqxSizFGYmGWsxFxYkA7+AXsI0C	AAA=
+	Mon, 23 Sep 2013 21:19:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <1379981427.5443.8.camel@pasglop>
+References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
+	<CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
+	<alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
+	<20130920162603.GA30381@localhost.localdomain>
+	<CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
+	<CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
+	<1379799901.24090.6.camel@pasglop>
+	<523E4F8A.7020708@zytor.com>
+	<1379824754.24090.11.camel@pasglop>
+	<1379824861.24090.12.camel@pasglop>
+	<20130922162410.GA10649@laptop.programming.kicks-ass.net>
+	<1379887000.24090.19.camel@pasglop>
+	<CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
+	<1379981427.5443.8.camel@pasglop>
+Date: Mon, 23 Sep 2013 18:19:47 -0700
+X-Google-Sender-Auth: PNR1AkvlC0Np0IskoJUpP4qd6PA
+Message-ID: <CA+55aFwyVG4DXOEvaVTp0gE-H2Zy0Kx7Mg7RWzpxzwm_RSWEYQ@mail.gmail.com>
+Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gu
+On Mon, Sep 23, 2013 at 5:10 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+>
+> BTW, that boils down to a choice between using r13 as either a TLS for
+> current or current_thread_info, or as a per-cpu pointer, which one is
+> the most performance critical ?
 
-> -----Original Message-----
-> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
-> Sent: Monday, September 23, 2013 9:54 AM
-> To: Chao Yu
-> Cc: Kim Jaegeuk; linux-f2fs-devel@lists.sourceforge.net;
-> linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; Ì·æ­
-> Subject: Re: [f2fs-dev] [PATCH] f2fs: remove unneeded write checkpoint in
-> recover_fsync_data
-> 
-> On 09/22/2013 03:51 PM, Chao Yu wrote:
-> 
-> > Previously, recover_fsync_data still to write checkpoint when there is
-> > nothing to recover with normal umount image.
-> > It may reduce mount performance and flash memory lifetime, so let's
-> > remove it.
-> >
-> > Signed-off-by: Tan Shu <shu.tan@samsung.com>
-> > Signed-off-by: Yu Chao <chao2.yu@samsung.com>
-> > ---
-> >  fs/f2fs/recovery.c |    5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c index
-> > 51ef5ee..6988e1b 100644
-> > --- a/fs/f2fs/recovery.c
-> > +++ b/fs/f2fs/recovery.c
-> > @@ -419,6 +419,7 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
-> > {
-> >  	struct list_head inode_list;
-> >  	int err;
-> > +	int is_writecp = 0;
-> 
-> "need_writecp" may be more suitable.
+I think you can tune most of the architecture setup to best suit your needs.
 
-Okay, it increase readability. I will change it.
+For example, on x86, we don't have much choice: the per-cpu accessors
+are going to be faster than the alternatives, and there are patches
+afoot to tune the preempt and rcu-readside counters to use the percpu
+area (and then save/restore things at task switch time). But having
+the counters natively in the thread_info struct is fine too and is
+what we do now.
 
-Thanks.
-> 
-> Thanks,
-> Gu
-> 
-> >
-> >  	fsync_entry_slab = f2fs_kmem_cache_create("f2fs_fsync_inode_entry",
-> >  			sizeof(struct fsync_inode_entry), NULL); @@ -436,6
-+437,8
-> @@ int
-> > recover_fsync_data(struct f2fs_sb_info *sbi)
-> >  	if (list_empty(&inode_list))
-> >  		goto out;
-> >
-> > +	is_writecp = 1;
-> > +
-> >  	/* step #2: recover data */
-> >  	err = recover_data(sbi, &inode_list, CURSEG_WARM_NODE);
-> >  	BUG_ON(!list_empty(&inode_list));
-> > @@ -443,7 +446,7 @@ out:
-> >  	destroy_fsync_dnodes(&inode_list);
-> >  	kmem_cache_destroy(fsync_entry_slab);
-> >  	sbi->por_doing = 0;
-> > -	if (!err)
-> > +	if (!err && is_writecp)
-> >  		write_checkpoint(sbi, false);
-> >  	return err;
-> >  }
-> > ---
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
+Generally, we've put the performance-critical stuff into
+"current_thread_info" as opposed to "current", so it's likely that if
+the choice is between those two, then you might want to pick %r13
+pointing to the thread-info rather than the "struct task_struct" (ie
+things like low-level thread flags). But which is better probably
+depends on load, and again, some of it you can tweak by just making
+per-architecture structure choices and making the macros point at one
+or the other.
 
+There's a few things that really depend on per-cpu areas, but I don't
+think it's a huge performance issue if you have to indirect off memory
+to get that. Most of the performance issues with per-cpu stuff is
+about avoiding cachelines ping-ponging back and forth, not so much
+about fast direct access. Of course, if some load really uses a *lot*
+of percpu accesses, you get both.
 
+The advantage of having %r13 point to thread data (which is "stable"
+as far as the compiler is concerned) as opposed to having it be a
+per-cpu pointer (which can change randomly due to task switching) is
+that from a correctness standpoint I really do think that either
+thread-info or current is *much* easier to handle than using it for
+the per-cpu base pointer.
+
+             Linus
