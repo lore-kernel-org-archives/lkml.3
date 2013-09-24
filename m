@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab3IXWad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 18:30:33 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55364 "EHLO e9.ny.us.ibm.com"
+	id S1754268Ab3IXWzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 18:55:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60556 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754071Ab3IXWab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 18:30:31 -0400
-Date: Tue, 24 Sep 2013 15:30:18 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Stephane Eranian <eranian@google.com>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 8/8][v4] powerpc/perf: Export Power7 memory hierarchy
- info to user space.
-Message-ID: <20130924223018.GA21644@us.ibm.com>
-References: <1379119755-21025-1-git-send-email-sukadev@linux.vnet.ibm.com>
- <1379119755-21025-9-git-send-email-sukadev@linux.vnet.ibm.com>
- <523AB8B2.1060202@linux.vnet.ibm.com>
+	id S1753738Ab3IXWze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 18:55:34 -0400
+Message-ID: <52421829.4050708@zytor.com>
+Date: Tue, 24 Sep 2013 15:54:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <523AB8B2.1060202@linux.vnet.ibm.com>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092422-7182-0000-0000-000008834B84
+To: Pavel Machek <pavel@denx.de>
+CC: Alan Tull <atull@altera.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        monstr@monstr.eu, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+References: <cover.1379519753.git.michal.simek@xilinx.com> <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com> <20130918191517.GQ19937@titan.lakedaemon.net> <20130918203247.GA11181@obsidianresearch.com> <1379539063.31417.23.camel@atx-linux-37> <20130919100833.GC19346@amd.pavel.ucw.cz>
+In-Reply-To: <20130919100833.GC19346@amd.pavel.ucw.cz>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anshuman Khandual [khandual@linux.vnet.ibm.com] wrote:
-| On 09/14/2013 06:19 AM, Sukadev Bhattiprolu wrote:
-| > +static void power7_get_mem_data_src(union perf_mem_data_src *dsrc,
-| > +			struct pt_regs *regs)
-| > +{
-| > +	u64 idx;
-| > +	u64 mmcra = regs->dsisr;
-| > +	u64 addr;
-| > +	int ret;
-| > +	unsigned int instr;
-| > +
-| > +	if (mmcra & POWER7_MMCRA_DCACHE_MISS) {
-| > +		idx = mmcra & POWER7_MMCRA_DCACHE_SRC_MASK;
-| > +		idx >>= POWER7_MMCRA_DCACHE_SRC_SHIFT;
-| > +
-| > +		dsrc->val |= dcache_src_map[idx];
-| > +		return;
-| > +	}
-| > +
-| > +	instr = 0;
-| > +	addr = perf_instruction_pointer(regs);
-| > +
-| > +	if (is_kernel_addr(addr))
-| > +		instr = *(unsigned int *)addr;
-| > +	else {
-| > +		pagefault_disable();
-| > +		ret = __get_user_inatomic(instr, (unsigned int __user *)addr);
-| > +		pagefault_enable();
-| > +		if (ret)
-| > +			instr = 0;
-| > +	}
-| > +	if (instr && instr_is_load_store(&instr))
-| 
-| 
-| Wondering if there is any possibility of getting positive values for
-| "(mmcra & POWER7_MMCRA_DCACHE_SRC_MASK) >> POWER7_MMCRA_DCACHE_SRC_SHIFT"
-| when the marked instruction did not have MMCRA[POWER7_MMCRA_DCACHE_MISS]
-| bit set. In that case we should actually compute dsrc->val as in the previous
-| case. I did couple of experiments on a P7 box, but was not able to find a
-| instance for a marked instruction whose MMCRA[POWER7_MMCRA_DCACHE_MISS] bit
-| not set and have a positive value POWER7_MMCRA_DCACHE_SRC field.
+On 09/19/2013 03:08 AM, Pavel Machek wrote:
+> 
+>> The firmware approach is interesting.  It might be less flexible
+>> compared with my original code (see link to git below) that this is
+> 
+> On the other hand... that's the interface world wants, right? To most
+> users, fpga bitstream is just a firmware.
+> 
 
-Confirmed again with the hardware team that if there was no DCACHE_MISS,
-the DCACHE_SRC field will be clear.
+No, not really.
 
-Thanks,
+The typical assumption with the firmware interface is that there is
+exactly one possible firmware for each device (possibly modulated by
+driver version, but still.)  This is blatantly not true for an FPGA in
+the most extreme way possible -- there are an almost infinite number of
+ways one can load an FPGA.
 
-Sukadev
+However, I have to question the whole idea of an "FPGA subsystem" --
+there is an almost infinite number of ways to program an FPGA or FPGA
+programming device (which may even be a commodity flash with a
+microcontroller or CPLD, and may be shared with other devices), and it
+really doesn't make any inherent sense to lump them together.
+
+	-hpa
 
