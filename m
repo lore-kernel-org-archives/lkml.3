@@ -1,95 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab3IXUup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 16:50:45 -0400
-Received: from ring0.de ([91.143.88.219]:46354 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015Ab3IXUun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 16:50:43 -0400
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-Date: Tue, 24 Sep 2013 22:50:27 +0200
-From: Sebastian Reichel <sre@ring0.de>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
-Subject: Re: [PATCH 4/4] RX-51: Add platform function and data for bq24150a
- charger
-Message-ID: <20130924205026.GA13204@earth.universe>
-Mail-Followup-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-	Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-	freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <201309232206.47391@pali>
- <20130923204714.GB22995@earth.universe>
- <201309241905.48301@pali>
+	id S1754609Ab3IXUyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 16:54:32 -0400
+Received: from exprod5og113.obsmtp.com ([64.18.0.26]:35620 "EHLO
+	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738Ab3IXUya (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 16:54:30 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
-Content-Disposition: inline
-In-Reply-To: <201309241905.48301@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Russ Knize <Russ.Knize@motorola.com>
+Date: Tue, 24 Sep 2013 15:53:56 -0500
+Message-ID: <CAGfvh62J=rkvAw_nxEt1CSE9EhDQqnow+waQJ_gNt1YmkrD9wg@mail.gmail.com>
+Subject: Re: [RFC 1/1] f2fs: don't GC or take an fs_lock from f2fs_initxattrs()
+To: Russ Knize <rknize@gmail.com>
+Cc: "linux-f2fs-devel@lists.sourceforge.net" 
+	<linux-f2fs-devel@lists.sourceforge.net>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an alternate solution to the deadlock problem I mentioned in
+my previous patch.
 
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Tue, Sep 24, 2013 at 07:05:47PM +0200, Pali Roh=E1r wrote:
-> No, isp1704 driver is doing fastcharger detection (and then=20
-> export charger type via sysfs power supply) based on musb usb=20
-> events.
->=20
-> Real charging (enabling/disabling and setting properties) is done=20
-> by bq24150a chip which has own power driver bq2415x_charger.
->=20
-> As already wrote this is not simple and this is reason why I sent=20
-> board data and functions only now...
-
-Yes, I'm aware of this. Technically the isp1704 does not provide the
-5 volt line, but for the system as a whole that fact does not really
-matter.
-
-The isp1704 can provide its functionality via the regulator API
-as a simple regulator device. It provides information about the
-power "it can supply".
-
-The bq24150a on the other hand can just use the regulator via the
-consumer interface.
-
-The regulator framework provides capabilities for events:
-"Regulators can notify consumers of external events"
-
--- Sebastian
-
---oyUTqETQ0mS9luUI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSQfsSAAoJENju1/PIO/qaS+MP/0lZBnUEtA/hMALEUVxpOf8C
-D0ANugtFato7kqeArHj/bC+wv4d2UIZpvFc64KwOH2xmywcaheFATp6qHFiuwYBl
-dZ3SAk8/aa6ezUvRVf6HfWE+IRSw7AdD0na3pNScnvn6Tsw5dt9g95Ot69xztbVs
-16tJ87+6YaToeEKsdL+QfEd5Q9kjiAIXpECUcrA8WCRyc5ypS1pKJOHtsGTaVyzR
-24p+z2L70fa8m8a7lwn7pRHtNiu3A/k1ZANLoB/zCzq6xSodASwDykT+rpWgpdFg
-+mKxCTKyMkR3xjQ8fpDh9uKJRUBGisYGd7aCpQA8YgNQ95z8Os99E317mn2drUv3
-Upohxge5AZjPaL4ciZI4C1T1OE3FS/8x5gM23bfepZT6ubuueP6zQ8L8mvcvW/vX
-E4CoMPlVm5iozFFp/opRb9Q/PVHbplsmDTW0khmRlqHc1MuxCy5E+1E+IAsgVdVi
-Cv+bAzDEt1BMPUPag/fi8NSD3GoZbe7/k6og9uhmZxeYVMm7PAOC52+0IcVOepF8
-z91g46S4OC1T7e4zH8wNIpBPtfNZ/lClxNTGBbazar1Kcb3fsKI++4MvsRSEVKP+
-EYCeDFm1ap3oTZdkbsv5cmzmnCcQr8kz2xAis29rv6oDZDu+YJtMkHQ5IIfDz+vo
-KJDoeHG8eeUIVyOleN35
-=O8yW
------END PGP SIGNATURE-----
-
---oyUTqETQ0mS9luUI--
+On Tue, Sep 24, 2013 at 3:49 PM, Russ Knize <rknize@gmail.com> wrote:
+> From: Russ Knize <Russ.Knize@motorola.com>
+>
+> f2fs_initxattrs() is called internally from within F2FS and should
+> not call functions that are used by VFS handlers.  This avoids
+> certain deadlocks:
+>
+> - vfs_create()
+>  - f2fs_create() <-- takes an fs_lock
+>   - f2fs_add_link()
+>    - __f2fs_add_link()
+>     - init_inode_metadata()
+>      - f2fs_init_security()
+>       - security_inode_init_security()
+>        - f2fs_initxattrs()
+>         - f2fs_setxattr() <-- also takes an fs_lock
+>
+> If the caller happens to grab the same fs_lock from the pool in both
+> places, they will deadlock.  There are also deadlocks involving
+> multiple threads and mutexes:
+>
+> - f2fs_write_begin()
+>  - f2fs_balance_fs() <-- takes gc_mutex
+>   - f2fs_gc()
+>    - write_checkpoint()
+>     - block_operations()
+>      - mutex_lock_all() <-- blocks trying to grab all fs_locks
+>
+> - f2fs_mkdir() <-- takes an fs_lock
+>  - __f2fs_add_link()
+>   - f2fs_init_security()
+>    - security_inode_init_security()
+>     - f2fs_initxattrs()
+>      - f2fs_setxattr()
+>       - f2fs_balance_fs() <-- blocks trying to take gc_mutex
+>
+> Signed-off-by: Russ Knize <Russ.Knize@motorola.com>
+> ---
+>  fs/f2fs/xattr.c |   35 +++++++++++++++++++++++++----------
+>  1 file changed, 25 insertions(+), 10 deletions(-)
+>
+> diff --git a/fs/f2fs/xattr.c b/fs/f2fs/xattr.c
+> index 1ac8a5f..3d900ea 100644
+> --- a/fs/f2fs/xattr.c
+> +++ b/fs/f2fs/xattr.c
+> @@ -154,6 +154,9 @@ static int f2fs_xattr_advise_set(struct dentry *dentry, const char *name,
+>  }
+>
+>  #ifdef CONFIG_F2FS_FS_SECURITY
+> +static int __f2fs_setxattr(struct inode *inode, int name_index,
+> +                       const char *name, const void *value, size_t value_len,
+> +                       struct page *ipage);
+>  static int f2fs_initxattrs(struct inode *inode, const struct xattr *xattr_array,
+>                 void *page)
+>  {
+> @@ -161,7 +164,7 @@ static int f2fs_initxattrs(struct inode *inode, const struct xattr *xattr_array,
+>         int err = 0;
+>
+>         for (xattr = xattr_array; xattr->name != NULL; xattr++) {
+> -               err = f2fs_setxattr(inode, F2FS_XATTR_INDEX_SECURITY,
+> +               err = __f2fs_setxattr(inode, F2FS_XATTR_INDEX_SECURITY,
+>                                 xattr->name, xattr->value,
+>                                 xattr->value_len, (struct page *)page);
+>                 if (err < 0)
+> @@ -469,16 +472,15 @@ cleanup:
+>         return error;
+>  }
+>
+> -int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
+> -                       const void *value, size_t value_len, struct page *ipage)
+> +static int __f2fs_setxattr(struct inode *inode, int name_index,
+> +                       const char *name, const void *value, size_t value_len,
+> +                       struct page *ipage)
+>  {
+> -       struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+>         struct f2fs_inode_info *fi = F2FS_I(inode);
+>         struct f2fs_xattr_entry *here, *last;
+>         void *base_addr;
+>         int found, newsize;
+>         size_t name_len;
+> -       int ilock;
+>         __u32 new_hsize;
+>         int error = -ENOMEM;
+>
+> @@ -493,10 +495,6 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
+>         if (name_len > F2FS_NAME_LEN || value_len > MAX_VALUE_LEN(inode))
+>                 return -ERANGE;
+>
+> -       f2fs_balance_fs(sbi);
+> -
+> -       ilock = mutex_lock_op(sbi);
+> -
+>         base_addr = read_all_xattrs(inode, ipage);
+>         if (!base_addr)
+>                 goto exit;
+> @@ -578,7 +576,24 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
+>         else
+>                 update_inode_page(inode);
+>  exit:
+> -       mutex_unlock_op(sbi, ilock);
+>         kzfree(base_addr);
+>         return error;
+>  }
+> +
+> +int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
+> +                       const void *value, size_t value_len, struct page *ipage)
+> +{
+> +       struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> +       int ilock;
+> +       int err;
+> +
+> +       f2fs_balance_fs(sbi);
+> +
+> +       ilock = mutex_lock_op(sbi);
+> +
+> +       err = __f2fs_setxattr(inode, name_index, name, value, value_len, ipage);
+> +
+> +       mutex_unlock_op(sbi, ilock);
+> +
+> +       return err;
+> +}
+> --
+> 1.7.10.4
+>
