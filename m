@@ -1,57 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab3IXMLp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:11:45 -0400
-Received: from unicorn.mansr.com ([81.2.72.234]:59881 "EHLO unicorn.mansr.com"
+	id S1753454Ab3IXMJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:09:33 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37644 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754037Ab3IXMLn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:11:43 -0400
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Rob Landley <rob@landley.net>
-Cc: Pavel Machek <pavel@ucw.cz>, Will Deacon <will.deacon@arm.com>,
-        Trivial patch monkey <trivial@kernel.org>,
-        Andrew Morton <akpm@osdl.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: new binutils needed for arm in 3.12-rc1
-References: <20130923235917.GA30967@amd.pavel.ucw.cz>
-	<1379988800.1974.68@driftwood>
-Date: Tue, 24 Sep 2013 13:11:38 +0100
-In-Reply-To: <1379988800.1974.68@driftwood> (Rob Landley's message of "Mon, 23
-	Sep 2013 21:13:20 -0500")
-Message-ID: <yw1xpprywhad.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753236Ab3IXMJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 08:09:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,970,1371106800"; 
+   d="scan'208";a="364821469"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH V3 03/10] perf tools: validate kcore module addresses
+Date: Tue, 24 Sep 2013 15:15:45 +0300
+Message-Id: <1380024952-29387-4-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
+References: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob Landley <rob@landley.net> writes:
+Before using kcore we need to check that modules are
+in memory at the same addresses that they were when
+data was recorded.
 
-> On 09/23/2013 06:59:17 PM, Pavel Machek wrote:
->> During 3.12-rc, Will Deacon introduced code into arch/arm that
->> requires binutils 2.22.
->
-> Um, my toolchain is using the last gplv2 snapshot of binutils out of  
-> git, which is just past 2.17 and can build armv7 (but not armv8).
->
-> Binutils 2.12->2.22 is quite the jump. (11 years.) I'd except some  
-> thought to have gone into that? Possibly a mention of it?
+This is done because, while we could remap symbols
+to different addresses, the object code linkages
+would still be different which would provide an
+erroneous view of the object code.
 
-I seriously doubt that 2.12 still works at all (I doubt it can even be
-built on a modern system).  In my experience, binutils older than 2.19
-or so rarely works properly for ARM.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/symbol.c | 194 ++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 173 insertions(+), 21 deletions(-)
 
-What value is there in maintaining compatibility with a truly ancient
-binutils version anyway?
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index ffdf2e7..668dbc3 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -798,51 +798,199 @@ bool symbol__restricted_filename(const char *filename,
+ 	return restricted;
+ }
+ 
+-struct kcore_mapfn_data {
+-	struct dso *dso;
+-	enum map_type type;
+-	struct list_head maps;
++struct module_info {
++	struct rb_node rb_node;
++	char *name;
++	u64 start;
+ };
+ 
+-static int kcore_mapfn(u64 start, u64 len, u64 pgoff, void *data)
++static void add_module(struct module_info *mi, struct rb_root *modules)
+ {
+-	struct kcore_mapfn_data *md = data;
+-	struct map *map;
++	struct rb_node **p = &modules->rb_node;
++	struct rb_node *parent = NULL;
++	struct module_info *m;
+ 
+-	map = map__new2(start, md->dso, md->type);
+-	if (map == NULL)
++	while (*p != NULL) {
++		parent = *p;
++		m = rb_entry(parent, struct module_info, rb_node);
++		if (strcmp(mi->name, m->name) < 0)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++	rb_link_node(&mi->rb_node, parent, p);
++	rb_insert_color(&mi->rb_node, modules);
++}
++
++static void delete_modules(struct rb_root *modules)
++{
++	struct module_info *mi;
++	struct rb_node *next = rb_first(modules);
++
++	while (next) {
++		mi = rb_entry(next, struct module_info, rb_node);
++		next = rb_next(&mi->rb_node);
++		rb_erase(&mi->rb_node, modules);
++		free(mi->name);
++		free(mi);
++	}
++}
++
++static struct module_info *find_module(const char *name,
++				       struct rb_root *modules)
++{
++	struct rb_node *n = modules->rb_node;
++
++	while (n) {
++		struct module_info *m;
++		int cmp;
++
++		m = rb_entry(n, struct module_info, rb_node);
++		cmp = strcmp(name, m->name);
++		if (cmp < 0)
++			n = n->rb_left;
++		else if (cmp > 0)
++			n = n->rb_right;
++		else
++			return m;
++	}
++
++	return NULL;
++}
++
++static int __read_proc_modules(void *arg, const char *name, u64 start)
++{
++	struct rb_root *modules = arg;
++	struct module_info *mi;
++
++	mi = zalloc(sizeof(struct module_info));
++	if (!mi)
+ 		return -ENOMEM;
+ 
+-	map->end = map->start + len;
+-	map->pgoff = pgoff;
++	mi->name = strdup(name);
++	mi->start = start;
+ 
+-	list_add(&map->node, &md->maps);
++	add_module(mi, modules);
++
++	if (!mi->name)
++		return -ENOMEM;
++
++	return 0;
++}
++
++static int read_proc_modules(const char *filename, struct rb_root *modules)
++{
++	if (symbol__restricted_filename(filename, "/proc/modules"))
++		return -1;
++
++	if (modules__parse(filename, modules, __read_proc_modules)) {
++		delete_modules(modules);
++		return -1;
++	}
+ 
+ 	return 0;
+ }
+ 
++static int do_validate_kcore_modules(const char *filename, struct map *map,
++				  struct map_groups *kmaps)
++{
++	struct rb_root modules = RB_ROOT;
++	struct map *old_map;
++	int err;
++
++	err = read_proc_modules(filename, &modules);
++	if (err)
++		return err;
++
++	old_map = map_groups__first(kmaps, map->type);
++	while (old_map) {
++		struct map *next = map_groups__next(old_map);
++		struct module_info *mi;
++
++		if (old_map == map || old_map->start == map->start) {
++			/* The kernel map */
++			old_map = next;
++			continue;
++		}
++
++		/* Module must be in memory at the same address */
++		mi = find_module(old_map->dso->short_name, &modules);
++		if (!mi || mi->start != old_map->start) {
++			err = -EINVAL;
++			goto out;
++		}
++
++		old_map = next;
++	}
++out:
++	delete_modules(&modules);
++	return err;
++}
++
+ /*
+- * If kallsyms is referenced by name then we look for kcore in the same
++ * If kallsyms is referenced by name then we look for filename in the same
+  * directory.
+  */
+-static bool kcore_filename_from_kallsyms_filename(char *kcore_filename,
+-						  const char *kallsyms_filename)
++static bool filename_from_kallsyms_filename(char *filename,
++					    const char *basename,
++					    const char *kallsyms_filename)
+ {
+ 	char *name;
+ 
+-	strcpy(kcore_filename, kallsyms_filename);
+-	name = strrchr(kcore_filename, '/');
++	strcpy(filename, kallsyms_filename);
++	name = strrchr(filename, '/');
+ 	if (!name)
+ 		return false;
+ 
+-	if (!strcmp(name, "/kallsyms")) {
+-		strcpy(name, "/kcore");
++	name += 1;
++
++	if (!strcmp(name, "kallsyms")) {
++		strcpy(name, basename);
+ 		return true;
+ 	}
+ 
+ 	return false;
+ }
+ 
++static int validate_kcore_modules(const char *kallsyms_filename,
++				  struct map *map)
++{
++	struct map_groups *kmaps = map__kmap(map)->kmaps;
++	char modules_filename[PATH_MAX];
++
++	if (!filename_from_kallsyms_filename(modules_filename, "modules",
++					     kallsyms_filename))
++		return -EINVAL;
++
++	if (do_validate_kcore_modules(modules_filename, map, kmaps))
++		return -EINVAL;
++
++	return 0;
++}
++
++struct kcore_mapfn_data {
++	struct dso *dso;
++	enum map_type type;
++	struct list_head maps;
++};
++
++static int kcore_mapfn(u64 start, u64 len, u64 pgoff, void *data)
++{
++	struct kcore_mapfn_data *md = data;
++	struct map *map;
++
++	map = map__new2(start, md->dso, md->type);
++	if (map == NULL)
++		return -ENOMEM;
++
++	map->end = map->start + len;
++	map->pgoff = pgoff;
++
++	list_add(&map->node, &md->maps);
++
++	return 0;
++}
++
+ static int dso__load_kcore(struct dso *dso, struct map *map,
+ 			   const char *kallsyms_filename)
+ {
+@@ -859,8 +1007,12 @@ static int dso__load_kcore(struct dso *dso, struct map *map,
+ 	if (map != machine->vmlinux_maps[map->type])
+ 		return -EINVAL;
+ 
+-	if (!kcore_filename_from_kallsyms_filename(kcore_filename,
+-						   kallsyms_filename))
++	if (!filename_from_kallsyms_filename(kcore_filename, "kcore",
++					     kallsyms_filename))
++		return -EINVAL;
++
++	/* All modules must be present at their original addresses */
++	if (validate_kcore_modules(kallsyms_filename, map))
+ 		return -EINVAL;
+ 
+ 	md.dso = dso;
 -- 
-Måns Rullgård
-mans@mansr.com
+1.7.11.7
+
