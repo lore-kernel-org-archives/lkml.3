@@ -1,109 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab3IXTuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 15:50:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:45751 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024Ab3IXTuW (ORCPT
+	id S1754643Ab3IXTuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 15:50:40 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38546 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754609Ab3IXTui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 15:50:22 -0400
-USER-AGENT: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402
- Thunderbird/17.0.5
+	Tue, 24 Sep 2013 15:50:38 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
+        Marc Pignat <marc.pignat@hevs.ch>, john.stultz@linaro.org,
+        kernel@pengutronix.de, Ronald Wahl <ronald.wahl@raritan.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [PATCH v2] clockevents: Sanitize ticks to nsec conversion
+Date: Tue, 24 Sep 2013 21:50:23 +0200
+Message-Id: <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-Message-ID: <5241ED15.7090003@oracle.com>
-Date: Tue, 24 Sep 2013 12:50:45 -0700 (PDT)
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: hpa@linux.intel.com
-Cc: Steven Rostedt <rostedt@goodmis.org>, david.vrabel@citrix.com,
-        linux-kernel@vger.kernel.org, Stefano.Stabellini@eu.citrix.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH] xen: Do not enable spinlocks before jump_label_init() has
- executed
-References: <1379039384-1568-1-git-send-email-boris.ostrovsky@oracle.com>
- <20130912224719.5a4a81da@gandalf.local.home>
-In-Reply-To: <20130912224719.5a4a81da@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 10:47 PM, Steven Rostedt wrote:
-> On Thu, 12 Sep 2013 22:29:44 -0400
-> Boris Ostrovsky <boris.ostrovsky@oracle.com> wrote:
->
->> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>
->> xen_init_spinlocks() currently calls static_key_slow_inc() before
->> jump_label_init() is invoked. When CONFIG_JUMP_LABEL is set (which usually is
->> the case) the effect of this static_key_slow_inc() is deferred until after
->> jump_label_init(). This is different from when CONFIG_JUMP_LABEL is not set, in
->> which case the key is set immediately. Thus, depending on the value of config
->> option, we may observe different behavior.
->>
->> In addition, when we come to __jump_label_transform() from jump_label_init(),
->> the key (paravirt_ticketlocks_enabled) is already enabled. On processors where
->> ideal_nop is not the same as default_nop this will cause a BUG() since it is
->> expected that before a key is enabled the latter is replaced by the former
->> during initialization.
->>
->> To address this problem we need to move
->> static_key_slow_inc(&paravirt_ticketlocks_enabled) so that it is called
->> after jump_label_init(). We also need to make sure that this is done before
->> other cpus start to boot. early_initcall appears to be  a good place to do so.
->> (Note that we cannot move whole xen_init_spinlocks() there since pv_lock_ops
->> need to be set before alternative_instructions() runs.)
->>
-> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
->
-> Peter,
->
-> This fixes a regression in 3.12 against xen. Please pull and push to
-> Linus sometime soon.
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Peter,
+Marc Kleine-Budde pointed out, that commit 77cc982 "clocksource: use
+clockevents_config_and_register() where possible" caused a regression
+for some of the converted subarchs.
 
-Are you planning on taking this patch?
+The reason is, that the clockevents core code converts the minimal
+hardware tick delta to a nanosecond value for core internal
+usage. This conversion is affected by integer math rounding loss, so
+the backwards conversion to hardware ticks will likely result in a
+value which is less than the configured hardware limitation. The
+affected subarchs used their own workaround (SIGH!) which got lost in
+the conversion.
 
-Thanks.
--boris
+The solution for the issue at hand is simple: adding evt->mult - 1 to
+the shifted value before the integer divison in the core conversion
+function takes care of it. But this only works for the case where for
+the scaled math mult/shift pair "mult <= 1 << shift" is true. For the
+case where "mult > 1 << shift" we can apply the rounding add only for
+the minimum delta value to make sure that the backward conversion is
+not less than the given hardware limit. For the upper bound we need to
+omit the rounding add, because the backwards conversion is always
+larger than the original latch value. That would violate the upper
+bound of the hardware device.
 
+Though looking closer at the details of that function reveals another
+bogosity: The upper bounds check is broken as well. Checking for a
+resulting "clc" value greater than KTIME_MAX after the conversion is
+pointless. The conversion does:
 
->
-> Thanks,
->
-> -- Steve
->
->> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->> ---
->>   arch/x86/xen/spinlock.c | 11 +++++++++--
->>   1 file changed, 9 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
->> index 253f63f..d90628d 100644
->> --- a/arch/x86/xen/spinlock.c
->> +++ b/arch/x86/xen/spinlock.c
->> @@ -267,11 +267,18 @@ void __init xen_init_spinlocks(void)
->>   		return;
->>   	}
->>   
->> -	static_key_slow_inc(&paravirt_ticketlocks_enabled);
->> -
->>   	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
->>   	pv_lock_ops.unlock_kick = xen_unlock_kick;
->>   }
->> +static __init int xen_init_spinlocks_jump(void)
->> +{
->> +	if (!xen_pvspin)
->> +		return 0;
->> +
->> +	static_key_slow_inc(&paravirt_ticketlocks_enabled);
->> +	return 0;
->> +}
->> +early_initcall(xen_init_spinlocks_jump);
->>   
->>   static __init int xen_parse_nopvspin(char *arg)
->>   {
+      u64 clc = (latch << evt->shift) / evt->mult;
+
+So there is no sanity check for (latch << evt->shift) exceeding the
+64bit boundary. The latch argument is "unsigned long", so on a 64bit
+arch the handed in argument could easily lead to an unnoticed shift
+overflow. With the above rounding fix applied the calculation before
+the divison is:
+
+       u64 clc = (latch << evt->shift) + evt->mult - 1;
+
+So we need to make sure, that neither the shift nor the rounding add
+is overflowing the u64 boundary.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: nicolas.ferre@atmel.com
+Cc: Marc Pignat <marc.pignat@hevs.ch>
+Cc: john.stultz@linaro.org
+Cc: kernel@pengutronix.de
+Cc: Ronald Wahl <ronald.wahl@raritan.com>
+Cc: LAK <linux-arm-kernel@lists.infradead.org>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
+[ukl: move assignment to rnd after eventually changing mult, fix build
+ issue and correct comment with the right math]
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ kernel/time/clockevents.c | 65 ++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 50 insertions(+), 15 deletions(-)
+
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 38959c8..662c579 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -33,29 +33,64 @@ struct ce_unbind {
+ 	int res;
+ };
+ 
+-/**
+- * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
+- * @latch:	value to convert
+- * @evt:	pointer to clock event device descriptor
+- *
+- * Math helper, returns latch value converted to nanoseconds (bound checked)
+- */
+-u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
++static u64 cev_delta2ns(unsigned long latch, struct clock_event_device *evt,
++			bool ismax)
+ {
+ 	u64 clc = (u64) latch << evt->shift;
++	u64 rnd;
+ 
+ 	if (unlikely(!evt->mult)) {
+ 		evt->mult = 1;
+ 		WARN_ON(1);
+ 	}
++	rnd = (u64) evt->mult - 1;
++
++	/*
++	 * Upper bound sanity check. If the backwards conversion is
++	 * not equal latch, we know that the above shift overflowed.
++	 */
++	if ((clc >> evt->shift) != (u64)latch)
++		clc = ~0ULL;
++
++	/*
++	 * Scaled math oddities:
++	 *
++	 * For mult <= (1 << shift) we can safely add mult - 1 to
++	 * prevent integer rounding loss. So the backwards conversion
++	 * from nsec to device ticks will be correct.
++	 *
++	 * For mult > (1 << shift), i.e. device frequency is > 1GHz we
++	 * need to be careful. Adding mult - 1 will result in a value
++	 * which when converted back to device ticks can be larger
++	 * than latch by up to (mult - 1) >> shift. For the min_delta
++	 * calculation we still want to apply this in order to stay
++	 * above the minimum device ticks limit. For the upper limit
++	 * we would end up with a latch value larger than the upper
++	 * limit of the device, so we omit the add to stay below the
++	 * device upper boundary.
++	 *
++	 * Also omit the add if it would overflow the u64 boundary.
++	 */
++	if ((~0ULL - clc > rnd) &&
++	    (!ismax || evt->mult <= (1U << evt->shift)))
++		clc += rnd;
+ 
+ 	do_div(clc, evt->mult);
+-	if (clc < 1000)
+-		clc = 1000;
+-	if (clc > KTIME_MAX)
+-		clc = KTIME_MAX;
+ 
+-	return clc;
++	/* Deltas less than 1usec are pointless noise */
++	return clc > 1000 ? clc : 1000;
++}
++
++/**
++ * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
++ * @latch:	value to convert
++ * @evt:	pointer to clock event device descriptor
++ *
++ * Math helper, returns latch value converted to nanoseconds (bound checked)
++ */
++u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
++{
++	return cev_delta2ns(latch, evt, false);
+ }
+ EXPORT_SYMBOL_GPL(clockevent_delta2ns);
+ 
+@@ -380,8 +415,8 @@ void clockevents_config(struct clock_event_device *dev, u32 freq)
+ 		sec = 600;
+ 
+ 	clockevents_calc_mult_shift(dev, freq, sec);
+-	dev->min_delta_ns = clockevent_delta2ns(dev->min_delta_ticks, dev);
+-	dev->max_delta_ns = clockevent_delta2ns(dev->max_delta_ticks, dev);
++	dev->min_delta_ns = cev_delta2ns(dev->min_delta_ticks, dev, false);
++	dev->max_delta_ns = cev_delta2ns(dev->max_delta_ticks, dev, true);
+ }
+ 
+ /**
+-- 
+1.8.4.rc3
 
