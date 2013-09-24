@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab3IXNzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 09:55:32 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:57527 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab3IXNz2 (ORCPT
+	id S1754016Ab3IXN43 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 09:56:29 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:33848 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab3IXN41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 09:55:28 -0400
-Date: Tue, 24 Sep 2013 14:55:22 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Mark Brown <broonie@kernel.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: core: introduce of_node_name for mfd sub devices
-Message-ID: <20130924135522.GA16407@lee--X1>
-References: <1379579392-1794-1-git-send-email-ldewangan@nvidia.com>
- <20130919083050.GH16984@lee--X1>
- <20130919115501.GM21013@sirena.org.uk>
- <20130919120051.GG22389@lee--X1>
- <523AEE07.9090405@nvidia.com>
- <20130919122240.GI22389@lee--X1>
- <5240A88D.8030309@wwwdotorg.org>
+	Tue, 24 Sep 2013 09:56:27 -0400
+Date: Tue, 24 Sep 2013 15:56:24 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+Message-ID: <20130924135622.GA21410@localhost.localdomain>
+References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
+ <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
+ <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
+ <20130920162603.GA30381@localhost.localdomain>
+ <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
+ <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
+ <1379799901.24090.6.camel@pasglop>
+ <1379911234.6625.7.camel@pasglop>
+ <20130924024422.GA13923@localhost.localdomain>
+ <1379997777.5443.24.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5240A88D.8030309@wwwdotorg.org>
+In-Reply-To: <1379997777.5443.24.camel@pasglop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> And regulator driver should get the regulator node by their
-> >> pdev->dev.of_node.
-> >> Currently, in most of driver, we are having the code on regulator
-> >> driver to get "regulators" node from parent node which I want to
-> >> avoid.
+On Tue, Sep 24, 2013 at 02:42:57PM +1000, Benjamin Herrenschmidt wrote:
+> On Tue, 2013-09-24 at 04:44 +0200, Frederic Weisbecker wrote:
+> > So the safest way to fix this is to unconditionally call do_softirq()
+> > from irq_exit().
+> > A performance penalty may come along but safety primes.
 > > 
-> > Ah, I see. Yes, I believe the regulators should have their own node,
+> > We should probably do that and work on longer term solutions (Kconfig
+> > based arch switch, etc...)
+> > for the next merge window?
 > 
-> The use of a "regulators" node to keep all the regulator configuration
-> in one place seems fine...
-> 
-> > complete with a compatible string.
-> 
-> ... but I see not reason why that node has to have a separate compatible
-> property, or /has/ to have a separate driver.
-> 
-> I think having a compatible value in this node would only be required if
-> the HW block that implements those registers is actually expected to be
-> shared between n different chips, and hence it's likely that you'd get
-> re-use out of a separate binding, driver, etc.
-> 
-> It's perfectly reasonable for the regulator MFD driver to know that the
-> binding for the top-level PMIC node has a regulators child node, and go
-> find it by name, and read whatever properties/nodes it needs directly
-> out of it. Writing code that way in no ways implies a need for a
-> compatible value.
+> As you prefer, though I'm keen on getting the "fast" version in RHEL7 if
+> RH will take it :-)
 
-Sounds fine.
+So what is the fast version? Converting __do_softirq() to do_softirq()
+unconditionally.
 
-> > To have each regulator listed
-> > separately in the parent node seems a little messy. Just out of
-> > interest, how many regulators are we talking about here?
+RH will accept any fix that goes upstream.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> 
+> From the generic code POV, it's a one-liner #ifdef to select between
+> do_softirq and __do_softirq() right ? Then it's up to the arch to
+> #define I_CAN_DO_FAST !
+
+I'd rather say #define I_CAN_DO_SAFE :)
+
+But I guess the kind of symbol we want is some ARCH_HAS_IRQ_STACK_LOW_HANDLER
+
+> 
+> > I'll respin the series plus the regression fix, unless somebody has a
+> > better solution.
+> 
+> Cheers,
+> Ben.
+> 
+> 
