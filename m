@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab3IXIix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 04:38:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53275 "EHLO
+	id S1753418Ab3IXIjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 04:39:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53236 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab3IXIi1 (ORCPT
+	with ESMTP id S1750730Ab3IXIh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 04:38:27 -0400
-Date: Tue, 24 Sep 2013 01:38:16 -0700
-From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-8a1f4653f27ffd5d61088cf6b95c39bb13bf6132@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        travis@sgi.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        travis@sgi.com, tglx@linutronix.de
+	Tue, 24 Sep 2013 04:37:56 -0400
+Date: Tue, 24 Sep 2013 01:37:36 -0700
+From: tip-bot for Mike Travis <tipbot@zytor.com>
+Message-ID: <tip-0d12ef0c900078cc1f4e78dff2245521aa5d0c89@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@kernel.org, jason.wessel@windriver.com, a.p.zijlstra@chello.nl,
+        travis@sgi.com, acme@ghostprotocols.net, hedi@sgi.com,
+        sivanich@sgi.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, travis@sgi.com, a.p.zijlstra@chello.nl,
+        jason.wessel@windriver.com, acme@ghostprotocols.net, hedi@sgi.com,
+        sivanich@sgi.com, tglx@linutronix.de
+In-Reply-To: <20130923212500.353547733@asylum.americas.sgi.com>
+References: <20130923212500.353547733@asylum.americas.sgi.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/uv] x86/UV: Check for alloc_cpumask_var()
-  failures properly in uv_nmi_setup()
-Git-Commit-ID: 8a1f4653f27ffd5d61088cf6b95c39bb13bf6132
+Subject: [tip:x86/uv] x86/UV: Update UV support for external NMI signals
+Git-Commit-ID: 0d12ef0c900078cc1f4e78dff2245521aa5d0c89
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -26,51 +31,810 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 24 Sep 2013 01:38:22 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 24 Sep 2013 01:37:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8a1f4653f27ffd5d61088cf6b95c39bb13bf6132
-Gitweb:     http://git.kernel.org/tip/8a1f4653f27ffd5d61088cf6b95c39bb13bf6132
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Tue, 24 Sep 2013 09:52:40 +0200
+Commit-ID:  0d12ef0c900078cc1f4e78dff2245521aa5d0c89
+Gitweb:     http://git.kernel.org/tip/0d12ef0c900078cc1f4e78dff2245521aa5d0c89
+Author:     Mike Travis <travis@sgi.com>
+AuthorDate: Mon, 23 Sep 2013 16:25:01 -0500
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 24 Sep 2013 09:52:40 +0200
+CommitDate: Tue, 24 Sep 2013 09:02:02 +0200
 
-x86/UV: Check for alloc_cpumask_var() failures properly in uv_nmi_setup()
+x86/UV: Update UV support for external NMI signals
 
-GCC warned about:
+The current UV NMI handler has not been updated for the changes
+in the system NMI handler and the perf operations.  The UV NMI
+handler reads an MMR in the UV Hub to check to see if the NMI
+event was caused by the external 'system NMI' that the operator
+can initiate on the System Mgmt Controller.
 
-   arch/x86/platform/uv/uv_nmi.c: In function ‘uv_nmi_setup’:
-   arch/x86/platform/uv/uv_nmi.c:664:2: warning: the address of ‘uv_nmi_cpu_mask’ will always evaluate as ‘true’
+The problem arises when the perf tools are running, causing
+millions of perf events per second on very large CPU count
+systems.  Previously this was okay because the perf NMI handler
+ran at a higher priority on the NMI call chain and if the NMI
+was a perf event, it would stop calling other NMI handlers
+remaining on the NMI call chain.
 
-The reason is this code:
+Now the system NMI handler calls all the handlers on the NMI
+call chain including the UV NMI handler.  This causes the UV NMI
+handler to read the MMRs at the same millions per second rate.
+This can lead to significant performance loss and possible
+system failures.  It also can cause thousands of 'Dazed and
+Confused' messages being sent to the system console.  This
+effectively makes perf tools unusable on UV systems.
 
-        alloc_cpumask_var(&uv_nmi_cpu_mask, GFP_KERNEL);
-        BUG_ON(!uv_nmi_cpu_mask);
+To avoid this excessive overhead when perf tools are running,
+this code has been optimized to minimize reading of the MMRs as
+much as possible, by moving to the NMI_UNKNOWN notifier chain.
+This chain is called only when all the users on the standard
+NMI_LOCAL call chain have been called and none of them have
+claimed this NMI.
 
-which is not the way to check for alloc_cpumask_var() failures - its
-return code should be checked instead.
+There is an exception where the NMI_LOCAL notifier chain is
+used.  When the perf tools are in use, it's possible that the UV
+NMI was captured by some other NMI handler and then either
+ignored or mistakenly processed as a perf event.  We set a
+per_cpu ('ping') flag for those CPUs that ignored the initial
+NMI, and then send them an IPI NMI signal.  The NMI_LOCAL
+handler on each cpu does not need to read the MMR, but instead
+checks the in memory flag indicating it was pinged.  There are
+two module variables, 'ping_count' indicating how many requested
+NMI events occurred, and 'ping_misses' indicating how many stray
+NMI events.  These most likely are perf events so it shows the
+overhead of the perf NMI interrupts and how many MMR reads were avoided.
 
-Cc: Mike Travis <travis@sgi.com>
-Link: http://lkml.kernel.org/n/tip-2pXRemsjupmvonbpmmnzleo1@git.kernel.org
+This patch also minimizes the reads of the MMRs by having the
+first cpu entering the NMI handler on each node set a per HUB
+in-memory atomic value.  (Having a per HUB value avoids sending
+lock traffic over NumaLink.)  Both types of UV NMIs from the SMI
+layer are supported.
+
+Signed-off-by: Mike Travis <travis@sgi.com>
+Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
+Reviewed-by: Hedi Berriche <hedi@sgi.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Link: http://lkml.kernel.org/r/20130923212500.353547733@asylum.americas.sgi.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/platform/uv/uv_nmi.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/x86/include/asm/uv/uv_hub.h   |  57 +++-
+ arch/x86/include/asm/uv/uv_mmrs.h  |  31 +++
+ arch/x86/kernel/apic/x2apic_uv_x.c |   1 +
+ arch/x86/platform/uv/uv_nmi.c      | 553 ++++++++++++++++++++++++++++++++++---
+ 4 files changed, 600 insertions(+), 42 deletions(-)
 
-diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
-index c171ca5..9126dfb 100644
---- a/arch/x86/platform/uv/uv_nmi.c
-+++ b/arch/x86/platform/uv/uv_nmi.c
-@@ -660,8 +660,7 @@ void uv_nmi_setup(void)
- 		}
- 		uv_hub_nmi_per(cpu) = uv_hub_nmi_list[nid];
- 	}
--	alloc_cpumask_var(&uv_nmi_cpu_mask, GFP_KERNEL);
--	BUG_ON(!uv_nmi_cpu_mask);
-+	BUG_ON(!alloc_cpumask_var(&uv_nmi_cpu_mask, GFP_KERNEL));
+diff --git a/arch/x86/include/asm/uv/uv_hub.h b/arch/x86/include/asm/uv/uv_hub.h
+index 2c32df9..a30836c 100644
+--- a/arch/x86/include/asm/uv/uv_hub.h
++++ b/arch/x86/include/asm/uv/uv_hub.h
+@@ -502,8 +502,8 @@ struct uv_blade_info {
+ 	unsigned short	nr_online_cpus;
+ 	unsigned short	pnode;
+ 	short		memory_nid;
+-	spinlock_t	nmi_lock;
+-	unsigned long	nmi_count;
++	spinlock_t	nmi_lock;	/* obsolete, see uv_hub_nmi */
++	unsigned long	nmi_count;	/* obsolete, see uv_hub_nmi */
+ };
+ extern struct uv_blade_info *uv_blade_info;
+ extern short *uv_node_to_blade;
+@@ -576,6 +576,59 @@ static inline int uv_num_possible_blades(void)
+ 	return uv_possible_blades;
  }
  
++/* Per Hub NMI support */
++extern void uv_nmi_setup(void);
++
++/* BMC sets a bit this MMR non-zero before sending an NMI */
++#define UVH_NMI_MMR		UVH_SCRATCH5
++#define UVH_NMI_MMR_CLEAR	UVH_SCRATCH5_ALIAS
++#define UVH_NMI_MMR_SHIFT	63
++#define	UVH_NMI_MMR_TYPE	"SCRATCH5"
++
++/* Newer SMM NMI handler, not present in all systems */
++#define UVH_NMI_MMRX		UVH_EVENT_OCCURRED0
++#define UVH_NMI_MMRX_CLEAR	UVH_EVENT_OCCURRED0_ALIAS
++#define UVH_NMI_MMRX_SHIFT	(is_uv1_hub() ? \
++					UV1H_EVENT_OCCURRED0_EXTIO_INT0_SHFT :\
++					UVXH_EVENT_OCCURRED0_EXTIO_INT0_SHFT)
++#define	UVH_NMI_MMRX_TYPE	"EXTIO_INT0"
++
++/* Non-zero indicates newer SMM NMI handler present */
++#define UVH_NMI_MMRX_SUPPORTED	UVH_EXTIO_INT0_BROADCAST
++
++/* Indicates to BIOS that we want to use the newer SMM NMI handler */
++#define UVH_NMI_MMRX_REQ	UVH_SCRATCH5_ALIAS_2
++#define UVH_NMI_MMRX_REQ_SHIFT	62
++
++struct uv_hub_nmi_s {
++	raw_spinlock_t	nmi_lock;
++	atomic_t	in_nmi;		/* flag this node in UV NMI IRQ */
++	atomic_t	cpu_owner;	/* last locker of this struct */
++	atomic_t	read_mmr_count;	/* count of MMR reads */
++	atomic_t	nmi_count;	/* count of true UV NMIs */
++	unsigned long	nmi_value;	/* last value read from NMI MMR */
++};
++
++struct uv_cpu_nmi_s {
++	struct uv_hub_nmi_s	*hub;
++	atomic_t		state;
++	atomic_t		pinging;
++	int			queries;
++	int			pings;
++};
++
++DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
++#define uv_cpu_nmi			(__get_cpu_var(__uv_cpu_nmi))
++#define uv_hub_nmi			(uv_cpu_nmi.hub)
++#define uv_cpu_nmi_per(cpu)		(per_cpu(__uv_cpu_nmi, cpu))
++#define uv_hub_nmi_per(cpu)		(uv_cpu_nmi_per(cpu).hub)
++
++/* uv_cpu_nmi_states */
++#define	UV_NMI_STATE_OUT		0
++#define	UV_NMI_STATE_IN			1
++#define	UV_NMI_STATE_DUMP		2
++#define	UV_NMI_STATE_DUMP_DONE		3
++
+ /* Update SCIR state */
+ static inline void uv_set_scir_bits(unsigned char value)
+ {
+diff --git a/arch/x86/include/asm/uv/uv_mmrs.h b/arch/x86/include/asm/uv/uv_mmrs.h
+index bd5f80e..e42249b 100644
+--- a/arch/x86/include/asm/uv/uv_mmrs.h
++++ b/arch/x86/include/asm/uv/uv_mmrs.h
+@@ -461,6 +461,23 @@ union uvh_event_occurred0_u {
  
+ 
+ /* ========================================================================= */
++/*                         UVH_EXTIO_INT0_BROADCAST                          */
++/* ========================================================================= */
++#define UVH_EXTIO_INT0_BROADCAST 0x61448UL
++#define UVH_EXTIO_INT0_BROADCAST_32 0x3f0
++
++#define UVH_EXTIO_INT0_BROADCAST_ENABLE_SHFT		0
++#define UVH_EXTIO_INT0_BROADCAST_ENABLE_MASK		0x0000000000000001UL
++
++union uvh_extio_int0_broadcast_u {
++	unsigned long	v;
++	struct uvh_extio_int0_broadcast_s {
++		unsigned long	enable:1;			/* RW */
++		unsigned long	rsvd_1_63:63;
++	} s;
++};
++
++/* ========================================================================= */
+ /*                         UVH_GR0_TLB_INT0_CONFIG                           */
+ /* ========================================================================= */
+ #define UVH_GR0_TLB_INT0_CONFIG 0x61b00UL
+@@ -2606,6 +2623,20 @@ union uvh_scratch5_u {
+ };
+ 
+ /* ========================================================================= */
++/*                            UVH_SCRATCH5_ALIAS                             */
++/* ========================================================================= */
++#define UVH_SCRATCH5_ALIAS 0x2d0208UL
++#define UVH_SCRATCH5_ALIAS_32 0x780
++
++
++/* ========================================================================= */
++/*                           UVH_SCRATCH5_ALIAS_2                            */
++/* ========================================================================= */
++#define UVH_SCRATCH5_ALIAS_2 0x2d0210UL
++#define UVH_SCRATCH5_ALIAS_2_32 0x788
++
++
++/* ========================================================================= */
+ /*                          UVXH_EVENT_OCCURRED2                             */
+ /* ========================================================================= */
+ #define UVXH_EVENT_OCCURRED2 0x70100UL
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index 9e47c06..0a5a4b8 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -977,6 +977,7 @@ void __init uv_system_init(void)
+ 	map_mmr_high(max_pnode);
+ 	map_mmioh_high(min_pnode, max_pnode);
+ 
++	uv_nmi_setup();
+ 	uv_cpu_init();
+ 	uv_scir_register_cpu_notifier();
+ 	uv_register_nmi_notifier();
+diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
+index 37feb60..fb02ea7 100644
+--- a/arch/x86/platform/uv/uv_nmi.c
++++ b/arch/x86/platform/uv/uv_nmi.c
+@@ -20,72 +20,518 @@
+  */
+ 
+ #include <linux/cpu.h>
++#include <linux/delay.h>
++#include <linux/module.h>
+ #include <linux/nmi.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
+ 
+ #include <asm/apic.h>
++#include <asm/current.h>
++#include <asm/kdebug.h>
++#include <asm/local64.h>
+ #include <asm/nmi.h>
+ #include <asm/uv/uv.h>
+ #include <asm/uv/uv_hub.h>
+ #include <asm/uv/uv_mmrs.h>
+ 
+-/* BMC sets a bit this MMR non-zero before sending an NMI */
+-#define UVH_NMI_MMR				UVH_SCRATCH5
+-#define UVH_NMI_MMR_CLEAR			(UVH_NMI_MMR + 8)
+-#define UV_NMI_PENDING_MASK			(1UL << 63)
+-DEFINE_PER_CPU(unsigned long, cpu_last_nmi_count);
+-static DEFINE_SPINLOCK(uv_nmi_lock);
++/*
++ * UV handler for NMI
++ *
++ * Handle system-wide NMI events generated by the global 'power nmi' command.
++ *
++ * Basic operation is to field the NMI interrupt on each cpu and wait
++ * until all cpus have arrived into the nmi handler.  If some cpus do not
++ * make it into the handler, try and force them in with the IPI(NMI) signal.
++ *
++ * We also have to lessen UV Hub MMR accesses as much as possible as this
++ * disrupts the UV Hub's primary mission of directing NumaLink traffic and
++ * can cause system problems to occur.
++ *
++ * To do this we register our primary NMI notifier on the NMI_UNKNOWN
++ * chain.  This reduces the number of false NMI calls when the perf
++ * tools are running which generate an enormous number of NMIs per
++ * second (~4M/s for 1024 cpu threads).  Our secondary NMI handler is
++ * very short as it only checks that if it has been "pinged" with the
++ * IPI(NMI) signal as mentioned above, and does not read the UV Hub's MMR.
++ *
++ */
++
++static struct uv_hub_nmi_s **uv_hub_nmi_list;
++
++DEFINE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
++EXPORT_PER_CPU_SYMBOL_GPL(__uv_cpu_nmi);
++
++static unsigned long nmi_mmr;
++static unsigned long nmi_mmr_clear;
++static unsigned long nmi_mmr_pending;
++
++static atomic_t	uv_in_nmi;
++static atomic_t uv_nmi_cpu = ATOMIC_INIT(-1);
++static atomic_t uv_nmi_cpus_in_nmi = ATOMIC_INIT(-1);
++static atomic_t uv_nmi_slave_continue;
++static cpumask_var_t uv_nmi_cpu_mask;
++
++/* Values for uv_nmi_slave_continue */
++#define SLAVE_CLEAR	0
++#define SLAVE_CONTINUE	1
++#define SLAVE_EXIT	2
+ 
+ /*
+- * When NMI is received, print a stack trace.
++ * Default is all stack dumps go to the console and buffer.
++ * Lower level to send to log buffer only.
+  */
+-int uv_handle_nmi(unsigned int reason, struct pt_regs *regs)
++static int uv_nmi_loglevel = 7;
++module_param_named(dump_loglevel, uv_nmi_loglevel, int, 0644);
++
++/*
++ * The following values show statistics on how perf events are affecting
++ * this system.
++ */
++static int param_get_local64(char *buffer, const struct kernel_param *kp)
+ {
+-	unsigned long real_uv_nmi;
+-	int bid;
++	return sprintf(buffer, "%lu\n", local64_read((local64_t *)kp->arg));
++}
+ 
+-	/*
+-	 * Each blade has an MMR that indicates when an NMI has been sent
+-	 * to cpus on the blade. If an NMI is detected, atomically
+-	 * clear the MMR and update a per-blade NMI count used to
+-	 * cause each cpu on the blade to notice a new NMI.
+-	 */
+-	bid = uv_numa_blade_id();
+-	real_uv_nmi = (uv_read_local_mmr(UVH_NMI_MMR) & UV_NMI_PENDING_MASK);
+-
+-	if (unlikely(real_uv_nmi)) {
+-		spin_lock(&uv_blade_info[bid].nmi_lock);
+-		real_uv_nmi = (uv_read_local_mmr(UVH_NMI_MMR) &
+-				UV_NMI_PENDING_MASK);
+-		if (real_uv_nmi) {
+-			uv_blade_info[bid].nmi_count++;
+-			uv_write_local_mmr(UVH_NMI_MMR_CLEAR,
+-						UV_NMI_PENDING_MASK);
++static int param_set_local64(const char *val, const struct kernel_param *kp)
++{
++	/* clear on any write */
++	local64_set((local64_t *)kp->arg, 0);
++	return 0;
++}
++
++static struct kernel_param_ops param_ops_local64 = {
++	.get = param_get_local64,
++	.set = param_set_local64,
++};
++#define param_check_local64(name, p) __param_check(name, p, local64_t)
++
++static local64_t uv_nmi_count;
++module_param_named(nmi_count, uv_nmi_count, local64, 0644);
++
++static local64_t uv_nmi_misses;
++module_param_named(nmi_misses, uv_nmi_misses, local64, 0644);
++
++static local64_t uv_nmi_ping_count;
++module_param_named(ping_count, uv_nmi_ping_count, local64, 0644);
++
++static local64_t uv_nmi_ping_misses;
++module_param_named(ping_misses, uv_nmi_ping_misses, local64, 0644);
++
++/*
++ * Following values allow tuning for large systems under heavy loading
++ */
++static int uv_nmi_initial_delay = 100;
++module_param_named(initial_delay, uv_nmi_initial_delay, int, 0644);
++
++static int uv_nmi_slave_delay = 100;
++module_param_named(slave_delay, uv_nmi_slave_delay, int, 0644);
++
++static int uv_nmi_loop_delay = 100;
++module_param_named(loop_delay, uv_nmi_loop_delay, int, 0644);
++
++static int uv_nmi_trigger_delay = 10000;
++module_param_named(trigger_delay, uv_nmi_trigger_delay, int, 0644);
++
++static int uv_nmi_wait_count = 100;
++module_param_named(wait_count, uv_nmi_wait_count, int, 0644);
++
++static int uv_nmi_retry_count = 500;
++module_param_named(retry_count, uv_nmi_retry_count, int, 0644);
++
++/* Setup which NMI support is present in system */
++static void uv_nmi_setup_mmrs(void)
++{
++	if (uv_read_local_mmr(UVH_NMI_MMRX_SUPPORTED)) {
++		uv_write_local_mmr(UVH_NMI_MMRX_REQ,
++					1UL << UVH_NMI_MMRX_REQ_SHIFT);
++		nmi_mmr = UVH_NMI_MMRX;
++		nmi_mmr_clear = UVH_NMI_MMRX_CLEAR;
++		nmi_mmr_pending = 1UL << UVH_NMI_MMRX_SHIFT;
++		pr_info("UV: SMI NMI support: %s\n", UVH_NMI_MMRX_TYPE);
++	} else {
++		nmi_mmr = UVH_NMI_MMR;
++		nmi_mmr_clear = UVH_NMI_MMR_CLEAR;
++		nmi_mmr_pending = 1UL << UVH_NMI_MMR_SHIFT;
++		pr_info("UV: SMI NMI support: %s\n", UVH_NMI_MMR_TYPE);
++	}
++}
++
++/* Read NMI MMR and check if NMI flag was set by BMC. */
++static inline int uv_nmi_test_mmr(struct uv_hub_nmi_s *hub_nmi)
++{
++	hub_nmi->nmi_value = uv_read_local_mmr(nmi_mmr);
++	atomic_inc(&hub_nmi->read_mmr_count);
++	return !!(hub_nmi->nmi_value & nmi_mmr_pending);
++}
++
++static inline void uv_local_mmr_clear_nmi(void)
++{
++	uv_write_local_mmr(nmi_mmr_clear, nmi_mmr_pending);
++}
++
++/*
++ * If first cpu in on this hub, set hub_nmi "in_nmi" and "owner" values and
++ * return true.  If first cpu in on the system, set global "in_nmi" flag.
++ */
++static int uv_set_in_nmi(int cpu, struct uv_hub_nmi_s *hub_nmi)
++{
++	int first = atomic_add_unless(&hub_nmi->in_nmi, 1, 1);
++
++	if (first) {
++		atomic_set(&hub_nmi->cpu_owner, cpu);
++		if (atomic_add_unless(&uv_in_nmi, 1, 1))
++			atomic_set(&uv_nmi_cpu, cpu);
++
++		atomic_inc(&hub_nmi->nmi_count);
++	}
++	return first;
++}
++
++/* Check if this is a system NMI event */
++static int uv_check_nmi(struct uv_hub_nmi_s *hub_nmi)
++{
++	int cpu = smp_processor_id();
++	int nmi = 0;
++
++	local64_inc(&uv_nmi_count);
++	uv_cpu_nmi.queries++;
++
++	do {
++		nmi = atomic_read(&hub_nmi->in_nmi);
++		if (nmi)
++			break;
++
++		if (raw_spin_trylock(&hub_nmi->nmi_lock)) {
++
++			/* check hub MMR NMI flag */
++			if (uv_nmi_test_mmr(hub_nmi)) {
++				uv_set_in_nmi(cpu, hub_nmi);
++				nmi = 1;
++				break;
++			}
++
++			/* MMR NMI flag is clear */
++			raw_spin_unlock(&hub_nmi->nmi_lock);
++
++		} else {
++			/* wait a moment for the hub nmi locker to set flag */
++			cpu_relax();
++			udelay(uv_nmi_slave_delay);
++
++			/* re-check hub in_nmi flag */
++			nmi = atomic_read(&hub_nmi->in_nmi);
++			if (nmi)
++				break;
++		}
++
++		/* check if this BMC missed setting the MMR NMI flag */
++		if (!nmi) {
++			nmi = atomic_read(&uv_in_nmi);
++			if (nmi)
++				uv_set_in_nmi(cpu, hub_nmi);
++		}
++
++	} while (0);
++
++	if (!nmi)
++		local64_inc(&uv_nmi_misses);
++
++	return nmi;
++}
++
++/* Need to reset the NMI MMR register, but only once per hub. */
++static inline void uv_clear_nmi(int cpu)
++{
++	struct uv_hub_nmi_s *hub_nmi = uv_hub_nmi;
++
++	if (cpu == atomic_read(&hub_nmi->cpu_owner)) {
++		atomic_set(&hub_nmi->cpu_owner, -1);
++		atomic_set(&hub_nmi->in_nmi, 0);
++		uv_local_mmr_clear_nmi();
++		raw_spin_unlock(&hub_nmi->nmi_lock);
++	}
++}
++
++/* Print non-responding cpus */
++static void uv_nmi_nr_cpus_pr(char *fmt)
++{
++	static char cpu_list[1024];
++	int len = sizeof(cpu_list);
++	int c = cpumask_weight(uv_nmi_cpu_mask);
++	int n = cpulist_scnprintf(cpu_list, len, uv_nmi_cpu_mask);
++
++	if (n >= len-1)
++		strcpy(&cpu_list[len - 6], "...\n");
++
++	printk(fmt, c, cpu_list);
++}
++
++/* Ping non-responding cpus attemping to force them into the NMI handler */
++static void uv_nmi_nr_cpus_ping(void)
++{
++	int cpu;
++
++	for_each_cpu(cpu, uv_nmi_cpu_mask)
++		atomic_set(&uv_cpu_nmi_per(cpu).pinging, 1);
++
++	apic->send_IPI_mask(uv_nmi_cpu_mask, APIC_DM_NMI);
++}
++
++/* Clean up flags for cpus that ignored both NMI and ping */
++static void uv_nmi_cleanup_mask(void)
++{
++	int cpu;
++
++	for_each_cpu(cpu, uv_nmi_cpu_mask) {
++		atomic_set(&uv_cpu_nmi_per(cpu).pinging, 0);
++		atomic_set(&uv_cpu_nmi_per(cpu).state, UV_NMI_STATE_OUT);
++		cpumask_clear_cpu(cpu, uv_nmi_cpu_mask);
++	}
++}
++
++/* Loop waiting as cpus enter nmi handler */
++static int uv_nmi_wait_cpus(int first)
++{
++	int i, j, k, n = num_online_cpus();
++	int last_k = 0, waiting = 0;
++
++	if (first) {
++		cpumask_copy(uv_nmi_cpu_mask, cpu_online_mask);
++		k = 0;
++	} else {
++		k = n - cpumask_weight(uv_nmi_cpu_mask);
++	}
++
++	udelay(uv_nmi_initial_delay);
++	for (i = 0; i < uv_nmi_retry_count; i++) {
++		int loop_delay = uv_nmi_loop_delay;
++
++		for_each_cpu(j, uv_nmi_cpu_mask) {
++			if (atomic_read(&uv_cpu_nmi_per(j).state)) {
++				cpumask_clear_cpu(j, uv_nmi_cpu_mask);
++				if (++k >= n)
++					break;
++			}
++		}
++		if (k >= n) {		/* all in? */
++			k = n;
++			break;
++		}
++		if (last_k != k) {	/* abort if no new cpus coming in */
++			last_k = k;
++			waiting = 0;
++		} else if (++waiting > uv_nmi_wait_count)
++			break;
++
++		/* extend delay if waiting only for cpu 0 */
++		if (waiting && (n - k) == 1 &&
++		    cpumask_test_cpu(0, uv_nmi_cpu_mask))
++			loop_delay *= 100;
++
++		udelay(loop_delay);
++	}
++	atomic_set(&uv_nmi_cpus_in_nmi, k);
++	return n - k;
++}
++
++/* Wait until all slave cpus have entered UV NMI handler */
++static void uv_nmi_wait(int master)
++{
++	/* indicate this cpu is in */
++	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_IN);
++
++	/* if not the first cpu in (the master), then we are a slave cpu */
++	if (!master)
++		return;
++
++	do {
++		/* wait for all other cpus to gather here */
++		if (!uv_nmi_wait_cpus(1))
++			break;
++
++		/* if not all made it in, send IPI NMI to them */
++		uv_nmi_nr_cpus_pr(KERN_ALERT
++			"UV: Sending NMI IPI to %d non-responding CPUs: %s\n");
++		uv_nmi_nr_cpus_ping();
++
++		/* if all cpus are in, then done */
++		if (!uv_nmi_wait_cpus(0))
++			break;
++
++		uv_nmi_nr_cpus_pr(KERN_ALERT
++			"UV: %d CPUs not in NMI loop: %s\n");
++	} while (0);
++
++	pr_alert("UV: %d of %d CPUs in NMI\n",
++		atomic_read(&uv_nmi_cpus_in_nmi), num_online_cpus());
++}
++
++/* Dump this cpu's state */
++static void uv_nmi_dump_state_cpu(int cpu, struct pt_regs *regs)
++{
++	const char *dots = " ................................. ";
++
++	printk(KERN_DEFAULT "UV:%sNMI process trace for CPU %d\n", dots, cpu);
++	show_regs(regs);
++	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_DUMP_DONE);
++}
++
++/* Trigger a slave cpu to dump it's state */
++static void uv_nmi_trigger_dump(int cpu)
++{
++	int retry = uv_nmi_trigger_delay;
++
++	if (atomic_read(&uv_cpu_nmi_per(cpu).state) != UV_NMI_STATE_IN)
++		return;
++
++	atomic_set(&uv_cpu_nmi_per(cpu).state, UV_NMI_STATE_DUMP);
++	do {
++		cpu_relax();
++		udelay(10);
++		if (atomic_read(&uv_cpu_nmi_per(cpu).state)
++				!= UV_NMI_STATE_DUMP)
++			return;
++	} while (--retry > 0);
++
++	pr_crit("UV: CPU %d stuck in process dump function\n", cpu);
++	atomic_set(&uv_cpu_nmi_per(cpu).state, UV_NMI_STATE_DUMP_DONE);
++}
++
++/* Wait until all cpus ready to exit */
++static void uv_nmi_sync_exit(int master)
++{
++	atomic_dec(&uv_nmi_cpus_in_nmi);
++	if (master) {
++		while (atomic_read(&uv_nmi_cpus_in_nmi) > 0)
++			cpu_relax();
++		atomic_set(&uv_nmi_slave_continue, SLAVE_CLEAR);
++	} else {
++		while (atomic_read(&uv_nmi_slave_continue))
++			cpu_relax();
++	}
++}
++
++/* Walk through cpu list and dump state of each */
++static void uv_nmi_dump_state(int cpu, struct pt_regs *regs, int master)
++{
++	if (master) {
++		int tcpu;
++		int ignored = 0;
++		int saved_console_loglevel = console_loglevel;
++
++		pr_alert("UV: tracing processes for %d CPUs from CPU %d\n",
++			atomic_read(&uv_nmi_cpus_in_nmi), cpu);
++
++		console_loglevel = uv_nmi_loglevel;
++		atomic_set(&uv_nmi_slave_continue, SLAVE_EXIT);
++		for_each_online_cpu(tcpu) {
++			if (cpumask_test_cpu(tcpu, uv_nmi_cpu_mask))
++				ignored++;
++			else if (tcpu == cpu)
++				uv_nmi_dump_state_cpu(tcpu, regs);
++			else
++				uv_nmi_trigger_dump(tcpu);
+ 		}
+-		spin_unlock(&uv_blade_info[bid].nmi_lock);
++		if (ignored)
++			printk(KERN_DEFAULT "UV: %d CPUs ignored NMI\n",
++				ignored);
++
++		console_loglevel = saved_console_loglevel;
++		pr_alert("UV: process trace complete\n");
++	} else {
++		while (!atomic_read(&uv_nmi_slave_continue))
++			cpu_relax();
++		while (atomic_read(&uv_cpu_nmi.state) != UV_NMI_STATE_DUMP)
++			cpu_relax();
++		uv_nmi_dump_state_cpu(cpu, regs);
+ 	}
++	uv_nmi_sync_exit(master);
++}
+ 
+-	if (likely(__get_cpu_var(cpu_last_nmi_count) ==
+-			uv_blade_info[bid].nmi_count))
++static void uv_nmi_touch_watchdogs(void)
++{
++	touch_softlockup_watchdog_sync();
++	clocksource_touch_watchdog();
++	rcu_cpu_stall_reset();
++	touch_nmi_watchdog();
++}
++
++/*
++ * UV NMI handler
++ */
++int uv_handle_nmi(unsigned int reason, struct pt_regs *regs)
++{
++	struct uv_hub_nmi_s *hub_nmi = uv_hub_nmi;
++	int cpu = smp_processor_id();
++	int master = 0;
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	/* If not a UV System NMI, ignore */
++	if (!atomic_read(&uv_cpu_nmi.pinging) && !uv_check_nmi(hub_nmi)) {
++		local_irq_restore(flags);
+ 		return NMI_DONE;
++	}
+ 
+-	__get_cpu_var(cpu_last_nmi_count) = uv_blade_info[bid].nmi_count;
++	/* Indicate we are the first CPU into the NMI handler */
++	master = (atomic_read(&uv_nmi_cpu) == cpu);
+ 
+-	/*
+-	 * Use a lock so only one cpu prints at a time.
+-	 * This prevents intermixed output.
+-	 */
+-	spin_lock(&uv_nmi_lock);
+-	pr_info("UV NMI stack dump cpu %u:\n", smp_processor_id());
+-	dump_stack();
+-	spin_unlock(&uv_nmi_lock);
++	/* Pause as all cpus enter the NMI handler */
++	uv_nmi_wait(master);
++
++	/* Dump state of each cpu */
++	uv_nmi_dump_state(cpu, regs, master);
++
++	/* Clear per_cpu "in nmi" flag */
++	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_OUT);
++
++	/* Clear MMR NMI flag on each hub */
++	uv_clear_nmi(cpu);
++
++	/* Clear global flags */
++	if (master) {
++		if (cpumask_weight(uv_nmi_cpu_mask))
++			uv_nmi_cleanup_mask();
++		atomic_set(&uv_nmi_cpus_in_nmi, -1);
++		atomic_set(&uv_nmi_cpu, -1);
++		atomic_set(&uv_in_nmi, 0);
++	}
++
++	uv_nmi_touch_watchdogs();
++	local_irq_restore(flags);
+ 
+ 	return NMI_HANDLED;
+ }
+ 
++/*
++ * NMI handler for pulling in CPUs when perf events are grabbing our NMI
++ */
++int uv_handle_nmi_ping(unsigned int reason, struct pt_regs *regs)
++{
++	int ret;
++
++	uv_cpu_nmi.queries++;
++	if (!atomic_read(&uv_cpu_nmi.pinging)) {
++		local64_inc(&uv_nmi_ping_misses);
++		return NMI_DONE;
++	}
++
++	uv_cpu_nmi.pings++;
++	local64_inc(&uv_nmi_ping_count);
++	ret = uv_handle_nmi(reason, regs);
++	atomic_set(&uv_cpu_nmi.pinging, 0);
++	return ret;
++}
++
+ void uv_register_nmi_notifier(void)
+ {
+ 	if (register_nmi_handler(NMI_UNKNOWN, uv_handle_nmi, 0, "uv"))
+-		pr_warn("UV NMI handler failed to register\n");
++		pr_warn("UV: NMI handler failed to register\n");
++
++	if (register_nmi_handler(NMI_LOCAL, uv_handle_nmi_ping, 0, "uvping"))
++		pr_warn("UV: PING NMI handler failed to register\n");
+ }
+ 
+ void uv_nmi_init(void)
+@@ -100,3 +546,30 @@ void uv_nmi_init(void)
+ 	apic_write(APIC_LVT1, value);
+ }
+ 
++void uv_nmi_setup(void)
++{
++	int size = sizeof(void *) * (1 << NODES_SHIFT);
++	int cpu, nid;
++
++	/* Setup hub nmi info */
++	uv_nmi_setup_mmrs();
++	uv_hub_nmi_list = kzalloc(size, GFP_KERNEL);
++	pr_info("UV: NMI hub list @ 0x%p (%d)\n", uv_hub_nmi_list, size);
++	BUG_ON(!uv_hub_nmi_list);
++	size = sizeof(struct uv_hub_nmi_s);
++	for_each_present_cpu(cpu) {
++		nid = cpu_to_node(cpu);
++		if (uv_hub_nmi_list[nid] == NULL) {
++			uv_hub_nmi_list[nid] = kzalloc_node(size,
++							    GFP_KERNEL, nid);
++			BUG_ON(!uv_hub_nmi_list[nid]);
++			raw_spin_lock_init(&(uv_hub_nmi_list[nid]->nmi_lock));
++			atomic_set(&uv_hub_nmi_list[nid]->cpu_owner, -1);
++		}
++		uv_hub_nmi_per(cpu) = uv_hub_nmi_list[nid];
++	}
++	alloc_cpumask_var(&uv_nmi_cpu_mask, GFP_KERNEL);
++	BUG_ON(!uv_nmi_cpu_mask);
++}
++
++
