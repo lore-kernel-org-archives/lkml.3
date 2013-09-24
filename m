@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750801Ab3IXH2v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 03:28:51 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:47643 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab3IXH2t (ORCPT
+	id S1750958Ab3IXHc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 03:32:56 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:34300 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab3IXHcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 03:28:49 -0400
-Date: Tue, 24 Sep 2013 09:28:45 +0200
+	Tue, 24 Sep 2013 03:32:54 -0400
+Date: Tue, 24 Sep 2013 09:32:50 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Christoph Lameter <cl@linux.com>
 Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
         Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
+        Peter Zijlstra <peterz@infradead.org>, netdev@vger.kernel.org
 Subject: Re: [pchecks v1 2/4] Use raw cpu ops for calls that would trigger
  with checks
-Message-ID: <20130924072845.GC28538@gmail.com>
+Message-ID: <20130924073250.GD28538@gmail.com>
 References: <20130923191256.584672290@linux.com>
  <000001414c3d064a-ebe0610b-6951-4a74-bd33-8480e3e1e364-000000@email.amazonses.com>
 MIME-Version: 1.0
@@ -28,6 +28,8 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+(netdev Cc:-ed)
+
 * Christoph Lameter <cl@linux.com> wrote:
 
 > These location triggered during testing with KVM.
@@ -35,38 +37,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > These are fetches without preemption off where we judged that
 > to be more performance efficient or where other means of
 > providing synchronization (BH handling) are available.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> Index: linux/include/linux/topology.h
+
+> Index: linux/include/net/snmp.h
 > ===================================================================
-> --- linux.orig/include/linux/topology.h	2013-09-12 13:26:29.216103951 -0500
-> +++ linux/include/linux/topology.h	2013-09-12 13:41:30.762358687 -0500
-> @@ -182,7 +182,7 @@ DECLARE_PER_CPU(int, numa_node);
->  /* Returns the number of the current Node. */
->  static inline int numa_node_id(void)
->  {
-> -	return __this_cpu_read(numa_node);
-> +	return raw_cpu_read(numa_node);
->  }
->  #endif
+> --- linux.orig/include/net/snmp.h	2013-09-12 13:26:29.216103951 -0500
+> +++ linux/include/net/snmp.h	2013-09-12 13:26:29.208104037 -0500
+> @@ -126,7 +126,7 @@ struct linux_xfrm_mib {
+>  	extern __typeof__(type) __percpu *name[SNMP_ARRAY_SZ]
 >  
-> @@ -239,7 +239,7 @@ static inline void set_numa_mem(int node
->  /* Returns the number of the nearest Node with memory */
->  static inline int numa_mem_id(void)
->  {
-> -	return __this_cpu_read(_numa_mem_);
-> +	return raw_cpu_read(_numa_mem_);
->  }
+>  #define SNMP_INC_STATS_BH(mib, field)	\
+> -			__this_cpu_inc(mib[0]->mibs[field])
+> +			raw_cpu_inc(mib[0]->mibs[field])
+>  
+>  #define SNMP_INC_STATS_USER(mib, field)	\
+>  			this_cpu_inc(mib[0]->mibs[field])
+> @@ -141,7 +141,7 @@ struct linux_xfrm_mib {
+>  			this_cpu_dec(mib[0]->mibs[field])
+>  
+>  #define SNMP_ADD_STATS_BH(mib, field, addend)	\
+> -			__this_cpu_add(mib[0]->mibs[field], addend)
+> +			raw_cpu_add(mib[0]->mibs[field], addend)
 
-These are generic primitives used in quite a few places and it can easily 
-be a bug to use numa_node_id() in a preemptible section - and this patch 
-would hide that fact.
+Are the networking folks fine with allowing unafe operations of SNMP stats 
+in preemptible sections, or should the kernel produce an optional warning 
+message if CONFIG_PREEMPT_DEBUG=y and these ops are used in preemptible 
+(non-bh, non-irq-handler, non-irqs-off, etc.) sections?
 
-So the correct way to do it is to have checking in these and to introduce 
-raw_numa_node_id()/raw_numa_mem_id() and change eventual KVM (and any 
-other) preemptible-section use of numa_node_id() to raw_numa_node_id() and 
-explain why it's safe to do it.
+RAW_SNMP_*_STATS() ops could be used to annotate those places where that 
+kind of usage is safe.
 
 Thanks,
 
