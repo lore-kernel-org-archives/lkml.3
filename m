@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab3IXJ2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:28:50 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:24511 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189Ab3IXJ2t (ORCPT
+	id S1753852Ab3IXJ3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:29:38 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:31497 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753351Ab3IXJ3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:28:49 -0400
-X-AuditID: cbfee68f-b7f1e6d000004e8d-34-52415b50e614
+	Tue, 24 Sep 2013 05:29:36 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-2f-52415b7fd02b
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/5] backlight: ams369fg06: use
+References: <007501ceb908$78df7370$6a9e5a50$%han@samsung.com>
+In-reply-to: <007501ceb908$78df7370$6a9e5a50$%han@samsung.com>
+Subject: [PATCH 2/5] backlight: ld9040: use
  devm_{backlight,lcd}_device_register()
-Date: Tue, 24 Sep 2013 18:28:47 +0900
-Message-id: <007501ceb908$78df7370$6a9e5a50$%han@samsung.com>
+Date: Tue, 24 Sep 2013 18:29:35 +0900
+Message-id: <007601ceb908$95288260$bf798720$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65CHjKuB0v+SsdTFGS6PUVVZI9Rw==
+Thread-index: Ac65CHjKuB0v+SsdTFGS6PUVVZI9RwAAAixA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zY92AaMcgg3XnuS3mrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErozpc+6x
-	FBzgr2g++Z2pgfEXTxcjJ4eEgInE6huv2CFsMYkL99azdTFycQgJLGOU+Pm+gRWmaMOWTSwQ
-	iemMEnN6NrCAJIQEfjFKvF2UDGKzCahJfPlyGGgSB4eIgL5EW4sGSJhZIEfi/pNZYAuEBSIk
-	TizbCDaTRUBVouXsQSYQm1fAVuL+julQtqDEj8n3WCB6tSQ2b2tihbDlJTavecsMMl5CQF3i
-	0V9dkLCIgJ7E3d7r7BAlIhL7XrxjBDlTQmAXu8TNo5OYIXYJSHybfIgFoldWYtMBZoi3JCUO
-	rrjBMoFRbBaSzbOQbJ6FZPMsJCsWMLKsYhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAiJsf4d
-	jHcPWB9iTAZaP5FZSjQ5HxijeSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphak
-	FsUXleakFh9iZOLglGpgXJvkrF1sKGZRZRjuyfnpns276b9bWOeaJN88qhmc8ITBMU/ALlpk
-	1z4R4Wup7IVR/fu0lVebPpcK2TUhLd/D+JRC0Ky/88+yzioUPpd7X6r6wc2rX80WeF7Z9zXk
-	8/VeDv8t1cy8/8LTfrxSiAvzP3SayUMsRO51ncYUTXbXFVtWvGrw85igxFKckWioxVxUnAgA
-	l0T+/scCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jQd2AaMcggxc/2S3mrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
-	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaM6XPusRQc4K9oPvmdqYHxF08XIyeHhICJxIYtm1ggbDGJC/fW
-	s3UxcnEICUxnlJjTswEsISTwi1Hi7aJkEJtNQE3iy5fD7F2MHBwiAvoSbS0aIGFmgRyJ+09m
-	sYPYwgIREieWbWQFsVkEVCVazh5kArF5BWwl7u+YDmULSvyYfI8FoldLYvO2JlYIW15i85q3
-	zCDjJQTUJR791QUJiwjoSdztvc4OUSIise/FO8YJjAKzkEyahWTSLCSTZiFpWcDIsopRNLUg
-	uaA4KT3XSK84Mbe4NC9dLzk/dxMjOIKfSe9gXNVgcYhRgINRiYf3QoJDkBBrYllxZe4hRgkO
-	ZiUR3hu2jkFCvCmJlVWpRfnxRaU5qcWHGJOBHp3ILCWanA9MLnkl8YbGJmZGlkZmFkYm5uak
-	CSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnVwNhbLsHbmalRp1jRXeJ/+b7Oj8niFgLZRy3b
-	Mo9vbHf9WHxUgsliy7ydm78tZX/k+0BiTyPnMen9q//ETaw4eMOv39NH3/HwhynrWJ9oT+bs
-	K5M7euz53mmuyvytd1ZkH9URvGDp9//Mnh8qHRlf39/9yqvs0DhnQp7YBfkTMz633+NmMXyc
-	f0OJpTgj0VCLuag4EQC6PfDjJAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zQ936aMcgg12nlS3mrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsEroyZHXeY
+	C+7zVcxt/sXUwLiQp4uRk0NCwETi3ZrvTBC2mMSFe+vZuhi5OIQEljFKPDg/lQWmaN/ng+wQ
+	iUWMEnt3XmIESQgJ/GKUaH9vD2KzCahJfPlyGKiIg0NEQF+irUUDJMwskCNx/8ksdohyW4mX
+	lx8zg9icAnYSy/ZdBLOFBUIkrrfsAKthEVCVONg8GWwML1D96V9OIGFeAUGJH5PvsUCM1JLY
+	vK2JFcKWl9i85i0zSLmEgLrEo7+6IGERASOJ5onfmCFKRCT2vXjHCPHJOXaJBy94IDYJSHyb
+	fIgFolVWYtMBZogSSYmDK26wTGCUmIVk8Swki2chWTwLyYYFjCyrGEVTC5ILipPSiwz1ihNz
+	i0vz0vWS83M3MULisXcH4+0D1ocYk4HWT2SWEk3OB8ZzXkm8obGZkYWpiamxkbmlGWnCSuK8
+	ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoY1dS/SqR6l/TcDl/hLL/80cIKy88nFksu
+	daw2j7jN+sjURYCxqcz2TV3plAylrPo74gFyHwJerr5+y6M+pUsszFN17b6jHLyaiccXfmRT
+	4HvPz7U9bH/jKrZYn+vcxeGiKWHXv+8U+ni/wEjikgZz7e8/dR4eYUdf7FXeabjpEkfasaav
+	TRpKLMUZiYZazEXFiQDozHHn3QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAd36aMcgg7aX8hZz1q9hs7i88BKr
+	xeVdc9gsdu96yurA4nFixm8Wjz3zf7B69G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
+	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
+	FjCNEbq+IUFwPUYGaCBhHWPGzI47zAX3+SrmNv9iamBcyNPFyMkhIWAise/zQXYIW0ziwr31
+	bF2MXBxCAosYJfbuvMQIkhAS+MUo0f7eHsRmE1CT+PLlMFADB4eIgL5EW4sGSJhZIEfi/pNZ
+	7BDlthIvLz9mBrE5Bewklu27CGYLC4RIXG/ZAVbDIqAqcbB5MtgYXqD607+cQMK8AoISPybf
+	Y4EYqSWxeVsTK4QtL7F5zVtmkHIJAXWJR391QcIiAkYSzRO/MUOUiEjse/GOcQKj0Cwkk2Yh
+	mTQLyaRZSFoWMLKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiO92fSOxhXNVgcYhTgYFTi
+	4b2Q4BAkxJpYVlyZe4hRgoNZSYT3hq1jkBBvSmJlVWpRfnxRaU5q8SHGZKA/JzJLiSbnA1NR
+	Xkm8obGJmZGlkZmFkYm5OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwJnyse5o0c3JI
+	8+uog7Xr97+62jTV2zF6guSkSaoS019XvpP5fOsu36Z82zsJOYwMSWaf85w8gw+fsou0KQl6
+	GF/Z/+qoyM98oweFGXPNBN9kRH00qLzCcXaZwZMLrzcu5rnldulq19pylaUl8d80ckNPvNpu
+	skW0l6Wr4P3Mg0djVdgzM/dGKbEUZyQaajEXFScCAJ9m4M07AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,57 +61,56 @@ to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/ams369fg06.c |   22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+ drivers/video/backlight/ld9040.c |   21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/video/backlight/ams369fg06.c b/drivers/video/backlight/ams369fg06.c
-index df5507b..d8952c4 100644
---- a/drivers/video/backlight/ams369fg06.c
-+++ b/drivers/video/backlight/ams369fg06.c
-@@ -477,8 +477,8 @@ static int ams369fg06_probe(struct spi_device *spi)
- 		return -EINVAL;
+diff --git a/drivers/video/backlight/ld9040.c b/drivers/video/backlight/ld9040.c
+index 26d5139..506a6c2 100644
+--- a/drivers/video/backlight/ld9040.c
++++ b/drivers/video/backlight/ld9040.c
+@@ -716,7 +716,8 @@ static int ld9040_probe(struct spi_device *spi)
+ 		return ret;
  	}
  
--	ld = lcd_device_register("ams369fg06", &spi->dev, lcd,
--		&ams369fg06_lcd_ops);
-+	ld = devm_lcd_device_register(&spi->dev, "ams369fg06", &spi->dev, lcd,
-+					&ams369fg06_lcd_ops);
+-	ld = lcd_device_register("ld9040", &spi->dev, lcd, &ld9040_lcd_ops);
++	ld = devm_lcd_device_register(&spi->dev, "ld9040", &spi->dev, lcd,
++					&ld9040_lcd_ops);
  	if (IS_ERR(ld))
  		return PTR_ERR(ld);
  
-@@ -488,12 +488,11 @@ static int ams369fg06_probe(struct spi_device *spi)
+@@ -726,12 +727,10 @@ static int ld9040_probe(struct spi_device *spi)
  	props.type = BACKLIGHT_RAW;
  	props.max_brightness = MAX_BRIGHTNESS;
  
--	bd = backlight_device_register("ams369fg06-bl", &spi->dev, lcd,
--		&ams369fg06_backlight_ops, &props);
+-	bd = backlight_device_register("ld9040-bl", &spi->dev,
+-		lcd, &ld9040_backlight_ops, &props);
 -	if (IS_ERR(bd)) {
--		ret =  PTR_ERR(bd);
--		goto out_lcd_unregister;
+-		ret = PTR_ERR(bd);
+-		goto out_unregister_lcd;
 -	}
-+	bd = devm_backlight_device_register(&spi->dev, "ams369fg06-bl",
-+					&spi->dev, lcd,
-+					&ams369fg06_backlight_ops, &props);
++	bd = devm_backlight_device_register(&spi->dev, "ld9040-bl", &spi->dev,
++					lcd, &ld9040_backlight_ops, &props);
 +	if (IS_ERR(bd))
 +		return PTR_ERR(bd);
  
- 	bd->props.brightness = DEFAULT_BRIGHTNESS;
+ 	bd->props.brightness = MAX_BRIGHTNESS;
  	lcd->bd = bd;
-@@ -516,10 +515,6 @@ static int ams369fg06_probe(struct spi_device *spi)
- 	dev_info(&spi->dev, "ams369fg06 panel driver has been probed.\n");
+@@ -757,11 +756,6 @@ static int ld9040_probe(struct spi_device *spi)
  
+ 	dev_info(&spi->dev, "ld9040 panel driver has been probed.\n");
  	return 0;
 -
--out_lcd_unregister:
--	lcd_device_unregister(ld);
+-out_unregister_lcd:
+-	lcd_device_unregister(lcd->ld);
+-
 -	return ret;
  }
  
- static int ams369fg06_remove(struct spi_device *spi)
-@@ -527,9 +522,6 @@ static int ams369fg06_remove(struct spi_device *spi)
- 	struct ams369fg06 *lcd = spi_get_drvdata(spi);
+ static int ld9040_remove(struct spi_device *spi)
+@@ -769,9 +763,6 @@ static int ld9040_remove(struct spi_device *spi)
+ 	struct ld9040 *lcd = spi_get_drvdata(spi);
  
- 	ams369fg06_power(lcd, FB_BLANK_POWERDOWN);
+ 	ld9040_power(lcd, FB_BLANK_POWERDOWN);
 -	backlight_device_unregister(lcd->bd);
 -	lcd_device_unregister(lcd->ld);
 -
