@@ -1,188 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab3IXX6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 19:58:19 -0400
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:52844 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab3IXX6Q (ORCPT
+	id S1754922Ab3IXX6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 19:58:46 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:48322 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab3IXX6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 19:58:16 -0400
-Date: Tue, 24 Sep 2013 17:58:12 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Bharat Bhushan <r65777@freescale.com>
-Cc: alex.williamson@redhat.com, joro@8bytes.org, benh@kernel.crashing.org,
-        galak@kernel.crashing.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-pci@vger.kernel.org,
-        agraf@suse.de, scottwood@freescale.com,
-        iommu@lists.linux-foundation.org,
-        Bharat Bhushan <Bharat.Bhushan@freescale.com>
-Subject: Re: [PATCH 1/7] powerpc: Add interface to get msi region information
-Message-ID: <20130924235812.GD9302@google.com>
-References: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
- <1379575763-2091-2-git-send-email-Bharat.Bhushan@freescale.com>
+	Tue, 24 Sep 2013 19:58:45 -0400
+Message-ID: <52422732.5000501@linaro.org>
+Date: Tue, 24 Sep 2013 16:58:42 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379575763-2091-2-git-send-email-Bharat.Bhushan@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
+Subject: [GIT PULL] drivers/clocksource: sched_clock_register() conversion
+ for 3.13 (via tip/timers/core)
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 12:59:17PM +0530, Bharat Bhushan wrote:
-> This patch adds interface to get following information
->   - Number of MSI regions (which is number of MSI banks for powerpc).
->   - Get the region address range: Physical page which have the
->      address/addresses used for generating MSI interrupt
->      and size of the page.
-> 
-> These are required to create IOMMU (Freescale PAMU) mapping for
-> devices which are directly assigned using VFIO.
-> 
-> Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
-> ---
->  arch/powerpc/include/asm/machdep.h |    8 +++++++
->  arch/powerpc/include/asm/pci.h     |    2 +
->  arch/powerpc/kernel/msi.c          |   18 ++++++++++++++++
->  arch/powerpc/sysdev/fsl_msi.c      |   39 +++++++++++++++++++++++++++++++++--
->  arch/powerpc/sysdev/fsl_msi.h      |   11 ++++++++-
->  drivers/pci/msi.c                  |   26 ++++++++++++++++++++++++
->  include/linux/msi.h                |    8 +++++++
->  include/linux/pci.h                |   13 ++++++++++++
->  8 files changed, 120 insertions(+), 5 deletions(-)
-> 
-> ...
+Hey Daniel,
+    Here's the sched_clock_register conversion that Stephen did earlier
+this summer, as part of extending the generic sched_clock code to
+support 64bit counters. Unfortunately the prereqs for this series missed
+getting into tip/timers/core for 3.12, so I never sent out this pull
+request. But now that the prereqs are in tip/timers/core for 3.13, I've
+merge it up and I wanted to go ahead and send this out.
 
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index aca7578..6d85c15 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -30,6 +30,20 @@ static int pci_msi_enable = 1;
->  
->  /* Arch hooks */
->  
-> +#ifndef arch_msi_get_region_count
-> +int arch_msi_get_region_count(void)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
-> +#ifndef arch_msi_get_region
-> +int arch_msi_get_region(int region_num, struct msi_region *region)
-> +{
-> +	return 0;
-> +}
-> +#endif
+Let me know if you have any issues or concerns.
 
-This #define strategy is gone; see 4287d824 ("PCI: use weak functions for
-MSI arch-specific functions").  Please use the weak function strategy
-for your new MSI region functions.
+thanks
+-john
 
-> +
->  #ifndef arch_msi_check_device
->  int arch_msi_check_device(struct pci_dev *dev, int nvec, int type)
->  {
-> @@ -903,6 +917,18 @@ void pci_disable_msi(struct pci_dev *dev)
->  }
->  EXPORT_SYMBOL(pci_disable_msi);
->  
-> +int msi_get_region_count(void)
-> +{
-> +	return arch_msi_get_region_count();
-> +}
-> +EXPORT_SYMBOL(msi_get_region_count);
-> +
-> +int msi_get_region(int region_num, struct msi_region *region)
-> +{
-> +	return arch_msi_get_region(region_num, region);
-> +}
-> +EXPORT_SYMBOL(msi_get_region);
 
-Please split these interface additions, i.e., the drivers/pci/msi.c,
-include/linux/msi.h, and include/linux/pci.h changes, into a separate
-patch.
 
-I don't know enough about VFIO to understand why these new interfaces
-are needed.  Is this the first VFIO IOMMU driver?  I see
-vfio_iommu_spapr_tce.c and vfio_iommu_type1.c but I don't know if
-they're comparable to the Freescale PAMU.  Do other VFIO IOMMU
-implementations support MSI?  If so, do they handle the problem of
-mapping the MSI regions in a different way?
+The following changes since commit 389e067032fbb96e439abafae848dd447e4cafb4:
 
->  /**
->   * pci_msix_table_size - return the number of device's MSI-X table entries
->   * @dev: pointer to the pci_dev data structure of MSI-X device function
-> diff --git a/include/linux/msi.h b/include/linux/msi.h
-> index ee66f3a..ae32601 100644
-> --- a/include/linux/msi.h
-> +++ b/include/linux/msi.h
-> @@ -50,6 +50,12 @@ struct msi_desc {
->  	struct kobject kobj;
->  };
->  
-> +struct msi_region {
-> +	int region_num;
-> +	dma_addr_t addr;
-> +	size_t size;
-> +};
+  Merge branch 'fortglx/3.12/time' into fortglx/3.13/time (2013-09-16
+18:54:07 -0700)
 
-This needs some sort of explanatory comment.
+are available in the git repository at:
 
->  /*
->   * The arch hook for setup up msi irqs
->   */
-> @@ -58,5 +64,7 @@ void arch_teardown_msi_irq(unsigned int irq);
->  int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
->  void arch_teardown_msi_irqs(struct pci_dev *dev);
->  int arch_msi_check_device(struct pci_dev* dev, int nvec, int type);
-> +int arch_msi_get_region_count(void);
-> +int arch_msi_get_region(int region_num, struct msi_region *region);
->  
->  #endif /* LINUX_MSI_H */
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 186540d..2b26a59 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1126,6 +1126,7 @@ struct msix_entry {
->  	u16	entry;	/* driver uses to specify entry, OS writes */
->  };
->  
-> +struct msi_region;
->  
->  #ifndef CONFIG_PCI_MSI
->  static inline int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
-> @@ -1168,6 +1169,16 @@ static inline int pci_msi_enabled(void)
->  {
->  	return 0;
->  }
-> +
-> +static inline int msi_get_region_count(void)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline int msi_get_region(int region_num, struct msi_region *region)
-> +{
-> +	return 0;
-> +}
->  #else
->  int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec);
->  int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec);
-> @@ -1180,6 +1191,8 @@ void pci_disable_msix(struct pci_dev *dev);
->  void msi_remove_pci_irq_vectors(struct pci_dev *dev);
->  void pci_restore_msi_state(struct pci_dev *dev);
->  int pci_msi_enabled(void);
-> +int msi_get_region_count(void);
-> +int msi_get_region(int region_num, struct msi_region *region);
->  #endif
->  
->  #ifdef CONFIG_PCIEPORTBUS
-> -- 
-> 1.7.0.4
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+  git://git.linaro.org/people/jstultz/linux.git
+fordlezcano/3.13/sched-clock64-conversion
+
+for you to fetch changes up to 4d655d1ae17259b53e89e8dc477557e0f162a5e3:
+
+  Merge remote-tracking branch 'tip/timers/core' into
+fordlezcano/3.13/sched-clock64-conversion (2013-09-24 16:44:43 -0700)
+
+----------------------------------------------------------------
+
+John Stultz (1):
+      Merge remote-tracking branch 'tip/timers/core' into
+fordlezcano/3.13/sched-clock64-conversion
+
+Stephen Boyd (11):
+      clocksource: bcm2835: Switch to sched_clock_register()
+      clocksource: dbx500-prcmu: Switch to sched_clock_register()
+      clocksource: dw_apb_timer_of: Switch to sched_clock_register()
+      clocksource: mxs_timer: Switch to sched_clock_register()
+      clocksource: nomadik: Switch to sched_clock_register()
+      clocksource: samsung_pwm_timer: Switch to sched_clock_register()
+      clocksource: tegra: Switch to sched_clock_register()
+      clocksource: time-armada-370-xp: Switch to sched_clock_register()
+      clocksource: sirf: Switch to sched_clock_register() and use 64 bits
+      clocksource: vf_pit_timer: Switch to sched_clock_register()
+      sched_clock: Deprecate setup_sched_clock()
+
+ drivers/clocksource/bcm2835_timer.c       | 4 ++--
+ drivers/clocksource/clksrc-dbx500-prcmu.c | 5 ++---
+ drivers/clocksource/dw_apb_timer_of.c     | 4 ++--
+ drivers/clocksource/mxs_timer.c           | 4 ++--
+ drivers/clocksource/nomadik-mtu.c         | 4 ++--
+ drivers/clocksource/samsung_pwm_timer.c   | 4 ++--
+ drivers/clocksource/tegra20_timer.c       | 4 ++--
+ drivers/clocksource/time-armada-370-xp.c  | 4 ++--
+ drivers/clocksource/timer-prima2.c        | 6 +++---
+ drivers/clocksource/vf_pit_timer.c        | 4 ++--
+ include/linux/sched_clock.h               | 3 ++-
+ 11 files changed, 23 insertions(+), 23 deletions(-)
