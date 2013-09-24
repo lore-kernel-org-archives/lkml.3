@@ -1,97 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3IXNCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 09:02:49 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:50072 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab3IXNCs (ORCPT
+	id S1753584Ab3IXNEY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 09:04:24 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:46277 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3IXNEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 09:02:48 -0400
-X-AuditID: cbfec373-b7f6d6d00000330d-9a-52418d765486
-Date: Tue, 24 Sep 2013 10:02:40 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>, t.figa@samsung.com,
-        kyungmin.park@samsung.com, s.nawrocki@samsung.com,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/4] media: s5p-tv: Replace mxr_ macro by default dev_
-Message-id: <20130924100240.211dcaa3@samsung.com>
-In-reply-to: <1583471.Ys4OY3iSLA@amdc1032>
-References: <1379775649-6331-1-git-send-email-m.krawczuk@partner.samsung.com>
- <13162989.WhfDRzW6dg@amdc1032> <52415ED9.3030407@samsung.com>
- <1583471.Ys4OY3iSLA@amdc1032>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
+	Tue, 24 Sep 2013 09:04:20 -0400
+X-AuditID: cbfec7f5-b7ef66d00000795a-c2-52418dd32059
+From: Tomasz Figa <t.figa@samsung.com>
+To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Cc: rjw@sisk.pl, kgene.kim@samsung.com, viresh.kumar@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        kyungmin.park@samsung.com, ben-linux@fluff.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, rob@landley.net, mturquette@linaro.org,
+        tomasz.figa@gmail.com, thomas.abraham@linaro.org,
+        s.nawrocki@samsung.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, t.stanislaws@samsung.com,
+        m.szyprowski@samsung.com, b.zolnierkie@samsung.com
+Subject: Re: [PATCH v5 0/3] ARM: S5PV210: move to common clk framework
+Date: Tue, 24 Sep 2013 15:04:07 +0200
+Message-id: <4983756.tzuZRus2Wn@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11 (Linux/3.10.10-gentoo; KDE/4.11.0; x86_64; ; )
+In-reply-to: <1380027009-2239-1-git-send-email-m.krawczuk@partner.samsung.com>
+References: <1380027009-2239-1-git-send-email-m.krawczuk@partner.samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t/hYN2yXscggx33dCw2zljPanG26Q27
-	xabH11gtLu+aw2bRs2Erq8XpNaeYLQ6/aWe1WD/jNYvFvPaXrA6cHpuX1HscfLeHyaNvyypG
-	j8+b5AJYorhsUlJzMstSi/TtErgyjs19zFbwjr9i59MH7A2Me3i6GDk5JARMJE49aWWEsMUk
-	Ltxbz9bFyMUhJLCEUWLvvm+MEE43k8TTLzOZQKpYBFQlzs/7AWazCRhJvGpsYQWxRQQsJNau
-	eMsC0sAsMJVJYsmHZWwgCWEBX4nL5++zg9i8AoYSH5ZsBLM5BbQkdnedY4fYsJZR4v/Bl8xd
-	jBxAdzhJbJ3qC1EvKPFj8j0WEJsZqH7ztiZWCFteYvOat8wTGAVmISmbhaRsFpKyBYzMqxhF
-	S4uTC4qT0nON9IoTc4tL89L1kvNzNzFCAr54B+OLDVaHGAU4GJV4eDWSHYKEWBPLiitzDzFK
-	cDArifBq1joGCfGmJFZWpRblxxeV5qQWH2Jk4uCUamAUP92yjbPt6UwB571fdtoI6Hk83SKg
-	veaIs7Kc/ifFn7bCLGcsNq/8q/b2TNiC+S5hS70PdYkrOe7wTbit++jL1Hm3/VUnTlRZ8llR
-	nENLbaWs4u7VJ+403C+fs+nX3BV81T95iuLu7ORyDP1+2pxnB5vt196cCW0T+ma/vi1mMsn4
-	QN6ka1u4lViKMxINtZiLihMBvRutSVYCAAA=
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t/xq7qXex2DDO48l7bYOGM9q8WkdQeY
+	LJ42/WC3mH/kHKvFuVcrGS16F1xlszjb9IbdYtPja6wWC9uWsFhc3jWHzeJz7xFGixnn9zFZ
+	3L7Ma3F6zSlmi7VH7rJbLL1+EWjIhItsFhOmr2Wx6F/Yy2RxeAXQ4HUvp7NYHH7Tzmrx6mAb
+	i8W89pesFsdmLGG0WLXrD6PFxq8eDtIea+atYfRoae5h81jw+Qq7x99VL5g9ds66y+6xcvkX
+	No9Xq2eyety5tofNY/OSeo+D7/YwefRtWcXo8WhxC6PH501yHhvnhgbwRXHZpKTmZJalFunb
+	JXBlrLxqUfCfr+JwL3sD42+uLkYODgkBE4kbX1W6GDmBTDGJC/fWs3UxcnEICSxllDj45BMj
+	hNPFJPFo5mdWkCo2ATWJzw2P2EBsEQFTiXd3r4F1MAssZpXY2HUdLCEs4CbRfKYNzGYRUJV4
+	0v+aCcTmFdCUWHH0PzuIzS+gLvFu21OwuKiAq8SnhRvB4pwCfhIz3n1jBrGFBHwl9v3fCtUr
+	KPFj8j0WEJtZQF5i3/6prBC2lsT6nceZJjAKzkJSNgtJ2SwkZQsYmVcxiqaWJhcUJ6XnGukV
+	J+YWl+al6yXn525ihCSFrzsYlx6zOsQowMGoxMN7IcEhSIg1say4MvcQowQHs5IIr2atY5AQ
+	b0piZVVqUX58UWlOavEhRiYOTqkGxoLe2ZVr9rWH/wmz8D65MVtW8Fl88dQjWfPPvy9W3ety
+	IrP+/bHYVVFfste//XP2iH3m8rJtOkZ/v/602nxrv9cDtSdfby6faPD9g7/NSsU3xRu/W8Vu
+	ckqQm6O4auMshz33b0XeNeb/fOOwZ9Q8id1Cf+z7Ih8q52yZmyjfK3kx7ne8sNpl519KLMUZ
+	iYZazEXFiQBc360D6AIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 24 Sep 2013 12:33:34 +0200
-Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> escreveu:
+Hi Mateusz,
 
+On Tuesday 24 of September 2013 14:50:06 Mateusz Krawczuk wrote:
+> This patch series is the new s5pv210 clock implementation
+> (using common clk framework).
 > 
-> Hi Tomasz,
+> This implementation is compatible with device tree definition and board
+> files.
 > 
-> On Tuesday, September 24, 2013 11:43:53 AM Tomasz Stanislawski wrote:
-> > Hi,
-> > 
-> > On 09/23/2013 05:48 PM, Bartlomiej Zolnierkiewicz wrote:
-> > > 
-> > > Hi Tomasz,
-> > > 
-> > > On Monday, September 23, 2013 04:50:01 PM Tomasz Stanislawski wrote:
-> > >> Hello,
-> > >> May I ask what is the rationale for this patch?
-> > >> To reduce a few lines of code?
-> > > 
-> > > This patch makes source code more generic-like and easier to follow (mxd_r*
-> > 
-> > more generic(-like?) - NOT. Using mxr_ macros is a more generic way to produce logs
+> This patch series is based on linux-next and has been tested on goni and
+> aquila
+> boards using board file.
 > 
-> Using mxr_* macros is not more generic, don't be silly. :)
+> Since v4:
+> Corrected mux flags for finpll.
+> 
+> Since v3:
+> 
+> Replace s5pv210_clk_register_finpll, by creating mux finpll
+> with xusbxti and xxti as parrents.
+> 
+> 
+> Mateusz Krawczuk (3):
+>   clk: samsung: Add clock driver for s5pc110/s5pv210
+>   Cpufreq: s5pv210 cpufreq fixes for CCF
+>   ARM: s5pv210: Migrate clock handling to Common Clock Framework
+> 
+>  .../bindings/clock/samsung,s5pv210-clock.txt       |  75 +++
+>  arch/arm/mach-s5pv210/Kconfig                      |   9 +
+>  arch/arm/mach-s5pv210/Makefile                     |   4 +-
+>  arch/arm/mach-s5pv210/common.c                     |  17 +
+>  arch/arm/mach-s5pv210/common.h                     |  10 +
+>  arch/arm/mach-s5pv210/mach-goni.c                  |   2 +-
+>  arch/arm/mach-s5pv210/mach-smdkv210.c              |   2 +-
+>  arch/arm/plat-samsung/Kconfig                      |   2 +-
+>  drivers/clk/samsung/Makefile                       |   3 +
+>  drivers/clk/samsung/clk-s5pv210.c                  | 673 +++++++++++++++++++++
+>  drivers/cpufreq/s5pv210-cpufreq.c                  |   6 +-
+>  include/dt-bindings/clock/samsung,s5pv210-clock.h  | 224 +++++++
+>  12 files changed, 1019 insertions(+), 8 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/samsung,s5pv210-clock.txt
+>  create mode 100644 drivers/clk/samsung/clk-s5pv210.c
+>  create mode 100644 include/dt-bindings/clock/samsung,s5pv210-clock.h
 
-Let me give my 2 cents on it: it used to be common on media drivers to
-define their own print macros. The rationale for that is because the
-existing macros, on that time (kernel 2.2), weren't good enough[1].
-Other drivers just followed it due to cut-and-paste.
+For this series:
 
-However, nowadays, most developers are just sticking with the existing
-common debug infrastructure (either dev_* or pr_* - being the last more
-used). By using them, Kernel janitors can do a better job, as they may
-have scripts already prepared to check issues there.
+Acked-by: Tomasz Figa <t.figa@samsung.com>
 
-I prefer the usage of pr_* macros, as they allow debug messages to be
-selectively enabled/disabled, if dynamic printk's are enabled. So,
-a change like that actually improves the debug capability on a given 
-driver.
+Best regards,
+Tomasz
 
-So, IMHO, the better would be to change the patch to use pr_* macros,
-and follow Joe's suggestions to improve it.
-
-Regards,
-Mauro
-
-
-[1] on other drivers that create their own macros, the usual prefix is the
-name of the driver (so, on em28xx, it is em28xx_dbg, and so on). In this 
-case, the driver is s5p_tv. So, a macro following the old way should be 
-called as s5p_tv_dbg. Yet, it is takes just a fraction of time to identify
-them as printk-alike macros, as all those macros are similar.
-
-Cheers,
-Mauro
