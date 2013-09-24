@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab3IXJPb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:15:31 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:22146 "EHLO
+	id S1754019Ab3IXJQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:16:18 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:22268 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab3IXJP3 (ORCPT
+	with ESMTP id S1751769Ab3IXJQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:15:29 -0400
-X-AuditID: cbfee68e-b7f756d000004512-86-524158300a90
+	Tue, 24 Sep 2013 05:16:17 -0400
+X-AuditID: cbfee691-b7f4a6d0000074fc-e6-5241585ff272
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
 In-reply-to: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
-Subject: [PATCH 13/22] backlight: gpio_backlight: use
+Subject: [PATCH 14/22] backlight: kb3886_bl: use
  devm_backlight_device_register()
-Date: Tue, 24 Sep 2013 18:15:28 +0900
-Message-id: <005301ceb906$9c6944d0$d53bce70$%han@samsung.com>
+Date: Tue, 24 Sep 2013 18:16:15 +0900
+Message-id: <005401ceb906$b826b590$287420b0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAAYZAw
+Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAAZmcQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zI12DCMcgg2/79CzmrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErow7Lz6w
-	FpzjqVh7YDt7A+Nxri5GTg4JAROJd+tusELYYhIX7q1n62Lk4hASWMYo8XDBDHaYooafyxgh
-	EosYJe49/MUM4fxilGh/vYYRpIpNQE3iy5fDQB0cHCIC+hJtLRogYWaBHIn7T2aBDRISsJVY
-	92E2mM0pYCdxaukZNhBbWCBC4nDfXRYQm0VAVeLctGlgF/EC1XdePAplC0r8mHyPBWKmlsTm
-	bU2sELa8xOY1b5lB1koIqEs8+qsLcYGRRP+TIIgKEYl9L96BnS8hcIpdYnHnY6hVAhLfJh9i
-	gWiVldh0gBniXUmJgytusExglJiFZPEsJItnIVk8C8mKBYwsqxhFUwuSC4qT0ouM9IoTc4tL
-	89L1kvNzNzFCYrJvB+PNA9aHGJOB1k9klhJNzgfGdF5JvKGxmZGFqYmpsZG5pRlpwkrivGot
-	1oFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGJeZWFslyh3YEML9e0Vq9dwNL+a+er6Qg01+
-	yT83U4H/8VMaVpy48q5v3qrnmxIqXU/Ul9nmpz2c+2jq5Hcif7q7Lx1rz3hdFbCJZQ/rzANq
-	d7xaL0nu2bFPfqFF7ISqKT88/K6a3VXzmf/f/86WN0u2BnXaNM1XbhRbqevxeY1NzRq9H74r
-	+TKVWIozEg21mIuKEwH5Tinr3wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jAV2DCMcgg477WhZz1q9hs7i88BKr
-	xeVdc9gsdu96yurA4nFixm8Wjz3zf7B69G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
-	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
-	FjCNEbq+IUFwPUYGaCBhHWPGnRcfWAvO8VSsPbCdvYHxOFcXIyeHhICJRMPPZYwQtpjEhXvr
-	2boYuTiEBBYxStx7+IsZwvnFKNH+eg1YFZuAmsSXL4fZuxg5OEQE9CXaWjRAwswCORL3n8xi
-	B7GFBGwl1n2YDWZzCthJnFp6hg3EFhaIkDjcd5cFxGYRUJU4N20aK4jNC1TfefEolC0o8WPy
-	PRaImVoSm7c1sULY8hKb17xlBlkrIaAu8eivLsQFRhL9T4IgKkQk9r14xziBUWgWkkGzkAya
-	hWTQLCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER/wzqR2MKxssDjEKcDAq8fDu
-	8HYIEmJNLCuuzD3EKMHBrCTCe8PWMUiINyWxsiq1KD++qDQntfgQYzLQnxOZpUST84HJKK8k
-	3tDYxMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGDOqbcITMzPln8zy
-	Fcq807fvgkpW8oKCENlvdu2KnYFnhMpepnxjeB22vk89xEBh0zOH4x1mm46fqax57Gpuwzzx
-	RAsjK1P8rgN807ezpGtLVh7U+XT5+RJx0S/t+Qf6ImatPSP13fmMV9GpfiVzR9mrB5Q+9Ekd
-	2V94s6ZV3T0kJeUyz6WFSizFGYmGWsxFxYkA3uMxaTwDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zI934CMcgg8aL0hZz1q9hs7i88BKr
+	xeVdc9gsdu96yurA4nFixm8Wjz3zf7B69G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8brLWoF
+	K3gqfjZnNDBO4Opi5OSQEDCR+LDrOSOELSZx4d56ti5GLg4hgWWMEvf/TGSHK9rygw3EFhKY
+	ziixa2IARNEvRonWph/MIAk2ATWJL18OAzVwcIgI6Eu0tWiAhJkFciTuP5nFDtFrK7Huw2ww
+	m1PATuLU0jNgM4UFgiXerTsNZrMIqEr0T/zICmLzAtV/uLKdDcIWlPgx+R4LxEwtic3bmlgh
+	bHmJzWveMoOslRBQl3j0VxckLCJgJPG4q4sNokREYt+Ld4wgJ0sInGKXuP1pPSvELgGJb5MP
+	sUD0ykpsOsAM8a6kxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJGllWMoqkFyQXFSelFpnrFibnF
+	pXnpesn5uZsYIfE4cQfj/QPWhxiTgdZPZJYSTc4HxnNeSbyhsZmRhamJqbGRuaUZacJK4rzq
+	LdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhg958z4KavJxd/cO4XROZ25asr9nl8Lbztc
+	5P4p9ddDuWDX/t0KtlcreHaEBFpHxlqGGe5ynSskLfBn98RqxtLZbq4H5+qVFHEU2Lp5nLUy
+	EZz6a4vexqcM+tfqVl/i+2/1dK6qT+wWhVPPdIUCztp/6jZba9tV8cv+8ub8oKqHQkn7dlx6
+	LqrEUpyRaKjFXFScCADI3y8T3QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jQd34CMcggz+PxC3mrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
+	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
+	LWAaI3R9Q4LgeowM0EDCOsaM11vUClbwVPxszmhgnMDVxcjJISFgIvFhyw82CFtM4sK99WC2
+	kMB0RoldEwO6GLmA7F+MEq1NP5hBEmwCahJfvhxm72Lk4BAR0Jdoa9EACTML5EjcfzKLHaLX
+	VmLdh9lgNqeAncSppWfAZgoLBEu8W3cazGYRUJXon/iRFcTmBar/cGU7G4QtKPFj8j0WiJla
+	Epu3NbFC2PISm9e8ZQZZKyGgLvHory5IWETASOJxVxcbRImIxL4X7xgnMArNQjJpFpJJs5BM
+	moWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4Gh/Jr2DcVWDxSFGAQ5GJR7eCwkO
+	QUKsiWXFlbmHGCU4mJVEeG/YOgYJ8aYkVlalFuXHF5XmpBYfYkwGenQis5Rocj4wEeWVxBsa
+	m5gZWRqZWRiZmJuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA+N8FgVLzvOnWjuY7gX4
+	hJXsfrYquXK+4Aqtg8c1bovfivu86KfazovLZ/533sGn45k5UzV3WffO88mtUkmrDFti3+bN
+	l/o69x+v1kfWyIbq/xUqTf9/SRe+T7iW3sfsVft7XvYk3u05MRHePWv+euv3By7TrjY9wc96
+	1P/80g4N753rX0+bEq7EUpyRaKjFXFScCABcM/IOOgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,47 +61,47 @@ and remove unnecessary remove().
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/gpio_backlight.c |   14 +++-----------
- 1 file changed, 3 insertions(+), 11 deletions(-)
+ drivers/video/backlight/kb3886_bl.c |   18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/video/backlight/gpio_backlight.c b/drivers/video/backlight/gpio_backlight.c
-index 118da0c..81fb127 100644
---- a/drivers/video/backlight/gpio_backlight.c
-+++ b/drivers/video/backlight/gpio_backlight.c
-@@ -95,8 +95,9 @@ static int gpio_backlight_probe(struct platform_device *pdev)
- 	memset(&props, 0, sizeof(props));
+diff --git a/drivers/video/backlight/kb3886_bl.c b/drivers/video/backlight/kb3886_bl.c
+index 5bacabb..7592cc2 100644
+--- a/drivers/video/backlight/kb3886_bl.c
++++ b/drivers/video/backlight/kb3886_bl.c
+@@ -150,10 +150,10 @@ static int kb3886bl_probe(struct platform_device *pdev)
+ 	memset(&props, 0, sizeof(struct backlight_properties));
  	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = 1;
--	bl = backlight_device_register(dev_name(&pdev->dev), &pdev->dev, gbl,
--				       &gpio_backlight_ops, &props);
-+	bl = devm_backlight_device_register(&pdev->dev, dev_name(&pdev->dev),
-+					&pdev->dev, gbl, &gpio_backlight_ops,
-+					&props);
- 	if (IS_ERR(bl)) {
- 		dev_err(&pdev->dev, "failed to register backlight\n");
- 		return PTR_ERR(bl);
-@@ -109,21 +110,12 @@ static int gpio_backlight_probe(struct platform_device *pdev)
+ 	props.max_brightness = machinfo->max_intensity;
+-	kb3886_backlight_device = backlight_device_register("kb3886-bl",
+-							    &pdev->dev, NULL,
+-							    &kb3886bl_ops,
+-							    &props);
++	kb3886_backlight_device = devm_backlight_device_register(&pdev->dev,
++							"kb3886-bl", &pdev->dev,
++							NULL, &kb3886bl_ops,
++							&props);
+ 	if (IS_ERR(kb3886_backlight_device))
+ 		return PTR_ERR(kb3886_backlight_device);
+ 
+@@ -166,18 +166,8 @@ static int kb3886bl_probe(struct platform_device *pdev)
  	return 0;
  }
  
--static int gpio_backlight_remove(struct platform_device *pdev)
+-static int kb3886bl_remove(struct platform_device *pdev)
 -{
--	struct backlight_device *bl = platform_get_drvdata(pdev);
+-	struct backlight_device *bd = platform_get_drvdata(pdev);
 -
--	backlight_device_unregister(bl);
+-	backlight_device_unregister(bd);
+-
 -	return 0;
 -}
 -
- static struct platform_driver gpio_backlight_driver = {
+ static struct platform_driver kb3886bl_driver = {
+ 	.probe		= kb3886bl_probe,
+-	.remove		= kb3886bl_remove,
  	.driver		= {
- 		.name		= "gpio-backlight",
- 		.owner		= THIS_MODULE,
- 	},
- 	.probe		= gpio_backlight_probe,
--	.remove		= gpio_backlight_remove,
- };
- 
- module_platform_driver(gpio_backlight_driver);
+ 		.name	= "kb3886-bl",
+ 		.pm	= &kb3886bl_pm_ops,
 -- 
 1.7.10.4
 
