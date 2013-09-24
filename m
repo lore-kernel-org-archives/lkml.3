@@ -1,131 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546Ab3IXTaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 15:30:15 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:34013 "EHLO relay.sgi.com"
+	id S1754096Ab3IXTmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 15:42:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16792 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754155Ab3IXTaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 15:30:13 -0400
-Date: Tue, 24 Sep 2013 14:30:12 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Jason Baron <jbaron@akamai.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC] eventpoll: Move a kmem_cache_alloc and kmem_cache_free
-Message-ID: <20130924193012.GA70073@asylum.americas.sgi.com>
-References: <1379087642-131349-1-git-send-email-nzimmer@sgi.com> <5239FA69.8030202@akamai.com> <523B2867.7000209@sgi.com> <52405B93.2010206@akamai.com> <20130923164740.GA43736@asylum.americas.sgi.com>
+	id S1753091Ab3IXTmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 15:42:09 -0400
+Date: Wed, 25 Sep 2013 01:11:54 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@dhcp193-39.pnq.redhat.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Export initial ramdisk compression config
+In-Reply-To: <20130923125256.e53b51a137a19a972c6026a2@linux-foundation.org>
+Message-ID: <alpine.LFD.2.03.1309250035480.5312@erqung.pbz>
+References: <alpine.LFD.2.03.1309151434580.7830@erqung.pbz> <20130923125256.e53b51a137a19a972c6026a2@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130923164740.GA43736@asylum.americas.sgi.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 11:47:41AM -0500, Nathan Zimmer wrote:
-> On Mon, Sep 23, 2013 at 11:17:39AM -0400, Jason Baron wrote:
-> > On 09/19/2013 12:37 PM, Nathan Zimmer wrote:
-> > > On 09/18/2013 02:09 PM, Jason Baron wrote:
-> > >> On 09/13/2013 11:54 AM, Nathan Zimmer wrote:
-> > >>> We noticed some scaling issue in the SPECjbb benchmark.  Running perf
-> > >>> we found that the it was spending lots of time in SYS_epoll_ctl.
-> > >>> In particular it is holding the epmutex.
-> > >>> This patch helps by moving out the kmem_cache_alloc and kmem_cache_free out
-> > >>> from under the lock.  It improves throughput by around 15% on 16 sockets.
-> > >>>
-> > >>> While this patch should be fine as it is there are probably is more things
-> > >>> that can be done out side the lock, like wakeup_source_unregister, but I am
-> > >>> not familar with the area and I don't know of many tests.  I did find the
-> > >>> one posted by Jason Baron at https://lkml.org/lkml/2011/2/25/297.
-> > >>>
-> > >>> Any thoughts?
-> > >>>
-> > >> Hi,
-> > >>
-> > >> Intersting - I think its also possible to completely drop taking the
-> > >> 'epmutex' for EPOLL_CTL_DEL by using rcu, and restricting it on add
-> > >> to more 'complex' topologies. That is when we have an epoll descriptor
-> > >> that doesn't nest with other epoll descriptors, we don't need the
-> > >> global 'epmutex' either. Any chance you can re-run with this? Its a bit
-> > >> hacky, but we can clean it up if it makes sense.
-> > >>
-> > >> Thanks,
-> > >>
-> > >> -Jason
-> > >>
-> > > That is working GREAT.  It is scaling to 16 jobs quite well.
-> > > I will have to grab a larger machine( to see what the new scaling curve 
-> > > will be.
-> > > 
-> > 
-> > Cool. Any specific numbers would be helpful for the changelog in support of these
-> > changes. Also, I think the move the alloc/free out of from under the locks still
-> > might be nice, since we are still taking the per-ep lock in most cases. If you
-> > want I can roll those too into a patch series for this when I resubmit.
-> > 
-> > Also, if you're still testing I have a small additional optimization on top of the
-> > prior patch:
-> > 
-> > diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> > index d98105d..d967fd7 100644
-> > --- a/fs/eventpoll.c
-> > +++ b/fs/eventpoll.c
-> > @@ -857,7 +857,7 @@ static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
-> >  	struct eventpoll *ep = file->private_data;
-> >  	struct readyevents_params params;
-> >  
-> > -	params.locked = ((wait->_qproc == ep_ptable_queue_proc) ? 1 : 0);
-> > +	params.locked = ((wait && (wait->_qproc == ep_ptable_queue_proc)) ? 1 : 0);
-> >  	params.ep = ep;
-> >  
-> >  	/* Insert inside our poll wait queue */
-> > @@ -1907,7 +1907,6 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
-> >  			} else
-> >  				list_add(&tf.file->f_tfile_llink, &tfile_check_list);
-> >  			mutex_lock_nested(&ep->mtx, 0);
-> > -			ep->type = EVENTPOLL_COMPLEX;
-> >  			if (is_file_epoll(tf.file)) {
-> >  				mutex_lock_nested(&(((struct eventpoll *)tf.file->private_data)->mtx), 1);
-> >  				((struct eventpoll *)tf.file->private_data)->type = EVENTPOLL_COMPLEX;
-> > 
-> > 
-> > Thanks,
-> > 
-> > -Jason
-> > 
-> > 
-> > 
-> 
-> I just finished up run some tests over the weekend.
-> The specjbb benchmark went from only scaling 10-12 sockets to scaling to over
-> 32 sockets.  I don't have an exact point where it stops scaling but it is under
-> 64 sockets, the size of the machine I had handy.  perf seems to indicate the
-> problems are elsewhere, but I will have to rerun and grap some more data.
-> 
-> Nate
-> 
+   Hello Andrew,
 
-Some more details.
+Thank you so much for reviewing these patches.
 
-On the 16 socket run the performance went from 35k jOPS to 125k jOPS.
-In addition the benchmark when from scaling well on 10 sockets to scaling well
-on just over 40 sockets.
++-- On Mon, 23 Sep 2013, Andrew Morton wrote --+
+| It's a bit confusing whether all this appiles to initrd, to initramfs
+| or to both.  Can you please clarify all this and be sure that it's all
+| consistent?
 
-I should also note there system responsiveness of various commands was quite
-improved when under the full load of the benchmark.
+  IIUC, we no longer use initrd block device images. Instead we use initramfs 
+which is a cpio(1) archive image. Both mkinitrd(8) & dracut(8) are invoked 
+from /sbin/new-kernel-pkg tool. And mkinitrd(8) is nothing but a wrapper 
+around dracut(8) these days.
+===
+  $ man mkinitrd
+       mkinitrd - is a compat wrapper, which calls dracut to generate an
+       initramfs
 
-Also I haven't tried your second optimization.  Once I applied your first patch
-the scaling in this area improved so much I am not seeing an issue in this area
-at all.  Moving the alloc/free out of the lock might be nice but at this point
-it would't be noticable.
+  $ less /sbin/new-kernel-pkg     # my local patched version
+...
+doMkinitrd() {
+    if [ -n "$dracut" ]; then
++       if [ -n "$INITRD_COMPRESS" ]; then
++           dracutcompress=--$INITRD_COMPRESS
++       fi
++       tool="dracut $dracuthostonly -f $dracutcompress $initrdfile $version"
+    else
+        tool="mkinitrd --allow-missing -f $initrdfile $version"
+    fi
+    [ -n "$verbose" ] && echo "creating initrd: $tool"
+    $tool
+    rc=$?
+    if [ $rc != 0 ]; then
+        echo "mkinitrd failed" >&2
+        exit 1
+    fi
+}
+===
 
-Currently the benchmark stops scaling at around 40-44 sockets but it seems like
-I found a second unrelated bottleneck.
+Because mkinitrd(8) does not support passing of compression argument to 
+dracut(8), it must use the default compression, ie. gzip(1).
 
-Feel free to toss on my tested-by.
 
-Nate
+| A few things...
+| - Why is it specific to x86?  Other architcetures use initramfs?
 
+  No, it is not specific to x86, most likely all architecturess' Makefile 
+would need similar patch. But I haven't looked into those yet.
+ 
+| - People add new compression schemes fairly regularly.  We should add
+|   a code comment somewhere in a place where such people are sure to
+|   find it.  That comment should explain what's going on, remind them to
+|   update this environment varlaible and should explain to them the
+|   process by which they get dracut(8) updated if needed.
+
+  True. Maybe user/Kconfig could have a note about updating INITRD_COMPRESS 
+environment variable through a relevant $arch/Makefile ? 
+
+Looking at the dracut(8) tool, it seems it can easily support any number of 
+compression tools, for it already has options --gzip, --bzip2, --xz & --lzma.
+Adding --lzo, --lz4 etc won't be much difficult.
+
+| - Can we avoid having to update dracut each time a new compression
+|   scheme is added?  I assume your dracut changes will just exec
+|   "$INITRD_COMPRESS -d", so as long as any new decompression
+|   application uses the expected -d argument in the expected way, it
+|   should work seamlessly?
+
+  Yes, dracut(8) has | --compress=$INITRD_COMPRESS | option which could be 
+used to pass compression program to dracut(8). Not sure if dracut(8) expects 
+an absolute path or just the program name. But to use this option, we'll need 
+to patch /sbin/new-kernel-pkg tool.
+
+Alternatively, dracut(8) could be patched to recognise and read 
+$INITRD_COMPRESS variable and internally it can define precedence order 
+between environment variable, command-line options and default fall-back 
+option.
+
+
+Thank you.
+--
+Prasad J Pandit / Red Hat Security Response Team
+DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
