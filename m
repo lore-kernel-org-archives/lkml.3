@@ -1,128 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab3IXBxc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 21:53:32 -0400
-Received: from gate.crashing.org ([63.228.1.57]:44154 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752857Ab3IXBxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 21:53:31 -0400
-Message-ID: <1379987527.5443.20.camel@pasglop>
-Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>
-Date: Tue, 24 Sep 2013 11:52:07 +1000
-In-Reply-To: <CA+55aFwyVG4DXOEvaVTp0gE-H2Zy0Kx7Mg7RWzpxzwm_RSWEYQ@mail.gmail.com>
-References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
-	 <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
-	 <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
-	 <20130920162603.GA30381@localhost.localdomain>
-	 <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
-	 <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
-	 <1379799901.24090.6.camel@pasglop> <523E4F8A.7020708@zytor.com>
-	 <1379824754.24090.11.camel@pasglop> <1379824861.24090.12.camel@pasglop>
-	 <20130922162410.GA10649@laptop.programming.kicks-ass.net>
-	 <1379887000.24090.19.camel@pasglop>
-	 <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
-	 <1379981427.5443.8.camel@pasglop>
-	 <CA+55aFwyVG4DXOEvaVTp0gE-H2Zy0Kx7Mg7RWzpxzwm_RSWEYQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1753675Ab3IXByj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 21:54:39 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47910 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753128Ab3IXByi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 21:54:38 -0400
+Date: Tue, 24 Sep 2013 11:54:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizefan@huawei.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH v6 0/5] memcg, cgroup: kill css id
+Message-Id: <20130924115420.a69505b10763ef89953698a8@canb.auug.org.au>
+In-Reply-To: <20130924015211.GD3482@htj.dyndns.org>
+References: <524001F8.6070205@huawei.com>
+	<20130923130816.GH30946@htj.dyndns.org>
+	<20130923131215.GI30946@htj.dyndns.org>
+	<5240DD83.1070509@huawei.com>
+	<20130923175247.ea5156de.akpm@linux-foundation.org>
+	<20130924013058.GB3482@htj.dyndns.org>
+	<20130924015211.GD3482@htj.dyndns.org>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__24_Sep_2013_11_54_20_+1000_RAsT_ht736N3B=Zx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-23 at 18:19 -0700, Linus Torvalds wrote:
-> On Mon, Sep 23, 2013 at 5:10 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> >
-> > BTW, that boils down to a choice between using r13 as either a TLS for
-> > current or current_thread_info, or as a per-cpu pointer, which one is
-> > the most performance critical ?
-> 
-> I think you can tune most of the architecture setup to best suit your needs.
-> 
-> For example, on x86, we don't have much choice: the per-cpu accessors
-> are going to be faster than the alternatives, and there are patches
-> afoot to tune the preempt and rcu-readside counters to use the percpu
-> area (and then save/restore things at task switch time). But having
-> the counters natively in the thread_info struct is fine too and is
-> what we do now.
+--Signature=_Tue__24_Sep_2013_11_54_20_+1000_RAsT_ht736N3B=Zx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Right, as long as the generic code doesn't move toward putting
-everything in per-cpu without leaving us the option :-)
+Hi Tejun,
 
-> Generally, we've put the performance-critical stuff into
-> "current_thread_info" as opposed to "current", so it's likely that if
-> the choice is between those two, then you might want to pick %r13
-> pointing to the thread-info rather than the "struct task_struct" (ie
-> things like low-level thread flags). But which is better probably
-> depends on load, and again, some of it you can tweak by just making
-> per-architecture structure choices and making the macros point at one
-> or the other.
+On Mon, 23 Sep 2013 21:52:11 -0400 Tejun Heo <tj@kernel.org> wrote:
+>
+> (cc'ing Stephen, hi!)
 
-Well, if current_thread_info is basically inside the thread struct, it
-will be the same, just a different offset from r13... task struct,
-thread struct, thread info, it all becomes just one big structure
-pointed to by r13.
+Hi :-)
 
-> There's a few things that really depend on per-cpu areas, but I don't
-> think it's a huge performance issue if you have to indirect off memory
-> to get that. Most of the performance issues with per-cpu stuff is
-> about avoiding cachelines ping-ponging back and forth, not so much
-> about fast direct access. Of course, if some load really uses a *lot*
-> of percpu accesses, you get both.
-> 
-> The advantage of having %r13 point to thread data (which is "stable"
-> as far as the compiler is concerned) as opposed to having it be a
-> per-cpu pointer (which can change randomly due to task switching) is
-> that from a correctness standpoint I really do think that either
-> thread-info or current is *much* easier to handle than using it for
-> the per-cpu base pointer.
+> On Mon, Sep 23, 2013 at 09:30:58PM -0400, Tejun Heo wrote:
+> >=20
+> > On Mon, Sep 23, 2013 at 05:52:47PM -0700, Andrew Morton wrote:
+> > > > I would love to see this patchset go through cgroup tree. The chang=
+es to
+> > > > memcg is quite small,
+> > >=20
+> > > It seems logical to put this in the cgroup tree as that's where most =
+of
+> > > the impact occurs.
+> >=20
+> > Cool, applying the changes to cgroup/for-3.13.
+>=20
+> Stephen, Andrew, cgroup/for-3.13 will cause a minor conflict in
+> mm/memcontrol.c with the patch which reverts Michal's reclaim changes.
+>=20
+>   static void __mem_cgroup_free(struct mem_cgroup *memcg)
+>   {
+> 	  int node;
+> 	  size_t size =3D memcg_size();
+>=20
+>   <<<<<<< HEAD
+>   =3D=3D=3D=3D=3D=3D=3D
+> 	  mem_cgroup_remove_from_trees(memcg);
+> 	  free_css_id(&mem_cgroup_subsys, &memcg->css);
+>=20
+>   >>>>>>> 1fa8f71dfa6e28c89afad7ac71dcb19b8c8da8b7
+> 	  for_each_node(node)
+> 		  free_mem_cgroup_per_zone_info(memcg, node);
+>=20
+> It's a context conflict and just removing free_css_id() call resolves
+> it.
+>=20
+>   static void __mem_cgroup_free(struct mem_cgroup *memcg)
+>   {
+> 	  int node;
+> 	  size_t size =3D memcg_size();
+>=20
+> 	  mem_cgroup_remove_from_trees(memcg);
+>=20
+> 	  for_each_node(node)
+> 		  free_mem_cgroup_per_zone_info(memcg, node);
 
-Right. I had a chat with Alan Modra (gcc) and he reckons the "right" way
-to make the per-cpu (or PACA) stuff work reasonably reliably is to do
-something along the lines of:
-
-register unsigned long per_cpu_offset asm("r13");
-
-And have a barrier in preempt_enable/disable (and irq enable/disable,
-though arguably we could just make barrier() do it) which marks r13 as
-an *output* (not a clobber !).
-
->From there, gcc knows that after any such barrier, r13 can have changed
-and we intend to use the new value (if it's marked as a clobber, it
-assumes it was *clobbered* and thus need to be restored to it's
-*previous* value).
-
-So if that holds, we have a solid way to do per-cpu. On one side, I tend
-to think that r13 being task/thread/thread_info is probably a better
-overall choice, I'm worried that going in a different direction than x86
-means generic code will get "tuned" to use per-cpu for performance
-critical stuff rather than task/thread/thread_info in inflexible ways.
-
+Thanks for the heads up, I guess I'll see that tomorrow.
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->              Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--Signature=_Tue__24_Sep_2013_11_54_20_+1000_RAsT_ht736N3B=Zx
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
+iQIcBAEBCAAGBQJSQPDRAAoJEECxmPOUX5FE55AP/13eg9hHuo1OMUOknTklxTW5
+Lu2i8Ic+9Ku5DTkEKN4Q/CLgvL4chcJXB9xFG5V/OWjE6Rn+DdhAMGQqiRBKdb85
+tPJS98hTFQiVR4yJOg24N4ZiZYNP1fZKBRJR76ZfHcKY5ai6v7cqiJt2o0dFhh5G
+cOUzrRq9quSjX+VDTfXj0Uw4tUMTFXdV4ar8y8XrjgczQ5NmzA568xwkqvSkvs+Z
+qXUb3I0Y+e3EZ3MrqWu3YLW7z8dmPae+xprMa3y1Renhyl0w5sQcTqU0VULpe0mj
+1R53fi8fu0rCAZGfT4eUQ7zb4eteggPnBHe8O5XZvouLqHMVUpsLITuj6DoIarQm
+L1NMlnnPLYpCWGUF38zrvnwZ/zufQXnIr+RGptM889qSP0YmrUIUqoLQIYNC2tNF
+GPFYKdVftsPfU8v/ITl+yXzrKDnc3Nz4pb/dW6XJPiQ+NumHWZX10MahjSMjBVsl
+HovFxNqp81NKrjTwgSEWhqWnlQTrp4tmt+PmB+YPJcr+viRlCy8CqAlagwLzpmie
+wmKVqLzeHzMlJQHwUxFKffMFYE1N3IkSnCop2RGbFDlyglKigd1iGk9Psekw60no
+jelE3X4eh5UoBmgNxBgInHfUub1kEbb9gItRZ4RpNYNPYCGrq2lctCrekyt3OujD
+XmHkD7nK9jFcz7oVjdD8
+=Ni4y
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__24_Sep_2013_11_54_20_+1000_RAsT_ht736N3B=Zx--
