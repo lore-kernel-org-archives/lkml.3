@@ -1,99 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab3IXQ2d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 12:28:33 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:59349 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab3IXQ2b (ORCPT
+	id S1754103Ab3IXQdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 12:33:52 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:13963 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765Ab3IXQdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 12:28:31 -0400
+	Tue, 24 Sep 2013 12:33:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 24 Sep 2013 09:30:15 -0700
+Message-ID: <5241BEEC.9000508@nvidia.com>
+Date: Tue, 24 Sep 2013 12:33:48 -0400
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAG-2HqVFJgz0cQTGZ-AAYBt8YrVaXPMtrjb=CfAg+=2H=rjmdg@mail.gmail.com>
-References: <1378744434-10883-1-git-send-email-dh.herrmann@gmail.com>
-	<CAG-2HqVFJgz0cQTGZ-AAYBt8YrVaXPMtrjb=CfAg+=2H=rjmdg@mail.gmail.com>
-Date: Tue, 24 Sep 2013 18:28:30 +0200
-Message-ID: <CANq1E4TU_P=m6cfqdY7+HPSzPJpSdOFDzjm8AXDvqsS+yUA8ZQ@mail.gmail.com>
-Subject: Re: [PATCH] HID: uhid: allocate static minor
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tom Gundersen <teg@jklm.no>
-Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Trent Piepho <tpiepho@gmail.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>, Simon Glass <sjg@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>
+Subject: Re: [RESEND] spi/tegra114: Correct support for cs_change
+References: <1379528245-6283-1-git-send-email-rklein@nvidia.com> <52408DC8.3020407@wwwdotorg.org>	<52409B1E.3030405@nvidia.com> <52409D63.3020909@wwwdotorg.org>	<5240AC3A.9060206@nvidia.com> <5240AF20.8030301@wwwdotorg.org> <CA+7tXiiNMwyQh9sCsW4Qkid9Tn8RTcQ-uUmNse+kK-PZro1pyQ@mail.gmail.com>
+In-Reply-To: <CA+7tXiiNMwyQh9sCsW4Qkid9Tn8RTcQ-uUmNse+kK-PZro1pyQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Jiri
+On 9/23/2013 7:08 PM, Trent Piepho wrote:
+> On Mon, Sep 23, 2013 at 2:14 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>
+>> That sounds broken. Normally, shouldn't CS assert before a transaction,
+>> stay asserted during a transaction, then deassert after the transaction?
+>> It shouldn't rise and fall very quickly in between parts of the transaction.
+> 
+> That is normal, where a transaction is a spi_message made up of
+> multiple spi_transfers.  The cs_change bit for a transfer will insert
+> a de-asserted pulse after a transfer or leave CS de-asserted after the
+> last transfer.
+> 
+>>>>> need to generate a falling-edge to trigger the beginning of a SPI
+>>>>> transaction. Doing this write with the default value of SPI_COMMAND1
+>>>>> causes a brief rise and fall of CS, giving us our falling-edge.
+> 
+> I wonder, is the real problem that the spi layer allows CS to possibly
+> remain asserted between transactions to the same device?  Normally you
+> would expect it to be de-asserted at the end of a spi_message, but I
+> believe the Linux spi semantics are that it may or may not actually be
+> de-asserted at that time.  It only guarantees that is will be
+> de-asserted before a message to a different device starts.
+> 
+> I guess this is supposed to be an optimization.  Some drivers, like
+> gpio bit-banging, probably have a cost associated with any CS change.
+> Usually many messages in a row are to the same device.  Most devices
+> don't care if CS pulses between messages.  Thus not pulsing CS between
+> each message is faster.
+> 
+>>>
+>>> Otherwise, this logic allows us to skip the spi of COMMAND1 which would
+>>> normally be used to create the falling edge to start a new transaction,
+>>> leaving the previous one open for more transfers.
+>>
+>> This sounds like something the SPI core should be managing. If a driver
+>> is using the SPI bus to communicate with a device in a way that needs CS
+>> left active while outside a transaction, it shouldn't be possible for
+>> another driver to come along and communicate with another device before
+>> the first transaction is all complete. The bus should be locked.
+>> Allowing anything else could corrupt the protocol that required specific
+>> CS states outside the transaction.
+> 
+> If the transaction is one message, which can be multiple transfers and
+> multiple CS pulses, then the spi core always does it atomically.  The
+> limitation is the driver can't get the result of the transaction until
+> the entire transaction is finished.
+> 
+> If a driver needs to get part of a transaction to complete the rest,
+> e.g. read a 16-bit length from the device and then read that many
+> bytes, it can still be done.  It doesn't seem to be documented in
+> spi-summary, but the way to do this is with spi_bus_(un)lock() and
+> spi_(a)sync_locked() calls.  The driver must lock the bus, used the
+> _locked versions to issue spi_messages, then unlock when done.  This
+> should prevent another device on the bus from getting a messages, and
+> thus CS pulses, in the middle of the transaction.
 
-I forgot to put you on CC on the initial patch. Any comments on this?
+I suppose I can should reword my comment then on the code which checked:
 
-Cheers
-David
++		if (tspi->cs_control) {
++			if (tspi->cs_control != spi)
++				tegra_spi_writel(tspi, command1, SPI_COMMAND1);
 
-On Mon, Sep 9, 2013 at 6:51 PM, Tom Gundersen <teg@jklm.no> wrote:
-> On Mon, Sep 9, 2013 at 6:33 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
->> udev has this nice feature of creating "dead" /dev/<node> device-nodes if
->> it finds a devnode:<node> modalias. Once the node is accessed, the kernel
->> automatically loads the module that provides the node. However, this
->> requires udev to know the major:minor code to use for the node. This
->> feature was introduced by:
->>
->>   commit 578454ff7eab61d13a26b568f99a89a2c9edc881
->>   Author: Kay Sievers <kay.sievers@vrfy.org>
->>   Date:   Thu May 20 18:07:20 2010 +0200
->>
->>       driver core: add devname module aliases to allow module on-demand auto-loading
->>
->> However, uhid uses dynamic minor numbers so this doesn't actually work. We
->> need to load uhid to know which minor it's going to use.
->>
->> Hence, allocate a static minor (just like uinput does) and we're good
->> to go.
->>
->> Reported-by: Tom Gundersen <teg@jklm.no>
->
-> Thanks, this works (I only tested the creation of the device node, not
-> the actual module loading).
->
->> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
->> ---
->>  drivers/hid/uhid.c         | 3 ++-
->>  include/linux/miscdevice.h | 1 +
->>  2 files changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
->> index 5bf2fb7..93b00d7 100644
->> --- a/drivers/hid/uhid.c
->> +++ b/drivers/hid/uhid.c
->> @@ -615,7 +615,7 @@ static const struct file_operations uhid_fops = {
->>
->>  static struct miscdevice uhid_misc = {
->>         .fops           = &uhid_fops,
->> -       .minor          = MISC_DYNAMIC_MINOR,
->> +       .minor          = UHID_MINOR,
->>         .name           = UHID_NAME,
->>  };
->>
->> @@ -634,4 +634,5 @@ module_exit(uhid_exit);
->>  MODULE_LICENSE("GPL");
->>  MODULE_AUTHOR("David Herrmann <dh.herrmann@gmail.com>");
->>  MODULE_DESCRIPTION("User-space I/O driver support for HID subsystem");
->> +MODULE_ALIAS_MISCDEV(UHID_MINOR);
->>  MODULE_ALIAS("devname:" UHID_NAME);
->> diff --git a/include/linux/miscdevice.h b/include/linux/miscdevice.h
->> index 09c2300..cb35835 100644
->> --- a/include/linux/miscdevice.h
->> +++ b/include/linux/miscdevice.h
->> @@ -45,6 +45,7 @@
->>  #define MAPPER_CTRL_MINOR      236
->>  #define LOOP_CTRL_MINOR                237
->>  #define VHOST_NET_MINOR                238
->> +#define UHID_MINOR             239
->>  #define MISC_DYNAMIC_MINOR     255
->>
->>  struct device;
->> --
->> 1.8.4
->>
+While this does do exactly what I said, ending a previous "on-going"
+transaction in favor of a new one, this shouldn't be expected to be the
+way for clients to guarantee that they have locked a bus. This is more
+of a way internally to the Tegra SPI driver to clear its state.
+
+-rhyland
+-- 
+nvpublic
