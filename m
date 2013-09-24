@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451Ab3IXJsy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:48:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42567 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752809Ab3IXJsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:48:52 -0400
-Date: Tue, 24 Sep 2013 11:48:48 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Few cleanups
-In-Reply-To: <1378930345-6670-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1309241147500.18703@pobox.suse.cz>
-References: <1378930345-6670-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754467Ab3IXJtl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:49:41 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39643 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750752Ab3IXJtj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 05:49:39 -0400
+Date: Tue, 24 Sep 2013 10:49:37 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: lee.jones@linaro.org, sameo@linux.intel.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, rob@landley.net, broonie@kernel.org,
+        patches@opensource.wolfsonmicro.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] mfd: arizona: Add device tree helper functions
+Message-ID: <20130924094937.GN3635@opensource.wolfsonmicro.com>
+References: <1379961043-23762-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <5240B464.2010903@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5240B464.2010903@wwwdotorg.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Sep 2013, Benjamin Tissoires wrote:
-
-> Well, while debugging hid-lenovo-tpkbd, I also cleaned it up a little (so this
-> goes on top of the CVE series):
-> - use devres API
-> - remove usb references (so that the regressions tests through uhid are working)
+On Mon, Sep 23, 2013 at 03:36:36PM -0600, Stephen Warren wrote:
+> On 09/23/2013 12:30 PM, Charles Keepax wrote:
+> > -  - AVDD1-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply, CPVDD-supply,
+> > +  - AVDD-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply, CPVDD-supply,
 > 
-> This has also been tested by https://bugzilla.redhat.com/show_bug.cgi?id=1003998
-> 
-> And I also had a patch for sony that I wanted to send, but I was waiting for a
-> complete drop of usb, which I still did not managed to do.
+> That looks like an incompatible change to the DT ABI.
 
-It took me some time, as I wanted to think a little bit more about 
-cleaning up 2/3, but didn't really come up with something that'd be 
-substantially nicer.
+The supply name in the driver is AVDD as is the name for the pin
+on the datasheet, if you specify it as AVDD1 in device tree the
+current driver will not load.
 
-Applied, thanks.
+This appears to have been a copy and paste error from the wm8994
+which has 2 AVDD supplies and I believe these docs were based
+on. I would prefer to update the documentation to match what the
+driver already expects rather than the other way around.
 
--- 
-Jiri Kosina
-SUSE Labs
+Thanks,
+Charles
