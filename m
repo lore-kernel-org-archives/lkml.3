@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab3IXJUZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:20:25 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:34008 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab3IXJUT (ORCPT
+	id S1754236Ab3IXJUa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:20:30 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:46547 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab3IXJU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:20:19 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-1a-52415950f92d
-From: Tomasz Figa <t.figa@samsung.com>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: linux-samsung-soc@vger.kernel.org,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Padmavathi Venna <padma.v@samsung.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/6] clk: exynos-audss: convert to platform device
-Date: Tue, 24 Sep 2013 11:20:05 +0200
-Message-id: <3549301.xmRx49e0Zc@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11 (Linux/3.10.10-gentoo; KDE/4.11.0; x86_64; ; )
-In-reply-to: <1379982078-23381-1-git-send-email-abrestic@chromium.org>
-References: <1379711637-5226-1-git-send-email-abrestic@chromium.org>
- <1379982078-23381-1-git-send-email-abrestic@chromium.org>
+	Tue, 24 Sep 2013 05:20:26 -0400
+X-AuditID: cbfec7f5-b7ef66d00000795a-4b-52415958fab4
+Message-id: <1380014422.31179.4.camel@AMDC1943>
+Subject: Re: [PATCH v2 0/5] mm: migrate zbud pages
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Bob Liu <bob.liu@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
+Date: Tue, 24 Sep 2013 11:20:22 +0200
+In-reply-to: <20130923220757.GC16191@variantweb.net>
+References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
+ <5237FDCC.5010109@oracle.com> <20130923220757.GC16191@variantweb.net>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
 MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t/xy7oBkY5BBh/ajS1Wvv/LaDH/yDlW
-	i7PLDrJZHPizg9Hi3KuVjBa75yxmsehdcJXNYueWG2wWmx5fY7VY2LaExeLyrjlsFjPO72Oy
-	uH2Z12Lp9YtMFk8nXGSz+H3zO5vFhOlrWSymLDrManF4xQEmi3Uvp7NYnPzTy2jx40w3i8Wr
-	g20sFvM+72SyaP+7l81B0mPNvDWMHi3NPWweCz5fYfeY3XCRxeNyXy+Tx85Zd9k9Vi7/wubx
-	avVMVo871/aweWxeUu/Rt2UVo8eZBUfYPT5vkvPYODc0gC+KyyYlNSezLLVI3y6BK2Pn2uSC
-	p+wVu5+4NDBOYeti5OSQEDCRaO18wAphi0lcuLceKM7FISSwlFFi9dUtjBBOF5PEvxVbmUGq
-	2ATUJD43PALrFhHQlZh64TQTiM0ssJJdom8/F4gtLOApse7TQhYQm0VAVWL9/iNgNq+ApsSX
-	x4/B6vkF1CXebXsKZosKuEp8WriRHcTmFHCTaGu7yQKxuIFR4t6dHiaIZkGJH5PvsUAsk5fY
-	t38qK4StJbF+53GmCYyCs5CUzUJSNgtJ2QJG5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsY
-	IUngyw7GxcesDjEKcDAq8fBeTHAIEmJNLCuuzD3EKMHBrCTCe8PWMUiINyWxsiq1KD++qDQn
-	tfgQIxMHp1QD48paj8pH0vHOypcPRyqeuehmXRXc9yHgCpMRa/nd89cezJWbsaZ3u9uPp6vO
-	rPv6aPv9SRf5YkQaJJJM9Y7JtW/dPW+aeP9qHT82qaMdWkd5l5itTTKdEhK2W8dYZFGgjdF9
-	g8VtTWVn1bN1e/f+U9Kv2pgTqbHqUOvO9IOMrSHd7wunsHIJK7EUZyQaajEXFScCACtk/nPg	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xa7oRkY5BBqdOilrMWb+GzWLjjPWs
+	Fl2nprJYfHr5gNHibNMbdovLu+awWdxb85/VYu2Ru+wWk989Y7RY9vU9u8WhfavYHbg9Fu95
+	yeSxaVUnm8emT5PYPU7M+M3i8eDQZhaPj09vsXj0bVnF6LH5dLXH501yAZxRXDYpqTmZZalF
+	+nYJXBn7f8xmL5jKX3Hl8VP2BsYGni5GTg4JAROJq60bmCBsMYkL99azdTFycQgJLGWUeL2n
+	D8r5zCjRf/AuWBWvgL7E0nWfmEFsYQEjibu7D7OD2GwCxhKbly9hA7FFgGq6Z69gBmlmFvjD
+	JLH85jewBIuAqkTf9KVgzZxAq8+/fsMEsaGfUWLxl2MsIAlmAXWJSfMWMUPcpCSxu72THSIu
+	L7F5zVtmiCsEJX5MvscygVFgFpKWWUjKZiEpW8DIvIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/
+	dxMjJHK+7mBceszqEKMAB6MSD++FBIcgIdbEsuLK3EOMEhzMSiK8N2wdg4R4UxIrq1KL8uOL
+	SnNSiw8xMnFwSjUwXt6eXd17bMvyNMFJHNeN5n26HB+95qtac263lHtd77y97PFedft6ExqV
+	69t8pkotYX5/6/epQwa7ZA8ZXXz7buaJzGMWhxcdzOl9bW506OdNjsYiGc/FCdPSd/oeFlpz
+	3ffv9EJeVb6kH5+fbltjc2d5XOCqtZcX/2zxOJyl+6H5yg7uJoGeUCWW4oxEQy3mouJEADuL
+	vzN6AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Hi,
 
-I'd like to ack this series, but there is one more thing that I think
-should be fixed. Please see my comment inline.
+On pon, 2013-09-23 at 17:07 -0500, Seth Jennings wrote:
+> On Tue, Sep 17, 2013 at 02:59:24PM +0800, Bob Liu wrote:
+> > Mel mentioned several problems about zswap/zbud in thread "[PATCH v6
+> > 0/5] zram/zsmalloc promotion".
+> > 
+> > Like "it's clunky as hell and the layering between zswap and zbud is
+> > twisty" and "I think I brought up its stalling behaviour during review
+> > when it was being merged. It would have been preferable if writeback
+> > could be initiated in batches and then waited on at the very least..
+> >  It's worse that it uses _swap_writepage directly instead of going
+> > through a writepage ops.  It would have been better if zbud pages
+> > existed on the LRU and written back with an address space ops and
+> > properly handled asynchonous writeback."
+> > 
+> > So I think it would be better if we can address those issues at first
+> > and it would be easier to address these issues before adding more new
+> > features. Welcome any ideas.
+> 
+> I just had an idea this afternoon to potentially kill both these birds with one
+> stone: Replace the rbtree in zswap with an address_space.
+> 
+> Each swap type would have its own page_tree to organize the compressed objects
+> by type and offset (radix tree is more suited for this anyway) and a_ops that
+> could be called by shrink_page_list() (writepage) or the migration code
+> (migratepage).
+> 
+> Then zbud pages could be put on the normal LRU list, maybe at the beginning of
+> the inactive LRU so they would live for another cycle through the list, then be
+> reclaimed in the normal way with the mapping->a_ops->writepage() pointing to a
+> zswap_writepage() function that would decompress the pages and call
+> __swap_writepage() on them.
 
-On Monday 23 of September 2013 17:21:13 Andrew Bresticker wrote:
-> @@ -128,8 +135,53 @@ static void __init exynos_audss_clk_init(struct device_node *np)
->  #endif
->  
->  	pr_info("Exynos: Audss: clock setup completed\n");
+How exactly the address space can be used here? Do you want to point to
+zbud pages in address_space.page_tree? If yes then which index should be
+used?
 
-nit (not the thing I mentioned above): This (and possibly other uses of
-pr_*() could be replaced with dev_*().
-
-> +
-> +	return 0;
-> +}
-> +
-> +static int exynos_audss_clk_remove(struct platform_device *pdev)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < EXYNOS_AUDSS_MAX_CLKS; i++) {
-> +		if (clk_table[i])
-
-I believe clk_register_* functions return ERR_PTR() in case of failure,
-not NULL, so this should be accounted for either here or at probe time.
-Possibly checking for registration error in probe() would be the best
-solution, although bloating the code a bit (but what error path isn't?).
 
 Best regards,
-Tomasz
+Krzysztof
+
+
 
