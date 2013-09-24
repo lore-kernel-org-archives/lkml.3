@@ -1,57 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750792Ab3IXHwR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 03:52:17 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:50308 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab3IXHwQ (ORCPT
+	id S1751134Ab3IXHzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 03:55:25 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:59954 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab3IXHzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 03:52:16 -0400
-Date: Tue, 24 Sep 2013 09:52:12 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] x86/UV/KDB/NMI: Updates for NMI/KDB handler for SGI
- UV
-Message-ID: <20130924075212.GG28538@gmail.com>
-References: <20130923212459.544517569@asylum.americas.sgi.com>
+	Tue, 24 Sep 2013 03:55:23 -0400
+Message-ID: <5241454E.2050602@collabora.co.uk>
+Date: Tue, 24 Sep 2013 09:54:54 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130923212459.544517569@asylum.americas.sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sricharan R <r.sricharan@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Balaji T K <balajitk@ti.com>, Jon Hunter <jgchunter@gmail.com>,
+        linux-gpio@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] gpio/omap: auto-setup a GPIO when used as an IRQ
+References: <1379860848-29020-1-git-send-email-javier.martinez@collabora.co.uk> <20130923164519.GF2684@atomide.com> <524073BC.9080907@collabora.co.uk> <20130923170724.GG2684@atomide.com> <524141A6.2090701@ti.com>
+In-Reply-To: <524141A6.2090701@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/24/2013 09:39 AM, Sricharan R wrote:
+> Hi,
+> On Monday 23 September 2013 10:37 PM, Tony Lindgren wrote:
+>> * Javier Martinez Canillas <javier.martinez@collabora.co.uk> [130923 10:09]:
+>>> On 09/23/2013 06:45 PM, Tony Lindgren wrote:
+>>>> Hmm does this still work for legacy platform data based
+>>>> drivers that are doing gpio_request() first?
+>>>>
+>>> Yes it still work when booting using board files. I tested on my OMAP3 board and
+>>> it worked in both DT and legacy booting mode.
+>> OK great.
+>>  
+>>>> And what's the path for clearing things for PM when free_irq()
+>>>> gets called? It seems that this would leave the GPIO bank
+>>>> enabled causing a PM regression?
+>>>>
+>>> Indeed, I did set bank->mod_usage |= 1 << offset so the bank is enabled if the
+>>> device goes to suspended and then resumed but I completely forget about the
+>>> clearing path when the IRQ is freed.
+>>>
+>>> Which makes me think that we should probably maintain two usage variables, one
+>>> for GPIO and another one for IRQ and check both of them on the suspend/resume pm
+>>> functions.
+>> Yes that it seems that they should be treated separately.
+>  To understand, why cant the flag be cleared in gpio_irq_shutdown ?
 
-Hm, do you test-build your patches? This series produces the following 
-annoying warning:
+Hi Sricharan,
 
- arch/x86/platform/uv/uv_nmi.c: In function ‘uv_nmi_setup’:
- arch/x86/platform/uv/uv_nmi.c:664:2: warning: the address of ‘uv_nmi_cpu_mask’ will always evaluate as ‘true’ [-Waddress]
+Without this patch today drivers do this:
 
-This:
+gpio_request(gpio, "foo IRQ"); // bank->mod_usage |= 1 << offset
+gpio_direction_input(gpio);
 
-        alloc_cpumask_var(&uv_nmi_cpu_mask, GFP_KERNEL);
-        BUG_ON(!uv_nmi_cpu_mask);
+and then request a IRQ with:
 
+irq = gpio_to_irq(gpio);
+request_irq(irq, ...);
 
-the way to check for allocation failures is by checking the return value 
-of alloc_cpumask_var():
+later on its cleanup path:
 
-	BUG_ON(!alloc_cpumask_var(&uv_nmi_cpu_mask, GFP_KERNEL));
+free_irq(irq, dev);
+gpio_free(gpio) // bank->mod_usage &= ~(1 << offset);
 
-I've fixed this in the patch.
+So if you clear the flag on gpio_irq_shutdown then bank module won't be enabled
+after a suspend making drivers using the GPIO after freeing the IRQ to fail.
 
-Thanks,
+So the idea is to have something like this:
 
-	Ingo
+a) Drivers that request both the GPIO and IRQ
+
+gpio_request(gpio, "foo IRQ"); // bank->mod_usage |= 1 << offset
+gpio_direction_input(gpio);
+
+irq = gpio_to_irq(gpio);
+request_irq(irq, ...); // bank->irq_usage |= 1 << offset
+
+free_irq(irq, dev); // bank->irq_usage &= ~(1 << offset);
+gpio_free(gpio) // bank->mod_usage &= ~(1 << offset);
+
+b) Drivers that just request the IRQ:
+
+irq = gpio_to_irq(gpio);
+request_irq(irq, ...); // bank->irq_usage |= 1 << offset
+free_irq(irq, dev); // bank->irq_usage &= ~(1 << offset);
+
+So irq_usage or mod_usage is set means that the bank has to be enabled and if
+both are not set means that the bank module can be disabled.
+
+> 
+> Regards,
+>  Sricharan
+> 
+
+Best regards,
+Javier
