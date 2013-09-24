@@ -1,62 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725Ab3IXCrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 22:47:01 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:51573 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab3IXCq7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 22:46:59 -0400
-Date: Mon, 23 Sep 2013 22:46:54 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, toshi.kani@hp.com,
-        liwanp@linux.vnet.ibm.com, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 2/5] memblock: Improve memblock to support allocation
- from lower address.
-Message-ID: <20130924024654.GE3482@htj.dyndns.org>
-References: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com>
- <1379064655-20874-3-git-send-email-tangchen@cn.fujitsu.com>
- <20130923155027.GD14547@htj.dyndns.org>
- <52408351.8080400@gmail.com>
- <20130923202147.GB28667@mtj.dyndns.org>
- <5240FBEF.10102@cn.fujitsu.com>
+	id S1753450Ab3IXCwk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 22:52:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752341Ab3IXCwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 22:52:38 -0400
+Date: Tue, 24 Sep 2013 10:52:09 +0800
+From: Dave Young <dyoung@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+Message-ID: <20130924025209.GA5561@dhcp-16-126.nay.redhat.com>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <1379602494-26684-12-git-send-email-bp@alien8.de>
+ <20130921113929.GB1587@pd.tnic>
+ <20130922123515.GA7476@dhcp-16-126.nay.redhat.com>
+ <20130922133722.GC28718@pd.tnic>
+ <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5240FBEF.10102@cn.fujitsu.com>
+In-Reply-To: <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 09/22/13 at 08:27am, H. Peter Anvin wrote:
+> The address that faults is interesting in that it is indeed just below -4G.  The question at hand is probably what information you are using to build the EFI mappings in the secondary kernel and what could make it not match the primary.
+> 
+> Assuming it isn't as simple as the mappings never get built at all.
 
-On Tue, Sep 24, 2013 at 10:41:51AM +0800, Zhang Yanfei wrote:
-> I see. But I think memblock_set_alloc_above_kernel may lose the info
-> that we are doing bottom-up allocation. So my idea is we introduce
-> pure bottom-up allocation mode in previous patches and we use the
-> bottom-up allocation here and limit the start address above the kernel
-> , with explicit comments to indicate this.
+Here is my debug output, diff efi-mapping-1st-kernel efi-mapping-2nd-kernel:
+Obviously, the high address mapping is not same:
 
-It probably doesn't matter either way.  I was just a bit bothered that
-it's called bottom-up when it implies more including the retry logic.
-Its use of bottom-up allocation is really an implementation logic to
-achieve the goal of allocating memory above kernel image after all,
-but yeah minor point either way.
+--- efi-mapping-1.txt	2013-09-24 10:46:09.977746047 +0800
++++ efi-mapping-2.txt	2013-09-24 10:46:33.871421806 +0800
+@@ -1,30 +1,30 @@
+ efi mapping PA 0x800000 -> VA 0x800000
+ efi mapping PA 0x800000 -> VA 0xffffffff00000000
+ efi mapping PA 0x7c000000 -> VA 0x7c000000
+-efi mapping PA 0x7c000000 -> VA 0xfffffffefffe0000
++efi mapping PA 0x7c000000 -> VA 0xffffffff00000000
+ efi mapping PA 0x7d5e2000 -> VA 0x7d5e2000
+-efi mapping PA 0x7d5e2000 -> VA 0xfffffffefffdf000
++efi mapping PA 0x7d5e2000 -> VA 0xfffffffefffff000
+ efi mapping PA 0x7d77d000 -> VA 0x7d77d000
+-efi mapping PA 0x7d77d000 -> VA 0xfffffffefffde000
++efi mapping PA 0x7d77d000 -> VA 0xfffffffeffffe000
+ efi mapping PA 0x7d864000 -> VA 0x7d864000
+-efi mapping PA 0x7d864000 -> VA 0xfffffffeff8d4000
++efi mapping PA 0x7d864000 -> VA 0xfffffffeff8f4000
+ efi mapping PA 0x7df6e000 -> VA 0x7df6e000
+-efi mapping PA 0x7df6e000 -> VA 0xfffffffeff6ae000
++efi mapping PA 0x7df6e000 -> VA 0xfffffffeff6ce000
+ efi mapping PA 0x7e194000 -> VA 0x7e194000
+-efi mapping PA 0x7e194000 -> VA 0xfffffffeff6ac000
++efi mapping PA 0x7e194000 -> VA 0xfffffffeff6cc000
+ efi mapping PA 0x7e196000 -> VA 0x7e196000
+-efi mapping PA 0x7e196000 -> VA 0xfffffffeff696000
++efi mapping PA 0x7e196000 -> VA 0xfffffffeff6b6000
+ efi mapping PA 0x7e1ac000 -> VA 0x7e1ac000
+-efi mapping PA 0x7e1ac000 -> VA 0xfffffffeff681000
++efi mapping PA 0x7e1ac000 -> VA 0xfffffffeff6a1000
+ efi mapping PA 0x7e1c1000 -> VA 0x7e1c1000
+-efi mapping PA 0x7e1c1000 -> VA 0xfffffffefe041000
++efi mapping PA 0x7e1c1000 -> VA 0xfffffffefe061000
+ efi mapping PA 0x7f802000 -> VA 0x7f802000
+-efi mapping PA 0x7f802000 -> VA 0xfffffffefdec2000
++efi mapping PA 0x7f802000 -> VA 0xfffffffefdee2000
+ efi mapping PA 0x7f981000 -> VA 0x7f981000
+-efi mapping PA 0x7f981000 -> VA 0xfffffffefde92000
++efi mapping PA 0x7f981000 -> VA 0xfffffffefdeb2000
+ efi mapping PA 0x7f9b1000 -> VA 0x7f9b1000
+-efi mapping PA 0x7f9b1000 -> VA 0xfffffffefde6e000
++efi mapping PA 0x7f9b1000 -> VA 0xfffffffefde8e000
+ efi mapping PA 0x7f9e5000 -> VA 0x7f9e5000
+-efi mapping PA 0x7f9e5000 -> VA 0xfffffffefd873000
++efi mapping PA 0x7f9e5000 -> VA 0xfffffffefd893000
+ efi mapping PA 0x7ffe0000 -> VA 0x7ffe0000
+-efi mapping PA 0x7ffe0000 -> VA 0xfffffffefd853000
++efi mapping PA 0x7ffe0000 -> VA 0xfffffffefd873000
 
-Thanks.
-
--- 
-tejun
+> 
+> 
+> Borislav Petkov <bp@alien8.de> wrote:
+> >On Sun, Sep 22, 2013 at 08:35:15PM +0800, Dave Young wrote:
+> >> I tested your new patch, it works both with efi stub and grub boot in
+> >> 1st kernel.
+> >
+> >Good, thanks!
+> >
+> >> But it paniced in kexec boot with my kexec related patcheset, the
+> >patchset
+> >
+> >That's the second kernel, right?
+> >
+> >> contains 3 patch:
+> >> 1. introduce cmdline kexecboot=<0|1|2>; 1 == kexec, 2 == kdump
+> >> 2. export physical addr fw_vendor, runtime, tables to
+> >/sys/firmware/efi/systab
+> >> 3. if kexecboot != 0, use fw_vendor, runtime, tables from bootparams;
+> >Also do not
+> >>    call SetVirtualAddressMao in case kexecboot.
+> >> 
+> >> The panic happens at the last line of efi_init:
+> >>         /* clean DUMMY object */
+> >>         efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+> >>                          EFI_VARIABLE_NON_VOLATILE |
+> >>                          EFI_VARIABLE_BOOTSERVICE_ACCESS |
+> >>                          EFI_VARIABLE_RUNTIME_ACCESS,
+> >>                          0, NULL);
+> >> 
+> >> Below is the dmesg:
+> >> [    0.003359] pid_max: default: 32768 minimum: 301
+> >> [    0.004792] BUG: unable to handle kernel paging request at
+> >fffffffefde97e70
+> >> [    0.006666] IP: [<ffffffff8103a1db>]
+> >virt_efi_set_variable+0x40/0x54
+> >> [    0.006666] PGD 36981067 PUD 35828063 PMD 0
+> >
+> >Here it is - fffffffefde97e70 is not mapped in the pagetable, PMD is 0.
+> >
+> >Ok, can you upload your patches somewhere and tell me exactly how to
+> >reproduce this so that I can take a look too?
+> >
+> >Thanks.
+> 
+> -- 
+> Sent from my mobile phone.  Please pardon brevity and lack of formatting.
