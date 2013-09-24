@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab3IXLgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 07:36:45 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:3463 "EHLO
+	id S1753810Ab3IXLg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 07:36:57 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:3497 "EHLO
 	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab3IXLgm (ORCPT
+	with ESMTP id S1753596Ab3IXLgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 07:36:42 -0400
+	Tue, 24 Sep 2013 07:36:54 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 24 Sep 2013 04:36:41 -0700
+	by hqnvupgp08.nvidia.com on Tue, 24 Sep 2013 04:33:18 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <lee.jones@linaro.org>, <sameo@linux.intel.com>, <broonie@kernel.org>,
         <linus.walleij@linaro.org>, <akpm@linux-foundation.org>
@@ -17,58 +17,777 @@ CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <rtc-linux@googlegroups.com>, <rob.herring@calxeda.com>,
         <mark.rutland@arm.com>, <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
         <rob@landley.net>, <ijc+devicetree@hellion.org.uk>,
-        <grant.likely@linaro.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3 0/3] Add AMS AS3722 mfd, pincontrol, regulator and RTC driver.
-Date: Tue, 24 Sep 2013 17:28:38 +0530
-Message-ID: <1380023921-29867-1-git-send-email-ldewangan@nvidia.com>
+        <grant.likely@linaro.org>, Laxman Dewangan <ldewangan@nvidia.com>,
+        Florian Lobmaier <florian.lobmaier@ams.com>
+Subject: [PATCH V3 2/3] pincntrl: add support for AMS AS3722 pin control driver
+Date: Tue, 24 Sep 2013 17:28:40 +0530
+Message-ID: <1380023921-29867-3-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1380023921-29867-1-git-send-email-ldewangan@nvidia.com>
+References: <1380023921-29867-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series add the driver support for AMS AS3722 PMIC. The driver includes
-MFD, pincontrol and GPIO, regulator and RTC.
+The AS3722 is a compact system PMU suitable for mobile phones, tablets etc.
 
+Add a driver to support accessing the GPIO, pinmux and pin configuration
+of 8 GPIO pins found on the AMS AS3722 through pin control driver and
+gpiolib.
+
+The driver will register itself as the pincontrol driver and gpio driver.
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Florian Lobmaier <florian.lobmaier@ams.com>
+---
 Changes from V1:
-- Remove compatible string from DT for subnode.
-- Add macro in regmap.h for definign range.
-- Nit cleanups in driver and use module_i2c_driver/module_platform_driver.
-- Use linear_range and added regulator_map_* on regulators.
-- Move OC configuration to regulator_current limit setting.
-- Get rid of clk32k out configuration from RTC. Will add clock driver.
+- Nit cleanups in driver and use module_platform_driver.
 
 Changes from V2:
-- Drop the already applied patches on V2 series
-	regmap: add helper macro to set min/max range of register
-	regulator: as3722: add regulator driver for AMS AS3722
-- Move the GPIo driver to pincontrol driver to expose the pin configuration
-  through pincontrol.
-- rewrite the DT binding of the mfd.
+- Move the gpio driver from gpio folder to pinctnrl driver and register
+  driver as pincontrol driver.
+- Provide pin configuration through pincntrl framework.
 
-Laxman Dewangan (3):
-  mfd: add support for AMS AS3722 PMIC
-  pincntrl: add support for AMS AS3722 pin control driver
-  drivers/rtc/rtc-as3722: add RTC driver
-
- Documentation/devicetree/bindings/mfd/as3722.txt   |   52 ++
  .../devicetree/bindings/pinctrl/pinctrl-as3722.txt |   59 ++
- drivers/mfd/Kconfig                                |   12 +
- drivers/mfd/Makefile                               |    1 +
- drivers/mfd/as3722.c                               |  448 ++++++++++++++
  drivers/pinctrl/Kconfig                            |   11 +
  drivers/pinctrl/Makefile                           |    1 +
  drivers/pinctrl/pinctrl-as3722.c                   |  625 ++++++++++++++++++++
- drivers/rtc/Kconfig                                |   10 +
- drivers/rtc/Makefile                               |    1 +
- drivers/rtc/rtc-as3722.c                           |  296 +++++++++
- include/linux/mfd/as3722.h                         |  423 +++++++++++++
- 12 files changed, 1939 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/as3722.txt
+ 4 files changed, 696 insertions(+), 0 deletions(-)
  create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-as3722.txt
- create mode 100644 drivers/mfd/as3722.c
  create mode 100644 drivers/pinctrl/pinctrl-as3722.c
- create mode 100644 drivers/rtc/rtc-as3722.c
- create mode 100644 include/linux/mfd/as3722.h
+
+diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-as3722.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-as3722.txt
+new file mode 100644
+index 0000000..7681afd
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-as3722.txt
+@@ -0,0 +1,59 @@
++AMS AS3722 Pincontrol
++
++The GPIO pins of AMS AS3722 device can be set on different options and provides
++the configuration for Pull UP/DOWN, high impedance, open drain etc.
++
++Please refer to pinctrl-bindings.txt in this directory for details of the
++common pinctrl bindings used by client devices, including the meaning of the
++phrase "pin configuration node".
++
++DT node contains the different subnode for pin control to represent
++different states. Each of these subnodes represents some desired
++configuration for a list of pins. This configuration can include the
++mux function to select on those pin(s), and various pin configuration
++parameters, such as pull-up, open drain.
++
++This binding uses the following generic properties as defined in
++pinctrl-bindings.txt:
++
++Required: pins
++Options: function, bias-disable, bias-pull-up, bias-pull-down,
++	 bias-pin-default, bias-high-impedance, drive-open-drain.
++
++Valid values for pin names are:
++	gpio0, gpio1, gpio2, gpio3, gpio4, gpio5, gpio6, gpio7
++
++Valid value of function names are:
++	gpio, interrupt-out, gpio-in-interrupt, vsup-vbat-low-undebounce-out,
++	vsup-vbat-low-debounce-out, voltage-in-standby, oc-pg-sd0, oc-pg-sd6,
++	powergood-out, pwm-in, pwm-out, clk32k-out, watchdog-in, soft-reset-in,
++
++Example:
++	as3722: as3722 {
++		....
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&as3722_default>;
++
++		as3722_default: pinmux {
++			gpio0 {
++				pins = "gpio0";
++				function = "gpio";
++				bias-pull-down;
++			};
++
++			gpio1_2_4_7 {
++				pins = "gpio1", "gpio2", "gpio4", "gpio7";
++				function = "gpio";
++				bias-pull-up;
++			};
++
++			gpio5 {
++				pins = "gpio5";
++				function = "clk32k_out";
++			};
++		};
++		...
++	};
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index 21db201..9d2d60c 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -59,6 +59,17 @@ config PINCTRL_ADI2
+ 	  future processors. This option is selected automatically when specific
+ 	  machine and arch are selected to build.
+ 
++config PINCTRL_AS3722
++	bool "Pinctrl and GPIO driver for the AMS AS3722 PMIC"
++	depends on MFD_AS3722 && GPIOLIB
++	select PINMUX
++	select GENERIC_PINCONF
++	help
++	  AS3722 device supports the configuration of GPIO pins for different
++	  functionality. This driver supports the pinmux, push-pull and
++	  open drain configuration for the GPIO pins of AS3722 devices. It also
++	  supports the GPIO functionality through gpiolib.
++
+ config PINCTRL_BF54x
+ 	def_bool y if BF54x
+ 	select PINCTRL_ADI2
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index bbeb980..3d14cb8 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -15,6 +15,7 @@ obj-$(CONFIG_PINCTRL_AB8540)	+= pinctrl-ab8540.o
+ obj-$(CONFIG_PINCTRL_AB9540)	+= pinctrl-ab9540.o
+ obj-$(CONFIG_PINCTRL_AB8505)	+= pinctrl-ab8505.o
+ obj-$(CONFIG_PINCTRL_ADI2)	+= pinctrl-adi2.o
++obj-$(CONFIG_PINCTRL_AS3722)	+= pinctrl-as3722.o
+ obj-$(CONFIG_PINCTRL_BF54x)	+= pinctrl-adi2-bf54x.o
+ obj-$(CONFIG_PINCTRL_BF60x)	+= pinctrl-adi2-bf60x.o
+ obj-$(CONFIG_PINCTRL_AT91)	+= pinctrl-at91.o
+diff --git a/drivers/pinctrl/pinctrl-as3722.c b/drivers/pinctrl/pinctrl-as3722.c
+new file mode 100644
+index 0000000..3d93c38
+--- /dev/null
++++ b/drivers/pinctrl/pinctrl-as3722.c
+@@ -0,0 +1,625 @@
++/*
++ * AMS AS3722 pin control and GPIO driver.
++ *
++ * Copyright (c) 2013, NVIDIA Corporation.
++ *
++ * Author: Laxman Dewangan <ldewangan@nvidia.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
++ * whether express or implied; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++ * 02111-1307, USA
++ */
++
++#include <linux/delay.h>
++#include <linux/gpio.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/mfd/as3722.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/platform_device.h>
++#include <linux/pinctrl/machine.h>
++#include <linux/pinctrl/pinctrl.h>
++#include <linux/pinctrl/pinconf-generic.h>
++#include <linux/pinctrl/pinconf.h>
++#include <linux/pinctrl/pinmux.h>
++#include <linux/pm.h>
++#include <linux/slab.h>
++
++#include "core.h"
++#include "pinconf.h"
++#include "pinctrl-utils.h"
++
++#define AS3722_PIN_GPIO0		0
++#define AS3722_PIN_GPIO1		1
++#define AS3722_PIN_GPIO2		2
++#define AS3722_PIN_GPIO3		3
++#define AS3722_PIN_GPIO4		4
++#define AS3722_PIN_GPIO5		5
++#define AS3722_PIN_GPIO6		6
++#define AS3722_PIN_GPIO7		7
++#define AS3722_PIN_NUM			(AS3722_PIN_GPIO7 + 1)
++
++#define AS3722_GPIO_MODE_PULL_UP           BIT(PIN_CONFIG_BIAS_PULL_UP)
++#define AS3722_GPIO_MODE_PULL_DOWN         BIT(PIN_CONFIG_BIAS_PULL_DOWN)
++#define AS3722_GPIO_MODE_HIGH_IMPED        BIT(PIN_CONFIG_BIAS_HIGH_IMPEDANCE)
++#define AS3722_GPIO_MODE_OPEN_DRAIN        BIT(PIN_CONFIG_DRIVE_OPEN_DRAIN)
++
++struct as3722_pin_function {
++	const char *name;
++	const char * const *groups;
++	unsigned ngroups;
++	int mux_option;
++};
++
++struct as3722_gpio_pin_control {
++	bool enable_gpio_invert;
++	unsigned mode_prop;
++	int io_function;
++};
++
++struct as3722_pingroup {
++	const char *name;
++	const unsigned pins[1];
++	unsigned npins;
++};
++
++struct as3722_pctrl_info {
++	struct device *dev;
++	struct pinctrl_dev *pctl;
++	struct as3722 *as3722;
++	struct gpio_chip gpio_chip;
++	int pins_current_opt[AS3722_PIN_NUM];
++	const struct as3722_pin_function *functions;
++	unsigned num_functions;
++	const struct as3722_pingroup *pin_groups;
++	int num_pin_groups;
++	const struct pinctrl_pin_desc *pins;
++	unsigned num_pins;
++	struct as3722_gpio_pin_control gpio_control[AS3722_PIN_NUM];
++};
++
++static const struct pinctrl_pin_desc as3722_pins_desc[] = {
++	PINCTRL_PIN(AS3722_PIN_GPIO0, "gpio0"),
++	PINCTRL_PIN(AS3722_PIN_GPIO1, "gpio1"),
++	PINCTRL_PIN(AS3722_PIN_GPIO2, "gpio2"),
++	PINCTRL_PIN(AS3722_PIN_GPIO3, "gpio3"),
++	PINCTRL_PIN(AS3722_PIN_GPIO4, "gpio4"),
++	PINCTRL_PIN(AS3722_PIN_GPIO5, "gpio5"),
++	PINCTRL_PIN(AS3722_PIN_GPIO6, "gpio6"),
++	PINCTRL_PIN(AS3722_PIN_GPIO7, "gpio7"),
++};
++
++static const char * const gpio_groups[] = {
++	"gpio0",
++	"gpio1",
++	"gpio2",
++	"gpio3",
++	"gpio4",
++	"gpio5",
++	"gpio6",
++	"gpio7",
++};
++
++enum as3722_pinmux_option {
++	AS3722_PINMUX_GPIO			= 0,
++	AS3722_PINMUX_INTERRUPT_OUT		= 1,
++	AS3722_PINMUX_VSUB_VBAT_UNDEB_LOW_OUT	= 2,
++	AS3722_PINMUX_GPIO_INTERRUPT		= 3,
++	AS3722_PINMUX_PWM_INPUT			= 4,
++	AS3722_PINMUX_VOLTAGE_IN_STBY		= 5,
++	AS3722_PINMUX_OC_PG_SD0			= 6,
++	AS3722_PINMUX_PG_OUT			= 7,
++	AS3722_PINMUX_CLK32K_OUT		= 8,
++	AS3722_PINMUX_WATCHDOG_INPUT		= 9,
++	AS3722_PINMUX_SOFT_RESET_IN		= 11,
++	AS3722_PINMUX_PWM_OUTPUT		= 12,
++	AS3722_PINMUX_VSUB_VBAT_LOW_DEB_OUT	= 13,
++	AS3722_PINMUX_OC_PG_SD6			= 14,
++};
++
++#define FUNCTION_GROUP(fname, mux)			\
++	{						\
++		.name = #fname,				\
++		.groups = gpio_groups,			\
++		.ngroups = ARRAY_SIZE(gpio_groups),	\
++		.mux_option = AS3722_PINMUX_##mux,	\
++	}
++
++static const struct as3722_pin_function as3722_pin_function[] = {
++	FUNCTION_GROUP(gpio, GPIO),
++	FUNCTION_GROUP(interrupt-out, INTERRUPT_OUT),
++	FUNCTION_GROUP(gpio-in-interrupt, GPIO_INTERRUPT),
++	FUNCTION_GROUP(vsup-vbat-low-undebounce-out, VSUB_VBAT_UNDEB_LOW_OUT),
++	FUNCTION_GROUP(vsup-vbat-low-debounce-out, VSUB_VBAT_LOW_DEB_OUT),
++	FUNCTION_GROUP(voltage-in-standby, VOLTAGE_IN_STBY),
++	FUNCTION_GROUP(oc-pg-sd0, OC_PG_SD0),
++	FUNCTION_GROUP(oc-pg-sd6, OC_PG_SD6),
++	FUNCTION_GROUP(powergood-out, PG_OUT),
++	FUNCTION_GROUP(pwm-in, PWM_INPUT),
++	FUNCTION_GROUP(pwm-out, PWM_OUTPUT),
++	FUNCTION_GROUP(clk32k-out, CLK32K_OUT),
++	FUNCTION_GROUP(watchdog-in, WATCHDOG_INPUT),
++	FUNCTION_GROUP(soft-reset-in, SOFT_RESET_IN),
++};
++
++#define AS3722_PINGROUP(pg_name, pin_id) \
++	{								\
++		.name = #pg_name,					\
++		.pins = {AS3722_PIN_##pin_id},				\
++		.npins = 1,						\
++	}
++
++static const struct as3722_pingroup as3722_pingroups[] = {
++	AS3722_PINGROUP(gpio0,	GPIO0),
++	AS3722_PINGROUP(gpio1,	GPIO1),
++	AS3722_PINGROUP(gpio2,	GPIO2),
++	AS3722_PINGROUP(gpio3,	GPIO3),
++	AS3722_PINGROUP(gpio4,	GPIO4),
++	AS3722_PINGROUP(gpio5,	GPIO5),
++	AS3722_PINGROUP(gpio6,	GPIO6),
++	AS3722_PINGROUP(gpio7,	GPIO7),
++};
++
++static int as3722_pinctrl_get_groups_count(struct pinctrl_dev *pctldev)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return as_pci->num_pin_groups;
++}
++
++static const char *as3722_pinctrl_get_group_name(struct pinctrl_dev *pctldev,
++		unsigned group)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return as_pci->pin_groups[group].name;
++}
++
++static int as3722_pinctrl_get_group_pins(struct pinctrl_dev *pctldev,
++		unsigned group, const unsigned **pins, unsigned *num_pins)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	*pins = as_pci->pin_groups[group].pins;
++	*num_pins = as_pci->pin_groups[group].npins;
++	return 0;
++}
++
++static const struct pinctrl_ops as3722_pinctrl_ops = {
++	.get_groups_count = as3722_pinctrl_get_groups_count,
++	.get_group_name = as3722_pinctrl_get_group_name,
++	.get_group_pins = as3722_pinctrl_get_group_pins,
++	.dt_node_to_map = pinconf_generic_dt_node_to_map_pin,
++	.dt_free_map = pinctrl_utils_dt_free_map,
++};
++
++static int as3722_pinctrl_get_funcs_count(struct pinctrl_dev *pctldev)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return as_pci->num_functions;
++}
++
++static const char *as3722_pinctrl_get_func_name(struct pinctrl_dev *pctldev,
++			unsigned function)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return as_pci->functions[function].name;
++}
++
++static int as3722_pinctrl_get_func_groups(struct pinctrl_dev *pctldev,
++		unsigned function, const char * const **groups,
++		unsigned * const num_groups)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	*groups = as_pci->functions[function].groups;
++	*num_groups = as_pci->functions[function].ngroups;
++	return 0;
++}
++
++static int as3722_pinctrl_enable(struct pinctrl_dev *pctldev, unsigned function,
++		unsigned group)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++	int gpio_cntr_reg = AS3722_GPIOn_CONTROL_REG(group);
++	u8 val = AS3722_GPIO_IOSF_VAL(as_pci->functions[function].mux_option);
++	int ret;
++
++	dev_dbg(as_pci->dev, "%s(): GPIO %u pin to function %u and val %u\n",
++		__func__, group, function, val);
++
++	ret = as3722_update_bits(as_pci->as3722, gpio_cntr_reg,
++			AS3722_GPIO_IOSF_MASK, val);
++	if (ret < 0) {
++		dev_err(as_pci->dev, "GPIO%d_CTRL_REG update failed %d\n",
++			group, ret);
++		return ret;
++	}
++	as_pci->gpio_control[group].io_function = function;
++	return ret;
++}
++
++static const struct pinmux_ops as3722_pinmux_ops = {
++	.get_functions_count = as3722_pinctrl_get_funcs_count,
++	.get_function_name = as3722_pinctrl_get_func_name,
++	.get_function_groups = as3722_pinctrl_get_func_groups,
++	.enable = as3722_pinctrl_enable,
++};
++
++static int as3722_pinconf_get(struct pinctrl_dev *pctldev,
++			unsigned pin, unsigned long *config)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++	enum pin_config_param param = pinconf_to_config_param(*config);
++	int arg = 0;
++	u16 prop;
++
++	switch (param) {
++	case PIN_CONFIG_BIAS_DISABLE:
++		prop = AS3722_GPIO_MODE_PULL_UP |
++				AS3722_GPIO_MODE_PULL_DOWN;
++		if (!(as_pci->gpio_control[pin].mode_prop & prop))
++			arg = 1;
++		prop = 0;
++		break;
++
++	case PIN_CONFIG_BIAS_PULL_UP:
++		prop = AS3722_GPIO_MODE_PULL_UP;
++		break;
++
++	case PIN_CONFIG_BIAS_PULL_DOWN:
++		prop = AS3722_GPIO_MODE_PULL_DOWN;
++		break;
++
++	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
++		prop = AS3722_GPIO_MODE_OPEN_DRAIN;
++		break;
++
++	case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
++		prop = AS3722_GPIO_MODE_HIGH_IMPED;
++		break;
++
++	default:
++		dev_err(as_pci->dev, "Properties not supported\n");
++		return -ENOTSUPP;
++	}
++
++	if (as_pci->gpio_control[pin].mode_prop & prop)
++		arg = 1;
++
++	*config = pinconf_to_config_packed(param, (u16)arg);
++	return 0;
++}
++
++static int as3722_pinconf_set(struct pinctrl_dev *pctldev,
++			unsigned pin, unsigned long *configs,
++			unsigned num_configs)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++	enum pin_config_param param;
++	int mode_prop;
++	int i;
++
++	for (i = 0; i < num_configs; i++) {
++		param = pinconf_to_config_param(configs[i]);
++		mode_prop = as_pci->gpio_control[pin].mode_prop;
++
++		switch (param) {
++		case PIN_CONFIG_BIAS_PULL_PIN_DEFAULT:
++			break;
++
++		case PIN_CONFIG_BIAS_DISABLE:
++			mode_prop &= ~(AS3722_GPIO_MODE_PULL_UP |
++					AS3722_GPIO_MODE_PULL_DOWN);
++			break;
++		case PIN_CONFIG_BIAS_PULL_UP:
++			mode_prop |= AS3722_GPIO_MODE_PULL_UP;
++			break;
++
++		case PIN_CONFIG_BIAS_PULL_DOWN:
++			mode_prop |= AS3722_GPIO_MODE_PULL_DOWN;
++			break;
++
++		case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
++			mode_prop |= AS3722_GPIO_MODE_HIGH_IMPED;
++			break;
++
++		case PIN_CONFIG_DRIVE_OPEN_DRAIN:
++			mode_prop |= AS3722_GPIO_MODE_OPEN_DRAIN;
++			break;
++
++		default:
++			dev_err(as_pci->dev, "Properties not supported\n");
++			return -ENOTSUPP;
++		}
++
++		as_pci->gpio_control[pin].mode_prop = mode_prop;
++	}
++	return 0;
++}
++
++static int as3722_pinconf_group_get(struct pinctrl_dev *pctldev,
++				unsigned group, unsigned long *config)
++{
++	dev_err(pctldev->dev, "as3722_pinconf_group_get op not supported\n");
++	return -ENOTSUPP;
++}
++
++static int as3722_pinconf_group_set(struct pinctrl_dev *pctldev,
++				unsigned group, unsigned long *configs,
++				unsigned num_configs)
++{
++	dev_err(pctldev->dev, "as3722_pinconf_group_set op not supported\n");
++	return -ENOTSUPP;
++}
++
++static const struct pinconf_ops as3722_pinconf_ops = {
++	.pin_config_get = as3722_pinconf_get,
++	.pin_config_set = as3722_pinconf_set,
++	.pin_config_group_get = as3722_pinconf_group_get,
++	.pin_config_group_set = as3722_pinconf_group_set,
++};
++
++static struct pinctrl_desc as3722_pinctrl_desc = {
++	.pctlops = (struct pinctrl_ops *)&as3722_pinctrl_ops,
++	.pmxops = (struct pinmux_ops *)&as3722_pinmux_ops,
++	.confops = (struct pinconf_ops *)&as3722_pinconf_ops,
++	.owner = THIS_MODULE,
++};
++
++static int as_pci_get_mode(unsigned gpio_mode_prop, bool input)
++{
++	if (gpio_mode_prop & AS3722_GPIO_MODE_HIGH_IMPED)
++		return -EINVAL;
++
++	if (gpio_mode_prop & AS3722_GPIO_MODE_OPEN_DRAIN) {
++		if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_UP)
++			return AS3722_GPIO_MODE_IO_OPEN_DRAIN_PULL_UP;
++		return AS3722_GPIO_MODE_IO_OPEN_DRAIN;
++	}
++	if (input) {
++		if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_UP)
++			return AS3722_GPIO_MODE_INPUT_PULL_UP;
++		else if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_DOWN)
++			return AS3722_GPIO_MODE_INPUT_PULL_DOWN;
++		return AS3722_GPIO_MODE_INPUT;
++	}
++	if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_DOWN)
++		return AS3722_GPIO_MODE_OUTPUT_VDDL;
++	return AS3722_GPIO_MODE_OUTPUT_VDDH;
++}
++
++static inline struct as3722_pctrl_info *to_as_pci(struct gpio_chip *chip)
++{
++	return container_of(chip, struct as3722_pctrl_info, gpio_chip);
++}
++
++static int as_pci_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
++	struct as3722 *as3722 = as_pci->as3722;
++	int ret;
++	u32 reg;
++	u32 control;
++	u32 val;
++	int mode;
++	int invert_enable;
++
++	ret = as3722_read(as3722, AS3722_GPIOn_CONTROL_REG(offset), &control);
++	if (ret < 0) {
++		dev_err(as_pci->dev,
++			"GPIO_CONTROL%d_REG read failed: %d\n", offset, ret);
++		return ret;
++	}
++
++	invert_enable = !!(control & AS3722_GPIO_INV);
++	mode = control & AS3722_GPIO_MODE_MASK;
++	switch (mode) {
++	case AS3722_GPIO_MODE_INPUT:
++	case AS3722_GPIO_MODE_INPUT_PULL_UP:
++	case AS3722_GPIO_MODE_INPUT_PULL_DOWN:
++	case AS3722_GPIO_MODE_IO_OPEN_DRAIN:
++	case AS3722_GPIO_MODE_IO_OPEN_DRAIN_PULL_UP:
++		reg = AS3722_GPIO_SIGNAL_IN_REG;
++		break;
++	case AS3722_GPIO_MODE_OUTPUT_VDDH:
++	case AS3722_GPIO_MODE_OUTPUT_VDDL:
++		reg = AS3722_GPIO_SIGNAL_OUT_REG;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	ret = as3722_read(as3722, reg, &val);
++	if (ret < 0) {
++		dev_err(as_pci->dev,
++			"GPIO_SIGNAL_IN_REG read failed: %d\n", ret);
++		return ret;
++	}
++
++	val = !!(val & AS3722_GPIOn_SIGNAL(offset));
++	return (invert_enable) ? !val : val;
++}
++
++static void as_pci_set(struct gpio_chip *chip, unsigned offset,
++		int value)
++{
++	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
++	struct as3722 *as3722 = as_pci->as3722;
++	int en_invert = as_pci->gpio_control[offset].enable_gpio_invert;
++	u32 val;
++	int ret;
++
++	if (value)
++		val = (en_invert) ? 0 : AS3722_GPIOn_SIGNAL(offset);
++	else
++		val = (en_invert) ? AS3722_GPIOn_SIGNAL(offset) : 0;
++
++	ret = as3722_update_bits(as3722, AS3722_GPIO_SIGNAL_OUT_REG,
++			AS3722_GPIOn_SIGNAL(offset), val);
++	if (ret < 0)
++		dev_err(as_pci->dev,
++			"GPIO_SIGNAL_OUT_REG update failed: %d\n", ret);
++}
++
++static int as_pci_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
++	struct as3722 *as3722 = as_pci->as3722;
++	int mode;
++
++	mode = as_pci_get_mode(as_pci->gpio_control[offset].mode_prop,
++			true);
++	if (mode < 0) {
++		dev_err(as_pci->dev,
++			"Input direction for GPIO %d not supported\n", offset);
++		return mode;
++	}
++
++	if (as_pci->gpio_control[offset].enable_gpio_invert)
++		mode |= AS3722_GPIO_INV;
++
++	return as3722_write(as3722, AS3722_GPIOn_CONTROL_REG(offset), mode);
++}
++
++static int as_pci_direction_output(struct gpio_chip *chip,
++		unsigned offset, int value)
++{
++	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
++	struct as3722 *as3722 = as_pci->as3722;
++	int mode;
++
++	mode = as_pci_get_mode(as_pci->gpio_control[offset].mode_prop,
++			false);
++	if (mode < 0) {
++		dev_err(as_pci->dev,
++			"Output direction for GPIO %d not supported\n", offset);
++		return mode;
++	}
++
++	as_pci_set(chip, offset, value);
++	if (as_pci->gpio_control[offset].enable_gpio_invert)
++		mode |= AS3722_GPIO_INV;
++	return as3722_write(as3722, AS3722_GPIOn_CONTROL_REG(offset), mode);
++}
++
++static int as_pci_to_irq(struct gpio_chip *chip, unsigned offset)
++{
++	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
++
++	return as3722_irq_get_virq(as_pci->as3722, offset);
++}
++
++static int as_pci_request(struct gpio_chip *chip, unsigned offset)
++{
++	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
++
++	if (as_pci->gpio_control[offset].io_function)
++		return -EBUSY;
++	return 0;
++}
++
++static const struct gpio_chip as_pci_chip = {
++	.label			= "as3722-gpio",
++	.owner			= THIS_MODULE,
++	.direction_input	= as_pci_direction_input,
++	.get			= as_pci_get,
++	.direction_output	= as_pci_direction_output,
++	.set			= as_pci_set,
++	.to_irq			= as_pci_to_irq,
++	.request		= as_pci_request,
++	.can_sleep		= 1,
++	.ngpio			= AS3722_PIN_NUM,
++	.base			= -1,
++};
++
++static int as3722_pinctrl_probe(struct platform_device *pdev)
++{
++	struct as3722_pctrl_info *as_pci;
++	int ret;
++
++	as_pci = devm_kzalloc(&pdev->dev, sizeof(*as_pci), GFP_KERNEL);
++	if (!as_pci)
++		return -ENOMEM;
++
++	as_pci->dev = &pdev->dev;
++	as_pci->dev->of_node = pdev->dev.parent->of_node;
++	as_pci->as3722 = dev_get_drvdata(pdev->dev.parent);
++	platform_set_drvdata(pdev, as_pci);
++
++	as_pci->pins = as3722_pins_desc;
++	as_pci->num_pins = ARRAY_SIZE(as3722_pins_desc);
++	as_pci->functions = as3722_pin_function;
++	as_pci->num_functions = ARRAY_SIZE(as3722_pin_function);
++	as_pci->pin_groups = as3722_pingroups;
++	as_pci->num_pin_groups = ARRAY_SIZE(as3722_pingroups);
++	as3722_pinctrl_desc.name = dev_name(&pdev->dev);
++	as3722_pinctrl_desc.pins = as3722_pins_desc;
++	as3722_pinctrl_desc.npins = ARRAY_SIZE(as3722_pins_desc);
++	as_pci->pctl = pinctrl_register(&as3722_pinctrl_desc,
++					&pdev->dev, as_pci);
++	if (!as_pci->pctl) {
++		dev_err(&pdev->dev, "Couldn't register pinctrl driver\n");
++		return -ENODEV;
++	}
++
++	as_pci->gpio_chip = as_pci_chip;
++	as_pci->gpio_chip.dev = &pdev->dev;
++	as_pci->gpio_chip.of_node = pdev->dev.parent->of_node;
++	ret = gpiochip_add(&as_pci->gpio_chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
++		goto scrub;
++	}
++	return 0;
++scrub:
++	pinctrl_unregister(as_pci->pctl);
++	return ret;
++}
++
++static int as3722_pinctrl_remove(struct platform_device *pdev)
++{
++	struct as3722_pctrl_info *as_pci = platform_get_drvdata(pdev);
++	int ret;
++
++	ret = gpiochip_remove(&as_pci->gpio_chip);
++	if (ret < 0)
++		return ret;
++	pinctrl_unregister(as_pci->pctl);
++	return 0;
++}
++
++static struct of_device_id as3722_pinctrl_of_match[] = {
++	{ .compatible = "ams,as3722-pinctrl", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, as3722_pinctrl_of_match);
++
++static struct platform_driver as3722_pinctrl_driver = {
++	.driver = {
++		.name = "as3722-pinctrl",
++		.owner = THIS_MODULE,
++		.of_match_table = as3722_pinctrl_of_match,
++	},
++	.probe = as3722_pinctrl_probe,
++	.remove = as3722_pinctrl_remove,
++};
++module_platform_driver(as3722_pinctrl_driver);
++
++MODULE_ALIAS("platform:as3722-pinctrl");
++MODULE_DESCRIPTION("AS3722 pin control and GPIO driver");
++MODULE_AUTHOR("Laxman Dewangan<ldewangan@nvidia.com>");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.1.1
 
