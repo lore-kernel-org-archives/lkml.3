@@ -1,114 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab3IXD5B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 23:57:01 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34208 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab3IXD5A (ORCPT
+	id S1750722Ab3IXEFe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 00:05:34 -0400
+Received: from relmlor3.renesas.com ([210.160.252.173]:62758 "EHLO
+	relmlor3.renesas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750701Ab3IXEFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 23:57:00 -0400
-Message-ID: <52410D89.8010801@wwwdotorg.org>
-Date: Mon, 23 Sep 2013 21:56:57 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Johannes Thumshirn <morbidrsa@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
-        linux-rpi-kernel@lists.infradead.org
-Subject: Re: [RFC] PWM: Add support for pwm-bcm2835
-References: <1379758142-7302-1-git-send-email-morbidrsa@gmail.com>
-In-Reply-To: <1379758142-7302-1-git-send-email-morbidrsa@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Sep 2013 00:05:31 -0400
+X-IronPort-AV: E=Sophos;i="4.90,968,1371049200";   d="scan'208";a="141048762"
+Message-id: <52410F86.4040301@renesas.com>
+Date: Tue, 24 Sep 2013 13:05:26 +0900
+From: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.8.0.14)
+ Gecko/20071210 Thunderbird/1.5.0.14 Mnenhy/0.7.6.666
+MIME-version: 1.0
+To: SH-Linux <linux-sh@vger.kernel.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>, ben.dooks@codethink.co.uk,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/6] ARM: shmobile: kzm9d-reference:  migrate to common clock
+ framework with DT
+X-Custom: EC No. H07-0010RT
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2013 04:09 AM, Johannes Thumshirn wrote:
-> Add support for the PWM controller of the BCM2835 SoC found on Raspberry PI
-> 
-> The driver isn't as much tested as I wanted it to be and devicetree
-> support is still missing, but I thought it would be nice to have some
-> comments if I'm in the right direction.
+This patch series makes kzm9d-reference to move to new clk implementation
+ based on the common clock framework and device tree.
 
-Presumably if DT support is missing, the driver can't have been tested
-at all?
+First three are for preparation.
+[PATCH 1/6] clocksource: em_sti: convert to clk_prepare/unprepare
+[PATCH 2/6] serial8250-em: convert to clk_prepare/unprepare
+[PATCH 3/6] sh: clkfwk: Select sh-/common- clkfwk alternatively
 
-> diff --git a/drivers/pwm/pwm-bcm2835.c b/drivers/pwm/pwm-bcm2835.c
+Next one is a proposal document of DT bindings.
+[PATCH 4/6] ARM: shmobile: emev2: Define SMU clock DT bindings
 
-> +/* Address Mappings (offsets) from Broadcom BCM2835 ARM Periperals Manual
-> + * Section 9.6 Page 141ff
+This is the implementation, and dts which carries clock tree description.
+[PATCH 5/6] clk: emev2: Add support for emev2 SMU clocks with DT
 
-s/141ff/141/
+Last one is small modification needed for migration.
+[PATCH 6/6] ARM: shmobile: kzm9d-reference: Use common clock
 
-> +/* Control registers 0 and 1 are mirrored on a distance of 4 bits */
-> +#define HWPWM(x) ((x) << 4)
+These patches do not remove sh-clkfwk version, even on emev2.
+kzm9d(without -reference) target still uses sh-clkfwk.
+I believe this method encourages step-by-step migration on other sh-mobile
+ targets, too.
 
-Distances between registers aren't really measured in bits although
-admittedly a certain minimum number of bits would be required to
-represent that distance. I would suggest s/4 bits/16 bytes/. People are
-likely to be familiar with "<< 4" being equivalent to "* 16".
+Patches should be applied and compiled both on
+ v3.12-rc2 and
+ kernel/git/horms/renesas.git tag:renesas-devel-20130922 
 
-> +/* TODO: We only need this register set once and use HWPWM macro to
-> + * access 2nd output
-> + */
+Confirmed on kernel/git/horms/renesas.git tag:renesas-devel-20130922 
+for boot up to command prompt.
+- kzm9d board / multiplatform + kzm9d-reference configuration
+- kzm9d board / kzm9d-reference configuration
+- kzm9d board / kzm9d (with sh-clkfwk) configuration for regression.
+- ape6evm (with sh-clkfwk) for regression.
+for compile only
+- sh7757lcr (in arch/sh with sh-clkfwk) for regression.
 
-I don't really understand what the TODO message says still needs to be
-done. The comment format is wrong; /* should be on its own line.
 
-> +static inline u32 bcm2835_readl(struct bcm2835_pwm_dev *chip,
-> +				unsigned int hwpwm, unsigned int num)
-> +{
-> +	num <<= HWPWM(hwpwm);
+Shinya Kuribayashi (2):
+  clocksource: em_sti: convert to clk_prepare/unprepare
+  serial8250-em: convert to clk_prepare/unprepare
 
-This doesn't work for hwpwm==1; HWPWM() already shifted the ID left, so
-you want "num += HWPWM(hwpwm)" here, I think. But as Thierry said, this
-function really doesn't need to do anything other than take an offset.
+Takashi YOSHII (4):
+  sh: clkfwk: Select sh-/common- clkfwk alternatively
+  ARM: shmobile: emev2: Define SMU clock DT bindings
+  clk: emev2: Add support for emev2 SMU clocks with DT
+  ARM: shmobile: kzm9d-reference: Use common clock framework
 
-Same comment for bcm2835_writel().
+ .../devicetree/bindings/clock/emev2-clock.txt      |  99 ++++++++++++++++++++
+ arch/arm/Kconfig                                   |   2 +-
+ arch/arm/boot/dts/emev2.dtsi                       |  84 +++++++++++++++++
+ arch/arm/mach-shmobile/Kconfig                     |   1 +
+ arch/arm/mach-shmobile/board-kzm9d-reference.c     |   5 +-
+ arch/sh/Kconfig                                    |   1 +
+ drivers/clk/Makefile                               |   2 +
+ drivers/clk/shmobile/Makefile                      |   5 +
+ drivers/clk/shmobile/clk-emev2.c                   | 104 +++++++++++++++++++++
+ drivers/clocksource/em_sti.c                       |   4 +-
+ drivers/sh/clk/Makefile                            |   3 +-
+ drivers/tty/serial/8250/8250_em.c                  |   6 +-
+ 12 files changed, 305 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/emev2-clock.txt
+ create mode 100644 drivers/clk/shmobile/Makefile
+ create mode 100644 drivers/clk/shmobile/clk-emev2.c
 
-BTW, bcm2835_readl() isn't a good name for a PWM-specific function,
-since it's pretty generic. While the name is static, so it won't cause
-linker problems, it might confuse a symbolic debugger. Better make it
-bcm2835_pwm_readl().
+-- 
+1.8.1.5
 
-> +static int bcm2835_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-> +			      int duty_ns, int period_ns)
-
-> +	/* write period */
-> +	bcm2835_writel(bcm, pwm->hwpwm, BCM2835_PWM_RNG1, period_ns);
-> +
-> +	/* write duty */
-> +	bcm2835_writel(bcm, pwm->hwpwm, BCM2835_PWM_DAT1, duty_ns);
-
-Presumably those registers are a count of clock cycles, not an absolute
-time in ns. The two are only equal if the PWM module clock runs at 1GHz.
-So, don't you need to convert time to clock cycle count here, using
-clk_get_rate(pwm_clk) as the ratio?
-
-> +static int bcm2835_pwm_probe(struct platform_device *pdev)
-...
-> +	bcm = devm_kzalloc(&pdev->dev, sizeof(*bcm), GFP_KERNEL);
-> +	if (!bcm)
-> +		return -ENOMEM;
-...
-> +	ret = pwmchip_add(&bcm->chip);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	platform_set_drvdata(pdev, bcm);
-
-You should really set the drvdata as soon as you've allocated it, and at
-least before calling pwmchip_add(); as soon as you've added the PWM
-chip, the PWM core could call functions on the PWM object, and if those
-callbacks rely on the drvdata, then they're going to fail if the drvdata
-hasn't been set yet.
-
-> +static const struct of_device_id bcm2835_pwm_of_match[] = {
-> +	{ .compatible = "brcm,bcm2835-pwm" },
-> +	{},
-> +};
-
-You need to write a DT binding document if you're going to ad DT support.
