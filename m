@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab3IXJbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:31:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58789 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753856Ab3IXJbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:31:38 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <alpine.LRH.2.02.1309241206010.4043@tundra.namei.org>
-References: <alpine.LRH.2.02.1309241206010.4043@tundra.namei.org> <alpine.LRH.2.02.1309120141280.4317@tundra.namei.org> <alpine.LRH.2.02.1309071426400.29124@tundra.namei.org> <alpine.LRH.2.02.1309070309360.24160@tundra.namei.org> <12075.1378340063@warthog.procyon.org.uk> <17000.1378488989@warthog.procyon.org.uk> <10114.1378806359@warthog.procyon.org.uk> <19686.1379426149@warthog.procyon.org.uk>
-To: James Morris <jmorris@namei.org>
-Cc: dhowells@redhat.com, simo@redhat.com, zohar@linux.vnet.ibm.com,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Keyrings patches
-Date: Tue, 24 Sep 2013 10:31:31 +0100
-Message-ID: <17428.1380015091@warthog.procyon.org.uk>
+	id S1754319Ab3IXJcb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:32:31 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61259 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752708Ab3IXJc3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 05:32:29 -0400
+Date: Tue, 24 Sep 2013 10:32:22 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "dave.martin@linaro.org" <dave.martin@linaro.org>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH -next] drivers: CCI: fix the error handle in
+ cci_pmu_probe()
+Message-ID: <20130924093222.GC15119@mudshark.cambridge.arm.com>
+References: <CAPgLHd9jKOp71tN43=oOUN4X_niTonuQExO1yMSy=3odoRqTcQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPgLHd9jKOp71tN43=oOUN4X_niTonuQExO1yMSy=3odoRqTcQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Morris <jmorris@namei.org> wrote:
-
-> > There's a slight change upstream that means that my patchset needs
-> > regenerating (the initconst changes).  Can you bring your -next branch up to
-> > date with linus/master so that I can rebase on top of it?
+On Sun, Sep 22, 2013 at 06:04:23AM +0100, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> I've merged my tree to -rc2 so you can rebase or merge (probably better).
+> This patch fix the error handle of function cci_pmu_probe():
+> - using IS_ERR() instead of NULL test for the return value of
+>   devm_ioremap_resource() since it nerver return NULL.
+> - remove kfree() for devm_kzalloc allocated memory
+> - remove dev_warn() since devm_ioremap_resource() has error message
+>   already.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Excellent, thanks!
+Cheers Wei, I'll add this as a new patch on top of my perf branch.
 
-David
+Will
