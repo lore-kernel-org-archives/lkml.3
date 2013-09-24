@@ -1,29 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab3IXOLJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 10:11:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53411 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854Ab3IXOLH (ORCPT
+	id S1754032Ab3IXOMr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 10:12:47 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:36932 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab3IXOMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 10:11:07 -0400
-Date: Tue, 24 Sep 2013 10:11:04 -0400 (EDT)
-Message-Id: <20130924.101104.1616534840490141167.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, wg@grandegger.com,
-        mkl@pengutronix.de, linux-can@vger.kernel.org
-Subject: Re: [PATCH 01/10] can: Remove extern from function prototypes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
-References: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 24 Sep 2013 10:12:44 -0400
+Message-ID: <52419DC6.4030800@gmail.com>
+Date: Tue, 24 Sep 2013 22:12:22 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com
+Subject: Re: [PATCH 2/6] memblock: Introduce bottom-up allocation mode
+References: <524162DA.30004@cn.fujitsu.com> <524163CF.3010303@cn.fujitsu.com> <20130924121725.GC2366@htj.dyndns.org> <524190DC.4060605@gmail.com> <20130924132327.GH2366@htj.dyndns.org>
+In-Reply-To: <20130924132327.GH2366@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 24 Sep 2013 07:11:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/24/2013 09:23 PM, Tejun Heo wrote:
+> On Tue, Sep 24, 2013 at 09:17:16PM +0800, Zhang Yanfei wrote:
+>>> Maybe just print warning only on the first failure?
+>>
+>> Hmmm... This message is for each memblock allocation, that said, if the
+>> allocation this time fails, it prints the message and we use so called top-down.
+>> But next time, we still use bottom up first again.
+>>
+>> Did you mean if we fail on one bottom-up allocation, then we never try
+>> bottom-up again and will always use top-down? 
+> 
+> Nope, it's just that it might end up printing something for each alloc
+> which can end up flooding console / log.  The first failure is the
+> most interesting and pretty much defeats the purpose of the whole
+> thing after all.  If it's expected to fail very rarely, I'd just stick
+> in WARN_ONCE() there as the stack trace would be interesting too.
+> 
 
-Series applied, thanks Joe.
+I see. I think it is rarely to fail. But here is case that it must
+fail in the current bottom-up implementation. For example, we allocate
+memory in reserve_real_mode() by calling this: 
+memblock_find_in_range(0, 1<<20, size, PAGE_SIZE);
+
+Both the start and end is below the kernel, so trying bottom-up for
+this must fail. So I am now thinking that if we should take this as
+the special case for bottom-up. That said, if we limit start and end
+both below the kernel, we should allocate memory below the kernel instead
+of make it fail. The cases are also rare, in early boot time, only
+these two:
+
+ |->early_reserve_e820_mpc_new()   /* allocate memory under 1MB */
+ |->reserve_real_mode()            /* allocate memory under 1MB */
+
+How do you think?
+
+-- 
+Thanks.
+Zhang Yanfei
