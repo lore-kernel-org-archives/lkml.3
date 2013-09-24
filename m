@@ -1,157 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab3IXWXe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 18:23:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19584 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754925Ab3IXWW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 18:22:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,974,1371106800"; 
-   d="scan'208";a="408595176"
-Subject: [PATCH v5 5/6] MCS Lock: Restructure the MCS lock defines and
- locking code into its own file
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <cover.1380057198.git.tim.c.chen@linux.intel.com>
-References: <cover.1380057198.git.tim.c.chen@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Sep 2013 15:22:46 -0700
-Message-ID: <1380061366.3467.54.camel@schen9-DESK>
+	id S1754826Ab3IXWWd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 18:22:33 -0400
+Received: from smtprelay0180.hostedemail.com ([216.40.44.180]:36089 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754630Ab3IXWWb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 18:22:31 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2909:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3870:3871:3872:3
+X-HE-Tag: sheep09_329388baf343d
+X-Filterd-Recvd-Size: 2399
+Message-ID: <1380061346.17366.1.camel@joe-AO722>
+Subject: Re: [PATCH 02/10] intel: Remove extern from function prototypes
+From: Joe Perches <joe@perches.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Tue, 24 Sep 2013 15:22:26 -0700
+In-Reply-To: <1380060449.2189.6.camel@jtkirshe-mobl>
+References: <cover.1380056108.git.joe@perches.com>
+	 <5ccc921af41a862fe969809228f029035f851502.1380056108.git.joe@perches.com>
+	 <1380060449.2189.6.camel@jtkirshe-mobl>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We will need the MCS lock code for doing optimistic spinning for rwsem.
-Extracting the MCS code from mutex.c and put into its own file allow us
-to reuse this code easily for rwsem.
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- kernel/mutex.c |   58 ++++++-------------------------------------------------
- 1 files changed, 7 insertions(+), 51 deletions(-)
+On Tue, 2013-09-24 at 15:07 -0700, Jeff Kirsher wrote:
+> On Tue, 2013-09-24 at 14:09 -0700, Joe Perches wrote:
+> > There are a mix of function prototypes with and without extern
+> > in the kernel sources.  Standardize on not using extern for
+> > function prototypes.
+> > 
+> > Function prototypes don't need to be written with extern.
+> > extern is assumed by the compiler.  Its use is as unnecessary as
+> > using auto to declare automatic/local variables in a block.
+> 
+> So you are able to confirm that all compilers make this assumption
+> correctly?  The initial reason for using extern was because not all
+> compilers made the assumption or made it correctly.
 
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index 6d647ae..1b6ba3f 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -25,6 +25,7 @@
- #include <linux/spinlock.h>
- #include <linux/interrupt.h>
- #include <linux/debug_locks.h>
-+#include <linux/mcslock.h>
- 
- /*
-  * In the DEBUG case we are using the "NULL fastpath" for mutexes,
-@@ -111,54 +112,9 @@ EXPORT_SYMBOL(mutex_lock);
-  * more or less simultaneously, the spinners need to acquire a MCS lock
-  * first before spinning on the owner field.
-  *
-- * We don't inline mspin_lock() so that perf can correctly account for the
-- * time spent in this lock function.
-  */
--struct mspin_node {
--	struct mspin_node *next ;
--	int		  locked;	/* 1 if lock acquired */
--};
--#define	MLOCK(mutex)	((struct mspin_node **)&((mutex)->spin_mlock))
- 
--static noinline
--void mspin_lock(struct mspin_node **lock, struct mspin_node *node)
--{
--	struct mspin_node *prev;
--
--	/* Init node */
--	node->locked = 0;
--	node->next   = NULL;
--
--	prev = xchg(lock, node);
--	if (likely(prev == NULL)) {
--		/* Lock acquired */
--		node->locked = 1;
--		return;
--	}
--	ACCESS_ONCE(prev->next) = node;
--	smp_wmb();
--	/* Wait until the lock holder passes the lock down */
--	while (!ACCESS_ONCE(node->locked))
--		arch_mutex_cpu_relax();
--}
--
--static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
--{
--	struct mspin_node *next = ACCESS_ONCE(node->next);
--
--	if (likely(!next)) {
--		/*
--		 * Release the lock by setting it to NULL
--		 */
--		if (cmpxchg(lock, node, NULL) == node)
--			return;
--		/* Wait until the next pointer is set */
--		while (!(next = ACCESS_ONCE(node->next)))
--			arch_mutex_cpu_relax();
--	}
--	ACCESS_ONCE(next->locked) = 1;
--	smp_wmb();
--}
-+#define	MLOCK(mutex)	((struct mcs_spin_node **)&((mutex)->spin_mlock))
- 
- /*
-  * Mutex spinning code migrated from kernel/sched/core.c
-@@ -448,7 +404,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 
- 	for (;;) {
- 		struct task_struct *owner;
--		struct mspin_node  node;
-+		struct mcs_spin_node  node;
- 
- 		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
- 			struct ww_mutex *ww;
-@@ -470,10 +426,10 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		 * If there's an owner, wait for it to either
- 		 * release the lock or go to sleep.
- 		 */
--		mspin_lock(MLOCK(lock), &node);
-+		mcs_spin_lock(MLOCK(lock), &node);
- 		owner = ACCESS_ONCE(lock->owner);
- 		if (owner && !mutex_spin_on_owner(lock, owner)) {
--			mspin_unlock(MLOCK(lock), &node);
-+			mcs_spin_unlock(MLOCK(lock), &node);
- 			goto slowpath;
- 		}
- 
-@@ -488,11 +444,11 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 			}
- 
- 			mutex_set_owner(lock);
--			mspin_unlock(MLOCK(lock), &node);
-+			mcs_spin_unlock(MLOCK(lock), &node);
- 			preempt_enable();
- 			return 0;
- 		}
--		mspin_unlock(MLOCK(lock), &node);
-+		mcs_spin_unlock(MLOCK(lock), &node);
- 
- 		/*
- 		 * When there's no owner, we might have preempted between the
--- 
-1.7.4.4
+No, I didn't bother.
+
+Any current compilers already do make this assumption
+valid as it's been part of the c spec since 1989 and
+prototypes without extern already are the predominate
+form in .h files for linux kernel sources.
+
+Even in drivers/net/ethernet/intel/... there are more
+prototypes without extern than with extern.
 
 
 
