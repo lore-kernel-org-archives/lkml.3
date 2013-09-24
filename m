@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab3IXRKg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 13:10:36 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:39252 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab3IXRKd (ORCPT
+	id S1754517Ab3IXRM1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 13:12:27 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:42038 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754020Ab3IXRM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 13:10:33 -0400
-Date: Tue, 24 Sep 2013 19:10:29 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [pchecks v2 2/2] percpu: Add preemption checks to __this_cpu ops
-Message-ID: <20130924171029.GB10261@gmail.com>
-References: <20130924154159.855373283@linux.com>
- <0000014150a21408-2d759c49-6a9e-4553-956f-2d4b53e710f8-000000@email.amazonses.com>
+	Tue, 24 Sep 2013 13:12:26 -0400
+Date: Tue, 24 Sep 2013 14:12:20 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [PATCH 3/4] perf tools: Check libunwind for availability of
+ dwarf parsing feature
+Message-ID: <20130924171220.GB2634@ghostprotocols.net>
+References: <1379323053-11458-1-git-send-email-jean.pihet@linaro.org>
+ <1379323053-11458-4-git-send-email-jean.pihet@linaro.org>
+ <20130917102904.GA27258@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0000014150a21408-2d759c49-6a9e-4553-956f-2d4b53e710f8-000000@email.amazonses.com>
+In-Reply-To: <20130917102904.GA27258@mudshark.cambridge.arm.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Tue, Sep 17, 2013 at 11:29:04AM +0100, Will Deacon escreveu:
+> Arnaldo, Ingo,
+> 
+> On Mon, Sep 16, 2013 at 10:17:32AM +0100, Jean Pihet wrote:
+> > The newly added dwarf unwinding feature [1] requires:
+> > . a recent version (>= 1.1) of libunwind,
+> > . libunwind to be configured with --enable-debug-frame.
+> > 
+> > [1] http://www.spinics.net/lists/kernel/msg1598951.html
+> > 
+> > Add the corresponding API test in the feature check list.
+> > 
+> > Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> > ---
+> >  tools/perf/config/Makefile          |  2 +-
+> >  tools/perf/config/feature-tests.mak | 11 ++++++++++-
+> >  2 files changed, 11 insertions(+), 2 deletions(-)
+> 
+> Can I have an ack for this and the following patch please?
+> 
+> (http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/198531.html)
+> 
+> Then I can stick these into -next for some more exposure before I queue them
+> for 3.13.
 
-* Christoph Lameter <cl@linux.com> wrote:
+I can pick it now that Jiri kinda acked it, right Jiri?
 
-> Index: linux/lib/smp_processor_id.c
-> ===================================================================
-> --- linux.orig/lib/smp_processor_id.c	2013-09-24 10:06:26.000000000 -0500
-> +++ linux/lib/smp_processor_id.c	2013-09-24 10:14:19.412825970 -0500
-> @@ -7,7 +7,7 @@
->  #include <linux/kallsyms.h>
->  #include <linux/sched.h>
->  
-> -notrace unsigned int debug_smp_processor_id(void)
-> +notrace static unsigned int check_preemption(char *what)
->  {
->  	unsigned long preempt_count = preempt_count();
->  	int this_cpu = raw_smp_processor_id();
-> @@ -39,8 +39,8 @@ notrace unsigned int debug_smp_processor
->  	if (!printk_ratelimit())
->  		goto out_enable;
->  
-> -	printk(KERN_ERR "BUG: using smp_processor_id() in preemptible [%08x] "
-> -			"code: %s/%d\n",
-> +	printk(KERN_ERR "BUG: using %s in preemptible [%08x] "
-> +			"code: %s/%d\n", what,
->  			preempt_count() - 1, current->comm, current->pid);
->  	print_symbol("caller is %s\n", (long)__builtin_return_address(0));
->  	dump_stack();
-> @@ -51,5 +51,18 @@ out:
->  	return this_cpu;
->  }
->  
-> +notrace unsigned int debug_smp_processor_id(void)
-> +{
-> +	return check_preemption("smp_processor_id()");
-> +
-> +}
->  EXPORT_SYMBOL(debug_smp_processor_id);
->  
-> +notrace void __this_cpu_preempt_check(void)
-> +{
-> +#ifdef CONFIG_THIS_CPU_PREEMPTION_CHECK
-> +	check_preemption("__this_cpu operation");
-> +#endif
-> +}
-> +EXPORT_SYMBOL(__this_cpu_preempt_check);
-
-Ok, this variant looks pretty good, modulo testing. I'd do:
-
-  s/check_preemption/check_preemption_disabled
-
-but that's a minor detail.
-
-> +config DEBUG_THIS_CPU_OPERATIONS
-> +	bool "Debug __this_cpu operations"
-> +	depends on DEBUG_PREEMPT
-> +	default n
-> +	help
-> +	  Enables preemption checks for __this_cpu macros. These
-> +	  are macros to generate single instruction operations on
-> +	  per cpu data. The option only affects the __this_cpu variant
-> +	  which is used when fallback to multiple instructions without
-> +	  other synchronization is possible. A verification is then
-> +	  done to make sure that the thread cannot be preempted.
-
-I don't think there's a need to make this a separate preemption debug 
-option: smp_processor_id() is really just a subset of the checks.
-
-So please just put it under CONFIG_DEBUG_PREEMPT, there's no need to add 
-yet another x2 to the kernel Kconfig space. Maybe extend the DEBUG_PREEMPT 
-help text to explain that it also checks __this_cpu ops.
-
-That will remove the #ifdef from lib/smp_processor_id.c and will simplify 
-debugging a bit as well.
-
-Thanks,
-
-	Ingo
+- Arnaldo
