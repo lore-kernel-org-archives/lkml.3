@@ -1,135 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab3IXIy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 04:54:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52099 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753685Ab3IXIyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 04:54:53 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
-CC: <p.zabel@pengutronix.de>, <broonie@kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v3 09/10] ARM: dts: omap3-beagle-xm: Add USB Host support
-Date: Tue, 24 Sep 2013 11:53:55 +0300
-Message-ID: <1380012836-29900-10-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1380012836-29900-1-git-send-email-rogerq@ti.com>
-References: <1380012836-29900-1-git-send-email-rogerq@ti.com>
+	id S1753930Ab3IXIzg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 04:55:36 -0400
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:36130 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896Ab3IXIzd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 04:55:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130917102904.GA27258@mudshark.cambridge.arm.com>
+References: <1379323053-11458-1-git-send-email-jean.pihet@linaro.org>
+	<1379323053-11458-4-git-send-email-jean.pihet@linaro.org>
+	<20130917102904.GA27258@mudshark.cambridge.arm.com>
+Date: Tue, 24 Sep 2013 10:55:32 +0200
+Message-ID: <CAFrcx1nnx0+kWx3z3A86Fwz13RYRVSPSG0YHBcxFeFQP8W7jBg@mail.gmail.com>
+Subject: Re: [PATCH 3/4] perf tools: Check libunwind for availability of dwarf
+ parsing feature
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide RESET GPIO and Power regulator for the USB PHY,
-the USB Host port mode and the PHY device for the controller.
-Also provide pin multiplexer information for USB host pins.
+Hin
 
-We also relocate omap3_pmx_core pin definations so that they
-are close to omap3_pmx_wkup pin definations.
+On 17 September 2013 12:29, Will Deacon <will.deacon@arm.com> wrote:
+> Arnaldo, Ingo,
+>
+> On Mon, Sep 16, 2013 at 10:17:32AM +0100, Jean Pihet wrote:
+>> The newly added dwarf unwinding feature [1] requires:
+>> . a recent version (>= 1.1) of libunwind,
+>> . libunwind to be configured with --enable-debug-frame.
+>>
+>> [1] http://www.spinics.net/lists/kernel/msg1598951.html
+>>
+>> Add the corresponding API test in the feature check list.
+>>
+>> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+>> ---
+>>  tools/perf/config/Makefile          |  2 +-
+>>  tools/perf/config/feature-tests.mak | 11 ++++++++++-
+>>  2 files changed, 11 insertions(+), 2 deletions(-)
+>
+> Can I have an ack for this and the following patch please?
+>
+> (http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/198531.html)
+>
+> Then I can stick these into -next for some more exposure before I queue them
+> for 3.13.
+>
+> Cheers,
+>
+> Will
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/boot/dts/omap3-beagle-xm.dts |   65 ++++++++++++++++++++++++++++-----
- 1 files changed, 56 insertions(+), 9 deletions(-)
+Ping on the series. The two patches above (3/4 and 4/4) are generic
+while the two others are impacting ARM only.
+Is it possible to get an Ack for the generic ones?
 
-diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
-index afdb164..b081f5a 100644
---- a/arch/arm/boot/dts/omap3-beagle-xm.dts
-+++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
-@@ -69,6 +69,23 @@
- 		};
- 
- 	};
-+
-+	/* HS USB Port 2 Power */
-+	hsusb2_power: hsusb2_power_reg {
-+		compatible = "regulator-fixed";
-+		regulator-name = "hsusb2_vbus";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		gpio = <&twl_gpio 18 0>;	/* GPIO LEDA */
-+		startup-delay-us = <70000>;
-+	};
-+
-+	/* HS USB Host PHY on PORT 2 */
-+	hsusb2_phy: hsusb2_phy {
-+		compatible = "usb-nop-xceiv";
-+		reset-gpios = <&gpio5 19 GPIO_ACTIVE_LOW>; /* gpio_147 */
-+		vcc-supply = <&hsusb2_power>;
-+	};
- };
- 
- &omap3_pmx_wkup {
-@@ -79,6 +96,37 @@
- 	};
- };
- 
-+&omap3_pmx_core {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <
-+			&hsusbb2_pins
-+	>;
-+
-+	uart3_pins: pinmux_uart3_pins {
-+		pinctrl-single,pins = <
-+			0x16e (PIN_INPUT | PIN_OFF_WAKEUPENABLE | MUX_MODE0) /* uart3_rx_irrx.uart3_rx_irrx */
-+			0x170 (PIN_OUTPUT | MUX_MODE0) /* uart3_tx_irtx.uart3_tx_irtx OUTPUT | MODE0 */
-+		>;
-+	};
-+
-+	hsusbb2_pins: pinmux_hsusbb2_pins {
-+		pinctrl-single,pins = <
-+			0x5c0 (PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
-+			0x5c2 (PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
-+			0x5c4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d12.hsusb2_dir */
-+			0x5c6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d13.hsusb2_nxt */
-+			0x5c8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d14.hsusb2_data0 */
-+			0x5cA (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d15.hsusb2_data1 */
-+			0x1a4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi1_cs3.hsusb2_data2 */
-+			0x1a6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_clk.hsusb2_data7 */
-+			0x1a8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_simo.hsusb2_data4 */
-+			0x1aa (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_somi.hsusb2_data5 */
-+			0x1ac (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs0.hsusb2_data6 */
-+			0x1ae (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs1.hsusb2_data3 */
-+		>;
-+	};
-+};
-+
- &i2c1 {
- 	clock-frequency = <2600000>;
- 
-@@ -148,15 +196,6 @@
- 	power = <50>;
- };
- 
--&omap3_pmx_core {
--	uart3_pins: pinmux_uart3_pins {
--		pinctrl-single,pins = <
--			0x16e (PIN_INPUT | PIN_OFF_WAKEUPENABLE | MUX_MODE0) /* uart3_rx_irrx.uart3_rx_irrx */
--			0x170 (PIN_OUTPUT | MUX_MODE0) /* uart3_tx_irtx.uart3_tx_irtx OUTPUT | MODE0 */
--		>;
--	};
--};
--
- &uart3 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&uart3_pins>;
-@@ -166,3 +205,11 @@
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&gpio1_pins>;
- };
-+
-+&usbhshost {
-+	port2-mode = "ehci-phy";
-+};
-+
-+&usbhsehci {
-+	phys = <0 &hsusb2_phy>;
-+};
--- 
-1.7.4.1
-
+Kind regards,
+Jean
