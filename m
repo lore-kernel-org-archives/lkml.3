@@ -1,161 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab3IXUjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 16:39:17 -0400
-Received: from mail-ye0-f182.google.com ([209.85.213.182]:55428 "EHLO
-	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181Ab3IXUjP (ORCPT
+	id S1754628Ab3IXUqn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 16:46:43 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:40463 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754455Ab3IXUqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 16:39:15 -0400
-Date: Tue, 24 Sep 2013 14:39:10 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Airlie <airlied@linux.ie>,
-        Mike Marciniszyn <infinipath@intel.com>,
-        Roland Dreier <roland@kernel.org>,
-        Roland Dreier <roland@purestorage.com>, linux-kernel@vger.kernel.org,
-        Mark Einon <mark.einon@gmail.com>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-pci@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [PATCH 4/6] IB/qib: Use pcie_set_mps() and pcie_get_mps() to
- simplify code
-Message-ID: <20130924203910.GB9302@google.com>
-References: <1378732388-4508-1-git-send-email-wangyijing@huawei.com>
- <1378732388-4508-5-git-send-email-wangyijing@huawei.com>
+	Tue, 24 Sep 2013 16:46:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378732388-4508-5-git-send-email-wangyijing@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130924.152833.434453431118381771.davem@redhat.com>
+References: <1380046281-6012-1-git-send-email-vincent.mc.li@gmail.com>
+	<20130924.152833.434453431118381771.davem@redhat.com>
+Date: Tue, 24 Sep 2013 13:46:41 -0700
+Message-ID: <CAK3+h2y7v0i7AgK02GSy1apKKsi8n7is7U8oypx=uBf49Bubbg@mail.gmail.com>
+Subject: Re: [PATCH] Allow userspace code to use flag IFA_F_SECONDARY to
+ specify an ip address to be primary or secondary ip on an interface
+From: Vincent Li <vincent.mc.li@gmail.com>
+To: David Miller <davem@redhat.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 09:13:06PM +0800, Yijing Wang wrote:
-> Refactor qib_tune_pcie_caps() function, use pcie_set_mps()
-> and pcie_get_mps() to simply code. Because pci core caches
-> the "PCI-E Max Payload Size Supported" in pci_dev->pcie_mpss,
-> so use that instead of pcie_capability_read_word(). Remove
-> the unused val2fld() and fld2val().
+Ok, I will resend the patch with your suggestions.
 
-I propose the following patch on top of this one:
+Vincent
 
-
-IB/qib: Drop qib_tune_pcie_caps() and qib_tune_pcie_coalesce() return values
-
-From: Bjorn Helgaas <bhelgaas@google.com>
-
-The callers of qib_tune_pcie_caps() and qib_tune_pcie_coalesce() don't
-check the return values, so this patch drops the return values altogether.
-
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/infiniband/hw/qib/qib_pcie.c |   28 ++++++++++++----------------
- 1 file changed, 12 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/infiniband/hw/qib/qib_pcie.c b/drivers/infiniband/hw/qib/qib_pcie.c
-index 24973c8..c8d9c4a 100644
---- a/drivers/infiniband/hw/qib/qib_pcie.c
-+++ b/drivers/infiniband/hw/qib/qib_pcie.c
-@@ -51,8 +51,8 @@
-  * file calls, even though this violates some
-  * expectations of harmlessness.
-  */
--static int qib_tune_pcie_caps(struct qib_devdata *);
--static int qib_tune_pcie_coalesce(struct qib_devdata *);
-+static void qib_tune_pcie_caps(struct qib_devdata *);
-+static void qib_tune_pcie_coalesce(struct qib_devdata *);
- 
- /*
-  * Do all the common PCIe setup and initialization.
-@@ -487,7 +487,7 @@ MODULE_PARM_DESC(pcie_coalesce, "tune PCIe colescing on some Intel chipsets");
-  * of these chipsets, with some BIOS settings, and enabling it on those
-  * systems may result in the system crashing, and/or data corruption.
-  */
--static int qib_tune_pcie_coalesce(struct qib_devdata *dd)
-+static void qib_tune_pcie_coalesce(struct qib_devdata *dd)
- {
- 	int r;
- 	struct pci_dev *parent;
-@@ -495,18 +495,18 @@ static int qib_tune_pcie_coalesce(struct qib_devdata *dd)
- 	u32 mask, bits, val;
- 
- 	if (!qib_pcie_coalesce)
--		return 0;
-+		return;
- 
- 	/* Find out supported and configured values for parent (root) */
- 	parent = dd->pcidev->bus->self;
- 	if (parent->bus->parent) {
- 		qib_devinfo(dd->pcidev, "Parent not root\n");
--		return 1;
-+		return;
- 	}
- 	if (!pci_is_pcie(parent))
--		return 1;
-+		return;
- 	if (parent->vendor != 0x8086)
--		return 1;
-+		return;
- 
- 	/*
- 	 *  - bit 12: Max_rdcmp_Imt_EN: need to set to 1
-@@ -539,13 +539,12 @@ static int qib_tune_pcie_coalesce(struct qib_devdata *dd)
- 		mask = (3U << 24) | (7U << 10);
- 	} else {
- 		/* not one of the chipsets that we know about */
--		return 1;
-+		return;
- 	}
- 	pci_read_config_dword(parent, 0x48, &val);
- 	val &= ~mask;
- 	val |= bits;
- 	r = pci_write_config_dword(parent, 0x48, val);
--	return 0;
- }
- 
- /*
-@@ -556,9 +555,8 @@ static int qib_pcie_caps;
- module_param_named(pcie_caps, qib_pcie_caps, int, S_IRUGO);
- MODULE_PARM_DESC(pcie_caps, "Max PCIe tuning: Payload (0..3), ReadReq (4..7)");
- 
--static int qib_tune_pcie_caps(struct qib_devdata *dd)
-+static void qib_tune_pcie_caps(struct qib_devdata *dd)
- {
--	int ret = 1; /* Assume the worst */
- 	struct pci_dev *parent;
- 	u16 rc_mpss, rc_mps, ep_mpss, ep_mps;
- 	u16 rc_mrrs, ep_mrrs, max_mrrs;
-@@ -567,18 +565,18 @@ static int qib_tune_pcie_caps(struct qib_devdata *dd)
- 	parent = dd->pcidev->bus->self;
- 	if (!pci_is_root_bus(parent->bus)) {
- 		qib_devinfo(dd->pcidev, "Parent not root\n");
--		goto bail;
-+		return;
- 	}
- 
- 	if (!pci_is_pcie(parent) || !pci_is_pcie(dd->pcidev))
--		goto bail;
-+		return;
-+
- 	rc_mpss = parent->pcie_mpss;
- 	rc_mps = ffs(pcie_get_mps(parent)) - 8;
- 	/* Find out supported and configured values for endpoint (us) */
- 	ep_mpss = dd->pcidev->pcie_mpss;
- 	ep_mps = ffs(pcie_get_mps(dd->pcidev)) - 8;
- 
--	ret = 0;
- 	/* Find max payload supported by root, endpoint */
- 	if (rc_mpss > ep_mpss)
- 		rc_mpss = ep_mpss;
-@@ -618,8 +616,6 @@ static int qib_tune_pcie_caps(struct qib_devdata *dd)
- 		ep_mrrs = max_mrrs;
- 		pcie_set_readrq(dd->pcidev, ep_mrrs);
- 	}
--bail:
--	return ret;
- }
- /* End of PCIe capability tuning */
- 
+On Tue, Sep 24, 2013 at 12:28 PM, David Miller <davem@redhat.com> wrote:
+> From: Vincent Li <vincent.mc.li@gmail.com>
+> Date: Tue, 24 Sep 2013 11:11:21 -0700
+>
+>> the current behavior is when an IP is added to an interface, the primary
+>> or secondary attributes is depending on the order of ip added to the interface
+>> the first IP will be primary and second, third,... or alias IP will be secondary
+>> if the IP subnet matches
+>>
+>> this patch add the flexiblity to allow user to specify an argument 'primary' or 'secondary'
+>> (use 'ip addr add ip/mask primary|secondary dev ethX ' from iproute2 for example) to specify
+>> an IP address to be  primary or secondary.
+>>
+>> the reason for this patch is that we have a multi blade cluster platform sharing 'floating management ip'
+>> and also that each blade has its own management ip on the management interface, so whichever blade in the
+>> cluster becomes primary blade, the 'floating mangaement ip' follows it, and we want any of our traffic
+>> originated from the primary blade source from the 'floating management ip' for consistency. but in this
+>> case, since the local blade management ip is always the primary ip on the mangaement interface and 'floating
+>> management ip' is always secondary, kernel always choose the primary ip as source ip address. thus we would
+>> like to add the flexibility in kernel to allow us to specify which ip to be primary or secondary.
+>>
+>> Signed-off-by: Vincent Li <vincent.mc.li@gmail.com>
+>
+> When submitting a patch, please:
+>
+> 1) Specify an appropriate prefix for your subject line, indicating the
+>    subsystem.  "ipv4: " might be appropriate here.
+>
+> 2) Format your commit message so that lines do not exceed 80 columns.
+>    People will read using ASCII text based tools in 80 column
+>    terminals.
