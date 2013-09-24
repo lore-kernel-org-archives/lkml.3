@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3IXVLt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:11:49 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44362 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948Ab3IXVLr (ORCPT
+	id S1754990Ab3IXVMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 17:12:16 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:50684 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754711Ab3IXVMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:11:47 -0400
-Date: Tue, 24 Sep 2013 23:11:39 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Marc Pignat <marc.pignat@hevs.ch>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        john.stultz@linaro.org, kernel@pengutronix.de,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Timekeeping on at91rm9200 [Was: [PATCH v2] clockevents: Sanitize
- ticks to nsec conversion]
-Message-ID: <20130924211139.GE16106@pengutronix.de>
-References: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
- <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	Tue, 24 Sep 2013 17:12:14 -0400
+Message-ID: <5242002A.6050507@converseincode.com>
+Date: Tue, 24 Sep 2013 17:12:10 -0400
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: balbi@ti.com
+CC: charlebm@gmail.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Subject: Re: [PATCH] Remove VLAIS usage from gadget code - alternate patch
+References: <1380045419-10367-1-git-send-email-charlebm@gmail.com>
+In-Reply-To: <1380045419-10367-1-git-send-email-charlebm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Nicolas, hello Jean-Christophe,
+On 09/24/13 13:56, charlebm@gmail.com wrote:
+> From: Mark Charlebois <charlebm@gmail.com>
+>
+> The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
+> precludes the use of compilers which don't implement VLAIS (for instance the
+> Clang compiler). This alternate patch calculates offsets into the kmalloc-ed
+> memory buffer using macros. The previous patch required multiple kmalloc and
+> kfree calls.
+>
+> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+This one uses macros and carves up a single piece of memory from one 
+kmalloc.
 
-I expect you should be able to revert 
-
-	b7a8ca5 (ARM: at91: rm9200 fix time support)
-
-which reverted 
-
-	838a2ae (ARM: use clockevents_config_and_register() where possible)
-
-for at91rm9200 on top of the patch this mail is a reply to.
-
-Can you please test that?
-
-Best regards
-Uwe
+Behan
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Behan Webster
+behanw@converseincode.com
+
