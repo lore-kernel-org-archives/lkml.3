@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab3IXIsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 04:48:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10933 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751350Ab3IXIsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 04:48:33 -0400
-From: Weiping Pan <wpan@redhat.com>
-To: linux-mm@kvack.org
-Cc: rob@landley.net, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH resend] typo: replace kernelcore with Movable
-Date: Tue, 24 Sep 2013 16:48:14 +0800
-Message-Id: <a1714d6a349ac584626a164631c5e2b74d91326d.1380012101.git.wpan@redhat.com>
+	id S1752787Ab3IXIsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 04:48:52 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37874 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab3IXIss (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 04:48:48 -0400
+Date: Tue, 24 Sep 2013 01:48:42 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Joe Perches <joe@perches.com>
+Cc: Christoph Hellwig <hch@infradead.org>, David Miller <davem@davemloft.net>,
+        stephen@networkplumber.org, netdev@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: [PATCH] stable_kernel_rules.txt: Exclude networking from stable
+ rules
+Message-ID: <20130924084842.GB11858@infradead.org>
+References: <alpine.LRH.2.02.1309191229480.32035@file01.intranet.prod.int.rdu2.redhat.com>
+ <20130919.135628.1201613770803318193.davem@davemloft.net>
+ <alpine.LRH.2.02.1309191359300.12162@file01.intranet.prod.int.rdu2.redhat.com>
+ <1379615474.22168.13.camel@joe-AO722>
+ <20130922185104.GA7515@infradead.org>
+ <1379968445.3575.60.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379968445.3575.60.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Han Pingtian found a typo in Documentation/kernel-parameters.txt
-about "kernelcore=", that "kernelcore" should be replaced with "Movable" here.
+On Mon, Sep 23, 2013 at 01:34:05PM -0700, Joe Perches wrote:
+> Maybe adding a mechanism to MAINTAINERS would be better.
+> Maybe a default B: (backport?) of stable@vger.kernel.org
+> with a per-subsystem override?
 
-I sent this patch a 8 months ago and got ack from Mel Gorman,
-http://marc.info/?l=linux-mm&m=135756720602638&w=2
-but it has not been merged so I resent it again.
-
-Signed-off-by: Weiping Pan <wpan@redhat.com>
----
- Documentation/kernel-parameters.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 1a036cd9..c3ea235 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1357,7 +1357,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			pages. In the event, a node is too small to have both
- 			kernelcore and Movable pages, kernelcore pages will
- 			take priority and other nodes will have a larger number
--			of kernelcore pages.  The Movable zone is used for the
-+			of Movable pages.  The Movable zone is used for the
- 			allocation of pages that may be reclaimed or moved
- 			by the page migration subsystem.  This means that
- 			HugeTLB pages may not be allocated from this zone.
--- 
-1.7.4
+Sounds fine to me.
 
