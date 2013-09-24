@@ -1,142 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab3IXSSX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 14:18:23 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34160 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750877Ab3IXSSW (ORCPT
+	id S1754439Ab3IXSXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 14:23:46 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:41616 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab3IXSXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 14:18:22 -0400
-Message-ID: <5241D767.6020809@hurleysoftware.com>
-Date: Tue, 24 Sep 2013 14:18:15 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 24 Sep 2013 14:23:44 -0400
+Message-ID: <5241D897.1090905@gmail.com>
+Date: Wed, 25 Sep 2013 02:23:19 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        codonell <codonell@redhat.com>, Eduard Benes <ebenes@redhat.com>,
-        Karel Srot <ksrot@redhat.com>, Matt Newsome <mnewsome@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tty: disassociate_ctty() sends the extra SIGCONT
-References: <20130915155006.GA11913@redhat.com> <20130915155026.GA11917@redhat.com> <5238BDEC.1070400@hurleysoftware.com> <20130921183436.GA13418@redhat.com> <523E00A3.5050507@hurleysoftware.com> <20130922200354.GA4865@redhat.com>
-In-Reply-To: <20130922200354.GA4865@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com
+CC: "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: [PATCH v5 0/6] x86, memblock: Allocate memory near kernel image before
+ SRAT parsed
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2013 04:03 PM, Oleg Nesterov wrote:
-> On 09/21, Peter Hurley wrote:
->>
->> On 09/21/2013 02:34 PM, Oleg Nesterov wrote:
->>>
->>> 		do_each_pid_task(tty->session, PIDTYPE_SID, p) {
->>> 			spin_lock_irq(&p->sighand->siglock);
->>> 			if (p->signal->tty == tty) {
->>> 				p->signal->tty = NULL;
->>> 				/* We defer the dereferences outside fo
->>> 				   the tasklist lock */
->>> 				refs++;
->>> 			}
->>> 			if (!p->signal->leader) {
->>> 				spin_unlock_irq(&p->sighand->siglock);
->>> 				continue;
->>> 			}
->>> 			__group_send_sig_info(SIGHUP, SEND_SIG_PRIV, p);
->>> 			__group_send_sig_info(SIGCONT, SEND_SIG_PRIV, p);
->>> 			put_pid(p->signal->tty_old_pgrp);  /* A noop */
->>> 			spin_lock(&tty->ctrl_lock);
->>> 			tty_pgrp = get_pid(tty->pgrp);
->>>
->>> I guess this can happen only once, so we could even add WARN_ON(tty_pgrp)
->>> before get_pid(). But this look confusing, as if we can do get_pid()
->>> multiple times and leak tty->pgrp.
->>>
->>> 			if (tty->pgrp)
->>> 				p->signal->tty_old_pgrp = get_pid(tty->pgrp);
->>>
->>> else? We already did put_pid(tty_old_pgrp), we should clear it.
->>>
->>> IOW, do you think the patch below makes sense or I missed something?
->>> Just curious.
->>
->> The code block you're referring to only executes once because there is
->> only one session leader.
->
-> I understand, and I even mentioned this above.
+Hello guys, here comes the v5 version. Any comments are welcome!
 
-Ah, ok. I didn't realize the earlier patch was a cleanup attempt and
-not fixing something.
+The v5 version is based on today's linus tree (3.12-rc2)
+HEAD is:
+commit 4a10c2ac2f368583138b774ca41fac4207911983
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Mon Sep 23 15:41:09 2013 -0700
 
-> My point was, this _looks_ confusing, and the patch I sent makes it
-> more clean.
-
-I agree that this looks confusing, but I'm not sure I agree that your earlier
-patch makes it cleaner; maybe a code comment stating that the block only
-executes once for the session leader would be more appropriate.
-
-Also, I put the get_pid() in the siglock critical section to prevent
-unsafe racing between hangup and ioctl(TIOCSCTTY).
-
-> And what about ->tty_old_pgrp? I still think that at least the patch
-> below makes sense. If tty->pgrp == NULL is not possible here (I do
-> not know), then why do we check?
-
-tty->pgrp can be NULL here if the session leader is dropping the
-controlling terminal association via no_tty(). But in this
-case ->tty_old_pgrp will also be NULL.
-
-This race should probably be eliminated by claiming the tty_lock()
-in no_tty(), so that it doesn't race with __tty_hangup() at all.
-
-[NB: The other possibility, a second hangup, is no longer possible.]
-
-> Otherwise ->tty_old_pgrp != NULL looks  certainly wrong after put_pid().
-
-I agree this looks fairly suspect; so does
-
-    			put_pid(p->signal->tty_old_pgrp);  /* A noop */
-
-not because of the comment, but because tty_old_pgrp cannot be non-NULL
-here:
-1. The session leader's tty_old_pgrp is only assigned non-NULL if its
-    controlling terminal is hung up.
-2. The tty cannot be hung up more than once.
-3. If the session leader changes the controlling tty via ioctl(TIOCSCTTY),
-    __proc_set_tty() will put_pid(tty_old_pgrp) and reset it to NULL.
-    [so tty_old_pgrp is NULL on a subsequent hangup of the new controlling tty].
-4. If the session leader drops the controlling terminal association
-    via ioctl(TIOCNOTTY), disassociate_tty() will put_pid(tty_old_pgrp)
-    and reset it to NULL. [Assuming the race mentioned above is fixed,
-    then there is no controlling tty to hangup.]
-
-What about replacing
-    			put_pid(p->signal->tty_old_pgrp);  /* A noop */
-with
-			WARN_ON(p->signal->tty_old_pgrp);
-?
-
-And fixing the FIXME in no_tty()?
-
-Regards,
-Peter Hurley
-
-> --- x/drivers/tty/tty_io.c
-> +++ x/drivers/tty/tty_io.c
-> @@ -569,8 +569,7 @@ static int tty_signal_session_leader(str
->   			put_pid(p->signal->tty_old_pgrp);  /* A noop */
->   			spin_lock(&tty->ctrl_lock);
->   			tty_pgrp = get_pid(tty->pgrp);
-> -			if (tty->pgrp)
-> -				p->signal->tty_old_pgrp = get_pid(tty->pgrp);
-> +			p->signal->tty_old_pgrp = get_pid(tty->pgrp);
->   			spin_unlock(&tty->ctrl_lock);
->   			spin_unlock_irq(&p->sighand->siglock);
->   		} while_each_pid_task(tty->session, PIDTYPE_SID, p);
+    Linux 3.12-rc2
 
 
+[Problem]
+
+The current Linux cannot migrate pages used by the kerenl because
+of the kernel direct mapping. In Linux kernel space, va = pa + PAGE_OFFSET.
+When the pa is changed, we cannot simply update the pagetable and
+keep the va unmodified. So the kernel pages are not migratable.
+
+There are also some other issues will cause the kernel pages not migratable.
+For example, the physical address may be cached somewhere and will be used.
+It is not to update all the caches.
+
+When doing memory hotplug in Linux, we first migrate all the pages in one
+memory device somewhere else, and then remove the device. But if pages are
+used by the kernel, they are not migratable. As a result, memory used by
+the kernel cannot be hot-removed.
+
+Modifying the kernel direct mapping mechanism is too difficult to do. And
+it may cause the kernel performance down and unstable. So we use the following
+way to do memory hotplug.
+
+
+[What we are doing]
+
+In Linux, memory in one numa node is divided into several zones. One of the
+zones is ZONE_MOVABLE, which the kernel won't use.
+
+In order to implement memory hotplug in Linux, we are going to arrange all
+hotpluggable memory in ZONE_MOVABLE so that the kernel won't use these memory.
+To do this, we need ACPI's help.
+
+In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
+affinities in SRAT record every memory range in the system, and also, flags
+specifying if the memory range is hotpluggable.
+(Please refer to ACPI spec 5.0 5.2.16)
+
+With the help of SRAT, we have to do the following two things to achieve our
+goal:
+
+1. When doing memory hot-add, allow the users arranging hotpluggable as
+   ZONE_MOVABLE.
+   (This has been done by the MOVABLE_NODE functionality in Linux.)
+
+2. when the system is booting, prevent bootmem allocator from allocating
+   hotpluggable memory for the kernel before the memory initialization
+   finishes.
+
+The problem 2 is the key problem we are going to solve. But before solving it,
+we need some preparation. Please see below.
+
+
+[Preparation]
+
+Bootloader has to load the kernel image into memory. And this memory must be 
+unhotpluggable. We cannot prevent this anyway. So in a memory hotplug system, 
+we can assume any node the kernel resides in is not hotpluggable.
+
+Before SRAT is parsed, we don't know which memory ranges are hotpluggable. But
+memblock has already started to work. In the current kernel, memblock allocates 
+the following memory before SRAT is parsed:
+
+setup_arch()
+ |->memblock_x86_fill()            /* memblock is ready */
+ |......
+ |->early_reserve_e820_mpc_new()   /* allocate memory under 1MB */
+ |->reserve_real_mode()            /* allocate memory under 1MB */
+ |->init_mem_mapping()             /* allocate page tables, about 2MB to map 1GB memory */
+ |->dma_contiguous_reserve()       /* specified by user, should be low */
+ |->setup_log_buf()                /* specified by user, several mega bytes */
+ |->relocate_initrd()              /* could be large, but will be freed after boot, should reorder */
+ |->acpi_initrd_override()         /* several mega bytes */
+ |->reserve_crashkernel()          /* could be large, should reorder */
+ |......
+ |->initmem_init()                 /* Parse SRAT */
+
+According to Tejun's advice, before SRAT is parsed, we should try our best to
+allocate memory near the kernel image. Since the whole node the kernel resides 
+in won't be hotpluggable, and for a modern server, a node may have at least 16GB
+memory, allocating several mega bytes memory around the kernel image won't cross
+to hotpluggable memory.
+
+
+[About this patch-set]
+
+So this patch-set does the following:
+
+1. Make memblock be able to allocate memory bottom up.
+   1) Keep all the memblock APIs' prototype unmodified.
+   2) When the direction is bottom up, keep the start address greater than the 
+      end of kernel image.
+
+2. Improve init_mem_mapping() to support allocate page tables in bottom up direction.
+
+3. Introduce "movablenode" boot option to enable and disable this functionality.
+
+PS: Reordering of relocate_initrd() has not been done yet. acpi_initrd_override() 
+    needs to access initrd with virtual address. So relocate_initrd() must be done 
+    before acpi_initrd_override().
+
+Change log v4 -> v5:
+1. Change memblock.current_direction to a boolean memblock.bottom_up. And remove 
+   the direction enum.
+2. Update and add some comments to explain things clearer.
+3. Misc fixes, such as removing unnecessary #ifdef
+
+Change log v3 -> v4:
+1. Use bottom-up/top-down to unify things. Thanks tj.
+2. Factor out of current top-down implementation and then introduce bottom-up mode,
+   not mixing them in one patch. Thanks tj.
+3. Changes function naming: memblock_direction_bottom_up -> memblock_bottom_up
+4. Use memblock_set_bottom_up to replace memblock_set_current_direction, which makes
+   the code simpler. Thanks tj.
+5. Define two implementions of function memblock_bottom_up and memblock_set_bottom_up
+   in order not to use #ifdef in the boot code. Thanks tj.
+6. Add comments to explain why retry top-down allocation when bottom_up allocation
+   failed. Thanks tj and toshi!
+
+Change log v2 -> v3:
+1. According to Toshi's suggestion, move the direction checking logic into memblock.
+   And simply the code more.
+
+Change log v1 -> v2:
+1. According to tj's suggestion, implemented a new function memblock_alloc_bottom_up() 
+   to allocate memory from bottom upwards, whihc can simplify the code.
+
+Tang Chen (6):
+  memblock: Factor out of top-down allocation
+  memblock: Introduce bottom-up allocation mode
+  x86/mm: Factor out of top-down direct mapping setup
+  x86/mem-hotplug: Support initialize page tables in bottom-up
+  x86, acpi, crash, kdump: Do reserve_crashkernel() after SRAT is
+    parsed.
+  mem-hotplug: Introduce movablenode boot option
+
+ Documentation/kernel-parameters.txt |   15 ++++
+ arch/x86/kernel/setup.c             |   15 ++++-
+ arch/x86/mm/init.c                  |  118 ++++++++++++++++++++++++++++------
+ include/linux/memblock.h            |   16 +++++
+ mm/memblock.c                       |  122 +++++++++++++++++++++++++++++++----
+ mm/memory_hotplug.c                 |   31 +++++++++
+ 6 files changed, 283 insertions(+), 34 deletions(-)
