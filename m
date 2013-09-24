@@ -1,70 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab3IXTUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 15:20:08 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:33735 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab3IXTUE (ORCPT
+	id S1754682Ab3IXTUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 15:20:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36830 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754657Ab3IXTUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 15:20:04 -0400
-Date: Tue, 24 Sep 2013 12:19:54 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, axboe@kernel.dk,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/22] Immutable biovecs, block layer changes
-Message-ID: <20130924191954.GB2636@kmo-pixel>
-References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
- <20130808150954.GA30092@infradead.org>
- <20130808211529.GB15409@kmo-pixel>
- <20130924110012.GA7160@infradead.org>
- <20130924132014.GA16165@redhat.com>
+	Tue, 24 Sep 2013 15:20:41 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel@pengutronix.de
+Subject: [PATCH] [RFC] devm: drop devm_clk_put
+Date: Tue, 24 Sep 2013 21:20:21 +0200
+Message-Id: <1380050421-19762-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1379951159-8294-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1379951159-8294-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130924132014.GA16165@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 09:20:14AM -0400, Mike Snitzer wrote:
-> On Tue, Sep 24 2013 at  7:00am -0400,
-> Christoph Hellwig <hch@infradead.org> wrote:
-> 
-> > Just curious, what's the state of the remaining immutable bio work?
-> 
-> Hey Christoph,
-> 
-> Have you been over the patchset?  Looks sane to you?
-> 
-> Given how disruptive this patchset is to the block layer I'm wondering
-> how painful this change will be in combination with Jens' blk-mq
-> changes.  I'd prefer to see blk-mq before immutable biovecs; but I have
-> my own selfish reasons for that.
-> 
-> I'm also concerned about DM regressions given that a lot of DM code to
-> handle splitting a bio that spans target boundaries is ripped out, see:
-> https://patchwork.kernel.org/patch/2840657/
+devm_clk_put isn't really necessary as a driver usually keeps the
+reference during its lifetime and there are no in-tree users. So
+drop it.
 
-Oh good, you had seen that :)
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+The "no in-tree users" part of the commit log isn't true yet, as there
+is no agreed-on patch for sound/soc/kirkwood/kirkwood-i2s.c yet and the
+other patches in this thread are not applied/acked yet.
+---
+ Documentation/driver-model/devres.txt |  1 -
+ drivers/clk/clk-devres.c              | 10 ----------
+ include/linux/clk.h                   | 19 +++----------------
+ 3 files changed, 3 insertions(+), 27 deletions(-)
 
-Are you worried about performance regressions or actual bugs?
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index 5bdc8cb..9d04836 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -287,7 +287,6 @@ REGULATOR
+ 
+ CLOCK
+   devm_clk_get()
+-  devm_clk_put()
+ 
+ PINCTRL
+   devm_pinctrl_get()
+diff --git a/drivers/clk/clk-devres.c b/drivers/clk/clk-devres.c
+index 8f57154..0943d8f 100644
+--- a/drivers/clk/clk-devres.c
++++ b/drivers/clk/clk-devres.c
+@@ -43,13 +43,3 @@ static int devm_clk_match(struct device *dev, void *res, void *data)
+ 	}
+ 	return *c == data;
+ }
+-
+-void devm_clk_put(struct device *dev, struct clk *clk)
+-{
+-	int ret;
+-
+-	ret = devres_release(dev, devm_clk_release, devm_clk_match, clk);
+-
+-	WARN_ON(ret);
+-}
+-EXPORT_SYMBOL(devm_clk_put);
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index 9a6d045..5115bc6 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -154,7 +154,9 @@ struct clk *clk_get(struct device *dev, const char *id);
+  * devm_clk_get should not be called from within interrupt context.
+  *
+  * The clock will automatically be freed when the device is unbound
+- * from the bus.
++ * from the bus. Note there is deliberately no devm_clk_put function as a
++ * driver usally keeps the reference to its clocks during the complete driver
++ * live time.
+  */
+ struct clk *devm_clk_get(struct device *dev, const char *id);
+ 
+@@ -205,19 +207,6 @@ unsigned long clk_get_rate(struct clk *clk);
+  */
+ void clk_put(struct clk *clk);
+ 
+-/**
+- * devm_clk_put	- "free" a managed clock source
+- * @dev: device used to acuqire the clock
+- * @clk: clock source acquired with devm_clk_get()
+- *
+- * Note: drivers must ensure that all clk_enable calls made on this
+- * clock source are balanced by clk_disable calls prior to calling
+- * this function.
+- *
+- * clk_put should not be called from within interrupt context.
+- */
+-void devm_clk_put(struct device *dev, struct clk *clk);
+-
+ /*
+  * The remaining APIs are optional for machine class support.
+  */
+@@ -290,8 +279,6 @@ static inline struct clk *devm_clk_get(struct device *dev, const char *id)
+ 
+ static inline void clk_put(struct clk *clk) {}
+ 
+-static inline void devm_clk_put(struct device *dev, struct clk *clk) {}
+-
+ static inline int clk_enable(struct clk *clk)
+ {
+ 	return 0;
+-- 
+1.8.4.rc3
 
-I _have_ explicitly tested that code path, but I don't know what corner
-cases I may have missed so it definitely needs your eyeballs and testing
-too.
-
-As for performance - this'll be more efficient than what the dm code was
-doing before. Especially when the multipage bvec patches go in.
-
-> But that is just handwaving/FUD at this point cause I haven't put the
-> time to looking at this patchset close enough to feel comfortable.  I
-> can make reviewing this patchset a priority this week though.
-> 
-> Kent, have you rebased this patchset at all?  Do you have a git tree I
-> can clone to save the pain of pulling these patches out my my mbox,
-> etc.
-
-Yeah: git://evilpiepirate.org/~kent/linux-bcache.git for-jens
