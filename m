@@ -1,99 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3IXPlM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 11:41:12 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56259 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab3IXPlK (ORCPT
+	id S1754184Ab3IXPlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 11:41:44 -0400
+Received: from a9-74.smtp-out.amazonses.com ([54.240.9.74]:33376 "EHLO
+	a9-74.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751559Ab3IXPlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 11:41:10 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18oYxVlMhC3gBo7hlD4Wxh2
-Date: Tue, 24 Sep 2013 08:40:48 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Balaji T K <balajitk@ti.com>, Jon Hunter <jgchunter@gmail.com>,
-        linux-gpio@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        r.sricharan@ti.com, holler@ahsoftware.de
-Subject: Re: [RFC v2] gpio/omap: auto-setup a GPIO when used as an IRQ
-Message-ID: <20130924154048.GM2684@atomide.com>
-References: <1380009480-4975-1-git-send-email-javier.martinez@collabora.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380009480-4975-1-git-send-email-javier.martinez@collabora.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 24 Sep 2013 11:41:42 -0400
+Message-ID: <0000014150a2131e-b4520b78-01e6-4a4b-b2ac-db17d4bd0d93-000000@email.amazonses.com>
+User-Agent: quilt/0.50-1
+Date: Tue, 24 Sep 2013 15:41:41 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org
+Cc: linux-arch@vger.kernel.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Subject: [pchecks v2 1/2] Subject; percpu: Add raw_cpu_ops
+References: <20130924154159.855373283@linux.com>
+X-SES-Outgoing: 2013.09.24-54.240.9.74
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Javier Martinez Canillas <javier.martinez@collabora.co.uk> [130924 01:06]:
-> The OMAP GPIO controller HW requires a pin to be configured in GPIO
-> input mode in order to operate as an interrupt input. Since drivers
-> should not be aware of whether an interrupt pin is also a GPIO or not,
-> the HW should be fully configured/enabled as an IRQ if a driver solely
-> uses IRQ APIs such as request_irq(), and never calls any GPIO-related
-> APIs. As such, add the missing HW setup to the OMAP GPIO controller's
-> irq_chip driver.
-> 
-> Since this bypasses the GPIO subsystem we have to ensure that another
-> caller won't be able to request the same GPIO pin that is used as an
-> IRQ and set its direction as output. Requesting the GPIO and setting
-> its direction as input is allowed though.
+The following patches will add preemption checks to __this_cpu ops so we
+need to have an alternative way to use this cpu operations without
+preemption checks.
 
-Also please mention the regression that this fixes. So far we know
-that smsc911x for tobi and igep boards in mainline, and also the
-MMC card detect for omap4 boards.
+raw_cpu ops rely on the __this_cpu_xxx_1/2/4/8 operations having no
+preemption checks. We therefore do not have to duplicate these functions
+but can affort to only duplicate the higher level macros.
+
+Also add raw_cpu_ptr for symmetries sake.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/include/linux/percpu.h
+===================================================================
+--- linux.orig/include/linux/percpu.h	2013-09-23 10:20:05.050535801 -0500
++++ linux/include/linux/percpu.h	2013-09-23 10:20:05.050535801 -0500
+@@ -139,6 +139,9 @@ extern int __init pcpu_page_first_chunk(
+ 				pcpu_fc_populate_pte_fn_t populate_pte_fn);
+ #endif
  
-> --- a/drivers/gpio/gpio-omap.c
-> +++ b/drivers/gpio/gpio-omap.c
-> @@ -63,6 +63,7 @@ struct gpio_bank {
->  	struct gpio_chip chip;
->  	struct clk *dbck;
->  	u32 mod_usage;
-> +	u32 irq_usage;
->  	u32 dbck_enable_mask;
->  	bool dbck_enabled;
->  	struct device *dev;
-> @@ -86,6 +87,9 @@ struct gpio_bank {
->  #define GPIO_BIT(bank, gpio) (1 << GPIO_INDEX(bank, gpio))
->  #define GPIO_MOD_CTRL_BIT	BIT(0)
->  
-> +#define BANK_USED(bank) (bank->mod_usage || bank->irq_usage)
-> +#define LINE_USED(line, offset) (line & (1 << offset))
++/* For symmetries sake. */
++#define raw_cpu_ptr __this_cpu_ptr
++
+ /*
+  * Use this to get to a cpu's version of the per-cpu object
+  * dynamically allocated. Non-atomic access to the current CPU's
+@@ -520,17 +523,7 @@ do {									\
+ 
+ /*
+  * Generic percpu operations for context that are safe from preemption/interrupts.
+- * Either we do not care about races or the caller has the
+- * responsibility of handling preemption/interrupt issues. Arch code can still
+- * override these instructions since the arch per cpu code may be more
+- * efficient and may actually get race freeness for free (that is the
+- * case for x86 for example).
+- *
+- * If there is no other protection through preempt disable and/or
+- * disabling interupts then one of these RMW operations can show unexpected
+- * behavior because the execution thread was rescheduled on another processor
+- * or an interrupt occurred and the same percpu variable was modified from
+- * the interrupt context.
++ * These functions verify that preemption has been disabled.
+  */
+ #ifndef __this_cpu_read
+ # ifndef __this_cpu_read_1
+@@ -755,4 +748,74 @@ do {									\
+ 	__pcpu_double_call_return_bool(__this_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
+ #endif
+ 
++/*
++ * Generic percpu operations for context where we do not want to do
++ * any checks for preemptiosn.
++ *
++ * If there is no other protection through preempt disable and/or
++ * disabling interupts then one of these RMW operations can show unexpected
++ * behavior because the execution thread was rescheduled on another processor
++ * or an interrupt occurred and the same percpu variable was modified from
++ * the interrupt context.
++ */
++#ifndef raw_cpu_read
++# define raw_cpu_read(pcp)	__pcpu_size_call_return(__this_cpu_read_, (pcp))
++#endif
++
++#ifndef raw_cpu_write
++# define raw_cpu_write(pcp, val)	__pcpu_size_call(__this_cpu_write_, (pcp), (val))
++#endif
++
++#ifndef raw_cpu_add
++# define raw_cpu_add(pcp, val)	__pcpu_size_call(__this_cpu_add_, (pcp), (val))
++#endif
++
++#ifndef raw_cpu_sub
++# define raw_cpu_sub(pcp, val)	raw_cpu_add((pcp), -(val))
++#endif
++
++#ifndef raw_cpu_inc
++# define raw_cpu_inc(pcp)		raw_cpu_add((pcp), 1)
++#endif
++
++#ifndef raw_cpu_dec
++# define raw_cpu_dec(pcp)		raw_cpu_sub((pcp), 1)
++#endif
++
++#ifndef raw_cpu_and
++# define raw_cpu_and(pcp, val)	__pcpu_size_call(__this_cpu_and_, (pcp), (val))
++#endif
++
++#ifndef raw_cpu_or
++# define raw_cpu_or(pcp, val)	__pcpu_size_call(__this_cpu_or_, (pcp), (val))
++#endif
++
++#ifndef raw_cpu_xor
++# define raw_cpu_xor(pcp, val)	__pcpu_size_call(__this_cpu_xor_, (pcp), (val))
++#endif
++
++#ifndef raw_cpu_add_return
++# define raw_cpu_add_return(pcp, val)	\
++	__pcpu_size_call_return2(__this_cpu_add_return_, pcp, val)
++#endif
++
++#define raw_cpu_sub_return(pcp, val)	raw_cpu_add_return(pcp, -(val))
++#define raw_cpu_inc_return(pcp)	raw_cpu_add_return(pcp, 1)
++#define raw_cpu_dec_return(pcp)	raw_cpu_add_return(pcp, -1)
++
++#ifndef raw_cpu_xchg
++# define raw_cpu_xchg(pcp, nval)	\
++	__pcpu_size_call_return2(__this_cpu_xchg_, (pcp), nval)
++#endif
++
++#ifndef raw_cpu_cmpxchg
++# define raw_cpu_cmpxchg(pcp, oval, nval)	\
++	__pcpu_size_call_return2(__this_cpu_cmpxchg_, pcp, oval, nval)
++#endif
++
++#ifndef raw_cpu_cmpxchg_double
++# define raw_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	__pcpu_double_call_return_bool(__this_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
++#endif
++
+ #endif /* __LINUX_PERCPU_H */
 
-Hmm this patch is hard to read, maybe break it into two patches?
-
-First you could do a patch to prepare thing by introducing
-BANK_USED and LINE_USED.
-
-> +static int gpio_is_input(struct gpio_bank *bank, int mask)
-> +{
-> +	void __iomem *reg = bank->base + bank->regs->direction;
-> +
-> +	return __raw_readl(reg) & mask;
-> +}
-
-And also move gpio_is_input() around in the first patch.
-
-Then the second patch for the fix would probably be much
-easier to read.
-
-Regards,
-
-Tony
