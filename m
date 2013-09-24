@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab3IXPZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 11:25:26 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:60282 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab3IXPZY (ORCPT
+	id S1753958Ab3IXP1V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 11:27:21 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22499 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751301Ab3IXP1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 11:25:24 -0400
-Message-ID: <5241AEC0.6040505@gmail.com>
-Date: Tue, 24 Sep 2013 23:24:48 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Tue, 24 Sep 2013 11:27:19 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/sgDe2yaj5tWKQi8Xpcre3
+Date: Tue, 24 Sep 2013 08:27:03 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Balaji T K <balajitk@ti.com>, Jon Hunter <jgchunter@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] gpio/omap: auto-setup a GPIO when used as an IRQ
+Message-ID: <20130924152703.GL2684@atomide.com>
+References: <1379860848-29020-1-git-send-email-javier.martinez@collabora.co.uk>
+ <CACRpkdb35DouKsZ+9aWfQmER1vmAaK1dR7VXjoFHTLRR+hBezg@mail.gmail.com>
+ <524125F4.4060608@collabora.co.uk>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com
-Subject: Re: [PATCH 6/6] mem-hotplug: Introduce movablenode boot option
-References: <524162DA.30004@cn.fujitsu.com> <5241655E.1000007@cn.fujitsu.com> <20130924124121.GG2366@htj.dyndns.org> <5241944B.4050103@gmail.com>
-In-Reply-To: <5241944B.4050103@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524125F4.4060608@collabora.co.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello tejun,
-
-On 09/24/2013 09:31 PM, Zhang Yanfei wrote:
->> This came up during earlier review but never was addressed.  Is
->> > "movablenode" the right name?  Shouldn't it be something which
->> > explicitly shows that it's to prepare for memory hotplug?  Also, maybe
->> > the above param should generate warning if CONFIG_MOVABLE_NODE isn't
->> > enabled?
-> hmmm...as for the option name, if this option is set, it means, the kernel
-> could support the functionality that a whole node is the so called
-> movable node, which only has ZONE MOVABLE zone in it. So we choose
-> to name the parameter "movablenode".
+* Javier Martinez Canillas <javier.martinez@collabora.co.uk> [130923 22:49]:
+> On 09/23/2013 10:15 PM, Linus Walleij wrote:
+> > <javier.martinez@collabora.co.uk> wrote:
+> > - When a second caller calls omap_gpio_request() it should
+> >   be OK as well, but only if the flags corresponds to the
+> >   previously enabled input mode. Else it should be
+> >   disallowed.
+> > 
+> > - The same should happen for _set_gpio_direction() if a pin
+> >   previously set up for IRQ gets a request to be used as
+> >   output.
+> > 
+> > If this cannot be tracked in the driver, it is certainly a candidate
+> > for something that gpiolib should be doing. And then I'm open to
+> > solutions to how we can do that.
+> > 
 > 
-> As for the warning, will add it.
+> Ok, this can be tracked in the driver, will add it when posting v2 soon.
+> 
+> > If this needs to be applied pronto to fix the regression I'm
+> > happy with that too, if we add a big boilerplate stating the above
+> > problem and that it needs to be *fixed* at some point.
 
-I am now preparing the v5 version. Only in this patch we haven't come to an
-agreement. So as for the boot option name, after my explanation, do you still
-have the objection? Or you could suggest a good name for us, that'll be
-very thankful:)
+In the mainline kernel, the regression is happening at least for
+smsc911x using boards, so that's omap3-igep.dtsi and omap3-tobi.dts
+currently. Also MMC card detection for omap4 is failing. Then
+of course there are tons of boards where we don't have the .dts
+files in the mainline kernel yet.
 
-Thanks.
+So maybe let's do a minimal fix for the -rc cycle first?
 
--- 
-Thanks.
-Zhang Yanfei
+Then the extra checks can be queued for the next merge window
+if it gets too intrusive.
+
+> > But in either case I want this to be tested on OMAP1 before
+> > I apply it, as in a Tested-by tag.
+> >
+> 
+> Agreed. Even though this is a fix for a long standing issue I prefer it to be
+> tested extensively than applying the patch in a rush just to learn that causes
+> regressions and have to be reverted as it happens last time.
+> 
+> So as you said let's wait until we have a few Tested-by tags by people using
+> different OMAP platforms specially OMAP1.
+
+Yup.
+
+Regards,
+
+Tony
