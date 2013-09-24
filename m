@@ -1,16 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab3IXNXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 09:23:33 -0400
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:63415 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab3IXNXb (ORCPT
+	id S1753819Ab3IXNYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 09:24:17 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:42601 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab3IXNYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 09:23:31 -0400
-Date: Tue, 24 Sep 2013 09:23:27 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+	Tue, 24 Sep 2013 09:24:15 -0400
+Message-ID: <52419264.3020409@gmail.com>
+Date: Tue, 24 Sep 2013 21:23:48 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
         Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -28,38 +31,78 @@ Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
         imtangchen@gmail.com
-Subject: Re: [PATCH 2/6] memblock: Introduce bottom-up allocation mode
-Message-ID: <20130924132327.GH2366@htj.dyndns.org>
-References: <524162DA.30004@cn.fujitsu.com>
- <524163CF.3010303@cn.fujitsu.com>
- <20130924121725.GC2366@htj.dyndns.org>
- <524190DC.4060605@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524190DC.4060605@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH 4/6] x86/mem-hotplug: Support initialize page tables bottom
+ up
+References: <524162DA.30004@cn.fujitsu.com> <5241649B.3090302@cn.fujitsu.com> <20130924123340.GE2366@htj.dyndns.org>
+In-Reply-To: <20130924123340.GE2366@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 09:17:16PM +0800, Zhang Yanfei wrote:
-> > Maybe just print warning only on the first failure?
+On 09/24/2013 08:33 PM, Tejun Heo wrote:
+> Hello,
 > 
-> Hmmm... This message is for each memblock allocation, that said, if the
-> allocation this time fails, it prints the message and we use so called top-down.
-> But next time, we still use bottom up first again.
+> On Tue, Sep 24, 2013 at 06:08:27PM +0800, Zhang Yanfei wrote:
+>> +#ifdef CONFIG_MOVABLE_NODE
 > 
-> Did you mean if we fail on one bottom-up allocation, then we never try
-> bottom-up again and will always use top-down? 
+> You don't need the above ifdef.  The compiler will be able to cull the
+> code as long as memblock_bottom_up() is defined as constant
+> expression when !MOVABLE_NODE.
 
-Nope, it's just that it might end up printing something for each alloc
-which can end up flooding console / log.  The first failure is the
-most interesting and pretty much defeats the purpose of the whole
-thing after all.  If it's expected to fail very rarely, I'd just stick
-in WARN_ONCE() there as the stack trace would be interesting too.
+yeah, will remove the #if. thanks.
 
-Thanks.
+> 
+>> +/**
+>> + * memory_map_bottom_up - Map [map_start, map_end) bottom up
+>> + * @map_start: start address of the target memory range
+>> + * @map_end: end address of the target memory range
+>> + *
+>> + * This function will setup direct mapping for memory range [map_start, map_end)
+>> + * in a heuristic way. In the beginning, step_size is small. The more memory we
+>> + * map memory in the next loop.
+> 
+> The same comment as before.  Now we have two function with the
+> identical comment but behaving differently, which isn't nice.
+
+OK, will change them.
+
+> 
+> ...
+>> +	 * If the allocation is in bottom-up direction, we start from the
+>> +	 * bottom and go to the top: first [kernel_end, end) and then
+>> +	 * [ISA_END_ADDRESS, kernel_end). Otherwise, we start from the top
+>> +	 * (end of memory) and go to the bottom.
+>> +	 *
+>> +	 * The memblock_find_in_range() gets us a block of RAM in
+>> +	 * [min_pfn_mapped, max_pfn_mapped) used as new pages for page table.
+>>  	 */
+>> -	memory_map_top_down(ISA_END_ADDRESS, end);
+>> +	if (memblock_bottom_up()) {
+>> +		unsigned long kernel_end;
+>> +
+>> +		kernel_end = round_up(__pa_symbol(_end), PMD_SIZE);
+>> +		memory_map_bottom_up(kernel_end, end);
+>> +		memory_map_bottom_up(ISA_END_ADDRESS, kernel_end);
+> 
+> Hmm... so, this is kinda weird.  We're doing it in two chunks and
+> mapping memory between ISA_END_ADDRESS and kernel_end right on top of
+> ISA_END_ADDRESS?  Can't you give enough information to the mapping
+> function so that it can map everything on top of kernel_end in single
+> go?
+
+You mean we should call memory_map_bottom_up like this:
+
+memory_map_bottom_up(ISA_END_ADDRESS, end)
+
+right?
+
+> 
+> Thanks.
+> 
+
 
 -- 
-tejun
+Thanks.
+Zhang Yanfei
