@@ -1,153 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab3IXVOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:14:15 -0400
-Received: from smtprelay0158.hostedemail.com ([216.40.44.158]:56302 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754610Ab3IXVKT (ORCPT
+	id S1754745Ab3IXVPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 17:15:54 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:45375 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043Ab3IXVPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:10:19 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:2:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1535:1605:1606:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:4117:4321:5007:6261:7903:10004:10026:10848:11026:11473:11657:11658:11914:12043:12438:12517:12519:12555:13161:13229:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: vase37_27ca38b90042
-X-Filterd-Recvd-Size: 6284
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/10] ibm/emac: Remove extern from function prototypes
-Date: Tue, 24 Sep 2013 14:09:55 -0700
-Message-Id: <d4cb2ee17dbb9fb636e5e127e8cb6cbde9d28cef.1380056108.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1380056108.git.joe@perches.com>
-References: <cover.1380056108.git.joe@perches.com>
+	Tue, 24 Sep 2013 17:15:51 -0400
+Message-ID: <524200FB.8010004@gmail.com>
+Date: Tue, 24 Sep 2013 23:15:39 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: linux-samsung-soc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Padmavathi Venna <padma.v@samsung.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 1/6] clk: exynos-audss: convert to platform device
+References: <1379982078-23381-1-git-send-email-abrestic@chromium.org> <1380046016-5811-1-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1380046016-5811-1-git-send-email-abrestic@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a mix of function prototypes with and without extern
-in the kernel sources.  Standardize on not using extern for
-function prototypes.
+On 09/24/2013 08:06 PM, Andrew Bresticker wrote:
+> +static int exynos_audss_clk_probe(struct platform_device *pdev)
+>   {
+[...]
+>   	clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
+>   				mout_audss_p, ARRAY_SIZE(mout_audss_p),
+> @@ -123,13 +124,83 @@ static void __init exynos_audss_clk_init(struct device_node *np)
+>   				"div_pcm0", CLK_SET_RATE_PARENT,
+>   				reg_base + ASS_CLK_GATE, 5, 0,&lock);
+>
+> +	for (i = 0; i<  EXYNOS_AUDSS_MAX_CLKS; i++) {
+> +		if (IS_ERR(clk_table[i])) {
+> +			dev_err(&pdev->dev, "failed to regsiter clock %d\n", i);
 
-Function prototypes don't need to be written with extern.
-extern is assumed by the compiler.  Its use is as unnecessary as
-using auto to declare automatic/local variables in a block.
+typo: regsiter -> register
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/ethernet/ibm/emac/debug.h | 14 +++++++-------
- drivers/net/ethernet/ibm/emac/rgmii.h | 18 +++++++++---------
- drivers/net/ethernet/ibm/emac/tah.h   | 14 +++++++-------
- drivers/net/ethernet/ibm/emac/zmii.h  | 18 +++++++++---------
- 4 files changed, 32 insertions(+), 32 deletions(-)
+> +			ret = PTR_ERR(clk_table[i]);
+> +			goto unregister;
+> +		}
+> +	}
+> +
+> +	clk_data.clks = clk_table;
+> +	clk_data.clk_num = EXYNOS_AUDSS_MAX_CLKS;
+> +	ret = of_clk_add_provider(pdev->dev.of_node, of_clk_src_onecell_get,
+> +					&clk_data);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to add clock provider\n");
+> +		goto unregister;
+> +	}
+> +
+[...]
+> +	return 0;
+> +
+> +unregister:
+> +	for (i = 0; i<  EXYNOS_AUDSS_MAX_CLKS; i++) {
+> +		if (!IS_ERR_OR_NULL(clk_table[i]))
+> +			clk_unregister(clk_table[i]);
+> +	}
 
-diff --git a/drivers/net/ethernet/ibm/emac/debug.h b/drivers/net/ethernet/ibm/emac/debug.h
-index 59a92d5..9c45efe 100644
---- a/drivers/net/ethernet/ibm/emac/debug.h
-+++ b/drivers/net/ethernet/ibm/emac/debug.h
-@@ -29,13 +29,13 @@
- struct emac_instance;
- struct mal_instance;
- 
--extern void emac_dbg_register(struct emac_instance *dev);
--extern void emac_dbg_unregister(struct emac_instance *dev);
--extern void mal_dbg_register(struct mal_instance *mal);
--extern void mal_dbg_unregister(struct mal_instance *mal);
--extern int emac_init_debug(void) __init;
--extern void emac_fini_debug(void) __exit;
--extern void emac_dbg_dump_all(void);
-+void emac_dbg_register(struct emac_instance *dev);
-+void emac_dbg_unregister(struct emac_instance *dev);
-+void mal_dbg_register(struct mal_instance *mal);
-+void mal_dbg_unregister(struct mal_instance *mal);
-+int emac_init_debug(void) __init;
-+void emac_fini_debug(void) __exit;
-+void emac_dbg_dump_all(void);
- 
- # define DBG_LEVEL		1
- 
-diff --git a/drivers/net/ethernet/ibm/emac/rgmii.h b/drivers/net/ethernet/ibm/emac/rgmii.h
-index 668bcee..d4f1374 100644
---- a/drivers/net/ethernet/ibm/emac/rgmii.h
-+++ b/drivers/net/ethernet/ibm/emac/rgmii.h
-@@ -56,15 +56,15 @@ struct rgmii_instance {
- 
- #ifdef CONFIG_IBM_EMAC_RGMII
- 
--extern int rgmii_init(void);
--extern void rgmii_exit(void);
--extern int rgmii_attach(struct platform_device *ofdev, int input, int mode);
--extern void rgmii_detach(struct platform_device *ofdev, int input);
--extern void rgmii_get_mdio(struct platform_device *ofdev, int input);
--extern void rgmii_put_mdio(struct platform_device *ofdev, int input);
--extern void rgmii_set_speed(struct platform_device *ofdev, int input, int speed);
--extern int rgmii_get_regs_len(struct platform_device *ofdev);
--extern void *rgmii_dump_regs(struct platform_device *ofdev, void *buf);
-+int rgmii_init(void);
-+void rgmii_exit(void);
-+int rgmii_attach(struct platform_device *ofdev, int input, int mode);
-+void rgmii_detach(struct platform_device *ofdev, int input);
-+void rgmii_get_mdio(struct platform_device *ofdev, int input);
-+void rgmii_put_mdio(struct platform_device *ofdev, int input);
-+void rgmii_set_speed(struct platform_device *ofdev, int input, int speed);
-+int rgmii_get_regs_len(struct platform_device *ofdev);
-+void *rgmii_dump_regs(struct platform_device *ofdev, void *buf);
- 
- #else
- 
-diff --git a/drivers/net/ethernet/ibm/emac/tah.h b/drivers/net/ethernet/ibm/emac/tah.h
-index 350b709..4d5f336 100644
---- a/drivers/net/ethernet/ibm/emac/tah.h
-+++ b/drivers/net/ethernet/ibm/emac/tah.h
-@@ -72,13 +72,13 @@ struct tah_instance {
- 
- #ifdef CONFIG_IBM_EMAC_TAH
- 
--extern int tah_init(void);
--extern void tah_exit(void);
--extern int tah_attach(struct platform_device *ofdev, int channel);
--extern void tah_detach(struct platform_device *ofdev, int channel);
--extern void tah_reset(struct platform_device *ofdev);
--extern int tah_get_regs_len(struct platform_device *ofdev);
--extern void *tah_dump_regs(struct platform_device *ofdev, void *buf);
-+int tah_init(void);
-+void tah_exit(void);
-+int tah_attach(struct platform_device *ofdev, int channel);
-+void tah_detach(struct platform_device *ofdev, int channel);
-+void tah_reset(struct platform_device *ofdev);
-+int tah_get_regs_len(struct platform_device *ofdev);
-+void *tah_dump_regs(struct platform_device *ofdev, void *buf);
- 
- #else
- 
-diff --git a/drivers/net/ethernet/ibm/emac/zmii.h b/drivers/net/ethernet/ibm/emac/zmii.h
-index 455bfb0..0959c55 100644
---- a/drivers/net/ethernet/ibm/emac/zmii.h
-+++ b/drivers/net/ethernet/ibm/emac/zmii.h
-@@ -53,15 +53,15 @@ struct zmii_instance {
- 
- #ifdef CONFIG_IBM_EMAC_ZMII
- 
--extern int zmii_init(void);
--extern void zmii_exit(void);
--extern int zmii_attach(struct platform_device *ofdev, int input, int *mode);
--extern void zmii_detach(struct platform_device *ofdev, int input);
--extern void zmii_get_mdio(struct platform_device *ofdev, int input);
--extern void zmii_put_mdio(struct platform_device *ofdev, int input);
--extern void zmii_set_speed(struct platform_device *ofdev, int input, int speed);
--extern int zmii_get_regs_len(struct platform_device *ocpdev);
--extern void *zmii_dump_regs(struct platform_device *ofdev, void *buf);
-+int zmii_init(void);
-+void zmii_exit(void);
-+int zmii_attach(struct platform_device *ofdev, int input, int *mode);
-+void zmii_detach(struct platform_device *ofdev, int input);
-+void zmii_get_mdio(struct platform_device *ofdev, int input);
-+void zmii_put_mdio(struct platform_device *ofdev, int input);
-+void zmii_set_speed(struct platform_device *ofdev, int input, int speed);
-+int zmii_get_regs_len(struct platform_device *ocpdev);
-+void *zmii_dump_regs(struct platform_device *ofdev, void *buf);
- 
- #else
- # define zmii_init()		0
--- 
-1.8.1.2.459.gbcd45b4.dirty
+Couldn't this instead be:
 
+	while (--i >= 0)
+		clk_unregister(clk_table[i]);
+
+?
+> +static int exynos_audss_clk_remove(struct platform_device *pdev)
+> +{
+> +	int i;
+> +
+> +	of_clk_del_provider(pdev->dev.of_node);
+> +
+> +	for (i = 0; i<  EXYNOS_AUDSS_MAX_CLKS; i++) {
+> +		if (!IS_ERR_OR_NULL(clk_table[i]))
+> +			clk_unregister(clk_table[i]);
+> +	}
+
+Since we only get here if all the clocks are registered properly and we
+always register EXYNOS_AUDSS_MAX_CLKS clocks, couldn't this simply be:
+
+	for (i = 0; i < EXYNOS_AUDSS_MAX_CLKS; i++)
+		clk_unregister(clk_table[i]);
+
+?
+> +	return 0;
+> +}
+
+Otherwise the whole series looks good to me. Feel free to add:
+
+Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+
+
+--
+Thanks,
+Sylwester
