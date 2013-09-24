@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498Ab3IXCUv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 22:20:51 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:44075 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab3IXCUt convert rfc822-to-8bit (ORCPT
+	id S1753298Ab3IXClC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 22:41:02 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:61414 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab3IXClA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 22:20:49 -0400
-Date: Mon, 23 Sep 2013 21:20:41 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: new binutils needed for arm in 3.12-rc1
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Trivial patch monkey <trivial@kernel.org>,
-        Andrew Morton <akpm@osdl.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-References: <20130919093002.GA23806@amd.pavel.ucw.cz>
-	<20130919093627.GB24866@mudshark.cambridge.arm.com>
-	<20130923235917.GA30967@amd.pavel.ucw.cz>
-In-Reply-To: <20130923235917.GA30967@amd.pavel.ucw.cz> (from pavel@ucw.cz on
-	Mon Sep 23 18:59:17 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1379989241.1974.69@driftwood>
+	Mon, 23 Sep 2013 22:41:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+Date: Tue, 24 Sep 2013 10:40:57 +0800
+Message-ID: <CAPgLHd-C0o3QsJ0TBfn4aE1foWFrwjUy3iSJCkAhgZrfs=e5CQ@mail.gmail.com>
+Subject: [PATCH] mmc: cb710: drop free_irq for devm_request_irq allocated irq
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: mirq-linux@rere.qmqm.pl, gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 06:59:17 PM, Pavel Machek wrote:
-> During 3.12-rc, Will Deacon introduced code into arch/arm that
-> requires binutils 2.22.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-I'm sorry, it occurs to me I should have been more explicit:
+irq allocated with devm_request_irq should not be freed using
+free_irq, because doing so causes a dangling pointer, and a
+subsequent double free.
 
-AAAAAAAAAAAAAAAAHHHHHHHHHH!!!!!!!!!!!!!!!!!  KILL IT WITH  
-FIRE!!!!!!!!!!!!!!!
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/misc/cb710/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Rob
+diff --git a/drivers/misc/cb710/core.c b/drivers/misc/cb710/core.c
+index 2e50f81..fb397e7 100644
+--- a/drivers/misc/cb710/core.c
++++ b/drivers/misc/cb710/core.c
+@@ -176,7 +176,7 @@ static int cb710_suspend(struct pci_dev *pdev, pm_message_t state)
+ {
+ 	struct cb710_chip *chip = pci_get_drvdata(pdev);
+ 
+-	free_irq(pdev->irq, chip);
++	devm_free_irq(&pdev->dev, pdev->irq, chip);
+ 	pci_save_state(pdev);
+ 	pci_disable_device(pdev);
+ 	if (state.event & PM_EVENT_SLEEP)
+
