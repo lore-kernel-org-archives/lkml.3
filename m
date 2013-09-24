@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab3IXJcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:32:47 -0400
-Received: from gate.crashing.org ([63.228.1.57]:55048 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753868Ab3IXJcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:32:46 -0400
-Message-ID: <1380015099.5443.43.camel@pasglop>
-Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>
-Date: Tue, 24 Sep 2013 19:31:39 +1000
-In-Reply-To: <20130924082128.GJ9326@twins.programming.kicks-ass.net>
-References: <1379824754.24090.11.camel@pasglop>
-	 <1379824861.24090.12.camel@pasglop>
-	 <20130922162410.GA10649@laptop.programming.kicks-ass.net>
-	 <1379887000.24090.19.camel@pasglop>
-	 <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
-	 <1379981427.5443.8.camel@pasglop>
-	 <CA+55aFwyVG4DXOEvaVTp0gE-H2Zy0Kx7Mg7RWzpxzwm_RSWEYQ@mail.gmail.com>
-	 <1379987527.5443.20.camel@pasglop>
-	 <20130924080436.GH9326@twins.programming.kicks-ass.net>
-	 <1380010613.5443.40.camel@pasglop>
-	 <20130924082128.GJ9326@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754381Ab3IXJcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:32:55 -0400
+Received: from mx0.eldamar.org.uk ([78.47.157.133]:55034 "EHLO
+	mx0.eldamar.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345Ab3IXJcw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 05:32:52 -0400
+Date: Tue, 24 Sep 2013 10:32:38 +0100
+From: Alexander Frolkin <avf@eldamar.org.uk>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Julian Anastasov <ja@ssi.bg>, lvs-devel@vger.kernel.org,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Simon Horman <horms@verge.net.au>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipvs: improved SH fallback strategy
+Message-ID: <20130924093238.GD18494@eldamar.org.uk>
+References: <20130923115139.GA15034@eldamar.org.uk>
+ <524099BA.5020303@cogentembedded.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524099BA.5020303@cogentembedded.com>
+X-GPG-Key-Fingerprint: 7820 960F C361 C9CE 401F  D07D 993A 2951 D970 4FA4
+X-Operating-System: Linux 3.2.0-41-generic
+X-Editor: Vi
+X-Uptime: 17:00:58 up 134 days,  2:25, 11 users,  load average: 0.57, 0.48,
+ 0.46
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-24 at 10:21 +0200, Peter Zijlstra wrote:
-> > I don't see how that relates to the above though...
-> 
-> It was a comment on the increase of per-cpu usage in generic code.
-
-Oh I see. Ok, but some things are intrinsically per-task so if you use
-per-cpu in that case you end up context switching, at least that's what
-Linus alluded to. It would be nice if such construct we design so that
-we still access them via the task struct on arch where such accesses are
-cheap.
-
-I think if/when we get rid of using r13 for our arch specific "PACA", it
-becomes easy for me to experiment with using it for either per-cpu or
-current and do some measurements. It also means I can easily switch "the
-other way" if I need to. I'll dig into that, it will probably take some
-time before I sanitize our code enough anyway.
-
-Cheers,
-Ben.
+Improve the SH fallback realserver selection strategy.
  
+With sh and sh-fallback, if a realserver is down, this attempts to
+distribute the traffic that would have gone to that server evenly
+among the remaining servers.
+ 
+Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
+--
+diff --git a/net/netfilter/ipvs/ip_vs_sh.c b/net/netfilter/ipvs/ip_vs_sh.c
+index 3588fae..0db7d01 100644
+--- a/net/netfilter/ipvs/ip_vs_sh.c
++++ b/net/netfilter/ipvs/ip_vs_sh.c
+@@ -120,22 +120,33 @@ static inline struct ip_vs_dest *
+ ip_vs_sh_get_fallback(struct ip_vs_service *svc, struct ip_vs_sh_state *s,
+ 		      const union nf_inet_addr *addr, __be16 port)
+ {
+-	unsigned int offset;
+-	unsigned int hash;
++	unsigned int offset, roffset;
++	unsigned int hash, ihash;
+ 	struct ip_vs_dest *dest;
+ 
+-	for (offset = 0; offset < IP_VS_SH_TAB_SIZE; offset++) {
+-		hash = ip_vs_sh_hashkey(svc->af, addr, port, offset);
+-		dest = rcu_dereference(s->buckets[hash].dest);
+-		if (!dest)
+-			break;
+-		if (is_unavailable(dest))
+-			IP_VS_DBG_BUF(6, "SH: selected unavailable server "
+-				      "%s:%d (offset %d)",
++	ihash = ip_vs_sh_hashkey(svc->af, addr, port, 0);
++	dest = rcu_dereference(s->buckets[ihash].dest);
++	if (!dest)
++		return NULL;
++	if (is_unavailable(dest)) {
++		IP_VS_DBG_BUF(6, "SH: selected unavailable server "
++		      "%s:%d, reselecting",
++		      IP_VS_DBG_ADDR(svc->af, &dest->addr),
++		      ntohs(dest->port));
++		for (offset = 0; offset < IP_VS_SH_TAB_SIZE; offset++) {
++			roffset = (offset + ihash) % IP_VS_SH_TAB_SIZE;
++			hash = ip_vs_sh_hashkey(svc->af, addr, port, roffset);
++			dest = rcu_dereference(s->buckets[hash].dest);
++			if (is_unavailable(dest))
++				IP_VS_DBG_BUF(6, "SH: selected unavailable "
++				      "server %s:%d (offset %d), reselecting",
+ 				      IP_VS_DBG_ADDR(svc->af, &dest->addr),
+-				      ntohs(dest->port), offset);
+-		else
+-			return dest;
++				      ntohs(dest->port), roffset);
++			else
++				return dest;
++		}
++	} else {
++		return dest;
+ 	}
+ 
+ 	return NULL;
 
