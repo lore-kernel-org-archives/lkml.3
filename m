@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab3IXJ5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:57:06 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50331 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750752Ab3IXJ5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:57:03 -0400
-Message-ID: <2f5d83d4d90ba9c5930f099d6f73e61b.squirrel@www.skyhub.de>
-In-Reply-To: <20130923162856.GC7264@otherpad.lan.raisama.net>
-References: <1379861095-628-1-git-send-email-bp@alien8.de>
-    <1379861095-628-2-git-send-email-bp@alien8.de>
-    <20130923162856.GC7264@otherpad.lan.raisama.net>
-Date: Tue, 24 Sep 2013 11:57:00 +0200 (CEST)
-Subject: Re: [PATCH 1/6] kvm: Add KVM_GET_EMULATED_CPUID
-From: "Borislav Petkov" <bp@alien8.de>
-To: "Eduardo Habkost" <ehabkost@redhat.com>
-Cc: "Borislav Petkov" <bp@alien8.de>, "LKML" <linux-kernel@vger.kernel.org>,
-        "Borislav Petkov" <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Gleb Natapov" <gleb@redhat.com>,
-        "Paolo Bonzini" <pbonzini@redhat.com>,
-        "Andre Przywara" <andre@andrep.de>, "Joerg Roedel" <joro@8bytes.org>,
-        "X86 ML" <x86@kernel.org>, "KVM" <kvm@vger.kernel.org>,
-        qemu-devel@nongnu.org
-User-Agent: SquirrelMail/1.4.15
+	id S1754174Ab3IXJ6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:58:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44184 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753284Ab3IXJ6E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 05:58:04 -0400
+Date: Tue, 24 Sep 2013 10:58:03 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, lee.jones@linaro.org,
+        sameo@linux.intel.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk, rob@landley.net,
+        patches@opensource.wolfsonmicro.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] mfd: arizona: Add device tree binding for
+	max_channels_clocked
+Message-ID: <20130924095803.GO3635@opensource.wolfsonmicro.com>
+References: <1379961043-23762-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <1379961043-23762-2-git-send-email-ckeepax@opensource.wolfsonmicro.com> <5240B4C2.2080600@wwwdotorg.org> <20130923232832.GM21013@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130923232832.GM21013@sirena.org.uk>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, September 23, 2013 6:28 pm, Eduardo Habkost wrote:
-> On Sun, Sep 22, 2013 at 04:44:50PM +0200, Borislav Petkov wrote:
->> From: Borislav Petkov <bp@suse.de>
->>
->> Add a kvm ioctl which states which system functionality kvm emulates.
->> The format used is that of CPUID and we return the corresponding CPUID
->> bits set for which we do emulate functionality.
->
-> Let me check if I understood the purpose of the new ioctl correctly: the
-> only reason for GET_EMULATED_CPUID to exist is to allow userspace to
-> differentiate features that are native or that are emulated efficiently
-> (GET_SUPPORTED_CPUID) and features that are emulated not very
-> efficiently (GET_EMULATED_CPUID)?
+On Tue, Sep 24, 2013 at 12:28:32AM +0100, Mark Brown wrote:
+> On Mon, Sep 23, 2013 at 03:38:10PM -0600, Stephen Warren wrote:
+> > On 09/23/2013 12:30 PM, Charles Keepax wrote:
+> 
+> > > +  - wlf,max-channels-clocked : The maximum number of channels to be clocked on
+> > > +    each AIF, useful for I2S systems with multiple data lines being mastered.
+> > > +    If specified three cells must supplied one for each AIF, specify zero for
+> > > +    AIFs that should be handled normally.
+> 
+> > What determines the value of this property? Is it really a definition of
+> > HW, or some kind of run-time configuration/limit? What goes into each of
+> > the 3 cells?
+> 
+> It's hardware, it's other devices wired in parallel on the bus that use
+> the CODEC as a clock master.  Personally I'd have this be set by the
+> ASoC machine driver so it's invisible from a DT point of view, that's
+> what it's really a property of.
 
-Not only that - emulated features are not reported in CPUID so they
-can be enabled only when specifically and explicitly requested, i.e.
-"+movbe". Basically, you want to emulate that feature for the guest but
-only for this specific guest - the others shouldn't see it.
+I don't have any really problem with setting this from the
+machine driver, I will have a look at doing that.
 
-> If that's the case, how do we decide how efficient emulation should be,
-> to deserve inclusion in GET_SUPPORTED_CPUID? I am guessing that the
-> criterion will be: if enabling it doesn't risk making performance worse,
-> it can get in GET_SUPPORTED_CPUID.
+I think based on the comments here I would suggest that we put
+the first patch in but I need to rethink the other patches and
+decide what is actually OS independant here.
 
-Well, in the MOVBE case, supported means, the host can execute this
-instruction natively. Now, you guys say you can emulate x2apic very
-efficiently and I'm guessing emulating x2apic doesn't bring any
-emulation overhead, thus SUPPORTED_CPUID.
-
-But for single instructions or group of instructions, the distinction
-should be very clear.
-
-At least this is how I see it but Gleb probably can comment too.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
+Thanks,
+Charles
 
