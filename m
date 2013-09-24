@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab3IXBbF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 21:31:05 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:64523 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062Ab3IXBbD (ORCPT
+	id S1753251Ab3IXBiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 21:38:12 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:33015 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab3IXBiL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 21:31:03 -0400
-Date: Mon, 23 Sep 2013 21:30:58 -0400
-From: Tejun Heo <tj@kernel.org>
+	Mon, 23 Sep 2013 21:38:11 -0400
+Date: Mon, 23 Sep 2013 20:38:07 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 1/2] Fix NULL pointer dereference while loading
+ initramfs
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Li Zefan <lizefan@huawei.com>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH v6 0/5] memcg, cgroup: kill css id
-Message-ID: <20130924013058.GB3482@htj.dyndns.org>
-References: <524001F8.6070205@huawei.com>
- <20130923130816.GH30946@htj.dyndns.org>
- <20130923131215.GI30946@htj.dyndns.org>
- <5240DD83.1070509@huawei.com>
- <20130923175247.ea5156de.akpm@linux-foundation.org>
+Cc: P J P <ppandit@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20130923124110.9b8aebd78c2b602255f1dc1f@linux-foundation.org>
+	(from akpm@linux-foundation.org on Mon Sep 23 14:41:10 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1379986687.1974.63@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <20130923175247.ea5156de.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
-
-On Mon, Sep 23, 2013 at 05:52:47PM -0700, Andrew Morton wrote:
-> > I would love to see this patchset go through cgroup tree. The changes to
-> > memcg is quite small,
+On 09/23/2013 02:41:10 PM, Andrew Morton wrote:
+> On Sun, 15 Sep 2013 14:33:53 +0530 (IST) P J P <ppandit@redhat.com>  
+> wrote:
 > 
-> It seems logical to put this in the cgroup tree as that's where most of
-> the impact occurs.
+> > Make menuconfig allows one to choose compression format of an
+> > initial ramdisk image. But this choice does not result in duly
+> > compressed initial ramdisk image. Because - $ make install - does
+> > not pass on the selected compression choice to the dracut(8) tool,
+> > which creates the initramfs file. dracut(8) generates the image
+> > with the default compression, ie. gzip(1).
 
-Cool, applying the changes to cgroup/for-3.13.
+I've been building kernels, including with initramfs, and I don't have  
+dracut(8) installed? In today's git:
 
-> > and as -mm tree is based on -next it won't cause
-> > future conflicts.
-> 
-> That's no longer the case - I'm staging -mm patches ahead of linux-next
-> now.  Except in cases where that's impractical, such as the 3.12 memcg
-> changes which were pretty heavily impacted by cgroups tree changes.
+$ find . -type f | xargs grep -i dracut
+./tools/testing/ktest/sample.conf:#POST_INSTALL = ssh user@target  
+/sbin/dracut -f /boot/initramfs-test.img $KERNEL_VERSION
+./tools/testing/ktest/examples/kvm.conf:# that uses dracut for its  
+initfs. The POST_INSTALL will be executed
+./tools/testing/ktest/examples/kvm.conf:POST_INSTALL = ${SSH}  
+/sbin/dracut -f /boot/initramfs-test.img $KERNEL_VERSION
+./Documentation/ABI/testing/evm:		 
+Documentation/keys-trusted-encrypted.txt.  (A sample dracut
 
-Please note that cgroup is likely to continue to go through a lot of
-changes for the foreseeable future and memcg is likely to be affected
-heavily.
+> - Is anyone working on fixing up Kconfig/dracut(8) so the correct
+>   decompression method is used?
 
-Thanks.
+I've been messing with this area and maight be interested if I had any  
+idea what this guy was talking about?
 
--- 
-tejun
+Rob
