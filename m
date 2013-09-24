@@ -1,126 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab3IXM1T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:27:19 -0400
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:46134 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab3IXM1R (ORCPT
+	id S1752714Ab3IXMcZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:32:25 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:35744 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721Ab3IXMcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:27:17 -0400
-Date: Tue, 24 Sep 2013 08:27:12 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Subject: Re: [PATCH 3/6] x86/mm: Factor out of top-down direct mapping setup
-Message-ID: <20130924122712.GD2366@htj.dyndns.org>
-References: <524162DA.30004@cn.fujitsu.com>
- <52416431.1090107@cn.fujitsu.com>
+	Tue, 24 Sep 2013 08:32:23 -0400
+Date: Tue, 24 Sep 2013 14:32:12 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: David Daney <david.daney@cavium.com>,
+        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] drivers: edac: octeon: fix lack of opstate_init
+Message-ID: <20130924123212.GD21257@linux-mips.org>
+References: <1379717202-26990-1-git-send-email-dwalker@fifo99.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52416431.1090107@cn.fujitsu.com>
+In-Reply-To: <1379717202-26990-1-git-send-email-dwalker@fifo99.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 06:06:41PM +0800, Zhang Yanfei wrote:
-> +/**
-> + * memory_map_top_down - Map [map_start, map_end) top down
-> + * @map_start: start address of the target memory range
-> + * @map_end: end address of the target memory range
-> + *
-> + * This function will setup direct mapping for memory range [map_start, map_end)
-> + * in a heuristic way. In the beginning, step_size is small. The more memory we
-> + * map memory in the next loop.
-> + */
+On Fri, Sep 20, 2013 at 03:46:40PM -0700, Daniel Walker wrote:
 
-The comment reads a bit weird to me.  The step size is increased
-gradually but that really isn't really a heuristic and it doesn't
-mention mapping direction.
+> If the opstate_init() isn't called the driver won't start properly.
+> 
+> I just added it in what appears to be an appropriate place.
+> 
+> Signed-off-by: Daniel Walker <dwalker@fifo99.com>
 
-...
-> @@ -430,19 +430,13 @@ void __init init_mem_mapping(void)
->  	min_pfn_mapped = real_end >> PAGE_SHIFT;
->  	last_start = start = real_end;
->  
-> -	/*
-> -	 * We start from the top (end of memory) and go to the bottom.
-> -	 * The memblock_find_in_range() gets us a block of RAM from the
-> -	 * end of RAM in [min_pfn_mapped, max_pfn_mapped) used as new pages
-> -	 * for page table.
-> -	 */
+Makes sense.  Unfortunately :-)
 
-I think this comment should stay here with the variable names
-updated.
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
-> -	while (last_start > ISA_END_ADDRESS) {
-> +	while (last_start > map_start) {
->  		if (last_start > step_size) {
->  			start = round_down(last_start - 1, step_size);
-> -			if (start < ISA_END_ADDRESS)
-> -				start = ISA_END_ADDRESS;
-> +			if (start < map_start)
-> +				start = map_start;
->  		} else
-> -			start = ISA_END_ADDRESS;
-> +			start = map_start;
->  		new_mapped_ram_size = init_range_memory_mapping(start,
->  							last_start);
->  		last_start = start;
-> @@ -453,8 +447,32 @@ void __init init_mem_mapping(void)
->  		mapped_ram_size += new_mapped_ram_size;
->  	}
->  
-> -	if (real_end < end)
-> -		init_range_memory_mapping(real_end, end);
-> +	if (real_end < map_end)
-> +		init_range_memory_mapping(real_end, map_end);
-> +}
-> +
-> +void __init init_mem_mapping(void)
-> +{
-> +	unsigned long end;
-> +
-> +	probe_page_size_mask();
-> +
-> +#ifdef CONFIG_X86_64
-> +	end = max_pfn << PAGE_SHIFT;
-> +#else
-> +	end = max_low_pfn << PAGE_SHIFT;
-> +#endif
-> +
-> +	/* the ISA range is always mapped regardless of memory holes */
-> +	init_memory_mapping(0, ISA_END_ADDRESS);
-> +
-> +	/*
-> +	 * We start from the top (end of memory) and go to the bottom.
-> +	 * The memblock_find_in_range() gets us a block of RAM from the
-> +	 * end of RAM in [min_pfn_mapped, max_pfn_mapped) used as new pages
-> +	 * for page table.
-> +	 */
+EDAC folks - I can funnel this patch through my tree or leave that to you,
+whatever you prefer.  Same for Daniel's other patch.
 
-And just mention the range and direction in the comment here?
-
-> +	memory_map_top_down(ISA_END_ADDRESS, end);
-
-Thanks.
-
--- 
-tejun
+  Ralf
