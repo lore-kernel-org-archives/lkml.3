@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab3IXMIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:08:19 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:44726 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab3IXMIR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:08:17 -0400
-Message-ID: <524180B7.7090307@gmail.com>
-Date: Tue, 24 Sep 2013 14:08:23 +0200
-From: Jack Wang <xjtuwjp@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: KY Srinivasan <kys@microsoft.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: Drivers: scsi: FLUSH timeout
-References: <1379705547-15028-1-git-send-email-kys@microsoft.com> <20130920203222.GA14306@kroah.com> <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752832Ab3IXMJW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:09:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37644 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735Ab3IXMJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 08:09:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,970,1371106800"; 
+   d="scan'208";a="364821417"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH V3 00/10] perf tools: kcore improvements
+Date: Tue, 24 Sep 2013 15:15:42 +0300
+Message-Id: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2013 07:24 AM, KY Srinivasan wrote:
-> 
-> 
->> -----Original Message-----
->> From: Greg KH [mailto:gregkh@linuxfoundation.org]
->> Sent: Friday, September 20, 2013 1:32 PM
->> To: KY Srinivasan
->> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
->> ohering@suse.com; jbottomley@parallels.com; hch@infradead.org; linux-
->> scsi@vger.kernel.org
->> Subject: Re: Drivers: scsi: FLUSH timeout
->>
->> On Fri, Sep 20, 2013 at 12:32:27PM -0700, K. Y. Srinivasan wrote:
->>> The SD_FLUSH_TIMEOUT value is currently hardcoded.
->>
->> Hardcoded where?  Please, more context.
-> 
-> This is defined in scsi/sd.h:
-> 
-> #define SD_FLUSH_TIMEOUT        (60 * HZ)
->>
->>> On our cloud, we sometimes hit this timeout. I was wondering if we
->>> could make this a module parameter. If this is acceptable, I can send
->>> you a patch for this.
->>
->> A module parameter don't make sense for a per-device value, does it?
-> Currently, the 60 second timeout is applied across devices. Ideally, I want to be
-> able to control the FLUSH TIMEOUT as we currently do I/O timeout. If this is 
-> acceptable, I can work on a patch for that as well.
-> 
-> Regards,
-> 
-> K. Y
->>
->> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-Hi,
+Hi
 
-Back to 2010, Mike(cc-ed) try to add a flush time out interface, similar
-to what you want here, no idea why it's just ignored?
-http://www.spinics.net/lists/linux-scsi/msg45017.html
+Here are some improvements for using kcore (version 3).  There are 3
+improvements:
 
-Jack
+	- validate that kcore matches the perf.data modules
+	- workaround objdump difficulties with kcore
+	- add kcore to the build-id cache
+
+Changes in V3:
+	perf tools: workaround objdump difficulties with kcore
+		change strncpy to strlcpy
+	perf buildid-cache: add ability to add kcore to the cache
+		change strncpy to strlcpy
+	perf tools: add ability to find kcore in build-id cache
+		change strncpy to strlcpy
+Changes in V2:
+	perf tools: fix buildid cache handling of kallsyms with kcore
+		Dropped because it has been applied
+	perf tools: fix path unpopulated in machine__create_modules()
+		Use 'modules' pointer
+
+
+Adrian Hunter (10):
+      perf tools: fix path unpopulated in machine__create_modules()
+      perf tools: make a separate function to parse /proc/modules
+      perf tools: validate kcore module addresses
+      perf tools: workaround objdump difficulties with kcore
+      perf tools: add map__find_other_map_symbol()
+      perf tools: fix annotate_browser__callq()
+      perf tools: find kcore symbols on other maps
+      perf tools: add copyfile_mode()
+      perf buildid-cache: add ability to add kcore to the cache
+      perf tools: add ability to find kcore in build-id cache
+
+ tools/perf/Documentation/perf-buildid-cache.txt |  12 +
+ tools/perf/builtin-buildid-cache.c              | 146 +++++-
+ tools/perf/ui/browsers/annotate.c               |  10 +-
+ tools/perf/util/annotate.c                      |  36 +-
+ tools/perf/util/machine.c                       |  75 +--
+ tools/perf/util/map.c                           |  27 ++
+ tools/perf/util/map.h                           |   2 +
+ tools/perf/util/symbol-elf.c                    | 579 ++++++++++++++++++++++++
+ tools/perf/util/symbol-minimal.c                |  15 +
+ tools/perf/util/symbol.c                        | 431 +++++++++++++++---
+ tools/perf/util/symbol.h                        |  20 +
+ tools/perf/util/util.c                          |  18 +-
+ tools/perf/util/util.h                          |   1 +
+ 13 files changed, 1234 insertions(+), 138 deletions(-)
+
+
+Regards
+Adrian
+
