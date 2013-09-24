@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab3IXKB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 06:01:56 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:2986 "EHLO song.cn.fujitsu.com"
+	id S1754204Ab3IXKEN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 06:04:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:29137 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652Ab3IXKBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 06:01:52 -0400
+	id S1752809Ab3IXKEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 06:04:11 -0400
 X-IronPort-AV: E=Sophos;i="4.90,969,1371052800"; 
-   d="scan'208";a="8606598"
-Message-ID: <524162DA.30004@cn.fujitsu.com>
-Date: Tue, 24 Sep 2013 18:00:58 +0800
+   d="scan'208";a="8606623"
+Message-ID: <5241636B.2060206@cn.fujitsu.com>
+Date: Tue, 24 Sep 2013 18:03:23 +0800
 From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
@@ -26,165 +26,120 @@ To: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
         gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
         lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
         jweiner@redhat.com, prarit@redhat.com
-CC: "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        zhangyanfei@cn.fujitsu.com
-Subject: [PATCH v4 0/6] x86, memblock: Allocate memory near kernel image before
- SRAT parsed
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Subject: [PATCH 1/6] memblock: Factor out of top-down allocation
+References: <524162DA.30004@cn.fujitsu.com>
+In-Reply-To: <524162DA.30004@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/24 18:00:01,
+ 2013/09/24 18:02:25,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/24 18:00:07,
-	Serialize complete at 2013/09/24 18:00:07
+ 2013/09/24 18:02:27,
+	Serialize complete at 2013/09/24 18:02:27
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The v4 version is based on today's linus tree (3.12-rc2)
-HEAD is:
-commit 4a10c2ac2f368583138b774ca41fac4207911983
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Mon Sep 23 15:41:09 2013 -0700
+From: Tang Chen <tangchen@cn.fujitsu.com>
 
-    Linux 3.12-rc2
+This patch imports a new function __memblock_find_range_rev
+to factor out of top-down allocation from memblock_find_in_range_node.
+This is a preparation because we will introduce a new bottom-up
+allocation mode in the following patch.
 
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ mm/memblock.c |   47 ++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 34 insertions(+), 13 deletions(-)
 
-[Problem]
-
-The current Linux cannot migrate pages used by the kerenl because
-of the kernel direct mapping. In Linux kernel space, va = pa + PAGE_OFFSET.
-When the pa is changed, we cannot simply update the pagetable and
-keep the va unmodified. So the kernel pages are not migratable.
-
-There are also some other issues will cause the kernel pages not migratable.
-For example, the physical address may be cached somewhere and will be used.
-It is not to update all the caches.
-
-When doing memory hotplug in Linux, we first migrate all the pages in one
-memory device somewhere else, and then remove the device. But if pages are
-used by the kernel, they are not migratable. As a result, memory used by
-the kernel cannot be hot-removed.
-
-Modifying the kernel direct mapping mechanism is too difficult to do. And
-it may cause the kernel performance down and unstable. So we use the following
-way to do memory hotplug.
-
-
-[What we are doing]
-
-In Linux, memory in one numa node is divided into several zones. One of the
-zones is ZONE_MOVABLE, which the kernel won't use.
-
-In order to implement memory hotplug in Linux, we are going to arrange all
-hotpluggable memory in ZONE_MOVABLE so that the kernel won't use these memory.
-To do this, we need ACPI's help.
-
-In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
-affinities in SRAT record every memory range in the system, and also, flags
-specifying if the memory range is hotpluggable.
-(Please refer to ACPI spec 5.0 5.2.16)
-
-With the help of SRAT, we have to do the following two things to achieve our
-goal:
-
-1. When doing memory hot-add, allow the users arranging hotpluggable as
-   ZONE_MOVABLE.
-   (This has been done by the MOVABLE_NODE functionality in Linux.)
-
-2. when the system is booting, prevent bootmem allocator from allocating
-   hotpluggable memory for the kernel before the memory initialization
-   finishes.
-
-The problem 2 is the key problem we are going to solve. But before solving it,
-we need some preparation. Please see below.
-
-
-[Preparation]
-
-Bootloader has to load the kernel image into memory. And this memory must be 
-unhotpluggable. We cannot prevent this anyway. So in a memory hotplug system, 
-we can assume any node the kernel resides in is not hotpluggable.
-
-Before SRAT is parsed, we don't know which memory ranges are hotpluggable. But
-memblock has already started to work. In the current kernel, memblock allocates 
-the following memory before SRAT is parsed:
-
-setup_arch()
- |->memblock_x86_fill()            /* memblock is ready */
- |......
- |->early_reserve_e820_mpc_new()   /* allocate memory under 1MB */
- |->reserve_real_mode()            /* allocate memory under 1MB */
- |->init_mem_mapping()             /* allocate page tables, about 2MB to map 1GB memory */
- |->dma_contiguous_reserve()       /* specified by user, should be low */
- |->setup_log_buf()                /* specified by user, several mega bytes */
- |->relocate_initrd()              /* could be large, but will be freed after boot, should reorder */
- |->acpi_initrd_override()         /* several mega bytes */
- |->reserve_crashkernel()          /* could be large, should reorder */
- |......
- |->initmem_init()                 /* Parse SRAT */
-
-According to Tejun's advice, before SRAT is parsed, we should try our best to
-allocate memory near the kernel image. Since the whole node the kernel resides 
-in won't be hotpluggable, and for a modern server, a node may have at least 16GB
-memory, allocating several mega bytes memory around the kernel image won't cross
-to hotpluggable memory.
-
-
-[About this patch-set]
-
-So this patch-set does the following:
-
-1. Make memblock be able to allocate memory bottom up.
-   1) Keep all the memblock APIs' prototype unmodified.
-   2) When the direction is bottom up, keep the start address greater than the 
-      end of kernel image.
-
-2. Improve init_mem_mapping() to support allocate page tables in bottom up direction.
-
-3. Introduce "movablenode" boot option to enable and disable this functionality.
-
-PS: Reordering of relocate_initrd() has not been done yet. acpi_initrd_override() 
-    needs to access initrd with virtual address. So relocate_initrd() must be done 
-    before acpi_initrd_override().
-
-Change log v3 -> v4:
-1. Use bottom-up/top-down to unify things. Thanks tj.
-2. Factor out of current top-down implementation and then introduce bottom-up mode,
-   not mixing them in one patch. Thanks tj.
-3. Changes function naming: memblock_direction_bottom_up -> memblock_bottom_up
-4. Use memblock_set_bottom_up to replace memblock_set_current_direction, which makes
-   the code simpler. Thanks tj.
-5. Define two implementions of function memblock_bottom_up and memblock_set_bottom_up
-   in order not to use #ifdef in the boot code. Thanks tj.
-6. Add comments to explain why retry top-down allocation when bottom_up allocation
-   failed. Thanks tj and toshi!
-
-Change log v2 -> v3:
-1. According to Toshi's suggestion, move the direction checking logic into memblock.
-   And simply the code more.
-
-Change log v1 -> v2:
-1. According to tj's suggestion, implemented a new function memblock_alloc_bottom_up() 
-   to allocate memory from bottom upwards, whihc can simplify the code.
-
-
-Tang Chen (6):
-  memblock: Factor out of top-down allocation
-  memblock: Introduce bottom-up allocation mode
-  x86/mm: Factor out of top-down direct mapping setup
-  x86/mem-hotplug: Support initialize page tables bottom up
-  x86, acpi, crash, kdump: Do reserve_crashkernel() after SRAT is
-    parsed.
-  mem-hotplug: Introduce movablenode boot option
-
- Documentation/kernel-parameters.txt |   15 ++++
- arch/x86/kernel/setup.c             |   16 ++++-
- arch/x86/mm/init.c                  |  125 +++++++++++++++++++++++++++-------
- include/linux/memblock.h            |   26 +++++++
- mm/memblock.c                       |  106 ++++++++++++++++++++++++++---
- mm/memory_hotplug.c                 |   27 ++++++++
- 6 files changed, 276 insertions(+), 39 deletions(-)
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 0ac412a..3d80c74 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -83,33 +83,25 @@ static long __init_memblock memblock_overlaps_region(struct memblock_type *type,
+ }
+ 
+ /**
+- * memblock_find_in_range_node - find free area in given range and node
++ * __memblock_find_range_rev - find free area utility, in reverse order
+  * @start: start of candidate range
+  * @end: end of candidate range, can be %MEMBLOCK_ALLOC_{ANYWHERE|ACCESSIBLE}
+  * @size: size of free area to find
+  * @align: alignment of free area to find
+  * @nid: nid of the free area to find, %MAX_NUMNODES for any node
+  *
+- * Find @size free area aligned to @align in the specified range and node.
++ * Utility called from memblock_find_in_range_node(), find free area top-down.
+  *
+  * RETURNS:
+  * Found address on success, %0 on failure.
+  */
+-phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+-					phys_addr_t end, phys_addr_t size,
+-					phys_addr_t align, int nid)
++static phys_addr_t __init_memblock
++__memblock_find_range_rev(phys_addr_t start, phys_addr_t end,
++			  phys_addr_t size, phys_addr_t align, int nid)
+ {
+ 	phys_addr_t this_start, this_end, cand;
+ 	u64 i;
+ 
+-	/* pump up @end */
+-	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+-		end = memblock.current_limit;
+-
+-	/* avoid allocating the first page */
+-	start = max_t(phys_addr_t, start, PAGE_SIZE);
+-	end = max(start, end);
+-
+ 	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
+ 		this_start = clamp(this_start, start, end);
+ 		this_end = clamp(this_end, start, end);
+@@ -121,10 +113,39 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 		if (cand >= this_start)
+ 			return cand;
+ 	}
++
+ 	return 0;
+ }
+ 
+ /**
++ * memblock_find_in_range_node - find free area in given range and node
++ * @start: start of candidate range
++ * @end: end of candidate range, can be %MEMBLOCK_ALLOC_{ANYWHERE|ACCESSIBLE}
++ * @size: size of free area to find
++ * @align: alignment of free area to find
++ * @nid: nid of the free area to find, %MAX_NUMNODES for any node
++ *
++ * Find @size free area aligned to @align in the specified range and node.
++ *
++ * RETURNS:
++ * Found address on success, %0 on failure.
++ */
++phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
++					phys_addr_t end, phys_addr_t size,
++					phys_addr_t align, int nid)
++{
++	/* pump up @end */
++	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
++		end = memblock.current_limit;
++
++	/* avoid allocating the first page */
++	start = max_t(phys_addr_t, start, PAGE_SIZE);
++	end = max(start, end);
++
++	return __memblock_find_range_rev(start, end, size, align, nid);
++}
++
++/**
+  * memblock_find_in_range - find free area in given range
+  * @start: start of candidate range
+  * @end: end of candidate range, can be %MEMBLOCK_ALLOC_{ANYWHERE|ACCESSIBLE}
+-- 
+1.7.1
