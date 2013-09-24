@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab3IXUzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 16:55:05 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58762 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab3IXUzD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 16:55:03 -0400
-Message-ID: <5241FC12.4090107@infradead.org>
-Date: Tue, 24 Sep 2013 13:54:42 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Weiping Pan <wpan@redhat.com>
-CC: linux-mm@kvack.org, rob@landley.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
+	id S1754716Ab3IXU5N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 16:57:13 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60862 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754492Ab3IXU5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 16:57:12 -0400
+Message-ID: <1380056147.5443.61.camel@pasglop>
+Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH resend] typo: replace kernelcore with Movable
-References: <a1714d6a349ac584626a164631c5e2b74d91326d.1380012101.git.wpan@redhat.com>
-In-Reply-To: <a1714d6a349ac584626a164631c5e2b74d91326d.1380012101.git.wpan@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Wed, 25 Sep 2013 06:55:47 +1000
+In-Reply-To: <20130924135622.GA21410@localhost.localdomain>
+References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
+	 <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
+	 <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
+	 <20130920162603.GA30381@localhost.localdomain>
+	 <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
+	 <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
+	 <1379799901.24090.6.camel@pasglop> <1379911234.6625.7.camel@pasglop>
+	 <20130924024422.GA13923@localhost.localdomain>
+	 <1379997777.5443.24.camel@pasglop>
+	 <20130924135622.GA21410@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/13 01:48, Weiping Pan wrote:
-> Han Pingtian found a typo in Documentation/kernel-parameters.txt
-> about "kernelcore=", that "kernelcore" should be replaced with "Movable" here.
+On Tue, 2013-09-24 at 15:56 +0200, Frederic Weisbecker wrote:
+> On Tue, Sep 24, 2013 at 02:42:57PM +1000, Benjamin Herrenschmidt wrote:
+> > On Tue, 2013-09-24 at 04:44 +0200, Frederic Weisbecker wrote:
+> > > So the safest way to fix this is to unconditionally call do_softirq()
+> > > from irq_exit().
+> > > A performance penalty may come along but safety primes.
+> > > 
+> > > We should probably do that and work on longer term solutions (Kconfig
+> > > based arch switch, etc...)
+> > > for the next merge window?
+> > 
+> > As you prefer, though I'm keen on getting the "fast" version in RHEL7 if
+> > RH will take it :-)
 > 
-> I sent this patch a 8 months ago and got ack from Mel Gorman,
-> http://marc.info/?l=linux-mm&m=135756720602638&w=2
-> but it has not been merged so I resent it again.
+> So what is the fast version? Converting __do_softirq() to do_softirq()
+> unconditionally.
 > 
-> Signed-off-by: Weiping Pan <wpan@redhat.com>
+> RH will accept any fix that goes upstream.
 
-so add:
-Acked-by: Mel Gorman <mgorman@suse.de>
+No, me fixing powerpc do_IRQ to do irq_exit run on the irq stack, and
+your fix for everybody else with an ifdef such that x86_64 and powerpc
+get to skip the additional stack switch.
 
-and Cc: Andrew Morton.  He can easily merge it.
-
-Thanks.
-
-> ---
->  Documentation/kernel-parameters.txt |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > From the generic code POV, it's a one-liner #ifdef to select between
+> > do_softirq and __do_softirq() right ? Then it's up to the arch to
+> > #define I_CAN_DO_FAST !
 > 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 1a036cd9..c3ea235 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -1357,7 +1357,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			pages. In the event, a node is too small to have both
->  			kernelcore and Movable pages, kernelcore pages will
->  			take priority and other nodes will have a larger number
-> -			of kernelcore pages.  The Movable zone is used for the
-> +			of Movable pages.  The Movable zone is used for the
->  			allocation of pages that may be reclaimed or moved
->  			by the page migration subsystem.  This means that
->  			HugeTLB pages may not be allocated from this zone.
+> I'd rather say #define I_CAN_DO_SAFE :)
 > 
+> But I guess the kind of symbol we want is some ARCH_HAS_IRQ_STACK_LOW_HANDLER
+
+ARCH_IRQ_EXIT_ON_IRQ_STACK
+
+Cheers,
+Ben.
+
+> > 
+> > > I'll respin the series plus the regression fix, unless somebody has a
+> > > better solution.
+> > 
+> > Cheers,
+> > Ben.
+> > 
+> > 
 
 
--- 
-~Randy
