@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab3IXJYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:24:39 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:23783 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852Ab3IXJYi (ORCPT
+	id S1754114Ab3IXJYu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:24:50 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:62260 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab3IXJYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:24:38 -0400
-X-AuditID: cbfee690-b7f3b6d000007a15-5e-52415a4f1976
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <006201ceb907$87256e90$95704bb0$%han@samsung.com>
-In-reply-to: <006201ceb907$87256e90$95704bb0$%han@samsung.com>
-Subject: [PATCH 5/8] backlight: lms501kf03: use devm_lcd_device_register()
-Date: Tue, 24 Sep 2013 18:24:31 +0900
-Message-id: <006601ceb907$e0013c10$a003b430$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65B4cS+dNU2Dj7TgWyLrp1FJz2pQAAEnvQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zY13/KMcgg8c/DC3mrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErowPrxey
-	F/xmr+idYNzAeJmti5GTQ0LAROLctMksELaYxIV764HiXBxCAssYJab07Icrurp+KVRiOqNE
-	/5XXTBDOL0aJHxengbWzCahJfPlymL2LkYNDREBfoq1FAyTMLJAjcf/JLHYQW0jAVmL1zKtg
-	NqeAncT7qWfAWoUFvCQWzF7OCmKzCKhK7Lx6ACzOC1T/5GETO4QtKPFj8j0WiJlaEpu3NbFC
-	2PISm9e8ZQZZKyGgLvHory5IWETASKLh+Dc2iBIRiX0v3jGCnCwhcI5dYsXRxWwQuwQkvk0+
-	xALRKyux6QAzxL+SEgdX3GCZwCgxC8nmWUg2z0KyeRaSFQsYWVYxiqYWJBcUJ6UXmegVJ+YW
-	l+al6yXn525ihMTkhB2M9w5YH2JMBlo/kVlKNDkfGNN5JfGGxmZGFqYmpsZG5pZmpAkrifOq
-	t1gHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDUz/jXMlNjdvV+9UnBp7QCjrYGv/r70NxS
-	RvHRteXT/i3jSTtyW2irQPeU3K18hTUbtB9t8/I+M90muDHF+te7/av7hYN4Q7fs516isSf6
-	95MHbXH/nmULn3u63uFpj199QaGnwn+rg3+rLq1M2bH9aaKqiug11ukVv3XffZuTzeHneWeB
-	dUCREktxRqKhFnNRcSIADMlrsd8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQV3/KMcggzfr9SzmrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
-	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaMD68Xshf8Zq/onWDcwHiZrYuRk0NCwETi6vqlULaYxIV764Fs
-	Lg4hgemMEv1XXjNBOL8YJX5cnMYCUsUmoCbx5cth9i5GDg4RAX2JthYNkDCzQI7E/Sez2EFs
-	IQFbidUzr4LZnAJ2Eu+nngFrFRbwklgwezkriM0ioCqx8+oBsDgvUP2Th03sELagxI/J91gg
-	ZmpJbN7WxAphy0tsXvOWGWSthIC6xKO/uiBhEQEjiYbj39ggSkQk9r14xziBUWgWkkmzkEya
-	hWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIER/wz6R2MqxosDjEKcDAq8fBe
-	SHAIEmJNLCuuzD3EKMHBrCTCe8PWMUiINyWxsiq1KD++qDQntfgQYzLQoxOZpUST84HJKK8k
-	3tDYxMzI0sjMwsjE3Jw0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGGV9//lqTeu2Mb97
-	87r9txuTir/Frl7omrk9ptj9yqIajQ3l0wyy5+YJPWTYc+5Q8P6YZdpmlhmb3/IdUbl4I8Dj
-	jozHk4yPk8rOr089r3Sjzabg4yYvUea9+8PY7x6274vQq3nrw8kg8nfTQbFWWf1JX9PeSHx2
-	2LAk5peB0uPHEt+Wei5PFFdiKc5INNRiLipOBAAt5WkmPAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 24 Sep 2013 05:24:48 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-24-52415a5f7be8
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
+        m.szyprowski@samsung.com, andrzej.p@samsung.com,
+        Robert Baldyga <r.baldyga@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH] USB: gadget: s3c-hsotg: fix can_write limit for non-periodic
+ endpoints
+Date: Tue, 24 Sep 2013 11:24:28 +0200
+Message-id: <1380014668-19597-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1379584223-15232-1-git-send-email-r.baldyga@samsung.com>
+References: <1379584223-15232-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jQd34KMcgg+nLNCxmvWxnsdg4Yz2r
+	xcH79RbNi9ezWZxtesNucXnXHDaLRctamS3WHrnLbvHg8E52B06P/XPXsHv0bVnF6HH8xnYm
+	j8+b5AJYorhsUlJzMstSi/TtErgybjetYynYwVnRvWkHcwPjU/YuRk4OCQETid0f9rNA2GIS
+	F+6tZ+ti5OIQEpjOKPFt9y9WCKedSeLJnhVgHWwCOhJbvk9gBLFFBAQk1r+4xA5SxCzwl1Hi
+	9sNONpCEsECkxJz2RcwgNouAqsS7zxOAijg4eAVcJe5fFAUxJQQUJOZMsgGp4BRwk5h4/jXY
+	EUJAFY83fWGbwMi7gJFhFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwcD2T2sG4ssHiEKMA
+	B6MSD+8Ob4cgIdbEsuLK3EOMEhzMSiK8N2wdg4R4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmi1
+	DhQSSE8sSc1OTS1ILYLJMnFwSjUwbmM/5CWyLdS2sMeJt7t4Yvvsw7JmszbnuYeaxVzwyXcX
+	Zr71xMD/utoKH6+Y2F3X/iqd6ixWOpz15n2jPZvrv6qXv9l+7Hmpl6goWrvMpmirTuq+fyoB
+	mu9OL9HmkM5P/qhgsHTBjOfmZ++X+4j25omtmj1Rp27l3duX9vPrr96hJ+l1fku0EktxRqKh
+	FnNRcSIAYkh5QSoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_lcd_device_register() to make cleanup paths simpler.
+Value of can_write variable in s3c_hsotg_write_fifo function should be limited
+to 512 only for non-periodic endpoints. There was some discrepancy between
+comment and code, becouse comment suggests correct behavior, but in the code
+limit was applied to periodic endpoints too. So there is additional check
+causing the limitation concerns only non-periodic endpoints.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/video/backlight/lms501kf03.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/usb/gadget/s3c-hsotg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/video/backlight/lms501kf03.c b/drivers/video/backlight/lms501kf03.c
-index ff46e19..77258b7 100644
---- a/drivers/video/backlight/lms501kf03.c
-+++ b/drivers/video/backlight/lms501kf03.c
-@@ -350,8 +350,8 @@ static int lms501kf03_probe(struct spi_device *spi)
- 		return -EINVAL;
- 	}
+I have found one small bug in s3c_hsotg_write_fifo function which doesn't
+allow to perform transfers greater than 512 bytes. 
+
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index d5d951d..2b9c446 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -542,7 +542,7 @@ static int s3c_hsotg_write_fifo(struct s3c_hsotg *hsotg,
+ 	 * FIFO, requests of >512 cause the endpoint to get stuck with a
+ 	 * fragment of the end of the transfer in it.
+ 	 */
+-	if (can_write > 512)
++	if (can_write > 512 && !periodic)
+ 		can_write = 512;
  
--	ld = lcd_device_register("lms501kf03", &spi->dev, lcd,
--				&lms501kf03_lcd_ops);
-+	ld = devm_lcd_device_register(&spi->dev, "lms501kf03", &spi->dev, lcd,
-+					&lms501kf03_lcd_ops);
- 	if (IS_ERR(ld))
- 		return PTR_ERR(ld);
- 
-@@ -382,8 +382,6 @@ static int lms501kf03_remove(struct spi_device *spi)
- 	struct lms501kf03 *lcd = spi_get_drvdata(spi);
- 
- 	lms501kf03_power(lcd, FB_BLANK_POWERDOWN);
--	lcd_device_unregister(lcd->ld);
--
- 	return 0;
- }
- 
+ 	/*
 -- 
-1.7.10.4
-
+1.7.9.5
 
