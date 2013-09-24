@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab3IXMLe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:11:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:37644 "EHLO mga03.intel.com"
+	id S1754120Ab3IXMLp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:11:45 -0400
+Received: from unicorn.mansr.com ([81.2.72.234]:59881 "EHLO unicorn.mansr.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753591Ab3IXMJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:09:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,970,1371106800"; 
-   d="scan'208";a="364821526"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 05/10] perf tools: add map__find_other_map_symbol()
-Date: Tue, 24 Sep 2013 15:15:47 +0300
-Message-Id: <1380024952-29387-6-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
-References: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1754037Ab3IXMLn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 08:11:43 -0400
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Rob Landley <rob@landley.net>
+Cc: Pavel Machek <pavel@ucw.cz>, Will Deacon <will.deacon@arm.com>,
+        Trivial patch monkey <trivial@kernel.org>,
+        Andrew Morton <akpm@osdl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: new binutils needed for arm in 3.12-rc1
+References: <20130923235917.GA30967@amd.pavel.ucw.cz>
+	<1379988800.1974.68@driftwood>
+Date: Tue, 24 Sep 2013 13:11:38 +0100
+In-Reply-To: <1379988800.1974.68@driftwood> (Rob Landley's message of "Mon, 23
+	Sep 2013 21:13:20 -0500")
+Message-ID: <yw1xpprywhad.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to find a symbol using an ip that
-might be on a different map.
+Rob Landley <rob@landley.net> writes:
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/map.c | 27 +++++++++++++++++++++++++++
- tools/perf/util/map.h |  2 ++
- 2 files changed, 29 insertions(+)
+> On 09/23/2013 06:59:17 PM, Pavel Machek wrote:
+>> During 3.12-rc, Will Deacon introduced code into arch/arm that
+>> requires binutils 2.22.
+>
+> Um, my toolchain is using the last gplv2 snapshot of binutils out of  
+> git, which is just past 2.17 and can build armv7 (but not armv8).
+>
+> Binutils 2.12->2.22 is quite the jump. (11 years.) I'd except some  
+> thought to have gone into that? Possibly a mention of it?
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 4f6680d..beedeef 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -213,6 +213,33 @@ struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
- 	return dso__find_symbol_by_name(map->dso, map->type, name);
- }
- 
-+struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
-+					  symbol_filter_t filter)
-+{
-+	struct map *map = *map_ptr;
-+	u64 ip = *ip_ptr;
-+	struct map *sym_map = NULL;
-+	struct symbol *sym;
-+
-+	if (ip >= map->start && ip <= map->end)
-+		sym_map = map;
-+	else if (map->groups)
-+		sym_map = map_groups__find(map->groups, map->type, ip);
-+
-+	if (!sym_map)
-+		return NULL;
-+
-+	ip = sym_map->map_ip(sym_map, ip);
-+
-+	sym = map__find_symbol(sym_map, ip, filter);
-+	if (sym) {
-+		*map_ptr = sym_map;
-+		*ip_ptr = ip;
-+	}
-+
-+	return sym;
-+}
-+
- struct map *map__clone(struct map *map)
- {
- 	return memdup(map, sizeof(*map));
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 4886ca2..b7b494c 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -106,6 +106,8 @@ struct symbol *map__find_symbol(struct map *map,
- 				u64 addr, symbol_filter_t filter);
- struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
- 					symbol_filter_t filter);
-+struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
-+					  symbol_filter_t filter);
- void map__fixup_start(struct map *map);
- void map__fixup_end(struct map *map);
- 
+I seriously doubt that 2.12 still works at all (I doubt it can even be
+built on a modern system).  In my experience, binutils older than 2.19
+or so rarely works properly for ARM.
+
+What value is there in maintaining compatibility with a truly ancient
+binutils version anyway?
+
 -- 
-1.7.11.7
-
+Måns Rullgård
+mans@mansr.com
