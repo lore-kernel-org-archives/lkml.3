@@ -1,108 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab3IXNYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 09:24:17 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:42601 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab3IXNYP (ORCPT
+	id S1753868Ab3IXNYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 09:24:22 -0400
+Received: from mail-ee0-f68.google.com ([74.125.83.68]:60478 "EHLO
+	mail-ee0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab3IXNYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 09:24:15 -0400
-Message-ID: <52419264.3020409@gmail.com>
-Date: Tue, 24 Sep 2013 21:23:48 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Tue, 24 Sep 2013 09:24:20 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com
-Subject: Re: [PATCH 4/6] x86/mem-hotplug: Support initialize page tables bottom
- up
-References: <524162DA.30004@cn.fujitsu.com> <5241649B.3090302@cn.fujitsu.com> <20130924123340.GE2366@htj.dyndns.org>
-In-Reply-To: <20130924123340.GE2366@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Reply-To: marois0147@gmail.com
+Date: Tue, 24 Sep 2013 14:24:18 +0100
+Message-ID: <CAG_i47RQ-i84FLhdGD1vwOod1+g+f3-3NBdBpCDghXk_t4GaSg@mail.gmail.com>
+Subject: Personal Email (24th september 2013)
+From: "Mrs. Nicole Marois" <lizzy.mic84@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 08:33 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Sep 24, 2013 at 06:08:27PM +0800, Zhang Yanfei wrote:
->> +#ifdef CONFIG_MOVABLE_NODE
-> 
-> You don't need the above ifdef.  The compiler will be able to cull the
-> code as long as memblock_bottom_up() is defined as constant
-> expression when !MOVABLE_NODE.
+Dear Beloved Friend,
 
-yeah, will remove the #if. thanks.
+    I am Mrs Nicole Marois Benoite, and i have been suffering from
+ovarian cancer disease and the doctor says that i have just few days
+to leave. I am from (Paris) France but based in Africa Burkina Faso
+since eleven years ago as a business woman dealing with gold
+exportation.
 
-> 
->> +/**
->> + * memory_map_bottom_up - Map [map_start, map_end) bottom up
->> + * @map_start: start address of the target memory range
->> + * @map_end: end address of the target memory range
->> + *
->> + * This function will setup direct mapping for memory range [map_start, map_end)
->> + * in a heuristic way. In the beginning, step_size is small. The more memory we
->> + * map memory in the next loop.
-> 
-> The same comment as before.  Now we have two function with the
-> identical comment but behaving differently, which isn't nice.
+Now that i am about to end the race like this, without any family
+members and no child. I have $3 Million US DOLLARS in Africa
+Development Bank (ADB) Burkina Faso which i instructed the bank to
+give St Andrews Missionary Home in Burkina Faso.But my mind is not at
+rest because i am writing this letter now through the help of my
+computer beside my sick bed.
 
-OK, will change them.
+I also have $4.5 Million US Dollars at Eco-Bank here in Burkina Faso
+and i instructed the bank to transfer the fund to you as foreigner
+that will apply to the bank after i have gone, that they should
+release the fund to him/her,but you will assure me that you will take
+50% of the fund and give 50% to the orphanages home in your country
+for my heart to rest.
 
-> 
-> ...
->> +	 * If the allocation is in bottom-up direction, we start from the
->> +	 * bottom and go to the top: first [kernel_end, end) and then
->> +	 * [ISA_END_ADDRESS, kernel_end). Otherwise, we start from the top
->> +	 * (end of memory) and go to the bottom.
->> +	 *
->> +	 * The memblock_find_in_range() gets us a block of RAM in
->> +	 * [min_pfn_mapped, max_pfn_mapped) used as new pages for page table.
->>  	 */
->> -	memory_map_top_down(ISA_END_ADDRESS, end);
->> +	if (memblock_bottom_up()) {
->> +		unsigned long kernel_end;
->> +
->> +		kernel_end = round_up(__pa_symbol(_end), PMD_SIZE);
->> +		memory_map_bottom_up(kernel_end, end);
->> +		memory_map_bottom_up(ISA_END_ADDRESS, kernel_end);
-> 
-> Hmm... so, this is kinda weird.  We're doing it in two chunks and
-> mapping memory between ISA_END_ADDRESS and kernel_end right on top of
-> ISA_END_ADDRESS?  Can't you give enough information to the mapping
-> function so that it can map everything on top of kernel_end in single
-> go?
+Respond to me immediately  for further details since I have just few
+days to end my life due to the ovarian cancer disease, hoping you will
+understand my point.
 
-You mean we should call memory_map_bottom_up like this:
-
-memory_map_bottom_up(ISA_END_ADDRESS, end)
-
-right?
-
-> 
-> Thanks.
-> 
-
-
--- 
-Thanks.
-Zhang Yanfei
+Yours fairly friend,
+Mrs Nicole Marois Benoite
