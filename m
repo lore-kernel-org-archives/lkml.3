@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab3IXLeb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 07:34:31 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:37463 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab3IXLea (ORCPT
+	id S1753437Ab3IXLgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 07:36:45 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:3463 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab3IXLgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 07:34:30 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Adam Lee <adam.lee@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "open list:USB VIDEO CLASS" <linux-media@vger.kernel.org>
-Subject: Re: [PATCH] Revert "V4L/DVB: uvc: Enable USB autosuspend by default on uvcvideo"
-Date: Tue, 24 Sep 2013 13:34:36 +0200
-Message-ID: <1657156.ZjLeh8FSxj@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130613095647.GC21583@adam-laptop>
-References: <1366790239-838-1-git-send-email-adam.lee@canonical.com> <20130425063306.GA20928@adam-laptop> <20130613095647.GC21583@adam-laptop>
+	Tue, 24 Sep 2013 07:36:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 24 Sep 2013 04:36:41 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <lee.jones@linaro.org>, <sameo@linux.intel.com>, <broonie@kernel.org>,
+        <linus.walleij@linaro.org>, <akpm@linux-foundation.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
+        <rtc-linux@googlegroups.com>, <rob.herring@calxeda.com>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
+        <rob@landley.net>, <ijc+devicetree@hellion.org.uk>,
+        <grant.likely@linaro.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V3 0/3] Add AMS AS3722 mfd, pincontrol, regulator and RTC driver.
+Date: Tue, 24 Sep 2013 17:28:38 +0530
+Message-ID: <1380023921-29867-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Adam,
+This series add the driver support for AMS AS3722 PMIC. The driver includes
+MFD, pincontrol and GPIO, regulator and RTC.
 
-On Thursday 13 June 2013 17:56:47 Adam Lee wrote:
-> On Thu, Apr 25, 2013 at 02:33:06PM +0800, Adam Lee wrote:
-> > On Wed, Apr 24, 2013 at 11:17:52AM +0200, Laurent Pinchart wrote:
-> > > On Wednesday 24 April 2013 15:57:19 adam.lee@canonical.com wrote:
-> > > > From: Adam Lee <adam.lee@canonical.com>
-> > > > 
-> > > > This reverts commit 3dae8b41dc5651f8eb22cf310e8b116480ba25b7.
-> > > > 
-> > > > 1, I do have a Chicony webcam, implements autosuspend in a broken way,
-> > > > make `poweroff` performs rebooting when its autosuspend enabled.
-> > > > 
-> > > > 2, There are other webcams which don't support autosuspend too, like
-> > > > https://patchwork.kernel.org/patch/2356141/
-> > > > 
-> > > > 3, kernel removed USB_QUIRK_NO_AUTOSUSPEND in
-> > > > a691efa9888e71232dfb4088fb8a8304ffc7b0f9, because autosuspend is
-> > > > disabled by default.
-> > > > 
-> > > > So, we need to disable autosuspend in uvcvideo, maintaining a quirk
-> > > > list only for uvcvideo is not a good idea.
-> > > 
-> > > I've received very few bug reports about broken auto-suspend support in
-> > > UVC devices. Most of them could be solved by setting the RESET_RESUME
-> > > quirk in USB core, only the Creative Live! Cam Optia AF required a quirk
-> > > in the uvcvideo driver. I would thus rather use the available quirks
-> > > (USB_QUIRK_RESET_RESUME if possible, UVC_QUIRK_DISABLE_AUTOSUSPEND
-> > > otherwise) than killing power management for the vast majority of
-> > > webcams that behave correctly.
-> >
-> > Here comes another one, integrated Chicony webcam 04f2:b39f, its
-> > autosuspend makes `poweroff` performs rebooting at the laptop I'm working
-> > on.
+Changes from V1:
+- Remove compatible string from DT for subnode.
+- Add macro in regmap.h for definign range.
+- Nit cleanups in driver and use module_i2c_driver/module_platform_driver.
+- Use linear_range and added regulator_map_* on regulators.
+- Move OC configuration to regulator_current limit setting.
+- Get rid of clk32k out configuration from RTC. Will add clock driver.
 
-That's a pretty bad one :-/ Do you have any idea why it occurs ?
+Changes from V2:
+- Drop the already applied patches on V2 series
+	regmap: add helper macro to set min/max range of register
+	regulator: as3722: add regulator driver for AMS AS3722
+- Move the GPIo driver to pincontrol driver to expose the pin configuration
+  through pincontrol.
+- rewrite the DT binding of the mfd.
 
-> > I tried USB_QUIRK_RESET_RESUME, not helping.
-> > 
-> > The quirks list will go longer and longer absolutely, do uvcvideo wanna
-> > maintain that? And why only uvcvideo do this in kernel space which
-> > against general USB module?
-> > 
-> > I still suggest we disable it by default, people can enable it in udev
-> > just like almost all distroes do for udisks. Please consider about it.
-> 
-> Any comment of this? I still think it's a risk to enable autosuspend in
-> uvcvideo by default, there must be users meeting weird issues but didn't
-> report to you becaue they didn't figured out the cause.
+Laxman Dewangan (3):
+  mfd: add support for AMS AS3722 PMIC
+  pincntrl: add support for AMS AS3722 pin control driver
+  drivers/rtc/rtc-as3722: add RTC driver
 
-I've discussed this issue during LPC last week, and I still believe we should 
-enable auto-suspend. The feature really saves power, without it my C910 
-Logitech webcam gets hot even when unused. 
-
-If we disable auto-suspend by default and enable it from userspace only a 
-handful of devices will get auto-suspended. Unless we can get distros to 
-automatically test auto-suspend on unknown webcam models and report the 
-results to update a central data base (which would grow much bigger than a 
-quirks list in the driver in my opinion), disabling auto-suspend would be a 
-serious regression.
-
-Any comment from other developers from the mailing lists ?
-
--- 
-Regards,
-
-Laurent Pinchart
+ Documentation/devicetree/bindings/mfd/as3722.txt   |   52 ++
+ .../devicetree/bindings/pinctrl/pinctrl-as3722.txt |   59 ++
+ drivers/mfd/Kconfig                                |   12 +
+ drivers/mfd/Makefile                               |    1 +
+ drivers/mfd/as3722.c                               |  448 ++++++++++++++
+ drivers/pinctrl/Kconfig                            |   11 +
+ drivers/pinctrl/Makefile                           |    1 +
+ drivers/pinctrl/pinctrl-as3722.c                   |  625 ++++++++++++++++++++
+ drivers/rtc/Kconfig                                |   10 +
+ drivers/rtc/Makefile                               |    1 +
+ drivers/rtc/rtc-as3722.c                           |  296 +++++++++
+ include/linux/mfd/as3722.h                         |  423 +++++++++++++
+ 12 files changed, 1939 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/as3722.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-as3722.txt
+ create mode 100644 drivers/mfd/as3722.c
+ create mode 100644 drivers/pinctrl/pinctrl-as3722.c
+ create mode 100644 drivers/rtc/rtc-as3722.c
+ create mode 100644 include/linux/mfd/as3722.h
 
