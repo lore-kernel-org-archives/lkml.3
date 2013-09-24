@@ -1,151 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab3IXDHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 23:07:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51251 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529Ab3IXDHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 23:07:18 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130924025209.GA5561@dhcp-16-126.nay.redhat.com>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de> <1379602494-26684-12-git-send-email-bp@alien8.de> <20130921113929.GB1587@pd.tnic> <20130922123515.GA7476@dhcp-16-126.nay.redhat.com> <20130922133722.GC28718@pd.tnic> <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com> <20130924025209.GA5561@dhcp-16-126.nay.redhat.com>
-MIME-Version: 1.0
+	id S1753545Ab3IXDHm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 23:07:42 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:35550 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab3IXDHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 23:07:39 -0400
+Date: Tue, 24 Sep 2013 11:07:34 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: "Jeff Moyer" <jmoyer@redhat.com>
+Cc: axboe <axboe@kernel.dk>, viro <viro@zeniv.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: Re: Re: [PATCH V2 0/2] Auto stop async-write on block device when device removed.
+References: <201309171121559232246@gmail.com>, 
+	<x49r4cfy4py.fsf@segfault.boston.devel.redhat.com>
+X-Priority: 3
+X-GUID: 46F2D491-3347-40D6-A70C-25F557B45431
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.93[cn]
+Mime-Version: 1.0
+Message-ID: <201309241107330800706@gmail.com>
 Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 23 Sep 2013 20:06:38 -0700
-To: Dave Young <dyoung@redhat.com>
-CC: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Message-ID: <2d27a1bc-eabf-4d45-8303-27ae58511b11@email.android.com>
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8O37lsK022964
 
-Okay... I see two problems.
-
-1. It looks like we subtract the region size after, rather than before, assigning an address.
-
-2. The second region is assigned the same address in the secondary kernel as in the first, implying the size of the first region was somehow set to zero.
-
-Dave Young <dyoung@redhat.com> wrote:
->On 09/22/13 at 08:27am, H. Peter Anvin wrote:
->> The address that faults is interesting in that it is indeed just
->below -4G.  The question at hand is probably what information you are
->using to build the EFI mappings in the secondary kernel and what could
->make it not match the primary.
->> 
->> Assuming it isn't as simple as the mappings never get built at all.
+>majianpeng <majianpeng@gmail.com> writes:
 >
->Here is my debug output, diff efi-mapping-1st-kernel
->efi-mapping-2nd-kernel:
->Obviously, the high address mapping is not same:
+>> For async-write on block device,if device removed,but the vfs don't know it.
+>> It will continue to do.
+>> Patch1 set size of inode of block device to zero when removed disk.By this,vfs know 
+>> disk changed.
+>> Path2 add size-check on blk_aio_write.If pos of write larger than size of inode,it will
+>> return zero.So the user can check disk state.
 >
->--- efi-mapping-1.txt	2013-09-24 10:46:09.977746047 +0800
->+++ efi-mapping-2.txt	2013-09-24 10:46:33.871421806 +0800
->@@ -1,30 +1,30 @@
-> efi mapping PA 0x800000 -> VA 0x800000
-> efi mapping PA 0x800000 -> VA 0xffffffff00000000
-> efi mapping PA 0x7c000000 -> VA 0x7c000000
->-efi mapping PA 0x7c000000 -> VA 0xfffffffefffe0000
->+efi mapping PA 0x7c000000 -> VA 0xffffffff00000000
-> efi mapping PA 0x7d5e2000 -> VA 0x7d5e2000
->-efi mapping PA 0x7d5e2000 -> VA 0xfffffffefffdf000
->+efi mapping PA 0x7d5e2000 -> VA 0xfffffffefffff000
-> efi mapping PA 0x7d77d000 -> VA 0x7d77d000
->-efi mapping PA 0x7d77d000 -> VA 0xfffffffefffde000
->+efi mapping PA 0x7d77d000 -> VA 0xfffffffeffffe000
-> efi mapping PA 0x7d864000 -> VA 0x7d864000
->-efi mapping PA 0x7d864000 -> VA 0xfffffffeff8d4000
->+efi mapping PA 0x7d864000 -> VA 0xfffffffeff8f4000
-> efi mapping PA 0x7df6e000 -> VA 0x7df6e000
->-efi mapping PA 0x7df6e000 -> VA 0xfffffffeff6ae000
->+efi mapping PA 0x7df6e000 -> VA 0xfffffffeff6ce000
-> efi mapping PA 0x7e194000 -> VA 0x7e194000
->-efi mapping PA 0x7e194000 -> VA 0xfffffffeff6ac000
->+efi mapping PA 0x7e194000 -> VA 0xfffffffeff6cc000
-> efi mapping PA 0x7e196000 -> VA 0x7e196000
->-efi mapping PA 0x7e196000 -> VA 0xfffffffeff696000
->+efi mapping PA 0x7e196000 -> VA 0xfffffffeff6b6000
-> efi mapping PA 0x7e1ac000 -> VA 0x7e1ac000
->-efi mapping PA 0x7e1ac000 -> VA 0xfffffffeff681000
->+efi mapping PA 0x7e1ac000 -> VA 0xfffffffeff6a1000
-> efi mapping PA 0x7e1c1000 -> VA 0x7e1c1000
->-efi mapping PA 0x7e1c1000 -> VA 0xfffffffefe041000
->+efi mapping PA 0x7e1c1000 -> VA 0xfffffffefe061000
-> efi mapping PA 0x7f802000 -> VA 0x7f802000
->-efi mapping PA 0x7f802000 -> VA 0xfffffffefdec2000
->+efi mapping PA 0x7f802000 -> VA 0xfffffffefdee2000
-> efi mapping PA 0x7f981000 -> VA 0x7f981000
->-efi mapping PA 0x7f981000 -> VA 0xfffffffefde92000
->+efi mapping PA 0x7f981000 -> VA 0xfffffffefdeb2000
-> efi mapping PA 0x7f9b1000 -> VA 0x7f9b1000
->-efi mapping PA 0x7f9b1000 -> VA 0xfffffffefde6e000
->+efi mapping PA 0x7f9b1000 -> VA 0xfffffffefde8e000
-> efi mapping PA 0x7f9e5000 -> VA 0x7f9e5000
->-efi mapping PA 0x7f9e5000 -> VA 0xfffffffefd873000
->+efi mapping PA 0x7f9e5000 -> VA 0xfffffffefd893000
-> efi mapping PA 0x7ffe0000 -> VA 0x7ffe0000
->-efi mapping PA 0x7ffe0000 -> VA 0xfffffffefd853000
->+efi mapping PA 0x7ffe0000 -> VA 0xfffffffefd873000
+>OK, so the basic problem is that __generic_file_aio_write will always
+>return 0 after device removal, yes?  I'm not sure why that's a real
+>issue, can you explain exactly why you're trying to change this?
 >
->> 
->> 
->> Borislav Petkov <bp@alien8.de> wrote:
->> >On Sun, Sep 22, 2013 at 08:35:15PM +0800, Dave Young wrote:
->> >> I tested your new patch, it works both with efi stub and grub boot
->in
->> >> 1st kernel.
->> >
->> >Good, thanks!
->> >
->> >> But it paniced in kexec boot with my kexec related patcheset, the
->> >patchset
->> >
->> >That's the second kernel, right?
->> >
->> >> contains 3 patch:
->> >> 1. introduce cmdline kexecboot=<0|1|2>; 1 == kexec, 2 == kdump
->> >> 2. export physical addr fw_vendor, runtime, tables to
->> >/sys/firmware/efi/systab
->> >> 3. if kexecboot != 0, use fw_vendor, runtime, tables from
->bootparams;
->> >Also do not
->> >>    call SetVirtualAddressMao in case kexecboot.
->> >> 
->> >> The panic happens at the last line of efi_init:
->> >>         /* clean DUMMY object */
->> >>         efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
->> >>                          EFI_VARIABLE_NON_VOLATILE |
->> >>                          EFI_VARIABLE_BOOTSERVICE_ACCESS |
->> >>                          EFI_VARIABLE_RUNTIME_ACCESS,
->> >>                          0, NULL);
->> >> 
->> >> Below is the dmesg:
->> >> [    0.003359] pid_max: default: 32768 minimum: 301
->> >> [    0.004792] BUG: unable to handle kernel paging request at
->> >fffffffefde97e70
->> >> [    0.006666] IP: [<ffffffff8103a1db>]
->> >virt_efi_set_variable+0x40/0x54
->> >> [    0.006666] PGD 36981067 PUD 35828063 PMD 0
->> >
->> >Here it is - fffffffefde97e70 is not mapped in the pagetable, PMD is
->0.
->> >
->> >Ok, can you upload your patches somewhere and tell me exactly how to
->> >reproduce this so that I can take a look too?
->> >
->> >Thanks.
->> 
->> -- 
->> Sent from my mobile phone.  Please pardon brevity and lack of
->formatting.
+At prenset, the __generic_file_aio_write don't return zero rather that the wanted size.
+So the user can't know the disk removed. 
+For example:
+dd if=/dev/zero of=usb-disk bs=64k
+When removed usb-disk, dd stoped until reached the endof usb-disk.
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Using this patch, after removed disk, the aio-write will return zero.I think the upper user will check.
+(or if the size of block is zero, we return -ENOSPC).
+
+>As for your patches, I don't think that putting the i_size_write into
+>invalidate_partitions is a good idea.  Consider the case of rescanning
+>partitions: you will always detect a size change now, which is not good.
+>
+Yes.But in func rescan_partitions, after invalidate_partitions it will call check_disk_size_change to set size of block_device.
+
+Thanks!
+Jianpeng Ma
+>Cheers,
+>Jeffÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
