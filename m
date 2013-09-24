@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab3IXJG2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:06:28 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:20620 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786Ab3IXJG0 (ORCPT
+	id S1754115Ab3IXJHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:07:04 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:58389 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753362Ab3IXJHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:06:26 -0400
-X-AuditID: cbfee68f-b7f1e6d000004e8d-ef-524156114ea6
+	Tue, 24 Sep 2013 05:07:02 -0400
+X-AuditID: cbfee68e-b7f756d000004512-c9-524156357f47
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
@@ -15,40 +15,40 @@ Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Michael Hennerich'" <michael.hennerich@analog.com>
 References: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
 In-reply-to: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
-Subject: [PATCH 03/22] backlight: adp5520: use devm_backlight_device_register()
-Date: Tue, 24 Sep 2013 18:06:25 +0900
-Message-id: <004901ceb905$58926fd0$09b74f70$%han@samsung.com>
+Subject: [PATCH 04/22] backlight: adp8860: use devm_backlight_device_register()
+Date: Tue, 24 Sep 2013 18:07:01 +0900
+Message-id: <004a01ceb905$6e0f3af0$4a2db0d0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAADjzA
+Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAAFYlQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zI13BMMcggykfVCzmrF/DZnF54SVW
-	i8u75rBZTDi8md1i966nrA6sHq+uOnqcmPGbxWPP/B+sHn1bVjF6fN4kF8AaxWWTkpqTWZZa
-	pG+XwJXRfPIcS8E+7ootdyewNDCe4uxi5OSQEDCReLLkEzuELSZx4d56ti5GLg4hgWWMEgt/
-	HmHtYuQAK5r/OQYivohR4sHsDmYI5xejxN+5e9hAutkE1CS+fDnMDtIgIqAv0daiAVLDDNKw
-	/UE7C0iNkICtxLoPs8G2cQrYSZxaegasV1jAX+LUut+sIDaLgKrEkuZFYPW8QPUT9z5hhrAF
-	JX5MvgcWZxbQkti8rYkVwpaX2LzmLTPEoeoSj/7qQpxgJPH0MFS1iMS+F+8YQc6RELjGLnH4
-	zmE2iFUCEt8mH2KBaJWV2HSAGRIOkhIHV9xgmcAoMQvJ4llIFs9CsngWkhULGFlWMYqmFiQX
-	FCelFxnrFSfmFpfmpesl5+duYoREaf8OxrsHrA8xJgOtn8gsJZqcD4zyvJJ4Q2MzIwtTE1Nj
-	I3NLM9KElcR51VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwFra3qjtKZVnHLWkTjnlp
-	dlosvsj96jyJ83ccXcOEpALOBD76vfBeB/dEOZE9JqrxkkI3+HqN9l1bt5KNcSvzHgfWWZzq
-	ydsWrjfJzTmy833Fa49sF17jyLtXSvcWGbllFvu1ntv48ObyW8ZqtTNvbb73et08ZlNW4V9p
-	79UK+qSdTh7vVnylxFKckWioxVxUnAgAFrN9r+gCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jAV3BMMcgg41fFCzmrF/DZnF54SVW
-	i8u75rBZTDi8md1i966nrA6sHq+uOnqcmPGbxWPP/B+sHn1bVjF6fN4kF8Aa1cBok5GamJJa
-	pJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0XEmhLDGnFCgUkFhc
-	rKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY0XzyHEvBPu6KLXcnsDQwnuLsYuTgkBAwkZj/
-	OaaLkRPIFJO4cG89WxcjF4eQwCJGiQezO5ghnF+MEn/n7mEDqWITUJP48uUwO0iziIC+RFuL
-	BkgNM0jD9gftLCA1QgK2Eus+zGYHsTkF7CROLT0D1iss4C9xat1vVhCbRUBVYknzIrB6XqD6
-	iXufMEPYghI/Jt8DizMLaEls3tbECmHLS2xe85YZ4mh1iUd/dSFOMJJ4ehiqWkRi34t3jBMY
-	hWYhGTQLyaBZSAbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwCngmvYNxVYPF
-	IUYBDkYlHt4LCQ5BQqyJZcWVuYcYJTiYlUR4b9g6BgnxpiRWVqUW5ccXleakFh9iTAb6cyKz
-	lGhyPjA95ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDY1tt
-	lsE0WYHCKaX7b3O9m+ulIl6x9MFHmTrJ0nnJ9ofjCzTm/fhzeA+b8eknjv9ylseeL31VqxPG
-	ETvx1xfTvphfbNpfG/MqbF6l/zgcpHp028toNzGzX4WlXD6vwnc/E5rSVhs69cmRXreZpsJd
-	zi9lZGLalxffVeia0ieQnim6NWxCDoOfEktxRqKhFnNRcSIA8rXSs0UDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zQ13TMMcgg9vNchZz1q9hs7i88BKr
+	xeVdc9gsJhzezG6xe9dTVgdWj1dXHT1OzPjN4rFn/g9Wj74tqxg9Pm+SC2CN4rJJSc3JLEst
+	0rdL4MpYtuwma8EcnormP5/ZGhincnUxcnJICJhILJ22nwnCFpO4cG89WxcjF4eQwDJGiZub
+	JrPCFN24e4EZIjGdUWLxof2sEM4vRon/NxcwglSxCahJfPlymL2LkYNDREBfoq1FA6SGWWAR
+	o8T2B+0sIDVCArYS6z7MZgexOQXsJE4tPcMGYgsL+Eu8PPoELM4ioCoxfdsHsM28QPU3579i
+	grAFJX5Mvgc2h1lAS2LztiZWCFteYvOat8wgeyUE1CUe/dUFCYsIGEn82DKHGaJERGLfi3eM
+	IPdICDxil7h07iozxC4BiW+TD7FA9MpKbDrADPGwpMTBFTdYJjBKzEKyeRaSzbOQbJ6FZMUC
+	RpZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGCGR2reD8eYB60OMyUDrJzJLiSbnAyM9ryTe
+	0NjMyMLUxNTYyNzSjDRhJXFetRbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MUXbc7wL+
+	S0oqWz1633oh5aJ1S1x0utDh9I/tDovfWxstS6+81nVgwxxW9uV7lN2STzFNCq+W7NbkOSB0
+	RsUqlfey+hbeDYXn+Ga1xm01t1mR75nWtj7Ii/n22SPT+B+fVezjm1TedfPFn5OZ3+9MC929
+	tj6obdrMDscStZTT5QpdjW1qW6SUWIozEg21mIuKEwE/XY3Q6gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQV3TMMcgg74ZUhZz1q9hs7i88BKr
+	xeVdc9gsJhzezG6xe9dTVgdWj1dXHT1OzPjN4rFn/g9Wj74tqxg9Pm+SC2CNamC0yUhNTEkt
+	UkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFarqRQlphTChQKSCwu
+	VtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMWLbsJmvBHJ6K5j+f2RoYp3J1MXJySAiYSNy4
+	e4EZwhaTuHBvPVsXIxeHkMB0RonFh/azQji/GCX+31zACFLFJqAm8eXLYfYuRg4OEQF9ibYW
+	DZAaZoFFjBLbH7SzgNQICdhKrPswmx3E5hSwkzi19AwbiC0s4C/x8ugTsDiLgKrE9G0fWEFs
+	XqD6m/NfMUHYghI/Jt8Dm8MsoCWxeVsTK4QtL7F5zVtmkL0SAuoSj/7qgoRFBIwkfmyZwwxR
+	IiKx78U7xgmMQrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4
+	DTyT2sG4ssHiEKMAB6MSD+8Ob4cgIdbEsuLK3EOMEhzMSiK8N2wdg4R4UxIrq1KL8uOLSnNS
+	iw8xJgM9OpFZSjQ5H5ii8kriDY1NzIwsjcwsjEzMzUkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSz
+	hYmDU6qBcanLtwcfCzzTe966xgjteSZuNaX+id1xLymnsxWR25c2b1w+6buGgTzH3tYts/1j
+	OLrNnxv9fLsp55T7NV0WgykLWYxrvaQ/2HQamp6IP5jFvPujj+r6xOAYqzOXpslMSdi/jD1v
+	duHl+5b95uoL1j3nPfdq9sS30s/CI576TLqdaKNTkZLTocRSnJFoqMVcVJwIAM/2rIVHAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,39 +60,48 @@ Use devm_backlight_device_register() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/adp5520_bl.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/video/backlight/adp8860_bl.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/video/backlight/adp5520_bl.c b/drivers/video/backlight/adp5520_bl.c
-index fe8e3d1..f37097a 100644
---- a/drivers/video/backlight/adp5520_bl.c
-+++ b/drivers/video/backlight/adp5520_bl.c
-@@ -312,8 +312,9 @@ static int adp5520_bl_probe(struct platform_device *pdev)
- 	memset(&props, 0, sizeof(struct backlight_properties));
- 	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = ADP5020_MAX_BRIGHTNESS;
--	bl = backlight_device_register(pdev->name, data->master, data,
--				       &adp5520_bl_ops, &props);
-+	bl = devm_backlight_device_register(&pdev->dev, pdev->name,
-+					data->master, data, &adp5520_bl_ops,
-+					&props);
+diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
+index 2f77f37..9d65671 100644
+--- a/drivers/video/backlight/adp8860_bl.c
++++ b/drivers/video/backlight/adp8860_bl.c
+@@ -711,8 +711,9 @@ static int adp8860_probe(struct i2c_client *client,
+ 
+ 	mutex_init(&data->lock);
+ 
+-	bl = backlight_device_register(dev_driver_string(&client->dev),
+-			&client->dev, data, &adp8860_bl_ops, &props);
++	bl = devm_backlight_device_register(&client->dev,
++				dev_driver_string(&client->dev),
++				&client->dev, data, &adp8860_bl_ops, &props);
  	if (IS_ERR(bl)) {
- 		dev_err(&pdev->dev, "failed to register backlight\n");
+ 		dev_err(&client->dev, "failed to register backlight\n");
  		return PTR_ERR(bl);
-@@ -326,7 +327,7 @@ static int adp5520_bl_probe(struct platform_device *pdev)
+@@ -728,7 +729,7 @@ static int adp8860_probe(struct i2c_client *client,
  
  	if (ret) {
- 		dev_err(&pdev->dev, "failed to register sysfs\n");
--		backlight_device_unregister(bl);
+ 		dev_err(&client->dev, "failed to register sysfs\n");
+-		goto out1;
 +		return ret;
  	}
  
- 	platform_set_drvdata(pdev, bl);
-@@ -347,8 +348,6 @@ static int adp5520_bl_remove(struct platform_device *pdev)
- 		sysfs_remove_group(&bl->dev.kobj,
- 				&adp5520_bl_attr_group);
- 
+ 	ret = adp8860_bl_setup(bl);
+@@ -751,8 +752,6 @@ out:
+ 	if (data->en_ambl_sens)
+ 		sysfs_remove_group(&data->bl->dev.kobj,
+ 			&adp8860_bl_attr_group);
+-out1:
 -	backlight_device_unregister(bl);
+ 
+ 	return ret;
+ }
+@@ -770,8 +769,6 @@ static int adp8860_remove(struct i2c_client *client)
+ 		sysfs_remove_group(&data->bl->dev.kobj,
+ 			&adp8860_bl_attr_group);
+ 
+-	backlight_device_unregister(data->bl);
 -
  	return 0;
  }
