@@ -1,61 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab3IXUqn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 16:46:43 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:40463 "EHLO
+	id S1754632Ab3IXUtU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 16:49:20 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:44041 "EHLO
 	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455Ab3IXUqm (ORCPT
+	with ESMTP id S1753657Ab3IXUtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 16:46:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130924.152833.434453431118381771.davem@redhat.com>
-References: <1380046281-6012-1-git-send-email-vincent.mc.li@gmail.com>
-	<20130924.152833.434453431118381771.davem@redhat.com>
-Date: Tue, 24 Sep 2013 13:46:41 -0700
-Message-ID: <CAK3+h2y7v0i7AgK02GSy1apKKsi8n7is7U8oypx=uBf49Bubbg@mail.gmail.com>
-Subject: Re: [PATCH] Allow userspace code to use flag IFA_F_SECONDARY to
- specify an ip address to be primary or secondary ip on an interface
-From: Vincent Li <vincent.mc.li@gmail.com>
-To: David Miller <davem@redhat.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 24 Sep 2013 16:49:18 -0400
+From: Russ Knize <rknize@gmail.com>
+To: linux-f2fs-devel@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russ Knize <Russ.Knize@motorola.com>
+Subject: [RFC 1/1] f2fs: don't GC or take an fs_lock from f2fs_initxattrs()
+Date: Tue, 24 Sep 2013 15:49:23 -0500
+Message-Id: <1380055763-13425-1-git-send-email-rknize@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <n>
+References: <n>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, I will resend the patch with your suggestions.
+From: Russ Knize <Russ.Knize@motorola.com>
 
-Vincent
+f2fs_initxattrs() is called internally from within F2FS and should
+not call functions that are used by VFS handlers.  This avoids
+certain deadlocks:
 
-On Tue, Sep 24, 2013 at 12:28 PM, David Miller <davem@redhat.com> wrote:
-> From: Vincent Li <vincent.mc.li@gmail.com>
-> Date: Tue, 24 Sep 2013 11:11:21 -0700
->
->> the current behavior is when an IP is added to an interface, the primary
->> or secondary attributes is depending on the order of ip added to the interface
->> the first IP will be primary and second, third,... or alias IP will be secondary
->> if the IP subnet matches
->>
->> this patch add the flexiblity to allow user to specify an argument 'primary' or 'secondary'
->> (use 'ip addr add ip/mask primary|secondary dev ethX ' from iproute2 for example) to specify
->> an IP address to be  primary or secondary.
->>
->> the reason for this patch is that we have a multi blade cluster platform sharing 'floating management ip'
->> and also that each blade has its own management ip on the management interface, so whichever blade in the
->> cluster becomes primary blade, the 'floating mangaement ip' follows it, and we want any of our traffic
->> originated from the primary blade source from the 'floating management ip' for consistency. but in this
->> case, since the local blade management ip is always the primary ip on the mangaement interface and 'floating
->> management ip' is always secondary, kernel always choose the primary ip as source ip address. thus we would
->> like to add the flexibility in kernel to allow us to specify which ip to be primary or secondary.
->>
->> Signed-off-by: Vincent Li <vincent.mc.li@gmail.com>
->
-> When submitting a patch, please:
->
-> 1) Specify an appropriate prefix for your subject line, indicating the
->    subsystem.  "ipv4: " might be appropriate here.
->
-> 2) Format your commit message so that lines do not exceed 80 columns.
->    People will read using ASCII text based tools in 80 column
->    terminals.
+- vfs_create()
+ - f2fs_create() <-- takes an fs_lock
+  - f2fs_add_link()
+   - __f2fs_add_link()
+    - init_inode_metadata()
+     - f2fs_init_security()
+      - security_inode_init_security()
+       - f2fs_initxattrs()
+        - f2fs_setxattr() <-- also takes an fs_lock
+
+If the caller happens to grab the same fs_lock from the pool in both
+places, they will deadlock.  There are also deadlocks involving
+multiple threads and mutexes:
+
+- f2fs_write_begin()
+ - f2fs_balance_fs() <-- takes gc_mutex
+  - f2fs_gc()
+   - write_checkpoint()
+    - block_operations()
+     - mutex_lock_all() <-- blocks trying to grab all fs_locks
+
+- f2fs_mkdir() <-- takes an fs_lock
+ - __f2fs_add_link()
+  - f2fs_init_security()
+   - security_inode_init_security()
+    - f2fs_initxattrs()
+     - f2fs_setxattr()
+      - f2fs_balance_fs() <-- blocks trying to take gc_mutex
+
+Signed-off-by: Russ Knize <Russ.Knize@motorola.com>
+---
+ fs/f2fs/xattr.c |   35 +++++++++++++++++++++++++----------
+ 1 file changed, 25 insertions(+), 10 deletions(-)
+
+diff --git a/fs/f2fs/xattr.c b/fs/f2fs/xattr.c
+index 1ac8a5f..3d900ea 100644
+--- a/fs/f2fs/xattr.c
++++ b/fs/f2fs/xattr.c
+@@ -154,6 +154,9 @@ static int f2fs_xattr_advise_set(struct dentry *dentry, const char *name,
+ }
+ 
+ #ifdef CONFIG_F2FS_FS_SECURITY
++static int __f2fs_setxattr(struct inode *inode, int name_index,
++			const char *name, const void *value, size_t value_len,
++			struct page *ipage);
+ static int f2fs_initxattrs(struct inode *inode, const struct xattr *xattr_array,
+ 		void *page)
+ {
+@@ -161,7 +164,7 @@ static int f2fs_initxattrs(struct inode *inode, const struct xattr *xattr_array,
+ 	int err = 0;
+ 
+ 	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
+-		err = f2fs_setxattr(inode, F2FS_XATTR_INDEX_SECURITY,
++		err = __f2fs_setxattr(inode, F2FS_XATTR_INDEX_SECURITY,
+ 				xattr->name, xattr->value,
+ 				xattr->value_len, (struct page *)page);
+ 		if (err < 0)
+@@ -469,16 +472,15 @@ cleanup:
+ 	return error;
+ }
+ 
+-int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
+-			const void *value, size_t value_len, struct page *ipage)
++static int __f2fs_setxattr(struct inode *inode, int name_index,
++			const char *name, const void *value, size_t value_len,
++			struct page *ipage)
+ {
+-	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+ 	struct f2fs_inode_info *fi = F2FS_I(inode);
+ 	struct f2fs_xattr_entry *here, *last;
+ 	void *base_addr;
+ 	int found, newsize;
+ 	size_t name_len;
+-	int ilock;
+ 	__u32 new_hsize;
+ 	int error = -ENOMEM;
+ 
+@@ -493,10 +495,6 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
+ 	if (name_len > F2FS_NAME_LEN || value_len > MAX_VALUE_LEN(inode))
+ 		return -ERANGE;
+ 
+-	f2fs_balance_fs(sbi);
+-
+-	ilock = mutex_lock_op(sbi);
+-
+ 	base_addr = read_all_xattrs(inode, ipage);
+ 	if (!base_addr)
+ 		goto exit;
+@@ -578,7 +576,24 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
+ 	else
+ 		update_inode_page(inode);
+ exit:
+-	mutex_unlock_op(sbi, ilock);
+ 	kzfree(base_addr);
+ 	return error;
+ }
++
++int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
++			const void *value, size_t value_len, struct page *ipage)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	int ilock;
++	int err;
++
++	f2fs_balance_fs(sbi);
++
++	ilock = mutex_lock_op(sbi);
++
++	err = __f2fs_setxattr(inode, name_index, name, value, value_len, ipage);
++
++	mutex_unlock_op(sbi, ilock);
++
++	return err;
++}
+-- 
+1.7.10.4
+
