@@ -1,87 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab3IXQg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 12:36:26 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:32253 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411Ab3IXQgX (ORCPT
+	id S1754308Ab3IXQgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 12:36:41 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:48512 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265Ab3IXQgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 12:36:23 -0400
-Message-ID: <1380040432.14046.16.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 6/6] mem-hotplug: Introduce movablenode boot option
-From: Toshi Kani <toshi.kani@hp.com>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com
-Date: Tue, 24 Sep 2013 10:33:52 -0600
-In-Reply-To: <5241B8FA.1030004@gmail.com>
-References: <524162DA.30004@cn.fujitsu.com>
-	  <5241655E.1000007@cn.fujitsu.com> <20130924124121.GG2366@htj.dyndns.org>
-	  <5241944B.4050103@gmail.com> <5241AEC0.6040505@gmail.com>
-	 <1380038410.14046.12.camel@misato.fc.hp.com> <5241B8FA.1030004@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Sep 2013 12:36:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130923090100.GE6192@mwanda>
+References: <20130923090100.GE6192@mwanda>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 24 Sep 2013 10:36:18 -0600
+Message-ID: <CAErSpo5XgvuG=75nExa7yCa7C+Bxhk+1LwruxY8pv2DU+r-_aA@mail.gmail.com>
+Subject: Re: checkpatch guide for newbies
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: kernel-janitors@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-25 at 00:08 +0800, Zhang Yanfei wrote:
-> Hello toshi-san
-> 
-> On 09/25/2013 12:00 AM, Toshi Kani wrote:
-> > On Tue, 2013-09-24 at 23:24 +0800, Zhang Yanfei wrote:
-> >> Hello tejun,
-> >>
-> >> On 09/24/2013 09:31 PM, Zhang Yanfei wrote:
-> >>>> This came up during earlier review but never was addressed.  Is
-> >>>>> "movablenode" the right name?  Shouldn't it be something which
-> >>>>> explicitly shows that it's to prepare for memory hotplug?  Also, maybe
-> >>>>> the above param should generate warning if CONFIG_MOVABLE_NODE isn't
-> >>>>> enabled?
-> >>> hmmm...as for the option name, if this option is set, it means, the kernel
-> >>> could support the functionality that a whole node is the so called
-> >>> movable node, which only has ZONE MOVABLE zone in it. So we choose
-> >>> to name the parameter "movablenode".
-> >>>
-> >>> As for the warning, will add it.
-> >>
-> >> I am now preparing the v5 version. Only in this patch we haven't come to an
-> >> agreement. So as for the boot option name, after my explanation, do you still
-> >> have the objection? Or you could suggest a good name for us, that'll be
-> >> very thankful:)
-> > 
-> > I do not think the granularity has to stay as a node, and this option
-> > does nothing to with other devices that may be included in a node.  So,
-> > how about using "movablemem"?
-> > 
-> 
-> As I explained before, we use movablenode to mean a node could only have
-> a MOVABLE zone from the memory aspect. So I still think movablenode seems
-> better than movablemem. movablemem seems vaguer here....
+On Mon, Sep 23, 2013 at 3:01 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> I've written a checkpatch guide for newbies because it seems like they
+> make the same mistakes over and over.  I intend to put it under
+> Documentation/.  Could you look it over?
 
-But a node may contain other devices, such CPUs and PCI bridges.  To me,
-movablenode does not clarify that this option is from the memory
-aspect...
+I think this is great.
 
-Thanks,
--Toshi
+>                 Introduction
+>
+> This document is aimed at new kernel contributors using "checkpatch.pl --file".
+>
+> The first thing to remember is that the aim is not to get rid of every
+> checkpatch.pl warning; the aim is to make the code cleaner and more readable.
+> The other thing to remember is that checkpatch.pl is not a very smart tool and
+> there are mistakes that it misses so keep your eyes open for those as well.
+>
+> For example, checkpatch.pl could warn about a badly formatted warning message.
+> Ask yourself, is the warning message is clear?  Is it needed?  Could a
+> non-privileged user trigger the warning and flood the syslog?  Are there
+> spelling mistakes?  Since Checkpatch.pl has flagged the line as sloppy code,
+> there may be multiple mistakes.
+>
+> In the Linux kernel, we take an enormous pride in our work and we want clean
+> code.  But the one major drawback to cleanup patches is that they break
+> "git blame" so it's not a good idea for newbies to send very trivial cleanup
+> patches to the kernel/ directory.  It's better to get a little experience in the
+> drivers/ directory first.  The drivers/staging/ directory in particular always
+> needs cleanup patches.
+>
+>
+>                 General Hints
+>
+> 1)  Don't put too many things in one patch because it makes it hard to review.
+> Break the patch up into a patch series like this made up example:
+>
+> [PATCH 1/4] subsystem: driver: Use tabs to indent instead of spaces
+> [PATCH 2/4] subsystem: driver: Add spaces around math operations
+> [PATCH 3/4] subsystem: driver: Remove extra braces
+> [PATCH 4/4] subsystem: driver: Delete LINUX_VERSION_CODE related code
 
+This is a good hint and a good example.  One thing that annoys me is
+when there's no consistency in subject lines; I wish people would run
+"git log --oneline <file>" and follow the existing convention,
+including spacing, brackets, capitalization, etc.  I also like Ingo's
+suggestion [1] for making them sentences, starting with a verb.
 
+But maybe that's too nitty-gritty to include.  You already have a nice
+concise writeup and it would be a shame to let us ruin it by committee
+:)
+
+Bjorn
+
+[1] http://lkml.kernel.org/r/20120711080446.GA17713@gmail.com
+
+>                 Long Lines
+>
+> Historically screens were 80 characters wide and it was annoying when code went
+> over the edge.  These days we have larger screens, but we keep the 80 character
+> limit because it forces us to write simpler code.
+>
+> One way to remove indent levels is using functions.  If you find yourself
+> writing a loop or a switch statement and you're already indented several tabs
+> then probably it should be a new function instead.
+>
+> Whenever possible return immediately.
+> Bad:
+> -       foo = kmalloc();
+> -       if (foo) {
+> -               /* code indent 2 tabs */
+> -       }
+> -       return foo;
+> Good:
+> +       foo = kmalloc();
+> +       if (!foo)
+> +               return NULL;
+> +       /* code indented 1 tab */
+> +       return foo;
+>
+> Choose shorter names.
+> Bad:
+> -       for(uiIpv6AddIndex = 0; uiIpv6AddIndex < uiIpv6AddrNoLongWords;
+> -           uiIpv6AddIndex++) {
+> Good:
+> +       for (i = 0; i < long_words; i++) {
+>
+> Use temporary variable names:
+> Bad:
+> -       dev->backdev[count]->bitlistsize =
+> -               dev->backdev[count]->devmagic->bitlistsize;
+> Good:
+> +       back = dev->backdev[count];
+> +       back->bitlistsize = back->devmagic->bitlistsize;
+>
+> Don't do complicated things in the initializer:
+> Bad:
+> -       struct binder_ref_death *tmp_death = container_of(w,
+> -                                               struct binder_ref_death, work);
+> Good:
+> +       struct binder_ref_death *tmp_death;
+> +
+> +       tmp_death = container_of(w, struct binder_ref_death, work);
+>
+> If you must break up a long line then align it nicely.  Use spaces if needed.
+> Bad:
+> -       if (adapter->flowcontrol == FLOW_RXONLY ||
+> -                       adapter->flowcontrol == FLOW_BOTH) {
+> Good:
+> +       if (adapter->flowcontrol == FLOW_RXONLY ||
+> +           adapter->flowcontrol == FLOW_BOTH) {
+>
+> It's preferred if the operator goes at the end of the first line instead of at
+> the start of the second line:
+> Bad:
+> -       PowerData = (1 << 31) | (0 << 30) | (24 << 24)
+> -                   | BitReverse(w89rf242_txvga_data[i][0], 24);
+> Good:
+> +       PowerData = (1 << 31) | (0 << 30) | (24 << 24) |
+> +                   BitReverse(w89rf242_txvga_data[i][0], 24);
+>
+>
+>                 Writing the Changelog
+>
+> Use the word "cleanup" instead of "fix".  "Fix" implies the runtime changed and
+> it fixes a bug.  "Cleanup" implies that runtime stayed exactly the same.
