@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab3IXVNk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:13:40 -0400
-Received: from smtprelay0065.hostedemail.com ([216.40.44.65]:49165 "EHLO
+	id S1755077Ab3IXVOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 17:14:15 -0400
+Received: from smtprelay0158.hostedemail.com ([216.40.44.158]:56302 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754774Ab3IXVK2 (ORCPT
+	by vger.kernel.org with ESMTP id S1754610Ab3IXVKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:10:28 -0400
+	Tue, 24 Sep 2013 17:10:19 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:966:973:988:989:1260:1345:1359:1437:1534:1544:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:3870:3871:4321:4385:4605:5007:6261:7903:10004:10026:10848:11026:11657:11658:11914:12043:12438:12517:12519:12555:13161:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: toe13_3ce2b995c902
-X-Filterd-Recvd-Size: 4984
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:2:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1535:1605:1606:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:4117:4321:5007:6261:7903:10004:10026:10848:11026:11473:11657:11658:11914:12043:12438:12517:12519:12555:13161:13229:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: vase37_27ca38b90042
+X-Filterd-Recvd-Size: 6284
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/10] oki-semi: Remove extern from function prototypes
-Date: Tue, 24 Sep 2013 14:09:57 -0700
-Message-Id: <f4588c4d5ded222ed2afb06bcec88c9b57597b1f.1380056108.git.joe@perches.com>
+Subject: [PATCH 01/10] ibm/emac: Remove extern from function prototypes
+Date: Tue, 24 Sep 2013 14:09:55 -0700
+Message-Id: <d4cb2ee17dbb9fb636e5e127e8cb6cbde9d28cef.1380056108.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1380056108.git.joe@perches.com>
 References: <cover.1380056108.git.joe@perches.com>
@@ -34,80 +34,120 @@ using auto to declare automatic/local variables in a block.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h | 56 ++++++++++++-------------
- 1 file changed, 28 insertions(+), 28 deletions(-)
+ drivers/net/ethernet/ibm/emac/debug.h | 14 +++++++-------
+ drivers/net/ethernet/ibm/emac/rgmii.h | 18 +++++++++---------
+ drivers/net/ethernet/ibm/emac/tah.h   | 14 +++++++-------
+ drivers/net/ethernet/ibm/emac/zmii.h  | 18 +++++++++---------
+ 4 files changed, 32 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
-index 6797b10..2a900307 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
-@@ -653,38 +653,38 @@ struct pch_gbe_adapter {
- extern const char pch_driver_version[];
+diff --git a/drivers/net/ethernet/ibm/emac/debug.h b/drivers/net/ethernet/ibm/emac/debug.h
+index 59a92d5..9c45efe 100644
+--- a/drivers/net/ethernet/ibm/emac/debug.h
++++ b/drivers/net/ethernet/ibm/emac/debug.h
+@@ -29,13 +29,13 @@
+ struct emac_instance;
+ struct mal_instance;
  
- /* pch_gbe_main.c */
--extern int pch_gbe_up(struct pch_gbe_adapter *adapter);
--extern void pch_gbe_down(struct pch_gbe_adapter *adapter);
--extern void pch_gbe_reinit_locked(struct pch_gbe_adapter *adapter);
--extern void pch_gbe_reset(struct pch_gbe_adapter *adapter);
--extern int pch_gbe_setup_tx_resources(struct pch_gbe_adapter *adapter,
--				       struct pch_gbe_tx_ring *txdr);
--extern int pch_gbe_setup_rx_resources(struct pch_gbe_adapter *adapter,
--				       struct pch_gbe_rx_ring *rxdr);
--extern void pch_gbe_free_tx_resources(struct pch_gbe_adapter *adapter,
--				       struct pch_gbe_tx_ring *tx_ring);
--extern void pch_gbe_free_rx_resources(struct pch_gbe_adapter *adapter,
--				       struct pch_gbe_rx_ring *rx_ring);
--extern void pch_gbe_update_stats(struct pch_gbe_adapter *adapter);
--extern u32 pch_ch_control_read(struct pci_dev *pdev);
--extern void pch_ch_control_write(struct pci_dev *pdev, u32 val);
--extern u32 pch_ch_event_read(struct pci_dev *pdev);
--extern void pch_ch_event_write(struct pci_dev *pdev, u32 val);
--extern u32 pch_src_uuid_lo_read(struct pci_dev *pdev);
--extern u32 pch_src_uuid_hi_read(struct pci_dev *pdev);
--extern u64 pch_rx_snap_read(struct pci_dev *pdev);
--extern u64 pch_tx_snap_read(struct pci_dev *pdev);
--extern int pch_set_station_address(u8 *addr, struct pci_dev *pdev);
-+int pch_gbe_up(struct pch_gbe_adapter *adapter);
-+void pch_gbe_down(struct pch_gbe_adapter *adapter);
-+void pch_gbe_reinit_locked(struct pch_gbe_adapter *adapter);
-+void pch_gbe_reset(struct pch_gbe_adapter *adapter);
-+int pch_gbe_setup_tx_resources(struct pch_gbe_adapter *adapter,
-+			       struct pch_gbe_tx_ring *txdr);
-+int pch_gbe_setup_rx_resources(struct pch_gbe_adapter *adapter,
-+			       struct pch_gbe_rx_ring *rxdr);
-+void pch_gbe_free_tx_resources(struct pch_gbe_adapter *adapter,
-+			       struct pch_gbe_tx_ring *tx_ring);
-+void pch_gbe_free_rx_resources(struct pch_gbe_adapter *adapter,
-+			       struct pch_gbe_rx_ring *rx_ring);
-+void pch_gbe_update_stats(struct pch_gbe_adapter *adapter);
-+u32 pch_ch_control_read(struct pci_dev *pdev);
-+void pch_ch_control_write(struct pci_dev *pdev, u32 val);
-+u32 pch_ch_event_read(struct pci_dev *pdev);
-+void pch_ch_event_write(struct pci_dev *pdev, u32 val);
-+u32 pch_src_uuid_lo_read(struct pci_dev *pdev);
-+u32 pch_src_uuid_hi_read(struct pci_dev *pdev);
-+u64 pch_rx_snap_read(struct pci_dev *pdev);
-+u64 pch_tx_snap_read(struct pci_dev *pdev);
-+int pch_set_station_address(u8 *addr, struct pci_dev *pdev);
+-extern void emac_dbg_register(struct emac_instance *dev);
+-extern void emac_dbg_unregister(struct emac_instance *dev);
+-extern void mal_dbg_register(struct mal_instance *mal);
+-extern void mal_dbg_unregister(struct mal_instance *mal);
+-extern int emac_init_debug(void) __init;
+-extern void emac_fini_debug(void) __exit;
+-extern void emac_dbg_dump_all(void);
++void emac_dbg_register(struct emac_instance *dev);
++void emac_dbg_unregister(struct emac_instance *dev);
++void mal_dbg_register(struct mal_instance *mal);
++void mal_dbg_unregister(struct mal_instance *mal);
++int emac_init_debug(void) __init;
++void emac_fini_debug(void) __exit;
++void emac_dbg_dump_all(void);
  
- /* pch_gbe_param.c */
--extern void pch_gbe_check_options(struct pch_gbe_adapter *adapter);
-+void pch_gbe_check_options(struct pch_gbe_adapter *adapter);
+ # define DBG_LEVEL		1
  
- /* pch_gbe_ethtool.c */
--extern void pch_gbe_set_ethtool_ops(struct net_device *netdev);
-+void pch_gbe_set_ethtool_ops(struct net_device *netdev);
+diff --git a/drivers/net/ethernet/ibm/emac/rgmii.h b/drivers/net/ethernet/ibm/emac/rgmii.h
+index 668bcee..d4f1374 100644
+--- a/drivers/net/ethernet/ibm/emac/rgmii.h
++++ b/drivers/net/ethernet/ibm/emac/rgmii.h
+@@ -56,15 +56,15 @@ struct rgmii_instance {
  
- /* pch_gbe_mac.c */
--extern s32 pch_gbe_mac_force_mac_fc(struct pch_gbe_hw *hw);
--extern s32 pch_gbe_mac_read_mac_addr(struct pch_gbe_hw *hw);
--extern u16 pch_gbe_mac_ctrl_miim(struct pch_gbe_hw *hw,
--				  u32 addr, u32 dir, u32 reg, u16 data);
-+s32 pch_gbe_mac_force_mac_fc(struct pch_gbe_hw *hw);
-+s32 pch_gbe_mac_read_mac_addr(struct pch_gbe_hw *hw);
-+u16 pch_gbe_mac_ctrl_miim(struct pch_gbe_hw *hw, u32 addr, u32 dir, u32 reg,
-+			  u16 data);
- #endif /* _PCH_GBE_H_ */
+ #ifdef CONFIG_IBM_EMAC_RGMII
+ 
+-extern int rgmii_init(void);
+-extern void rgmii_exit(void);
+-extern int rgmii_attach(struct platform_device *ofdev, int input, int mode);
+-extern void rgmii_detach(struct platform_device *ofdev, int input);
+-extern void rgmii_get_mdio(struct platform_device *ofdev, int input);
+-extern void rgmii_put_mdio(struct platform_device *ofdev, int input);
+-extern void rgmii_set_speed(struct platform_device *ofdev, int input, int speed);
+-extern int rgmii_get_regs_len(struct platform_device *ofdev);
+-extern void *rgmii_dump_regs(struct platform_device *ofdev, void *buf);
++int rgmii_init(void);
++void rgmii_exit(void);
++int rgmii_attach(struct platform_device *ofdev, int input, int mode);
++void rgmii_detach(struct platform_device *ofdev, int input);
++void rgmii_get_mdio(struct platform_device *ofdev, int input);
++void rgmii_put_mdio(struct platform_device *ofdev, int input);
++void rgmii_set_speed(struct platform_device *ofdev, int input, int speed);
++int rgmii_get_regs_len(struct platform_device *ofdev);
++void *rgmii_dump_regs(struct platform_device *ofdev, void *buf);
+ 
+ #else
+ 
+diff --git a/drivers/net/ethernet/ibm/emac/tah.h b/drivers/net/ethernet/ibm/emac/tah.h
+index 350b709..4d5f336 100644
+--- a/drivers/net/ethernet/ibm/emac/tah.h
++++ b/drivers/net/ethernet/ibm/emac/tah.h
+@@ -72,13 +72,13 @@ struct tah_instance {
+ 
+ #ifdef CONFIG_IBM_EMAC_TAH
+ 
+-extern int tah_init(void);
+-extern void tah_exit(void);
+-extern int tah_attach(struct platform_device *ofdev, int channel);
+-extern void tah_detach(struct platform_device *ofdev, int channel);
+-extern void tah_reset(struct platform_device *ofdev);
+-extern int tah_get_regs_len(struct platform_device *ofdev);
+-extern void *tah_dump_regs(struct platform_device *ofdev, void *buf);
++int tah_init(void);
++void tah_exit(void);
++int tah_attach(struct platform_device *ofdev, int channel);
++void tah_detach(struct platform_device *ofdev, int channel);
++void tah_reset(struct platform_device *ofdev);
++int tah_get_regs_len(struct platform_device *ofdev);
++void *tah_dump_regs(struct platform_device *ofdev, void *buf);
+ 
+ #else
+ 
+diff --git a/drivers/net/ethernet/ibm/emac/zmii.h b/drivers/net/ethernet/ibm/emac/zmii.h
+index 455bfb0..0959c55 100644
+--- a/drivers/net/ethernet/ibm/emac/zmii.h
++++ b/drivers/net/ethernet/ibm/emac/zmii.h
+@@ -53,15 +53,15 @@ struct zmii_instance {
+ 
+ #ifdef CONFIG_IBM_EMAC_ZMII
+ 
+-extern int zmii_init(void);
+-extern void zmii_exit(void);
+-extern int zmii_attach(struct platform_device *ofdev, int input, int *mode);
+-extern void zmii_detach(struct platform_device *ofdev, int input);
+-extern void zmii_get_mdio(struct platform_device *ofdev, int input);
+-extern void zmii_put_mdio(struct platform_device *ofdev, int input);
+-extern void zmii_set_speed(struct platform_device *ofdev, int input, int speed);
+-extern int zmii_get_regs_len(struct platform_device *ocpdev);
+-extern void *zmii_dump_regs(struct platform_device *ofdev, void *buf);
++int zmii_init(void);
++void zmii_exit(void);
++int zmii_attach(struct platform_device *ofdev, int input, int *mode);
++void zmii_detach(struct platform_device *ofdev, int input);
++void zmii_get_mdio(struct platform_device *ofdev, int input);
++void zmii_put_mdio(struct platform_device *ofdev, int input);
++void zmii_set_speed(struct platform_device *ofdev, int input, int speed);
++int zmii_get_regs_len(struct platform_device *ocpdev);
++void *zmii_dump_regs(struct platform_device *ofdev, void *buf);
+ 
+ #else
+ # define zmii_init()		0
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
