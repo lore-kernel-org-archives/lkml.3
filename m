@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab3IXMkF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:40:05 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:55645 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab3IXMkC (ORCPT
+	id S1753522Ab3IXMl1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:41:27 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:50742 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab3IXMlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:40:02 -0400
-X-AuditID: cbfec37b-b7fa96d00000716e-12-52418820928f
-Message-id: <52418815.20701@samsung.com>
-Date: Tue, 24 Sep 2013 06:39:49 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-Cc: alex.williamson@redhat.com, Varun.Sethi@freescale.com, udknight@gmail.com,
-        aik@ozlabs.ru, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, shuahkhan@gmail.com,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 1/2] iommu: Add iommu_fault class event to iommu trace
-References: <cover.1376672275.git.shuah.kh@samsung.com>
- <7a14c27d8341e53f2aed7b80e08a4480d89eac5e.1376672275.git.shuah.kh@samsung.com>
- <20130924104855.GB4532@8bytes.org>
-In-reply-to: <20130924104855.GB4532@8bytes.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e+wr65Ch2OQwbkmZYve40UW3/73sFnM
-	fN3NZLFgv7VF5+wN7BaXd81hs7h0YAGTxb6OB0wWX386WGyf8p/JYuatNSwO3B5PDs5j8vh3
-	uJ/JY+esu+weLftusXtMvrGc0ePG3WY2j/f7rrJ5fN4kF8ARxWWTkpqTWZZapG+XwJVxfo5I
-	wXvWiuaprUwNjBdZuhg5OSQETCTWvNrIDmGLSVy4t56ti5GLQ0hgGaPEuqnbwBJCAr1MEvs+
-	1kAkNjFKbFl4iQ0kwSugIXH9zCNWEJtFQFWid/90RhCbTUBd4vPrHVDNchJNS1Yzg9iiAhES
-	K5c8YIXoFZT4Mfke2BUiAkoS1z+3gsWZBaYySXzY6QliCwt4SZxu7Ie6aC2jRMPMK2ANnAL6
-	Ejf3zIFqsJZYOWkbI4QtL7F5zVtmiMXKEn8un2LqYuQAek1RYvtqqwmMIrOQrJ6FpHsWku4F
-	jMyrGMVKi5MLipPSUyuM9IoTc4tL89L1kvNzNzFC4rB6B+PdrzaHGAU4GJV4eCvjHIKEWBPL
-	iitzDzFKcDArifBq1joGCfGmJFZWpRblxxeV5qQWH2Jk4uCUamBku5jbqaZtmeUx4dMeb1HV
-	v0enfhFSPbhjdf9efeulMZ+b9Gs27Q8UX7/LR2M9u6HW3sJVX3aZJFp98+bs1WySr7fXtrDi
-	qFL4PDX27K+iG04/92y0nLhoI7fyy+mml7zKLQqcTzxwfGKttuC/fNPE4O2V8y5e+bLyXPjO
-	yYH/Y4z59sbzH1FRYinOSDTUYi4qTgQARPuh46ECAAA=
+	Tue, 24 Sep 2013 08:41:25 -0400
+Date: Tue, 24 Sep 2013 08:41:21 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Subject: Re: [PATCH 6/6] mem-hotplug: Introduce movablenode boot option
+Message-ID: <20130924124121.GG2366@htj.dyndns.org>
+References: <524162DA.30004@cn.fujitsu.com>
+ <5241655E.1000007@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5241655E.1000007@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 04:48 AM, Joerg Roedel wrote:
-> On Fri, Aug 16, 2013 at 11:20:16AM -0600, Shuah Khan wrote:
->> +DEFINE_EVENT(iommu_fault, report_fault,
->> +
->> +	TP_PROTO(struct device *dev, unsigned long iova, int flags),
->> +
->> +	TP_ARGS(dev, iova, flags)
->> +);
->
-> I am not entirely happy with the naming. It is better to name the class
-> iommu_error and the page-fault event io_page_fault. This makes it more
-> clear what kind of fault it is.
->
->
-> 	Joerg
->
->
+Hello,
 
-Joerg,
+On Tue, Sep 24, 2013 at 06:11:42PM +0800, Zhang Yanfei wrote:
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 36cfce3..2cf04fd 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -1132,6 +1132,14 @@ void __init setup_arch(char **cmdline_p)
+>  	early_acpi_boot_init();
+>  
+>  	initmem_init();
+> +
+> +	/*
+> +	 * When ACPI SRAT is parsed, which is done in initmem_init(),
+> +	 * set memblock back to the top-down direction.
+> +	 */
+> +	if (memblock_bottom_up())
+> +		memblock_set_bottom_up(false);
 
-Yes, iommu_error and io_page_fault sounds better. I will rename and send 
-the updated patch.
+I don't think you need the if ().  Just call
+memblock_set_bottom_up(false).
 
--- Shuah
+> +static int __init cmdline_parse_movablenode(char *p)
+> +{
+> +	/*
+> +	 * Memory used by the kernel cannot be hot-removed because Linux
+> +	 * cannot migrate the kernel pages. When memory hotplug is
+> +	 * enabled, we should prevent memblock from allocating memory
+> +	 * for the kernel.
+> +	 *
+> +	 * ACPI SRAT records all hotpluggable memory ranges. But before
+> +	 * SRAT is parsed, we don't know about it.
+> +	 *
+> +	 * The kernel image is loaded into memory at very early time. We
+> +	 * cannot prevent this anyway. So on NUMA system, we set any
+> +	 * node the kernel resides in as un-hotpluggable.
+> +	 *
+> +	 * Since on modern servers, one node could have double-digit
+> +	 * gigabytes memory, we can assume the memory around the kernel
+> +	 * image is also un-hotpluggable. So before SRAT is parsed, just
+> +	 * allocate memory near the kernel image to try the best to keep
+> +	 * the kernel away from hotpluggable memory.
+> +	 */
+> +	memblock_set_bottom_up(true);
+> +	return 0;
+> +}
+> +early_param("movablenode", cmdline_parse_movablenode);
+
+This came up during earlier review but never was addressed.  Is
+"movablenode" the right name?  Shouldn't it be something which
+explicitly shows that it's to prepare for memory hotplug?  Also, maybe
+the above param should generate warning if CONFIG_MOVABLE_NODE isn't
+enabled?
+
+Thanks.
 
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+tejun
