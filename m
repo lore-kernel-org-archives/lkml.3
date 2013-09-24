@@ -1,73 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab3IXDtS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 23:49:18 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:19512 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab3IXDtR (ORCPT
+	id S1753209Ab3IXD5B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 23:57:01 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34208 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab3IXD5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 23:49:17 -0400
-Message-ID: <52410B49.3050306@huawei.com>
-Date: Tue, 24 Sep 2013 11:47:21 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 23 Sep 2013 23:57:00 -0400
+Message-ID: <52410D89.8010801@wwwdotorg.org>
+Date: Mon, 23 Sep 2013 21:56:57 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Alexey Neyman <stilor@att.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Feng Tang <feng.tang@intel.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix coalescing host bridge windows in arch/x86/pci/acpi.c
-References: <6362938.J7ZtNEOFpc@mistral>
-In-Reply-To: <6362938.J7ZtNEOFpc@mistral>
-Content-Type: text/plain; charset="UTF-8"
+To: Johannes Thumshirn <morbidrsa@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
+        linux-rpi-kernel@lists.infradead.org
+Subject: Re: [RFC] PWM: Add support for pwm-bcm2835
+References: <1379758142-7302-1-git-send-email-morbidrsa@gmail.com>
+In-Reply-To: <1379758142-7302-1-git-send-email-morbidrsa@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/9/23 14:15, Alexey Neyman wrote:
-> [Resending due to no response to the original message in a week]
+On 09/21/2013 04:09 AM, Johannes Thumshirn wrote:
+> Add support for the PWM controller of the BCM2835 SoC found on Raspberry PI
 > 
-> Hi all,
-> 
-> I have a board with a BIOS bug that reports the following I/O port regions in 
-> _CRS on one of the host bridges:
-> 
-> 0x0000-0x03af // #0
-> 0x03e0-0x0cf7 // #1
-> 0x03b0-0x03bb // #2
-> 0x03c0-0x03df // #3
-> 0x0000-0xdfff // #4
-> 0xf000-0xffff // #5
-> 
-> Obviously, region number #4 is erroneous as it overlaps with regions #0..3. 
-> The code in coalesce_windows() in arch/x86/pci/acpi.c attempts to recover from 
-> such kind of BIOS bugs by merging the overlapping regions. Current code 
-> expands region #0 to 0x0000-0xdffff and makes region #4 ignored. As a result, 
-> overlap of the expanded region #0 with regions #1..3 remains undetected (as 
-> the inner loop already compared them with region #0). As a result, regions 
-> #1..3 are inserted into the resource tree even though they overlap with 
-> adjusted region #0 - which later results in resource conflicts for PCI devices 
-> with IO ports in one of those regions (e.g., for an PCI IDE controller in 
-> legacy mode - which has port 0x3f6). The kernel then refuses to initialize 
-> these devices.
-> 
-> The fix: instead of expanding res1 and ignoring res2, do the opposite. The 
-> res2 window is yet to be compared against all windows between res1 and res2 
-> (regions #1..3 in the above example), so the resulting resource map will 
-> include just the expanded region - and will ignore any overlapping ones.
-> 
-> Signed-off-by: Alexey Neyman <stilor@att.net>
-> 
+> The driver isn't as much tested as I wanted it to be and devicetree
+> support is still missing, but I thought it would be nice to have some
+> comments if I'm in the right direction.
 
-It looks fine to me, but I have no platform to test it. :)
+Presumably if DT support is missing, the driver can't have been tested
+at all?
 
+> diff --git a/drivers/pwm/pwm-bcm2835.c b/drivers/pwm/pwm-bcm2835.c
 
--- 
-Thanks!
-Yijing
+> +/* Address Mappings (offsets) from Broadcom BCM2835 ARM Periperals Manual
+> + * Section 9.6 Page 141ff
 
+s/141ff/141/
+
+> +/* Control registers 0 and 1 are mirrored on a distance of 4 bits */
+> +#define HWPWM(x) ((x) << 4)
+
+Distances between registers aren't really measured in bits although
+admittedly a certain minimum number of bits would be required to
+represent that distance. I would suggest s/4 bits/16 bytes/. People are
+likely to be familiar with "<< 4" being equivalent to "* 16".
+
+> +/* TODO: We only need this register set once and use HWPWM macro to
+> + * access 2nd output
+> + */
+
+I don't really understand what the TODO message says still needs to be
+done. The comment format is wrong; /* should be on its own line.
+
+> +static inline u32 bcm2835_readl(struct bcm2835_pwm_dev *chip,
+> +				unsigned int hwpwm, unsigned int num)
+> +{
+> +	num <<= HWPWM(hwpwm);
+
+This doesn't work for hwpwm==1; HWPWM() already shifted the ID left, so
+you want "num += HWPWM(hwpwm)" here, I think. But as Thierry said, this
+function really doesn't need to do anything other than take an offset.
+
+Same comment for bcm2835_writel().
+
+BTW, bcm2835_readl() isn't a good name for a PWM-specific function,
+since it's pretty generic. While the name is static, so it won't cause
+linker problems, it might confuse a symbolic debugger. Better make it
+bcm2835_pwm_readl().
+
+> +static int bcm2835_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+> +			      int duty_ns, int period_ns)
+
+> +	/* write period */
+> +	bcm2835_writel(bcm, pwm->hwpwm, BCM2835_PWM_RNG1, period_ns);
+> +
+> +	/* write duty */
+> +	bcm2835_writel(bcm, pwm->hwpwm, BCM2835_PWM_DAT1, duty_ns);
+
+Presumably those registers are a count of clock cycles, not an absolute
+time in ns. The two are only equal if the PWM module clock runs at 1GHz.
+So, don't you need to convert time to clock cycle count here, using
+clk_get_rate(pwm_clk) as the ratio?
+
+> +static int bcm2835_pwm_probe(struct platform_device *pdev)
+...
+> +	bcm = devm_kzalloc(&pdev->dev, sizeof(*bcm), GFP_KERNEL);
+> +	if (!bcm)
+> +		return -ENOMEM;
+...
+> +	ret = pwmchip_add(&bcm->chip);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	platform_set_drvdata(pdev, bcm);
+
+You should really set the drvdata as soon as you've allocated it, and at
+least before calling pwmchip_add(); as soon as you've added the PWM
+chip, the PWM core could call functions on the PWM object, and if those
+callbacks rely on the drvdata, then they're going to fail if the drvdata
+hasn't been set yet.
+
+> +static const struct of_device_id bcm2835_pwm_of_match[] = {
+> +	{ .compatible = "brcm,bcm2835-pwm" },
+> +	{},
+> +};
+
+You need to write a DT binding document if you're going to ad DT support.
