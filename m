@@ -1,216 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab3IXNyx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 09:54:53 -0400
-Received: from briaree.onecert.fr ([134.212.190.4]:55570 "EHLO
-	briaree.onecert.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab3IXNyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 09:54:51 -0400
-From: Paul Chavent <Paul.Chavent@onera.fr>
-To: nsekhar@ti.com, khilman@deeprootsystems.com, linux@arm.linux.org.uk,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Paul Chavent <Paul.Chavent@onera.fr>
-Subject: [PATCH] ARM: davinci: usb: provide minimal support for da850.
-Date: Tue, 24 Sep 2013 15:46:05 +0200
-Message-Id: <1380030365-30373-1-git-send-email-paul.chavent@onera.fr>
-X-Mailer: git-send-email 1.7.12.1
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (briaree.onecert.fr [134.212.190.4]); Tue, 24 Sep 2013 15:52:39 +0200 (CEST)
+	id S1753962Ab3IXNzG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 09:55:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34408 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753835Ab3IXNzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 09:55:01 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: majianpeng <majianpeng@gmail.com>
+Cc: axboe <axboe@kernel.dk>, viro <viro@zeniv.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH V2 0/2] Auto stop async-write on block device when device removed.
+References: <201309171121559232246@gmail.com>
+	<x49r4cfy4py.fsf@segfault.boston.devel.redhat.com>
+	<201309241107330800706@gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 24 Sep 2013 09:54:57 -0400
+In-Reply-To: <201309241107330800706@gmail.com> (majianpeng@gmail.com's message
+	of "Tue, 24 Sep 2013 11:07:34 +0800")
+Message-ID: <x4961tqwci6.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As for the da830 and hawk boards, the da850 can provide minimalist usb
-1.1 implementation. Moreover, this patch has only been tested with the
-OHCI (on an OMAP L138 EVM / DA850 board), not with the Inventra HC
-(that seems broken for the DA8XX).
+majianpeng <majianpeng@gmail.com> writes:
 
-This patch is inspired by the hawk board implementation.
+>>majianpeng <majianpeng@gmail.com> writes:
+>>
+>>> For async-write on block device,if device removed,but the vfs don't know it.
+>>> It will continue to do.
+>>> Patch1 set size of inode of block device to zero when removed disk.By this,vfs know 
+>>> disk changed.
+>>> Path2 add size-check on blk_aio_write.If pos of write larger than size of inode,it will
+>>> return zero.So the user can check disk state.
+>>
+>>OK, so the basic problem is that __generic_file_aio_write will always
+>>return 0 after device removal, yes?  I'm not sure why that's a real
+>>issue, can you explain exactly why you're trying to change this?
+>>
+> At prenset, the __generic_file_aio_write don't return zero rather that the wanted size.
+> So the user can't know the disk removed. 
+> For example:
+> dd if=/dev/zero of=usb-disk bs=64k
+> When removed usb-disk, dd stoped until reached the endof usb-disk.
 
-Signed-off-by: Paul Chavent <paul.chavent@onera.fr>
----
- arch/arm/mach-davinci/board-da850-evm.c | 153 ++++++++++++++++++++++++++++++++
- 1 file changed, 153 insertions(+)
+Ah, right, it's just writing to the page cache.  I think the only reason
+you get more timely errors when doing the same thing to a file on a file
+system is that there is some synchronous metadata or journal I/O that
+will get EIO and result in the file system being set read-only.
 
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index dd1fb24..f0bee9d 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -62,6 +62,9 @@
- 
- #define DA850_MII_MDIO_CLKEN_PIN	GPIO_TO_PIN(2, 6)
- 
-+#define DA850_USB1_VBUS_PIN		GPIO_TO_PIN(2, 4)
-+#define DA850_USB1_OC_PIN		GPIO_TO_PIN(6, 13)
-+
- static struct mtd_partition da850evm_spiflash_part[] = {
- 	[0] = {
- 		.name = "UBL",
-@@ -1431,6 +1434,155 @@ static __init int da850_wl12xx_init(void)
- 
- #endif /* CONFIG_DA850_WL12XX */
- 
-+#ifdef CONFIG_USB
-+
-+static irqreturn_t da850_usb_ocic_irq(int irq, void *dev_id);
-+static da8xx_ocic_handler_t da850_usb_ocic_handler;
-+
-+static const short da850_usb11_pins[] = {
-+	DA850_GPIO2_4, DA850_GPIO6_13,
-+	-1
-+};
-+
-+static int da850_usb_set_power(unsigned port, int on)
-+{
-+	gpio_set_value(DA850_USB1_VBUS_PIN, on);
-+	return 0;
-+}
-+
-+static int da850_usb_get_power(unsigned port)
-+{
-+	return gpio_get_value(DA850_USB1_VBUS_PIN);
-+}
-+
-+static int da850_usb_get_oci(unsigned port)
-+{
-+	return !gpio_get_value(DA850_USB1_OC_PIN);
-+}
-+
-+static int da850_usb_ocic_notify(da8xx_ocic_handler_t handler)
-+{
-+	int irq         = gpio_to_irq(DA850_USB1_OC_PIN);
-+	int error       = 0;
-+
-+	if (handler != NULL) {
-+		da850_usb_ocic_handler = handler;
-+
-+		error = request_irq(irq, da850_usb_ocic_irq,
-+					IRQF_DISABLED | IRQF_TRIGGER_RISING |
-+					IRQF_TRIGGER_FALLING,
-+					"OHCI over-current indicator", NULL);
-+		if (error)
-+			pr_err("%s: could not request IRQ to watch "
-+				"over-current indicator changes\n", __func__);
-+	} else {
-+		free_irq(irq, NULL);
-+	}
-+	return error;
-+}
-+
-+static struct da8xx_ohci_root_hub da850_usb11_pdata = {
-+	.set_power      = da850_usb_set_power,
-+	.get_power      = da850_usb_get_power,
-+	.get_oci        = da850_usb_get_oci,
-+	.ocic_notify    = da850_usb_ocic_notify,
-+	/* TPS2087 switch @ 5V */
-+	.potpgt         = (3 + 1) / 2,  /* 3 ms max */
-+};
-+
-+static irqreturn_t da850_usb_ocic_irq(int irq, void *dev_id)
-+{
-+	da850_usb_ocic_handler(&da850_usb11_pdata, 1);
-+	return IRQ_HANDLED;
-+}
-+
-+static __init void da850_usb_init(void)
-+{
-+	void __iomem *cfg_chip2_base;
-+	int ret;
-+	u32 val;
-+
-+	/*
-+	 * Set up USB clock/mode in the CFGCHIP2 register.
-+	 */
-+
-+	cfg_chip2_base = DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP2_REG);
-+
-+	val = __raw_readl(cfg_chip2_base);
-+
-+	/* USB2.0 PHY reference clock is 24 MHz */
-+	val &= ~CFGCHIP2_REFFREQ;
-+	val |=  CFGCHIP2_REFFREQ_24MHZ;
-+
-+	/*
-+	 * Select internal reference clock for USB 2.0 PHY
-+	 * and use it as a clock source for USB 1.1 PHY
-+	 * (this is the default setting anyway).
-+	 */
-+	 val &= ~CFGCHIP2_USB1PHYCLKMUX;
-+	 val |=  CFGCHIP2_USB2PHYCLKMUX;
-+
-+	/*
-+	 * We have to override VBUS/ID signals when MUSB is configured into the
-+	 * host-only mode -- ID pin will float if no cable is connected, so the
-+	 * controller won't be able to drive VBUS thinking that it's a B-device.
-+	 * Otherwise, we want to use the OTG mode and enable VBUS comparators.
-+	 */
-+	val &= ~CFGCHIP2_OTGMODE;
-+#ifdef	CONFIG_USB_MUSB_HOST
-+	val |=  CFGCHIP2_FORCE_HOST;
-+#else
-+	val |=  CFGCHIP2_SESENDEN | CFGCHIP2_VBDTCTEN;
-+#endif
-+
-+	/* configure the CFGCHIP2 register */
-+	__raw_writel(val, cfg_chip2_base);
-+
-+	ret = davinci_cfg_reg_list(da850_usb11_pins);
-+	if (ret) {
-+		pr_warn("%s: USB 1.1 PinMux setup failed: %d\n", __func__, ret);
-+		return;
-+	}
-+
-+	ret = gpio_request_one(DA850_USB1_VBUS_PIN,
-+			GPIOF_DIR_OUT, "USB1 VBUS");
-+	if (ret < 0) {
-+		pr_err("%s: failed to request GPIO for USB 1.1 port "
-+			"power control: %d\n", __func__, ret);
-+		return;
-+	}
-+
-+	ret = gpio_request_one(DA850_USB1_OC_PIN,
-+			GPIOF_DIR_IN, "USB1 OC");
-+	if (ret < 0) {
-+		pr_err("%s: failed to request GPIO for USB 1.1 port "
-+			"over-current indicator: %d\n", __func__, ret);
-+		goto usb11_setup_oc_fail;
-+	}
-+
-+	ret = da8xx_register_usb11(&da850_usb11_pdata);
-+	if (ret) {
-+		pr_warn("%s: USB 1.1 registration failed: %d\n", __func__, ret);
-+		goto usb11_setup_fail;
-+	}
-+
-+	return;
-+
-+usb11_setup_fail:
-+	gpio_free(DA850_USB1_OC_PIN);
-+usb11_setup_oc_fail:
-+	gpio_free(DA850_USB1_VBUS_PIN);
-+}
-+
-+#else /* CONFIG_USB */
-+
-+static __init void da850_usb_init(void)
-+{
-+	return 0;
-+}
-+
-+#endif /* CONFIG_USB */
-+
- #define DA850EVM_SATA_REFCLKPN_RATE	(100 * 1000 * 1000)
- 
- static __init void da850_evm_init(void)
-@@ -1453,6 +1605,7 @@ static __init void da850_evm_init(void)
- 	if (ret)
- 		pr_warn("%s: I2C0 registration failed: %d\n", __func__, ret);
- 
-+	da850_usb_init();
- 
- 	ret = da8xx_register_watchdog();
- 	if (ret)
--- 
-1.7.12.1
+The bigger question is whether we want to change this long-standing
+behaviour of how our write-back cache works.  I don't know that it's
+really worth it, honestly.  If you want to ensure data is on disk, you
+open the file O_SYNC or you issue an fsync, and those calls will return
+an error for a removed block device.  So, I guess I'll ask the same
+question again: why are you looking at this?  Is there some application
+you care about that does buffered I/O to the block device and never does
+an fsync?
 
+> Using this patch, after removed disk, the aio-write will return zero.I
+> think the upper user will check.  (or if the size of block is zero, we
+> return -ENOSPC).
+>
+>>As for your patches, I don't think that putting the i_size_write into
+>>invalidate_partitions is a good idea.  Consider the case of rescanning
+>>partitions: you will always detect a size change now, which is not good.
+>>
+> Yes.But in func rescan_partitions, after invalidate_partitions it will
+> call check_disk_size_change to set size of block_device.
+
+The problem with doing an i_size_write of 0 inside of
+invalidate_partitions is that it isn't just called for the case where a
+device is removed.  A user can initiate a rescan of partitions.  In such
+a case, we don't want to evict all of the cached data for unchanged
+partitions.
+
+The call chain is like this:
+
+blkdev_ioctl
+blkdev_reread_part
+rescan_partitions
+check_disk_size_change
+
+Now look and see what check_disk_size_change will do when it finds out
+that the size has changed:
+
+void check_disk_size_change(struct gendisk *disk, struct block_device
+*bdev)
+{
+        loff_t disk_size, bdev_size;
+
+        disk_size = (loff_t)get_capacity(disk) << 9;
+        bdev_size = i_size_read(bdev->bd_inode);
+        if (disk_size != bdev_size) {
+                char name[BDEVNAME_SIZE];
+
+                disk_name(disk, 0, name);
+                printk(KERN_INFO
+                       "%s: detected capacity change from %lld to
+                %lld\n",
+                       name, bdev_size, disk_size);
+                i_size_write(bdev->bd_inode, disk_size);
+                flush_disk(bdev, false);  <=============
+        }
+}
+
+That will invalidate all of the metadata for any mounted file systems on
+the device.  Also, you'll get a big nasty warning if any files are dirty:
+
+                printk(KERN_WARNING "VFS: busy inodes on changed media or "
+                       "resized disk %s\n", name);
+
+And the reality is that we haven't changed anything, so there's no need
+for this.
+
+After looking at the code further, why do you even need to add the
+second patch?  generic_write_checks will check for a write past the end
+of the block device.
+
+Cheers,
+Jeff
