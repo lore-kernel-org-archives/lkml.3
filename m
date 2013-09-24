@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab3IXNxB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 09:53:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35528 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab3IXNw7 (ORCPT
+	id S1753706Ab3IXNyY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 09:54:24 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:58724 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab3IXNyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 09:52:59 -0400
-Message-ID: <5241992E.3090805@canonical.com>
-Date: Tue, 24 Sep 2013 09:52:46 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 24 Sep 2013 09:54:22 -0400
+Message-ID: <5241996B.5080701@gmail.com>
+Date: Tue, 24 Sep 2013 21:53:47 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de, list@osuosl.org,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
-        HID CORE LAYER <linux-input@vger.kernel.org>,
-        devel@linuxdriverproject.org
-Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to memdup
-References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda> <5237A5D5.8010006@canonical.com> <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com
+Subject: Re: [PATCH 4/6] x86/mem-hotplug: Support initialize page tables bottom
+ up
+References: <524162DA.30004@cn.fujitsu.com> <5241649B.3090302@cn.fujitsu.com> <20130924123340.GE2366@htj.dyndns.org> <52419264.3020409@gmail.com> <20130924132727.GI2366@htj.dyndns.org> <524194F6.4000101@gmail.com> <20130924133908.GJ2366@htj.dyndns.org>
+In-Reply-To: <20130924133908.GJ2366@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 05:29 AM, Jiri Kosina wrote:
-> On Mon, 16 Sep 2013, Joseph Salisbury wrote:
->
->>>> Can you explain a little further?  Mark commit a4a23f6 as bad?  An
->>>> initial bisect already reported that was the first bad commit, so it
->>>> can't be marked bad.  The oops on memcpy() happens after commit a4a23f6
->>>> is reverted.  The oops on memcpy() did not happen before a4a23f6 was
->>>> committed, so I assume this new oops was introduced by a change later.
->>>>
->>>> Right now I'm bisecting down the oops on memcpy() by updating the bisect
->>>> with good or bad, depending if the test kernel hit the oops.  I then
->>>> revert a4a23f6, so that revert is the HEAD of the tree each time before
->>>> building the kernel again(As long as the commit spit out by bisect is
->>>> after when a4a23f6 was introduced).
->>> Yep.  Please continue bisecting the memcpy() oops.
->>>
->>> kmemdup() is just a kzalloc() followed by a memcpy().  When we split it
->>> apart by reverting the patch then we would expect the oops to move to
->>> the memcpy() part.  Somehow "desc" is a bogus pointer, but I don't
->>> immediately see how that is possible.
->>>
->>> regards,
->>> dan carpenter
->> Thanks for the details.  We'll continue the bisect and let you know how
->> it goes.
-> Did this please yield any useful result?
->
-> Thanks,
->
-Thanks for following up, Jiri.  It's been a little tricky narrowing this
-one down.  We bisected a couple of times, and both bisects indicated the
-following commits as the first bad:
+Hi tejun,
 
-commit b1a1442a23776756b254b69786848a94d92445ba
-Author: Jiri Kosina <jkosina@suse.cz>
-Date: Mon Jun 3 11:27:48 2013 +0200
+On 09/24/2013 09:39 PM, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Sep 24, 2013 at 09:34:46PM +0800, Zhang Yanfei wrote:
+>>> But that wouldn't be ideal as we want the page tables above kernel
+>>> image and the above would allocate it above ISA_END_ADDRESS, right?
+>>
+>> The original idea is we will allocate everything above the kernel. So
+>> the pagetables for [ISA_END_ADDRESS, kernel_end) will be also located
+>> above the kernel.
+> 
+> I'm a bit confused why we need two separate calls then.  What's the
+> difference from calling with the whole range?
 
-    HID: core: fix reporting of raw events
+OK, this is just because we allocate pagtables just above the kernel.
+And if we use up the BRK space that is reserved for inital pagetables,
+we will use memblock to allocate memory for pagetables, and the memory
+allocated here should be mapped already. So we first map [kernel_end, end)
+to make memory above the kernel be mapped as soon as possible. And then
+use pagetables allocated above the kernel to map [ISA_END_ADDRESS, kernel_end).
 
-However, reverting this commit does not stop the system from locking up,
-when the wireless trackpad is connected.  I was thinking of maybe using
-a brute force method and pulling out all the HID changes, added in
-3.11-rc1 to ensure the bug goes away.  Then add a group back in at a
-time to narrow down the commit that introduced this.  The bisect should
-have done this, but I'm not sure why it didn't.  It would be greatly
-appreciated if you had any other suggestions on tracking down the cause?
+Thanks.
 
-Thanks,
-
-Joe
+> 
+> Thanks.
+> 
 
 
-
+-- 
+Thanks.
+Zhang Yanfei
