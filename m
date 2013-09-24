@@ -1,52 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751158Ab3IXIAJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 04:00:09 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:31976 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754Ab3IXIAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 04:00:08 -0400
-Message-ID: <52414682.3010608@c-s.fr>
-Date: Tue, 24 Sep 2013 10:00:02 +0200
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751391Ab3IXIA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 04:00:57 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:44148 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189Ab3IXIA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 04:00:56 -0400
+Date: Tue, 24 Sep 2013 10:01:12 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, Imre Deak <imre.deak@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH] drm/i915/tv: clear adjusted_mode.flags
+Message-ID: <20130924080112.GC32145@phenom.ffwll.local>
+Mail-Followup-To: Knut Petersen <Knut_Petersen@t-online.de>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Imre Deak <imre.deak@intel.com>,
+	Chris Wilson <chris@chris-wilson.co.uk>
+References: <522EDB3D.7040504@t-online.de>
+ <1378806270-18132-1-git-send-email-daniel.vetter@ffwll.ch>
+ <52412886.5070106@t-online.de>
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Subject: Re: [PATCH v2] powerpc 8xx: Fixing issue with CONFIG_PIN_TLB
-References: <201309121825.r8CIPrkI005690@localhost.localdomain>   <1379011469.2536.45.camel@snotra.buserror.net> <52329CDF.9020103@c-s.fr>  <1379365336.2536.166.camel@snotra.buserror.net> <5238860F.4030405@c-s.fr> <1379712141.16231.36.camel@aoeu.buserror.net>
-In-Reply-To: <1379712141.16231.36.camel@aoeu.buserror.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52412886.5070106@t-online.de>
+X-Operating-System: Linux phenom 3.10-2-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 24, 2013 at 07:52:06AM +0200, Knut Petersen wrote:
+> Hi Daniel!
+> 
+> This patch is definitely needed for 3.12, but it is still missing in 3.12-rc2 ...
 
-Le 20/09/2013 23:22, Scott Wood a écrit :
->>> The hardware wants to decrement; why fight it?
->> >I see your point.
->> >However it is not clear in the documentation if the decrement is done
->> >really after the update, or at xTLB interrupt. So I propose to still set
->> >the CTR ourself as described in the reference Manual and not assume that
->> >the HW decrements it.
-> It says "every update" -- do you have any reason to believe that's
-> wrong?  It could be tested...
->
->
-Ok. I just test it,  and I observe the following: As we have set the 
-RSV4x bit, the CPU sets Mx_CTR to a value below 0x1c after each update:
-* After writing entry 0x1c, Mx_CTR has value 0x1b
-* After writing entry 0x1d, Mx_CTR has value 0x18
-* After writing entry 0x1e, Mx_CTR has value 0x19
-* After writing entry 0x1f, Mx_CTR has value 0x1a
+Oops, that one fell through the cracks. Applied to -fixes, thanks for
+poking.
+-Daniel
 
-Indeed the first version of my patch was complete, only the description 
-was not fully correct.
-So, in order to minimise code churn, I will re-submit my initial patch 
-with a modified description.
+> 
+> cu,
+>  Knut
+> 
+> On 10.09.2013 11:44, Daniel Vetter wrote:
+> >The native TV encoder has it's own flags to adjust sync modes and
+> >enabled interlaced modes which are totally irrelevant for the adjusted
+> >mode. This worked out nicely since the input modes used by both the
+> >load detect code and reported in the ->get_modes callbacks all have no
+> >flags set, and we also don't fill out any of them in the ->get_config
+> >callback.
+> >
+> >This changed with the additional sanitation done with
+> >
+> >commit 2960bc9cceecb5d556ce1c07656a6609e2f7e8b0
+> >Author: Imre Deak <imre.deak@intel.com>
+> >Date:   Tue Jul 30 13:36:32 2013 +0300
+> >
+> >     drm/i915: make user mode sync polarity setting explicit
+> >
+> >sinc now the "no flags at all" state wouldn't fit through core code
+> >any more. So fix this up again by explicitly clearing the flags in the
+> >->compute_config callback.
+> >
+> >Aside: We have zero checking in place to make sure that the requested
+> >mode is indeed the right input mode we want for the selected TV mode.
+> >So we'll happily fall over if userspace tries to pull us.  But that's
+> >definitely work for a different patch series. So just add a FIXME
+> >comment for now.
+> >
+> >Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
+> >Cc: Knut Petersen <Knut_Petersen@t-online.de>
+> >Cc: Imre Deak <imre.deak@intel.com>
+> >Cc: Chris Wilson <chris@chris-wilson.co.uk>
+> >Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> >---
+> >  drivers/gpu/drm/i915/intel_tv.c | 8 ++++++++
+> >  1 file changed, 8 insertions(+)
+> >
+> >diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+> >index f2c6d79..dd6f84b 100644
+> >--- a/drivers/gpu/drm/i915/intel_tv.c
+> >+++ b/drivers/gpu/drm/i915/intel_tv.c
+> >@@ -916,6 +916,14 @@ intel_tv_compute_config(struct intel_encoder *encoder,
+> >  	DRM_DEBUG_KMS("forcing bpc to 8 for TV\n");
+> >  	pipe_config->pipe_bpp = 8*3;
+> >+	/* TV has it's own notion of sync and other mode flags, so clear them. */
+> >+	pipe_config->adjusted_mode.flags = 0;
+> >+
+> >+	/*
+> >+	 * FIXME: We don't check whether the input mode is actually what we want
+> >+	 * or whether userspace is doing something stupid.
+> >+	 */
+> >+
+> >  	return true;
+> >  }
+> 
 
-Christophe
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
