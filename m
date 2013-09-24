@@ -1,121 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab3IXMN5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:13:57 -0400
-Received: from cc-smtpout2.netcologne.de ([89.1.8.212]:58156 "EHLO
-	cc-smtpout2.netcologne.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210Ab3IXMNy (ORCPT
+	id S1752216Ab3IXMRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:17:32 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:57840 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab3IXMRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:13:54 -0400
-Date: Tue, 24 Sep 2013 14:13:48 +0200
-From: Kurt Garloff <kurt@garloff.de>
-To: Linux USB list <linux-usb@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <GregKH@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH] usb/core/devio.c: Don't reject control message to endpoint
- with wrong direction bit
-Message-ID: <20130924121348.GB32287@nehalem.garloff.de>
+	Tue, 24 Sep 2013 08:17:30 -0400
+Date: Tue, 24 Sep 2013 08:17:25 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Subject: Re: [PATCH 2/6] memblock: Introduce bottom-up allocation mode
+Message-ID: <20130924121725.GC2366@htj.dyndns.org>
+References: <524162DA.30004@cn.fujitsu.com>
+ <524163CF.3010303@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Operating-System: Linux 3.0.96-default x86_64
-X-PGP-Info: on http://www.garloff.de/kurt/mykeys.pgp
-X-PGP-Key: 1024D/1C98774E
+In-Reply-To: <524163CF.3010303@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Sep 24, 2013 at 06:05:03PM +0800, Zhang Yanfei wrote:
+> +/* Allocation direction */
+> +enum {
+> +	MEMBLOCK_DIRECTION_TOP_DOWN,
+> +	MEMBLOCK_DIRECTION_BOTTOM_UP,
+> +	NR_MEMLBOCK_DIRECTIONS
+> +};
+> +
+>  struct memblock_region {
+>  	phys_addr_t base;
+>  	phys_addr_t size;
+> @@ -35,6 +42,7 @@ struct memblock_type {
+>  };
+>  
+>  struct memblock {
+> +	int current_direction;  /* current allocation direction */
 
-this has been discussed on linux-usb and Alan Stern provided very
-helpful feedback.
+Just use boolean bottom_up here too?  No need for the constants.
 
-Please merge this patch ...
+> @@ -20,6 +20,8 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/memblock.h>
+>  
+> +#include <asm-generic/sections.h>
+> +
 
+Why is the above added by this patch?
 
-From: Kurt Garloff <kurt@garloff.de>
-Date: Mon, 23 Sep 2013 14:19:02 +0200
-Subject: Tolerate wrong direction bit in endpoint address for control messages
-    
-Trying to read data from the Pegasus Technologies NoteTaker (0e20:0101)
-[1] with the Windows App (EasyNote) works natively but fails when
-Windows is running under KVM (and the USB device handed to KVM).
-    
-The reason is a USB control message
- usb 4-2.2: control urb: bRequestType=22 bRequest=09 wValue=0200 wIndex=0001 wLength=0008
-This goes to endpoint address 0x01 (wIndex); however, endpoint address 
-0x01 does not exist. There is an endpoint 0x81 though (same number,
-but other direction); the app may have meant that endpoint instead.
- 
-The kernel thus rejects the IO and thus we see the failure.
-    
-Apparently, Linux is more strict here than Windows ... we can't change
-the Win app easily, so that's a problem.
+>  /**
+> + * __memblock_find_range - find free area utility
+> + * @start: start of candidate range
+> + * @end: end of candidate range, can be %MEMBLOCK_ALLOC_{ANYWHERE|ACCESSIBLE}
+> + * @size: size of free area to find
+> + * @align: alignment of free area to find
+> + * @nid: nid of the free area to find, %MAX_NUMNODES for any node
+> + *
+> + * Utility called from memblock_find_in_range_node(), find free area bottom-up.
+> + *
+> + * RETURNS:
+> + * Found address on success, %0 on failure.
 
-It seems that the Win app/driver is buggy here and the driver does not
-behave fully according to the USB HID class spec that it claims to 
-belong to.  The device seems to happily deal with that though (and 
-seems to not really care about this value much).
+I don't think we prefix numeric literals with %.
 
-So the question is whether the Linux kernel should filter here.
-Rejecting has the risk that somewhat non-compliant userspace apps/
-drivers (most likely in a virtual machine) are prevented from working.
-Not rejecting has the risk of confusing an overly sensitive device with
-such a transfer. Given the fact that Windows does not filter it makes
-this risk rather small though.
+...
+> @@ -127,6 +162,10 @@ __memblock_find_range_rev(phys_addr_t start, phys_addr_t end,
+>   *
+>   * Find @size free area aligned to @align in the specified range and node.
+>   *
+> + * When allocation direction is bottom-up, the @start should be greater
+> + * than the end of the kernel image. Otherwise, it will be trimmed. And also,
+> + * if bottom-up allocation failed, will try to allocate memory top-down.
 
-The patch makes the kernel more tolerant: If the endpoint address in
-wIndex does not exist, but an endpoint with toggled direction bit does,
-it will let the transfer through. (It does NOT change the message.)
+It'd be nice to explain that bottom-up allocation is limited to above
+kernel image and what it's used for here.
 
-With attached patch, the app in Windows in KVM works.
- usb 4-2.2: check_ctrlrecip: process 13073 (qemu-kvm) requesting ep 01 but needs 81
-    
-I suspect this will mostly affect apps in virtual environments; as on
-Linux the apps would have been adapted to the stricter handling of the
-kernel. I have done that for mine[2].
- 
-[1] http://www.pegatech.com/
-[2] https://sourceforge.net/projects/notetakerpen/
+> + *
+>   * RETURNS:
+>   * Found address on success, %0 on failure.
+>   */
+> @@ -134,6 +173,8 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>  					phys_addr_t end, phys_addr_t size,
+>  					phys_addr_t align, int nid)
+>  {
+> +	int ret;
+> +
+>  	/* pump up @end */
+>  	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+>  		end = memblock.current_limit;
+> @@ -142,6 +183,28 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>  	start = max_t(phys_addr_t, start, PAGE_SIZE);
+>  	end = max(start, end);
+>  
+> +	if (memblock_bottom_up()) {
+> +		phys_addr_t bottom_up_start;
+> +
+> +		/* make sure we will allocate above the kernel */
+> +		bottom_up_start = max_t(phys_addr_t, start, __pa_symbol(_end));
+> +
+> +		/* ok, try bottom-up allocation first */
+> +		ret = __memblock_find_range(bottom_up_start, end,
+> +					    size, align, nid);
+> +		if (ret)
+> +			return ret;
+> +
+> +		/*
+> +		 * we always limit bottom-up allocation above the kernel,
+> +		 * but top-down allocation doesn't have the limit, so
+> +		 * retrying top-down allocation may succeed when bottom-up
+> +		 * allocation failed.
+> +		 */
+> +		pr_warn("memblock: Failed to allocate memory in bottom up "
+> +			"direction. Now try top down direction.\n");
 
-Signed-off-by: Kurt Garloff <kurt@garloff.de>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Cc: stable@vger.kernel.org
----
- drivers/usb/core/devio.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+Maybe just print warning only on the first failure?
 
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index 737e3c1..71dc5d7 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -742,6 +742,22 @@ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
- 		if ((index & ~USB_DIR_IN) == 0)
- 			return 0;
- 		ret = findintfep(ps->dev, index);
-+		if (ret < 0) {
-+			/*
-+			 * Some not fully compliant Win apps seem to get
-+			 * index wrong and have the endpoint number here
-+			 * rather than the endpoint address (with the
-+			 * correct direction). Win does let this through,
-+			 * so we'll not reject it here but leave it to
-+			 * the device to not break KVM. But we warn.
-+			 */
-+			ret = findintfep(ps->dev, index ^ 0x80);
-+			if (ret >= 0)
-+				dev_info(&ps->dev->dev,
-+					"%s: process %i (%s) requesting ep %02x but needs %02x\n",
-+					__func__, task_pid_nr(current),
-+					current->comm, index, index ^ 0x80);
-+		}
- 		if (ret >= 0)
- 			ret = checkintf(ps, ret);
- 		break;
+Otherwise, looks good to me.
 
+Thanks.
 
 -- 
-Kurt Garloff <kurt@garloff.de>  [Koeln, Germany]
-
+tejun
