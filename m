@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab3IXVpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:45:21 -0400
-Received: from smtprelay0145.hostedemail.com ([216.40.44.145]:56797 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752933Ab3IXVpU (ORCPT
+	id S1754731Ab3IXVs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 17:48:28 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40001 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753517Ab3IXVs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:45:20 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:2737:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3873:4321:5007:6120:6248:7652:9545:10004:10400:10848:11232:11473:11658:11914:12517:12519:12533:12740:13069:13072:13095:13286:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: mice45_112e4963ab60b
-X-Filterd-Recvd-Size: 1828
-Message-ID: <1380059116.18695.5.camel@joe-AO722>
-Subject: Re: [RFC patch] Update Jens Osterkamp email address
-From: Joe Perches <joe@perches.com>
-To: Ishizaki Kou <kou.ishizaki@toshiba.co.jp>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Sep 2013 14:45:16 -0700
-In-Reply-To: <1380057697.18695.2.camel@joe-AO722>
-References: <cover.1380056108.git.joe@perches.com>
-	 <OF686C5618.58B3CEF3-ONC1257BF0.0074538C-C1257BF0.00745392@de.ibm.com>
-	 <1380057697.18695.2.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Sep 2013 17:48:26 -0400
+Date: Tue, 24 Sep 2013 22:48:00 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Landley <rob@landley.net>
+Cc: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Andrew Morton <akpm@osdl.org>,
+        Trivial patch monkey <trivial@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: new binutils needed for arm in 3.12-rc1
+Message-ID: <20130924214800.GV25647@n2100.arm.linux.org.uk>
+References: <yw1xpprywhad.fsf@unicorn.mansr.com> <1380057828.1974.73@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380057828.1974.73@driftwood>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-24 at 14:21 -0700, Joe Perches wrote:
-> The old address isn't working.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> 
-> Maybe if you're still interested in receiving emails
-> on this old driver...
-> 
-> On Tue, 2013-09-24 at 14:10 -0700, Postmaster@de.ibm.com wrote:
-> > Your message
-> >   Subject: [PATCH 08/10] toshiba: Remove extern from function prototypes
-> > was not delivered to:
-> >   jens@de.ibm.com
-> > because:
-> >   User jens (jens@de.ibm.com) not listed in Domino Directory
+On Tue, Sep 24, 2013 at 04:23:48PM -0500, Rob Landley wrote:
+> What value is there in requiring the new toolchain? From what I could  
+> see of the commits it was micro-optimizations around memory barriers.
+>
+> *shrug* I can revert the patch locally, or patch the extra instruction  
+> into my toolchain. But I do object to changing the documentation  
+> globally for every architecture because one architecture did something  
+> they apparently never thought through (or they'd have commented in the  
+> commit that it requires a big toolchain version jump; pretty sure they  
+> didn't actually notice).
 
-Nevermind.  The newer address isn't working either.
+Some of us are notoriously slow at updating our toolchains.  I'm still
+using gcc 4.5.4 here, and people regard that as bordering on "too old"
+because of the amount of warnings it spits out.  Binutils?  I upgraded
+to 2.22 when I needed to fix a problem I was having with the previous
+binutils I was using (I think that was 2.18).
 
-------
-VMSDVM9.POK.IBM.COM unable to deliver following mail to recipient(s):
-    <jens@linux.ibm.com>
-VMSDVM9.POK.IBM.COM received negative reply:
-550 5.1.1 <jens@linux.ibm.com>: Recipient address rejected: User unknown
-in local recipient table
--------
+I generally don't touch my toolchain unless there's a _reason_ I need
+to, and as I've already updated to 2.22, it's a normally a pretty safe
+bet that everyone else is already using 2.22 or later.  One reason for
+this is that I don't want to be messing around trying to work out
+whether a bug I'm seeing is because of a toolchain problem or something
+in the kernel.
 
-Ishizaki?
+I realised at the time that I'm going to got shouted at if I accepted
+the patches by a minority who wanted to keep their old toolchains, but
+I also realise that if I don't accept the patches, I'll get shouted at
+by another group.  It's the classic damned if I do and damned if I
+don't.  So I've chosen the lesser of the two weavels.
 
-Maybe you know of a more current address or maybe
-you could delete Jens' email address from MAINTAINERS.
+Now, if you feel strongly about this, we _could_ introduce a
+CONFIG_OLD_BINUTILS and give everyone their cake - but it will be
+fragile.  Not everyone will remember to get that right, because they'll
+be using the later binutils.  Also, we already have an excessive number
+of potential breakage-inducing options and we certainly don't need
+another.
 
-
+Use IS_ENABLED() I hear you say.  That won't get the one dsb instruction
+in some SoC code which was missed which will break the build on older
+toolchains.
