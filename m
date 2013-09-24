@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600Ab3IXIFF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 04:05:05 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40712 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab3IXIE7 (ORCPT
+	id S1752669Ab3IXIGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 04:06:35 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:16935 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab3IXIGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 04:04:59 -0400
-Date: Tue, 24 Sep 2013 10:04:36 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>
-Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
-Message-ID: <20130924080436.GH9326@twins.programming.kicks-ass.net>
-References: <1379799901.24090.6.camel@pasglop>
- <523E4F8A.7020708@zytor.com>
- <1379824754.24090.11.camel@pasglop>
- <1379824861.24090.12.camel@pasglop>
- <20130922162410.GA10649@laptop.programming.kicks-ass.net>
- <1379887000.24090.19.camel@pasglop>
- <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
- <1379981427.5443.8.camel@pasglop>
- <CA+55aFwyVG4DXOEvaVTp0gE-H2Zy0Kx7Mg7RWzpxzwm_RSWEYQ@mail.gmail.com>
- <1379987527.5443.20.camel@pasglop>
+	Tue, 24 Sep 2013 04:06:31 -0400
+From: Josh Wu <josh.wu@atmel.com>
+To: <cooloney@gmail.com>, <rpurdie@rpsys.net>
+CC: <linux-leds@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Josh Wu <josh.wu@atmel.com>
+Subject: [PATCH] leds-gpio: of: led should not be created if its status is disabled
+Date: Tue, 24 Sep 2013 16:04:22 +0800
+Message-ID: <1380009863-6454-1-git-send-email-josh.wu@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379987527.5443.20.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 11:52:07AM +1000, Benjamin Herrenschmidt wrote:
-> So if that holds, we have a solid way to do per-cpu. On one side, I tend
-> to think that r13 being task/thread/thread_info is probably a better
-> overall choice, I'm worried that going in a different direction than x86
-> means generic code will get "tuned" to use per-cpu for performance
-> critical stuff rather than task/thread/thread_info in inflexible ways.
+now the leds-gpio driver will create every child led node without
+checking the status is disabled or not.
 
-The plus side of per-cpu over per-task is that one typically has a lot
-less cpus than tasks. Also, its far easier/cheaper to iterate cpus than
-it is to iterate tasks.
+for example, if we have a led node like d3, and its status is disabled:
+	leds {
+		d3 {
+			label = "d3";
+			gpios = <&pioE 24 0>;
+			status = "disabled";
+		};
+	};
+
+we except the d3 should not be created. And the gpios should not be
+request as well.
+
+But current driver will create d3 and request its gpio.
+
+This patch fix this by using for_each_available_child_of_node() to
+enumerate all child nodes. So the disabled node will be inavilable.
+
+Signed-off-by: Josh Wu <josh.wu@atmel.com>
+---
+ drivers/leds/leds-gpio.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
+index e8b01e5..9bb4e04 100644
+--- a/drivers/leds/leds-gpio.c
++++ b/drivers/leds/leds-gpio.c
+@@ -167,23 +167,23 @@ static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node, *child;
+ 	struct gpio_leds_priv *priv;
+-	int count, ret;
++	int count = 0, ret;
+ 
+ 	/* count LEDs in this device, so we know how much to allocate */
+-	count = of_get_child_count(np);
+-	if (!count)
+-		return ERR_PTR(-ENODEV);
+-
+-	for_each_child_of_node(np, child)
++	for_each_available_child_of_node(np, child) {
++		count++;
+ 		if (of_get_gpio(child, 0) == -EPROBE_DEFER)
+ 			return ERR_PTR(-EPROBE_DEFER);
++	}
++	if (!count)
++		return ERR_PTR(-ENODEV);
+ 
+ 	priv = devm_kzalloc(&pdev->dev, sizeof_gpio_leds_priv(count),
+ 			GFP_KERNEL);
+ 	if (!priv)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	for_each_child_of_node(np, child) {
++	for_each_available_child_of_node(np, child) {
+ 		struct gpio_led led = {};
+ 		enum of_gpio_flags flags;
+ 		const char *state;
+-- 
+1.7.9.5
+
