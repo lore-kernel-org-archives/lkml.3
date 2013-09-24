@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341Ab3IXHhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 03:37:25 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38220 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab3IXHhY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 03:37:24 -0400
-Message-ID: <52414128.8030706@pengutronix.de>
-Date: Tue, 24 Sep 2013 09:37:12 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+	id S1752333Ab3IXHjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 03:39:51 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34119 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750733Ab3IXHjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 03:39:49 -0400
+Message-ID: <524141A6.2090701@ti.com>
+Date: Tue, 24 Sep 2013 13:09:18 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>,
-        linux-can@vger.kernel.org
-Subject: Re: [PATCH 01/10] can: Remove extern from function prototypes
-References: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
-In-Reply-To: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="SG8AfUo3gTIoKWh5E6fcuER59cc8ViKKH"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Tony Lindgren <tony@atomide.com>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Balaji T K <balajitk@ti.com>, Jon Hunter <jgchunter@gmail.com>,
+        <linux-gpio@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] gpio/omap: auto-setup a GPIO when used as an IRQ
+References: <1379860848-29020-1-git-send-email-javier.martinez@collabora.co.uk> <20130923164519.GF2684@atomide.com> <524073BC.9080907@collabora.co.uk> <20130923170724.GG2684@atomide.com>
+In-Reply-To: <20130923170724.GG2684@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---SG8AfUo3gTIoKWh5E6fcuER59cc8ViKKH
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
+On Monday 23 September 2013 10:37 PM, Tony Lindgren wrote:
+> * Javier Martinez Canillas <javier.martinez@collabora.co.uk> [130923 10:09]:
+>> On 09/23/2013 06:45 PM, Tony Lindgren wrote:
+>>> Hmm does this still work for legacy platform data based
+>>> drivers that are doing gpio_request() first?
+>>>
+>> Yes it still work when booting using board files. I tested on my OMAP3 board and
+>> it worked in both DT and legacy booting mode.
+> OK great.
+>  
+>>> And what's the path for clearing things for PM when free_irq()
+>>> gets called? It seems that this would leave the GPIO bank
+>>> enabled causing a PM regression?
+>>>
+>> Indeed, I did set bank->mod_usage |= 1 << offset so the bank is enabled if the
+>> device goes to suspended and then resumed but I completely forget about the
+>> clearing path when the IRQ is freed.
+>>
+>> Which makes me think that we should probably maintain two usage variables, one
+>> for GPIO and another one for IRQ and check both of them on the suspend/resume pm
+>> functions.
+> Yes that it seems that they should be treated separately.
+ To understand, why cant the flag be cleared in gpio_irq_shutdown ?
 
-On 09/24/2013 12:11 AM, Joe Perches wrote:
-> There are a mix of function prototypes with and without extern
-> in the kernel sources.  Standardize on not using extern for
-> function prototypes.
->=20
-> Function prototypes don't need to be written with extern.
-> extern is assumed by the compiler.  Its use is as unnecessary as
-> using auto to declare automatic/local variables in a block.
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
-
-Thx, added to linux-can-next. The patch will be included in the next
-pull request to David.
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---SG8AfUo3gTIoKWh5E6fcuER59cc8ViKKH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlJBQSgACgkQjTAFq1RaXHOosQCdHzjND4NQOeaKoz6vv7RjjKsV
-k4IAn2E/UoKcsCmrCXKBAIfRsqdXkP3t
-=tYWu
------END PGP SIGNATURE-----
-
---SG8AfUo3gTIoKWh5E6fcuER59cc8ViKKH--
+Regards,
+ Sricharan
