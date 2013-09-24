@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab3IXQnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 12:43:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14493 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab3IXQnp (ORCPT
+	id S1754320Ab3IXQob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 12:44:31 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42574 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab3IXQoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 12:43:45 -0400
-X-Authority-Analysis: v=2.0 cv=LYm+G0ji c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=6uerBSPhkSsA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=rzOjJkEkrDcA:10 a=20KFwNOVAAAA:8 a=TjSqwAcOZwPWnt3izXcA:9 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=5Au0VPIJt5UA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 24 Sep 2013 12:43:41 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130924124341.64d57912@gandalf.local.home>
-In-Reply-To: <20130924160359.GA2739@redhat.com>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
-	<1378805550-29949-38-git-send-email-mgorman@suse.de>
-	<20130917143003.GA29354@twins.programming.kicks-ass.net>
-	<20130917162050.GK22421@suse.de>
-	<20130917164505.GG12926@twins.programming.kicks-ass.net>
-	<20130918154939.GZ26785@twins.programming.kicks-ass.net>
-	<20130919143241.GB26785@twins.programming.kicks-ass.net>
-	<20130923175052.GA20991@redhat.com>
-	<20130924123821.GT12926@twins.programming.kicks-ass.net>
-	<20130924160359.GA2739@redhat.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 24 Sep 2013 12:44:30 -0400
+Message-ID: <5241C168.4060100@wwwdotorg.org>
+Date: Tue, 24 Sep 2013 10:44:24 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 08/12] clk: tegra: move periph clocks to common file
+References: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com> <1379515331-19427-9-git-send-email-pdeschrijver@nvidia.com> <5240890F.6050807@wwwdotorg.org> <20130924082004.GJ30013@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20130924082004.GJ30013@tbergstrom-lnx.Nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Sep 2013 18:03:59 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
-
-> On 09/24, Peter Zijlstra wrote:
-> >
-> > +static inline void get_online_cpus(void)
-> > +{
-> > +	might_sleep();
-> > +
-> > +	if (current->cpuhp_ref++) {
-> > +		barrier();
-> > +		return;
+On 09/24/2013 02:20 AM, Peter De Schrijver wrote:
+> On Mon, Sep 23, 2013 at 08:31:43PM +0200, Stephen Warren wrote:
+>> On 09/18/2013 08:41 AM, Peter De Schrijver wrote:
+>>> Introduce a new file for peripheral clocks common between several Tegra
+>>> SoCs and move Tegra114 to this new infrastructure. Also PLLP and the PLLP_OUT
+>>> clocks will be initialized here.
+>>
+>>> diff --git a/drivers/clk/tegra/clk-tegra-periph.c b/drivers/clk/tegra/clk-tegra-periph.c
+>>
+>> Similarly here: don't the following differences exist between the SoCs:
+>>
+>> * At least the set of extant peripheral clocks, and perhaps some
+>> parameters of those clocks.
 > 
-> I don't undestand this barrier()... we are going to return if we already
-> hold the lock, do we really need it?
-
-I'm confused too. Unless gcc moves this after the release, but the
-release uses preempt_disable() which is its own barrier.
-
-If anything, it requires a comment.
-
--- Steve
-
+> That's what the tegra_clks is for. If the clock isn't in that table, it won't
+> be registered.
 > 
-> The same for put_online_cpus().
+>> * The set of legal parents for some peripheral clocks (?)
 > 
-> > +void __get_online_cpus(void)
-> >  {
-> > -	if (cpu_hotplug.active_writer == current)
-> > +	if (cpuhp_writer_task == current)
-> >  		return;
-> 
+> If they differ for Tegra20 and Tegra30, we will need some extra clocks here,
+> which will have a new ID and then only be defined in the tegra_clks for those
+> SoCs. Alternatively they can stay in the SoC specific files.
+
+I guess that would work.
+
+However, I'd suggest simply leaving all the SoC-specific stuff in the
+SoC-specific files until it actually becomes shared. Otherwise, you're
+simply putting all the code into one big file, and parameterizing it to
+get the correct SoC-specific clocks registered, when you could just keep
+the SoC-specific code in the SoC-specific file/functions, and not need
+any of the conditions.
