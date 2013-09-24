@@ -1,95 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab3IXMnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:43:03 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:39487 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab3IXMnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:43:00 -0400
-Message-ID: <1380026575.3371.1.camel@ThinkPad-X230.localdomain>
-Subject: Re: [PATCH v3 0/4] Fix Win8 backlight issue
-From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
-        Mike Galbraith <bitbucket@online.de>
-Date: Tue, 24 Sep 2013 16:42:55 +0400
-In-Reply-To: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
-References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.9.92 (3.9.92-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753613Ab3IXMoI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:44:08 -0400
+Received: from 8bytes.org ([85.214.48.195]:45402 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882Ab3IXMoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 08:44:05 -0400
+Date: Tue, 24 Sep 2013 14:44:02 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: joe@perches.com, festevam@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iommu: No need to pass '0x' when '%pa' is used
+Message-ID: <20130924124401.GB5150@8bytes.org>
+References: <1377177942-24965-1-git-send-email-fabio.estevam@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377177942-24965-1-git-send-email-fabio.estevam@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Sep 24 14:44:04 2013
+X-DSPAM-Confidence: 0.9987
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5241891420861633738235
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-24 at 17:47 +0800, Aaron Lu wrote:
-> v3:
-> 1 Add a new patch 4/4 to fix some problems in thinkpad-acpi module;
-> 2 Remove unnecessary function acpi_video_unregister introduced in
->   patch 2/3 as pointed out by Jani Nikula.
+On Thu, Aug 22, 2013 at 10:25:42AM -0300, Fabio Estevam wrote:
+> Commit 6197ca82 (iommu: Use %pa and %zx instead of casting) introduced the 
+> usage of '%pa', but still kept the '0x', which leads to printing '0x0x'.
 > 
-> v2:
-> v1 has the subject of "Rework ACPI video driver" and is posted here:
-> http://lkml.org/lkml/2013/9/9/74
-> Since the objective is really to fix Win8 backlight issues, I changed
-> the subject in this version, sorry about that.
-> 
-> This patchset has three patches, the first introduced a new API named
-> backlight_device_registered in backlight layer that can be used for
-> backlight interface provider module to check if a specific type backlight
-> interface has been registered, see changelog for patch 1/3 for details.
-> Then patch 2/3 does the cleanup to sepeate the backlight control and
-> event delivery functionality in the ACPI video module and patch 3/3
-> solves some Win8 backlight control problems by avoiding register ACPI
-> video's backlight interface if:
-> 1 Kernel cmdline option acpi_backlight=video is not given;
-> 2 This is a Win8 system;
-> 3 Native backlight control interface exists.
-> 
-> Technically, patch 2/3 is not required to fix the issue here. So if you
-> think it is not necessary, I can remove it from the series.
-> 
-> Aaron Lu (4):
->   backlight: introduce backlight_device_registered
->   ACPI / video: seperate backlight control and event interface
->   ACPI / video: Do not register backlight if win8 and native interface
->     exists
->   thinkpad-acpi: fix handle locate for video and query of _BCL
-> 
->  drivers/acpi/internal.h              |   5 +-
->  drivers/acpi/video.c                 | 442 ++++++++++++++++++++---------------
->  drivers/acpi/video_detect.c          |  14 +-
->  drivers/platform/x86/thinkpad_acpi.c |  31 ++-
->  drivers/video/backlight/backlight.c  |  31 +++
->  include/acpi/video.h                 |   2 +
->  include/linux/backlight.h            |   4 +
->  7 files changed, 324 insertions(+), 205 deletions(-)
-> 
+> Remove the '0x' when '%pa' is used.
 
-Excellent! I've tested this patch-set on ThinkPad X230 and backlight
-issue is exhausted.
+Applied to core branch, thanks.
 
-Thanks.
-
--- 
-Igor Gnatenko
-Fedora release 20 (Heisenbug)
-Linux 3.11.1-300.fc20.x86_64
 
