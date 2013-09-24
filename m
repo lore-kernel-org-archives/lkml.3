@@ -1,134 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750892Ab3IXEyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 00:54:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65473 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706Ab3IXEyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 00:54:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,968,1371106800"; 
-   d="scan'208";a="382616848"
-Date: Tue, 24 Sep 2013 07:59:42 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 2/2] gpio / ACPI: add support for GPIO operation regions
-Message-ID: <20130924045942.GE28875@intel.com>
-References: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
- <1379085280-2211-2-git-send-email-mika.westerberg@linux.intel.com>
- <1AE640813FDE7649BE1B193DEA596E880246367A@SHSMSX101.ccr.corp.intel.com>
- <20130915065151.GK7393@intel.com>
- <1AE640813FDE7649BE1B193DEA596E88024639E4@SHSMSX101.ccr.corp.intel.com>
- <1AE640813FDE7649BE1B193DEA596E8802463A46@SHSMSX101.ccr.corp.intel.com>
- <20130916081048.GM7393@intel.com>
- <1AE640813FDE7649BE1B193DEA596E8802463D85@SHSMSX101.ccr.corp.intel.com>
- <20130917083712.GS7393@intel.com>
- <1AE640813FDE7649BE1B193DEA596E880246596B@SHSMSX101.ccr.corp.intel.com>
+	id S1751114Ab3IXEzk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 00:55:40 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:47178 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab3IXEzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 00:55:39 -0400
+Date: Tue, 24 Sep 2013 13:55:36 +0900
+From: Simon Horman <horms@verge.net.au>
+To: takasi-y@ops.dti.ne.jp
+Cc: SH-Linux <linux-sh@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
+        ben.dooks@codethink.co.uk,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] ARM: shmobile: kzm9d-reference: Use common clock
+ framework
+Message-ID: <20130924045536.GF3619@verge.net.au>
+References: <52410F86.4040301@renesas.com>
+ <20130924131703.4834a055892285858338003c@ops.dti.ne.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E880246596B@SHSMSX101.ccr.corp.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <20130924131703.4834a055892285858338003c@ops.dti.ne.jp>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 12:47:56AM +0000, Zheng, Lv wrote:
-> > From: Mika Westerberg [mailto:mika.westerberg@linux.intel.com]
-> > Sent: Tuesday, September 17, 2013 4:37 PM
-> > 
-> > On Mon, Sep 16, 2013 at 11:35:56PM +0000, Zheng, Lv wrote:
-> > > > From: Mika Westerberg [mailto:mika.westerberg@linux.intel.com]
-> > > > Sent: Monday, September 16, 2013 4:11 PM
-> > > >
-> > > > On Mon, Sep 16, 2013 at 01:21:53AM +0000, Zheng, Lv wrote:
-> > > > > > A pseudo device may be created to access the GPIO operation region fields provided by one GPIO device.
-> > > > > > The pseudo device may have other functions to access other GPIO operation region fields provided by other GPIO devices, or even
-> > worse
-> > > > to
-> > > > > > access other ACPI provided value-adds.
-> > > > > > So hierarchically the pseudo device only requires CPU, thus should not be under the GPIO device, which means the GPIO operation
-> > > > regions
-> > > > > > have nothing to do with the GPIO devices' ACPI handle.
-> > > > >
-> > > > > Sorry for the wording.
-> > > > > It's better to say the GPIO operation region users haven't strict
-> > > > > relationship to the GPIO operation region providers.
-> > > > > As the installation is to provide GPIO operation regions to the users, it
-> > > > > shouldn't relate to the providers' ACPI handle.
-> > > >
-> > > > If I understand you correctly you mean that there might be multiple users
-> > > > (different devices) for the same GPIO operation region, right?
-> > >
-> > > No, this is not what I meant.
-> > > Can one vendor device uses two or more GPIO pins from different GPIO ports?
-> > 
-> > Yes.
+On Tue, Sep 24, 2013 at 01:17:03PM +0900, takasi-y@ops.dti.ne.jp wrote:
+> Use common clock framework version of clock
+>  drivers/clk/shmobile/clk-emev2.c
+> instead of sh-clkfwk version
+>  arch/arm/mach-shmobile/clock-emev2.c
 > 
-> So how can such a device under one of these GPIO ports?
-> It can only be under one particular GPIO port device, right?
+> kzm9d(without -reference) still uses sh-clkfwk version.
 > 
-> Thus I believe such device will appear below other devices rather than
-> below a GPIO port device in the ACPI namespace.
-
-I'm sorry, but I can't follow what you mean.
-
-> > > > That shouldn't be a problem as far as I can tell.
-> > > >
-> > > > What comes to the hierarchy you refer, I'm not sure if that is a problem
-> > > > either (unless I'm missing something). The GPIO can be used anywhere in the
-> > > > ASL, it doesn't have to be descendant of the GPIO device. You only need to
-> > > > do something like this:
-> > > >
-> > > > 	// Assert the GPIO
-> > > > 	Store(1, \_SB.PCI0.SHD3)
-> > > >
-> > > > In other words, use the fully qualified name.
-> > >
-> > > Yes, which means this line of code can be everywhere in the namespace.
-> > > It is not required to be under one particular GPIO device as long as there is an operation region defined in that scope.
-> > >
-> > > The problem is the installation, the first parameter for
-> > > acpi_install_address_space_handler() is a namespace node, the function
-> > > will call _REG for all OperationRegions below the scope whose top most
-> > > node is the specified node.
-> > > The nodes out of this scope are not affected.  So if an OperationRegion
-> > > is defined out of this scope, problem happens.
-> > 
-> > I suppose for that operation region another GPIO device should be
-> > introduced then, no?
+> Because two of that framework can not live in one kernel binary,
+> there will be SoCs and Boards that can not be in one binary as
+> multiplatform binary or so.
+> For example, kzm9d and kzm9d-reference is now exclusive.
 > 
-> I believe the answer is no.
+> Signed-off-by: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
 
-Consider a situation, where you have two different GPIO controllers and the
-ASL code needs to access GPIOs on both controllers. That requires
-introducing two GPIO devices in ACPI namespace and two separate drivers as
-well.
+Magnus, could you confirm whether or not you would like
+common clocks to be mandatory for -reference in the near-term?
 
+> ---
+>  arch/arm/mach-shmobile/Kconfig                 | 1 +
+>  arch/arm/mach-shmobile/board-kzm9d-reference.c | 5 ++---
+>  2 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> > So if we don't have a GPIO driver for the given operation region, what can
-> > we do? We don't want the ASL code to erroneusly think that there is an
-> > operation region available when it is not.
+> diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
+> index 50bab8d..d20d4ce 100644
+> --- a/arch/arm/mach-shmobile/Kconfig
+> +++ b/arch/arm/mach-shmobile/Kconfig
+> @@ -237,6 +237,7 @@ config MACH_KZM9D_REFERENCE
+>  	depends on ARCH_EMEV2
+>  	select REGULATOR_FIXED_VOLTAGE if REGULATOR
+>  	select USE_OF
+> +	select COMMON_CLK
+>  	---help---
+>  	   Use reference implementation of KZM9D board support
+>  	   which makes a greater use of device tree at the expense
+> diff --git a/arch/arm/mach-shmobile/board-kzm9d-reference.c b/arch/arm/mach-shmobile/board-kzm9d-reference.c
+> index 8f8bb2f..e0b8317 100644
+> --- a/arch/arm/mach-shmobile/board-kzm9d-reference.c
+> +++ b/arch/arm/mach-shmobile/board-kzm9d-reference.c
+> @@ -20,15 +20,14 @@
+>  
+>  #include <linux/init.h>
+>  #include <linux/of_platform.h>
+> +#include <linux/clk-provider.h>
+>  #include <mach/emev2.h>
+>  #include <mach/common.h>
+>  #include <asm/mach/arch.h>
+>  
+>  static void __init kzm9d_add_standard_devices(void)
+>  {
+> -	if (!IS_ENABLED(CONFIG_COMMON_CLK))
+> -		emev2_clock_init();
+> -
+> +	of_clk_init(NULL);
+>  	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+>  }
+>  
+> -- 
+> 1.8.1.5
 > 
-> I think GPIO "address_space_handler" should be provided by an ACPI GPIO
-> address space module rather than provided by a particular GPIO driver.
-> 
-> Actually, without the readiness of the GPIO driver, currently ASL code
-> can still access the GPIO fields, though it just results in "handler not
-> found" ACPICA error message.  If the "setup" callback is implemented,
-> then the proper GPIO driver can be matched in this "setup" callback.  If
-> the GPIO driver hasn't been loaded by Linux and thus not matched in the
-> "setup" callback, from users' point of view, the result is just changing
-> the error message from "handler not found" to "driver not found".
-
-Well, I'm fine implementing a single global GPIO region handler (instead of
-what is done in this series).
-
-Rafael, do you have any comments on this?
