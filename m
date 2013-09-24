@@ -1,262 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab3IXI5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 04:57:41 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35554 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335Ab3IXIyh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 04:54:37 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
-CC: <p.zabel@pengutronix.de>, <broonie@kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v3 02/10] usb: phy: generic: Don't use regulator framework for RESET line
-Date: Tue, 24 Sep 2013 11:53:48 +0300
-Message-ID: <1380012836-29900-3-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1380012836-29900-1-git-send-email-rogerq@ti.com>
-References: <1380012836-29900-1-git-send-email-rogerq@ti.com>
+	id S1754135Ab3IXI6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 04:58:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49055 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754103Ab3IXI57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 04:57:59 -0400
+Date: Tue, 24 Sep 2013 16:57:31 +0800
+From: Dave Young <dyoung@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+Message-ID: <20130924085731.GI5561@dhcp-16-126.nay.redhat.com>
+References: <1379602494-26684-12-git-send-email-bp@alien8.de>
+ <20130921113929.GB1587@pd.tnic>
+ <20130922123515.GA7476@dhcp-16-126.nay.redhat.com>
+ <20130922133722.GC28718@pd.tnic>
+ <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com>
+ <20130924025209.GA5561@dhcp-16-126.nay.redhat.com>
+ <2d27a1bc-eabf-4d45-8303-27ae58511b11@email.android.com>
+ <20130924045705.GB5561@dhcp-16-126.nay.redhat.com>
+ <20130924045818.GC5561@dhcp-16-126.nay.redhat.com>
+ <20130924052334.GD5561@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130924052334.GD5561@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modelling the RESET line as a regulator supply wasn't a good idea
-as it kind of abuses the regulator framework and also makes adaptation
-code more complex.
+On 09/24/13 at 01:23pm, Dave Young wrote:
+> On 09/24/13 at 12:58pm, Dave Young wrote:
+> > On 09/24/13 at 12:57pm, Dave Young wrote:
+> > > On 09/23/13 at 08:06pm, H. Peter Anvin wrote:
+> > > > Okay... I see two problems.
+> > > > 
+> > > > 1. It looks like we subtract the region size after, rather than before, assigning an address.
+> 
+> Could you explain more about this problem? Where is the code?
+> 
+> > > > 
+> > > > 2. The second region is assigned the same address in the secondary kernel as in the first, implying the size of the first region was somehow set to zero.
+> > > 
+> > > I find the reason, efi_reserve_boot_services will reserve the BOOT_SERVICE_DATA region
+> > > thus the memmap size is changed to 0, so in 2nd kernel the virtual mapping addr after
+> > > the md will be not same as 1st kernel, see below code:
+> > >  
+> > > void __init efi_map_region(efi_memory_desc_t *md)
+> > > {
+> > >         unsigned long size = md->num_pages << PAGE_SHIFT;
+> > > 
+> > >         efi_va -= size;
+> > >         ^^^^^^^^^^^^^^^
+> > > 	[snip]
+> > > }
+> > 
+> > So how about just reserve BOOT_SERVICE_DATA region but keep the md.numpages as is?
+> 
+> Hmm, num_pages = 0 is only set when boot service region reservation is imporsible, I'm
+> lost.. But there must be somewhere set the size to 0.
+> 
 
-Instead, manage the RESET gpio line directly in the driver. Update
-the device tree binding information.
+digging more about it, it is indeed below code move the num_pages to 0:
+void __init efi_reserve_boot_services(void)
+{
+ [snip]
+                if ((start+size >= __pa_symbol(_text)
+                                && start <= __pa_symbol(_end)) ||
+                        !e820_all_mapped(start, start+size, E820_RAM) ||
+                        memblock_is_region_reserved(start, size)) {
+                        /* Could not reserve, skip it */
+                        md->num_pages = 0;
+ [snip]
+}
 
-This also makes us easy to migrate to a dedicated GPIO RESET controller
-whenever it becomes available.
+During my test, the first region overlaps with kernel _text <-> _end, thus cause this issue.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- .../devicetree/bindings/usb/usb-nop-xceiv.txt      |    7 +-
- drivers/usb/phy/phy-am335x.c                       |    2 +-
- drivers/usb/phy/phy-generic.c                      |   84 +++++++++++++-------
- drivers/usb/phy/phy-generic.h                      |    6 +-
- 4 files changed, 63 insertions(+), 36 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt b/Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt
-index d7e2726..1bd37fa 100644
---- a/Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt
-+++ b/Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt
-@@ -15,7 +15,7 @@ Optional properties:
- 
- - vcc-supply: phandle to the regulator that provides RESET to the PHY.
- 
--- reset-supply: phandle to the regulator that provides power to the PHY.
-+- reset-gpios: Should specify the GPIO for reset.
- 
- Example:
- 
-@@ -25,10 +25,9 @@ Example:
- 		clocks = <&osc 0>;
- 		clock-names = "main_clk";
- 		vcc-supply = <&hsusb1_vcc_regulator>;
--		reset-supply = <&hsusb1_reset_regulator>;
-+		reset-gpios = <&gpio1 7 GPIO_ACTIVE_LOW>;
- 	};
- 
- hsusb1_phy is a NOP USB PHY device that gets its clock from an oscillator
- and expects that clock to be configured to 19.2MHz by the NOP PHY driver.
--hsusb1_vcc_regulator provides power to the PHY and hsusb1_reset_regulator
--controls RESET.
-+hsusb1_vcc_regulator provides power to the PHY and GPIO 7 controls RESET.
-diff --git a/drivers/usb/phy/phy-am335x.c b/drivers/usb/phy/phy-am335x.c
-index c4d614d..fb4bf28 100644
---- a/drivers/usb/phy/phy-am335x.c
-+++ b/drivers/usb/phy/phy-am335x.c
-@@ -53,7 +53,7 @@ static int am335x_phy_probe(struct platform_device *pdev)
- 	}
- 
- 	ret = usb_phy_gen_create_phy(dev, &am_phy->usb_phy_gen,
--			USB_PHY_TYPE_USB2, 0, false, false);
-+			USB_PHY_TYPE_USB2, 0, false);
- 	if (ret)
- 		return ret;
- 
-diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
-index efe59f3..36d7071 100644
---- a/drivers/usb/phy/phy-generic.c
-+++ b/drivers/usb/phy/phy-generic.c
-@@ -35,6 +35,9 @@
- #include <linux/clk.h>
- #include <linux/regulator/consumer.h>
- #include <linux/of.h>
-+#include <linux/of_gpio.h>
-+#include <linux/gpio.h>
-+#include <linux/delay.h>
- 
- #include "phy-generic.h"
- 
-@@ -64,6 +67,23 @@ static int nop_set_suspend(struct usb_phy *x, int suspend)
- 	return 0;
- }
- 
-+static void nop_reset_set(struct usb_phy_gen_xceiv *nop, int asserted)
-+{
-+	int value;
-+
-+	if (!gpio_is_valid(nop->gpio_reset))
-+		return;
-+
-+	value = asserted;
-+	if (nop->reset_active_low)
-+		value = !value;
-+
-+	gpio_set_value_cansleep(nop->gpio_reset, value);
-+
-+	if (!asserted)
-+		usleep_range(10000, 20000);
-+}
-+
- int usb_gen_phy_init(struct usb_phy *phy)
- {
- 	struct usb_phy_gen_xceiv *nop = dev_get_drvdata(phy->dev);
-@@ -76,11 +96,8 @@ int usb_gen_phy_init(struct usb_phy *phy)
- 	if (!IS_ERR(nop->clk))
- 		clk_enable(nop->clk);
- 
--	if (!IS_ERR(nop->reset)) {
--		/* De-assert RESET */
--		if (regulator_enable(nop->reset))
--			dev_err(phy->dev, "Failed to de-assert reset\n");
--	}
-+	/* De-assert RESET */
-+	nop_reset_set(nop, 0);
- 
- 	return 0;
- }
-@@ -90,11 +107,8 @@ void usb_gen_phy_shutdown(struct usb_phy *phy)
- {
- 	struct usb_phy_gen_xceiv *nop = dev_get_drvdata(phy->dev);
- 
--	if (!IS_ERR(nop->reset)) {
--		/* Assert RESET */
--		if (regulator_disable(nop->reset))
--			dev_err(phy->dev, "Failed to assert reset\n");
--	}
-+	/* Assert RESET */
-+	nop_reset_set(nop, 1);
- 
- 	if (!IS_ERR(nop->clk))
- 		clk_disable(nop->clk);
-@@ -136,8 +150,7 @@ static int nop_set_host(struct usb_otg *otg, struct usb_bus *host)
- }
- 
- int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xceiv *nop,
--		enum usb_phy_type type, u32 clk_rate, bool needs_vcc,
--		bool needs_reset)
-+		enum usb_phy_type type, u32 clk_rate, bool needs_vcc)
- {
- 	int err;
- 
-@@ -176,12 +189,22 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xceiv *nop,
- 			return -EPROBE_DEFER;
- 	}
- 
--	nop->reset = devm_regulator_get(dev, "reset");
--	if (IS_ERR(nop->reset)) {
--		dev_dbg(dev, "Error getting reset regulator: %ld\n",
--					PTR_ERR(nop->reset));
--		if (needs_reset)
--			return -EPROBE_DEFER;
-+	if (gpio_is_valid(nop->gpio_reset)) {
-+		unsigned long gpio_flags;
-+
-+		/* Assert RESET */
-+		if (nop->reset_active_low)
-+			gpio_flags = GPIOF_OUT_INIT_LOW;
-+		else
-+			gpio_flags = GPIOF_OUT_INIT_HIGH;
-+
-+		err = devm_gpio_request_one(dev, nop->gpio_reset,
-+						gpio_flags, dev_name(dev));
-+		if (err) {
-+			dev_err(dev, "Error requesting RESET GPIO %d\n",
-+					nop->gpio_reset);
-+			return err;
-+		}
- 	}
- 
- 	nop->dev		= dev;
-@@ -217,31 +240,36 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
- 	int err;
- 	u32 clk_rate = 0;
- 	bool needs_vcc = false;
--	bool needs_reset = false;
-+
-+	nop = devm_kzalloc(dev, sizeof(*nop), GFP_KERNEL);
-+	if (!nop)
-+		return -ENOMEM;
-+
-+	nop->reset_active_low = true;	/* default behaviour */
- 
- 	if (dev->of_node) {
- 		struct device_node *node = dev->of_node;
-+		enum of_gpio_flags flags;
- 
- 		if (of_property_read_u32(node, "clock-frequency", &clk_rate))
- 			clk_rate = 0;
- 
- 		needs_vcc = of_property_read_bool(node, "vcc-supply");
--		needs_reset = of_property_read_bool(node, "reset-supply");
-+		nop->gpio_reset = of_get_named_gpio_flags(node, "reset-gpios",
-+								0, &flags);
-+		if (nop->gpio_reset == -EPROBE_DEFER)
-+			return -EPROBE_DEFER;
-+
-+		nop->reset_active_low = flags & OF_GPIO_ACTIVE_LOW;
- 
- 	} else if (pdata) {
- 		type = pdata->type;
- 		clk_rate = pdata->clk_rate;
- 		needs_vcc = pdata->needs_vcc;
--		needs_reset = pdata->needs_reset;
-+		nop->gpio_reset = pdata->gpio_reset;
- 	}
- 
--	nop = devm_kzalloc(dev, sizeof(*nop), GFP_KERNEL);
--	if (!nop)
--		return -ENOMEM;
--
--
--	err = usb_phy_gen_create_phy(dev, nop, type, clk_rate, needs_vcc,
--			needs_reset);
-+	err = usb_phy_gen_create_phy(dev, nop, type, clk_rate, needs_vcc);
- 	if (err)
- 		return err;
- 
-diff --git a/drivers/usb/phy/phy-generic.h b/drivers/usb/phy/phy-generic.h
-index 61687d5..6c3a2e1 100644
---- a/drivers/usb/phy/phy-generic.h
-+++ b/drivers/usb/phy/phy-generic.h
-@@ -6,15 +6,15 @@ struct usb_phy_gen_xceiv {
- 	struct device *dev;
- 	struct clk *clk;
- 	struct regulator *vcc;
--	struct regulator *reset;
-+	int gpio_reset;
-+	bool reset_active_low;
- };
- 
- int usb_gen_phy_init(struct usb_phy *phy);
- void usb_gen_phy_shutdown(struct usb_phy *phy);
- 
- int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xceiv *nop,
--		enum usb_phy_type type, u32 clk_rate, bool needs_vcc,
--		bool needs_reset);
-+		enum usb_phy_type type, u32 clk_rate, bool needs_vcc);
- void usb_phy_gen_cleanup_phy(struct usb_phy_gen_xceiv *nop);
- 
- #endif
--- 
-1.7.4.1
+I wonder if md->num_pages must be set to 0 here. If so I think we have to save the original memmap
+for kexec use. Any better idea?
 
