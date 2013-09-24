@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab3IXO45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 10:56:57 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50275 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752708Ab3IXO44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 10:56:56 -0400
-Message-ID: <e39e1065bddc2afee2cb6eed957e3ba8.squirrel@www.skyhub.de>
-Date: Tue, 24 Sep 2013 16:56:49 +0200 (CEST)
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-From: "Borislav Petkov" <bp@alien8.de>
-To: "Dave Young" <dyoung@redhat.com>
-Cc: "Borislav Petkov" <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        "X86 ML" <x86@kernel.org>, "LKML" <linux-kernel@vger.kernel.org>,
-        "Borislav Petkov" <bp@suse.de>,
-        "Matt Fleming" <matt@console-pimps.org>,
-        "Matthew Garrett" <mjg59@srcf.ucam.org>,
-        "James Bottomley" <james.bottomley@hansenpartnership.com>,
-        "Vivek Goyal" <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-User-Agent: SquirrelMail/1.4.15
-MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+	id S1753967Ab3IXO6s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 10:58:48 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:59736 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab3IXO6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 10:58:47 -0400
+X-Nat-Received: from [202.181.97.72]:57188 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1380034712.29291
+To: akpm@linux-foundation.org
+Cc: oleg@redhat.com, viro@zeniv.linux.org.uk, rostedt@goodmis.org,
+        fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201309160202.FBC60981.FQOHSLFMFtOJVO@I-love.SAKURA.ne.jp>
+	<20130915171549.GA15346@redhat.com>
+	<201309160226.DGH90134.QLSFtOJOOMFHVF@I-love.SAKURA.ne.jp>
+	<201309240612.ADE82877.MSFHVtOOFLFOQJ@I-love.SAKURA.ne.jp>
+	<20130923143057.a6a7ac7d524f890bfef92b72@linux-foundation.org>
+In-Reply-To: <20130923143057.a6a7ac7d524f890bfef92b72@linux-foundation.org>
+Message-Id: <201309242358.CIG60403.OQLJVOSFHtFOFM@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 24 Sep 2013 23:58:32 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 24092013 #11056189, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, September 24, 2013 2:45 pm, Dave Young wrote:
-> Think again about this, how about 1:1 map them from a base address
-> like -64G phy_addr -> (-64G + phy_addr), in this way we can avoid
-> depending on the previous region size.
+Andrew Morton wrote:
+> > --- a/kernel/kmod.c
+> > +++ b/kernel/kmod.c
+> > @@ -571,6 +571,10 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
+> >  	DECLARE_COMPLETION_ONSTACK(done);
+> >  	int retval = 0;
+> >  
+> > +	if (!sub_info->path) {
+> > +		call_usermodehelper_freeinfo(sub_info);
+> > +		return -ENOENT;
+> > +	}
+> >  	helper_lock();
+> >  	if (!khelper_wq || usermodehelper_disabled) {
+> >  		retval = -EBUSY;
+> 
+> The error is that the user put a bare "|" into
+> /proc/sys/kernel/core_pattern.  Is ENOENT ("No such file or directory")
+> the most appropriate error code here?  I think EINVAL ("Invalid
+> argument")?
+> 
+I'm fine with EINVAL. Updated patch follows.
+----------
+>From a1068778ed0dd3156dff0ac6245314b8627b8830 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Tue, 24 Sep 2013 23:54:05 +0900
+Subject: [PATCH] kernel/kmod.c: check for NULL in call_usermodehelper_exec()
 
-Right, how we layout the regions is arbitrary as long as we start at
-the same VA and use the same regions, in the same order and of the same
-size...
+If /proc/sys/kernel/core_pattern contains only "|", NULL pointer
+dereference happens upon core dump because argv_split("") returns argv[0]
+== NULL.
 
-> For the zero region problem, we can resolve it as a standalone
-> problem.
+This bug was once fixed by commit 264b83c0 ("usermodehelper: check
+subprocess_info->path != NULL") but was by error reintroduced by commit
+7f57cfa4 ("usermodehelper: kill the sub_info->path[0] check").
 
-... however, we still need to understand why it fails mapping the boot
-services region as some implementations apparently do call boot services
-even after ExitBootServices(). IOW, we need that region mapped in the
-kexec'ed kernel too.
+This bug seems to exist since 2.6.19 (the version which core dump to pipe
+was added).  Depending on kernel version and config, some side effect
+might happen immediately after this oops (e.g.  kernel panic with
+2.6.32-358.18.1.el6).
 
-Thanks.
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ kernel/kmod.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index fb32636..b086006 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -571,6 +571,10 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
+ 	DECLARE_COMPLETION_ONSTACK(done);
+ 	int retval = 0;
+ 
++	if (!sub_info->path) {
++		call_usermodehelper_freeinfo(sub_info);
++		return -EINVAL;
++	}
+ 	helper_lock();
+ 	if (!khelper_wq || usermodehelper_disabled) {
+ 		retval = -EBUSY;
 -- 
-Regards/Gruss,
-Boris.
-
+1.7.1
