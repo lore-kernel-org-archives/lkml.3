@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab3IXJMD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:12:03 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:4997 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab3IXJMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:12:02 -0400
-X-IronPort-AV: E=Sophos;i="4.90,969,1371081600"; 
-   d="scan'208";a="54242423"
-Message-ID: <1380013893.23688.10.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH] powerpc/dts/virtex440: declare address/size-cells for
- phy device
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Gernot Vormayr <gvormayr@gmail.com>,
-        <linuxppc-dev@lists.ozlabs.org>
-Date: Tue, 24 Sep 2013 10:11:33 +0100
-In-Reply-To: <1370257241-23923-1-git-send-email-ian.campbell@citrix.com>
-References: <1370257241-23923-1-git-send-email-ian.campbell@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
-X-DLP: MIA2
+	id S1754108Ab3IXJN1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:13:27 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:21800 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab3IXJNZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 05:13:25 -0400
+X-AuditID: cbfee68e-b7f756d000004512-d2-524157b4b6c9
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
+In-reply-to: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
+Subject: [PATCH 10/22] backlight: da9052_bl: use
+ devm_backlight_device_register()
+Date: Tue, 24 Sep 2013 18:13:24 +0900
+Message-id: <005001ceb906$52535b60$f6fa1220$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAAQy2g
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zI90t4Y5BBhvaZCzmrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsEroxV3V1M
+	BSc4K94ei21g7OLoYuTkkBAwkfh28h87hC0mceHeerYuRi4OIYFljBKP+z8wwhSdeXEaKrGI
+	UaLzwSUWCOcXo8TXxZNYQarYBNQkvnw5DDSKg0NEQF+irUUDJMwskCNx/8kssA1CArYS6z7M
+	BrM5BewkTi09wwZiCwsES2w8uhlsGYuAqsT0hT/BRvIC1b/b3MQGYQtK/Jh8jwVippbE5m1N
+	rBC2vMTmNW+ZQdZKCKhLPPqrCxIWETCS2LHtF1S5iMS+F+8YQU6WEDjHLtF54yILxC4BiW+T
+	D7FA9MpKbDrADPGvpMTBFTdYJjBKzEKyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRUZ6xYm5
+	xaV56XrJ+bmbGCEx2beD8eYB60OMyUDrJzJLiSbnA2M6ryTe0NjMyMLUxNTYyNzSjDRhJXFe
+	tRbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MLh+MWcMfqvAu3yiRdezEzSo5pTul/S80
+	ZaIuhCzdx7G0/uiM4rMsUwtF3TIa9wlPfS5ZL3/0lOHLlTVSyc6Sy26d+OTtYqkt9/T55m2a
+	5yIdE84Hsy1bfGazSO7uf/7ayX4hG416n2w1fqRznu2BpcM3J+7n8z8umrM28PbeuQJlP5P2
+	79o1S4mlOCPRUIu5qDgRAJhLlt3fAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jAd0t4Y5BBue3SljMWb+GzeLywkus
+	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZq7q7mApOcFa8PRbbwNjF0cXIySEhYCJx5sVpNghbTOLCvfVA
+	NheHkMAiRonOB5dYIJxfjBJfF09iBaliE1CT+PLlMHsXIweHiIC+RFuLBkiYWSBH4v6TWewg
+	tpCArcS6D7PBbE4BO4lTS8+ALRAWCJbYeHQzI4jNIqAqMX3hT7CRvED17zY3sUHYghI/Jt9j
+	gZipJbF5WxMrhC0vsXnNW2aQtRIC6hKP/uqChEUEjCR2bPsFVS4ise/FO8YJjEKzkEyahWTS
+	LCSTZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOOKfSe1gXNlgcYhRgINRiYd3
+	h7dDkBBrYllxZe4hRgkOZiUR3hu2jkFCvCmJlVWpRfnxRaU5qcWHGJOBHp3ILCWanA9MRnkl
+	8YbGJmZGlkZmFkYm5uakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLEwSnVwFgXq2P57sqGyB2T
+	tCckXDjJHFr075XNot1Zb9YfFNmbGv1HcHPZl4oNnwSn/lkr++FA6x8GPwFNy7kMv6T6GJbu
+	yTGXFbz8RHmGn4bB0+aM+4uLijWD1m0uunry9ZbojrYADd6InmoHs+Qnj/Yb/P+f730tUPPd
+	RdZtO/bLKy/fy2ZTFJMddUOJpTgj0VCLuag4EQAAjK61PAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 12:00 +0100, Ian Campbell wrote:
-> This fixes a warning:
-> 
->   DTC     arch/powerpc/boot/virtex440-ml507.dtb
-> Warning (reg_format): "reg" property in /plb@0/xps-ll-temac@81c00000/ethernet@81c00000/phy@7 has invalid length (4 bytes) (#address-cells == 2, #size-cells == 1)
-> Warning (avoid_default_addr_size): Relying on default #address-cells value for /plb@0/xps-ll-temac@81c00000/ethernet@81c00000/phy@7
-> Warning (avoid_default_addr_size): Relying on default #size-cells value for /plb@0/xps-ll-temac@81c00000/ethernet@81c00000/phy@7
+Use devm_backlight_device_register() to make cleanup paths simpler.
 
-I still see this in v3.12-rc2. Ping?
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/da9052_bl.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Gernot Vormayr <gvormayr@gmail.com>
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/powerpc/boot/dts/virtex440-ml507.dts |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/arch/powerpc/boot/dts/virtex440-ml507.dts b/arch/powerpc/boot/dts/virtex440-ml507.dts
-> index fc7073b..391a4e2 100644
-> --- a/arch/powerpc/boot/dts/virtex440-ml507.dts
-> +++ b/arch/powerpc/boot/dts/virtex440-ml507.dts
-> @@ -257,6 +257,8 @@
->  			#size-cells = <1>;
->  			compatible = "xlnx,compound";
->  			ethernet@81c00000 {
-> +				#address-cells = <1>;
-> +				#size-cells = <0>;
->  				compatible = "xlnx,xps-ll-temac-1.01.b";
->  				device_type = "network";
->  				interrupt-parent = <&xps_intc_0>;
+diff --git a/drivers/video/backlight/da9052_bl.c b/drivers/video/backlight/da9052_bl.c
+index 842da5a..20d55be 100644
+--- a/drivers/video/backlight/da9052_bl.c
++++ b/drivers/video/backlight/da9052_bl.c
+@@ -125,8 +125,9 @@ static int da9052_backlight_probe(struct platform_device *pdev)
+ 	props.type = BACKLIGHT_RAW;
+ 	props.max_brightness = DA9052_MAX_BRIGHTNESS;
+ 
+-	bl = backlight_device_register(pdev->name, wleds->da9052->dev, wleds,
+-				       &da9052_backlight_ops, &props);
++	bl = devm_backlight_device_register(&pdev->dev, pdev->name,
++					wleds->da9052->dev, wleds,
++					&da9052_backlight_ops, &props);
+ 	if (IS_ERR(bl)) {
+ 		dev_err(&pdev->dev, "Failed to register backlight\n");
+ 		return PTR_ERR(bl);
+@@ -147,7 +148,6 @@ static int da9052_backlight_remove(struct platform_device *pdev)
+ 	wleds->brightness = 0;
+ 	wleds->state = DA9052_WLEDS_OFF;
+ 	da9052_adjust_wled_brightness(wleds);
+-	backlight_device_unregister(bl);
+ 
+ 	return 0;
+ }
+-- 
+1.7.10.4
 
 
