@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab3IXIPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 04:15:51 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:46685 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab3IXIPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 04:15:48 -0400
-Date: Tue, 24 Sep 2013 10:15:43 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Mike Travis <travis@sgi.com>, Jason Wessel <jason.wessel@windriver.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+	id S1752529Ab3IXIST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 04:18:19 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57956 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751096Ab3IXISQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 04:18:16 -0400
+Message-ID: <1380010613.5443.40.camel@pasglop>
+Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] KGDB/KDB: add support for external NMI handler to
- call KGDB/KDB.
-Message-ID: <20130924081543.GA3715@gmail.com>
-References: <20130923212459.544517569@asylum.americas.sgi.com>
- <20130923212500.866318244@asylum.americas.sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130923212500.866318244@asylum.americas.sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Anton Blanchard <anton@au1.ibm.com>
+Date: Tue, 24 Sep 2013 18:16:53 +1000
+In-Reply-To: <20130924080436.GH9326@twins.programming.kicks-ass.net>
+References: <1379799901.24090.6.camel@pasglop> <523E4F8A.7020708@zytor.com>
+	 <1379824754.24090.11.camel@pasglop> <1379824861.24090.12.camel@pasglop>
+	 <20130922162410.GA10649@laptop.programming.kicks-ass.net>
+	 <1379887000.24090.19.camel@pasglop>
+	 <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
+	 <1379981427.5443.8.camel@pasglop>
+	 <CA+55aFwyVG4DXOEvaVTp0gE-H2Zy0Kx7Mg7RWzpxzwm_RSWEYQ@mail.gmail.com>
+	 <1379987527.5443.20.camel@pasglop>
+	 <20130924080436.GH9326@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mike Travis <travis@sgi.com> wrote:
-
-> This patch adds a kgdb_nmicallin() interface that can be used by
-> external NMI handlers to call the KGDB/KDB handler.  The primary need
-> for this is for those types of NMI interrupts where all the CPUs
-> have already received the NMI signal.  Therefore no send_IPI(NMI)
-> is required, and in fact it will cause a 2nd unhandled NMI to occur.
-> This generates the "Dazed and Confuzed" messages.
+On Tue, 2013-09-24 at 10:04 +0200, Peter Zijlstra wrote:
+> On Tue, Sep 24, 2013 at 11:52:07AM +1000, Benjamin Herrenschmidt wrote:
+> > So if that holds, we have a solid way to do per-cpu. On one side, I tend
+> > to think that r13 being task/thread/thread_info is probably a better
+> > overall choice, I'm worried that going in a different direction than x86
+> > means generic code will get "tuned" to use per-cpu for performance
+> > critical stuff rather than task/thread/thread_info in inflexible ways.
 > 
-> Since all the CPUs are getting the NMI at roughly the same time, it's not
-> guaranteed that the first CPU that hits the NMI handler will manage to
-> enter KGDB and set the dbg_master_lock before the slaves start entering.
-> The new argument "send_ready" was added for KGDB to signal the NMI handler
-> to release the slave CPUs for entry into KGDB.
-> 
-> Signed-off-by: Mike Travis <travis@sgi.com>
-> Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
-> Reviewed-by: Hedi Berriche <hedi@sgi.com>
-> ---
->  include/linux/kdb.h             |    1 +
->  include/linux/kgdb.h            |    1 +
->  kernel/debug/debug_core.c       |   30 +++++++++++++++++++++++++++++-
->  kernel/debug/debug_core.h       |    1 +
->  kernel/debug/kdb/kdb_debugger.c |    5 ++++-
->  kernel/debug/kdb/kdb_main.c     |    3 +++
->  6 files changed, 39 insertions(+), 2 deletions(-)
+> The plus side of per-cpu over per-task is that one typically has a lot
+> less cpus than tasks. Also, its far easier/cheaper to iterate cpus than
+> it is to iterate tasks.
 
-Jason, any objections to form or substance of this callback?
+I don't see how that relates to the above though... ie, how the number
+of CPUs vs. tasks and the relative ease of iteration relates to how fast
+we access the "current" cpu and the "current" task ?
 
-Thanks,
+The thing is, if I use r13 as "current" (and put thread_info in the task
+struct), virtually *all* my accesses to task, thread and thread_info
+structs become a single load or store instruction from r13.
 
-	Ingo
+On the other hand, access to "my_cpu_offset" for per-cpu remains (since
+that's what we do today already) a load to get the offset an an addition
++ access. (ie, I would stash the cpu offset into the thread info and
+context switch it).
+
+If I use r13 as "my_cpu_offset", then I might be able to skip a load for
+per-cpu accesses to the current cpu, making them a bit faster, but add
+an indirection for "current" and thread_info.
+
+It's basically a question of where do I put the extra load and what has
+the bigger net benefit. I tend to think we access "current" a LOT more
+than per-cpu but I might be wrong.
+
+Additionally, using r13 for "current" removes all the problems with gcc
+copying the value accross preempt_disable/enable etc... while using it
+as per-cpu means they remain. We think we have a fix (which will involve
+a special preempt_barrier() added to preempt_disable/enable and irq
+enable/disable), but it's still not as nice as "the problem just doesn't
+exist" :-)
+
+Cheers,
+Ben.
+
+
