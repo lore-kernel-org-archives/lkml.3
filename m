@@ -1,2847 +1,803 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab3IXRTr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 13:19:47 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:14273 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364Ab3IXRTo (ORCPT
+	id S1754238Ab3IXRZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 13:25:57 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:16285 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab3IXRZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 13:19:44 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-aa-5241c9ab5b75
-From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-To: kgene.kim@samsung.com
-Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        b.zolnierkie@samsung.com, t.figa@samsung.com, m.szyprowski@samsung.com,
-        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [RFC] clk: samsung:  Remove old clock drivers for s5pc100 and s5pv210
-Date: Tue, 24 Sep 2013 19:19:20 +0200
-Message-id: <1380043160-16824-1-git-send-email-m.krawczuk@partner.samsung.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupiluLIzCtJLcpLzFFi42I5/e+xoO7qk45BBmcv6FpsnLGe1aJ3wVU2
-	i7NNb9gtNj2+xmpxedccNosZ5/cxWdy+zGtxes0pZou1R+6yW6yf8ZrFgcujpbmHzWPzknqP
-	g+/2MHn0bVnF6PF5k1wAaxSXTUpqTmZZapG+XQJXxvQXe1kK2k+xVFzedIipgXHVGeYuRk4O
-	CQETiWu3J0LZYhIX7q1n62Lk4hASmM4oMf/TYhYIp51J4vTUVUwgVWwC5hITn21iAbFFBCQl
-	mhr+MIMUMQusZ5L4dLgPqJ2DQ1jAT+LDFVuQGhYBVYlp/S0sIGFeoPDu+0oQyxQkfl4+wTaB
-	kXsBI8MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOAQeia1g3Flg8UhRgEORiUeXoGjjkFC
-	rIllxZW5hxglOJiVRHjNNwCFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5otQ4UEkhPLEnNTk0t
-	SC2CyTJxcEo1MNrum+915/zprZHasd8Lgs60XHv572ak0eXv04PEL7pyHRX+La/yPayXSSzR
-	UIjnjiBzgFT51Ak7Tvm8SAn56674mEd75p0J5/eXn57RsnzibwdWgzfXTH4ETrjDU8efs+9C
-	ouC1nFiOFLf+2kUzg6TTfcQWtm4yucz370JE1OOH/aqrpkf/q1BiKc5INNRiLipOBACmpvb/
-	HQIAAA==
+	Tue, 24 Sep 2013 13:25:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 24 Sep 2013 10:22:15 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <lee.jones@linaro.org>, <sameo@linux.intel.com>, <broonie@kernel.org>,
+        <linus.walleij@linaro.org>, <akpm@linux-foundation.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
+        <rtc-linux@googlegroups.com>, <rob.herring@calxeda.com>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
+        <rob@landley.net>, <ijc+devicetree@hellion.org.uk>,
+        <grant.likely@linaro.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V4 2/3] pincntrl: add support for AMS AS3722 pin control driver
+Date: Tue, 24 Sep 2013 23:17:25 +0530
+Message-ID: <1380044845-7734-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes old clock management code for S5PC100 and S5PC110/S5PV210,
-since the platform has been already moved to the new clock driver
-using Common Clock Framework.
+The AS3722 is a compact system PMU suitable for mobile phones, tablets etc.
 
-Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Add a driver to support accessing the GPIO, pinmux and pin configuration
+of 8 GPIO pins found on the AMS AS3722 through pin control driver and
+gpiolib.
+
+The driver will register itself as the pincontrol driver and gpio driver.
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
-This patch series require
-S5PC100 and S5PV210 patch series moving to common clock framework.
+Changes from V1: 
+- Nit cleanups in driver and use module_platform_driver.
 
- arch/arm/mach-s5pc100/Kconfig  |    2 +-
- arch/arm/mach-s5pc100/Makefile |    1 -
- arch/arm/mach-s5pc100/clock.c  | 1361 ---------------------------------------
- arch/arm/mach-s5pv210/Kconfig  |    2 +-
- arch/arm/mach-s5pv210/Makefile |    1 -
- arch/arm/mach-s5pv210/clock.c  | 1365 ----------------------------------------
- 6 files changed, 2 insertions(+), 2730 deletions(-)
- delete mode 100644 arch/arm/mach-s5pc100/clock.c
- delete mode 100644 arch/arm/mach-s5pv210/clock.c
+Changes from V2: 
+- Move the gpio driver from gpio folder to pinctnrl driver and register
+  driver as pincontrol driver.
+- Provide pin configuration through pincntrl framework.
 
-diff --git a/arch/arm/mach-s5pc100/Kconfig b/arch/arm/mach-s5pc100/Kconfig
-index 2f27923..203caae 100644
---- a/arch/arm/mach-s5pc100/Kconfig
-+++ b/arch/arm/mach-s5pc100/Kconfig
-@@ -11,7 +11,7 @@ config CPU_S5PC100
- 	bool
- 	select S5P_EXT_INT
- 	select SAMSUNG_DMADEV
--	select S5P_CLOCK if !COMMON_CLK
-+	select COMMON_CLK
- 	help
- 	  Enable S5PC100 CPU support
+Changes from V3:
+- Added gpio ranges and pinctrl_gpio calls.
+- Used pinctrl_gpio_* calls on gpio chips callback.
+- Remove dummy function which just return not supported.
+- Nit cleanups.
+
+Notes: As there is only change in pincontrol driver, I am respinning this patch
+only. Other patches are same as V3 and so not sending it again.
+
+ .../devicetree/bindings/pinctrl/pinctrl-as3722.txt |   59 ++
+ drivers/pinctrl/Kconfig                            |   11 +
+ drivers/pinctrl/Makefile                           |    1 +
+ drivers/pinctrl/pinctrl-as3722.c                   |  630 ++++++++++++++++++++
+ 4 files changed, 701 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-as3722.txt
+ create mode 100644 drivers/pinctrl/pinctrl-as3722.c
+
+diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-as3722.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-as3722.txt
+new file mode 100644
+index 0000000..7681afd
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-as3722.txt
+@@ -0,0 +1,59 @@
++AMS AS3722 Pincontrol
++
++The GPIO pins of AMS AS3722 device can be set on different options and provides
++the configuration for Pull UP/DOWN, high impedance, open drain etc.
++
++Please refer to pinctrl-bindings.txt in this directory for details of the
++common pinctrl bindings used by client devices, including the meaning of the
++phrase "pin configuration node".
++
++DT node contains the different subnode for pin control to represent
++different states. Each of these subnodes represents some desired
++configuration for a list of pins. This configuration can include the
++mux function to select on those pin(s), and various pin configuration
++parameters, such as pull-up, open drain.
++
++This binding uses the following generic properties as defined in
++pinctrl-bindings.txt:
++
++Required: pins
++Options: function, bias-disable, bias-pull-up, bias-pull-down,
++	 bias-pin-default, bias-high-impedance, drive-open-drain.
++
++Valid values for pin names are:
++	gpio0, gpio1, gpio2, gpio3, gpio4, gpio5, gpio6, gpio7
++
++Valid value of function names are:
++	gpio, interrupt-out, gpio-in-interrupt, vsup-vbat-low-undebounce-out,
++	vsup-vbat-low-debounce-out, voltage-in-standby, oc-pg-sd0, oc-pg-sd6,
++	powergood-out, pwm-in, pwm-out, clk32k-out, watchdog-in, soft-reset-in,
++
++Example:
++	as3722: as3722 {
++		....
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&as3722_default>;
++
++		as3722_default: pinmux {
++			gpio0 {
++				pins = "gpio0";
++				function = "gpio";
++				bias-pull-down;
++			};
++
++			gpio1_2_4_7 {
++				pins = "gpio1", "gpio2", "gpio4", "gpio7";
++				function = "gpio";
++				bias-pull-up;
++			};
++
++			gpio5 {
++				pins = "gpio5";
++				function = "clk32k_out";
++			};
++		};
++		...
++	};
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index 21db201..9d2d60c 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -59,6 +59,17 @@ config PINCTRL_ADI2
+ 	  future processors. This option is selected automatically when specific
+ 	  machine and arch are selected to build.
  
-diff --git a/arch/arm/mach-s5pc100/Makefile b/arch/arm/mach-s5pc100/Makefile
-index 74b90ec..0c2def8 100644
---- a/arch/arm/mach-s5pc100/Makefile
-+++ b/arch/arm/mach-s5pc100/Makefile
-@@ -12,7 +12,6 @@ obj-				:=
- # Core
- 
- obj-y				+= common.o
--obj-$(CONFIG_S5P_CLOCK)	+= clock.o
- obj-y				+= dma.o
- 
- # machine support
-diff --git a/arch/arm/mach-s5pc100/clock.c b/arch/arm/mach-s5pc100/clock.c
-deleted file mode 100644
-index d0dc10e..0000000
---- a/arch/arm/mach-s5pc100/clock.c
-+++ /dev/null
-@@ -1,1361 +0,0 @@
--/* linux/arch/arm/mach-s5pc100/clock.c
-- *
-- * Copyright (c) 2010 Samsung Electronics Co., Ltd.
-- *		http://www.samsung.com/
-- *
-- * S5PC100 - Clock support
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
--*/
--
--#include <linux/init.h>
--#include <linux/module.h>
--#include <linux/kernel.h>
--#include <linux/list.h>
--#include <linux/err.h>
--#include <linux/clk.h>
--#include <linux/io.h>
--
--#include <mach/map.h>
--
--#include <plat/cpu-freq.h>
--#include <mach/regs-clock.h>
--#include <plat/clock.h>
--#include <plat/cpu.h>
--#include <plat/pll.h>
--#include <plat/s5p-clock.h>
--#include <plat/clock-clksrc.h>
--
--#include "common.h"
--
--static struct clk s5p_clk_otgphy = {
--	.name		= "otg_phy",
--};
--
--static struct clk dummy_apb_pclk = {
--	.name		= "apb_pclk",
--	.id		= -1,
--};
--
--static struct clk *clk_src_mout_href_list[] = {
--	[0] = &s5p_clk_27m,
--	[1] = &clk_fin_hpll,
--};
--
--static struct clksrc_sources clk_src_mout_href = {
--	.sources	= clk_src_mout_href_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_mout_href_list),
--};
--
--static struct clksrc_clk clk_mout_href = {
--	.clk = {
--		.name           = "mout_href",
--	},
--	.sources        = &clk_src_mout_href,
--	.reg_src        = { .reg = S5P_CLK_SRC0, .shift = 20, .size = 1 },
--};
--
--static struct clk *clk_src_mout_48m_list[] = {
--	[0] = &clk_xusbxti,
--	[1] = &s5p_clk_otgphy,
--};
--
--static struct clksrc_sources clk_src_mout_48m = {
--	.sources	= clk_src_mout_48m_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_mout_48m_list),
--};
--
--static struct clksrc_clk clk_mout_48m = {
--	.clk = {
--		.name           = "mout_48m",
--	},
--	.sources        = &clk_src_mout_48m,
--	.reg_src        = { .reg = S5P_CLK_SRC1, .shift = 24, .size = 1 },
--};
--
--static struct clksrc_clk clk_mout_mpll = {
--	.clk = {
--		.name           = "mout_mpll",
--	},
--	.sources        = &clk_src_mpll,
--	.reg_src        = { .reg = S5P_CLK_SRC0, .shift = 4, .size = 1 },
--};
--
--
--static struct clksrc_clk clk_mout_apll = {
--	.clk    = {
--		.name           = "mout_apll",
--	},
--	.sources        = &clk_src_apll,
--	.reg_src        = { .reg = S5P_CLK_SRC0, .shift = 0, .size = 1 },
--};
--
--static struct clksrc_clk clk_mout_epll = {
--	.clk    = {
--		.name           = "mout_epll",
--	},
--	.sources        = &clk_src_epll,
--	.reg_src        = { .reg = S5P_CLK_SRC0, .shift = 8, .size = 1 },
--};
--
--static struct clk *clk_src_mout_hpll_list[] = {
--	[0] = &s5p_clk_27m,
--};
--
--static struct clksrc_sources clk_src_mout_hpll = {
--	.sources	= clk_src_mout_hpll_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_mout_hpll_list),
--};
--
--static struct clksrc_clk clk_mout_hpll = {
--	.clk    = {
--		.name           = "mout_hpll",
--	},
--	.sources        = &clk_src_mout_hpll,
--	.reg_src        = { .reg = S5P_CLK_SRC0, .shift = 12, .size = 1 },
--};
--
--static struct clksrc_clk clk_div_apll = {
--	.clk	= {
--		.name	= "div_apll",
--		.parent	= &clk_mout_apll.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV0, .shift = 0, .size = 1 },
--};
--
--static struct clksrc_clk clk_div_arm = {
--	.clk	= {
--		.name	= "div_arm",
--		.parent	= &clk_div_apll.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV0, .shift = 4, .size = 3 },
--};
--
--static struct clksrc_clk clk_div_d0_bus = {
--	.clk	= {
--		.name	= "div_d0_bus",
--		.parent	= &clk_div_arm.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV0, .shift = 8, .size = 3 },
--};
--
--static struct clksrc_clk clk_div_pclkd0 = {
--	.clk	= {
--		.name	= "div_pclkd0",
--		.parent	= &clk_div_d0_bus.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV0, .shift = 12, .size = 3 },
--};
--
--static struct clksrc_clk clk_div_secss = {
--	.clk	= {
--		.name	= "div_secss",
--		.parent	= &clk_div_d0_bus.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV0, .shift = 16, .size = 3 },
--};
--
--static struct clksrc_clk clk_div_apll2 = {
--	.clk	= {
--		.name	= "div_apll2",
--		.parent	= &clk_mout_apll.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV1, .shift = 0, .size = 3 },
--};
--
--static struct clk *clk_src_mout_am_list[] = {
--	[0] = &clk_mout_mpll.clk,
--	[1] = &clk_div_apll2.clk,
--};
--
--static struct clksrc_sources clk_src_mout_am = {
--	.sources	= clk_src_mout_am_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_mout_am_list),
--};
--
--static struct clksrc_clk clk_mout_am = {
--	.clk	= {
--		.name	= "mout_am",
--	},
--	.sources = &clk_src_mout_am,
--	.reg_src = { .reg = S5P_CLK_SRC0, .shift = 16, .size = 1 },
--};
--
--static struct clksrc_clk clk_div_d1_bus = {
--	.clk	= {
--		.name	= "div_d1_bus",
--		.parent	= &clk_mout_am.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV1, .shift = 12, .size = 3 },
--};
--
--static struct clksrc_clk clk_div_mpll2 = {
--	.clk	= {
--		.name	= "div_mpll2",
--		.parent	= &clk_mout_am.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV1, .shift = 8, .size = 1 },
--};
--
--static struct clksrc_clk clk_div_mpll = {
--	.clk	= {
--		.name	= "div_mpll",
--		.parent	= &clk_mout_am.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV1, .shift = 4, .size = 2 },
--};
--
--static struct clk *clk_src_mout_onenand_list[] = {
--	[0] = &clk_div_d0_bus.clk,
--	[1] = &clk_div_d1_bus.clk,
--};
--
--static struct clksrc_sources clk_src_mout_onenand = {
--	.sources	= clk_src_mout_onenand_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_mout_onenand_list),
--};
--
--static struct clksrc_clk clk_mout_onenand = {
--	.clk	= {
--		.name	= "mout_onenand",
--	},
--	.sources = &clk_src_mout_onenand,
--	.reg_src = { .reg = S5P_CLK_SRC0, .shift = 24, .size = 1 },
--};
--
--static struct clksrc_clk clk_div_onenand = {
--	.clk	= {
--		.name	= "div_onenand",
--		.parent	= &clk_mout_onenand.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV1, .shift = 20, .size = 2 },
--};
--
--static struct clksrc_clk clk_div_pclkd1 = {
--	.clk	= {
--		.name	= "div_pclkd1",
--		.parent	= &clk_div_d1_bus.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV1, .shift = 16, .size = 3 },
--};
--
--static struct clksrc_clk clk_div_cam = {
--	.clk	= {
--		.name	= "div_cam",
--		.parent	= &clk_div_mpll2.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV1, .shift = 24, .size = 5 },
--};
--
--static struct clksrc_clk clk_div_hdmi = {
--	.clk	= {
--		.name	= "div_hdmi",
--		.parent	= &clk_mout_hpll.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV3, .shift = 28, .size = 4 },
--};
--
--static u32 epll_div[][4] = {
--	{ 32750000,	131, 3, 4 },
--	{ 32768000,	131, 3, 4 },
--	{ 36000000,	72,  3, 3 },
--	{ 45000000,	90,  3, 3 },
--	{ 45158000,	90,  3, 3 },
--	{ 45158400,	90,  3, 3 },
--	{ 48000000,	96,  3, 3 },
--	{ 49125000,	131, 4, 3 },
--	{ 49152000,	131, 4, 3 },
--	{ 60000000,	120, 3, 3 },
--	{ 67737600,	226, 5, 3 },
--	{ 67738000,	226, 5, 3 },
--	{ 73800000,	246, 5, 3 },
--	{ 73728000,	246, 5, 3 },
--	{ 72000000,	144, 3, 3 },
--	{ 84000000,	168, 3, 3 },
--	{ 96000000,	96,  3, 2 },
--	{ 144000000,	144, 3, 2 },
--	{ 192000000,	96,  3, 1 }
--};
--
--static int s5pc100_epll_set_rate(struct clk *clk, unsigned long rate)
--{
--	unsigned int epll_con;
--	unsigned int i;
--
--	if (clk->rate == rate)	/* Return if nothing changed */
--		return 0;
--
--	epll_con = __raw_readl(S5P_EPLL_CON);
--
--	epll_con &= ~(PLL65XX_MDIV_MASK | PLL65XX_PDIV_MASK | PLL65XX_SDIV_MASK);
--
--	for (i = 0; i < ARRAY_SIZE(epll_div); i++) {
--		if (epll_div[i][0] == rate) {
--			epll_con |= (epll_div[i][1] << PLL65XX_MDIV_SHIFT) |
--				    (epll_div[i][2] << PLL65XX_PDIV_SHIFT) |
--				    (epll_div[i][3] << PLL65XX_SDIV_SHIFT);
--			break;
--		}
--	}
--
--	if (i == ARRAY_SIZE(epll_div)) {
--		printk(KERN_ERR "%s: Invalid Clock EPLL Frequency\n", __func__);
--		return -EINVAL;
--	}
--
--	__raw_writel(epll_con, S5P_EPLL_CON);
--
--	printk(KERN_WARNING "EPLL Rate changes from %lu to %lu\n",
--			clk->rate, rate);
--
--	clk->rate = rate;
--
--	return 0;
--}
--
--static struct clk_ops s5pc100_epll_ops = {
--	.get_rate = s5p_epll_get_rate,
--	.set_rate = s5pc100_epll_set_rate,
--};
--
--static int s5pc100_d0_0_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_D00, clk, enable);
--}
--
--static int s5pc100_d0_1_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_D01, clk, enable);
--}
--
--static int s5pc100_d0_2_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_D02, clk, enable);
--}
--
--static int s5pc100_d1_0_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_D10, clk, enable);
--}
--
--static int s5pc100_d1_1_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_D11, clk, enable);
--}
--
--static int s5pc100_d1_2_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_D12, clk, enable);
--}
--
--static int s5pc100_d1_3_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_D13, clk, enable);
--}
--
--static int s5pc100_d1_4_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_D14, clk, enable);
--}
--
--static int s5pc100_d1_5_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_D15, clk, enable);
--}
--
--static int s5pc100_sclk0_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_SCLK0, clk, enable);
--}
--
--static int s5pc100_sclk1_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_SCLK1, clk, enable);
--}
--
--/*
-- * The following clocks will be disabled during clock initialization. It is
-- * recommended to keep the following clocks disabled until the driver requests
-- * for enabling the clock.
-- */
--static struct clk init_clocks_off[] = {
--	{
--		.name		= "cssys",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_0_ctrl,
--		.ctrlbit	= (1 << 6),
--	}, {
--		.name		= "secss",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_0_ctrl,
--		.ctrlbit	= (1 << 5),
--	}, {
--		.name		= "g2d",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_0_ctrl,
--		.ctrlbit	= (1 << 4),
--	}, {
--		.name		= "mdma",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_0_ctrl,
--		.ctrlbit	= (1 << 3),
--	}, {
--		.name		= "cfcon",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_0_ctrl,
--		.ctrlbit	= (1 << 2),
--	}, {
--		.name		= "nfcon",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_1_ctrl,
--		.ctrlbit	= (1 << 3),
--	}, {
--		.name		= "onenandc",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_1_ctrl,
--		.ctrlbit	= (1 << 2),
--	}, {
--		.name		= "sdm",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_2_ctrl,
--		.ctrlbit	= (1 << 2),
--	}, {
--		.name		= "seckey",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_2_ctrl,
--		.ctrlbit	= (1 << 1),
--	}, {
--		.name		= "modemif",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_0_ctrl,
--		.ctrlbit	= (1 << 4),
--	}, {
--		.name		= "otg",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_0_ctrl,
--		.ctrlbit	= (1 << 3),
--	}, {
--		.name		= "usbhost",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_0_ctrl,
--		.ctrlbit	= (1 << 2),
--	}, {
--		.name		= "dma",
--		.devname	= "dma-pl330.1",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_0_ctrl,
--		.ctrlbit	= (1 << 1),
--	}, {
--		.name		= "dma",
--		.devname	= "dma-pl330.0",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_0_ctrl,
--		.ctrlbit	= (1 << 0),
--	}, {
--		.name		= "lcd",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_1_ctrl,
--		.ctrlbit	= (1 << 0),
--	}, {
--		.name		= "rotator",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_1_ctrl,
--		.ctrlbit	= (1 << 1),
--	}, {
--		.name		= "fimc",
--		.devname	= "s5p-fimc.0",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_1_ctrl,
--		.ctrlbit	= (1 << 2),
--	}, {
--		.name		= "fimc",
--		.devname	= "s5p-fimc.1",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_1_ctrl,
--		.ctrlbit	= (1 << 3),
--	}, {
--		.name		= "fimc",
--		.devname	= "s5p-fimc.2",
--		.enable		= s5pc100_d1_1_ctrl,
--		.ctrlbit	= (1 << 4),
--	}, {
--		.name		= "jpeg",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_1_ctrl,
--		.ctrlbit	= (1 << 5),
--	}, {
--		.name		= "mipi-dsim",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_1_ctrl,
--		.ctrlbit	= (1 << 6),
--	}, {
--		.name		= "mipi-csis",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_1_ctrl,
--		.ctrlbit	= (1 << 7),
--	}, {
--		.name		= "g3d",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_0_ctrl,
--		.ctrlbit	= (1 << 8),
--	}, {
--		.name		= "tv",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_2_ctrl,
--		.ctrlbit	= (1 << 0),
--	}, {
--		.name		= "vp",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_2_ctrl,
--		.ctrlbit	= (1 << 1),
--	}, {
--		.name		= "mixer",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_2_ctrl,
--		.ctrlbit	= (1 << 2),
--	}, {
--		.name		= "hdmi",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_2_ctrl,
--		.ctrlbit	= (1 << 3),
--	}, {
--		.name		= "mfc",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_2_ctrl,
--		.ctrlbit	= (1 << 4),
--	}, {
--		.name		= "apc",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_3_ctrl,
--		.ctrlbit	= (1 << 2),
--	}, {
--		.name		= "iec",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_3_ctrl,
--		.ctrlbit	= (1 << 3),
--	}, {
--		.name		= "systimer",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_3_ctrl,
--		.ctrlbit	= (1 << 7),
--	}, {
--		.name		= "watchdog",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_3_ctrl,
--		.ctrlbit	= (1 << 8),
--	}, {
--		.name		= "rtc",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_3_ctrl,
--		.ctrlbit	= (1 << 9),
--	}, {
--		.name		= "i2c",
--		.devname	= "s3c2440-i2c.0",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 4),
--	}, {
--		.name		= "i2c",
--		.devname	= "s3c2440-i2c.1",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 5),
--	}, {
--		.name		= "spi",
--		.devname	= "s5pc100-spi.0",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 6),
--	}, {
--		.name		= "spi",
--		.devname	= "s5pc100-spi.1",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 7),
--	}, {
--		.name		= "spi",
--		.devname	= "s5pc100-spi.2",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 8),
--	}, {
--		.name		= "irda",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 9),
--	}, {
--		.name		= "ccan",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 10),
--	}, {
--		.name		= "ccan",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 11),
--	}, {
--		.name		= "hsitx",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 12),
--	}, {
--		.name		= "hsirx",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 13),
--	}, {
--		.name		= "ac97",
--		.parent		= &clk_div_pclkd1.clk,
--		.enable		= s5pc100_d1_5_ctrl,
--		.ctrlbit	= (1 << 3),
--	}, {
--		.name		= "pcm",
--		.devname	= "samsung-pcm.0",
--		.parent		= &clk_div_pclkd1.clk,
--		.enable		= s5pc100_d1_5_ctrl,
--		.ctrlbit	= (1 << 4),
--	}, {
--		.name		= "pcm",
--		.devname	= "samsung-pcm.1",
--		.parent		= &clk_div_pclkd1.clk,
--		.enable		= s5pc100_d1_5_ctrl,
--		.ctrlbit	= (1 << 5),
--	}, {
--		.name		= "spdif",
--		.parent		= &clk_div_pclkd1.clk,
--		.enable		= s5pc100_d1_5_ctrl,
--		.ctrlbit	= (1 << 6),
--	}, {
--		.name		= "adc",
--		.parent		= &clk_div_pclkd1.clk,
--		.enable		= s5pc100_d1_5_ctrl,
--		.ctrlbit	= (1 << 7),
--	}, {
--		.name		= "keypad",
--		.parent		= &clk_div_pclkd1.clk,
--		.enable		= s5pc100_d1_5_ctrl,
--		.ctrlbit	= (1 << 8),
--	}, {
--		.name		= "mmc_48m",
--		.devname	= "s3c-sdhci.0",
--		.parent		= &clk_mout_48m.clk,
--		.enable		= s5pc100_sclk0_ctrl,
--		.ctrlbit	= (1 << 15),
--	}, {
--		.name		= "mmc_48m",
--		.devname	= "s3c-sdhci.1",
--		.parent		= &clk_mout_48m.clk,
--		.enable		= s5pc100_sclk0_ctrl,
--		.ctrlbit	= (1 << 16),
--	}, {
--		.name		= "mmc_48m",
--		.devname	= "s3c-sdhci.2",
--		.parent		= &clk_mout_48m.clk,
--		.enable		= s5pc100_sclk0_ctrl,
--		.ctrlbit	= (1 << 17),
--	},
--};
--
--static struct clk clk_hsmmc2 = {
--	.name		= "hsmmc",
--	.devname	= "s3c-sdhci.2",
--	.parent		= &clk_div_d1_bus.clk,
--	.enable		= s5pc100_d1_0_ctrl,
--	.ctrlbit	= (1 << 7),
--};
--
--static struct clk clk_hsmmc1 = {
--	.name		= "hsmmc",
--	.devname	= "s3c-sdhci.1",
--	.parent		= &clk_div_d1_bus.clk,
--	.enable		= s5pc100_d1_0_ctrl,
--	.ctrlbit	= (1 << 6),
--};
--
--static struct clk clk_hsmmc0 = {
--	.name		= "hsmmc",
--	.devname	= "s3c-sdhci.0",
--	.parent		= &clk_div_d1_bus.clk,
--	.enable		= s5pc100_d1_0_ctrl,
--	.ctrlbit	= (1 << 5),
--};
--
--static struct clk clk_48m_spi0 = {
--	.name		= "spi_48m",
--	.devname	= "s5pc100-spi.0",
--	.parent		= &clk_mout_48m.clk,
--	.enable		= s5pc100_sclk0_ctrl,
--	.ctrlbit	= (1 << 7),
--};
--
--static struct clk clk_48m_spi1 = {
--	.name		= "spi_48m",
--	.devname	= "s5pc100-spi.1",
--	.parent		= &clk_mout_48m.clk,
--	.enable		= s5pc100_sclk0_ctrl,
--	.ctrlbit	= (1 << 8),
--};
--
--static struct clk clk_48m_spi2 = {
--	.name		= "spi_48m",
--	.devname	= "s5pc100-spi.2",
--	.parent		= &clk_mout_48m.clk,
--	.enable		= s5pc100_sclk0_ctrl,
--	.ctrlbit	= (1 << 9),
--};
--
--static struct clk clk_i2s0 = {
--	.name		= "iis",
--	.devname	= "samsung-i2s.0",
--	.parent		= &clk_div_pclkd1.clk,
--	.enable		= s5pc100_d1_5_ctrl,
--	.ctrlbit	= (1 << 0),
--};
--
--static struct clk clk_i2s1 = {
--	.name		= "iis",
--	.devname	= "samsung-i2s.1",
--	.parent		= &clk_div_pclkd1.clk,
--	.enable		= s5pc100_d1_5_ctrl,
--	.ctrlbit	= (1 << 1),
--};
--
--static struct clk clk_i2s2 = {
--	.name		= "iis",
--	.devname	= "samsung-i2s.2",
--	.parent		= &clk_div_pclkd1.clk,
--	.enable		= s5pc100_d1_5_ctrl,
--	.ctrlbit	= (1 << 2),
--};
--
--static struct clk clk_vclk54m = {
--	.name		= "vclk_54m",
--	.rate		= 54000000,
--};
--
--static struct clk clk_i2scdclk0 = {
--	.name		= "i2s_cdclk0",
--};
--
--static struct clk clk_i2scdclk1 = {
--	.name		= "i2s_cdclk1",
--};
--
--static struct clk clk_i2scdclk2 = {
--	.name		= "i2s_cdclk2",
--};
--
--static struct clk clk_pcmcdclk0 = {
--	.name		= "pcm_cdclk0",
--};
--
--static struct clk clk_pcmcdclk1 = {
--	.name		= "pcm_cdclk1",
--};
--
--static struct clk *clk_src_group1_list[] = {
--	[0] = &clk_mout_epll.clk,
--	[1] = &clk_div_mpll2.clk,
--	[2] = &clk_fin_epll,
--	[3] = &clk_mout_hpll.clk,
--};
--
--static struct clksrc_sources clk_src_group1 = {
--	.sources	= clk_src_group1_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_group1_list),
--};
--
--static struct clk *clk_src_group2_list[] = {
--	[0] = &clk_mout_epll.clk,
--	[1] = &clk_div_mpll.clk,
--};
--
--static struct clksrc_sources clk_src_group2 = {
--	.sources	= clk_src_group2_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_group2_list),
--};
--
--static struct clk *clk_src_group3_list[] = {
--	[0] = &clk_mout_epll.clk,
--	[1] = &clk_div_mpll.clk,
--	[2] = &clk_fin_epll,
--	[3] = &clk_i2scdclk0,
--	[4] = &clk_pcmcdclk0,
--	[5] = &clk_mout_hpll.clk,
--};
--
--static struct clksrc_sources clk_src_group3 = {
--	.sources	= clk_src_group3_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_group3_list),
--};
--
--static struct clksrc_clk clk_sclk_audio0 = {
--	.clk	= {
--		.name		= "sclk_audio",
--		.devname	= "samsung-pcm.0",
--		.ctrlbit	= (1 << 8),
--		.enable		= s5pc100_sclk1_ctrl,
--	},
--	.sources = &clk_src_group3,
--	.reg_src = { .reg = S5P_CLK_SRC3, .shift = 12, .size = 3 },
--	.reg_div = { .reg = S5P_CLK_DIV4, .shift = 12, .size = 4 },
--};
--
--static struct clk *clk_src_group4_list[] = {
--	[0] = &clk_mout_epll.clk,
--	[1] = &clk_div_mpll.clk,
--	[2] = &clk_fin_epll,
--	[3] = &clk_i2scdclk1,
--	[4] = &clk_pcmcdclk1,
--	[5] = &clk_mout_hpll.clk,
--};
--
--static struct clksrc_sources clk_src_group4 = {
--	.sources	= clk_src_group4_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_group4_list),
--};
--
--static struct clksrc_clk clk_sclk_audio1 = {
--	.clk	= {
--		.name		= "sclk_audio",
--		.devname	= "samsung-pcm.1",
--		.ctrlbit	= (1 << 9),
--		.enable		= s5pc100_sclk1_ctrl,
--	},
--	.sources = &clk_src_group4,
--	.reg_src = { .reg = S5P_CLK_SRC3, .shift = 16, .size = 3 },
--	.reg_div = { .reg = S5P_CLK_DIV4, .shift = 16, .size = 4 },
--};
--
--static struct clk *clk_src_group5_list[] = {
--	[0] = &clk_mout_epll.clk,
--	[1] = &clk_div_mpll.clk,
--	[2] = &clk_fin_epll,
--	[3] = &clk_i2scdclk2,
--	[4] = &clk_mout_hpll.clk,
--};
--
--static struct clksrc_sources clk_src_group5 = {
--	.sources	= clk_src_group5_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_group5_list),
--};
--
--static struct clksrc_clk clk_sclk_audio2 = {
--	.clk	= {
--		.name		= "sclk_audio",
--		.devname	= "samsung-pcm.2",
--		.ctrlbit	= (1 << 10),
--		.enable		= s5pc100_sclk1_ctrl,
--	},
--	.sources = &clk_src_group5,
--	.reg_src = { .reg = S5P_CLK_SRC3, .shift = 20, .size = 3 },
--	.reg_div = { .reg = S5P_CLK_DIV4, .shift = 20, .size = 4 },
--};
--
--static struct clk *clk_src_group6_list[] = {
--	[0] = &s5p_clk_27m,
--	[1] = &clk_vclk54m,
--	[2] = &clk_div_hdmi.clk,
--};
--
--static struct clksrc_sources clk_src_group6 = {
--	.sources	= clk_src_group6_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_group6_list),
--};
--
--static struct clk *clk_src_group7_list[] = {
--	[0] = &clk_mout_epll.clk,
--	[1] = &clk_div_mpll.clk,
--	[2] = &clk_mout_hpll.clk,
--	[3] = &clk_vclk54m,
--};
--
--static struct clksrc_sources clk_src_group7 = {
--	.sources	= clk_src_group7_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_group7_list),
--};
--
--static struct clk *clk_src_mmc0_list[] = {
--	[0] = &clk_mout_epll.clk,
--	[1] = &clk_div_mpll.clk,
--	[2] = &clk_fin_epll,
--};
--
--static struct clksrc_sources clk_src_mmc0 = {
--	.sources	= clk_src_mmc0_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_mmc0_list),
--};
--
--static struct clk *clk_src_mmc12_list[] = {
--	[0] = &clk_mout_epll.clk,
--	[1] = &clk_div_mpll.clk,
--	[2] = &clk_fin_epll,
--	[3] = &clk_mout_hpll.clk,
--};
--
--static struct clksrc_sources clk_src_mmc12 = {
--	.sources	= clk_src_mmc12_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_mmc12_list),
--};
--
--static struct clk *clk_src_irda_usb_list[] = {
--	[0] = &clk_mout_epll.clk,
--	[1] = &clk_div_mpll.clk,
--	[2] = &clk_fin_epll,
--	[3] = &clk_mout_hpll.clk,
--};
--
--static struct clksrc_sources clk_src_irda_usb = {
--	.sources	= clk_src_irda_usb_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_irda_usb_list),
--};
--
--static struct clk *clk_src_pwi_list[] = {
--	[0] = &clk_fin_epll,
--	[1] = &clk_mout_epll.clk,
--	[2] = &clk_div_mpll.clk,
--};
--
--static struct clksrc_sources clk_src_pwi = {
--	.sources	= clk_src_pwi_list,
--	.nr_sources	= ARRAY_SIZE(clk_src_pwi_list),
--};
--
--static struct clk *clk_sclk_spdif_list[] = {
--	[0] = &clk_sclk_audio0.clk,
--	[1] = &clk_sclk_audio1.clk,
--	[2] = &clk_sclk_audio2.clk,
--};
--
--static struct clksrc_sources clk_src_sclk_spdif = {
--	.sources	= clk_sclk_spdif_list,
--	.nr_sources	= ARRAY_SIZE(clk_sclk_spdif_list),
--};
--
--static struct clksrc_clk clk_sclk_spdif = {
--	.clk	= {
--		.name		= "sclk_spdif",
--		.ctrlbit	= (1 << 11),
--		.enable		= s5pc100_sclk1_ctrl,
--		.ops		= &s5p_sclk_spdif_ops,
--	},
--	.sources = &clk_src_sclk_spdif,
--	.reg_src = { .reg = S5P_CLK_SRC3, .shift = 24, .size = 2 },
--};
--
--static struct clksrc_clk clksrcs[] = {
--	{
--		.clk	= {
--			.name		= "sclk_mixer",
--			.ctrlbit	= (1 << 6),
--			.enable		= s5pc100_sclk0_ctrl,
--
--		},
--		.sources = &clk_src_group6,
--		.reg_src = { .reg = S5P_CLK_SRC2, .shift = 28, .size = 2 },
--	}, {
--		.clk	= {
--			.name		= "sclk_lcd",
--			.ctrlbit	= (1 << 0),
--			.enable		= s5pc100_sclk1_ctrl,
--
--		},
--		.sources = &clk_src_group7,
--		.reg_src = { .reg = S5P_CLK_SRC2, .shift = 12, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV3, .shift = 12, .size = 4 },
--	}, {
--		.clk	= {
--			.name		= "sclk_fimc",
--			.devname	= "s5p-fimc.0",
--			.ctrlbit	= (1 << 1),
--			.enable		= s5pc100_sclk1_ctrl,
--
--		},
--		.sources = &clk_src_group7,
--		.reg_src = { .reg = S5P_CLK_SRC2, .shift = 16, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV3, .shift = 16, .size = 4 },
--	}, {
--		.clk	= {
--			.name		= "sclk_fimc",
--			.devname	= "s5p-fimc.1",
--			.ctrlbit	= (1 << 2),
--			.enable		= s5pc100_sclk1_ctrl,
--
--		},
--		.sources = &clk_src_group7,
--		.reg_src = { .reg = S5P_CLK_SRC2, .shift = 20, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV3, .shift = 20, .size = 4 },
--	}, {
--		.clk	= {
--			.name		= "sclk_fimc",
--			.devname	= "s5p-fimc.2",
--			.ctrlbit	= (1 << 3),
--			.enable		= s5pc100_sclk1_ctrl,
--
--		},
--		.sources = &clk_src_group7,
--		.reg_src = { .reg = S5P_CLK_SRC2, .shift = 24, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV3, .shift = 24, .size = 4 },
--	}, {
--		.clk	= {
--			.name		= "sclk_irda",
--			.ctrlbit	= (1 << 10),
--			.enable		= s5pc100_sclk0_ctrl,
--
--		},
--		.sources = &clk_src_irda_usb,
--		.reg_src = { .reg = S5P_CLK_SRC2, .shift = 8, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV3, .shift = 8, .size = 4 },
--	}, {
--		.clk	= {
--			.name		= "sclk_irda",
--			.ctrlbit	= (1 << 10),
--			.enable		= s5pc100_sclk0_ctrl,
--
--		},
--		.sources = &clk_src_mmc12,
--		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 16, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 16, .size = 4 },
--	}, {
--		.clk	= {
--			.name		= "sclk_pwi",
--			.ctrlbit	= (1 << 1),
--			.enable		= s5pc100_sclk0_ctrl,
--
--		},
--		.sources = &clk_src_pwi,
--		.reg_src = { .reg = S5P_CLK_SRC3, .shift = 0, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV4, .shift = 0, .size = 3 },
--	}, {
--		.clk	= {
--			.name		= "sclk_uhost",
--			.ctrlbit	= (1 << 11),
--			.enable		= s5pc100_sclk0_ctrl,
--
--		},
--		.sources = &clk_src_irda_usb,
--		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 20, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 20, .size = 4 },
--	},
--};
--
--static struct clksrc_clk clk_sclk_uart = {
--	.clk	= {
--		.name		= "uclk1",
--		.ctrlbit	= (1 << 3),
--		.enable		= s5pc100_sclk0_ctrl,
--	},
--	.sources = &clk_src_group2,
--	.reg_src = { .reg = S5P_CLK_SRC1, .shift = 0, .size = 1 },
--	.reg_div = { .reg = S5P_CLK_DIV2, .shift = 0, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_mmc0 = {
--	.clk	= {
--		.name		= "sclk_mmc",
--		.devname	= "s3c-sdhci.0",
--		.ctrlbit	= (1 << 12),
--		.enable		= s5pc100_sclk1_ctrl,
--	},
--	.sources = &clk_src_mmc0,
--	.reg_src = { .reg = S5P_CLK_SRC2, .shift = 0, .size = 2 },
--	.reg_div = { .reg = S5P_CLK_DIV3, .shift = 0, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_mmc1 = {
--	.clk	= {
--		.name		= "sclk_mmc",
--		.devname	= "s3c-sdhci.1",
--		.ctrlbit	= (1 << 13),
--		.enable		= s5pc100_sclk1_ctrl,
--	},
--	.sources = &clk_src_mmc12,
--	.reg_src = { .reg = S5P_CLK_SRC2, .shift = 4, .size = 2 },
--	.reg_div = { .reg = S5P_CLK_DIV3, .shift = 4, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_mmc2 = {
--	.clk	= {
--		.name		= "sclk_mmc",
--		.devname	= "s3c-sdhci.2",
--		.ctrlbit	= (1 << 14),
--		.enable		= s5pc100_sclk1_ctrl,
--	},
--	.sources = &clk_src_mmc12,
--	.reg_src = { .reg = S5P_CLK_SRC2, .shift = 8, .size = 2 },
--	.reg_div = { .reg = S5P_CLK_DIV3, .shift = 8, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_spi0 = {
--	.clk	= {
--		.name		= "sclk_spi",
--		.devname	= "s5pc100-spi.0",
--		.ctrlbit	= (1 << 4),
--		.enable		= s5pc100_sclk0_ctrl,
--	},
--	.sources = &clk_src_group1,
--	.reg_src = { .reg = S5P_CLK_SRC1, .shift = 4, .size = 2 },
--	.reg_div = { .reg = S5P_CLK_DIV2, .shift = 4, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_spi1 = {
--	.clk	= {
--		.name		= "sclk_spi",
--		.devname	= "s5pc100-spi.1",
--		.ctrlbit	= (1 << 5),
--		.enable		= s5pc100_sclk0_ctrl,
--	},
--	.sources = &clk_src_group1,
--	.reg_src = { .reg = S5P_CLK_SRC1, .shift = 8, .size = 2 },
--	.reg_div = { .reg = S5P_CLK_DIV2, .shift = 8, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_spi2 = {
--	.clk	= {
--		.name		= "sclk_spi",
--		.devname	= "s5pc100-spi.2",
--		.ctrlbit	= (1 << 6),
--		.enable		= s5pc100_sclk0_ctrl,
--	},
--	.sources = &clk_src_group1,
--	.reg_src = { .reg = S5P_CLK_SRC1, .shift = 12, .size = 2 },
--	.reg_div = { .reg = S5P_CLK_DIV2, .shift = 12, .size = 4 },
--};
--
--/* Clock initialisation code */
--static struct clksrc_clk *sysclks[] = {
--	&clk_mout_apll,
--	&clk_mout_epll,
--	&clk_mout_mpll,
--	&clk_mout_hpll,
--	&clk_mout_href,
--	&clk_mout_48m,
--	&clk_div_apll,
--	&clk_div_arm,
--	&clk_div_d0_bus,
--	&clk_div_pclkd0,
--	&clk_div_secss,
--	&clk_div_apll2,
--	&clk_mout_am,
--	&clk_div_d1_bus,
--	&clk_div_mpll2,
--	&clk_div_mpll,
--	&clk_mout_onenand,
--	&clk_div_onenand,
--	&clk_div_pclkd1,
--	&clk_div_cam,
--	&clk_div_hdmi,
--	&clk_sclk_audio0,
--	&clk_sclk_audio1,
--	&clk_sclk_audio2,
--	&clk_sclk_spdif,
--};
--
--static struct clk *clk_cdev[] = {
--	&clk_hsmmc0,
--	&clk_hsmmc1,
--	&clk_hsmmc2,
--	&clk_48m_spi0,
--	&clk_48m_spi1,
--	&clk_48m_spi2,
--	&clk_i2s0,
--	&clk_i2s1,
--	&clk_i2s2,
--};
--
--static struct clksrc_clk *clksrc_cdev[] = {
--	&clk_sclk_uart,
--	&clk_sclk_mmc0,
--	&clk_sclk_mmc1,
--	&clk_sclk_mmc2,
--	&clk_sclk_spi0,
--	&clk_sclk_spi1,
--	&clk_sclk_spi2,
--};
--
--void __init_or_cpufreq s5pc100_setup_clocks(void)
--{
--	unsigned long xtal;
--	unsigned long arm;
--	unsigned long hclkd0;
--	unsigned long hclkd1;
--	unsigned long pclkd0;
--	unsigned long pclkd1;
--	unsigned long apll;
--	unsigned long mpll;
--	unsigned long epll;
--	unsigned long hpll;
--	unsigned int ptr;
--
--	/* Set S5PC100 functions for clk_fout_epll */
--	clk_fout_epll.enable = s5p_epll_enable;
--	clk_fout_epll.ops = &s5pc100_epll_ops;
--
--	printk(KERN_DEBUG "%s: registering clocks\n", __func__);
--
--	xtal = clk_get_rate(&clk_xtal);
--
--	printk(KERN_DEBUG "%s: xtal is %ld\n", __func__, xtal);
--
--	apll = s5p_get_pll65xx(xtal, __raw_readl(S5P_APLL_CON));
--	mpll = s5p_get_pll65xx(xtal, __raw_readl(S5P_MPLL_CON));
--	epll = s5p_get_pll65xx(xtal, __raw_readl(S5P_EPLL_CON));
--	hpll = s5p_get_pll65xx(xtal, __raw_readl(S5P_HPLL_CON));
--
--	printk(KERN_INFO "S5PC100: PLL settings, A=%ld.%ldMHz, M=%ld.%ldMHz, E=%ld.%ldMHz, H=%ld.%ldMHz\n",
--			print_mhz(apll), print_mhz(mpll), print_mhz(epll), print_mhz(hpll));
--
--	clk_fout_apll.rate = apll;
--	clk_fout_mpll.rate = mpll;
--	clk_fout_epll.rate = epll;
--	clk_mout_hpll.clk.rate = hpll;
--
--	for (ptr = 0; ptr < ARRAY_SIZE(clksrcs); ptr++)
--		s3c_set_clksrc(&clksrcs[ptr], true);
--
--	arm = clk_get_rate(&clk_div_arm.clk);
--	hclkd0 = clk_get_rate(&clk_div_d0_bus.clk);
--	pclkd0 = clk_get_rate(&clk_div_pclkd0.clk);
--	hclkd1 = clk_get_rate(&clk_div_d1_bus.clk);
--	pclkd1 = clk_get_rate(&clk_div_pclkd1.clk);
--
--	printk(KERN_INFO "S5PC100: HCLKD0=%ld.%ldMHz, HCLKD1=%ld.%ldMHz, PCLKD0=%ld.%ldMHz, PCLKD1=%ld.%ldMHz\n",
--			print_mhz(hclkd0), print_mhz(hclkd1), print_mhz(pclkd0), print_mhz(pclkd1));
--
--	clk_f.rate = arm;
--	clk_h.rate = hclkd1;
--	clk_p.rate = pclkd1;
--}
--
--/*
-- * The following clocks will be enabled during clock initialization.
-- */
--static struct clk init_clocks[] = {
--	{
--		.name		= "tzic",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_0_ctrl,
--		.ctrlbit	= (1 << 1),
--	}, {
--		.name		= "intc",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_0_ctrl,
--		.ctrlbit	= (1 << 0),
--	}, {
--		.name		= "ebi",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_1_ctrl,
--		.ctrlbit	= (1 << 5),
--	}, {
--		.name		= "intmem",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_1_ctrl,
--		.ctrlbit	= (1 << 4),
--	}, {
--		.name		= "sromc",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_1_ctrl,
--		.ctrlbit	= (1 << 1),
--	}, {
--		.name		= "dmc",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_1_ctrl,
--		.ctrlbit	= (1 << 0),
--	}, {
--		.name		= "chipid",
--		.parent		= &clk_div_d0_bus.clk,
--		.enable		= s5pc100_d0_1_ctrl,
--		.ctrlbit	= (1 << 0),
--	}, {
--		.name		= "gpio",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_3_ctrl,
--		.ctrlbit	= (1 << 1),
--	}, {
--		.name		= "uart",
--		.devname	= "s3c6400-uart.0",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 0),
--	}, {
--		.name		= "uart",
--		.devname	= "s3c6400-uart.1",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 1),
--	}, {
--		.name		= "uart",
--		.devname	= "s3c6400-uart.2",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 2),
--	}, {
--		.name		= "uart",
--		.devname	= "s3c6400-uart.3",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_4_ctrl,
--		.ctrlbit	= (1 << 3),
--	}, {
--		.name		= "timers",
--		.parent		= &clk_div_d1_bus.clk,
--		.enable		= s5pc100_d1_3_ctrl,
--		.ctrlbit	= (1 << 6),
--	},
--};
--
--static struct clk *clks[] __initdata = {
--	&clk_ext,
--	&clk_i2scdclk0,
--	&clk_i2scdclk1,
--	&clk_i2scdclk2,
--	&clk_pcmcdclk0,
--	&clk_pcmcdclk1,
--};
--
--static struct clk_lookup s5pc100_clk_lookup[] = {
--	CLKDEV_INIT(NULL, "clk_uart_baud2", &clk_p),
--	CLKDEV_INIT(NULL, "clk_uart_baud3", &clk_sclk_uart.clk),
--	CLKDEV_INIT("s3c-sdhci.0", "mmc_busclk.0", &clk_hsmmc0),
--	CLKDEV_INIT("s3c-sdhci.1", "mmc_busclk.0", &clk_hsmmc1),
--	CLKDEV_INIT("s3c-sdhci.2", "mmc_busclk.0", &clk_hsmmc2),
--	CLKDEV_INIT("s3c-sdhci.0", "mmc_busclk.2", &clk_sclk_mmc0.clk),
--	CLKDEV_INIT("s3c-sdhci.1", "mmc_busclk.2", &clk_sclk_mmc1.clk),
--	CLKDEV_INIT("s3c-sdhci.2", "mmc_busclk.2", &clk_sclk_mmc2.clk),
--	CLKDEV_INIT(NULL, "spi_busclk0", &clk_p),
--	CLKDEV_INIT("s5pc100-spi.0", "spi_busclk1", &clk_48m_spi0),
--	CLKDEV_INIT("s5pc100-spi.0", "spi_busclk2", &clk_sclk_spi0.clk),
--	CLKDEV_INIT("s5pc100-spi.1", "spi_busclk1", &clk_48m_spi1),
--	CLKDEV_INIT("s5pc100-spi.1", "spi_busclk2", &clk_sclk_spi1.clk),
--	CLKDEV_INIT("s5pc100-spi.2", "spi_busclk1", &clk_48m_spi2),
--	CLKDEV_INIT("s5pc100-spi.2", "spi_busclk2", &clk_sclk_spi2.clk),
--	CLKDEV_INIT("samsung-i2s.0", "i2s_opclk0", &clk_i2s0),
--	CLKDEV_INIT("samsung-i2s.1", "i2s_opclk0", &clk_i2s1),
--	CLKDEV_INIT("samsung-i2s.2", "i2s_opclk0", &clk_i2s2),
--};
--
--void __init s5pc100_register_clocks(void)
--{
--	int ptr;
--
--	s3c24xx_register_clocks(clks, ARRAY_SIZE(clks));
--
--	for (ptr = 0; ptr < ARRAY_SIZE(sysclks); ptr++)
--		s3c_register_clksrc(sysclks[ptr], 1);
--
--	s3c_register_clksrc(clksrcs, ARRAY_SIZE(clksrcs));
--	s3c_register_clocks(init_clocks, ARRAY_SIZE(init_clocks));
--	for (ptr = 0; ptr < ARRAY_SIZE(clksrc_cdev); ptr++)
--		s3c_register_clksrc(clksrc_cdev[ptr], 1);
--
--	s3c_register_clocks(init_clocks_off, ARRAY_SIZE(init_clocks_off));
--	s3c_disable_clocks(init_clocks_off, ARRAY_SIZE(init_clocks_off));
--	clkdev_add_table(s5pc100_clk_lookup, ARRAY_SIZE(s5pc100_clk_lookup));
--
--	s3c24xx_register_clocks(clk_cdev, ARRAY_SIZE(clk_cdev));
--	for (ptr = 0; ptr < ARRAY_SIZE(clk_cdev); ptr++)
--		s3c_disable_clocks(clk_cdev[ptr], 1);
--
--	s3c24xx_register_clock(&dummy_apb_pclk);
--}
-diff --git a/arch/arm/mach-s5pv210/Kconfig b/arch/arm/mach-s5pv210/Kconfig
-index abad41f..b18cb8b 100644
---- a/arch/arm/mach-s5pv210/Kconfig
-+++ b/arch/arm/mach-s5pv210/Kconfig
-@@ -11,7 +11,7 @@ if ARCH_S5PV210
- 
- config CPU_S5PV210
- 	bool
--	select S5P_CLOCK if !COMMON_CLK
-+	select COMMON_CLK
- 	select S5P_EXT_INT
- 	select S5P_PM if PM
- 	select S5P_SLEEP if PM
-diff --git a/arch/arm/mach-s5pv210/Makefile b/arch/arm/mach-s5pv210/Makefile
-index 0c67fe2..a5e1043 100644
---- a/arch/arm/mach-s5pv210/Makefile
-+++ b/arch/arm/mach-s5pv210/Makefile
-@@ -13,7 +13,6 @@ obj-				:=
- # Core
- 
- obj-y					+= common.o
--obj-$(CONFIG_S5P_CLOCK)			+= clock.o
- obj-$(CONFIG_PM)		+= pm.o
- 
- obj-y				+= dma.o
-diff --git a/arch/arm/mach-s5pv210/clock.c b/arch/arm/mach-s5pv210/clock.c
-deleted file mode 100644
-index ca46372..0000000
---- a/arch/arm/mach-s5pv210/clock.c
-+++ /dev/null
-@@ -1,1365 +0,0 @@
--/* linux/arch/arm/mach-s5pv210/clock.c
-- *
-- * Copyright (c) 2010 Samsung Electronics Co., Ltd.
-- *		http://www.samsung.com/
-- *
-- * S5PV210 - Clock support
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
--*/
--
--#include <linux/init.h>
--#include <linux/module.h>
--#include <linux/kernel.h>
--#include <linux/list.h>
--#include <linux/errno.h>
--#include <linux/err.h>
--#include <linux/clk.h>
--#include <linux/device.h>
--#include <linux/io.h>
--
--#include <mach/map.h>
--
--#include <plat/cpu-freq.h>
--#include <mach/regs-clock.h>
--#include <plat/clock.h>
--#include <plat/cpu.h>
--#include <plat/pll.h>
--#include <plat/s5p-clock.h>
--#include <plat/clock-clksrc.h>
--
--#include "common.h"
--
--static unsigned long xtal;
--
--static struct clksrc_clk clk_mout_apll = {
--	.clk	= {
--		.name		= "mout_apll",
--	},
--	.sources	= &clk_src_apll,
--	.reg_src	= { .reg = S5P_CLK_SRC0, .shift = 0, .size = 1 },
--};
--
--static struct clksrc_clk clk_mout_epll = {
--	.clk	= {
--		.name		= "mout_epll",
--	},
--	.sources	= &clk_src_epll,
--	.reg_src	= { .reg = S5P_CLK_SRC0, .shift = 8, .size = 1 },
--};
--
--static struct clksrc_clk clk_mout_mpll = {
--	.clk = {
--		.name		= "mout_mpll",
--	},
--	.sources	= &clk_src_mpll,
--	.reg_src	= { .reg = S5P_CLK_SRC0, .shift = 4, .size = 1 },
--};
--
--static struct clk *clkset_armclk_list[] = {
--	[0] = &clk_mout_apll.clk,
--	[1] = &clk_mout_mpll.clk,
--};
--
--static struct clksrc_sources clkset_armclk = {
--	.sources	= clkset_armclk_list,
--	.nr_sources	= ARRAY_SIZE(clkset_armclk_list),
--};
--
--static struct clksrc_clk clk_armclk = {
--	.clk	= {
--		.name		= "armclk",
--	},
--	.sources	= &clkset_armclk,
--	.reg_src	= { .reg = S5P_CLK_SRC0, .shift = 16, .size = 1 },
--	.reg_div	= { .reg = S5P_CLK_DIV0, .shift = 0, .size = 3 },
--};
--
--static struct clksrc_clk clk_hclk_msys = {
--	.clk	= {
--		.name		= "hclk_msys",
--		.parent		= &clk_armclk.clk,
--	},
--	.reg_div	= { .reg = S5P_CLK_DIV0, .shift = 8, .size = 3 },
--};
--
--static struct clksrc_clk clk_pclk_msys = {
--	.clk	= {
--		.name		= "pclk_msys",
--		.parent		= &clk_hclk_msys.clk,
--	},
--	.reg_div        = { .reg = S5P_CLK_DIV0, .shift = 12, .size = 3 },
--};
--
--static struct clksrc_clk clk_sclk_a2m = {
--	.clk	= {
--		.name		= "sclk_a2m",
--		.parent		= &clk_mout_apll.clk,
--	},
--	.reg_div	= { .reg = S5P_CLK_DIV0, .shift = 4, .size = 3 },
--};
--
--static struct clk *clkset_hclk_sys_list[] = {
--	[0] = &clk_mout_mpll.clk,
--	[1] = &clk_sclk_a2m.clk,
--};
--
--static struct clksrc_sources clkset_hclk_sys = {
--	.sources	= clkset_hclk_sys_list,
--	.nr_sources	= ARRAY_SIZE(clkset_hclk_sys_list),
--};
--
--static struct clksrc_clk clk_hclk_dsys = {
--	.clk	= {
--		.name	= "hclk_dsys",
--	},
--	.sources	= &clkset_hclk_sys,
--	.reg_src        = { .reg = S5P_CLK_SRC0, .shift = 20, .size = 1 },
--	.reg_div        = { .reg = S5P_CLK_DIV0, .shift = 16, .size = 4 },
--};
--
--static struct clksrc_clk clk_pclk_dsys = {
--	.clk	= {
--		.name	= "pclk_dsys",
--		.parent	= &clk_hclk_dsys.clk,
--	},
--	.reg_div = { .reg = S5P_CLK_DIV0, .shift = 20, .size = 3 },
--};
--
--static struct clksrc_clk clk_hclk_psys = {
--	.clk	= {
--		.name	= "hclk_psys",
--	},
--	.sources	= &clkset_hclk_sys,
--	.reg_src        = { .reg = S5P_CLK_SRC0, .shift = 24, .size = 1 },
--	.reg_div        = { .reg = S5P_CLK_DIV0, .shift = 24, .size = 4 },
--};
--
--static struct clksrc_clk clk_pclk_psys = {
--	.clk	= {
--		.name	= "pclk_psys",
--		.parent	= &clk_hclk_psys.clk,
--	},
--	.reg_div        = { .reg = S5P_CLK_DIV0, .shift = 28, .size = 3 },
--};
--
--static int s5pv210_clk_ip0_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_IP0, clk, enable);
--}
--
--static int s5pv210_clk_ip1_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_IP1, clk, enable);
--}
--
--static int s5pv210_clk_ip2_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_IP2, clk, enable);
--}
--
--static int s5pv210_clk_ip3_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLKGATE_IP3, clk, enable);
--}
--
--static int s5pv210_clk_mask0_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLK_SRC_MASK0, clk, enable);
--}
--
--static int s5pv210_clk_mask1_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_CLK_SRC_MASK1, clk, enable);
--}
--
--static int s5pv210_clk_hdmiphy_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_HDMI_PHY_CONTROL, clk, enable);
--}
--
--static int exynos4_clk_dac_ctrl(struct clk *clk, int enable)
--{
--	return s5p_gatectrl(S5P_DAC_PHY_CONTROL, clk, enable);
--}
--
--static struct clk clk_sclk_hdmi27m = {
--	.name		= "sclk_hdmi27m",
--	.rate		= 27000000,
--};
--
--static struct clk clk_sclk_hdmiphy = {
--	.name		= "sclk_hdmiphy",
--};
--
--static struct clk clk_sclk_usbphy0 = {
--	.name		= "sclk_usbphy0",
--};
--
--static struct clk clk_sclk_usbphy1 = {
--	.name		= "sclk_usbphy1",
--};
--
--static struct clk clk_pcmcdclk0 = {
--	.name		= "pcmcdclk",
--};
--
--static struct clk clk_pcmcdclk1 = {
--	.name		= "pcmcdclk",
--};
--
--static struct clk clk_pcmcdclk2 = {
--	.name		= "pcmcdclk",
--};
--
--static struct clk *clkset_vpllsrc_list[] = {
--	[0] = &clk_fin_vpll,
--	[1] = &clk_sclk_hdmi27m,
--};
--
--static struct clksrc_sources clkset_vpllsrc = {
--	.sources	= clkset_vpllsrc_list,
--	.nr_sources	= ARRAY_SIZE(clkset_vpllsrc_list),
--};
--
--static struct clksrc_clk clk_vpllsrc = {
--	.clk	= {
--		.name		= "vpll_src",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 7),
--	},
--	.sources	= &clkset_vpllsrc,
--	.reg_src	= { .reg = S5P_CLK_SRC1, .shift = 28, .size = 1 },
--};
--
--static struct clk *clkset_sclk_vpll_list[] = {
--	[0] = &clk_vpllsrc.clk,
--	[1] = &clk_fout_vpll,
--};
--
--static struct clksrc_sources clkset_sclk_vpll = {
--	.sources	= clkset_sclk_vpll_list,
--	.nr_sources	= ARRAY_SIZE(clkset_sclk_vpll_list),
--};
--
--static struct clksrc_clk clk_sclk_vpll = {
--	.clk	= {
--		.name		= "sclk_vpll",
--	},
--	.sources	= &clkset_sclk_vpll,
--	.reg_src	= { .reg = S5P_CLK_SRC0, .shift = 12, .size = 1 },
--};
--
--static struct clk *clkset_moutdmc0src_list[] = {
--	[0] = &clk_sclk_a2m.clk,
--	[1] = &clk_mout_mpll.clk,
--	[2] = NULL,
--	[3] = NULL,
--};
--
--static struct clksrc_sources clkset_moutdmc0src = {
--	.sources	= clkset_moutdmc0src_list,
--	.nr_sources	= ARRAY_SIZE(clkset_moutdmc0src_list),
--};
--
--static struct clksrc_clk clk_mout_dmc0 = {
--	.clk	= {
--		.name		= "mout_dmc0",
--	},
--	.sources	= &clkset_moutdmc0src,
--	.reg_src	= { .reg = S5P_CLK_SRC6, .shift = 24, .size = 2 },
--};
--
--static struct clksrc_clk clk_sclk_dmc0 = {
--	.clk	= {
--		.name		= "sclk_dmc0",
--		.parent		= &clk_mout_dmc0.clk,
--	},
--	.reg_div	= { .reg = S5P_CLK_DIV6, .shift = 28, .size = 4 },
--};
--
--static unsigned long s5pv210_clk_imem_get_rate(struct clk *clk)
--{
--	return clk_get_rate(clk->parent) / 2;
--}
--
--static struct clk_ops clk_hclk_imem_ops = {
--	.get_rate	= s5pv210_clk_imem_get_rate,
--};
--
--static unsigned long s5pv210_clk_fout_apll_get_rate(struct clk *clk)
--{
--	return s5p_get_pll45xx(xtal, __raw_readl(S5P_APLL_CON), pll_4508);
--}
--
--static struct clk_ops clk_fout_apll_ops = {
--	.get_rate	= s5pv210_clk_fout_apll_get_rate,
--};
--
--static struct clk init_clocks_off[] = {
--	{
--		.name		= "rot",
--		.parent		= &clk_hclk_dsys.clk,
--		.enable		= s5pv210_clk_ip0_ctrl,
--		.ctrlbit	= (1<<29),
--	}, {
--		.name		= "fimc",
--		.devname	= "s5pv210-fimc.0",
--		.parent		= &clk_hclk_dsys.clk,
--		.enable		= s5pv210_clk_ip0_ctrl,
--		.ctrlbit	= (1 << 24),
--	}, {
--		.name		= "fimc",
--		.devname	= "s5pv210-fimc.1",
--		.parent		= &clk_hclk_dsys.clk,
--		.enable		= s5pv210_clk_ip0_ctrl,
--		.ctrlbit	= (1 << 25),
--	}, {
--		.name		= "fimc",
--		.devname	= "s5pv210-fimc.2",
--		.parent		= &clk_hclk_dsys.clk,
--		.enable		= s5pv210_clk_ip0_ctrl,
--		.ctrlbit	= (1 << 26),
--	}, {
--		.name		= "jpeg",
--		.parent		= &clk_hclk_dsys.clk,
--		.enable		= s5pv210_clk_ip0_ctrl,
--		.ctrlbit	= (1 << 28),
--	}, {
--		.name		= "mfc",
--		.devname	= "s5p-mfc",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip0_ctrl,
--		.ctrlbit	= (1 << 16),
--	}, {
--		.name		= "dac",
--		.devname	= "s5p-sdo",
--		.parent		= &clk_hclk_dsys.clk,
--		.enable		= s5pv210_clk_ip1_ctrl,
--		.ctrlbit	= (1 << 10),
--	}, {
--		.name		= "mixer",
--		.devname	= "s5p-mixer",
--		.parent		= &clk_hclk_dsys.clk,
--		.enable		= s5pv210_clk_ip1_ctrl,
--		.ctrlbit	= (1 << 9),
--	}, {
--		.name		= "vp",
--		.devname	= "s5p-mixer",
--		.parent		= &clk_hclk_dsys.clk,
--		.enable		= s5pv210_clk_ip1_ctrl,
--		.ctrlbit	= (1 << 8),
--	}, {
--		.name		= "hdmi",
--		.devname	= "s5pv210-hdmi",
--		.parent		= &clk_hclk_dsys.clk,
--		.enable		= s5pv210_clk_ip1_ctrl,
--		.ctrlbit	= (1 << 11),
--	}, {
--		.name		= "hdmiphy",
--		.devname	= "s5pv210-hdmi",
--		.enable		= s5pv210_clk_hdmiphy_ctrl,
--		.ctrlbit	= (1 << 0),
--	}, {
--		.name		= "dacphy",
--		.devname	= "s5p-sdo",
--		.enable		= exynos4_clk_dac_ctrl,
--		.ctrlbit	= (1 << 0),
--	}, {
--		.name		= "otg",
--		.parent		= &clk_hclk_psys.clk,
--		.enable		= s5pv210_clk_ip1_ctrl,
--		.ctrlbit	= (1<<16),
--	}, {
--		.name		= "usb-host",
--		.parent		= &clk_hclk_psys.clk,
--		.enable		= s5pv210_clk_ip1_ctrl,
--		.ctrlbit	= (1<<17),
--	}, {
--		.name		= "lcd",
--		.parent		= &clk_hclk_dsys.clk,
--		.enable		= s5pv210_clk_ip1_ctrl,
--		.ctrlbit	= (1<<0),
--	}, {
--		.name		= "cfcon",
--		.parent		= &clk_hclk_psys.clk,
--		.enable		= s5pv210_clk_ip1_ctrl,
--		.ctrlbit	= (1<<25),
--	}, {
--		.name		= "systimer",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<16),
--	}, {
--		.name		= "watchdog",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<22),
--	}, {
--		.name		= "rtc",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<15),
--	}, {
--		.name		= "i2c",
--		.devname	= "s3c2440-i2c.0",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<7),
--	}, {
--		.name		= "i2c",
--		.devname	= "s3c2440-i2c.1",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1 << 10),
--	}, {
--		.name		= "i2c",
--		.devname	= "s3c2440-i2c.2",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<9),
--	}, {
--		.name		= "i2c",
--		.devname	= "s3c2440-hdmiphy-i2c",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1 << 11),
--	}, {
--		.name		= "spi",
--		.devname	= "s5pv210-spi.0",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<12),
--	}, {
--		.name		= "spi",
--		.devname	= "s5pv210-spi.1",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<13),
--	}, {
--		.name		= "spi",
--		.devname	= "s5pv210-spi.2",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<14),
--	}, {
--		.name		= "timers",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<23),
--	}, {
--		.name		= "adc",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<24),
--	}, {
--		.name		= "keypad",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<21),
--	}, {
--		.name		= "iis",
--		.devname	= "samsung-i2s.0",
--		.parent		= &clk_p,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1<<4),
--	}, {
--		.name		= "iis",
--		.devname	= "samsung-i2s.1",
--		.parent		= &clk_p,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1 << 5),
--	}, {
--		.name		= "iis",
--		.devname	= "samsung-i2s.2",
--		.parent		= &clk_p,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1 << 6),
--	}, {
--		.name		= "spdif",
--		.parent		= &clk_p,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1 << 0),
--	},
--};
--
--static struct clk init_clocks[] = {
--	{
--		.name		= "hclk_imem",
--		.parent		= &clk_hclk_msys.clk,
--		.ctrlbit	= (1 << 5),
--		.enable		= s5pv210_clk_ip0_ctrl,
--		.ops		= &clk_hclk_imem_ops,
--	}, {
--		.name		= "uart",
--		.devname	= "s5pv210-uart.0",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1 << 17),
--	}, {
--		.name		= "uart",
--		.devname	= "s5pv210-uart.1",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1 << 18),
--	}, {
--		.name		= "uart",
--		.devname	= "s5pv210-uart.2",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1 << 19),
--	}, {
--		.name		= "uart",
--		.devname	= "s5pv210-uart.3",
--		.parent		= &clk_pclk_psys.clk,
--		.enable		= s5pv210_clk_ip3_ctrl,
--		.ctrlbit	= (1 << 20),
--	}, {
--		.name		= "sromc",
--		.parent		= &clk_hclk_psys.clk,
--		.enable		= s5pv210_clk_ip1_ctrl,
--		.ctrlbit	= (1 << 26),
--	},
--};
--
--static struct clk clk_hsmmc0 = {
--	.name		= "hsmmc",
--	.devname	= "s3c-sdhci.0",
--	.parent		= &clk_hclk_psys.clk,
--	.enable		= s5pv210_clk_ip2_ctrl,
--	.ctrlbit	= (1<<16),
--};
--
--static struct clk clk_hsmmc1 = {
--	.name		= "hsmmc",
--	.devname	= "s3c-sdhci.1",
--	.parent		= &clk_hclk_psys.clk,
--	.enable		= s5pv210_clk_ip2_ctrl,
--	.ctrlbit	= (1<<17),
--};
--
--static struct clk clk_hsmmc2 = {
--	.name		= "hsmmc",
--	.devname	= "s3c-sdhci.2",
--	.parent		= &clk_hclk_psys.clk,
--	.enable		= s5pv210_clk_ip2_ctrl,
--	.ctrlbit	= (1<<18),
--};
--
--static struct clk clk_hsmmc3 = {
--	.name		= "hsmmc",
--	.devname	= "s3c-sdhci.3",
--	.parent		= &clk_hclk_psys.clk,
--	.enable		= s5pv210_clk_ip2_ctrl,
--	.ctrlbit	= (1<<19),
--};
--
--static struct clk clk_pdma0 = {
--	.name		= "pdma0",
--	.parent		= &clk_hclk_psys.clk,
--	.enable		= s5pv210_clk_ip0_ctrl,
--	.ctrlbit	= (1 << 3),
--};
--
--static struct clk clk_pdma1 = {
--	.name		= "pdma1",
--	.parent		= &clk_hclk_psys.clk,
--	.enable		= s5pv210_clk_ip0_ctrl,
--	.ctrlbit	= (1 << 4),
--};
--
--static struct clk *clkset_uart_list[] = {
--	[6] = &clk_mout_mpll.clk,
--	[7] = &clk_mout_epll.clk,
--};
--
--static struct clksrc_sources clkset_uart = {
--	.sources	= clkset_uart_list,
--	.nr_sources	= ARRAY_SIZE(clkset_uart_list),
--};
--
--static struct clk *clkset_group1_list[] = {
--	[0] = &clk_sclk_a2m.clk,
--	[1] = &clk_mout_mpll.clk,
--	[2] = &clk_mout_epll.clk,
--	[3] = &clk_sclk_vpll.clk,
--};
--
--static struct clksrc_sources clkset_group1 = {
--	.sources	= clkset_group1_list,
--	.nr_sources	= ARRAY_SIZE(clkset_group1_list),
--};
--
--static struct clk *clkset_sclk_onenand_list[] = {
--	[0] = &clk_hclk_psys.clk,
--	[1] = &clk_hclk_dsys.clk,
--};
--
--static struct clksrc_sources clkset_sclk_onenand = {
--	.sources	= clkset_sclk_onenand_list,
--	.nr_sources	= ARRAY_SIZE(clkset_sclk_onenand_list),
--};
--
--static struct clk *clkset_sclk_dac_list[] = {
--	[0] = &clk_sclk_vpll.clk,
--	[1] = &clk_sclk_hdmiphy,
--};
--
--static struct clksrc_sources clkset_sclk_dac = {
--	.sources	= clkset_sclk_dac_list,
--	.nr_sources	= ARRAY_SIZE(clkset_sclk_dac_list),
--};
--
--static struct clksrc_clk clk_sclk_dac = {
--	.clk		= {
--		.name		= "sclk_dac",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 2),
--	},
--	.sources	= &clkset_sclk_dac,
--	.reg_src	= { .reg = S5P_CLK_SRC1, .shift = 8, .size = 1 },
--};
--
--static struct clksrc_clk clk_sclk_pixel = {
--	.clk		= {
--		.name		= "sclk_pixel",
--		.parent		= &clk_sclk_vpll.clk,
--	},
--	.reg_div	= { .reg = S5P_CLK_DIV1, .shift = 0, .size = 4},
--};
--
--static struct clk *clkset_sclk_hdmi_list[] = {
--	[0] = &clk_sclk_pixel.clk,
--	[1] = &clk_sclk_hdmiphy,
--};
--
--static struct clksrc_sources clkset_sclk_hdmi = {
--	.sources	= clkset_sclk_hdmi_list,
--	.nr_sources	= ARRAY_SIZE(clkset_sclk_hdmi_list),
--};
--
--static struct clksrc_clk clk_sclk_hdmi = {
--	.clk		= {
--		.name		= "sclk_hdmi",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 0),
--	},
--	.sources	= &clkset_sclk_hdmi,
--	.reg_src	= { .reg = S5P_CLK_SRC1, .shift = 0, .size = 1 },
--};
--
--static struct clk *clkset_sclk_mixer_list[] = {
--	[0] = &clk_sclk_dac.clk,
--	[1] = &clk_sclk_hdmi.clk,
--};
--
--static struct clksrc_sources clkset_sclk_mixer = {
--	.sources	= clkset_sclk_mixer_list,
--	.nr_sources	= ARRAY_SIZE(clkset_sclk_mixer_list),
--};
--
--static struct clksrc_clk clk_sclk_mixer = {
--	.clk		= {
--		.name		= "sclk_mixer",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 1),
--	},
--	.sources = &clkset_sclk_mixer,
--	.reg_src = { .reg = S5P_CLK_SRC1, .shift = 4, .size = 1 },
--};
--
--static struct clksrc_clk *sclk_tv[] = {
--	&clk_sclk_dac,
--	&clk_sclk_pixel,
--	&clk_sclk_hdmi,
--	&clk_sclk_mixer,
--};
--
--static struct clk *clkset_sclk_audio0_list[] = {
--	[0] = &clk_ext_xtal_mux,
--	[1] = &clk_pcmcdclk0,
--	[2] = &clk_sclk_hdmi27m,
--	[3] = &clk_sclk_usbphy0,
--	[4] = &clk_sclk_usbphy1,
--	[5] = &clk_sclk_hdmiphy,
--	[6] = &clk_mout_mpll.clk,
--	[7] = &clk_mout_epll.clk,
--	[8] = &clk_sclk_vpll.clk,
--};
--
--static struct clksrc_sources clkset_sclk_audio0 = {
--	.sources	= clkset_sclk_audio0_list,
--	.nr_sources	= ARRAY_SIZE(clkset_sclk_audio0_list),
--};
--
--static struct clksrc_clk clk_sclk_audio0 = {
--	.clk		= {
--		.name		= "sclk_audio",
--		.devname	= "soc-audio.0",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 24),
--	},
--	.sources = &clkset_sclk_audio0,
--	.reg_src = { .reg = S5P_CLK_SRC6, .shift = 0, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV6, .shift = 0, .size = 4 },
--};
--
--static struct clk *clkset_sclk_audio1_list[] = {
--	[0] = &clk_ext_xtal_mux,
--	[1] = &clk_pcmcdclk1,
--	[2] = &clk_sclk_hdmi27m,
--	[3] = &clk_sclk_usbphy0,
--	[4] = &clk_sclk_usbphy1,
--	[5] = &clk_sclk_hdmiphy,
--	[6] = &clk_mout_mpll.clk,
--	[7] = &clk_mout_epll.clk,
--	[8] = &clk_sclk_vpll.clk,
--};
--
--static struct clksrc_sources clkset_sclk_audio1 = {
--	.sources	= clkset_sclk_audio1_list,
--	.nr_sources	= ARRAY_SIZE(clkset_sclk_audio1_list),
--};
--
--static struct clksrc_clk clk_sclk_audio1 = {
--	.clk		= {
--		.name		= "sclk_audio",
--		.devname	= "soc-audio.1",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 25),
--	},
--	.sources = &clkset_sclk_audio1,
--	.reg_src = { .reg = S5P_CLK_SRC6, .shift = 4, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV6, .shift = 4, .size = 4 },
--};
--
--static struct clk *clkset_sclk_audio2_list[] = {
--	[0] = &clk_ext_xtal_mux,
--	[1] = &clk_pcmcdclk0,
--	[2] = &clk_sclk_hdmi27m,
--	[3] = &clk_sclk_usbphy0,
--	[4] = &clk_sclk_usbphy1,
--	[5] = &clk_sclk_hdmiphy,
--	[6] = &clk_mout_mpll.clk,
--	[7] = &clk_mout_epll.clk,
--	[8] = &clk_sclk_vpll.clk,
--};
--
--static struct clksrc_sources clkset_sclk_audio2 = {
--	.sources	= clkset_sclk_audio2_list,
--	.nr_sources	= ARRAY_SIZE(clkset_sclk_audio2_list),
--};
--
--static struct clksrc_clk clk_sclk_audio2 = {
--	.clk		= {
--		.name		= "sclk_audio",
--		.devname	= "soc-audio.2",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 26),
--	},
--	.sources = &clkset_sclk_audio2,
--	.reg_src = { .reg = S5P_CLK_SRC6, .shift = 8, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV6, .shift = 8, .size = 4 },
--};
--
--static struct clk *clkset_sclk_spdif_list[] = {
--	[0] = &clk_sclk_audio0.clk,
--	[1] = &clk_sclk_audio1.clk,
--	[2] = &clk_sclk_audio2.clk,
--};
--
--static struct clksrc_sources clkset_sclk_spdif = {
--	.sources	= clkset_sclk_spdif_list,
--	.nr_sources	= ARRAY_SIZE(clkset_sclk_spdif_list),
--};
--
--static struct clksrc_clk clk_sclk_spdif = {
--	.clk		= {
--		.name		= "sclk_spdif",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 27),
--		.ops		= &s5p_sclk_spdif_ops,
--	},
--	.sources = &clkset_sclk_spdif,
--	.reg_src = { .reg = S5P_CLK_SRC6, .shift = 12, .size = 2 },
--};
--
--static struct clk *clkset_group2_list[] = {
--	[0] = &clk_ext_xtal_mux,
--	[1] = &clk_xusbxti,
--	[2] = &clk_sclk_hdmi27m,
--	[3] = &clk_sclk_usbphy0,
--	[4] = &clk_sclk_usbphy1,
--	[5] = &clk_sclk_hdmiphy,
--	[6] = &clk_mout_mpll.clk,
--	[7] = &clk_mout_epll.clk,
--	[8] = &clk_sclk_vpll.clk,
--};
--
--static struct clksrc_sources clkset_group2 = {
--	.sources	= clkset_group2_list,
--	.nr_sources	= ARRAY_SIZE(clkset_group2_list),
--};
--
--static struct clksrc_clk clksrcs[] = {
--	{
--		.clk	= {
--			.name		= "sclk_dmc",
--		},
--		.sources = &clkset_group1,
--		.reg_src = { .reg = S5P_CLK_SRC6, .shift = 24, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV6, .shift = 28, .size = 4 },
--	}, {
--		.clk	= {
--			.name		= "sclk_onenand",
--		},
--		.sources = &clkset_sclk_onenand,
--		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 28, .size = 1 },
--		.reg_div = { .reg = S5P_CLK_DIV6, .shift = 12, .size = 3 },
--	}, {
--		.clk	= {
--			.name		= "sclk_fimc",
--			.devname	= "s5pv210-fimc.0",
--			.enable		= s5pv210_clk_mask1_ctrl,
--			.ctrlbit	= (1 << 2),
--		},
--		.sources = &clkset_group2,
--		.reg_src = { .reg = S5P_CLK_SRC3, .shift = 12, .size = 4 },
--		.reg_div = { .reg = S5P_CLK_DIV3, .shift = 12, .size = 4 },
--	}, {
--		.clk	= {
--			.name		= "sclk_fimc",
--			.devname	= "s5pv210-fimc.1",
--			.enable		= s5pv210_clk_mask1_ctrl,
--			.ctrlbit	= (1 << 3),
--		},
--		.sources = &clkset_group2,
--		.reg_src = { .reg = S5P_CLK_SRC3, .shift = 16, .size = 4 },
--		.reg_div = { .reg = S5P_CLK_DIV3, .shift = 16, .size = 4 },
--	}, {
--		.clk	= {
--			.name		= "sclk_fimc",
--			.devname	= "s5pv210-fimc.2",
--			.enable		= s5pv210_clk_mask1_ctrl,
--			.ctrlbit	= (1 << 4),
--		},
--		.sources = &clkset_group2,
--		.reg_src = { .reg = S5P_CLK_SRC3, .shift = 20, .size = 4 },
--		.reg_div = { .reg = S5P_CLK_DIV3, .shift = 20, .size = 4 },
--	}, {
--		.clk		= {
--			.name		= "sclk_cam0",
--			.enable		= s5pv210_clk_mask0_ctrl,
--			.ctrlbit	= (1 << 3),
--		},
--		.sources = &clkset_group2,
--		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 12, .size = 4 },
--		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 12, .size = 4 },
--	}, {
--		.clk		= {
--			.name		= "sclk_cam1",
--			.enable		= s5pv210_clk_mask0_ctrl,
--			.ctrlbit	= (1 << 4),
--		},
--		.sources = &clkset_group2,
--		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 16, .size = 4 },
--		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 16, .size = 4 },
--	}, {
--		.clk		= {
--			.name		= "sclk_fimd",
--			.enable		= s5pv210_clk_mask0_ctrl,
--			.ctrlbit	= (1 << 5),
--		},
--		.sources = &clkset_group2,
--		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 20, .size = 4 },
--		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 20, .size = 4 },
--	}, {
--		.clk		= {
--			.name		= "sclk_mfc",
--			.devname	= "s5p-mfc",
--			.enable		= s5pv210_clk_ip0_ctrl,
--			.ctrlbit	= (1 << 16),
--		},
--		.sources = &clkset_group1,
--		.reg_src = { .reg = S5P_CLK_SRC2, .shift = 4, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 4, .size = 4 },
--	}, {
--		.clk		= {
--			.name		= "sclk_g2d",
--			.enable		= s5pv210_clk_ip0_ctrl,
--			.ctrlbit	= (1 << 12),
--		},
--		.sources = &clkset_group1,
--		.reg_src = { .reg = S5P_CLK_SRC2, .shift = 8, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 8, .size = 4 },
--	}, {
--		.clk		= {
--			.name		= "sclk_g3d",
--			.enable		= s5pv210_clk_ip0_ctrl,
--			.ctrlbit	= (1 << 8),
--		},
--		.sources = &clkset_group1,
--		.reg_src = { .reg = S5P_CLK_SRC2, .shift = 0, .size = 2 },
--		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 0, .size = 4 },
--	}, {
--		.clk		= {
--			.name		= "sclk_csis",
--			.enable		= s5pv210_clk_mask0_ctrl,
--			.ctrlbit	= (1 << 6),
--		},
--		.sources = &clkset_group2,
--		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 24, .size = 4 },
--		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 28, .size = 4 },
--	}, {
--		.clk		= {
--			.name		= "sclk_pwi",
--			.enable		= s5pv210_clk_mask0_ctrl,
--			.ctrlbit	= (1 << 29),
--		},
--		.sources = &clkset_group2,
--		.reg_src = { .reg = S5P_CLK_SRC6, .shift = 20, .size = 4 },
--		.reg_div = { .reg = S5P_CLK_DIV6, .shift = 24, .size = 4 },
--	}, {
--		.clk		= {
--			.name		= "sclk_pwm",
--			.enable		= s5pv210_clk_mask0_ctrl,
--			.ctrlbit	= (1 << 19),
--		},
--		.sources = &clkset_group2,
--		.reg_src = { .reg = S5P_CLK_SRC5, .shift = 12, .size = 4 },
--		.reg_div = { .reg = S5P_CLK_DIV5, .shift = 12, .size = 4 },
--	},
--};
--
--static struct clksrc_clk clk_sclk_uart0 = {
--	.clk	= {
--		.name		= "uclk1",
--		.devname	= "s5pv210-uart.0",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 12),
--	},
--	.sources = &clkset_uart,
--	.reg_src = { .reg = S5P_CLK_SRC4, .shift = 16, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV4, .shift = 16, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_uart1 = {
--	.clk		= {
--		.name		= "uclk1",
--		.devname	= "s5pv210-uart.1",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 13),
--	},
--	.sources = &clkset_uart,
--	.reg_src = { .reg = S5P_CLK_SRC4, .shift = 20, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV4, .shift = 20, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_uart2 = {
--	.clk		= {
--		.name		= "uclk1",
--		.devname	= "s5pv210-uart.2",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 14),
--	},
--	.sources = &clkset_uart,
--	.reg_src = { .reg = S5P_CLK_SRC4, .shift = 24, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV4, .shift = 24, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_uart3	= {
--	.clk		= {
--		.name		= "uclk1",
--		.devname	= "s5pv210-uart.3",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 15),
--	},
--	.sources = &clkset_uart,
--	.reg_src = { .reg = S5P_CLK_SRC4, .shift = 28, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV4, .shift = 28, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_mmc0 = {
--	.clk		= {
--		.name		= "sclk_mmc",
--		.devname	= "s3c-sdhci.0",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 8),
--	},
--	.sources = &clkset_group2,
--	.reg_src = { .reg = S5P_CLK_SRC4, .shift = 0, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV4, .shift = 0, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_mmc1 = {
--	.clk		= {
--		.name		= "sclk_mmc",
--		.devname	= "s3c-sdhci.1",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 9),
--	},
--	.sources = &clkset_group2,
--	.reg_src = { .reg = S5P_CLK_SRC4, .shift = 4, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV4, .shift = 4, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_mmc2 = {
--	.clk		= {
--		.name		= "sclk_mmc",
--		.devname	= "s3c-sdhci.2",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 10),
--	},
--	.sources = &clkset_group2,
--	.reg_src = { .reg = S5P_CLK_SRC4, .shift = 8, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV4, .shift = 8, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_mmc3 = {
--	.clk		= {
--		.name		= "sclk_mmc",
--		.devname	= "s3c-sdhci.3",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 11),
--	},
--	.sources = &clkset_group2,
--	.reg_src = { .reg = S5P_CLK_SRC4, .shift = 12, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV4, .shift = 12, .size = 4 },
--};
--
--static struct clksrc_clk clk_sclk_spi0 = {
--	.clk		= {
--		.name		= "sclk_spi",
--		.devname	= "s5pv210-spi.0",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 16),
--	},
--	.sources = &clkset_group2,
--	.reg_src = { .reg = S5P_CLK_SRC5, .shift = 0, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV5, .shift = 0, .size = 4 },
--	};
--
--static struct clksrc_clk clk_sclk_spi1 = {
--	.clk		= {
--		.name		= "sclk_spi",
--		.devname	= "s5pv210-spi.1",
--		.enable		= s5pv210_clk_mask0_ctrl,
--		.ctrlbit	= (1 << 17),
--	},
--	.sources = &clkset_group2,
--	.reg_src = { .reg = S5P_CLK_SRC5, .shift = 4, .size = 4 },
--	.reg_div = { .reg = S5P_CLK_DIV5, .shift = 4, .size = 4 },
--	};
--
--
--static struct clksrc_clk *clksrc_cdev[] = {
--	&clk_sclk_uart0,
--	&clk_sclk_uart1,
--	&clk_sclk_uart2,
--	&clk_sclk_uart3,
--	&clk_sclk_mmc0,
--	&clk_sclk_mmc1,
--	&clk_sclk_mmc2,
--	&clk_sclk_mmc3,
--	&clk_sclk_spi0,
--	&clk_sclk_spi1,
--};
--
--static struct clk *clk_cdev[] = {
--	&clk_hsmmc0,
--	&clk_hsmmc1,
--	&clk_hsmmc2,
--	&clk_hsmmc3,
--	&clk_pdma0,
--	&clk_pdma1,
--};
--
--/* Clock initialisation code */
--static struct clksrc_clk *sysclks[] = {
--	&clk_mout_apll,
--	&clk_mout_epll,
--	&clk_mout_mpll,
--	&clk_armclk,
--	&clk_hclk_msys,
--	&clk_sclk_a2m,
--	&clk_hclk_dsys,
--	&clk_hclk_psys,
--	&clk_pclk_msys,
--	&clk_pclk_dsys,
--	&clk_pclk_psys,
--	&clk_vpllsrc,
--	&clk_sclk_vpll,
--	&clk_mout_dmc0,
--	&clk_sclk_dmc0,
--	&clk_sclk_audio0,
--	&clk_sclk_audio1,
--	&clk_sclk_audio2,
--	&clk_sclk_spdif,
--};
--
--static u32 epll_div[][6] = {
--	{  48000000, 0, 48, 3, 3, 0 },
--	{  96000000, 0, 48, 3, 2, 0 },
--	{ 144000000, 1, 72, 3, 2, 0 },
--	{ 192000000, 0, 48, 3, 1, 0 },
--	{ 288000000, 1, 72, 3, 1, 0 },
--	{  32750000, 1, 65, 3, 4, 35127 },
--	{  32768000, 1, 65, 3, 4, 35127 },
--	{  45158400, 0, 45, 3, 3, 10355 },
--	{  45000000, 0, 45, 3, 3, 10355 },
--	{  45158000, 0, 45, 3, 3, 10355 },
--	{  49125000, 0, 49, 3, 3, 9961 },
--	{  49152000, 0, 49, 3, 3, 9961 },
--	{  67737600, 1, 67, 3, 3, 48366 },
--	{  67738000, 1, 67, 3, 3, 48366 },
--	{  73800000, 1, 73, 3, 3, 47710 },
--	{  73728000, 1, 73, 3, 3, 47710 },
--	{  36000000, 1, 32, 3, 4, 0 },
--	{  60000000, 1, 60, 3, 3, 0 },
--	{  72000000, 1, 72, 3, 3, 0 },
--	{  80000000, 1, 80, 3, 3, 0 },
--	{  84000000, 0, 42, 3, 2, 0 },
--	{  50000000, 0, 50, 3, 3, 0 },
--};
--
--static int s5pv210_epll_set_rate(struct clk *clk, unsigned long rate)
--{
--	unsigned int epll_con, epll_con_k;
--	unsigned int i;
--
--	/* Return if nothing changed */
--	if (clk->rate == rate)
--		return 0;
--
--	epll_con = __raw_readl(S5P_EPLL_CON);
--	epll_con_k = __raw_readl(S5P_EPLL_CON1);
--
--	epll_con_k &= ~PLL46XX_KDIV_MASK;
--	epll_con &= ~(1 << 27 |
--			PLL46XX_MDIV_MASK << PLL46XX_MDIV_SHIFT |
--			PLL46XX_PDIV_MASK << PLL46XX_PDIV_SHIFT |
--			PLL46XX_SDIV_MASK << PLL46XX_SDIV_SHIFT);
--
--	for (i = 0; i < ARRAY_SIZE(epll_div); i++) {
--		if (epll_div[i][0] == rate) {
--			epll_con_k |= epll_div[i][5] << 0;
--			epll_con |= (epll_div[i][1] << 27 |
--					epll_div[i][2] << PLL46XX_MDIV_SHIFT |
--					epll_div[i][3] << PLL46XX_PDIV_SHIFT |
--					epll_div[i][4] << PLL46XX_SDIV_SHIFT);
--			break;
--		}
--	}
--
--	if (i == ARRAY_SIZE(epll_div)) {
--		printk(KERN_ERR "%s: Invalid Clock EPLL Frequency\n",
--				__func__);
--		return -EINVAL;
--	}
--
--	__raw_writel(epll_con, S5P_EPLL_CON);
--	__raw_writel(epll_con_k, S5P_EPLL_CON1);
--
--	printk(KERN_WARNING "EPLL Rate changes from %lu to %lu\n",
--			clk->rate, rate);
--
--	clk->rate = rate;
--
--	return 0;
--}
--
--static struct clk_ops s5pv210_epll_ops = {
--	.set_rate = s5pv210_epll_set_rate,
--	.get_rate = s5p_epll_get_rate,
--};
--
--static u32 vpll_div[][5] = {
--	{  54000000, 3, 53, 3, 0 },
--	{ 108000000, 3, 53, 2, 0 },
--};
--
--static unsigned long s5pv210_vpll_get_rate(struct clk *clk)
--{
--	return clk->rate;
--}
--
--static int s5pv210_vpll_set_rate(struct clk *clk, unsigned long rate)
--{
--	unsigned int vpll_con;
--	unsigned int i;
--
--	/* Return if nothing changed */
--	if (clk->rate == rate)
--		return 0;
--
--	vpll_con = __raw_readl(S5P_VPLL_CON);
--	vpll_con &= ~(0x1 << 27 |					\
--			PLL90XX_MDIV_MASK << PLL90XX_MDIV_SHIFT |	\
--			PLL90XX_PDIV_MASK << PLL90XX_PDIV_SHIFT |	\
--			PLL90XX_SDIV_MASK << PLL90XX_SDIV_SHIFT);
--
--	for (i = 0; i < ARRAY_SIZE(vpll_div); i++) {
--		if (vpll_div[i][0] == rate) {
--			vpll_con |= vpll_div[i][1] << PLL90XX_PDIV_SHIFT;
--			vpll_con |= vpll_div[i][2] << PLL90XX_MDIV_SHIFT;
--			vpll_con |= vpll_div[i][3] << PLL90XX_SDIV_SHIFT;
--			vpll_con |= vpll_div[i][4] << 27;
--			break;
--		}
--	}
--
--	if (i == ARRAY_SIZE(vpll_div)) {
--		printk(KERN_ERR "%s: Invalid Clock VPLL Frequency\n",
--				__func__);
--		return -EINVAL;
--	}
--
--	__raw_writel(vpll_con, S5P_VPLL_CON);
--
--	/* Wait for VPLL lock */
--	while (!(__raw_readl(S5P_VPLL_CON) & (1 << PLL90XX_LOCKED_SHIFT)))
--		continue;
--
--	clk->rate = rate;
--	return 0;
--}
--static struct clk_ops s5pv210_vpll_ops = {
--	.get_rate = s5pv210_vpll_get_rate,
--	.set_rate = s5pv210_vpll_set_rate,
--};
--
--void __init_or_cpufreq s5pv210_setup_clocks(void)
--{
--	struct clk *xtal_clk;
--	unsigned long vpllsrc;
--	unsigned long armclk;
--	unsigned long hclk_msys;
--	unsigned long hclk_dsys;
--	unsigned long hclk_psys;
--	unsigned long pclk_msys;
--	unsigned long pclk_dsys;
--	unsigned long pclk_psys;
--	unsigned long apll;
--	unsigned long mpll;
--	unsigned long epll;
--	unsigned long vpll;
--	unsigned int ptr;
--	u32 clkdiv0, clkdiv1;
--
--	/* Set functions for clk_fout_epll */
--	clk_fout_epll.enable = s5p_epll_enable;
--	clk_fout_epll.ops = &s5pv210_epll_ops;
--
--	printk(KERN_DEBUG "%s: registering clocks\n", __func__);
--
--	clkdiv0 = __raw_readl(S5P_CLK_DIV0);
--	clkdiv1 = __raw_readl(S5P_CLK_DIV1);
--
--	printk(KERN_DEBUG "%s: clkdiv0 = %08x, clkdiv1 = %08x\n",
--				__func__, clkdiv0, clkdiv1);
--
--	xtal_clk = clk_get(NULL, "xtal");
--	BUG_ON(IS_ERR(xtal_clk));
--
--	xtal = clk_get_rate(xtal_clk);
--	clk_put(xtal_clk);
--
--	printk(KERN_DEBUG "%s: xtal is %ld\n", __func__, xtal);
--
--	apll = s5p_get_pll45xx(xtal, __raw_readl(S5P_APLL_CON), pll_4508);
--	mpll = s5p_get_pll45xx(xtal, __raw_readl(S5P_MPLL_CON), pll_4502);
--	epll = s5p_get_pll46xx(xtal, __raw_readl(S5P_EPLL_CON),
--				__raw_readl(S5P_EPLL_CON1), pll_4600);
--	vpllsrc = clk_get_rate(&clk_vpllsrc.clk);
--	vpll = s5p_get_pll45xx(vpllsrc, __raw_readl(S5P_VPLL_CON), pll_4502);
--
--	clk_fout_apll.ops = &clk_fout_apll_ops;
--	clk_fout_mpll.rate = mpll;
--	clk_fout_epll.rate = epll;
--	clk_fout_vpll.ops = &s5pv210_vpll_ops;
--	clk_fout_vpll.rate = vpll;
--
--	printk(KERN_INFO "S5PV210: PLL settings, A=%ld, M=%ld, E=%ld V=%ld",
--			apll, mpll, epll, vpll);
--
--	armclk = clk_get_rate(&clk_armclk.clk);
--	hclk_msys = clk_get_rate(&clk_hclk_msys.clk);
--	hclk_dsys = clk_get_rate(&clk_hclk_dsys.clk);
--	hclk_psys = clk_get_rate(&clk_hclk_psys.clk);
--	pclk_msys = clk_get_rate(&clk_pclk_msys.clk);
--	pclk_dsys = clk_get_rate(&clk_pclk_dsys.clk);
--	pclk_psys = clk_get_rate(&clk_pclk_psys.clk);
--
--	printk(KERN_INFO "S5PV210: ARMCLK=%ld, HCLKM=%ld, HCLKD=%ld\n"
--			 "HCLKP=%ld, PCLKM=%ld, PCLKD=%ld, PCLKP=%ld\n",
--			armclk, hclk_msys, hclk_dsys, hclk_psys,
--			pclk_msys, pclk_dsys, pclk_psys);
--
--	clk_f.rate = armclk;
--	clk_h.rate = hclk_psys;
--	clk_p.rate = pclk_psys;
--
--	for (ptr = 0; ptr < ARRAY_SIZE(clksrcs); ptr++)
--		s3c_set_clksrc(&clksrcs[ptr], true);
--}
--
--static struct clk *clks[] __initdata = {
--	&clk_sclk_hdmi27m,
--	&clk_sclk_hdmiphy,
--	&clk_sclk_usbphy0,
--	&clk_sclk_usbphy1,
--	&clk_pcmcdclk0,
--	&clk_pcmcdclk1,
--	&clk_pcmcdclk2,
--};
--
--static struct clk_lookup s5pv210_clk_lookup[] = {
--	CLKDEV_INIT(NULL, "clk_uart_baud0", &clk_p),
--	CLKDEV_INIT("s5pv210-uart.0", "clk_uart_baud1", &clk_sclk_uart0.clk),
--	CLKDEV_INIT("s5pv210-uart.1", "clk_uart_baud1", &clk_sclk_uart1.clk),
--	CLKDEV_INIT("s5pv210-uart.2", "clk_uart_baud1", &clk_sclk_uart2.clk),
--	CLKDEV_INIT("s5pv210-uart.3", "clk_uart_baud1", &clk_sclk_uart3.clk),
--	CLKDEV_INIT("s3c-sdhci.0", "mmc_busclk.0", &clk_hsmmc0),
--	CLKDEV_INIT("s3c-sdhci.1", "mmc_busclk.0", &clk_hsmmc1),
--	CLKDEV_INIT("s3c-sdhci.2", "mmc_busclk.0", &clk_hsmmc2),
--	CLKDEV_INIT("s3c-sdhci.3", "mmc_busclk.0", &clk_hsmmc3),
--	CLKDEV_INIT("s3c-sdhci.0", "mmc_busclk.2", &clk_sclk_mmc0.clk),
--	CLKDEV_INIT("s3c-sdhci.1", "mmc_busclk.2", &clk_sclk_mmc1.clk),
--	CLKDEV_INIT("s3c-sdhci.2", "mmc_busclk.2", &clk_sclk_mmc2.clk),
--	CLKDEV_INIT("s3c-sdhci.3", "mmc_busclk.2", &clk_sclk_mmc3.clk),
--	CLKDEV_INIT(NULL, "spi_busclk0", &clk_p),
--	CLKDEV_INIT("s5pv210-spi.0", "spi_busclk1", &clk_sclk_spi0.clk),
--	CLKDEV_INIT("s5pv210-spi.1", "spi_busclk1", &clk_sclk_spi1.clk),
--	CLKDEV_INIT("dma-pl330.0", "apb_pclk", &clk_pdma0),
--	CLKDEV_INIT("dma-pl330.1", "apb_pclk", &clk_pdma1),
--};
--
--void __init s5pv210_register_clocks(void)
--{
--	int ptr;
--
--	s3c24xx_register_clocks(clks, ARRAY_SIZE(clks));
--
--	for (ptr = 0; ptr < ARRAY_SIZE(sysclks); ptr++)
--		s3c_register_clksrc(sysclks[ptr], 1);
--
--	for (ptr = 0; ptr < ARRAY_SIZE(sclk_tv); ptr++)
--		s3c_register_clksrc(sclk_tv[ptr], 1);
--
--	for (ptr = 0; ptr < ARRAY_SIZE(clksrc_cdev); ptr++)
--		s3c_register_clksrc(clksrc_cdev[ptr], 1);
--
--	s3c_register_clksrc(clksrcs, ARRAY_SIZE(clksrcs));
--	s3c_register_clocks(init_clocks, ARRAY_SIZE(init_clocks));
--
--	s3c_register_clocks(init_clocks_off, ARRAY_SIZE(init_clocks_off));
--	s3c_disable_clocks(init_clocks_off, ARRAY_SIZE(init_clocks_off));
--	clkdev_add_table(s5pv210_clk_lookup, ARRAY_SIZE(s5pv210_clk_lookup));
--
--	s3c24xx_register_clocks(clk_cdev, ARRAY_SIZE(clk_cdev));
--	for (ptr = 0; ptr < ARRAY_SIZE(clk_cdev); ptr++)
--		s3c_disable_clocks(clk_cdev[ptr], 1);
--
--}
++config PINCTRL_AS3722
++	bool "Pinctrl and GPIO driver for the AMS AS3722 PMIC"
++	depends on MFD_AS3722 && GPIOLIB
++	select PINMUX
++	select GENERIC_PINCONF
++	help
++	  AS3722 device supports the configuration of GPIO pins for different
++	  functionality. This driver supports the pinmux, push-pull and
++	  open drain configuration for the GPIO pins of AS3722 devices. It also
++	  supports the GPIO functionality through gpiolib.
++
+ config PINCTRL_BF54x
+ 	def_bool y if BF54x
+ 	select PINCTRL_ADI2
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index bbeb980..3d14cb8 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -15,6 +15,7 @@ obj-$(CONFIG_PINCTRL_AB8540)	+= pinctrl-ab8540.o
+ obj-$(CONFIG_PINCTRL_AB9540)	+= pinctrl-ab9540.o
+ obj-$(CONFIG_PINCTRL_AB8505)	+= pinctrl-ab8505.o
+ obj-$(CONFIG_PINCTRL_ADI2)	+= pinctrl-adi2.o
++obj-$(CONFIG_PINCTRL_AS3722)	+= pinctrl-as3722.o
+ obj-$(CONFIG_PINCTRL_BF54x)	+= pinctrl-adi2-bf54x.o
+ obj-$(CONFIG_PINCTRL_BF60x)	+= pinctrl-adi2-bf60x.o
+ obj-$(CONFIG_PINCTRL_AT91)	+= pinctrl-at91.o
+diff --git a/drivers/pinctrl/pinctrl-as3722.c b/drivers/pinctrl/pinctrl-as3722.c
+new file mode 100644
+index 0000000..608111f
+--- /dev/null
++++ b/drivers/pinctrl/pinctrl-as3722.c
+@@ -0,0 +1,630 @@
++/*
++ * AMS AS3722 pin control and GPIO driver.
++ *
++ * Copyright (c) 2013, NVIDIA Corporation.
++ *
++ * Author: Laxman Dewangan <ldewangan@nvidia.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
++ * whether express or implied; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++ * 02111-1307, USA
++ */
++
++#include <linux/delay.h>
++#include <linux/gpio.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/mfd/as3722.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/platform_device.h>
++#include <linux/pinctrl/consumer.h>
++#include <linux/pinctrl/machine.h>
++#include <linux/pinctrl/pinctrl.h>
++#include <linux/pinctrl/pinconf-generic.h>
++#include <linux/pinctrl/pinconf.h>
++#include <linux/pinctrl/pinmux.h>
++#include <linux/pm.h>
++#include <linux/slab.h>
++
++#include "core.h"
++#include "pinconf.h"
++#include "pinctrl-utils.h"
++
++#define AS3722_PIN_GPIO0		0
++#define AS3722_PIN_GPIO1		1
++#define AS3722_PIN_GPIO2		2
++#define AS3722_PIN_GPIO3		3
++#define AS3722_PIN_GPIO4		4
++#define AS3722_PIN_GPIO5		5
++#define AS3722_PIN_GPIO6		6
++#define AS3722_PIN_GPIO7		7
++#define AS3722_PIN_NUM			(AS3722_PIN_GPIO7 + 1)
++
++#define AS3722_GPIO_MODE_PULL_UP           BIT(PIN_CONFIG_BIAS_PULL_UP)
++#define AS3722_GPIO_MODE_PULL_DOWN         BIT(PIN_CONFIG_BIAS_PULL_DOWN)
++#define AS3722_GPIO_MODE_HIGH_IMPED        BIT(PIN_CONFIG_BIAS_HIGH_IMPEDANCE)
++#define AS3722_GPIO_MODE_OPEN_DRAIN        BIT(PIN_CONFIG_DRIVE_OPEN_DRAIN)
++
++struct as3722_pin_function {
++	const char *name;
++	const char * const *groups;
++	unsigned ngroups;
++	int mux_option;
++};
++
++struct as3722_gpio_pin_control {
++	bool enable_gpio_invert;
++	unsigned mode_prop;
++	int io_function;
++};
++
++struct as3722_pingroup {
++	const char *name;
++	const unsigned pins[1];
++	unsigned npins;
++};
++
++struct as3722_pctrl_info {
++	struct device *dev;
++	struct pinctrl_dev *pctl;
++	struct as3722 *as3722;
++	struct gpio_chip gpio_chip;
++	int pins_current_opt[AS3722_PIN_NUM];
++	const struct as3722_pin_function *functions;
++	unsigned num_functions;
++	const struct as3722_pingroup *pin_groups;
++	int num_pin_groups;
++	const struct pinctrl_pin_desc *pins;
++	unsigned num_pins;
++	struct as3722_gpio_pin_control gpio_control[AS3722_PIN_NUM];
++};
++
++static const struct pinctrl_pin_desc as3722_pins_desc[] = {
++	PINCTRL_PIN(AS3722_PIN_GPIO0, "gpio0"),
++	PINCTRL_PIN(AS3722_PIN_GPIO1, "gpio1"),
++	PINCTRL_PIN(AS3722_PIN_GPIO2, "gpio2"),
++	PINCTRL_PIN(AS3722_PIN_GPIO3, "gpio3"),
++	PINCTRL_PIN(AS3722_PIN_GPIO4, "gpio4"),
++	PINCTRL_PIN(AS3722_PIN_GPIO5, "gpio5"),
++	PINCTRL_PIN(AS3722_PIN_GPIO6, "gpio6"),
++	PINCTRL_PIN(AS3722_PIN_GPIO7, "gpio7"),
++};
++
++static const char * const gpio_groups[] = {
++	"gpio0",
++	"gpio1",
++	"gpio2",
++	"gpio3",
++	"gpio4",
++	"gpio5",
++	"gpio6",
++	"gpio7",
++};
++
++enum as3722_pinmux_option {
++	AS3722_PINMUX_GPIO			= 0,
++	AS3722_PINMUX_INTERRUPT_OUT		= 1,
++	AS3722_PINMUX_VSUB_VBAT_UNDEB_LOW_OUT	= 2,
++	AS3722_PINMUX_GPIO_INTERRUPT		= 3,
++	AS3722_PINMUX_PWM_INPUT			= 4,
++	AS3722_PINMUX_VOLTAGE_IN_STBY		= 5,
++	AS3722_PINMUX_OC_PG_SD0			= 6,
++	AS3722_PINMUX_PG_OUT			= 7,
++	AS3722_PINMUX_CLK32K_OUT		= 8,
++	AS3722_PINMUX_WATCHDOG_INPUT		= 9,
++	AS3722_PINMUX_SOFT_RESET_IN		= 11,
++	AS3722_PINMUX_PWM_OUTPUT		= 12,
++	AS3722_PINMUX_VSUB_VBAT_LOW_DEB_OUT	= 13,
++	AS3722_PINMUX_OC_PG_SD6			= 14,
++};
++
++#define FUNCTION_GROUP(fname, mux)			\
++	{						\
++		.name = #fname,				\
++		.groups = gpio_groups,			\
++		.ngroups = ARRAY_SIZE(gpio_groups),	\
++		.mux_option = AS3722_PINMUX_##mux,	\
++	}
++
++static const struct as3722_pin_function as3722_pin_function[] = {
++	FUNCTION_GROUP(gpio, GPIO),
++	FUNCTION_GROUP(interrupt-out, INTERRUPT_OUT),
++	FUNCTION_GROUP(gpio-in-interrupt, GPIO_INTERRUPT),
++	FUNCTION_GROUP(vsup-vbat-low-undebounce-out, VSUB_VBAT_UNDEB_LOW_OUT),
++	FUNCTION_GROUP(vsup-vbat-low-debounce-out, VSUB_VBAT_LOW_DEB_OUT),
++	FUNCTION_GROUP(voltage-in-standby, VOLTAGE_IN_STBY),
++	FUNCTION_GROUP(oc-pg-sd0, OC_PG_SD0),
++	FUNCTION_GROUP(oc-pg-sd6, OC_PG_SD6),
++	FUNCTION_GROUP(powergood-out, PG_OUT),
++	FUNCTION_GROUP(pwm-in, PWM_INPUT),
++	FUNCTION_GROUP(pwm-out, PWM_OUTPUT),
++	FUNCTION_GROUP(clk32k-out, CLK32K_OUT),
++	FUNCTION_GROUP(watchdog-in, WATCHDOG_INPUT),
++	FUNCTION_GROUP(soft-reset-in, SOFT_RESET_IN),
++};
++
++#define AS3722_PINGROUP(pg_name, pin_id) \
++	{								\
++		.name = #pg_name,					\
++		.pins = {AS3722_PIN_##pin_id},				\
++		.npins = 1,						\
++	}
++
++static const struct as3722_pingroup as3722_pingroups[] = {
++	AS3722_PINGROUP(gpio0,	GPIO0),
++	AS3722_PINGROUP(gpio1,	GPIO1),
++	AS3722_PINGROUP(gpio2,	GPIO2),
++	AS3722_PINGROUP(gpio3,	GPIO3),
++	AS3722_PINGROUP(gpio4,	GPIO4),
++	AS3722_PINGROUP(gpio5,	GPIO5),
++	AS3722_PINGROUP(gpio6,	GPIO6),
++	AS3722_PINGROUP(gpio7,	GPIO7),
++};
++
++static int as3722_pinctrl_get_groups_count(struct pinctrl_dev *pctldev)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return as_pci->num_pin_groups;
++}
++
++static const char *as3722_pinctrl_get_group_name(struct pinctrl_dev *pctldev,
++		unsigned group)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return as_pci->pin_groups[group].name;
++}
++
++static int as3722_pinctrl_get_group_pins(struct pinctrl_dev *pctldev,
++		unsigned group, const unsigned **pins, unsigned *num_pins)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	*pins = as_pci->pin_groups[group].pins;
++	*num_pins = as_pci->pin_groups[group].npins;
++	return 0;
++}
++
++static const struct pinctrl_ops as3722_pinctrl_ops = {
++	.get_groups_count = as3722_pinctrl_get_groups_count,
++	.get_group_name = as3722_pinctrl_get_group_name,
++	.get_group_pins = as3722_pinctrl_get_group_pins,
++	.dt_node_to_map = pinconf_generic_dt_node_to_map_pin,
++	.dt_free_map = pinctrl_utils_dt_free_map,
++};
++
++static int as3722_pinctrl_get_funcs_count(struct pinctrl_dev *pctldev)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return as_pci->num_functions;
++}
++
++static const char *as3722_pinctrl_get_func_name(struct pinctrl_dev *pctldev,
++			unsigned function)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return as_pci->functions[function].name;
++}
++
++static int as3722_pinctrl_get_func_groups(struct pinctrl_dev *pctldev,
++		unsigned function, const char * const **groups,
++		unsigned * const num_groups)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	*groups = as_pci->functions[function].groups;
++	*num_groups = as_pci->functions[function].ngroups;
++	return 0;
++}
++
++static int as3722_pinctrl_enable(struct pinctrl_dev *pctldev, unsigned function,
++		unsigned group)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++	int gpio_cntr_reg = AS3722_GPIOn_CONTROL_REG(group);
++	u8 val = AS3722_GPIO_IOSF_VAL(as_pci->functions[function].mux_option);
++	int ret;
++
++	dev_dbg(as_pci->dev, "%s(): GPIO %u pin to function %u and val %u\n",
++		__func__, group, function, val);
++
++	ret = as3722_update_bits(as_pci->as3722, gpio_cntr_reg,
++			AS3722_GPIO_IOSF_MASK, val);
++	if (ret < 0) {
++		dev_err(as_pci->dev, "GPIO%d_CTRL_REG update failed %d\n",
++			group, ret);
++		return ret;
++	}
++	as_pci->gpio_control[group].io_function = function;
++	return ret;
++}
++
++static int as3722_pinctrl_gpio_get_mode(unsigned gpio_mode_prop, bool input)
++{
++	if (gpio_mode_prop & AS3722_GPIO_MODE_HIGH_IMPED)
++		return -EINVAL;
++
++	if (gpio_mode_prop & AS3722_GPIO_MODE_OPEN_DRAIN) {
++		if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_UP)
++			return AS3722_GPIO_MODE_IO_OPEN_DRAIN_PULL_UP;
++		return AS3722_GPIO_MODE_IO_OPEN_DRAIN;
++	}
++	if (input) {
++		if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_UP)
++			return AS3722_GPIO_MODE_INPUT_PULL_UP;
++		else if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_DOWN)
++			return AS3722_GPIO_MODE_INPUT_PULL_DOWN;
++		return AS3722_GPIO_MODE_INPUT;
++	}
++	if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_DOWN)
++		return AS3722_GPIO_MODE_OUTPUT_VDDL;
++	return AS3722_GPIO_MODE_OUTPUT_VDDH;
++}
++
++static int as3722_pinctrl_gpio_request_enable(struct pinctrl_dev *pctldev,
++		struct pinctrl_gpio_range *range, unsigned offset)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++
++	if (as_pci->gpio_control[offset].io_function)
++		return -EBUSY;
++	return 0;
++}
++
++static int as3722_pinctrl_gpio_set_direction(struct pinctrl_dev *pctldev,
++		struct pinctrl_gpio_range *range, unsigned offset, bool input)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++	struct as3722 *as3722 = as_pci->as3722;
++	int mode;
++
++	mode = as3722_pinctrl_gpio_get_mode(
++			as_pci->gpio_control[offset].mode_prop, input);
++	if (mode < 0) {
++		dev_err(as_pci->dev, "%s direction for GPIO %d not supported\n",
++			(input) ? "Input" : "Output", offset);
++		return mode;
++	}
++
++	if (as_pci->gpio_control[offset].enable_gpio_invert)
++		mode |= AS3722_GPIO_INV;
++
++	return as3722_write(as3722, AS3722_GPIOn_CONTROL_REG(offset), mode);
++}
++
++static const struct pinmux_ops as3722_pinmux_ops = {
++	.get_functions_count	= as3722_pinctrl_get_funcs_count,
++	.get_function_name	= as3722_pinctrl_get_func_name,
++	.get_function_groups	= as3722_pinctrl_get_func_groups,
++	.enable			= as3722_pinctrl_enable,
++	.gpio_request_enable	= as3722_pinctrl_gpio_request_enable,
++	.gpio_set_direction	= as3722_pinctrl_gpio_set_direction,
++};
++
++static int as3722_pinconf_get(struct pinctrl_dev *pctldev,
++			unsigned pin, unsigned long *config)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++	enum pin_config_param param = pinconf_to_config_param(*config);
++	int arg = 0;
++	u16 prop;
++
++	switch (param) {
++	case PIN_CONFIG_BIAS_DISABLE:
++		prop = AS3722_GPIO_MODE_PULL_UP |
++				AS3722_GPIO_MODE_PULL_DOWN;
++		if (!(as_pci->gpio_control[pin].mode_prop & prop))
++			arg = 1;
++		prop = 0;
++		break;
++
++	case PIN_CONFIG_BIAS_PULL_UP:
++		prop = AS3722_GPIO_MODE_PULL_UP;
++		break;
++
++	case PIN_CONFIG_BIAS_PULL_DOWN:
++		prop = AS3722_GPIO_MODE_PULL_DOWN;
++		break;
++
++	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
++		prop = AS3722_GPIO_MODE_OPEN_DRAIN;
++		break;
++
++	case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
++		prop = AS3722_GPIO_MODE_HIGH_IMPED;
++		break;
++
++	default:
++		dev_err(as_pci->dev, "Properties not supported\n");
++		return -ENOTSUPP;
++	}
++
++	if (as_pci->gpio_control[pin].mode_prop & prop)
++		arg = 1;
++
++	*config = pinconf_to_config_packed(param, (u16)arg);
++	return 0;
++}
++
++static int as3722_pinconf_set(struct pinctrl_dev *pctldev,
++			unsigned pin, unsigned long *configs,
++			unsigned num_configs)
++{
++	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
++	enum pin_config_param param;
++	int mode_prop;
++	int i;
++
++	for (i = 0; i < num_configs; i++) {
++		param = pinconf_to_config_param(configs[i]);
++		mode_prop = as_pci->gpio_control[pin].mode_prop;
++
++		switch (param) {
++		case PIN_CONFIG_BIAS_PULL_PIN_DEFAULT:
++			break;
++
++		case PIN_CONFIG_BIAS_DISABLE:
++			mode_prop &= ~(AS3722_GPIO_MODE_PULL_UP |
++					AS3722_GPIO_MODE_PULL_DOWN);
++			break;
++		case PIN_CONFIG_BIAS_PULL_UP:
++			mode_prop |= AS3722_GPIO_MODE_PULL_UP;
++			break;
++
++		case PIN_CONFIG_BIAS_PULL_DOWN:
++			mode_prop |= AS3722_GPIO_MODE_PULL_DOWN;
++			break;
++
++		case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
++			mode_prop |= AS3722_GPIO_MODE_HIGH_IMPED;
++			break;
++
++		case PIN_CONFIG_DRIVE_OPEN_DRAIN:
++			mode_prop |= AS3722_GPIO_MODE_OPEN_DRAIN;
++			break;
++
++		default:
++			dev_err(as_pci->dev, "Properties not supported\n");
++			return -ENOTSUPP;
++		}
++
++		as_pci->gpio_control[pin].mode_prop = mode_prop;
++	}
++	return 0;
++}
++
++static const struct pinconf_ops as3722_pinconf_ops = {
++	.pin_config_get = as3722_pinconf_get,
++	.pin_config_set = as3722_pinconf_set,
++};
++
++static struct pinctrl_desc as3722_pinctrl_desc = {
++	.pctlops = &as3722_pinctrl_ops,
++	.pmxops = &as3722_pinmux_ops,
++	.confops = &as3722_pinconf_ops,
++	.owner = THIS_MODULE,
++};
++
++static inline struct as3722_pctrl_info *to_as_pci(struct gpio_chip *chip)
++{
++	return container_of(chip, struct as3722_pctrl_info, gpio_chip);
++}
++
++static int as3722_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
++	struct as3722 *as3722 = as_pci->as3722;
++	int ret;
++	u32 reg;
++	u32 control;
++	u32 val;
++	int mode;
++	int invert_enable;
++
++	ret = as3722_read(as3722, AS3722_GPIOn_CONTROL_REG(offset), &control);
++	if (ret < 0) {
++		dev_err(as_pci->dev,
++			"GPIO_CONTROL%d_REG read failed: %d\n", offset, ret);
++		return ret;
++	}
++
++	invert_enable = !!(control & AS3722_GPIO_INV);
++	mode = control & AS3722_GPIO_MODE_MASK;
++	switch (mode) {
++	case AS3722_GPIO_MODE_INPUT:
++	case AS3722_GPIO_MODE_INPUT_PULL_UP:
++	case AS3722_GPIO_MODE_INPUT_PULL_DOWN:
++	case AS3722_GPIO_MODE_IO_OPEN_DRAIN:
++	case AS3722_GPIO_MODE_IO_OPEN_DRAIN_PULL_UP:
++		reg = AS3722_GPIO_SIGNAL_IN_REG;
++		break;
++	case AS3722_GPIO_MODE_OUTPUT_VDDH:
++	case AS3722_GPIO_MODE_OUTPUT_VDDL:
++		reg = AS3722_GPIO_SIGNAL_OUT_REG;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	ret = as3722_read(as3722, reg, &val);
++	if (ret < 0) {
++		dev_err(as_pci->dev,
++			"GPIO_SIGNAL_IN_REG read failed: %d\n", ret);
++		return ret;
++	}
++
++	val = !!(val & AS3722_GPIOn_SIGNAL(offset));
++	return (invert_enable) ? !val : val;
++}
++
++static void as3722_gpio_set(struct gpio_chip *chip, unsigned offset,
++		int value)
++{
++	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
++	struct as3722 *as3722 = as_pci->as3722;
++	int en_invert = as_pci->gpio_control[offset].enable_gpio_invert;
++	u32 val;
++	int ret;
++
++	if (value)
++		val = (en_invert) ? 0 : AS3722_GPIOn_SIGNAL(offset);
++	else
++		val = (en_invert) ? AS3722_GPIOn_SIGNAL(offset) : 0;
++
++	ret = as3722_update_bits(as3722, AS3722_GPIO_SIGNAL_OUT_REG,
++			AS3722_GPIOn_SIGNAL(offset), val);
++	if (ret < 0)
++		dev_err(as_pci->dev,
++			"GPIO_SIGNAL_OUT_REG update failed: %d\n", ret);
++}
++
++static int as3722_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	return pinctrl_gpio_direction_input(chip->base + offset);
++}
++
++static int as3722_gpio_direction_output(struct gpio_chip *chip,
++		unsigned offset, int value)
++{
++	as3722_gpio_set(chip, offset, value);
++	return pinctrl_gpio_direction_output(chip->base + offset);
++}
++
++static int as3722_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
++{
++	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
++
++	return as3722_irq_get_virq(as_pci->as3722, offset);
++}
++
++static int as3722_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++	return pinctrl_request_gpio(chip->base + offset);
++}
++
++static void as3722_gpio_free(struct gpio_chip *chip, unsigned offset)
++{
++	pinctrl_free_gpio(chip->base + offset);
++}
++
++static const struct gpio_chip as3722_gpio_chip = {
++	.label			= "as3722-gpio",
++	.owner			= THIS_MODULE,
++	.request		= as3722_gpio_request,
++	.free			= as3722_gpio_free,
++	.get			= as3722_gpio_get,
++	.set			= as3722_gpio_set,
++	.direction_input	= as3722_gpio_direction_input,
++	.direction_output	= as3722_gpio_direction_output,
++	.to_irq			= as3722_gpio_to_irq,
++	.can_sleep		= 1,
++	.ngpio			= AS3722_PIN_NUM,
++	.base			= -1,
++};
++
++static int as3722_pinctrl_probe(struct platform_device *pdev)
++{
++	struct as3722_pctrl_info *as_pci;
++	int ret;
++	int tret;
++
++	as_pci = devm_kzalloc(&pdev->dev, sizeof(*as_pci), GFP_KERNEL);
++	if (!as_pci)
++		return -ENOMEM;
++
++	as_pci->dev = &pdev->dev;
++	as_pci->dev->of_node = pdev->dev.parent->of_node;
++	as_pci->as3722 = dev_get_drvdata(pdev->dev.parent);
++	platform_set_drvdata(pdev, as_pci);
++
++	as_pci->pins = as3722_pins_desc;
++	as_pci->num_pins = ARRAY_SIZE(as3722_pins_desc);
++	as_pci->functions = as3722_pin_function;
++	as_pci->num_functions = ARRAY_SIZE(as3722_pin_function);
++	as_pci->pin_groups = as3722_pingroups;
++	as_pci->num_pin_groups = ARRAY_SIZE(as3722_pingroups);
++	as3722_pinctrl_desc.name = dev_name(&pdev->dev);
++	as3722_pinctrl_desc.pins = as3722_pins_desc;
++	as3722_pinctrl_desc.npins = ARRAY_SIZE(as3722_pins_desc);
++	as_pci->pctl = pinctrl_register(&as3722_pinctrl_desc,
++					&pdev->dev, as_pci);
++	if (!as_pci->pctl) {
++		dev_err(&pdev->dev, "Couldn't register pinctrl driver\n");
++		return -EINVAL;
++	}
++
++	as_pci->gpio_chip = as3722_gpio_chip;
++	as_pci->gpio_chip.dev = &pdev->dev;
++	as_pci->gpio_chip.of_node = pdev->dev.parent->of_node;
++	ret = gpiochip_add(&as_pci->gpio_chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Couldn't register gpiochip, %d\n", ret);
++		goto fail_chip_add;
++	}
++
++	ret = gpiochip_add_pin_range(&as_pci->gpio_chip, dev_name(&pdev->dev),
++				0, 0, AS3722_PIN_NUM);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Couldn't add pin range, %d\n", ret);
++		goto fail_range_add;
++	}
++
++	return 0;
++
++fail_range_add:
++	tret = gpiochip_remove(&as_pci->gpio_chip);
++	if (tret < 0)
++		dev_warn(&pdev->dev, "Couldn't remove gpio chip, %d\n", tret);
++
++fail_chip_add:
++	pinctrl_unregister(as_pci->pctl);
++	return ret;
++}
++
++static int as3722_pinctrl_remove(struct platform_device *pdev)
++{
++	struct as3722_pctrl_info *as_pci = platform_get_drvdata(pdev);
++	int ret;
++
++	ret = gpiochip_remove(&as_pci->gpio_chip);
++	if (ret < 0)
++		return ret;
++	pinctrl_unregister(as_pci->pctl);
++	return 0;
++}
++
++static struct of_device_id as3722_pinctrl_of_match[] = {
++	{ .compatible = "ams,as3722-pinctrl", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, as3722_pinctrl_of_match);
++
++static struct platform_driver as3722_pinctrl_driver = {
++	.driver = {
++		.name = "as3722-pinctrl",
++		.owner = THIS_MODULE,
++		.of_match_table = as3722_pinctrl_of_match,
++	},
++	.probe = as3722_pinctrl_probe,
++	.remove = as3722_pinctrl_remove,
++};
++module_platform_driver(as3722_pinctrl_driver);
++
++MODULE_ALIAS("platform:as3722-pinctrl");
++MODULE_DESCRIPTION("AS3722 pin control and GPIO driver");
++MODULE_AUTHOR("Laxman Dewangan<ldewangan@nvidia.com>");
++MODULE_LICENSE("GPL v2");
 -- 
-1.8.1.2
+1.7.1.1
 
