@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab3IXRFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 13:05:53 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:49504 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528Ab3IXRFv (ORCPT
+	id S1754058Ab3IXRIx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 13:08:53 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:35948 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005Ab3IXRIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 13:05:51 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
-Subject: Re: [PATCH 4/4] RX-51: Add platform function and data for bq24150a charger
-Date: Tue, 24 Sep 2013 19:05:47 +0200
-User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com> <201309232206.47391@pali> <20130923204714.GB22995@earth.universe>
-In-Reply-To: <20130923204714.GB22995@earth.universe>
+	Tue, 24 Sep 2013 13:08:52 -0400
+Date: Tue, 24 Sep 2013 14:08:42 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH] perf tools: Use per-file CFLAGS in Makefile
+Message-ID: <20130924170842.GA2634@ghostprotocols.net>
+References: <1379297476-20793-1-git-send-email-namhyung@kernel.org>
+ <20130920230132.GK9574@pd.tnic>
+ <878uynrjaa.fsf@sejong.aot.lge.com>
+ <20130923092659.GD2527@pd.tnic>
+ <87vc1qprny.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart12110048.YEdymJpjU4";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201309241905.48301@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vc1qprny.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart12110048.YEdymJpjU4
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Em Tue, Sep 24, 2013 at 05:09:21PM +0900, Namhyung Kim escreveu:
+> On Mon, 23 Sep 2013 11:26:59 +0200, Borislav Petkov wrote:
+> > On Mon, Sep 23, 2013 at 06:15:09PM +0900, Namhyung Kim wrote:
+> >> I replaced them to a single -w option since all we want to do is
+> >> suppress any warning, right?
 
-On Monday 23 September 2013 22:47:15 Sebastian Reichel wrote:
-> On Mon, Sep 23, 2013 at 10:06:46PM +0200, Pali Roh=C3=A1r wrote:
-> > On Monday 23 September 2013 22:00:09 Sebastian Reichel wrote:
-> > > On Mon, Sep 23, 2013 at 09:16:18PM +0200, Pali Roh=C3=A1r wrote:
-> > > > It is not as simple as it looks. This is reason why I
-> > > > submited this patch long time after I submited bq2415x
-> > > > driver.
-> > > >=20
-> > > > Problem is that for rx51 is needed specific function
-> > > > which connect to two drivers (bq2415x and isp1704) plus
-> > > > it call specific rx51 board functions.
-> > > >=20
-> > > > Something which cannot be in DT (unless DT support C/ASM
-> > > > code).
-> > >=20
-> > > mh could isp1704 driver expose the data via the regulator
-> > > framework?
-> >=20
-> > No, isp1704 is power supply driver and export data via power
-> > supply (sysfs) interface. It is not regulator but charger
-> > driver.
->=20
-> well it does not charge the battery directly, but just
-> provides a power line with 5 Volt and a specified amount of
-> current to the system, doesn't it?
->=20
+> > Do we? And besides, -w is a big hammer as it shuts up all warnings.
+> > acme?
 
-No, isp1704 driver is doing fastcharger detection (and then=20
-export charger type via sysfs power supply) based on musb usb=20
-events.
+> > I think special handling those files grew out of necessity to shut up
+> > some warnings but acme would know better.
 
-Real charging (enabling/disabling and setting properties) is done=20
-by bq24150a chip which has own power driver bq2415x_charger.
+Yes, there were reasons for disabling some warnings on some files, would
+have to look at the git history to see...
 
-As already wrote this is not simple and this is reason why I sent=20
-board data and functions only now...
+commit 09c0211c0bb0e40231e6ee9a35041d467ed72f16
+Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date:   Fri May 4 11:32:54 2012 -0700
 
-> From my POV this is a candiate for the regulator framework:
->=20
-> https://www.kernel.org/doc/Documentation/power/regulator/overv
-> iew.txt
->=20
-> -- Sebastian
+    perf: Turn off compiler warnings for flex and bison generated files
+    
+    We don't know what types of warnings different versions of flex
+    and bison combined with different versions of gcc is going to
+    generate, so just punt and don't warn about anything.
+    
+    This fixes the build of perf for me on an openSUSE 12.1 system.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
 
---nextPart12110048.YEdymJpjU4
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+commit 575bf1d04e908469d26da424b52fc1b12a1db9d8
+Author: Kirill A. Shutemov <kirill@shutemov.name>
+Date:   Mon Jun 24 11:43:14 2013 +0300
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+    perf tools: Fix build with perl 5.18
+    
+    perl.h from new Perl release doesn't like -Wundef and -Wswitch-default:
 
-iEYEABECAAYFAlJBxmwACgkQi/DJPQPkQ1Kp7wCcC1XPLWrKuH4C2G1cXP6IjM7o
-p1EAoIMQl6pR0zV6eyhWzX2nXDwZk4eU
-=Lrlw
------END PGP SIGNATURE-----
+etc.
 
---nextPart12110048.YEdymJpjU4--
+ 
+> I don't know.  I just thought there's not much thing we can do for those
+> files other than shutting up all warnings.
+ 
+> But if you think that's not the right thing, I'll keep the existing
+> options.  What do you think, Arnaldo?
+
+I think keeping the existing options is the right thing to do, if some
+of that can be simplified or made like you did it in your patch, then
+that is the matter for a separate patch, with proper explanation.
+ 
+- Arnaldo
