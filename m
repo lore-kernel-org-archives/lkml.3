@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab3IXULs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 16:11:48 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48407 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505Ab3IXULr (ORCPT
+	id S1754551Ab3IXUNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 16:13:49 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:38841 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370Ab3IXUNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 16:11:47 -0400
-Date: Tue, 24 Sep 2013 16:11:33 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: hpa@linux.intel.com, Steven Rostedt <rostedt@goodmis.org>,
-        david.vrabel@citrix.com, linux-kernel@vger.kernel.org,
-        Stefano.Stabellini@eu.citrix.com
-Subject: Re: [PATCH] xen: Do not enable spinlocks before jump_label_init()
- has executed
-Message-ID: <20130924201133.GB14935@phenom.dumpdata.com>
-References: <1379039384-1568-1-git-send-email-boris.ostrovsky@oracle.com>
- <20130912224719.5a4a81da@gandalf.local.home>
- <5241ED15.7090003@oracle.com>
+	Tue, 24 Sep 2013 16:13:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5241ED15.7090003@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <CA+MoWDpnNjeEN+Crzh2kQ7DPJ_DqEOP4z-9n3=EqP7hiPgZRXg@mail.gmail.com>
+References: <20130923090100.GE6192@mwanda> <CAErSpo5XgvuG=75nExa7yCa7C+Bxhk+1LwruxY8pv2DU+r-_aA@mail.gmail.com>
+ <5241CB44.8080004@ahsoftware.de> <CA+MoWDpnNjeEN+Crzh2kQ7DPJ_DqEOP4z-9n3=EqP7hiPgZRXg@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 24 Sep 2013 14:13:26 -0600
+Message-ID: <CAErSpo4X0-PEYtZrY2r4GKmzTJhHK3eKdXrbccJhB7wVkVCYLA@mail.gmail.com>
+Subject: Re: checkpatch guide for newbies
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Alexander Holler <holler@ahsoftware.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        kernel-janitors@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 12:50:45PM -0700, Boris Ostrovsky wrote:
-> On 09/12/2013 10:47 PM, Steven Rostedt wrote:
-> >On Thu, 12 Sep 2013 22:29:44 -0400
-> >Boris Ostrovsky <boris.ostrovsky@oracle.com> wrote:
-> >
-> >>From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >>
-> >>xen_init_spinlocks() currently calls static_key_slow_inc() before
-> >>jump_label_init() is invoked. When CONFIG_JUMP_LABEL is set (which usually is
-> >>the case) the effect of this static_key_slow_inc() is deferred until after
-> >>jump_label_init(). This is different from when CONFIG_JUMP_LABEL is not set, in
-> >>which case the key is set immediately. Thus, depending on the value of config
-> >>option, we may observe different behavior.
-> >>
-> >>In addition, when we come to __jump_label_transform() from jump_label_init(),
-> >>the key (paravirt_ticketlocks_enabled) is already enabled. On processors where
-> >>ideal_nop is not the same as default_nop this will cause a BUG() since it is
-> >>expected that before a key is enabled the latter is replaced by the former
-> >>during initialization.
-> >>
-> >>To address this problem we need to move
-> >>static_key_slow_inc(&paravirt_ticketlocks_enabled) so that it is called
-> >>after jump_label_init(). We also need to make sure that this is done before
-> >>other cpus start to boot. early_initcall appears to be  a good place to do so.
-> >>(Note that we cannot move whole xen_init_spinlocks() there since pv_lock_ops
-> >>need to be set before alternative_instructions() runs.)
-> >>
-> >Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> >
-> >Peter,
-> >
-> >This fixes a regression in 3.12 against xen. Please pull and push to
-> >Linus sometime soon.
-> 
-> Peter,
-> 
-> Are you planning on taking this patch?
+On Tue, Sep 24, 2013 at 1:29 PM, Peter Senna Tschudin
+<peter.senna@gmail.com> wrote:
+> On Tue, Sep 24, 2013 at 7:26 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+>>> On Mon, Sep 23, 2013 at 3:01 AM, Dan Carpenter <dan.carpenter@oracle.com>
+>>> wrote:
+>>>>
+>>>>                  Long Lines
+>>>>
+>>>> Historically screens were 80 characters wide and it was annoying when
+>>>> code went
+>>>> over the edge.  These days we have larger screens, but we keep the 80
+>>>> character
+>>>> limit because it forces us to write simpler code.
+>>
+>> Sorry, but that just isn't true and never was. Having a line wide limit of
+>> 80 characters while forcing tabs to be 8 characters long limits most code to
+>> just 72 characters. And even less (max 64) inside constructs like if, for or
+>> while.
+>>
+>> The only outcome of that totally silly rule is that variable names will
+>> become shorted to silly acronyms almost nobody does understand make code
+>> unreadable.
 
-If he hasn't done yet (and I don't see a tip-bot email so I think the answer
-is no) I can do it (as I am back from my mini vacation).
+In the context of a two-sentence paragraph, Dan's original text is
+pithy and accurate.  A Wikipedia article would deserve more
+elaboration.
 
-Thanks for the ping!
+Obviously the skill of the programmer is the overwhelming factor, but
+I think restricting the line length does help encourage simpler,
+better-factored code.  It's also part of the whole "it's better to be
+consistent than to be better" thing.  If 95% of the files in Linux use
+80-character lines and the remainder use longer lines, it's just an
+ongoing hassle for the reader.
+
+>> I always feel like beeing in the IT stone age when programmers thought they
+>> have to use variable names like a, b and c to save storage, memory or to
+>> type less when reading linux kernel code.
+> I was about to disagree because I've never seen variables named a, b
+> or c, but I found that there are at least 2238 variables named a, b or
+> c in linux-next. This is not good.
+
+That is not self-evident.  In many cases, e.g., loop iterators, simple
+names are fine.  Nothing is gained by renaming a loop counter from "a"
+to "array_index."  Simple names for simple things help the reader
+focus on more important aspects of the code.
+
+Bjorn
