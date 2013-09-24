@@ -1,60 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab3IXCN0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 22:13:26 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:43419 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744Ab3IXCNY convert rfc822-to-8bit (ORCPT
+	id S1753552Ab3IXCQk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 22:16:40 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55016 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab3IXCQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 22:13:24 -0400
-Date: Mon, 23 Sep 2013 21:13:20 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: new binutils needed for arm in 3.12-rc1
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Trivial patch monkey <trivial@kernel.org>,
-        Andrew Morton <akpm@osdl.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-In-Reply-To: <20130923235917.GA30967@amd.pavel.ucw.cz> (from pavel@ucw.cz on
-	Mon Sep 23 18:59:17 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1379988800.1974.68@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+	Mon, 23 Sep 2013 22:16:39 -0400
+Date: Tue, 24 Sep 2013 12:16:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fan Du <fan.du@windriver.com>, Joe Perches <joe@perches.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the ipsec-next tree with the net-next
+ tree
+Message-Id: <20130924121629.f818475ddf308b0494cfce2a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__24_Sep_2013_12_16_29_+1000_e=XcjafQ3mHIc/b7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 06:59:17 PM, Pavel Machek wrote:
-> During 3.12-rc, Will Deacon introduced code into arch/arm that
-> requires binutils 2.22.
+--Signature=_Tue__24_Sep_2013_12_16_29_+1000_e=XcjafQ3mHIc/b7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Um, my toolchain is using the last gplv2 snapshot of binutils out of  
-git, which is just past 2.17 and can build armv7 (but not armv8).
+Hi Steffen,
 
-Binutils 2.12->2.22 is quite the jump. (11 years.) I'd except some  
-thought to have gone into that? Possibly a mention of it?
+Today's linux-next merge of the ipsec-next tree got a conflict in
+include/net/xfrm.h between commit d511337a1eda ("xfrm.h: Remove extern
+from function prototypes") from the net-next tree and commit aba826958830
+("{ipv4,xfrm}: Introduce xfrm_tunnel_notifier for xfrm tunnel mode
+callback") from the ipsec-next tree.
 
-> diff --git a/Documentation/Changes b/Documentation/Changes
-> index b175808..0f8deaf 100644
-> --- a/Documentation/Changes
-> +++ b/Documentation/Changes
-> @@ -23,7 +23,7 @@ you probably needn't concern yourself with  
-> isdn4k-utils.
-> 
->  o  Gnu C                  3.2                     # gcc --version
->  o  Gnu make               3.80                    # make --version
-> -o  binutils               2.12                    # ld -v
-> +o  binutils               2.22                    # ld -v
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-When the sh4 platform did this, I just reverted the patch. (It still  
-reverts cleanly ~4 years later, and builds with my old tool versions...)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Rob
+diff --cc include/net/xfrm.h
+index 7657461,c7afa6e..0000000
+--- a/include/net/xfrm.h
++++ b/include/net/xfrm.h
+@@@ -1493,39 -1495,35 +1499,39 @@@ static inline int xfrm4_rcv_spi(struct=20
+  	return xfrm4_rcv_encap(skb, nexthdr, spi, 0);
+  }
+ =20
+ -extern int xfrm4_extract_output(struct xfrm_state *x, struct sk_buff *skb=
+);
+ -extern int xfrm4_prepare_output(struct xfrm_state *x, struct sk_buff *skb=
+);
+ -extern int xfrm4_output(struct sk_buff *skb);
+ -extern int xfrm4_output_finish(struct sk_buff *skb);
+ -extern int xfrm4_tunnel_register(struct xfrm_tunnel *handler, unsigned sh=
+ort family);
+ -extern int xfrm4_tunnel_deregister(struct xfrm_tunnel *handler, unsigned =
+short family);
+ -extern int xfrm4_mode_tunnel_input_register(struct xfrm_tunnel_notifier *=
+handler);
+ -extern int xfrm4_mode_tunnel_input_deregister(struct xfrm_tunnel_notifier=
+ *handler);
+ -extern int xfrm6_extract_header(struct sk_buff *skb);
+ -extern int xfrm6_extract_input(struct xfrm_state *x, struct sk_buff *skb);
+ -extern int xfrm6_rcv_spi(struct sk_buff *skb, int nexthdr, __be32 spi);
+ -extern int xfrm6_transport_finish(struct sk_buff *skb, int async);
+ -extern int xfrm6_rcv(struct sk_buff *skb);
+ -extern int xfrm6_input_addr(struct sk_buff *skb, xfrm_address_t *daddr,
+ -			    xfrm_address_t *saddr, u8 proto);
+ -extern int xfrm6_tunnel_register(struct xfrm6_tunnel *handler, unsigned s=
+hort family);
+ -extern int xfrm6_tunnel_deregister(struct xfrm6_tunnel *handler, unsigned=
+ short family);
+ -extern __be32 xfrm6_tunnel_alloc_spi(struct net *net, xfrm_address_t *sad=
+dr);
+ -extern __be32 xfrm6_tunnel_spi_lookup(struct net *net, const xfrm_address=
+_t *saddr);
+ -extern int xfrm6_extract_output(struct xfrm_state *x, struct sk_buff *skb=
+);
+ -extern int xfrm6_prepare_output(struct xfrm_state *x, struct sk_buff *skb=
+);
+ -extern int xfrm6_output(struct sk_buff *skb);
+ -extern int xfrm6_output_finish(struct sk_buff *skb);
+ -extern int xfrm6_find_1stfragopt(struct xfrm_state *x, struct sk_buff *sk=
+b,
+ -				 u8 **prevhdr);
+ +int xfrm4_extract_output(struct xfrm_state *x, struct sk_buff *skb);
+ +int xfrm4_prepare_output(struct xfrm_state *x, struct sk_buff *skb);
+ +int xfrm4_output(struct sk_buff *skb);
+ +int xfrm4_output_finish(struct sk_buff *skb);
+ +int xfrm4_tunnel_register(struct xfrm_tunnel *handler, unsigned short fam=
+ily);
+ +int xfrm4_tunnel_deregister(struct xfrm_tunnel *handler, unsigned short f=
+amily);
+- int xfrm4_mode_tunnel_input_register(struct xfrm_tunnel *handler);
+- int xfrm4_mode_tunnel_input_deregister(struct xfrm_tunnel *handler);
+++int xfrm4_mode_tunnel_input_register(struct xfrm_tunnel_notifier *handler=
+);
+++int xfrm4_mode_tunnel_input_deregister(struct xfrm_tunnel_notifier *handl=
+er);
+ +void xfrm4_local_error(struct sk_buff *skb, u32 mtu);
+ +int xfrm6_extract_header(struct sk_buff *skb);
+ +int xfrm6_extract_input(struct xfrm_state *x, struct sk_buff *skb);
+ +int xfrm6_rcv_spi(struct sk_buff *skb, int nexthdr, __be32 spi);
+ +int xfrm6_transport_finish(struct sk_buff *skb, int async);
+ +int xfrm6_rcv(struct sk_buff *skb);
+ +int xfrm6_input_addr(struct sk_buff *skb, xfrm_address_t *daddr,
+ +		     xfrm_address_t *saddr, u8 proto);
+ +int xfrm6_tunnel_register(struct xfrm6_tunnel *handler, unsigned short fa=
+mily);
+ +int xfrm6_tunnel_deregister(struct xfrm6_tunnel *handler,
+ +			    unsigned short family);
+ +__be32 xfrm6_tunnel_alloc_spi(struct net *net, xfrm_address_t *saddr);
+ +__be32 xfrm6_tunnel_spi_lookup(struct net *net, const xfrm_address_t *sad=
+dr);
+ +int xfrm6_extract_output(struct xfrm_state *x, struct sk_buff *skb);
+ +int xfrm6_prepare_output(struct xfrm_state *x, struct sk_buff *skb);
+ +int xfrm6_output(struct sk_buff *skb);
+ +int xfrm6_output_finish(struct sk_buff *skb);
+ +int xfrm6_find_1stfragopt(struct xfrm_state *x, struct sk_buff *skb,
+ +			  u8 **prevhdr);
+ +void xfrm6_local_error(struct sk_buff *skb, u32 mtu);
+ =20
+  #ifdef CONFIG_XFRM
+ -extern int xfrm4_udp_encap_rcv(struct sock *sk, struct sk_buff *skb);
+ -extern int xfrm_user_policy(struct sock *sk, int optname, u8 __user *optv=
+al, int optlen);
+ +int xfrm4_udp_encap_rcv(struct sock *sk, struct sk_buff *skb);
+ +int xfrm_user_policy(struct sock *sk, int optname,
+ +		     u8 __user *optval, int optlen);
+  #else
+  static inline int xfrm_user_policy(struct sock *sk, int optname, u8 __use=
+r *optval, int optlen)
+  {
+
+--Signature=_Tue__24_Sep_2013_12_16_29_+1000_e=XcjafQ3mHIc/b7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSQPYBAAoJEECxmPOUX5FEAAkP/RTzkYo+TecOO+NmvGDnQ/eC
+cyti2nnNXJgxGVD7B9fdJgk1KQCedXvYR5OxkIe02FR984r431WPwlQ+rV0Ti4D5
+lBUlC/gWfKTeZSuWzCjohmgdeDIBwuURgYrf0XXQR5ktPGx9izvjkr24e7WWBanD
+OsNNL9T8osg8nBECvDwhiLrsA6Th67lWsYtDNdSq0gwoNih+RecUpU+MlQ4STI7v
+h9ND22Thyb01ywLC19jHKSvVHtBD8DlTO+8nyqF/VCA81W2gTSUcmwKk7wQufwbL
+uvfsHEw0IF7NcOs/2SiLSMFNNqku1hhtqiGEhAOlUTmSEWhh2epvEEjKYmNaqnF3
+HfcN4OcjlX35plJf9LjzzCpzK2nLtzaPxizaw6G+bucmQKJTzAY7tB12pDd4cfom
+6xGtq0c5Ii9KZGwlIiGUqZI2l5PRRHSBvGNBmLwbpIsiWGp8NhqwNk5oSt448/yE
+5GiTj3vrKra6mEugYtbpNtJgqrYcrEvgN2Ff6xvtGasmhxwY2Oi9Bp9RFroIckji
+FsCh6Rk+34Rfar/oZCXAOsOjCppN4ZXVF2UQ1xRUAVh0Ak+JBeZxbBZuR84TM34q
+u1+AEfxPUxO1JUURKkJbaY7DrrYhBVLGwhG7I+pPpxJfB1oTWAuOhb4I8SNX+yMo
+5jSbOH8lsJ8vJ8O7eaCC
+=mWrv
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__24_Sep_2013_12_16_29_+1000_e=XcjafQ3mHIc/b7--
