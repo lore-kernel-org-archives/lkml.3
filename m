@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab3IXIch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 04:32:37 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:7834 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab3IXIcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 04:32:33 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 24 Sep 2013 01:28:58 -0700
-Date: Tue, 24 Sep 2013 11:32:31 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 10/12] clk: tegra: move fixed clocks to common file
-Message-ID: <20130924083231.GK30013@tbergstrom-lnx.Nvidia.com>
-References: <1379515331-19427-1-git-send-email-pdeschrijver@nvidia.com>
- <1379515331-19427-11-git-send-email-pdeschrijver@nvidia.com>
- <524089C8.4010108@wwwdotorg.org>
+	id S1752685Ab3IXIdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 04:33:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39504 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750777Ab3IXIdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 04:33:47 -0400
+Date: Tue, 24 Sep 2013 09:33:42 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: Kent Overstreet <kmo@daterainc.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Jan Kara <jack@suse.cz>,
+        Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: Fix a regression where MS_SNAP_STABLE (stable pages
+ snapshotting) was ignored
+Message-ID: <20130924083342.GB22421@suse.de>
+References: <20130920030602.GC4565@birch.djwong.org>
+ <20130920080637.GV22421@suse.de>
+ <20130920082807.GW22421@suse.de>
+ <20130920165407.GA10392@birch.djwong.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <524089C8.4010108@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130920165407.GA10392@birch.djwong.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 08:34:48PM +0200, Stephen Warren wrote:
-> On 09/18/2013 08:41 AM, Peter De Schrijver wrote:
-> > Introduce a new file for fixed clocks common between several Tegra
-> > SoCs and move Tegra114 to this new infrastructure.
+On Fri, Sep 20, 2013 at 09:54:07AM -0700, Darrick J. Wong wrote:
+> On Fri, Sep 20, 2013 at 09:28:07AM +0100, Mel Gorman wrote:
+> > On Fri, Sep 20, 2013 at 09:06:37AM +0100, Mel Gorman wrote:
+> > > On Thu, Sep 19, 2013 at 08:06:02PM -0700, Darrick J. Wong wrote:
+> > > > The "force" parameter in __blk_queue_bounce was being ignored, which means that
+> > > > stable page snapshots are not always happening (on ext3).  This of course
+> > > > leads to DIF disks reporting checksum errors, so fix this regression.
+> > > > 
+> > > > The regression was introduced in commit 6bc454d1 (bounce: Refactor
+> > > > __blk_queue_bounce to not use bi_io_vec)
+> > > > 
+> > > > Reported-by: Mel Gorman <mgorman@suse.de>
+> > > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> > > 
+> > > I have no means of testing it but it looks right and thanks for checking
+> > > DIF disks.
+> > > 
+> > > Acked-by: Mel Gorman <mgorman@suse.de>
+> > > 
+> > 
+> > That said the two checks are now redundant. They could just be deleted
+> > and depend entirely on the following check within the loop
+> > 
+> >                 if (page_to_pfn(page) <= queue_bounce_pfn(q) && !force)
+> >                         continue;
+> > 
+> > with an update to the comment explaining that the check is for pages
+> > below the bounce pfn or for bios that require stable writes
 > 
-> > diff --git a/drivers/clk/tegra/clk-tegra-fixed.c b/drivers/clk/tegra/clk-tegra-fixed.c
-> 
-> > +void __init tegra_fixed_clk_init(struct tegra_clk *tegra_clks)
-> 
-> > +	/* clk_m_div2 */
-> > +	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_m_div2, tegra_clks);
-> > +	if (dt_clk) {
-> > +		clk = clk_register_fixed_factor(NULL, "clk_m_div2", "clk_m",
-> > +					CLK_SET_RATE_PARENT, 1, 2);
-> > +		clk_register_clkdev(clk, "clk_m_div2", NULL);
-> > +		*dt_clk = clk;
-> > +	}
-> 
-> I guess "fixed" means "fixed at run-time", not "identical rate in all
-> systems"? Since this is the crystal rate, it can vary between boards,
-> but I supposed if "fixed" means "fixed at run-time", considering this as
-> a fixed clock is fine.
-> 
+> I'm under the impression that the point of the first looping-check is to avoid
+> the bio_clone_bioset() if we're not going to bounce anything.  But I could be
+> wrong. 
 
-Fixed means "fixed at run-time" indeed. Although clk_32k is 32768Hz on all
-boards as well.
+I doubt it, avoiding the clone makes sense and I was wrong about the
+check being redundant anyway. Trying to do the clone within the loop
+when the first bio that needs bouncing is encountered turns into a
+mess.
 
-> But, isn't clk_m also a fixed clock then? I would expect one or two more
-
-I guess the code from clk-tegra-osc.c could be moved here if you think that's
-better?
-
-> clocks in this file. What about clk_s, or is that known as clk_32k here?
-
-I don't think we ever had clk_s in upstream?
-
-Cheers,
-
-Peter.
+-- 
+Mel Gorman
+SUSE Labs
