@@ -1,33 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751102Ab3IXI0P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 04:26:15 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:54834 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab3IXI0L (ORCPT
+	id S1751124Ab3IXIbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 04:31:46 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:46883 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab3IXIbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 04:26:11 -0400
+	Tue, 24 Sep 2013 04:31:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <5240A0C2.4010502@wwwdotorg.org>
+In-Reply-To: <5240A2D3.20105@wwwdotorg.org>
 References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de>
-	<52279524.8090006@wwwdotorg.org>
-	<20130909161924.GT29403@sirena.org.uk>
-	<2052193.CMUEUJFRgS@lem-wkst-02>
-	<522F78CB.2020507@wwwdotorg.org>
-	<20130910213718.GH29403@sirena.org.uk>
-	<522F9E6C.2010905@wwwdotorg.org>
 	<522FBED9.9000305@collabora.co.uk>
 	<5230C7F6.3080803@wwwdotorg.org>
-	<CACRpkdacx-e01i_h4cj1qMX2zNOiiDshbTV__wi_LfQrLkrL6g@mail.gmail.com>
-	<5240A0C2.4010502@wwwdotorg.org>
-Date: Tue, 24 Sep 2013 10:26:10 +0200
-Message-ID: <CACRpkdZKqW9veHzc1Rgj4oKsjGRATk+Sz8vJaP3EfT4de+bjQA@mail.gmail.com>
+	<3653629.tapNZSuWhS@lem-wkst-02>
+	<52373B34.4060709@wwwdotorg.org>
+	<CACRpkdY=cgtf6_eypfAAv-fvmiNgAYyz4StTgDie5THsbrcumg@mail.gmail.com>
+	<5240A2D3.20105@wwwdotorg.org>
+Date: Tue, 24 Sep 2013 10:31:41 +0200
+Message-ID: <CACRpkdZ7E7MGppbkTiObvTDHdmphnbysMKVc1OZjsPXKVuKttQ@mail.gmail.com>
 Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mark Brown <broonie@kernel.org>, Lars Poeschel <poeschel@lemonage.de>,
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Lars Poeschel <poeschel@lemonage.de>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mark Brown <broonie@kernel.org>,
         Lars Poeschel <larsi@wh2.tu-dresden.de>,
         Grant Likely <grant.likely@linaro.org>,
         "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
@@ -42,86 +38,64 @@ Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
         Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
-        joelf@ti.com
+        joelf@ti.com,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 10:12 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 09/23/2013 01:53 PM, Linus Walleij wrote:
+On Mon, Sep 23, 2013 at 10:21 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 09/23/2013 02:01 PM, Linus Walleij wrote:
 
->> I think the kernel should prevent such things.
+>> And how to you block the same line from being gpio_request()ed
+>> and set as output?
 >
-> It might be nice if it could do that.
->
-> However, that is 100% unrelated to the problem at hand.
+> To be honest, I really don't think this problem is terribly likely to
+> occur, so I'm really not convinced that it's worth putting a lot of
+> effort into solving it.
 
-I don't think it is unrelated when the old OMAP boardfile-based
-code definately prevents such uses by its strict usage
-of gpio_request() for all IRQ-bound GPIOs.
+I have a different opionion, I think this is important. As GPIO
+subsystem maintainer I need to be convinced of the integrity
+of the system.
 
-I think not preventing it for the DT boot path is setting lower
-standards for DT code than for boardfile code which is not
-what we should be doing.
+> If the problem does occur, it's trivial to see that this has happened by
+> looking at /proc/interrupts and /sys/kernel/debug/gpio,
 
-> A driver which only cares about an IRQ should be able to call just IRQ
-> APIs and have the HW work. Since not all IRQs are GPIOs, the thing that
-> causes the HW to work should not involve the GPIO subsystem in any way
-> at all.
+I basically want /sys/kernel/debug/gpio to say if a certain line
+is tied for IRQ.
 
-Yes I have bought into that concept now.
+> That driver needs to maintain some state that indicates which of its
+> IRQs have been requested. Any time a GPIO request (I mean e.g.
+> set_output() not request_gpio)) comes in, the request needs to be
+> validated against that IRQ usage state. If there's a conflict, deny the
+> GPIO request.
 
-> Having the kernel detect when two different drivers both request the
-> same resource is entirely another thing. The solution to the first issue
-> must not rely on any solution to this second issue.
+I think this should be done by gpiolib, and I think it is trivial
+given the right APIs. Putting it in the drivers will just create
+an array of similar-look Rube Goldberg-machines and code
+duplication. There is no point.
 
-I understand this stance from a DT point of view - which is about
-resource passing and its syntax and semantics.
+> Now, it's quite possible that the code to maintain this state and
+> perform the checks will be similar/common across multiple drivers. If
+> so, by all means implement the code somewhere common, and have the
+> various irq_chip/gpio_chip drivers call into it.
 
->From a GPIO subsystem point of view, in keeping resources under
-kernel control, I naturally do not agree.
+And this is what we should do in gpiolib.
 
-> I'm also not convinced it's possible to solve this second issue given
-> the current kernel APIs, since there's not enough semantic information;
-> requests of GPIOs and IRQs aren't actually tied to a particular driver
-> at present (there's no "struct device *dev" parameter to request_irq or
-> gpio_request) and so the subsystems can't actually tell who is
-> requesting the GPIO/IRQ, and hence can't detect when the same driver, or
-> a different driver, is requesting the same core resource for different
-> purposes.
+> The main thing is that all of this has to be driven/controlled/enabled
+> by the gpio_chip/irq_chip driver itself, not as some global/blanket
+> feature of the GPIO or IRQ subsystems.
 
-Solving the issue that e.g. two different drivers competing about the
-same resource (as in one driver requesting an IRQ and another one
-requesting a GPIO) is not what I'm after here.
+Sure.
 
-I'm more after the GPIO subsystem having knowledge of a certain
-GPIO line being requested for IRQ, and denying that line to be set
-as input.
+> Perhaps rather than having the gpio_chip/irq_chip drivers physically
+> implement a function which calls this common code, they could set some
+> flags/data/... in the struct gpio_chip/irq_chip indicating that they
+> desire the core code that implements the error-checking to be enabled.
 
-Maybe this can actually be achieved quite easily with
-an additional API? Like gpio_lock_as_irq(gpio) which flags this
-in .flags of struct gpio_desc and prevent such things?
-
-Alexandre what do you think about this idea?
-
-> Equally, I am actually not 100% sure we want the core to prevent this.
-> Why shouldn't two different drivers request the same IRQ? Why shouldn't
-> at least one driver, perhaps more, request the pin as a GPIO (assuming
-> it will only read the GPIO value, not flip the pin to output).
-
-But I have already stated that this is OK?
-
-Are we talking past each other now?
-
-> This
-> exact situation might happen on some Tegra boards where there's a GPIO
-> for VBUS_EN that affects 2 USB ports. It's supposed to be driven
-> open-collector. If an external entity forces it low, it means
-> over-current.
-
-You are describing a very good reason for the core to be
-doing exactly what I described I think?
+I think it should more be like a function they can call to flag
+a GPIO as used for IRQ.
 
 Yours,
 Linus Walleij
