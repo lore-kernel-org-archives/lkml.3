@@ -1,87 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab3IXWSF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 18:18:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37315 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab3IXWSD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 18:18:03 -0400
-Date: Tue, 24 Sep 2013 15:18:02 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Alan Tull <atull@altera.com>
-Cc: Michal Simek <monstr@monstr.eu>, Pavel Machek <pavel@denx.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-Message-ID: <20130924221802.GC3837@kroah.com>
-References: <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
- <20130918191517.GQ19937@titan.lakedaemon.net>
- <20130918203247.GA11181@obsidianresearch.com>
- <1379539063.31417.23.camel@atx-linux-37>
- <20130919100833.GC19346@amd.pavel.ucw.cz>
- <523AD9C5.8060006@monstr.eu>
- <1379710523.21515.4.camel@atx-linux-37>
- <1380038126.13235.12.camel@atx-linux-37>
- <5241B6BC.1010301@monstr.eu>
- <1380039774.14129.6.camel@atx-linux-37>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380039774.14129.6.camel@atx-linux-37>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754583Ab3IXWW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 18:22:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47542 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753449Ab3IXWWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 18:22:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,974,1371106800"; 
+   d="scan'208";a="408595121"
+Subject: [PATCH v5 0/6]  rwsem: performance optimizations
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <cover.1380057198.git.tim.c.chen@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Sep 2013 15:22:21 -0700
+Message-ID: <1380061341.3467.49.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 11:22:54AM -0500, Alan Tull wrote:
-> Yes, I could see /sys/class/fpga/fpga0/image.rbf/loading and 'data' and
-> a few others (If I was requesting to load 'image.rbf').  It's a nice
-> interface.
-> 
-> I just used the linux/Documentation/firmware_class/hotplug-script
-> without modifications.
-> 
-> To enable it:
-> 
->  * cp linux/Documentation/firmware_class/hotplug-script /lib/udev/
-> 
->  * chmod 755 /lib/udev/hotplug-script
-> 
->  * Add this udev rule:
->    SUBSYSTEM=="firmware", ACTION=="add", RUN+="/lib/udev/hotplug-script"
-> 
->  * Check that there aren't other 'firmware' udev rules to get in the
-> way.
+We have incorporated various suggestions from Ingo for version 5 of this patchset
+and will like to have it merged if there are no objections.
 
-Hm, don't do that, all "modern" distros will not do firmware loading
-through udev anymore, so please don't try to add it back in.  The kernel
-handles the loading of the firmware directly, with no need to call any
-usermodehelper program at all.
+In this patchset, we introduce two categories of optimizations to read
+write semaphore.  The first four patches from Alex Shi reduce cache bouncing of the
+sem->count field by doing a pre-read of the sem->count and avoid cmpxchg
+if possible.
 
->  * Add your firmware files to /usr/lib/hotplug/firmware/ or change that
->    path in hotplug-script to point to where your firmware files.
-> 
-> The default hotplug-script doesn't do anything special (that the kernel
-> couldn't do by itself).  What's great is that it could call another
-> script that adds headers or does whatever other special un-gzipping or
-> other massaging that the firmware image needs before it gets loaded.
+The last two patches introduce similar optimistic spinning logic as
+the mutex code for the writer lock acquisition of rwsem.
 
-Only if you need to do something "special" like this could it justify
-not using the in-kernel firmware loader.  Also note that I think future
-versions of udev will have the udev firmware loader removed entirely, so
-watch out for that.
+Without these optimizations, Davidlohr Bueso saw a -8% regression to
+aim7's shared and high_systime workloads when he switched i_mmap_mutex to
+rwsem.  Tests were on 8 socket 80 cores system.  With the patchset, he
+get significant improvements to the aim7 suite instead of regressions:
 
-thanks,
+alltests (+16.3%), custom (+20%), disk (+19.5%), high_systime (+7%),
+shared (+18.4%) and short (+6.3%).
 
-greg k-h
+Tim Chen also got a +5% improvements to exim mail server workload on a 40 core system.
+
+Thanks to Ingo Molnar, Peter Hurley and Peter Zijlstra for reviewing this patchset.
+
+Regards,
+Tim Chen
+
+Changelog:
+
+v5:
+1. Try optimistic spinning before we put the writer on the wait queue
+to avoid bottlenecking at wait queue.  This provides 5% boost to exim workload
+and between 2% to 8% boost to aim7. 
+2. Put MCS locking code into its own mcslock.h file for better reuse
+between mutex.c and rwsem.c
+3. Remove the configuration RWSEM_SPIN_ON_WRITE_OWNER and make the 
+operations default per Ingo's suggestions.
+
+v4:
+1. Fixed a bug in task_struct definition in rwsem_can_spin_on_owner
+2. Fix another typo for RWSEM_SPIN_ON_WRITE_OWNER config option
+
+v3:
+1. Added ACCESS_ONCE to sem->count access in rwsem_can_spin_on_owner.
+2. Fix typo bug for RWSEM_SPIN_ON_WRITE_OWNER option in init/Kconfig
+
+v2:
+1. Reorganize changes to down_write_trylock and do_wake into 4 patches and fixed
+   a bug referencing &sem->count when sem->count is intended.
+2. Fix unsafe sem->owner de-reference in rwsem_can_spin_on_owner.
+the option to be on for more seasoning but can be turned off should it be detrimental.
+3. Various patch comments update
+
+
+
+Alex Shi (4):
+  rwsem: check the lock before cpmxchg in down_write_trylock
+  rwsem: remove 'out' label in do_wake
+  rwsem: remove try_reader_grant label do_wake
+  rwsem/wake: check lock before do atomic update
+
+Tim Chen (2):
+  MCS Lock: Restructure the MCS lock defines and locking code into its
+    own file
+  rwsem: do optimistic spinning for writer lock acquisition
+
+ include/asm-generic/rwsem.h |    8 +-
+ include/linux/rwsem.h       |    8 +-
+ kernel/mutex.c              |   58 ++----------
+ kernel/rwsem.c              |   19 ++++-
+ lib/rwsem.c                 |  218 ++++++++++++++++++++++++++++++++++++++-----
+ 5 files changed, 228 insertions(+), 83 deletions(-)
+
+-- 
+1.7.4.4
+
+
