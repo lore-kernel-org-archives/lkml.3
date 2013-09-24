@@ -1,97 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750813Ab3IXE2n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 00:28:43 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:16054 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3IXE2m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 00:28:42 -0400
-X-Spam-Score: -100.7
-Message-ID: <524114B8.3070903@asianux.com>
-Date: Tue, 24 Sep 2013 12:27:36 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info'
- in all related extern functions
-References: <5212DBFA.8030805@asianux.com> <20130923150625.GB14547@htj.dyndns.org> <52410A40.1000304@asianux.com> <20130924040601.GA31575@mtj.dyndns.org>
-In-Reply-To: <20130924040601.GA31575@mtj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1750849Ab3IXEdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 00:33:55 -0400
+Received: from gw.cm.dream.jp ([59.157.128.2]:53086 "EHLO vsmtp02.cm.dti.ne.jp"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750742Ab3IXEdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 00:33:52 -0400
+Date: Tue, 24 Sep 2013 13:13:31 +0900
+From: takasi-y@ops.dti.ne.jp
+To: SH-Linux <linux-sh@vger.kernel.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>, ben.dooks@codethink.co.uk,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/6] ARM: shmobile: emev2: Define SMU clock DT bindings
+Message-Id: <20130924131331.0e9a5f830f531655b2ea0ebe@ops.dti.ne.jp>
+In-Reply-To: <52410F86.4040301@renesas.com>
+References: <52410F86.4040301@renesas.com>
+X-Mailer: Sylpheed 3.4.0beta3 (GTK+ 2.24.17; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 12:06 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Sep 24, 2013 at 11:42:56AM +0800, Chen Gang wrote:
->> Hmm... can user be permitted to call other system call (e.g. getgroups)
->> before call groups_alloc()? (may the user space already give check, but
->> for our kernel, we can not only depend on their checking).
-> 
-> I don't think so.
-> 
->> According to group_alloc() and setgroups() usage in kernel source code,
->> 'group_info' may be not set if kernel/process is running (although user
->> space may be sure "if kernel is running, 'group_info' must be set").
->>
->> The below is the proof for "kernel itself can not be sure 'group_info'
->> must be set during kernel/process is running", please check, thanks.
-> ..
->> The related conclusion:
->>
->>   during kernel startup or process creation, kernel does not intend to set 'group_info'.
-> 
-> No, this is not a proof or any meaningful conclusion.  This is just
-> some random suspicions combined with supposedly related grep output.
-> 
+Device tree clock binding document for EMMA Mobile EV2 SMU.
+Following nodes are defined to describe clock tree.
+- renesas,emev2-smu
+- renesas,emev2-smu-clkdiv
+- renesas,emev2-smu-gclk
 
-For real world, /sbin/init will call setgroups, so user space 'help'
-kernel itself to protect this issue, but I think, we don't only depend
-on the user space help checking.
+These bindings are designed manually based on
+ 19UH0037EJ1000_SMU : System Management Unit User's Manual
 
-The proof is below:
+Signed-off-by: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
+---
+ .../devicetree/bindings/clock/emev2-clock.txt      | 99 ++++++++++++++++++++++
+ 1 file changed, 99 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/emev2-clock.txt
 
-  [root@gchenlinux tmp]# grep setgroups /sbin/*
-  Binary file /sbin/init matches
-  Binary file /sbin/rpc.statd matches
-  Binary file /sbin/rsyslogd matches
-  Binary file /sbin/runuser matches
-
->From reading kernel source code, kernel itself does not intend to set
-'group_info', it is triggered by user space or another kernel mode
-sub-systems.
-
-
->> In extern function groups_search (which also called by export function
->> in_group_p and in_egroup_p), it checks "if 'cred->group_info' is NULL".
->>
->> So "kernel/groups.c" have 9 extern/export/system-call functions, and
->> 4/9 notice about "if 'cred->group_info' is NULL" (e.g. groups_alloc,
->> groups_search, in_group_p, in_egroup_p).
->>
->> So for API self-consistency, all of extern/export/system-call functions
->> need notice about it.
-> 
-> I'm afraid this isn't useful.  If you want to change the code, you
-> actually need to understand what's going on.  "this seems weird to me"
-> is a good starting point but you need to go way beyond that to
-> actually make changes.
-> 
-
-If some of APIs check the related parameters, but the other not, this
-interface must assume some usage condition from the callers which
-callers can break out (although the callers may not break out, now).
-
-> Thanks.
-> 
-
-
+diff --git a/Documentation/devicetree/bindings/clock/emev2-clock.txt b/Documentation/devicetree/bindings/clock/emev2-clock.txt
+new file mode 100644
+index 0000000..f8649eb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/emev2-clock.txt
+@@ -0,0 +1,99 @@
++Device tree Clock bindings for Renesas EMMA Mobile EV2
++
++This binding uses the common clock binding.
++
++* SMU
++System Management Unit described in user's manual R19UH0037EJ1000_SMU.
++This is not a clock provider, but clocks under SMU depend on it.
++
++Required properties:
++- compatible: Should be "renesas,emev2-smu"
++- reg: Address and Size of SMU registers
++
++* SMU_CLKDIV
++Function block with an input mux and a divider, which corresponds to
++"Serial clock generator" in fig."Clock System Overview" of the manual,
++and "xxx frequency division setting register" (XXXCLKDIV) registers.
++This makes internal (neither input nor output) clock that is provided
++to input of xxxGCLK block.
++
++Required properties:
++- compatible: Should be "renesas,emev2-smu-clkdiv"
++- reg: Byte offset from SMU base and Bit position in the register
++- clocks: Parent clocks. Input clocks as described in clock-bindings.txt
++- #clock-cells: Should be <0>
++
++* SMU_GCLK
++Clock gating node shown as "Clock stop processing block" in the
++fig."Clock System Overview" of the manual.
++Registers are "xxx clock gate control register" (XXXGCLKCTRL).
++
++Required properties:
++- compatible: Should be "renesas,emev2-smu-gclk"
++- reg: Byte offset from SMU base and Bit position in the register
++- clocks: Input clock as described in clock-bindings.txt
++- #clock-cells: Should be <0>
++
++Example of provider:
++
++usia_u0_sclkdiv: usia_u0_sclkdiv {
++	compatible = "renesas,emev2-smu-clkdiv";
++	reg = <0x610 0>;
++	clocks = <&pll3_fo>, <&pll4_fo>, <&pll1_fo>, <&osc1_fo>;
++	#clock-cells = <0>;
++};
++
++usia_u0_sclk: usia_u0_sclk {
++	compatible = "renesas,emev2-smu-gclk";
++	reg = <0x4a0 1>;
++	clocks = <&usia_u0_sclkdiv>;
++	#clock-cells = <0>;
++};
++
++Example of consumer:
++
++uart@e1020000 {
++	compatible = "renesas,em-uart";
++	reg = <0xe1020000 0x38>;
++	interrupts = <0 8 0>;
++	clocks = <&usia_u0_sclk>;
++	clock-names = "sclk";
++};
++
++Example of clock-tree description:
++
++ This describes a clock path in the clock tree
++  c32ki -> pll3_fo -> usia_u0_sclkdiv -> usia_u0_sclk
++
++smu {
++	compatible = "renesas,emev2-smu";
++	reg = <0xe0110000 0x10000>;
++	#address-cells = <2>;
++	#size-cells = <0>;
++
++	c32ki: c32ki {
++		compatible = "fixed-clock";
++		clock-frequency = <32768>;
++		#clock-cells = <0>;
++	};
++	pll3_fo: pll3_fo {
++		compatible = "fixed-factor-clock";
++		clocks = <&c32ki>;
++		clock-div = <1>;
++		clock-mult = <7000>;
++		#clock-cells = <0>;
++	};
++	usia_u0_sclkdiv: usia_u0_sclkdiv {
++		compatible = "renesas,emev2-smu-clkdiv";
++		reg = <0x610 0>;
++		clocks = <&pll3_fo>;
++		#clock-cells = <0>;
++	};
++	usia_u0_sclk: usia_u0_sclk {
++		compatible = "renesas,emev2-smu-gclk";
++		reg = <0x4a0 1>;
++		clocks = <&usia_u0_sclkdiv>;
++		#clock-cells = <0>;
++	};
++};
++
 -- 
-Chen Gang
+1.8.1.5
+
