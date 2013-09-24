@@ -1,58 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab3IXSHr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 14:07:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754314Ab3IXSHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 14:07:10 -0400
-Date: Tue, 24 Sep 2013 20:00:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130924180005.GA7148@redhat.com>
-References: <20130917162050.GK22421@suse.de> <20130917164505.GG12926@twins.programming.kicks-ass.net> <20130918154939.GZ26785@twins.programming.kicks-ass.net> <20130919143241.GB26785@twins.programming.kicks-ass.net> <20130923175052.GA20991@redhat.com> <20130924123821.GT12926@twins.programming.kicks-ass.net> <20130924160359.GA2739@redhat.com> <20130924124341.64d57912@gandalf.local.home> <20130924170631.GB5059@redhat.com> <20130924174717.GH9093@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130924174717.GH9093@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754534Ab3IXSHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 14:07:08 -0400
+Received: from mail-vb0-f73.google.com ([209.85.212.73]:45969 "EHLO
+	mail-vb0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754284Ab3IXSHC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 14:07:02 -0400
+X-Greylist: delayed 63938 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Sep 2013 14:07:02 EDT
+From: Andrew Bresticker <abrestic@chromium.org>
+To: linux-samsung-soc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Padmavathi Venna <padma.v@samsung.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH V3 2/6] clk: exynos-audss: allow input clocks to be specified in device tree
+Date: Tue, 24 Sep 2013 11:06:52 -0700
+Message-Id: <1380046016-5811-2-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1380046016-5811-1-git-send-email-abrestic@chromium.org>
+References: <1379982078-23381-1-git-send-email-abrestic@chromium.org>
+ <1380046016-5811-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24, Paul E. McKenney wrote:
->
-> On Tue, Sep 24, 2013 at 07:06:31PM +0200, Oleg Nesterov wrote:
-> >
-> > If gcc can actually do something wrong, then I suspect this barrier()
-> > should be unconditional.
->
-> If you are saying that there should be a barrier() on all return paths
-> from get_online_cpus(), I agree.
+This allows the input clocks to the Exynos AudioSS block to be
+specified via device-tree bindings.  Default names will be used
+when an input clock is not given.
 
-Paul, Peter, could you provide any (even completely artificial) example
-to explain me why do we need this barrier() ? I am puzzled. And
-preempt_enable() already has barrier...
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+Changes since v1:
+ - listed input clocks as required properties
+---
+ .../devicetree/bindings/clock/clk-exynos-audss.txt | 32 ++++++++++++++++++++--
+ drivers/clk/samsung/clk-exynos-audss.c             | 25 +++++++++++++----
+ 2 files changed, 50 insertions(+), 7 deletions(-)
 
-	get_online_cpus();
-	do_something();
-
-Yes, we need to ensure gcc doesn't reorder this code so that
-do_something() comes before get_online_cpus(). But it can't? At least
-it should check current->cpuhp_ref != 0 first? And if it is non-zero
-we do not really care, we are already in the critical section and
-this ->cpuhp_ref has only meaning in put_online_cpus().
-
-Confused...
-
-Oleg.
+diff --git a/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt b/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt
+index 75e2e19..85b9e28 100644
+--- a/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt
++++ b/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt
+@@ -14,6 +14,21 @@ Required Properties:
+ 
+ - #clock-cells: should be 1.
+ 
++- clocks:
++  - pll_ref: Fixed rate PLL reference clock, parent of mout_audss. "fin_pll"
++    is used if not specified.
++  - pll_in: Input PLL to the AudioSS block, parent of mout_audss. "fout_epll"
++    is used if not specified.
++  - cdclk: External i2s clock, parent of mout_i2s. "cdclk0" is used if not
++    specified.
++  - sclk_audio: Audio bus clock, parent of mout_i2s. "sclk_audio0" is used if
++    not specified.
++  - sclk_pcm_in: PCM clock, parent of sclk_pcm.  "sclk_pcm0" is used if not
++    specified.
++
++- clock-names: Aliases for the above clocks. They should be "pll_ref",
++  "pll_in", "cdclk", "sclk_audio", and "sclk_pcm_in" respectively.
++
+ The following is the list of clocks generated by the controller. Each clock is
+ assigned an identifier and client nodes use this identifier to specify the
+ clock which they consume. Some of the clocks are available only on a particular
+@@ -35,15 +50,28 @@ sclk_i2s        7
+ pcm_bus         8
+ sclk_pcm        9
+ 
+-Example 1: An example of a clock controller node is listed below.
++Example 1: An example of a clock controller node using the default input
++	   clock names is listed below.
++
++clock_audss: audss-clock-controller@3810000 {
++	compatible = "samsung,exynos5250-audss-clock";
++	reg = <0x03810000 0x0C>;
++	#clock-cells = <1>;
++};
++
++Example 2: An example of a clock controller node with the input clocks
++           specified.
+ 
+ clock_audss: audss-clock-controller@3810000 {
+ 	compatible = "samsung,exynos5250-audss-clock";
+ 	reg = <0x03810000 0x0C>;
+ 	#clock-cells = <1>;
++	clocks = <&clock 1>, <&clock 7>, <&clock 138>, <&clock 160>,
++		<&ext_i2s_clk>;
++	clock-names = "pll_ref", "pll_in", "sclk_audio", "sclk_pcm_in", "cdclk";
+ };
+ 
+-Example 2: I2S controller node that consumes the clock generated by the clock
++Example 3: I2S controller node that consumes the clock generated by the clock
+            controller. Refer to the standard clock bindings for information
+            about 'clocks' and 'clock-names' property.
+ 
+diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
+index 319c6e4..e7e800a 100644
+--- a/drivers/clk/samsung/clk-exynos-audss.c
++++ b/drivers/clk/samsung/clk-exynos-audss.c
+@@ -34,10 +34,6 @@ static unsigned long reg_save[][2] = {
+ 	{ASS_CLK_GATE, 0},
+ };
+ 
+-/* list of all parent clock list */
+-static const char *mout_audss_p[] = { "fin_pll", "fout_epll" };
+-static const char *mout_i2s_p[] = { "mout_audss", "cdclk0", "sclk_audio0" };
+-
+ #ifdef CONFIG_PM_SLEEP
+ static int exynos_audss_clk_suspend(void)
+ {
+@@ -68,6 +64,10 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
+ {
+ 	int i, ret = 0;
+ 	struct resource *res;
++	const char *mout_audss_p[] = {"fin_pll", "fout_epll"};
++	const char *mout_i2s_p[] = {"mout_audss", "cdclk0", "sclk_audio0"};
++	const char *sclk_pcm_p = "sclk_pcm0";
++	struct clk *pll_ref, *pll_in, *cdclk, *sclk_audio, *sclk_pcm_in;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	reg_base = devm_ioremap_resource(&pdev->dev, res);
+@@ -82,11 +82,23 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
+ 	if (!clk_table)
+ 		return -ENOMEM;
+ 
++	pll_ref = devm_clk_get(&pdev->dev, "pll_ref");
++	pll_in = devm_clk_get(&pdev->dev, "pll_in");
++	if (!IS_ERR(pll_ref))
++		mout_audss_p[0] = __clk_get_name(pll_ref);
++	if (!IS_ERR(pll_in))
++		mout_audss_p[1] = __clk_get_name(pll_in);
+ 	clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
+ 				mout_audss_p, ARRAY_SIZE(mout_audss_p),
+ 				CLK_SET_RATE_NO_REPARENT,
+ 				reg_base + ASS_CLK_SRC, 0, 1, 0, &lock);
+ 
++	cdclk = devm_clk_get(&pdev->dev, "cdclk");
++	sclk_audio = devm_clk_get(&pdev->dev, "sclk_audio");
++	if (!IS_ERR(cdclk))
++		mout_i2s_p[1] = __clk_get_name(cdclk);
++	if (!IS_ERR(sclk_audio))
++		mout_i2s_p[2] = __clk_get_name(sclk_audio);
+ 	clk_table[EXYNOS_MOUT_I2S] = clk_register_mux(NULL, "mout_i2s",
+ 				mout_i2s_p, ARRAY_SIZE(mout_i2s_p),
+ 				CLK_SET_RATE_NO_REPARENT,
+@@ -120,8 +132,11 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
+ 				 "sclk_pcm", CLK_SET_RATE_PARENT,
+ 				reg_base + ASS_CLK_GATE, 4, 0, &lock);
+ 
++	sclk_pcm_in = devm_clk_get(&pdev->dev, "sclk_pcm_in");
++	if (!IS_ERR(sclk_pcm_in))
++		sclk_pcm_p = __clk_get_name(sclk_pcm_in);
+ 	clk_table[EXYNOS_SCLK_PCM] = clk_register_gate(NULL, "sclk_pcm",
+-				"div_pcm0", CLK_SET_RATE_PARENT,
++				sclk_pcm_p, CLK_SET_RATE_PARENT,
+ 				reg_base + ASS_CLK_GATE, 5, 0, &lock);
+ 
+ 	for (i = 0; i < EXYNOS_AUDSS_MAX_CLKS; i++) {
+-- 
+1.8.4
 
