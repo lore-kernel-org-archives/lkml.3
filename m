@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab3IXANb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 20:13:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43236 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752662Ab3IXANa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 20:13:30 -0400
-Date: Mon, 23 Sep 2013 20:13:20 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, "Alasdair G. Kergon" <agk@redhat.com>,
-        Frank Mayhar <fmayhar@google.com>, Hannes Reinecke <hare@suse.de>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Subject: [git pull] device mapper fixes for 3.12
-Message-ID: <20130924001320.GA27767@redhat.com>
+	id S1753626Ab3IXAPx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 20:15:53 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48664 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab3IXAPv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 20:15:51 -0400
+Date: Tue, 24 Sep 2013 02:15:45 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, Nishanth Menon <nm@ti.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Ivaylo Dimitrov <freemangordon@abv.bg>
+Subject: Re: [PATCH v2 2/2] RX-51: ARM errata 430973 workaround
+Message-ID: <20130924001545.GA31569@amd.pavel.ucw.cz>
+References: <1362044548-5398-1-git-send-email-pali.rohar@gmail.com>
+ <1373461145-9812-3-git-send-email-pali.rohar@gmail.com>
+ <20130917232417.GK9994@atomide.com>
+ <201309181033.24965@pali>
+ <20130918171816.GT9994@atomide.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130918171816.GT9994@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
+Hi!
 
-  Linux 3.12-rc1 (2013-09-16 16:17:51 -0400)
+> > Tony, if you did not have time for review this patch months ago 
+> > or you found it only today - no problem, I understand it. But 
+> > what I need to know is what will happen with board-rx51-* files 
+> > (and when?) You can see that DT does not have definitions of all 
+> > n900 hw parts (plus it is not in last 3.11 kernel!) which means 
+> > that DT is not usable for me and other n900 people. This also 
+> > means that I cannot rewrite my patches for DT and test if they 
+> > working.
+> 
+> I usually stop looking at new code around -rc4 and concentrate
+> on fixes until -rc1 or so. So there can be easily one month
+> delays on reviewing stuff depending on where we are with the
+> current merge window or -rc cycle, sorry if that's annoying.
+> 
+> The .dts files will be separate from the kernel soonish, so
+> that's not be a show stopper. Just like all the board specific
+> .config files are separate from the kernel already. Too bad our
+> .dts changes did not get merged for v3.12 because of conflicts
+> with other branches, but hey, they should be independent from the
+> kernel anyways.
 
-are available in the git repository at:
+Well... I'd say it is still time to merge them. "New hardware support"
+is ok after -rc1.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git tags/dm-3.12-fixes
+> The board files will be going away as soon as things are working
+> with DT. We've been pretty much only applying fixes to them for
+> quite some time now. For the timeline, the earliest we'll be able
+> to remove the board-*.c files and platform data is for v3.13
 
-for you to fetch changes up to e8603136cb04ec2d0c9b4b5be7a071fc003cb399:
+And it would be good to merge n900 dts support for 3.12. Adding 
+device tree at the same release as removing board support files in
+same release leaves zero room for testing, and practically guarantees
+regressions.
 
-  dm: add reserved_bio_based_ios module parameter (2013-09-23 10:42:24 -0400)
-
-Please pull, thanks.
-Mike
-
-----------------------------------------------------------------
-A set of device-mapper fixes for 3.12.
-
-A few fixes for dm-snapshot, a 32 bit fix for dm-stats, a couple error
-handling fixes for dm-multipath.  A fix for the thin provisioning target
-to not expose non-zero discard limits if discards are disabled.
-
-Lastly, add two DM module parameters which allow users to tune the
-emergency memory reserves that DM mainatins per device -- this helps fix
-a long-standing issue for dm-multipath.  The conservative default
-reserve for request-based dm-multipath devices (256) has proven
-problematic for users with many multipathed SCSI devices but relatively
-little memory.  To responsibly select a smaller value users should use
-the new nr_bios tracepoint info (via commit 75afb352 "block: Add nr_bios
-to block_rq_remap tracepoint") to determine the peak number of bios
-their workloads create.
-
-----------------------------------------------------------------
-Jun'ichi Nomura (1):
-      dm mpath: do not fail path on -ENOSPC
-
-Mike Snitzer (5):
-      dm mpath: disable WRITE SAME if it fails
-      dm thin: do not expose non-zero discard limits if discards disabled
-      dm: lower bio-based mempool reservation
-      dm: add reserved_rq_based_ios module parameter
-      dm: add reserved_bio_based_ios module parameter
-
-Mikulas Patocka (3):
-      dm stats: fix possible counter corruption on 32-bit systems
-      dm snapshot: workaround for a false positive lockdep warning
-      dm-snapshot: fix performance degradation due to small hash size
-
- drivers/md/dm-io.c              |  7 ++--
- drivers/md/dm-mpath.c           | 18 ++++++++---
- drivers/md/dm-snap-persistent.c |  2 +-
- drivers/md/dm-snap.c            |  5 ++-
- drivers/md/dm-stats.c           | 23 +++++++++----
- drivers/md/dm-thin.c            | 14 ++++++--
- drivers/md/dm.c                 | 71 ++++++++++++++++++++++++++++++++++++++---
- drivers/md/dm.h                 |  3 ++
- include/linux/device-mapper.h   |  3 +-
- 9 files changed, 120 insertions(+), 26 deletions(-)
-
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
