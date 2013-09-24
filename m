@@ -1,157 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab3IXVeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:34:07 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:39806 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab3IXVeF (ORCPT
+	id S1754783Ab3IXVeu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 17:34:50 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46725 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062Ab3IXVes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:34:05 -0400
+	Tue, 24 Sep 2013 17:34:48 -0400
+Message-ID: <5242051F.70609@ti.com>
+Date: Tue, 24 Sep 2013 17:33:19 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1309242255350.1875@ja.ssi.bg>
-References: <1380046281-6012-1-git-send-email-vincent.mc.li@gmail.com>
-	<alpine.LFD.2.00.1309242255350.1875@ja.ssi.bg>
-Date: Tue, 24 Sep 2013 14:34:04 -0700
-Message-ID: <CAK3+h2y8eAKFC7BbnDwfZLzTw=t-G9qWSqznp4ggwDy7R_O6Ag@mail.gmail.com>
-Subject: Re: [PATCH] Allow userspace code to use flag IFA_F_SECONDARY to
- specify an ip address to be primary or secondary ip on an interface
-From: Vincent Li <vincent.mc.li@gmail.com>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "wni@nvidia.com" <wni@nvidia.com>, "joe@perches.com" <joe@perches.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCHv6 02/16] drivers: thermal: introduce device tree parser
+References: <1379537849-28425-1-git-send-email-eduardo.valentin@ti.com> <1379540136-28378-1-git-send-email-eduardo.valentin@ti.com> <20130923104003.GA16069@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130923104003.GA16069@e106331-lin.cambridge.arm.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="9VuNC348GOpQBO6G88XXmFPgOq4Q8R8lS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Julian for the comments, I imagined it would not be so simple
-as it changed old behavior with ip binary and some actions in
-__inet_del_ifa() that I am not fully aware of. my intention is to
-preserve the old behavior and extend the flexibility, I am unable to
-come up with a good patch to achieve the intended behavior.
+--9VuNC348GOpQBO6G88XXmFPgOq4Q8R8lS
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I had to patch the ip binary to sort of preserve original ip binary
-behavior with the kernel patch I provided., the ip command patch
-below:
+On 23-09-2013 06:40, Mark Rutland wrote:
+>=20
+> It would be nice to have a name for the cells after a phandle which
+> describe the cooling device's configuration. You've called them
+> parameters here, but it probably makes sense to call them a
+> cooling-specifier (following clock-specifier and interrupt-specifier).
 
-diff --git a/ip/ipaddress.c b/ip/ipaddress.c
-index 1c3e4da..9f2802c 100644
---- a/ip/ipaddress.c
-+++ b/ip/ipaddress.c
-@@ -1259,6 +1259,7 @@ static int ipaddr_modify(int cmd, int flags, int
-argc, char **argv)
-        req.n.nlmsg_flags = NLM_F_REQUEST | flags;
-        req.n.nlmsg_type = cmd;
-        req.ifa.ifa_family = preferred_family;
-+       req.ifa.ifa_flags |= IFA_F_SECONDARY;
+Maybe it was not very clear, and I am working on improving this, but
+what I am proposing is simply to have:
+ cooling-device =3D <&cdev min max>
 
-        while (argc > 0) {
-                if (strcmp(*argv, "peer") == 0 ||
-@@ -1307,6 +1308,11 @@ static int ipaddr_modify(int cmd, int flags,
-int argc, char **argv)
-                                invarg("invalid scope value.", *argv);
-                        req.ifa.ifa_scope = scope;
-                        scoped = 1;
-+                } else if (strcmp(*argv, "secondary") == 0 ||
-+                           strcmp(*argv, "temporary") == 0) {
-+                        req.ifa.ifa_flags |= IFA_F_SECONDARY;
-+                } else if (strcmp(*argv, "primary") == 0) {
-+                        req.ifa.ifa_flags &= ~IFA_F_SECONDARY;
-                } else if (strcmp(*argv, "dev") == 0) {
-                        NEXT_ARG();
-                        d = *argv;
+where min and max are one cell unsigned values referring to minimum
+cooling level and maximum cooling level, for this reference. Note that
+'cdev' may have 10 levels, but in this reference we may use only from 6
+to 10:
+ cooling-device =3D <&cdev 6 10>;
 
-if someone can point me to the right patch directions or coming up
-with better patches, it is very much appreciated.
+I don't see a need to have a cooling-names for this case. And for now, I
+also don't see why we would use other specifiers. But we can leave it
+open for future extensions.
+
+It does make sense to have thermal-sensor-names (using thermal-sensor as
+per your suggestion). Because it makes clear where the sensor is in the
+case of using several sensors in one zone. Just like in the example I
+already gave:
+> +cpu-thermal: cpu-thermal {
+> +	polling-delay-passive =3D <250>; /* milliseconds */
+> +	polling-delay =3D <1000>; /* milliseconds */
+> +
+> +		/* sensor       ID */
+> +     thermal-sensors =3D <&bandgap0	0>,
+> +		  	  <&adc		0>;
+> +	thermal-sensors-names =3D "cpu", "pcb north";
+> +
+> +		/* hotspot =3D 100 * bandgap - 120 * adc + 484 */
+> +	coefficients =3D 		<100	-120	484>;
+> +
+> +        trips {
+> +		...
+> +        };
+> +
+> +	cooling-attachments {
+> +		...
+> +	};
+> +};
 
 
-On Tue, Sep 24, 2013 at 2:13 PM, Julian Anastasov <ja@ssi.bg> wrote:
->
->         Hello,
->
-> On Tue, 24 Sep 2013, Vincent Li wrote:
->
->> the current behavior is when an IP is added to an interface, the primary
->> or secondary attributes is depending on the order of ip added to the interface
->> the first IP will be primary and second, third,... or alias IP will be secondary
->> if the IP subnet matches
->>
->> this patch add the flexiblity to allow user to specify an argument 'primary' or 'secondary'
->> (use 'ip addr add ip/mask primary|secondary dev ethX ' from iproute2 for example) to specify
->> an IP address to be  primary or secondary.
->>
->> the reason for this patch is that we have a multi blade cluster platform sharing 'floating management ip'
->> and also that each blade has its own management ip on the management interface, so whichever blade in the
->> cluster becomes primary blade, the 'floating mangaement ip' follows it, and we want any of our traffic
->> originated from the primary blade source from the 'floating management ip' for consistency. but in this
->> case, since the local blade management ip is always the primary ip on the mangaement interface and 'floating
->> management ip' is always secondary, kernel always choose the primary ip as source ip address. thus we would
->> like to add the flexibility in kernel to allow us to specify which ip to be primary or secondary.
->>
->> Signed-off-by: Vincent Li <vincent.mc.li@gmail.com>
->> ---
->>  net/ipv4/devinet.c |    9 +++++++--
->>  1 file changed, 7 insertions(+), 2 deletions(-)
->>
->> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
->> index a1b5bcb..bfc702a 100644
->> --- a/net/ipv4/devinet.c
->> +++ b/net/ipv4/devinet.c
->> @@ -440,9 +440,11 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
->>               return 0;
->>       }
->>
->> -     ifa->ifa_flags &= ~IFA_F_SECONDARY;
->>       last_primary = &in_dev->ifa_list;
->>
->> +     if((*last_primary) == NULL)
->> +             ifa->ifa_flags &= ~IFA_F_SECONDARY;
->> +
->>       for (ifap = &in_dev->ifa_list; (ifa1 = *ifap) != NULL;
->>            ifap = &ifa1->ifa_next) {
->>               if (!(ifa1->ifa_flags & IFA_F_SECONDARY) &&
->> @@ -458,7 +460,10 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
->>                               inet_free_ifa(ifa);
->>                               return -EINVAL;
->>                       }
->> -                     ifa->ifa_flags |= IFA_F_SECONDARY;
->
->         There is some confusion here, when ifa has
-> IFA_F_SECONDARY bit set, in the 'else' we set it again.
-> I guess the 'else' part is not needed.
->
->> +                        if (!(ifa->ifa_flags & IFA_F_SECONDARY))
->> +                                ifa1->ifa_flags |= IFA_F_SECONDARY;
->> +                        else
->> +                                ifa->ifa_flags |= IFA_F_SECONDARY;
->
->         It should not be so simple. You can not
-> just change the flag of existing address (ifa1) to secondary.
-> See __inet_del_ifa(), there are many more actions that
-> follow:
->
-> - kernel routes that use this primary address
-> should be deleted and recreated with the new primary
-> address as source. This includes local routes to secondary
-> IPs.
->
-> - RTM_NEWADDR should be sent, so that user space see
-> the IFA_F_SECONDARY flag
->
->         Some questions:
->
-> - should we allow adding of secondary IPs when no primary
-> address exists for the subnet, it can happen when primary
-> for another subnet already exists
->
-> - by default, existing 'ip addr' binaries will provide
-> address without IFA_F_SECONDARY flag. Before now we added
-> such addresses as last for the subnet, now the
-> behaviour changes, we start to add addresses in reverse
-> order. Is that true? I.e. before now the operation was
-> APPEND, now we need a way to provide PREPEND operation.
->
-> Regards
->
-> --
-> Julian Anastasov <ja@ssi.bg>
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+--9VuNC348GOpQBO6G88XXmFPgOq4Q8R8lS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlJCBSsACgkQCXcVR3XQvP1s2gD6Ak+M7jZvhrKL6WWAYGh9j+XT
+JWpfJDtukecQzRmJ3JsA/2Gni/BCC7ay0GgvMwk1o7FqN8cFxJ6//g02cMMqppab
+=7JL8
+-----END PGP SIGNATURE-----
+
+--9VuNC348GOpQBO6G88XXmFPgOq4Q8R8lS--
