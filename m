@@ -1,59 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab3IXPGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 11:06:46 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:61589 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab3IXPGo (ORCPT
+	id S1753377Ab3IXPNd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 11:13:33 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:37939 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038Ab3IXPNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 11:06:44 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-fe-5241aa828388
-From: Tomasz Figa <t.figa@samsung.com>
-To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Cc: linus.walleij@linaro.org, thomas.abraham@linaro.org, kgene.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] pinctrl: Correct number of pins for s5pv210
-Date: Tue, 24 Sep 2013 17:06:31 +0200
-Message-id: <2660734.r2Dp8L0F5K@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11 (Linux/3.10.10-gentoo; KDE/4.11.0; x86_64; ; )
-In-reply-to: <1380035051-24526-1-git-send-email-m.krawczuk@partner.samsung.com>
-References: <1380035051-24526-1-git-send-email-m.krawczuk@partner.samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t/xy7pNqxyDDBa9MrboXXCVzeJs0xt2
-	iyl/ljNZbHp8jdXi8q45bBYzzu9jsji95hSzxbEZSxgdODzuXNvD5rF5Sb3HwXd7mDz6tqxi
-	9Pi8SS6ANYrLJiU1J7MstUjfLoErY8vtp8wFq1kqenZfYGtgPMXcxcjJISFgItE9dz0LhC0m
-	ceHeejYQW0hgKaPEnVM5XYxcQHYXk8SCI1fAGtgE1CQ+NzwCKxIRMJV4d/caG0gRs8ATRok3
-	d14BORwcwgIOEo9PWoDUsAioSqx88o8dxOYV0JQ493MqI4jNL6Au8W7bUyYQW1TAVeLTwo3s
-	IK2cAv4Sc7aKg5hCAn4SW+4bQHQKSvyYfA/sTGYBeYl9+6eyQthaEut3HmeawCg4C0nZLCRl
-	s5CULWBkXsUomlqaXFCclJ5rqFecmFtcmpeul5yfu4kREgFfdjAuPmZ1iFGAg1GJh/digkOQ
-	EGtiWXFl7iFGCQ5mJRFezVrHICHelMTKqtSi/Pii0pzU4kOMTBycUg2M0juN8mx/7Y7d7fhE
-	RPz9E58tOtJt220b9m3snffi5vxMN/UJ3nPqL5rvDu0K+Viae4zP5WPHmiWrW82lPlgvmJdx
-	q/gZw4mEtAfZ/30ZA89sFGKbeSndYBXT7cM1F/ZYGJS1rM1dI/OXoazH2bQnzeJN8Kmp9pN2
-	yh6Zs02f3+6Rvt31WFsFJZbijERDLeai4kQAm8jfPl4CAAA=
+	Tue, 24 Sep 2013 11:13:32 -0400
+Date: Tue, 24 Sep 2013 16:13:29 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+Subject: Re: False positive in checkpatch
+Message-ID: <20130924151329.GL13914@dm>
+References: <20130923225949.GA26278@linux.vnet.ibm.com>
+ <1379996467.3575.67.camel@joe-AO722>
+ <20130924140305.GZ9093@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130924140305.GZ9093@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mateusz,
-
-On Tuesday 24 of September 2013 16:35:07 Mateusz Krawczuk wrote:
-> Values of pins in table s5pv210 bank are incorrect. This patch correct values.
+On Tue, Sep 24, 2013 at 07:03:05AM -0700, Paul E. McKenney wrote:
+> On Mon, Sep 23, 2013 at 09:21:07PM -0700, Joe Perches wrote:
+> > On Mon, 2013-09-23 at 15:59 -0700, Paul E. McKenney wrote:
+> > > Hello!
+> > > 
+> > > The checkpatch.pl script complains as follows:
+> > > 
+> > > ERROR: need consistent spacing around '*' (ctx:WxB)
+> > > #57: FILE: include/linux/rcupdate.h:564:
+> > > +		ACCESS_ONCE(p) = (typeof(*(v)) __force space *)(v); \
+> > > 
+> > > Of course, the two uses of '*' are doing different things, so it should
+> > > be OK for the spacing to be different.
+> > > 
+> > > Could you please fix this?
+> > > 
+> > > 							Thanx, Paul
+> > > 
+> > 
+> > Hi Paul.
+> > 
+> > Try this patch: https://lkml.org/lkml/2013/9/2/428
+> > 
+> > Andy?  Can you verify this suggested patch please?
 > 
-> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/pinctrl/pinctrl-exynos.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+> That does it, thank you!  And it does look like this patch was directed
+> precisely at this patch.  ;-)
+> 
+> 							Thanx, Paul
+> 
 
-Acked-by: Tomasz Figa <t.figa@samsung.com>
+How about this one, it is a bit of a hack but does at least correctly
+correct the formal characterisation of the operator to unary.
 
-Best regards,
-Tomasz
+Working on getting this tested a bit better before sending it out
+formally.
 
-P.S. Please be more careful next time when defining things like this.
+-apw
+
+
+>From 5b4e22c123b3492838d12181129a8c168598dbf4 Mon Sep 17 00:00:00 2001
+From: Andy Whitcroft <apw@canonical.com>
+Date: Tue, 24 Sep 2013 16:10:46 +0100
+Subject: [PATCH] checkpatch: handle miss identified binary operators which
+ bump a close parenthesis
+
+When we hit a close parenthesis, any binary operators we have without right
+hand sides cannot actually be binary if the code is correctly formatted.
+Go back and fix up any we get wrong.
+
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ scripts/checkpatch.pl | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 47016c3..3d56e6e 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1277,6 +1277,16 @@ sub annotate_values {
+ 			} else {
+ 				print "PAREN('$1')\n" if ($dbg_values > 1);
+ 			}
++			# Check for any pending binary operators, if they but up against this
++			# bracket then they are really unary, correct them.
++			my $pos = length($res) - 1;
++			while ($pos >= 0 && substr($res, $pos, 1) eq 'N') {
++				if (substr($var, $pos, 1) eq 'B') {
++					substr($var, $pos, 1) = 'U';
++					print "BINARY WACKED TO UNARY at $pos\n" if ($dbg_values > 1);
++				}
++				$pos--;
++			}
+ 
+ 		} elsif ($cur =~ /^($Ident)\s*\(/o) {
+ 			print "FUNC($1)\n" if ($dbg_values > 1);
+@@ -1331,12 +1341,12 @@ sub annotate_values {
+ 		} elsif ($cur =~ /^(-(?![->])|\+(?!\+)|\*|\&\&|\&)/o) {
+ 			my $variant;
+ 
+-			print "OPV($1)\n" if ($dbg_values > 1);
+ 			if ($type eq 'V') {
+ 				$variant = 'B';
+ 			} else {
+ 				$variant = 'U';
+ 			}
++			print "OPV($1) -> $variant\n" if ($dbg_values > 1);
+ 
+ 			substr($var, length($res), 1, $variant);
+ 			$type = 'N';
+-- 
+1.8.1.2
 
