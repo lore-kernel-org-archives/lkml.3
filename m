@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab3IXWQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 18:16:59 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:58648 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741Ab3IXWQ6 (ORCPT
+	id S1754837Ab3IXWSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 18:18:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37315 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab3IXWSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 18:16:58 -0400
-Message-ID: <1380061012.2736.57.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH 02/10] intel: Remove extern from function prototypes
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-CC: Joe Perches <joe@perches.com>, <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        "Bruce Allan" <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        <e1000-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Sep 2013 23:16:52 +0100
-In-Reply-To: <1380060449.2189.6.camel@jtkirshe-mobl>
-References: <cover.1380056108.git.joe@perches.com>
-	 <5ccc921af41a862fe969809228f029035f851502.1380056108.git.joe@perches.com>
-	 <1380060449.2189.6.camel@jtkirshe-mobl>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Tue, 24 Sep 2013 18:18:03 -0400
+Date: Tue, 24 Sep 2013 15:18:02 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Alan Tull <atull@altera.com>
+Cc: Michal Simek <monstr@monstr.eu>, Pavel Machek <pavel@denx.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+Message-ID: <20130924221802.GC3837@kroah.com>
+References: <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
+ <20130918191517.GQ19937@titan.lakedaemon.net>
+ <20130918203247.GA11181@obsidianresearch.com>
+ <1379539063.31417.23.camel@atx-linux-37>
+ <20130919100833.GC19346@amd.pavel.ucw.cz>
+ <523AD9C5.8060006@monstr.eu>
+ <1379710523.21515.4.camel@atx-linux-37>
+ <1380038126.13235.12.camel@atx-linux-37>
+ <5241B6BC.1010301@monstr.eu>
+ <1380039774.14129.6.camel@atx-linux-37>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20170.005
-X-TM-AS-Result: No--22.273400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380039774.14129.6.camel@atx-linux-37>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-24 at 15:07 -0700, Jeff Kirsher wrote:
-> On Tue, 2013-09-24 at 14:09 -0700, Joe Perches wrote:
-> > There are a mix of function prototypes with and without extern
-> > in the kernel sources.  Standardize on not using extern for
-> > function prototypes.
-> > 
-> > Function prototypes don't need to be written with extern.
-> > extern is assumed by the compiler.  Its use is as unnecessary as
-> > using auto to declare automatic/local variables in a block.
+On Tue, Sep 24, 2013 at 11:22:54AM -0500, Alan Tull wrote:
+> Yes, I could see /sys/class/fpga/fpga0/image.rbf/loading and 'data' and
+> a few others (If I was requesting to load 'image.rbf').  It's a nice
+> interface.
 > 
-> So you are able to confirm that all compilers make this assumption
-> correctly?  The initial reason for using extern was because not all
-> compilers made the assumption or made it correctly.
+> I just used the linux/Documentation/firmware_class/hotplug-script
+> without modifications.
+> 
+> To enable it:
+> 
+>  * cp linux/Documentation/firmware_class/hotplug-script /lib/udev/
+> 
+>  * chmod 755 /lib/udev/hotplug-script
+> 
+>  * Add this udev rule:
+>    SUBSYSTEM=="firmware", ACTION=="add", RUN+="/lib/udev/hotplug-script"
+> 
+>  * Check that there aren't other 'firmware' udev rules to get in the
+> way.
 
-You are probably thinking of global variables, where declarations
-without either 'extern' or an initialiser might or might not be treated
-as 'common'.  On function declarations, 'extern' really is redundant.
+Hm, don't do that, all "modern" distros will not do firmware loading
+through udev anymore, so please don't try to add it back in.  The kernel
+handles the loading of the firmware directly, with no need to call any
+usermodehelper program at all.
 
-Ben.
+>  * Add your firmware files to /usr/lib/hotplug/firmware/ or change that
+>    path in hotplug-script to point to where your firmware files.
+> 
+> The default hotplug-script doesn't do anything special (that the kernel
+> couldn't do by itself).  What's great is that it could call another
+> script that adds headers or does whatever other special un-gzipping or
+> other massaging that the firmware image needs before it gets loaded.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Only if you need to do something "special" like this could it justify
+not using the in-kernel firmware loader.  Also note that I think future
+versions of udev will have the udev firmware loader removed entirely, so
+watch out for that.
 
+thanks,
+
+greg k-h
