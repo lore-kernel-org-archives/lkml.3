@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab3IXJcb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:32:31 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61259 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752708Ab3IXJc3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:32:29 -0400
-Date: Tue, 24 Sep 2013 10:32:22 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "dave.martin@linaro.org" <dave.martin@linaro.org>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH -next] drivers: CCI: fix the error handle in
- cci_pmu_probe()
-Message-ID: <20130924093222.GC15119@mudshark.cambridge.arm.com>
-References: <CAPgLHd9jKOp71tN43=oOUN4X_niTonuQExO1yMSy=3odoRqTcQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd9jKOp71tN43=oOUN4X_niTonuQExO1yMSy=3odoRqTcQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754338Ab3IXJcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:32:47 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55048 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753868Ab3IXJcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 05:32:46 -0400
+Message-ID: <1380015099.5443.43.camel@pasglop>
+Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>
+Date: Tue, 24 Sep 2013 19:31:39 +1000
+In-Reply-To: <20130924082128.GJ9326@twins.programming.kicks-ass.net>
+References: <1379824754.24090.11.camel@pasglop>
+	 <1379824861.24090.12.camel@pasglop>
+	 <20130922162410.GA10649@laptop.programming.kicks-ass.net>
+	 <1379887000.24090.19.camel@pasglop>
+	 <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
+	 <1379981427.5443.8.camel@pasglop>
+	 <CA+55aFwyVG4DXOEvaVTp0gE-H2Zy0Kx7Mg7RWzpxzwm_RSWEYQ@mail.gmail.com>
+	 <1379987527.5443.20.camel@pasglop>
+	 <20130924080436.GH9326@twins.programming.kicks-ass.net>
+	 <1380010613.5443.40.camel@pasglop>
+	 <20130924082128.GJ9326@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 06:04:23AM +0100, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Tue, 2013-09-24 at 10:21 +0200, Peter Zijlstra wrote:
+> > I don't see how that relates to the above though...
 > 
-> This patch fix the error handle of function cci_pmu_probe():
-> - using IS_ERR() instead of NULL test for the return value of
->   devm_ioremap_resource() since it nerver return NULL.
-> - remove kfree() for devm_kzalloc allocated memory
-> - remove dev_warn() since devm_ioremap_resource() has error message
->   already.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> It was a comment on the increase of per-cpu usage in generic code.
 
-Cheers Wei, I'll add this as a new patch on top of my perf branch.
+Oh I see. Ok, but some things are intrinsically per-task so if you use
+per-cpu in that case you end up context switching, at least that's what
+Linus alluded to. It would be nice if such construct we design so that
+we still access them via the task struct on arch where such accesses are
+cheap.
 
-Will
+I think if/when we get rid of using r13 for our arch specific "PACA", it
+becomes easy for me to experiment with using it for either per-cpu or
+current and do some measurements. It also means I can easily switch "the
+other way" if I need to. I'll dig into that, it will probably take some
+time before I sanitize our code enough anyway.
+
+Cheers,
+Ben.
+ 
+
