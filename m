@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab3IXJSc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:18:32 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:25212 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab3IXJSb (ORCPT
+	id S1754170Ab3IXJTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:19:00 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:22788 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695Ab3IXJS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:18:31 -0400
-X-AuditID: cbfee68e-b7f756d000004512-9a-524158e01004
+	Tue, 24 Sep 2013 05:18:58 -0400
+X-AuditID: cbfee691-b7f4a6d0000074fc-7d-5241590142ea
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
 In-reply-to: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
-Subject: [PATCH 18/22] backlight: max8925_bl: use
+Subject: [PATCH 19/22] backlight: pandora_bl: use
  devm_backlight_device_register()
-Date: Tue, 24 Sep 2013 18:18:24 +0900
-Message-id: <005801ceb907$054ff980$0fefec80$%han@samsung.com>
+Date: Tue, 24 Sep 2013 18:18:57 +0900
+Message-id: <005901ceb907$18dfe8c0$4a9fba40$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAAe44g
+Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAAgJ3Q
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zA90HEY5BBk0TzC3mrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsEroz3/6ey
-	Fmzmq1j4UKSBcQZPFyMnh4SAicTbvVuZIGwxiQv31rN1MXJxCAksY5Q4fWA6I0zRpBeHmSES
-	0xklzk4/zgLh/GKU6P3wnR2kik1ATeLLl8NANgeHiIC+RFuLBkiYWSBH4v6TWWAlQgK2Eus+
-	zAazOQXsJE4tPcMGYgsLhEis3jEdzGYRUJWY/nAjM4jNC1R/4NNsVghbUOLH5HssEDO1JDZv
-	a2KFsOUlNq95ywyyVkJAXeLRX12QsIiAkcSX9xugSkQk9r14xwhysoTAKXaJX2dXQO0SkPg2
-	+RALRK+sxKYDzBD/SkocXHGDZQKjxCwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSkV5yY
-	W1yal66XnJ+7iRESk307GG8esD7EmAy0fiKzlGhyPjCm80riDY3NjCxMTUyNjcwtzUgTVhLn
-	VWuxDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAaKloG7CpfZ7L/QtFD41rs3hmBwkledoa
-	pslNMHH+3+D8XeHv5Oprwb9klO9FnBWa2nigluv206e/F799xPTCbK5rwaqNk5PkXlj8c7yn
-	tlibJ7abXfDyea8+Y8PElwfeGUp5Becbd4TMfxBe1Lp18uGUDaYzSvZLFWyI7/Po3Wo4KdHc
-	9/N3JZbijERDLeai4kQADalY3d8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQd0HEY5BBj1zjC3mrF/DZnF54SVW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zI13GSMcgg43flCzmrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErowPs76z
+	FuznqWi99JW5gfEUVxcjJ4eEgInEsl2zmCBsMYkL99azdTFycQgJLGOUONK5hg2maMHWNlaI
+	xHRGiXtnn7FDOL8YJT4cfc8IUsUmoCbx5cthoAQHh4iAvkRbiwZImFkgR+L+k1nsILaQgK3E
+	ug+zwWxOATuJU0vPgC0QFgiR2LBwFwuIzSKgKtF2cw8TyBheoPo5vxRBwrwCghI/Jt9jgRip
+	JbF5WxMrhC0vsXnNW2aQcgkBdYlHf3VBwiICRhI7b51jhigRkdj34h0jyMUSApfYJZoOHmeG
+	WCUg8W3yIRaIXlmJTQeYId6VlDi44gbLBEaJWUg2z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCm9
+	yFSvODG3uDQvXS85P3cTIyQmJ+5gvH/A+hBjMtD6icxSosn5wJjOK4k3NDYzsjA1MTU2Mrc0
+	I01YSZxXvcU6UEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOjnhvvgruHBVUPKnSZZn/TClYN
+	C/Dv5U/NdO5ZVq9bu0v+tpV7rf+aN6X2qfnii9Tattd/j+/8tzMs8b3owbu5add8/kUt15/S
+	57ihtDTx71TGWSVXn5W71Cdm+Ib99EutvnCh2fZ7itSGt8v+ZukeiQmd+u2d58N0O4vnReUc
+	Ke+4W58rxyixFGckGmoxFxUnAgC0efMX3wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQV3GSMcgg30T5S3mrF/DZnF54SVW
 	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
 	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaM9/+nshZs5qtY+FCkgXEGTxcjJ4eEgInEpBeHmSFsMYkL99az
-	dTFycQgJTGeUODv9OAuE84tRovfDd3aQKjYBNYkvXw4D2RwcIgL6Em0tGiBhZoEciftPZoGV
-	CAnYSqz7MBvM5hSwkzi19AwbiC0sECKxesd0MJtFQFVi+sONYIt5geoPfJrNCmELSvyYfI8F
-	YqaWxOZtTawQtrzE5jVvmUHWSgioSzz6qwsSFhEwkvjyfgNUiYjEvhfvGCcwCs1CMmkWkkmz
-	kEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgiH8mvYNxVYPFIUYBDkYlHt4L
-	CQ5BQqyJZcWVuYcYJTiYlUR4b9g6BgnxpiRWVqUW5ccXleakFh9iTAZ6dCKzlGhyPjAZ5ZXE
-	GxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDo7N60rKGntJqb9bP
-	57Q8T4iF31J3rF4aGTWPZdXrl79zw45MDuBYzxr0Lbdk2sJ3j4tmRLxfHyhh+0Ql9HJjxoFV
-	uf+9OP8uT7zecLBus6PUzanvjT/IZ7979lL8Y4LL+p0tAtJiR9UOnjBv9TkUmHy0Tkwyf51Y
-	pTNrVjbPjMkP8thOFE84pcRSnJFoqMVcVJwIABDcFyg8AwAA
+	LWAaI3R9Q4LgeowM0EDCOsaMD7O+sxbs56lovfSVuYHxFFcXIyeHhICJxIKtbawQtpjEhXvr
+	2boYuTiEBKYzStw7+4wdwvnFKPHh6HtGkCo2ATWJL18OAyU4OEQE9CXaWjRAwswCORL3n8xi
+	B7GFBGwl1n2YDWZzCthJnFp6hg3EFhYIkdiwcBcLiM0ioCrRdnMPE8gYXqD6Ob8UQcK8AoIS
+	PybfY4EYqSWxeVsTK4QtL7F5zVtmkHIJAXWJR391QcIiAkYSO2+dY4YoEZHY9+Id4wRGoVlI
+	Js1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREc8c+kdjCubLA4xCjA
+	wajEw7vD2yFIiDWxrLgy9xCjBAezkgjvDVvHICHelMTKqtSi/Pii0pzU4kOMyUB/TmSWEk3O
+	ByajvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpgbCkvqD67
+	eesjge/91l0zL89lO1cmEtMY0HDQsX0O2yQ1u82at5bef57Abuzr6m985OqF/d168RG6kb1l
+	xxKPPDRgy5x40ez+wzXtnxyseedsnR7gvb7c5YPmN1/etry36W6Z3fp69dd88qdUC17pfvXn
+	yJuNvIuY77O+uDR3nW9f55HtW2pLlFiKMxINtZiLihMB/IXq0DwDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,53 +61,45 @@ and remove unnecessary remove().
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/max8925_bl.c |   17 +++--------------
- 1 file changed, 3 insertions(+), 14 deletions(-)
+ drivers/video/backlight/pandora_bl.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
-index 886e797..66fa08c 100644
---- a/drivers/video/backlight/max8925_bl.c
-+++ b/drivers/video/backlight/max8925_bl.c
-@@ -163,7 +163,8 @@ static int max8925_backlight_probe(struct platform_device *pdev)
- 	memset(&props, 0, sizeof(struct backlight_properties));
+diff --git a/drivers/video/backlight/pandora_bl.c b/drivers/video/backlight/pandora_bl.c
+index 633b0a2..2098c5d 100644
+--- a/drivers/video/backlight/pandora_bl.c
++++ b/drivers/video/backlight/pandora_bl.c
+@@ -120,8 +120,8 @@ static int pandora_backlight_probe(struct platform_device *pdev)
+ 	memset(&props, 0, sizeof(props));
+ 	props.max_brightness = MAX_USER_VALUE;
  	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = MAX_BRIGHTNESS;
--	bl = backlight_device_register("max8925-backlight", &pdev->dev, data,
-+	bl = devm_backlight_device_register(&pdev->dev, "max8925-backlight",
-+					&pdev->dev, data,
- 					&max8925_backlight_ops, &props);
+-	bl = backlight_device_register(pdev->name, &pdev->dev,
+-			NULL, &pandora_backlight_ops, &props);
++	bl = devm_backlight_device_register(&pdev->dev, pdev->name, &pdev->dev,
++					NULL, &pandora_backlight_ops, &props);
  	if (IS_ERR(bl)) {
  		dev_err(&pdev->dev, "failed to register backlight\n");
-@@ -188,20 +189,9 @@ static int max8925_backlight_probe(struct platform_device *pdev)
- 	}
- 	ret = max8925_set_bits(chip->i2c, data->reg_mode_cntl, 0xfe, value);
- 	if (ret < 0)
--		goto out_brt;
-+		return ret;
- 	backlight_update_status(bl);
+ 		return PTR_ERR(bl);
+@@ -145,20 +145,12 @@ static int pandora_backlight_probe(struct platform_device *pdev)
  	return 0;
--out_brt:
--	backlight_device_unregister(bl);
--	return ret;
--}
--
--static int max8925_backlight_remove(struct platform_device *pdev)
--{
--	struct backlight_device *bl = platform_get_drvdata(pdev);
--
--	backlight_device_unregister(bl);
--	return 0;
  }
  
- static struct platform_driver max8925_backlight_driver = {
-@@ -210,7 +200,6 @@ static struct platform_driver max8925_backlight_driver = {
+-static int pandora_backlight_remove(struct platform_device *pdev)
+-{
+-	struct backlight_device *bl = platform_get_drvdata(pdev);
+-	backlight_device_unregister(bl);
+-	return 0;
+-}
+-
+ static struct platform_driver pandora_backlight_driver = {
+ 	.driver		= {
+ 		.name	= "pandora-backlight",
  		.owner	= THIS_MODULE,
  	},
- 	.probe		= max8925_backlight_probe,
--	.remove		= max8925_backlight_remove,
+ 	.probe		= pandora_backlight_probe,
+-	.remove		= pandora_backlight_remove,
  };
  
- module_platform_driver(max8925_backlight_driver);
+ module_platform_driver(pandora_backlight_driver);
 -- 
 1.7.10.4
 
