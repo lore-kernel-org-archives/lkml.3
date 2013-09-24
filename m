@@ -1,105 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab3IXRyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 13:54:25 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:58413 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754499Ab3IXRyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 13:54:24 -0400
-X-Greylist: delayed 1281 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Sep 2013 13:54:24 EDT
-Message-ID: <5241C9E7.2000404@cs.wisc.edu>
-Date: Tue, 24 Sep 2013 12:20:39 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: KY Srinivasan <kys@microsoft.com>
-CC: Jack Wang <xjtuwjp@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: Drivers: scsi: FLUSH timeout
-References: <1379705547-15028-1-git-send-email-kys@microsoft.com> <20130920203222.GA14306@kroah.com> <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com> <524180B7.7090307@gmail.com> <3413dbd7fa254fd380a84fe6d9cd87e1@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <3413dbd7fa254fd380a84fe6d9cd87e1@SN2PR03MB061.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754300Ab3IXR57 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 13:57:59 -0400
+Received: from mail-pa0-f67.google.com ([209.85.220.67]:46677 "EHLO
+	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829Ab3IXR55 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 13:57:57 -0400
+From: charlebm@gmail.com
+To: balbi@ti.com
+Cc: Mark Charlebois <charlebm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Subject: [PATCH] Remove VLAIS usage from gadget code - alternate patch
+Date: Tue, 24 Sep 2013 10:56:59 -0700
+Message-Id: <1380045419-10367-1-git-send-email-charlebm@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 07:35 AM, KY Srinivasan wrote:
-> 
-> 
->> -----Original Message-----
->> From: Jack Wang [mailto:xjtuwjp@gmail.com]
->> Sent: Tuesday, September 24, 2013 5:08 AM
->> To: KY Srinivasan
->> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
->> ohering@suse.com; jbottomley@parallels.com; hch@infradead.org; linux-
->> scsi@vger.kernel.org; Mike Christie
->> Subject: Re: Drivers: scsi: FLUSH timeout
->>
->> On 09/21/2013 07:24 AM, KY Srinivasan wrote:
->>>
->>>
->>>> -----Original Message-----
->>>> From: Greg KH [mailto:gregkh@linuxfoundation.org]
->>>> Sent: Friday, September 20, 2013 1:32 PM
->>>> To: KY Srinivasan
->>>> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
->>>> ohering@suse.com; jbottomley@parallels.com; hch@infradead.org; linux-
->>>> scsi@vger.kernel.org
->>>> Subject: Re: Drivers: scsi: FLUSH timeout
->>>>
->>>> On Fri, Sep 20, 2013 at 12:32:27PM -0700, K. Y. Srinivasan wrote:
->>>>> The SD_FLUSH_TIMEOUT value is currently hardcoded.
->>>>
->>>> Hardcoded where?  Please, more context.
->>>
->>> This is defined in scsi/sd.h:
->>>
->>> #define SD_FLUSH_TIMEOUT        (60 * HZ)
->>>>
->>>>> On our cloud, we sometimes hit this timeout. I was wondering if we
->>>>> could make this a module parameter. If this is acceptable, I can send
->>>>> you a patch for this.
->>>>
->>>> A module parameter don't make sense for a per-device value, does it?
->>> Currently, the 60 second timeout is applied across devices. Ideally, I want to be
->>> able to control the FLUSH TIMEOUT as we currently do I/O timeout. If this is
->>> acceptable, I can work on a patch for that as well.
->>>
->>> Regards,
->>>
->>> K. Y
->>>>
->>>> greg k-h
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->> Hi,
->>
->> Back to 2010, Mike(cc-ed) try to add a flush time out interface, similar
->> to what you want here, no idea why it's just ignored?
->> http://www.spinics.net/lists/linux-scsi/msg45017.html
-> 
-> Thanks Jack. Mike, do you know what the concerns were as to why this
-> patch was not accepted?
-> 
+From: Mark Charlebois <charlebm@gmail.com>
 
-I do not remember the exact concerns. We ended up just increasing the
-hard coded value in:
+The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
+precludes the use of compilers which don't implement VLAIS (for instance the
+Clang compiler). This alternate patch calculates offsets into the kmalloc-ed
+memory buffer using macros. The previous patch required multiple kmalloc and
+kfree calls.
 
-commit e3b3e6246726cd05950677ed843010b8e8c5884c
-Author: Mike Christie <mchristi@redhat.com>
-Date:   Wed Aug 11 11:06:25 2010 -0500
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+---
 
-    [SCSI] scsi/block: increase flush/sync timeout
-
-
-In the git commit message there is a comment about people thinking
-making it configurable for users was troublesome.
+--- linux.orig/drivers/usb/gadget/f_fs.c
++++ linux/drivers/usb/gadget/f_fs.c
+@@ -30,6 +30,21 @@
+ 
+ #define FUNCTIONFS_MAGIC	0xa647361 /* Chosen by a honest dice roll ;) */
+ 
++/* Variable Length Array Macros **********************************************/
++#define vla_struct(structname) size_t structname##__##next = 0
++#define vla_struct_size(structname) structname##__##next
++
++#define vla_item(structname, type, name, n) \
++	type * structname##_##name; \
++	size_t structname##_##name##__##offset = \
++		(structname##__##next + __alignof__(type) - 1) & \
++		~(__alignof__(type) - 1); \
++	size_t structname##_##name##__##sz = n * sizeof(type); \
++	structname##__##next = structname##_##name##__##offset + \
++		structname##_##name##__##sz;
++
++#define vla_ptr(ptr,structname,name) structname##_##name = \
++	(__typeof__(structname##_##name))&ptr[structname##_##name##__##offset]
+ 
+ /* Debugging ****************************************************************/
+ 
+@@ -1909,30 +1924,38 @@
+ 
+ 	/* Allocate everything in one chunk so there's less maintenance. */
+ 	{
+-		struct {
+-			struct usb_gadget_strings *stringtabs[lang_count + 1];
+-			struct usb_gadget_strings stringtab[lang_count];
+-			struct usb_string strings[lang_count*(needed_count+1)];
+-		} *d;
+ 		unsigned i = 0;
++		vla_struct(d);
++		vla_item(d, struct usb_gadget_strings *, stringtabs,
++			lang_count + 1);
++		vla_item(d, struct usb_gadget_strings, stringtab, lang_count);
++		vla_item(d, struct usb_string, strings,
++			lang_count*(needed_count+1));
++
++		char *vlabuf = kmalloc(vla_struct_size(d), GFP_KERNEL);
+ 
+-		d = kmalloc(sizeof *d, GFP_KERNEL);
+-		if (unlikely(!d)) {
++		if (unlikely(!vlabuf)) {
+ 			kfree(_data);
+ 			return -ENOMEM;
+ 		}
+ 
+-		stringtabs = d->stringtabs;
+-		t = d->stringtab;
++		/* Initialize the VLA pointers */
++		vla_ptr(vlabuf, d, stringtabs);
++		vla_ptr(vlabuf, d, stringtab);
++		vla_ptr(vlabuf, d, strings);
++
++		stringtabs = d_stringtabs;
++		t = d_stringtab;
+ 		i = lang_count;
+ 		do {
+ 			*stringtabs++ = t++;
+ 		} while (--i);
+ 		*stringtabs = NULL;
+ 
+-		stringtabs = d->stringtabs;
+-		t = d->stringtab;
+-		s = d->strings;
++		/* stringtabs = vlabuf = d_stringtabs for later free */
++		stringtabs = d_stringtabs;
++		t = d_stringtab;
++		s = d_strings;
+ 		strings = s;
+ 	}
+ 
+@@ -2208,16 +2231,15 @@
+ 	int ret;
+ 
+ 	/* Make it a single chunk, less management later on */
+-	struct {
+-		struct ffs_ep eps[ffs->eps_count];
+-		struct usb_descriptor_header
+-			*fs_descs[full ? ffs->fs_descs_count + 1 : 0];
+-		struct usb_descriptor_header
+-			*hs_descs[high ? ffs->hs_descs_count + 1 : 0];
+-		short inums[ffs->interfaces_count];
+-		char raw_descs[high ? ffs->raw_descs_length
+-				    : ffs->raw_fs_descs_length];
+-	} *data;
++	vla_struct(d);
++	vla_item(d, struct ffs_ep, eps, ffs->eps_count);
++	vla_item(d, struct usb_descriptor_header *, fs_descs,
++		full ? ffs->fs_descs_count + 1 : 0);
++	vla_item(d, struct usb_descriptor_header *, hs_descs,
++		high ? ffs->hs_descs_count + 1 : 0);
++	vla_item(d, short, inums, ffs->interfaces_count);
++	vla_item(d, char, raw_descs,
++		high ? ffs->raw_descs_length : ffs->raw_fs_descs_length);
+ 
+ 	ENTER();
+ 
+@@ -2225,21 +2247,30 @@
+ 	if (unlikely(!(full | high)))
+ 		return -ENOTSUPP;
+ 
+-	/* Allocate */
+-	data = kmalloc(sizeof *data, GFP_KERNEL);
+-	if (unlikely(!data))
++	/* Allocate a single chunk, less management later on */
++	char *vlabuf = kmalloc(vla_struct_size(d), GFP_KERNEL);
++	if (unlikely(!vlabuf))
+ 		return -ENOMEM;
+ 
++	/* Initialize each struct member pointer in the allocated memory */
++	vla_ptr(vlabuf, d, eps);
++	vla_ptr(vlabuf, d, fs_descs);
++	vla_ptr(vlabuf, d, hs_descs);
++	vla_ptr(vlabuf, d, inums);
++	vla_ptr(vlabuf, d, raw_descs);
++
+ 	/* Zero */
+-	memset(data->eps, 0, sizeof data->eps);
+-	memcpy(data->raw_descs, ffs->raw_descs + 16, sizeof data->raw_descs);
+-	memset(data->inums, 0xff, sizeof data->inums);
++	memset(d_eps, 0, d_eps__sz);
++	memcpy(d_raw_descs, ffs->raw_descs + 16, d_raw_descs__sz);
++	memset(d_inums, 0xff, d_inums__sz);
+ 	for (ret = ffs->eps_count; ret; --ret)
+-		data->eps[ret].num = -1;
++		d_eps[ret].num = -1;
+ 
+-	/* Save pointers */
+-	func->eps             = data->eps;
+-	func->interfaces_nums = data->inums;
++	/* Save pointers
++	 * d_eps == vlabuf, func->eps used to free vlabuf later
++         */
++	func->eps             = d_eps;
++	func->interfaces_nums = d_inums;
+ 
+ 	/*
+ 	 * Go through all the endpoint descriptors and allocate
+@@ -2247,10 +2278,10 @@
+ 	 * numbers without worrying that it may be described later on.
+ 	 */
+ 	if (likely(full)) {
+-		func->function.fs_descriptors = data->fs_descs;
++		func->function.fs_descriptors = d_fs_descs;
+ 		ret = ffs_do_descs(ffs->fs_descs_count,
+-				   data->raw_descs,
+-				   sizeof data->raw_descs,
++				   d_raw_descs,
++				   d_raw_descs__sz,
+ 				   __ffs_func_bind_do_descs, func);
+ 		if (unlikely(ret < 0))
+ 			goto error;
+@@ -2259,10 +2290,10 @@
+ 	}
+ 
+ 	if (likely(high)) {
+-		func->function.hs_descriptors = data->hs_descs;
++		func->function.hs_descriptors = d_hs_descs;
+ 		ret = ffs_do_descs(ffs->hs_descs_count,
+-				   data->raw_descs + ret,
+-				   (sizeof data->raw_descs) - ret,
++				   d_raw_descs + ret,
++				   d_raw_descs__sz - ret,
+ 				   __ffs_func_bind_do_descs, func);
+ 	}
+ 
+@@ -2273,7 +2304,7 @@
+ 	 */
+ 	ret = ffs_do_descs(ffs->fs_descs_count +
+ 			   (high ? ffs->hs_descs_count : 0),
+-			   data->raw_descs, sizeof data->raw_descs,
++			   d_raw_descs, d_raw_descs__sz,
+ 			   __ffs_func_bind_do_nums, func);
+ 	if (unlikely(ret < 0))
+ 		goto error;
