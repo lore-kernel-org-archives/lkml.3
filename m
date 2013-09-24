@@ -1,124 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3IXO3b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 10:29:31 -0400
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:53103 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752778Ab3IXO33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 10:29:29 -0400
-X-TM-IMSS-Message-ID: <31c9e20a0002e080@nsa.gov>
-Message-ID: <5241A199.1080505@tycho.nsa.gov>
-Date: Tue, 24 Sep 2013 10:28:41 -0400
-From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1754143Ab3IXO3m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 10:29:42 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39022 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933Ab3IXO3j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 10:29:39 -0400
+Date: Tue, 24 Sep 2013 07:29:35 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
+        axboe@kernel.dk, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/22] Immutable biovecs, block layer changes
+Message-ID: <20130924142935.GA5697@infradead.org>
+References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
+ <20130808150954.GA30092@infradead.org>
+ <20130808211529.GB15409@kmo-pixel>
+ <20130924110012.GA7160@infradead.org>
+ <20130924132014.GA16165@redhat.com>
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: tpmdd-devel@lists.sourceforge.net,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
-        Sirrix AG <tpmdd@sirrix.com>
-Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to sysfs
- into tpm-sysfs.c
-References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com> <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com> <52408E5D.4020904@tycho.nsa.gov> <20130923193633.GA9194@obsidianresearch.com> <5240A2A3.4040102@tycho.nsa.gov> <20130923204232.GB16345@obsidianresearch.com> <5240BA0E.3000304@tycho.nsa.gov> <20130923222324.GA9533@obsidianresearch.com>
-In-Reply-To: <20130923222324.GA9533@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130924132014.GA16165@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 06:23 PM, Jason Gunthorpe wrote:
-> On Mon, Sep 23, 2013 at 06:00:46PM -0400, Daniel De Graaf wrote:
->
->> In a PC client TPM, normal OS code (as opposed to firmware or microcode)
->> is already restricted to locality 0-2. It may make sense to restrict
->> locality 2 to the kernel, which would allow an in-kernel TPM seal
->> command to be able to bind data so that userspace cannot unseal it.
->> However, only allowing localities 0 and 1 to userspace may be too
->> restrictive if userspace also wishes to use locality for separation,
->> since locality 1 does not have the ability to reset any PCRs that
->> locality 0 cannot also reset.
->> The kernel could reserve only locality 1 for its own use, giving it the
->> ability to seal data but not interfering with the ability to reset PCRs.
->> This would be my preference, although it is less intuitive to allow code
->> of lower privilege (userspace) to control the higher numbered locality
->> 2.
->
-> This matches my vague understanding (we don't use localities here)
->
->>> Perhaps a .config option would be useful to allow the system designer to
->>> choose what, if any, locality to reserve for kernel use?
->
-> A runtime sysfs seems reasonable..
+On Tue, Sep 24, 2013 at 09:20:14AM -0400, Mike Snitzer wrote:
+> Have you been over the patchset?  Looks sane to you?
 
-Allowing a userspace application to change which locality is kernel- and
-userspace-only will eliminate the primary benefit of having a locality
-restricted to the kernel. With the kernel-only locality selected at
-compile (or possibly kernel command line) time, a reboot with different
-measurements would be required for userspace to gain access to the
-locality used to seal a secret intended for use by the kernel alone -
-and the secret would presumably be sealed to those original
-measurements.
+I looked over it, although I didn't dig into the details of all driver
+patches, and I like what I see.  As said in the previous mail I'd love
+to see the patches to shrink struct bio again, too.
 
-> Would:
->   user_default_locality
->   kernel_default_locality
->   user_allowed_localities (bitmask)
->   supported_localities (bitmask)
->   a GET_LOCALITY/SET_LOCALITY IOCTL to change localities of an open'd
->    /dev/tpmX
->
-> Do the job?
+> Given how disruptive this patchset is to the block layer I'm wondering
+> how painful this change will be in combination with Jens' blk-mq
+> changes.  I'd prefer to see blk-mq before immutable biovecs; but I have
+> my own selfish reasons for that.
 
-At least "supported_localities" should be generated by the driver if it
-is generated at all. There are a few different proposals for handling
-localities over 4 in virtual TPMs; one is that locality numbers between
-32-255 would be permitted and 5-31 made non-addressable. While this
-would work with a bitmask, I'm not sure that is the best solution.
+I don't see too much conflicts with blk-multiqueue as that is operating
+at the request layer.  Blk-multiqueue defintively is a higher priority
+for me, but as it already looks fairly good I have no idea what we're
+blocked on for it anyway.
 
-Perhaps:
-	default_locality - default to CONFIG_USER_DEFAULT_LOCALITY
-		sysfs node permissions 0644
-	kernel_locality - default to #CONFIG_KERNEL_DEFAULT_LOCALITY
-		0444 if CONFIG_KERNEL_ONLY_LOCALITY=y
-		0644 if CONFIG_KERNEL_ONLY_LOCALITY=n
-	ioctl TPM_{GET,SET}_LOCALITY on an open /dev/tpmX
-
-If CONFIG_KERNEL_ONLY_LOCALITY=y, the userspace locality is not
-permitted to be equal to kernel_locality (but may take any other valid
-value).  Drivers may reject locality values that they consider invalid
-(the default should be to only allow 0-4, which is all that is defined
-in the spec) or may fail on attempted use of the TPM by passing down an
-error from the hardware - I would expect the latter to be the case on
-attempts to use locality 4 in the tpm_tis driver.
-
-> At first glance anyhow. I wonder what in-kernel users would be
-> impacted by localities..
-
-The only one I see immediately is seal/unseal (security/keys/trusted.c).
-The invocation of the seal command would need to be changed to seal the
-trusted keys to the kernel-only locality in order to take advantage of
-the increased protection provided by a kernel-only locality.
-
-IMA could potentially be impacted by the locality selection if it were
-configured to use a locality-restricted PCR; however, the default (10) is
-not restricted and there is generally no need to use a locality-restricted
-PCR for this.
-
-> Any thoughts on root vs not-root? Would middelware want to use
-> localities?
-
-I think permissions on the /dev/tpmX node suffices for this distinction.
-The TCS daemon would need to be trusted to separate multiple user-space
-localities since it will be keeping /dev/tpmX open anyway.
-
-> Do you know anyone on the userspace SW side who could look at this?
->
-> Jason
-
-I should be able to find someone.
-
--- 
-Daniel De Graaf
-National Security Agency
