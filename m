@@ -1,69 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab3IXV3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:29:36 -0400
-Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:51252
-	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753865Ab3IXV3d (ORCPT
+	id S1754737Ab3IXVeH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 17:34:07 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:39806 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277Ab3IXVeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:29:33 -0400
-X-Greylist: delayed 426 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Sep 2013 17:29:33 EDT
-From: Shuah Khan <shuah.kh@samsung.com>
-To: joro@8bytes.org, alex.williamson@redhat.com, Varun.Sethi@freescale.com,
-        udknight@gmail.com, aik@ozlabs.ru, rostedt@goodmis.org,
-        fweisbec@gmail.com, mingo@redhat.com
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, shuahkhan@gmail.com
-Subject: [PATCH v4 2/2] iommu: Change iommu driver to call io_page_fault trace event
-Date: Tue, 24 Sep 2013 15:21:20 -0600
-Message-Id: <5d124e3b1aee697d24c4b427cb21784c7c3a90e5.1380056222.git.shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <cover.1380056222.git.shuah.kh@samsung.com>
-References: <cover.1380056222.git.shuah.kh@samsung.com>
-In-Reply-To: <cover.1380056222.git.shuah.kh@samsung.com>
-References: <cover.1380056222.git.shuah.kh@samsung.com>
+	Tue, 24 Sep 2013 17:34:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1309242255350.1875@ja.ssi.bg>
+References: <1380046281-6012-1-git-send-email-vincent.mc.li@gmail.com>
+	<alpine.LFD.2.00.1309242255350.1875@ja.ssi.bg>
+Date: Tue, 24 Sep 2013 14:34:04 -0700
+Message-ID: <CAK3+h2y8eAKFC7BbnDwfZLzTw=t-G9qWSqznp4ggwDy7R_O6Ag@mail.gmail.com>
+Subject: Re: [PATCH] Allow userspace code to use flag IFA_F_SECONDARY to
+ specify an ip address to be primary or secondary ip on an interface
+From: Vincent Li <vincent.mc.li@gmail.com>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change iommu driver call io_page_fault trace event. This iommu_error class
-event can be enabled to trigger when an iommu error occurs. Trace information
-includes driver name, device name, iova, and flags.
+Thanks Julian for the comments, I imagined it would not be so simple
+as it changed old behavior with ip binary and some actions in
+__inet_del_ifa() that I am not fully aware of. my intention is to
+preserve the old behavior and extend the flexibility, I am unable to
+come up with a good patch to achieve the intended behavior.
 
-Testing:
-Added trace calls to iommu_prepare_identity_map() for testing some of the
-conditions that are hard to trigger. Here is the trace from the testing:
+I had to patch the ip binary to sort of preserve original ip binary
+behavior with the kernel patch I provided., the ip command patch
+below:
 
-       swapper/0-1     [003] ....     2.003774: io_page_fault: IOMMU:pci 0000:00:02.0 iova=0x00000000cb800000 flags=0x0002
-       swapper/0-1     [003] ....     2.004098: io_page_fault: IOMMU:pci 0000:00:1d.0 iova=0x00000000cadc6000 flags=0x0002
-       swapper/0-1     [003] ....     2.004115: io_page_fault: IOMMU:pci 0000:00:1a.0 iova=0x00000000cadc6000 flags=0x0002
-       swapper/0-1     [003] ....     2.004129: io_page_fault: IOMMU:pci 0000:00:1f.0 iova=0x0000000000000000 flags=0x0002
+diff --git a/ip/ipaddress.c b/ip/ipaddress.c
+index 1c3e4da..9f2802c 100644
+--- a/ip/ipaddress.c
++++ b/ip/ipaddress.c
+@@ -1259,6 +1259,7 @@ static int ipaddr_modify(int cmd, int flags, int
+argc, char **argv)
+        req.n.nlmsg_flags = NLM_F_REQUEST | flags;
+        req.n.nlmsg_type = cmd;
+        req.ifa.ifa_family = preferred_family;
++       req.ifa.ifa_flags |= IFA_F_SECONDARY;
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- include/linux/iommu.h | 2 ++
- 1 file changed, 2 insertions(+)
+        while (argc > 0) {
+                if (strcmp(*argv, "peer") == 0 ||
+@@ -1307,6 +1308,11 @@ static int ipaddr_modify(int cmd, int flags,
+int argc, char **argv)
+                                invarg("invalid scope value.", *argv);
+                        req.ifa.ifa_scope = scope;
+                        scoped = 1;
++                } else if (strcmp(*argv, "secondary") == 0 ||
++                           strcmp(*argv, "temporary") == 0) {
++                        req.ifa.ifa_flags |= IFA_F_SECONDARY;
++                } else if (strcmp(*argv, "primary") == 0) {
++                        req.ifa.ifa_flags &= ~IFA_F_SECONDARY;
+                } else if (strcmp(*argv, "dev") == 0) {
+                        NEXT_ARG();
+                        d = *argv;
 
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 7ea319e..a444c79 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -22,6 +22,7 @@
- #include <linux/errno.h>
- #include <linux/err.h>
- #include <linux/types.h>
-+#include <trace/events/iommu.h>
- 
- #define IOMMU_READ	(1)
- #define IOMMU_WRITE	(2)
-@@ -227,6 +228,7 @@ static inline int report_iommu_fault(struct iommu_domain *domain,
- 		ret = domain->handler(domain, dev, iova, flags,
- 						domain->handler_token);
- 
-+	trace_io_page_fault(dev, iova, flags);
- 	return ret;
- }
- 
--- 
-1.8.1.2
+if someone can point me to the right patch directions or coming up
+with better patches, it is very much appreciated.
 
+
+On Tue, Sep 24, 2013 at 2:13 PM, Julian Anastasov <ja@ssi.bg> wrote:
+>
+>         Hello,
+>
+> On Tue, 24 Sep 2013, Vincent Li wrote:
+>
+>> the current behavior is when an IP is added to an interface, the primary
+>> or secondary attributes is depending on the order of ip added to the interface
+>> the first IP will be primary and second, third,... or alias IP will be secondary
+>> if the IP subnet matches
+>>
+>> this patch add the flexiblity to allow user to specify an argument 'primary' or 'secondary'
+>> (use 'ip addr add ip/mask primary|secondary dev ethX ' from iproute2 for example) to specify
+>> an IP address to be  primary or secondary.
+>>
+>> the reason for this patch is that we have a multi blade cluster platform sharing 'floating management ip'
+>> and also that each blade has its own management ip on the management interface, so whichever blade in the
+>> cluster becomes primary blade, the 'floating mangaement ip' follows it, and we want any of our traffic
+>> originated from the primary blade source from the 'floating management ip' for consistency. but in this
+>> case, since the local blade management ip is always the primary ip on the mangaement interface and 'floating
+>> management ip' is always secondary, kernel always choose the primary ip as source ip address. thus we would
+>> like to add the flexibility in kernel to allow us to specify which ip to be primary or secondary.
+>>
+>> Signed-off-by: Vincent Li <vincent.mc.li@gmail.com>
+>> ---
+>>  net/ipv4/devinet.c |    9 +++++++--
+>>  1 file changed, 7 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+>> index a1b5bcb..bfc702a 100644
+>> --- a/net/ipv4/devinet.c
+>> +++ b/net/ipv4/devinet.c
+>> @@ -440,9 +440,11 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
+>>               return 0;
+>>       }
+>>
+>> -     ifa->ifa_flags &= ~IFA_F_SECONDARY;
+>>       last_primary = &in_dev->ifa_list;
+>>
+>> +     if((*last_primary) == NULL)
+>> +             ifa->ifa_flags &= ~IFA_F_SECONDARY;
+>> +
+>>       for (ifap = &in_dev->ifa_list; (ifa1 = *ifap) != NULL;
+>>            ifap = &ifa1->ifa_next) {
+>>               if (!(ifa1->ifa_flags & IFA_F_SECONDARY) &&
+>> @@ -458,7 +460,10 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
+>>                               inet_free_ifa(ifa);
+>>                               return -EINVAL;
+>>                       }
+>> -                     ifa->ifa_flags |= IFA_F_SECONDARY;
+>
+>         There is some confusion here, when ifa has
+> IFA_F_SECONDARY bit set, in the 'else' we set it again.
+> I guess the 'else' part is not needed.
+>
+>> +                        if (!(ifa->ifa_flags & IFA_F_SECONDARY))
+>> +                                ifa1->ifa_flags |= IFA_F_SECONDARY;
+>> +                        else
+>> +                                ifa->ifa_flags |= IFA_F_SECONDARY;
+>
+>         It should not be so simple. You can not
+> just change the flag of existing address (ifa1) to secondary.
+> See __inet_del_ifa(), there are many more actions that
+> follow:
+>
+> - kernel routes that use this primary address
+> should be deleted and recreated with the new primary
+> address as source. This includes local routes to secondary
+> IPs.
+>
+> - RTM_NEWADDR should be sent, so that user space see
+> the IFA_F_SECONDARY flag
+>
+>         Some questions:
+>
+> - should we allow adding of secondary IPs when no primary
+> address exists for the subnet, it can happen when primary
+> for another subnet already exists
+>
+> - by default, existing 'ip addr' binaries will provide
+> address without IFA_F_SECONDARY flag. Before now we added
+> such addresses as last for the subnet, now the
+> behaviour changes, we start to add addresses in reverse
+> order. Is that true? I.e. before now the operation was
+> APPEND, now we need a way to provide PREPEND operation.
+>
+> Regards
+>
+> --
+> Julian Anastasov <ja@ssi.bg>
