@@ -1,647 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab3IXPvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 11:51:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43636 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449Ab3IXPvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 11:51:46 -0400
-Message-ID: <5241B4BF.900@ti.com>
-Date: Tue, 24 Sep 2013 11:50:23 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754165Ab3IXPzi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 11:55:38 -0400
+Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:33609
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752988Ab3IXPzh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 11:55:37 -0400
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh2a8h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h1155h)
+Message-ID: <1380038126.13235.12.camel@atx-linux-37>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+From: Alan Tull <atull@altera.com>
+To: Michal Simek <monstr@monstr.eu>
+CC: Pavel Machek <pavel@denx.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Date: Tue, 24 Sep 2013 10:55:26 -0500
+In-Reply-To: <1379710523.21515.4.camel@atx-linux-37>
+References: <cover.1379519753.git.michal.simek@xilinx.com>
+	 <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
+	 <20130918191517.GQ19937@titan.lakedaemon.net>
+	 <20130918203247.GA11181@obsidianresearch.com>
+	 <1379539063.31417.23.camel@atx-linux-37>
+	 <20130919100833.GC19346@amd.pavel.ucw.cz> <523AD9C5.8060006@monstr.eu>
+	 <1379710523.21515.4.camel@atx-linux-37>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
-To: Hongbo Zhang <hongbo.zhang@freescale.com>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "wni@nvidia.com" <wni@nvidia.com>, "joe@perches.com" <joe@perches.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCHv6 02/16] drivers: thermal: introduce device tree parser
-References: <1379537849-28425-1-git-send-email-eduardo.valentin@ti.com> <1379540136-28378-1-git-send-email-eduardo.valentin@ti.com> <20130923104003.GA16069@e106331-lin.cambridge.arm.com> <5241492C.9020201@freescale.com>
-In-Reply-To: <5241492C.9020201@freescale.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="3xSmEntBFOKHWdWeH8vq219u8i5imabAE"
+X-OriginatorOrg: altera.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3xSmEntBFOKHWdWeH8vq219u8i5imabAE
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-Zhang,
-
-I appreciate your interest. I am replying a couple of your comments.
-Please also check my answers to Mark's queries on other email thread.
-
-On 24-09-2013 04:11, Hongbo Zhang wrote:
-> On 09/23/2013 06:40 PM, Mark Rutland wrote:
->> Hi Eduardo,
->>
->> Apologies for having taken so long to get back you on this.
->>
->> I have several comments on the binding and the way it's parsed.
->>
->> On Wed, Sep 18, 2013 at 10:35:36PM +0100, Eduardo Valentin wrote:
->>> This patch introduces a device tree bindings for
->>> describing the hardware thermal behavior and limits.
->>> Also a parser to read and interpret the data and feed
->>> it in the thermal framework is presented.
->>>
->>> This patch introduces a thermal data parser for device
->>> tree. The parsed data is used to build thermal zones
->>> and thermal binding parameters. The output data
->>> can then be used to deploy thermal policies.
->>>
->>> This patch adds also documentation regarding this
->>> API and how to define tree nodes to use
->>> this infrastructure.
->>>
->>> Note that, in order to be able to have control
->>> on the sensor registration on the DT thermal zone,
->>> it was required to allow changing the thermal zone
->>> .get_temp callback. For this reason, this patch
->>> also removes the 'const' modifier from the .ops
->>> field of thermal zone devices.
->>>
->>> Cc: Zhang Rui <rui.zhang@intel.com>
->>> Cc: linux-pm@vger.kernel.org
->>> Cc: linux-kernel@vger.kernel.org
->>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->>> ---
->>>   .../devicetree/bindings/thermal/thermal.txt        | 498 ++++++++++=
-+++
->>>   drivers/thermal/Kconfig                            |  13 +
->>>   drivers/thermal/Makefile                           |   1 +
->>>   drivers/thermal/of-thermal.c                       | 775
->>> +++++++++++++++++++++
->>>   drivers/thermal/thermal_core.c                     |   9 +-
->>>   drivers/thermal/thermal_core.h                     |   9 +
->>>   include/dt-bindings/thermal/thermal.h              |  27 +
->>>   include/linux/thermal.h                            |  28 +-
->>>   8 files changed, 1357 insertions(+), 3 deletions(-)
->>>   create mode 100644
->>> Documentation/devicetree/bindings/thermal/thermal.txt
->>>   create mode 100644 drivers/thermal/of-thermal.c
->>>   create mode 100644 include/dt-bindings/thermal/thermal.h
->>>
->>> ---
->>>
->>> Hello all,
->>>
->>> Thanks Joe Perches for the effort of reviewing this code, I really
->>> appreciate it.
->>>
->>> Here is a version with a refactored init function without leaks in
->>> the failure
->>> patch. I also added a couple of comments to better understand the
->>> intention of
->>> that function. Besides, when there are no memory available, the funct=
-ion
->>> rolls back what ever thermal zones have been added.
->>>
->>> Thanks,
->>>
->>> Eduardo
->>>
->>> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt
->>> b/Documentation/devicetree/bindings/thermal/thermal.txt
->>> new file mode 100644
->>> index 0000000..6664533
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
->>> @@ -0,0 +1,498 @@
->>> +* Thermal Framework Device Tree descriptor
->>> +
->>> +Generic binding to provide a way of defining hardware thermal
->>> +structure using device tree. A thermal structure includes thermal
->>> +zones and their components, such as trip points, polling intervals,
->>> +sensors and cooling devices binding descriptors.
->>> +
->>> +The target of device tree thermal descriptors is to describe only
->>> +the hardware thermal aspects, not how the system must control or whi=
-ch
->>> +algorithm or policy must be taken in place.
->>> +
->>> +There are five types of nodes involved to describe thermal bindings:=
-
->>> +- sensors: used to describe the device source of temperature sensing=
-;
->>> +- cooling devices: used to describe devices source of power
->>> dissipation control;
->>> +- trip points: used to describe points in temperature domain defined=
- to
->>> +make the system aware of hardware limits;
->>> +- cooling attachments: used to describe links between trip points an=
-d
->>> +cooling devices;
->> I think "attachments" sounds a bit odd, though I don't have a better
->> naming suggestion.
->=20
-> "map" or "mapping" is better?
-
-Well,  yeah, that could work.
-
->=20
->>> +- thermal zones: used to describe thermal data within the hardware;
->>> +
->>> +It follows a description of each type of these device tree nodes.
->>> +
->>> +* Sensor devices
->>> +
->>> +Sensor devices are nodes providing temperature sensing capabilities
->>> on thermal
->>> +zones. Typical devices are I2C ADC converters and bandgaps. Theses
->>> are nodes
->>> +providing temperature data to thermal zones. Temperature sensor
->>> devices may
->>> +control one or more internal sensors.
->>> +
->>> +Required property:
->>> +- #sensor-cells:       Used to provide sensor device specific
->>> information
->>> +                       while referring to it. Must be at least 1, in=
-
->>> order
->>> +                       to identify uniquely the sensor instances wit=
-hin
->>> +                       the IC. See thermal zone binding for more
->>> details
->>> +                       on how consumers refer to sensor devices.
->> I don't see why this needs to be at least one cell -- if an IC only ha=
-s
->> one temperature sensor it should be fine for this to be zero and have =
-no
->> ambiguity.
->>
->> It may make sense to call these thermal sensor devices, there are plen=
-ty
->> of other sensors we might want to describe in the dt for other purpose=
-s,
->> and we can impose some consistency if we remove the ambiguity.
->>
->>> +
->>> +* Cooling device nodes
->>> +
->>> +Cooling devices are nodes providing control on power dissipation. Th=
-ere
->>> +are essentially two ways to provide control on power dissipation. Fi=
-rst
->>> +is by means of regulating device performance, which is known as pass=
-ive
->>> +cooling. Second is by means of activating devices in order to remove=
-
->>> +the dissipated heat, which is known as active cooling, e.g. regulati=
-ng
->>> +fan speeds. In both cases, cooling devices shall have a way to
->>> determine
->>> +the level of cooling.
->>> +
->>> +Required property:
->>> +- cooling-min-level:   A unsigned integer indicating the smallest
->>> +                       cooling level accepted. Typically 0.
->>> +- cooling-max-level:   An unsigned integer indicating the largest
->>> +                       cooling level accepted.
->> I'm not sure what a "cooling level" means. It seems a bit abstract. Is=
-
->> this binding specific?
->=20
-> It means cooling ability of a cooling device, such as speed of a fan.
-> But it is better to use cooling-min/max-state I think, because the
-> thermal management code is using "cooling state", concepts in dt and c
-> should be identical.
-
-I think the idea is just to be clear. Just because the thermal
-management implementation uses a terminology, it does not necessarily
-mean it is best fit for describing in device tree bindings. But I dont
-really have strong opinion on level or state at this point.
-
->=20
->> How does this relate to cooling-cells? These seem to be a fixed size.
->=20
-> I also think cooling-cells is redundant.
-
-Cooling cells is not redundant, please check my explanation on the other
-thread. It is required to determine which level/states are used while
-binding.
-
->=20
->>> +- #cooling-cells:      Used to provide cooling device specific
->>> information
->>> +                       while referring to it. Must be at least 2, in=
-
->>> order
->>> +                       to specify minimum and maximum cooling level
->>> used
->>> +                       in the reference. See Cooling device
->>> attachments section
->>> +                       below for more details on how consumers refer=
- to
->>> +                       cooling devices.
->> Are these cooling cells always expected to cover min and max, and are
->> min and max always expected to take the same number of cells? The abov=
-e
->> cooling-*-level properties imply they each take up one cell.
->>
->> Does #cooling-cells =3D <3> make sense?. If this covers additional
->> information (e.g. which fan on a multi-fan controller), how does the O=
-S
->> determine which cells are min and max, and how do these relate to
->> cooling-level-min and cooling-level-max?
->>
->>> +
->>> +* Trip points
->>> +
->>> +The trip node is a node to describe a point in the temperature domai=
-n
->>> +in which the system takes an action. This node describes just the
->>> point,
->>> +not the action.
->> I'm still not sure on this, as it sounds like embedding policy into th=
-e
->> DT, rather than a description of the hardware. I realise we need to
->> prevent devices burning out, so describing the max acceptable
->> temperature and possibly a preferred range makes sense, but do we need=
-
->> this level of flexibility? Maybe we do.
->>
-> Putting platform data into dt is acceptable, right?
-> In a narrow sense, trip points are platform data, but in a broad sense,=
-
-> both trip point itself and its corresponding cooling device are all
-> platform data.
->=20
-
-I think Mark needs to elaborate a bit more to clarify why he sees this
-as embedding policy into DT. And I believe it is fine to pass platform
-data, as long as it represents hardware and it is  not representing polic=
-y.
-
->>> +
->>> +Required properties:
->>> +- temperature:         the trip temperature level, in milliCelsius.
->> Preferably, s/milliCelsius/millicelsius/ over the document.
->>
->> Given that we have signed values elsewhere, is this signed or unsigned=
-?
->>
->>> +- hysteresis:          a (low) hysteresis value on 'temperature'.
->>> This is a
->>> +                       relative value, in milliCelsius.
->>> +- type:                        the trip type. Here is the type mappi=
-ng:
->>> +       THERMAL_TRIP_ACTIVE     0:      A trip point to enable active=
-
->>> cooling
->>> +       THERMAL_TRIP_PASSIVE    1:      A trip point to enable
->>> passive cooling
->>> +       THERMAL_TRIP_HOT        2:      A trip point to notify emerge=
-ncy
->>> +       THERMAL_TRIP_CRITICAL   3:      Hardware not reliable.
->>> +
->>> +Refer to include/dt-bindings/thermal/thermal.h for definition of
->>> these consts.
->> Why not use a string for this? We do so for other type parameters in
->> other bindings (see dr_mode in
->> Documentation/devicetree/bindings/usb/generic.txt, phy-mode for ethern=
-et
->> PHYs, etc).
->>
->>> +
->>> +* Cooling device attachments
->>> +
->>> +The cooling device attachments node is a node to describe how
->>> cooling devices
->>> +get assigned to trip points of the zone. The cooling devices are
->>> expected
->>> +to be loaded in the target system.
->>> +
->>> +Required properties:
->>> +- cooling-device:      A phandle of a cooling device with its
->>> parameters,
->>> +                       referring to which cooling device is used in
->>> this
->>> +                       binding. The required parameters are: the
->>> minimum
->>> +                       cooling level and the maximum cooling level u=
-sed
->>> +                       in this attach.
->> Might this be a list in general? The code doesn't have to support that=
-
->> yet.
->>
->> It would be nice to have a name for the cells after a phandle which
->> describe the cooling device's configuration. You've called them
->> parameters here, but it probably makes sense to call them a
->> cooling-specifier (following clock-specifier and interrupt-specifier).=
-
->>
->>> +- trip:                        A phandle of a trip point node within=
-
->>> the same thermal
->>> +                       zone.
->>> +
->>> +Optional property:
->>> +- contribution:                The cooling contribution to the
->>> thermal zone of the
->>> +                       referred cooling device at the referred trip
->>> point.
->>> +                       The contribution is a value from 0 to 100.
->>> The sum
->>> +                       of all cooling contributions within a thermal=
-
->>> zone
->>> +                       must never exceed 100.
->> This is a bit arbitrary. Couldn't we sum all contributions to find the=
-
->> total automatically, so this could be a simpler ratio?
->>
->>> +
->>> +Note: Using the THERMAL_NO_LIMIT (-1L) constant in the
->>> cooling-device phandle
->>> +limit parameters means:
->>> +(i)   - minimum level allowed for minimum cooling level used in the
->>> reference.
->>> +(ii)  - maximum level allowed for maximum cooling level used in the
->>> reference.
->>> +Refer to include/dt-bindings/thermal/thermal.h for definition of
->>> this constant.
->>> +
->>> +* Thermal zones
->>> +
->>> +The thermal-zone node is the node containing all the required info
->>> +for describing a thermal zone, including its cdev bindings. The
->>> thermal_zone
->>> +node must contain, apart from its own properties, one node containin=
-g
->>> +trip nodes and one node containing all the zone cooling attachments.=
-
->> s/cdev/cooling device/ ?
->>
->>> +
->>> +Required properties:
->>> +- passive-delay:       The maximum number of milliseconds to wait
->>> between polls
->>> +                       when performing passive cooling.
->>> +- polling-delay:       The maximum number of milliseconds to wait
->>> between polls
->>> +                       when checking this thermal zone.
->> How about polling-delay-passive, polling-delay-active? I'm still not
->>
->>> +- sensors:             A list of sensor phandles and their
->>> parameters. The
->>> +                       required parameter is the sensor id, in order=
- to
->>> +                       identify internal sensors when the sensor IC
->>> features
->>> +                       several sensing units.
->> As mentioned above, I'm not sure you even need that one cell.
->>
->> - sensors:                A list of sensor phandle +
->> thermal-sensor-specifier
->>                            cells describing the sensors monitoring the=
-
->> thermal
->>               zone.
->>
->>> +- trips:               A sub-node containing several trip point
->>> nodes required
->>> +                       to describe the thermal zone.
->>> +- cooling-attachments  A sub-node containing several cooling device
->>> attaches
->>> +                       nodes, used to describe the relation between
->>> trips
->>> +                       and cooling devices.
->>> +
->>> +Optional property:
->>> +- coefficients:                An array of integers (one signed
->>> cell) containing
->>> +                       coefficients to compose a linear relation
->>> between
->>> +                       the sensors described in the sensors property=
-=2E
->>> +                       Coefficients defaults to 1, in case this
->>> property
->>> +                       is not specified. A simple linear polynomial
->>> is used:
->>> +                       Z =3D c0 * x0 + c1 + x1 + ... + c(n-1) * x(n-=
-1)
->>> + cn.
->>> +
->>> +                       The coefficients are ordered and they match
->>> with sensors
->>> +                       by means of sensor ID. Additional
->>> coefficients are
->>> +                       interpreted as constant offsets.
->> What is the end result of this? Presumably this is meant to result in =
-an
->> estimate of the average temperature of the thermal zone, rather than a=
-n
->> arbitrary value? This should be mentioned.
->>
->> This doesn't seem to be used the in the code below...
->>
->>> +
->>> +Note: The delay properties are bound to the maximum dT/dt (temperatu=
-re
->>> +derivative over time) in two situations for a thermal zone:
->>> +(i)  - when active cooling is activated (passive-delay); and
->>> +(ii) - when the zone just needs to be monitored (polling-delay).
->>> +The maximum dT/dt is highly bound to hardware power consumption and
->>> dissipation
->>> +capability.
->> I'm not sure what you mean by this, could you elaborate?
->>
->> I guess you mean that the delays should be chosen to account for said
->> max dT/dt, such that a device can't unexpectedly cross several trip
->> boundaries between polls?
->>
->>> +
->>> +* Examples
->>> +
->>> +Below are several examples on how to use thermal data descriptors
->>> +using device tree bindings:
->>> +
->>> +(a) - CPU thermal zone
->>> +
->>> +The CPU thermal zone example below describes how to setup one
->>> thermal zone
->>> +using one single sensor as temperature source and many cooling
->>> devices and
->>> +power dissipation control sources.
->>> +
->>> +#include <dt-bindings/thermal/thermal.h>
->>> +
->>> +cpus {
->>> +       cpu0: cpu@0 {
->>> +               ...
->>> +               cooling-min-level =3D <0>;
->>> +               cooling-max-level =3D <3>;
->>> +               #cooling-cells =3D <2>; /* min followed by max */
->>> +       };
->> What do those min and max mean in this context? What do the values in
->> the range [0,3] correspond to?
->>
->> I'm not sure it makes sense to describe passive cooling in this way --=
-
->> the precise way an OS does less work on a device is fundamentally tied=
-
->> to the design of the OS (it might be able to rate-limit requests, it
->> might be able to clock the device down, it might only be able to turn
->> the device off).
->>
->> I'm not sure there is anything we can describe for passive cooling
->> (beyond the thermal limits the OS should attempt to stick to).
->>
->>> +       ...
->>> +};
->>> +
->>> +&i2c1 {
->>> +       ...
->>> +       fan0: fan@0x48 {
->>> +               ...
->>> +               cooling-min-level =3D <0>;
->>> +               cooling-max-level =3D <9>;
->>> +               #cooling-cells =3D <2>; /* min followed by max */
->>> +       };
->> What do min and max mean here for the fan?
->>
-> It means the speed level of a fan. Even if a fan can run at a continuou=
-s
-> speed range, but when it is controlled under thermal management
-> framework, it can only run at discrete speeds.
+> I have ported the altera fpga manager driver to work with your version
+> of the fpga manager framework.  It works fine if I use the
+> firmware_class.c's built-in support to load the firmware, but not with a
+> userspace helper.
+> 
 
 
-Please, an important point here, this is not about thermal framework
-requirement. But how we describe hardware. As you mentioned, even if
-there are fan devices out there that uses continuous speed range, there
-other devices, even fan devices or cpu frequency steps for instance,
-that are discrete. Again, *this is not a thermal framework requirement*.
+Hi Michal,
 
->>> +};
->>> +
->>> +bandgap0: bandgap@0x0000ED00 {
->>> +       ...
->>> +       #sensor-cells =3D <1>;
->>> +};
->>> +
->>> +cpu-thermal: cpu-thermal {
->> How do the thermal zones get probed?
->>
->>> +       passive-delay =3D <250>; /* milliseconds */
->>> +       polling-delay =3D <1000>; /* milliseconds */
->>> +
->>> +               /* sensor       ID */
->>> +        sensors =3D <&bandgap0     0>;
->>> +
->>> +        trips {
->>> +                cpu-alert0: cpu-alert {
->>> +                        temperature =3D <90000>; /* milliCelsius */
->>> +                        hysteresis =3D <2000>; /* milliCelsius */
->>> +                        type =3D <THERMAL_TRIP_ACTIVE>;
->>> +                };
->>> +                cpu-alert1: cpu-alert {
->>> +                        temperature =3D <100000>; /* milliCelsius */=
+I cleaned up my udev rules and now I see the userspace helper working.
+Just adding one udev rule that points to the standard hotplug-script was
+sufficient to see the userspace script working nicely.  
 
->>> +                        hysteresis =3D <2000>; /* milliCelsius */
->>> +                        type =3D <THERMAL_TRIP_PASSIVE>;
->>> +                };
->>> +                cpu-crit: cpu-crit {
->>> +                        temperature =3D <125000>; /* milliCelsius */=
+All in all, the firmware interface seems pretty easy to use and it gives
+us the flexibility to either use the kernel to load the firmware or to
+use scripts, so it should work with a variety of use cases.
 
->>> +                        hysteresis =3D <2000>; /* milliCelsius */
->>> +                        type =3D <THERMAL_TRIP_CRITICAL>;
->>> +                };
->>> +        };
->>> +
->>> +       cooling-attachments {
->>> +               attach0 {
->>> +                       trip =3D <&cpu-alert0>;
->>> +                       cooling-device =3D <&fan0 THERMAL_NO_LIMITS 4=
->;
->>> +               };
->>> +               attach1 {
->>> +                       trip =3D <&cpu-alert1>;
->>> +                       cooling-device =3D <&fan0 5 THERMAL_NO_LIMITS=
->;
->>> +               };
->>> +               attach2 {
->>> +                       trip =3D <&cpu-alert1>;
->>> +                       cooling-device =3D
->>> +                               <&cpu0 THERMAL_NO_LIMITS
->>> THERMAL_NO_LIMITS>;
->>> +               };
->>> +       };
->> Was there a good reason for splitting trips and attachment?
->=20
-> This is for adding/removing cooling device dynamically.
+Since we are arriving at a solution that is suitable for the both of us,
+I expect you will be able to add Dinh and myself as maintainers here,
+right?  I have no problem with there only being one repo to store
+patches for this subsystem.
 
-Well not really. I don't think this would prevent us of representing it
-inside the trip point. It is, as I replied to Mark, because I wanted to
-keep the flexibility to allow describing better properties related to
-the cooling device while associated to a trip point alone, e.g.
-'contribution'.
-
->=20
->>> +};
->>> +
->>> +In the example above, the ADC sensor at address 0x0000ED00 is used
->>> to monitor
->>> +the zone 'cpu-thermal' using its the sensor 0. The fan0, a fan
->>> device controlled
->>> +via I2C bus 1, at adress 0x48, is used to remove the heat out of the=
-
->>> thermal
->>> +zone 'cpu-thermal' using its cooling levels from its minimum to 4,
->>> when it
->>> +reaches trip point 'cpu-alert0' at 90C, as an example of active
->>> cooling. The
->>> +same cooling device is used at 'cpu-alert1', but from 5 to its
->>> maximum level.
->>> +The cpu@0 device is also linked to the same thermal zone,
->>> 'cpu-thermal', as a
->>> +passive cooling device, using all its cooling levels at trip point
->>> 'cpu-alert1',
->>> +which is a trip point at 100C.
->>> +
->>
->=20
->=20
->=20
->=20
->=20
+Alan
 
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
 
 
---3xSmEntBFOKHWdWeH8vq219u8i5imabAE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iF4EAREIAAYFAlJBtMIACgkQCXcVR3XQvP2chgEAlJl0pBJq62xUWKmPi88lp8Ic
-kgktrtL3itjfuQiWFpgA/jHKWzYAhIF8wvGFWjyZaQvXRJYYnZ5lTnS25NtAevnT
-=ju28
------END PGP SIGNATURE-----
-
---3xSmEntBFOKHWdWeH8vq219u8i5imabAE--
