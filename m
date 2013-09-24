@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab3IXR0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 13:26:45 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:40968 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754494Ab3IXR0n (ORCPT
+	id S1754173Ab3IXRar (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 13:30:47 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:34451 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753836Ab3IXRaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 13:26:43 -0400
-Message-ID: <5241CB44.8080004@ahsoftware.de>
-Date: Tue, 24 Sep 2013 19:26:28 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Dan Carpenter <dan.carpenter@oracle.com>, kernel-janitors@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: checkpatch guide for newbies
-References: <20130923090100.GE6192@mwanda> <CAErSpo5XgvuG=75nExa7yCa7C+Bxhk+1LwruxY8pv2DU+r-_aA@mail.gmail.com>
-In-Reply-To: <CAErSpo5XgvuG=75nExa7yCa7C+Bxhk+1LwruxY8pv2DU+r-_aA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Sep 2013 13:30:46 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] ARM: at91: sama5d: add the PWM clock
+Date: Tue, 24 Sep 2013 19:30:32 +0200
+Message-Id: <1380043832-26600-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.09.2013 18:36, schrieb Bjorn Helgaas:
-> On Mon, Sep 23, 2013 at 3:01 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
->>                  Long Lines
->>
->> Historically screens were 80 characters wide and it was annoying when code went
->> over the edge.  These days we have larger screens, but we keep the 80 character
->> limit because it forces us to write simpler code.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-at91/sama5d3.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Sorry, but that just isn't true and never was. Having a line wide limit 
-of 80 characters while forcing tabs to be 8 characters long limits most 
-code to just 72 characters. And even less (max 64) inside constructs 
-like if, for or while.
-
-The only outcome of that totally silly rule is that variable names will 
-become shorted to silly acronyms almost nobody does understand make code 
-unreadable.
-
-I always feel like beeing in the IT stone age when programmers thought 
-they have to use variable names like a, b and c to save storage, memory 
-or to type less when reading linux kernel code.
-
-Regards,
-
-Alexander Holler
+diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
+index 4012797..8e43e8d 100644
+--- a/arch/arm/mach-at91/sama5d3.c
++++ b/arch/arm/mach-at91/sama5d3.c
+@@ -241,6 +241,11 @@ static struct clk tdes_clk = {
+ 	.pid		= SAMA5D3_ID_TDES,
+ 	.type		= CLK_TYPE_PERIPHERAL,
+ };
++static struct clk pwm_clk = {
++	.name		= "pwm_clk",
++	.pid		= SAMA5D3_ID_PWM,
++	.type		= CLK_TYPE_PERIPHERAL,
++};
+ 
+ static struct clk *periph_clocks[] __initdata = {
+ 	&pioA_clk,
+@@ -281,6 +286,7 @@ static struct clk *periph_clocks[] __initdata = {
+ 	&sha_clk,
+ 	&aes_clk,
+ 	&tdes_clk,
++	&pwm_clk,
+ };
+ 
+ static struct clk pck0 = {
+@@ -345,6 +351,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("sha_clk", "f8034000.sha", &sha_clk),
+ 	CLKDEV_CON_DEV_ID("aes_clk", "f8038000.aes", &aes_clk),
+ 	CLKDEV_CON_DEV_ID("tdes_clk", "f803c000.tdes", &tdes_clk),
++	CLKDEV_CON_DEV_ID(NULL, "f002c000.pwm", &pwm_clk),
+ };
+ 
+ static void __init sama5d3_register_clocks(void)
+-- 
+1.8.1.2
 
