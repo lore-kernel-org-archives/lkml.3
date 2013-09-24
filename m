@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813Ab3IXMJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:09:45 -0400
+	id S1753856Ab3IXMJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:09:47 -0400
 Received: from mga03.intel.com ([143.182.124.21]:37644 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906Ab3IXMJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:09:42 -0400
+	id S1751186Ab3IXMJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 08:09:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,970,1371106800"; 
-   d="scan'208";a="364821562"
+   d="scan'208";a="364821578"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 06/10] perf tools: fix annotate_browser__callq()
-Date: Tue, 24 Sep 2013 15:15:48 +0300
-Message-Id: <1380024952-29387-7-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V3 07/10] perf tools: find kcore symbols on other maps
+Date: Tue, 24 Sep 2013 15:15:49 +0300
+Message-Id: <1380024952-29387-8-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
 References: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
@@ -28,51 +28,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When following a call, annotate_browser__callq()
-uses the current symbol's map to look up the
-target ip.  That will not work if the target ip
-is on a map with a different mapping (i.e.
-start - pgoff is different).
+Use the new map__find_other_map_symbol() to
+find kcore symbols on other maps.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/ui/browsers/annotate.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ tools/perf/util/annotate.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 08545ae..d9edb35 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -445,14 +445,16 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
- 	struct symbol *sym = ms->sym;
- 	struct annotation *notes;
- 	struct symbol *target;
-+	struct map *map;
- 	u64 ip;
- 	char title[SYM_TITLE_MAX_SIZE];
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 46746b8..6cb7277 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -825,20 +825,15 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 		dl->ops.target.offset = dl->ops.target.addr -
+ 					map__rip_2objdump(map, sym->start);
  
- 	if (!ins__is_call(dl->ins))
- 		return false;
+-	/*
+-	 * kcore has no symbols, so add the call target name if it is on the
+-	 * same map.
+-	 */
++	/* kcore has no symbols, so add the call target name */
+ 	if (dl->ins && ins__is_call(dl->ins) && !dl->ops.target.name) {
++		struct map *map_ptr = map;
+ 		struct symbol *s;
+ 		u64 ip = dl->ops.target.addr;
  
--	ip = ms->map->map_ip(ms->map, dl->ops.target.addr);
--	target = map__find_symbol(ms->map, ip, NULL);
-+	map = ms->map;
-+	ip = dl->ops.target.addr;
-+	target = map__find_other_map_symbol(&map, &ip, NULL);
- 	if (target == NULL) {
- 		ui_helpline__puts("The called function was not found.");
- 		return true;
-@@ -469,8 +471,8 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
+-		if (ip >= map->start && ip <= map->end) {
+-			ip = map->map_ip(map, ip);
+-			s = map__find_symbol(map, ip, NULL);
+-			if (s && s->start == ip)
+-				dl->ops.target.name = strdup(s->name);
+-		}
++		s = map__find_other_map_symbol(&map_ptr, &ip, NULL);
++		if (s && s->start == ip)
++			dl->ops.target.name = strdup(s->name);
  	}
  
- 	pthread_mutex_unlock(&notes->lock);
--	symbol__tui_annotate(target, ms->map, evsel, hbt);
--	sym_title(sym, ms->map, title, sizeof(title));
-+	symbol__tui_annotate(target, map, evsel, hbt);
-+	sym_title(sym, map, title, sizeof(title));
- 	ui_browser__show_title(&browser->b, title);
- 	return true;
- }
+ 	disasm__add(&notes->src->source, dl);
 -- 
 1.7.11.7
 
