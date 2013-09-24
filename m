@@ -1,166 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab3IXVyc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:54:32 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:39252 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab3IXVya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:54:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK3+h2y8eAKFC7BbnDwfZLzTw=t-G9qWSqznp4ggwDy7R_O6Ag@mail.gmail.com>
-References: <1380046281-6012-1-git-send-email-vincent.mc.li@gmail.com>
-	<alpine.LFD.2.00.1309242255350.1875@ja.ssi.bg>
-	<CAK3+h2y8eAKFC7BbnDwfZLzTw=t-G9qWSqznp4ggwDy7R_O6Ag@mail.gmail.com>
-Date: Tue, 24 Sep 2013 14:54:29 -0700
-Message-ID: <CAK3+h2x_RwCynqwnDHE_fqHhSHrE+LQ6UohxKGpmYxfBBbK_Wg@mail.gmail.com>
-Subject: Re: [PATCH] Allow userspace code to use flag IFA_F_SECONDARY to
- specify an ip address to be primary or secondary ip on an interface
-From: Vincent Li <vincent.mc.li@gmail.com>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754544Ab3IXWHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 18:07:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23422 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752751Ab3IXWHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 18:07:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,974,1371106800"; 
+   d="asc'?scan'208";a="408588788"
+Message-ID: <1380060449.2189.6.camel@jtkirshe-mobl>
+Subject: Re: [PATCH 02/10] intel: Remove extern from function prototypes
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Tue, 24 Sep 2013 15:07:29 -0700
+In-Reply-To: <5ccc921af41a862fe969809228f029035f851502.1380056108.git.joe@perches.com>
+References: <cover.1380056108.git.joe@perches.com>
+	 <5ccc921af41a862fe969809228f029035f851502.1380056108.git.joe@perches.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-f7T30DymDb+35Lv0wJp7"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sorry Julian to miss your point after reading the __inet_del_ifa and
-see the rtmsg_ifa, fib_del_ifaddr/fib_add_ifaddr, I can try another
-patch and actually test if the patches changes works as it is
-intended, not just checking from ip binary output.
 
-Vincent
+--=-f7T30DymDb+35Lv0wJp7
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Sep 24, 2013 at 2:34 PM, Vincent Li <vincent.mc.li@gmail.com> wrote:
-> Thanks Julian for the comments, I imagined it would not be so simple
-> as it changed old behavior with ip binary and some actions in
-> __inet_del_ifa() that I am not fully aware of. my intention is to
-> preserve the old behavior and extend the flexibility, I am unable to
-> come up with a good patch to achieve the intended behavior.
->
-> I had to patch the ip binary to sort of preserve original ip binary
-> behavior with the kernel patch I provided., the ip command patch
-> below:
->
-> diff --git a/ip/ipaddress.c b/ip/ipaddress.c
-> index 1c3e4da..9f2802c 100644
-> --- a/ip/ipaddress.c
-> +++ b/ip/ipaddress.c
-> @@ -1259,6 +1259,7 @@ static int ipaddr_modify(int cmd, int flags, int
-> argc, char **argv)
->         req.n.nlmsg_flags = NLM_F_REQUEST | flags;
->         req.n.nlmsg_type = cmd;
->         req.ifa.ifa_family = preferred_family;
-> +       req.ifa.ifa_flags |= IFA_F_SECONDARY;
->
->         while (argc > 0) {
->                 if (strcmp(*argv, "peer") == 0 ||
-> @@ -1307,6 +1308,11 @@ static int ipaddr_modify(int cmd, int flags,
-> int argc, char **argv)
->                                 invarg("invalid scope value.", *argv);
->                         req.ifa.ifa_scope = scope;
->                         scoped = 1;
-> +                } else if (strcmp(*argv, "secondary") == 0 ||
-> +                           strcmp(*argv, "temporary") == 0) {
-> +                        req.ifa.ifa_flags |= IFA_F_SECONDARY;
-> +                } else if (strcmp(*argv, "primary") == 0) {
-> +                        req.ifa.ifa_flags &= ~IFA_F_SECONDARY;
->                 } else if (strcmp(*argv, "dev") == 0) {
->                         NEXT_ARG();
->                         d = *argv;
->
-> if someone can point me to the right patch directions or coming up
-> with better patches, it is very much appreciated.
->
->
-> On Tue, Sep 24, 2013 at 2:13 PM, Julian Anastasov <ja@ssi.bg> wrote:
->>
->>         Hello,
->>
->> On Tue, 24 Sep 2013, Vincent Li wrote:
->>
->>> the current behavior is when an IP is added to an interface, the primary
->>> or secondary attributes is depending on the order of ip added to the interface
->>> the first IP will be primary and second, third,... or alias IP will be secondary
->>> if the IP subnet matches
->>>
->>> this patch add the flexiblity to allow user to specify an argument 'primary' or 'secondary'
->>> (use 'ip addr add ip/mask primary|secondary dev ethX ' from iproute2 for example) to specify
->>> an IP address to be  primary or secondary.
->>>
->>> the reason for this patch is that we have a multi blade cluster platform sharing 'floating management ip'
->>> and also that each blade has its own management ip on the management interface, so whichever blade in the
->>> cluster becomes primary blade, the 'floating mangaement ip' follows it, and we want any of our traffic
->>> originated from the primary blade source from the 'floating management ip' for consistency. but in this
->>> case, since the local blade management ip is always the primary ip on the mangaement interface and 'floating
->>> management ip' is always secondary, kernel always choose the primary ip as source ip address. thus we would
->>> like to add the flexibility in kernel to allow us to specify which ip to be primary or secondary.
->>>
->>> Signed-off-by: Vincent Li <vincent.mc.li@gmail.com>
->>> ---
->>>  net/ipv4/devinet.c |    9 +++++++--
->>>  1 file changed, 7 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
->>> index a1b5bcb..bfc702a 100644
->>> --- a/net/ipv4/devinet.c
->>> +++ b/net/ipv4/devinet.c
->>> @@ -440,9 +440,11 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
->>>               return 0;
->>>       }
->>>
->>> -     ifa->ifa_flags &= ~IFA_F_SECONDARY;
->>>       last_primary = &in_dev->ifa_list;
->>>
->>> +     if((*last_primary) == NULL)
->>> +             ifa->ifa_flags &= ~IFA_F_SECONDARY;
->>> +
->>>       for (ifap = &in_dev->ifa_list; (ifa1 = *ifap) != NULL;
->>>            ifap = &ifa1->ifa_next) {
->>>               if (!(ifa1->ifa_flags & IFA_F_SECONDARY) &&
->>> @@ -458,7 +460,10 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
->>>                               inet_free_ifa(ifa);
->>>                               return -EINVAL;
->>>                       }
->>> -                     ifa->ifa_flags |= IFA_F_SECONDARY;
->>
->>         There is some confusion here, when ifa has
->> IFA_F_SECONDARY bit set, in the 'else' we set it again.
->> I guess the 'else' part is not needed.
->>
->>> +                        if (!(ifa->ifa_flags & IFA_F_SECONDARY))
->>> +                                ifa1->ifa_flags |= IFA_F_SECONDARY;
->>> +                        else
->>> +                                ifa->ifa_flags |= IFA_F_SECONDARY;
->>
->>         It should not be so simple. You can not
->> just change the flag of existing address (ifa1) to secondary.
->> See __inet_del_ifa(), there are many more actions that
->> follow:
->>
->> - kernel routes that use this primary address
->> should be deleted and recreated with the new primary
->> address as source. This includes local routes to secondary
->> IPs.
->>
->> - RTM_NEWADDR should be sent, so that user space see
->> the IFA_F_SECONDARY flag
->>
->>         Some questions:
->>
->> - should we allow adding of secondary IPs when no primary
->> address exists for the subnet, it can happen when primary
->> for another subnet already exists
->>
->> - by default, existing 'ip addr' binaries will provide
->> address without IFA_F_SECONDARY flag. Before now we added
->> such addresses as last for the subnet, now the
->> behaviour changes, we start to add addresses in reverse
->> order. Is that true? I.e. before now the operation was
->> APPEND, now we need a way to provide PREPEND operation.
->>
->> Regards
->>
->> --
->> Julian Anastasov <ja@ssi.bg>
+On Tue, 2013-09-24 at 14:09 -0700, Joe Perches wrote:
+> There are a mix of function prototypes with and without extern
+> in the kernel sources.  Standardize on not using extern for
+> function prototypes.
+>=20
+> Function prototypes don't need to be written with extern.
+> extern is assumed by the compiler.  Its use is as unnecessary as
+> using auto to declare automatic/local variables in a block.
+
+So you are able to confirm that all compilers make this assumption
+correctly?  The initial reason for using extern was because not all
+compilers made the assumption or made it correctly.
+
+--=-f7T30DymDb+35Lv0wJp7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAABCgAGBQJSQg0hAAoJEOVv75VaS+3Oz9sP/Rd3iytGfwfsAnfeEMxely30
+UjfgNOTaCXr7vEzWmRqG6xIgFiSmQ0f3no7RiYI70Ob2GUZgSkZ0KUvYFoOK2XTk
+l57aV2MXixEP6Cl+RpcpinCP98LIx9O/AM927WNY3ZoJEs3MSB01ly9/dhSKz2oo
+HGDNw/fF9QXSVguATwnsBCPmmKMN0OTNgoN73dptKl1WNk4oK4d0byr9UzWjyh6j
+JzIZ3g1B9VIa9gFMdZwW2VHRhyi+4FoxQu2Z53DTJ/RP/gF/VDZpUmRx8ZusQsF4
+/2N4HQxNR8udy7gH8MaSDP8KnWrh3zQGmpqLs9XUiI5Jgr8pqA7UF9cxRg20Q2Sy
+3JBNOzsABBBU6s7Omi0V9Iq1nH77v5m3wVLA0wdiiyaYEq7wnO5EWS2qCkFWPwPK
+Ie7tz1EYuAUk4aqzdbdsaE5KlxtTsgmcf0vd6DT1Gg56+E2UKqibI+MdaHqssbdE
+AQcuSiLPMGVmeJWJJAsqBoVi8GGlL0i/9aacF3LLtU0bFKIMlk1GFBp0u7kI4OeZ
+8tgbpeIAMrXk6VF/wrSIWZU9eh/o13lrsO6sR45Mpfrqbr33gHmhFLKUtzHJmG6a
+5FK1ePkIgm8A/eK+LbiWwoBsez8VZcGKu5rQtNyqz1Y9Ci5Iw8o4ZBREMkiGigZn
+UGkfhpwuTXhzdOl782qb
+=+Qk0
+-----END PGP SIGNATURE-----
+
+--=-f7T30DymDb+35Lv0wJp7--
+
