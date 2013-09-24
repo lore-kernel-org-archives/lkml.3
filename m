@@ -1,102 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3IXJUE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:20:04 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:61162 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab3IXJUC (ORCPT
+	id S1754206Ab3IXJUZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:20:25 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:34008 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab3IXJUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:20:02 -0400
-X-AuditID: cbfee68e-b7f756d000004512-a8-524159415c6d
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
-In-reply-to: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
-Subject: [PATCH 21/22] backlight: tps65217_bl: use
- devm_backlight_device_register()
-Date: Tue, 24 Sep 2013 18:20:00 +0900
-Message-id: <005b01ceb907$3ec1a1f0$bc44e5d0$%han@samsung.com>
+	Tue, 24 Sep 2013 05:20:19 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-1a-52415950f92d
+From: Tomasz Figa <t.figa@samsung.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: linux-samsung-soc@vger.kernel.org,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Padmavathi Venna <padma.v@samsung.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/6] clk: exynos-audss: convert to platform device
+Date: Tue, 24 Sep 2013 11:20:05 +0200
+Message-id: <3549301.xmRx49e0Zc@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11 (Linux/3.10.10-gentoo; KDE/4.11.0; x86_64; ; )
+In-reply-to: <1379982078-23381-1-git-send-email-abrestic@chromium.org>
+References: <1379711637-5226-1-git-send-email-abrestic@chromium.org>
+ <1379982078-23381-1-git-send-email-abrestic@chromium.org>
 MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAAii1g
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zI13HSMcggw0P2S3mrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErowL/Y2s
-	BV+5KmZc/8HSwDiTs4uRk0NCwERix51/TBC2mMSFe+vZuhi5OIQEljFKzFmyiwmmaM2GXkaI
-	xHRGiVPdj6CqfjFKPNo6ixWkik1ATeLLl8PsXYwcHCIC+hJtLRogYWaBHIn7T2axg9hCArYS
-	6z7MBrM5BewkTi09wwZiCwuESmx49BDMZhFQlfjb2cAIYvMC1e84uZUJwhaU+DH5HgvETC2J
-	zduaWCFseYnNa94yg6yVEFCXePRXFyQsImAkcfTcNyaIEhGJfS/eMUL8co5d4uGldIhVAhLf
-	Jh9igWiVldh0gBmiRFLi4IobLBMYJWYhWTwLyeJZSBbPQrJhASPLKkbR1ILkguKk9CIjveLE
-	3OLSvHS95PzcTYyQmOzbwXjzgPUhxmSg9ROZpUST84ExnVcSb2hsZmRhamJqbGRuaUaasJI4
-	r1qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxra756Wu9J9kLJprES203DpUrHB7wqd7
-	r75OCzYR4Sxs2eH/KEvZVL/8CNf+G/3XixZMZbl2QFPbvffI3iqh+I4spocRW4xVWdjSVW13
-	Kn0IT3vAHyP+M++ZaYx+nLGjW44bq/2FP0V8G3Pz4goSDS0/2z7c8LP8pcekw2dajLXKSj9N
-	+rJdiaU4I9FQi7moOBEAbeXFC98CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jQV3HSMcgg/tXmS3mrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
-	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaMC/2NrAVfuSpmXP/B0sA4k7OLkZNDQsBEYs2GXkYIW0ziwr31
-	bF2MXBxCAtMZJU51P4JyfjFKPNo6ixWkik1ATeLLl8PsXYwcHCIC+hJtLRogYWaBHIn7T2ax
-	g9hCArYS6z7MBrM5BewkTi09wwZiCwuESmx49BDMZhFQlfjb2QC2mBeofsfJrUwQtqDEj8n3
-	WCBmakls3tbECmHLS2xe85YZZK2EgLrEo7+6IGERASOJo+e+MUGUiEjse/GOcQKj0Cwkk2Yh
-	mTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiO+WdSOxhXNlgcYhTgYFTi
-	4d3h7RAkxJpYVlyZe4hRgoNZSYT3hq1jkBBvSmJlVWpRfnxRaU5q8SHGZKBHJzJLiSbnA9NR
-	Xkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUw1qsGTzVzC1j2
-	uXMPg9iJrWuOy2V07WpoVzzmuuBDRk7nxluOt2Yqhyy4cmdvQy3DW89Lq04YTnBoPxqw2eL3
-	Y/bl29RfyYjPyJfL1E6U0GIXvnDmTvupTZYW5cULhPclP7BckXjxa2r4f839W12WKy97m6Gy
-	4iHTR5O5i8RcFe212s3Mpdw9lFiKMxINtZiLihMB/tiv+z0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t/xy7oBkY5BBh/ajS1Wvv/LaDH/yDlW
+	i7PLDrJZHPizg9Hi3KuVjBa75yxmsehdcJXNYueWG2wWmx5fY7VY2LaExeLyrjlsFjPO72Oy
+	uH2Z12Lp9YtMFk8nXGSz+H3zO5vFhOlrWSymLDrManF4xQEmi3Uvp7NYnPzTy2jx40w3i8Wr
+	g20sFvM+72SyaP+7l81B0mPNvDWMHi3NPWweCz5fYfeY3XCRxeNyXy+Tx85Zd9k9Vi7/wubx
+	avVMVo871/aweWxeUu/Rt2UVo8eZBUfYPT5vkvPYODc0gC+KyyYlNSezLLVI3y6BK2Pn2uSC
+	p+wVu5+4NDBOYeti5OSQEDCRaO18wAphi0lcuLceKM7FISSwlFFi9dUtjBBOF5PEvxVbmUGq
+	2ATUJD43PALrFhHQlZh64TQTiM0ssJJdom8/F4gtLOApse7TQhYQm0VAVWL9/iNgNq+ApsSX
+	x4/B6vkF1CXebXsKZosKuEp8WriRHcTmFHCTaGu7yQKxuIFR4t6dHiaIZkGJH5PvsUAsk5fY
+	t38qK4StJbF+53GmCYyCs5CUzUJSNgtJ2QJG5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsY
+	IUngyw7GxcesDjEKcDAq8fBeTHAIEmJNLCuuzD3EKMHBrCTCe8PWMUiINyWxsiq1KD++qDQn
+	tfgQIxMHp1QD48paj8pH0vHOypcPRyqeuehmXRXc9yHgCpMRa/nd89cezJWbsaZ3u9uPp6vO
+	rPv6aPv9SRf5YkQaJJJM9Y7JtW/dPW+aeP9qHT82qaMdWkd5l5itTTKdEhK2W8dYZFGgjdF9
+	g8VtTWVn1bN1e/f+U9Kv2pgTqbHqUOvO9IOMrSHd7wunsHIJK7EUZyQaajEXFScCACtk/nPg	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_backlight_device_register() to make cleanup paths simpler,
-and remove unnecessary remove().
+Hi Andrew,
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/tps65217_bl.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+I'd like to ack this series, but there is one more thing that I think
+should be fixed. Please see my comment inline.
 
-diff --git a/drivers/video/backlight/tps65217_bl.c b/drivers/video/backlight/tps65217_bl.c
-index 4ea2039..cbba37e 100644
---- a/drivers/video/backlight/tps65217_bl.c
-+++ b/drivers/video/backlight/tps65217_bl.c
-@@ -313,7 +313,7 @@ static int tps65217_bl_probe(struct platform_device *pdev)
- 	bl_props.type = BACKLIGHT_RAW;
- 	bl_props.max_brightness = 100;
- 
--	tps65217_bl->bl = backlight_device_register(pdev->name,
-+	tps65217_bl->bl = devm_backlight_device_register(&pdev->dev, pdev->name,
- 						tps65217_bl->dev, tps65217_bl,
- 						&tps65217_bl_ops, &bl_props);
- 	if (IS_ERR(tps65217_bl->bl)) {
-@@ -329,18 +329,8 @@ static int tps65217_bl_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int tps65217_bl_remove(struct platform_device *pdev)
--{
--	struct tps65217_bl *tps65217_bl = platform_get_drvdata(pdev);
--
--	backlight_device_unregister(tps65217_bl->bl);
--
--	return 0;
--}
--
- static struct platform_driver tps65217_bl_driver = {
- 	.probe		= tps65217_bl_probe,
--	.remove		= tps65217_bl_remove,
- 	.driver		= {
- 		.owner	= THIS_MODULE,
- 		.name	= "tps65217-bl",
--- 
-1.7.10.4
+On Monday 23 of September 2013 17:21:13 Andrew Bresticker wrote:
+> @@ -128,8 +135,53 @@ static void __init exynos_audss_clk_init(struct device_node *np)
+>  #endif
+>  
+>  	pr_info("Exynos: Audss: clock setup completed\n");
 
+nit (not the thing I mentioned above): This (and possibly other uses of
+pr_*() could be replaced with dev_*().
+
+> +
+> +	return 0;
+> +}
+> +
+> +static int exynos_audss_clk_remove(struct platform_device *pdev)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < EXYNOS_AUDSS_MAX_CLKS; i++) {
+> +		if (clk_table[i])
+
+I believe clk_register_* functions return ERR_PTR() in case of failure,
+not NULL, so this should be accounted for either here or at probe time.
+Possibly checking for registration error in probe() would be the best
+solution, although bloating the code a bit (but what error path isn't?).
+
+Best regards,
+Tomasz
 
