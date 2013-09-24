@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab3IXBWF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 21:22:05 -0400
-Received: from tundra.namei.org ([65.99.196.166]:33038 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753029Ab3IXBWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 21:22:03 -0400
-Date: Tue, 24 Sep 2013 11:23:38 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Eric Paris <eparis@parisplace.org>
-cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: Oddness in security/Makefile
-In-Reply-To: <1378821492.2493.3.camel@localhost>
-Message-ID: <alpine.LRH.2.02.1309241123270.3782@tundra.namei.org>
-References: <11543.1378741281@turing-police.cc.vt.edu> <1378821492.2493.3.camel@localhost>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1753602Ab3IXBWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 21:22:22 -0400
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:61831 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130Ab3IXBWR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 21:22:17 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1379981085.2060.18.camel@buesod1.americas.hpqcorp.net>
+References: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
+	<1379625742.2145.19.camel@buesod1.americas.hpqcorp.net>
+	<1379700524.5434.22.camel@flatline.rdu.redhat.com>
+	<1379788235.2145.48.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFwQp6Fm9-Zrn3uue9bFe9tERCbVv5Z-z9r4ZgOmS0VB+Q@mail.gmail.com>
+	<1379918525.2231.0.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFzVnivKb=nwzeTjGvi=LvnBLGnr=NZE+Ns6kLSm=WCN4w@mail.gmail.com>
+	<1379981085.2060.18.camel@buesod1.americas.hpqcorp.net>
+Date: Mon, 23 Sep 2013 18:22:17 -0700
+X-Google-Sender-Auth: Nfq1hcFzfIR38rCiC2o9uVlaubQ
+Message-ID: <CA+55aFxLi7PNP-4-ouoPJYjOhRCttsP6YxbCHgE2+PNee3hVGg@mail.gmail.com>
+Subject: Re: [PATCH 0/4] ipc: shm and msg fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Eric Paris <eparis@parisplace.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Sep 2013, Eric Paris wrote:
+On Mon, Sep 23, 2013 at 5:04 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+>
+> Ok, so here's the code - again I've tested it with LTP on the resources
+> I have.
 
-> >From 4675ca3470e3c2e325c5be6d9a11f47ac0917537 Mon Sep 17 00:00:00 2001
-> From: Eric Paris <eparis@redhat.com>
-> Date: Tue, 10 Sep 2013 09:51:50 -0400
-> Subject: [PATCH] security: remove erroneous comment about capabilities.o link
->  ordering
-> 
-> Back when we had half ass LSM stacking we had to link capabilities.o
-> after bigger LSMs so that on initialization the bigger LSM would
-> register first and the capabilities module would be the one stacked as
-> the 'seconday'.  Somewhere around 6f0f0fd496333777d53 (back in 2008) we
-> finally removed the last of the kinda module stacking code but this
-> comment in the makefile still lives today.
-> 
+This looks good to me.
 
-Applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
+Manfred, mind giving this a look-over and see if this resolves your
+race concerns too?
 
-
--- 
-James Morris
-<jmorris@namei.org>
+              Linus
