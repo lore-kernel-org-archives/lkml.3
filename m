@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab3IXOYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 10:24:38 -0400
-Received: from b232-131.smtp-out.amazonses.com ([199.127.232.131]:38537 "EHLO
-	b232-131.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751559Ab3IXOYh (ORCPT
+	id S1754100Ab3IXOY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 10:24:58 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:45150 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab3IXOY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 10:24:37 -0400
-Date: Tue, 24 Sep 2013 14:24:36 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ingo Molnar <mingo@kernel.org>
-cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [pchecks v1 4/4] percpu: Add preemption checks to __this_cpu
- ops
-In-Reply-To: <20130924080347.GH28538@gmail.com>
-Message-ID: <00000141505b72a3-6935722e-fdfb-4c46-b52c-bc40609144ac-000000@email.amazonses.com>
-References: <20130923191256.584672290@linux.com> <000001414c47a1da-a60858ec-6fe0-4560-a859-8274151411bf-000000@email.amazonses.com> <20130924080347.GH28538@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 24 Sep 2013 10:24:57 -0400
+Date: Tue, 24 Sep 2013 15:24:53 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Joe Perches <joe@perches.com>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: False positive in checkpatch
+Message-ID: <20130924142453.GK13914@dm>
+References: <20130923225949.GA26278@linux.vnet.ibm.com>
+ <1379996467.3575.67.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.127.232.131
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379996467.3575.67.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Sep 2013, Ingo Molnar wrote:
+On Mon, Sep 23, 2013 at 09:21:07PM -0700, Joe Perches wrote:
+> On Mon, 2013-09-23 at 15:59 -0700, Paul E. McKenney wrote:
+> > Hello!
+> > 
+> > The checkpatch.pl script complains as follows:
+> > 
+> > ERROR: need consistent spacing around '*' (ctx:WxB)
+> > #57: FILE: include/linux/rcupdate.h:564:
+> > +		ACCESS_ONCE(p) = (typeof(*(v)) __force space *)(v); \
+> > 
+> > Of course, the two uses of '*' are doing different things, so it should
+> > be OK for the spacing to be different.
+> > 
+> > Could you please fix this?
+> > 
+> > 							Thanx, Paul
+> > 
+> 
+> Hi Paul.
+> 
+> Try this patch: https://lkml.org/lkml/2013/9/2/428
+> 
+> Andy?  Can you verify this suggested patch please?
 
-> During past review of your series Peter Zijlstra very explicitly told you
-> to reuse (and unify with) the preempt checks in lib/smp_processor_id.c!
-> See debug_smp_processor_id().
+Ok so fundamentally this goes wrong because we detect the typeof()
+__force part as a type, but 'space' which is a type subsituted in is not
+so identifiable.  This leads to us identifying the '*' as a binary one.
 
-No he did not. He mentioned something about debug_smp_processor_id() at
-the end of a post after talking about something else. Given your
-comments now I see what was meant. That was not really obvious in the
-first place.
+You patch prevents the error being emitted indeed, but as we have
+missidentified it anything else which applies to the correct type would
+be missed I think.
 
-> The problem isn't just that you are duplicating code and adding
-> unnecessary #ifdefs into the wrong place, the bigger problem is that you
-> are implementing weak checks which creates unnecessary raw_*() pollution
-> all across the kernel.
+I will see if I can get this to identify this form better.
 
-what kind of idiotic comment is that? I am using a single function
-preemptible(). How is that duplicating anything?
-
-> Your lack of cooperation is getting ridiculous!
-
-And this kind of insulting behavior is really discouraging people to do
-work on the kernel.
+-apw
