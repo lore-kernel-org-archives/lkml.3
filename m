@@ -1,154 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751334Ab3IXLdH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 07:33:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34808 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab3IXLdF (ORCPT
+	id S1752837Ab3IXLeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 07:34:31 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:37463 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab3IXLea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 07:33:05 -0400
-Message-ID: <52417866.5090609@canonical.com>
-Date: Tue, 24 Sep 2013 13:32:54 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Tue, 24 Sep 2013 07:34:30 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Adam Lee <adam.lee@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "open list:USB VIDEO CLASS" <linux-media@vger.kernel.org>
+Subject: Re: [PATCH] Revert "V4L/DVB: uvc: Enable USB autosuspend by default on uvcvideo"
+Date: Tue, 24 Sep 2013 13:34:36 +0200
+Message-ID: <1657156.ZjLeh8FSxj@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130613095647.GC21583@adam-laptop>
+References: <1366790239-838-1-git-send-email-adam.lee@canonical.com> <20130425063306.GA20928@adam-laptop> <20130613095647.GC21583@adam-laptop>
 MIME-Version: 1.0
-To: Thomas Hellstrom <thellstrom@vmware.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: Re: [RFC PATCH] drm/nouveau: fix nested locking in mmap handler
-References: <5232B44C.9010408@vmware.com> <5232BBE1.5030509@canonical.com> <5232C2BB.9070303@vmware.com> <20130913082933.GH31370@twins.programming.kicks-ass.net> <CAKMK7uHh_pKh1JpQ_nA7gvWMUsvQoTKAcBXpdcwpVGSddHE9mQ@mail.gmail.com> <20130913090000.GJ31370@twins.programming.kicks-ass.net> <52405F3E.4000609@canonical.com> <52413DA9.4050000@vmware.com> <5241409B.6010102@canonical.com> <52415569.6020602@vmware.com> <20130924093620.GA14003@phenom.ffwll.local> <52416556.7030208@canonical.com> <52416A96.6040802@vmware.com>
-In-Reply-To: <52416A96.6040802@vmware.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 24-09-13 12:33, Thomas Hellstrom schreef:
-> On 09/24/2013 12:11 PM, Maarten Lankhorst wrote:
->> Op 24-09-13 11:36, Daniel Vetter schreef:
->>> On Tue, Sep 24, 2013 at 11:03:37AM +0200, Thomas Hellstrom wrote:
->>>> On 09/24/2013 09:34 AM, Maarten Lankhorst wrote:
->>>>> Op 24-09-13 09:22, Thomas Hellstrom schreef:
->>>>>> On 09/23/2013 05:33 PM, Maarten Lankhorst wrote:
->>>>>>> Hey,
->>>>>>>
->>>>>>> Op 13-09-13 11:00, Peter Zijlstra schreef:
->>>>>>>> On Fri, Sep 13, 2013 at 10:41:54AM +0200, Daniel Vetter wrote:
->>>>>>>>> On Fri, Sep 13, 2013 at 10:29 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->>>>>>>>>> On Fri, Sep 13, 2013 at 09:46:03AM +0200, Thomas Hellstrom wrote:
->>>>>>>>>>>>> if (!bo_tryreserve()) {
->>>>>>>>>>>>>       up_read mmap_sem(); // Release the mmap_sem to avoid deadlocks.
->>>>>>>>>>>>>       bo_reserve();               // Wait for the BO to become available (interruptible)
->>>>>>>>>>>>>       bo_unreserve();           // Where is bo_wait_unreserved() when we need it, Maarten :P
->>>>>>>>>>>>>       return VM_FAULT_RETRY; // Go ahead and retry the VMA walk, after regrabbing
->>>>>>>>>>>>> }
->>>>>>>>>>> Anyway, could you describe what is wrong, with the above solution, because
->>>>>>>>>>> it seems perfectly legal to me.
->>>>>>>>>> Luckily the rule of law doesn't have anything to do with this stuff --
->>>>>>>>>> at least I sincerely hope so.
->>>>>>>>>>
->>>>>>>>>> The thing that's wrong with that pattern is that its still not
->>>>>>>>>> deterministic - although its a lot better than the pure trylock. Because
->>>>>>>>>> you have to release and re-acquire with the trylock another user might
->>>>>>>>>> have gotten in again. Its utterly prone to starvation.
->>>>>>>>>>
->>>>>>>>>> The acquire+release does remove the dead/life-lock scenario from the
->>>>>>>>>> FIFO case, since blocking on the acquire will allow the other task to
->>>>>>>>>> run (or even get boosted on -rt).
->>>>>>>>>>
->>>>>>>>>> Aside from that there's nothing particularly wrong with it and lockdep
->>>>>>>>>> should be happy afaict (but I haven't had my morning juice yet).
->>>>>>>>> bo_reserve internally maps to a ww-mutex and task can already hold
->>>>>>>>> ww-mutex (potentially even the same for especially nasty userspace).
->>>>>>>> OK, yes I wasn't aware of that. Yes in that case you're quite right.
->>>>>>>>
->>>>>>> I added a RFC patch below.  I only tested with PROVE_LOCKING, and always forced the slowpath for debugging.
->>>>>>>
->>>>>>> This fixes nouveau and core ttm to always use blocking acquisition in fastpath.
->>>>>>> Nouveau was a bit of a headache, but afaict it should work.
->>>>>>>
->>>>>>> In almost all cases relocs are not updated, so I kept intact the fastpath
->>>>>>> of not copying relocs from userspace. The slowpath tries to copy it atomically,
->>>>>>> and if that fails it will unreserve all bo's and copy everything.
->>>>>>>
->>>>>>> One thing to note is that the command submission ioctl may fail now with -EFAULT
->>>>>>> if presumed cannot be updated, while the commands are submitted succesfully.
->>>>>> I think the Nouveau guys need to comment further on this, but returning -EFAULT might break existing user-space, and that's not allowed, but IIRC the return value of "presumed" is only a hint, and if it's incorrect will only trigger future command stream patching.
->>>>>>
->>>>>> Otherwise reviewing mostly the TTM stuff. FWIW, from wat I can tell the vmwgfx driver doesn't need any fixups.
->>>>> Well because we read the list of buffer objects the presumed offsets are at least read-mapped. Although I guess in the worst case the mapping might disappear before the syscall copies back the data.
->>>>> So if -EFAULT happens here then userspace messed up in some way, either by forgetting to map the offsets read-write, which cannot happen with libdrm or free'ing the bo list before the syscall returns,
->>>>> which would probably result in libdrm crashing shortly afterwards anyway.
->>>> Hmm, is the list of buffer objects (and the "presumed" members)
->>>> really in DRM memory? Because if it resides or may reside in
->>>> anonymous system memory, it may well be paged out between reading
->>>> and writing, in which case the -EFAULT return is incorrect.
->>>>
->>>> In fact failures of pushbuf / execbuf *after* commands are
->>>> successfully submitted are generally very hard to recover from.
->>>> That's why the kernel should do whatever it takes to recover from
->>>> such failures, and user-space should do whatever it takes to recover
->>>> from copy-to-user failures of needed info from the kernel, and it
->>>> really depends on the user-space usage pattern of "presumed". IIRC
->>>> the original reason for copying it back to user-space was, that if a
->>>> relocation offsets were patched up by the kernel, and then the
->>>> process was sent a signal causing it to retry execbuf, then
->>>> "presumed" had to be updated, otherwise it would be inconsistent
->>>> with what's currently in the command stream, which is very bad. If
->>>> "presumed" is, however, only used by user-space to guess an offset,
->>>> the correct action would be to swallow the -EFAULT.
->>> In i915 we've had tons of fun with a regression in 3.7 where exactly this
->>> blows up: Some of our userspace (UXA ddx specifically) retains
->>> relocations-trees partially accross an execbuf. Which means if the kernel
->>> updates the relocations it _must_ update the presumed offset for
->>> otherwise things will go haywire on the next execbuf. So we can't return
->>> -EFAULT if the userspace memory needs to be just refaulted but still need
->>> to guarante a "correct" presumed offset.
->>>
->>> Since we didn't come up with a way to make sure this will work in all
->>> cases when we get an -EFAULT when writing back presumed offsets we have a
->>> rather tricky piece of fallback logic.
->>> - Any -EFAULT error in the fastpath will drop us into the relocation
->>>    slowpath. The slowpath completly processes relocs anew, so any updates
->>>    done by the fastpath are irrelevant.
->>>
->>> - The first thing the slowpath does is set the presumed offset in the
->>>    userspace reloc lists to an invalid address (we pick -1) to make sure
->>>    that any subsequent execbuf with the same partial reloc tree will again
->>>    go through the relocation update code.
->>>
->>> - Then we do the usual slowpath, i.e. copy relocs from userspace, re-grab
->>>    locks and then process them. The copy-back of the presumed offset
->>>    happens with an copy_to_user_inatomic, and we ignore any errors.
->>>
->>> Of course we try really hard to make sure that we never hit the reloc
->>> slowpath ;-) But nowadays this is all fully tested with some nasty
->>> testcases (and a small kernel option to disable prefaulting).
->>>
->> It seems userspace only updates offset and domain in nouveau. If it fails to update
->> it would result in the same affect as when the buffer gets moved around by TTM.
->> But hey maybe I'll have some fun, I'll lie to userspace, hardcode userspace offset
->> to 0x40000000, always force domain to be different and see what breaks.
->>
->> My guess is absolutely nothing, except it might expose some bugs where we forgot annotation..
-> I think that would certainly break if your return an -ERESTARTSYS after applying relocations but
-> before submitting the command stream to hardware....
-The relocations are updated before submitting the command stream, but it's copied back to userspace
-after submitting the command stream. I'm not sure what -ERESTARTSYS would change, the syscall
-is not in an interruptible state.
+Hi Adam,
 
-Oh and after some testing with relocations it seems they always break nouveau. Originally I've set domain
-and offset differently, but that crashed the card. In my second try I kept domain and offset correct, and hacked
-the kernel to force apply all relocations. Unsurprisingly nouveau still breaks, even if the relocations themselves
-should have been a noop. :/
+On Thursday 13 June 2013 17:56:47 Adam Lee wrote:
+> On Thu, Apr 25, 2013 at 02:33:06PM +0800, Adam Lee wrote:
+> > On Wed, Apr 24, 2013 at 11:17:52AM +0200, Laurent Pinchart wrote:
+> > > On Wednesday 24 April 2013 15:57:19 adam.lee@canonical.com wrote:
+> > > > From: Adam Lee <adam.lee@canonical.com>
+> > > > 
+> > > > This reverts commit 3dae8b41dc5651f8eb22cf310e8b116480ba25b7.
+> > > > 
+> > > > 1, I do have a Chicony webcam, implements autosuspend in a broken way,
+> > > > make `poweroff` performs rebooting when its autosuspend enabled.
+> > > > 
+> > > > 2, There are other webcams which don't support autosuspend too, like
+> > > > https://patchwork.kernel.org/patch/2356141/
+> > > > 
+> > > > 3, kernel removed USB_QUIRK_NO_AUTOSUSPEND in
+> > > > a691efa9888e71232dfb4088fb8a8304ffc7b0f9, because autosuspend is
+> > > > disabled by default.
+> > > > 
+> > > > So, we need to disable autosuspend in uvcvideo, maintaining a quirk
+> > > > list only for uvcvideo is not a good idea.
+> > > 
+> > > I've received very few bug reports about broken auto-suspend support in
+> > > UVC devices. Most of them could be solved by setting the RESET_RESUME
+> > > quirk in USB core, only the Creative Live! Cam Optia AF required a quirk
+> > > in the uvcvideo driver. I would thus rather use the available quirks
+> > > (USB_QUIRK_RESET_RESUME if possible, UVC_QUIRK_DISABLE_AUTOSUSPEND
+> > > otherwise) than killing power management for the vast majority of
+> > > webcams that behave correctly.
+> >
+> > Here comes another one, integrated Chicony webcam 04f2:b39f, its
+> > autosuspend makes `poweroff` performs rebooting at the laptop I'm working
+> > on.
 
-Swallowing -EFAULT is fine theoretically though, I wouldn't worry about it..
+That's a pretty bad one :-/ Do you have any idea why it occurs ?
 
-~Maarten
+> > I tried USB_QUIRK_RESET_RESUME, not helping.
+> > 
+> > The quirks list will go longer and longer absolutely, do uvcvideo wanna
+> > maintain that? And why only uvcvideo do this in kernel space which
+> > against general USB module?
+> > 
+> > I still suggest we disable it by default, people can enable it in udev
+> > just like almost all distroes do for udisks. Please consider about it.
+> 
+> Any comment of this? I still think it's a risk to enable autosuspend in
+> uvcvideo by default, there must be users meeting weird issues but didn't
+> report to you becaue they didn't figured out the cause.
+
+I've discussed this issue during LPC last week, and I still believe we should 
+enable auto-suspend. The feature really saves power, without it my C910 
+Logitech webcam gets hot even when unused. 
+
+If we disable auto-suspend by default and enable it from userspace only a 
+handful of devices will get auto-suspended. Unless we can get distros to 
+automatically test auto-suspend on unknown webcam models and report the 
+results to update a central data base (which would grow much bigger than a 
+quirks list in the driver in my opinion), disabling auto-suspend would be a 
+serious regression.
+
+Any comment from other developers from the mailing lists ?
+
+-- 
+Regards,
+
+Laurent Pinchart
 
