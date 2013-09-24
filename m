@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab3IXIwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 04:52:31 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:37892 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab3IXIw1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 04:52:27 -0400
-Date: Tue, 24 Sep 2013 01:52:27 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Gerd Hoffmann <kraxel@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-usb@vger.kernel.org,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "open list:USB ATTACHED SCSI" <linux-scsi@vger.kernel.org>,
-        "open list:USB MASS STORAGE..." 
-	<usb-storage@lists.one-eyed-alien.net>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 3/6] uas: make work list per-device
-Message-ID: <20130924085227.GF11858@infradead.org>
-References: <1379071635-30701-1-git-send-email-kraxel@redhat.com>
- <1379071635-30701-4-git-send-email-kraxel@redhat.com>
- <20130917203012.GA1752@infradead.org>
- <1379489584.12907.11.camel@nilsson.home.kraxel.org>
+	id S1753402Ab3IXIyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 04:54:38 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46216 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784Ab3IXIye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 04:54:34 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
+CC: <p.zabel@pengutronix.de>, <broonie@kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v3 01/10] usb: phy: generic: Add gpio_reset to platform data
+Date: Tue, 24 Sep 2013 11:53:47 +0300
+Message-ID: <1380012836-29900-2-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1380012836-29900-1-git-send-email-rogerq@ti.com>
+References: <1380012836-29900-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379489584.12907.11.camel@nilsson.home.kraxel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 09:33:04AM +0200, Gerd Hoffmann wrote:
-> > > While being at it rename the list head from "list" to "work", preparing
-> > > for the addition of a second list.
-> > 
-> > Why do you even the list?
-> 
-> The list was already there when I took over maintainance ...
-> 
-> > What would a ordered per-device workqueue not
-> > provide?
-> 
-> Had no reason to look into replacing the list with something else so
-> far.  Why do you suggest using a workqueue instead?
-> 
-> Note that the list is not used in a typical request workflow.  Only in
-> case queuing an usb urb failed the request is linked into the list and
-> the worker will try to submit the usb urb again.
+The GPIO number of the RESET line can be passed to the
+driver using the gpio_reset member.
 
-The driver is only using the list to queue up things into workqueue
-context as far as I can see.  Which means it's far easier to leave that
-to the workqueue.
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ include/linux/usb/usb_phy_gen_xceiv.h |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/usb/usb_phy_gen_xceiv.h b/include/linux/usb/usb_phy_gen_xceiv.h
+index f9a7e7b..42f3b71 100644
+--- a/include/linux/usb/usb_phy_gen_xceiv.h
++++ b/include/linux/usb/usb_phy_gen_xceiv.h
+@@ -9,7 +9,8 @@ struct usb_phy_gen_xceiv_platform_data {
+ 
+ 	/* if set fails with -EPROBE_DEFER if can't get regulator */
+ 	unsigned int needs_vcc:1;
+-	unsigned int needs_reset:1;
++	unsigned int needs_reset:1;	/* deprecated */
++	int gpio_reset;
+ };
+ 
+ #if IS_ENABLED(CONFIG_NOP_USB_XCEIV)
+-- 
+1.7.4.1
 
