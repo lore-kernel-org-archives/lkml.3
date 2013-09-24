@@ -1,89 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab3IXJaS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:30:18 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:47157 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780Ab3IXJaM (ORCPT
+	id S1754195Ab3IXJai (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:30:38 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:24782 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753032Ab3IXJaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:30:12 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-88-52415ba3f500
-From: Tomasz Figa <t.figa@samsung.com>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH 0/6] thermal: exynos: Fixes for v3.12
-Date: Tue, 24 Sep 2013 11:29:59 +0200
-Message-id: <5975797.eclhCJt8Bu@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11 (Linux/3.10.10-gentoo; KDE/4.11.0; x86_64; ; )
-In-reply-to: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
-References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
+	Tue, 24 Sep 2013 05:30:35 -0400
+X-AuditID: cbfee68f-b7f1e6d000004e8d-0c-52415bac012e
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <007501ceb908$78df7370$6a9e5a50$%han@samsung.com>
+In-reply-to: <007501ceb908$78df7370$6a9e5a50$%han@samsung.com>
+Subject: [PATCH 3/5] backlight: corgi_lcd: use
+ devm_{backlight,lcd}_device_register()
+Date: Tue, 24 Sep 2013 18:30:20 +0900
+Message-id: <007701ceb908$b03c93c0$10b5bb40$%han@samsung.com>
 MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t/xy7qLox2DDA70C1g0XA2x2DhjPavF
-	/CPnWC3W7P/JZNF59gmzxZtH3BZvHm5mtLi8aw6bxefeI4wWM87vY7K43biCzaJ/YS+TxZOH
-	fWwOvB6L97xk8lg37S2zR9+WVYwejxa3MHocv7GdyePzJrkAtigum5TUnMyy1CJ9uwSujL5W
-	44KdPBWLf0xlaWC8zNnFyMkhIWAicWrVDjYIW0ziwr31QDYXh5DAUkaJRT1/oZwuJokbS3Yy
-	glSxCahJfG54BNYhIqAjceFjAzNIEbPAD2aJkwcus4MkhAUsJX7chShiEVCVmHT6C1icV0BT
-	Ys+c3awgNr+AusS7bU+ZQGxRAVeJTws3gtVwCrhLtD+dArZMSMBN4u2jrSwQvYISPybfA7OZ
-	BeQl9u2fygpha0ms33mcaQKj4CwkZbOQlM1CUraAkXkVo2hqaXJBcVJ6rpFecWJucWleul5y
-	fu4mRkgEfd3BuPSY1SFGAQ5GJR7eCwkOQUKsiWXFlbmHGCU4mJVEeG/YOgYJ8aYkVlalFuXH
-	F5XmpBYfYmTi4JRqYJxdurN+3bpe7RW7FUwCLeoimA311T9vXcUXtWaFb8vTPJ8AKYeGrtj/
-	qul5ttkmvGu5LQJO2R7Wnm0QO2Nf17dTTOwPw1IyFpZs97NpLA9hd3mh3rOy906I2bsP0QmM
-	3+z3VpaULD6beGnOsjXHy6K1FSItFSUf93ApXd94/TtflFXxT8lYJZbijERDLeai4kQADO2f
-	w34CAAA=
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac65CHjKuB0v+SsdTFGS6PUVVZI9RwAAB1dA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zA9210Y5BBvPTLeasX8NmcXnhJVaL
+	y7vmsFns3vWU1YHF48SM3ywee+b/YPXo27KK0ePzJrkAligum5TUnMyy1CJ9uwSujMf3jrEX
+	LBCuuNr+mbmBcb5AFyMnh4SAicTNphfMELaYxIV769m6GLk4hASWMUq8/jibBaZo/szdTBCJ
+	6YwSlx4eYQdJCAn8YpRY9MsGxGYTUJP48uUwUJyDQ0RAX6KtRQMkzCyQI3H/ySyocluJl5cf
+	gy3jFLCTWLbvIpgtLBAusfT2P7AaFgFViUd3GphAbF6g+s/dr6FsQYkfk++xQMzUkti8rYkV
+	wpaX2LzmLTPIWgkBdYlHf3UhLjCSeDrRE6JCRGLfi3eMINdLCJxil3j++wcrxCoBiW+TD7FA
+	tMpKbDoADQZJiYMrbrBMYJSYhWTxLCSLZyFZPAvJigWMLKsYRVMLkguKk9KLjPWKE3OLS/PS
+	9ZLzczcxQuKxfwfj3QPWhxiTgdZPZJYSTc4HxnNeSbyhsZmRhamJqbGRuaUZacJK4rxqLdaB
+	QgLpiSWp2ampBalF8UWlOanFhxiZODilGhjXfzzdtZ2p/nVfvG7etPm3tx24rlp1ei+HiLrm
+	yl9FR9sWHDY6zfO1d3rrpwkec9bsONS3p97/nvfP+5JMhxauPTlzuseji9q3Q4Rz3y5f/OV0
+	5t7WDx+OFnEonjv5n1WWp9zfdqbLdleWJ/oF21ZqXNgXtXRKukuOsY9UUbXY/peRm80DplVr
+	KrEUZyQaajEXFScCAAUz53fdAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jQd010Y5BBguarCzmrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
+	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
+	LWAaI3R9Q4LgeowM0EDCOsaMx/eOsRcsEK642v6ZuYFxvkAXIyeHhICJxPyZu5kgbDGJC/fW
+	s3UxcnEICUxnlLj08Ag7SEJI4BejxKJfNiA2m4CaxJcvh4HiHBwiAvoSbS0aIGFmgRyJ+09m
+	QZXbSry8/JgZxOYUsJNYtu8imC0sEC6x9PY/sBoWAVWJR3cawPbyAtV/7n4NZQtK/Jh8jwVi
+	ppbE5m1NrBC2vMTmNW+ZQdZKCKhLPPqrC3GBkcTTiZ4QFSIS+168Y5zAKDQLyaBZSAbNQjJo
+	FpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGC4/2Z1A7GlQ0WhxgFOBiVeHh3eDsE
+	CbEmlhVX5h5ilOBgVhLhvWHrGCTEm5JYWZValB9fVJqTWnyIMRnoz4nMUqLJ+cBUlFcSb2hs
+	YmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjIYCMppWT6a9NbhgF9gQ
+	f+yNxtW5qj9Xu/xXna72R6xbz/ftlMPnt4pk2/S7tFje62JS2/1opp/Ljw9sOzaemrP34btt
+	ndVqhxzjw5ZK12+bLcya76H6Ynv9b+MmtkfWF1/oNSlkP2g9ZxO02yFD9PPX21tj3vKtWfZt
+	ffaSmkel2jVLvryvMFJiKc5INNRiLipOBACdTFxfOwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lukasz,
+Use devm_backlight_device_register() and devm_lcd_device_register()
+to make cleanup paths simpler.
 
-On Tuesday 24 of September 2013 10:08:16 Lukasz Majewski wrote:
-> This patch series is divided into two parts:
-> 1. Device tree node definition and enabelement for TMU at Exynos4412 (Trats2)
-> 2. Exynos thermal subsystem regressions for v3.12-rc1. Several commits were 
->    necessary to properly fix regression for TMU test MUX address setting after
->    reset.
-> 
-> Test HW:
-> - Exynos4412 - TRATS2 board (Linux v3.12-rc1)
-> 
-> Lukasz Majewski (6):
->   thermal: exynos: fix: Return from exynos_report_trigger() when
->     therm_dev is NULL
->   thermal: exynos: Provide separate TMU data for Exynos4412
->   thermal: exynos: Provide initial setting for TMU's test MUX address
->     at Exynos4412
->   thermal: exynos: Replace SOC_ARCH_EXYNOS with SOC_ARCH_EXYNOS5250
->   ARM: dts: exynos4x12: Device tree node definition for TMU on
->     Exynos4x12
->   ARM: dts: exynos4412-trats2: Enable TMU support at Trats2
-> 
->  arch/arm/boot/dts/exynos4412-trats2.dts         |    5 +++++
->  arch/arm/boot/dts/exynos4x12.dtsi               |   10 +++++++++
->  drivers/thermal/samsung/exynos_thermal_common.c |    2 +-
->  drivers/thermal/samsung/exynos_tmu.c            |   12 +++++++----
->  drivers/thermal/samsung/exynos_tmu.h            |    3 ++-
->  drivers/thermal/samsung/exynos_tmu_data.c       |   26 +++++++++++++++++------
->  drivers/thermal/samsung/exynos_tmu_data.h       |   13 +++++++++++-
->  7 files changed, 58 insertions(+), 13 deletions(-)
-> 
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/corgi_lcd.c |   28 +++++++++-------------------
+ 1 file changed, 9 insertions(+), 19 deletions(-)
 
-For the whole series:
+diff --git a/drivers/video/backlight/corgi_lcd.c b/drivers/video/backlight/corgi_lcd.c
+index be56cfe..db8db5f 100644
+--- a/drivers/video/backlight/corgi_lcd.c
++++ b/drivers/video/backlight/corgi_lcd.c
+@@ -550,8 +550,8 @@ static int corgi_lcd_probe(struct spi_device *spi)
+ 
+ 	lcd->spi_dev = spi;
+ 
+-	lcd->lcd_dev = lcd_device_register("corgi_lcd", &spi->dev,
+-					lcd, &corgi_lcd_ops);
++	lcd->lcd_dev = devm_lcd_device_register(&spi->dev, "corgi_lcd",
++						&spi->dev, lcd, &corgi_lcd_ops);
+ 	if (IS_ERR(lcd->lcd_dev))
+ 		return PTR_ERR(lcd->lcd_dev);
+ 
+@@ -561,18 +561,18 @@ static int corgi_lcd_probe(struct spi_device *spi)
+ 	memset(&props, 0, sizeof(struct backlight_properties));
+ 	props.type = BACKLIGHT_RAW;
+ 	props.max_brightness = pdata->max_intensity;
+-	lcd->bl_dev = backlight_device_register("corgi_bl", &spi->dev, lcd,
+-						&corgi_bl_ops, &props);
+-	if (IS_ERR(lcd->bl_dev)) {
+-		ret = PTR_ERR(lcd->bl_dev);
+-		goto err_unregister_lcd;
+-	}
++	lcd->bl_dev = devm_backlight_device_register(&spi->dev, "corgi_bl",
++						&spi->dev, lcd, &corgi_bl_ops,
++						&props);
++	if (IS_ERR(lcd->bl_dev))
++		return PTR_ERR(lcd->bl_dev);
++
+ 	lcd->bl_dev->props.brightness = pdata->default_intensity;
+ 	lcd->bl_dev->props.power = FB_BLANK_UNBLANK;
+ 
+ 	ret = setup_gpio_backlight(lcd, pdata);
+ 	if (ret)
+-		goto err_unregister_bl;
++		return ret;
+ 
+ 	lcd->kick_battery = pdata->kick_battery;
+ 
+@@ -583,12 +583,6 @@ static int corgi_lcd_probe(struct spi_device *spi)
+ 	lcd->limit_mask = pdata->limit_mask;
+ 	the_corgi_lcd = lcd;
+ 	return 0;
+-
+-err_unregister_bl:
+-	backlight_device_unregister(lcd->bl_dev);
+-err_unregister_lcd:
+-	lcd_device_unregister(lcd->lcd_dev);
+-	return ret;
+ }
+ 
+ static int corgi_lcd_remove(struct spi_device *spi)
+@@ -598,11 +592,7 @@ static int corgi_lcd_remove(struct spi_device *spi)
+ 	lcd->bl_dev->props.power = FB_BLANK_UNBLANK;
+ 	lcd->bl_dev->props.brightness = 0;
+ 	backlight_update_status(lcd->bl_dev);
+-	backlight_device_unregister(lcd->bl_dev);
+-
+ 	corgi_lcd_set_power(lcd->lcd_dev, FB_BLANK_POWERDOWN);
+-	lcd_device_unregister(lcd->lcd_dev);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.10.4
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-
-Best regards,
-Tomasz
 
