@@ -1,285 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab3IXMJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:09:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:37644 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753236Ab3IXMJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:09:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,970,1371106800"; 
-   d="scan'208";a="364821469"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 03/10] perf tools: validate kcore module addresses
-Date: Tue, 24 Sep 2013 15:15:45 +0300
-Message-Id: <1380024952-29387-4-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
-References: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1753362Ab3IXMJc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:09:32 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:4305 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005Ab3IXMJ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 08:09:27 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 24 Sep 2013 05:09:26 -0700
+From: Arto Merilainen <amerilainen@nvidia.com>
+To: <tbergstrom@nvidia.com>, <treding@nvidia.com>
+CC: <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <amerilainen@nvidia.com>,
+        <mkulkarni@nvidia.com>
+Subject: [PATCHv3 1/4] gpu: host1x: shuffle job APIs
+Date: Tue, 24 Sep 2013 15:05:22 +0300
+Message-ID: <1380024325-18280-2-git-send-email-amerilainen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1380024325-18280-1-git-send-email-amerilainen@nvidia.com>
+References: <1380024325-18280-1-git-send-email-amerilainen@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before using kcore we need to check that modules are
-in memory at the same addresses that they were when
-data was recorded.
+From: Mayuresh Kulkarni <mkulkarni@nvidia.com>
 
-This is done because, while we could remap symbols
-to different addresses, the object code linkages
-would still be different which would provide an
-erroneous view of the object code.
+This patch moves function host1x_job_submit() to job.c file where
+all other host1x_job_* functions are placed. This patch also
+introduces function host1x_job_complete().
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Mayuresh Kulkarni <mkulkarni@nvidia.com>
+Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
 ---
- tools/perf/util/symbol.c | 194 ++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 173 insertions(+), 21 deletions(-)
+ drivers/gpu/host1x/cdma.c    |  2 ++
+ drivers/gpu/host1x/channel.c |  8 --------
+ drivers/gpu/host1x/channel.h |  1 -
+ drivers/gpu/host1x/job.c     | 12 ++++++++++++
+ drivers/gpu/host1x/job.h     |  3 +++
+ 5 files changed, 17 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index ffdf2e7..668dbc3 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -798,51 +798,199 @@ bool symbol__restricted_filename(const char *filename,
- 	return restricted;
- }
+diff --git a/drivers/gpu/host1x/cdma.c b/drivers/gpu/host1x/cdma.c
+index de72172..910087b 100644
+--- a/drivers/gpu/host1x/cdma.c
++++ b/drivers/gpu/host1x/cdma.c
+@@ -252,6 +252,8 @@ static void update_cdma_locked(struct host1x_cdma *cdma)
+ 				signal = true;
+ 		}
  
--struct kcore_mapfn_data {
--	struct dso *dso;
--	enum map_type type;
--	struct list_head maps;
-+struct module_info {
-+	struct rb_node rb_node;
-+	char *name;
-+	u64 start;
- };
++		host1x_job_complete(job);
++
+ 		list_del(&job->list);
+ 		host1x_job_put(job);
+ 	}
+diff --git a/drivers/gpu/host1x/channel.c b/drivers/gpu/host1x/channel.c
+index 83ea51b..c381441 100644
+--- a/drivers/gpu/host1x/channel.c
++++ b/drivers/gpu/host1x/channel.c
+@@ -21,7 +21,6 @@
  
--static int kcore_mapfn(u64 start, u64 len, u64 pgoff, void *data)
-+static void add_module(struct module_info *mi, struct rb_root *modules)
- {
--	struct kcore_mapfn_data *md = data;
--	struct map *map;
-+	struct rb_node **p = &modules->rb_node;
-+	struct rb_node *parent = NULL;
-+	struct module_info *m;
+ #include "channel.h"
+ #include "dev.h"
+-#include "job.h"
  
--	map = map__new2(start, md->dso, md->type);
--	if (map == NULL)
-+	while (*p != NULL) {
-+		parent = *p;
-+		m = rb_entry(parent, struct module_info, rb_node);
-+		if (strcmp(mi->name, m->name) < 0)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+	rb_link_node(&mi->rb_node, parent, p);
-+	rb_insert_color(&mi->rb_node, modules);
-+}
-+
-+static void delete_modules(struct rb_root *modules)
-+{
-+	struct module_info *mi;
-+	struct rb_node *next = rb_first(modules);
-+
-+	while (next) {
-+		mi = rb_entry(next, struct module_info, rb_node);
-+		next = rb_next(&mi->rb_node);
-+		rb_erase(&mi->rb_node, modules);
-+		free(mi->name);
-+		free(mi);
-+	}
-+}
-+
-+static struct module_info *find_module(const char *name,
-+				       struct rb_root *modules)
-+{
-+	struct rb_node *n = modules->rb_node;
-+
-+	while (n) {
-+		struct module_info *m;
-+		int cmp;
-+
-+		m = rb_entry(n, struct module_info, rb_node);
-+		cmp = strcmp(name, m->name);
-+		if (cmp < 0)
-+			n = n->rb_left;
-+		else if (cmp > 0)
-+			n = n->rb_right;
-+		else
-+			return m;
-+	}
-+
-+	return NULL;
-+}
-+
-+static int __read_proc_modules(void *arg, const char *name, u64 start)
-+{
-+	struct rb_root *modules = arg;
-+	struct module_info *mi;
-+
-+	mi = zalloc(sizeof(struct module_info));
-+	if (!mi)
- 		return -ENOMEM;
- 
--	map->end = map->start + len;
--	map->pgoff = pgoff;
-+	mi->name = strdup(name);
-+	mi->start = start;
- 
--	list_add(&map->node, &md->maps);
-+	add_module(mi, modules);
-+
-+	if (!mi->name)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static int read_proc_modules(const char *filename, struct rb_root *modules)
-+{
-+	if (symbol__restricted_filename(filename, "/proc/modules"))
-+		return -1;
-+
-+	if (modules__parse(filename, modules, __read_proc_modules)) {
-+		delete_modules(modules);
-+		return -1;
-+	}
- 
+ /* Constructor for the host1x device list */
+ int host1x_channel_list_init(struct host1x *host)
+@@ -37,13 +36,6 @@ int host1x_channel_list_init(struct host1x *host)
  	return 0;
  }
  
-+static int do_validate_kcore_modules(const char *filename, struct map *map,
-+				  struct map_groups *kmaps)
-+{
-+	struct rb_root modules = RB_ROOT;
-+	struct map *old_map;
-+	int err;
-+
-+	err = read_proc_modules(filename, &modules);
-+	if (err)
-+		return err;
-+
-+	old_map = map_groups__first(kmaps, map->type);
-+	while (old_map) {
-+		struct map *next = map_groups__next(old_map);
-+		struct module_info *mi;
-+
-+		if (old_map == map || old_map->start == map->start) {
-+			/* The kernel map */
-+			old_map = next;
-+			continue;
-+		}
-+
-+		/* Module must be in memory at the same address */
-+		mi = find_module(old_map->dso->short_name, &modules);
-+		if (!mi || mi->start != old_map->start) {
-+			err = -EINVAL;
-+			goto out;
-+		}
-+
-+		old_map = next;
-+	}
-+out:
-+	delete_modules(&modules);
-+	return err;
-+}
-+
- /*
-- * If kallsyms is referenced by name then we look for kcore in the same
-+ * If kallsyms is referenced by name then we look for filename in the same
-  * directory.
-  */
--static bool kcore_filename_from_kallsyms_filename(char *kcore_filename,
--						  const char *kallsyms_filename)
-+static bool filename_from_kallsyms_filename(char *filename,
-+					    const char *basename,
-+					    const char *kallsyms_filename)
+-int host1x_job_submit(struct host1x_job *job)
+-{
+-	struct host1x *host = dev_get_drvdata(job->channel->dev->parent);
+-
+-	return host1x_hw_channel_submit(host, job);
+-}
+-
+ struct host1x_channel *host1x_channel_get(struct host1x_channel *channel)
  {
- 	char *name;
+ 	int err = 0;
+diff --git a/drivers/gpu/host1x/channel.h b/drivers/gpu/host1x/channel.h
+index 48723b8..8401f25 100644
+--- a/drivers/gpu/host1x/channel.h
++++ b/drivers/gpu/host1x/channel.h
+@@ -44,7 +44,6 @@ struct host1x_channel *host1x_channel_request(struct device *dev);
+ void host1x_channel_free(struct host1x_channel *channel);
+ struct host1x_channel *host1x_channel_get(struct host1x_channel *channel);
+ void host1x_channel_put(struct host1x_channel *channel);
+-int host1x_job_submit(struct host1x_job *job);
  
--	strcpy(kcore_filename, kallsyms_filename);
--	name = strrchr(kcore_filename, '/');
-+	strcpy(filename, kallsyms_filename);
-+	name = strrchr(filename, '/');
- 	if (!name)
- 		return false;
- 
--	if (!strcmp(name, "/kallsyms")) {
--		strcpy(name, "/kcore");
-+	name += 1;
-+
-+	if (!strcmp(name, "kallsyms")) {
-+		strcpy(name, basename);
- 		return true;
- 	}
- 
- 	return false;
+ #define host1x_for_each_channel(host, channel)				\
+ 	list_for_each_entry(channel, &host->chlist.list, list)
+diff --git a/drivers/gpu/host1x/job.c b/drivers/gpu/host1x/job.c
+index c4e1050..3928b4e 100644
+--- a/drivers/gpu/host1x/job.c
++++ b/drivers/gpu/host1x/job.c
+@@ -585,3 +585,15 @@ void host1x_job_dump(struct device *dev, struct host1x_job *job)
+ 	dev_dbg(dev, "    NUM_SLOTS   %d\n", job->num_slots);
+ 	dev_dbg(dev, "    NUM_HANDLES %d\n", job->num_unpins);
  }
- 
-+static int validate_kcore_modules(const char *kallsyms_filename,
-+				  struct map *map)
++
++int host1x_job_submit(struct host1x_job *job)
 +{
-+	struct map_groups *kmaps = map__kmap(map)->kmaps;
-+	char modules_filename[PATH_MAX];
++	struct host1x *host = dev_get_drvdata(job->channel->dev->parent);
 +
-+	if (!filename_from_kallsyms_filename(modules_filename, "modules",
-+					     kallsyms_filename))
-+		return -EINVAL;
-+
-+	if (do_validate_kcore_modules(modules_filename, map, kmaps))
-+		return -EINVAL;
-+
-+	return 0;
++	return host1x_hw_channel_submit(host, job);
 +}
 +
-+struct kcore_mapfn_data {
-+	struct dso *dso;
-+	enum map_type type;
-+	struct list_head maps;
-+};
-+
-+static int kcore_mapfn(u64 start, u64 len, u64 pgoff, void *data)
++int host1x_job_complete(struct host1x_job *job)
 +{
-+	struct kcore_mapfn_data *md = data;
-+	struct map *map;
-+
-+	map = map__new2(start, md->dso, md->type);
-+	if (map == NULL)
-+		return -ENOMEM;
-+
-+	map->end = map->start + len;
-+	map->pgoff = pgoff;
-+
-+	list_add(&map->node, &md->maps);
-+
 +	return 0;
 +}
-+
- static int dso__load_kcore(struct dso *dso, struct map *map,
- 			   const char *kallsyms_filename)
- {
-@@ -859,8 +1007,12 @@ static int dso__load_kcore(struct dso *dso, struct map *map,
- 	if (map != machine->vmlinux_maps[map->type])
- 		return -EINVAL;
+diff --git a/drivers/gpu/host1x/job.h b/drivers/gpu/host1x/job.h
+index fba45f2..e0249c3 100644
+--- a/drivers/gpu/host1x/job.h
++++ b/drivers/gpu/host1x/job.h
+@@ -159,4 +159,7 @@ void host1x_job_unpin(struct host1x_job *job);
+  */
+ void host1x_job_dump(struct device *dev, struct host1x_job *job);
  
--	if (!kcore_filename_from_kallsyms_filename(kcore_filename,
--						   kallsyms_filename))
-+	if (!filename_from_kallsyms_filename(kcore_filename, "kcore",
-+					     kallsyms_filename))
-+		return -EINVAL;
++int host1x_job_submit(struct host1x_job *job);
++int host1x_job_complete(struct host1x_job *job);
 +
-+	/* All modules must be present at their original addresses */
-+	if (validate_kcore_modules(kallsyms_filename, map))
- 		return -EINVAL;
- 
- 	md.dso = dso;
+ #endif
 -- 
-1.7.11.7
+1.8.1.5
 
