@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab3IXPoK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 11:44:10 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:42755 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411Ab3IXPoH (ORCPT
+	id S1754256Ab3IXPot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 11:44:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36127 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411Ab3IXPor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 11:44:07 -0400
-Message-ID: <5241B32E.3090803@gmail.com>
-Date: Tue, 24 Sep 2013 23:43:42 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com
-Subject: Re: [PATCH 6/6] mem-hotplug: Introduce movablenode boot option
-References: <524162DA.30004@cn.fujitsu.com> <5241655E.1000007@cn.fujitsu.com> <20130924124121.GG2366@htj.dyndns.org> <5241944B.4050103@gmail.com> <5241AEC0.6040505@gmail.com> <20130924153259.GM2366@htj.dyndns.org>
-In-Reply-To: <20130924153259.GM2366@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Sep 2013 11:44:47 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, rydberg@euromail.se, kamal@canonical.com,
+        dudl@cypress.com, git@status.e4ward.com, tim.gardner@canonical.com,
+        linux-input@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH 1/1] Input: cypress_ps2 - Return zero finger count if palm is detected.
+Date: Tue, 24 Sep 2013 11:44:38 -0400
+Message-Id: <007c09ae4ef7f72ffb657de0fb3854fcbc6d88f0.1379968154.git.joseph.salisbury@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <cover.1379968154.git.joseph.salisbury@canonical.com>
+References: <cover.1379968154.git.joseph.salisbury@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 11:32 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Sep 24, 2013 at 11:24:48PM +0800, Zhang Yanfei wrote:
->> I am now preparing the v5 version. Only in this patch we haven't come to an
->> agreement. So as for the boot option name, after my explanation, do you still
->> have the objection? Or you could suggest a good name for us, that'll be
->> very thankful:)
-> 
-> No particular idea and my concern about the name isn't very strong.
-> It just doesn't seem like a good name to me.  It's a bit obscure and
-> we may want to do more things for hotplug later which may not fit the
-> param name.  If you guys think it's good enough, please go ahead.
-> 
+BugLink: http://bugs.launchpad.net/bugs/1229361
 
-Thanks very much!
+This patch sets the finger count to 0 in the case of palm contact.
 
-I have addressed your comments and finish the v5 version. Please help
-checking them again after I send them to the community. Thanks.
+Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com> (maintainer:INPUT (KEYBOARD,...,commit_signer:2/2=100%)
+Cc: Henrik Rydberg <rydberg@euromail.se> (maintainer:INPUT MULTITOUCH...)
+Cc: Kamal Mostafa <kamal@canonical.com> (commit_signer:2/2=100%)
+Cc: Dudley Du <dudl@cypress.com> (commit_signer:2/2=100%)
+Cc: Kyle Fazzari <git@status.e4ward.com> (commit_signer:1/2=50%)
+Cc: Tim Gardner <tim.gardner@canonical.com> (commit_signer:1/2=50%)
+Cc: linux-input@vger.kernel.org (open list:INPUT (KEYBOARD,...)
+Cc: linux-kernel@vger.kernel.org (open list)
+Cc: stable@vger.kernel.org
 
+---
+ drivers/input/mouse/cypress_ps2.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
+index 45b3eda..95b2c40 100644
+--- a/drivers/input/mouse/cypress_ps2.c
++++ b/drivers/input/mouse/cypress_ps2.c
+@@ -441,7 +441,7 @@ static int cypress_get_finger_count(unsigned char header_byte)
+ 			case 2: return 5;
+ 			default:
+ 				/* Invalid contact (e.g. palm). Ignore it. */
+-				return -1;
++				return 0;
+ 		}
+ 	}
+ 
+@@ -460,7 +460,7 @@ static int cypress_parse_packet(struct psmouse *psmouse,
+ 
+ 	contact_cnt = cypress_get_finger_count(header_byte);
+ 
+-	if (contact_cnt < 0) /* e.g. palm detect */
++	if (contact_cnt < 0)
+ 		return -EINVAL;
+ 
+ 	report_data->contact_cnt = contact_cnt;
 -- 
-Thanks.
-Zhang Yanfei
+1.7.9.5
+
