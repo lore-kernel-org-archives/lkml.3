@@ -1,148 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab3IXQtJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 12:49:09 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:58342 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab3IXQtH (ORCPT
+	id S1754533Ab3IXQtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 12:49:23 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60609 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754420Ab3IXQtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 12:49:07 -0400
-Date: Tue, 24 Sep 2013 09:49:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130924164900.GG9093@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
- <1378805550-29949-38-git-send-email-mgorman@suse.de>
- <20130917143003.GA29354@twins.programming.kicks-ass.net>
- <20130917162050.GK22421@suse.de>
- <20130917164505.GG12926@twins.programming.kicks-ass.net>
- <20130918154939.GZ26785@twins.programming.kicks-ass.net>
- <20130919143241.GB26785@twins.programming.kicks-ass.net>
- <20130923175052.GA20991@redhat.com>
- <20130924123821.GT12926@twins.programming.kicks-ass.net>
- <20130924160359.GA2739@redhat.com>
+	Tue, 24 Sep 2013 12:49:20 -0400
+Date: Tue, 24 Sep 2013 17:49:17 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Lubomir Rintel <lkundrak@v3.sk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysv: Add forgotten superblock lock init for v7 fs
+Message-ID: <20130924164917.GX13318@ZenIV.linux.org.uk>
+References: <1379457556-8902-1-git-send-email-lkundrak@v3.sk>
+ <20130924085022.GD11858@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130924160359.GA2739@redhat.com>
+In-Reply-To: <20130924085022.GD11858@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092416-6688-0000-0000-000001F5C454
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 06:03:59PM +0200, Oleg Nesterov wrote:
-> On 09/24, Peter Zijlstra wrote:
-> >
-> > +static inline void get_online_cpus(void)
-> > +{
-> > +	might_sleep();
-> > +
-> > +	if (current->cpuhp_ref++) {
-> > +		barrier();
-> > +		return;
-> 
-> I don't undestand this barrier()... we are going to return if we already
-> hold the lock, do we really need it?
-> 
-> The same for put_online_cpus().
+On Tue, Sep 24, 2013 at 01:50:22AM -0700, Christoph Hellwig wrote:
 
-The barrier() is needed because of the possibility of inlining, right?
+> Al, can you add this to the next VFS pile?
 
-> > +void __get_online_cpus(void)
-> >  {
-> > -	if (cpu_hotplug.active_writer == current)
-> > +	if (cpuhp_writer_task == current)
-> >  		return;
-> 
-> Probably it would be better to simply inc/dec ->cpuhp_ref in
-> cpu_hotplug_begin/end and remove this check here and in
-> __put_online_cpus().
-> 
-> This also means that the writer doing get/put_online_cpus() will
-> always use the fast path, and __cpuhp_writer can go away,
-> cpuhp_writer_task != NULL can be used instead.
-
-I would need to see the code for this change to be sure.  ;-)
-
-> > +     atomic_inc(&cpuhp_waitcount);
-> > +
-> > +     /*
-> > +      * We either call schedule() in the wait, or we'll fall through
-> > +      * and reschedule on the preempt_enable() in get_online_cpus().
-> > +      */
-> > +     preempt_enable_no_resched();
-> > +     wait_event(cpuhp_wq, !__cpuhp_writer);
-> > +     preempt_disable();
-> > +
-> > +     /*
-> > +      * It would be possible for cpu_hotplug_done() to complete before
-> > +      * the atomic_inc() above; in which case there is no writer waiting
-> > +      * and doing a wakeup would be BAD (tm).
-> > +      *
-> > +      * If however we still observe cpuhp_writer_task here we know
-> > +      * cpu_hotplug_done() is currently stuck waiting for cpuhp_waitcount.
-> > +      */
-> > +     if (atomic_dec_and_test(&cpuhp_waitcount) && cpuhp_writer_task)
-> > +             cpuhp_writer_wake();
-> 
-> cpuhp_writer_wake() here and in __put_online_cpus() looks racy...
-> Not only cpuhp_writer_wake() can hit cpuhp_writer_task == NULL (we need
-> something like ACCESS_ONCE()), its task_struct can be already freed/reused
-> if the writer exits.
-> 
-> And I don't really understand the logic... This slow path succeds without
-> incrementing any counter (except current->cpuhp_ref)? How the next writer
-> can notice the fact it should wait for this reader?
-> 
-> >  void cpu_hotplug_done(void)
-> >  {
-> > -	cpu_hotplug.active_writer = NULL;
-> > -	mutex_unlock(&cpu_hotplug.lock);
-> > +	/* Signal the writer is done */
-> > +	cpuhp_writer = 0;
-> > +	wake_up_all(&cpuhp_wq);
-> > +
-> > +	/* Wait for any pending readers to be running */
-> > +	cpuhp_writer_wait(!atomic_read(&cpuhp_waitcount));
-> > +	cpuhp_writer_task = NULL;
-> 
-> We also need to ensure that the next reader should see all changes
-> done by the writer, iow this lacks "realease" semantics.
-
-Good point -- I was expecting wake_up_all() to provide the release
-semantics, but code could be reordered into __wake_up()'s critical
-section, especially in the case where there was nothing to wake
-up, but where there were new readers starting concurrently with
-cpu_hotplug_done().
-
-> But, Peter, the main question is, why this is better than
-> percpu_rw_semaphore performance-wise? (Assuming we add
-> task_struct->cpuhp_ref).
-> 
-> If the writer is pending, percpu_down_read() does
-> 
-> 	down_read(&brw->rw_sem);
-> 	atomic_inc(&brw->slow_read_ctr);
-> 	__up_read(&brw->rw_sem);
-> 
-> is it really much worse than wait_event + atomic_dec_and_test?
-> 
-> And! please note that with your implementation the new readers will
-> be likely blocked while the writer sleeps in synchronize_sched().
-> This doesn't happen with percpu_rw_semaphore.
-
-							Thanx, Paul
-
+Applied.
