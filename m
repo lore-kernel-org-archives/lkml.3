@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab3IXJaE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:30:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41623 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753574Ab3IXJaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:30:01 -0400
-Date: Tue, 24 Sep 2013 11:29:57 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de, list@osuosl.org,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
-        HID CORE LAYER <linux-input@vger.kernel.org>,
-        devel@linuxdriverproject.org
-Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to
- memdup
-In-Reply-To: <5237A5D5.8010006@canonical.com>
-Message-ID: <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
-References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda> <5237A5D5.8010006@canonical.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754167Ab3IXJaS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:30:18 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:47157 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753780Ab3IXJaM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 05:30:12 -0400
+X-AuditID: cbfec7f5-b7ef66d00000795a-88-52415ba3f500
+From: Tomasz Figa <t.figa@samsung.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH 0/6] thermal: exynos: Fixes for v3.12
+Date: Tue, 24 Sep 2013 11:29:59 +0200
+Message-id: <5975797.eclhCJt8Bu@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11 (Linux/3.10.10-gentoo; KDE/4.11.0; x86_64; ; )
+In-reply-to: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
+References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t/xy7qLox2DDA70C1g0XA2x2DhjPavF
+	/CPnWC3W7P/JZNF59gmzxZtH3BZvHm5mtLi8aw6bxefeI4wWM87vY7K43biCzaJ/YS+TxZOH
+	fWwOvB6L97xk8lg37S2zR9+WVYwejxa3MHocv7GdyePzJrkAtigum5TUnMyy1CJ9uwSujL5W
+	44KdPBWLf0xlaWC8zNnFyMkhIWAicWrVDjYIW0ziwr31QDYXh5DAUkaJRT1/oZwuJokbS3Yy
+	glSxCahJfG54BNYhIqAjceFjAzNIEbPAD2aJkwcus4MkhAUsJX7chShiEVCVmHT6C1icV0BT
+	Ys+c3awgNr+AusS7bU+ZQGxRAVeJTws3gtVwCrhLtD+dArZMSMBN4u2jrSwQvYISPybfA7OZ
+	BeQl9u2fygpha0ms33mcaQKj4CwkZbOQlM1CUraAkXkVo2hqaXJBcVJ6rpFecWJucWleul5y
+	fu4mRkgEfd3BuPSY1SFGAQ5GJR7eCwkOQUKsiWXFlbmHGCU4mJVEeG/YOgYJ8aYkVlalFuXH
+	F5XmpBYfYmTi4JRqYJxdurN+3bpe7RW7FUwCLeoimA311T9vXcUXtWaFb8vTPJ8AKYeGrtj/
+	qul5ttkmvGu5LQJO2R7Wnm0QO2Nf17dTTOwPw1IyFpZs97NpLA9hd3mh3rOy906I2bsP0QmM
+	3+z3VpaULD6beGnOsjXHy6K1FSItFSUf93ApXd94/TtflFXxT8lYJZbijERDLeai4kQADO2f
+	w34CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Sep 2013, Joseph Salisbury wrote:
+Hi Lukasz,
 
-> >> Can you explain a little further?  Mark commit a4a23f6 as bad?  An
-> >> initial bisect already reported that was the first bad commit, so it
-> >> can't be marked bad.  The oops on memcpy() happens after commit a4a23f6
-> >> is reverted.  The oops on memcpy() did not happen before a4a23f6 was
-> >> committed, so I assume this new oops was introduced by a change later.
-> >>
-> >> Right now I'm bisecting down the oops on memcpy() by updating the bisect
-> >> with good or bad, depending if the test kernel hit the oops.  I then
-> >> revert a4a23f6, so that revert is the HEAD of the tree each time before
-> >> building the kernel again(As long as the commit spit out by bisect is
-> >> after when a4a23f6 was introduced).
-> > Yep.  Please continue bisecting the memcpy() oops.
-> >
-> > kmemdup() is just a kzalloc() followed by a memcpy().  When we split it
-> > apart by reverting the patch then we would expect the oops to move to
-> > the memcpy() part.  Somehow "desc" is a bogus pointer, but I don't
-> > immediately see how that is possible.
-> >
-> > regards,
-> > dan carpenter
+On Tuesday 24 of September 2013 10:08:16 Lukasz Majewski wrote:
+> This patch series is divided into two parts:
+> 1. Device tree node definition and enabelement for TMU at Exynos4412 (Trats2)
+> 2. Exynos thermal subsystem regressions for v3.12-rc1. Several commits were 
+>    necessary to properly fix regression for TMU test MUX address setting after
+>    reset.
 > 
-> Thanks for the details.  We'll continue the bisect and let you know how
-> it goes.
+> Test HW:
+> - Exynos4412 - TRATS2 board (Linux v3.12-rc1)
+> 
+> Lukasz Majewski (6):
+>   thermal: exynos: fix: Return from exynos_report_trigger() when
+>     therm_dev is NULL
+>   thermal: exynos: Provide separate TMU data for Exynos4412
+>   thermal: exynos: Provide initial setting for TMU's test MUX address
+>     at Exynos4412
+>   thermal: exynos: Replace SOC_ARCH_EXYNOS with SOC_ARCH_EXYNOS5250
+>   ARM: dts: exynos4x12: Device tree node definition for TMU on
+>     Exynos4x12
+>   ARM: dts: exynos4412-trats2: Enable TMU support at Trats2
+> 
+>  arch/arm/boot/dts/exynos4412-trats2.dts         |    5 +++++
+>  arch/arm/boot/dts/exynos4x12.dtsi               |   10 +++++++++
+>  drivers/thermal/samsung/exynos_thermal_common.c |    2 +-
+>  drivers/thermal/samsung/exynos_tmu.c            |   12 +++++++----
+>  drivers/thermal/samsung/exynos_tmu.h            |    3 ++-
+>  drivers/thermal/samsung/exynos_tmu_data.c       |   26 +++++++++++++++++------
+>  drivers/thermal/samsung/exynos_tmu_data.h       |   13 +++++++++++-
+>  7 files changed, 58 insertions(+), 13 deletions(-)
+> 
 
-Did this please yield any useful result?
+For the whole series:
 
-Thanks,
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
--- 
-Jiri Kosina
-SUSE Labs
+Best regards,
+Tomasz
+
