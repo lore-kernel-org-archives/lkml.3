@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab3IXQzt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 12:55:49 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:11268 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab3IXQzq (ORCPT
+	id S1754685Ab3IXQ4B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 12:56:01 -0400
+Received: from smtprelay0053.hostedemail.com ([216.40.44.53]:53711 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754661Ab3IXQz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 12:55:46 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-1e-5241c411f7a1
-From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-To: kyungmin.park@samsung.com
-Cc: mturquette@linaro.org, t.figa@samsung.com, s.nawrocki@samsung.com,
-        yadi.brar@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, rob@landley.net,
-        devicetree@vger.kernel.org, ben-linux@fluff.org,
-        linux-samsung-soc@vger.kernel.org,
-        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Subject: [PATCH 0/3] ARM: S5PC100: move to common clk framework
-Date: Tue, 24 Sep 2013 18:55:23 +0200
-Message-id: <1380041723-15877-1-git-send-email-m.krawczuk@partner.samsung.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jQV3BI45BBkufiVhMWneAyWL+kXOs
-	FuderWS0ONv0ht1i0+NrrBaXd81hs5hxfh+Txek1p5gtll6/yGTxdMJFNosJ09eyWBxeAdS2
-	7uV0IOtNO6vFq4NtLBbrZ7xmsZgz/R2Tg6DHmnlrGD0WfL7C7vF31Qtmj5XLv7B5vFo9k9Xj
-	zrU9bB6bl9R7HHy3h8mjb8sqRo/Pm+Q8Ns4NDeCO4rJJSc3JLEst0rdL4Mq42j6RreATd0XX
-	ydWsDYxnOboYOTkkBEwk3r/6wwJhi0lcuLeerYuRi0NIYDqjxK2VS1ggnHYmiWVvfrGCVLEJ
-	mEtMfLYJrENEQFZi4uQvzCBFzAJ7mSWmnF0NViQsYC9xa8kzdhCbRUBVYs7uVkYQm1fAT2LF
-	/QlMEOsUJH5ePsE2gZF7ASPDKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgIH4mvYNxVYPF
-	IUYBDkYlHt4LCQ5BQqyJZcWVuYcYJTiYlUR4zTc4BgnxpiRWVqUW5ccXleakFh9ilOZgURLn
-	PdhqHSgkkJ5YkpqdmlqQWgSTZeLglGpgXGAR/8P9nMW6Cs+3Cf56q1/cX+9vfuX9pdozx5QN
-	GQ3EFCY/2CzsU3P7ZbRQtHL6koJtlz6fSNLg3miUNXd1Mtf0927Lz3sobXhUb7LNuizbVyjp
-	xr1VUyQ/6pyrK2v8P908dNaVt5OucpzPDY6dv+/t2t0bfn6K+7hoEf/pvluW7dsUbmu5pCux
-	FGckGmoxFxUnAgDQsbiVXgIAAA==
+	Tue, 24 Sep 2013 12:55:58 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3690:3865:3867:3870:3871:5007:7652:10004:10400:10848:11658:11914:12043:12438:12517:12519:12555:13069:13163:13229:13311:13357:13618,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: meat13_6e1caab6a8032
+X-Filterd-Recvd-Size: 1216
+Message-ID: <1380041755.3575.93.camel@joe-AO722>
+Subject: Re: [PATCH 04/10] amd/7990: Remove extern from function prototypes
+From: Joe Perches <joe@perches.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 24 Sep 2013 09:55:55 -0700
+In-Reply-To: <65ef2eba58fddc268ba0afb4de7757f073d3bb49.1379974101.git.joe@perches.com>
+References: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
+	 <65ef2eba58fddc268ba0afb4de7757f073d3bb49.1379974101.git.joe@perches.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series is the new s5pc100 clock implementation
-(using common clk framework).
+Hey David.
 
-This implementation is compatible with device tree definition and board files.
+This ended up in your tree as
+commit 44da5c2f523876a02336c18dbcce93449fdbf0ca
+without your signoff.
 
-This patch series is based on linux-next and has been tested on smdkc100 
-board using board file.
+Is there something I need to do differently so
+your scripts add your sign-off properly or did
+this manage to just slip through via some manual
+git am without the -s?
 
-Mateusz Krawczuk (3):
-  clk: samsung: pll: Add support for PLL6545a and PLL6522x
-  clk: samsung: Add clock driver for s5pc100
-  ARM: s5pc100: Migrate clock handling to Common Clock Framework
-
- .../bindings/clock/samsung,s5pc100-clock.txt       |  72 +++
- arch/arm/mach-s5pc100/Kconfig                      |   8 +
- arch/arm/mach-s5pc100/Makefile                     |   4 +-
- arch/arm/mach-s5pc100/common.c                     |  23 +-
- arch/arm/mach-s5pc100/common.h                     |  13 +
- arch/arm/mach-s5pc100/mach-smdkc100.c              |   3 +-
- arch/arm/plat-samsung/Kconfig                      |   2 +-
- drivers/clk/samsung/Makefile                       |   1 +
- drivers/clk/samsung/clk-pll.c                      |   2 +
- drivers/clk/samsung/clk-pll.h                      |   2 +
- drivers/clk/samsung/clk-s5pc100.c                  | 695 +++++++++++++++++++++
- include/dt-bindings/clock/samsung,s5pc100-clock.h  | 202 ++++++
- 12 files changed, 1022 insertions(+), 5 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/samsung,s5pc100-clock.txt
- create mode 100644 drivers/clk/samsung/clk-s5pc100.c
- create mode 100644 include/dt-bindings/clock/samsung,s5pc100-clock.h
-
--- 
-1.8.1.2
 
