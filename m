@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750765Ab3IXEdw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 00:33:52 -0400
-Received: from gw.cm.dream.jp ([59.157.128.2]:53086 "EHLO vsmtp02.cm.dti.ne.jp"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750708Ab3IXEdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 00:33:50 -0400
-Date: Tue, 24 Sep 2013 13:12:06 +0900
-From: takasi-y@ops.dti.ne.jp
-To: SH-Linux <linux-sh@vger.kernel.org>
-Cc: Magnus Damm <magnus.damm@gmail.com>, ben.dooks@codethink.co.uk,
+	id S1750767Ab3IXEmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 00:42:43 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:60476 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab3IXEml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 00:42:41 -0400
+Date: Tue, 24 Sep 2013 13:42:36 +0900
+From: Simon Horman <horms@verge.net.au>
+To: takasi-y@ops.dti.ne.jp
+Cc: SH-Linux <linux-sh@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
+        ben.dooks@codethink.co.uk,
         Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
         devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/6] sh: clkfwk: Select sh-/common- clkfwk alternatively
-Message-Id: <20130924131206.d57d07f5faa5cb0773fc328c@ops.dti.ne.jp>
-In-Reply-To: <52410F86.4040301@renesas.com>
+        Paul Mundt <lethal@linux-sh.org>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/6] clocksource: em_sti: convert to clk_prepare/unprepare
+Message-ID: <20130924044236.GC3619@verge.net.au>
 References: <52410F86.4040301@renesas.com>
-X-Mailer: Sylpheed 3.4.0beta3 (GTK+ 2.24.17; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+ <20130924130924.61d4ecedf3d4fca5952d55fc@ops.dti.ne.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130924130924.61d4ecedf3d4fca5952d55fc@ops.dti.ne.jp>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sh clock framework core depend on HAVE_MACH_CLKDEV, and
-set it
-- y on sh for backward compatibility
-- !CONFIG_COMMON_CLK on sh-mobile
-This is a preparation for migration to common clock framework
-from sh clock framework on sh-mobile.
+[ CCed Daniel Lezcano and Thomas Gleixner, the clocksource maintainers ]
 
-Signed-off-by: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
----
- arch/arm/Kconfig        | 2 +-
- arch/sh/Kconfig         | 1 +
- drivers/sh/clk/Makefile | 3 +--
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 3f7714d..53044ca 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -650,7 +650,7 @@ config ARCH_SHMOBILE
- 	select HAVE_ARM_SCU if SMP
- 	select HAVE_ARM_TWD if SMP
- 	select HAVE_CLK
--	select HAVE_MACH_CLKDEV
-+	select HAVE_MACH_CLKDEV if !COMMON_CLK
- 	select HAVE_SMP
- 	select MIGHT_HAVE_CACHE_L2X0
- 	select MULTI_IRQ_HANDLER
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index 224f4bc..f57e47f 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -41,6 +41,7 @@ config SUPERH
- 	select MODULES_USE_ELF_RELA
- 	select OLD_SIGSUSPEND
- 	select OLD_SIGACTION
-+	select HAVE_MACH_CLKDEV
- 	help
- 	  The SuperH is a RISC processor targeted for use in embedded systems
- 	  and consumer electronics; it was also used in the Sega Dreamcast
-diff --git a/drivers/sh/clk/Makefile b/drivers/sh/clk/Makefile
-index 5d15ebf..e73b031 100644
---- a/drivers/sh/clk/Makefile
-+++ b/drivers/sh/clk/Makefile
-@@ -1,3 +1,2 @@
--obj-y	:= core.o
--
-+obj-$(CONFIG_HAVE_MACH_CLKDEV)	+= core.o
- obj-$(CONFIG_SH_CLK_CPG)	+= cpg.o
--- 
-1.8.1.5
-
+On Tue, Sep 24, 2013 at 01:09:24PM +0900, takasi-y@ops.dti.ne.jp wrote:
+> From: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
+> 
+> Add calls to clk_prepare and unprepare so that EMMA Mobile EV2 can
+> migrate to the common clock framework.
+> 
+> Signed-off-by: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
+> ---
+>  drivers/clocksource/em_sti.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/clocksource/em_sti.c b/drivers/clocksource/em_sti.c
+> index 3a5909c..9d17083 100644
+> --- a/drivers/clocksource/em_sti.c
+> +++ b/drivers/clocksource/em_sti.c
+> @@ -78,7 +78,7 @@ static int em_sti_enable(struct em_sti_priv *p)
+>  	int ret;
+>  
+>  	/* enable clock */
+> -	ret = clk_enable(p->clk);
+> +	ret = clk_prepare_enable(p->clk);
+>  	if (ret) {
+>  		dev_err(&p->pdev->dev, "cannot enable clock\n");
+>  		return ret;
+> @@ -107,7 +107,7 @@ static void em_sti_disable(struct em_sti_priv *p)
+>  	em_sti_write(p, STI_INTENCLR, 3);
+>  
+>  	/* stop clock */
+> -	clk_disable(p->clk);
+> +	clk_disable_unprepare(p->clk);
+>  }
+>  
+>  static cycle_t em_sti_count(struct em_sti_priv *p)
+> -- 
+> 1.8.1.5
+> 
