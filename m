@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab3IXMJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:09:39 -0400
+	id S1754086Ab3IXMLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:11:34 -0400
 Received: from mga03.intel.com ([143.182.124.21]:37644 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753492Ab3IXMJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:09:36 -0400
+	id S1753591Ab3IXMJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 08:09:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,970,1371106800"; 
-   d="scan'208";a="364821487"
+   d="scan'208";a="364821526"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 04/10] perf tools: workaround objdump difficulties with kcore
-Date: Tue, 24 Sep 2013 15:15:46 +0300
-Message-Id: <1380024952-29387-5-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V3 05/10] perf tools: add map__find_other_map_symbol()
+Date: Tue, 24 Sep 2013 15:15:47 +0300
+Message-Id: <1380024952-29387-6-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
 References: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
@@ -28,342 +28,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-objdump fails to annotate module symbols when looking
-at kcore.  Workaround this by extracting object code
-from kcore and putting it in a temporary file for
-objdump to use instead.  The temporary file is created
-to look like kcore but contains only the function
-being disassembled.
+Add a function to find a symbol using an ip that
+might be on a different map.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/annotate.c       |  21 ++++
- tools/perf/util/symbol-elf.c     | 221 +++++++++++++++++++++++++++++++++++++++
- tools/perf/util/symbol-minimal.c |   9 ++
- tools/perf/util/symbol.h         |  14 +++
- 4 files changed, 265 insertions(+)
+ tools/perf/util/map.c | 27 +++++++++++++++++++++++++++
+ tools/perf/util/map.h |  2 ++
+ 2 files changed, 29 insertions(+)
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index f7bdc01..46746b8 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -879,6 +879,8 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
- 	FILE *file;
- 	int err = 0;
- 	char symfs_filename[PATH_MAX];
-+	struct kcore_extract kce;
-+	bool delete_extract = false;
- 
- 	if (filename) {
- 		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-@@ -940,6 +942,23 @@ fallback:
- 	pr_debug("annotating [%p] %30s : [%p] %30s\n",
- 		 dso, dso->long_name, sym, sym->name);
- 
-+	if (dso__is_kcore(dso)) {
-+		kce.kcore_filename = symfs_filename;
-+		kce.addr = map__rip_2objdump(map, sym->start);
-+		kce.offs = sym->start;
-+		kce.len = sym->end + 1 - sym->start;
-+		if (!create_kcore_extract(&kce)) {
-+			delete_extract = true;
-+			strlcpy(symfs_filename, kce.extract_filename,
-+				sizeof(symfs_filename));
-+			if (free_filename) {
-+				free(filename);
-+				free_filename = false;
-+			}
-+			filename = symfs_filename;
-+		}
-+	}
-+
- 	snprintf(command, sizeof(command),
- 		 "%s %s%s --start-address=0x%016" PRIx64
- 		 " --stop-address=0x%016" PRIx64
-@@ -972,6 +991,8 @@ fallback:
- 
- 	pclose(file);
- out_free_filename:
-+	if (delete_extract)
-+		delete_kcore_extract(&kce);
- 	if (free_filename)
- 		free(filename);
- 	return err;
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index a7b9ab5..79b27fc7 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -1002,6 +1002,227 @@ int file__read_maps(int fd, bool exe, mapfn_t mapfn, void *data,
- 	return err;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 4f6680d..beedeef 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -213,6 +213,33 @@ struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
+ 	return dso__find_symbol_by_name(map->dso, map->type, name);
  }
  
-+static int copy_bytes(int from, off_t from_offs, int to, off_t to_offs, u64 len)
++struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
++					  symbol_filter_t filter)
 +{
-+	char buf[page_size];
-+	ssize_t r;
-+	size_t n;
++	struct map *map = *map_ptr;
++	u64 ip = *ip_ptr;
++	struct map *sym_map = NULL;
++	struct symbol *sym;
 +
-+	if (lseek(to, to_offs, SEEK_SET) != to_offs)
-+		return -1;
++	if (ip >= map->start && ip <= map->end)
++		sym_map = map;
++	else if (map->groups)
++		sym_map = map_groups__find(map->groups, map->type, ip);
 +
-+	if (lseek(from, from_offs, SEEK_SET) != from_offs)
-+		return -1;
++	if (!sym_map)
++		return NULL;
 +
-+	while (len) {
-+		n = sizeof(buf);
-+		if (len < n)
-+			n = len;
-+		/* Use read because mmap won't work on proc files */
-+		r = read(from, buf, n);
-+		if (r < 0)
-+			return -1;
-+		if (!r)
-+			break;
-+		n = r;
-+		r = write(to, buf, n);
-+		if (r < 0)
-+			return -1;
-+		if ((size_t)r != n)
-+			return -1;
-+		len -= n;
-+	}
-+	return 0;
-+}
++	ip = sym_map->map_ip(sym_map, ip);
 +
-+struct kcore {
-+	int fd;
-+	int elfclass;
-+	Elf *elf;
-+	GElf_Ehdr ehdr;
-+};
-+
-+static int kcore_open(const char *filename, struct kcore *kcore)
-+{
-+	GElf_Ehdr *ehdr;
-+
-+	kcore->fd = open(filename, O_RDONLY);
-+	if (kcore->fd == -1)
-+		return -1;
-+
-+	kcore->elf = elf_begin(kcore->fd, ELF_C_READ, NULL);
-+	if (!kcore->elf)
-+		goto out_close;
-+
-+	kcore->elfclass = gelf_getclass(kcore->elf);
-+	if (kcore->elfclass == ELFCLASSNONE)
-+		goto out_end;
-+
-+	ehdr = gelf_getehdr(kcore->elf, &kcore->ehdr);
-+	if (!ehdr)
-+		goto out_end;
-+
-+	return 0;
-+
-+out_end:
-+	elf_end(kcore->elf);
-+out_close:
-+	close(kcore->fd);
-+	return -1;
-+}
-+
-+static int kcore_new(char *filename, struct kcore *kcore, int elfclass,
-+		     bool temp)
-+{
-+	GElf_Ehdr *ehdr;
-+
-+	kcore->elfclass = elfclass;
-+
-+	if (temp)
-+		kcore->fd = mkstemp(filename);
-+	else
-+		kcore->fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0400);
-+	if (kcore->fd == -1)
-+		return -1;
-+
-+	kcore->elf = elf_begin(kcore->fd, ELF_C_WRITE, NULL);
-+	if (!kcore->elf)
-+		goto out_close;
-+
-+	if (!gelf_newehdr(kcore->elf, elfclass))
-+		goto out_end;
-+
-+	ehdr = gelf_getehdr(kcore->elf, &kcore->ehdr);
-+	if (!ehdr)
-+		goto out_end;
-+
-+	return 0;
-+
-+out_end:
-+	elf_end(kcore->elf);
-+out_close:
-+	close(kcore->fd);
-+	unlink(filename);
-+	return -1;
-+}
-+
-+static void kcore_close(struct kcore *kcore)
-+{
-+	elf_end(kcore->elf);
-+	close(kcore->fd);
-+}
-+
-+static int kcore_copy_hdr(struct kcore *from, struct kcore *to, size_t count)
-+{
-+	GElf_Ehdr *ehdr = &to->ehdr;
-+	GElf_Ehdr *kehdr = &from->ehdr;
-+
-+	memcpy(ehdr->e_ident, kehdr->e_ident, EI_NIDENT);
-+	ehdr->e_type      = kehdr->e_type;
-+	ehdr->e_machine   = kehdr->e_machine;
-+	ehdr->e_version   = kehdr->e_version;
-+	ehdr->e_entry     = 0;
-+	ehdr->e_shoff     = 0;
-+	ehdr->e_flags     = kehdr->e_flags;
-+	ehdr->e_phnum     = count;
-+	ehdr->e_shentsize = 0;
-+	ehdr->e_shnum     = 0;
-+	ehdr->e_shstrndx  = 0;
-+
-+	if (from->elfclass == ELFCLASS32) {
-+		ehdr->e_phoff     = sizeof(Elf32_Ehdr);
-+		ehdr->e_ehsize    = sizeof(Elf32_Ehdr);
-+		ehdr->e_phentsize = sizeof(Elf32_Phdr);
-+	} else {
-+		ehdr->e_phoff     = sizeof(Elf64_Ehdr);
-+		ehdr->e_ehsize    = sizeof(Elf64_Ehdr);
-+		ehdr->e_phentsize = sizeof(Elf64_Phdr);
++	sym = map__find_symbol(sym_map, ip, filter);
++	if (sym) {
++		*map_ptr = sym_map;
++		*ip_ptr = ip;
 +	}
 +
-+	if (!gelf_update_ehdr(to->elf, ehdr))
-+		return -1;
-+
-+	if (!gelf_newphdr(to->elf, count))
-+		return -1;
-+
-+	return 0;
++	return sym;
 +}
 +
-+static int kcore_add_phdr(struct kcore *kcore, int index, off_t offset,
-+			  u64 addr, u64 len)
-+{
-+	GElf_Phdr gphdr;
-+	GElf_Phdr *phdr;
-+
-+	phdr = gelf_getphdr(kcore->elf, index, &gphdr);
-+	if (!phdr)
-+		return -1;
-+
-+	phdr->p_type	= PT_LOAD;
-+	phdr->p_flags	= PF_R | PF_W | PF_X;
-+	phdr->p_offset	= offset;
-+	phdr->p_vaddr	= addr;
-+	phdr->p_paddr	= 0;
-+	phdr->p_filesz	= len;
-+	phdr->p_memsz	= len;
-+	phdr->p_align	= page_size;
-+
-+	if (!gelf_update_phdr(kcore->elf, index, phdr))
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static off_t kcore_write(struct kcore *kcore)
-+{
-+	return elf_update(kcore->elf, ELF_C_WRITE);
-+}
-+
-+int create_kcore_extract(struct kcore_extract *kce)
-+{
-+	struct kcore kcore;
-+	struct kcore extract;
-+	size_t count = 1;
-+	int index = 0, err = -1;
-+	off_t offset = page_size, sz;
-+
-+	if (kcore_open(kce->kcore_filename, &kcore))
-+		return -1;
-+
-+	strcpy(kce->extract_filename, PERF_KCORE_EXTRACT);
-+	if (kcore_new(kce->extract_filename, &extract, kcore.elfclass, true))
-+		goto out_kcore_close;
-+
-+	if (kcore_copy_hdr(&kcore, &extract, count))
-+		goto out_extract_close;
-+
-+	if (kcore_add_phdr(&extract, index, offset, kce->addr, kce->len))
-+		goto out_extract_close;
-+
-+	sz = kcore_write(&extract);
-+	if (sz < 0 || sz > offset)
-+		goto out_extract_close;
-+
-+	if (copy_bytes(kcore.fd, kce->offs, extract.fd, offset, kce->len))
-+		goto out_extract_close;
-+
-+	err = 0;
-+
-+out_extract_close:
-+	kcore_close(&extract);
-+	if (err)
-+		unlink(kce->extract_filename);
-+out_kcore_close:
-+	kcore_close(&kcore);
-+
-+	return err;
-+}
-+
-+void delete_kcore_extract(struct kcore_extract *kce)
-+{
-+	unlink(kce->extract_filename);
-+}
-+
- void symbol__elf_init(void)
+ struct map *map__clone(struct map *map)
  {
- 	elf_version(EV_CURRENT);
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index 3a802c3..0330163 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -308,6 +308,15 @@ int file__read_maps(int fd __maybe_unused, bool exe __maybe_unused,
- 	return -1;
- }
+ 	return memdup(map, sizeof(*map));
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 4886ca2..b7b494c 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -106,6 +106,8 @@ struct symbol *map__find_symbol(struct map *map,
+ 				u64 addr, symbol_filter_t filter);
+ struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
+ 					symbol_filter_t filter);
++struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
++					  symbol_filter_t filter);
+ void map__fixup_start(struct map *map);
+ void map__fixup_end(struct map *map);
  
-+int create_kcore_extract(struct kcore_extract *kce __maybe_unused)
-+{
-+	return -1;
-+}
-+
-+void delete_kcore_extract(struct kcore_extract *kce __maybe_unused)
-+{
-+}
-+
- void symbol__elf_init(void)
- {
- }
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index a2543f0..54f3ed0 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -256,4 +256,18 @@ typedef int (*mapfn_t)(u64 start, u64 len, u64 pgoff, void *data);
- int file__read_maps(int fd, bool exe, mapfn_t mapfn, void *data,
- 		    bool *is_64_bit);
- 
-+#define PERF_KCORE_EXTRACT "/tmp/perf-kcore-XXXXXX"
-+
-+struct kcore_extract {
-+	char *kcore_filename;
-+	u64 addr;
-+	u64 offs;
-+	u64 len;
-+	char extract_filename[sizeof(PERF_KCORE_EXTRACT)];
-+	int fd;
-+};
-+
-+int create_kcore_extract(struct kcore_extract *kce);
-+void delete_kcore_extract(struct kcore_extract *kce);
-+
- #endif /* __PERF_SYMBOL */
 -- 
 1.7.11.7
 
