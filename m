@@ -1,87 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab3IXIMD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 04:12:03 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:59706 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753204Ab3IXIL6 (ORCPT
+	id S1751496Ab3IXIOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 04:14:54 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:48091 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab3IXIOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 04:11:58 -0400
-Message-ID: <5241488F.5010000@st.com>
-Date: Tue, 24 Sep 2013 09:08:47 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-media@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+	Tue, 24 Sep 2013 04:14:49 -0400
+Date: Tue, 24 Sep 2013 17:14:46 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] media: st-rc: Add ST remote control driver
-References: <1379581176-25078-1-git-send-email-srinivas.kandagatla@st.com> <5240A740.7000407@wwwdotorg.org>
-In-Reply-To: <5240A740.7000407@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, openezx-devel@lists.openezx.org,
+        linux-samsung-soc@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 00/10] pwm-backlight: Add GPIO and power supply support
+Message-ID: <20130924081446.GA11981@verge.net.au>
+References: <1379972467-11243-1-git-send-email-treding@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379972467-11243-1-git-send-email-treding@nvidia.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Stephen,
-On 23/09/13 21:40, Stephen Warren wrote:
-> On 09/19/2013 02:59 AM, Srinivas KANDAGATLA wrote:
->> This patch adds support to ST RC driver, which is basically a IR/UHF
->> receiver and transmitter. This IP (IRB) is common across all the ST
->> parts for settop box platforms. IRB is embedded in ST COMMS IP block.
->> It supports both Rx & Tx functionality.
->>
->> In this driver adds only Rx functionality via LIRC codec.
-> 
->> diff --git a/Documentation/devicetree/bindings/media/st-rc.txt b/Documentation/devicetree/bindings/media/st-rc.txt
-> 
->> +Required properties:
->> +	- compatible: should contain "st,comms-irb".
->> +	- reg: base physical address of the controller and length of memory
->> +	mapped  region.
-> 
-> Nits:
-> 
-> The indentation is a little odd here; I'd expect the - to be in column
-> 1, at least that's how most other binding docs are written. Not a big
-> deal though.
-> 
-> It'd be nice to indent the continuation lines (e.g. "mapped region") a
-> bit more so it's easier to see where each new entry starts.
-> 
-> There are two spaces in "mapped  region".
-I should have noticed it... I will fix it in next version.
-> 
->> +	- rx-mode: can be "infrared" or "uhf". rx-mode should be present iff the
->> +	  rx pins are wired up.
->> +	- tx-mode: should be "infrared". tx-mode should be present iff the tx
->> +	  pins are wired up.
-> 
-> Should those property names be prefixed with "st,"; I assume they're
-> specific to this binding rather than something generic that applies to
-> all IR controller bindings? If you expect them to be generic, it's fine.
+[ Cc: Olof Johansson, Kevin Hilman and Arnd Bergman: arm-soc maintainers ]
 
-Officially these bindings are not specified in ePAPR specs but I see no
-reason for not having these properties as generic ones.
-
-Are you ok with that?
-
+On Mon, Sep 23, 2013 at 11:40:57PM +0200, Thierry Reding wrote:
+> This series adds the ability to specify a GPIO and a power supply to
+> enable a backlight.
 > 
->> +	- clocks : phandle with clock-specifier pair.
+> Patch 1 refactors the power on and power off sequences into separate
+> functions in preparation for subsequent patches.
 > 
-> For what clock?
-Its Clock for IRB block. I will add this in next version.
+> Patch 2 adds an optional GPIO to enable a backlight. This patch only
+> includes the field within the platform data so that it can be properly
+> setup before actually being put to use.
 > 
+> Patches 3 to 7 convert all users of the pwm-backlight driver to use the
+> new field. For most of them, this just initializes the field to -1,
+> marking the field as unused.
+>
+> Patch 8 uses the new field within the pwm-backlight driver and at the
+> same time allows it to be parsed from device tree.
 > 
+> Patch 9 implements support for an optional power supply. This relies on
+> the regulator core to return a dummy regulator when no supply has been
+> otherwise setup so the driver doesn't have to handle that specially nor
+> require all users to be updated.
+> 
+> Patch 10 adds a way to keep a backlight turned off at boot. This is
+> useful when hooking up a backlight with a subsystem such as DRM which
+> has more explicit semantics as to when a backlight should be turned on.
+> 
+> Due to the dependencies within the series, I propose to take all these
+> patches through the PWM tree, so I'll need acks from OMAP, PXA, Samsung,
+> shmobile and Unicore32 maintainers.
 
-Thanks,
-srini
+I received some feedback regarding shmobile conflicts when
+arm-soc was merged between v3.11 and v3.12-rc1. With this
+in mind I now have a strong preference for changes inside
+arch/arm/mach-shmobile/ to be taken through my renesas
+tree and thus more importantly through arm-soc if possible.
 
+> Thierry
+> 
+> Thierry Reding (10):
+>   pwm-backlight: Refactor backlight power on/off
+>   pwm-backlight: Add optional enable GPIO
+>   ARM: OMAP: Initialize PWM backlight enable_gpio field
+>   ARM: pxa: Initialize PWM backlight enable_gpio field
+>   ARM: SAMSUNG: Initialize PWM backlight enable_gpio field
+>   ARM: shmobile: Initialize PWM backlight enable_gpio field
+>   unicore32: Initialize PWM backlight enable_gpio field
+>   pwm-backlight: Use new enable_gpio field
+>   pwm-backlight: Use an optional power supply
+>   pwm-backlight: Allow backlight to remain disabled on boot
+> 
+>  .../bindings/video/backlight/pwm-backlight.txt     |   6 +
+>  arch/arm/mach-omap2/board-zoom-peripherals.c       |   1 +
+>  arch/arm/mach-pxa/cm-x300.c                        |   1 +
+>  arch/arm/mach-pxa/colibri-pxa270-income.c          |   1 +
+>  arch/arm/mach-pxa/ezx.c                            |   1 +
+>  arch/arm/mach-pxa/hx4700.c                         |   1 +
+>  arch/arm/mach-pxa/lpd270.c                         |   1 +
+>  arch/arm/mach-pxa/magician.c                       |   1 +
+>  arch/arm/mach-pxa/mainstone.c                      |   1 +
+>  arch/arm/mach-pxa/mioa701.c                        |   1 +
+>  arch/arm/mach-pxa/palm27x.c                        |   1 +
+>  arch/arm/mach-pxa/palmtc.c                         |  35 +----
+>  arch/arm/mach-pxa/palmte2.c                        |   1 +
+>  arch/arm/mach-pxa/pcm990-baseboard.c               |   1 +
+>  arch/arm/mach-pxa/raumfeld.c                       |   1 +
+>  arch/arm/mach-pxa/tavorevb.c                       |   2 +
+>  arch/arm/mach-pxa/viper.c                          |   1 +
+>  arch/arm/mach-pxa/z2.c                             |   2 +
+>  arch/arm/mach-pxa/zylonite.c                       |   1 +
+>  arch/arm/mach-s3c24xx/mach-h1940.c                 |   1 +
+>  arch/arm/mach-s3c24xx/mach-rx1950.c                |   1 +
+>  arch/arm/mach-s3c64xx/mach-crag6410.c              |   1 +
+>  arch/arm/mach-s3c64xx/mach-hmt.c                   |   1 +
+>  arch/arm/mach-s3c64xx/mach-smartq.c                |   1 +
+>  arch/arm/mach-s3c64xx/mach-smdk6410.c              |   1 +
+>  arch/arm/mach-s5p64x0/mach-smdk6440.c              |   1 +
+>  arch/arm/mach-s5p64x0/mach-smdk6450.c              |   1 +
+>  arch/arm/mach-s5pc100/mach-smdkc100.c              |   1 +
+>  arch/arm/mach-s5pv210/mach-smdkv210.c              |   1 +
+>  arch/arm/mach-shmobile/board-armadillo800eva.c     |   1 +
+>  arch/arm/plat-samsung/dev-backlight.c              |   5 +
+>  arch/unicore32/kernel/puv3-nb0916.c                |   1 +
+>  drivers/video/backlight/pwm_bl.c                   | 142 ++++++++++++++++-----
+>  include/linux/pwm_backlight.h                      |   7 +
+>  34 files changed, 162 insertions(+), 64 deletions(-)
+> 
+> -- 
+> 1.8.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
