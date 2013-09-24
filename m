@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751405Ab3IXMEh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:04:37 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:47362 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab3IXMEg (ORCPT
+	id S1752511Ab3IXMIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:08:19 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:44726 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab3IXMIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:04:36 -0400
-Date: Tue, 24 Sep 2013 08:04:29 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info' in
- all related extern functions
-Message-ID: <20130924120429.GA2366@htj.dyndns.org>
-References: <5212DBFA.8030805@asianux.com>
- <20130923150625.GB14547@htj.dyndns.org>
- <52410A40.1000304@asianux.com>
- <20130924040601.GA31575@mtj.dyndns.org>
- <524114B8.3070903@asianux.com>
+	Tue, 24 Sep 2013 08:08:17 -0400
+Message-ID: <524180B7.7090307@gmail.com>
+Date: Tue, 24 Sep 2013 14:08:23 +0200
+From: Jack Wang <xjtuwjp@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524114B8.3070903@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KY Srinivasan <kys@microsoft.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Mike Christie <michaelc@cs.wisc.edu>
+Subject: Re: Drivers: scsi: FLUSH timeout
+References: <1379705547-15028-1-git-send-email-kys@microsoft.com> <20130920203222.GA14306@kroah.com> <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 12:27:36PM +0800, Chen Gang wrote:
-> For real world, /sbin/init will call setgroups, so user space 'help'
-> kernel itself to protect this issue, but I think, we don't only depend
-> on the user space help checking.
+On 09/21/2013 07:24 AM, KY Srinivasan wrote:
 > 
-> The proof is below:
 > 
->   [root@gchenlinux tmp]# grep setgroups /sbin/*
->   Binary file /sbin/init matches
->   Binary file /sbin/rpc.statd matches
->   Binary file /sbin/rsyslogd matches
->   Binary file /sbin/runuser matches
+>> -----Original Message-----
+>> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+>> Sent: Friday, September 20, 2013 1:32 PM
+>> To: KY Srinivasan
+>> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+>> ohering@suse.com; jbottomley@parallels.com; hch@infradead.org; linux-
+>> scsi@vger.kernel.org
+>> Subject: Re: Drivers: scsi: FLUSH timeout
+>>
+>> On Fri, Sep 20, 2013 at 12:32:27PM -0700, K. Y. Srinivasan wrote:
+>>> The SD_FLUSH_TIMEOUT value is currently hardcoded.
+>>
+>> Hardcoded where?  Please, more context.
 > 
-> From reading kernel source code, kernel itself does not intend to set
-> 'group_info', it is triggered by user space or another kernel mode
-> sub-systems.
+> This is defined in scsi/sd.h:
+> 
+> #define SD_FLUSH_TIMEOUT        (60 * HZ)
+>>
+>>> On our cloud, we sometimes hit this timeout. I was wondering if we
+>>> could make this a module parameter. If this is acceptable, I can send
+>>> you a patch for this.
+>>
+>> A module parameter don't make sense for a per-device value, does it?
+> Currently, the 60 second timeout is applied across devices. Ideally, I want to be
+> able to control the FLUSH TIMEOUT as we currently do I/O timeout. If this is 
+> acceptable, I can work on a patch for that as well.
+> 
+> Regards,
+> 
+> K. Y
+>>
+>> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+Hi,
 
-Can you please demonstrate such failure?  You can tell kernel to
-execute a given binary instead of init with "init=" param.
+Back to 2010, Mike(cc-ed) try to add a flush time out interface, similar
+to what you want here, no idea why it's just ignored?
+http://www.spinics.net/lists/linux-scsi/msg45017.html
 
-Thanks.
-
--- 
-tejun
+Jack
