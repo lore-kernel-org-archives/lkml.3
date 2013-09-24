@@ -1,199 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab3IXMKF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:10:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:37644 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753912Ab3IXMJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:09:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,970,1371106800"; 
-   d="scan'208";a="364821691"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 10/10] perf tools: add ability to find kcore in build-id cache
-Date: Tue, 24 Sep 2013 15:15:52 +0300
-Message-Id: <1380024952-29387-11-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
-References: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1754003Ab3IXMKR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:10:17 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:35346 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab3IXMKK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 08:10:10 -0400
+Date: Tue, 24 Sep 2013 08:10:05 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Subject: Re: [PATCH 1/6] memblock: Factor out of top-down allocation
+Message-ID: <20130924121005.GB2366@htj.dyndns.org>
+References: <524162DA.30004@cn.fujitsu.com>
+ <5241636B.2060206@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5241636B.2060206@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When no vmlinux is found, tools will use kallsyms and,
-if possible, kcore.  Add the ability to find kcore in
-the build-id cache.
+On Tue, Sep 24, 2013 at 06:03:23PM +0800, Zhang Yanfei wrote:
+> From: Tang Chen <tangchen@cn.fujitsu.com>
+> 
+> This patch imports a new function __memblock_find_range_rev
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/symbol.c | 138 ++++++++++++++++++++++++++++++++---------------
- 1 file changed, 94 insertions(+), 44 deletions(-)
+"imports" sounds a bit weird.  I think "creates" or "this patch
+factors out __memblock_find_range_rev() from
+memblock_find_in_range_node()" would be better.
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 43b2c85..78bf1ab 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1440,6 +1440,96 @@ out:
- 	return err;
- }
- 
-+static int find_matching_kcore(struct map *map, char *dir, size_t dir_sz)
-+{
-+	char kallsyms_filename[PATH_MAX];
-+	struct dirent *dent;
-+	int ret = -1;
-+	DIR *d;
-+
-+	d = opendir(dir);
-+	if (!d)
-+		return -1;
-+
-+	while (1) {
-+		dent = readdir(d);
-+		if (!dent)
-+			break;
-+		if (dent->d_type != DT_DIR)
-+			continue;
-+		snprintf(kallsyms_filename, sizeof(kallsyms_filename),
-+			 "%s/%s/kallsyms", dir, dent->d_name);
-+		if (!validate_kcore_modules(kallsyms_filename, map)) {
-+			strlcpy(dir, kallsyms_filename, dir_sz);
-+			ret = 0;
-+			break;
-+		}
-+	}
-+
-+	closedir(d);
-+
-+	return ret;
-+}
-+
-+static char *dso__find_kallsyms(struct dso *dso, struct map *map)
-+{
-+	u8 host_build_id[BUILD_ID_SIZE];
-+	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
-+	bool is_host = false;
-+	char path[PATH_MAX];
-+
-+	if (!dso->has_build_id) {
-+		/*
-+		 * Last resort, if we don't have a build-id and couldn't find
-+		 * any vmlinux file, try the running kernel kallsyms table.
-+		 */
-+		goto proc_kallsyms;
-+	}
-+
-+	if (sysfs__read_build_id("/sys/kernel/notes", host_build_id,
-+				 sizeof(host_build_id)) == 0)
-+		is_host = dso__build_id_equal(dso, host_build_id);
-+
-+	build_id__sprintf(dso->build_id, sizeof(dso->build_id), sbuild_id);
-+
-+	/* Use /proc/kallsyms if possible */
-+	if (is_host) {
-+		DIR *d;
-+
-+		/* If no cached kcore go with /proc/kallsyms */
-+		snprintf(path, sizeof(path), "%s/[kernel.kcore]/%s",
-+			 buildid_dir, sbuild_id);
-+		d = opendir(path);
-+		if (!d)
-+			goto proc_kallsyms;
-+		closedir(d);
-+
-+		/* If module maps match go with /proc/kallsyms */
-+		if (!validate_kcore_modules("/proc/kallsyms", map))
-+			goto proc_kallsyms;
-+
-+		/* Find kallsyms in build-id cache with kcore */
-+		if (!find_matching_kcore(map, path, sizeof(path)))
-+			return strdup(path);
-+
-+		goto proc_kallsyms;
-+	}
-+
-+	snprintf(path, sizeof(path), "%s/[kernel.kallsyms]/%s",
-+		 buildid_dir, sbuild_id);
-+
-+	if (access(path, F_OK)) {
-+		pr_err("No kallsyms or vmlinux with build-id %s was found\n",
-+		       sbuild_id);
-+		return NULL;
-+	}
-+
-+	return strdup(path);
-+
-+proc_kallsyms:
-+	return strdup("/proc/kallsyms");
-+}
-+
- static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 				symbol_filter_t filter)
- {
-@@ -1488,51 +1578,11 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 	if (symbol_conf.symfs[0] != 0)
- 		return -1;
- 
--	/*
--	 * Say the kernel DSO was created when processing the build-id header table,
--	 * we have a build-id, so check if it is the same as the running kernel,
--	 * using it if it is.
--	 */
--	if (dso->has_build_id) {
--		u8 kallsyms_build_id[BUILD_ID_SIZE];
--		char sbuild_id[BUILD_ID_SIZE * 2 + 1];
--
--		if (sysfs__read_build_id("/sys/kernel/notes", kallsyms_build_id,
--					 sizeof(kallsyms_build_id)) == 0) {
--			if (dso__build_id_equal(dso, kallsyms_build_id)) {
--				kallsyms_filename = "/proc/kallsyms";
--				goto do_kallsyms;
--			}
--		}
--		/*
--		 * Now look if we have it on the build-id cache in
--		 * $HOME/.debug/[kernel.kallsyms].
--		 */
--		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
--				  sbuild_id);
--
--		if (asprintf(&kallsyms_allocated_filename,
--			     "%s/.debug/[kernel.kallsyms]/%s",
--			     getenv("HOME"), sbuild_id) == -1) {
--			pr_err("Not enough memory for kallsyms file lookup\n");
--			return -1;
--		}
--
--		kallsyms_filename = kallsyms_allocated_filename;
-+	kallsyms_allocated_filename = dso__find_kallsyms(dso, map);
-+	if (!kallsyms_allocated_filename)
-+		return -1;
- 
--		if (access(kallsyms_filename, F_OK)) {
--			pr_err("No kallsyms or vmlinux with build-id %s "
--			       "was found\n", sbuild_id);
--			free(kallsyms_allocated_filename);
--			return -1;
--		}
--	} else {
--		/*
--		 * Last resort, if we don't have a build-id and couldn't find
--		 * any vmlinux file, try the running kernel kallsyms table.
--		 */
--		kallsyms_filename = "/proc/kallsyms";
--	}
-+	kallsyms_filename = kallsyms_allocated_filename;
- 
- do_kallsyms:
- 	err = dso__load_kallsyms(dso, kallsyms_filename, map, filter);
+> to factor out of top-down allocation from memblock_find_in_range_node.
+> This is a preparation because we will introduce a new bottom-up
+> allocation mode in the following patch.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+
+Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
 -- 
-1.7.11.7
-
+tejun
