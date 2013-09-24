@@ -1,92 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab3IXQvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 12:51:25 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:37056 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751038Ab3IXQvY (ORCPT
+	id S1754557Ab3IXQvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 12:51:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53050 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754537Ab3IXQvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 12:51:24 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+uifc2incRzfe+lVjPCuhJ
-Date: Tue, 24 Sep 2013 09:51:17 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, Nishanth Menon <nm@ti.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: Re: [PATCH v2 2/2] RX-51: ARM errata 430973 workaround
-Message-ID: <20130924165117.GQ2684@atomide.com>
-References: <1362044548-5398-1-git-send-email-pali.rohar@gmail.com>
- <1373461145-9812-3-git-send-email-pali.rohar@gmail.com>
- <20130917232417.GK9994@atomide.com>
- <201309181033.24965@pali>
- <20130918171816.GT9994@atomide.com>
- <20130924001545.GA31569@amd.pavel.ucw.cz>
+	Tue, 24 Sep 2013 12:51:42 -0400
+Date: Tue, 24 Sep 2013 18:51:21 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130924165121.GQ9326@twins.programming.kicks-ass.net>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-38-git-send-email-mgorman@suse.de>
+ <20130917143003.GA29354@twins.programming.kicks-ass.net>
+ <20130917162050.GK22421@suse.de>
+ <20130917164505.GG12926@twins.programming.kicks-ass.net>
+ <20130918154939.GZ26785@twins.programming.kicks-ass.net>
+ <20130919143241.GB26785@twins.programming.kicks-ass.net>
+ <20130923175052.GA20991@redhat.com>
+ <20130924123821.GT12926@twins.programming.kicks-ass.net>
+ <20130924160359.GA2739@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130924001545.GA31569@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130924160359.GA2739@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pavel Machek <pavel@ucw.cz> [130923 17:23]:
-> Hi!
+On Tue, Sep 24, 2013 at 06:03:59PM +0200, Oleg Nesterov wrote:
+> On 09/24, Peter Zijlstra wrote:
+> >
+> > +static inline void get_online_cpus(void)
+> > +{
+> > +	might_sleep();
+> > +
+> > +	if (current->cpuhp_ref++) {
+> > +		barrier();
+> > +		return;
 > 
-> > > Tony, if you did not have time for review this patch months ago 
-> > > or you found it only today - no problem, I understand it. But 
-> > > what I need to know is what will happen with board-rx51-* files 
-> > > (and when?) You can see that DT does not have definitions of all 
-> > > n900 hw parts (plus it is not in last 3.11 kernel!) which means 
-> > > that DT is not usable for me and other n900 people. This also 
-> > > means that I cannot rewrite my patches for DT and test if they 
-> > > working.
-> > 
-> > I usually stop looking at new code around -rc4 and concentrate
-> > on fixes until -rc1 or so. So there can be easily one month
-> > delays on reviewing stuff depending on where we are with the
-> > current merge window or -rc cycle, sorry if that's annoying.
-> > 
-> > The .dts files will be separate from the kernel soonish, so
-> > that's not be a show stopper. Just like all the board specific
-> > .config files are separate from the kernel already. Too bad our
-> > .dts changes did not get merged for v3.12 because of conflicts
-> > with other branches, but hey, they should be independent from the
-> > kernel anyways.
+> I don't undestand this barrier()... we are going to return if we already
+> hold the lock, do we really need it?
 > 
-> Well... I'd say it is still time to merge them. "New hardware support"
-> is ok after -rc1.
+> The same for put_online_cpus().
 
-Sure if there's a good reason like "driver foo is already device
-tree only and cannot be used for board bar without blah".
- 
-> > The board files will be going away as soon as things are working
-> > with DT. We've been pretty much only applying fixes to them for
-> > quite some time now. For the timeline, the earliest we'll be able
-> > to remove the board-*.c files and platform data is for v3.13
+to make {get,put}_online_cpus() always behave like per-cpu lock
+sections.
+
+I don't think its ever 'correct' for loads/stores to escape the section,
+even if not strictly harmful.
+
+> > +void __get_online_cpus(void)
+> >  {
+> > -	if (cpu_hotplug.active_writer == current)
+> > +	if (cpuhp_writer_task == current)
+> >  		return;
 > 
-> And it would be good to merge n900 dts support for 3.12. Adding 
-> device tree at the same release as removing board support files in
-> same release leaves zero room for testing, and practically guarantees
-> regressions.
+> Probably it would be better to simply inc/dec ->cpuhp_ref in
+> cpu_hotplug_begin/end and remove this check here and in
+> __put_online_cpus().
 
-Yes we experienced that with omap4 conversion where it caused
-some wl12xx regression. So we might want to keep some omap3
-board files around until v3.14 if necessary.
+Oh indeed!
 
-Also please take a look at the "[PATCH 0/4] Clean up legacy platform
-data handling for omaps for v3.13" patches I posted few days ago,
-those should make it easy to have board specific pdata quirks
-for DT based booting.
+> > +     if (atomic_dec_and_test(&cpuhp_waitcount) && cpuhp_writer_task)
+> > +             cpuhp_writer_wake();
+> 
+> cpuhp_writer_wake() here and in __put_online_cpus() looks racy...
 
-Regards,
+Yeah it is. Paul already said.
 
-Tony
+> But, Peter, the main question is, why this is better than
+> percpu_rw_semaphore performance-wise? (Assuming we add
+> task_struct->cpuhp_ref).
+> 
+> If the writer is pending, percpu_down_read() does
+> 
+> 	down_read(&brw->rw_sem);
+> 	atomic_inc(&brw->slow_read_ctr);
+> 	__up_read(&brw->rw_sem);
+> 
+> is it really much worse than wait_event + atomic_dec_and_test?
+> 
+> And! please note that with your implementation the new readers will
+> be likely blocked while the writer sleeps in synchronize_sched().
+> This doesn't happen with percpu_rw_semaphore.
+
+Good points both, no I don't think there's a significant performance gap
+there.
+
+I'm still hoping we can come up with something better though :/ I don't
+particularly like either.
+
+
