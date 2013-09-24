@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab3IXJai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:30:38 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:24782 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab3IXJaf (ORCPT
+	id S1754215Ab3IXJbS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:31:18 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:63536 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753780Ab3IXJbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:30:35 -0400
-X-AuditID: cbfee68f-b7f1e6d000004e8d-0c-52415bac012e
+	Tue, 24 Sep 2013 05:31:17 -0400
+X-AuditID: cbfee690-b7f3b6d000007a15-48-52415bd80998
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <007501ceb908$78df7370$6a9e5a50$%han@samsung.com>
 In-reply-to: <007501ceb908$78df7370$6a9e5a50$%han@samsung.com>
-Subject: [PATCH 3/5] backlight: corgi_lcd: use
+Subject: [PATCH 4/5] backlight: cr_bllcd: use
  devm_{backlight,lcd}_device_register()
-Date: Tue, 24 Sep 2013 18:30:20 +0900
-Message-id: <007701ceb908$b03c93c0$10b5bb40$%han@samsung.com>
+Date: Tue, 24 Sep 2013 18:31:04 +0900
+Message-id: <007801ceb908$ca2348b0$5e69da10$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65CHjKuB0v+SsdTFGS6PUVVZI9RwAAB1dA
+Thread-index: Ac65CHjKuB0v+SsdTFGS6PUVVZI9RwAADmpQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zA9210Y5BBvPTLeasX8NmcXnhJVaL
-	y7vmsFns3vWU1YHF48SM3ywee+b/YPXo27KK0ePzJrkAligum5TUnMyy1CJ9uwSujMf3jrEX
-	LBCuuNr+mbmBcb5AFyMnh4SAicTNphfMELaYxIV769m6GLk4hASWMUq8/jibBaZo/szdTBCJ
-	6YwSlx4eYQdJCAn8YpRY9MsGxGYTUJP48uUwUJyDQ0RAX6KtRQMkzCyQI3H/ySyocluJl5cf
-	gy3jFLCTWLbvIpgtLBAusfT2P7AaFgFViUd3GphAbF6g+s/dr6FsQYkfk++xQMzUkti8rYkV
-	wpaX2LzmLTPIWgkBdYlHf3UhLjCSeDrRE6JCRGLfi3eMINdLCJxil3j++wcrxCoBiW+TD7FA
-	tMpKbDoADQZJiYMrbrBMYJSYhWTxLCSLZyFZPAvJigWMLKsYRVMLkguKk9KLjPWKE3OLS/PS
-	9ZLzczcxQuKxfwfj3QPWhxiTgdZPZJYSTc4HxnNeSbyhsZmRhamJqbGRuaUZacJK4rxqLdaB
-	QgLpiSWp2ampBalF8UWlOanFhxiZODilGhjXfzzdtZ2p/nVfvG7etPm3tx24rlp1ei+HiLrm
-	yl9FR9sWHDY6zfO1d3rrpwkec9bsONS3p97/nvfP+5JMhxauPTlzuseji9q3Q4Rz3y5f/OV0
-	5t7WDx+OFnEonjv5n1WWp9zfdqbLdleWJ/oF21ZqXNgXtXRKukuOsY9UUbXY/peRm80DplVr
-	KrEUZyQaajEXFScCAAUz53fdAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jQd010Y5BBguarCzmrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
-	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaMx/eOsRcsEK642v6ZuYFxvkAXIyeHhICJxPyZu5kgbDGJC/fW
-	s3UxcnEICUxnlLj08Ag7SEJI4BejxKJfNiA2m4CaxJcvh4HiHBwiAvoSbS0aIGFmgRyJ+09m
-	QZXbSry8/JgZxOYUsJNYtu8imC0sEC6x9PY/sBoWAVWJR3cawPbyAtV/7n4NZQtK/Jh8jwVi
-	ppbE5m1NrBC2vMTmNW+ZQdZKCKhLPPqrC3GBkcTTiZ4QFSIS+168Y5zAKDQLyaBZSAbNQjJo
-	FpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGC4/2Z1A7GlQ0WhxgFOBiVeHh3eDsE
-	CbEmlhVX5h5ilOBgVhLhvWHrGCTEm5JYWZValB9fVJqTWnyIMRnoz4nMUqLJ+cBUlFcSb2hs
-	YmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjIYCMppWT6a9NbhgF9gQ
-	f+yNxtW5qj9Xu/xXna72R6xbz/ftlMPnt4pk2/S7tFje62JS2/1opp/Ljw9sOzaemrP34btt
-	ndVqhxzjw5ZK12+bLcya76H6Ynv9b+MmtkfWF1/oNSlkP2g9ZxO02yFD9PPX21tj3vKtWfZt
-	ffaSmkel2jVLvryvMFJiKc5INNRiLipOBACdTFxfOwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zI90b0Y5BBldXyVjMWb+GzeLywkus
+	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBmPdnQy
+	F0zmr9i/UrOB8QNPFyMnh4SAiUTn1AtsELaYxIV764FsLg4hgWWMEscud7DDFHW8WscKkZjO
+	KDHl2ztGkISQwC9Giee3Q0FsNgE1iS9fDgM1cHCICOhLtLVogISZBXIk7j+ZxQ5Rbivx8vJj
+	ZhCbU8BOYtm+i2C2sECYxO4Z21lAbBYBVYm10/+CjeEFqj/bFAES5hUQlPgx+R4LxEgtic3b
+	mlghbHmJzWveMoOUSwioSzz6qwsSFhEwkri3aStUiYjEvhcgB3MBlZxjl/i0fyo7xCoBiW+T
+	D7FA9MpKbDrADPGtpMTBFTdYJjBKzEKyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRSZ6xYm5
+	xaV56XrJ+bmbGCHxOGEH470D1ocYk4HWT2SWEk3OB8ZzXkm8obGZkYWpiamxkbmlGWnCSuK8
+	6i3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYKzbr9zn2u8lIfnu6ZtqeGXy3ZZ/1psrx
+	5zctuy1ZFDEnoyiif39L5uaJ29K8/2vGHv1aIMh4r75supb4uQ2yPjEVSwOOFQX/Z1VKDH7z
+	08k2wjPSyE363tKgvf9y9L/onJi/OaJkU7PMyWjLWfdfCHAJVLtfdFOVtH9Uw7BksfDch1Nf
+	dlUqsRRnJBpqMRcVJwIAOJ+H1t0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jQd0b0Y5BBmd2SVjMWb+GzeLywkus
+	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZj3Z0MhdM5q/Yv1KzgfEDTxcjJ4eEgIlEx6t1rBC2mMSFe+vZ
+	uhi5OIQEpjNKTPn2jhEkISTwi1Hi+e1QEJtNQE3iy5fD7F2MHBwiAvoSbS0aIGFmgRyJ+09m
+	sUOU20q8vPyYGcTmFLCTWLbvIpgtLBAmsXvGdhYQm0VAVWLt9L9gY3iB6s82RYCEeQUEJX5M
+	vscCMVJLYvO2JlYIW15i85q3zCDlEgLqEo/+6oKERQSMJO5t2gpVIiKx78U7xgmMQrOQTJqF
+	ZNIsJJNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM42p9J7WBc2WBxiFGAg1GJ
+	h3eHt0OQEGtiWXFl7iFGCQ5mJRHeG7aOQUK8KYmVValF+fFFpTmpxYcYk4H+nMgsJZqcD0xE
+	eSXxhsYmZkaWRmYWRibm5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAuCIuIEDt0hOp
+	H795XyTuCI9e2izNZKURUCRy8uh0lqr7jkGVWu+0PvI+mBBizTLz4ZPEdU+2Lf4545dQZu4N
+	O4P63in/tj1bH8zyp2jd3PjTKvrsfDoxhoYs6z0nX29d8/hUWibv2QNKq82nXH+7odtg9576
+	7MuHd12y2fuU07s7sKw8uE35tRJLcUaioRZzUXEiAKb6hrk6AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,75 +61,53 @@ to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/corgi_lcd.c |   28 +++++++++-------------------
- 1 file changed, 9 insertions(+), 19 deletions(-)
+ drivers/video/backlight/cr_bllcd.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/video/backlight/corgi_lcd.c b/drivers/video/backlight/corgi_lcd.c
-index be56cfe..db8db5f 100644
---- a/drivers/video/backlight/corgi_lcd.c
-+++ b/drivers/video/backlight/corgi_lcd.c
-@@ -550,8 +550,8 @@ static int corgi_lcd_probe(struct spi_device *spi)
+diff --git a/drivers/video/backlight/cr_bllcd.c b/drivers/video/backlight/cr_bllcd.c
+index 37bae80..f3fed9e 100644
+--- a/drivers/video/backlight/cr_bllcd.c
++++ b/drivers/video/backlight/cr_bllcd.c
+@@ -195,16 +195,17 @@ static int cr_backlight_probe(struct platform_device *pdev)
  
- 	lcd->spi_dev = spi;
- 
--	lcd->lcd_dev = lcd_device_register("corgi_lcd", &spi->dev,
--					lcd, &corgi_lcd_ops);
-+	lcd->lcd_dev = devm_lcd_device_register(&spi->dev, "corgi_lcd",
-+						&spi->dev, lcd, &corgi_lcd_ops);
- 	if (IS_ERR(lcd->lcd_dev))
- 		return PTR_ERR(lcd->lcd_dev);
- 
-@@ -561,18 +561,18 @@ static int corgi_lcd_probe(struct spi_device *spi)
  	memset(&props, 0, sizeof(struct backlight_properties));
  	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = pdata->max_intensity;
--	lcd->bl_dev = backlight_device_register("corgi_bl", &spi->dev, lcd,
--						&corgi_bl_ops, &props);
--	if (IS_ERR(lcd->bl_dev)) {
--		ret = PTR_ERR(lcd->bl_dev);
--		goto err_unregister_lcd;
--	}
-+	lcd->bl_dev = devm_backlight_device_register(&spi->dev, "corgi_bl",
-+						&spi->dev, lcd, &corgi_bl_ops,
-+						&props);
-+	if (IS_ERR(lcd->bl_dev))
-+		return PTR_ERR(lcd->bl_dev);
-+
- 	lcd->bl_dev->props.brightness = pdata->default_intensity;
- 	lcd->bl_dev->props.power = FB_BLANK_UNBLANK;
+-	bdp = backlight_device_register("cr-backlight", &pdev->dev, NULL,
+-					&cr_backlight_ops, &props);
++	bdp = devm_backlight_device_register(&pdev->dev, "cr-backlight",
++					&pdev->dev, NULL, &cr_backlight_ops,
++					&props);
+ 	if (IS_ERR(bdp)) {
+ 		pci_dev_put(lpc_dev);
+ 		return PTR_ERR(bdp);
+ 	}
  
- 	ret = setup_gpio_backlight(lcd, pdata);
- 	if (ret)
--		goto err_unregister_bl;
-+		return ret;
+-	ldp = lcd_device_register("cr-lcd", &pdev->dev, NULL, &cr_lcd_ops);
++	ldp = devm_lcd_device_register(&pdev->dev, "cr-lcd", &pdev->dev, NULL,
++					&cr_lcd_ops);
+ 	if (IS_ERR(ldp)) {
+-		backlight_device_unregister(bdp);
+ 		pci_dev_put(lpc_dev);
+ 		return PTR_ERR(ldp);
+ 	}
+@@ -215,8 +216,6 @@ static int cr_backlight_probe(struct platform_device *pdev)
  
- 	lcd->kick_battery = pdata->kick_battery;
+ 	crp = devm_kzalloc(&pdev->dev, sizeof(*crp), GFP_KERNEL);
+ 	if (!crp) {
+-		lcd_device_unregister(ldp);
+-		backlight_device_unregister(bdp);
+ 		pci_dev_put(lpc_dev);
+ 		return -ENOMEM;
+ 	}
+@@ -241,8 +240,6 @@ static int cr_backlight_remove(struct platform_device *pdev)
+ 	crp->cr_backlight_device->props.max_brightness = 0;
+ 	cr_backlight_set_intensity(crp->cr_backlight_device);
+ 	cr_lcd_set_power(crp->cr_lcd_device, FB_BLANK_POWERDOWN);
+-	backlight_device_unregister(crp->cr_backlight_device);
+-	lcd_device_unregister(crp->cr_lcd_device);
+ 	pci_dev_put(lpc_dev);
  
-@@ -583,12 +583,6 @@ static int corgi_lcd_probe(struct spi_device *spi)
- 	lcd->limit_mask = pdata->limit_mask;
- 	the_corgi_lcd = lcd;
  	return 0;
--
--err_unregister_bl:
--	backlight_device_unregister(lcd->bl_dev);
--err_unregister_lcd:
--	lcd_device_unregister(lcd->lcd_dev);
--	return ret;
- }
- 
- static int corgi_lcd_remove(struct spi_device *spi)
-@@ -598,11 +592,7 @@ static int corgi_lcd_remove(struct spi_device *spi)
- 	lcd->bl_dev->props.power = FB_BLANK_UNBLANK;
- 	lcd->bl_dev->props.brightness = 0;
- 	backlight_update_status(lcd->bl_dev);
--	backlight_device_unregister(lcd->bl_dev);
--
- 	corgi_lcd_set_power(lcd->lcd_dev, FB_BLANK_POWERDOWN);
--	lcd_device_unregister(lcd->lcd_dev);
--
- 	return 0;
- }
- 
 -- 
 1.7.10.4
 
