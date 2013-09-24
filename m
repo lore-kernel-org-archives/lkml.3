@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab3IXAFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 20:05:40 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:63726 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab3IXAFj (ORCPT
+	id S1753614Ab3IXAFx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 20:05:53 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48518 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab3IXAFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 20:05:39 -0400
-X-AuditID: 9c93017d-b7c8cae000000bbb-22-5240d7507023
-Date: Tue, 24 Sep 2013 09:06:03 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Weijie Yang <weijie.yang@samsung.com>
-Cc: akpm@linux-foundation.org, sjenning@linux.vnet.ibm.com, bob.liu@oracle.com,
-        weijie.yang.kh@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        d.j.shin@samsung.com, heesub.shin@samsung.com,
-        kyungmin.park@samsung.com, hau.chen@samsung.com,
-        bifeng.tong@samsung.com, rui.xie@samsung.com
-Subject: Re: [PATCH v3 1/3] mm/zswap: bugfix: memory leak when re-swapon
-Message-ID: <20130924000603.GF17725@bbox>
-References: <000301ceb836$7b4a1340$71de39c0$%yang@samsung.com>
+	Mon, 23 Sep 2013 20:05:51 -0400
+Date: Tue, 24 Sep 2013 02:05:50 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        freemangordon@abv.bg, aaro.koskinen@iki.fi
+Subject: Re: [PATCH 4/4] RX-51: Add platform function and data for bq24150a
+ charger
+Message-ID: <20130924000550.GC30967@amd.pavel.ucw.cz>
+References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
+ <201309232116.19161@pali>
+ <20130923200008.GA21808@earth.universe>
+ <201309232206.47391@pali>
+ <20130923204714.GB22995@earth.universe>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000301ceb836$7b4a1340$71de39c0$%yang@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20130923204714.GB22995@earth.universe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 04:21:49PM +0800, Weijie Yang wrote:
-> zswap_tree is not freed when swapoff, and it got re-kmalloc in swapon,
-> so memory-leak occurs.
-> 
-> Modify: free memory of zswap_tree in zswap_frontswap_invalidate_area().
-> 
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-> Reviewed-by: Bob Liu <bob.liu@oracle.com>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: stable@vger.kernel.org
-> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Hi!
 
-Reviewed-by: Minchan Kim <minchan@kernel.org>
+> > No, isp1704 is power supply driver and export data via power 
+> > supply (sysfs) interface. It is not regulator but charger driver.
+> 
+> well it does not charge the battery directly, but just provides a
+> power line with 5 Volt and a specified amount of current to the
+> system, doesn't it?
 
+I don't want to talk about isp1704, but...
+
+LiION charger is just something that provides 4.2V power line with
+C/10 current limitation...
+
+(IOW line between regulators and chargers is very very thin, if it
+even exists).
+
+									Pavel
+
+            (who did use laboratory power supply as emergency battery charger)
 -- 
-Kind regards,
-Minchan Kim
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
