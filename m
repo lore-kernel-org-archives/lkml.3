@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab3IXMdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:33:46 -0400
-Received: from mail-ye0-f171.google.com ([209.85.213.171]:40923 "EHLO
-	mail-ye0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab3IXMdo (ORCPT
+	id S1753087Ab3IXMee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:34:34 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:62526 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab3IXMec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:33:44 -0400
-Date: Tue, 24 Sep 2013 08:33:40 -0400
+	Tue, 24 Sep 2013 08:34:32 -0400
+Date: Tue, 24 Sep 2013 08:34:28 -0400
 From: Tejun Heo <tj@kernel.org>
 To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
@@ -27,63 +27,36 @@ Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
         imtangchen@gmail.com, Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Subject: Re: [PATCH 4/6] x86/mem-hotplug: Support initialize page tables
- bottom up
-Message-ID: <20130924123340.GE2366@htj.dyndns.org>
+Subject: Re: [PATCH 5/6] x86, acpi, crash, kdump: Do reserve_crashkernel()
+ after SRAT is parsed.
+Message-ID: <20130924123428.GF2366@htj.dyndns.org>
 References: <524162DA.30004@cn.fujitsu.com>
- <5241649B.3090302@cn.fujitsu.com>
+ <524164ED.3060201@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5241649B.3090302@cn.fujitsu.com>
+In-Reply-To: <524164ED.3060201@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Sep 24, 2013 at 06:09:49PM +0800, Zhang Yanfei wrote:
+> From: Tang Chen <tangchen@cn.fujitsu.com>
+> 
+> Memory reserved for crashkernel could be large. So we should not allocate
+> this memory bottom up from the end of kernel image.
+> 
+> When SRAT is parsed, we will be able to know whihc memory is hotpluggable,
+> and we can avoid allocating this memory for the kernel. So reorder
+> reserve_crashkernel() after SRAT is parsed.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-On Tue, Sep 24, 2013 at 06:08:27PM +0800, Zhang Yanfei wrote:
-> +#ifdef CONFIG_MOVABLE_NODE
+Assuming this was tested to work.
 
-You don't need the above ifdef.  The compiler will be able to cull the
-code as long as memblock_bottom_up() is defined as constant
-expression when !MOVABLE_NODE.
-
-> +/**
-> + * memory_map_bottom_up - Map [map_start, map_end) bottom up
-> + * @map_start: start address of the target memory range
-> + * @map_end: end address of the target memory range
-> + *
-> + * This function will setup direct mapping for memory range [map_start, map_end)
-> + * in a heuristic way. In the beginning, step_size is small. The more memory we
-> + * map memory in the next loop.
-
-The same comment as before.  Now we have two function with the
-identical comment but behaving differently, which isn't nice.
-
-...
-> +	 * If the allocation is in bottom-up direction, we start from the
-> +	 * bottom and go to the top: first [kernel_end, end) and then
-> +	 * [ISA_END_ADDRESS, kernel_end). Otherwise, we start from the top
-> +	 * (end of memory) and go to the bottom.
-> +	 *
-> +	 * The memblock_find_in_range() gets us a block of RAM in
-> +	 * [min_pfn_mapped, max_pfn_mapped) used as new pages for page table.
->  	 */
-> -	memory_map_top_down(ISA_END_ADDRESS, end);
-> +	if (memblock_bottom_up()) {
-> +		unsigned long kernel_end;
-> +
-> +		kernel_end = round_up(__pa_symbol(_end), PMD_SIZE);
-> +		memory_map_bottom_up(kernel_end, end);
-> +		memory_map_bottom_up(ISA_END_ADDRESS, kernel_end);
-
-Hmm... so, this is kinda weird.  We're doing it in two chunks and
-mapping memory between ISA_END_ADDRESS and kernel_end right on top of
-ISA_END_ADDRESS?  Can't you give enough information to the mapping
-function so that it can map everything on top of kernel_end in single
-go?
+ Acked-by: Tejun Heo <tj@kernel.org>
 
 Thanks.
 
