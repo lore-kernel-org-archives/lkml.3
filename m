@@ -1,174 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab3IXDqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 23:46:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:26862 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529Ab3IXDqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 23:46:49 -0400
-X-IronPort-AV: E=Sophos;i="4.90,968,1371052800"; 
-   d="scan'208";a="8602453"
-Message-ID: <524109F3.3040300@cn.fujitsu.com>
-Date: Tue, 24 Sep 2013 11:41:39 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1753202Ab3IXDtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 23:49:18 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:19512 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab3IXDtR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 23:49:17 -0400
+Message-ID: <52410B49.3050306@huawei.com>
+Date: Tue, 24 Sep 2013 11:47:21 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Al Viro <viro@zeniv.linux.org.uk>
-CC: Jens <axboe@kernel.dk>, fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH V2] fs/bio-integrity: remove duplicate code
-References: <523C030E.3040408@cn.fujitsu.com>
-In-Reply-To: <523C030E.3040408@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/24 11:44:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/24 11:45:01,
-	Serialize complete at 2013/09/24 11:45:01
+To: Alexey Neyman <stilor@att.net>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Feng Tang <feng.tang@intel.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Fix coalescing host bridge windows in arch/x86/pci/acpi.c
+References: <6362938.J7ZtNEOFpc@mistral>
+In-Reply-To: <6362938.J7ZtNEOFpc@mistral>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most code of function bio_integrity_verify and bio_integrity_generate
-is the same, so introduce a common function bio_integrity_generate_verify()
-to remove the reduplicate code.
+On 2013/9/23 14:15, Alexey Neyman wrote:
+> [Resending due to no response to the original message in a week]
+> 
+> Hi all,
+> 
+> I have a board with a BIOS bug that reports the following I/O port regions in 
+> _CRS on one of the host bridges:
+> 
+> 0x0000-0x03af // #0
+> 0x03e0-0x0cf7 // #1
+> 0x03b0-0x03bb // #2
+> 0x03c0-0x03df // #3
+> 0x0000-0xdfff // #4
+> 0xf000-0xffff // #5
+> 
+> Obviously, region number #4 is erroneous as it overlaps with regions #0..3. 
+> The code in coalesce_windows() in arch/x86/pci/acpi.c attempts to recover from 
+> such kind of BIOS bugs by merging the overlapping regions. Current code 
+> expands region #0 to 0x0000-0xdffff and makes region #4 ignored. As a result, 
+> overlap of the expanded region #0 with regions #1..3 remains undetected (as 
+> the inner loop already compared them with region #0). As a result, regions 
+> #1..3 are inserted into the resource tree even though they overlap with 
+> adjusted region #0 - which later results in resource conflicts for PCI devices 
+> with IO ports in one of those regions (e.g., for an PCI IDE controller in 
+> legacy mode - which has port 0x3f6). The kernel then refuses to initialize 
+> these devices.
+> 
+> The fix: instead of expanding res1 and ignoring res2, do the opposite. The 
+> res2 window is yet to be compared against all windows between res1 and res2 
+> (regions #1..3 in the above example), so the resulting resource map will 
+> include just the expanded region - and will ignore any overlapping ones.
+> 
+> Signed-off-by: Alexey Neyman <stilor@att.net>
+> 
 
-v2:
-  fix a minor logic mistake.
+It looks fine to me, but I have no platform to test it. :)
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/bio-integrity.c |   86 +++++++++++++++++++++++-----------------------------
- 1 files changed, 38 insertions(+), 48 deletions(-)
 
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index 6025084..4773ab2 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -287,24 +287,25 @@ int bio_integrity_get_tag(struct bio *bio, void *tag_buf, unsigned int len)
- EXPORT_SYMBOL(bio_integrity_get_tag);
- 
- /**
-- * bio_integrity_generate - Generate integrity metadata for a bio
-- * @bio:	bio to generate integrity metadata for
-- *
-- * Description: Generates integrity metadata for a bio by calling the
-- * block device's generation callback function.  The bio must have a
-- * bip attached with enough room to accommodate the generated
-- * integrity metadata.
-+ * bio_integrity_generate_verify - Generate/verify integrity metadata for a bio
-+ * @bio:	bio to generate/verify integrity metadata for
-+ * @operate:	operate number, 1 for generate, 0 for verify
-  */
--static void bio_integrity_generate(struct bio *bio)
-+static int bio_integrity_generate_verify(struct bio *bio, int operate)
- {
- 	struct blk_integrity *bi = bdev_get_integrity(bio->bi_bdev);
- 	struct blk_integrity_exchg bix;
- 	struct bio_vec *bv;
--	sector_t sector = bio->bi_sector;
--	unsigned int i, sectors, total;
-+	sector_t sector;
-+	unsigned int i, sectors, total, ret;
- 	void *prot_buf = bio->bi_integrity->bip_buf;
- 
--	total = 0;
-+	if (operate)
-+		sector = bio->bi_sector;
-+	else
-+		sector = bio->bi_integrity->bip_sector;
-+
-+	ret = total = 0;
- 	bix.disk_name = bio->bi_bdev->bd_disk->disk_name;
- 	bix.sector_size = bi->sector_size;
- 
-@@ -314,8 +315,15 @@ static void bio_integrity_generate(struct bio *bio)
- 		bix.data_size = bv->bv_len;
- 		bix.prot_buf = prot_buf;
- 		bix.sector = sector;
--
--		bi->generate_fn(&bix);
-+		if (operate) {
-+			bi->generate_fn(&bix);
-+		} else {
-+			ret = bi->verify_fn(&bix);
-+			if (ret) {
-+				kunmap_atomic(kaddr);
-+				return ret;
-+			}
-+		}
- 
- 		sectors = bv->bv_len / bi->sector_size;
- 		sector += sectors;
-@@ -325,6 +333,22 @@ static void bio_integrity_generate(struct bio *bio)
- 
- 		kunmap_atomic(kaddr);
- 	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * bio_integrity_generate - Generate integrity metadata for a bio
-+ * @bio:	bio to generate integrity metadata for
-+ *
-+ * Description: Generates integrity metadata for a bio by calling the
-+ * block device's generation callback function.  The bio must have a
-+ * bip attached with enough room to accommodate the generated
-+ * integrity metadata.
-+ */
-+static void bio_integrity_generate(struct bio *bio)
-+{
-+	bio_integrity_generate_verify(bio, 1);
- }
- 
- static inline unsigned short blk_integrity_tuple_size(struct blk_integrity *bi)
-@@ -439,41 +463,7 @@ EXPORT_SYMBOL(bio_integrity_prep);
-  */
- static int bio_integrity_verify(struct bio *bio)
- {
--	struct blk_integrity *bi = bdev_get_integrity(bio->bi_bdev);
--	struct blk_integrity_exchg bix;
--	struct bio_vec *bv;
--	sector_t sector = bio->bi_integrity->bip_sector;
--	unsigned int i, sectors, total, ret;
--	void *prot_buf = bio->bi_integrity->bip_buf;
--
--	ret = total = 0;
--	bix.disk_name = bio->bi_bdev->bd_disk->disk_name;
--	bix.sector_size = bi->sector_size;
--
--	bio_for_each_segment(bv, bio, i) {
--		void *kaddr = kmap_atomic(bv->bv_page);
--		bix.data_buf = kaddr + bv->bv_offset;
--		bix.data_size = bv->bv_len;
--		bix.prot_buf = prot_buf;
--		bix.sector = sector;
--
--		ret = bi->verify_fn(&bix);
--
--		if (ret) {
--			kunmap_atomic(kaddr);
--			return ret;
--		}
--
--		sectors = bv->bv_len / bi->sector_size;
--		sector += sectors;
--		prot_buf += sectors * bi->tuple_size;
--		total += sectors * bi->tuple_size;
--		BUG_ON(total > bio->bi_integrity->bip_size);
--
--		kunmap_atomic(kaddr);
--	}
--
--	return ret;
-+	return bio_integrity_generate_verify(bio, 0);
- }
- 
- /**
 -- 
-1.7.7
-
+Thanks!
+Yijing
 
