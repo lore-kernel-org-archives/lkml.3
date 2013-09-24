@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab3IXQCQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 12:02:16 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:12074 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab3IXQCN (ORCPT
+	id S1753550Ab3IXQIE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 12:08:04 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:10912 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038Ab3IXQIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 12:02:13 -0400
-Message-ID: <1380038410.14046.12.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 6/6] mem-hotplug: Introduce movablenode boot option
-From: Toshi Kani <toshi.kani@hp.com>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com
-Date: Tue, 24 Sep 2013 10:00:10 -0600
-In-Reply-To: <5241AEC0.6040505@gmail.com>
-References: <524162DA.30004@cn.fujitsu.com>
-	 <5241655E.1000007@cn.fujitsu.com> <20130924124121.GG2366@htj.dyndns.org>
-	 <5241944B.4050103@gmail.com> <5241AEC0.6040505@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Sep 2013 12:08:01 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-27-5241b8de0c1a
+From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+To: broonie@kernel.org
+Cc: t.figa@samsung.com, s.nawrocki@samsung.com, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
+        m.szyprowski@samsung.com, t.stanislaws@samsung.com,
+        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH v2] Spi s3c64xx fix for s5pv210
+Date: Tue, 24 Sep 2013 18:07:46 +0200
+Message-id: <1380038866-1861-1-git-send-email-m.krawczuk@partner.samsung.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplluLIzCtJLcpLzFFi42I5/e+xoO69HY5BBtP+qllsnLGe1WLqwyds
+	Fmeb3rBbXN41h82i8eNNdovTa04xW6w9cpfd4vCbdlaL9TNes1jMa3/J6sDlsWlVJ5vHwXd7
+	mDz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr4/WHRewFj1grNl7rYW5gfMbSxcjBISFgInFx
+	mWAXIyeQKSZx4d56ti5GLg4hgemMEicvHIJy2pkk1r3bwQhSxSZgLjHx2SYWEFsEqOP2nE5m
+	kCJmgdlMEoc27WEFSQgL6EvcmdbCBmKzCKhKTDj/ng1kG6+Ar8SGV7EQ2xQkfl4+wTaBkXsB
+	I8MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjODAeSa1g3Flg8UhRgEORiUe3h3eDkFCrIll
+	xZW5hxglOJiVRHjNNzgGCfGmJFZWpRblxxeV5qQWH2KU5mBREuc90GodKCSQnliSmp2aWpBa
+	BJNl4uCUamCU7mwUkfme+POwX5bxm1+JdfphrFM/+8YwO2VwzDmv2be3aV4R/2SOBfHrVoer
+	6LctTPRU/mxvKvPFdX3lHeFfJzaJnXERkVAr4gu8zfjy96N9f+a4Oyj6fWiYYVp2ty4k9VyX
+	9/0vmTuEp6gYsuacmDr/TsxLyepio2rFM1Gz7XmONdx9kqrEUpyRaKjFXFScCAAC01DhGAIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-24 at 23:24 +0800, Zhang Yanfei wrote:
-> Hello tejun,
-> 
-> On 09/24/2013 09:31 PM, Zhang Yanfei wrote:
-> >> This came up during earlier review but never was addressed.  Is
-> >> > "movablenode" the right name?  Shouldn't it be something which
-> >> > explicitly shows that it's to prepare for memory hotplug?  Also, maybe
-> >> > the above param should generate warning if CONFIG_MOVABLE_NODE isn't
-> >> > enabled?
-> > hmmm...as for the option name, if this option is set, it means, the kernel
-> > could support the functionality that a whole node is the so called
-> > movable node, which only has ZONE MOVABLE zone in it. So we choose
-> > to name the parameter "movablenode".
-> > 
-> > As for the warning, will add it.
-> 
-> I am now preparing the v5 version. Only in this patch we haven't come to an
-> agreement. So as for the boot option name, after my explanation, do you still
-> have the objection? Or you could suggest a good name for us, that'll be
-> very thankful:)
+Replace all symbols by simple dependency PLAT_SAMSUNG.
 
-I do not think the granularity has to stay as a node, and this option
-does nothing to with other devices that may be included in a node.  So,
-how about using "movablemem"?
+Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/spi/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
--Toshi
-
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index 734eaa5..eb1f1ef 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -394,7 +394,7 @@ config SPI_S3C24XX_FIQ
+ 
+ config SPI_S3C64XX
+ 	tristate "Samsung S3C64XX series type SPI"
+-	depends on (ARCH_S3C24XX || ARCH_S3C64XX || ARCH_S5P64X0 || ARCH_EXYNOS)
++	depends on PLAT_SAMSUNG
+ 	select S3C64XX_DMA if ARCH_S3C64XX
+ 	help
+ 	  SPI driver for Samsung S3C64XX and newer SoCs.
+-- 
+1.8.1.2
 
