@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab3IXT2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 15:28:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752706Ab3IXT2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 15:28:35 -0400
-Date: Tue, 24 Sep 2013 15:28:33 -0400 (EDT)
-Message-Id: <20130924.152833.434453431118381771.davem@redhat.com>
-To: vincent.mc.li@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Allow userspace code to use flag IFA_F_SECONDARY to
- specify an ip address to be primary or secondary ip on an interface
-From: David Miller <davem@redhat.com>
-In-Reply-To: <1380046281-6012-1-git-send-email-vincent.mc.li@gmail.com>
-References: <1380046281-6012-1-git-send-email-vincent.mc.li@gmail.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754604Ab3IXT2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 15:28:34 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59375 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706Ab3IXT2d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 15:28:33 -0400
+Date: Tue, 24 Sep 2013 12:28:30 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        "'Stephen Boyd'" <sboyd@codeaurora.org>,
+        "'Joerg Roedel'" <joro@8bytes.org>, "'Suman Anna'" <s-anna@ti.com>
+Subject: Re: [PATCH] iommu: remove unnecessary platform_set_drvdata()
+Message-ID: <20130924192830.GA18207@codeaurora.org>
+References: <001501ce9eda$5660b2c0$03221840$%han@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <001501ce9eda$5660b2c0$03221840$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vincent Li <vincent.mc.li@gmail.com>
-Date: Tue, 24 Sep 2013 11:11:21 -0700
+On Thu, Aug 22, 2013 at 10:53:01AM +0900, Jingoo Han wrote:
+>The driver core clears the driver data to NULL after device_release
+>or on probe failure. Thus, it is not needed to manually clear the
+>device driver data to NULL.
+>
+>Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+>---
+> drivers/iommu/msm_iommu_dev.c |    2 --
 
-> the current behavior is when an IP is added to an interface, the primary
-> or secondary attributes is depending on the order of ip added to the interface
-> the first IP will be primary and second, third,... or alias IP will be secondary
-> if the IP subnet matches
-> 
-> this patch add the flexiblity to allow user to specify an argument 'primary' or 'secondary'
-> (use 'ip addr add ip/mask primary|secondary dev ethX ' from iproute2 for example) to specify
-> an IP address to be  primary or secondary.
-> 
-> the reason for this patch is that we have a multi blade cluster platform sharing 'floating management ip'
-> and also that each blade has its own management ip on the management interface, so whichever blade in the
-> cluster becomes primary blade, the 'floating mangaement ip' follows it, and we want any of our traffic
-> originated from the primary blade source from the 'floating management ip' for consistency. but in this
-> case, since the local blade management ip is always the primary ip on the mangaement interface and 'floating
-> management ip' is always secondary, kernel always choose the primary ip as source ip address. thus we would
-> like to add the flexibility in kernel to allow us to specify which ip to be primary or secondary.
-> 
-> Signed-off-by: Vincent Li <vincent.mc.li@gmail.com>
+With the splitting:
 
-When submitting a patch, please:
+Acked-by: David Brown <davidb@codeaurora.org>
 
-1) Specify an appropriate prefix for your subject line, indicating the
-   subsystem.  "ipv4: " might be appropriate here.
-
-2) Format your commit message so that lines do not exceed 80 columns.
-   People will read using ASCII text based tools in 80 column
-   terminals.
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
