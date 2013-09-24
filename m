@@ -1,42 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab3IXQ4B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 12:56:01 -0400
-Received: from smtprelay0053.hostedemail.com ([216.40.44.53]:53711 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754661Ab3IXQz6 (ORCPT
+	id S1754700Ab3IXQ4f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 12:56:35 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59245 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156Ab3IXQ4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 12:55:58 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3690:3865:3867:3870:3871:5007:7652:10004:10400:10848:11658:11914:12043:12438:12517:12519:12555:13069:13163:13229:13311:13357:13618,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: meat13_6e1caab6a8032
-X-Filterd-Recvd-Size: 1216
-Message-ID: <1380041755.3575.93.camel@joe-AO722>
-Subject: Re: [PATCH 04/10] amd/7990: Remove extern from function prototypes
-From: Joe Perches <joe@perches.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 24 Sep 2013 09:55:55 -0700
-In-Reply-To: <65ef2eba58fddc268ba0afb4de7757f073d3bb49.1379974101.git.joe@perches.com>
-References: <5570169a078375fa8662adeb2a7f24c1ae718bfb.1379974101.git.joe@perches.com>
-	 <65ef2eba58fddc268ba0afb4de7757f073d3bb49.1379974101.git.joe@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Tue, 24 Sep 2013 12:56:33 -0400
+Message-ID: <5241C43A.2080402@wwwdotorg.org>
+Date: Tue, 24 Sep 2013 10:56:26 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Alexandre Courbot <acourbot@nvidia.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mark Brown <broonie@kernel.org>, Lars Poeschel <poeschel@lemonage.de>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
+        joelf@ti.com
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <52279524.8090006@wwwdotorg.org> <20130909161924.GT29403@sirena.org.uk> <2052193.CMUEUJFRgS@lem-wkst-02> <522F78CB.2020507@wwwdotorg.org> <20130910213718.GH29403@sirena.org.uk> <522F9E6C.2010905@wwwdotorg.org> <522FBED9.9000305@collabora.co.uk> <5230C7F6.3080803@wwwdotorg.org> <CACRpkdacx-e01i_h4cj1qMX2zNOiiDshbTV__wi_LfQrLkrL6g@mail.gmail.com> <5240A0C2.4010502@wwwdotorg.org> <CACRpkdZKqW9veHzc1Rgj4oKsjGRATk+Sz8vJaP3EfT4de+bjQA@mail.gmail.com>
+In-Reply-To: <CACRpkdZKqW9veHzc1Rgj4oKsjGRATk+Sz8vJaP3EfT4de+bjQA@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey David.
+On 09/24/2013 02:26 AM, Linus Walleij wrote:
+> On Mon, Sep 23, 2013 at 10:12 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 09/23/2013 01:53 PM, Linus Walleij wrote:
+> 
+>>> I think the kernel should prevent such things.
+>>
+>> It might be nice if it could do that.
+>>
+>> However, that is 100% unrelated to the problem at hand.
+> 
+> I don't think it is unrelated when the old OMAP boardfile-based
+> code definately prevents such uses by its strict usage
+> of gpio_request() for all IRQ-bound GPIOs.
+> 
+> I think not preventing it for the DT boot path is setting lower
+> standards for DT code than for boardfile code which is not
+> what we should be doing.
 
-This ended up in your tree as
-commit 44da5c2f523876a02336c18dbcce93449fdbf0ca
-without your signoff.
+Semantics matter.
 
-Is there something I need to do differently so
-your scripts add your sign-off properly or did
-this manage to just slip through via some manual
-git am without the -s?
+In the old board file code, the gpio_request()s were present to work
+around the bug in the OMAP driver where request_irq() wouldn't configure
+the IRQ signal correctly. That's the primary reason those calls were there.
 
+Now, this had the side-effect of also preventing anything else from
+calling gpio_request() on those GPIOs, but that wasn't the primary
+motivation; just a convenient effect.
 
+...
+> Solving the issue that e.g. two different drivers competing about the
+> same resource (as in one driver requesting an IRQ and another one
+> requesting a GPIO) is not what I'm after here.
+> 
+> I'm more after the GPIO subsystem having knowledge of a certain
+> GPIO line being requested for IRQ, and denying that line to be set
+> as input.
+
+s/input/output/ I assume.
+
+...
+> Maybe this can actually be achieved quite easily with
+> an additional API? Like gpio_lock_as_irq(gpio) which flags this
+> in .flags of struct gpio_desc and prevent such things?
+> 
+> Alexandre what do you think about this idea?
+> 
+>> Equally, I am actually not 100% sure we want the core to prevent this.
+>> Why shouldn't two different drivers request the same IRQ? Why shouldn't
+>> at least one driver, perhaps more, request the pin as a GPIO (assuming
+>> it will only read the GPIO value, not flip the pin to output).
+> 
+> But I have already stated that this is OK?
+> 
+> Are we talking past each other now?
+
+If all you want to do is prevent gpio_direction_input() on a GPIO that's
+in use as a GPIO, then that's probably OK.
+
+However, the interrupt consistency patch that was posted implemented
+that restriction by calling gpio_request(), and the wording of most of
+what you've written implies to me that implementing the restriction by
+calling gpio_request() is what you're after. That approach imposes far
+more restrictions than just preventing gpio_direction_input(). Imposing
+those additional restrictions is what I'm objecting to.
