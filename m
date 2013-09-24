@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab3IXKH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 06:07:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:22773 "EHLO song.cn.fujitsu.com"
+	id S1754484Ab3IXKJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 06:09:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:23399 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753967Ab3IXKH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 06:07:26 -0400
+	id S1752652Ab3IXKJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 06:09:16 -0400
 X-IronPort-AV: E=Sophos;i="4.90,969,1371052800"; 
-   d="scan'208";a="8606656"
-Message-ID: <52416431.1090107@cn.fujitsu.com>
-Date: Tue, 24 Sep 2013 18:06:41 +0800
+   d="scan'208";a="8606675"
+Message-ID: <5241649B.3090302@cn.fujitsu.com>
+Date: Tue, 24 Sep 2013 18:08:27 +0800
 From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
@@ -31,14 +31,15 @@ CC: "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
         imtangchen@gmail.com, Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Subject: [PATCH 3/6] x86/mm: Factor out of top-down direct mapping setup
+Subject: [PATCH 4/6] x86/mem-hotplug: Support initialize page tables bottom
+ up
 References: <524162DA.30004@cn.fujitsu.com>
 In-Reply-To: <524162DA.30004@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/24 18:05:43,
+ 2013/09/24 18:07:29,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/24 18:05:44,
-	Serialize complete at 2013/09/24 18:05:44
+ 2013/09/24 18:07:33,
+	Serialize complete at 2013/09/24 18:07:33
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
@@ -47,32 +48,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tang Chen <tangchen@cn.fujitsu.com>
 
-This patch introduces a new function memory_map_top_down to
-factor out of the top-down direct memory mapping pagetable
-setup. This is also a preparation for the following patch,
-which will introduce the bottom-up memory mapping. That said,
-we will put the two ways of pagetable setup into separate
-functions, and choose to use which way in init_mem_mapping,
-which makes the code more clear.
+The Linux kernel cannot migrate pages used by the kernel. As a
+result, kernel pages cannot be hot-removed. So we cannot allocate
+hotpluggable memory for the kernel.
+
+In a memory hotplug system, any numa node the kernel resides in
+should be unhotpluggable. And for a modern server, each node could
+have at least 16GB memory. So memory around the kernel image is
+highly likely unhotpluggable.
+
+ACPI SRAT (System Resource Affinity Table) contains the memory
+hotplug info. But before SRAT is parsed, memblock has already
+started to allocate memory for the kernel. So we need to prevent
+memblock from doing this.
+
+So direct memory mapping page tables setup is the case. init_mem_mapping()
+is called before SRAT is parsed. To prevent page tables being allocated
+within hotpluggable memory, we will use bottom-up direction to allocate
+page tables from the end of kernel image to the higher memory.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- arch/x86/mm/init.c |   70 ++++++++++++++++++++++++++++++++-------------------
- 1 files changed, 44 insertions(+), 26 deletions(-)
+ arch/x86/mm/init.c |   65 ++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 60 insertions(+), 5 deletions(-)
 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 04664cd..73e79e6 100644
+index 73e79e6..7441865 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -401,27 +401,27 @@ static unsigned long __init init_range_memory_mapping(
+@@ -451,6 +451,50 @@ static void __init memory_map_top_down(unsigned long map_start,
+ 		init_range_memory_mapping(real_end, map_end);
+ }
  
- /* (PUD_SHIFT-PMD_SHIFT)/2 */
- #define STEP_SIZE_SHIFT 5
--void __init init_mem_mapping(void)
 +
++#ifdef CONFIG_MOVABLE_NODE
 +/**
-+ * memory_map_top_down - Map [map_start, map_end) top down
++ * memory_map_bottom_up - Map [map_start, map_end) bottom up
 + * @map_start: start address of the target memory range
 + * @map_end: end address of the target memory range
 + *
@@ -80,89 +92,68 @@ index 04664cd..73e79e6 100644
 + * in a heuristic way. In the beginning, step_size is small. The more memory we
 + * map memory in the next loop.
 + */
-+static void __init memory_map_top_down(unsigned long map_start,
-+				       unsigned long map_end)
++static void __init memory_map_bottom_up(unsigned long map_start,
++					unsigned long map_end)
++{
++	unsigned long next, new_mapped_ram_size, start;
++	unsigned long mapped_ram_size = 0;
++	/* step_size need to be small so pgt_buf from BRK could cover it */
++	unsigned long step_size = PMD_SIZE;
++	start = map_start;
++
++	while (start < map_end) {
++		if (map_end - start > step_size) {
++			next = round_up(start + 1, step_size);
++			if (next > map_end)
++				next = map_end;
++		} else
++			next = map_end;
++
++		new_mapped_ram_size = init_range_memory_mapping(start, next);
++		min_pfn_mapped = start >> PAGE_SHIFT;
++		start = next;
++
++		if (new_mapped_ram_size > mapped_ram_size)
++			step_size <<= STEP_SIZE_SHIFT;
++		mapped_ram_size += new_mapped_ram_size;
++	}
++}
++#else
++static void __init memory_map_bottom_up(unsigned long map_start,
++					unsigned long map_end)
++{
++}
++#endif /* CONFIG_MOVABLE_NODE */
++
+ void __init init_mem_mapping(void)
  {
--	unsigned long end, real_end, start, last_start;
-+	unsigned long real_end, start, last_start;
- 	unsigned long step_size;
- 	unsigned long addr;
- 	unsigned long mapped_ram_size = 0;
- 	unsigned long new_mapped_ram_size;
+ 	unsigned long end;
+@@ -467,12 +511,23 @@ void __init init_mem_mapping(void)
+ 	init_memory_mapping(0, ISA_END_ADDRESS);
  
--	probe_page_size_mask();
--
--#ifdef CONFIG_X86_64
--	end = max_pfn << PAGE_SHIFT;
--#else
--	end = max_low_pfn << PAGE_SHIFT;
--#endif
--
--	/* the ISA range is always mapped regardless of memory holes */
--	init_memory_mapping(0, ISA_END_ADDRESS);
--
- 	/* xen has big range in reserved near end of ram, skip it at first.*/
--	addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE, PMD_SIZE);
-+	addr = memblock_find_in_range(map_start, map_end, PMD_SIZE, PMD_SIZE);
- 	real_end = addr + PMD_SIZE;
- 
- 	/* step_size need to be small so pgt_buf from BRK could cover it */
-@@ -430,19 +430,13 @@ void __init init_mem_mapping(void)
- 	min_pfn_mapped = real_end >> PAGE_SHIFT;
- 	last_start = start = real_end;
- 
--	/*
+ 	/*
 -	 * We start from the top (end of memory) and go to the bottom.
 -	 * The memblock_find_in_range() gets us a block of RAM from the
 -	 * end of RAM in [min_pfn_mapped, max_pfn_mapped) used as new pages
 -	 * for page table.
--	 */
--	while (last_start > ISA_END_ADDRESS) {
-+	while (last_start > map_start) {
- 		if (last_start > step_size) {
- 			start = round_down(last_start - 1, step_size);
--			if (start < ISA_END_ADDRESS)
--				start = ISA_END_ADDRESS;
-+			if (start < map_start)
-+				start = map_start;
- 		} else
--			start = ISA_END_ADDRESS;
-+			start = map_start;
- 		new_mapped_ram_size = init_range_memory_mapping(start,
- 							last_start);
- 		last_start = start;
-@@ -453,8 +447,32 @@ void __init init_mem_mapping(void)
- 		mapped_ram_size += new_mapped_ram_size;
- 	}
- 
--	if (real_end < end)
--		init_range_memory_mapping(real_end, end);
-+	if (real_end < map_end)
-+		init_range_memory_mapping(real_end, map_end);
-+}
++	 * If the allocation is in bottom-up direction, we start from the
++	 * bottom and go to the top: first [kernel_end, end) and then
++	 * [ISA_END_ADDRESS, kernel_end). Otherwise, we start from the top
++	 * (end of memory) and go to the bottom.
++	 *
++	 * The memblock_find_in_range() gets us a block of RAM in
++	 * [min_pfn_mapped, max_pfn_mapped) used as new pages for page table.
+ 	 */
+-	memory_map_top_down(ISA_END_ADDRESS, end);
++	if (memblock_bottom_up()) {
++		unsigned long kernel_end;
 +
-+void __init init_mem_mapping(void)
-+{
-+	unsigned long end;
-+
-+	probe_page_size_mask();
-+
-+#ifdef CONFIG_X86_64
-+	end = max_pfn << PAGE_SHIFT;
-+#else
-+	end = max_low_pfn << PAGE_SHIFT;
-+#endif
-+
-+	/* the ISA range is always mapped regardless of memory holes */
-+	init_memory_mapping(0, ISA_END_ADDRESS);
-+
-+	/*
-+	 * We start from the top (end of memory) and go to the bottom.
-+	 * The memblock_find_in_range() gets us a block of RAM from the
-+	 * end of RAM in [min_pfn_mapped, max_pfn_mapped) used as new pages
-+	 * for page table.
-+	 */
-+	memory_map_top_down(ISA_END_ADDRESS, end);
++		kernel_end = round_up(__pa_symbol(_end), PMD_SIZE);
++		memory_map_bottom_up(kernel_end, end);
++		memory_map_bottom_up(ISA_END_ADDRESS, kernel_end);
++	} else {
++		memory_map_top_down(ISA_END_ADDRESS, end);
++	}
  
  #ifdef CONFIG_X86_64
  	if (max_pfn > max_low_pfn) {
