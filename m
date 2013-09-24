@@ -1,112 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab3IXVeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:34:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46725 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab3IXVes (ORCPT
+	id S1754817Ab3IXVgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 17:36:43 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:45627 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754734Ab3IXVgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:34:48 -0400
-Message-ID: <5242051F.70609@ti.com>
-Date: Tue, 24 Sep 2013 17:33:19 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 24 Sep 2013 17:36:41 -0400
+Message-ID: <524205E5.2090303@marcussundberg.com>
+Date: Tue, 24 Sep 2013 23:36:37 +0200
+From: Marcus Sundberg <marcus@marcussundberg.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "wni@nvidia.com" <wni@nvidia.com>, "joe@perches.com" <joe@perches.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCHv6 02/16] drivers: thermal: introduce device tree parser
-References: <1379537849-28425-1-git-send-email-eduardo.valentin@ti.com> <1379540136-28378-1-git-send-email-eduardo.valentin@ti.com> <20130923104003.GA16069@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130923104003.GA16069@e106331-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="9VuNC348GOpQBO6G88XXmFPgOq4Q8R8lS"
+To: "David S. Miller" <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] net: ipheth Add support for iPad 3.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---9VuNC348GOpQBO6G88XXmFPgOq4Q8R8lS
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+>From ad23adfbe455f8ae44476d43e4b3033306fe536f Mon Sep 17 00:00:00 2001
+From: Marcus Sundberg <marcus@marcussundberg.com>
+Date: Tue, 24 Sep 2013 22:37:07 +0200
+Subject: [PATCH 1/2] net: ipheth: Sort device IDs and use consistent
+ whitespace.
 
-On 23-09-2013 06:40, Mark Rutland wrote:
->=20
-> It would be nice to have a name for the cells after a phandle which
-> describe the cooling device's configuration. You've called them
-> parameters here, but it probably makes sense to call them a
-> cooling-specifier (following clock-specifier and interrupt-specifier).
+Signed-off-by: Marcus Sundberg <marcus@marcussundberg.com>
+---
+ drivers/net/usb/ipheth.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-Maybe it was not very clear, and I am working on improving this, but
-what I am proposing is simply to have:
- cooling-device =3D <&cdev min max>
+diff --git a/drivers/net/usb/ipheth.c b/drivers/net/usb/ipheth.c
+index ff8594d..a736ebb 100644
+--- a/drivers/net/usb/ipheth.c
++++ b/drivers/net/usb/ipheth.c
+@@ -54,16 +54,16 @@
+ #include <linux/usb.h>
+ #include <linux/workqueue.h>
 
-where min and max are one cell unsigned values referring to minimum
-cooling level and maximum cooling level, for this reference. Note that
-'cdev' may have 10 levels, but in this reference we may use only from 6
-to 10:
- cooling-device =3D <&cdev 6 10>;
+-#define USB_VENDOR_APPLE        0x05ac
+-#define USB_PRODUCT_IPHONE      0x1290
+-#define USB_PRODUCT_IPHONE_3G   0x1292
+-#define USB_PRODUCT_IPHONE_3GS  0x1294
+-#define USB_PRODUCT_IPHONE_4	0x1297
+-#define USB_PRODUCT_IPAD 0x129a
+-#define USB_PRODUCT_IPAD_MINI    0x12ab
+-#define USB_PRODUCT_IPHONE_4_VZW 0x129c
+-#define USB_PRODUCT_IPHONE_4S	0x12a0
+-#define USB_PRODUCT_IPHONE_5	0x12a8
++#define USB_VENDOR_APPLE		0x05ac
++#define USB_PRODUCT_IPHONE		0x1290
++#define USB_PRODUCT_IPHONE_3G		0x1292
++#define USB_PRODUCT_IPHONE_3GS		0x1294
++#define USB_PRODUCT_IPHONE_4		0x1297
++#define USB_PRODUCT_IPAD		0x129a
++#define USB_PRODUCT_IPHONE_4_VZW	0x129c
++#define USB_PRODUCT_IPHONE_4S		0x12a0
++#define USB_PRODUCT_IPHONE_5		0x12a8
++#define USB_PRODUCT_IPAD_MINI		0x12ab
 
-I don't see a need to have a cooling-names for this case. And for now, I
-also don't see why we would use other specifiers. But we can leave it
-open for future extensions.
+ #define IPHETH_USBINTF_CLASS    255
+ #define IPHETH_USBINTF_SUBCLASS 253
+-- 
+1.7.9.5
 
-It does make sense to have thermal-sensor-names (using thermal-sensor as
-per your suggestion). Because it makes clear where the sensor is in the
-case of using several sensors in one zone. Just like in the example I
-already gave:
-> +cpu-thermal: cpu-thermal {
-> +	polling-delay-passive =3D <250>; /* milliseconds */
-> +	polling-delay =3D <1000>; /* milliseconds */
-> +
-> +		/* sensor       ID */
-> +     thermal-sensors =3D <&bandgap0	0>,
-> +		  	  <&adc		0>;
-> +	thermal-sensors-names =3D "cpu", "pcb north";
-> +
-> +		/* hotspot =3D 100 * bandgap - 120 * adc + 484 */
-> +	coefficients =3D 		<100	-120	484>;
-> +
-> +        trips {
-> +		...
-> +        };
-> +
-> +	cooling-attachments {
-> +		...
-> +	};
-> +};
+>From 73f4ff929960772cc1cd07209b87ceba111173f2 Mon Sep 17 00:00:00 2001
+From: Marcus Sundberg <marcus@marcussundberg.com>
+Date: Tue, 24 Sep 2013 22:43:59 +0200
+Subject: [PATCH 2/2] net: ipheth: Add support for iPad 3.
+
+Add USB device ID 0x12a6 to the ipheth network-over-USB-tethering
+driver for iOS devices.
+
+Signed-off-by: Marcus Sundberg <marcus@marcussundberg.com>
+---
+ drivers/net/usb/ipheth.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/net/usb/ipheth.c b/drivers/net/usb/ipheth.c
+index a736ebb..fc3e2a4 100644
+--- a/drivers/net/usb/ipheth.c
++++ b/drivers/net/usb/ipheth.c
+@@ -62,6 +62,7 @@
+ #define USB_PRODUCT_IPAD		0x129a
+ #define USB_PRODUCT_IPHONE_4_VZW	0x129c
+ #define USB_PRODUCT_IPHONE_4S		0x12a0
++#define USB_PRODUCT_IPAD_3		0x12a6
+ #define USB_PRODUCT_IPHONE_5		0x12a8
+ #define USB_PRODUCT_IPAD_MINI		0x12ab
+
+@@ -123,6 +124,10 @@ static struct usb_device_id ipheth_table[] = {
+ 		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_5,
+ 		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
+ 		IPHETH_USBINTF_PROTO) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(
++		USB_VENDOR_APPLE, USB_PRODUCT_IPAD_3,
++		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
++		IPHETH_USBINTF_PROTO) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(usb, ipheth_table);
+-- 
+1.7.9.5
 
 
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
---9VuNC348GOpQBO6G88XXmFPgOq4Q8R8lS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlJCBSsACgkQCXcVR3XQvP1s2gD6Ak+M7jZvhrKL6WWAYGh9j+XT
-JWpfJDtukecQzRmJ3JsA/2Gni/BCC7ay0GgvMwk1o7FqN8cFxJ6//g02cMMqppab
-=7JL8
------END PGP SIGNATURE-----
-
---9VuNC348GOpQBO6G88XXmFPgOq4Q8R8lS--
+-- 
+------------------------------------------------------------------
+           Marcus Sundberg <marcus@marcussundberg.com>
