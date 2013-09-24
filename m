@@ -1,69 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab3IXL1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 07:27:09 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:49657 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763Ab3IXL1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 07:27:07 -0400
-Message-ID: <524176BD.9060403@imgtec.com>
-Date: Tue, 24 Sep 2013 12:25:49 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751334Ab3IXLdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 07:33:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34808 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab3IXLdF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 07:33:05 -0400
+Message-ID: <52417866.5090609@canonical.com>
+Date: Tue, 24 Sep 2013 13:32:54 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] sysfs: Allow mounting without CONFIG_NET
-References: <878uzmhkqg.fsf@xmission.com> <874naahkng.fsf@xmission.com> <524018EA.9070202@imgtec.com> <87ioxrrzb6.fsf_-_@tw-ebiederman.twitter.com>
-In-Reply-To: <87ioxrrzb6.fsf_-_@tw-ebiederman.twitter.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Thomas Hellstrom <thellstrom@vmware.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: Re: [RFC PATCH] drm/nouveau: fix nested locking in mmap handler
+References: <5232B44C.9010408@vmware.com> <5232BBE1.5030509@canonical.com> <5232C2BB.9070303@vmware.com> <20130913082933.GH31370@twins.programming.kicks-ass.net> <CAKMK7uHh_pKh1JpQ_nA7gvWMUsvQoTKAcBXpdcwpVGSddHE9mQ@mail.gmail.com> <20130913090000.GJ31370@twins.programming.kicks-ass.net> <52405F3E.4000609@canonical.com> <52413DA9.4050000@vmware.com> <5241409B.6010102@canonical.com> <52415569.6020602@vmware.com> <20130924093620.GA14003@phenom.ffwll.local> <52416556.7030208@canonical.com> <52416A96.6040802@vmware.com>
+In-Reply-To: <52416A96.6040802@vmware.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_09_24_12_27_03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/09/13 22:41, Eric W. Biederman wrote:
-> 
-> In kobj_ns_current_may_mount the default should be to allow the
-> mount.  The test is only for a single kobj_ns_type at a time, and unless
-> there is a reason to prevent it the mounting sysfs should be allowed.
-> Subsystems that are not registered can't have are not involved so can't
-> have a reason to prevent mounting sysfs.
-> 
-> This is a bug-fix to:
->     commit 7dc5dbc879bd0779924b5132a48b731a0bc04a1e
->     Author: Eric W. Biederman <ebiederm@xmission.com>
->     Date:   Mon Mar 25 20:07:01 2013 -0700
->     
->         sysfs: Restrict mounting sysfs
->         
->         Don't allow mounting sysfs unless the caller has CAP_SYS_ADMIN rights
->         over the net namespace.  The principle here is if you create or have
->         capabilities over it you can mount it, otherwise you get to live with
->         what other people have mounted.
->         
->         Instead of testing this with a straight forward ns_capable call,
->         perform this check the long and torturous way with kobject helpers,
->         this keeps direct knowledge of namespaces out of sysfs, and preserves
->         the existing sysfs abstractions.
->         
->         Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->         Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> That came in via the userns tree during the 3.12 merge window.
->     
-> Reported-by: James Hogan <james.hogan@imgtec.com>
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Op 24-09-13 12:33, Thomas Hellstrom schreef:
+> On 09/24/2013 12:11 PM, Maarten Lankhorst wrote:
+>> Op 24-09-13 11:36, Daniel Vetter schreef:
+>>> On Tue, Sep 24, 2013 at 11:03:37AM +0200, Thomas Hellstrom wrote:
+>>>> On 09/24/2013 09:34 AM, Maarten Lankhorst wrote:
+>>>>> Op 24-09-13 09:22, Thomas Hellstrom schreef:
+>>>>>> On 09/23/2013 05:33 PM, Maarten Lankhorst wrote:
+>>>>>>> Hey,
+>>>>>>>
+>>>>>>> Op 13-09-13 11:00, Peter Zijlstra schreef:
+>>>>>>>> On Fri, Sep 13, 2013 at 10:41:54AM +0200, Daniel Vetter wrote:
+>>>>>>>>> On Fri, Sep 13, 2013 at 10:29 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>>>>>>>> On Fri, Sep 13, 2013 at 09:46:03AM +0200, Thomas Hellstrom wrote:
+>>>>>>>>>>>>> if (!bo_tryreserve()) {
+>>>>>>>>>>>>>       up_read mmap_sem(); // Release the mmap_sem to avoid deadlocks.
+>>>>>>>>>>>>>       bo_reserve();               // Wait for the BO to become available (interruptible)
+>>>>>>>>>>>>>       bo_unreserve();           // Where is bo_wait_unreserved() when we need it, Maarten :P
+>>>>>>>>>>>>>       return VM_FAULT_RETRY; // Go ahead and retry the VMA walk, after regrabbing
+>>>>>>>>>>>>> }
+>>>>>>>>>>> Anyway, could you describe what is wrong, with the above solution, because
+>>>>>>>>>>> it seems perfectly legal to me.
+>>>>>>>>>> Luckily the rule of law doesn't have anything to do with this stuff --
+>>>>>>>>>> at least I sincerely hope so.
+>>>>>>>>>>
+>>>>>>>>>> The thing that's wrong with that pattern is that its still not
+>>>>>>>>>> deterministic - although its a lot better than the pure trylock. Because
+>>>>>>>>>> you have to release and re-acquire with the trylock another user might
+>>>>>>>>>> have gotten in again. Its utterly prone to starvation.
+>>>>>>>>>>
+>>>>>>>>>> The acquire+release does remove the dead/life-lock scenario from the
+>>>>>>>>>> FIFO case, since blocking on the acquire will allow the other task to
+>>>>>>>>>> run (or even get boosted on -rt).
+>>>>>>>>>>
+>>>>>>>>>> Aside from that there's nothing particularly wrong with it and lockdep
+>>>>>>>>>> should be happy afaict (but I haven't had my morning juice yet).
+>>>>>>>>> bo_reserve internally maps to a ww-mutex and task can already hold
+>>>>>>>>> ww-mutex (potentially even the same for especially nasty userspace).
+>>>>>>>> OK, yes I wasn't aware of that. Yes in that case you're quite right.
+>>>>>>>>
+>>>>>>> I added a RFC patch below.  I only tested with PROVE_LOCKING, and always forced the slowpath for debugging.
+>>>>>>>
+>>>>>>> This fixes nouveau and core ttm to always use blocking acquisition in fastpath.
+>>>>>>> Nouveau was a bit of a headache, but afaict it should work.
+>>>>>>>
+>>>>>>> In almost all cases relocs are not updated, so I kept intact the fastpath
+>>>>>>> of not copying relocs from userspace. The slowpath tries to copy it atomically,
+>>>>>>> and if that fails it will unreserve all bo's and copy everything.
+>>>>>>>
+>>>>>>> One thing to note is that the command submission ioctl may fail now with -EFAULT
+>>>>>>> if presumed cannot be updated, while the commands are submitted succesfully.
+>>>>>> I think the Nouveau guys need to comment further on this, but returning -EFAULT might break existing user-space, and that's not allowed, but IIRC the return value of "presumed" is only a hint, and if it's incorrect will only trigger future command stream patching.
+>>>>>>
+>>>>>> Otherwise reviewing mostly the TTM stuff. FWIW, from wat I can tell the vmwgfx driver doesn't need any fixups.
+>>>>> Well because we read the list of buffer objects the presumed offsets are at least read-mapped. Although I guess in the worst case the mapping might disappear before the syscall copies back the data.
+>>>>> So if -EFAULT happens here then userspace messed up in some way, either by forgetting to map the offsets read-write, which cannot happen with libdrm or free'ing the bo list before the syscall returns,
+>>>>> which would probably result in libdrm crashing shortly afterwards anyway.
+>>>> Hmm, is the list of buffer objects (and the "presumed" members)
+>>>> really in DRM memory? Because if it resides or may reside in
+>>>> anonymous system memory, it may well be paged out between reading
+>>>> and writing, in which case the -EFAULT return is incorrect.
+>>>>
+>>>> In fact failures of pushbuf / execbuf *after* commands are
+>>>> successfully submitted are generally very hard to recover from.
+>>>> That's why the kernel should do whatever it takes to recover from
+>>>> such failures, and user-space should do whatever it takes to recover
+>>>> from copy-to-user failures of needed info from the kernel, and it
+>>>> really depends on the user-space usage pattern of "presumed". IIRC
+>>>> the original reason for copying it back to user-space was, that if a
+>>>> relocation offsets were patched up by the kernel, and then the
+>>>> process was sent a signal causing it to retry execbuf, then
+>>>> "presumed" had to be updated, otherwise it would be inconsistent
+>>>> with what's currently in the command stream, which is very bad. If
+>>>> "presumed" is, however, only used by user-space to guess an offset,
+>>>> the correct action would be to swallow the -EFAULT.
+>>> In i915 we've had tons of fun with a regression in 3.7 where exactly this
+>>> blows up: Some of our userspace (UXA ddx specifically) retains
+>>> relocations-trees partially accross an execbuf. Which means if the kernel
+>>> updates the relocations it _must_ update the presumed offset for
+>>> otherwise things will go haywire on the next execbuf. So we can't return
+>>> -EFAULT if the userspace memory needs to be just refaulted but still need
+>>> to guarante a "correct" presumed offset.
+>>>
+>>> Since we didn't come up with a way to make sure this will work in all
+>>> cases when we get an -EFAULT when writing back presumed offsets we have a
+>>> rather tricky piece of fallback logic.
+>>> - Any -EFAULT error in the fastpath will drop us into the relocation
+>>>    slowpath. The slowpath completly processes relocs anew, so any updates
+>>>    done by the fastpath are irrelevant.
+>>>
+>>> - The first thing the slowpath does is set the presumed offset in the
+>>>    userspace reloc lists to an invalid address (we pick -1) to make sure
+>>>    that any subsequent execbuf with the same partial reloc tree will again
+>>>    go through the relocation update code.
+>>>
+>>> - Then we do the usual slowpath, i.e. copy relocs from userspace, re-grab
+>>>    locks and then process them. The copy-back of the presumed offset
+>>>    happens with an copy_to_user_inatomic, and we ignore any errors.
+>>>
+>>> Of course we try really hard to make sure that we never hit the reloc
+>>> slowpath ;-) But nowadays this is all fully tested with some nasty
+>>> testcases (and a small kernel option to disable prefaulting).
+>>>
+>> It seems userspace only updates offset and domain in nouveau. If it fails to update
+>> it would result in the same affect as when the buffer gets moved around by TTM.
+>> But hey maybe I'll have some fun, I'll lie to userspace, hardcode userspace offset
+>> to 0x40000000, always force domain to be different and see what breaks.
+>>
+>> My guess is absolutely nothing, except it might expose some bugs where we forgot annotation..
+> I think that would certainly break if your return an -ERESTARTSYS after applying relocations but
+> before submitting the command stream to hardware....
+The relocations are updated before submitting the command stream, but it's copied back to userspace
+after submitting the command stream. I'm not sure what -ERESTARTSYS would change, the syscall
+is not in an interruptible state.
 
-Tested-by: James Hogan <james.hogan@imgtec.com>
+Oh and after some testing with relocations it seems they always break nouveau. Originally I've set domain
+and offset differently, but that crashed the card. In my second try I kept domain and offset correct, and hacked
+the kernel to force apply all relocations. Unsurprisingly nouveau still breaks, even if the relocations themselves
+should have been a noop. :/
 
-Thanks
-James
+Swallowing -EFAULT is fine theoretically though, I wouldn't worry about it..
+
+~Maarten
 
