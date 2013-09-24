@@ -1,199 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab3IXDN7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 23:13:59 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:54240 "EHLO
+	id S1753812Ab3IXDPN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 23:15:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54522 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab3IXDNi (ORCPT
+	with ESMTP id S1752797Ab3IXDPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 23:13:38 -0400
+	Mon, 23 Sep 2013 23:15:11 -0400
 From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
 Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCHv4 2/3] ARM: msm: Add support for APQ8074 Dragonboard
-Date: Mon, 23 Sep 2013 20:13:25 -0700
-Message-Id: <1379992406-3541-2-git-send-email-rvaswani@codeaurora.org>
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] ARM: debug: Create CONFIG_DEBUG_MSM_UART and re-organize the selects for MSM
+Date: Mon, 23 Sep 2013 20:14:59 -0700
+Message-Id: <1379992499-3662-1-git-send-email-rvaswani@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1379992406-3541-1-git-send-email-rvaswani@codeaurora.org>
-References: <1379992406-3541-1-git-send-email-rvaswani@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds basic board support for APQ8074 Dragonboard
-which belongs to the Snapdragon 800 family.
-For now, just support a basic machine with device tree.
+Create the hidden config DEBUG_MSM_UART and clean-up the default selection
+for CONFIG_DEBUG_LL_INCLUDE.
 
 Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 ---
- arch/arm/Kconfig.debug                         |  9 +++++++
- arch/arm/boot/dts/Makefile                     |  3 ++-
- arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |  6 +++++
- arch/arm/boot/dts/qcom-msm8974.dtsi            | 35 ++++++++++++++++++++++++++
- arch/arm/include/debug/msm.S                   |  5 ++++
- arch/arm/mach-msm/Kconfig                      | 13 ++++++++++
- arch/arm/mach-msm/board-dt.c                   |  9 +++++++
- 7 files changed, 79 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
- create mode 100644 arch/arm/boot/dts/qcom-msm8974.dtsi
+ arch/arm/Kconfig.debug | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
 diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index e18a6fc..959b2c7 100644
+index 9762c84..e18a6fc 100644
 --- a/arch/arm/Kconfig.debug
 +++ b/arch/arm/Kconfig.debug
-@@ -357,6 +357,15 @@ choice
+@@ -318,6 +318,7 @@ choice
+ 	config DEBUG_MSM_UART1
+ 		bool "Kernel low-level debugging messages via MSM UART1"
+ 		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
++		select DEBUG_MSM_UART
+ 		help
+ 		  Say Y here if you want the debug print routines to direct
+ 		  their output to the first serial port on MSM devices.
+@@ -325,6 +326,7 @@ choice
+ 	config DEBUG_MSM_UART2
+ 		bool "Kernel low-level debugging messages via MSM UART2"
+ 		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
++		select DEBUG_MSM_UART
+ 		help
+ 		  Say Y here if you want the debug print routines to direct
+ 		  their output to the second serial port on MSM devices.
+@@ -332,6 +334,7 @@ choice
+ 	config DEBUG_MSM_UART3
+ 		bool "Kernel low-level debugging messages via MSM UART3"
+ 		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
++		select DEBUG_MSM_UART
+ 		help
+ 		  Say Y here if you want the debug print routines to direct
+ 		  their output to the third serial port on MSM devices.
+@@ -340,6 +343,7 @@ choice
+ 		bool "Kernel low-level debugging messages via MSM 8660 UART"
+ 		depends on ARCH_MSM8X60
+ 		select MSM_HAS_DEBUG_UART_HS
++		select DEBUG_MSM_UART
+ 		help
+ 		  Say Y here if you want the debug print routines to direct
+ 		  their output to the serial port on MSM 8660 devices.
+@@ -348,6 +352,7 @@ choice
+ 		bool "Kernel low-level debugging messages via MSM 8960 UART"
+ 		depends on ARCH_MSM8960
+ 		select MSM_HAS_DEBUG_UART_HS
++		select DEBUG_MSM_UART
+ 		help
  		  Say Y here if you want the debug print routines to direct
  		  their output to the serial port on MSM 8960 devices.
- 
-+	config DEBUG_MSM8974_UART
-+		bool "Kernel low-level debugging messages via MSM 8974 UART"
-+		depends on ARCH_MSM8974
-+		select MSM_HAS_DEBUG_UART_HS
-+		select DEBUG_MSM_UART
-+		help
-+		  Say Y here if you want the debug print routines to direct
-+		  their output to the serial port on MSM 8974 devices.
-+
- 	config DEBUG_MVEBU_UART
- 		bool "Kernel low-level debugging messages via MVEBU UART (old bootloaders)"
- 		depends on ARCH_MVEBU
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 000cf76..e71a3ec 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -102,7 +102,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
- 	kirkwood-openblocks_a6.dtb
- dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
- dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
--	msm8960-cdp.dtb
-+	msm8960-cdp.dtb \
-+	qcom-apq8074-dragonboard.dtb
- dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
- 	armada-370-mirabox.dtb \
- 	armada-370-netgear-rn102.dtb \
-diff --git a/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
-new file mode 100644
-index 0000000..bb6f3c4
---- /dev/null
-+++ b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
-@@ -0,0 +1,6 @@
-+/include/ "qcom-msm8974.dtsi"
-+
-+/ {
-+	model = "Qualcomm APQ8074 Dragonboard";
-+	compatible = "qcom,apq8074-dragonboard", "qcom,apq8074";
-+};
-diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
-new file mode 100644
-index 0000000..f04b643
---- /dev/null
-+++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
-@@ -0,0 +1,35 @@
-+/dts-v1/;
-+
-+/include/ "skeleton.dtsi"
-+
-+/ {
-+	model = "Qualcomm MSM8974";
-+	compatible = "qcom,msm8974";
-+	interrupt-parent = <&intc>;
-+
-+	soc: soc { };
-+};
-+
-+&soc {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	ranges;
-+	compatible = "simple-bus";
-+
-+	intc: interrupt-controller@f9000000 {
-+		compatible = "qcom,msm-qgic2";
-+		interrupt-controller;
-+		#interrupt-cells = <3>;
-+		reg = <0xf9000000 0x1000>,
-+		      <0xf9002000 0x1000>;
-+	};
-+
-+	timer {
-+		compatible = "arm,armv7-timer";
-+		interrupts = <1 2 0xf08>,
-+			     <1 3 0xf08>,
-+			     <1 4 0xf08>,
-+			     <1 1 0xf08>;
-+		clock-frequency = <19200000>;
-+	};
-+};
-diff --git a/arch/arm/include/debug/msm.S b/arch/arm/include/debug/msm.S
-index 9166e1b..9d653d4 100644
---- a/arch/arm/include/debug/msm.S
-+++ b/arch/arm/include/debug/msm.S
-@@ -46,6 +46,11 @@
- #define MSM_DEBUG_UART_PHYS	0x16440000
- #endif
- 
-+#ifdef CONFIG_DEBUG_MSM8974_UART
-+#define MSM_DEBUG_UART_BASE	0xFA71E000
-+#define MSM_DEBUG_UART_PHYS	0xF991E000
-+#endif
-+
- 	.macro	addruart, rp, rv, tmp
- #ifdef MSM_DEBUG_UART_PHYS
- 	ldr	\rp, =MSM_DEBUG_UART_PHYS
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 2586c28..086bcb9 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -64,6 +64,19 @@ config ARCH_MSM_DT
- 	select SPARSE_IRQ
- 	select USE_OF
- 
-+config ARCH_MSM8974
-+	bool "MSM8974"
-+	select ARM_GIC
-+	select CPU_V7
-+	select HAVE_ARM_ARCH_TIMER
-+	select HAVE_SMP
-+	select MSM_SCM if SMP
-+	select USE_OF
-+
-+config ARCH_MSM_DT
-+	def_bool y
-+	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_MSM8974)
-+
- config MSM_HAS_DEBUG_UART_HS
+@@ -880,6 +885,10 @@ config DEBUG_STI_UART
  	bool
+ 	depends on ARCH_STI
  
-diff --git a/arch/arm/mach-msm/board-dt.c b/arch/arm/mach-msm/board-dt.c
-index 266a280..5211e80 100644
---- a/arch/arm/mach-msm/board-dt.c
-+++ b/arch/arm/mach-msm/board-dt.c
-@@ -26,7 +26,16 @@ static const char * const msm_dt_match[] __initconst = {
- 	NULL
- };
- 
-+static const char * const apq8074_dt_match[] __initconst = {
-+	"qcom,apq8074-dragonboard",
-+	NULL
-+};
++config DEBUG_MSM_UART
++	bool
++	depends on ARCH_MSM
 +
- DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
- 	.smp = smp_ops(msm_smp_ops),
- 	.dt_compat = msm_dt_match,
- MACHINE_END
-+
-+DT_MACHINE_START(APQ_DT, "Qualcomm MSM (Flattened Device Tree)")
-+	.dt_compat = apq8074_dt_match,
-+MACHINE_END
+ config DEBUG_LL_INCLUDE
+ 	string
+ 	default "debug/8250.S" if DEBUG_LL_UART_8250 || DEBUG_UART_8250
+@@ -895,11 +904,7 @@ config DEBUG_LL_INCLUDE
+ 				 DEBUG_IMX53_UART ||\
+ 				 DEBUG_IMX6Q_UART || \
+ 				 DEBUG_IMX6SL_UART
+-	default "debug/msm.S" if DEBUG_MSM_UART1 || \
+-				 DEBUG_MSM_UART2 || \
+-				 DEBUG_MSM_UART3 || \
+-				 DEBUG_MSM8660_UART || \
+-				 DEBUG_MSM8960_UART
++	default "debug/msm.S" if DEBUG_MSM_UART
+ 	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
+ 	default "debug/sirf.S" if DEBUG_SIRFPRIMA2_UART1 || DEBUG_SIRFMARCO_UART1
+ 	default "debug/sti.S" if DEBUG_STI_UART
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
