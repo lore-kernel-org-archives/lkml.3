@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab3IXJLf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:11:35 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:21483 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab3IXJLd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:11:33 -0400
-X-AuditID: cbfee68e-b7f756d000004512-88-52415744299f
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
-In-reply-to: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
-Subject: [PATCH 09/22] backlight: da903x_bl: use
- devm_backlight_device_register()
-Date: Tue, 24 Sep 2013 18:11:32 +0900
-Message-id: <004f01ceb906$0f824120$2e86c360$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAAPIOw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zI12XcMcgg1Vr5S3mrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErozNz9oY
-	Cy7wVLSs28/SwHiaq4uRk0NCwERi0+n77BC2mMSFe+vZuhi5OIQEljFKzOt4zQhT1ND+Eyqx
-	iFHiff9sdgjnF6NEx8p9bCBVbAJqEl++HAZKcHCICOhLtLVogISZBXIk7j+ZBbZBSMBWYt2H
-	2WA2p4CdxKmlZ8BahQWCJT61fGYFsVkEVCWe/3nKBGLzAtX/f7uTEcIWlPgx+R4LxEwtic3b
-	mlghbHmJzWveMoOslRBQl3j0VxckLCJgJPF43zRmiBIRiX0v3jGCnCwhcI5d4syzQ2wQuwQk
-	vk0+xALRKyux6QAzxL+SEgdX3GCZwCgxC8nmWUg2z0KyeRaSFQsYWVYxiqYWJBcUJ6UXGekV
-	J+YWl+al6yXn525ihERl3w7GmwesDzEmA62fyCwlmpwPjOq8knhDYzMjC1MTU2Mjc0sz0oSV
-	xHnVWqwDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTAqGWZ/PijC0X1I7NwG7a7OyXe85ScF
-	vzRQYVr5ZHNn3cm+slNd5ppKZd/nWiXPe6j9wX1PTqTDac1Az3vF9e/4fl2dc1nogYB4kIUd
-	vyv/KvnsnDUvOvbmsLXesHDJO/co3bj1zl+dv1+jF09qdtvdWC9x7pzssu5e/8O7TPkL782f
-	8f31HD0lluKMREMt5qLiRABU+nIw4AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jAV2XcMcggxe7pS3mrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
-	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaMzc/aGAsu8FS0rNvP0sB4mquLkZNDQsBEoqH9JxuELSZx4d56
-	IJuLQ0hgEaPE+/7Z7BDOL0aJjpX7wKrYBNQkvnw5DJTg4BAR0Jdoa9EACTML5EjcfzKLHcQW
-	ErCVWPdhNpjNKWAncWrpGbBWYYFgiU8tn1lBbBYBVYnnf54ygdi8QPX/3+5khLAFJX5MvscC
-	MVNLYvO2JlYIW15i85q3zCBrJQTUJR791QUJiwgYSTzeN40ZokREYt+Ld4wTGIVmIZk0C8mk
-	WUgmzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcMw/k9rBuLLB4hCjAAejEg/v
-	Dm+HICHWxLLiytxDjBIczEoivDdsHYOEeFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0OR+YjvJK
-	4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgXF5uKXs74SI2Ii6
-	/iUCdyQct07xzpK58Vu2c5e57Ndts1fePxJiyvlS9fqSY3XlcwXSf+yNPz9jUb9iupzvNVfV
-	zapM6wqrevvm91TkrZ6barluddzcmA2PXlt/P3VfVusGX0yP9XoPo3kmaj9Pzjw554TAE822
-	lQ+XmF6zr2xLPta2dIcBh4USS3FGoqEWc1FxIgB6+EAEPQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754099Ab3IXJMD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:12:03 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:4997 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784Ab3IXJMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 05:12:02 -0400
+X-IronPort-AV: E=Sophos;i="4.90,969,1371081600"; 
+   d="scan'208";a="54242423"
+Message-ID: <1380013893.23688.10.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH] powerpc/dts/virtex440: declare address/size-cells for
+ phy device
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Gernot Vormayr <gvormayr@gmail.com>,
+        <linuxppc-dev@lists.ozlabs.org>
+Date: Tue, 24 Sep 2013 10:11:33 +0100
+In-Reply-To: <1370257241-23923-1-git-send-email-ian.campbell@citrix.com>
+References: <1370257241-23923-1-git-send-email-ian.campbell@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_backlight_device_register() to make cleanup paths simpler,
-and remove unnecessary remove().
+On Mon, 2013-06-03 at 12:00 +0100, Ian Campbell wrote:
+> This fixes a warning:
+> 
+>   DTC     arch/powerpc/boot/virtex440-ml507.dtb
+> Warning (reg_format): "reg" property in /plb@0/xps-ll-temac@81c00000/ethernet@81c00000/phy@7 has invalid length (4 bytes) (#address-cells == 2, #size-cells == 1)
+> Warning (avoid_default_addr_size): Relying on default #address-cells value for /plb@0/xps-ll-temac@81c00000/ethernet@81c00000/phy@7
+> Warning (avoid_default_addr_size): Relying on default #size-cells value for /plb@0/xps-ll-temac@81c00000/ethernet@81c00000/phy@7
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/da903x_bl.c |   14 +++-----------
- 1 file changed, 3 insertions(+), 11 deletions(-)
+I still see this in v3.12-rc2. Ping?
 
-diff --git a/drivers/video/backlight/da903x_bl.c b/drivers/video/backlight/da903x_bl.c
-index bbad5c2..12c5d84 100644
---- a/drivers/video/backlight/da903x_bl.c
-+++ b/drivers/video/backlight/da903x_bl.c
-@@ -144,8 +144,9 @@ static int da903x_backlight_probe(struct platform_device *pdev)
- 	memset(&props, 0, sizeof(props));
- 	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = max_brightness;
--	bl = backlight_device_register(pdev->name, data->da903x_dev, data,
--				       &da903x_backlight_ops, &props);
-+	bl = devm_backlight_device_register(&pdev->dev, pdev->name,
-+					data->da903x_dev, data,
-+					&da903x_backlight_ops, &props);
- 	if (IS_ERR(bl)) {
- 		dev_err(&pdev->dev, "failed to register backlight\n");
- 		return PTR_ERR(bl);
-@@ -158,21 +159,12 @@ static int da903x_backlight_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int da903x_backlight_remove(struct platform_device *pdev)
--{
--	struct backlight_device *bl = platform_get_drvdata(pdev);
--
--	backlight_device_unregister(bl);
--	return 0;
--}
--
- static struct platform_driver da903x_backlight_driver = {
- 	.driver		= {
- 		.name	= "da903x-backlight",
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= da903x_backlight_probe,
--	.remove		= da903x_backlight_remove,
- };
- 
- module_platform_driver(da903x_backlight_driver);
--- 
-1.7.10.4
+> 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Gernot Vormayr <gvormayr@gmail.com>
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/powerpc/boot/dts/virtex440-ml507.dts |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/powerpc/boot/dts/virtex440-ml507.dts b/arch/powerpc/boot/dts/virtex440-ml507.dts
+> index fc7073b..391a4e2 100644
+> --- a/arch/powerpc/boot/dts/virtex440-ml507.dts
+> +++ b/arch/powerpc/boot/dts/virtex440-ml507.dts
+> @@ -257,6 +257,8 @@
+>  			#size-cells = <1>;
+>  			compatible = "xlnx,compound";
+>  			ethernet@81c00000 {
+> +				#address-cells = <1>;
+> +				#size-cells = <0>;
+>  				compatible = "xlnx,xps-ll-temac-1.01.b";
+>  				device_type = "network";
+>  				interrupt-parent = <&xps_intc_0>;
 
 
