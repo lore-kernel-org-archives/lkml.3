@@ -1,222 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab3IXMwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:52:50 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:58348 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab3IXMws (ORCPT
+	id S1753986Ab3IXMwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 08:52:54 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:61930 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753731Ab3IXMwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 08:52:48 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-a4-52418b1ec51d
-Message-id: <52418B1C.6030600@samsung.com>
-Date: Tue, 24 Sep 2013 14:52:44 +0200
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Joe Perches <joe@perches.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
-        m.chehab@samsung.com, t.figa@samsung.com, kyungmin.park@samsung.com,
-        s.nawrocki@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/4] media: s5p-tv: Replace mxr_ macro by default dev_
-References: <1379775649-6331-1-git-send-email-m.krawczuk@partner.samsung.com>
- <1379775649-6331-2-git-send-email-m.krawczuk@partner.samsung.com>
- <52405519.3020504@samsung.com> <13162989.WhfDRzW6dg@amdc1032>
- <1379958282.3575.31.camel@joe-AO722>
-In-reply-to: <1379958282.3575.31.camel@joe-AO722>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t/xa7py3Y5BBptnilpsnLGe1WL2/ccs
-	Fmeb3rBbbHp8jdXi8q45bBY9G7ayWlxcJ29xes0pZovDb9pZLdbPeM3iwOWxeUm9x8F3e5g8
-	vqy6xuzRt2UVo8fnTXIBrFFcNimpOZllqUX6dglcGUun/Wcq2GNSMe3xdpYGxkXaXYycHBIC
-	JhJtE28xQthiEhfurWcDsYUEljJKPPgOFOcCsj8zSsxse8ACkuAV0JL4eHAGE4jNIqAq8ffD
-	PbAGNqBBx5Z8BhskKhAh8ef0PlaIekGJH5PvAfVycIgIKErc3cIPMpNZYCOTxN77vWAzhQV8
-	JS6fv88OsfgHo8SKt8ogNqeAocT8re+ZQWxmAR2J/a3T2CBseYnNa94yT2AUmIVkxSwkZbOQ
-	lC1gZF7FKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERL+X3YwLj5mdYhRgINRiYf3YoJDkBBr
-	YllxZe4hRgkOZiURXs1axyAh3pTEyqrUovz4otKc1OJDjEwcnFINjB4rpTaKP5/mGFJ54eM7
-	//LbT7YzTWJZkn7mlYmg+wVOZakJvf7GMddmbVw//fTcV+eKH8RpvnPmdrjg3qbBtnuN/41y
-	h9bUlXtUjKqaf/XKNHcca+PYcsm90m1vo+Ybz+guA5v5GZ4Pyi51vT70yzi1vefD2b1dcc8v
-	J76dXpvVpWga1/jvnBJLcUaioRZzUXEiAEUbZUFdAgAA
+	Tue, 24 Sep 2013 08:52:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1380023921-29867-3-git-send-email-ldewangan@nvidia.com>
+References: <1380023921-29867-1-git-send-email-ldewangan@nvidia.com>
+	<1380023921-29867-3-git-send-email-ldewangan@nvidia.com>
+Date: Tue, 24 Sep 2013 14:52:48 +0200
+Message-ID: <CACRpkda3m4ipTsS8FZoU1QDwrvwmKFn4awyfXOy2VOiuV63y6A@mail.gmail.com>
+Subject: Re: [rtc-linux] [PATCH V3 2/3] pincntrl: add support for AMS AS3722
+ pin control driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Rob Landley <rob@landley.net>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Florian Lobmaier <florian.lobmaier@ams.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 07:44 PM, Joe Perches wrote:
-> On Mon, 2013-09-23 at 17:48 +0200, Bartlomiej Zolnierkiewicz wrote:
->> On Monday, September 23, 2013 04:50:01 PM Tomasz Stanislawski wrote:
->>> May I ask what is the rationale for this patch?
->>> To reduce a few lines of code?
->> This patch makes source code more generic-like and easier to follow (mxd_r*
->> macros currently only obfuscate the code and make them harder to read for
->> everybody, maybe besides the original driver author ;). Removal of few
->> superfluous lines of code is just a bonus.
-> I don't see any significant issue with this change.
-> Using generic mechanisms is good.
+On Tue, Sep 24, 2013 at 1:58 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+> The AS3722 is a compact system PMU suitable for mobile phones, tablets etc.
 >
-
-Hi Joe,
-Sorry for flaming but please let me explain reasons of my opposition to this patch.
-
-1. It is true that there was no change in mixer messages for 2.5 year in MAINLINE.
-But sometimes I used modification of mxr_ macros while testing the driver.
-Therefore those macros are useful for me.
-
-2. The other problem with this patch is its high 'conflictness' during merging.
-Unfortunately, sometimes I have to use s5p-tv on platform and configuration
-that is only supported in older versions of the kernel + some integration patches.
-The s5p-tv differs from mainline version in those kernels. Therefore
-I would need to keep two versions of patches, one for old and another one for new kernel.
-Or backport the 'cleanup patch' and all experimental patches above it.
-
-3. As I understand the coding guidelines asked to use dev_* to ensure that all
-error messages have information about the device. There is no change in format of
-errors after this patch. So they do not change anything from userland point of view.
-
-4. I looked for other files where macro for dev_err is used.
-I tried following shell command on v3.12-rc2.
-
-git grep -A1 "_err(" | grep -A1 '#define' | grep -B1 "dev_err"
-
-then processing results using
-grep -v "^--" | cut -d: -f 1 | sort -u | wc
-
-produced 55 files. Among them, the files below makes use of a macro that is
-directly expanded to dev_err(dev_ptr, fmt, ...) without any changes in format.
-
-drivers/firewire/ohci.c
-drivers/gpu/drm/i2c/ch7006_priv.h
-drivers/gpu/drm/i2c/sil164_drv.c
-drivers/infiniband/hw/mthca/mthca_dev.h
-drivers/infiniband/hw/qib/qib.h
-drivers/media/platform/marvell-ccic/cafe-driver.c
-drivers/media/platform/marvell-ccic/mcam-core.c
-drivers/media/platform/s5p-tv/mixer.h
-drivers/media/platform/via-camera.c
-drivers/mtd/devices/docg3.h
-drivers/net/ethernet/broadcom/bgmac.h
-drivers/net/ethernet/chelsio/cxgb3/common.h
-drivers/net/ethernet/intel/e1000/e1000.h
-drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-drivers/net/ethernet/mellanox/mlx4/mlx4.h
-drivers/net/wireless/iwlegacy/common.h
-drivers/pci/hotplug/pciehp.h
-drivers/pci/hotplug/shpchp.h
-drivers/remoteproc/ste_modem_rproc.c
-drivers/scsi/csiostor/csio_hw.h
-drivers/staging/fwserial/fwserial.c
-drivers/usb/atm/usbatm.h
-drivers/usb/host/ehci.h
-drivers/usb/host/fhci.h
-drivers/usb/host/fotg210-hcd.c
-drivers/usb/host/fusbh200-hcd.c
-drivers/usb/host/ohci.h
-drivers/usb/host/oxu210hp-hcd.c
-drivers/usb/host/xhci.h
-include/linux/hid.h
-include/net/cfg80211.h
-
-Other files makes only cosmetic changes to format, so they might still be worth to
-be 'demacronized'. So I think we can consider that macros wrapping dev_* is still
-a widely used technique so I ask for a good reason before changing the driver.
-
-If one still would like to continue a 'dev_* cleanup crusade' then I kindly
-ask to create a big patchset that fixes all over mentioned files.
-If most of their maintainers accepts the patches I promise to accept it in
-s5p-tv.
-
-Currently, due to mentioned reason the patch is not a cleanup-up for me.
-And since I am still a maintainer of this god-forgotten driver I am
-going NACK this patch because it makes my work more difficult and because
-this patch provides only (if any) relative aesthetic gain.
-
-However this patch can be saved a little. (see below)
-
-> Few trivial nits:
+> Add a driver to support accessing the GPIO, pinmux and pin configuration
+> of 8 GPIO pins found on the AMS AS3722 through pin control driver and
+> gpiolib.
 >
-> I'd remove the trailing periods from some of the messages
-> at the same time.
+> The driver will register itself as the pincontrol driver and gpio driver.
 >
-> Function tracing is better done by the function tracing
-> mechanism built in to the kernel.  Removing the
-> 	dev_dbg(dev, "%s: enter\n", __func__)
-> lines would be good too.
->
-> Maybe look at the message levels of more of these
-> logging messages and determine which are actually
-> useful and what is mostly noise and should be dev_dbg
-> or deleted altogether.
->
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Signed-off-by: Florian Lobmaier <florian.lobmaier@ams.com>
 
-I agree that most of debugs in form
+That was quick! :-)
 
-mxr_dbg(layer->mdev, "%s:%d\n", __func__, __LINE__);
+This is starting to look a lot better.
 
-are obfuscation. So removal of such lines is a cleanup
-and provides some gain and I can ACK this kind of change.
+> +static int as3722_pinconf_group_get(struct pinctrl_dev *pctldev,
+> +                               unsigned group, unsigned long *config)
+> +{
+> +       dev_err(pctldev->dev, "as3722_pinconf_group_get op not supported\n");
+> +       return -ENOTSUPP;
+> +}
+> +
+> +static int as3722_pinconf_group_set(struct pinctrl_dev *pctldev,
+> +                               unsigned group, unsigned long *configs,
+> +                               unsigned num_configs)
+> +{
+> +       dev_err(pctldev->dev, "as3722_pinconf_group_set op not supported\n");
+> +       return -ENOTSUPP;
+> +}
+> +
+> +static const struct pinconf_ops as3722_pinconf_ops = {
+> +       .pin_config_get = as3722_pinconf_get,
+> +       .pin_config_set = as3722_pinconf_set,
+> +       .pin_config_group_get = as3722_pinconf_group_get,
+> +       .pin_config_group_set = as3722_pinconf_group_set,
 
-Moreover, I agree that some mxr_info() should be changed mxr_dbg().
-I ask Mateusz to modify the 'cleanup' patch to remove only useless
-mxr_dbg() and mxr_info() but to keep mxr_* macros intact.
+Can't you just leave .pin_config_group_[get|set] undefined as
+you don't support that?
 
-Regards,
-Tomasz Stanislawski
+> +static struct pinctrl_desc as3722_pinctrl_desc = {
+> +       .pctlops = (struct pinctrl_ops *)&as3722_pinctrl_ops,
+> +       .pmxops = (struct pinmux_ops *)&as3722_pinmux_ops,
+> +       .confops = (struct pinconf_ops *)&as3722_pinconf_ops,
 
->>>> diff --git a/drivers/media/platform/s5p-tv/mixer_drv.c b/drivers/media/platform/s5p-tv/mixer_drv.c
-> 
->>>> @@ -59,7 +59,7 @@ void mxr_streamer_get(struct mxr_device *mdev)
->>>>  {
->>>>  	mutex_lock(&mdev->mutex);
->>>>  	++mdev->n_streamer;
->>>> -	mxr_dbg(mdev, "%s(%d)\n", __func__, mdev->n_streamer);
->>>> +	dev_dbg(mdev->dev, "%s(%d)\n", __func__, mdev->n_streamer);
-> 
-> not too useful
-> 
-> []
-> 
->>>> @@ -159,42 +159,42 @@ static int mxr_acquire_plat_resources(struct mxr_device *mdev,
->>>>  
->>>>  	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "mxr");
->>>>  	if (res == NULL) {
->>>> -		mxr_err(mdev, "get memory resource failed.\n");
->>>> +		dev_err(mdev->dev, "get memory resource failed.\n");
-> 
-> 		dev_err(mdev->dev, "get memory resource failed\n");
-> etc... because of:
-> 
->>>> @@ -252,27 +252,27 @@ static int mxr_acquire_clocks(struct mxr_device *mdev)
->>>>  
->>>>  	res->mixer = clk_get(dev, "mixer");
->>>>  	if (IS_ERR(res->mixer)) {
->>>> -		mxr_err(mdev, "failed to get clock 'mixer'\n");
->>>> +		dev_err(mdev->dev, "failed to get clock 'mixer'\n");
-> 
-> Mixed use of messages with/without periods.
-> 
->>>> @@ -295,13 +295,13 @@ static int mxr_acquire_resources(struct mxr_device *mdev,
->>>>  	if (ret)
->>>>  		goto fail_plat;
->>>>  
->>>> -	mxr_info(mdev, "resources acquired\n");
->>>> +	dev_info(mdev->dev, "resources acquired\n");
-> 
-> This isn't really a useful message so I'd convert it
-> to dev_dbg
-> 
->>>> @@ -391,7 +391,6 @@ static int mxr_probe(struct platform_device *pdev)
->>>>  	struct mxr_device *mdev;
->>>>  	int ret;
->>>>  
->>>> -	/* mdev does not exist yet so no mxr_dbg is used */
->>>>  	dev_info(dev, "probe start\n");
-> 
-> Same with a lot of these...
-> 
-> Maybe in a separate patch.
-> 
-> 
-> 
-> 
+Why do you need these casts? Should not be necessary.
 
+> +static int as_pci_direction_input(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       struct as3722_pctrl_info *as_pci = to_as_pci(chip);
+> +       struct as3722 *as3722 = as_pci->as3722;
+> +       int mode;
+> +
+> +       mode = as_pci_get_mode(as_pci->gpio_control[offset].mode_prop,
+> +                       true);
+> +       if (mode < 0) {
+> +               dev_err(as_pci->dev,
+> +                       "Input direction for GPIO %d not supported\n", offset);
+> +               return mode;
+> +       }
+> +
+> +       if (as_pci->gpio_control[offset].enable_gpio_invert)
+> +               mode |= AS3722_GPIO_INV;
+> +
+> +       return as3722_write(as3722, AS3722_GPIOn_CONTROL_REG(offset), mode);
+> +}
+
+Why is this function not calling
+pinctrl_gpio_direction_input(chip->base + offset) instea of setting up
+the mode intself?
+
+The GPIO part of the driver should use the pinctrl part of the
+driver as back-end.
+
+> +static int as_pci_direction_output(struct gpio_chip *chip,
+> +               unsigned offset, int value)
+> +{
+> +       struct as3722_pctrl_info *as_pci = to_as_pci(chip);
+> +       struct as3722 *as3722 = as_pci->as3722;
+> +       int mode;
+> +
+> +       mode = as_pci_get_mode(as_pci->gpio_control[offset].mode_prop,
+> +                       false);
+> +       if (mode < 0) {
+> +               dev_err(as_pci->dev,
+> +                       "Output direction for GPIO %d not supported\n", offset);
+> +               return mode;
+> +       }
+> +
+> +       as_pci_set(chip, offset, value);
+> +       if (as_pci->gpio_control[offset].enable_gpio_invert)
+> +               mode |= AS3722_GPIO_INV;
+> +       return as3722_write(as3722, AS3722_GPIOn_CONTROL_REG(offset), mode);
+> +}
+
+Dito:
+pinctrl_gpio_direction_output()
+
+> +static int as_pci_to_irq(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       struct as3722_pctrl_info *as_pci = to_as_pci(chip);
+> +
+> +       return as3722_irq_get_virq(as_pci->as3722, offset);
+> +}
+> +
+> +static int as_pci_request(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       struct as3722_pctrl_info *as_pci = to_as_pci(chip);
+> +
+> +       if (as_pci->gpio_control[offset].io_function)
+> +               return -EBUSY;
+> +       return 0;
+> +}
+
+Why is this not calling pinctrl_request_gpio(as_pci->chip.base + offset)
+instead of just checking if we happen to be GPIO and failing if
+we are not?
+
+I would implement .free calling pinctrl_free_gpio(gpio) as well.
+
+See e.g. pinctrl-abx500.c
+
+> +static const struct gpio_chip as_pci_chip = {
+> +       .label                  = "as3722-gpio",
+> +       .owner                  = THIS_MODULE,
+> +       .direction_input        = as_pci_direction_input,
+> +       .get                    = as_pci_get,
+> +       .direction_output       = as_pci_direction_output,
+> +       .set                    = as_pci_set,
+> +       .to_irq                 = as_pci_to_irq,
+> +       .request                = as_pci_request,
+> +       .can_sleep              = 1,
+> +       .ngpio                  = AS3722_PIN_NUM,
+> +       .base                   = -1,
+> +};
+> +
+> +static int as3722_pinctrl_probe(struct platform_device *pdev)
+> +{
+> +       struct as3722_pctrl_info *as_pci;
+> +       int ret;
+> +
+> +       as_pci = devm_kzalloc(&pdev->dev, sizeof(*as_pci), GFP_KERNEL);
+> +       if (!as_pci)
+> +               return -ENOMEM;
+> +
+> +       as_pci->dev = &pdev->dev;
+> +       as_pci->dev->of_node = pdev->dev.parent->of_node;
+> +       as_pci->as3722 = dev_get_drvdata(pdev->dev.parent);
+> +       platform_set_drvdata(pdev, as_pci);
+> +
+> +       as_pci->pins = as3722_pins_desc;
+> +       as_pci->num_pins = ARRAY_SIZE(as3722_pins_desc);
+> +       as_pci->functions = as3722_pin_function;
+> +       as_pci->num_functions = ARRAY_SIZE(as3722_pin_function);
+> +       as_pci->pin_groups = as3722_pingroups;
+> +       as_pci->num_pin_groups = ARRAY_SIZE(as3722_pingroups);
+> +       as3722_pinctrl_desc.name = dev_name(&pdev->dev);
+> +       as3722_pinctrl_desc.pins = as3722_pins_desc;
+> +       as3722_pinctrl_desc.npins = ARRAY_SIZE(as3722_pins_desc);
+> +       as_pci->pctl = pinctrl_register(&as3722_pinctrl_desc,
+> +                                       &pdev->dev, as_pci);
+> +       if (!as_pci->pctl) {
+> +               dev_err(&pdev->dev, "Couldn't register pinctrl driver\n");
+> +               return -ENODEV;
+> +       }
+> +
+> +       as_pci->gpio_chip = as_pci_chip;
+> +       as_pci->gpio_chip.dev = &pdev->dev;
+> +       as_pci->gpio_chip.of_node = pdev->dev.parent->of_node;
+> +       ret = gpiochip_add(&as_pci->gpio_chip);
+> +       if (ret < 0) {
+> +               dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
+> +               goto scrub;
+> +       }
+
+Right here you should register a GPIO range using
+gpiochip_add_pin_range() so that all calls from the gpio_chip
+side can happily fall through to the pinctrl driver and set up
+pins as GPIO.
+
+It's very nice how you contained the driver in one state container.
+
+Yours,
+Linus Walleij
