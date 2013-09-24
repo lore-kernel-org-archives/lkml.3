@@ -1,90 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236Ab3IXJUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:20:30 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:46547 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab3IXJU0 (ORCPT
+	id S1754258Ab3IXJUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:20:39 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:23104 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab3IXJUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:20:26 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-4b-52415958fab4
-Message-id: <1380014422.31179.4.camel@AMDC1943>
-Subject: Re: [PATCH v2 0/5] mm: migrate zbud pages
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Bob Liu <bob.liu@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
-Date: Tue, 24 Sep 2013 11:20:22 +0200
-In-reply-to: <20130923220757.GC16191@variantweb.net>
-References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
- <5237FDCC.5010109@oracle.com> <20130923220757.GC16191@variantweb.net>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
+	Tue, 24 Sep 2013 05:20:35 -0400
+X-AuditID: cbfee68e-b7f756d000004512-27-524159621ef0
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
+In-reply-to: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
+Subject: [PATCH 22/22] backlight: wm831x_bl: use
+ devm_backlight_device_register()
+Date: Tue, 24 Sep 2013 18:20:33 +0900
+Message-id: <005c01ceb907$528635c0$f792a140$%han@samsung.com>
 MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xa7oRkY5BBqdOilrMWb+GzWLjjPWs
-	Fl2nprJYfHr5gNHibNMbdovLu+awWdxb85/VYu2Ru+wWk989Y7RY9vU9u8WhfavYHbg9Fu95
-	yeSxaVUnm8emT5PYPU7M+M3i8eDQZhaPj09vsXj0bVnF6LH5dLXH501yAZxRXDYpqTmZZalF
-	+nYJXBn7f8xmL5jKX3Hl8VP2BsYGni5GTg4JAROJq60bmCBsMYkL99azdTFycQgJLGWUeL2n
-	D8r5zCjRf/AuWBWvgL7E0nWfmEFsYQEjibu7D7OD2GwCxhKbly9hA7FFgGq6Z69gBmlmFvjD
-	JLH85jewBIuAqkTf9KVgzZxAq8+/fsMEsaGfUWLxl2MsIAlmAXWJSfMWMUPcpCSxu72THSIu
-	L7F5zVtmiCsEJX5MvscygVFgFpKWWUjKZiEpW8DIvIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/
-	dxMjJHK+7mBceszqEKMAB6MSD++FBIcgIdbEsuLK3EOMEhzMSiK8N2wdg4R4UxIrq1KL8uOL
-	SnNSiw8xMnFwSjUwXt6eXd17bMvyNMFJHNeN5n26HB+95qtac263lHtd77y97PFedft6ExqV
-	69t8pkotYX5/6/epQwa7ZA8ZXXz7buaJzGMWhxcdzOl9bW506OdNjsYiGc/FCdPSd/oeFlpz
-	3ffv9EJeVb6kH5+fbltjc2d5XOCqtZcX/2zxOJyl+6H5yg7uJoGeUCWW4oxEQy3mouJEADuL
-	vzN6AgAA
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAAjvcg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zA92kSMcgg0XPBS3mrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsEroyO3YfY
+	CjbxVBxcMYG9gXEzVxcjJ4eEgInE6Wc9jBC2mMSFe+vZuhi5OIQEljFK/L3SwQpT9Pv/D1aI
+	xHRGiXezjzJBOL8YJf7tesoEUsUmoCbx5cth9i5GDg4RAX2JthYNkDCzQI7E/Sez2EFsIQFb
+	iXUfZoPZnAJ2EqeWnmEDsYUFgiWOzvjAAmKzCKhKTF2/CSzOC1R/c8ErRghbUOLH5HssEDO1
+	JDZva2KFsOUlNq95ywyyVkJAXeLRX12QsIiAkcTBT7+ZIUpEJPa9eMcIcrKEwCV2idk3nzBD
+	7BKQ+Db5EAtEr6zEpgPMEP9KShxccYNlAqPELCSbZyHZPAvJ5llIVixgZFnFKJpakFxQnJRe
+	ZKRXnJhbXJqXrpecn7uJERKVfTsYbx6wPsSYDLR+IrOUaHI+MKrzSuINjc2MLExNTI2NzC3N
+	SBNWEudVa7EOFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cCo0lGlEPTftOfoNevquIjvXCo5
+	ccKet9jmX99Xx7f3nOIB8QB1m+IjN1gl93q+muS/5rbr1prY4uCC+/a9D79XHOKZL2Jk90no
+	wfFbv1VvOZqkzX6dsN9hZaAJ76yrUod4vLSF9AtcNGa2BLRc8T/kkuKmvmPPpcY3B7rE0+db
+	L4qbHieyPEyJpTgj0VCLuag4EQBOlApA4AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jQd2kSMcgg78tfBZz1q9hs7i88BKr
+	xeVdc9gsdu96yurA4nFixm8Wjz3zf7B69G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
+	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
+	FjCNEbq+IUFwPUYGaCBhHWNGx+5DbAWbeCoOrpjA3sC4mauLkZNDQsBE4vf/H6wQtpjEhXvr
+	2boYuTiEBKYzSrybfZQJwvnFKPFv11MmkCo2ATWJL18Os3cxcnCICOhLtLVogISZBXIk7j+Z
+	xQ5iCwnYSqz7MBvM5hSwkzi19AwbiC0sECxxdMYHFhCbRUBVYur6TWBxXqD6mwteMULYghI/
+	Jt9jgZipJbF5WxMrhC0vsXnNW2aQtRIC6hKP/uqChEUEjCQOfvrNDFEiIrHvxTvGCYxCs5BM
+	moVk0iwkk2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzjmn0nvYFzVYHGIUYCD
+	UYmH90KCQ5AQa2JZcWXuIUYJDmYlEd4bto5BQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwP
+	TEd5JfGGxiZmRpZGZhZGJubmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cAYbvddovSf
+	eVCW5KHFlWtu/XrBe6Jhj6zPgUn/WiL7NviYnfgfyPB3qWuLed4fk3kVh4pi/eadNEpX/zad
+	Z2tH1oKdsmWeaXLhPE8tZjw02mxy9WSntNwH0QbGe6uTuqUyX9x1XG7f9fvcQtFbylc2pM58
+	NJf/VYjiUeeWbSaGrlem8c74t+mKEktxRqKhFnNRcSIAGdSUiT0DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Use devm_backlight_device_register() to make cleanup paths simpler,
+and remove unnecessary remove().
 
-On pon, 2013-09-23 at 17:07 -0500, Seth Jennings wrote:
-> On Tue, Sep 17, 2013 at 02:59:24PM +0800, Bob Liu wrote:
-> > Mel mentioned several problems about zswap/zbud in thread "[PATCH v6
-> > 0/5] zram/zsmalloc promotion".
-> > 
-> > Like "it's clunky as hell and the layering between zswap and zbud is
-> > twisty" and "I think I brought up its stalling behaviour during review
-> > when it was being merged. It would have been preferable if writeback
-> > could be initiated in batches and then waited on at the very least..
-> >  It's worse that it uses _swap_writepage directly instead of going
-> > through a writepage ops.  It would have been better if zbud pages
-> > existed on the LRU and written back with an address space ops and
-> > properly handled asynchonous writeback."
-> > 
-> > So I think it would be better if we can address those issues at first
-> > and it would be easier to address these issues before adding more new
-> > features. Welcome any ideas.
-> 
-> I just had an idea this afternoon to potentially kill both these birds with one
-> stone: Replace the rbtree in zswap with an address_space.
-> 
-> Each swap type would have its own page_tree to organize the compressed objects
-> by type and offset (radix tree is more suited for this anyway) and a_ops that
-> could be called by shrink_page_list() (writepage) or the migration code
-> (migratepage).
-> 
-> Then zbud pages could be put on the normal LRU list, maybe at the beginning of
-> the inactive LRU so they would live for another cycle through the list, then be
-> reclaimed in the normal way with the mapping->a_ops->writepage() pointing to a
-> zswap_writepage() function that would decompress the pages and call
-> __swap_writepage() on them.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/wm831x_bl.c |   13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-How exactly the address space can be used here? Do you want to point to
-zbud pages in address_space.page_tree? If yes then which index should be
-used?
-
-
-Best regards,
-Krzysztof
-
+diff --git a/drivers/video/backlight/wm831x_bl.c b/drivers/video/backlight/wm831x_bl.c
+index 2ccf320..8b9455e 100644
+--- a/drivers/video/backlight/wm831x_bl.c
++++ b/drivers/video/backlight/wm831x_bl.c
+@@ -195,8 +195,8 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
+ 	memset(&props, 0, sizeof(props));
+ 	props.type = BACKLIGHT_RAW;
+ 	props.max_brightness = max_isel;
+-	bl = backlight_device_register("wm831x", &pdev->dev, data,
+-				       &wm831x_backlight_ops, &props);
++	bl = devm_backlight_device_register(&pdev->dev, "wm831x", &pdev->dev,
++					data, &wm831x_backlight_ops, &props);
+ 	if (IS_ERR(bl)) {
+ 		dev_err(&pdev->dev, "failed to register backlight\n");
+ 		return PTR_ERR(bl);
+@@ -214,21 +214,12 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int wm831x_backlight_remove(struct platform_device *pdev)
+-{
+-	struct backlight_device *bl = platform_get_drvdata(pdev);
+-
+-	backlight_device_unregister(bl);
+-	return 0;
+-}
+-
+ static struct platform_driver wm831x_backlight_driver = {
+ 	.driver		= {
+ 		.name	= "wm831x-backlight",
+ 		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= wm831x_backlight_probe,
+-	.remove		= wm831x_backlight_remove,
+ };
+ 
+ module_platform_driver(wm831x_backlight_driver);
+-- 
+1.7.10.4
 
 
