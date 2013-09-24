@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab3IXJJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 05:09:53 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:23290 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab3IXJJv (ORCPT
+	id S1753876Ab3IXJKv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 05:10:51 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:27962 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab3IXJKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 05:09:51 -0400
-X-AuditID: cbfee690-b7f3b6d000007a15-d2-524156deb3ac
+	Tue, 24 Sep 2013 05:10:49 -0400
+X-AuditID: cbfee68f-b7f1e6d000004e8d-6f-524157176c44
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
 In-reply-to: <004701ceb905$03e8da50$0bba8ef0$%han@samsung.com>
-Subject: [PATCH 07/22] backlight: atmel-pwm-bl: use
- devm_backlight_device_register()
-Date: Tue, 24 Sep 2013 18:09:50 +0900
-Message-id: <004d01ceb905$d3041c00$790c5400$%han@samsung.com>
+Subject: [PATCH 08/22] backlight: bd6107: use devm_backlight_device_register()
+Date: Tue, 24 Sep 2013 18:10:47 +0900
+Message-id: <004e01ceb905$f50e6760$df2b3620$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAALVxQ
+Thread-index: Ac65BQPO2UlhwYgjRvaJnkuV9ccl+gAANAbQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zfd37YY5BBtcPMFrMWb+GzeLywkus
-	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBmX9qxm
-	KZjGW7Gm9RRbA+NU7i5GTg4JAROJI6s6GCFsMYkL99azdTFycQgJLGOUWDDjCDNM0ZWu6cwQ
-	iUWMEle3nWCHcH4xStyb0ALWziagJvHly2GgBAeHiIC+RFuLBkiYWSBH4v6TWewgtpCArcS6
-	D7PBbE4BO4lTS8+wgZQLC4RJfLroBBJmEVCVuPF8PthEXqDy87OfMUHYghI/Jt9jgRipJbF5
-	WxMrhC0vsXnNW2aQMRIC6hKP/uqChEUEjCSu9zQxQ5SISOx78Q7qx0vsEhcmpUKsEpD4NvkQ
-	C0SrrMSmA1DfSkocXHGDZQKjxCwki2chWTwLyeJZSDYsYGRZxSiaWpBcUJyUXmSiV5yYW1ya
-	l66XnJ+7iRESkRN2MN47YH2IMRlo/URmKdHkfGBE55XEGxqbGVmYmpgaG5lbmpEmrCTOq95i
-	HSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBsSrs8kbnu08mSkTprtGuntbhPU/kDItF0AJZ
-	IfWmiEcGLQ8WbtQ5d5Hj8Hzu7MPf1p1v+R0i91EjiEX5If8BLZupDefir/Yu+C0Qwi+eZChu
-	pTZxwelQRe8Lxfxfb9teXW+78PETa5F9O8/bXtu7LqL71NcuyRtPZNbteqH6XuM/68TqBIUN
-	P5VYijMSDbWYi4oTAY4auLTeAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jAd17YY5BBifPWlnMWb+GzeLywkus
-	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
-	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGEdYwZl/asZimYxluxpvUUWwPjVO4uRk4OCQETiStd05khbDGJC/fW
-	s3UxcnEICSxilLi67QQ7hPOLUeLehBZGkCo2ATWJL18OAyU4OEQE9CXaWjRAwswCORL3n8xi
-	B7GFBGwl1n2YDWZzCthJnFp6hg2kXFggTOLTRSeQMIuAqsSN5/PBJvIClZ+f/YwJwhaU+DH5
-	HgvESC2JzduaWCFseYnNa94yg4yREFCXePRXFyQsImAkcb2niRmiRERi34t3jBMYhWYhmTQL
-	yaRZSCbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwxD+T3sG4qsHiEKMAB6MS
-	D++FBIcgIdbEsuLK3EOMEhzMSiK8N2wdg4R4UxIrq1KL8uOLSnNSiw8xJgM9OpFZSjQ5H5iM
-	8kriDY1NzIwsjcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBkUH9Rd//N0qP
-	Lc/zLu8vydi/+3bX72uswZ8fXNW8Fe3R3JE8bWvB4YlKSbxPpVJ8+hb3eWkx8jS5sF2fupkt
-	+YTy9Z+i6z7e9N7heCL36+Ful/NH5hx/c+uk97V4uVXb1ml0pYUr71bjUFl7wOpL2IqwzXy+
-	y+yuBEpcmLlSYM6UII95E4/tEFNiKc5INNRiLipOBADnESvSPAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zA13xcMcggz2zrS3mrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErozvl1+y
+	FBzhqFj39AZbA2M7excjJ4eEgInE4+9rmSBsMYkL99azdTFycQgJLGOUWLvsK1xRx8LJLBCJ
+	6YwSs97+Y4JwfjFKTOq7wwxSxSagJvHly2GgDg4OEQF9ibYWDZAws0COxP0ns8AGCQnYSqz7
+	MBvM5hSwkzi19AwbiC0s4Cex/vYbsDiLgKrE2avHwEbyAtV/eviCHcIWlPgx+R4LxEwtic3b
+	mlghbHmJzWveMoOslRBQl3j0VxckLCJgJHH43F1miBIRiX0v3jGCnCwhcI5douPgeTaIXQIS
+	3yYfYoHolZXYdIAZ4l9JiYMrbrBMAPoUyeZZSDbPQrJ5FpIVCxhZVjGKphYkFxQnpRcZ6xUn
+	5haX5qXrJefnbmKERGX/Dsa7B6wPMSYDrZ/ILCWanA+M6rySeENjMyMLUxNTYyNzSzPShJXE
+	edVarAOFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MK4smps0fZdmyX7Whi/s8g1r2RrqVokI
+	PmHukfdcGvlOXI+Ft0NlR/GRuI3Ns8MEX/P5Ct5f5HVM3Oh66o+Vb82av21KP3rp+Q6Vm36B
+	6r/2erybFh6/4mNvVhf7mcsi2gsPv55966X+3mm+U+f+C3eYcCH5pXOCAsOLHQv/R90MvPTd
+	u0EhkkuJpTgj0VCLuag4EQC91nqI4AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jQV3xcMcgg8mHzC3mrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
+	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
+	LWAaI3R9Q4LgeowM0EDCOsaM75dfshQc4ahY9/QGWwNjO3sXIyeHhICJRMfCySwQtpjEhXvr
+	2boYuTiEBKYzSsx6+48JwvnFKDGp7w4zSBWbgJrEly+Hgbo5OEQE9CXaWjRAwswCORL3n8wC
+	GyokYCux7sNsMJtTwE7i1NIzbCC2sICfxPrbb8DiLAKqEmevHgMbyQtU/+nhC3YIW1Dix+R7
+	LBAztSQ2b2tihbDlJTavecsMslZCQF3i0V9dkLCIgJHE4XN3mSFKRCT2vXjHOIFRaBaSSbOQ
+	TJqFZNIsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgTH/DPpHYyrGiwOMQpwMCrx
+	8F5IcAgSYk0sK67MPcQowcGsJMJ7w9YxSIg3JbGyKrUoP76oNCe1+BBjMtCjE5mlRJPzgeko
+	ryTe0NjEzMjSyMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYFy6YrqT768Ke
+	3M+vbjHO6TucbTsv/40FY6uQkofPn4XGkmf1+0Mv9/I31Gk5H5y0VN1urpF714fAnSZM/2bG
+	tocuyJPO35LqxDulNNKWfcWR2vUH7zEcVNAvnMedePYAr+qUJZt223q8mrBp0QeF+LNsRfvY
+	NXNmLc1LOPxwF0eRav/NI5LTlViKMxINtZiLihMB9JYNlD0DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,46 +59,28 @@ Use devm_backlight_device_register() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/atmel-pwm-bl.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/video/backlight/bd6107.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-index 8900da7..8993c24 100644
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -171,8 +171,9 @@ static int __init atmel_pwm_bl_probe(struct platform_device *pdev)
- 	memset(&props, 0, sizeof(struct backlight_properties));
- 	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = pdata->pwm_duty_max - pdata->pwm_duty_min;
--	bldev = backlight_device_register("atmel-pwm-bl", &pdev->dev, pwmbl,
--					  &atmel_pwm_bl_ops, &props);
-+	bldev = devm_backlight_device_register(&pdev->dev, "atmel-pwm-bl",
-+					&pdev->dev, pwmbl, &atmel_pwm_bl_ops,
-+					&props);
- 	if (IS_ERR(bldev)) {
- 		retval = PTR_ERR(bldev);
- 		goto err_free_pwm;
-@@ -188,14 +189,12 @@ static int __init atmel_pwm_bl_probe(struct platform_device *pdev)
+diff --git a/drivers/video/backlight/bd6107.c b/drivers/video/backlight/bd6107.c
+index 43c434e..16dd9bc 100644
+--- a/drivers/video/backlight/bd6107.c
++++ b/drivers/video/backlight/bd6107.c
+@@ -166,7 +166,8 @@ static int bd6107_probe(struct i2c_client *client,
+ 	props.brightness = clamp_t(unsigned int, pdata->def_value, 0,
+ 				   props.max_brightness);
  
- 	retval = atmel_pwm_bl_init_pwm(pwmbl);
- 	if (retval)
--		goto err_free_bl_dev;
-+		goto err_free_pwm;
+-	backlight = backlight_device_register(dev_name(&client->dev),
++	backlight = devm_backlight_device_register(&client->dev,
++					      dev_name(&client->dev),
+ 					      &bd->client->dev, bd,
+ 					      &bd6107_backlight_ops, &props);
+ 	if (IS_ERR(backlight)) {
+@@ -186,7 +187,6 @@ static int bd6107_remove(struct i2c_client *client)
  
- 	atmel_pwm_bl_set_intensity(bldev);
- 
- 	return 0;
- 
--err_free_bl_dev:
--	backlight_device_unregister(bldev);
- err_free_pwm:
- 	pwm_channel_free(&pwmbl->pwmc);
- err_free_mem:
-@@ -210,7 +209,6 @@ static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
- 		gpio_set_value(pwmbl->gpio_on, 0);
- 	pwm_channel_disable(&pwmbl->pwmc);
- 	pwm_channel_free(&pwmbl->pwmc);
--	backlight_device_unregister(pwmbl->bldev);
+ 	backlight->props.brightness = 0;
+ 	backlight_update_status(backlight);
+-	backlight_device_unregister(backlight);
  
  	return 0;
  }
