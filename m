@@ -1,69 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab3IXPpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 11:45:38 -0400
-Received: from a9-50.smtp-out.amazonses.com ([54.240.9.50]:40203 "EHLO
-	a9-50.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754309Ab3IXPph (ORCPT
+	id S1754386Ab3IXPq3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 11:46:29 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:60342 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988Ab3IXPq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 11:45:37 -0400
-X-Greylist: delayed 610 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Sep 2013 11:45:37 EDT
-Date: Tue, 24 Sep 2013 15:35:26 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ingo Molnar <mingo@kernel.org>
-cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [pchecks v1 4/4] percpu: Add preemption checks to __this_cpu
- ops
-In-Reply-To: <20130924151847.GB8494@gmail.com>
-Message-ID: <00000141509c4346-586ca654-989b-4a6a-ae30-592d2f8f11a8-000000@email.amazonses.com>
-References: <20130923191256.584672290@linux.com> <000001414c47a1da-a60858ec-6fe0-4560-a859-8274151411bf-000000@email.amazonses.com> <20130924080347.GH28538@gmail.com> <00000141505b72a3-6935722e-fdfb-4c46-b52c-bc40609144ac-000000@email.amazonses.com>
- <20130924151847.GB8494@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 24 Sep 2013 11:46:28 -0400
+Message-ID: <5241B3B4.7020603@collabora.co.uk>
+Date: Tue, 24 Sep 2013 17:45:56 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.09.24-54.240.9.50
+To: Tony Lindgren <tony@atomide.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Balaji T K <balajitk@ti.com>, Jon Hunter <jgchunter@gmail.com>,
+        linux-gpio@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        r.sricharan@ti.com, holler@ahsoftware.de
+Subject: Re: [RFC v2] gpio/omap: auto-setup a GPIO when used as an IRQ
+References: <1380009480-4975-1-git-send-email-javier.martinez@collabora.co.uk> <20130924154048.GM2684@atomide.com>
+In-Reply-To: <20130924154048.GM2684@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Sep 2013, Ingo Molnar wrote:
+On 09/24/2013 05:40 PM, Tony Lindgren wrote:
+> * Javier Martinez Canillas <javier.martinez@collabora.co.uk> [130924 01:06]:
+>> The OMAP GPIO controller HW requires a pin to be configured in GPIO
+>> input mode in order to operate as an interrupt input. Since drivers
+>> should not be aware of whether an interrupt pin is also a GPIO or not,
+>> the HW should be fully configured/enabled as an IRQ if a driver solely
+>> uses IRQ APIs such as request_irq(), and never calls any GPIO-related
+>> APIs. As such, add the missing HW setup to the OMAP GPIO controller's
+>> irq_chip driver.
+>> 
+>> Since this bypasses the GPIO subsystem we have to ensure that another
+>> caller won't be able to request the same GPIO pin that is used as an
+>> IRQ and set its direction as output. Requesting the GPIO and setting
+>> its direction as input is allowed though.
+> 
+> Also please mention the regression that this fixes. So far we know
+> that smsc911x for tobi and igep boards in mainline, and also the
+> MMC card detect for omap4 boards.
+>  
 
-> > No he did not. He mentioned something about debug_smp_processor_id() at
-> > the end of a post after talking about something else. Given your
-> > comments now I see what was meant. That was not really obvious in the
-> > first place.
->
-> Holy cow, this is what PeterZ wrote to you a week ago:
->
->      > +#ifdef CONFIG_PREEMPT
->      > +extern void this_cpu_preempt_check(void);
->      > +#else
->      > +static inline void this_cpu_preempt_check(void) { }
->      > +#endif
->
->      How about re-using debug_smp_processor_id() instead?
->
-> Firstly, that sentence is as damn obvious as it gets.
+Ok, I'll mention that on the next post.
 
-No its not. This is a side comment and did not explain in detail what was
-intended. There was another issue mentioned there. You did that in your
-dysfunctional communication.
-
-> Pointing out your repeated lack of cooperation in this matter is a
-> statement of facts, not an 'insulting behavior'. Your wasting of other
-> people's time is simply not acceptable.
+>> --- a/drivers/gpio/gpio-omap.c
+>> +++ b/drivers/gpio/gpio-omap.c
+>> @@ -63,6 +63,7 @@ struct gpio_bank {
+>>  	struct gpio_chip chip;
+>>  	struct clk *dbck;
+>>  	u32 mod_usage;
+>> +	u32 irq_usage;
+>>  	u32 dbck_enable_mask;
+>>  	bool dbck_enabled;
+>>  	struct device *dev;
+>> @@ -86,6 +87,9 @@ struct gpio_bank {
+>>  #define GPIO_BIT(bank, gpio) (1 << GPIO_INDEX(bank, gpio))
+>>  #define GPIO_MOD_CTRL_BIT	BIT(0)
+>>  
+>> +#define BANK_USED(bank) (bank->mod_usage || bank->irq_usage)
+>> +#define LINE_USED(line, offset) (line & (1 << offset))
+> 
+> Hmm this patch is hard to read, maybe break it into two patches?
+> 
+> First you could do a patch to prepare thing by introducing
+> BANK_USED and LINE_USED.
+> 
+>> +static int gpio_is_input(struct gpio_bank *bank, int mask)
+>> +{
+>> +	void __iomem *reg = bank->base + bank->regs->direction;
+>> +
+>> +	return __raw_readl(reg) & mask;
+>> +}
+> 
+> And also move gpio_is_input() around in the first patch.
+> 
+> Then the second patch for the fix would probably be much
+> easier to read.
 >
-> That I called you out on it might be embarrassing to you but there's a
-> really easy solution to that: implement reviewer and maintainer requests
-> and don't send sloppy patches repeatedly.
 
-What is embarrasing here is your behavior. Usually I do not respond to
-this kind of crap because its obvious that it is just that and it needs
-to stand there for all to see not requiring a response.
+Sure will split in more patches, I just wanted to keep in one patch since it was
+a RFC but it seems that the change makes sense so I'll post it as a proper
+patch-set.
 
-And the patches were repeatedly send to you as well. You could have said
-something earlier too when you realized that I did not note Peter's
-comment.
+> Regards,
+> 
+> Tony
+> 
+
+Thanks a lot for your feedback and best regards,
+Javier
