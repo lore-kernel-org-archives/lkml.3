@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab3IXRr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 13:47:29 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:60021 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab3IXRr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 13:47:28 -0400
-Date: Tue, 24 Sep 2013 10:47:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130924174717.GH9093@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130917143003.GA29354@twins.programming.kicks-ass.net>
- <20130917162050.GK22421@suse.de>
- <20130917164505.GG12926@twins.programming.kicks-ass.net>
- <20130918154939.GZ26785@twins.programming.kicks-ass.net>
- <20130919143241.GB26785@twins.programming.kicks-ass.net>
- <20130923175052.GA20991@redhat.com>
- <20130924123821.GT12926@twins.programming.kicks-ass.net>
- <20130924160359.GA2739@redhat.com>
- <20130924124341.64d57912@gandalf.local.home>
- <20130924170631.GB5059@redhat.com>
+	id S1754191Ab3IXRuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 13:50:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14633 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750783Ab3IXRum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 13:50:42 -0400
+Date: Tue, 24 Sep 2013 13:50:30 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+cc: Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Mirko Lindner <mlindner@marvell.com>, linux-kernel@vger.kernel.org,
+        Stephen Hemminger <stephen@networkplumber.org>, netdev@vger.kernel.org,
+        member graysky <graysky@archlinux.us>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [REGRESSION][BISECTED] skge: add dma_mapping check
+In-Reply-To: <5241ACEA.6010402@canonical.com>
+Message-ID: <alpine.LRH.2.02.1309241345190.28370@file01.intranet.prod.int.rdu2.redhat.com>
+References: <1379494844.2294.12.camel@ThinkPad-X230.localdomain>  <20130918220819.GA11989@electric-eye.fr.zoreil.com> <1379581391.2403.5.camel@ThinkPad-X230.localdomain> <5241ACEA.6010402@canonical.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130924170631.GB5059@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092417-9332-0000-0000-000001863DA3
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 07:06:31PM +0200, Oleg Nesterov wrote:
-> On 09/24, Steven Rostedt wrote:
+
+
+On Tue, 24 Sep 2013, Joseph Salisbury wrote:
+
+> On 09/19/2013 05:03 AM, Igor Gnatenko wrote:
+> > Please, send patch.
 > >
-> > On Tue, 24 Sep 2013 18:03:59 +0200
-> > Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > > On 09/24, Peter Zijlstra wrote:
-> > > >
-> > > > +static inline void get_online_cpus(void)
-> > > > +{
-> > > > +	might_sleep();
-> > > > +
-> > > > +	if (current->cpuhp_ref++) {
-> > > > +		barrier();
-> > > > +		return;
-> > >
-> > > I don't undestand this barrier()... we are going to return if we already
-> > > hold the lock, do we really need it?
-> >
-> > I'm confused too. Unless gcc moves this after the release, but the
-> > release uses preempt_disable() which is its own barrier.
-> >
-> > If anything, it requires a comment.
+> The patch is in mainline as of 3.12-rc2 as commit:
 > 
-> And I am still confused even after emails from Paul and Peter...
+> Author: Mikulas Patocka <mpatocka@redhat.com>
+> Date:   Thu Sep 19 14:13:17 2013 -0400
 > 
-> If gcc can actually do something wrong, then I suspect this barrier()
-> should be unconditional.
+>     skge: fix broken driver
+> 
+> I don't see that the commit was Cc'd to stable.  Mikulas, we might need
+> to send a request directly to the stable maintainers and reqeust that
+> the commit be pulled into stable, in case they didn't notice the request
+> in the commit message.
 
-If you are saying that there should be a barrier() on all return paths
-from get_online_cpus(), I agree.
+The patch needs to be added to 3.11 stable tree. David Miller's networking 
+tree has a rule that it doesn't want "Cc: stable@kernel.org" in patches 
+submitted through it.
 
-							Thanx, Paul
+So, David hopefully submits the patch to the stable tree on his own.
 
+Mikulas
