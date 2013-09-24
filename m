@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab3IXVCm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:02:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58863 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab3IXVCl (ORCPT
+	id S1754654Ab3IXVFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 17:05:44 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42178 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753836Ab3IXVFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:02:41 -0400
-Date: Tue, 24 Sep 2013 23:02:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130924210221.GF26785@twins.programming.kicks-ass.net>
-References: <1378805550-29949-38-git-send-email-mgorman@suse.de>
- <20130917143003.GA29354@twins.programming.kicks-ass.net>
- <20130917162050.GK22421@suse.de>
- <20130917164505.GG12926@twins.programming.kicks-ass.net>
- <20130918154939.GZ26785@twins.programming.kicks-ass.net>
- <20130919143241.GB26785@twins.programming.kicks-ass.net>
- <20130921163404.GA8545@redhat.com>
- <20130923092955.GV9326@twins.programming.kicks-ass.net>
- <20130923173203.GA20392@redhat.com>
- <20130924202423.GW12926@twins.programming.kicks-ass.net>
+	Tue, 24 Sep 2013 17:05:43 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Vineet Gupta <vgupta@synopsys.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] ARC: Use clockevents_config_and_register over clockevents_register_device
+Date: Tue, 24 Sep 2013 23:05:37 +0200
+Message-Id: <1380056737-3471-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.8.4.rc3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130924202423.GW12926@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 10:24:23PM +0200, Peter Zijlstra wrote:
-> +void __get_online_cpus(void)
-> +{
-> +	if (__cpuhp_writer == 1) {
-take_ref:
-> +		/* See __srcu_read_lock() */
-> +		__this_cpu_inc(__cpuhp_refcount);
-> +		smp_mb();
-> +		__this_cpu_inc(cpuhp_seq);
-> +		return;
-> +	}
-> +
-> +	atomic_inc(&cpuhp_waitcount);
-> +
->  	/*
-> +	 * We either call schedule() in the wait, or we'll fall through
-> +	 * and reschedule on the preempt_enable() in get_online_cpus().
->  	 */
-> +	preempt_enable_no_resched();
-> +	wait_event(cpuhp_readers, !__cpuhp_writer);
-> +	preempt_disable();
->  
-> +	/*
-> +	 * XXX list_empty_careful(&cpuhp_readers.task_list) ?
-> +	 */
-> +	if (atomic_dec_and_test(&cpuhp_waitcount))
-> +		wake_up_all(&cpuhp_writer);
-	goto take_ref;
-> +}
-> +EXPORT_SYMBOL_GPL(__get_online_cpus);
+clockevents_config_and_register is more clever and correct than doing it
+by hand; so use it.
 
-It would probably be a good idea to increment __cpuhp_refcount after the
-wait_event.
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ arch/arc/kernel/time.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arc/kernel/time.c b/arch/arc/kernel/time.c
+index 0e51e69..273df8e 100644
+--- a/arch/arc/kernel/time.c
++++ b/arch/arc/kernel/time.c
+@@ -227,12 +227,9 @@ void __attribute__((weak)) arc_local_timer_setup(unsigned int cpu)
+ {
+ 	struct clock_event_device *clk = &per_cpu(arc_clockevent_device, cpu);
+ 
+-	clockevents_calc_mult_shift(clk, arc_get_core_freq(), 5);
+-
+-	clk->max_delta_ns = clockevent_delta2ns(ARC_TIMER_MAX, clk);
+ 	clk->cpumask = cpumask_of(cpu);
+-
+-	clockevents_register_device(clk);
++	clockevents_config_and_register(clk, arc_get_core_freq(),
++					0, ARC_TIMER_MAX)
+ 
+ 	/*
+ 	 * setup the per-cpu timer IRQ handler - for all cpus
+-- 
+1.8.4.rc3
+
