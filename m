@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab3IXAL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Sep 2013 20:11:58 -0400
-Received: from gate.crashing.org ([63.228.1.57]:43529 "EHLO gate.crashing.org"
+	id S1753559Ab3IXANb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Sep 2013 20:13:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43236 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752566Ab3IXAL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Sep 2013 20:11:57 -0400
-Message-ID: <1379981427.5443.8.camel@pasglop>
-Subject: Re: [RFC GIT PULL] softirq: Consolidation and stack overrun fix
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+	id S1752662Ab3IXANa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Sep 2013 20:13:30 -0400
+Date: Mon, 23 Sep 2013 20:13:20 -0400
+From: Mike Snitzer <snitzer@redhat.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>
-Date: Tue, 24 Sep 2013 10:10:27 +1000
-In-Reply-To: <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
-References: <1379620267-25191-1-git-send-email-fweisbec@gmail.com>
-	 <CA+55aFyXf370Ds6FH5wPPycZLSPD5qiP7rjWqxwDetfHfKjg1w@mail.gmail.com>
-	 <alpine.DEB.2.02.1309201244080.4089@ionos.tec.linutronix.de>
-	 <20130920162603.GA30381@localhost.localdomain>
-	 <CA+55aFyBcjP2U6ipzZay=FdhzA4oFNwE4tU0OcJJhwFvgoeALw@mail.gmail.com>
-	 <CAFTL4hzucS5nJbCrArPv9zfY=QpyUESMK2Th0tKFHVCjDP7-eA@mail.gmail.com>
-	 <1379799901.24090.6.camel@pasglop> <523E4F8A.7020708@zytor.com>
-	 <1379824754.24090.11.camel@pasglop> <1379824861.24090.12.camel@pasglop>
-	 <20130922162410.GA10649@laptop.programming.kicks-ass.net>
-	 <1379887000.24090.19.camel@pasglop>
-	 <CA+55aFwaf_Wst=AS75ydBJVQ6aJxPfAzXdt-UXj3qC9WeUt7kw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        Joe Thornber <ejt@redhat.com>, "Alasdair G. Kergon" <agk@redhat.com>,
+        Frank Mayhar <fmayhar@google.com>, Hannes Reinecke <hare@suse.de>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: [git pull] device mapper fixes for 3.12
+Message-ID: <20130924001320.GA27767@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-09-22 at 15:22 -0700, Linus Torvalds wrote:
->  - use %r13 for the per-thread thread-info pointer instead. A
-> per-thread pointer is *not* volatile like the per-cpu base is.
+The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
 
- .../...
+  Linux 3.12-rc1 (2013-09-16 16:17:51 -0400)
 
-> Alternatively, make %r13 point to the percpu side, but make sure that
-> you always use an asm accessor to fetch the value. In particular, I
-> think you need to make __my_cpu_offset be an inline asm that fetches
-> %r13 into some other register. Otherwise you can never get it right.
+are available in the git repository at:
 
-BTW, that boils down to a choice between using r13 as either a TLS for
-current or current_thread_info, or as a per-cpu pointer, which one is
-the most performance critical ?
+  git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git tags/dm-3.12-fixes
 
-Now in the first case, it seems to me that using it as "current" rather
-than "current_thread_info()" is a better idea since we access current a
-LOT more overall in the kernel, from there we can find a way to put
-thread_info into task struct (via thread struct maybe) to make it a
-simple offset from current.
+for you to fetch changes up to e8603136cb04ec2d0c9b4b5be7a071fc003cb399:
 
-The big pro of that approach is of course that r13 becomes the TLS as
-intended, and we can feel a lot more comfortable that we are "safe" vs.
-whatever crazyness gcc will come up with next.
+  dm: add reserved_bio_based_ios module parameter (2013-09-23 10:42:24 -0400)
 
-The flip side is that per-cpu will remain a load away, so getting the
-address of a per-cpu variable would typically be a 3 instruction deal
-involving a load and a pair of adds to get to the address, then the
-actual per-cpu access proper. This is equivalent to what we have today
-(we put the per-cpu offset in the PACA). Using r13 as per-cpu allows to
-avoid that first load.
+Please pull, thanks.
+Mike
 
-So what's the most worthwhile thing to do here ? I'm leaning toward 1,
-ie, stick current in r13 and feel a lot safer about it (I won't have to
-scrutinize generated code all over the place to convince myself things
-aren't crossing the barriers), and if the thread_info is in the task
-struct, that makes accessing it really trivial & fast as well.
+----------------------------------------------------------------
+A set of device-mapper fixes for 3.12.
 
-Cheers,
-Ben.
+A few fixes for dm-snapshot, a 32 bit fix for dm-stats, a couple error
+handling fixes for dm-multipath.  A fix for the thin provisioning target
+to not expose non-zero discard limits if discards are disabled.
 
+Lastly, add two DM module parameters which allow users to tune the
+emergency memory reserves that DM mainatins per device -- this helps fix
+a long-standing issue for dm-multipath.  The conservative default
+reserve for request-based dm-multipath devices (256) has proven
+problematic for users with many multipathed SCSI devices but relatively
+little memory.  To responsibly select a smaller value users should use
+the new nr_bios tracepoint info (via commit 75afb352 "block: Add nr_bios
+to block_rq_remap tracepoint") to determine the peak number of bios
+their workloads create.
+
+----------------------------------------------------------------
+Jun'ichi Nomura (1):
+      dm mpath: do not fail path on -ENOSPC
+
+Mike Snitzer (5):
+      dm mpath: disable WRITE SAME if it fails
+      dm thin: do not expose non-zero discard limits if discards disabled
+      dm: lower bio-based mempool reservation
+      dm: add reserved_rq_based_ios module parameter
+      dm: add reserved_bio_based_ios module parameter
+
+Mikulas Patocka (3):
+      dm stats: fix possible counter corruption on 32-bit systems
+      dm snapshot: workaround for a false positive lockdep warning
+      dm-snapshot: fix performance degradation due to small hash size
+
+ drivers/md/dm-io.c              |  7 ++--
+ drivers/md/dm-mpath.c           | 18 ++++++++---
+ drivers/md/dm-snap-persistent.c |  2 +-
+ drivers/md/dm-snap.c            |  5 ++-
+ drivers/md/dm-stats.c           | 23 +++++++++----
+ drivers/md/dm-thin.c            | 14 ++++++--
+ drivers/md/dm.c                 | 71 ++++++++++++++++++++++++++++++++++++++---
+ drivers/md/dm.h                 |  3 ++
+ include/linux/device-mapper.h   |  3 +-
+ 9 files changed, 120 insertions(+), 26 deletions(-)
 
