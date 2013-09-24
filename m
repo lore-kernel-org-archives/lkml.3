@@ -1,182 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab3IXMMp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 08:12:45 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:15350 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab3IXMJa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753231Ab3IXMJa (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Sep 2013 08:09:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 24 Sep 2013 05:05:55 -0700
-From: Arto Merilainen <amerilainen@nvidia.com>
-To: <tbergstrom@nvidia.com>, <treding@nvidia.com>
-CC: <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <amerilainen@nvidia.com>,
-        <mkulkarni@nvidia.com>
-Subject: [PATCHv3 2/4] drm/tegra: Add runtime pm support for gr2d
-Date: Tue, 24 Sep 2013 15:05:23 +0300
-Message-ID: <1380024325-18280-3-git-send-email-amerilainen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1380024325-18280-1-git-send-email-amerilainen@nvidia.com>
-References: <1380024325-18280-1-git-send-email-amerilainen@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+Received: from mga03.intel.com ([143.182.124.21]:37644 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735Ab3IXMJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 08:09:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,970,1371106800"; 
+   d="scan'208";a="364821444"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH V3 02/10] perf tools: make a separate function to parse /proc/modules
+Date: Tue, 24 Sep 2013 15:15:44 +0300
+Message-Id: <1380024952-29387-3-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
+References: <1380024952-29387-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mayuresh Kulkarni <mkulkarni@nvidia.com>
+Make a separate function to parse /proc/modules
+so that it can be reused.
 
-This far we have enabled gr2d clock on device probe and disabled
-it on device deinitialisation. This patch adds runtime pm support
-for the hardware unit allowing dynamic power management. If pm
-runtime is not enabled, gr2d clock is enabled in device probe and
-disabled in remove.
-
-Signed-off-by: Mayuresh Kulkarni <mkulkarni@nvidia.com>
-Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- drivers/gpu/host1x/drm/gr2d.c | 57 +++++++++++++++++++++++++++++++++++++++----
- drivers/gpu/host1x/job.c      |  5 ++--
- 2 files changed, 55 insertions(+), 7 deletions(-)
+ tools/perf/util/machine.c | 67 +++++++++++++----------------------------------
+ tools/perf/util/symbol.c  | 58 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h  |  3 +++
+ 3 files changed, 79 insertions(+), 49 deletions(-)
 
-diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
-index 27ffcf1..8d92925 100644
---- a/drivers/gpu/host1x/drm/gr2d.c
-+++ b/drivers/gpu/host1x/drm/gr2d.c
-@@ -22,6 +22,7 @@
- #include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/clk.h>
-+#include <linux/pm_runtime.h>
- 
- #include "channel.h"
- #include "drm.h"
-@@ -45,6 +46,8 @@ static inline struct gr2d *to_gr2d(struct host1x_client *client)
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index ddf917b..83b615bc 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -776,12 +776,22 @@ static int machine__set_modules_path(struct machine *machine)
+ 	return map_groups__set_modules_path_dir(&machine->kmaps, modules_path);
  }
  
- static int gr2d_is_addr_reg(struct device *dev, u32 class, u32 reg);
-+static int gr2d_runtime_suspend(struct device *dev);
-+static int gr2d_runtime_resume(struct device *dev);
- 
- static int gr2d_client_init(struct host1x_client *client,
- 			    struct drm_device *drm)
-@@ -275,12 +278,18 @@ static int gr2d_probe(struct platform_device *pdev)
- 		return PTR_ERR(gr2d->clk);
- 	}
- 
--	err = clk_prepare_enable(gr2d->clk);
--	if (err) {
--		dev_err(dev, "cannot turn on clock\n");
--		return err;
-+	/* pm runtime accesses the clock through driver data */
-+	platform_set_drvdata(pdev, gr2d);
+-static int machine__create_modules(struct machine *machine)
++static int machine__create_module(void *arg, const char *name, u64 start)
+ {
+-	char *line = NULL;
+-	size_t n;
+-	FILE *file;
++	struct machine *machine = arg;
+ 	struct map *map;
 +
-+	pm_runtime_enable(&pdev->dev);
-+	if (!pm_runtime_enabled(&pdev->dev)) {
-+		err = gr2d_runtime_resume(&pdev->dev);
-+		if (err < 0)
-+			return err;
- 	}
- 
-+	pm_runtime_get_sync(&pdev->dev);
++	map = machine__new_module(machine, start, name);
++	if (map == NULL)
++		return -1;
 +
- 	gr2d->channel = host1x_channel_request(dev);
- 	if (!gr2d->channel)
- 		return -ENOMEM;
-@@ -305,7 +314,7 @@ static int gr2d_probe(struct platform_device *pdev)
- 
- 	gr2d_init_addr_reg_map(dev, gr2d);
- 
--	platform_set_drvdata(pdev, gr2d);
-+	pm_runtime_put(&pdev->dev);
- 
- 	return 0;
- }
-@@ -327,11 +336,48 @@ static int __exit gr2d_remove(struct platform_device *pdev)
- 		host1x_syncpt_free(gr2d->client.syncpts[i]);
- 
- 	host1x_channel_free(gr2d->channel);
-+
-+	if (pm_runtime_enabled(&pdev->dev))
-+		pm_runtime_disable(&pdev->dev);
-+	else
-+		gr2d_runtime_suspend(&pdev->dev);
++	dso__kernel_module_get_build_id(map->dso, machine->root_dir);
 +
 +	return 0;
 +}
 +
-+static int gr2d_runtime_suspend(struct device *dev)
++static int machine__create_modules(struct machine *machine)
 +{
-+	struct gr2d *gr2d;
-+
-+	gr2d = dev_get_drvdata(dev);
-+	if (!gr2d)
-+		return -EINVAL;
-+
- 	clk_disable_unprepare(gr2d->clk);
+ 	const char *modules;
+ 	char path[PATH_MAX];
  
+@@ -795,56 +805,15 @@ static int machine__create_modules(struct machine *machine)
+ 	if (symbol__restricted_filename(modules, "/proc/modules"))
+ 		return -1;
+ 
+-	file = fopen(modules, "r");
+-	if (file == NULL)
++	if (modules__parse(modules, machine, machine__create_module))
+ 		return -1;
+ 
+-	while (!feof(file)) {
+-		char name[PATH_MAX];
+-		u64 start;
+-		char *sep;
+-		int line_len;
+-
+-		line_len = getline(&line, &n, file);
+-		if (line_len < 0)
+-			break;
+-
+-		if (!line)
+-			goto out_failure;
+-
+-		line[--line_len] = '\0'; /* \n */
+-
+-		sep = strrchr(line, 'x');
+-		if (sep == NULL)
+-			continue;
+-
+-		hex2u64(sep + 1, &start);
+-
+-		sep = strchr(line, ' ');
+-		if (sep == NULL)
+-			continue;
+-
+-		*sep = '\0';
+-
+-		snprintf(name, sizeof(name), "[%s]", line);
+-		map = machine__new_module(machine, start, name);
+-		if (map == NULL)
+-			goto out_delete_line;
+-		dso__kernel_module_get_build_id(map->dso, machine->root_dir);
+-	}
++	if (!machine__set_modules_path(machine))
++		return 0;
+ 
+-	free(line);
+-	fclose(file);
++	pr_debug("Problems setting modules path maps, continuing anyway...\n");
+ 
+-	if (machine__set_modules_path(machine) < 0) {
+-		pr_debug("Problems setting modules path maps, continuing anyway...\n");
+-	}
  	return 0;
+-
+-out_delete_line:
+-	free(line);
+-out_failure:
+-	return -1;
  }
  
-+static int gr2d_runtime_resume(struct device *dev)
+ int machine__create_kernel_maps(struct machine *machine)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 48c3879..ffdf2e7 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -500,6 +500,64 @@ out_failure:
+ 	return -1;
+ }
+ 
++int modules__parse(const char *filename, void *arg,
++		   int (*process_module)(void *arg, const char *name,
++					 u64 start))
 +{
++	char *line = NULL;
++	size_t n;
++	FILE *file;
 +	int err = 0;
-+	struct gr2d *gr2d;
 +
-+	gr2d = dev_get_drvdata(dev);
-+	if (!gr2d)
-+		return -EINVAL;
++	file = fopen(filename, "r");
++	if (file == NULL)
++		return -1;
 +
-+	err = clk_prepare_enable(gr2d->clk);
-+	if (err < 0)
-+		dev_err(dev, "failed to enable clock\n");
++	while (1) {
++		char name[PATH_MAX];
++		u64 start;
++		char *sep;
++		ssize_t line_len;
 +
++		line_len = getline(&line, &n, file);
++		if (line_len < 0) {
++			if (feof(file))
++				break;
++			err = -1;
++			goto out;
++		}
++
++		if (!line) {
++			err = -1;
++			goto out;
++		}
++
++		line[--line_len] = '\0'; /* \n */
++
++		sep = strrchr(line, 'x');
++		if (sep == NULL)
++			continue;
++
++		hex2u64(sep + 1, &start);
++
++		sep = strchr(line, ' ');
++		if (sep == NULL)
++			continue;
++
++		*sep = '\0';
++
++		snprintf(name, sizeof(name), "[%s]", line);
++
++		err = process_module(arg, name, start);
++		if (err)
++			break;
++	}
++out:
++	free(line);
++	fclose(file);
 +	return err;
 +}
 +
-+static const struct dev_pm_ops gr2d_pm_ops = {
-+	SET_RUNTIME_PM_OPS(gr2d_runtime_suspend, gr2d_runtime_resume, NULL)
-+};
-+
- struct platform_driver tegra_gr2d_driver = {
- 	.probe = gr2d_probe,
- 	.remove = __exit_p(gr2d_remove),
-@@ -339,5 +385,6 @@ struct platform_driver tegra_gr2d_driver = {
- 		.owner = THIS_MODULE,
- 		.name = "gr2d",
- 		.of_match_table = gr2d_match,
-+		.pm = &gr2d_pm_ops,
- 	}
- };
-diff --git a/drivers/gpu/host1x/job.c b/drivers/gpu/host1x/job.c
-index 3928b4e..e4148e0 100644
---- a/drivers/gpu/host1x/job.c
-+++ b/drivers/gpu/host1x/job.c
-@@ -23,6 +23,7 @@
- #include <linux/scatterlist.h>
- #include <linux/slab.h>
- #include <linux/vmalloc.h>
-+#include <linux/pm_runtime.h>
- #include <trace/events/host1x.h>
+ struct process_kallsyms_args {
+ 	struct map *map;
+ 	struct dso *dso;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 2d4ee9a..a2543f0 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -223,6 +223,9 @@ int sysfs__read_build_id(const char *filename, void *bf, size_t size);
+ int kallsyms__parse(const char *filename, void *arg,
+ 		    int (*process_symbol)(void *arg, const char *name,
+ 					  char type, u64 start));
++int modules__parse(const char *filename, void *arg,
++		   int (*process_module)(void *arg, const char *name,
++					 u64 start));
+ int filename__read_debuglink(const char *filename, char *debuglink,
+ 			     size_t size);
  
- #include "channel.h"
-@@ -589,11 +590,11 @@ void host1x_job_dump(struct device *dev, struct host1x_job *job)
- int host1x_job_submit(struct host1x_job *job)
- {
- 	struct host1x *host = dev_get_drvdata(job->channel->dev->parent);
--
-+	pm_runtime_get_sync(job->channel->dev);
- 	return host1x_hw_channel_submit(host, job);
- }
- 
- int host1x_job_complete(struct host1x_job *job)
- {
--	return 0;
-+	return pm_runtime_put(job->channel->dev);
- }
 -- 
-1.8.1.5
+1.7.11.7
 
