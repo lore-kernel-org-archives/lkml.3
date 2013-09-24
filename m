@@ -1,141 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab3IXVxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 17:53:09 -0400
-Received: from mail-bn1lp0155.outbound.protection.outlook.com ([207.46.163.155]:14772
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753517Ab3IXVxE convert rfc822-to-8bit (ORCPT
+	id S1754776Ab3IXVyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 17:54:32 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:39252 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936Ab3IXVya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 17:53:04 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Mike Christie <michaelc@cs.wisc.edu>
-CC: Jack Wang <xjtuwjp@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: Drivers: scsi: FLUSH timeout
-Thread-Topic: Drivers: scsi: FLUSH timeout
-Thread-Index: AQHOtkBtWGcmfS/7wkmW+8Ppp9OK8pnPmBJggAU49YCAAAdE0IAAT/uAgABKyIA=
-Date: Tue, 24 Sep 2013 21:53:00 +0000
-Message-ID: <bf168ab724a140f989ab3dfe877b750f@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
- <20130920203222.GA14306@kroah.com>
- <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
- <524180B7.7090307@gmail.com>
- <3413dbd7fa254fd380a84fe6d9cd87e1@SN2PR03MB061.namprd03.prod.outlook.com>
- <5241C9E7.2000404@cs.wisc.edu>
-In-Reply-To: <5241C9E7.2000404@cs.wisc.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [80.169.49.146]
-x-forefront-prvs: 09796A1B83
-x-forefront-antispam-report: SFV:NSPM;SFS:(51704005)(189002)(199002)(479174003)(24454002)(377454003)(13464003)(74706001)(74316001)(74366001)(83072001)(77096001)(56816003)(76796001)(76786001)(66066001)(80022001)(81342001)(59766001)(63696002)(65816001)(69226001)(77982001)(81542001)(79102001)(15202345003)(54356001)(53806001)(56776001)(54316002)(81816001)(15975445006)(76482001)(50986001)(4396001)(19580395003)(47976001)(74876001)(19580405001)(83322001)(46102001)(47736001)(49866001)(80976001)(51856001)(74662001)(31966008)(81686001)(76576001)(47446002)(74502001)(33646001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:80.169.49.146;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Sep 2013 17:54:30 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
+In-Reply-To: <CAK3+h2y8eAKFC7BbnDwfZLzTw=t-G9qWSqznp4ggwDy7R_O6Ag@mail.gmail.com>
+References: <1380046281-6012-1-git-send-email-vincent.mc.li@gmail.com>
+	<alpine.LFD.2.00.1309242255350.1875@ja.ssi.bg>
+	<CAK3+h2y8eAKFC7BbnDwfZLzTw=t-G9qWSqznp4ggwDy7R_O6Ag@mail.gmail.com>
+Date: Tue, 24 Sep 2013 14:54:29 -0700
+Message-ID: <CAK3+h2x_RwCynqwnDHE_fqHhSHrE+LQ6UohxKGpmYxfBBbK_Wg@mail.gmail.com>
+Subject: Re: [PATCH] Allow userspace code to use flag IFA_F_SECONDARY to
+ specify an ip address to be primary or secondary ip on an interface
+From: Vincent Li <vincent.mc.li@gmail.com>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+sorry Julian to miss your point after reading the __inet_del_ifa and
+see the rtmsg_ifa, fib_del_ifaddr/fib_add_ifaddr, I can try another
+patch and actually test if the patches changes works as it is
+intended, not just checking from ip binary output.
 
+Vincent
 
-> -----Original Message-----
-> From: Mike Christie [mailto:michaelc@cs.wisc.edu]
-> Sent: Tuesday, September 24, 2013 10:21 AM
-> To: KY Srinivasan
-> Cc: Jack Wang; Greg KH; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; ohering@suse.com; jbottomley@parallels.com;
-> hch@infradead.org; linux-scsi@vger.kernel.org
-> Subject: Re: Drivers: scsi: FLUSH timeout
-> 
-> On 09/24/2013 07:35 AM, KY Srinivasan wrote:
-> >
-> >
-> >> -----Original Message-----
-> >> From: Jack Wang [mailto:xjtuwjp@gmail.com]
-> >> Sent: Tuesday, September 24, 2013 5:08 AM
-> >> To: KY Srinivasan
-> >> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> >> ohering@suse.com; jbottomley@parallels.com; hch@infradead.org; linux-
-> >> scsi@vger.kernel.org; Mike Christie
-> >> Subject: Re: Drivers: scsi: FLUSH timeout
-> >>
-> >> On 09/21/2013 07:24 AM, KY Srinivasan wrote:
-> >>>
-> >>>
-> >>>> -----Original Message-----
-> >>>> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> >>>> Sent: Friday, September 20, 2013 1:32 PM
-> >>>> To: KY Srinivasan
-> >>>> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> >>>> ohering@suse.com; jbottomley@parallels.com; hch@infradead.org; linux-
-> >>>> scsi@vger.kernel.org
-> >>>> Subject: Re: Drivers: scsi: FLUSH timeout
-> >>>>
-> >>>> On Fri, Sep 20, 2013 at 12:32:27PM -0700, K. Y. Srinivasan wrote:
-> >>>>> The SD_FLUSH_TIMEOUT value is currently hardcoded.
-> >>>>
-> >>>> Hardcoded where?  Please, more context.
-> >>>
-> >>> This is defined in scsi/sd.h:
-> >>>
-> >>> #define SD_FLUSH_TIMEOUT        (60 * HZ)
-> >>>>
-> >>>>> On our cloud, we sometimes hit this timeout. I was wondering if we
-> >>>>> could make this a module parameter. If this is acceptable, I can send
-> >>>>> you a patch for this.
-> >>>>
-> >>>> A module parameter don't make sense for a per-device value, does it?
-> >>> Currently, the 60 second timeout is applied across devices. Ideally, I want to
-> be
-> >>> able to control the FLUSH TIMEOUT as we currently do I/O timeout. If this is
-> >>> acceptable, I can work on a patch for that as well.
-> >>>
-> >>> Regards,
-> >>>
-> >>> K. Y
-> >>>>
-> >>>> greg k-h
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>>
-> >> Hi,
-> >>
-> >> Back to 2010, Mike(cc-ed) try to add a flush time out interface, similar
-> >> to what you want here, no idea why it's just ignored?
-> >> http://www.spinics.net/lists/linux-scsi/msg45017.html
-> >
-> > Thanks Jack. Mike, do you know what the concerns were as to why this
-> > patch was not accepted?
-> >
-> 
-> I do not remember the exact concerns. We ended up just increasing the
-> hard coded value in:
-> 
-> commit e3b3e6246726cd05950677ed843010b8e8c5884c
-> Author: Mike Christie <mchristi@redhat.com>
-> Date:   Wed Aug 11 11:06:25 2010 -0500
-> 
->     [SCSI] scsi/block: increase flush/sync timeout
-> 
-> 
-> In the git commit message there is a comment about people thinking
-> making it configurable for users was troublesome.
-
-I am not sure how that magic number was arrived at (the 60HZ number). We want this to be little higher -
-would there be any issues raising this to say  180 seconds. This is the value we currently have for I/O
-timeout.
-
-Regards,
-
-K. Y
-
+On Tue, Sep 24, 2013 at 2:34 PM, Vincent Li <vincent.mc.li@gmail.com> wrote:
+> Thanks Julian for the comments, I imagined it would not be so simple
+> as it changed old behavior with ip binary and some actions in
+> __inet_del_ifa() that I am not fully aware of. my intention is to
+> preserve the old behavior and extend the flexibility, I am unable to
+> come up with a good patch to achieve the intended behavior.
+>
+> I had to patch the ip binary to sort of preserve original ip binary
+> behavior with the kernel patch I provided., the ip command patch
+> below:
+>
+> diff --git a/ip/ipaddress.c b/ip/ipaddress.c
+> index 1c3e4da..9f2802c 100644
+> --- a/ip/ipaddress.c
+> +++ b/ip/ipaddress.c
+> @@ -1259,6 +1259,7 @@ static int ipaddr_modify(int cmd, int flags, int
+> argc, char **argv)
+>         req.n.nlmsg_flags = NLM_F_REQUEST | flags;
+>         req.n.nlmsg_type = cmd;
+>         req.ifa.ifa_family = preferred_family;
+> +       req.ifa.ifa_flags |= IFA_F_SECONDARY;
+>
+>         while (argc > 0) {
+>                 if (strcmp(*argv, "peer") == 0 ||
+> @@ -1307,6 +1308,11 @@ static int ipaddr_modify(int cmd, int flags,
+> int argc, char **argv)
+>                                 invarg("invalid scope value.", *argv);
+>                         req.ifa.ifa_scope = scope;
+>                         scoped = 1;
+> +                } else if (strcmp(*argv, "secondary") == 0 ||
+> +                           strcmp(*argv, "temporary") == 0) {
+> +                        req.ifa.ifa_flags |= IFA_F_SECONDARY;
+> +                } else if (strcmp(*argv, "primary") == 0) {
+> +                        req.ifa.ifa_flags &= ~IFA_F_SECONDARY;
+>                 } else if (strcmp(*argv, "dev") == 0) {
+>                         NEXT_ARG();
+>                         d = *argv;
+>
+> if someone can point me to the right patch directions or coming up
+> with better patches, it is very much appreciated.
+>
+>
+> On Tue, Sep 24, 2013 at 2:13 PM, Julian Anastasov <ja@ssi.bg> wrote:
+>>
+>>         Hello,
+>>
+>> On Tue, 24 Sep 2013, Vincent Li wrote:
+>>
+>>> the current behavior is when an IP is added to an interface, the primary
+>>> or secondary attributes is depending on the order of ip added to the interface
+>>> the first IP will be primary and second, third,... or alias IP will be secondary
+>>> if the IP subnet matches
+>>>
+>>> this patch add the flexiblity to allow user to specify an argument 'primary' or 'secondary'
+>>> (use 'ip addr add ip/mask primary|secondary dev ethX ' from iproute2 for example) to specify
+>>> an IP address to be  primary or secondary.
+>>>
+>>> the reason for this patch is that we have a multi blade cluster platform sharing 'floating management ip'
+>>> and also that each blade has its own management ip on the management interface, so whichever blade in the
+>>> cluster becomes primary blade, the 'floating mangaement ip' follows it, and we want any of our traffic
+>>> originated from the primary blade source from the 'floating management ip' for consistency. but in this
+>>> case, since the local blade management ip is always the primary ip on the mangaement interface and 'floating
+>>> management ip' is always secondary, kernel always choose the primary ip as source ip address. thus we would
+>>> like to add the flexibility in kernel to allow us to specify which ip to be primary or secondary.
+>>>
+>>> Signed-off-by: Vincent Li <vincent.mc.li@gmail.com>
+>>> ---
+>>>  net/ipv4/devinet.c |    9 +++++++--
+>>>  1 file changed, 7 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+>>> index a1b5bcb..bfc702a 100644
+>>> --- a/net/ipv4/devinet.c
+>>> +++ b/net/ipv4/devinet.c
+>>> @@ -440,9 +440,11 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
+>>>               return 0;
+>>>       }
+>>>
+>>> -     ifa->ifa_flags &= ~IFA_F_SECONDARY;
+>>>       last_primary = &in_dev->ifa_list;
+>>>
+>>> +     if((*last_primary) == NULL)
+>>> +             ifa->ifa_flags &= ~IFA_F_SECONDARY;
+>>> +
+>>>       for (ifap = &in_dev->ifa_list; (ifa1 = *ifap) != NULL;
+>>>            ifap = &ifa1->ifa_next) {
+>>>               if (!(ifa1->ifa_flags & IFA_F_SECONDARY) &&
+>>> @@ -458,7 +460,10 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
+>>>                               inet_free_ifa(ifa);
+>>>                               return -EINVAL;
+>>>                       }
+>>> -                     ifa->ifa_flags |= IFA_F_SECONDARY;
+>>
+>>         There is some confusion here, when ifa has
+>> IFA_F_SECONDARY bit set, in the 'else' we set it again.
+>> I guess the 'else' part is not needed.
+>>
+>>> +                        if (!(ifa->ifa_flags & IFA_F_SECONDARY))
+>>> +                                ifa1->ifa_flags |= IFA_F_SECONDARY;
+>>> +                        else
+>>> +                                ifa->ifa_flags |= IFA_F_SECONDARY;
+>>
+>>         It should not be so simple. You can not
+>> just change the flag of existing address (ifa1) to secondary.
+>> See __inet_del_ifa(), there are many more actions that
+>> follow:
+>>
+>> - kernel routes that use this primary address
+>> should be deleted and recreated with the new primary
+>> address as source. This includes local routes to secondary
+>> IPs.
+>>
+>> - RTM_NEWADDR should be sent, so that user space see
+>> the IFA_F_SECONDARY flag
+>>
+>>         Some questions:
+>>
+>> - should we allow adding of secondary IPs when no primary
+>> address exists for the subnet, it can happen when primary
+>> for another subnet already exists
+>>
+>> - by default, existing 'ip addr' binaries will provide
+>> address without IFA_F_SECONDARY flag. Before now we added
+>> such addresses as last for the subnet, now the
+>> behaviour changes, we start to add addresses in reverse
+>> order. Is that true? I.e. before now the operation was
+>> APPEND, now we need a way to provide PREPEND operation.
+>>
+>> Regards
+>>
+>> --
+>> Julian Anastasov <ja@ssi.bg>
