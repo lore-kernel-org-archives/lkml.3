@@ -1,192 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab3IXTuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 15:50:40 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38546 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609Ab3IXTui (ORCPT
+	id S1754324Ab3IXTz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 15:55:57 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44521 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649Ab3IXTzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 15:50:38 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
-        Marc Pignat <marc.pignat@hevs.ch>, john.stultz@linaro.org,
-        kernel@pengutronix.de, Ronald Wahl <ronald.wahl@raritan.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [PATCH v2] clockevents: Sanitize ticks to nsec conversion
-Date: Tue, 24 Sep 2013 21:50:23 +0200
-Message-Id: <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
+	Tue, 24 Sep 2013 15:55:55 -0400
+Message-ID: <5241EE47.5050907@wwwdotorg.org>
+Date: Tue, 24 Sep 2013 13:55:51 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [RFCv2 3/3] ARM: dts: N900: Add SSI information
+References: <1379277856-24571-1-git-send-email-sre@debian.org> <1379277856-24571-4-git-send-email-sre@debian.org> <5240A617.1010208@wwwdotorg.org> <20130923234656.GB24781@earth.universe>
+In-Reply-To: <20130923234656.GB24781@earth.universe>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On 09/23/2013 05:46 PM, Sebastian Reichel wrote:
+> Hi,
+> 
+> On Mon, Sep 23, 2013 at 02:35:35PM -0600, Stephen Warren wrote:
+>> On 09/15/2013 02:44 PM, Sebastian Reichel wrote:
+>>> Add SSI device tree data for OMAP34xx and Nokia N900.
 
-Marc Kleine-Budde pointed out, that commit 77cc982 "clocksource: use
-clockevents_config_and_register() where possible" caused a regression
-for some of the converted subarchs.
+...
+>>> +- ti,hwmods:		Name of the hwmod associated to the controller,
+>>> which +			is "ssi".
+>> 
+>> I don't think we should add any more of that, for new bindings.
+> 
+> That basically means not adding new drivers until hwmod is
+> completly removed, since no new drivers not using DT are accepted
+> anymore.
+> 
+> hwmod still holds some information, which are not yet mapped to
+> DT.
 
-The reason is, that the clockevents core code converts the minimal
-hardware tick delta to a nanosecond value for core internal
-usage. This conversion is affected by integer math rounding loss, so
-the backwards conversion to hardware ticks will likely result in a
-value which is less than the configured hardware limitation. The
-affected subarchs used their own workaround (SIGH!) which got lost in
-the conversion.
+Tony, is defining hwmod properties for new OMAP bindings what everyone
+is currently doing? I'm not sure how that will work with a stable DT
+ABI...
 
-The solution for the issue at hand is simple: adding evt->mult - 1 to
-the shifted value before the integer divison in the core conversion
-function takes care of it. But this only works for the case where for
-the scaled math mult/shift pair "mult <= 1 << shift" is true. For the
-case where "mult > 1 << shift" we can apply the rounding add only for
-the minimum delta value to make sure that the backward conversion is
-not less than the given hardware limit. For the upper bound we need to
-omit the rounding add, because the backwards conversion is always
-larger than the original latch value. That would violate the upper
-bound of the hardware device.
+I wonder if it makes sense not to define the ti,hwmods property in the
+binding document (so it doesn't become part of the ABI), but put it
+into the DTS file simply to make the current Linux code work? I'm not
+sure if that's any better though.
 
-Though looking closer at the details of that function reveals another
-bogosity: The upper bounds check is broken as well. Checking for a
-resulting "clc" value greater than KTIME_MAX after the conversion is
-pointless. The conversion does:
+>>> +Required Port sub-node properties: +- compatible:		Should be
+>>> set to the following value +
+>>> ti,omap3-ssi-port (applicable to OMAP34xx devices)
+>> 
+>> Hmm. Is it really the case that there is 1 controller with n
+>> ports?
+> 
+> Yes with n=2.
+> 
+>> Are the ports really dependent upon some shared resource?
+> 
+> Yes and runtime power management.
+> 
+>> Couldn't the ports be represented as separate top-level SSI 
+>> controllers?
+> 
+> Maybe with some phandles. The current layout is cleaner IMHO. The
+> ports are part of the controller and actually most boards only use
+> one of them.
+> 
+> In the original driver only the controller hat platform data with
+> memory areas called "port1_rx" etc.
 
-      u64 clc = (latch << evt->shift) / evt->mult;
+If the HW block really does include 2 ports, then representing it as a
+single node in DT is fine; I was just making sure.
 
-So there is no sanity check for (latch << evt->shift) exceeding the
-64bit boundary. The latch argument is "unsigned long", so on a 64bit
-arch the handed in argument could easily lead to an unnoticed shift
-overflow. With the above rounding fix applied the calculation before
-the divison is:
+>>> +- interrupts:		Contains the interrupt information for the
+>>> port. +- interrupt-names:	Contains the names of the interrupts.
+>>> It's expected, +			that "mpu_irq0" and "mpu_irq1" are
+>>> provided.
+>> 
+>> What exactly are those interrupts? "MPU" sounds like an external 
+>> micro-controller/processor...
+>> 
+>>> +- ti,ssi-cawake-gpio:	Defines which GPIO pin is used to
+>>> signify CAWAKE +			events for the port. This is an optional
+>>> board-specific +			property. If it's missing the port will not
+>>> be +			enabled.
+>> 
+>> That also sounds like something that's a higher-level protocol,
+>> rather than whatever low-level transport "SSI" implements. Should
+>> this be part of a child node that represents the device attached
+>> to the SSI controller?
+> 
+> Both the interrupts and the cawake-gpio are used as irqs for 
+> starting data transfers. As far as I understand it none of them are
+> specific to the attached device.
 
-       u64 clc = (latch << evt->shift) + evt->mult - 1;
+But are the interrupts and GPIO actually part of the HSI protocol
+itself, or something layered on top? While your particular board has
+them wired up, is it strictly necessary for all boards using HSI to
+have those IRQs/GPIOs?
 
-So we need to make sure, that neither the shift nor the rounding add
-is overflowing the u64 boundary.
+>> Does the SSI controller (or its ports) not need any clocks,
+>> resets, regulators, ...?
+> 
+> The only other stuff needed is taken care of by hwmod, which can be
+> seen in this patch:
+> 
+> https://lkml.org/lkml/2013/9/15/97
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: nicolas.ferre@atmel.com
-Cc: Marc Pignat <marc.pignat@hevs.ch>
-Cc: john.stultz@linaro.org
-Cc: kernel@pengutronix.de
-Cc: Ronald Wahl <ronald.wahl@raritan.com>
-Cc: LAK <linux-arm-kernel@lists.infradead.org>
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
-[ukl: move assignment to rnd after eventually changing mult, fix build
- issue and correct comment with the right math]
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- kernel/time/clockevents.c | 65 ++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 50 insertions(+), 15 deletions(-)
-
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 38959c8..662c579 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -33,29 +33,64 @@ struct ce_unbind {
- 	int res;
- };
- 
--/**
-- * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
-- * @latch:	value to convert
-- * @evt:	pointer to clock event device descriptor
-- *
-- * Math helper, returns latch value converted to nanoseconds (bound checked)
-- */
--u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
-+static u64 cev_delta2ns(unsigned long latch, struct clock_event_device *evt,
-+			bool ismax)
- {
- 	u64 clc = (u64) latch << evt->shift;
-+	u64 rnd;
- 
- 	if (unlikely(!evt->mult)) {
- 		evt->mult = 1;
- 		WARN_ON(1);
- 	}
-+	rnd = (u64) evt->mult - 1;
-+
-+	/*
-+	 * Upper bound sanity check. If the backwards conversion is
-+	 * not equal latch, we know that the above shift overflowed.
-+	 */
-+	if ((clc >> evt->shift) != (u64)latch)
-+		clc = ~0ULL;
-+
-+	/*
-+	 * Scaled math oddities:
-+	 *
-+	 * For mult <= (1 << shift) we can safely add mult - 1 to
-+	 * prevent integer rounding loss. So the backwards conversion
-+	 * from nsec to device ticks will be correct.
-+	 *
-+	 * For mult > (1 << shift), i.e. device frequency is > 1GHz we
-+	 * need to be careful. Adding mult - 1 will result in a value
-+	 * which when converted back to device ticks can be larger
-+	 * than latch by up to (mult - 1) >> shift. For the min_delta
-+	 * calculation we still want to apply this in order to stay
-+	 * above the minimum device ticks limit. For the upper limit
-+	 * we would end up with a latch value larger than the upper
-+	 * limit of the device, so we omit the add to stay below the
-+	 * device upper boundary.
-+	 *
-+	 * Also omit the add if it would overflow the u64 boundary.
-+	 */
-+	if ((~0ULL - clc > rnd) &&
-+	    (!ismax || evt->mult <= (1U << evt->shift)))
-+		clc += rnd;
- 
- 	do_div(clc, evt->mult);
--	if (clc < 1000)
--		clc = 1000;
--	if (clc > KTIME_MAX)
--		clc = KTIME_MAX;
- 
--	return clc;
-+	/* Deltas less than 1usec are pointless noise */
-+	return clc > 1000 ? clc : 1000;
-+}
-+
-+/**
-+ * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
-+ * @latch:	value to convert
-+ * @evt:	pointer to clock event device descriptor
-+ *
-+ * Math helper, returns latch value converted to nanoseconds (bound checked)
-+ */
-+u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
-+{
-+	return cev_delta2ns(latch, evt, false);
- }
- EXPORT_SYMBOL_GPL(clockevent_delta2ns);
- 
-@@ -380,8 +415,8 @@ void clockevents_config(struct clock_event_device *dev, u32 freq)
- 		sec = 600;
- 
- 	clockevents_calc_mult_shift(dev, freq, sec);
--	dev->min_delta_ns = clockevent_delta2ns(dev->min_delta_ticks, dev);
--	dev->max_delta_ns = clockevent_delta2ns(dev->max_delta_ticks, dev);
-+	dev->min_delta_ns = cev_delta2ns(dev->min_delta_ticks, dev, false);
-+	dev->max_delta_ns = cev_delta2ns(dev->max_delta_ticks, dev, true);
- }
- 
- /**
--- 
-1.8.4.rc3
-
+It would be best to completely define the DT binding so that all
+required clocks etc. are already present in the DT. That way, the DT
+ABI won't change once people stop using hwmods. Tony, is that possible
+on OMAP at present, irrespective of whether those e.g. clock
+properties will actually be used by Linux?
