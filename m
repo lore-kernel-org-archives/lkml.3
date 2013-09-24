@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab3IXTQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 15:16:40 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:38139 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab3IXTQi (ORCPT
+	id S1754598Ab3IXTRH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 15:17:07 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:33959 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754549Ab3IXTRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 15:16:38 -0400
-Date: Tue, 24 Sep 2013 12:16:35 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: axboe@kernel.dk, neilb@suse.de, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, dm-devel@redhat.com,
-        linux-raid@vger.kernel.org
-Subject: Re: [PATCH 0/22] Immutable biovecs, block layer changes
-Message-ID: <20130924191635.GA2636@kmo-pixel>
-References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
- <20130808150954.GA30092@infradead.org>
- <20130808211529.GB15409@kmo-pixel>
- <20130924110012.GA7160@infradead.org>
+	Tue, 24 Sep 2013 15:17:04 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        linux-samsung-soc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tushar Behera <tushar.behera@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Padmavathi Venna <padma.v@samsung.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH V3 1/6] clk: exynos-audss: convert to platform device
+Date: Tue, 24 Sep 2013 12:17:01 -0700 (PDT)
+Message-ID: <1706375.1GRhkzSkm0@flatron>
+User-Agent: KMail/4.11.1 (Linux/3.11.1-gentoo; KDE/4.11.1; x86_64; ; )
+In-Reply-To: <1380046016-5811-1-git-send-email-abrestic@chromium.org>
+References: <1379982078-23381-1-git-send-email-abrestic@chromium.org> <1380046016-5811-1-git-send-email-abrestic@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130924110012.GA7160@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 04:00:12AM -0700, Christoph Hellwig wrote:
-> Just curious, what's the state of the remaining immutable bio work?
+Hi Andrew,
 
-Mostly just waiting for Jens to pull it, though I did discover an issue
-with the "generic bio chaining" patch last time I was testing it - but
-that's towards the end of the series and the rest could be pulled now.
-
-Going to work on the series more today - the reworked segment merging
-patches is what lets us shrink struct bio; those patches aren't ready
-yet (and they're more invasive than some other cleanup I was planning on
-getting in first) but I think they're logically independent from most of
-the other patches, I'll see if I can mail out a short series on top of
-this one for you to look at.
-
+On Tuesday 24 of September 2013 11:06:51 Andrew Bresticker wrote:
+> The Exynos AudioSS clock controller will later be modified to allow
+> input clocks to be specified via device-tree in order to support
+> multiple Exynos SoCs.  This will introduce a dependency on the core
+> SoC clock controller being initialized first so that the AudioSS driver
+> can look up its input clocks, but the order in which clock providers
+> are probed in of_clk_init() is not guaranteed.  Since deferred probing
+> is not supported in of_clk_init() and the AudioSS block is not the core
+> controller, we can initialize it later as a platform device.
 > 
-> On Thu, Aug 08, 2013 at 02:15:29PM -0700, Kent Overstreet wrote:
-> > > What is preventing you from sending those out as well?  While it's not
-> > > absolutely nessecary it would certainly be good if we'd avoid a struct
-> > > bio size regression.
-> > 
-> > There's still some fairly significant changes, and I don't want to make
-> > too many invasive changes at once.
-> > 
-> > Main thing is making generic_make_request() take arbitrary size bios.
-> > After this series that's just two simple patches, but then the changes
-> > to make use of that will be changing behaviour in non obvious ways.
-> > 
-> > The way the merging changes work is it enables multi page bvecs - so a
-> > bvec can point to many physically contiguous pages. This moves segment
-> > merging to bio_add_page(), and gets rid of bi_phys_segments - now
-> > bi_vcnt == bi_phys_segments, we just split the bio if it's too big.
-> > 
-> > Then, with bio_add_page() building up large bios and the block layer
-> > splitting them as necessary, there shouldn't be any need for segment
-> > merging across bios anymore (because generally when that would've
-> > happened before, now we'd just be sending one larger bio down).
-> > 
-> > The remaining patches aren't terribly complicated though (less
-> > complicated than this patch series). Trickiest bit is multipage bvecs,
-> > and that's mostly just lots of code auditing - the way I convert
-> > existing code is by adding bio_for_each_page() - analagous to
-> > bio_for_each_segment, but giving you bvecs that point to single pages.
-> > So it's an easy conversion, just have to make sure nothing's missed.
-> ---end quoted text---
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+> Changes since v2:
+>  - add error handling to probe callback
+>  - fixed ordering of of_clk_{add,del}_provider
+>  - fixed nits from Tomasz and Sylwester
+> Changes since v1:
+>  - add clk_unregister() calls to remove callback
+>  - fixed minor nits from Tomasz
+> ---
+>  drivers/clk/samsung/clk-exynos-audss.c | 109
+> +++++++++++++++++++++++++++------ 1 file changed, 90 insertions(+), 19
+> deletions(-)
+
+For the whole series:
+
+Acked-by: Tomasz Figa <t.figa@samsung.com>
+
+Thanks for addressing all the comments.
+
+Best regards,
+Tomasz
+
