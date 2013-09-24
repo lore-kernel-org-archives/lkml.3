@@ -1,56 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3IXNUq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 09:20:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32223 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750766Ab3IXNUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 09:20:44 -0400
-Date: Tue, 24 Sep 2013 09:20:14 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Kent Overstreet <kmo@daterainc.com>, axboe@kernel.dk,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/22] Immutable biovecs, block layer changes
-Message-ID: <20130924132014.GA16165@redhat.com>
-References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
- <20130808150954.GA30092@infradead.org>
- <20130808211529.GB15409@kmo-pixel>
- <20130924110012.GA7160@infradead.org>
+	id S1753580Ab3IXNVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 09:21:14 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:55736 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab3IXNVM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 09:21:12 -0400
+Message-ID: <52419198.1010906@gmail.com>
+Date: Tue, 24 Sep 2013 21:20:24 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130924110012.GA7160@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com
+Subject: Re: [PATCH 3/6] x86/mm: Factor out of top-down direct mapping setup
+References: <524162DA.30004@cn.fujitsu.com> <52416431.1090107@cn.fujitsu.com> <20130924122712.GD2366@htj.dyndns.org>
+In-Reply-To: <20130924122712.GD2366@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24 2013 at  7:00am -0400,
-Christoph Hellwig <hch@infradead.org> wrote:
+Hello tejun,
 
-> Just curious, what's the state of the remaining immutable bio work?
+On 09/24/2013 08:27 PM, Tejun Heo wrote:
+> On Tue, Sep 24, 2013 at 06:06:41PM +0800, Zhang Yanfei wrote:
+>> +/**
+>> + * memory_map_top_down - Map [map_start, map_end) top down
+>> + * @map_start: start address of the target memory range
+>> + * @map_end: end address of the target memory range
+>> + *
+>> + * This function will setup direct mapping for memory range [map_start, map_end)
+>> + * in a heuristic way. In the beginning, step_size is small. The more memory we
+>> + * map memory in the next loop.
+>> + */
+> 
+> The comment reads a bit weird to me.  The step size is increased
+> gradually but that really isn't really a heuristic and it doesn't
+> mention mapping direction.
 
-Hey Christoph,
+Ok, will change the words and add the comment of direction.
 
-Have you been over the patchset?  Looks sane to you?
+> 
+> ...
+>> @@ -430,19 +430,13 @@ void __init init_mem_mapping(void)
+>>  	min_pfn_mapped = real_end >> PAGE_SHIFT;
+>>  	last_start = start = real_end;
+>>  
+>> -	/*
+>> -	 * We start from the top (end of memory) and go to the bottom.
+>> -	 * The memblock_find_in_range() gets us a block of RAM from the
+>> -	 * end of RAM in [min_pfn_mapped, max_pfn_mapped) used as new pages
+>> -	 * for page table.
+>> -	 */
+> 
+> I think this comment should stay here with the variable names
+> updated.
 
-Given how disruptive this patchset is to the block layer I'm wondering
-how painful this change will be in combination with Jens' blk-mq
-changes.  I'd prefer to see blk-mq before immutable biovecs; but I have
-my own selfish reasons for that.
+OK, agreed
 
-I'm also concerned about DM regressions given that a lot of DM code to
-handle splitting a bio that spans target boundaries is ripped out, see:
-https://patchwork.kernel.org/patch/2840657/
+> 
+>> -	while (last_start > ISA_END_ADDRESS) {
+>> +	while (last_start > map_start) {
+>>  		if (last_start > step_size) {
+>>  			start = round_down(last_start - 1, step_size);
+>> -			if (start < ISA_END_ADDRESS)
+>> -				start = ISA_END_ADDRESS;
+>> +			if (start < map_start)
+>> +				start = map_start;
+>>  		} else
+>> -			start = ISA_END_ADDRESS;
+>> +			start = map_start;
+>>  		new_mapped_ram_size = init_range_memory_mapping(start,
+>>  							last_start);
+>>  		last_start = start;
+>> @@ -453,8 +447,32 @@ void __init init_mem_mapping(void)
+>>  		mapped_ram_size += new_mapped_ram_size;
+>>  	}
+>>  
+>> -	if (real_end < end)
+>> -		init_range_memory_mapping(real_end, end);
+>> +	if (real_end < map_end)
+>> +		init_range_memory_mapping(real_end, map_end);
+>> +}
+>> +
+>> +void __init init_mem_mapping(void)
+>> +{
+>> +	unsigned long end;
+>> +
+>> +	probe_page_size_mask();
+>> +
+>> +#ifdef CONFIG_X86_64
+>> +	end = max_pfn << PAGE_SHIFT;
+>> +#else
+>> +	end = max_low_pfn << PAGE_SHIFT;
+>> +#endif
+>> +
+>> +	/* the ISA range is always mapped regardless of memory holes */
+>> +	init_memory_mapping(0, ISA_END_ADDRESS);
+>> +
+>> +	/*
+>> +	 * We start from the top (end of memory) and go to the bottom.
+>> +	 * The memblock_find_in_range() gets us a block of RAM from the
+>> +	 * end of RAM in [min_pfn_mapped, max_pfn_mapped) used as new pages
+>> +	 * for page table.
+>> +	 */
+> 
+> And just mention the range and direction in the comment here?
 
-But that is just handwaving/FUD at this point cause I haven't put the
-time to looking at this patchset close enough to feel comfortable.  I
-can make reviewing this patchset a priority this week though.
+OK, agreed.
 
-Kent, have you rebased this patchset at all?  Do you have a git tree I
-can clone to save the pain of pulling these patches out my my mbox,
-etc.
+Thanks
 
-Mike
+> 
+>> +	memory_map_top_down(ISA_END_ADDRESS, end);
+> 
+> Thanks.
+> 
+
+
+-- 
+Thanks.
+Zhang Yanfei
