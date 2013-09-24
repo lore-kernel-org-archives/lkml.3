@@ -1,115 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333Ab3IXE4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 00:56:48 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:47189 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3IXE4q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 00:56:46 -0400
-Date: Tue, 24 Sep 2013 13:56:44 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
-Cc: SH-Linux <linux-sh@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
-        ben.dooks@codethink.co.uk,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH 0/6] ARM: shmobile: kzm9d-reference:  migrate to common
- clock framework with DT
-Message-ID: <20130924045644.GG3619@verge.net.au>
-References: <52410F86.4040301@renesas.com>
+	id S1751549Ab3IXE5j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 00:57:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9772 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750706Ab3IXE5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 00:57:38 -0400
+Date: Tue, 24 Sep 2013 12:57:05 +0800
+From: Dave Young <dyoung@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+Message-ID: <20130924045705.GB5561@dhcp-16-126.nay.redhat.com>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <1379602494-26684-12-git-send-email-bp@alien8.de>
+ <20130921113929.GB1587@pd.tnic>
+ <20130922123515.GA7476@dhcp-16-126.nay.redhat.com>
+ <20130922133722.GC28718@pd.tnic>
+ <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com>
+ <20130924025209.GA5561@dhcp-16-126.nay.redhat.com>
+ <2d27a1bc-eabf-4d45-8303-27ae58511b11@email.android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52410F86.4040301@renesas.com>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <2d27a1bc-eabf-4d45-8303-27ae58511b11@email.android.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Cc Laurent ]
+On 09/23/13 at 08:06pm, H. Peter Anvin wrote:
+> Okay... I see two problems.
+> 
+> 1. It looks like we subtract the region size after, rather than before, assigning an address.
+> 
+> 2. The second region is assigned the same address in the secondary kernel as in the first, implying the size of the first region was somehow set to zero.
 
-On Tue, Sep 24, 2013 at 01:05:26PM +0900, Takashi Yoshii wrote:
-> This patch series makes kzm9d-reference to move to new clk implementation
->  based on the common clock framework and device tree.
+I find the reason, efi_reserve_boot_services will reserve the BOOT_SERVICE_DATA region
+thus the memmap size is changed to 0, so in 2nd kernel the virtual mapping addr after
+the md will be not same as 1st kernel, see below code:
+ 
+void __init efi_map_region(efi_memory_desc_t *md)
+{
+        unsigned long size = md->num_pages << PAGE_SHIFT;
 
-Magnus, Laurent,
+        efi_va -= size;
+        ^^^^^^^^^^^^^^^
+	[snip]
+}
 
-I would appreciate it if you could take a look over the approach taken
-here.
-
-Thanks
 
 > 
-> First three are for preparation.
-> [PATCH 1/6] clocksource: em_sti: convert to clk_prepare/unprepare
-> [PATCH 2/6] serial8250-em: convert to clk_prepare/unprepare
-> [PATCH 3/6] sh: clkfwk: Select sh-/common- clkfwk alternatively
-> 
-> Next one is a proposal document of DT bindings.
-> [PATCH 4/6] ARM: shmobile: emev2: Define SMU clock DT bindings
-> 
-> This is the implementation, and dts which carries clock tree description.
-> [PATCH 5/6] clk: emev2: Add support for emev2 SMU clocks with DT
-> 
-> Last one is small modification needed for migration.
-> [PATCH 6/6] ARM: shmobile: kzm9d-reference: Use common clock
-> 
-> These patches do not remove sh-clkfwk version, even on emev2.
-> kzm9d(without -reference) target still uses sh-clkfwk.
-> I believe this method encourages step-by-step migration on other sh-mobile
->  targets, too.
-> 
-> Patches should be applied and compiled both on
->  v3.12-rc2 and
->  kernel/git/horms/renesas.git tag:renesas-devel-20130922 
-> 
-> Confirmed on kernel/git/horms/renesas.git tag:renesas-devel-20130922 
-> for boot up to command prompt.
-> - kzm9d board / multiplatform + kzm9d-reference configuration
-> - kzm9d board / kzm9d-reference configuration
-> - kzm9d board / kzm9d (with sh-clkfwk) configuration for regression.
-> - ape6evm (with sh-clkfwk) for regression.
-> for compile only
-> - sh7757lcr (in arch/sh with sh-clkfwk) for regression.
-> 
-> 
-> Shinya Kuribayashi (2):
->   clocksource: em_sti: convert to clk_prepare/unprepare
->   serial8250-em: convert to clk_prepare/unprepare
-> 
-> Takashi YOSHII (4):
->   sh: clkfwk: Select sh-/common- clkfwk alternatively
->   ARM: shmobile: emev2: Define SMU clock DT bindings
->   clk: emev2: Add support for emev2 SMU clocks with DT
->   ARM: shmobile: kzm9d-reference: Use common clock framework
-> 
->  .../devicetree/bindings/clock/emev2-clock.txt      |  99 ++++++++++++++++++++
->  arch/arm/Kconfig                                   |   2 +-
->  arch/arm/boot/dts/emev2.dtsi                       |  84 +++++++++++++++++
->  arch/arm/mach-shmobile/Kconfig                     |   1 +
->  arch/arm/mach-shmobile/board-kzm9d-reference.c     |   5 +-
->  arch/sh/Kconfig                                    |   1 +
->  drivers/clk/Makefile                               |   2 +
->  drivers/clk/shmobile/Makefile                      |   5 +
->  drivers/clk/shmobile/clk-emev2.c                   | 104 +++++++++++++++++++++
->  drivers/clocksource/em_sti.c                       |   4 +-
->  drivers/sh/clk/Makefile                            |   3 +-
->  drivers/tty/serial/8250/8250_em.c                  |   6 +-
->  12 files changed, 305 insertions(+), 11 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/clock/emev2-clock.txt
->  create mode 100644 drivers/clk/shmobile/Makefile
->  create mode 100644 drivers/clk/shmobile/clk-emev2.c
+> Dave Young <dyoung@redhat.com> wrote:
+> >On 09/22/13 at 08:27am, H. Peter Anvin wrote:
+> >> The address that faults is interesting in that it is indeed just
+> >below -4G.  The question at hand is probably what information you are
+> >using to build the EFI mappings in the secondary kernel and what could
+> >make it not match the primary.
+> >> 
+> >> Assuming it isn't as simple as the mappings never get built at all.
+> >
+> >Here is my debug output, diff efi-mapping-1st-kernel
+> >efi-mapping-2nd-kernel:
+> >Obviously, the high address mapping is not same:
+> >
+> >--- efi-mapping-1.txt	2013-09-24 10:46:09.977746047 +0800
+> >+++ efi-mapping-2.txt	2013-09-24 10:46:33.871421806 +0800
+> >@@ -1,30 +1,30 @@
+> > efi mapping PA 0x800000 -> VA 0x800000
+> > efi mapping PA 0x800000 -> VA 0xffffffff00000000
+> > efi mapping PA 0x7c000000 -> VA 0x7c000000
+> >-efi mapping PA 0x7c000000 -> VA 0xfffffffefffe0000
+> >+efi mapping PA 0x7c000000 -> VA 0xffffffff00000000
+> > efi mapping PA 0x7d5e2000 -> VA 0x7d5e2000
+> >-efi mapping PA 0x7d5e2000 -> VA 0xfffffffefffdf000
+> >+efi mapping PA 0x7d5e2000 -> VA 0xfffffffefffff000
+> > efi mapping PA 0x7d77d000 -> VA 0x7d77d000
+> >-efi mapping PA 0x7d77d000 -> VA 0xfffffffefffde000
+> >+efi mapping PA 0x7d77d000 -> VA 0xfffffffeffffe000
+> > efi mapping PA 0x7d864000 -> VA 0x7d864000
+> >-efi mapping PA 0x7d864000 -> VA 0xfffffffeff8d4000
+> >+efi mapping PA 0x7d864000 -> VA 0xfffffffeff8f4000
+> > efi mapping PA 0x7df6e000 -> VA 0x7df6e000
+> >-efi mapping PA 0x7df6e000 -> VA 0xfffffffeff6ae000
+> >+efi mapping PA 0x7df6e000 -> VA 0xfffffffeff6ce000
+> > efi mapping PA 0x7e194000 -> VA 0x7e194000
+> >-efi mapping PA 0x7e194000 -> VA 0xfffffffeff6ac000
+> >+efi mapping PA 0x7e194000 -> VA 0xfffffffeff6cc000
+> > efi mapping PA 0x7e196000 -> VA 0x7e196000
+> >-efi mapping PA 0x7e196000 -> VA 0xfffffffeff696000
+> >+efi mapping PA 0x7e196000 -> VA 0xfffffffeff6b6000
+> > efi mapping PA 0x7e1ac000 -> VA 0x7e1ac000
+> >-efi mapping PA 0x7e1ac000 -> VA 0xfffffffeff681000
+> >+efi mapping PA 0x7e1ac000 -> VA 0xfffffffeff6a1000
+> > efi mapping PA 0x7e1c1000 -> VA 0x7e1c1000
+> >-efi mapping PA 0x7e1c1000 -> VA 0xfffffffefe041000
+> >+efi mapping PA 0x7e1c1000 -> VA 0xfffffffefe061000
+> > efi mapping PA 0x7f802000 -> VA 0x7f802000
+> >-efi mapping PA 0x7f802000 -> VA 0xfffffffefdec2000
+> >+efi mapping PA 0x7f802000 -> VA 0xfffffffefdee2000
+> > efi mapping PA 0x7f981000 -> VA 0x7f981000
+> >-efi mapping PA 0x7f981000 -> VA 0xfffffffefde92000
+> >+efi mapping PA 0x7f981000 -> VA 0xfffffffefdeb2000
+> > efi mapping PA 0x7f9b1000 -> VA 0x7f9b1000
+> >-efi mapping PA 0x7f9b1000 -> VA 0xfffffffefde6e000
+> >+efi mapping PA 0x7f9b1000 -> VA 0xfffffffefde8e000
+> > efi mapping PA 0x7f9e5000 -> VA 0x7f9e5000
+> >-efi mapping PA 0x7f9e5000 -> VA 0xfffffffefd873000
+> >+efi mapping PA 0x7f9e5000 -> VA 0xfffffffefd893000
+> > efi mapping PA 0x7ffe0000 -> VA 0x7ffe0000
+> >-efi mapping PA 0x7ffe0000 -> VA 0xfffffffefd853000
+> >+efi mapping PA 0x7ffe0000 -> VA 0xfffffffefd873000
+> >
+> >> 
+> >> 
+> >> Borislav Petkov <bp@alien8.de> wrote:
+> >> >On Sun, Sep 22, 2013 at 08:35:15PM +0800, Dave Young wrote:
+> >> >> I tested your new patch, it works both with efi stub and grub boot
+> >in
+> >> >> 1st kernel.
+> >> >
+> >> >Good, thanks!
+> >> >
+> >> >> But it paniced in kexec boot with my kexec related patcheset, the
+> >> >patchset
+> >> >
+> >> >That's the second kernel, right?
+> >> >
+> >> >> contains 3 patch:
+> >> >> 1. introduce cmdline kexecboot=<0|1|2>; 1 == kexec, 2 == kdump
+> >> >> 2. export physical addr fw_vendor, runtime, tables to
+> >> >/sys/firmware/efi/systab
+> >> >> 3. if kexecboot != 0, use fw_vendor, runtime, tables from
+> >bootparams;
+> >> >Also do not
+> >> >>    call SetVirtualAddressMao in case kexecboot.
+> >> >> 
+> >> >> The panic happens at the last line of efi_init:
+> >> >>         /* clean DUMMY object */
+> >> >>         efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+> >> >>                          EFI_VARIABLE_NON_VOLATILE |
+> >> >>                          EFI_VARIABLE_BOOTSERVICE_ACCESS |
+> >> >>                          EFI_VARIABLE_RUNTIME_ACCESS,
+> >> >>                          0, NULL);
+> >> >> 
+> >> >> Below is the dmesg:
+> >> >> [    0.003359] pid_max: default: 32768 minimum: 301
+> >> >> [    0.004792] BUG: unable to handle kernel paging request at
+> >> >fffffffefde97e70
+> >> >> [    0.006666] IP: [<ffffffff8103a1db>]
+> >> >virt_efi_set_variable+0x40/0x54
+> >> >> [    0.006666] PGD 36981067 PUD 35828063 PMD 0
+> >> >
+> >> >Here it is - fffffffefde97e70 is not mapped in the pagetable, PMD is
+> >0.
+> >> >
+> >> >Ok, can you upload your patches somewhere and tell me exactly how to
+> >> >reproduce this so that I can take a look too?
+> >> >
+> >> >Thanks.
+> >> 
+> >> -- 
+> >> Sent from my mobile phone.  Please pardon brevity and lack of
+> >formatting.
 > 
 > -- 
-> 1.8.1.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> Sent from my mobile phone.  Please pardon brevity and lack of formatting.
