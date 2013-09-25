@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab3IYKr6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 06:47:58 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:41771 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152Ab3IYKr4 (ORCPT
+	id S1755341Ab3IYKsP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 06:48:15 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:51016 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185Ab3IYKsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 06:47:56 -0400
+	Wed, 25 Sep 2013 06:48:13 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v1 6/7] arm64, jump label: optimize jump label implementation
-Date: Wed, 25 Sep 2013 18:44:26 +0800
-Message-Id: <1380105868-31985-7-git-send-email-liuj97@gmail.com>
+        Andrew Jones <drjones@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH v1 7/7] jump_label: use defined macros instead of hard-coding for better readability
+Date: Wed, 25 Sep 2013 18:44:27 +0800
+Message-Id: <1380105868-31985-8-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1380105868-31985-1-git-send-email-liuj97@gmail.com>
 References: <1380105868-31985-1-git-send-email-liuj97@gmail.com>
@@ -26,168 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Optimize jump label implementation for ARM64 by dynamically patching
-kernel text.
+Use macro JUMP_LABEL_TRUE_BRANCH instead of hard-coding for better
+readability.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Cc: Jiang Liu <liuj97@gmail.com>
 ---
- arch/arm64/Kconfig                  |  1 +
- arch/arm64/include/asm/jump_label.h | 52 ++++++++++++++++++++++++++++++++
- arch/arm64/kernel/Makefile          |  1 +
- arch/arm64/kernel/jump_label.c      | 60 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 114 insertions(+)
- create mode 100644 arch/arm64/include/asm/jump_label.h
- create mode 100644 arch/arm64/kernel/jump_label.c
+ include/linux/jump_label.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index c044548..da388e4 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -17,6 +17,7 @@ config ARM64
- 	select GENERIC_SMP_IDLE_THREAD
- 	select GENERIC_TIME_VSYSCALL
- 	select HARDIRQS_SW_RESEND
-+	select HAVE_ARCH_JUMP_LABEL
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_DEBUG_BUGVERBOSE
- 	select HAVE_DEBUG_KMEMLEAK
-diff --git a/arch/arm64/include/asm/jump_label.h b/arch/arm64/include/asm/jump_label.h
-new file mode 100644
-index 0000000..d268fab
---- /dev/null
-+++ b/arch/arm64/include/asm/jump_label.h
-@@ -0,0 +1,52 @@
-+/*
-+ * Copyright (C) 2013 Huawei Ltd.
-+ * Author: Jiang Liu <jiang.liu@huawei.com>
-+ *
-+ * Based on arch/arm/include/asm/jump_label.h
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef _ASM_ARM64_JUMP_LABEL_H
-+#define _ASM_ARM64_JUMP_LABEL_H
-+#include <linux/types.h>
-+
-+#ifdef __KERNEL__
-+
-+#define JUMP_LABEL_NOP_SIZE 4
-+
-+static __always_inline bool arch_static_branch(struct static_key *key)
-+{
-+	asm goto("1:\n\t"
-+		 "nop\n\t"
-+		 ".pushsection __jump_table,  \"aw\"\n\t"
-+		 ".align 3\n\t"
-+		 ".quad 1b, %l[l_yes], %c0\n\t"
-+		 ".popsection\n\t"
-+		 :  :  "i"(key) :  : l_yes);
-+
-+	return false;
-+l_yes:
-+	return true;
-+}
-+
-+#endif /* __KERNEL__ */
-+
-+typedef u64 jump_label_t;
-+
-+struct jump_entry {
-+	jump_label_t code;
-+	jump_label_t target;
-+	jump_label_t key;
-+};
-+
-+#endif	/* _ASM_ARM64_JUMP_LABEL_H */
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index 9af6cb3..b7db65e 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o smp_psci.o
- arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
- arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
- arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
-+arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index a507907..b697fbd 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -116,7 +116,8 @@ extern void static_key_slow_dec(struct static_key *key);
+ extern void jump_label_apply_nops(struct module *mod);
  
- obj-y					+= $(arm64-obj-y) vdso/
- obj-m					+= $(arm64-obj-m)
-diff --git a/arch/arm64/kernel/jump_label.c b/arch/arm64/kernel/jump_label.c
-new file mode 100644
-index 0000000..6cbe2ed
---- /dev/null
-+++ b/arch/arm64/kernel/jump_label.c
-@@ -0,0 +1,60 @@
-+/*
-+ * Copyright (C) 2013 Huawei Ltd.
-+ * Author: Jiang Liu <jiang.liu@huawei.com>
-+ *
-+ * Based on arch/arm/kernel/jump_label.c
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/jump_label.h>
-+#include <asm/jump_label.h>
-+#include <asm/insn.h>
-+
-+#ifdef HAVE_JUMP_LABEL
-+
-+static void __arch_jump_label_transform(struct jump_entry *entry,
-+					enum jump_label_type type,
-+					bool is_static)
-+{
-+	void *addr = (void *)entry->code;
-+	u32 insn;
-+
-+	if (type == JUMP_LABEL_ENABLE) {
-+		/* no way out if instruction offset is out of range(+/-128M) */
-+		insn = aarch64_insn_gen_branch_imm(entry->code,
-+						   entry->target, 0);
-+		BUG_ON(!insn);
-+	} else {
-+		insn = aarch64_insn_gen_nop();
-+	}
-+
-+	if (is_static)
-+		__aarch64_insn_patch_text(addr, &insn, 1);
-+	else
-+		aarch64_insn_patch_text(addr, &insn, 1);
-+}
-+
-+void arch_jump_label_transform(struct jump_entry *entry,
-+			       enum jump_label_type type)
-+{
-+	__arch_jump_label_transform(entry, type, false);
-+}
-+
-+void arch_jump_label_transform_static(struct jump_entry *entry,
-+				      enum jump_label_type type)
-+{
-+	__arch_jump_label_transform(entry, type, true);
-+}
-+
-+#endif	/* HAVE_JUMP_LABEL */
+ #define STATIC_KEY_INIT_TRUE ((struct static_key) \
+-	{ .enabled = ATOMIC_INIT(1), .entries = (void *)1 })
++	{ .enabled = ATOMIC_INIT(1), \
++	  .entries = (void *)JUMP_LABEL_TRUE_BRANCH })
+ #define STATIC_KEY_INIT_FALSE ((struct static_key) \
+ 	{ .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
+ 
 -- 
 1.8.1.2
 
