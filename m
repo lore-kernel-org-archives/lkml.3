@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab3IYKRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 06:17:36 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:58800 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730Ab3IYKRe (ORCPT
+	id S1755140Ab3IYKRn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 06:17:43 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:58844 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755075Ab3IYKRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 06:17:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <001201ceb9c5$95268ab0$bf73a010$%han@samsung.com>
-References: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
-	<001201ceb9c5$95268ab0$bf73a010$%han@samsung.com>
-Date: Wed, 25 Sep 2013 15:47:34 +0530
-Message-ID: <CAK9yfHxu3LxaKVSX9WO6J7dd+xtGWF4304pUHwN=oFd_hwy3hQ@mail.gmail.com>
-Subject: Re: [PATCH 09/20] regulator: lp3972: use devm_regulator_register()
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 Sep 2013 06:17:42 -0400
+Subject: Re: [PATCH] X.509: Remove validity check of certificate date
+From: joeyli <jlee@suse.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, Josh Boyer <jwboyer@redhat.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Peter Jones <pjones@redhat.com>
+In-Reply-To: <5242A6CD.5010006@ahsoftware.de>
+References: <1380090051-19482-1-git-send-email-jlee@suse.com>
+	 <5242A6CD.5010006@ahsoftware.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Sep 2013 18:17:52 +0800
+Message-ID: <1380104272.21947.504.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2013 13:32, Jingoo Han <jg1.han@samsung.com> wrote:
-> Use devm_regulator_register() to make cleanup paths simpler.
+於 三，2013-09-25 於 11:03 +0200，Alexander Holler 提到：
+> (I've resend this message, because the one I've replied to contained 
+> contained kernel@vger... and not linux-kernel@vger... as addressee)
+> 
+> I've already sent exactly the same patch here:
+> 
+> http://lkml.org/lkml/2013/3/27/449
+> 
+> and here:
+> 
+> https://lkml.org/lkml/2013/6/6/207
 
->  static int lp3972_i2c_remove(struct i2c_client *i2c)
->  {
->         struct lp3972 *lp3972 = i2c_get_clientdata(i2c);
-> -       int i;
->
-> -       for (i = 0; i < lp3972->num_regulators; i++)
-> -               regulator_unregister(lp3972->rdev[i]);
->         kfree(lp3972->rdev);
+Ah! Thanks for your point out, I didn't search out it!
 
-With devm the unregister would happen after the freeing of the device.
-Wouldn't this re-ordering cause any
-problems?
+> 
+> but for some unspoken reason it always got ignored.
 
--- 
-With warm regards,
-Sachin
+Yes, looks your patch is waiting for merge...
+
+> 
+> It would make wonder if it would be accepted this time, just because of
+> another author name.
+
+I think just ignore my patch.
+
+> 
+> Regards,
+> 
+> Alexander Holler
+
+Thanks a lot!
+Joey Lee
+
