@@ -1,133 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab3IYBGp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:06:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39122 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756098Ab3IYAQg (ORCPT
+	id S1757645Ab3IYBG6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:06:58 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51124 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757418Ab3IYBGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:36 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 060/110] ath9k: fix rx descriptor related race condition
-Date: Tue, 24 Sep 2013 17:14:58 -0700
-Message-Id: <20130925001329.919735328@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
-References: <20130925001323.387158698@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 24 Sep 2013 21:06:55 -0400
+Date: Wed, 25 Sep 2013 11:06:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sergei Trofimovich <slyfox@gentoo.org>,
+        Timur Tabi <timur@freescale.com>, Greg KH <greg@kroah.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20130925110643.db5fa154bea3838ed6affa45@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__25_Sep_2013_11_06_43_+1000_=pbgY2xoeaNwF_sN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+--Signature=_Wed__25_Sep_2013_11_06_43_+1000_=pbgY2xoeaNwF_sN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Andrew,
 
-From: Felix Fietkau <nbd@openwrt.org>
+After merging the akpm tree, linux-next builds (powerpc allmodconfig)
+fail like this:
 
-commit e96542e55a2aacf4bdeccfe2f17b77c4895b4df2 upstream.
+drivers/tty/ehv_bytechan.c:362:1: error: type defaults to 'int' in declarat=
+ion of 'console_initcall' [-Werror=3Dimplicit-int]
 
-Similar to a race condition that exists in the tx path, the hardware
-might re-read the 'next' pointer of a descriptor of the last completed
-frame. This only affects non-EDMA (pre-AR93xx) devices.
+Caused by commit 0f01cf96c2d4 ("./Makefile: enable -Werror=3Dimplicit-int
+and -Werror=3Dstrict-prototypes by default") which has bee in linux-next
+since Aug 16.  This commit exposed that fact that
+drivers/tty/ehv_bytechan.c can be built as a module, but has a
+console_initcall (which is not available to modules).  This was
+originally introduced in commit dcd83aaff1c8 ("tty/powerpc: introduce the
+ePAPR embedded hypervisor byte channel driver") in v3.2.
 
-To deal with this race, defer clearing and re-linking a completed rx
-descriptor until the next one has been processed.
+Anyone got a good solution?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+--Signature=_Wed__25_Sep_2013_11_06_43_+1000_=pbgY2xoeaNwF_sN
+Content-Type: application/pgp-signature
 
----
- drivers/net/wireless/ath/ath9k/ath9k.h |    5 +----
- drivers/net/wireless/ath/ath9k/recv.c  |   17 +++++++++++++----
- 2 files changed, 14 insertions(+), 8 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
---- a/drivers/net/wireless/ath/ath9k/ath9k.h
-+++ b/drivers/net/wireless/ath/ath9k/ath9k.h
-@@ -79,10 +79,6 @@ struct ath_config {
- 		       sizeof(struct ath_buf_state));		\
- 	} while (0)
- 
--#define ATH_RXBUF_RESET(_bf) do {		\
--		(_bf)->bf_stale = false;	\
--	} while (0)
--
- /**
-  * enum buffer_type - Buffer type flags
-  *
-@@ -316,6 +312,7 @@ struct ath_rx {
- 	struct ath_descdma rxdma;
- 	struct ath_rx_edma rx_edma[ATH9K_RX_QUEUE_MAX];
- 
-+	struct ath_buf *buf_hold;
- 	struct sk_buff *frag;
- 
- 	u32 ampdu_ref;
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -42,8 +42,6 @@ static void ath_rx_buf_link(struct ath_s
- 	struct ath_desc *ds;
- 	struct sk_buff *skb;
- 
--	ATH_RXBUF_RESET(bf);
--
- 	ds = bf->bf_desc;
- 	ds->ds_link = 0; /* link to null */
- 	ds->ds_data = bf->bf_buf_addr;
-@@ -70,6 +68,14 @@ static void ath_rx_buf_link(struct ath_s
- 	sc->rx.rxlink = &ds->ds_link;
- }
- 
-+static void ath_rx_buf_relink(struct ath_softc *sc, struct ath_buf *bf)
-+{
-+	if (sc->rx.buf_hold)
-+		ath_rx_buf_link(sc, sc->rx.buf_hold);
-+
-+	sc->rx.buf_hold = bf;
-+}
-+
- static void ath_setdefantenna(struct ath_softc *sc, u32 antenna)
- {
- 	/* XXX block beacon interrupts */
-@@ -117,7 +123,6 @@ static bool ath_rx_edma_buf_link(struct
- 
- 	skb = bf->bf_mpdu;
- 
--	ATH_RXBUF_RESET(bf);
- 	memset(skb->data, 0, ah->caps.rx_status_len);
- 	dma_sync_single_for_device(sc->dev, bf->bf_buf_addr,
- 				ah->caps.rx_status_len, DMA_TO_DEVICE);
-@@ -432,6 +437,7 @@ int ath_startrecv(struct ath_softc *sc)
- 	if (list_empty(&sc->rx.rxbuf))
- 		goto start_recv;
- 
-+	sc->rx.buf_hold = NULL;
- 	sc->rx.rxlink = NULL;
- 	list_for_each_entry_safe(bf, tbf, &sc->rx.rxbuf, list) {
- 		ath_rx_buf_link(sc, bf);
-@@ -677,6 +683,9 @@ static struct ath_buf *ath_get_next_rx_b
- 	}
- 
- 	bf = list_first_entry(&sc->rx.rxbuf, struct ath_buf, list);
-+	if (bf == sc->rx.buf_hold)
-+		return NULL;
-+
- 	ds = bf->bf_desc;
- 
- 	/*
-@@ -1378,7 +1387,7 @@ requeue:
- 		if (edma) {
- 			ath_rx_edma_buf_link(sc, qtype);
- 		} else {
--			ath_rx_buf_link(sc, bf);
-+			ath_rx_buf_relink(sc, bf);
- 			ath9k_hw_rxena(ah);
- 		}
- 	} while (1);
+iQIcBAEBCAAGBQJSQjcnAAoJEECxmPOUX5FELSEP+wWHQRnG45pvXpbVMeSo+VE7
+s8ZvM2trltNujcLG55fIlDVpMqEmOCOXCNVBWNw1PBzTzFtocm7TsgtDgRITu5T8
+DUM/tAH2d9ySvzK1AkY9fM2ZhRs+LUZKI/jqAu08yjoAgUAXgVedwM3E7fKNYa31
+nR9xXJm1LIcTDN2MDPzaBxTnxWzD3Q9O04jiuyRh8V9V7VU+qGugxzgUHisxnxLm
+rrPDowhQlwA9xmncvGxreyrlAsZECoakZ5kEs04SPHx15Na+KKavcvEnfXg5IuxE
+7BgVEpBukLrvpe19epY99EJCAv0i0/ZDhN7mg0b5V/Gjf5Xy6MboMSRfrL8w9ic3
+YrGXK4LNHQUMtwBpNB3fZM6XToKKvqdOi7qsptly+RkXvzhnwI44kNG1/OsLvO39
+EsGmy+8ToskaCTTgymIJQh5O0HgmQGA5ROo4o9UJwz4vZ6GUL3Uey60XLe9z9G29
+w24DOYnLycGZ4U3AIlGEjpk8zhEZb4PMsuFdjWmOCsEPj44l+P+kZkZ5fpHJDBON
+6fhhE6XmX9ugSvYtXkuPvioUuw3yKQD7HNF9xXvhNaBw+BPA/ESclzxsRtOk5Ga7
+yx7q/aEnRsh3HJU+au6b2zb277GYb8cAWt1eBliOx2IV6+8jpMdeO0ywXjS3q5tb
+ZgcNrMgrBoSb9Fl+bWIf
+=92ne
+-----END PGP SIGNATURE-----
 
-
+--Signature=_Wed__25_Sep_2013_11_06_43_+1000_=pbgY2xoeaNwF_sN--
