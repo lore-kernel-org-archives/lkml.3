@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757840Ab3IYBKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:10:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39049 "EHLO
+	id S1757863Ab3IYBLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:11:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39042 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029Ab3IYAQZ (ORCPT
+	with ESMTP id S1756020Ab3IYAQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:25 -0400
+	Tue, 24 Sep 2013 20:16:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
-        Patrick McHardy <kaber@trash.net>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [ 044/110] rculist: list_first_or_null_rcu() should use list_entry_rcu()
-Date: Tue, 24 Sep 2013 17:14:42 -0700
-Message-Id: <20130925001328.184875914@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 043/110] usb: dont check pm qos NO_POWER_OFF flag in usb_port_suspend()
+Date: Tue, 24 Sep 2013 17:14:41 -0700
+Message-Id: <20130925001328.071490951@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -31,68 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit c34ac00caefbe49d40058ae7200bd58725cebb45 upstream.
+commit 98a4f1ff7bea8002ab79d6776e30d27932e88244 upstream.
 
-list_first_or_null() should test whether the list is empty and return
-pointer to the first entry if not in a RCU safe manner.  It's broken
-in several ways.
+The pm qos NO_POWER_OFF flag is checked twice during usb device suspend
+to see if the usb port power off condition is met. This is redundant and
+also will prevent the port from being powered off if the NO_POWER_OFF
+flag is changed to 1 from 0 after the device was already suspended.
 
-* It compares __kernel @__ptr with __rcu @__next triggering the
-  following sparse warning.
+More detail in the following link.
+	http://marc.info/?l=linux-usb&m=136543949130865&w=2
 
-  net/core/dev.c:4331:17: error: incompatible types in comparison expression (different address spaces)
+This patch should be backported to kernels as old as 3.7, that
+contain the commit f7ac7787ad361e31a7972e2854ed8dc2eedfac3b "usb/acpi:
+Use ACPI methods to power off ports."
 
-* It doesn't perform rcu_dereference*() and computes the entry address
-  using container_of() directly from the __rcu pointer which is
-  inconsitent with other rculist interface.  As a result, all three
-  in-kernel users - net/core/dev.c, macvlan, cgroup - are buggy.  They
-  dereference the pointer w/o going through read barrier.
-
-* While ->next dereference passes through list_next_rcu(), the
-  compiler is still free to fetch ->next more than once and thus
-  nullify the "__ptr != __next" condition check.
-
-Fix it by making list_first_or_null_rcu() dereference ->next directly
-using ACCESS_ONCE() and then use list_entry_rcu() on it like other
-rculist accessors.
-
-v2: Paul pointed out that the compiler may fetch the pointer more than
-    once nullifying the condition check.  ACCESS_ONCE() added on
-    ->next dereference.
-
-v3: Restored () around macro param which was accidentally removed.
-    Spotted by Paul.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/rculist.h |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/core/hub.c |   14 ++------------
+ 1 file changed, 2 insertions(+), 12 deletions(-)
 
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -267,8 +267,9 @@ static inline void list_splice_init_rcu(
-  */
- #define list_first_or_null_rcu(ptr, type, member) \
- 	({struct list_head *__ptr = (ptr); \
--	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
--	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
-+	  struct list_head *__next = ACCESS_ONCE(__ptr->next); \
-+	  likely(__ptr != __next) ? \
-+		list_entry_rcu(__next, type, member) : NULL; \
- 	})
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3041,19 +3041,9 @@ int usb_port_suspend(struct usb_device *
+ 		usb_set_device_state(udev, USB_STATE_SUSPENDED);
+ 	}
  
- /**
+-	/*
+-	 * Check whether current status meets the requirement of
+-	 * usb port power off mechanism
+-	 */
+ 	if (status == 0 && !udev->do_remote_wakeup && udev->persist_enabled) {
+-		enum pm_qos_flags_status pm_qos_stat;
+-
+-		pm_qos_stat = dev_pm_qos_flags(&port_dev->dev,
+-				PM_QOS_FLAG_NO_POWER_OFF);
+-		if (pm_qos_stat != PM_QOS_FLAGS_ALL) {
+-			pm_runtime_put_sync(&port_dev->dev);
+-			port_dev->did_runtime_put = true;
+-		}
++		pm_runtime_put_sync(&port_dev->dev);
++		port_dev->did_runtime_put = true;
+ 	}
+ 
+ 	usb_mark_last_busy(hub->hdev);
 
 
