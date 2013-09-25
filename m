@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab3IYA5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:57:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39249 "EHLO
+	id S932599Ab3IYA51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:57:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39243 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932081Ab3IYAQ7 (ORCPT
+	with ESMTP id S932077Ab3IYAQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:16:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [ 089/110] pidns: Fix hang in zap_pid_ns_processes by sending a potentially extra wakeup
-Date: Tue, 24 Sep 2013 17:15:27 -0700
-Message-Id: <20130925001333.069484841@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Joerg Roedel <joro@8bytes.org>
+Subject: [ 088/110] intel-iommu: Fix leaks in pagetable freeing
+Date: Tue, 24 Sep 2013 17:15:26 -0700
+Message-Id: <20130925001332.961067966@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -28,97 +27,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit a606488513543312805fab2b93070cefe6a3016c upstream.
+commit 3269ee0bd6686baf86630300d528500ac5b516d7 upstream.
 
-Serge Hallyn <serge.hallyn@ubuntu.com> writes:
+At best the current code only seems to free the leaf pagetables and
+the root.  If you're unlucky enough to have a large gap (like any
+QEMU guest with more than 3G of memory), only the first chunk of leaf
+pagetables are freed (plus the root).  This is a massive memory leak.
+This patch re-writes the pagetable freeing function to use a
+recursive algorithm and manages to not only free all the pagetables,
+but does it without any apparent performance loss versus the current
+broken version.
 
-> Since commit af4b8a83add95ef40716401395b44a1b579965f4 it's been
-> possible to get into a situation where a pidns reaper is
-> <defunct>, reparented to host pid 1, but never reaped.  How to
-> reproduce this is documented at
->
-> https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526
-> (and see
-> https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526/comments/13)
-> In short, run repeated starts of a container whose init is
->
-> Process.exit(0);
->
-> sysrq-t when such a task is playing zombie shows:
->
-> [  131.132978] init            x ffff88011fc14580     0  2084   2039 0x00000000
-> [  131.132978]  ffff880116e89ea8 0000000000000002 ffff880116e89fd8 0000000000014580
-> [  131.132978]  ffff880116e89fd8 0000000000014580 ffff8801172a0000 ffff8801172a0000
-> [  131.132978]  ffff8801172a0630 ffff88011729fff0 ffff880116e14650 ffff88011729fff0
-> [  131.132978] Call Trace:
-> [  131.132978]  [<ffffffff816f6159>] schedule+0x29/0x70
-> [  131.132978]  [<ffffffff81064591>] do_exit+0x6e1/0xa40
-> [  131.132978]  [<ffffffff81071eae>] ? signal_wake_up_state+0x1e/0x30
-> [  131.132978]  [<ffffffff8106496f>] do_group_exit+0x3f/0xa0
-> [  131.132978]  [<ffffffff810649e4>] SyS_exit_group+0x14/0x20
-> [  131.132978]  [<ffffffff8170102f>] tracesys+0xe1/0xe6
->
-> Further debugging showed that every time this happened, zap_pid_ns_processes()
-> started with nr_hashed being 3, while we were expecting it to drop to 2.
-> Any time it didn't happen, nr_hashed was 1 or 2.  So the reaper was
-> waiting for nr_hashed to become 2, but free_pid() only wakes the reaper
-> if nr_hashed hits 1.
-
-The issue is that when the task group leader of an init process exits
-before other tasks of the init process when the init process finally
-exits it will be a secondary task sleeping in zap_pid_ns_processes and
-waiting to wake up when the number of hashed pids drops to two.  This
-case waits forever as free_pid only sends a wake up when the number of
-hashed pids drops to 1.
-
-To correct this the simple strategy of sending a possibly unncessary
-wake up when the number of hashed pids drops to 2 is adopted.
-
-Sending one extraneous wake up is relatively harmless, at worst we
-waste a little cpu time in the rare case when a pid namespace
-appropaches exiting.
-
-We can detect the case when the pid namespace drops to just two pids
-hashed race free in free_pid.
-
-Dereferencing pid_ns->child_reaper with the pidmap_lock held is safe
-without out the tasklist_lock because it is guaranteed that the
-detach_pid will be called on the child_reaper before it is freed and
-detach_pid calls __change_pid which calls free_pid which takes the
-pidmap_lock.  __change_pid only calls free_pid if this is the
-last use of the pid.  For a thread that is not the thread group leader
-the threads pid will only ever have one user because a threads pid
-is not allowed to be the pid of a process, of a process group or
-a session.  For a thread that is a thread group leader all of
-the other threads of that process will be reaped before it is allowed
-for the thread group leader to be reaped ensuring there will only
-be one user of the threads pid as a process pid.  Furthermore
-because the thread is the init process of a pid namespace all of the
-other processes in the pid namespace will have also been already freed
-leading to the fact that the pid will not be used as a session pid or
-a process group pid for any other running process.
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Tested-by: Serge Hallyn <serge.hallyn@canonical.com>
-Reported-by: Serge Hallyn <serge.hallyn@ubuntu.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/pid.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/iommu/intel-iommu.c |   74 +++++++++++++++++++++-----------------------
+ 1 file changed, 36 insertions(+), 38 deletions(-)
 
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -264,6 +264,7 @@ void free_pid(struct pid *pid)
- 		struct pid_namespace *ns = upid->ns;
- 		hlist_del_rcu(&upid->pid_chain);
- 		switch(--ns->nr_hashed) {
-+		case 2:
- 		case 1:
- 			/* When all that is left in the pid namespace
- 			 * is the reaper wake up the reaper.  The reaper
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -890,56 +890,54 @@ static int dma_pte_clear_range(struct dm
+ 	return order;
+ }
+ 
++static void dma_pte_free_level(struct dmar_domain *domain, int level,
++			       struct dma_pte *pte, unsigned long pfn,
++			       unsigned long start_pfn, unsigned long last_pfn)
++{
++	pfn = max(start_pfn, pfn);
++	pte = &pte[pfn_level_offset(pfn, level)];
++
++	do {
++		unsigned long level_pfn;
++		struct dma_pte *level_pte;
++
++		if (!dma_pte_present(pte) || dma_pte_superpage(pte))
++			goto next;
++
++		level_pfn = pfn & level_mask(level - 1);
++		level_pte = phys_to_virt(dma_pte_addr(pte));
++
++		if (level > 2)
++			dma_pte_free_level(domain, level - 1, level_pte,
++					   level_pfn, start_pfn, last_pfn);
++
++		/* If range covers entire pagetable, free it */
++		if (!(start_pfn > level_pfn ||
++		      last_pfn < level_pfn + level_size(level))) {
++			dma_clear_pte(pte);
++			domain_flush_cache(domain, pte, sizeof(*pte));
++			free_pgtable_page(level_pte);
++		}
++next:
++		pfn += level_size(level);
++	} while (!first_pte_in_page(++pte) && pfn <= last_pfn);
++}
++
+ /* free page table pages. last level pte should already be cleared */
+ static void dma_pte_free_pagetable(struct dmar_domain *domain,
+ 				   unsigned long start_pfn,
+ 				   unsigned long last_pfn)
+ {
+ 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+-	struct dma_pte *first_pte, *pte;
+-	int total = agaw_to_level(domain->agaw);
+-	int level;
+-	unsigned long tmp;
+-	int large_page = 2;
+ 
+ 	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
+ 	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
+ 	BUG_ON(start_pfn > last_pfn);
+ 
+ 	/* We don't need lock here; nobody else touches the iova range */
+-	level = 2;
+-	while (level <= total) {
+-		tmp = align_to_level(start_pfn, level);
+-
+-		/* If we can't even clear one PTE at this level, we're done */
+-		if (tmp + level_size(level) - 1 > last_pfn)
+-			return;
+-
+-		do {
+-			large_page = level;
+-			first_pte = pte = dma_pfn_level_pte(domain, tmp, level, &large_page);
+-			if (large_page > level)
+-				level = large_page + 1;
+-			if (!pte) {
+-				tmp = align_to_level(tmp + 1, level + 1);
+-				continue;
+-			}
+-			do {
+-				if (dma_pte_present(pte)) {
+-					free_pgtable_page(phys_to_virt(dma_pte_addr(pte)));
+-					dma_clear_pte(pte);
+-				}
+-				pte++;
+-				tmp += level_size(level);
+-			} while (!first_pte_in_page(pte) &&
+-				 tmp + level_size(level) - 1 <= last_pfn);
+-
+-			domain_flush_cache(domain, first_pte,
+-					   (void *)pte - (void *)first_pte);
+-			
+-		} while (tmp && tmp + level_size(level) - 1 <= last_pfn);
+-		level++;
+-	}
++	dma_pte_free_level(domain, agaw_to_level(domain->agaw),
++			   domain->pgd, 0, start_pfn, last_pfn);
++
+ 	/* free pgd */
+ 	if (start_pfn == 0 && last_pfn == DOMAIN_MAX_PFN(domain->gaw)) {
+ 		free_pgtable_page(domain->pgd);
 
 
