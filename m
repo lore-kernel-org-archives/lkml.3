@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504Ab3IYAvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:51:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39397 "EHLO
+	id S1757513Ab3IYAvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:51:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39394 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756417Ab3IYATu (ORCPT
+	with ESMTP id S1755783Ab3IYATt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:50 -0400
+	Tue, 24 Sep 2013 20:19:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>, Jiang Liu <jiang.liu@huawei.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [ 008/117] zram: dont grab mutex in zram_slot_free_noity
-Date: Tue, 24 Sep 2013 17:17:54 -0700
-Message-Id: <20130925001741.773160209@linuxfoundation.org>
+        Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [ 002/117] ipc/msg.c: Fix lost wakeup in msgsnd().
+Date: Tue, 24 Sep 2013 17:17:48 -0700
+Message-Id: <20130925001741.137679051@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,199 +29,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minchan Kim <minchan@kernel.org>
+From: Manfred Spraul <manfred@colorfullife.com>
 
-commit a0c516cbfc7452c8cbd564525fef66d9f20b46d1 upstream.
+commit bebcb928c820d0ee83aca4b192adc195e43e66a2 upstream.
 
-[1] introduced down_write in zram_slot_free_notify to prevent race
-between zram_slot_free_notify and zram_bvec_[read|write]. The race
-could happen if somebody who has right permission to open swap device
-is reading swap device while it is used by swap in parallel.
+The check if the queue is full and adding current to the wait queue of
+pending msgsnd() operations (ss_add()) must be atomic.
 
-However, zram_slot_free_notify is called with holding spin_lock of
-swap layer so we shouldn't avoid holing mutex. Otherwise, lockdep
-warns it.
+Otherwise:
+ - the thread that performs msgsnd() finds a full queue and decides to
+   sleep.
+ - the thread that performs msgrcv() first reads all messages from the
+   queue and then sleeps, because the queue is empty.
+ - the msgrcv() calls do not perform any wakeups, because the msgsnd()
+   task has not yet called ss_add().
+ - then the msgsnd()-thread first calls ss_add() and then sleeps.
 
-This patch adds new list to handle free slot and workqueue
-so zram_slot_free_notify just registers slot index to be freed and
-registers the request to workqueue. If workqueue is expired,
-it holds mutex_lock so there is no problem any more.
+Net result: msgsnd() and msgrcv() both sleep forever.
 
-If any I/O is issued, zram handles pending slot-free request
-caused by zram_slot_free_notify right before handling issued
-request because workqueue wouldn't be expired yet so zram I/O
-request handling function can miss it.
+Observed with msgctl08 from ltp with a preemptible kernel.
 
-Lastly, when zram is reset, flush_work could handle all of pending
-free request so we shouldn't have memory leak.
+Fix: Call ipc_lock_object() before performing the check.
 
-NOTE: If zram_slot_free_notify's kmalloc with GFP_ATOMIC would be
-failed, the slot will be freed when next write I/O write the slot.
+The patch also moves security_msg_queue_msgsnd() under ipc_lock_object:
+ - msgctl(IPC_SET) explicitely mentions that it tries to expunge any
+   pending operations that are not allowed anymore with the new
+   permissions.  If security_msg_queue_msgsnd() is called without locks,
+   then there might be races.
+ - it makes the patch much simpler.
 
-[1] [57ab0485, zram: use zram->lock to protect zram_free_page()
-    in swap free notify path]
-
-* from v2
-  * refactoring
-
-* from v1
-  * totally redesign
-
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+Reported-and-tested-by: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zram/zram_drv.c |   60 ++++++++++++++++++++++++++++++++++++++--
- drivers/staging/zram/zram_drv.h |   10 ++++++
- 2 files changed, 67 insertions(+), 3 deletions(-)
+ ipc/msg.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -445,6 +445,14 @@ static int zram_bvec_write(struct zram *
- 		goto out;
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -680,16 +680,18 @@ long do_msgsnd(int msqid, long mtype, vo
+ 		goto out_unlock1;
  	}
  
-+	/*
-+	 * zram_slot_free_notify could miss free so that let's
-+	 * double check.
-+	 */
-+	if (unlikely(meta->table[index].handle ||
-+			zram_test_flag(meta, index, ZRAM_ZERO)))
-+		zram_free_page(zram, index);
++	ipc_lock_object(&msq->q_perm);
 +
- 	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
- 			       meta->compress_workmem);
+ 	for (;;) {
+ 		struct msg_sender s;
  
-@@ -504,6 +512,20 @@ out:
- 	return ret;
- }
+ 		err = -EACCES;
+ 		if (ipcperms(ns, &msq->q_perm, S_IWUGO))
+-			goto out_unlock1;
++			goto out_unlock0;
  
-+static void handle_pending_slot_free(struct zram *zram)
-+{
-+	struct zram_slot_free *free_rq;
-+
-+	spin_lock(&zram->slot_free_lock);
-+	while (zram->slot_free_rq) {
-+		free_rq = zram->slot_free_rq;
-+		zram->slot_free_rq = free_rq->next;
-+		zram_free_page(zram, free_rq->index);
-+		kfree(free_rq);
-+	}
-+	spin_unlock(&zram->slot_free_lock);
-+}
-+
- static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			int offset, struct bio *bio, int rw)
- {
-@@ -511,10 +533,12 @@ static int zram_bvec_rw(struct zram *zra
+ 		err = security_msg_queue_msgsnd(msq, msg, msgflg);
+ 		if (err)
+-			goto out_unlock1;
++			goto out_unlock0;
  
- 	if (rw == READ) {
- 		down_read(&zram->lock);
-+		handle_pending_slot_free(zram);
- 		ret = zram_bvec_read(zram, bvec, index, offset, bio);
- 		up_read(&zram->lock);
- 	} else {
- 		down_write(&zram->lock);
-+		handle_pending_slot_free(zram);
- 		ret = zram_bvec_write(zram, bvec, index, offset);
- 		up_write(&zram->lock);
+ 		if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
+ 				1 + msq->q_qnum <= msq->q_qbytes) {
+@@ -699,10 +701,9 @@ long do_msgsnd(int msqid, long mtype, vo
+ 		/* queue full, wait: */
+ 		if (msgflg & IPC_NOWAIT) {
+ 			err = -EAGAIN;
+-			goto out_unlock1;
++			goto out_unlock0;
+ 		}
+ 
+-		ipc_lock_object(&msq->q_perm);
+ 		ss_add(msq, &s);
+ 
+ 		if (!ipc_rcu_getref(msq)) {
+@@ -730,10 +731,7 @@ long do_msgsnd(int msqid, long mtype, vo
+ 			goto out_unlock0;
+ 		}
+ 
+-		ipc_unlock_object(&msq->q_perm);
  	}
-@@ -527,6 +551,8 @@ static void zram_reset_device(struct zra
- 	size_t index;
- 	struct zram_meta *meta;
+-
+-	ipc_lock_object(&msq->q_perm);
+ 	msq->q_lspid = task_tgid_vnr(current);
+ 	msq->q_stime = get_seconds();
  
-+	flush_work(&zram->free_work);
-+
- 	down_write(&zram->init_lock);
- 	if (!zram->init_done) {
- 		up_write(&zram->init_lock);
-@@ -721,16 +747,40 @@ error:
- 	bio_io_error(bio);
- }
- 
-+static void zram_slot_free(struct work_struct *work)
-+{
-+	struct zram *zram;
-+
-+	zram = container_of(work, struct zram, free_work);
-+	down_write(&zram->lock);
-+	handle_pending_slot_free(zram);
-+	up_write(&zram->lock);
-+}
-+
-+static void add_slot_free(struct zram *zram, struct zram_slot_free *free_rq)
-+{
-+	spin_lock(&zram->slot_free_lock);
-+	free_rq->next = zram->slot_free_rq;
-+	zram->slot_free_rq = free_rq;
-+	spin_unlock(&zram->slot_free_lock);
-+}
-+
- static void zram_slot_free_notify(struct block_device *bdev,
- 				unsigned long index)
- {
- 	struct zram *zram;
-+	struct zram_slot_free *free_rq;
- 
- 	zram = bdev->bd_disk->private_data;
--	down_write(&zram->lock);
--	zram_free_page(zram, index);
--	up_write(&zram->lock);
- 	atomic64_inc(&zram->stats.notify_free);
-+
-+	free_rq = kmalloc(sizeof(struct zram_slot_free), GFP_ATOMIC);
-+	if (!free_rq)
-+		return;
-+
-+	free_rq->index = index;
-+	add_slot_free(zram, free_rq);
-+	schedule_work(&zram->free_work);
- }
- 
- static const struct block_device_operations zram_devops = {
-@@ -777,6 +827,10 @@ static int create_device(struct zram *zr
- 	init_rwsem(&zram->lock);
- 	init_rwsem(&zram->init_lock);
- 
-+	INIT_WORK(&zram->free_work, zram_slot_free);
-+	spin_lock_init(&zram->slot_free_lock);
-+	zram->slot_free_rq = NULL;
-+
- 	zram->queue = blk_alloc_queue(GFP_KERNEL);
- 	if (!zram->queue) {
- 		pr_err("Error allocating disk queue for device %d\n",
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -94,11 +94,20 @@ struct zram_meta {
- 	struct zs_pool *mem_pool;
- };
- 
-+struct zram_slot_free {
-+	unsigned long index;
-+	struct zram_slot_free *next;
-+};
-+
- struct zram {
- 	struct zram_meta *meta;
- 	struct rw_semaphore lock; /* protect compression buffers, table,
- 				   * 32bit stat counters against concurrent
- 				   * notifications, reads and writes */
-+
-+	struct work_struct free_work;  /* handle pending free request */
-+	struct zram_slot_free *slot_free_rq; /* list head of free request */
-+
- 	struct request_queue *queue;
- 	struct gendisk *disk;
- 	int init_done;
-@@ -109,6 +118,7 @@ struct zram {
- 	 * we can store in a disk.
- 	 */
- 	u64 disksize;	/* bytes */
-+	spinlock_t slot_free_lock;
- 
- 	struct zram_stats stats;
- };
 
 
