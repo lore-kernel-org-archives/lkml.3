@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab3IYAI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:08:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38418 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab3IYAIG (ORCPT
+	id S1758631Ab3IYBmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:42:23 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:56600 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755527Ab3IYBmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:08:06 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Tue, 24 Sep 2013 21:42:19 -0400
+Date: Tue, 24 Sep 2013 18:42:10 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shawn Nematbakhsh <shawnn@chromium.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 06/28] usb: xhci: Disable runtime PM suspend for quirky controllers
-Date: Tue, 24 Sep 2013 17:07:37 -0700
-Message-Id: <20130925000650.000689258@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
-References: <20130925000648.404447782@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/10] Grace-period-related changes for 3.13
+Message-ID: <20130925014210.GA31690@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092501-8236-0000-0000-000002123FD3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Hello!
 
-------------------
+This series contains updates to RCU's grace-period processsing, mostly
+to improve debuggability of RCU itself.
 
-From: Shawn Nematbakhsh <shawnn@chromium.org>
+1.	Add consistency checks to the grace-period initialization logic.
 
-commit c8476fb855434c733099079063990e5bfa7ecad6 upstream.
+2.	Prevent spurious-wakeup DoS attack on rcu_gp_kthread.
 
-If a USB controller with XHCI_RESET_ON_RESUME goes to runtime suspend,
-a reset will be performed upon runtime resume. Any previously suspended
-devices attached to the controller will be re-enumerated at this time.
-This will cause problems, for example, if an open system call on the
-device triggered the resume (the open call will fail).
+3.	Flag lockless accesses to ->gp_flags with ACCESS_ONCE().
 
-Note that this change is only relevant when persist_enabled is not set
-for USB devices.
+4-6.	Add event tracing to various aspects of RCU grace period processing.
 
-This patch should be backported to kernels as old as 3.0, that
-contain the commit c877b3b2ad5cb9d4fe523c5496185cc328ff3ae9 "xhci: Add
-reset on resume quirk for asrock p67 host".
+7.	Distinguish between NOCB and non-NOCB rcu_callback trace events.
 
-Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+8.	Add event tracing to track rcu_nocb_kthread() sleeping and awakening.
 
----
- drivers/usb/host/xhci.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+9.	Avoid sparse warnings in rcu_nocb_wake trace event.
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2713,10 +2713,21 @@ void xhci_free_dev(struct usb_hcd *hcd,
- {
- 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
- 	struct xhci_virt_device *virt_dev;
-+	struct device *dev = hcd->self.controller;
- 	unsigned long flags;
- 	u32 state;
- 	int i, ret;
- 
-+#ifndef CONFIG_USB_DEFAULT_PERSIST
-+	/*
-+	 * We called pm_runtime_get_noresume when the device was attached.
-+	 * Decrement the counter here to allow controller to runtime suspend
-+	 * if no devices remain.
-+	 */
-+	if (xhci->quirks & XHCI_RESET_ON_RESUME)
-+		pm_runtime_put_noidle(dev);
-+#endif
-+
- 	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);
- 	/* If the host is halted due to driver unload, we still need to free the
- 	 * device.
-@@ -2783,6 +2794,7 @@ static int xhci_reserve_host_control_ep_
- int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
- {
- 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
-+	struct device *dev = hcd->self.controller;
- 	unsigned long flags;
- 	int timeleft;
- 	int ret;
-@@ -2835,6 +2847,16 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
- 		goto disable_slot;
- 	}
- 	udev->slot_id = xhci->slot_id;
-+
-+#ifndef CONFIG_USB_DEFAULT_PERSIST
-+	/*
-+	 * If resetting upon resume, we can't put the controller into runtime
-+	 * suspend if there is a device attached.
-+	 */
-+	if (xhci->quirks & XHCI_RESET_ON_RESUME)
-+		pm_runtime_get_noresume(dev);
-+#endif
-+
- 	/* Is this a LS or FS device under a HS hub? */
- 	/* Hub or peripherial? */
- 	return 1;
+10.	Make RCU use resched_cpu() instead of the current set_need_resched(),
+	courtesy of Peter Zijlstra.
 
+							Thanx, Paul
+
+
+ b/include/trace/events/rcu.h |   80 +++++++++++++++++++++++++++++++++++--------
+ b/kernel/rcutiny.c           |    2 -
+ b/kernel/rcutree.c           |   71 ++++++++++++++++++++++++++++++++------
+ b/kernel/rcutree_plugin.h    |   35 ++++++++++++++++--
+ b/kernel/sched/core.c        |   10 +----
+ 5 files changed, 160 insertions(+), 38 deletions(-)
 
