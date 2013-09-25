@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab3IYVAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 17:00:22 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:59653 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755128Ab3IYVAU (ORCPT
+	id S1755962Ab3IYVFK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 17:05:10 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:39608 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755478Ab3IYVFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 17:00:20 -0400
-Date: Wed, 25 Sep 2013 17:00:16 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20130925210016.GA8926@htj.dyndns.org>
-References: <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
- <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
- <20130917143022.GA7707@concordia>
- <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
- <20130918142231.GA21650@mtj.dyndns.org>
- <20130918165045.GB2353@dhcp-26-207.brq.redhat.com>
- <20130920082458.GA10507@dhcp-26-207.brq.redhat.com>
- <20130920122736.GD7630@mtj.dyndns.org>
- <20130925180220.GB26273@google.com>
- <20130925205804.GA21737@dhcp-26-207.brq.redhat.com>
+	Wed, 25 Sep 2013 17:05:05 -0400
+Date: Wed, 25 Sep 2013 14:05:02 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+cc: akpm@linux-foundation.org, oleg@redhat.com, security@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] kthread: Make kthread_create() killable.
+In-Reply-To: <201309250017.HBG57846.VFOStOFFOLQJHM@I-love.SAKURA.ne.jp>
+Message-ID: <alpine.DEB.2.02.1309251351001.27471@chino.kir.corp.google.com>
+References: <20130914160515.GA8627@redhat.com> <201309150846.HED51521.tJOFOMVFSOHQFL@I-love.SAKURA.ne.jp> <20130915163919.GC13344@redhat.com> <201309160953.IGI12418.FOQHOFVJLOMFSt@I-love.SAKURA.ne.jp> <20130923160725.49093c565dcf6df7037dcc6b@linux-foundation.org>
+ <201309250017.HBG57846.VFOStOFFOLQJHM@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925205804.GA21737@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 25 Sep 2013, Tetsuo Handa wrote:
 
-On Wed, Sep 25, 2013 at 10:58:05PM +0200, Alexander Gordeev wrote:
-> Unfortunately, pSeries is a shows-topper here :( It seems we have to
-> introduce pci_get_msi{,x}_limit() interfaces to honour the quota
-> thing.  I just hope the hardware set for pSeries is limited and we
-> won't need to use it for all drivers.
+> Any users of wait_for_completion() might be chosen by the OOM killer while
+> waiting for completion() call by some process which does memory
+> allocation.  kthread_create() is one of such users.
+> 
 
-Can you please go into a bit of detail on that?  Why does it matter?
-Is it because you're worried you might cause performance regression by
-forcing prevoius partial multiple allocations to single interrupt
-operation?
+Any user process callers of wait_for_completion() you mean.
 
-Thanks.
+> When such users are chosen by the OOM killer when they are waiting for
+> completion() in TASK_UNINTERRUPTIBLE, the system will be kept stressed
+> due to memory starvation because the OOM killer cannot kill such users.
+> 
 
--- 
-tejun
+Also results in a livelock if you're running in a memcg and have hit its 
+limit.
+
+> Fix this problem for kthreadd by making kthread_create() killable.
+> 
+
+There appear to be other potential callers of wait_for_completion() in the 
+tree as well that could be holding lots of memory besides 
+kthread_create().
+
+Perhaps that's beyond the scope of this particular patch, though.
+
+wait_for_completion() is scary if that completion requires memory that 
+cannot be allocated because the caller is killed but uninterruptible.
+
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+Acked-by: David Rientjes <rientjes@google.com>
