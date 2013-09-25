@@ -1,138 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab3IYX1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 19:27:19 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39012 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754374Ab3IYX1P (ORCPT
+	id S1756102Ab3IYXXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 19:23:33 -0400
+Received: from zetta.elopez.com.ar ([199.30.59.35]:54001 "EHLO
+	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754954Ab3IYXX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 19:27:15 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v4 40/40] mm: Add triggers in the page-allocator to kick
- off region evacuation
-To: akpm@linux-foundation.org, mgorman@suse.de, dave@sr71.net,
-        hannes@cmpxchg.org, tony.luck@intel.com, matthew.garrett@nebula.com,
-        riel@redhat.com, arjan@linux.intel.com,
-        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
-Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 26 Sep 2013 04:52:58 +0530
-Message-ID: <20130925232256.26184.77601.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com>
-References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Wed, 25 Sep 2013 19:23:29 -0400
+Message-ID: <52437062.5040705@elopez.com.ar>
+Date: Wed, 25 Sep 2013 20:23:14 -0300
+From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092523-7014-0000-0000-000003AB5050
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: linux-arm-kernel@lists.infradead.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] clocksource: Add Allwinner SoCs HS timers driver
+References: <1380117790-19390-1-git-send-email-maxime.ripard@free-electrons.com> <1380117790-19390-3-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1380117790-19390-3-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have the entire infrastructure to perform targeted region
-evacuation from a dedicated kthread (kmempowerd), modify the page-allocator
-to invoke the region-evacuator at opportune points.
+Hi Maxime,
 
-At a basic level, the most obvious opportunity to try region-evacuation is
-when a page is freed back to the page-allocator. The rationale behind this is
-explained below.
+El 25/09/13 11:03, Maxime Ripard escribió:
+> Most of the Allwinner SoCs (at this time, all but the A10) also have a
+> High Speed timers that are not using the 24MHz oscillator as a source
+> but rather the AHB clock running much faster.
+>
+> The IP is slightly different between the A10s/A13 and the one used in
+> the A20/A31, since the latter have 4 timers available, while the former
+> have only 2 of them.
+>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
 
-The page-allocator already has the intelligence to allocate pages such that
-they are consolidated within as few regions as possible. That is, due to the
-sorted-buddy design, it will _not_ spill allocations to a new region as long
-as there is still memory available in lower-numbered regions to satisfy the
-allocation request.
+[...]
 
-So, the fragmentation happens _after_ they are allocated, i.e., once the
-entity starts freeing the memory in a random fashion. This freeing of pages
-presents an opportunity to the MM subsystem: if the pages freed belong to
-lower-numbered regions, then there is a chance that pages from higher-numbered
-regions could be moved to these freshly freed pages, thereby causing further
-consolidation of regions.
+> +static void __init sun5i_timer_init(struct device_node *node)
+> +{
+> +	unsigned long rate;
+> +	struct clk *clk;
+> +	int ret, irq;
+> +	u32 val;
+> +
+> +	timer_base = of_iomap(node, 0);
+> +	if (!timer_base)
+> +		panic("Can't map registers");
+> +
+> +	irq = irq_of_parse_and_map(node, 0);
+> +	if (irq <= 0)
+> +		panic("Can't parse IRQ");
+> +
+> +	clk = of_clk_get(node, 0);
+> +	if (IS_ERR(clk))
+> +		panic("Can't get timer clock");
 
-With this in mind, add the region-evac trigger in the page-freeing path.
-Along with that, also add appropriate checks and intelligence necessary to
-avoid compaction attempts that don't provide any net benefit. For example,
-we can avoid compacting regions in ZONE_DMA, or regions that have mostly only
-MIGRATE_UNMOVABLE allocations etc. These checks are done best at the
-page-allocator side. Apart from them, also perform the same eligibility checks
-that the region-evacuator employs, to avoid useless wakeups of kmempowerd.
+I'm not familiar with clocksources, but does this have to be as fatal as 
+it is considering the kernel also supports the slower sun4i timer?
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Also, would any special considerations be needed when adjusting the ahb 
+clock? A future cpufreq driver will most likely need to.
 
- mm/page_alloc.c |   38 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 36 insertions(+), 2 deletions(-)
+Cheers,
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4571d30..48b748e 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -639,6 +639,29 @@ out:
- static void add_to_region_allocator(struct zone *z, struct free_list *free_list,
- 				    int region_id);
- 
-+static inline int region_is_evac_candidate(struct zone *z,
-+					   struct zone_mem_region *region,
-+					   int migratetype)
-+{
-+
-+	/* Don't start evacuation too early during boot */
-+	if (system_state != SYSTEM_RUNNING)
-+		return 0;
-+
-+	/* Don't bother evacuating regions in ZONE_DMA */
-+	if (zone_idx(z) == ZONE_DMA)
-+		return 0;
-+
-+	/*
-+	 * Don't try evacuations in regions not containing MOVABLE or
-+	 * RECLAIMABLE allocations.
-+	 */
-+	if (!(migratetype == MIGRATE_MOVABLE ||
-+		migratetype == MIGRATE_RECLAIMABLE))
-+		return 0;
-+
-+	return should_evacuate_region(z, region);
-+}
- 
- static inline int can_return_region(struct mem_region_list *region, int order,
- 				    struct free_list *free_list)
-@@ -683,7 +706,9 @@ static void add_to_freelist(struct page *page, struct free_list *free_list,
- {
- 	struct list_head *prev_region_list, *lru;
- 	struct mem_region_list *region;
--	int region_id, prev_region_id;
-+	int region_id, prev_region_id, migratetype;
-+	struct zone *zone;
-+	struct pglist_data *pgdat;
- 
- 	lru = &page->lru;
- 	region_id = page_zone_region_id(page);
-@@ -741,8 +766,17 @@ try_return_region:
- 	 * Try to return the freepages of a memory region to the region
- 	 * allocator, if possible.
- 	 */
--	if (can_return_region(region, order, free_list))
-+	if (can_return_region(region, order, free_list)) {
- 		add_to_region_allocator(page_zone(page), free_list, region_id);
-+		return;
-+	}
-+
-+	zone = page_zone(page);
-+	migratetype = get_pageblock_migratetype(page);
-+	pgdat = NODE_DATA(page_to_nid(page));
-+
-+	if (region_is_evac_candidate(zone, region->zone_region, migratetype))
-+		queue_mempower_work(pgdat, zone, region_id);
- }
- 
- /*
-
+Emilio
