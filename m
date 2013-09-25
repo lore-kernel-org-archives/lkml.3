@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab3IYT0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 15:26:20 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:48489 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab3IYT0T (ORCPT
+	id S1754927Ab3IYT0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 15:26:53 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:45544 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab3IYT0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 15:26:19 -0400
-Date: Wed, 25 Sep 2013 15:26:13 -0400
-From: Matt Porter <matt.porter@linaro.org>
-To: Wendy Ng <wendy.ng@broadcom.com>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Christian Daudt <bcm@fixthebug.org>,
-        Markus Mayer <mmayer@broadcom.com>
-Subject: Re: [PATCH 1/3] thermal: bcm281xx: Add thermal driver
-Message-ID: <20130925192609.GB25191@ohporter.com>
-References: <1379958698-7554-1-git-send-email-wendy.ng@broadcom.com>
- <1379958698-7554-2-git-send-email-wendy.ng@broadcom.com>
+	Wed, 25 Sep 2013 15:26:52 -0400
+Message-ID: <524338F6.2090508@tilera.com>
+Date: Wed, 25 Sep 2013 15:26:46 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379958698-7554-2-git-send-email-wendy.ng@broadcom.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen Gang <gang.chen@asianux.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tile: include: asm: use 'long long' instead of 'u64'
+ for atomic64_t and its related functions
+References: <52426310.4020204@asianux.com>
+In-Reply-To: <52426310.4020204@asianux.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 10:51:36AM -0700, Wendy Ng wrote:
-> This adds the support for reading out temperature from Broadcom bcm281xx
-> SoCs.
-> 
-> Signed-off-by: Wendy Ng <wendy.ng@broadcom.com>
-> Reviewed-by: Markus Mayer <mmayer@broadcom.com>
-> Reviewed-by: Christian Daudt <csd@broadcom.com>
+On 9/25/2013 12:14 AM, Chen Gang wrote:
+> atomic* value is signed value, and atomic* functions need also process
+> signed value (parameter value, and return value), so use 'long long'
+> instead of 'u64'.
+>
+> After replacement, it will also fix a bug for atomic64_add_negative():
+> "u64 is never less than 0".
+>
+> The modifications are:
+>
+>   in vim, use "1,% s/\<u64\>/long long/g" command.
+>   remove redundant '__aligned(8)' and a type case '(u64 *)'.
+>   be sure of 80 (and macro '\') columns limitation after replacement.
+>
+>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 > ---
->  .../bindings/thermal/bcm-kona-thermal.txt          |   18 +++
->  drivers/thermal/Kconfig                            |   10 ++
->  drivers/thermal/Makefile                           |    1 +
->  drivers/thermal/bcm_thermal.c                      |  170 ++++++++++++++++++++
->  4 files changed, 199 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt
->  create mode 100644 drivers/thermal/bcm_thermal.c
-> 
-> diff --git a/Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt b/Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt
-> new file mode 100644
-> index 0000000..acca99e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt
-> @@ -0,0 +1,18 @@
-> +* Broadcom Kona Thermal Management Unit
-> +
-> +This version is for the BCM281xx family of SoCs.
-> +
-> +Required properties:
-> +- compatible : "brcm,bcm11351-thermal", "brcm,kona-thermal"
-> +- reg : Address range of the thermal register
-> +- thermal-name: this entry must be specified and it will be passed into
-> +thermal_zone_device_register().  This name will also be reported under Hwmon
-> +sysfs 'name' attribute.
-> +
-> +Example:
-> +	thermal@34008000 {
-> +		compatible = "brcm,bcm11351-thermal", "brcm,kona-thermal";
-> +		reg = <0x34008000 0x0024>;
-> +		thermal-name = "bcm_kona_therm";
-> +		status = "disabled";
-> +	};
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index dbfc390..7f823f0 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -134,6 +134,16 @@ config KIRKWOOD_THERMAL
->  	  Support for the Kirkwood thermal sensor driver into the Linux thermal
->  	  framework. Only kirkwood 88F6282 and 88F6283 have this sensor.
->  
-> +config BCM_THERMAL
-> +	tristate "Temperature sensor on Broadcom BCM281xx family of SoCs"
-> +	depends on ARCH_BCM
+>  arch/tile/include/asm/atomic.h    |    5 +++--
+>  arch/tile/include/asm/atomic_32.h |   27 +++++++++++++++------------
+>  arch/tile/include/asm/cmpxchg.h   |   28 +++++++++++++++++-----------
+>  arch/tile/lib/atomic_32.c         |    8 ++++----
+>  4 files changed, 39 insertions(+), 29 deletions(-)
 
-Hi Wendy,
+Thanks!  Taken into the tile tree for 3.12.
 
-I just noticed that, depending on acceptance, this could collide with
-Christian's ARCH_BCM->ARCH_BCM_MOBILE rename that is expected to go into
-3.13. I'm not sure if this series is targeted for 3.13 (due to the discussion
-about Eduardo's subsystem changes that impact it). If it is, you might
-want to rebase on Christian's rename series
-http://www.spinics.net/lists/arm-kernel/msg274963.html and use
-ARCH_BCM_MOBILE here.
-
--Matt
-
-> +	default y
-> +	help
-> +	  If you say yes here you get support for TMU (Thermal Management
-> +	  Unit) on Broadcom BCM281xx family of SoCs. This provides thermal
-> +	  monitoring of CPU clusters, graphics, and SoC glue, but does not
-> +	  include monitoring of charger temperature.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
