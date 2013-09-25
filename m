@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab3IYBMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:12:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39024 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755952Ab3IYAQV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755995Ab3IYAQV (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Sep 2013 20:16:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38977 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755952Ab3IYAQO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 20:16:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleksii Shevchuk <alxchk@gmail.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [ 025/110] cifs: ensure that srv_mutex is held when dealing with ssocket pointer
-Date: Tue, 24 Sep 2013 17:14:23 -0700
-Message-Id: <20130925001326.134522950@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>
+Subject: [ 037/110] USB: cdc-wdm: fix race between interrupt handler and tasklet
+Date: Tue, 24 Sep 2013 17:14:35 -0700
+Message-Id: <20130925001327.417075914@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,101 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 73e216a8a42c0ef3d08071705c946c38fdbe12b0 upstream.
+commit 6dd433e6cf2475ce8abec1b467720858c24450eb upstream.
 
-Oleksii reported that he had seen an oops similar to this:
+Both could want to submit the same URB. Some checks of the flag
+intended to prevent that were missing.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000088
-IP: [<ffffffff814dcc13>] sock_sendmsg+0x93/0xd0
-PGD 0
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in: ipt_MASQUERADE xt_REDIRECT xt_tcpudp iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack ip_tables x_tables carl9170 ath usb_storage f2fs nfnetlink_log nfnetlink md4 cifs dns_resolver hid_generic usbhid hid af_packet uvcvideo videobuf2_vmalloc videobuf2_memops videobuf2_core videodev rfcomm btusb bnep bluetooth qmi_wwan qcserial cdc_wdm usb_wwan usbnet usbserial mii snd_hda_codec_hdmi snd_hda_codec_realtek iwldvm mac80211 coretemp intel_powerclamp kvm_intel kvm iwlwifi snd_hda_intel cfg80211 snd_hda_codec xhci_hcd e1000e ehci_pci snd_hwdep sdhci_pci snd_pcm ehci_hcd microcode psmouse sdhci thinkpad_acpi mmc_core i2c_i801 pcspkr usbcore hwmon snd_timer snd_page_alloc snd ptp rfkill pps_core soundcore evdev usb_common vboxnetflt(O) vboxdrv(O)Oops#2 Part8
- loop tun binfmt_misc fuse msr acpi_call(O) ipv6 autofs4
-CPU: 0 PID: 21612 Comm: kworker/0:1 Tainted: G        W  O 3.10.1SIGN #28
-Hardware name: LENOVO 2306CTO/2306CTO, BIOS G2ET92WW (2.52 ) 02/22/2013
-Workqueue: cifsiod cifs_echo_request [cifs]
-task: ffff8801e1f416f0 ti: ffff880148744000 task.ti: ffff880148744000
-RIP: 0010:[<ffffffff814dcc13>]  [<ffffffff814dcc13>] sock_sendmsg+0x93/0xd0
-RSP: 0000:ffff880148745b00  EFLAGS: 00010246
-RAX: 0000000000000000 RBX: ffff880148745b78 RCX: 0000000000000048
-RDX: ffff880148745c90 RSI: ffff880181864a00 RDI: ffff880148745b78
-RBP: ffff880148745c48 R08: 0000000000000048 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff880181864a00
-R13: ffff880148745c90 R14: 0000000000000048 R15: 0000000000000048
-FS:  0000000000000000(0000) GS:ffff88021e200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000088 CR3: 000000020c42c000 CR4: 00000000001407b0
-Oops#2 Part7
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Stack:
- ffff880148745b30 ffffffff810c4af9 0000004848745b30 ffff880181864a00
- ffffffff81ffbc40 0000000000000000 ffff880148745c90 ffffffff810a5aab
- ffff880148745bc0 ffffffff81ffbc40 ffff880148745b60 ffffffff815a9fb8
-Call Trace:
- [<ffffffff810c4af9>] ? finish_task_switch+0x49/0xe0
- [<ffffffff810a5aab>] ? lock_timer_base.isra.36+0x2b/0x50
- [<ffffffff815a9fb8>] ? _raw_spin_unlock_irqrestore+0x18/0x40
- [<ffffffff810a673f>] ? try_to_del_timer_sync+0x4f/0x70
- [<ffffffff815aa38f>] ? _raw_spin_unlock_bh+0x1f/0x30
- [<ffffffff814dcc87>] kernel_sendmsg+0x37/0x50
- [<ffffffffa081a0e0>] smb_send_kvec+0xd0/0x1d0 [cifs]
- [<ffffffffa081a263>] smb_send_rqst+0x83/0x1f0 [cifs]
- [<ffffffffa081ab6c>] cifs_call_async+0xec/0x1b0 [cifs]
- [<ffffffffa08245e0>] ? free_rsp_buf+0x40/0x40 [cifs]
-Oops#2 Part6
- [<ffffffffa082606e>] SMB2_echo+0x8e/0xb0 [cifs]
- [<ffffffffa0808789>] cifs_echo_request+0x79/0xa0 [cifs]
- [<ffffffff810b45b3>] process_one_work+0x173/0x4a0
- [<ffffffff810b52a1>] worker_thread+0x121/0x3a0
- [<ffffffff810b5180>] ? manage_workers.isra.27+0x2b0/0x2b0
- [<ffffffff810bae00>] kthread+0xc0/0xd0
- [<ffffffff810bad40>] ? kthread_create_on_node+0x120/0x120
- [<ffffffff815b199c>] ret_from_fork+0x7c/0xb0
- [<ffffffff810bad40>] ? kthread_create_on_node+0x120/0x120
-Code: 84 24 b8 00 00 00 4c 89 f1 4c 89 ea 4c 89 e6 48 89 df 4c 89 60 18 48 c7 40 28 00 00 00 00 4c 89 68 30 44 89 70 14 49 8b 44 24 28 <ff> 90 88 00 00 00 3d ef fd ff ff 74 10 48 8d 65 e0 5b 41 5c 41
- RIP  [<ffffffff814dcc13>] sock_sendmsg+0x93/0xd0
- RSP <ffff880148745b00>
-CR2: 0000000000000088
-
-The client was in the middle of trying to send a frame when the
-server->ssocket pointer got zeroed out. In most places, that we access
-that pointer, the srv_mutex is held. There's only one spot that I see
-that the server->ssocket pointer gets set and the srv_mutex isn't held.
-This patch corrects that.
-
-The upstream bug report was here:
-
-    https://bugzilla.kernel.org/show_bug.cgi?id=60557
-
-Reported-by: Oleksii Shevchuk <alxchk@gmail.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/connect.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/class/cdc-wdm.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -377,6 +377,7 @@ cifs_reconnect(struct TCP_Server_Info *s
- 		try_to_freeze();
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -209,6 +209,7 @@ skip_error:
+ static void wdm_int_callback(struct urb *urb)
+ {
+ 	int rv = 0;
++	int responding;
+ 	int status = urb->status;
+ 	struct wdm_device *desc;
+ 	struct usb_cdc_notification *dr;
+@@ -262,8 +263,8 @@ static void wdm_int_callback(struct urb
  
- 		/* we should try only the port we connected to before */
-+		mutex_lock(&server->srv_mutex);
- 		rc = generic_ip_connect(server);
- 		if (rc) {
- 			cifs_dbg(FYI, "reconnect error %d\n", rc);
-@@ -388,6 +389,7 @@ cifs_reconnect(struct TCP_Server_Info *s
- 				server->tcpStatus = CifsNeedNegotiate;
- 			spin_unlock(&GlobalMid_Lock);
- 		}
-+		mutex_unlock(&server->srv_mutex);
- 	} while (server->tcpStatus == CifsNeedReconnect);
+ 	spin_lock(&desc->iuspin);
+ 	clear_bit(WDM_READ, &desc->flags);
+-	set_bit(WDM_RESPONDING, &desc->flags);
+-	if (!test_bit(WDM_DISCONNECTING, &desc->flags)
++	responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
++	if (!responding && !test_bit(WDM_DISCONNECTING, &desc->flags)
+ 		&& !test_bit(WDM_SUSPENDING, &desc->flags)) {
+ 		rv = usb_submit_urb(desc->response, GFP_ATOMIC);
+ 		dev_dbg(&desc->intf->dev, "%s: usb_submit_urb %d",
+@@ -685,16 +686,20 @@ static void wdm_rxwork(struct work_struc
+ {
+ 	struct wdm_device *desc = container_of(work, struct wdm_device, rxwork);
+ 	unsigned long flags;
+-	int rv;
++	int rv = 0;
++	int responding;
  
- 	return rc;
+ 	spin_lock_irqsave(&desc->iuspin, flags);
+ 	if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
+ 		spin_unlock_irqrestore(&desc->iuspin, flags);
+ 	} else {
++		responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
+ 		spin_unlock_irqrestore(&desc->iuspin, flags);
+-		rv = usb_submit_urb(desc->response, GFP_KERNEL);
++		if (!responding)
++			rv = usb_submit_urb(desc->response, GFP_KERNEL);
+ 		if (rv < 0 && rv != -EPERM) {
+ 			spin_lock_irqsave(&desc->iuspin, flags);
++			clear_bit(WDM_RESPONDING, &desc->flags);
+ 			if (!test_bit(WDM_DISCONNECTING, &desc->flags))
+ 				schedule_work(&desc->rxwork);
+ 			spin_unlock_irqrestore(&desc->iuspin, flags);
 
 
