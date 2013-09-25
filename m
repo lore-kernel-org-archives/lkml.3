@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab3IYAUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39616 "EHLO
+	id S1756325Ab3IYAdT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:33:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39687 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756611Ab3IYAUb (ORCPT
+	with ESMTP id S1756681Ab3IYAUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:31 -0400
+	Tue, 24 Sep 2013 20:20:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 061/117] ext4: move test whether extent to map can be extended to one place
-Date: Tue, 24 Sep 2013 17:18:47 -0700
-Message-Id: <20130925001747.521451488@linuxfoundation.org>
+        Stefan Kriwanek <mail@stefankriwanek.de>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 074/117] HID: Fix Speedlink VAD Cezanne support for some devices
+Date: Tue, 24 Sep 2013 17:19:00 -0700
+Message-Id: <20130925001749.035910690@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,108 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Stefan Kriwanek <dev@stefankriwanek.de>
 
-commit 09930042a2e94cf8ee79d22943915612c1e4ba51 upstream.
+commit 06bb5219118fb098f4b0c7dcb484b28a52bf1c14 upstream.
 
-Currently the logic whether the current buffer can be added to an extent
-of buffers to map is split between mpage_add_bh_to_extent() and
-add_page_bufs_to_extent(). Move the whole logic to
-mpage_add_bh_to_extent() which makes things a bit more straightforward
-and make following i_size fixes easier.
+Some devices of the "Speedlink VAD Cezanne" model need more aggressive fixing
+than already done.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+I made sure through testing that this patch would not interfere with the proper
+working of a device that is bug-free. (The driver drops EV_REL events with
+abs(val) >= 256, which are not achievable even on the highest laser resolution
+hardware setting.)
+
+Signed-off-by: Stefan Kriwanek <mail@stefankriwanek.de>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |   49 +++++++++++++++++++++++++++++--------------------
- 1 file changed, 29 insertions(+), 20 deletions(-)
+ drivers/hid/hid-speedlink.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1904,34 +1904,48 @@ static int ext4_writepage(struct page *p
+--- a/drivers/hid/hid-speedlink.c
++++ b/drivers/hid/hid-speedlink.c
+@@ -3,7 +3,7 @@
+  *  Fixes "jumpy" cursor and removes nonexistent keyboard LEDS from
+  *  the HID descriptor.
   *
-  * @mpd - extent of blocks
-  * @lblk - logical number of the block in the file
-- * @b_state - b_state of the buffer head added
-+ * @bh - buffer head we want to add to the extent
-  *
-- * the function is used to collect contig. blocks in same state
-+ * The function is used to collect contig. blocks in the same state. If the
-+ * buffer doesn't require mapping for writeback and we haven't started the
-+ * extent of buffers to map yet, the function returns 'true' immediately - the
-+ * caller can write the buffer right away. Otherwise the function returns true
-+ * if the block has been added to the extent, false if the block couldn't be
-+ * added.
+- *  Copyright (c) 2011 Stefan Kriwanek <mail@stefankriwanek.de>
++ *  Copyright (c) 2011, 2013 Stefan Kriwanek <dev@stefankriwanek.de>
   */
--static int mpage_add_bh_to_extent(struct mpage_da_data *mpd, ext4_lblk_t lblk,
--				  unsigned long b_state)
-+static bool mpage_add_bh_to_extent(struct mpage_da_data *mpd, ext4_lblk_t lblk,
-+				   struct buffer_head *bh)
+ 
+ /*
+@@ -46,8 +46,13 @@ static int speedlink_event(struct hid_de
+ 		struct hid_usage *usage, __s32 value)
  {
- 	struct ext4_map_blocks *map = &mpd->map;
- 
--	/* Don't go larger than mballoc is willing to allocate */
--	if (map->m_len >= MAX_WRITEPAGES_EXTENT_LEN)
--		return 0;
-+	/* Buffer that doesn't need mapping for writeback? */
-+	if (!buffer_dirty(bh) || !buffer_mapped(bh) ||
-+	    (!buffer_delay(bh) && !buffer_unwritten(bh))) {
-+		/* So far no extent to map => we write the buffer right away */
-+		if (map->m_len == 0)
-+			return true;
-+		return false;
-+	}
- 
- 	/* First block in the extent? */
- 	if (map->m_len == 0) {
- 		map->m_lblk = lblk;
- 		map->m_len = 1;
--		map->m_flags = b_state & BH_FLAGS;
--		return 1;
-+		map->m_flags = bh->b_state & BH_FLAGS;
-+		return true;
- 	}
- 
-+	/* Don't go larger than mballoc is willing to allocate */
-+	if (map->m_len >= MAX_WRITEPAGES_EXTENT_LEN)
-+		return false;
+ 	/* No other conditions due to usage_table. */
+-	/* Fix "jumpy" cursor (invalid events sent by device). */
+-	if (value == 256)
 +
- 	/* Can we merge the block to our big extent? */
- 	if (lblk == map->m_lblk + map->m_len &&
--	    (b_state & BH_FLAGS) == map->m_flags) {
-+	    (bh->b_state & BH_FLAGS) == map->m_flags) {
- 		map->m_len++;
--		return 1;
-+		return true;
- 	}
--	return 0;
-+	return false;
- }
- 
- static bool add_page_bufs_to_extent(struct mpage_da_data *mpd,
-@@ -1946,18 +1960,13 @@ static bool add_page_bufs_to_extent(stru
- 	do {
- 		BUG_ON(buffer_locked(bh));
- 
--		if (!buffer_dirty(bh) || !buffer_mapped(bh) ||
--		    (!buffer_delay(bh) && !buffer_unwritten(bh)) ||
--		    lblk >= blocks) {
-+		if (lblk >= blocks || !mpage_add_bh_to_extent(mpd, lblk, bh)) {
- 			/* Found extent to map? */
- 			if (mpd->map.m_len)
- 				return false;
--			if (lblk >= blocks)
--				return true;
--			continue;
-+			/* Everything mapped so far and we hit EOF */
-+			return true;
- 		}
--		if (!mpage_add_bh_to_extent(mpd, lblk, bh->b_state))
--			return false;
- 	} while (lblk++, (bh = bh->b_this_page) != head);
- 	return true;
- }
++	/* This fixes the "jumpy" cursor occuring due to invalid events sent
++	 * by the device. Some devices only send them with value==+256, others
++	 * don't. However, catching abs(value)>=256 is restrictive enough not
++	 * to interfere with devices that were bug-free (has been tested).
++	 */
++	if (abs(value) >= 256)
+ 		return 1;
+ 	/* Drop useless distance 0 events (on button clicks etc.) as well */
+ 	if (value == 0)
 
 
