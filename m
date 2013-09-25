@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab3IYAXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:23:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39846 "EHLO
+	id S1756920Ab3IYAYA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:24:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39838 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab3IYAVK (ORCPT
+	with ESMTP id S1755275Ab3IYAVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:21:10 -0400
+	Tue, 24 Sep 2013 20:21:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Durgin <josh.durgin@inktank.com>,
-        Alex Elder <alex.elder@linaro.org>
-Subject: [ 109/117] rbd: fix I/O error propagation for reads
-Date: Tue, 24 Sep 2013 17:19:35 -0700
-Message-Id: <20130925001752.846889431@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <alex.elder@linary.org>
+Subject: [ 107/117] libceph: use pg_num_mask instead of pgp_num_mask for pg.seed calc
+Date: Tue, 24 Sep 2013 17:19:33 -0700
+Message-Id: <20130925001752.626253898@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,74 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Durgin <josh.durgin@inktank.com>
+From: Sage Weil <sage@inktank.com>
 
-commit 17c1cc1d9293a568a00545469078e29555cc7f39 upstream.
+commit 9542cf0bf9b1a3adcc2ef271edbcbdba03abf345 upstream.
 
-When a request returns an error, the driver needs to report the entire
-extent of the request as completed.  Writes already did this, since
-they always set xferred = length, but reads were skipping that step if
-an error other than -ENOENT occurred.  Instead, rbd would end up
-passing 0 xferred to blk_end_request(), which would always report
-needing more data.  This resulted in an assert failing when more data
-was required by the block layer, but all the object requests were
-done:
+Fix a typo that used the wrong bitmask for the pg.seed calculation.  This
+is normally unnoticed because in most cases pg_num == pgp_num.  It is, however,
+a bug that is easily corrected.
 
-[ 1868.719077] rbd: obj_request read result -108 xferred 0
-[ 1868.719077]
-[ 1868.719518] end_request: I/O error, dev rbd1, sector 0
-[ 1868.719739]
-[ 1868.719739] Assertion failure in rbd_img_obj_callback() at line 1736:
-[ 1868.719739]
-[ 1868.719739]   rbd_assert(more ^ (which == img_request->obj_request_count));
-
-Without this assert, reads that hit errors would hang forever, since
-the block layer considered them incomplete.
-
-Fixes: http://tracker.ceph.com/issues/5647
-Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
-Reviewed-by: Alex Elder <alex.elder@linaro.org>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <alex.elder@linary.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ net/ceph/osdmap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1557,11 +1557,12 @@ rbd_img_obj_request_read_callback(struct
- 		obj_request, obj_request->img_request, obj_request->result,
- 		xferred, length);
- 	/*
--	 * ENOENT means a hole in the image.  We zero-fill the
--	 * entire length of the request.  A short read also implies
--	 * zero-fill to the end of the request.  Either way we
--	 * update the xferred count to indicate the whole request
--	 * was satisfied.
-+	 * ENOENT means a hole in the image.  We zero-fill the entire
-+	 * length of the request.  A short read also implies zero-fill
-+	 * to the end of the request.  An error requires the whole
-+	 * length of the request to be reported finished with an error
-+	 * to the block layer.  In each case we update the xferred
-+	 * count to indicate the whole request was satisfied.
- 	 */
- 	rbd_assert(obj_request->type != OBJ_REQUEST_NODATA);
- 	if (obj_request->result == -ENOENT) {
-@@ -1570,14 +1571,13 @@ rbd_img_obj_request_read_callback(struct
- 		else
- 			zero_pages(obj_request->pages, 0, length);
- 		obj_request->result = 0;
--		obj_request->xferred = length;
- 	} else if (xferred < length && !obj_request->result) {
- 		if (obj_request->type == OBJ_REQUEST_BIO)
- 			zero_bio_chain(obj_request->bio_list, xferred);
- 		else
- 			zero_pages(obj_request->pages, xferred, length);
--		obj_request->xferred = length;
- 	}
-+	obj_request->xferred = length;
- 	obj_request_done_set(obj_request);
- }
+--- a/net/ceph/osdmap.c
++++ b/net/ceph/osdmap.c
+@@ -1129,7 +1129,7 @@ static int *calc_pg_raw(struct ceph_osdm
  
+ 	/* pg_temp? */
+ 	pgid.seed = ceph_stable_mod(pgid.seed, pool->pg_num,
+-				    pool->pgp_num_mask);
++				    pool->pg_num_mask);
+ 	pg = __lookup_pg_mapping(&osdmap->pg_temp, pgid);
+ 	if (pg) {
+ 		*num = pg->len;
 
 
