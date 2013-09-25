@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab3IYJYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 05:24:38 -0400
-Received: from ozlabs.org ([203.10.76.45]:43845 "EHLO ozlabs.org"
+	id S1754984Ab3IYJY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 05:24:59 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33233 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754302Ab3IYJY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 05:24:26 -0400
-From: Michael Ellerman <michael@ellerman.id.au>
-To: <linuxppc-dev@ozlabs.org>
-Cc: <linux-kernel@vger.kernel.org>, mpm@selenic.com,
-        herbert@gondor.hengli.com.au
-Subject: [PATCH 2/2] hwrng: Return errors to upper levels in pseries-rng.c
-Date: Wed, 25 Sep 2013 19:24:17 +1000
-Message-Id: <1380101057-29903-2-git-send-email-michael@ellerman.id.au>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1380101057-29903-1-git-send-email-michael@ellerman.id.au>
-References: <1380101057-29903-1-git-send-email-michael@ellerman.id.au>
+	id S1752734Ab3IYJY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 05:24:56 -0400
+Message-ID: <1c45cce8ceb98b178976751a1d7db8be.squirrel@www.skyhub.de>
+In-Reply-To: <20130921113929.GB1587@pd.tnic>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+    <1379602494-26684-12-git-send-email-bp@alien8.de>
+    <20130921113929.GB1587@pd.tnic>
+Date: Wed, 25 Sep 2013 11:24:54 +0200 (CEST)
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+From: "Borislav Petkov" <bp@alien8.de>
+To: "Borislav Petkov" <bp@alien8.de>
+Cc: "X86 ML" <x86@kernel.org>, "LKML" <linux-kernel@vger.kernel.org>,
+        "Borislav Petkov" <bp@suse.de>,
+        "Matt Fleming" <matt@console-pimps.org>,
+        "Matthew Garrett" <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "James Bottomley" <james.bottomley@hansenpartnership.com>,
+        "Vivek Goyal" <vgoyal@redhat.com>, "Dave Young" <dyoung@redhat.com>,
+        linux-efi@vger.kernel.org
+User-Agent: SquirrelMail/1.4.15
+MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't expect to get errors from the hypervisor when reading the rng,
-but if we do we should pass the error up to the hwrng driver. Otherwise
-the hwrng driver will continue calling us forever.
+On Sat, September 21, 2013 1:39 pm, Borislav Petkov wrote:
+> diff --git a/arch/x86/platform/efi/efi_32.c
+> b/arch/x86/platform/efi/efi_32.c
+> index 40e446941dd7..661663b08eaf 100644
+> --- a/arch/x86/platform/efi/efi_32.c
+> +++ b/arch/x86/platform/efi/efi_32.c
+> @@ -37,9 +37,36 @@
+>   * claim EFI runtime service handler exclusively and to duplicate a
+> memory in
+>   * low memory space say 0 - 3G.
+>   */
+> -
+>  static unsigned long efi_rt_eflags;
+>
+> +void efi_sync_low_kernel_mappings(void) {}
+> +
+> +void __init efi_map_region(efi_memory_desc_t *md)
+> +{
+> +	u64 start_pfn, end_pfn, end;
+> +	unsigned long size;
+> +	void *va;
+> +
+> +	start_pfn = PFN_DOWN(md->phys_addr);
+> +	size	  = md->num_pages << PAGE_SHIFT;
+> +	end	  = md->phys_addr + size;
+> +	end_pfn   = PFN_UP(end);
+> +
+> +	if (pfn_range_is_mapped(start_pfn, end_pfn)) {
+> +		va = __va(md->phys_addr);
+> +
+> +		if (!(md->attribute & EFI_MEMORY_WB))
+> +			efi_memory_uc((u64)(unsigned long)va, size);
+> +	} else
+> +		va = efi_ioremap(md->phys_addr, size,
+> +				 md->type, md->attribute);
+> +
+> +	md->virt_addr = (u64) (unsigned long) va;
+> +	if (!va)
+> +		pr_err("ioremap of 0x%llX failed!\n",
+> +		       (unsigned long long)md->phys_addr);
+> +}
+> +
 
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
----
- drivers/char/hw_random/pseries-rng.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+Another note-to-self, while I'm here: it is probably prudent to
+be conservative here and keep the old runtime mapping method
+in generic EFI code and behind a chicken bit, something like
+"efi.use_old_runtime_mapping" or shorter so that people whose systems
+break from the new mapping can fall back to the old, well-tested method.
 
-diff --git a/drivers/char/hw_random/pseries-rng.c b/drivers/char/hw_random/pseries-rng.c
-index 9dbeed3..ab7ffde 100644
---- a/drivers/char/hw_random/pseries-rng.c
-+++ b/drivers/char/hw_random/pseries-rng.c
-@@ -17,6 +17,9 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/hw_random.h>
- #include <asm/vio.h>
-@@ -24,10 +27,15 @@
- 
- static int pseries_rng_data_read(struct hwrng *rng, u32 *data)
- {
--	if (plpar_hcall(H_RANDOM, (unsigned long *)data) != H_SUCCESS) {
--		printk(KERN_ERR "pseries rng hcall error\n");
--		return 0;
-+	int rc;
-+
-+	rc = plpar_hcall(H_RANDOM, (unsigned long *)data);
-+	if (rc != H_SUCCESS) {
-+		pr_err_ratelimited("H_RANDOM call failed %d\n", rc);
-+		return -EIO;
- 	}
-+
-+	/* The hypervisor interface returns 64 bits */
- 	return 8;
- }
- 
+Thanks.
+
 -- 
-1.8.1.2
+Regards/Gruss,
+Boris.
 
