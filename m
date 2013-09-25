@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab3IYRqR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 13:46:17 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:34372 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918Ab3IYRqO (ORCPT
+	id S1754774Ab3IYRqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 13:46:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43719 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753914Ab3IYRqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 13:46:14 -0400
-Date: Wed, 25 Sep 2013 10:46:09 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Gupta, Pekon" <pekon@ti.com>, "olof@lixom.net" <olof@lixom.net>,
-        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various
- ECC schemes
-Message-ID: <20130925174609.GU4550@ld-irv-0074.broadcom.com>
-References: <1378986619-26765-1-git-send-email-pekon@ti.com>
- <1378986619-26765-2-git-send-email-pekon@ti.com>
- <20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
- <20130925134619.GG10746@radagast>
+	Wed, 25 Sep 2013 13:46:21 -0400
+Message-ID: <52432152.3030100@canonical.com>
+Date: Wed, 25 Sep 2013 13:45:54 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925134619.GG10746@radagast>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de, list@osuosl.org,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
+        HID CORE LAYER <linux-input@vger.kernel.org>,
+        devel@linuxdriverproject.org
+Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to memdup
+References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda> <5237A5D5.8010006@canonical.com> <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 08:46:19AM -0500, Felipe Balbi wrote:
-> + akpm
-> 
-> On Tue, Sep 24, 2013 at 01:04:05PM -0500, Gupta, Pekon wrote:
-> > 
-> > > 
-> > > This patch
-> > > - updates DT binding for selection of ecc-scheme
-> > > - updates DT binding for detection of ELM h/w engine
-> > > - removes following obselete ECC schemes
-> > > 	OMAP_ECC_HAMMING_CODE_DEFAULT (S/W based 1-bit Hamming
-> > > ECC)
-> > > 	OMAP_ECC_HAMMING_CODE_HW_ROMCODE (H/W based 1-bit
-> > > Hamming ECC scheme)
-> > > - updates DT binding documentation for mtd/gpmc-nand
-> > > 
-> > > Signed-off-by: Pekon Gupta <pekon@ti.com>
-> > > ---
-> > 
-> > Dear Olof and other DT Maintainers,
-> > 
-> > This patch series has missed multiple merge windows, and
-> > much of the other development work on mtd/nand/omap
-> > driver is gated due to this.
-> > So, request you to please review this patch set and Ack it
-> > if all your mentioned concerns are resolved.
+On 09/24/2013 05:29 AM, Jiri Kosina wrote:
+> On Mon, 16 Sep 2013, Joseph Salisbury wrote:
+>
+>>>> Can you explain a little further?  Mark commit a4a23f6 as bad?  An
+>>>> initial bisect already reported that was the first bad commit, so it
+>>>> can't be marked bad.  The oops on memcpy() happens after commit a4a23f6
+>>>> is reverted.  The oops on memcpy() did not happen before a4a23f6 was
+>>>> committed, so I assume this new oops was introduced by a change later.
+>>>>
+>>>> Right now I'm bisecting down the oops on memcpy() by updating the bisect
+>>>> with good or bad, depending if the test kernel hit the oops.  I then
+>>>> revert a4a23f6, so that revert is the HEAD of the tree each time before
+>>>> building the kernel again(As long as the commit spit out by bisect is
+>>>> after when a4a23f6 was introduced).
+>>> Yep.  Please continue bisecting the memcpy() oops.
+>>>
+>>> kmemdup() is just a kzalloc() followed by a memcpy().  When we split it
+>>> apart by reverting the patch then we would expect the oops to move to
+>>> the memcpy() part.  Somehow "desc" is a bogus pointer, but I don't
+>>> immediately see how that is possible.
+>>>
+>>> regards,
+>>> dan carpenter
+>> Thanks for the details.  We'll continue the bisect and let you know how
+>> it goes.
+> Did this please yield any useful result?
+>
+> Thanks,
+>
 
-I've been waiting on Olof's response for this one. It seems like you
-addressed his comments well enough for me, although (in line with his
-comments) you are admittedly still breaking the DT ABI for these
-devices. IMO, that's OK given the low quality of the original bindings.
+After further testing reverting the following commit does in fact
+resolve the bug:
 
-I will make my own last pass at this series and push it to l2-mtd.git if
-it looks OK.
+commit b1a1442a23776756b254b69786848a94d92445ba
+Author: Jiri Kosina <jkosina@suse.cz>
+Date: Mon Jun 3 11:27:48 2013 +0200
 
-Brian
+    HID: core: fix reporting of raw events
+
+Reverting this commit in v3.12-rc2 prevents the system from locking up, which happens when connecting a bluetooth trackpad.
+
+Jiri,  do you think we should revert this patch, or is there some further debugging/data collecting you would like to do?
+
+Thanks,
+
+Joe
+
+
+
