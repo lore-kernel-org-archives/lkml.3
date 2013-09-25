@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab3IYPZH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 11:25:07 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:54121 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755549Ab3IYPZF (ORCPT
+	id S1753799Ab3IYP3s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 11:29:48 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:51381 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab3IYP3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 11:25:05 -0400
-From: Manfred Spraul <manfred@colorfullife.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH] ipc/sem.c: Synchronize the proc interface
-Date: Wed, 25 Sep 2013 17:24:49 +0200
-Message-Id: <1380122689-6789-1-git-send-email-manfred@colorfullife.com>
-X-Mailer: git-send-email 1.8.3.1
+	Wed, 25 Sep 2013 11:29:47 -0400
+Message-ID: <52430167.4000701@linaro.org>
+Date: Wed, 25 Sep 2013 17:29:43 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] clocksource: of: respect device tree node status
+References: <523AD63A.8040906@gmail.com>
+In-Reply-To: <523AD63A.8040906@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The proc interface is not aware of sem_lock(), it calls
-ipc_lock_object() directly.
-This means that simple semop() operations can run in parallel with the
-proc interface.
-Right now, this is uncritical, because the implementation doesn't
-do anything that requires a proper synchronization.
+On 09/19/2013 12:47 PM, Sebastian Hesselbarth wrote:
+> Clocksource devices provided by DT can be disabled (status != "okay").
+> Instead of registering clocksource drivers for disabled nodes, respect
+> the device's status by skiping disabled nodes.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-But it is dangerous and therefore should be fixed.
+Shall it be applied as a 3.12 fix ?
 
-Andrew:
-- Could you include the patch in -mm and push it towards Linus?
-- The patch depends on ipc-semc-fix-race-in-sem_lock.patch
+> ---
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/clocksource/clksrc-of.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/clocksource/clksrc-of.c
+> b/drivers/clocksource/clksrc-of.c
+> index 37f5325..b9ddd9e 100644
+> --- a/drivers/clocksource/clksrc-of.c
+> +++ b/drivers/clocksource/clksrc-of.c
+> @@ -30,6 +30,9 @@ void __init clocksource_of_init(void)
+>      clocksource_of_init_fn init_func;
+>       for_each_matching_node_and_match(np, __clksrc_of_table, &match) {
+> +        if (!of_device_is_available(np))
+> +            continue;
+> +
+>          init_func = match->data;
+>          init_func(np);
+>      }
 
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
----
- ipc/sem.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 4a92c04..e5d9bb8 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -2095,6 +2095,14 @@ static int sysvipc_sem_proc_show(struct seq_file *s, void *it)
- 	struct sem_array *sma = it;
- 	time_t sem_otime;
- 
-+	/*
-+	 * The proc interface isn't aware of sem_lock(), it calls
-+	 * ipc_lock_object() directly (in sysvipc_find_ipc).
-+	 * In order to stay compatible with sem_lock(), we must wait until
-+	 * all simple semop() calls have left their critical regions.
-+	 */
-+	sem_wait_array(sma);
-+
- 	sem_otime = get_semotime(sma);
- 
- 	return seq_printf(s,
 -- 
-1.8.3.1
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
