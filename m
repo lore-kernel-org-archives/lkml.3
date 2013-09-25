@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab3IYAQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:16:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38965 "EHLO
+	id S932491Ab3IYBLx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:11:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755948Ab3IYAQN (ORCPT
+	with ESMTP id S1756010Ab3IYAQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:13 -0400
+	Tue, 24 Sep 2013 20:16:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [ 036/110] usb: ehci-mxc: check for pdata before dereferencing
-Date: Tue, 24 Sep 2013 17:14:34 -0700
-Message-Id: <20130925001327.314678224@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [ 041/110] usb: config->desc.bLength may not exceed amount of data returned by the device
+Date: Tue, 24 Sep 2013 17:14:39 -0700
+Message-Id: <20130925001327.849473622@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,34 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit f375fc520d4df0cd9fcb570f33c103c6c0311f9e upstream.
+commit b4f17a488ae2e09bfcf95c0e0b4219c246f1116a upstream.
 
-Commit 7e8d5cd93fac ("USB: Add EHCI support for MX27 and MX31 based
-boards") introduced code that could potentially lead to a NULL pointer
-dereference on driver removal.
+While reading the config parsing code I noticed this check is missing, without
+this check config->desc.wTotalLength can end up with a value larger then the
+dev->rawdescriptors length for the config, and when userspace then tries to
+get the rawdescriptors bad things may happen.
 
-Fix this by checking for the value of pdata before dereferencing it.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-mxc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/config.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-mxc.c
-+++ b/drivers/usb/host/ehci-mxc.c
-@@ -184,7 +184,7 @@ static int ehci_mxc_drv_remove(struct pl
- 	if (pdata && pdata->exit)
- 		pdata->exit(pdev);
+--- a/drivers/usb/core/config.c
++++ b/drivers/usb/core/config.c
+@@ -424,7 +424,8 @@ static int usb_parse_configuration(struc
  
--	if (pdata->otg)
-+	if (pdata && pdata->otg)
- 		usb_phy_shutdown(pdata->otg);
- 
- 	clk_disable_unprepare(priv->usbclk);
+ 	memcpy(&config->desc, buffer, USB_DT_CONFIG_SIZE);
+ 	if (config->desc.bDescriptorType != USB_DT_CONFIG ||
+-	    config->desc.bLength < USB_DT_CONFIG_SIZE) {
++	    config->desc.bLength < USB_DT_CONFIG_SIZE ||
++	    config->desc.bLength > size) {
+ 		dev_err(ddev, "invalid descriptor for config index %d: "
+ 		    "type = 0x%X, length = %d\n", cfgidx,
+ 		    config->desc.bDescriptorType, config->desc.bLength);
 
 
