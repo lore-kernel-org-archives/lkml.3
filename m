@@ -1,105 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab3IYLKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 07:10:20 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:57680 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab3IYLKS (ORCPT
+	id S1755228Ab3IYLLX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 07:11:23 -0400
+Received: from emh02.mail.saunalahti.fi ([62.142.5.108]:34292 "EHLO
+	emh02.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755119Ab3IYLLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 07:10:18 -0400
-Date: Wed, 25 Sep 2013 13:10:10 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Gabor Juhos <juhosg@openwrt.org>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] avr32: balance cpu_idle_poll_ctrl calls
-Message-ID: <20130925111010.GA17254@samfundet.no>
-References: <1380101479-28358-1-git-send-email-juhosg@openwrt.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380101479-28358-1-git-send-email-juhosg@openwrt.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 25 Sep 2013 07:11:22 -0400
+X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Sep 2013 07:11:22 EDT
+Message-ID: <1380107096.4503.8.camel@porter.coelho.fi>
+Subject: Re: [PATCH] ti-connectivity: add wl1251 firmware and license
+From: Luca Coelho <luca@coelho.fi>
+To: Felipe Balbi <balbi@ti.com>
+Cc: ben@decadent.org.uk,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-wireless@vger.kernel.org, Pavel Machek <pavel@denx.de>
+Date: Wed, 25 Sep 2013 14:04:56 +0300
+In-Reply-To: <1380033894-5007-1-git-send-email-balbi@ti.com>
+References: <1380033894-5007-1-git-send-email-balbi@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-4+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Wed 25 Sep 2013 11:31:19 +0200 or thereabout, Gabor Juhos wrote:
-> Since commit 01426478df3a8791ff5c8b6b82d409e699cfaf38
-> (avr32: Use generic idle loop) the kernel throws the
-> following warning on avr32:
+Hi dude,
+
+Great, this is cool! Finally! :)
+
+A few comments...
+
+
+On Tue, 2013-09-24 at 09:44 -0500, Felipe Balbi wrote:
+> It's way overdue that we send these firmware
+> blobs upstream. Thanks for everybody involved
+> in getting this sorted out.
 > 
->   WARNING: at 900322e4 [verbose debug info unavailable]
->   Modules linked in:
->   CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0-rc2 #117
->   task: 901c3ecc ti: 901c0000 task.ti: 901c0000
->   PC is at cpu_idle_poll_ctrl+0x1c/0x38
->   LR is at comparator_mode+0x3e/0x40
->   pc : [<900322e4>]    lr : [<90014882>]    Not tainted
->   sp : 901c1f74  r12: 00000000  r11: 901c74a0
->   r10: 901d2510  r9 : 00000001  r8 : 901db4de
->   r7 : 901c74a0  r6 : 00000001  r5 : 00410020  r4 : 901db574
->   r3 : 00410024  r2 : 90206fe0  r1 : 00000000  r0 : 007f0000
->   Flags: qvnzc
->   Mode bits: hjmde....G
->   CPU Mode: Supervisor
->   Call trace:
->    [<90039ede>] clockevents_set_mode+0x16/0x2e
->    [<90039f00>] clockevents_shutdown+0xa/0x1e
->    [<9003a078>] clockevents_exchange_device+0x58/0x70
->    [<9003a78c>] tick_check_new_device+0x38/0x54
->    [<9003a1a2>] clockevents_register_device+0x32/0x90
->    [<900035c4>] time_init+0xa8/0x108
->    [<90000520>] start_kernel+0x128/0x23c
-> 
-> When the 'avr32_comparator' clockevent device is registered,
-> the clockevent core sets the mode of that clockevent device
-> to CLOCK_EVT_MODE_SHUTDOWN. Due to this, the 'comparator_mode'
-> function calls the 'cpu_idle_poll_ctrl' to disables idle poll.
-> This results in the aforementioned warning because the polling
-> is not enabled yet.
-> 
-> Change the code to only disable idle poll if it is enabled by
-> the same function to avoid the warning.
-
-Thank you for fixing.
-
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-
-> ---
-> Note: the patch is against v3.12-rc2.
+> Cc: Luciano Coelho <luca@coelho.fi>
+> Cc: Pavel Machek <pavel@denx.de>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
 > ---
 
-I'll add this to my for-linus branch, which I'll send a pull request for
-soon.
+The commit message could be a bit more descriptive rather than
+narrative?
 
->  arch/avr32/kernel/time.c |    9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/avr32/kernel/time.c b/arch/avr32/kernel/time.c
-> index 869a1c6..12f828a 100644
-> --- a/arch/avr32/kernel/time.c
-> +++ b/arch/avr32/kernel/time.c
-> @@ -98,7 +98,14 @@ static void comparator_mode(enum clock_event_mode mode,
->  	case CLOCK_EVT_MODE_SHUTDOWN:
->  		sysreg_write(COMPARE, 0);
->  		pr_debug("%s: stop\n", evdev->name);
-> -		cpu_idle_poll_ctrl(false);
-> +		if (evdev->mode == CLOCK_EVT_MODE_ONESHOT ||
-> +		    evdev->mode == CLOCK_EVT_MODE_RESUME) {
-> +			/*
-> +			 * Only disable idle poll if we have forced that
-> +			 * in a previous call.
-> +			 */
-> +			cpu_idle_poll_ctrl(false);
-> +		}
->  		break;
->  	default:
->  		BUG();
--- 
-mvh
-Hans-Christian Egtvedt
+
+>  ti-connectivity/license-wl1251.txt |  59 +++++++++++++++++++++++++++++++++++++
+
+The license file should be in the root, together with the other licenses
+and called LICENCE.wl1251 (note the en-GB spelling).  Also, this license
+is *very* similar to the one for WiLink6/7/8 (LICENCE.ti-connectivity),
+except for some very minor things and the formatting.  Couldn't the same
+one be used, for the sake of simplicity and consistency?
+
+
+>  ti-connectivity/wl1251-fw.bin      | Bin 0 -> 194180 bytes
+>  ti-connectivity/wl1251-nvs.bin     | Bin 0 -> 752 bytes
+>  3 files changed, 59 insertions(+)
+>  create mode 100644 ti-connectivity/license-wl1251.txt
+>  create mode 100644 ti-connectivity/wl1251-fw.bin
+>  create mode 100644 ti-connectivity/wl1251-nvs.bin
+
+When sending big binary blobs, it's generally better to send pull
+requests instead of patches.  If you add the -p option when calling git
+pull-request, the text will include all the readable parts but will omit
+the binary stuff.
+
+Thank you very much for following up on this!
+
+--
+Cheers,
+Luca.
+
