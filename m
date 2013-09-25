@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab3IYAQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:16:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38984 "EHLO
+	id S1757840Ab3IYBKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:10:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39049 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755910Ab3IYAQP (ORCPT
+	with ESMTP id S1756029Ab3IYAQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:15 -0400
+	Tue, 24 Sep 2013 20:16:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Shilovsky <pshilovsky@samba.org>,
-        Steve French <smfrench@gmail.com>
-Subject: [ 027/110] CIFS: Fix missing lease break
-Date: Tue, 24 Sep 2013 17:14:25 -0700
-Message-Id: <20130925001326.347284526@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
+        Patrick McHardy <kaber@trash.net>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [ 044/110] rculist: list_first_or_null_rcu() should use list_entry_rcu()
+Date: Tue, 24 Sep 2013 17:14:42 -0700
+Message-Id: <20130925001328.184875914@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,205 +31,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <pshilovsky@samba.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit 933d4b36576c951d0371bbfed05ec0135d516a6e upstream.
+commit c34ac00caefbe49d40058ae7200bd58725cebb45 upstream.
 
-If a server sends a lease break to a connection that doesn't have
-opens with a lease key specified in the server response, we can't
-find an open file to send an ack. Fix this by walking through
-all connections we have.
+list_first_or_null() should test whether the list is empty and return
+pointer to the first entry if not in a RCU safe manner.  It's broken
+in several ways.
 
-Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-Signed-off-by: Steve French <smfrench@gmail.com>
+* It compares __kernel @__ptr with __rcu @__next triggering the
+  following sparse warning.
+
+  net/core/dev.c:4331:17: error: incompatible types in comparison expression (different address spaces)
+
+* It doesn't perform rcu_dereference*() and computes the entry address
+  using container_of() directly from the __rcu pointer which is
+  inconsitent with other rculist interface.  As a result, all three
+  in-kernel users - net/core/dev.c, macvlan, cgroup - are buggy.  They
+  dereference the pointer w/o going through read barrier.
+
+* While ->next dereference passes through list_next_rcu(), the
+  compiler is still free to fetch ->next more than once and thus
+  nullify the "__ptr != __next" condition check.
+
+Fix it by making list_first_or_null_rcu() dereference ->next directly
+using ACCESS_ONCE() and then use list_entry_rcu() on it like other
+rculist accessors.
+
+v2: Paul pointed out that the compiler may fetch the pointer more than
+    once nullifying the condition check.  ACCESS_ONCE() added on
+    ->next dereference.
+
+v3: Restored () around macro param which was accidentally removed.
+    Spotted by Paul.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/smb2misc.c |  149 ++++++++++++++++++++++++++++-------------------------
- 1 file changed, 80 insertions(+), 69 deletions(-)
+ include/linux/rculist.h |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/smb2misc.c
-+++ b/fs/cifs/smb2misc.c
-@@ -413,19 +413,76 @@ cifs_ses_oplock_break(struct work_struct
- }
+--- a/include/linux/rculist.h
++++ b/include/linux/rculist.h
+@@ -267,8 +267,9 @@ static inline void list_splice_init_rcu(
+  */
+ #define list_first_or_null_rcu(ptr, type, member) \
+ 	({struct list_head *__ptr = (ptr); \
+-	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
+-	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
++	  struct list_head *__next = ACCESS_ONCE(__ptr->next); \
++	  likely(__ptr != __next) ? \
++		list_entry_rcu(__next, type, member) : NULL; \
+ 	})
  
- static bool
--smb2_is_valid_lease_break(char *buffer, struct TCP_Server_Info *server)
-+smb2_tcon_has_lease(struct cifs_tcon *tcon, struct smb2_lease_break *rsp,
-+		    struct smb2_lease_break_work *lw)
-+{
-+	bool found;
-+	__u8 lease_state;
-+	struct list_head *tmp;
-+	struct cifsFileInfo *cfile;
-+	struct cifs_pending_open *open;
-+	struct cifsInodeInfo *cinode;
-+	int ack_req = le32_to_cpu(rsp->Flags &
-+				  SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED);
-+
-+	lease_state = smb2_map_lease_to_oplock(rsp->NewLeaseState);
-+
-+	list_for_each(tmp, &tcon->openFileList) {
-+		cfile = list_entry(tmp, struct cifsFileInfo, tlist);
-+		cinode = CIFS_I(cfile->dentry->d_inode);
-+
-+		if (memcmp(cinode->lease_key, rsp->LeaseKey,
-+							SMB2_LEASE_KEY_SIZE))
-+			continue;
-+
-+		cifs_dbg(FYI, "found in the open list\n");
-+		cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
-+			 le32_to_cpu(rsp->NewLeaseState));
-+
-+		smb2_set_oplock_level(cinode, lease_state);
-+
-+		if (ack_req)
-+			cfile->oplock_break_cancelled = false;
-+		else
-+			cfile->oplock_break_cancelled = true;
-+
-+		queue_work(cifsiod_wq, &cfile->oplock_break);
-+		kfree(lw);
-+		return true;
-+	}
-+
-+	found = false;
-+	list_for_each_entry(open, &tcon->pending_opens, olist) {
-+		if (memcmp(open->lease_key, rsp->LeaseKey,
-+			   SMB2_LEASE_KEY_SIZE))
-+			continue;
-+
-+		if (!found && ack_req) {
-+			found = true;
-+			memcpy(lw->lease_key, open->lease_key,
-+			       SMB2_LEASE_KEY_SIZE);
-+			lw->tlink = cifs_get_tlink(open->tlink);
-+			queue_work(cifsiod_wq, &lw->lease_break);
-+		}
-+
-+		cifs_dbg(FYI, "found in the pending open list\n");
-+		cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
-+			 le32_to_cpu(rsp->NewLeaseState));
-+
-+		open->oplock = lease_state;
-+	}
-+	return found;
-+}
-+
-+static bool
-+smb2_is_valid_lease_break(char *buffer)
- {
- 	struct smb2_lease_break *rsp = (struct smb2_lease_break *)buffer;
- 	struct list_head *tmp, *tmp1, *tmp2;
-+	struct TCP_Server_Info *server;
- 	struct cifs_ses *ses;
- 	struct cifs_tcon *tcon;
--	struct cifsInodeInfo *cinode;
--	struct cifsFileInfo *cfile;
--	struct cifs_pending_open *open;
- 	struct smb2_lease_break_work *lw;
--	bool found;
--	int ack_req = le32_to_cpu(rsp->Flags &
--				  SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED);
- 
- 	lw = kmalloc(sizeof(struct smb2_lease_break_work), GFP_KERNEL);
- 	if (!lw)
-@@ -438,72 +495,26 @@ smb2_is_valid_lease_break(char *buffer,
- 
- 	/* look up tcon based on tid & uid */
- 	spin_lock(&cifs_tcp_ses_lock);
--	list_for_each(tmp, &server->smb_ses_list) {
--		ses = list_entry(tmp, struct cifs_ses, smb_ses_list);
-+	list_for_each(tmp, &cifs_tcp_ses_list) {
-+		server = list_entry(tmp, struct TCP_Server_Info, tcp_ses_list);
- 
--		spin_lock(&cifs_file_list_lock);
--		list_for_each(tmp1, &ses->tcon_list) {
--			tcon = list_entry(tmp1, struct cifs_tcon, tcon_list);
--
--			cifs_stats_inc(&tcon->stats.cifs_stats.num_oplock_brks);
--			list_for_each(tmp2, &tcon->openFileList) {
--				cfile = list_entry(tmp2, struct cifsFileInfo,
--						   tlist);
--				cinode = CIFS_I(cfile->dentry->d_inode);
--
--				if (memcmp(cinode->lease_key, rsp->LeaseKey,
--					   SMB2_LEASE_KEY_SIZE))
--					continue;
--
--				cifs_dbg(FYI, "found in the open list\n");
--				cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
--					 le32_to_cpu(rsp->NewLeaseState));
--
--				smb2_set_oplock_level(cinode,
--				  smb2_map_lease_to_oplock(rsp->NewLeaseState));
--
--				if (ack_req)
--					cfile->oplock_break_cancelled = false;
--				else
--					cfile->oplock_break_cancelled = true;
--
--				queue_work(cifsiod_wq, &cfile->oplock_break);
--
--				kfree(lw);
--				spin_unlock(&cifs_file_list_lock);
--				spin_unlock(&cifs_tcp_ses_lock);
--				return true;
--			}
-+		list_for_each(tmp1, &server->smb_ses_list) {
-+			ses = list_entry(tmp1, struct cifs_ses, smb_ses_list);
- 
--			found = false;
--			list_for_each_entry(open, &tcon->pending_opens, olist) {
--				if (memcmp(open->lease_key, rsp->LeaseKey,
--					   SMB2_LEASE_KEY_SIZE))
--					continue;
--
--				if (!found && ack_req) {
--					found = true;
--					memcpy(lw->lease_key, open->lease_key,
--					       SMB2_LEASE_KEY_SIZE);
--					lw->tlink = cifs_get_tlink(open->tlink);
--					queue_work(cifsiod_wq,
--						   &lw->lease_break);
-+			spin_lock(&cifs_file_list_lock);
-+			list_for_each(tmp2, &ses->tcon_list) {
-+				tcon = list_entry(tmp2, struct cifs_tcon,
-+						  tcon_list);
-+				cifs_stats_inc(
-+				    &tcon->stats.cifs_stats.num_oplock_brks);
-+				if (smb2_tcon_has_lease(tcon, rsp, lw)) {
-+					spin_unlock(&cifs_file_list_lock);
-+					spin_unlock(&cifs_tcp_ses_lock);
-+					return true;
- 				}
--
--				cifs_dbg(FYI, "found in the pending open list\n");
--				cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
--					 le32_to_cpu(rsp->NewLeaseState));
--
--				open->oplock =
--				  smb2_map_lease_to_oplock(rsp->NewLeaseState);
--			}
--			if (found) {
--				spin_unlock(&cifs_file_list_lock);
--				spin_unlock(&cifs_tcp_ses_lock);
--				return true;
- 			}
-+			spin_unlock(&cifs_file_list_lock);
- 		}
--		spin_unlock(&cifs_file_list_lock);
- 	}
- 	spin_unlock(&cifs_tcp_ses_lock);
- 	kfree(lw);
-@@ -529,7 +540,7 @@ smb2_is_valid_oplock_break(char *buffer,
- 	if (rsp->StructureSize !=
- 				smb2_rsp_struct_sizes[SMB2_OPLOCK_BREAK_HE]) {
- 		if (le16_to_cpu(rsp->StructureSize) == 44)
--			return smb2_is_valid_lease_break(buffer, server);
-+			return smb2_is_valid_lease_break(buffer);
- 		else
- 			return false;
- 	}
+ /**
 
 
