@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab3IYKKg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 06:10:36 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:56093 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab3IYKKe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 06:10:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPgLHd-xSjXvn51RUP+dY-9_pK=HhHzb_R6rb4mKcLufms_jQA@mail.gmail.com>
-References: <CAPgLHd-xSjXvn51RUP+dY-9_pK=HhHzb_R6rb4mKcLufms_jQA@mail.gmail.com>
-Date: Wed, 25 Sep 2013 15:40:33 +0530
-Message-ID: <CAK9yfHxo=zWxvH2KoUiMfys5MXfkJiCcF3L7yO_zHTOq5dm9qg@mail.gmail.com>
-Subject: Re: [PATCH] mfd: twl6040: drop devm_free_irq of devm_ allocated irq
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, yongjun_wei@trendmicro.com.cn,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755201Ab3IYKLp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 06:11:45 -0400
+Received: from 8bytes.org ([85.214.48.195]:47193 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755181Ab3IYKLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 06:11:43 -0400
+From: Joerg Roedel <joro@8bytes.org>
+To: arm@kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Joerg Roedel <joro@8bytes.org>, stable@vger.kernel.org
+Subject: [PATCH] arm: mach-integrator: Add stub for pci_v3_early_init() for !CONFIG_PCI
+Date: Wed, 25 Sep 2013 12:11:33 +0200
+Message-Id: <1380103893-7119-1-git-send-email-joro@8bytes.org>
+X-Mailer: git-send-email 1.7.9.5
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Sep 25 12:11:41 2013
+X-DSPAM-Confidence: 0.9992
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5242b6dd20861861778620
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2013 13:07, Wei Yongjun <weiyj.lk@gmail.com> wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> -       devm_free_irq(&client->dev, twl6040->irq_ready, twl6040);
-> -       devm_free_irq(&client->dev, twl6040->irq_th, twl6040);
->         regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
+This fixes a compile error where CONFIG_PCI is disabled:
 
-Now that the freeing of irq will happen after regmap_del_irq_chip,
-wouldn't this cause any ordering related issues?
+  LD      init/built-in.o
+arch/arm/mach-integrator/built-in.o: In function `ap_map_io':
+integrator_cp.c:(.init.text+0x570): undefined reference to `pci_v3_early_init'
+make[1]: *** [vmlinux] Error 1
+make: *** [sub-make] Error 2
 
+Cc: stable@vger.kernel.org
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+---
+ arch/arm/mach-integrator/pci_v3.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
+diff --git a/arch/arm/mach-integrator/pci_v3.h b/arch/arm/mach-integrator/pci_v3.h
+index 755fd29..06a9e2e 100644
+--- a/arch/arm/mach-integrator/pci_v3.h
++++ b/arch/arm/mach-integrator/pci_v3.h
+@@ -1,2 +1,9 @@
+ /* Simple oneliner include to the PCIv3 early init */
++#ifdef CONFIG_PCI
+ extern int pci_v3_early_init(void);
++#else
++static inline int pci_v3_early_init(void)
++{
++	return 0;
++}
++#endif
 -- 
-With warm regards,
-Sachin
+1.7.9.5
+
+
