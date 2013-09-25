@@ -1,112 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308Ab3IYHMg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 03:12:36 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:48631 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab3IYHMf (ORCPT
+	id S1752725Ab3IYHN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 03:13:29 -0400
+Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:38086
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752457Ab3IYHN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 03:12:35 -0400
-Date: Wed, 25 Sep 2013 16:12:32 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Subject: Re: [PATCH v5 0/7] DMA: shdma: switch DT to use OF device ID tables
-Message-ID: <20130925071232.GR6663@verge.net.au>
-References: <1375455042-24093-1-git-send-email-g.liakhovetski@gmx.de>
- <20130825073656.GF8091@intel.com>
- <20130826071725.GJ26682@verge.net.au>
- <Pine.LNX.4.64.1308291321260.3786@axis700.grange>
- <20130904085539.GE25209@verge.net.au>
+	Wed, 25 Sep 2013 03:13:28 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh1155h)
+Message-ID: <52428D13.7080007@freescale.com>
+Date: Wed, 25 Sep 2013 15:13:23 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130904085539.GE25209@verge.net.au>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+CC: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>, <wni@nvidia.com>,
+        <joe@perches.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [PATCHv6 02/16] drivers: thermal: introduce device tree parser
+References: <1379537849-28425-1-git-send-email-eduardo.valentin@ti.com> <1379540136-28378-1-git-send-email-eduardo.valentin@ti.com>
+In-Reply-To: <1379540136-28378-1-git-send-email-eduardo.valentin@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guennadi,
+On 09/19/2013 05:35 AM, Eduardo Valentin wrote:
+>   
+> [...]
+> +
+> +/***   sensor API   ***/
+> +
 
-apologies for the long delay.
+You are introducing new concept here, the original framework and drivers 
+cannot use this, right? any further plan to update original framework 
+for this new feature?
 
-On Wed, Sep 04, 2013 at 05:55:39PM +0900, Simon Horman wrote:
-> On Thu, Aug 29, 2013 at 01:24:31PM +0200, Guennadi Liakhovetski wrote:
-> > Hi Simon,
-> > 
-> > On Mon, 26 Aug 2013, Simon Horman wrote:
-> > 
-> > > On Sun, Aug 25, 2013 at 01:06:57PM +0530, Vinod Koul wrote:
-> > > > On Fri, Aug 02, 2013 at 04:50:35PM +0200, Guennadi Liakhovetski wrote:
-> > > > > In this version of shdma Device Tree support I preserved the DT 
-> > > > > configuration approach via OF device ID tables from v4, but now it is only 
-> > > > > used for the DT-mode, the C-version is left untouched. In this series I 
-> > > > > only include one platform: r8a73a4-based APE6EVM, if accepted, others can 
-> > > > > be added easily. I also took care not to include mach/*.h headers in 
-> > > > > driver .c files. To illustrate the use of DT DMA support for MMC DMA on 
-> > > > > APE6EVM a patch from a previously separate patch series "DMA for MMCIF and 
-> > > > > SDHI devices in DT mode"
-> > > > I have applied all the dma patches, the ARM ones fail for me so should possible
-> > > > go thru ARM tree.
-> > > 
-> > > Guennadi, if you need me to queue up any patches please repost them
-> > > once their dependencies are available in a stable branch.
-> > 
-> > I've just verified, that the current -next has all DMA and MMCIF 
-> > prerequisites for the following my patches:
-> > 
-> >       ARM: shmobile: armadillo800eva-reference: add MMCIF and SDHI DT nodes
+> +static struct thermal_zone_device *
+> +thermal_zone_of_add_sensor(struct device_node *zone,
+> +			   struct device_node *sensor, void *data,
+> +			   int (*get_temp)(void *, long *),
+> +			   int (*get_trend)(void *, long *))
+> +{
+> +	struct thermal_zone_device *tzd;
+> +	struct __thermal_zone *tz;
+> +
+> +	tzd = thermal_zone_get_zone_by_name(zone->name);
+> +	if (IS_ERR(tzd))
+> +		return ERR_PTR(-EPROBE_DEFER);
+> +
+> [...]
+> +
+> +/*
+> + * Here are the thermal trip types. This must
+> + * match with enum thermal_trip_type at
+> + * include/linux/thermal.h
+> + */
+> +#define THERMAL_TRIP_ACTIVE		0
+> +#define THERMAL_TRIP_PASSIVE		1
+> +#define THERMAL_TRIP_HOT		2
+> +#define THERMAL_TRIP_CRITICAL		3
+> +
 
-I have responded to v4 of this change.
-https://patchwork.kernel.org/patch/2928971/
+These macros seem duplicated with enum thermal_trip_type in thermal.h, 
+do you have further plan to merge them?
+Or by using string "active",  "passive" etc in the dts, then you can 
+reuse the original enum definition.
 
-> >       ARM: shmobile: r8a73a4: add a DMAC platform device and clock for it
+> +/* On cooling devices upper and lower limits */
+> +#define THERMAL_NO_LIMIT		(-1UL)
+> +
+> +#endif
+> [...]
 
-I have responded to v5 of this change.
-https://patchwork.kernel.org/patch/2837970/
 
-> >       ARM: shmobile: r8a73a4: add a DT node and a clock alias for the DMAC
-
-I have responded to v5 of this change.
-https://patchwork.kernel.org/patch/2837971/
-
-> >       ARM: shmobile: ape6evm-reference: enable DMA for the MMC interface
-
-I have responded to v5 of this change.
-https://patchwork.kernel.org/patch/2837965/
-
-> >       ARM: shmobile: ape6evm: disable MMCIF Command Completion Signal
-
-I have queued v1 of this change for v3.13.
-https://patchwork.kernel.org/patch/2825871/
-
-> >       ARM: shmobile: ape6evm: add DMA support to MMCIF
-
-I have queued v1 of this change for v3.13.
-https://patchwork.kernel.org/patch/2831484/
-
-> >       ARM: shmobile: armadillo800eva: disable MMCIF Command Completion Signal
-
-I have queued v1 of this change for v3.13.
-https://patchwork.kernel.org/patch/2825874/
-
-> >       ARM: shmobile: kzm9g: disable MMCIF Command Completion Signal
-
-I have queued v1 of this change for v3.13.
-https://patchwork.kernel.org/patch/2825867/
-
-> >       ARM: shmobile: lager: disable MMCIF Command Completion Signal, add CLK_CTRL2
-
-I have queued v1 of this change for v3.13.
-https://patchwork.kernel.org/patch/2825865/
-
-> > 
-> > I can re-send them all to your privetly as an archive, if you like, or you 
-> > can pick their latest versions from an archive or from patchwork.
-> 
-> Thanks, I can pick them out of patchwork.
