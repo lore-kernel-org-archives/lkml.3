@@ -1,145 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757981Ab3IYBRa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:17:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38944 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755923Ab3IYAQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:09 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	id S1757995Ab3IYBRf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:17:35 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:37536 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755154Ab3IYBRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 21:17:33 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>, Felipe Balbi <balbi@ti.com>
-Subject: [ 023/110] usb: dwc3: gadget: dont request IRQs in atomic
-Date: Tue, 24 Sep 2013 17:14:21 -0700
-Message-Id: <20130925001325.924356579@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
-References: <20130925001323.387158698@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/3] kthread: Add pointer to vmstat-avoidance patch
+Date: Tue, 24 Sep 2013 18:17:22 -0700
+Message-Id: <1380071843-30362-2-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1380071843-30362-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130925011657.GA29958@linux.vnet.ibm.com>
+ <1380071843-30362-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092501-0320-0000-0000-0000011D9A44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-------------------
-
-From: Felipe Balbi <balbi@ti.com>
-
-commit b0d7ffd44ba9cd2dfbf299674418193a5f9ed21a upstream.
-
-We cannot request an IRQ with spinlocks held
-as that would trigger a sleeping inside
-spinlock warning.
-
-Reported-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- drivers/usb/dwc3/gadget.c |   39 ++++++++++++++++++++++-----------------
- 1 file changed, 22 insertions(+), 17 deletions(-)
+ Documentation/kernel-per-CPU-kthreads.txt | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1508,6 +1508,15 @@ static int dwc3_gadget_start(struct usb_
- 	int			irq;
- 	u32			reg;
- 
-+	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
-+	ret = request_threaded_irq(irq, dwc3_interrupt, dwc3_thread_interrupt,
-+			IRQF_SHARED | IRQF_ONESHOT, "dwc3", dwc);
-+	if (ret) {
-+		dev_err(dwc->dev, "failed to request irq #%d --> %d\n",
-+				irq, ret);
-+		goto err0;
-+	}
-+
- 	spin_lock_irqsave(&dwc->lock, flags);
- 
- 	if (dwc->gadget_driver) {
-@@ -1515,7 +1524,7 @@ static int dwc3_gadget_start(struct usb_
- 				dwc->gadget.name,
- 				dwc->gadget_driver->driver.name);
- 		ret = -EBUSY;
--		goto err0;
-+		goto err1;
- 	}
- 
- 	dwc->gadget_driver	= driver;
-@@ -1551,42 +1560,38 @@ static int dwc3_gadget_start(struct usb_
- 	ret = __dwc3_gadget_ep_enable(dep, &dwc3_gadget_ep0_desc, NULL, false);
- 	if (ret) {
- 		dev_err(dwc->dev, "failed to enable %s\n", dep->name);
--		goto err0;
-+		goto err2;
- 	}
- 
- 	dep = dwc->eps[1];
- 	ret = __dwc3_gadget_ep_enable(dep, &dwc3_gadget_ep0_desc, NULL, false);
- 	if (ret) {
- 		dev_err(dwc->dev, "failed to enable %s\n", dep->name);
--		goto err1;
-+		goto err3;
- 	}
- 
- 	/* begin to receive SETUP packets */
- 	dwc->ep0state = EP0_SETUP_PHASE;
- 	dwc3_ep0_out_start(dwc);
- 
--	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
--	ret = request_threaded_irq(irq, dwc3_interrupt, dwc3_thread_interrupt,
--			IRQF_SHARED | IRQF_ONESHOT, "dwc3", dwc);
--	if (ret) {
--		dev_err(dwc->dev, "failed to request irq #%d --> %d\n",
--				irq, ret);
--		goto err1;
--	}
--
- 	dwc3_gadget_enable_irq(dwc);
- 
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- 
- 	return 0;
- 
--err1:
-+err3:
- 	__dwc3_gadget_ep_disable(dwc->eps[0]);
- 
--err0:
-+err2:
- 	dwc->gadget_driver = NULL;
-+
-+err1:
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- 
-+	free_irq(irq, dwc);
-+
-+err0:
- 	return ret;
- }
- 
-@@ -1600,9 +1605,6 @@ static int dwc3_gadget_stop(struct usb_g
- 	spin_lock_irqsave(&dwc->lock, flags);
- 
- 	dwc3_gadget_disable_irq(dwc);
--	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
--	free_irq(irq, dwc);
--
- 	__dwc3_gadget_ep_disable(dwc->eps[0]);
- 	__dwc3_gadget_ep_disable(dwc->eps[1]);
- 
-@@ -1610,6 +1612,9 @@ static int dwc3_gadget_stop(struct usb_g
- 
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- 
-+	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
-+	free_irq(irq, dwc);
-+
- 	return 0;
- }
- 
-
+diff --git a/Documentation/kernel-per-CPU-kthreads.txt b/Documentation/kernel-per-CPU-kthreads.txt
+index 32351bf..827104f 100644
+--- a/Documentation/kernel-per-CPU-kthreads.txt
++++ b/Documentation/kernel-per-CPU-kthreads.txt
+@@ -181,12 +181,17 @@ To reduce its OS jitter, do any of the following:
+ 		make sure that this is safe on your particular system.
+ 	d.	It is not possible to entirely get rid of OS jitter
+ 		from vmstat_update() on CONFIG_SMP=y systems, but you
+-		can decrease its frequency by writing a large value to
+-		/proc/sys/vm/stat_interval.  The default value is HZ,
+-		for an interval of one second.  Of course, larger values
+-		will make your virtual-memory statistics update more
+-		slowly.  Of course, you can also run your workload at
+-		a real-time priority, thus preempting vmstat_update().
++		can decrease its frequency by writing a large value
++		to /proc/sys/vm/stat_interval.	The default value is
++		HZ, for an interval of one second.  Of course, larger
++		values will make your virtual-memory statistics update
++		more slowly.  Of course, you can also run your workload
++		at a real-time priority, thus preempting vmstat_update(),
++		but if your workload is CPU-bound, this is a bad idea.
++		However, there is an RFC patch from Christoph Lameter
++		(based on an earlier one from Gilad Ben-Yossef) that
++		reduces or even eliminates vmstat overhead for some
++		workloads at https://lkml.org/lkml/2013/9/4/379.
+ 	e.	If running on high-end powerpc servers, build with
+ 		CONFIG_PPC_RTAS_DAEMON=n.  This prevents the RTAS
+ 		daemon from running on each CPU every second or so.
+-- 
+1.8.1.5
 
