@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371Ab3IYXZy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 19:25:54 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:47844 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755507Ab3IYXZw (ORCPT
+	id S1756396Ab3IYX0M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 19:26:12 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:60518 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756376Ab3IYX0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 19:25:52 -0400
+	Wed, 25 Sep 2013 19:26:10 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v4 35/40] mm: Add infrastructure to evacuate memory
- regions using compaction
+Subject: [RFC PATCH v4 36/40] kthread: Split out kthread-worker bits to avoid
+ circular header-file dependency
 To: akpm@linux-foundation.org, mgorman@suse.de, dave@sr71.net,
         hannes@cmpxchg.org, tony.luck@intel.com, matthew.garrett@nebula.com,
         riel@redhat.com, arjan@linux.intel.com,
@@ -21,8 +21,8 @@ Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
         kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 26 Sep 2013 04:51:39 +0530
-Message-ID: <20130925232136.26184.28161.stgit@srivatsabhat.in.ibm.com>
+Date: Thu, 26 Sep 2013 04:51:54 +0530
+Message-ID: <20130925232149.26184.76968.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com>
 References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -31,271 +31,226 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092523-3864-0000-0000-00000A3EAA8D
+x-cbid: 13092523-9264-0000-0000-0000049A1249
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To enhance memory power-savings, we need to be able to completely evacuate
-lightly allocated regions, and move those used pages to lower regions,
-which would help consolidate all the allocations to a minimum no. of regions.
-This can be done using some of the memory compaction and reclaim algorithms.
-Develop such an infrastructure to evacuate memory regions completely.
+In subsequent patches, we will want to declare variables of kthread-work and
+kthread-worker structures within mmzone.h. But trying to include kthread.h
+inside mmzone.h to get the structure definitions, will lead to the following
+circular header-file dependency.
 
-The traditional compaction algorithm uses a pfn walker to get free pages
-for compaction. But this would be way too costly for us. So we do a pfn walk
-only to isolate the used pages, but to get free pages, we just depend on the
-fast buddy allocator itself. But we are careful to abort the compaction run
-when the buddy allocator starts giving free pages in this region itself or
-higher regions (because in that case, if we proceed, it would be defeating
-the purpose of the entire effort).
+     mmzone.h -> kthread.h -> sched.h -> gfp.h -> mmzone.h
+
+We can avoid this by not including sched.h in kthread.h. But sched.h is quite
+handy for call-sites which use the core kthread start/stop infrastructure such
+as kthread-create-on-cpu/node etc. However, the kthread-work/worker framework
+doesn't actually depend on sched.h.
+
+So extract the definitions related to kthread-work/worker from kthread.h into
+a new header-file named kthread-work.h (which doesn't include sched.h), so that
+it can be easily included inside mmzone.h when required.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- include/linux/compaction.h     |    7 +++
- include/linux/gfp.h            |    2 +
- include/linux/migrate.h        |    3 +
- include/linux/mm.h             |    1 
- include/trace/events/migrate.h |    3 +
- mm/compaction.c                |   99 ++++++++++++++++++++++++++++++++++++++++
- mm/page_alloc.c                |   23 +++++++--
- 7 files changed, 130 insertions(+), 8 deletions(-)
+ include/linux/kthread-work.h |   92 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/kthread.h      |   85 ---------------------------------------
+ 2 files changed, 93 insertions(+), 84 deletions(-)
+ create mode 100644 include/linux/kthread-work.h
 
-diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-index 091d72e..6be2b08 100644
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -26,6 +26,7 @@ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
- extern void compact_pgdat(pg_data_t *pgdat, int order);
- extern void reset_isolation_suitable(pg_data_t *pgdat);
- extern unsigned long compaction_suitable(struct zone *zone, int order);
-+extern int evacuate_mem_region(struct zone *z, struct zone_mem_region *zmr);
- 
- /* Do not skip compaction more than 64 times */
- #define COMPACT_MAX_DEFER_SHIFT 6
-@@ -102,6 +103,12 @@ static inline bool compaction_deferred(struct zone *zone, int order)
- 	return true;
- }
- 
-+static inline int evacuate_mem_region(struct zone *z,
-+				      struct zone_mem_region *zmr)
-+{
-+	return 0;
-+}
+diff --git a/include/linux/kthread-work.h b/include/linux/kthread-work.h
+new file mode 100644
+index 0000000..6dae2ab
+--- /dev/null
++++ b/include/linux/kthread-work.h
+@@ -0,0 +1,92 @@
++#ifndef _LINUX_KTHREAD_WORK_H
++#define _LINUX_KTHREAD_WORK_H
++#include <linux/err.h>
 +
- #endif /* CONFIG_COMPACTION */
- 
- #if defined(CONFIG_COMPACTION) && defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 9b4dd49..dab3c78 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -351,6 +351,8 @@ extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
- extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
- extern unsigned long get_zeroed_page(gfp_t gfp_mask);
- 
-+int rmqueue_bulk(struct zone *zone, unsigned int order, unsigned long count,
-+		 struct list_head *list, int migratetype, int cold);
- void *alloc_pages_exact(size_t size, gfp_t gfp_mask);
- void free_pages_exact(void *virt, size_t size);
- /* This is different from alloc_pages_exact_node !!! */
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 8d3c57f..5ab1d48 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -30,7 +30,8 @@ enum migrate_reason {
- 	MR_SYSCALL,		/* also applies to cpusets */
- 	MR_MEMPOLICY_MBIND,
- 	MR_NUMA_MISPLACED,
--	MR_CMA
-+	MR_CMA,
-+	MR_PWR_MGMT
- };
- 
- #ifdef CONFIG_MIGRATION
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 4286a75..f49acb0 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -470,6 +470,7 @@ void put_pages_list(struct list_head *pages);
- 
- void split_page(struct page *page, unsigned int order);
- int split_free_page(struct page *page);
-+void __split_free_page(struct page *page, unsigned int order);
- 
- /*
-  * Compound pages have a destructor function.  Provide a
-diff --git a/include/trace/events/migrate.h b/include/trace/events/migrate.h
-index ec2a6cc..e6892c0 100644
---- a/include/trace/events/migrate.h
-+++ b/include/trace/events/migrate.h
-@@ -15,7 +15,8 @@
- 	{MR_MEMORY_HOTPLUG,	"memory_hotplug"},		\
- 	{MR_SYSCALL,		"syscall_or_cpuset"},		\
- 	{MR_MEMPOLICY_MBIND,	"mempolicy_mbind"},		\
--	{MR_CMA,		"cma"}
-+	{MR_CMA,		"cma"},				\
-+	{MR_PWR_MGMT,		"power_management"}
- 
- TRACE_EVENT(mm_migrate_pages,
- 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index c775066..9449b7f 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -1168,6 +1168,105 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	return rc;
- }
- 
-+static struct page *power_mgmt_alloc(struct page *migratepage,
-+				     unsigned long data, int **result)
-+{
-+	struct compact_control *cc = (struct compact_control *)data;
-+	struct page *freepage;
-+
-+	/*
-+	 * Try to allocate pages from lower memory regions. If it fails,
-+	 * abort.
-+	 */
-+	if (list_empty(&cc->freepages)) {
-+		struct zone *z = page_zone(migratepage);
-+		unsigned int i, count, order = 0;
-+		struct page *page, *tmp;
-+		LIST_HEAD(list);
-+
-+		/* Get a bunch of order-0 pages from the buddy freelists */
-+		count = rmqueue_bulk(z, order, cc->nr_migratepages, &list,
-+				     MIGRATE_MOVABLE, 1);
-+
-+		cc->nr_freepages = count * (1ULL << order);
-+
-+		if (list_empty(&list))
-+			return NULL;
-+
-+		list_for_each_entry_safe(page, tmp, &list, lru) {
-+			__split_free_page(page, order);
-+
-+			list_move_tail(&page->lru, &cc->freepages);
-+
-+			/*
-+			 * Now add all the order-0 subdivisions of this page
-+			 * to the freelist as well.
-+			 */
-+			for (i = 1; i < (1ULL << order); i++) {
-+				page++;
-+				list_add(&page->lru, &cc->freepages);
-+			}
-+
-+		}
-+
-+		VM_BUG_ON(!list_empty(&list));
-+
-+		/* Now map all the order-0 pages on the freelist. */
-+		map_pages(&cc->freepages);
-+	}
-+
-+	freepage = list_entry(cc->freepages.next, struct page, lru);
-+
-+	if (page_zone_region_id(freepage) >= page_zone_region_id(migratepage))
-+		return NULL; /* Freepage is not from lower region, so abort */
-+
-+	list_del(&freepage->lru);
-+	cc->nr_freepages--;
-+
-+	return freepage;
-+}
-+
-+static unsigned long power_mgmt_release_freepages(unsigned long info)
-+{
-+	struct compact_control *cc = (struct compact_control *)info;
-+
-+	return release_freepages(&cc->freepages);
-+}
-+
-+int evacuate_mem_region(struct zone *z, struct zone_mem_region *zmr)
-+{
-+	unsigned long start_pfn = zmr->start_pfn;
-+	unsigned long end_pfn = zmr->end_pfn;
-+
-+	struct compact_control cc = {
-+		.nr_migratepages = 0,
-+		.order = -1,
-+		.zone = page_zone(pfn_to_page(start_pfn)),
-+		.sync = false,  /* Async migration */
-+		.ignore_skip_hint = true,
-+	};
-+
-+	struct aggression_control ac = {
-+		.isolate_unevictable = false,
-+		.prep_all = false,
-+		.reclaim_clean = true,
-+		.max_tries = 1,
-+		.reason = MR_PWR_MGMT,
-+	};
-+
-+	struct free_page_control fc = {
-+		.free_page_alloc = power_mgmt_alloc,
-+		.alloc_data = (unsigned long)&cc,
-+		.release_freepages = power_mgmt_release_freepages,
-+		.free_data = (unsigned long)&cc,
-+	};
-+
-+	INIT_LIST_HEAD(&cc.migratepages);
-+	INIT_LIST_HEAD(&cc.freepages);
-+
-+	return compact_range(&cc, &ac, &fc, start_pfn, end_pfn);
-+}
-+
- 
- /* Compact all zones within a node */
- static void __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 70c3d7a..4571d30 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1793,9 +1793,8 @@ retry:
-  * a single hold of the lock, for efficiency.  Add them to the supplied list.
-  * Returns the number of new pages which were placed at *list.
-  */
--static int rmqueue_bulk(struct zone *zone, unsigned int order,
--			unsigned long count, struct list_head *list,
--			int migratetype, int cold)
-+int rmqueue_bulk(struct zone *zone, unsigned int order, unsigned long count,
-+		 struct list_head *list, int migratetype, int cold)
- {
- 	int mt = migratetype, i;
- 
-@@ -2111,6 +2110,20 @@ static int __isolate_free_page(struct page *page, unsigned int order)
- 	return 1UL << order;
- }
- 
++__printf(4, 5)
 +
 +/*
-+ * The page is already free and isolated (removed) from the buddy system.
-+ * Set up the refcounts appropriately. Note that we can't use page_order()
-+ * here, since the buddy system would have invoked rmv_page_order() before
-+ * giving the page.
++ * Simple work processor based on kthread.
++ *
++ * This provides easier way to make use of kthreads.  A kthread_work
++ * can be queued and flushed using queue/flush_kthread_work()
++ * respectively.  Queued kthread_works are processed by a kthread
++ * running kthread_worker_fn().
 + */
-+void __split_free_page(struct page *page, unsigned int order)
-+{
-+	/* Split into individual pages */
-+	set_page_refcounted(page);
-+	split_page(page, order);
-+}
++struct kthread_work;
++typedef void (*kthread_work_func_t)(struct kthread_work *work);
 +
- /*
-  * Similar to split_page except the page is already free. As this is only
-  * being used for migration, the migratetype of the block also changes.
-@@ -2132,9 +2145,7 @@ int split_free_page(struct page *page)
- 	if (!nr_pages)
- 		return 0;
++struct kthread_worker {
++	spinlock_t		lock;
++	struct list_head	work_list;
++	struct task_struct	*task;
++	struct kthread_work	*current_work;
++};
++
++struct kthread_work {
++	struct list_head	node;
++	kthread_work_func_t	func;
++	wait_queue_head_t	done;
++	struct kthread_worker	*worker;
++};
++
++#define KTHREAD_WORKER_INIT(worker)	{				\
++	.lock = __SPIN_LOCK_UNLOCKED((worker).lock),			\
++	.work_list = LIST_HEAD_INIT((worker).work_list),		\
++	}
++
++#define KTHREAD_WORK_INIT(work, fn)	{				\
++	.node = LIST_HEAD_INIT((work).node),				\
++	.func = (fn),							\
++	.done = __WAIT_QUEUE_HEAD_INITIALIZER((work).done),		\
++	}
++
++#define DEFINE_KTHREAD_WORKER(worker)					\
++	struct kthread_worker worker = KTHREAD_WORKER_INIT(worker)
++
++#define DEFINE_KTHREAD_WORK(work, fn)					\
++	struct kthread_work work = KTHREAD_WORK_INIT(work, fn)
++
++/*
++ * kthread_worker.lock and kthread_work.done need their own lockdep class
++ * keys if they are defined on stack with lockdep enabled.  Use the
++ * following macros when defining them on stack.
++ */
++#ifdef CONFIG_LOCKDEP
++# define KTHREAD_WORKER_INIT_ONSTACK(worker)				\
++	({ init_kthread_worker(&worker); worker; })
++# define DEFINE_KTHREAD_WORKER_ONSTACK(worker)				\
++	struct kthread_worker worker = KTHREAD_WORKER_INIT_ONSTACK(worker)
++# define KTHREAD_WORK_INIT_ONSTACK(work, fn)				\
++	({ init_kthread_work((&work), fn); work; })
++# define DEFINE_KTHREAD_WORK_ONSTACK(work, fn)				\
++	struct kthread_work work = KTHREAD_WORK_INIT_ONSTACK(work, fn)
++#else
++# define DEFINE_KTHREAD_WORKER_ONSTACK(worker) DEFINE_KTHREAD_WORKER(worker)
++# define DEFINE_KTHREAD_WORK_ONSTACK(work, fn) DEFINE_KTHREAD_WORK(work, fn)
++#endif
++
++extern void __init_kthread_worker(struct kthread_worker *worker,
++			const char *name, struct lock_class_key *key);
++
++#define init_kthread_worker(worker)					\
++	do {								\
++		static struct lock_class_key __key;			\
++		__init_kthread_worker((worker), "("#worker")->lock", &__key); \
++	} while (0)
++
++#define init_kthread_work(work, fn)					\
++	do {								\
++		memset((work), 0, sizeof(struct kthread_work));		\
++		INIT_LIST_HEAD(&(work)->node);				\
++		(work)->func = (fn);					\
++		init_waitqueue_head(&(work)->done);			\
++	} while (0)
++
++int kthread_worker_fn(void *worker_ptr);
++
++bool queue_kthread_work(struct kthread_worker *worker,
++			struct kthread_work *work);
++void flush_kthread_work(struct kthread_work *work);
++void flush_kthread_worker(struct kthread_worker *worker);
++
++#endif /* _LINUX_KTHREAD_WORK_H */
+diff --git a/include/linux/kthread.h b/include/linux/kthread.h
+index 7dcef33..cbefb16 100644
+--- a/include/linux/kthread.h
++++ b/include/linux/kthread.h
+@@ -52,89 +52,6 @@ int kthreadd(void *unused);
+ extern struct task_struct *kthreadd_task;
+ extern int tsk_fork_get_node(struct task_struct *tsk);
  
--	/* Split into individual pages */
--	set_page_refcounted(page);
--	split_page(page, order);
-+	__split_free_page(page, order);
- 	return nr_pages;
- }
+-/*
+- * Simple work processor based on kthread.
+- *
+- * This provides easier way to make use of kthreads.  A kthread_work
+- * can be queued and flushed using queue/flush_kthread_work()
+- * respectively.  Queued kthread_works are processed by a kthread
+- * running kthread_worker_fn().
+- */
+-struct kthread_work;
+-typedef void (*kthread_work_func_t)(struct kthread_work *work);
+-
+-struct kthread_worker {
+-	spinlock_t		lock;
+-	struct list_head	work_list;
+-	struct task_struct	*task;
+-	struct kthread_work	*current_work;
+-};
+-
+-struct kthread_work {
+-	struct list_head	node;
+-	kthread_work_func_t	func;
+-	wait_queue_head_t	done;
+-	struct kthread_worker	*worker;
+-};
+-
+-#define KTHREAD_WORKER_INIT(worker)	{				\
+-	.lock = __SPIN_LOCK_UNLOCKED((worker).lock),			\
+-	.work_list = LIST_HEAD_INIT((worker).work_list),		\
+-	}
+-
+-#define KTHREAD_WORK_INIT(work, fn)	{				\
+-	.node = LIST_HEAD_INIT((work).node),				\
+-	.func = (fn),							\
+-	.done = __WAIT_QUEUE_HEAD_INITIALIZER((work).done),		\
+-	}
+-
+-#define DEFINE_KTHREAD_WORKER(worker)					\
+-	struct kthread_worker worker = KTHREAD_WORKER_INIT(worker)
+-
+-#define DEFINE_KTHREAD_WORK(work, fn)					\
+-	struct kthread_work work = KTHREAD_WORK_INIT(work, fn)
+-
+-/*
+- * kthread_worker.lock and kthread_work.done need their own lockdep class
+- * keys if they are defined on stack with lockdep enabled.  Use the
+- * following macros when defining them on stack.
+- */
+-#ifdef CONFIG_LOCKDEP
+-# define KTHREAD_WORKER_INIT_ONSTACK(worker)				\
+-	({ init_kthread_worker(&worker); worker; })
+-# define DEFINE_KTHREAD_WORKER_ONSTACK(worker)				\
+-	struct kthread_worker worker = KTHREAD_WORKER_INIT_ONSTACK(worker)
+-# define KTHREAD_WORK_INIT_ONSTACK(work, fn)				\
+-	({ init_kthread_work((&work), fn); work; })
+-# define DEFINE_KTHREAD_WORK_ONSTACK(work, fn)				\
+-	struct kthread_work work = KTHREAD_WORK_INIT_ONSTACK(work, fn)
+-#else
+-# define DEFINE_KTHREAD_WORKER_ONSTACK(worker) DEFINE_KTHREAD_WORKER(worker)
+-# define DEFINE_KTHREAD_WORK_ONSTACK(work, fn) DEFINE_KTHREAD_WORK(work, fn)
+-#endif
+-
+-extern void __init_kthread_worker(struct kthread_worker *worker,
+-			const char *name, struct lock_class_key *key);
+-
+-#define init_kthread_worker(worker)					\
+-	do {								\
+-		static struct lock_class_key __key;			\
+-		__init_kthread_worker((worker), "("#worker")->lock", &__key); \
+-	} while (0)
+-
+-#define init_kthread_work(work, fn)					\
+-	do {								\
+-		memset((work), 0, sizeof(struct kthread_work));		\
+-		INIT_LIST_HEAD(&(work)->node);				\
+-		(work)->func = (fn);					\
+-		init_waitqueue_head(&(work)->done);			\
+-	} while (0)
+-
+-int kthread_worker_fn(void *worker_ptr);
+-
+-bool queue_kthread_work(struct kthread_worker *worker,
+-			struct kthread_work *work);
+-void flush_kthread_work(struct kthread_work *work);
+-void flush_kthread_worker(struct kthread_worker *worker);
++#include <linux/kthread-work.h>
  
+ #endif /* _LINUX_KTHREAD_H */
 
