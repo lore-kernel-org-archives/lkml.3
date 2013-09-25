@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444Ab3IYAzq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:55:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39285 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074Ab3IYARD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932113Ab3IYARD (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Sep 2013 20:17:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39252 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932074Ab3IYARA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 20:17:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hui Wang <hui.wang@canonical.com>, Jan Kara <jack@suse.cz>
-Subject: [ 095/110] isofs: Refuse RW mount of the filesystem instead of making it RO
-Date: Tue, 24 Sep 2013 17:15:33 -0700
-Message-Id: <20130925001333.705012318@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>, Colin Walters <walters@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 090/110] pidns: fix vfork() after unshare(CLONE_NEWPID)
+Date: Tue, 24 Sep 2013 17:15:28 -0700
+Message-Id: <20130925001333.174738667@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -26,68 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 17b7f7cf58926844e1dd40f5eb5348d481deca6a upstream.
+commit e79f525e99b04390ca4d2366309545a836c03bf1 upstream.
 
-Refuse RW mount of isofs filesystem. So far we just silently changed it
-to RO mount but when the media is writeable, block layer won't notice
-this change and thus will think device is used RW and will block eject
-button of the drive. That is unexpected by users because for
-non-writeable media eject button works just fine.
+Commit 8382fcac1b81 ("pidns: Outlaw thread creation after
+unshare(CLONE_NEWPID)") nacks CLONE_VM if the forking process unshared
+pid_ns, this obviously breaks vfork:
 
-Userspace mount(8) command handles this just fine and retries mounting
-with MS_RDONLY set so userspace shouldn't see any regression.  Plus any
-tool mounting isofs is likely confronted with the case of read-only
-media where block layer already refuses to mount the filesystem without
-MS_RDONLY set so our behavior shouldn't be anything new for it.
+	int main(void)
+	{
+		assert(unshare(CLONE_NEWUSER | CLONE_NEWPID) == 0);
+		assert(vfork() >= 0);
+		_exit(0);
+		return 0;
+	}
 
-Reported-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+fails without this patch.
+
+Change this check to use CLONE_SIGHAND instead.  This also forbids
+CLONE_THREAD automatically, and this is what the comment implies.
+
+We could probably even drop CLONE_SIGHAND and use CLONE_THREAD, but it
+would be safer to not do this.  The current check denies CLONE_SIGHAND
+implicitely and there is no reason to change this.
+
+Eric said "CLONE_SIGHAND is fine.  CLONE_THREAD would be even better.
+Having shared signal handling between two different pid namespaces is
+the case that we are fundamentally guarding against."
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Colin Walters <walters@redhat.com>
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/isofs/inode.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+ kernel/fork.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -125,8 +125,8 @@ static void destroy_inodecache(void)
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1171,10 +1171,11 @@ static struct task_struct *copy_process(
+ 		return ERR_PTR(-EINVAL);
  
- static int isofs_remount(struct super_block *sb, int *flags, char *data)
- {
--	/* we probably want a lot more here */
--	*flags |= MS_RDONLY;
-+	if (!(*flags & MS_RDONLY))
-+		return -EROFS;
- 	return 0;
- }
- 
-@@ -779,15 +779,6 @@ root_found:
+ 	/*
+-	 * If the new process will be in a different pid namespace
+-	 * don't allow the creation of threads.
++	 * If the new process will be in a different pid namespace don't
++	 * allow it to share a thread group or signal handlers with the
++	 * forking task.
  	 */
- 	s->s_maxbytes = 0x80000000000LL;
- 
--	/*
--	 * The CDROM is read-only, has no nodes (devices) on it, and since
--	 * all of the files appear to be owned by root, we really do not want
--	 * to allow suid.  (suid or devices will not show up unless we have
--	 * Rock Ridge extensions)
--	 */
--
--	s->s_flags |= MS_RDONLY /* | MS_NODEV | MS_NOSUID */;
--
- 	/* Set this for reference. Its not currently used except on write
- 	   which we don't have .. */
- 
-@@ -1546,6 +1537,9 @@ struct inode *isofs_iget(struct super_bl
- static struct dentry *isofs_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
-+	/* We don't support read-write mounts */
-+	if (!(flags & MS_RDONLY))
-+		return ERR_PTR(-EACCES);
- 	return mount_bdev(fs_type, flags, dev_name, data, isofs_fill_super);
- }
+-	if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
++	if ((clone_flags & (CLONE_SIGHAND | CLONE_NEWPID)) &&
+ 	    (task_active_pid_ns(current) != current->nsproxy->pid_ns))
+ 		return ERR_PTR(-EINVAL);
  
 
 
