@@ -1,90 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab3IYSue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 14:50:34 -0400
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:20357
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751242Ab3IYSuc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 14:50:32 -0400
-X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz1432I1447Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh2a8h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h1155h)
-Message-ID: <1380135024.4810.8.camel@atx-linux-37>
-Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-From: Alan Tull <atull@altera.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Michal Simek <monstr@monstr.eu>, Pavel Machek <pavel@denx.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Date: Wed, 25 Sep 2013 13:50:24 -0500
-In-Reply-To: <20130924221802.GC3837@kroah.com>
-References: <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
-	 <20130918191517.GQ19937@titan.lakedaemon.net>
-	 <20130918203247.GA11181@obsidianresearch.com>
-	 <1379539063.31417.23.camel@atx-linux-37>
-	 <20130919100833.GC19346@amd.pavel.ucw.cz> <523AD9C5.8060006@monstr.eu>
-	 <1379710523.21515.4.camel@atx-linux-37>
-	 <1380038126.13235.12.camel@atx-linux-37> <5241B6BC.1010301@monstr.eu>
-	 <1380039774.14129.6.camel@atx-linux-37> <20130924221802.GC3837@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1753596Ab3IYTCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 15:02:53 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:61860 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab3IYTCv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 15:02:51 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: altera.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20130925183828.GA30372@lenny.home.zabbo.net>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+ <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com> <20130925183828.GA30372@lenny.home.zabbo.net>
+From: Anna Schumaker <schumaker.anna@gmail.com>
+Date: Wed, 25 Sep 2013 15:02:29 -0400
+X-Google-Sender-Auth: 8swmNhJx1H7_8WBhwvP3j-apVMc
+Message-ID: <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
+Subject: Re: [RFC] extending splice for copy offloading
+To: Zach Brown <zab@redhat.com>
+Cc: Szeredi Miklos <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> >  * Add this udev rule:
-> >    SUBSYSTEM=="firmware", ACTION=="add", RUN+="/lib/udev/hotplug-script"
-> > 
-> >  * Check that there aren't other 'firmware' udev rules to get in the
-> > way.
-> 
-> Hm, don't do that, all "modern" distros will not do firmware loading
-> through udev anymore, so please don't try to add it back in.  The kernel
-> handles the loading of the firmware directly, with no need to call any
-> usermodehelper program at all.
-> 
-> >  * Add your firmware files to /usr/lib/hotplug/firmware/ or change that
-> >    path in hotplug-script to point to where your firmware files.
-> > 
-> > The default hotplug-script doesn't do anything special (that the kernel
-> > couldn't do by itself).  What's great is that it could call another
-> > script that adds headers or does whatever other special un-gzipping or
-> > other massaging that the firmware image needs before it gets loaded.
-> 
-> Only if you need to do something "special" like this could it justify
-> not using the in-kernel firmware loader.  Also note that I think future
-> versions of udev will have the udev firmware loader removed entirely, so
-> watch out for that.
-> 
+On Wed, Sep 25, 2013 at 2:38 PM, Zach Brown <zab@redhat.com> wrote:
+>
+> Hrmph.  I had composed a reply to you during Plumbers but.. something
+> happened to it :).  Here's another try now that I'm back.
+>
+>> > Some things to talk about:
+>> > - I really don't care about the naming here.  If you do, holler.
+>> > - We might want different flags for file-to-file splicing and acceleration
+>>
+>> Yes, I think "copy" and "reflink" needs to be differentiated.
+>
+> I initially agreed but I'm not so sure now.  The problem is that we
+> can't know whether the acceleration is copying or not.  XCOPY on some
+> array may well do some shared referencing tricks.  The nfs COPY op can
+> have a server use btrfs reflink, or ext* and XCOPY, or .. who knows.  At
+> some point we have to admit that we have no way to determine the
+> relative durability of writes.  Storage can do a lot to make writes more
+> or less fragile that we have no visibility of.  SSD FTLs can log a bunch
+> of unrelated sectors on to one flash failure domain.
+>
+> And if such a flag couldn't *actually* guarantee anything for a bunch of
+> storage topologies, well, let's not bother with it.
+>
+> The only flag I'm in favour of now is one that has splice return rather
+> than falling back to manual page cache reads and writes.  It's more like
+> O_NONBLOCK than any kind of data durability hint.
 
-Hi Greg,
+For reference, I'm planning to have the NFS server do the fallback
+when it copies since any local copy will be faster than a read and
+write over the network.
 
-Thanks for the heads-up on the direction the firmware class is taking.
-Well, that's kind of disappointing.  I was just getting excited about
-how flexible the firmware class currently is.  In the simpler fpga use
-cases, using the in-kernel loader to load static raw images would be
-great.  But we are really excited about exploiting the possibilities
-that fpga's give in terms of reconfiguration and partial reconfiguration
-on the fly, so we will be needing to do 'special' things (unpacking
-images, stripping headers, lots of stuff that userspace would better for
-and that we wouldn't want to put into the kernel).  I hope that we can
-arrive at a framework with a unified interface that suites this.
+Anna
 
-Alan
-
+>
+>> > - We might want flags to require or forbid acceleration
+>> > - We might want to provide all these flags to sendfile, too
+>> >
+>> > Thoughts?  Objections?
+>>
+>> Can filesystem support "whole file copy" only?  Or arbitrary
+>> block-to-block copy should be mandatory?
+>
+> I'm not sure I understand what you're asking.  The interface specifies
+> byte ranges.  File systems can return errors if they can't accelerate
+> the copy.  We *can't* mandate copy acceleration granularity as some
+> formats and protocols just can't do it.  splice() will fall back to
+> doing buffered copies when the file system returns an error.
+>
+>> Splice has size_t argument for the size, which is limited to 4G on 32
+>> bit.  Won't this be an issue for whole-file-copy?  We could have
+>> special value (-1) for whole file, but that's starting to be hackish.
+>
+> It will be an issue, yeah.  Just like it is with write() today.  I think
+> it's reasonable to start with a simple interface that matches current IO
+> syscalls.  I won't implement a special whole-file value, no.
+>
+> And it's not just 32bit size_t.  While do_splice_direct() doesn't use
+> the truncated length that's returned from rw_verify_area(), it then
+> silently truncates the lengths to unsigned int in the splice_desc struct
+> fields.  It seems like we might want to address that :/.
+>
+>> We are talking about copying large amounts of data in a single
+>> syscall, which will possibly take a long time.  Will the syscall be
+>> interruptible?  Restartable?
+>
+> In as much as file systems let it be, yeah.  As ever, you're not going
+> to have a lot of luck interrupting a process stuck in lock_page(),
+> mutex_lock(), wait_on_page_writeback(), etc.   Though you did remind me
+> to investigate restarting.  Thanks.
+>
+> - z
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
