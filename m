@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab3IYAQN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:16:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38922 "EHLO
+	id S1757954Ab3IYBQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:16:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38957 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755910Ab3IYAQH (ORCPT
+	with ESMTP id S1755935Ab3IYAQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:07 -0400
+	Tue, 24 Sep 2013 20:16:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>
-Subject: [ 020/110] KVM: PPC: Book3S: Fix compile error in XICS emulation
-Date: Tue, 24 Sep 2013 17:14:18 -0700
-Message-Id: <20130925001325.611881733@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 034/110] USB: mos7720: use GFP_ATOMIC under spinlock
+Date: Tue, 24 Sep 2013 17:14:32 -0700
+Message-Id: <20130925001327.104396923@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,35 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 7bfa9ad55d691f2b836b576769b11eca2cf50816 upstream.
+commit d0bd9a41186e076ea543c397ad8a67a6cf604b55 upstream.
 
-Commit 8e44ddc3f3 ("powerpc/kvm/book3s: Add support for H_IPOLL and
-H_XIRR_X in XICS emulation") added a call to get_tb() but didn't
-include the header that defines it, and on some configs this means
-book3s_xics.c fails to compile:
+The write_parport_reg_nonblock() function shouldn't sleep because it's
+called with spinlocks held.
 
-arch/powerpc/kvm/book3s_xics.c: In function ‘kvmppc_xics_hcall’:
-arch/powerpc/kvm/book3s_xics.c:812:3: error: implicit declaration of function ‘get_tb’ [-Werror=implicit-function-declaration]
-
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kvm/book3s_xics.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/mos7720.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kvm/book3s_xics.c
-+++ b/arch/powerpc/kvm/book3s_xics.c
-@@ -19,6 +19,7 @@
- #include <asm/hvcall.h>
- #include <asm/xics.h>
- #include <asm/debug.h>
-+#include <asm/time.h>
- 
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -374,7 +374,7 @@ static int write_parport_reg_nonblock(st
+ 		kfree(urbtrack);
+ 		return -ENOMEM;
+ 	}
+-	urbtrack->setup = kmalloc(sizeof(*urbtrack->setup), GFP_KERNEL);
++	urbtrack->setup = kmalloc(sizeof(*urbtrack->setup), GFP_ATOMIC);
+ 	if (!urbtrack->setup) {
+ 		usb_free_urb(urbtrack->urb);
+ 		kfree(urbtrack);
 
 
