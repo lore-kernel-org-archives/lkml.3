@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab3IYAjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:39:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39584 "EHLO
+	id S932338Ab3IYAkA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:40:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932267Ab3IYAUY (ORCPT
+	with ESMTP id S932255Ab3IYAUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:24 -0400
+	Tue, 24 Sep 2013 20:20:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 052/117] Introduce [compat_]save_altstack_ex() to unbreak x86 SMAP
-Date: Tue, 24 Sep 2013 17:18:38 -0700
-Message-Id: <20130925001746.525671807@linuxfoundation.org>
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Mark Brown <broonie@linaro.org>
+Subject: [ 050/117] ASoC: mc13783: add spi errata fix
+Date: Tue, 24 Sep 2013 17:18:36 -0700
+Message-Id: <20130925001746.307865676@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,107 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
 
-commit bd1c149aa9915b9abb6d83d0f01dfd2ace0680b5 upstream.
+commit 9f6f0afbb9fdabf6dcac642dfec457f28981e3f8 upstream.
 
-For performance reasons, when SMAP is in use, SMAP is left open for an
-entire put_user_try { ... } put_user_catch(); block, however, calling
-__put_user() in the middle of that block will close SMAP as the
-STAC..CLAC constructs intentionally do not nest.
+The MC13783 Chip Errata, Rev. 4 says, that depending on SPI clock
+and main audio clock speed, the Audio Codec or Stereo DAC do sometimes
+not start when programmed to do so. This is due to an internal clock
+timing issue related to the loading of the SPI bits into the audio block.
 
-Furthermore, using __put_user() rather than put_user_ex() here is bad
-for performance.
+On an i.MX27 based system, this issue lead to switched audio channels under
+certain circumstances: RTC + Touch + Audio are used and loaded at startup.
 
-Thus, introduce new [compat_]save_altstack_ex() helpers that replace
-__[compat_]save_altstack() for x86, being currently the only
-architecture which supports put_user_try { ... } put_user_catch().
+The mentioned workaround of writing registers 40 and 41 two times is implemented
+here.
 
-Reported-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-es5p6y64if71k8p5u08agv9n@git.kernel.org
+Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/ia32/ia32_signal.c |    2 +-
- arch/x86/kernel/signal.c    |    6 +++---
- include/linux/compat.h      |    7 +++++++
- include/linux/signal.h      |    8 ++++++++
- 4 files changed, 19 insertions(+), 4 deletions(-)
+ sound/soc/codecs/mc13783.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/x86/ia32/ia32_signal.c
-+++ b/arch/x86/ia32/ia32_signal.c
-@@ -457,7 +457,7 @@ int ia32_setup_rt_frame(int sig, struct
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __compat_save_altstack(&frame->uc.uc_stack, regs->sp);
-+		compat_save_altstack_ex(&frame->uc.uc_stack, regs->sp);
+--- a/sound/soc/codecs/mc13783.c
++++ b/sound/soc/codecs/mc13783.c
+@@ -126,6 +126,10 @@ static int mc13783_write(struct snd_soc_
  
- 		if (ksig->ka.sa.sa_flags & SA_RESTORER)
- 			restorer = ksig->ka.sa.sa_restorer;
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -358,7 +358,7 @@ static int __setup_rt_frame(int sig, str
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
-+		save_altstack_ex(&frame->uc.uc_stack, regs->sp);
+ 	ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
  
- 		/* Set up to return from userspace.  */
- 		restorer = VDSO32_SYMBOL(current->mm->context.vdso, rt_sigreturn);
-@@ -423,7 +423,7 @@ static int __setup_rt_frame(int sig, str
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
-+		save_altstack_ex(&frame->uc.uc_stack, regs->sp);
- 
- 		/* Set up to return from userspace.  If provided, use a stub
- 		   already in userspace.  */
-@@ -490,7 +490,7 @@ static int x32_setup_rt_frame(struct ksi
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __compat_save_altstack(&frame->uc.uc_stack, regs->sp);
-+		compat_save_altstack_ex(&frame->uc.uc_stack, regs->sp);
- 		put_user_ex(0, &frame->uc.uc__pad0);
- 
- 		if (ksig->ka.sa.sa_flags & SA_RESTORER) {
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -669,6 +669,13 @@ asmlinkage long compat_sys_sigaltstack(c
- 
- int compat_restore_altstack(const compat_stack_t __user *uss);
- int __compat_save_altstack(compat_stack_t __user *, unsigned long);
-+#define compat_save_altstack_ex(uss, sp) do { \
-+	compat_stack_t __user *__uss = uss; \
-+	struct task_struct *t = current; \
-+	put_user_ex(ptr_to_compat((void __user *)t->sas_ss_sp), &__uss->ss_sp); \
-+	put_user_ex(sas_ss_flags(sp), &__uss->ss_flags); \
-+	put_user_ex(t->sas_ss_size, &__uss->ss_size); \
-+} while (0);
- 
- asmlinkage long compat_sys_sched_rr_get_interval(compat_pid_t pid,
- 						 struct compat_timespec __user *interval);
---- a/include/linux/signal.h
-+++ b/include/linux/signal.h
-@@ -434,6 +434,14 @@ void signals_init(void);
- int restore_altstack(const stack_t __user *);
- int __save_altstack(stack_t __user *, unsigned long);
- 
-+#define save_altstack_ex(uss, sp) do { \
-+	stack_t __user *__uss = uss; \
-+	struct task_struct *t = current; \
-+	put_user_ex((void __user *)t->sas_ss_sp, &__uss->ss_sp); \
-+	put_user_ex(sas_ss_flags(sp), &__uss->ss_flags); \
-+	put_user_ex(t->sas_ss_size, &__uss->ss_size); \
-+} while (0);
++	/* include errata fix for spi audio problems */
++	if (reg == MC13783_AUDIO_CODEC || reg == MC13783_AUDIO_DAC)
++		ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
 +
- #ifdef CONFIG_PROC_FS
- struct seq_file;
- extern void render_sigset_t(struct seq_file *, const char *, sigset_t *);
+ 	mc13xxx_unlock(priv->mc13xxx);
+ 
+ 	return ret;
 
 
