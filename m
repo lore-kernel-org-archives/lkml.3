@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab3IYVag (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 17:30:36 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:34791 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965Ab3IYVae (ORCPT
+	id S1756167Ab3IYVcI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 17:32:08 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:50140 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755183Ab3IYVcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 17:30:34 -0400
+	Wed, 25 Sep 2013 17:32:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo6+AQhpO2WvoKCSw7WokDiex_E43oi9xpuka7biPEx=7Q@mail.gmail.com>
-References: <1379382464-7920-1-git-send-email-vfalico@redhat.com>
- <1379382464-7920-2-git-send-email-vfalico@redhat.com> <CAErSpo6+AQhpO2WvoKCSw7WokDiex_E43oi9xpuka7biPEx=7Q@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 25 Sep 2013 15:30:14 -0600
-Message-ID: <CAErSpo6jXzbgZUDbbo74vW-aSUD8MgtK5iNieFGUk=fxho102A@mail.gmail.com>
-Subject: Re: [PATCH 1/3] msi: add forgotten pci_dev_put(pdev) to populate_msi_sysfs()
-To: Veaceslav Falico <vfalico@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20130925212903.GI23337@ld-irv-0074.broadcom.com>
+References: <1378986619-26765-1-git-send-email-pekon@ti.com>
+	<1378986619-26765-2-git-send-email-pekon@ti.com>
+	<20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
+	<20130925134619.GG10746@radagast>
+	<20130925175527.GA23337@ld-irv-0074.broadcom.com>
+	<20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
+	<20130925200539.GH23337@ld-irv-0074.broadcom.com>
+	<CAOesGMif301iBe9zxHudkC_G9SzPPy1Mj4XYvQ-MY8nmx4wO+A@mail.gmail.com>
+	<20130925212903.GI23337@ld-irv-0074.broadcom.com>
+Date: Wed, 25 Sep 2013 14:32:04 -0700
+Message-ID: <CAOesGMi=xBXTdMm+-yTRVVFf0VR-7gy6xTrdeAupyo7OWVb3iQ@mail.gmail.com>
+Subject: Re: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various ECC schemes
+From: Olof Johansson <olof@lixom.net>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: "Gupta, Pekon" <pekon@ti.com>,
+        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mark Rutland <mark.rutland@arm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 3:08 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> Also, I think it is incorrect that free_msi_irqs() does this:
+On Wed, Sep 25, 2013 at 2:29 PM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> On Wed, Sep 25, 2013 at 01:33:27PM -0700, Olof Johansson wrote:
+>> On Wed, Sep 25, 2013 at 1:05 PM, Brian Norris
+>> <computersforpeace@gmail.com> wrote:
+>>
+>> > Olof has given good advice on your DT binding and has (slowly) been
+>> > responding to other requests for DT review that make it to his list. I
+>> > see that he hasn't followed up on your changes (this v6), so pinging him
+>> > (as you did) is probably the correct approach. But please do recognize
+>> > that the DT list is very high volume, so it's hard to get good timely
+>> > responses there.
+>>
+>> I am not a DT mainainer, but sometimes when I see a binding that
+>> appears to be wrong I speak up. In this case, the binding was one of
+>> those.
 >
->                 if (entry->kobj.parent) {
->                         kobject_del(&entry->kobj);
->                         kobject_put(&entry->kobj);
->                 }
+> Whoops, my bad. I was deceived by the responses I've seen from you on
+> other issues (thanks, BTW). In that case, I haven't seen any response
+> from a proper DT binding maintainer :(
 >
->                 list_del(&entry->list);
->                 kfree(entry);
+>> So, I have no more objections to it, and I hope you can get a quick
+>> review from a DT maintainer on the rest of the binding.
 >
-> I think the "kfree(entry)" should be in msi_kobj_release() instead.
+> At this point, I'm comfortable going ahead without their ack, since they
+> obviously don't care/don't have the manpower to review.
 
-Oh, I see you fixed this in patch 3/3.  I hadn't read that far yet :)
+No, that is not how we handle device tree bindings. They need to be
+reviewed, since we are moving over to a model where they will be
+considered ABI and can't be changed after the fact. We have a long
+backlog of mostly-unreviewed old bindings that we're going to do a
+pass through and then lock down, but it would be good to not add to
+that backlog with newer bindings.
 
-Did you find these problems by inspection, or is there some easy way
-to trigger bad behavior?  Just wondering if this is some way I can
-reproduce the problem.
+In other words, there's a strong desire for actual acks on bindings
+from those maintainers these days.
 
-Bjorn
+
+-Olof
