@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab3IYWmH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 18:42:07 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44619 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753875Ab3IYWmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 18:42:05 -0400
-Date: Wed, 25 Sep 2013 15:41:47 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 08/21] perf: Add new 'paused' attribute
-Message-ID: <20130925224147.GB13425@us.ibm.com>
-References: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
- <1380113447-17144-9-git-send-email-jolsa@redhat.com>
+	id S1755103Ab3IYWpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 18:45:45 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:35279 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364Ab3IYWpn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 18:45:43 -0400
+Date: Wed, 25 Sep 2013 16:45:41 -0600
+From: Linn Crosetto <linn@hp.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: matt.fleming@intel.com, hpa@zytor.com, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, yinghai@kernel.org,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3] x86: EFI stub support for large memory maps
+Message-ID: <20130925224541.GT13098@oranje.fc.hp.com>
+References: <1378487056-9857-1-git-send-email-linn@hp.com>
+ <1379901548-70954-1-git-send-email-linn@hp.com>
+ <20130925125840.GK21381@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380113447-17144-9-git-send-email-jolsa@redhat.com>
-X-Operating-System: Linux 2.0.32 on an i486
+In-Reply-To: <20130925125840.GK21381@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092522-7182-0000-0000-00000886EEB5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Olsa [jolsa@redhat.com] wrote:
-| Adding new 'paused' perf_event_attr attribute bit. It sets
-| the initial event state as paused, so it wont get started
-| until it's triggered by toggling mechanism.
+On Wed, Sep 25, 2013 at 01:58:40PM +0100, Matt Fleming wrote:
+> On Sun, 22 Sep, at 07:59:08PM, Linn Crosetto wrote:
+> > This patch fixes a problem with EFI memory maps larger than 128 entries
+> > when booting using the EFI stub, which results in overflowing e820_map
+> > in boot_params and an eventual halt when checking the map size in
+> > sanitize_e820_map().
+> > 
+> > If the number of map entries is greater than what can fit in e820_map,
+> > add the extra entries to the setup_data list using type SETUP_E820_EXT.
+> > These extra entries are then picked up when the setup_data list is
+> > parsed in parse_e820_ext().
+> > 
+> > Signed-off-by: Linn Crosetto <linn@hp.com>
+> > ---
+> > Changes from v2:
+> >  * Removed unnecessary optimization in alloc_e820ext() (Matt Fleming)
+> >  * Fixed a bug where an incorrect buffer size may be passed to
+> >    get_memory_map when jumping to get_map
+> > 
+> >  arch/x86/boot/compressed/eboot.c | 239 +++++++++++++++++++++++++++------------
+> >  1 file changed, 167 insertions(+), 72 deletions(-)
+> 
+> Thanks Linn. I applied this to the 'next' branch at,
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
+> 
+> but it required a bit of massaging to apply on top of the changes
+> already there. Could you confirm that my changes are OK? I've included
+> the modified commit below.
 
-There is a attr->disabled field which also leaves the event off by
-default.  Some comments distinguishing the two states will help ?
+I have tested the 'next' branch on a system with a large number of entries in
+the memory map and the merge appears to be functionally correct. 
 
-Sukadev
+With the change in commit ae8e9060, I noticed the memory map is no longer placed
+in memory allocated with low_alloc(). I have not looked into what effect it
+could have, if any.
+
+> +	/* Historic? */
+> +	boot_params->alt_mem_k = 32 * 1024;
+> +
+> +	status = setup_e820(boot_params, e820ext, e820ext_size);
+>  
+>  	return EFI_SUCCESS;
+
+I might add the following to your merge for semantic reasons:
+
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 04b228d..a7677ba 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -730,6 +730,8 @@ get_map:
+        boot_params->alt_mem_k = 32 * 1024;
+ 
+        status = setup_e820(boot_params, e820ext, e820ext_size);
++       if (status != EFI_SUCCESS)
++               return status;
+ 
+        return EFI_SUCCESS;
+
 
