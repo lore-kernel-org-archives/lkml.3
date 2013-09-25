@@ -1,94 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab3IYSjH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 14:39:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5125 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061Ab3IYSjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 14:39:05 -0400
-Date: Wed, 25 Sep 2013 11:38:28 -0700
-From: Zach Brown <zab@redhat.com>
-To: Szeredi Miklos <miklos@szeredi.hu>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-Message-ID: <20130925183828.GA30372@lenny.home.zabbo.net>
-References: <1378919210-10372-1-git-send-email-zab@redhat.com>
- <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
+	id S1753872Ab3IYSkb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 14:40:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56629 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab3IYSka (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 14:40:30 -0400
+Date: Wed, 25 Sep 2013 20:40:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130925184015.GC3657@laptop.programming.kicks-ass.net>
+References: <20130917164505.GG12926@twins.programming.kicks-ass.net>
+ <20130918154939.GZ26785@twins.programming.kicks-ass.net>
+ <20130919143241.GB26785@twins.programming.kicks-ass.net>
+ <20130921163404.GA8545@redhat.com>
+ <20130923092955.GV9326@twins.programming.kicks-ass.net>
+ <20130923173203.GA20392@redhat.com>
+ <20130924202423.GW12926@twins.programming.kicks-ass.net>
+ <20130925155515.GA17447@redhat.com>
+ <20130925174307.GA3220@laptop.programming.kicks-ass.net>
+ <20130925175055.GA25914@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130925175055.GA25914@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 25, 2013 at 07:50:55PM +0200, Oleg Nesterov wrote:
+> No. Too tired too ;) damn LSB test failures...
 
-Hrmph.  I had composed a reply to you during Plumbers but.. something
-happened to it :).  Here's another try now that I'm back.
 
-> > Some things to talk about:
-> > - I really don't care about the naming here.  If you do, holler.
-> > - We might want different flags for file-to-file splicing and acceleration
-> 
-> Yes, I think "copy" and "reflink" needs to be differentiated.
+ok; I cobbled this together.. I might think better of it tomorrow, but
+for now I think I closed the hole before wait_event(readers_active())
+you pointed out -- of course I might have created new holes :/
 
-I initially agreed but I'm not so sure now.  The problem is that we
-can't know whether the acceleration is copying or not.  XCOPY on some
-array may well do some shared referencing tricks.  The nfs COPY op can
-have a server use btrfs reflink, or ext* and XCOPY, or .. who knows.  At
-some point we have to admit that we have no way to determine the
-relative durability of writes.  Storage can do a lot to make writes more
-or less fragile that we have no visibility of.  SSD FTLs can log a bunch
-of unrelated sectors on to one flash failure domain.
+For easy reading the + only version.
 
-And if such a flag couldn't *actually* guarantee anything for a bunch of
-storage topologies, well, let's not bother with it.
-
-The only flag I'm in favour of now is one that has splice return rather
-than falling back to manual page cache reads and writes.  It's more like
-O_NONBLOCK than any kind of data durability hint.
-
-> > - We might want flags to require or forbid acceleration
-> > - We might want to provide all these flags to sendfile, too
-> >
-> > Thoughts?  Objections?
-> 
-> Can filesystem support "whole file copy" only?  Or arbitrary
-> block-to-block copy should be mandatory?
-
-I'm not sure I understand what you're asking.  The interface specifies
-byte ranges.  File systems can return errors if they can't accelerate
-the copy.  We *can't* mandate copy acceleration granularity as some
-formats and protocols just can't do it.  splice() will fall back to
-doing buffered copies when the file system returns an error.
-
-> Splice has size_t argument for the size, which is limited to 4G on 32
-> bit.  Won't this be an issue for whole-file-copy?  We could have
-> special value (-1) for whole file, but that's starting to be hackish.
-
-It will be an issue, yeah.  Just like it is with write() today.  I think
-it's reasonable to start with a simple interface that matches current IO
-syscalls.  I won't implement a special whole-file value, no.
-
-And it's not just 32bit size_t.  While do_splice_direct() doesn't use
-the truncated length that's returned from rw_verify_area(), it then
-silently truncates the lengths to unsigned int in the splice_desc struct
-fields.  It seems like we might want to address that :/.
-
-> We are talking about copying large amounts of data in a single
-> syscall, which will possibly take a long time.  Will the syscall be
-> interruptible?  Restartable?
-
-In as much as file systems let it be, yeah.  As ever, you're not going
-to have a lot of luck interrupting a process stuck in lock_page(),
-mutex_lock(), wait_on_page_writeback(), etc.   Though you did remind me
-to investigate restarting.  Thanks.
-
-- z
+---
++++ b/include/linux/cpu.h
+@@ -16,6 +16,7 @@
+ #include <linux/node.h>
+ #include <linux/compiler.h>
+ #include <linux/cpumask.h>
++#include <linux/percpu.h>
+ 
+ struct device;
+ 
+@@ -173,10 +174,50 @@ extern struct bus_type cpu_subsys;
+ #ifdef CONFIG_HOTPLUG_CPU
+ /* Stop CPUs going up and down. */
+ 
++extern void cpu_hotplug_init_task(struct task_struct *p);
++
+ extern void cpu_hotplug_begin(void);
+ extern void cpu_hotplug_done(void);
++
++extern int __cpuhp_writer;
++DECLARE_PER_CPU(unsigned int, __cpuhp_refcount);
++
++extern void __get_online_cpus(void);
++
++static inline void get_online_cpus(void)
++{
++	might_sleep();
++
++	/* Support reader-in-reader recursion */
++	if (current->cpuhp_ref++) {
++		barrier();
++		return;
++	}
++
++	preempt_disable();
++	if (likely(!__cpuhp_writer))
++		__this_cpu_inc(__cpuhp_refcount);
++	else
++		__get_online_cpus();
++	preempt_enable();
++}
++
++extern void __put_online_cpus(void);
++
++static inline void put_online_cpus(void)
++{
++	barrier();
++	if (--current->cpuhp_ref)
++		return;
++
++	preempt_disable();
++	if (likely(!__cpuhp_writer))
++		__this_cpu_dec(__cpuhp_refcount);
++	else
++		__put_online_cpus();
++	preempt_enable();
++}
++
+ extern void cpu_hotplug_disable(void);
+ extern void cpu_hotplug_enable(void);
+ #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
+@@ -200,6 +241,8 @@ static inline void cpu_hotplug_driver_un
+ 
+ #else		/* CONFIG_HOTPLUG_CPU */
+ 
++static inline void cpu_hotplug_init_task(struct task_struct *p) {}
++
+ static inline void cpu_hotplug_begin(void) {}
+ static inline void cpu_hotplug_done(void) {}
+ #define get_online_cpus()	do { } while (0)
++++ b/include/linux/sched.h
+@@ -1454,6 +1454,9 @@ struct task_struct {
+ 	unsigned int	sequential_io;
+ 	unsigned int	sequential_io_avg;
+ #endif
++#ifdef CONFIG_HOTPLUG_CPU
++	int		cpuhp_ref;
++#endif
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
++++ b/kernel/cpu.c
+@@ -49,88 +49,140 @@ static int cpu_hotplug_disabled;
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+ 
++enum { readers_fast = 0, readers_slow, readers_block };
++
++int __cpuhp_writer;
++EXPORT_SYMBOL_GPL(__cpuhp_writer);
++
++DEFINE_PER_CPU(unsigned int, __cpuhp_refcount);
++EXPORT_PER_CPU_SYMBOL_GPL(__cpuhp_refcount);
++
++static DEFINE_PER_CPU(unsigned int, cpuhp_seq);
++static atomic_t cpuhp_waitcount;
++static DECLARE_WAIT_QUEUE_HEAD(cpuhp_readers);
++static DECLARE_WAIT_QUEUE_HEAD(cpuhp_writer);
++
++void cpu_hotplug_init_task(struct task_struct *p)
++{
++	p->cpuhp_ref = 0;
++}
+ 
++void __get_online_cpus(void)
+ {
++again:
++	/* See __srcu_read_lock() */
++	__this_cpu_inc(__cpuhp_refcount);
++	smp_mb(); /* A matches B, E */
++	__this_cpu_inc(cpuhp_seq);
++
++	if (unlikely(__cpuhp_writer == readers_block)) {
++		__put_online_cpus();
++
++		atomic_inc(&cpuhp_waitcount);
++
++		/*
++		 * We either call schedule() in the wait, or we'll fall through
++		 * and reschedule on the preempt_enable() in get_online_cpus().
++		 */
++		preempt_enable_no_resched();
++		__wait_event(cpuhp_readers, __cpuhp_writer != readers_block);
++		preempt_disable();
+ 
++		if (atomic_dec_and_test(&cpuhp_waitcount))
++			wake_up_all(&cpuhp_writer);
++
++		goto again;
++	}
++}
++EXPORT_SYMBOL_GPL(__get_online_cpus);
++
++void __put_online_cpus(void)
++{
++	/* See __srcu_read_unlock() */
++	smp_mb(); /* C matches D */
++	this_cpu_dec(__cpuhp_refcount);
++
++	/* Prod writer to recheck readers_active */
++	wake_up_all(&cpuhp_writer);
+ }
++EXPORT_SYMBOL_GPL(__put_online_cpus);
+ 
++#define per_cpu_sum(var)						\
++({ 									\
++ 	typeof(var) __sum = 0;						\
++ 	int cpu;							\
++ 	for_each_possible_cpu(cpu)					\
++ 		__sum += per_cpu(var, cpu);				\
++ 	__sum;								\
++)}
++
++/*
++ * See srcu_readers_active_idx_check()
++ */
++static bool cpuhp_readers_active_check(void)
+ {
++	unsigned int seq = per_cpu_sum(cpuhp_seq);
++
++	smp_mb(); /* B matches A */
+ 
++	if (per_cpu_sum(__cpuhp_refcount) != 0)
++		return false;
+ 
++	smp_mb(); /* D matches C */
+ 
++	return per_cpu_sum(cpuhp_seq) == seq;
+ }
+ 
+ /*
+  * This ensures that the hotplug operation can begin only when the
+  * refcount goes to zero.
+  *
+  * Since cpu_hotplug_begin() is always called after invoking
+  * cpu_maps_update_begin(), we can be sure that only one writer is active.
+  */
+ void cpu_hotplug_begin(void)
+ {
++	unsigned int count = 0;
++	int cpu;
+ 
++	lockdep_assert_held(&cpu_add_remove_lock);
++
++	/* allow reader-in-writer recursion */
++	current->cpuhp_ref++;
++
++	/* make readers take the slow path */
++	__cpuhp_writer = readers_slow;
++
++	/* See percpu_down_write() */
++	synchronize_sched();
++
++	/* make readers block */
++	__cpuhp_writer = readers_block;
++
++	smp_mb(); /* E matches A */
++
++	/* Wait for all readers to go away */
++	wait_event(cpuhp_writer, cpuhp_readers_active_check());
+ }
+ 
+ void cpu_hotplug_done(void)
+ {
++	/* Signal the writer is done, no fast path yet */
++	__cpuhp_writer = readers_slow;
++	wake_up_all(&cpuhp_readers);
++
++	/* See percpu_up_write() */
++	synchronize_sched();
++
++	/* Let 'em rip */
++	__cpuhp_writer = readers_fast;
++	current->cpuhp_ref--;
++
++	/*
++	 * Wait for any pending readers to be running. This ensures readers
++	 * after writer and avoids writers starving readers.
++	 */
++	wait_event(cpuhp_writer, !atomic_read(&cpuhp_waitcount));
+ }
+ 
+ /*
++++ b/kernel/sched/core.c
+@@ -1736,6 +1736,8 @@ static void __sched_fork(unsigned long c
+ 	INIT_LIST_HEAD(&p->numa_entry);
+ 	p->numa_group = NULL;
+ #endif /* CONFIG_NUMA_BALANCING */
++
++	cpu_hotplug_init_task(p);
+ }
+ 
+ #ifdef CONFIG_NUMA_BALANCING
