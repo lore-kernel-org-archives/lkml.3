@@ -1,57 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab3IYBEH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:04:07 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:52049 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757039Ab3IYBEE (ORCPT
+	id S1756146Ab3IYAQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:16:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39114 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185Ab3IYAQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:04:04 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v7 4/4] revert mm/vmalloc.c: emit the failure message before return
-Date: Wed, 25 Sep 2013 09:02:44 +0800
-Message-Id: <1380070964-12975-4-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1380070964-12975-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1380070964-12975-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-5490-0000-0000-00000434D92C
+	Tue, 24 Sep 2013 20:16:35 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Brett Rudley <brudley@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        brcm80211-dev-list@broadcom.com
+Subject: [ 058/110] brcmsmac: Fix WARNING caused by lack of calls to dma_mapping_error()
+Date: Tue, 24 Sep 2013 17:14:56 -0700
+Message-Id: <20130925001329.698004815@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
+References: <20130925001323.387158698@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
- *v2 -> v3: revert commit 46c001a2 directly
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Don't warning twice in __vmalloc_area_node and __vmalloc_node_range if
-__vmalloc_area_node allocation failure. This patch revert commit 46c001a2
-(mm/vmalloc.c: emit the failure message before return).
+------------------
 
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+From: "John W. Linville" <linville@tuxdriver.com>
+
+commit 67d0cf50bd32b66eab709871714e55725ee30ce4 upstream.
+
+The driver fails to check the results of DMA mapping in twp places,
+which results in the following warning:
+
+[   28.078515] ------------[ cut here ]------------
+[   28.078529] WARNING: at lib/dma-debug.c:937 check_unmap+0x47e/0x930()
+[   28.078533] bcma-pci-bridge 0000:0e:00.0: DMA-API: device driver failed to check map error[device address=0x00000000b5d60d6c] [size=1876 bytes] [mapped as
+ single]
+[   28.078536] Modules linked in: bnep bluetooth vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O) ipv6 b43 brcmsmac rtl8192cu rtl8192c_common rtlwifi mac802
+11 brcmutil cfg80211 snd_hda_codec_conexant rng_core snd_hda_intel kvm_amd snd_hda_codec ssb kvm mmc_core snd_pcm snd_seq snd_timer snd_seq_device snd k8temp
+ cordic joydev serio_raw hwmon sr_mod sg pcmcia pcmcia_core soundcore cdrom i2c_nforce2 i2c_core forcedeth bcma snd_page_alloc autofs4 ext4 jbd2 mbcache crc1
+6 scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic pata_amd
+[   28.078602] CPU: 1 PID: 2570 Comm: NetworkManager Tainted: G           O 3.10.0-rc7-wl+ #42
+[   28.078605] Hardware name: Hewlett-Packard HP Pavilion dv2700 Notebook PC/30D6, BIOS F.27 11/27/2008
+[   28.078607]  0000000000000009 ffff8800bbb03ad8 ffffffff8144f898 ffff8800bbb03b18
+[   28.078612]  ffffffff8103e1eb 0000000000000002 ffff8800b719f480 ffff8800b7b9c010
+[   28.078617]  ffffffff824204c0 ffffffff81754d57 0000000000000754 ffff8800bbb03b78
+[   28.078622] Call Trace:
+[   28.078624]  <IRQ>  [<ffffffff8144f898>] dump_stack+0x19/0x1b
+[   28.078634]  [<ffffffff8103e1eb>] warn_slowpath_common+0x6b/0xa0
+[   28.078638]  [<ffffffff8103e2c1>] warn_slowpath_fmt+0x41/0x50
+[   28.078650]  [<ffffffff8122d7ae>] check_unmap+0x47e/0x930
+[   28.078655]  [<ffffffff8122de4c>] debug_dma_unmap_page+0x5c/0x70
+[   28.078679]  [<ffffffffa04a808c>] dma64_getnextrxp+0x10c/0x190 [brcmsmac]
+[   28.078691]  [<ffffffffa04a9042>] dma_rx+0x62/0x240 [brcmsmac]
+[   28.078707]  [<ffffffffa0479101>] brcms_c_dpc+0x211/0x9d0 [brcmsmac]
+[   28.078717]  [<ffffffffa046d927>] ? brcms_dpc+0x27/0xf0 [brcmsmac]
+[   28.078731]  [<ffffffffa046d947>] brcms_dpc+0x47/0xf0 [brcmsmac]
+[   28.078736]  [<ffffffff81047dcc>] tasklet_action+0x6c/0xf0
+--snip--
+[   28.078974]  [<ffffffff813891bd>] SyS_sendmsg+0xd/0x20
+[   28.078979]  [<ffffffff81455c24>] tracesys+0xdd/0xe2
+[   28.078982] ---[ end trace 6164d1a08148e9c8 ]---
+[   28.078984] Mapped at:
+[   28.078985]  [<ffffffff8122c8fd>] debug_dma_map_page+0x9d/0x150
+[   28.078989]  [<ffffffffa04a9322>] dma_rxfill+0x102/0x3d0 [brcmsmac]
+[   28.079001]  [<ffffffffa047a13d>] brcms_c_init+0x87d/0x1100 [brcmsmac]
+[   28.079010]  [<ffffffffa046d851>] brcms_init+0x21/0x30 [brcmsmac]
+[   28.079018]  [<ffffffffa04786e0>] brcms_c_up+0x150/0x430 [brcmsmac]
+
+As the patch adds a new failure mechanism to dma_rxfill(). When I changed the
+comment at the start of the routine to add that information, I also polished
+the wording.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Brett Rudley <brudley@broadcom.com>
+Cc: Franky (Zhenhui) Lin <frankyl@broadcom.com>
+Cc: Hante Meuleman <meuleman@broadcom.com>
+Cc: brcm80211-dev-list@broadcom.com
+Acked-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- mm/vmalloc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/wireless/brcm80211/brcmsmac/dma.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index e523a14..fa4eee8 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1635,7 +1635,7 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
+--- a/drivers/net/wireless/brcm80211/brcmsmac/dma.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
+@@ -1015,9 +1015,10 @@ static bool dma64_txidle(struct dma_info
  
- 	addr = __vmalloc_area_node(area, gfp_mask, prot, node);
- 	if (!addr)
--		goto fail;
-+		return NULL;
+ /*
+  * post receive buffers
+- *  return false is refill failed completely and ring is empty this will stall
+- *  the rx dma and user might want to call rxfill again asap. This unlikely
+- *  happens on memory-rich NIC, but often on memory-constrained dongle
++ *  Return false if refill failed completely or dma mapping failed. The ring
++ *  is empty, which will stall the rx dma and user might want to call rxfill
++ *  again asap. This is unlikely to happen on a memory-rich NIC, but often on
++ *  memory-constrained dongle.
+  */
+ bool dma_rxfill(struct dma_pub *pub)
+ {
+@@ -1078,6 +1079,8 @@ bool dma_rxfill(struct dma_pub *pub)
  
- 	/*
- 	 * In this function, newly allocated vm_struct has VM_UNINITIALIZED
--- 
-1.7.5.4
+ 		pa = dma_map_single(di->dmadev, p->data, di->rxbufsize,
+ 				    DMA_FROM_DEVICE);
++		if (dma_mapping_error(di->dmadev, pa))
++			return false;
+ 
+ 		/* save the free packet pointer */
+ 		di->rxp[rxout] = p;
+@@ -1284,7 +1287,11 @@ static void dma_txenq(struct dma_info *d
+ 
+ 	/* get physical address of buffer start */
+ 	pa = dma_map_single(di->dmadev, data, len, DMA_TO_DEVICE);
+-
++	/* if mapping failed, free skb */
++	if (dma_mapping_error(di->dmadev, pa)) {
++		brcmu_pkt_buf_free_skb(p);
++		return;
++	}
+ 	/* With a DMA segment list, Descriptor table is filled
+ 	 * using the segment list instead of looping over
+ 	 * buffers in multi-chain DMA. Therefore, EOF for SGLIST
+
 
