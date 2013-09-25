@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab3IYAIx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:08:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38497 "EHLO
+	id S1755296Ab3IYAIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:08:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab3IYAI0 (ORCPT
+	with ESMTP id S1755044Ab3IYAI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:08:26 -0400
+	Tue, 24 Sep 2013 20:08:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 18/28] HID: pantherlord: validate output report details
-Date: Tue, 24 Sep 2013 17:07:49 -0700
-Message-Id: <20130925000652.785586563@linuxfoundation.org>
+        Hui Wang <hui.wang@canonical.com>, Jan Kara <jack@suse.cz>
+Subject: [ 25/28] isofs: Refuse RW mount of the filesystem instead of making it RO
+Date: Tue, 24 Sep 2013 17:07:56 -0700
+Message-Id: <20130925000654.389757644@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
 References: <20130925000648.404447782@linuxfoundation.org>
@@ -26,46 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 412f30105ec6735224535791eed5cdc02888ecb4 upstream.
+commit 17b7f7cf58926844e1dd40f5eb5348d481deca6a upstream.
 
-A HID device could send a malicious output report that would cause the
-pantherlord HID driver to write beyond the output report allocation
-during initialization, causing a heap overflow:
+Refuse RW mount of isofs filesystem. So far we just silently changed it
+to RO mount but when the media is writeable, block layer won't notice
+this change and thus will think device is used RW and will block eject
+button of the drive. That is unexpected by users because for
+non-writeable media eject button works just fine.
 
-[  310.939483] usb 1-1: New USB device found, idVendor=0e8f, idProduct=0003
-...
-[  315.980774] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+Userspace mount(8) command handles this just fine and retries mounting
+with MS_RDONLY set so userspace shouldn't see any regression.  Plus any
+tool mounting isofs is likely confronted with the case of read-only
+media where block layer already refuses to mount the filesystem without
+MS_RDONLY set so our behavior shouldn't be anything new for it.
 
-CVE-2013-2892
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Reported-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-pl.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ fs/isofs/inode.c |   16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
 
---- a/drivers/hid/hid-pl.c
-+++ b/drivers/hid/hid-pl.c
-@@ -128,8 +128,14 @@ static int plff_init(struct hid_device *
- 			strong = &report->field[0]->value[2];
- 			weak = &report->field[0]->value[3];
- 			debug("detected single-field device");
--		} else if (report->maxfield >= 4 && report->field[0]->maxusage == 1 &&
--				report->field[0]->usage[0].hid == (HID_UP_LED | 0x43)) {
-+		} else if (report->field[0]->maxusage == 1 &&
-+			   report->field[0]->usage[0].hid ==
-+				(HID_UP_LED | 0x43) &&
-+			   report->maxfield >= 4 &&
-+			   report->field[0]->report_count >= 1 &&
-+			   report->field[1]->report_count >= 1 &&
-+			   report->field[2]->report_count >= 1 &&
-+			   report->field[3]->report_count >= 1) {
- 			report->field[0]->value[0] = 0x00;
- 			report->field[1]->value[0] = 0x00;
- 			strong = &report->field[2]->value[0];
+--- a/fs/isofs/inode.c
++++ b/fs/isofs/inode.c
+@@ -119,8 +119,8 @@ static void destroy_inodecache(void)
+ 
+ static int isofs_remount(struct super_block *sb, int *flags, char *data)
+ {
+-	/* we probably want a lot more here */
+-	*flags |= MS_RDONLY;
++	if (!(*flags & MS_RDONLY))
++		return -EROFS;
+ 	return 0;
+ }
+ 
+@@ -769,15 +769,6 @@ root_found:
+ 	 */
+ 	s->s_maxbytes = 0x80000000000LL;
+ 
+-	/*
+-	 * The CDROM is read-only, has no nodes (devices) on it, and since
+-	 * all of the files appear to be owned by root, we really do not want
+-	 * to allow suid.  (suid or devices will not show up unless we have
+-	 * Rock Ridge extensions)
+-	 */
+-
+-	s->s_flags |= MS_RDONLY /* | MS_NODEV | MS_NOSUID */;
+-
+ 	/* Set this for reference. Its not currently used except on write
+ 	   which we don't have .. */
+ 
+@@ -1528,6 +1519,9 @@ struct inode *isofs_iget(struct super_bl
+ static struct dentry *isofs_mount(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data)
+ {
++	/* We don't support read-write mounts */
++	if (!(flags & MS_RDONLY))
++		return ERR_PTR(-EACCES);
+ 	return mount_bdev(fs_type, flags, dev_name, data, isofs_fill_super);
+ }
+ 
 
 
