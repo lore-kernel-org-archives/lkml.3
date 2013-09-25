@@ -1,156 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab3IYUPi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:15:38 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:34284 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab3IYUPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:15:37 -0400
-From: Djalal Harouni <tixxdz@opendz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        <kernel-hardening@lists.openwall.com>
-Cc: tixxdz@gmail.com, Djalal Harouni <tixxdz@opendz.org>
-Subject: [PATCH 0/12] procfs: protect /proc/<pid>/* files with file->f_cred
-Date: Wed, 25 Sep 2013 21:14:33 +0100
-Message-Id: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
-X-Mailer: git-send-email 1.7.11.7
+	id S1755382Ab3IYUQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:16:48 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:37871 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753727Ab3IYUQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 16:16:46 -0400
+Date: Wed, 25 Sep 2013 13:16:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH tip/core/rcu 08/11] rcu: Micro-optimize
+ rcu_cpu_has_callbacks()
+Message-ID: <20130925201640.GZ9093@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130925012750.GA30601@linux.vnet.ibm.com>
+ <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1380072561-31134-8-git-send-email-paulmck@linux.vnet.ibm.com>
+ <524250A2.3050502@asianux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524250A2.3050502@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092520-5806-0000-0000-000022D9F8B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 25, 2013 at 10:55:30AM +0800, Chen Gang wrote:
+> 
+> Thank you for your whole work, firstly  :-).
+> 
+> And your suggestion about testing (in our discussion) is also valuable
+> to me.
+> 
+> I need start LTP in q4. After referenced your suggestion, my first step
+> for using/learning LTP is not mainly for finding kernel issues, but for
+> testing kernel (to improve my kernel testing efficiency).
+> 
+> When I want to find issues by reading code, I will consider about LTP
+> too (I will try to find issues which can be tested by LTP).
 
-/proc/<pid>/* entries varies at runtime, appropriate permission checks
-need to happen during each system call.
+Doing more testing will be good!  You will probably need more tests
+than just LTP, but you must of course start somewhere.
 
-Currently some of these sensitive entries are protected by performing
-the ptrace_may_access() check. However even with that the /proc file
-descriptors can be passed to a more privileged process
-(e.g. a suid-exec) which will pass the classic ptrace_may_access()
-check. In general the ->open() call will be issued by an unprivileged
-process while the ->read(),->write() calls by a more privileged one.
+							Thanx, Paul
 
-Example of these files are:
-/proc/*/syscall, /proc/*/stack etc.
+> On 09/25/2013 09:29 AM, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > The for_each_rcu_flavor() loop unconditionally scans all flavors, even
+> > when the first flavor might have some non-lazy callbacks.  Once the
+> > loop has seen a non-lazy callback, further passes through the loop
+> > cannot change the state.  This is not a huge problem, given that there
+> > can be at most three RCU flavors (RCU-bh, RCU-preempt, and RCU-sched),
+> > but this code is on the path to idle, so speeding it up even a small
+> > amount would have some benefit.
+> > 
+> > This commit therefore does two things:
+> > 
+> > 1.	Rearranges the order of the list of RCU flavors in order to
+> > 	place the most active flavor first in the list.  The most active
+> > 	RCU flavor is RCU-preempt, or, if there is no RCU-preempt,
+> > 	RCU-sched.
+> > 
+> > 2.	Reworks the for_each_rcu_flavor() to exit early when the first
+> > 	non-lazy callback is seen, or, in the case where the caller
+> > 	does not care about non-lazy callbacks (RCU_FAST_NO_HZ=n),
+> > 	when the first callback is seen.
+> > 
+> > Reported-by: Chen Gang <gang.chen@asianux.com>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/rcutree.c | 11 +++++++----
+> >  1 file changed, 7 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index e6f2e8f..49464ad 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -2727,10 +2727,13 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
+> >  
+> >  	for_each_rcu_flavor(rsp) {
+> >  		rdp = per_cpu_ptr(rsp->rda, cpu);
+> > -		if (rdp->qlen != rdp->qlen_lazy)
+> > +		if (!rdp->nxtlist)
+> > +			continue;
+> > +		hc = true;
+> > +		if (rdp->qlen != rdp->qlen_lazy || !all_lazy) {
+> >  			al = false;
+> > -		if (rdp->nxtlist)
+> > -			hc = true;
+> > +			break;
+> > +		}
+> >  	}
+> >  	if (all_lazy)
+> >  		*all_lazy = al;
+> > @@ -3297,8 +3300,8 @@ void __init rcu_init(void)
+> >  
+> >  	rcu_bootup_announce();
+> >  	rcu_init_geometry();
+> > -	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
+> >  	rcu_init_one(&rcu_bh_state, &rcu_bh_data);
+> > +	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
+> >  	__rcu_init_preempt();
+> >  	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
+> >  
+> > 
+> 
+> 
+> -- 
+> Chen Gang
+> 
+> -- 
+> Chen Gang
+> 
 
-And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
-
-
-These files are protected during read() by the ptrace_may_access(),
-however the file descriptor can be passed to a suid-exec which can be
-used to read data and bypass ASLR. Of course this was discussed several
-times on LKML.
-
-
-Solution:
-Here we propose a clean solution that uses available mechanisms. No
-additions, nor new structs/memory allocation...
-
-After a discussion about some /proc/<pid>/* file permissions [1],
-Eric W. Biederman proposed to use the file->f_cred to check if current's
-cred have changed [2], actually he said that Linus was looking
-on using the file->f_cred to implement a similar thing! But run in
-problems with Chromes sandbox ? a link please ?
-
-
-So here are my experiments:
-The idea is to track the cred of current. If the cred change between
-->open() and read()/write() this means that current has lost or gained
-some X privileges. If so, in addition to the classic ptrace_may_access()
-check, perform a second check using the file's opener cred. This means,
-if an unprivileged process that tries to use a privileged one
-(e.g. suid-exec) to read privileged files will get caught. The original
-process that opened the file does not have the appropriate permissions
-to read()/write() the target /proc/<pid>/* entry.
-
-This second check is done of course during read(),write()...
-
-
-Advantages of the proposed solution:
-* It uses available mechanisms: file->f_cred which is a const cred
-  that reference the cred of the opener.
-
-* The file->f_cred can be easily referenced  and it will live until
-  fput()
-
-* Does not pin or grab any counter on any extra struct.
-
-* It allows to pass file descriptors under certain conditions:
-  (1) current at open time may have enough permissions
-  (2) current does a suid-exec or change its ruid/euid (new cred)
-  (3) current or suid-exec tries to read from the task /proc entry
-     Allow the ->read() only if the file's opener cred at (1)
-     have enough permissions on *this* task /proc entry during
-     *this* ->read() moment. Otherwise fail.
-
-  IOW allow it if the opener does not need the help of a suid-exec to
-  read/write data.
-
-
-Disadvantage:
-* Currently only /proc/*/{stack,syscall,stat,personality} are handled
-  If the solution is accepted I'll continue with other files, taking
-  care to not break userspace. All the facilities are provided.
-* Your feedback
-
-
-The following series tries to implement what I describe.
-
-1) Add the proc_same_open_cred() helper
-This function will check if the file's opener cred matches the current
-cred. The match concerns the cred that are used in the
-ptrace_may_access() check to allow /proc task access. These cred are:
-uid,gid and cap_permitted.
-
-2) Add the proc_allow_access() helper
-Check if the file's opener had enough permissions to access the target
-process.
-
-3) Make seq_file struct able to access the file's opener cred.
-Since seq_file struct is used by procfs entries, embed a pointer to the
-file->f_cred into the seq_file struct.
-
-4) Add permission checks on the file's opener of /proc/*/stack
-
-5) Add permission checks on the file's opener of /proc/*/personality
-
-6) Add permission checks on the file's opener of /proc/*/stat
-
-7) Improve permission checks on /proc/*/syscall
-
-8) Finally the last patch is user_ns and seq_file cleaning.
-
-
-Thanks!
-
-[1] https://lkml.org/lkml/2013/8/26/354
-[2] https://lkml.org/lkml/2013/8/31/209
-
-
-Djalal Harouni (12):
- procfs: add proc_same_open_cred() to check if the cred have changed
- procfs: add proc_allow_access() to check if file's opener may access task
- procfs: Document the proposed solution to protect procfs entries
- seq_file: Make seq_file able to access the file's opener cred
- seq_file: set the seq_file->f_cred during seq_open()
- procfs: make /proc/*/stack 0400
- procfs: add permission checks on the file's opener of /proc/*/stack
- procfs: add permission checks on the file's opener of /proc/*/personality
- procfs: add permission checks on the file's opener of /proc/*/stat
- procfs: move PROC_BLOCK_SIZE declaration up to make it visible
- procfs: improve permission checks on /proc/*/syscall
- user_ns: seq_file: use the user_ns that is embedded in the f_cred struct
-
- fs/proc/array.c          |  14 ++++++-
- fs/proc/base.c           | 233 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------
- fs/proc/internal.h       |   3 ++
- fs/seq_file.c            |   4 +-
- include/linux/seq_file.h |  13 +++++--
- 5 files changed, 238 insertions(+), 29 deletions(-)
