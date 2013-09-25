@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab3IYKCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 06:02:17 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:43902 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab3IYKCQ (ORCPT
+	id S1755005Ab3IYKGy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 06:06:54 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:59700 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371Ab3IYKGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 06:02:16 -0400
+	Wed, 25 Sep 2013 06:06:53 -0400
+Date: Wed, 25 Sep 2013 11:06:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: sameo@linux.intel.com, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: ezx-pcap: drop devm_free_irq of devm_ allocated irq
+Message-ID: <20130925100649.GC5132@lee--X1>
+References: <CAPgLHd-XqeHscSMmFuUH5gqrbuW6QDvHuLAR+9hPqtjiNXhKZQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
-References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
-	<52118042.30101@oracle.com>
-	<20130819054742.GA28062@bbox>
-	<CAL1ERfN3AUYwWTctGBjVcgb-mwAmc15-FayLz48P1d0GzogncA@mail.gmail.com>
-	<20130821074939.GE3022@bbox>
-	<CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
-	<CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
-	<CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
-Date: Wed, 25 Sep 2013 18:02:15 +0800
-Message-ID: <CAA_GA1eBS642zSsAd8W=n6oAD7hpKumXTneoSSMqWZxyr4QWng@mail.gmail.com>
-Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
-From: Bob Liu <lliubbo@gmail.com>
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, Bob Liu <bob.liu@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPgLHd-XqeHscSMmFuUH5gqrbuW6QDvHuLAR+9hPqtjiNXhKZQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 5:33 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
-> On Wed, Sep 25, 2013 at 4:31 PM, Bob Liu <lliubbo@gmail.com> wrote:
->> On Wed, Sep 25, 2013 at 4:09 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
->>> I think I find a new issue, for integrity of this mail thread, I reply
->>> to this mail.
->>>
->>> It is a concurrence issue either, when duplicate store and reclaim
->>> concurrentlly.
->>>
->>> zswap entry x with offset A is already stored in zswap backend.
->>> Consider the following scenario:
->>>
->>> thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
->>>
->>> thread 1: store new page with the same offset A, alloc a new zswap entry y.
->>>   store finished. shrink_page_list() call __remove_mapping(), and now
->>> it is not in swap_cache
->>>
->>
->> But I don't think swap layer will call zswap with the same offset A.
->
-> 1. store page of offset A in zswap
-> 2. some time later, pagefault occur, load page data from zswap.
->   But notice that zswap entry x is still in zswap because it is not
+On Wed, 25 Sep 2013, Wei Yongjun wrote:
 
-Sorry I didn't notice that zswap_frontswap_load() doesn't call rb_erase().
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> The devm_request_irq function allocates irq that is released
+> when a driver detaches. Thus, there is no reason to explicitly
+> call devm_free_irq in probe or remove functions.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/mfd/ezx-pcap.c | 7 +------
+>  1 file changed, 1 insertion(+), 6 deletions(-)
 
-> frontswap_tmem_exclusive_gets_enabled.
->  this page is with PageSwapCache(page) and page_private(page) = entry.val
-> 3. change this page data, and it become dirty
-> 4. some time later again, swap this page on the same offset A.
->
-> so, a duplicate store happens.
->
-
-Then I think we should erase the entry from rbtree in zswap_frontswap_load().
-After the page is decompressed and loaded from zswap, still storing
-the compressed data in zswap is meanless.
+Applied, thanks.
 
 -- 
-Regards,
---Bob
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
