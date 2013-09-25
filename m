@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab3IYAQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:16:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38977 "EHLO
+	id S932682Ab3IYBMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:12:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755952Ab3IYAQO (ORCPT
+	with ESMTP id S1755997Ab3IYAQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:14 -0400
+	Tue, 24 Sep 2013 20:16:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [ 037/110] USB: cdc-wdm: fix race between interrupt handler and tasklet
-Date: Tue, 24 Sep 2013 17:14:35 -0700
-Message-Id: <20130925001327.417075914@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 039/110] usb: Dont fail port power resume on device disconnect.
+Date: Tue, 24 Sep 2013 17:14:37 -0700
+Message-Id: <20130925001327.631869696@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -26,63 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 6dd433e6cf2475ce8abec1b467720858c24450eb upstream.
+commit d49dad3e11638f66be4e16573ffaa8c46a09e3b3 upstream.
 
-Both could want to submit the same URB. Some checks of the flag
-intended to prevent that were missing.
+Userspace can tell the kernel to power off any USB port, including ones
+that are visible and connectible to users.  When an attached USB device
+goes into suspend, the port will be powered off if the
+pm_qos_no_port_poweroff file for its port is set to 0, the device does
+not have remote wakeup enabled, and the device is marked as persistent.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+If the user disconnects the USB device while the port is powered off,
+the current code does not handle that properly.  If you disconnect a
+device, and then run `lsusb -v -s` for the device, the device disconnect
+does not get handled by the USB core.  The runtime resume of the port
+fails, because hub_port_debounce_be_connected() returns -ETIMEDOUT.
+
+This means the port resume fails and khubd doesn't handle the USB device
+disconnect.  This leaves the device listed in lsusb, and the port's
+runtime_status will be permanently marked as "error".
+
+Fix this by ignoring the return value of hub_port_debounce_be_connected.
+Users can disconnect USB devices while the ports are powered off, and we
+must be able to handle that.
+
+This patch should be backported to kernels as old as 3.9, that
+contain the commit ad493e5e580546e6c3024b76a41535476da1546a "usb: add
+usb port auto power off mechanism"
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-wdm.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/usb/core/port.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -209,6 +209,7 @@ skip_error:
- static void wdm_int_callback(struct urb *urb)
- {
- 	int rv = 0;
-+	int responding;
- 	int status = urb->status;
- 	struct wdm_device *desc;
- 	struct usb_cdc_notification *dr;
-@@ -262,8 +263,8 @@ static void wdm_int_callback(struct urb
+--- a/drivers/usb/core/port.c
++++ b/drivers/usb/core/port.c
+@@ -89,22 +89,19 @@ static int usb_port_runtime_resume(struc
+ 	retval = usb_hub_set_port_power(hdev, port1, true);
+ 	if (port_dev->child && !retval) {
+ 		/*
+-		 * Wait for usb hub port to be reconnected in order to make
+-		 * the resume procedure successful.
++		 * Attempt to wait for usb hub port to be reconnected in order
++		 * to make the resume procedure successful.  The device may have
++		 * disconnected while the port was powered off, so ignore the
++		 * return status.
+ 		 */
+ 		retval = hub_port_debounce_be_connected(hub, port1);
+-		if (retval < 0) {
++		if (retval < 0)
+ 			dev_dbg(&port_dev->dev, "can't get reconnection after setting port  power on, status %d\n",
+ 					retval);
+-			goto out;
+-		}
+ 		usb_clear_port_feature(hdev, port1, USB_PORT_FEAT_C_ENABLE);
+-
+-		/* Set return value to 0 if debounce successful */
+ 		retval = 0;
+ 	}
  
- 	spin_lock(&desc->iuspin);
- 	clear_bit(WDM_READ, &desc->flags);
--	set_bit(WDM_RESPONDING, &desc->flags);
--	if (!test_bit(WDM_DISCONNECTING, &desc->flags)
-+	responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
-+	if (!responding && !test_bit(WDM_DISCONNECTING, &desc->flags)
- 		&& !test_bit(WDM_SUSPENDING, &desc->flags)) {
- 		rv = usb_submit_urb(desc->response, GFP_ATOMIC);
- 		dev_dbg(&desc->intf->dev, "%s: usb_submit_urb %d",
-@@ -685,16 +686,20 @@ static void wdm_rxwork(struct work_struc
- {
- 	struct wdm_device *desc = container_of(work, struct wdm_device, rxwork);
- 	unsigned long flags;
--	int rv;
-+	int rv = 0;
-+	int responding;
- 
- 	spin_lock_irqsave(&desc->iuspin, flags);
- 	if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
- 		spin_unlock_irqrestore(&desc->iuspin, flags);
- 	} else {
-+		responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
- 		spin_unlock_irqrestore(&desc->iuspin, flags);
--		rv = usb_submit_urb(desc->response, GFP_KERNEL);
-+		if (!responding)
-+			rv = usb_submit_urb(desc->response, GFP_KERNEL);
- 		if (rv < 0 && rv != -EPERM) {
- 			spin_lock_irqsave(&desc->iuspin, flags);
-+			clear_bit(WDM_RESPONDING, &desc->flags);
- 			if (!test_bit(WDM_DISCONNECTING, &desc->flags))
- 				schedule_work(&desc->rxwork);
- 			spin_unlock_irqrestore(&desc->iuspin, flags);
+-out:
+ 	clear_bit(port1, hub->busy_bits);
+ 	usb_autopm_put_interface(intf);
+ 	return retval;
 
 
