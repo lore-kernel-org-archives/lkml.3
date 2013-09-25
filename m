@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab3IYAvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:51:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39394 "EHLO
+	id S932530Ab3IYAvs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:51:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39380 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755783Ab3IYATt (ORCPT
+	with ESMTP id S1756399Ab3IYATs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:49 -0400
+	Tue, 24 Sep 2013 20:19:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [ 002/117] ipc/msg.c: Fix lost wakeup in msgsnd().
-Date: Tue, 24 Sep 2013 17:17:48 -0700
-Message-Id: <20130925001741.137679051@linuxfoundation.org>
+        Maxime Bizon <mbizon@freebox.fr>, Ming Lei <ming.lei@canonical.com>
+Subject: [ 006/117] firmware loader: fix pending_fw_head list corruption
+Date: Tue, 24 Sep 2013 17:17:52 -0700
+Message-Id: <20130925001741.558238953@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -29,91 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manfred Spraul <manfred@colorfullife.com>
+From: Maxime Bizon <mbizon@freebox.fr>
 
-commit bebcb928c820d0ee83aca4b192adc195e43e66a2 upstream.
+commit 1eeeef153c02f5856ec109fa532eb5f31c39f85c upstream.
 
-The check if the queue is full and adding current to the wait queue of
-pending msgsnd() operations (ss_add()) must be atomic.
+Got the following oops just before reboot:
 
-Otherwise:
- - the thread that performs msgsnd() finds a full queue and decides to
-   sleep.
- - the thread that performs msgrcv() first reads all messages from the
-   queue and then sleeps, because the queue is empty.
- - the msgrcv() calls do not perform any wakeups, because the msgsnd()
-   task has not yet called ss_add().
- - then the msgsnd()-thread first calls ss_add() and then sleeps.
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+[<8028d300>] (__list_del_entry+0x44/0xac)
+[<802e3320>] (__fw_load_abort.part.13+0x1c/0x50)
+[<802e337c>] (fw_shutdown_notify+0x28/0x50)
+[<80034f80>] (notifier_call_chain.isra.1+0x5c/0x9c)
+[<800350ec>] (__blocking_notifier_call_chain+0x44/0x58)
+[<80035114>] (blocking_notifier_call_chain+0x14/0x18)
+[<80035d64>] (kernel_restart_prepare+0x14/0x38)
+[<80035d94>] (kernel_restart+0xc/0x50)
 
-Net result: msgsnd() and msgrcv() both sleep forever.
+The following race condition triggers here:
 
-Observed with msgctl08 from ltp with a preemptible kernel.
+  _request_firmware_load()
+  device_create_file(...)
+  kobject_uevent(...)
+  (schedule)
+                                       (resume)
+                                       firmware_loading_store(1)
+                                       firmware_loading_store(0)
+                                       list_del_init(&buf->pending_list)
+                                       (schedule)
+  (resume)
+  list_add(&buf->pending_list, &pending_fw_head);
+  wait_for_completion(&buf->completion);
 
-Fix: Call ipc_lock_object() before performing the check.
+causing an oops later when walking pending_list after the firmware has
+been released.
 
-The patch also moves security_msg_queue_msgsnd() under ipc_lock_object:
- - msgctl(IPC_SET) explicitely mentions that it tries to expunge any
-   pending operations that are not allowed anymore with the new
-   permissions.  If security_msg_queue_msgsnd() is called without locks,
-   then there might be races.
- - it makes the patch much simpler.
+The proposed fix is to move the list_add() before sysfs attribute
+creation.
 
-Reported-and-tested-by: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+Acked-by: Ming Lei <ming.lei@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/msg.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ drivers/base/firmware_class.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -680,16 +680,18 @@ long do_msgsnd(int msqid, long mtype, vo
- 		goto out_unlock1;
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -868,8 +868,15 @@ static int _request_firmware_load(struct
+ 		goto err_del_dev;
  	}
  
-+	ipc_lock_object(&msq->q_perm);
++	mutex_lock(&fw_lock);
++	list_add(&buf->pending_list, &pending_fw_head);
++	mutex_unlock(&fw_lock);
 +
- 	for (;;) {
- 		struct msg_sender s;
- 
- 		err = -EACCES;
- 		if (ipcperms(ns, &msq->q_perm, S_IWUGO))
--			goto out_unlock1;
-+			goto out_unlock0;
- 
- 		err = security_msg_queue_msgsnd(msq, msg, msgflg);
- 		if (err)
--			goto out_unlock1;
-+			goto out_unlock0;
- 
- 		if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
- 				1 + msq->q_qnum <= msq->q_qbytes) {
-@@ -699,10 +701,9 @@ long do_msgsnd(int msqid, long mtype, vo
- 		/* queue full, wait: */
- 		if (msgflg & IPC_NOWAIT) {
- 			err = -EAGAIN;
--			goto out_unlock1;
-+			goto out_unlock0;
- 		}
- 
--		ipc_lock_object(&msq->q_perm);
- 		ss_add(msq, &s);
- 
- 		if (!ipc_rcu_getref(msq)) {
-@@ -730,10 +731,7 @@ long do_msgsnd(int msqid, long mtype, vo
- 			goto out_unlock0;
- 		}
- 
--		ipc_unlock_object(&msq->q_perm);
+ 	retval = device_create_file(f_dev, &dev_attr_loading);
+ 	if (retval) {
++		mutex_lock(&fw_lock);
++		list_del_init(&buf->pending_list);
++		mutex_unlock(&fw_lock);
+ 		dev_err(f_dev, "%s: device_create_file failed\n", __func__);
+ 		goto err_del_bin_attr;
  	}
--
--	ipc_lock_object(&msq->q_perm);
- 	msq->q_lspid = task_tgid_vnr(current);
- 	msq->q_stime = get_seconds();
+@@ -884,10 +891,6 @@ static int _request_firmware_load(struct
+ 		kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
+ 	}
  
+-	mutex_lock(&fw_lock);
+-	list_add(&buf->pending_list, &pending_fw_head);
+-	mutex_unlock(&fw_lock);
+-
+ 	wait_for_completion(&buf->completion);
+ 
+ 	cancel_delayed_work_sync(&fw_priv->timeout_work);
 
 
