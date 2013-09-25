@@ -1,50 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab3IYJEY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 05:04:24 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:59491 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab3IYJEW (ORCPT
+	id S1754661Ab3IYJJA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 05:09:00 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:34943 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab3IYJI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 05:04:22 -0400
+	Wed, 25 Sep 2013 05:08:57 -0400
+Message-ID: <5242A6CD.5010006@ahsoftware.de>
+Date: Wed, 25 Sep 2013 11:03:09 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <5238F252.5070905@hurleysoftware.com>
-References: <20130913005133.GA32479@localhost>
-	<20130913010936.GA1291@localhost>
-	<5238767D.1080606@hurleysoftware.com>
-	<20130917232214.GA11390@localhost>
-	<5238F252.5070905@hurleysoftware.com>
-Date: Wed, 25 Sep 2013 17:04:21 +0800
-Message-ID: <CAF1ivSbYg296oHhO0_UXwkos8Ui_1C93pUnXPzow4qLWyAa2kg@mail.gmail.com>
-Subject: Re: increased vmap_area_lock contentions on "n_tty: Move buffers into n_tty_data"
-From: Lin Ming <minggr@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+CC: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        "Lee, Chun-Yi" <jlee@suse.com>, David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, Josh Boyer <jwboyer@redhat.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH] X.509: Remove validity check of certificate date
+References: <1380090051-19482-1-git-send-email-jlee@suse.com>
+In-Reply-To: <1380090051-19482-1-git-send-email-jlee@suse.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 8:22 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
-[snip]
+(I've resend this message, because the one I've replied to contained 
+contained kernel@vger... and not linux-kernel@vger... as addressee)
+
+I've already sent exactly the same patch here:
+
+http://lkml.org/lkml/2013/3/27/449
+
+and here:
+
+https://lkml.org/lkml/2013/6/6/207
+
+but for some unspoken reason it always got ignored.
+
+It would make wonder if it would be accepted this time, just because of
+another author name.
+
+Regards,
+
+Alexander Holler
+
+
+Am 25.09.2013 08:20, schrieb Lee, Chun-Yi:
+> The check of valid_from and valid_to fields on X.509 certificate is a
+> time bomb to MODSIGN function, It causes kernel module could not be
+> load because the RTC on system may messed by user action (e.g. refresh
+> BIOS) that should not be trusted.
 >
-> Looking over vmalloc.c, the critical section footprint of the vmap_area_lock
-> could definitely be reduced (even nearly eliminated), but that's a project
-> for
-> another day :)
-
-Hi Peter,
-
-I also looked over vmallo.c, but didn't find obvious way to reduce the
-critical section footprint.
-Could you share some hints how to do this?
-
-Thanks,
-Lin Ming
-
+> Base on the discussion of David Howells's "[PATCH] X.509: Remove
+> certificate date checks":
+>   https://lkml.org/lkml/2013/3/14/257
 >
-> Regards,
-> Peter Hurley
+> This patch removed the validity check of certificate date but still keep
+> the valid_from and valid_to fields for future usage.
+>
+> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+> cc: David Howells <dhowells@redhat.com>
+> cc: David Woodhouse <dwmw2@infradead.org>
+> cc: Rusty Russell <rusty@rustcorp.com.au>
+> cc: Josh Boyer <jwboyer@redhat.com>
+> cc: Alexander Holler <holler@ahsoftware.de>
+> cc: Matthew Garrett <mjg59@srcf.ucam.org>
+> cc: Peter Jones <pjones@redhat.com>
+> ---
+>  crypto/asymmetric_keys/x509_public_key.c |   38 ------------------------------
+>  1 files changed, 0 insertions(+), 38 deletions(-)
+>
+> diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+> index 06007f0..52222a2 100644
+> --- a/crypto/asymmetric_keys/x509_public_key.c
+> +++ b/crypto/asymmetric_keys/x509_public_key.c
+> @@ -106,7 +106,6 @@ error_no_sig:
+>  static int x509_key_preparse(struct key_preparsed_payload *prep)
+>  {
+>  	struct x509_certificate *cert;
+> -	struct tm now;
+>  	size_t srlen, sulen;
+>  	char *desc = NULL;
+>  	int ret;
+> @@ -137,43 +136,6 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+>  		goto error_free_cert;
+>  	}
+>
+> -	time_to_tm(CURRENT_TIME.tv_sec, 0, &now);
+> -	pr_devel("Now: %04ld-%02d-%02d %02d:%02d:%02d\n",
+> -		 now.tm_year + 1900, now.tm_mon + 1, now.tm_mday,
+> -		 now.tm_hour, now.tm_min,  now.tm_sec);
+> -	if (now.tm_year < cert->valid_from.tm_year ||
+> -	    (now.tm_year == cert->valid_from.tm_year &&
+> -	     (now.tm_mon < cert->valid_from.tm_mon ||
+> -	      (now.tm_mon == cert->valid_from.tm_mon &&
+> -	       (now.tm_mday < cert->valid_from.tm_mday ||
+> -		(now.tm_mday == cert->valid_from.tm_mday &&
+> -		 (now.tm_hour < cert->valid_from.tm_hour ||
+> -		  (now.tm_hour == cert->valid_from.tm_hour &&
+> -		   (now.tm_min < cert->valid_from.tm_min ||
+> -		    (now.tm_min == cert->valid_from.tm_min &&
+> -		     (now.tm_sec < cert->valid_from.tm_sec
+> -		      ))))))))))) {
+> -		pr_warn("Cert %s is not yet valid\n", cert->fingerprint);
+> -		ret = -EKEYREJECTED;
+> -		goto error_free_cert;
+> -	}
+> -	if (now.tm_year > cert->valid_to.tm_year ||
+> -	    (now.tm_year == cert->valid_to.tm_year &&
+> -	     (now.tm_mon > cert->valid_to.tm_mon ||
+> -	      (now.tm_mon == cert->valid_to.tm_mon &&
+> -	       (now.tm_mday > cert->valid_to.tm_mday ||
+> -		(now.tm_mday == cert->valid_to.tm_mday &&
+> -		 (now.tm_hour > cert->valid_to.tm_hour ||
+> -		  (now.tm_hour == cert->valid_to.tm_hour &&
+> -		   (now.tm_min > cert->valid_to.tm_min ||
+> -		    (now.tm_min == cert->valid_to.tm_min &&
+> -		     (now.tm_sec > cert->valid_to.tm_sec
+> -		      ))))))))))) {
+> -		pr_warn("Cert %s has expired\n", cert->fingerprint);
+> -		ret = -EKEYEXPIRED;
+> -		goto error_free_cert;
+> -	}
+> -
+>  	cert->pub->algo = x509_public_key_algorithms[cert->pkey_algo];
+>  	cert->pub->id_type = PKEY_ID_X509;
+>
+>
+
