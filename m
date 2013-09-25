@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab3IYT1k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 15:27:40 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:45556 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754980Ab3IYT1j (ORCPT
+	id S1755076Ab3IYT3j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 15:29:39 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23293 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab3IYT3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 15:27:39 -0400
-Message-ID: <5243390C.8030509@tilera.com>
-Date: Wed, 25 Sep 2013 15:27:08 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Henrik Austad <haustad@cisco.com>
-CC: Henrik Austad <henrik@austad.us>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tile: change lock initalization in hardwall
-References: <1380118600-30352-1-git-send-email-haustad@cisco.com>
-In-Reply-To: <1380118600-30352-1-git-send-email-haustad@cisco.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Sep 2013 15:29:38 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: jbeulich@suse.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] xen/mmu: Correct PAT MST setting.
+Date: Wed, 25 Sep 2013 15:29:27 -0400
+Message-Id: <1380137367-8357-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/25/2013 10:16 AM, Henrik Austad wrote:
-> hardwall used __SPIN_LOCK_INITIALIZER directly instead of the preferred
-> __SPIN_LOCK_UNLOCKED. This also has the benefit that it will compile
-> when applying the preempt-rt patch series.
->
-> Signed-off-by: Henrik Austad <haustad@cisco.com>
-> ---
->  arch/tile/kernel/hardwall.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+Jan Beulich spotted that the PAT MSR settings in the Xen public
+document that "the first (PAT6) column was wrong across the
+board, and the column for PAT7 was missing altogether."
 
-Thanks!  Taken into the tile tree for 3.12.
+This updates it to be in sync.
 
+CC: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/mmu.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index fdc3ba2..c9631e7 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -468,8 +468,8 @@ PV_CALLEE_SAVE_REGS_THUNK(xen_pgd_val);
+  * 3        PCD PWT      UC       UC     UC
+  * 4    PAT              WB       WC     WB
+  * 5    PAT     PWT      WC       WP     WT
+- * 6    PAT PCD          UC-      UC     UC-
+- * 7    PAT PCD PWT      UC       UC     UC
++ * 6    PAT PCD          UC-      rsv    UC-
++ * 7    PAT PCD PWT      UC       rsv    UC
+  */
+ 
+ void xen_set_pat(u64 pat)
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.8.3.1
 
