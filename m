@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab3IYAMm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:12:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38651 "EHLO
+	id S1755703Ab3IYAPA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:15:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38682 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495Ab3IYAMj (ORCPT
+	with ESMTP id S1755495Ab3IYAMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:12:39 -0400
+	Tue, 24 Sep 2013 20:12:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>, Gabor Juhos <juhosg@openwrt.org>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [ 30/40] MIPS: ath79: Fix ar933x watchdog clock
-Date: Tue, 24 Sep 2013 17:12:02 -0700
-Message-Id: <20130925001045.223911302@linuxfoundation.org>
+        Hui Wang <hui.wang@canonical.com>, Jan Kara <jack@suse.cz>
+Subject: [ 35/40] isofs: Refuse RW mount of the filesystem instead of making it RO
+Date: Tue, 24 Sep 2013 17:12:07 -0700
+Message-Id: <20130925001045.757050855@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
 References: <20130925001041.939335518@linuxfoundation.org>
@@ -27,44 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Jan Kara <jack@suse.cz>
 
-commit a1191927ace7e6f827132aa9e062779eb3f11fa5 upstream.
+commit 17b7f7cf58926844e1dd40f5eb5348d481deca6a upstream.
 
-The watchdog device on the AR933x is connected to
-the AHB clock, however the current code uses the
-reference clock. Due to the wrong rate, the watchdog
-driver can't calculate correct register values for
-a given timeout value and the watchdog unexpectedly
-restarts the system.
+Refuse RW mount of isofs filesystem. So far we just silently changed it
+to RO mount but when the media is writeable, block layer won't notice
+this change and thus will think device is used RW and will block eject
+button of the drive. That is unexpected by users because for
+non-writeable media eject button works just fine.
 
-The code uses the wrong value since the initial
-commit 04225e1d227c8e68d685936ecf42ac175fec0e54
-(MIPS: ath79: add AR933X specific clock init)
+Userspace mount(8) command handles this just fine and retries mounting
+with MS_RDONLY set so userspace shouldn't see any regression.  Plus any
+tool mounting isofs is likely confronted with the case of read-only
+media where block layer already refuses to mount the filesystem without
+MS_RDONLY set so our behavior shouldn't be anything new for it.
 
-The patch fixes the code to use the correct clock
-rate to avoid the problem.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/5777/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Reported-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/ath79/clock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/isofs/inode.c |   16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
 
---- a/arch/mips/ath79/clock.c
-+++ b/arch/mips/ath79/clock.c
-@@ -159,7 +159,7 @@ static void __init ar933x_clocks_init(vo
- 		ath79_ahb_clk.rate = freq / t;
- 	}
+--- a/fs/isofs/inode.c
++++ b/fs/isofs/inode.c
+@@ -119,8 +119,8 @@ static void destroy_inodecache(void)
  
--	ath79_wdt_clk.rate = ath79_ref_clk.rate;
-+	ath79_wdt_clk.rate = ath79_ahb_clk.rate;
- 	ath79_uart_clk.rate = ath79_ref_clk.rate;
+ static int isofs_remount(struct super_block *sb, int *flags, char *data)
+ {
+-	/* we probably want a lot more here */
+-	*flags |= MS_RDONLY;
++	if (!(*flags & MS_RDONLY))
++		return -EROFS;
+ 	return 0;
+ }
+ 
+@@ -769,15 +769,6 @@ root_found:
+ 	 */
+ 	s->s_maxbytes = 0x80000000000LL;
+ 
+-	/*
+-	 * The CDROM is read-only, has no nodes (devices) on it, and since
+-	 * all of the files appear to be owned by root, we really do not want
+-	 * to allow suid.  (suid or devices will not show up unless we have
+-	 * Rock Ridge extensions)
+-	 */
+-
+-	s->s_flags |= MS_RDONLY /* | MS_NODEV | MS_NOSUID */;
+-
+ 	/* Set this for reference. Its not currently used except on write
+ 	   which we don't have .. */
+ 
+@@ -1536,6 +1527,9 @@ struct inode *isofs_iget(struct super_bl
+ static struct dentry *isofs_mount(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data)
+ {
++	/* We don't support read-write mounts */
++	if (!(flags & MS_RDONLY))
++		return ERR_PTR(-EACCES);
+ 	return mount_bdev(fs_type, flags, dev_name, data, isofs_fill_super);
  }
  
 
