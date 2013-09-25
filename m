@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab3IYAUV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39547 "EHLO
+	id S1756606Ab3IYAU1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:20:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39576 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab3IYAUQ (ORCPT
+	with ESMTP id S932263Ab3IYAUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:16 -0400
+	Tue, 24 Sep 2013 20:20:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [ 045/117] usb: config->desc.bLength may not exceed amount of data returned by the device
-Date: Tue, 24 Sep 2013 17:18:31 -0700
-Message-Id: <20130925001745.753133109@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 051/117] x86, smap: Handle csum_partial_copy_*_user()
+Date: Tue, 24 Sep 2013 17:18:37 -0700
+Message-Id: <20130925001746.423484117@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,33 +26,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit b4f17a488ae2e09bfcf95c0e0b4219c246f1116a upstream.
+commit 7263dda41b5a28ae6566fd126d9b06ada73dd721 upstream.
 
-While reading the config parsing code I noticed this check is missing, without
-this check config->desc.wTotalLength can end up with a value larger then the
-dev->rawdescriptors length for the config, and when userspace then tries to
-get the rawdescriptors bad things may happen.
+Add SMAP annotations to csum_partial_copy_to/from_user().  These
+functions legitimately access user space and thus need to set the AC
+flag.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+TODO: add explicit checks that the side with the kernel space pointer
+really points into kernel space.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-2aps0u00eer658fd5xyanan7@git.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/config.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/checksum_32.h |   22 +++++++++++++++++-----
+ arch/x86/lib/csum-wrappers_64.c    |   12 ++++++++++--
+ 2 files changed, 27 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/core/config.c
-+++ b/drivers/usb/core/config.c
-@@ -424,7 +424,8 @@ static int usb_parse_configuration(struc
+--- a/arch/x86/include/asm/checksum_32.h
++++ b/arch/x86/include/asm/checksum_32.h
+@@ -49,9 +49,15 @@ static inline __wsum csum_partial_copy_f
+ 						 int len, __wsum sum,
+ 						 int *err_ptr)
+ {
++	__wsum ret;
++
+ 	might_sleep();
+-	return csum_partial_copy_generic((__force void *)src, dst,
+-					 len, sum, err_ptr, NULL);
++	stac();
++	ret = csum_partial_copy_generic((__force void *)src, dst,
++					len, sum, err_ptr, NULL);
++	clac();
++
++	return ret;
+ }
  
- 	memcpy(&config->desc, buffer, USB_DT_CONFIG_SIZE);
- 	if (config->desc.bDescriptorType != USB_DT_CONFIG ||
--	    config->desc.bLength < USB_DT_CONFIG_SIZE) {
-+	    config->desc.bLength < USB_DT_CONFIG_SIZE ||
-+	    config->desc.bLength > size) {
- 		dev_err(ddev, "invalid descriptor for config index %d: "
- 		    "type = 0x%X, length = %d\n", cfgidx,
- 		    config->desc.bDescriptorType, config->desc.bLength);
+ /*
+@@ -176,10 +182,16 @@ static inline __wsum csum_and_copy_to_us
+ 					   int len, __wsum sum,
+ 					   int *err_ptr)
+ {
++	__wsum ret;
++
+ 	might_sleep();
+-	if (access_ok(VERIFY_WRITE, dst, len))
+-		return csum_partial_copy_generic(src, (__force void *)dst,
+-						 len, sum, NULL, err_ptr);
++	if (access_ok(VERIFY_WRITE, dst, len)) {
++		stac();
++		ret = csum_partial_copy_generic(src, (__force void *)dst,
++						len, sum, NULL, err_ptr);
++		clac();
++		return ret;
++	}
+ 
+ 	if (len)
+ 		*err_ptr = -EFAULT;
+--- a/arch/x86/lib/csum-wrappers_64.c
++++ b/arch/x86/lib/csum-wrappers_64.c
+@@ -6,6 +6,7 @@
+  */
+ #include <asm/checksum.h>
+ #include <linux/module.h>
++#include <asm/smap.h>
+ 
+ /**
+  * csum_partial_copy_from_user - Copy and checksum from user space.
+@@ -52,8 +53,10 @@ csum_partial_copy_from_user(const void _
+ 			len -= 2;
+ 		}
+ 	}
++	stac();
+ 	isum = csum_partial_copy_generic((__force const void *)src,
+ 				dst, len, isum, errp, NULL);
++	clac();
+ 	if (unlikely(*errp))
+ 		goto out_err;
+ 
+@@ -82,6 +85,8 @@ __wsum
+ csum_partial_copy_to_user(const void *src, void __user *dst,
+ 			  int len, __wsum isum, int *errp)
+ {
++	__wsum ret;
++
+ 	might_sleep();
+ 
+ 	if (unlikely(!access_ok(VERIFY_WRITE, dst, len))) {
+@@ -105,8 +110,11 @@ csum_partial_copy_to_user(const void *sr
+ 	}
+ 
+ 	*errp = 0;
+-	return csum_partial_copy_generic(src, (void __force *)dst,
+-					 len, isum, NULL, errp);
++	stac();
++	ret = csum_partial_copy_generic(src, (void __force *)dst,
++					len, isum, NULL, errp);
++	clac();
++	return ret;
+ }
+ EXPORT_SYMBOL(csum_partial_copy_to_user);
+ 
 
 
