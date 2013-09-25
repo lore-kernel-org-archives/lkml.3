@@ -1,100 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab3IYAyX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:54:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39311 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147Ab3IYARI (ORCPT
+	id S932578Ab3IYAyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:54:39 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:44550 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755164Ab3IYAyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:08 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Durgin <josh.durgin@inktank.com>,
-        Alex Elder <alex.elder@linaro.org>
-Subject: [ 102/110] rbd: fix I/O error propagation for reads
-Date: Tue, 24 Sep 2013 17:15:40 -0700
-Message-Id: <20130925001334.468551389@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
-References: <20130925001323.387158698@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 24 Sep 2013 20:54:38 -0400
+Message-ID: <5242344B.8020002@linaro.org>
+Date: Tue, 24 Sep 2013 17:54:35 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] drivers/clocksource: sched_clock_register() conversion
+ for 3.13 (via tip/timers/core)
+References: <52422732.5000501@linaro.org>
+In-Reply-To: <52422732.5000501@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 09/24/2013 04:58 PM, John Stultz wrote:
+> Hey Daniel,
+>     Here's the sched_clock_register conversion that Stephen did earlier
+> this summer, as part of extending the generic sched_clock code to
+> support 64bit counters. Unfortunately the prereqs for this series missed
+> getting into tip/timers/core for 3.12, so I never sent out this pull
+> request. But now that the prereqs are in tip/timers/core for 3.13, I've
+> merge it up and I wanted to go ahead and send this out.
+>
+> Let me know if you have any issues or concerns.
+Hey Daniel,
+    Maybe hold off on this one. The kbuild test robot is has some
+complaints aobut the deprecation of setup_sched_clock() while there are
+still users in arch/arm.
 
-------------------
+I'll likely rework a new branch for you to pull that will be all but the
+"Deprecate setup_sched_clock()" patch.
 
-From: Josh Durgin <josh.durgin@inktank.com>
 
-commit 17c1cc1d9293a568a00545469078e29555cc7f39 upstream.
-
-When a request returns an error, the driver needs to report the entire
-extent of the request as completed.  Writes already did this, since
-they always set xferred = length, but reads were skipping that step if
-an error other than -ENOENT occurred.  Instead, rbd would end up
-passing 0 xferred to blk_end_request(), which would always report
-needing more data.  This resulted in an assert failing when more data
-was required by the block layer, but all the object requests were
-done:
-
-[ 1868.719077] rbd: obj_request read result -108 xferred 0
-[ 1868.719077]
-[ 1868.719518] end_request: I/O error, dev rbd1, sector 0
-[ 1868.719739]
-[ 1868.719739] Assertion failure in rbd_img_obj_callback() at line 1736:
-[ 1868.719739]
-[ 1868.719739]   rbd_assert(more ^ (which == img_request->obj_request_count));
-
-Without this assert, reads that hit errors would hang forever, since
-the block layer considered them incomplete.
-
-Fixes: http://tracker.ceph.com/issues/5647
-Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
-Reviewed-by: Alex Elder <alex.elder@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/block/rbd.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1565,11 +1565,12 @@ rbd_img_obj_request_read_callback(struct
- 		obj_request, obj_request->img_request, obj_request->result,
- 		xferred, length);
- 	/*
--	 * ENOENT means a hole in the image.  We zero-fill the
--	 * entire length of the request.  A short read also implies
--	 * zero-fill to the end of the request.  Either way we
--	 * update the xferred count to indicate the whole request
--	 * was satisfied.
-+	 * ENOENT means a hole in the image.  We zero-fill the entire
-+	 * length of the request.  A short read also implies zero-fill
-+	 * to the end of the request.  An error requires the whole
-+	 * length of the request to be reported finished with an error
-+	 * to the block layer.  In each case we update the xferred
-+	 * count to indicate the whole request was satisfied.
- 	 */
- 	rbd_assert(obj_request->type != OBJ_REQUEST_NODATA);
- 	if (obj_request->result == -ENOENT) {
-@@ -1578,14 +1579,13 @@ rbd_img_obj_request_read_callback(struct
- 		else
- 			zero_pages(obj_request->pages, 0, length);
- 		obj_request->result = 0;
--		obj_request->xferred = length;
- 	} else if (xferred < length && !obj_request->result) {
- 		if (obj_request->type == OBJ_REQUEST_BIO)
- 			zero_bio_chain(obj_request->bio_list, xferred);
- 		else
- 			zero_pages(obj_request->pages, xferred, length);
--		obj_request->xferred = length;
- 	}
-+	obj_request->xferred = length;
- 	obj_request_done_set(obj_request);
- }
- 
-
+thanks
+-john
 
