@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab3IYARF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:17:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39275 "EHLO
+	id S932198Ab3IYARO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:17:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39307 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932103Ab3IYARC (ORCPT
+	with ESMTP id S932139Ab3IYARI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:02 -0400
+	Tue, 24 Sep 2013 20:17:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Libin <huawei.libin@huawei.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 093/110] mm/huge_memory.c: fix potential NULL pointer dereference
-Date: Tue, 24 Sep 2013 17:15:31 -0700
-Message-Id: <20130925001333.496467023@linuxfoundation.org>
+        Jianpeng Ma <majianpeng@gmail.com>, Sage Weil <sage@inktank.com>
+Subject: [ 101/110] ceph: Dont forget the up_read(&osdc->map_sem) if met error.
+Date: Tue, 24 Sep 2013 17:15:39 -0700
+Message-Id: <20130925001334.366458001@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -30,42 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Libin <huawei.libin@huawei.com>
+From: majianpeng <majianpeng@gmail.com>
 
-commit a8f531ebc33052642b4bd7b812eedf397108ce64 upstream.
+commit 494ddd11be3e2621096bb425eed2886f8e8446d4 upstream.
 
-In collapse_huge_page() there is a race window between releasing the
-mmap_sem read lock and taking the mmap_sem write lock, so find_vma() may
-return NULL.  So check the return value to avoid NULL pointer dereference.
-
-collapse_huge_page
-	khugepaged_alloc_page
-		up_read(&mm->mmap_sem)
-	down_write(&mm->mmap_sem)
-	vma = find_vma(mm, address)
-
-Signed-off-by: Libin <huawei.libin@huawei.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/ceph/ioctl.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2286,6 +2286,8 @@ static void collapse_huge_page(struct mm
- 		goto out;
- 
- 	vma = find_vma(mm, address);
-+	if (!vma)
-+		goto out;
- 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
- 	hend = vma->vm_end & HPAGE_PMD_MASK;
- 	if (address < hstart || address + HPAGE_PMD_SIZE > hend)
+--- a/fs/ceph/ioctl.c
++++ b/fs/ceph/ioctl.c
+@@ -196,8 +196,10 @@ static long ceph_ioctl_get_dataloc(struc
+ 	r = ceph_calc_file_object_mapping(&ci->i_layout, dl.file_offset, len,
+ 					  &dl.object_no, &dl.object_offset,
+ 					  &olen);
+-	if (r < 0)
++	if (r < 0) {
++		up_read(&osdc->map_sem);
+ 		return -EIO;
++	}
+ 	dl.file_offset -= dl.object_offset;
+ 	dl.object_size = ceph_file_layout_object_size(ci->i_layout);
+ 	dl.block_size = ceph_file_layout_su(ci->i_layout);
 
 
