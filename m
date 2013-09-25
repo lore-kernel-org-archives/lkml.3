@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab3IYATs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:19:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39369 "EHLO
+	id S1756392Ab3IYATr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:19:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39364 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab3IYATq (ORCPT
+	with ESMTP id S1755779Ab3IYATp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:46 -0400
+	Tue, 24 Sep 2013 20:19:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
-        Chris Zankel <chris@zankel.net>
-Subject: [ 003/117] xtensa: Fix broken allmodconfig build
-Date: Tue, 24 Sep 2013 17:17:49 -0700
-Message-Id: <20130925001741.237265341@linuxfoundation.org>
+        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 001/117] ARC: SMP failed to boot due to missing IVT setup
+Date: Tue, 24 Sep 2013 17:17:47 -0700
+Message-Id: <20130925001741.036217071@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,37 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Noam Camus <noamc@ezchip.com>
 
-commit 8872366df396444d7655287c79ed182d8f47cba6 upstream.
+commit c3567f8a359b7917dcffa442301f88ed0a75211f upstream.
 
-xtansa allmodbuild fails with:
+Commit 05b016ecf5e7a "ARC: Setup Vector Table Base in early boot" moved
+the Interrupt vector Table setup out of arc_init_IRQ() which is called
+for all CPUs, to entry point of boot cpu only, breaking booting of others.
 
-arch/xtensa/kernel/xtensa_ksyms.c:129:1: error: '_mcount' undeclared here (not in a function)
-make[2]: *** [arch/xtensa/kernel/xtensa_ksyms.o] Error 1
-make[1]: *** [arch/xtensa/kernel] Error 2
+Fix by adding the same to entry point of non-boot CPUs too.
 
-The breakage is due to commit 478ba61af (xtensa: add static function tracer
-support) which exports _mcount without declaring it.
+read_arc_build_cfg_regs() printing IVT Base Register didn't help the
+casue since it prints a synthetic value if zero which is totally bogus,
+so fix that to print the exact Register.
 
-Cc: Max Filippov <jcmvbkbc@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Chris Zankel <chris@zankel.net>
+[vgupta: Remove the now stale comment from header of arc_init_IRQ and
+also added the commentary for halt-on-reset]
+
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>
+Signed-off-by: Noam Camus <noamc@ezchip.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/kernel/xtensa_ksyms.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arc/include/asm/sections.h |    1 -
+ arch/arc/kernel/head.S          |    5 +++++
+ arch/arc/kernel/irq.c           |    1 -
+ arch/arc/kernel/setup.c         |    3 ---
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/xtensa/kernel/xtensa_ksyms.c
-+++ b/arch/xtensa/kernel/xtensa_ksyms.c
-@@ -25,6 +25,7 @@
- #include <asm/io.h>
- #include <asm/page.h>
- #include <asm/pgalloc.h>
-+#include <asm/ftrace.h>
- #ifdef CONFIG_BLK_DEV_FD
- #include <asm/floppy.h>
- #endif
+--- a/arch/arc/include/asm/sections.h
++++ b/arch/arc/include/asm/sections.h
+@@ -11,7 +11,6 @@
+ 
+ #include <asm-generic/sections.h>
+ 
+-extern char _int_vec_base_lds[];
+ extern char __arc_dccm_base[];
+ extern char __dtb_start[];
+ 
+--- a/arch/arc/kernel/head.S
++++ b/arch/arc/kernel/head.S
+@@ -34,6 +34,9 @@ stext:
+ 	;	IDENTITY Reg [ 3  2  1  0 ]
+ 	;	(cpu-id)             ^^^	=> Zero for UP ARC700
+ 	;					=> #Core-ID if SMP (Master 0)
++	; Note that non-boot CPUs might not land here if halt-on-reset and
++	; instead breath life from @first_lines_of_secondary, but we still
++	; need to make sure only boot cpu takes this path.
+ 	GET_CPU_ID  r5
+ 	cmp	r5, 0
+ 	jnz	arc_platform_smp_wait_to_boot
+@@ -98,6 +101,8 @@ stext:
+ 
+ first_lines_of_secondary:
+ 
++	sr	@_int_vec_base_lds, [AUX_INTR_VEC_BASE]
++
+ 	; setup per-cpu idle task as "current" on this CPU
+ 	ld	r0, [@secondary_idle_tsk]
+ 	SET_CURR_TASK_ON_CPU  r0, r1
+--- a/arch/arc/kernel/irq.c
++++ b/arch/arc/kernel/irq.c
+@@ -24,7 +24,6 @@
+  * -Needed for each CPU (hence not foldable into init_IRQ)
+  *
+  * what it does ?
+- * -setup Vector Table Base Reg - in case Linux not linked at 0x8000_0000
+  * -Disable all IRQs (on CPU side)
+  * -Optionally, setup the High priority Interrupts as Level 2 IRQs
+  */
+--- a/arch/arc/kernel/setup.c
++++ b/arch/arc/kernel/setup.c
+@@ -47,10 +47,7 @@ void read_arc_build_cfg_regs(void)
+ 	READ_BCR(AUX_IDENTITY, cpu->core);
+ 
+ 	cpu->timers = read_aux_reg(ARC_REG_TIMERS_BCR);
+-
+ 	cpu->vec_base = read_aux_reg(AUX_INTR_VEC_BASE);
+-	if (cpu->vec_base == 0)
+-		cpu->vec_base = (unsigned int)_int_vec_base_lds;
+ 
+ 	READ_BCR(ARC_REG_D_UNCACH_BCR, uncached_space);
+ 	cpu->uncached_base = uncached_space.start << 24;
 
 
