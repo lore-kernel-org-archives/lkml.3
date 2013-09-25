@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab3IYAN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:13:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755304Ab3IYAN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:13:56 -0400
-Date: Tue, 24 Sep 2013 20:13:44 -0400
-From: Dave Jones <davej@redhat.com>
-To: x86@kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Fix apparent cut-n-paste mistake in Dell reboot workaround.
-Message-ID: <20130925001344.GA13554@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, x86@kernel.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755532Ab3IYAMp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:12:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38675 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755512Ab3IYAMm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 20:12:42 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Libin <huawei.libin@huawei.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 34/40] mm/huge_memory.c: fix potential NULL pointer dereference
+Date: Tue, 24 Sep 2013 17:12:06 -0700
+Message-Id: <20130925001045.650355671@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
+References: <20130925001041.939335518@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This seems to have been copied from the Optiplex 990 entry above, but somoene
-forgot to change the ident text.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
+------------------
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index f6835d8..ea2aaca 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -360,7 +360,7 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 	},
- 	{	/* Handle problems with rebooting on the Precision M6600. */
- 		.callback = set_pci_reboot,
--		.ident = "Dell OptiPlex 990",
-+		.ident = "Dell Precision M6600",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
+From: Libin <huawei.libin@huawei.com>
+
+commit a8f531ebc33052642b4bd7b812eedf397108ce64 upstream.
+
+In collapse_huge_page() there is a race window between releasing the
+mmap_sem read lock and taking the mmap_sem write lock, so find_vma() may
+return NULL.  So check the return value to avoid NULL pointer dereference.
+
+collapse_huge_page
+	khugepaged_alloc_page
+		up_read(&mm->mmap_sem)
+	down_write(&mm->mmap_sem)
+	vma = find_vma(mm, address)
+
+Signed-off-by: Libin <huawei.libin@huawei.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ mm/huge_memory.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1894,6 +1894,8 @@ static void collapse_huge_page(struct mm
+ 		goto out;
+ 
+ 	vma = find_vma(mm, address);
++	if (!vma)
++		goto out;
+ 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
+ 	hend = vma->vm_end & HPAGE_PMD_MASK;
+ 	if (address < hstart || address + HPAGE_PMD_SIZE > hend)
+
+
