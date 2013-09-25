@@ -1,191 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441Ab3IYEZZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 00:25:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37201 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab3IYEZX (ORCPT
+	id S1750997Ab3IYE2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 00:28:35 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:53515 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab3IYE2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 00:25:23 -0400
-From: Milo Kim <milo.kim@ti.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-pwm@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        <devicetree@vger.kernel.org>, Milo Kim <milo.kim@ti.com>
-Subject: [PATCH v4 4/4] Documentation: add LP3943 DT bindings and document
-Date: Wed, 25 Sep 2013 13:25:09 +0900
-Message-ID: <1380083109-6284-1-git-send-email-milo.kim@ti.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 25 Sep 2013 00:28:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1380014422.31179.4.camel@AMDC1943>
+References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
+	<5237FDCC.5010109@oracle.com>
+	<20130923220757.GC16191@variantweb.net>
+	<1380014422.31179.4.camel@AMDC1943>
+Date: Wed, 25 Sep 2013 12:28:33 +0800
+Message-ID: <CAA_GA1f_vpJ+Ou3ANcrK5_Bd-vu+-cnCgEhQ3USiW3MpNX7Opw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] mm: migrate zbud pages
+From: Bob Liu <lliubbo@gmail.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bindings for LP3943 MFD, GPIO and PWM controller are added.
+On Tue, Sep 24, 2013 at 5:20 PM, Krzysztof Kozlowski
+<k.kozlowski@samsung.com> wrote:
+> Hi,
+>
+> On pon, 2013-09-23 at 17:07 -0500, Seth Jennings wrote:
+>> On Tue, Sep 17, 2013 at 02:59:24PM +0800, Bob Liu wrote:
+>> > Mel mentioned several problems about zswap/zbud in thread "[PATCH v6
+>> > 0/5] zram/zsmalloc promotion".
+>> >
+>> > Like "it's clunky as hell and the layering between zswap and zbud is
+>> > twisty" and "I think I brought up its stalling behaviour during review
+>> > when it was being merged. It would have been preferable if writeback
+>> > could be initiated in batches and then waited on at the very least..
+>> >  It's worse that it uses _swap_writepage directly instead of going
+>> > through a writepage ops.  It would have been better if zbud pages
+>> > existed on the LRU and written back with an address space ops and
+>> > properly handled asynchonous writeback."
+>> >
+>> > So I think it would be better if we can address those issues at first
+>> > and it would be easier to address these issues before adding more new
+>> > features. Welcome any ideas.
+>>
+>> I just had an idea this afternoon to potentially kill both these birds with one
+>> stone: Replace the rbtree in zswap with an address_space.
+>>
+>> Each swap type would have its own page_tree to organize the compressed objects
+>> by type and offset (radix tree is more suited for this anyway) and a_ops that
+>> could be called by shrink_page_list() (writepage) or the migration code
+>> (migratepage).
+>>
+>> Then zbud pages could be put on the normal LRU list, maybe at the beginning of
+>> the inactive LRU so they would live for another cycle through the list, then be
+>> reclaimed in the normal way with the mapping->a_ops->writepage() pointing to a
+>> zswap_writepage() function that would decompress the pages and call
+>> __swap_writepage() on them.
+>
+> How exactly the address space can be used here? Do you want to point to
+> zbud pages in address_space.page_tree? If yes then which index should be
+> used?
+>
 
-Cc: devicetree@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>
-Signed-off-by: Milo Kim <milo.kim@ti.com>
----
- .../devicetree/bindings/gpio/gpio-lp3943.txt       |   37 +++++++++++++
- Documentation/devicetree/bindings/mfd/lp3943.txt   |   33 +++++++++++
- .../devicetree/bindings/pwm/pwm-lp3943.txt         |   58 ++++++++++++++++++++
- 3 files changed, 128 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/lp3943.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
+I didn't get the point neither. I think introduce address_space is enough.
+1. zbud.c:
+static struct address_space_operations zbud_aops = {
+.writepage= zswap_write_page,
+};
+struct address_space zbud_space = {
+.a_ops = &zbud_aops,
+};
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt b/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
-new file mode 100644
-index 0000000..80fcb7d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
-@@ -0,0 +1,37 @@
-+TI/National Semiconductor LP3943 GPIO controller
-+
-+Required properties:
-+  - compatible: "ti,lp3943-gpio"
-+  - gpio-controller: Marks the device node as a GPIO controller.
-+  - #gpio-cells: Should be 2. See gpio.txt in this directory for a
-+                 description of the cells format.
-+
-+Example:
-+Simple LED controls with LP3943 GPIO controller
-+
-+&i2c4 {
-+	lp3943@60 {
-+		compatible = "ti,lp3943";
-+		reg = <0x60>;
-+
-+		gpioex: gpio {
-+			compatible = "ti,lp3943-gpio";
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+		};
-+	};
-+};
-+
-+leds {
-+	compatible = "gpio-leds";
-+	indicator1 {
-+		label = "indi1";
-+		gpios = <&gpioex 9 GPIO_ACTIVE_LOW>;
-+	};
-+
-+	indicator2 {
-+		label = "indi2";
-+		gpios = <&gpioex 10 GPIO_ACTIVE_LOW>;
-+		default-state = "off";
-+	};
-+};
-diff --git a/Documentation/devicetree/bindings/mfd/lp3943.txt b/Documentation/devicetree/bindings/mfd/lp3943.txt
-new file mode 100644
-index 0000000..e8591d6
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/lp3943.txt
-@@ -0,0 +1,33 @@
-+TI/National Semiconductor LP3943 MFD driver
-+
-+Required properties:
-+  - compatible: "ti,lp3943"
-+  - reg: I2C slave address. From 0x60 to 0x67.
-+
-+LP3943 consists of two sub-devices, lp3943-gpio and lp3943-pwm.
-+
-+For the LP3943 GPIO properties please refer to:
-+Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
-+
-+For the LP3943 PWM properties please refer to:
-+Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
-+
-+Example:
-+
-+lp3943@60 {
-+	compatible = "ti,lp3943";
-+	reg = <0x60>;
-+
-+	gpioex: gpio {
-+		compatible = "ti,lp3943-gpio";
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	pwm3943: pwm {
-+		compatible = "ti,lp3943-pwm";
-+		#pwm-cells = <2>;
-+		ti,pwm0 = <8 9 10>;
-+		ti,pwm1 = <15>;
-+	};
-+};
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt b/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
-new file mode 100644
-index 0000000..7bd9d3b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
-@@ -0,0 +1,58 @@
-+TI/National Semiconductor LP3943 PWM controller
-+
-+Required properties:
-+  - compatible: "ti,lp3943-pwm"
-+  - #pwm-cells: Should be 2. See pwm.txt in this directory for a
-+                description of the cells format.
-+                Note that this hardware limits the period length to the
-+                range 6250~1600000.
-+  - ti,pwm0 or ti,pwm1: Output pin number(s) for PWM channel 0 or 1.
-+    0 = output 0
-+    1 = output 1
-+    .
-+    .
-+    15 = output 15
-+
-+Example:
-+PWM 0 is for RGB LED brightness control
-+PWM 1 is for brightness control of LP8557 backlight device
-+
-+&i2c3 {
-+	lp3943@60 {
-+		compatible = "ti,lp3943";
-+		reg = <0x60>;
-+
-+		/*
-+		 * PWM 0 : output 8, 9 and 10
-+		 * PWM 1 : output 15
-+		 */
-+		pwm3943: pwm {
-+			compatible = "ti,lp3943-pwm";
-+			#pwm-cells = <2>;
-+			ti,pwm0 = <8 9 10>;
-+			ti,pwm1 = <15>;
-+		};
-+	};
-+
-+};
-+
-+/* LEDs control with PWM 0 of LP3943 */
-+pwmleds {
-+	compatible = "pwm-leds";
-+	rgb {
-+		label = "indi::rgb";
-+		pwms = <&pwm3943 0 10000>;
-+		max-brightness = <255>;
-+	};
-+};
-+
-+&i2c4 {
-+	/* Backlight control with PWM 1 of LP3943 */
-+	backlight@2c {
-+		compatible = "ti,lp8557";
-+		reg = <0x2c>;
-+
-+		pwms = <&pwm3943 1 10000>;
-+		pwm-names = "lp8557";
-+	};
-+};
+zbud_alloc() {
+zbud_page = alloc_page();
+zbud_page->mapping = (struct address_space *)&zbud_space;
+set_page_private(page, (unsigned long)pool);
+lru_add_anon(zbud_page);
+}
+
+2. zswap.c
+static int zswap_writepage(struct page *page, struct writeback_control *wbc)
+{
+handle = encode_handle(page_address(page), FIRST));
+zswap_writeback_entry(pool, handle);
+
+handle = encode_handle(page_address(page), LAST));
+zswap_writeback_entry(pool, handle);
+}
+
+Of course it may need lots of work for core MM subsystem can maintain
+zbud pages.
+But in this way, we can get rid of the clunky reclaiming layer and
+integrate zswap closely with core MM subsystem which knows better how
+many zbud pages can be used and when should trigger the zbud pages
+reclaim.
+
 -- 
-1.7.9.5
-
+Regards,
+--Bob
