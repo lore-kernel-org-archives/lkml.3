@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab3IYAqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:46:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39472 "EHLO
+	id S1757460Ab3IYAqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:46:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39476 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab3IYAUD (ORCPT
+	with ESMTP id S1755645Ab3IYAUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:20:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Steve Cotton <steve@s.cotton.clara.co.uk>
-Subject: [ 027/117] xhci: fix port BESL LPM capability checking
-Date: Tue, 24 Sep 2013 17:18:13 -0700
-Message-Id: <20130925001743.798271050@linuxfoundation.org>
+        Stephen Boyd <sboyd@codeaurora.org>, Felipe Balbi <balbi@ti.com>
+Subject: [ 028/117] usb: dwc3: gadget: dont request IRQs in atomic
+Date: Tue, 24 Sep 2013 17:18:14 -0700
+Message-Id: <20130925001743.910176839@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -28,37 +26,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit dcf06a036848b4e8e6c8220f2e00b9adf6f84918 upstream.
+commit b0d7ffd44ba9cd2dfbf299674418193a5f9ed21a upstream.
 
-Wrong capability bit was checked for best effort service latency.
-bit 20 indicate port is BESL LPM capable (BLC),
-bit 19 is hardware LPM capable (HLC)
+We cannot request an IRQ with spinlocks held
+as that would trigger a sleeping inside
+spinlock warning.
 
-This patch should be backported to kernels as old as 3.11, that
-contain the commit a558ccdcc71c7770c5e80c926a31cfe8a3892a09 "usb: xhci:
-add USB2 Link power management BESL support"
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Steve Cotton <steve@s.cotton.clara.co.uk>
+Reported-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ext-caps.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/dwc3/gadget.c |   39 ++++++++++++++++++++++-----------------
+ 1 file changed, 22 insertions(+), 17 deletions(-)
 
---- a/drivers/usb/host/xhci-ext-caps.h
-+++ b/drivers/usb/host/xhci-ext-caps.h
-@@ -71,7 +71,7 @@
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1508,6 +1508,15 @@ static int dwc3_gadget_start(struct usb_
+ 	int			irq;
+ 	u32			reg;
  
- /* USB 2.0 xHCI 1.0 hardware LMP capability - section 7.2.2.1.3.2 */
- #define XHCI_HLC               (1 << 19)
--#define XHCI_BLC               (1 << 19)
-+#define XHCI_BLC               (1 << 20)
++	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
++	ret = request_threaded_irq(irq, dwc3_interrupt, dwc3_thread_interrupt,
++			IRQF_SHARED | IRQF_ONESHOT, "dwc3", dwc);
++	if (ret) {
++		dev_err(dwc->dev, "failed to request irq #%d --> %d\n",
++				irq, ret);
++		goto err0;
++	}
++
+ 	spin_lock_irqsave(&dwc->lock, flags);
  
- /* command register values to disable interrupts and halt the HC */
- /* start/stop HC execution - do not write unless HC is halted*/
+ 	if (dwc->gadget_driver) {
+@@ -1515,7 +1524,7 @@ static int dwc3_gadget_start(struct usb_
+ 				dwc->gadget.name,
+ 				dwc->gadget_driver->driver.name);
+ 		ret = -EBUSY;
+-		goto err0;
++		goto err1;
+ 	}
+ 
+ 	dwc->gadget_driver	= driver;
+@@ -1551,42 +1560,38 @@ static int dwc3_gadget_start(struct usb_
+ 	ret = __dwc3_gadget_ep_enable(dep, &dwc3_gadget_ep0_desc, NULL, false);
+ 	if (ret) {
+ 		dev_err(dwc->dev, "failed to enable %s\n", dep->name);
+-		goto err0;
++		goto err2;
+ 	}
+ 
+ 	dep = dwc->eps[1];
+ 	ret = __dwc3_gadget_ep_enable(dep, &dwc3_gadget_ep0_desc, NULL, false);
+ 	if (ret) {
+ 		dev_err(dwc->dev, "failed to enable %s\n", dep->name);
+-		goto err1;
++		goto err3;
+ 	}
+ 
+ 	/* begin to receive SETUP packets */
+ 	dwc->ep0state = EP0_SETUP_PHASE;
+ 	dwc3_ep0_out_start(dwc);
+ 
+-	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
+-	ret = request_threaded_irq(irq, dwc3_interrupt, dwc3_thread_interrupt,
+-			IRQF_SHARED | IRQF_ONESHOT, "dwc3", dwc);
+-	if (ret) {
+-		dev_err(dwc->dev, "failed to request irq #%d --> %d\n",
+-				irq, ret);
+-		goto err1;
+-	}
+-
+ 	dwc3_gadget_enable_irq(dwc);
+ 
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
+ 	return 0;
+ 
+-err1:
++err3:
+ 	__dwc3_gadget_ep_disable(dwc->eps[0]);
+ 
+-err0:
++err2:
+ 	dwc->gadget_driver = NULL;
++
++err1:
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
++	free_irq(irq, dwc);
++
++err0:
+ 	return ret;
+ }
+ 
+@@ -1600,9 +1605,6 @@ static int dwc3_gadget_stop(struct usb_g
+ 	spin_lock_irqsave(&dwc->lock, flags);
+ 
+ 	dwc3_gadget_disable_irq(dwc);
+-	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
+-	free_irq(irq, dwc);
+-
+ 	__dwc3_gadget_ep_disable(dwc->eps[0]);
+ 	__dwc3_gadget_ep_disable(dwc->eps[1]);
+ 
+@@ -1610,6 +1612,9 @@ static int dwc3_gadget_stop(struct usb_g
+ 
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
++	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
++	free_irq(irq, dwc);
++
+ 	return 0;
+ }
+ 
 
 
