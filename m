@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab3IYA4q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:56:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39260 "EHLO
+	id S1757290Ab3IYA5E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:57:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932091Ab3IYARB (ORCPT
+	with ESMTP id S932081Ab3IYAQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:01 -0400
+	Tue, 24 Sep 2013 20:16:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jie Liu <jeff.liu@oracle.com>, David Weber <wb@munzinger.de>,
-        Sunil Mushran <sunil.mushran@gmail.com>, Mark Fashen <mfasheh@suse.de>,
-        Joel Becker <jlbec@evilplan.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 091/110] ocfs2: fix the end cluster offset of FIEMAP
-Date: Tue, 24 Sep 2013 17:15:29 -0700
-Message-Id: <20130925001333.278853749@linuxfoundation.org>
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [ 089/110] pidns: Fix hang in zap_pid_ns_processes by sending a potentially extra wakeup
+Date: Tue, 24 Sep 2013 17:15:27 -0700
+Message-Id: <20130925001333.069484841@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -30,65 +28,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jie Liu <jeff.liu@oracle.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 28e8be31803b19d0d8f76216cb11b480b8a98bec upstream.
+commit a606488513543312805fab2b93070cefe6a3016c upstream.
 
-Call fiemap ioctl(2) with given start offset as well as an desired mapping
-range should show extents if possible.  However, we somehow figure out the
-end offset of mapping via 'mapping_end -= cpos' before iterating the
-extent records which would cause problems if the given fiemap length is
-too small to a cluster size, e.g,
+Serge Hallyn <serge.hallyn@ubuntu.com> writes:
 
-Cluster size 4096:
-debugfs.ocfs2 1.6.3
-        Block Size Bits: 12   Cluster Size Bits: 12
+> Since commit af4b8a83add95ef40716401395b44a1b579965f4 it's been
+> possible to get into a situation where a pidns reaper is
+> <defunct>, reparented to host pid 1, but never reaped.  How to
+> reproduce this is documented at
+>
+> https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526
+> (and see
+> https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526/comments/13)
+> In short, run repeated starts of a container whose init is
+>
+> Process.exit(0);
+>
+> sysrq-t when such a task is playing zombie shows:
+>
+> [  131.132978] init            x ffff88011fc14580     0  2084   2039 0x00000000
+> [  131.132978]  ffff880116e89ea8 0000000000000002 ffff880116e89fd8 0000000000014580
+> [  131.132978]  ffff880116e89fd8 0000000000014580 ffff8801172a0000 ffff8801172a0000
+> [  131.132978]  ffff8801172a0630 ffff88011729fff0 ffff880116e14650 ffff88011729fff0
+> [  131.132978] Call Trace:
+> [  131.132978]  [<ffffffff816f6159>] schedule+0x29/0x70
+> [  131.132978]  [<ffffffff81064591>] do_exit+0x6e1/0xa40
+> [  131.132978]  [<ffffffff81071eae>] ? signal_wake_up_state+0x1e/0x30
+> [  131.132978]  [<ffffffff8106496f>] do_group_exit+0x3f/0xa0
+> [  131.132978]  [<ffffffff810649e4>] SyS_exit_group+0x14/0x20
+> [  131.132978]  [<ffffffff8170102f>] tracesys+0xe1/0xe6
+>
+> Further debugging showed that every time this happened, zap_pid_ns_processes()
+> started with nr_hashed being 3, while we were expecting it to drop to 2.
+> Any time it didn't happen, nr_hashed was 1 or 2.  So the reaper was
+> waiting for nr_hashed to become 2, but free_pid() only wakes the reaper
+> if nr_hashed hits 1.
 
-The extended fiemap test utility From David:
-https://gist.github.com/anonymous/6172331
+The issue is that when the task group leader of an init process exits
+before other tasks of the init process when the init process finally
+exits it will be a secondary task sleeping in zap_pid_ns_processes and
+waiting to wake up when the number of hashed pids drops to two.  This
+case waits forever as free_pid only sends a wake up when the number of
+hashed pids drops to 1.
 
-# dd if=/dev/urandom of=/ocfs2/test_file bs=1M count=1000
-# ./fiemap /ocfs2/test_file 4096 10
-start: 4096, length: 10
-File /ocfs2/test_file has 0 extents:
-#	Logical          Physical         Length           Flags
-	^^^^^ <-- No extent is shown
+To correct this the simple strategy of sending a possibly unncessary
+wake up when the number of hashed pids drops to 2 is adopted.
 
-In this case, at ocfs2_fiemap(): cpos == mapping_end == 1. Hence the
-loop of searching extent records was not executed at all.
+Sending one extraneous wake up is relatively harmless, at worst we
+waste a little cpu time in the rare case when a pid namespace
+appropaches exiting.
 
-This patch remove the in question 'mapping_end -= cpos', and loops
-until the cpos is larger than the mapping_end as usual.
+We can detect the case when the pid namespace drops to just two pids
+hashed race free in free_pid.
 
-# ./fiemap /ocfs2/test_file 4096 10
-start: 4096, length: 10
-File /ocfs2/test_file has 1 extents:
-#	Logical          Physical         Length           Flags
-0:	0000000000000000 0000000056a01000 0000000006a00000 0000
+Dereferencing pid_ns->child_reaper with the pidmap_lock held is safe
+without out the tasklist_lock because it is guaranteed that the
+detach_pid will be called on the child_reaper before it is freed and
+detach_pid calls __change_pid which calls free_pid which takes the
+pidmap_lock.  __change_pid only calls free_pid if this is the
+last use of the pid.  For a thread that is not the thread group leader
+the threads pid will only ever have one user because a threads pid
+is not allowed to be the pid of a process, of a process group or
+a session.  For a thread that is a thread group leader all of
+the other threads of that process will be reaped before it is allowed
+for the thread group leader to be reaped ensuring there will only
+be one user of the threads pid as a process pid.  Furthermore
+because the thread is the init process of a pid namespace all of the
+other processes in the pid namespace will have also been already freed
+leading to the fact that the pid will not be used as a session pid or
+a process group pid for any other running process.
 
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-Reported-by: David Weber <wb@munzinger.de>
-Tested-by: David Weber <wb@munzinger.de>
-Cc: Sunil Mushran <sunil.mushran@gmail.com>
-Cc: Mark Fashen <mfasheh@suse.de>
-Cc: Joel Becker <jlbec@evilplan.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Tested-by: Serge Hallyn <serge.hallyn@canonical.com>
+Reported-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/extent_map.c |    1 -
- 1 file changed, 1 deletion(-)
+ kernel/pid.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ocfs2/extent_map.c
-+++ b/fs/ocfs2/extent_map.c
-@@ -781,7 +781,6 @@ int ocfs2_fiemap(struct inode *inode, st
- 	cpos = map_start >> osb->s_clustersize_bits;
- 	mapping_end = ocfs2_clusters_for_bytes(inode->i_sb,
- 					       map_start + map_len);
--	mapping_end -= cpos;
- 	is_last = 0;
- 	while (cpos < mapping_end && !is_last) {
- 		u32 fe_flags;
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -264,6 +264,7 @@ void free_pid(struct pid *pid)
+ 		struct pid_namespace *ns = upid->ns;
+ 		hlist_del_rcu(&upid->pid_chain);
+ 		switch(--ns->nr_hashed) {
++		case 2:
+ 		case 1:
+ 			/* When all that is left in the pid namespace
+ 			 * is the reaper wake up the reaper.  The reaper
 
 
