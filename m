@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab3IYAgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:36:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39630 "EHLO
+	id S1757248Ab3IYAgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:36:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39626 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756624Ab3IYAUd (ORCPT
+	with ESMTP id S1756614Ab3IYAUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:33 -0400
+	Tue, 24 Sep 2013 20:20:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Don Zickus <dzickus@redhat.com>, Joe Mario <jmario@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Paul Turner <pjt@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 056/117] sched/x86: Optimize switch_mm() for multi-threaded workloads
-Date: Tue, 24 Sep 2013 17:18:42 -0700
-Message-Id: <20130925001746.957732213@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 063/117] ext4: simplify truncation code in ext4_setattr()
+Date: Tue, 24 Sep 2013 17:18:49 -0700
+Message-Id: <20130925001747.736784577@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -29,90 +26,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rik van Riel <riel@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 8f898fbbe5ee5e20a77c4074472a1fd088dc47d1 upstream.
+commit 5208386c501276df18fee464e21d3c58d2d79517 upstream.
 
-Dick Fowles, Don Zickus and Joe Mario have been working on
-improvements to perf, and noticed heavy cache line contention
-on the mm_cpumask, running linpack on a 60 core / 120 thread
-system.
+Merge conditions in ext4_setattr() handling inode size changes, also
+move ext4_begin_ordered_truncate() call somewhat earlier because it
+simplifies error recovery in case of failure. Also add error handling in
+case i_disksize update fails.
 
-The cause turned out to be unnecessary atomic accesses to the
-mm_cpumask. When in lazy TLB mode, the CPU is only removed from
-the mm_cpumask if there is a TLB flush event.
-
-Most of the time, no such TLB flush happens, and the kernel
-skips the TLB reload. It can also skip the atomic memory
-set & test.
-
-Here is a summary of Joe's test results:
-
- * The __schedule function dropped from 24% of all program cycles down
-   to 5.5%.
-
- * The cacheline contention/hotness for accesses to that bitmask went
-   from being the 1st/2nd hottest - down to the 84th hottest (0.3% of
-   all shared misses which is now quite cold)
-
- * The average load latency for the bit-test-n-set instruction in
-   __schedule dropped from 10k-15k cycles down to an average of 600 cycles.
-
- * The linpack program results improved from 133 GFlops to 144 GFlops.
-   Peak GFlops rose from 133 to 153.
-
-Reported-by: Don Zickus <dzickus@redhat.com>
-Reported-by: Joe Mario <jmario@redhat.com>
-Tested-by: Joe Mario <jmario@redhat.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20130731221421.616d3d20@annuminas.surriel.com
-[ Made the comments consistent around the modified code. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/mmu_context.h |   20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ fs/ext4/inode.c |  109 +++++++++++++++++++++++++-------------------------------
+ 1 file changed, 49 insertions(+), 60 deletions(-)
 
---- a/arch/x86/include/asm/mmu_context.h
-+++ b/arch/x86/include/asm/mmu_context.h
-@@ -45,22 +45,28 @@ static inline void switch_mm(struct mm_s
- 		/* Re-load page tables */
- 		load_cr3(next->pgd);
- 
--		/* stop flush ipis for the previous mm */
-+		/* Stop flush ipis for the previous mm */
- 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
- 
--		/*
--		 * load the LDT, if the LDT is different:
--		 */
-+		/* Load the LDT, if the LDT is different: */
- 		if (unlikely(prev->context.ldt != next->context.ldt))
- 			load_LDT_nolock(&next->context);
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4600,7 +4600,9 @@ int ext4_setattr(struct dentry *dentry,
+ 		ext4_journal_stop(handle);
  	}
- #ifdef CONFIG_SMP
--	else {
-+	  else {
- 		this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
- 		BUG_ON(this_cpu_read(cpu_tlbstate.active_mm) != next);
  
--		if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next))) {
--			/* We were in lazy tlb mode and leave_mm disabled
-+		if (!cpumask_test_cpu(cpu, mm_cpumask(next))) {
-+			/*
-+			 * On established mms, the mm_cpumask is only changed
-+			 * from irq context, from ptep_clear_flush() while in
-+			 * lazy tlb mode, and here. Irqs are blocked during
-+			 * schedule, protecting us from simultaneous changes.
-+			 */
-+			cpumask_set_cpu(cpu, mm_cpumask(next));
-+			/*
-+			 * We were in lazy tlb mode and leave_mm disabled
- 			 * tlb flush IPI delivery. We must reload CR3
- 			 * to make sure to use no freed page tables.
- 			 */
+-	if (attr->ia_valid & ATTR_SIZE) {
++	if (attr->ia_valid & ATTR_SIZE && attr->ia_size != inode->i_size) {
++		handle_t *handle;
++		loff_t oldsize = inode->i_size;
+ 
+ 		if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
+ 			struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+@@ -4608,73 +4610,60 @@ int ext4_setattr(struct dentry *dentry,
+ 			if (attr->ia_size > sbi->s_bitmap_maxbytes)
+ 				return -EFBIG;
+ 		}
+-	}
+-
+-	if (S_ISREG(inode->i_mode) &&
+-	    attr->ia_valid & ATTR_SIZE &&
+-	    (attr->ia_size < inode->i_size)) {
+-		handle_t *handle;
+-
+-		handle = ext4_journal_start(inode, EXT4_HT_INODE, 3);
+-		if (IS_ERR(handle)) {
+-			error = PTR_ERR(handle);
+-			goto err_out;
+-		}
+-		if (ext4_handle_valid(handle)) {
+-			error = ext4_orphan_add(handle, inode);
+-			orphan = 1;
+-		}
+-		EXT4_I(inode)->i_disksize = attr->ia_size;
+-		rc = ext4_mark_inode_dirty(handle, inode);
+-		if (!error)
+-			error = rc;
+-		ext4_journal_stop(handle);
+-
+-		if (ext4_should_order_data(inode)) {
+-			error = ext4_begin_ordered_truncate(inode,
++		if (S_ISREG(inode->i_mode) &&
++		    (attr->ia_size < inode->i_size)) {
++			if (ext4_should_order_data(inode)) {
++				error = ext4_begin_ordered_truncate(inode,
+ 							    attr->ia_size);
+-			if (error) {
+-				/* Do as much error cleanup as possible */
+-				handle = ext4_journal_start(inode,
+-							    EXT4_HT_INODE, 3);
+-				if (IS_ERR(handle)) {
+-					ext4_orphan_del(NULL, inode);
++				if (error)
+ 					goto err_out;
+-				}
+-				ext4_orphan_del(handle, inode);
+-				orphan = 0;
+-				ext4_journal_stop(handle);
++			}
++			handle = ext4_journal_start(inode, EXT4_HT_INODE, 3);
++			if (IS_ERR(handle)) {
++				error = PTR_ERR(handle);
++				goto err_out;
++			}
++			if (ext4_handle_valid(handle)) {
++				error = ext4_orphan_add(handle, inode);
++				orphan = 1;
++			}
++			EXT4_I(inode)->i_disksize = attr->ia_size;
++			rc = ext4_mark_inode_dirty(handle, inode);
++			if (!error)
++				error = rc;
++			ext4_journal_stop(handle);
++			if (error) {
++				ext4_orphan_del(NULL, inode);
+ 				goto err_out;
+ 			}
+ 		}
+-	}
+-
+-	if (attr->ia_valid & ATTR_SIZE) {
+-		if (attr->ia_size != inode->i_size) {
+-			loff_t oldsize = inode->i_size;
+ 
+-			i_size_write(inode, attr->ia_size);
+-			/*
+-			 * Blocks are going to be removed from the inode. Wait
+-			 * for dio in flight.  Temporarily disable
+-			 * dioread_nolock to prevent livelock.
+-			 */
+-			if (orphan) {
+-				if (!ext4_should_journal_data(inode)) {
+-					ext4_inode_block_unlocked_dio(inode);
+-					inode_dio_wait(inode);
+-					ext4_inode_resume_unlocked_dio(inode);
+-				} else
+-					ext4_wait_for_tail_page_commit(inode);
+-			}
+-			/*
+-			 * Truncate pagecache after we've waited for commit
+-			 * in data=journal mode to make pages freeable.
+-			 */
+-			truncate_pagecache(inode, oldsize, inode->i_size);
++		i_size_write(inode, attr->ia_size);
++		/*
++		 * Blocks are going to be removed from the inode. Wait
++		 * for dio in flight.  Temporarily disable
++		 * dioread_nolock to prevent livelock.
++		 */
++		if (orphan) {
++			if (!ext4_should_journal_data(inode)) {
++				ext4_inode_block_unlocked_dio(inode);
++				inode_dio_wait(inode);
++				ext4_inode_resume_unlocked_dio(inode);
++			} else
++				ext4_wait_for_tail_page_commit(inode);
+ 		}
+-		ext4_truncate(inode);
++		/*
++		 * Truncate pagecache after we've waited for commit
++		 * in data=journal mode to make pages freeable.
++		 */
++		truncate_pagecache(inode, oldsize, inode->i_size);
+ 	}
++	/*
++	 * We want to call ext4_truncate() even if attr->ia_size ==
++	 * inode->i_size for cases like truncation of fallocated space
++	 */
++	if (attr->ia_valid & ATTR_SIZE)
++		ext4_truncate(inode);
+ 
+ 	if (!rc) {
+ 		setattr_copy(inode, attr);
 
 
