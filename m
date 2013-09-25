@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab3IYARO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:17:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39307 "EHLO
+	id S1756300Ab3IYARS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:17:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39349 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab3IYARI (ORCPT
+	with ESMTP id S932139Ab3IYARP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:08 -0400
+	Tue, 24 Sep 2013 20:17:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jianpeng Ma <majianpeng@gmail.com>, Sage Weil <sage@inktank.com>
-Subject: [ 101/110] ceph: Dont forget the up_read(&osdc->map_sem) if met error.
-Date: Tue, 24 Sep 2013 17:15:39 -0700
-Message-Id: <20130925001334.366458001@linuxfoundation.org>
+        Grant Likely <grant.likely@linaro.org>,
+        Wladislav Wiebe <wladislav.kw@gmail.com>
+Subject: [ 104/110] of: Fix missing memory initialization on FDT unflattening
+Date: Tue, 24 Sep 2013 17:15:42 -0700
+Message-Id: <20130925001334.681145682@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -26,31 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: majianpeng <majianpeng@gmail.com>
+From: Grant Likely <grant.likely@linaro.org>
 
-commit 494ddd11be3e2621096bb425eed2886f8e8446d4 upstream.
+commit 0640332e073be9207f0784df43595c0c39716e42 upstream.
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Any calls to dt_alloc() need to be zeroed. This is a temporary fix, but
+the allocation function itself needs to zero memory before returning
+it. This is a follow up to patch 9e4012752, "of: fdt: fix memory
+initialization for expanded DT" which fixed one call site but missed
+another.
+
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Acked-by: Wladislav Wiebe <wladislav.kw@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/ioctl.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/of/base.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ceph/ioctl.c
-+++ b/fs/ceph/ioctl.c
-@@ -196,8 +196,10 @@ static long ceph_ioctl_get_dataloc(struc
- 	r = ceph_calc_file_object_mapping(&ci->i_layout, dl.file_offset, len,
- 					  &dl.object_no, &dl.object_offset,
- 					  &olen);
--	if (r < 0)
-+	if (r < 0) {
-+		up_read(&osdc->map_sem);
- 		return -EIO;
-+	}
- 	dl.file_offset -= dl.object_offset;
- 	dl.object_size = ceph_file_layout_object_size(ci->i_layout);
- 	dl.block_size = ceph_file_layout_su(ci->i_layout);
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -1629,6 +1629,7 @@ void of_alias_scan(void * (*dt_alloc)(u6
+ 		ap = dt_alloc(sizeof(*ap) + len + 1, 4);
+ 		if (!ap)
+ 			continue;
++		memset(ap, 0, sizeof(*ap) + len + 1);
+ 		ap->alias = start;
+ 		of_alias_add(ap, np, id, start, len);
+ 	}
 
 
