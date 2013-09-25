@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab3IYAtf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:49:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39421 "EHLO
+	id S1757479Ab3IYAuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:50:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39413 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756446Ab3IYATy (ORCPT
+	with ESMTP id S1756432Ab3IYATx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:54 -0400
+	Tue, 24 Sep 2013 20:19:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Roger=20Pau=20Monn=C3=A9?= <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, Matt Wilson <msw@amazon.com>
-Subject: [ 015/117] xen-gnt: prevent adding duplicate gnt callbacks
-Date: Tue, 24 Sep 2013 17:18:01 -0700
-Message-Id: <20130925001742.523767432@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 013/117] powerpc: Handle unaligned ldbrx/stdbrx
+Date: Tue, 24 Sep 2013 17:17:59 -0700
+Message-Id: <20130925001742.318851206@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,53 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Pau Monne <roger.pau@citrix.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 5f338d9001094a56cf87bd8a280b4e7ff953bb59 upstream.
+commit 230aef7a6a23b6166bd4003bfff5af23c9bd381f upstream.
 
-With the current implementation, the callback in the tail of the list
-can be added twice, because the check done in
-gnttab_request_free_callback is bogus, callback->next can be NULL if
-it is the last callback in the list. If we add the same callback twice
-we end up with an infinite loop, were callback == callback->next.
+Normally when we haven't implemented an alignment handler for
+a load or store instruction the process will be terminated.
 
-Replace this check with a proper one that iterates over the list to
-see if the callback has already been added.
+The alignment handler uses the DSISR (or a pseudo one) to locate
+the right handler. Unfortunately ldbrx and stdbrx overlap lfs and
+stfs so we incorrectly think ldbrx is an lfs and stdbrx is an
+stfs.
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Matt Wilson <msw@amazon.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+This bug is particularly nasty - instead of terminating the
+process we apply an incorrect fixup and continue on.
+
+With more and more overlapping instructions we should stop
+creating a pseudo DSISR and index using the instruction directly,
+but for now add a special case to catch ldbrx/stdbrx.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/grant-table.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/align.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -730,9 +730,18 @@ void gnttab_request_free_callback(struct
- 				  void (*fn)(void *), void *arg, u16 count)
- {
- 	unsigned long flags;
-+	struct gnttab_free_callback *cb;
-+
- 	spin_lock_irqsave(&gnttab_list_lock, flags);
--	if (callback->next)
--		goto out;
-+
-+	/* Check if the callback is already on the list */
-+	cb = gnttab_free_callback_list;
-+	while (cb) {
-+		if (cb == callback)
-+			goto out;
-+		cb = cb->next;
+--- a/arch/powerpc/kernel/align.c
++++ b/arch/powerpc/kernel/align.c
+@@ -764,6 +764,16 @@ int fix_alignment(struct pt_regs *regs)
+ 	nb = aligninfo[instr].len;
+ 	flags = aligninfo[instr].flags;
+ 
++	/* ldbrx/stdbrx overlap lfs/stfs in the DSISR unfortunately */
++	if (IS_XFORM(instruction) && ((instruction >> 1) & 0x3ff) == 532) {
++		nb = 8;
++		flags = LD+SW;
++	} else if (IS_XFORM(instruction) &&
++		   ((instruction >> 1) & 0x3ff) == 660) {
++		nb = 8;
++		flags = ST+SW;
 +	}
 +
- 	callback->fn = fn;
- 	callback->arg = arg;
- 	callback->count = count;
+ 	/* Byteswap little endian loads and stores */
+ 	swiz = 0;
+ 	if (regs->msr & MSR_LE) {
 
 
