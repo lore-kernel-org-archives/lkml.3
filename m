@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab3IYAUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39712 "EHLO
+	id S1757117Ab3IYAa0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:30:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756656Ab3IYAUp (ORCPT
+	with ESMTP id S1756740Ab3IYAUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:45 -0400
+	Tue, 24 Sep 2013 20:20:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Ryniker <ryniker@alum.mit.edu>,
-        Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 080/117] HID: battery: dont do DMA from stack
-Date: Tue, 24 Sep 2013 17:19:06 -0700
-Message-Id: <20130925001749.699707899@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 082/117] HID: check for NULL field when setting values
+Date: Tue, 24 Sep 2013 17:19:08 -0700
+Message-Id: <20130925001749.921305651@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,61 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Kees Cook <keescook@chromium.org>
 
-commit 6c2794a2984f4c17a58117a68703cc7640f01c5a upstream.
+commit be67b68d52fa28b9b721c47bb42068f0c1214855 upstream.
 
-Instead of using data from stack for DMA in hidinput_get_battery_property(),
-allocate the buffer dynamically.
+Defensively check that the field to be worked on is not NULL.
 
-Reported-by: Richard Ryniker <ryniker@alum.mit.edu>
-Reported-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-input.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/hid/hid-core.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -340,7 +340,7 @@ static int hidinput_get_battery_property
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1156,7 +1156,12 @@ EXPORT_SYMBOL_GPL(hid_output_report);
+ 
+ int hid_set_field(struct hid_field *field, unsigned offset, __s32 value)
  {
- 	struct hid_device *dev = container_of(psy, struct hid_device, battery);
- 	int ret = 0;
--	__u8 buf[2] = {};
-+	__u8 *buf;
- 
- 	switch (prop) {
- 	case POWER_SUPPLY_PROP_PRESENT:
-@@ -349,12 +349,19 @@ static int hidinput_get_battery_property
- 		break;
- 
- 	case POWER_SUPPLY_PROP_CAPACITY:
+-	unsigned size = field->report_size;
++	unsigned size;
 +
-+		buf = kmalloc(2 * sizeof(__u8), GFP_KERNEL);
-+		if (!buf) {
-+			ret = -ENOMEM;
-+			break;
-+		}
- 		ret = dev->hid_get_raw_report(dev, dev->battery_report_id,
--					      buf, sizeof(buf),
-+					      buf, 2,
- 					      dev->battery_report_type);
++	if (!field)
++		return -1;
++
++	size = field->report_size;
  
- 		if (ret != 2) {
- 			ret = -ENODATA;
-+			kfree(buf);
- 			break;
- 		}
- 		ret = 0;
-@@ -364,6 +371,7 @@ static int hidinput_get_battery_property
- 		    buf[1] <= dev->battery_max)
- 			val->intval = (100 * (buf[1] - dev->battery_min)) /
- 				(dev->battery_max - dev->battery_min);
-+		kfree(buf);
- 		break;
+ 	hid_dump_input(field->report->device, field->usage + offset, value);
  
- 	case POWER_SUPPLY_PROP_MODEL_NAME:
 
 
