@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397Ab3IYAvr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:51:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39388 "EHLO
+	id S1757534Ab3IYAwa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:52:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39376 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab3IYATt (ORCPT
+	with ESMTP id S1755758Ab3IYATr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:49 -0400
+	Tue, 24 Sep 2013 20:19:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>, Jiang Liu <jiang.liu@huawei.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [ 007/117] zram: fix invalid memory access
-Date: Tue, 24 Sep 2013 17:17:53 -0700
-Message-Id: <20130925001741.663589370@linuxfoundation.org>
+        Imre Deak <imre.deak@intel.com>, "cancan,feng" <cancan.feng@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 005/117] drm/i915: make user mode sync polarity setting explicit
+Date: Tue, 24 Sep 2013 17:17:51 -0700
+Message-Id: <20130925001741.446963782@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,74 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minchan Kim <minchan@kernel.org>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 2b86ab9cc29fcd435cde9378c3b9ffe8b5c76128 upstream.
+commit 2960bc9cceecb5d556ce1c07656a6609e2f7e8b0 upstream.
 
-[1] tried to fix invalid memory access on zram->disk but it didn't
-fix properly because get_disk failed during module exit path.
+Userspace can pass a mode with an unspecified vsync/hsync polarity
+setting. All encoders in the Intel driver take this to mean a negative
+polarity setting. The HW readout/state checker code on the other hand
+needs these flags to be explicitly set, otherwise the state checker will
+WARN about the mismatch.
 
-Actually, we don't need to reset zram->disk's capacity to zero
-in module exit path so that this patch introduces new argument
-"reset_capacity" on zram_reset_divice and it only reset it when
-reset_store is called.
+Get rid of the WARN by making the polarity setting explicit in the
+adjusted mode flags based on the requested mode flags. This will keep
+the existing behavior otherwise.
 
-[1] 6030ea9b,  zram: avoid invalid memory access in zram_exit()
+Note that we could guess from the other timing parameters whether the
+user wanted a VESA or other standard mode and set the polarity
+accordingly. This is what the NV driver does
+(drivers/gpu/drm/nouveau/dispnv04/crtc.c), but I think that's not very
+exact and would change the existing behavior of the Intel driver.
 
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65442
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Tested-by: cancan,feng <cancan.feng@intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zram/zram_drv.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -522,7 +522,7 @@ static int zram_bvec_rw(struct zram *zra
- 	return ret;
- }
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7809,6 +7809,19 @@ intel_modeset_pipe_config(struct drm_crt
+ 	pipe_config->cpu_transcoder = to_intel_crtc(crtc)->pipe;
+ 	pipe_config->shared_dpll = DPLL_ID_PRIVATE;
  
--static void zram_reset_device(struct zram *zram)
-+static void zram_reset_device(struct zram *zram, bool reset_capacity)
- {
- 	size_t index;
- 	struct zram_meta *meta;
-@@ -551,7 +551,8 @@ static void zram_reset_device(struct zra
- 	memset(&zram->stats, 0, sizeof(zram->stats));
- 
- 	zram->disksize = 0;
--	set_capacity(zram->disk, 0);
-+	if (reset_capacity)
-+		set_capacity(zram->disk, 0);
- 	up_write(&zram->init_lock);
- }
- 
-@@ -635,7 +636,7 @@ static ssize_t reset_store(struct device
- 	if (bdev)
- 		fsync_bdev(bdev);
- 
--	zram_reset_device(zram);
-+	zram_reset_device(zram, true);
- 	return len;
- }
- 
-@@ -902,10 +903,12 @@ static void __exit zram_exit(void)
- 	for (i = 0; i < num_devices; i++) {
- 		zram = &zram_devices[i];
- 
--		get_disk(zram->disk);
- 		destroy_device(zram);
--		zram_reset_device(zram);
--		put_disk(zram->disk);
-+		/*
-+		 * Shouldn't access zram->disk after destroy_device
-+		 * because destroy_device already released zram->disk.
-+		 */
-+		zram_reset_device(zram, false);
- 	}
- 
- 	unregister_blkdev(zram_major, "zram");
++	/*
++	 * Sanitize sync polarity flags based on requested ones. If neither
++	 * positive or negative polarity is requested, treat this as meaning
++	 * negative polarity.
++	 */
++	if (!(pipe_config->adjusted_mode.flags &
++	      (DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NHSYNC)))
++		pipe_config->adjusted_mode.flags |= DRM_MODE_FLAG_NHSYNC;
++
++	if (!(pipe_config->adjusted_mode.flags &
++	      (DRM_MODE_FLAG_PVSYNC | DRM_MODE_FLAG_NVSYNC)))
++		pipe_config->adjusted_mode.flags |= DRM_MODE_FLAG_NVSYNC;
++
+ 	/* Compute a starting value for pipe_config->pipe_bpp taking the source
+ 	 * plane pixel format and any sink constraints into account. Returns the
+ 	 * source plane bpp so that dithering can be selected on mismatches
 
 
