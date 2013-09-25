@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758191Ab3IYB17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:27:59 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:43314 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755427Ab3IYB14 (ORCPT
+	id S1758217Ab3IYB2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:28:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38594 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754917Ab3IYAM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:27:56 -0400
-Date: Tue, 24 Sep 2013 18:27:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	Tue, 24 Sep 2013 20:12:27 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: [PATCH tip/core/rcu 0/11] Fixes for 3.13
-Message-ID: <20130925012750.GA30601@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-6688-0000-0000-000001F8A8FB
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mike Dyer <mike.dyer@md-soft.co.uk>, Mark Brown <broonie@linaro.org>
+Subject: [ 16/40] ASoC: wm8960: Fix PLL register writes
+Date: Tue, 24 Sep 2013 17:11:48 -0700
+Message-Id: <20130925001043.718874937@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
+References: <20130925001041.939335518@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-This series provides the following miscellaneous fixes:
+------------------
 
-1.	Place a preemption point in do_mlockall().
+From: Mike Dyer <mike.dyer@md-soft.co.uk>
 
-2.	Use proper cpp macro for ->gp_flags instead of the constant "1".
+commit 85fa532b6ef920b32598df86b194571a7059a77c upstream.
 
-3.	Convert a number of local functions to static.
+Bit 9 of PLL2,3 and 4 is reserved as '0'. The 24bit fractional part
+should be split across each register in 8bit chunks.
 
-4.	Fix a dubious "if" condition to use "||" rather than "|"
-	(we were getting lucky...).
+Signed-off-by: Mike Dyer <mike.dyer@md-soft.co.uk>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-5.	Make list_splice_init_rcu() account for RCU readers.
+---
+ sound/soc/codecs/wm8960.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-6.	Replace __get_cpu_var() uses, courtesy of Christoph Lameter.
+--- a/sound/soc/codecs/wm8960.c
++++ b/sound/soc/codecs/wm8960.c
+@@ -790,9 +790,9 @@ static int wm8960_set_dai_pll(struct snd
+ 	if (pll_div.k) {
+ 		reg |= 0x20;
+ 
+-		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 18) & 0x3f);
+-		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 9) & 0x1ff);
+-		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0x1ff);
++		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 16) & 0xff);
++		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 8) & 0xff);
++		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0xff);
+ 	}
+ 	snd_soc_write(codec, WM8960_PLL1, reg);
+ 
 
-7.	Silence an unused-variables warning in rcu_eqs_enter_common()
-	and rcu_eqs_exit_common().
-
-8.	Micro-optimize rcu_cpu_has_callbacks().
-
-9.	Reject memory-order-induced stall-warning false positives.
-
-10.	Apply tracepoint_string() to rcutiny's trace events.
-
-11.	Avoid a CONFIG_RCU_NOCB_CPU_ALL=y panic on systems with sparse
-	CPU numbering, courtesy of Kirill Tkhai.
-
-							Thanx, Paul
-
-
- b/include/linux/rculist.h |   23 +++++++++-
- b/kernel/rcu.h            |    7 +++
- b/kernel/rcupdate.c       |    2 
- b/kernel/rcutiny.c        |   17 ++++----
- b/kernel/rcutree.c        |   97 ++++++++++++++++++++++++++++++----------------
- b/kernel/rcutree_plugin.h |   23 ++++++----
- b/mm/mlock.c              |    1 
- 7 files changed, 119 insertions(+), 51 deletions(-)
 
