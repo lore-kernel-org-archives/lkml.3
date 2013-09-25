@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab3IYUoM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:44:12 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:33885 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754851Ab3IYUoK (ORCPT
+	id S1755569Ab3IYUpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:45:09 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40028 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436Ab3IYUpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:44:10 -0400
-Message-ID: <52434AED.3000104@ahsoftware.de>
-Date: Wed, 25 Sep 2013 22:43:25 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Wed, 25 Sep 2013 16:45:07 -0400
+Date: Wed, 25 Sep 2013 21:44:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Landley <rob@landley.net>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Andrew Morton <akpm@osdl.org>,
+        Trivial patch monkey <trivial@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: new binutils needed for arm in 3.12-rc1
+Message-ID: <20130925204432.GW25647@n2100.arm.linux.org.uk>
+References: <alpine.LFD.2.03.1309242158340.312@syhkavp.arg> <1380122586.1974.84@driftwood>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] add exFAT driver
-References: <20130830124622.5f81b7d4@rechenknecht2k7> <20130830154205.GA1411@kroah.com> <20130925183632.08a0d073@rechenknecht2k7> <20130925172704.GB5258@kroah.com> <20130925183235.GA9659@srcf.ucam.org> <20130925184539.GA4208@kroah.com> <52433978.9050302@ahsoftware.de> <20130925202151.GA6149@kroah.com>
-In-Reply-To: <20130925202151.GA6149@kroah.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380122586.1974.84@driftwood>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 25.09.2013 22:21, schrieb Greg Kroah-Hartman:
-> On Wed, Sep 25, 2013 at 09:28:56PM +0200, Alexander Holler wrote:
-
->> Maybe a silly question, but isn't exFAT protected by some MS owned
->> patents which might drive Linux users into the hand of MS lawyers as
->> already happened with FAT? It would make me wonder if not. Maybe you
->> could ask Samsung about that too, when you are there.
+On Wed, Sep 25, 2013 at 10:23:06AM -0500, Rob Landley wrote:
+> On 09/24/2013 09:07:57 PM, Nicolas Pitre wrote:
+>> It could be as simple as making gas accept an extra argument for
+>> instructions like dsb and just ignoring it.
 >
-> Because Samsung released the code under the GPLv2, and their lawyers
-> understand what that means, should answer any question you might have
-> about this.
->
-> thanks,
+> So you prefer I come up with the reversion patches locally and _not_  
+> send them upstream?
 
-I'll have to thank for the clarification.
+This is a silly attitude.  What you're effectively saying is that we
+are never allowed to use any future ARM instructions in any Linux
+kernel because that might break your precious assembler.
 
-Alexander Holler
+I've got news for you.  We're *not* going to listen to that argument.
 
+END OF DISCUSSION (everything else is just a waste of time.)
