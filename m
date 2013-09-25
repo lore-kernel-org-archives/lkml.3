@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab3IYLPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 07:15:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17143 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832Ab3IYLPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 07:15:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,978,1371106800"; 
-   d="scan'208";a="383299996"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <ak@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20130924165848.4f3ba25b4de236fa746fb7ee@linux-foundation.org>
-References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org>
- <20130924234950.GC2018@tassilo.jf.intel.com>
- <20130924165848.4f3ba25b4de236fa746fb7ee@linux-foundation.org>
-Subject: Re: [PATCHv6 00/22] Transparent huge page cache: phase 1, everything
- but mmap()
+	id S1755276Ab3IYLQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 07:16:28 -0400
+Received: from emh07.mail.saunalahti.fi ([62.142.5.117]:46628 "EHLO
+	emh07.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755160Ab3IYLQ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 07:16:27 -0400
+Message-ID: <1380107278.4503.9.camel@porter.coelho.fi>
+Subject: Re: [PATCH] ti-connectivity: add wl1251 firmware and license
+From: Luca Coelho <luca@coelho.fi>
+To: Felipe Balbi <balbi@ti.com>
+Cc: ben@decadent.org.uk,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-wireless@vger.kernel.org, Pavel Machek <pavel@denx.de>
+Date: Wed, 25 Sep 2013 14:07:58 +0300
+In-Reply-To: <1380107096.4503.8.camel@porter.coelho.fi>
+References: <1380033894-5007-1-git-send-email-balbi@ti.com>
+	 <1380107096.4503.8.camel@porter.coelho.fi>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-4+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130925111538.CCE16E0090@blue.fi.intel.com>
-Date: Wed, 25 Sep 2013 14:15:38 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> On Tue, 24 Sep 2013 16:49:50 -0700 Andi Kleen <ak@linux.intel.com> wrote:
+On Wed, 2013-09-25 at 14:04 +0300, Luca Coelho wrote:
+> Hi dude,
 > 
-> > > At the very least we should get this done for a real filesystem to see
-> > > how intrusive the changes are and to evaluate the performance changes.
+> Great, this is cool! Finally! :)
+> 
+> A few comments...
+> 
+> 
+> On Tue, 2013-09-24 at 09:44 -0500, Felipe Balbi wrote:
+> > It's way overdue that we send these firmware
+> > blobs upstream. Thanks for everybody involved
+> > in getting this sorted out.
 > > 
-> > That would give even larger patches, and people already complain
-> > the patchkit is too large.
+> > Cc: Luciano Coelho <luca@coelho.fi>
+> > Cc: Pavel Machek <pavel@denx.de>
+> > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > ---
 > 
-> The thing is that merging an implementation for ramfs commits us to
-> doing it for the major real filesystems.  Before making that commitment
-> we should at least have a pretty good understanding of what those
-> changes will look like.
+> The commit message could be a bit more descriptive rather than
+> narrative?
 > 
-> Plus I don't see how we can realistically performance-test it without
-> having real physical backing store in the picture?
+> 
+> >  ti-connectivity/license-wl1251.txt |  59 +++++++++++++++++++++++++++++++++++++
+> 
+> The license file should be in the root, together with the other licenses
+> and called LICENCE.wl1251 (note the en-GB spelling).  Also, this license
+> is *very* similar to the one for WiLink6/7/8 (LICENCE.ti-connectivity),
+> except for some very minor things and the formatting.  Couldn't the same
+> one be used, for the sake of simplicity and consistency?
+> 
+> 
+> >  ti-connectivity/wl1251-fw.bin      | Bin 0 -> 194180 bytes
+> >  ti-connectivity/wl1251-nvs.bin     | Bin 0 -> 752 bytes
+> >  3 files changed, 59 insertions(+)
+> >  create mode 100644 ti-connectivity/license-wl1251.txt
+> >  create mode 100644 ti-connectivity/wl1251-fw.bin
+> >  create mode 100644 ti-connectivity/wl1251-nvs.bin
+> 
+> When sending big binary blobs, it's generally better to send pull
+> requests instead of patches.  If you add the -p option when calling git
+> pull-request, the text will include all the readable parts but will omit
+> the binary stuff.
+> 
+> Thank you very much for following up on this!
 
-My plan for real filesystem is to get it first beneficial for read-mostly
-files:
- - allocate huge pages on read (or collapse small pages) only if nobody
-   has the inode opened on write;
- - split huge page on write to avoid dealing with write back patch at
-   first and dirty only 4k pages;
+Ah, and I forgot to say that you should update the WHENCE file
+accordingly too.  Check the wl12xx and wl18xx drivers for examples.
 
-This will will get most of elf executables and libraries mapped with huge
-pages (it may require dynamic linker change to align length to huge page
-boundary) which is not bad for start.
+--
+Luca.
 
--- 
- Kirill A. Shutemov
