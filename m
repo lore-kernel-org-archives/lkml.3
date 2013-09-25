@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab3IYAOa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:14:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38688 "EHLO
+	id S1755675Ab3IYAOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:14:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755522Ab3IYAMo (ORCPT
+	with ESMTP id S1755515Ab3IYAMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:12:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vasily Titskiy <qehgt0@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 28/40] HID: usbhid: quirk for N-Trig DuoSense Touch Screen
-Date: Tue, 24 Sep 2013 17:12:00 -0700
-Message-Id: <20130925001044.999425405@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 36/40] drm/edid: add quirk for Medion MD30217PG
+Date: Tue, 24 Sep 2013 17:12:08 -0700
+Message-Id: <20130925001045.857541830@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
 References: <20130925001041.939335518@linuxfoundation.org>
@@ -26,42 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasily Titskiy <qehgt0@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 9e0bf92c223dabe0789714f8f85f6e26f8f9cda4 upstream.
+commit 118bdbd86b39dbb843155054021d2c59058f1e05 upstream.
 
-The DuoSense touchscreen device causes a 10 second timeout. This fix
-removes the delay.
+This LCD monitor (1280x1024 native) has a completely
+bogus detailed timing (640x350@70hz).  User reports that
+1280x1024@60 has waves so prefer 1280x1024@75.
 
-Signed-off-by: Vasily Titskiy <qehgt0@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Manufacturer: MED  Model: 7b8  Serial#: 99188
+Year: 2005  Week: 5
+EDID Version: 1.3
+Analog Display Input,  Input Voltage Level: 0.700/0.700 V
+Sync:  Separate
+Max Image Size [cm]: horiz.: 34  vert.: 27
+Gamma: 2.50
+DPMS capabilities: Off; RGB/Color Display
+First detailed timing is preferred mode
+redX: 0.645 redY: 0.348   greenX: 0.280 greenY: 0.605
+blueX: 0.142 blueY: 0.071   whiteX: 0.313 whiteY: 0.329
+Supported established timings:
+720x400@70Hz
+640x480@60Hz
+640x480@72Hz
+640x480@75Hz
+800x600@56Hz
+800x600@60Hz
+800x600@72Hz
+800x600@75Hz
+1024x768@60Hz
+1024x768@70Hz
+1024x768@75Hz
+1280x1024@75Hz
+Manufacturer's mask: 0
+Supported standard timings:
+Supported detailed timing:
+clock: 25.2 MHz   Image Size:  337 x 270 mm
+h_active: 640  h_sync: 688  h_sync_end 784 h_blank_end 800 h_border: 0
+v_active: 350  v_sync: 350  v_sync_end 352 v_blanking: 449 v_border: 0
+Monitor name: MD30217PG
+Ranges: V min: 56 V max: 76 Hz, H min: 30 H max: 83 kHz, PixClock max 145 MHz
+Serial No: 501099188
+EDID (in hex):
+          00ffffffffffff0034a4b80774830100
+          050f010368221b962a0c55a559479b24
+          125054afcf00310a0101010101018180
+          000000000000d60980a0205e63103060
+          0200510e1100001e000000fc004d4433
+          3032313750470a202020000000fd0038
+          4c1e530e000a202020202020000000ff
+          003530313039393138380a2020200078
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: friedrich@mailstation.de
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    1 +
- drivers/hid/usbhid/hid-quirks.c |    2 ++
- 2 files changed, 3 insertions(+)
+ drivers/gpu/drm/drm_edid.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -595,6 +595,7 @@
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16   0x0012
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17   0x0013
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18   0x0014
-+#define USB_DEVICE_ID_NTRIG_DUOSENSE 0x1500
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -125,6 +125,9 @@ static struct edid_quirk {
  
- #define USB_VENDOR_ID_ONTRAK		0x0a07
- #define USB_DEVICE_ID_ONTRAK_ADU100	0x0064
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -103,6 +103,8 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_SIGMA_MICRO, USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X, HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_M610X, HID_QUIRK_MULTI_INPUT },
-+	{ USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NO_INIT_REPORTS },
+ 	/* ViewSonic VA2026w */
+ 	{ "VSC", 5020, EDID_QUIRK_FORCE_REDUCED_BLANKING },
 +
- 	{ 0, 0 }
++	/* Medion MD 30217 PG */
++	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
  };
  
+ /*** DDC fetch and block validation ***/
 
 
