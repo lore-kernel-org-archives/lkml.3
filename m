@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3IYEh4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 00:37:56 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:47887 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab3IYEhz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 00:37:55 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <CAL85gmAi9qZWdeHt5JWeEW-OuNKdxqt-0fPDeCugnpun_6BDKA@mail.gmail.com>
-References: <CAL85gmAi9qZWdeHt5JWeEW-OuNKdxqt-0fPDeCugnpun_6BDKA@mail.gmail.com>
-Date: Tue, 24 Sep 2013 21:37:54 -0700
-Message-ID: <CAOesGMj9qUKw9hTSmoV76bvbKHbapxyUss4JfrD0pg9=oPpLdg@mail.gmail.com>
-Subject: Re: General placement of platform drivers and header files
-From: Olof Johansson <olof@lixom.net>
-To: Feng Kan <fkan@apm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754923Ab3IYEju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 00:39:50 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34264 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751072Ab3IYEjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 00:39:48 -0400
+Message-ID: <1380083974.5443.91.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Wed, 25 Sep 2013 14:39:34 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Linus !
 
-On Tue, Sep 24, 2013 at 8:33 PM, Feng Kan <fkan@apm.com> wrote:
-> Hi all:
->
-> I have some drivers like Queue Manager and co-processor driver that
-> are used by other
-> drivers like Ethernet. Would it be appropriate to locate these drivers
-> under one folder under
-> drivers/misc/arch_name/xxx.
+Here are a few things for -rc2, this time it's all written by me so it
+can only be perfect .... right ? :)
 
-drivers/misc is almost always the wrong answer to where to add a driver.
+So we have the fix to call irq_enter/exit on the irq stack we've been
+discussing, plus a cleanup on top to remove an unused (and broken)
+stack limit tracking feature (well, make it 32-bit only in fact where
+it is used and works properly).
 
-It would help to also know how the devices interact to answer the
-question of best location. Are the drivers for the coprocessor and for
-the queue manager mostly a pass-through for some operations (and some
-shared allocation of resources), i.e. more of a library, or is it a
-full-fledged driver that will service interrupts, etc?
+Then we have two things that I wrote over the last couple of days and
+made the executive decision to include just because I can (and I'm sure
+you won't object .... right ?).
 
-> My other question is on common header files (belonging to Queue
-> Manager) but is sourced
-> by Ethernet, where should those reside. Should they go under
-> linux/include/misc/arch_name
-> or directly sourced using the ../../../misc/arch_name/headerfile method.
+They fix a couple of annoying and long standing "issues":
 
-This depends somewhat on where the driver ends up, but somewhere under
-include/linux is likely the right place for the in-kernel interface
-header files.
+ - We had separate zImages for when booting via Open Firmware vs.
+booting via a flat device-tree, while it's trivial to make one that
+deals with both
 
+ - We wasted a ton of cycles spinning secondary CPUs uselessly at boot
+instead of starting them when needed on pseries, thus contributing
+significantly to global warming.
 
--Olof
+Cheers,
+Ben.
+
+The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
+
+  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to dbe78b40118636f2d5d276144239dd4bfd5f04f9:
+
+  powerpc/pseries: Do not start secondaries in Open Firmware (2013-09-25 14:19:00 +1000)
+
+----------------------------------------------------------------
+Benjamin Herrenschmidt (4):
+      powerpc/irq: Run softirqs off the top of the irq stack
+      powerpc: Remove ksp_limit on ppc64
+      powerpc/zImage: make the "OF" wrapper support ePAPR boot
+      powerpc/pseries: Do not start secondaries in Open Firmware
+
+ arch/powerpc/boot/Makefile           |   4 +-
+ arch/powerpc/boot/epapr-wrapper.c    |   9 ++++
+ arch/powerpc/boot/epapr.c            |   4 +-
+ arch/powerpc/boot/of.c               |  16 +++++-
+ arch/powerpc/boot/wrapper            |   9 ++--
+ arch/powerpc/include/asm/irq.h       |   4 +-
+ arch/powerpc/include/asm/processor.h |   4 +-
+ arch/powerpc/kernel/asm-offsets.c    |   3 +-
+ arch/powerpc/kernel/irq.c            | 100 +++++++++++++++--------------------
+ arch/powerpc/kernel/misc_32.S        |  25 +++++++--
+ arch/powerpc/kernel/misc_64.S        |  10 ++--
+ arch/powerpc/kernel/process.c        |   3 +-
+ arch/powerpc/kernel/prom_init.c      |  21 ++++++++
+ arch/powerpc/lib/sstep.c             |   3 +-
+ arch/powerpc/platforms/pseries/smp.c |  26 +++++----
+ 15 files changed, 147 insertions(+), 94 deletions(-)
+ create mode 100644 arch/powerpc/boot/epapr-wrapper.c
+
+	
+
