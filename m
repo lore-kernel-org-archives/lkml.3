@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab3IYTbR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 15:31:17 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:39707 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab3IYTbP (ORCPT
+	id S1754693Ab3IYTfl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 15:35:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48876 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab3IYTfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 15:31:15 -0400
-Date: Wed, 25 Sep 2013 12:31:27 -0700
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Andrew Jones <drjones@redhat.com>
-Cc: kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org, catalin.marinas@arm.com,
-        gleb@redhat.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
-        pbonzini@redhat.com, linux@arm.linux.org.uk, will.deacon@arm.com
-Subject: Re: [PATCH v2] arm32: kvm: rename CONFIG_KVM_ARM_MAX_VCPUS
-Message-ID: <20130925193127.GD32311@cbox>
-References: <1379160656-28050-3-git-send-email-drjones@redhat.com>
- <1380031768-21354-1-git-send-email-drjones@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380031768-21354-1-git-send-email-drjones@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 25 Sep 2013 15:35:40 -0400
+Date: Wed, 25 Sep 2013 12:35:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH tip/core/rcu 01/11] mm: Place preemption point in
+ do_mlockall() loop
+Message-Id: <20130925123537.c948095dd10fbf6e1b8708f4@linux-foundation.org>
+In-Reply-To: <20130925134803.GQ9093@linux.vnet.ibm.com>
+References: <20130925012750.GA30601@linux.vnet.ibm.com>
+	<1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	<20130924211047.57f9d9c8.akpm@linux-foundation.org>
+	<20130925134803.GQ9093@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 04:09:28PM +0200, Andrew Jones wrote:
-> Drop the _ARM_ part of the name. We can then introduce a config option
-> like this to aarch64 and other arches using the same name - allowing
-> grep to show them all. Also update the help text to describe the option
-> more completely.
-> 
-> Signed-off-by: Andrew Jones <drjones@redhat.com>
-> 
-> ---
-> v2: reword help text some more
-> ---
->  arch/arm/include/asm/kvm_host.h | 4 ++--
->  arch/arm/kvm/Kconfig            | 9 +++++----
->  2 files changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
-> index 7d22517d80711..c614d3eb176c6 100644
-> --- a/arch/arm/include/asm/kvm_host.h
-> +++ b/arch/arm/include/asm/kvm_host.h
-> @@ -25,8 +25,8 @@
->  #include <asm/fpstate.h>
->  #include <kvm/arm_arch_timer.h>
->  
-> -#if defined(CONFIG_KVM_ARM_MAX_VCPUS)
-> -#define KVM_MAX_VCPUS CONFIG_KVM_ARM_MAX_VCPUS
-> +#if defined(CONFIG_KVM_MAX_VCPUS)
-> +#define KVM_MAX_VCPUS CONFIG_KVM_MAX_VCPUS
->  #else
->  #define KVM_MAX_VCPUS 0
->  #endif
-> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
-> index ebf5015508b52..8e56ccf45edce 100644
-> --- a/arch/arm/kvm/Kconfig
-> +++ b/arch/arm/kvm/Kconfig
-> @@ -40,16 +40,17 @@ config KVM_ARM_HOST
->  	---help---
->  	  Provides host support for ARM processors.
->  
-> -config KVM_ARM_MAX_VCPUS
-> +config KVM_MAX_VCPUS
->  	int "Number maximum supported virtual CPUs per VM"
->  	depends on KVM_ARM_HOST
->  	default 4
->  	help
->  	  Static number of max supported virtual CPUs per VM.
->  
-> -	  If you choose a high number, the vcpu structures will be quite
-> -	  large, so only choose a reasonable number that you expect to
-> -	  actually use.
-> +	  The default is set to the highest number of vcpus that
-> +	  current hardware supports. Choosing a lower number decreases
-> +	  the size of the VM data structure. This number may also be
-> +	  increased.
->  
-Maybe I'm being forgetful, but what do you mean by "This number may also
-be increased" ?
+On Wed, 25 Sep 2013 06:48:04 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
--Christoffer
+> On Tue, Sep 24, 2013 at 09:10:47PM -0700, Andrew Morton wrote:
+> > On Tue, 24 Sep 2013 18:29:11 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > > --- a/mm/mlock.c
+> > > +++ b/mm/mlock.c
+> > > @@ -736,6 +736,7 @@ static int do_mlockall(int flags)
+> > >  
+> > >  		/* Ignore errors */
+> > >  		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
+> > > +		cond_resched();
+> > >  	}
+> > >  out:
+> > >  	return 0;
+> > 
+> > Might need one in munlock_vma_pages_range() as well - it's a matter of
+> > finding the right test case.  This will be neverending :(
+> 
+> Indeed...  I suspect that Trinity running on big-memory systems will
+> eventually find most of them via RCU CPU stall warnings, but as you say...
+> 
+> Would you like the corresponding change to munlock_vma_pages_range()
+> beforehand?
+
+Can't decide.  If we went and poked holes in every place which looks
+like it loops for a long time, we'd be poking holes everywhere, some of
+them unnecessary.  otoh if we wait around for people to say "hey" then
+it will take a very long time to poke all the needed holes.
+
+The best approach would be for someone to sit down, identify all the
+potential problem spots, attempt to craft a userspace exploit to verify
+that each one really is a problem, then fix it.  Nobody will bother
+doing this.
+
+So I dunno.  Stop asking difficult questions ;)
