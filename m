@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab3IYJjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 05:39:12 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38137 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab3IYJjL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 05:39:11 -0400
-From: =?iso-8859-15?q?J=FCrgen_Beisert?= <jbe@pengutronix.de>
-Organization: Pengutronix e.K.
-To: linux-kernel@vger.kernel.org
-Subject: Re: ARM/Samsung/S3C24xx: Linux-3.11 crashes when using PWM
-Date: Wed, 25 Sep 2013 11:40:36 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>
-References: <201309251029.44265.jbe@pengutronix.de> <5242AA7C.4010905@samsung.com>
-In-Reply-To: <5242AA7C.4010905@samsung.com>
-X-KMail-QuotePrefix: > 
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201309251140.36582.jbe@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5e26:aff:fe2b:7cc4
-X-SA-Exim-Mail-From: jbe@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754884Ab3IYJvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 05:51:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7810 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754459Ab3IYJvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 05:51:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,977,1371106800"; 
+   d="scan'208";a="383272383"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Ning Qu <quning@google.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org>
+References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org>
+Subject: Re: [PATCHv6 00/22] Transparent huge page cache: phase 1, everything
+ but mmap()
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130925095105.06464E0090@blue.fi.intel.com>
+Date: Wed, 25 Sep 2013 12:51:04 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester,
+Andrew Morton wrote:
+> On Mon, 23 Sep 2013 15:05:28 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> 
+> > It brings thp support for ramfs, but without mmap() -- it will be posted
+> > separately.
+> 
+> We were never going to do this :(
+> 
+> Has anyone reviewed these patches much yet?
 
-On Wednesday 25 September 2013 11:18:52 Sylwester Nawrocki wrote:
-> On 25/09/13 10:29, Jürgen Beisert wrote:
-> > Change one single line:
-> >
-> > diff --git a/arch/arm/mach-s3c24xx/mach-mini2440.c
-> > b/arch/arm/mach-s3c24xx/mach-mini2440.c index a83db46..d8273da 100644
-> > --- a/arch/arm/mach-s3c24xx/mach-mini2440.c
-> > +++ b/arch/arm/mach-s3c24xx/mach-mini2440.c
-> > @@ -519,6 +519,7 @@ static struct platform_device *mini2440_devices[]
-> > __initdata = { &s3c_device_iis,
-> >         &uda1340_codec,
-> >         &mini2440_audio,
-> > +       &s3c_device_timer[0],
-> >  };
->
-> I think you need to add instead:
->
-> 	&samsung_device_pwm,
->
-> IIRC I had this working, can't verify at the moment as I don't
-> have access to the board right now. Please see commit:
->
-> 7fa33bdb4c44155e390c9ebbc5aa4c5cfc73f6fa
-> ARM: SAMSUNG: Modify board files to use new PWM platform device
+Dave did very good review. Few other people looked to separate patches.
+See Reviewed-by/Acked-by tags in patches.
 
-Seems valid for 3.12, but not for 3.11.
+It looks like most mm experts are busy with numa balancing nowadays, so
+it's hard to get more review.
 
-Regards,
-Juergen
+The patchset was mostly ignored for few rounds and Dave suggested to split
+to have less scary patch number.
+
+> > Please review and consider applying.
+> 
+> It appears rather too immature at this stage.
+
+More review is always welcome and I'm committed to address issues.
 
 -- 
-Pengutronix e.K.                              | Juergen Beisert             |
-Linux Solutions for Science and Industry      | http://www.pengutronix.de/  |
+ Kirill A. Shutemov
