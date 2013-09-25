@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab3IYAiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:38:00 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:60593 "EHLO
+	id S932284Ab3IYAib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:38:31 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:60583 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755912Ab3IYAhz (ORCPT
+	with ESMTP id S1757046Ab3IYAhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:37:55 -0400
+	Tue, 24 Sep 2013 20:37:53 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Linus Walleij <linus.walleij@linaro.org>
 Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -26,8 +26,8 @@ Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         linux-kernel@vger.kernel.org, r.sricharan@ti.com, holler@ahsoftware.de,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 Subject: [PATCH 2/2] gpio/omap: auto-setup a GPIO when used as an IRQ
-Date: Wed, 25 Sep 2013 02:36:54 +0200
-Message-Id: <1380069414-2922-3-git-send-email-javier.martinez@collabora.co.uk>
+Date: Wed, 25 Sep 2013 02:36:53 +0200
+Message-Id: <1380069414-2922-2-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1380069414-2922-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1380069414-2922-1-git-send-email-javier.martinez@collabora.co.uk>
