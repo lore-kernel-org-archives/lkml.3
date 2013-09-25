@@ -1,52 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab3IYBRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:17:11 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:44360 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757507Ab3IYBRH (ORCPT
+	id S1757981Ab3IYBRa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:17:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38944 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755923Ab3IYAQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:17:07 -0400
-Date: Tue, 24 Sep 2013 18:16:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	Tue, 24 Sep 2013 20:16:09 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: [PATCH tip/core/rcu 0/3] Documentation updates for 3.13
-Message-ID: <20130925011657.GA29958@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-9332-0000-0000-000001875378
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>, Felipe Balbi <balbi@ti.com>
+Subject: [ 023/110] usb: dwc3: gadget: dont request IRQs in atomic
+Date: Tue, 24 Sep 2013 17:14:21 -0700
+Message-Id: <20130925001325.924356579@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
+References: <20130925001323.387158698@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-This series provides a few documentation updates:
+------------------
 
-1.	Update stall-warning documentation to catch up with recent updates.
+From: Felipe Balbi <balbi@ti.com>
 
-2.	Add a reference to the new vmstat-avoidance patch to the
-	file describing how to quiet per-CPU kthreads.
+commit b0d7ffd44ba9cd2dfbf299674418193a5f9ed21a upstream.
 
-3.	Fix a typo in Documentation/RCU/checklist.txt, courtesy of
-	Michael Opdenacker.
+We cannot request an IRQ with spinlocks held
+as that would trigger a sleeping inside
+spinlock warning.
 
-							Thanx, Paul
+Reported-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
+---
+ drivers/usb/dwc3/gadget.c |   39 ++++++++++++++++++++++-----------------
+ 1 file changed, 22 insertions(+), 17 deletions(-)
 
- b/Documentation/RCU/checklist.txt           |    2 +-
- b/Documentation/RCU/stallwarn.txt           |   22 +++++++++++++++-------
- b/Documentation/kernel-per-CPU-kthreads.txt |   17 +++++++++++------
- 3 files changed, 27 insertions(+), 14 deletions(-)
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1508,6 +1508,15 @@ static int dwc3_gadget_start(struct usb_
+ 	int			irq;
+ 	u32			reg;
+ 
++	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
++	ret = request_threaded_irq(irq, dwc3_interrupt, dwc3_thread_interrupt,
++			IRQF_SHARED | IRQF_ONESHOT, "dwc3", dwc);
++	if (ret) {
++		dev_err(dwc->dev, "failed to request irq #%d --> %d\n",
++				irq, ret);
++		goto err0;
++	}
++
+ 	spin_lock_irqsave(&dwc->lock, flags);
+ 
+ 	if (dwc->gadget_driver) {
+@@ -1515,7 +1524,7 @@ static int dwc3_gadget_start(struct usb_
+ 				dwc->gadget.name,
+ 				dwc->gadget_driver->driver.name);
+ 		ret = -EBUSY;
+-		goto err0;
++		goto err1;
+ 	}
+ 
+ 	dwc->gadget_driver	= driver;
+@@ -1551,42 +1560,38 @@ static int dwc3_gadget_start(struct usb_
+ 	ret = __dwc3_gadget_ep_enable(dep, &dwc3_gadget_ep0_desc, NULL, false);
+ 	if (ret) {
+ 		dev_err(dwc->dev, "failed to enable %s\n", dep->name);
+-		goto err0;
++		goto err2;
+ 	}
+ 
+ 	dep = dwc->eps[1];
+ 	ret = __dwc3_gadget_ep_enable(dep, &dwc3_gadget_ep0_desc, NULL, false);
+ 	if (ret) {
+ 		dev_err(dwc->dev, "failed to enable %s\n", dep->name);
+-		goto err1;
++		goto err3;
+ 	}
+ 
+ 	/* begin to receive SETUP packets */
+ 	dwc->ep0state = EP0_SETUP_PHASE;
+ 	dwc3_ep0_out_start(dwc);
+ 
+-	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
+-	ret = request_threaded_irq(irq, dwc3_interrupt, dwc3_thread_interrupt,
+-			IRQF_SHARED | IRQF_ONESHOT, "dwc3", dwc);
+-	if (ret) {
+-		dev_err(dwc->dev, "failed to request irq #%d --> %d\n",
+-				irq, ret);
+-		goto err1;
+-	}
+-
+ 	dwc3_gadget_enable_irq(dwc);
+ 
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
+ 	return 0;
+ 
+-err1:
++err3:
+ 	__dwc3_gadget_ep_disable(dwc->eps[0]);
+ 
+-err0:
++err2:
+ 	dwc->gadget_driver = NULL;
++
++err1:
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
++	free_irq(irq, dwc);
++
++err0:
+ 	return ret;
+ }
+ 
+@@ -1600,9 +1605,6 @@ static int dwc3_gadget_stop(struct usb_g
+ 	spin_lock_irqsave(&dwc->lock, flags);
+ 
+ 	dwc3_gadget_disable_irq(dwc);
+-	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
+-	free_irq(irq, dwc);
+-
+ 	__dwc3_gadget_ep_disable(dwc->eps[0]);
+ 	__dwc3_gadget_ep_disable(dwc->eps[1]);
+ 
+@@ -1610,6 +1612,9 @@ static int dwc3_gadget_stop(struct usb_g
+ 
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
++	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
++	free_irq(irq, dwc);
++
+ 	return 0;
+ }
+ 
+
 
