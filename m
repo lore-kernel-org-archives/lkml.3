@@ -1,132 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab3IYOmV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 10:42:21 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:49527 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab3IYOmU (ORCPT
+	id S1755888Ab3IYOnq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 10:43:46 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:57392 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755464Ab3IYOno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 10:42:20 -0400
+	Wed, 25 Sep 2013 10:43:44 -0400
+Message-ID: <5242F695.2070506@monstr.eu>
+Date: Wed, 25 Sep 2013 16:43:33 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130925103535.2249f617@gandalf.local.home>
-References: <1380105868-31985-1-git-send-email-liuj97@gmail.com>
-	<1380105868-31985-3-git-send-email-liuj97@gmail.com>
-	<20130925103535.2249f617@gandalf.local.home>
-Date: Wed, 25 Sep 2013 20:12:17 +0530
-Message-ID: <CA+b37P0P0RhUytnkLSXmz28wzzsoL3-viV2oxNJqq2nP7kZBFA@mail.gmail.com>
-Subject: Re: [PATCH v1 2/7] arm64: introduce interfaces to hotpatch kernel and
- module code
-From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jiang Liu <liuj97@gmail.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Philip Balister <philip@balister.org>
+CC: Pavel Machek <pavel@denx.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Alan Tull <atull@altera.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+References: <cover.1379519753.git.michal.simek@xilinx.com> <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com> <20130918191517.GQ19937@titan.lakedaemon.net> <20130918203247.GA11181@obsidianresearch.com> <1379539063.31417.23.camel@atx-linux-37> <20130919100833.GC19346@amd.pavel.ucw.cz> <52421829.4050708@zytor.com> <20130925120052.GD9690@amd.pavel.ucw.cz> <5242F2EF.2050900@balister.org>
+In-Reply-To: <5242F2EF.2050900@balister.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="7cMS1VGWgH8O3I7V1O9DdIlnGj289JmpD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2013 20:05, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 25 Sep 2013 18:44:22 +0800
-> Jiang Liu <liuj97@gmail.com> wrote:
->> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
->> index 8541c3a..50facfc 100644
->> --- a/arch/arm64/kernel/insn.c
->> +++ b/arch/arm64/kernel/insn.c
->> @@ -15,6 +15,8 @@
->>   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
->>   */
->>  #include <linux/kernel.h>
->> +#include <linux/stop_machine.h>
->> +#include <asm/cacheflush.h>
->>  #include <asm/insn.h>
->>
->>  static int aarch64_insn_cls[] = {
->> @@ -69,3 +71,65 @@ bool __kprobes aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn)
->>       return __aarch64_insn_hotpatch_safe(old_insn) &&
->>              __aarch64_insn_hotpatch_safe(new_insn);
->>  }
->> +
->> +struct aarch64_insn_patch {
->> +     void    *text_addr;
->> +     u32     *new_insns;
->> +     int     insn_cnt;
->> +};
->> +
->> +int __kprobes __aarch64_insn_patch_text(void *addr, u32 *insns, int cnt)
->> +{
->> +     int i;
->> +     u32 *tp = addr;
->> +
->> +     /* instructions must be word aligned */
->> +     if (cnt <= 0 || ((uintptr_t)addr & 0x3))
->> +             return -EINVAL;
->
-> On aarch64, are instructions always word aligned? If not, it should be
-> safe for stop machine to modify non word aligned instructions, but this
-> patch looks like it doesn't allow stop_machine() to do so.
-Steve,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--7cMS1VGWgH8O3I7V1O9DdIlnGj289JmpD
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yes, aarch64 instructions must be word-aligned, else instruction fetch
-would generate Misaligned PC fault.
+On 09/25/2013 04:27 PM, Philip Balister wrote:
+> On 09/25/2013 08:00 AM, Pavel Machek wrote:
+>> Hi!
+>>
+>>>>> The firmware approach is interesting.  It might be less flexible
+>>>>> compared with my original code (see link to git below) that this is=
+
+>>>>
+>>>> On the other hand... that's the interface world wants, right? To mos=
+t
+>>>> users, fpga bitstream is just a firmware.
+>>>>
+>>>
+>>> No, not really.
+>>>
+>>> The typical assumption with the firmware interface is that there is
+>>> exactly one possible firmware for each device (possibly modulated by
+>>> driver version, but still.) =20
+>>
+>> Actually, I have seen counterexample there, too. Wifi card had
+>> different firmware for host and access points mode, probably because
+>> internal RAM could not fit both at same time.=20
+>=20
+> And another counter example ...
+>=20
+> For the Zynq based product I am working on, we encourage the end user t=
+o
+> create their own bitstreams to customize their application. So we need
+> an easy way for the user to load a bitstream. cat foo.bin > /dev/xdevcf=
+g
+> works well for us.
+
+You probably don't care if this will be
+cat foo.bin > /sys/fpga/fpga0/<whatever>
+(for zynq case you can also run)
+cat foo.bit > /sys/fpga/fpga0/<whatever>
+
+FYI: Current driver in xilinx repo supports bit format too.
+
+> Then we need to make sure that the interface supports partial
+> reconfiguration.
+
+That will be next step.
+
+> That said, having a sane user api that addresses the various fpga use
+> cases would be a win for use since we would not need to write custom
+> user space code for every platform created in the future. I'd like to
+> see this api work with things like PCI based FPGA cards and discrete
+> fpgas that are not integrated with an arm etc.
+
+I don't have any PCI based FPGA card to have information how to work with=
+
+it but for discrete fpga I have one application note where jtag is emulat=
+ed
+by gpio interface and you can program another fpga from zynq (This can
+be probably generic case for any combination in this 4 pin connection).
 
 Thanks,
-Sandeepa
->
-> -- Steve
->
->> +
->> +     for (i = 0; i < cnt; i++)
->> +             tp[i] = insns[i];
->> +
->> +     flush_icache_range((uintptr_t)tp, (uintptr_t)tp + cnt * sizeof(u32));
->> +
->> +     return 0;
->> +}
->> +
->> +static int __kprobes aarch64_insn_patch_text_cb(void *arg)
->> +{
->> +     struct aarch64_insn_patch *pp = arg;
->> +
->> +     return __aarch64_insn_patch_text(pp->text_addr, pp->new_insns,
->> +                                      pp->insn_cnt);
->> +}
->> +
->> +int __kprobes aarch64_insn_patch_text(void *addr, u32 *insns, int cnt)
->> +{
->> +     int ret;
->> +     bool safe = false;
->> +
->> +     /* instructions must be word aligned */
->> +     if (cnt <= 0 || ((uintptr_t)addr & 0x3))
->> +             return -EINVAL;
->> +
->> +     if (cnt == 1)
->> +             safe = aarch64_insn_hotpatch_safe(*(u32 *)addr, insns[0]);
->> +
->> +     if (safe) {
->> +             ret = __aarch64_insn_patch_text(addr, insns, cnt);
->> +     } else {
->> +             struct aarch64_insn_patch patch = {
->> +                     .text_addr = addr,
->> +                     .new_insns = insns,
->> +                     .insn_cnt = cnt,
->> +             };
->> +
->> +             /*
->> +              * Execute __aarch64_insn_patch_text() on every online CPU,
->> +              * which ensure serialization among all online CPUs.
->> +              */
->> +             ret = stop_machine(aarch64_insn_patch_text_cb, &patch, NULL);
->> +     }
->> +
->> +     return ret;
->> +}
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--7cMS1VGWgH8O3I7V1O9DdIlnGj289JmpD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlJC9pUACgkQykllyylKDCFb+ACffQtEYbfwca98xfvws3PrftKb
+7ysAn0x1uijj8g+X2CmwibWHut14Pfzx
+=0z2L
+-----END PGP SIGNATURE-----
+
+--7cMS1VGWgH8O3I7V1O9DdIlnGj289JmpD--
