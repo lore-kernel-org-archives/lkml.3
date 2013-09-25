@@ -1,30 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab3IYAUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39657 "EHLO
+	id S1757152Ab3IYAbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:31:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756656Ab3IYAUi (ORCPT
+	with ESMTP id S932291Ab3IYAUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:38 -0400
+	Tue, 24 Sep 2013 20:20:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Willy Tarreau <w@1wt.eu>,
-        Jochen De Smet <jochen.armkernel@leahnim.org>,
-        Peter Sanford <psanford@nearbuy.io>,
-        Ethan Tuttle <ethan@ethantuttle.com>,
-        =?UTF-8?q?Ch=C3=A9ny=20Yves-Gael?= <yves@cheny.fr>,
-        Ryan Press <ryan@presslab.us>,
-        Simon Guinot <simon.guinot@sequanux.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Vincent Donnefort <vdonnefort@gmail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>, vdonnefort@lacie.com
-Subject: [ 069/117] net: mvneta: properly disable HW PHY polling and ensure adjust_link() works
-Date: Tue, 24 Sep 2013 17:18:55 -0700
-Message-Id: <20130925001748.398030649@linuxfoundation.org>
+        =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 079/117] HID: picolcd: Prevent NULL pointer dereference on _remove()
+Date: Tue, 24 Sep 2013 17:19:05 -0700
+Message-Id: <20130925001749.587844641@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -40,117 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Bruno Prémont <bonbons@linux-vserver.org>
 
-commit 714086029116b6b0a34e67ba1dd2f0d1cf26770c upstream.
+commit 1cde501bb4655e98fb832194beb88ac73be5a05d upstream.
 
-This commit fixes a long-standing bug that has been reported by many
-users: on some Armada 370 platforms, only the network interface that
-has been used in U-Boot to tftp the kernel works properly in
-Linux. The other network interfaces can see a 'link up', but are
-unable to transmit data. The reports were generally made on the Armada
-370-based Mirabox, but have also been given on the Armada 370-RD
-board.
+When picolcd is switched into bootloader mode (for FW flashing) make
+sure not to try to dereference NULL-pointers of feature-devices during
+unplug/unbind.
 
-The network MAC in the Armada 370/XP (supported by the mvneta driver
-in Linux) has a functionality that allows it to continuously poll the
-PHY and directly update the MAC configuration accordingly (speed,
-duplex, etc.). The very first versions of the driver submitted for
-review were using this hardware mechanism, but due to this, the driver
-was not integrated with the kernel phylib. Following reviews, the
-driver was changed to use the phylib, and therefore a software based
-polling. In software based polling, Linux regularly talks to the PHY
-over the MDIO bus, and sees if the link status has changed. If it's
-the case then the adjust_link() callback of the driver is called to
-update the MAC configuration accordingly.
+This fixes following BUG:
+  BUG: unable to handle kernel NULL pointer dereference at 00000298
+  IP: [<f811f56b>] picolcd_exit_framebuffer+0x1b/0x80 [hid_picolcd]
+  *pde = 00000000
+  Oops: 0000 [#1]
+  Modules linked in: hid_picolcd syscopyarea sysfillrect sysimgblt fb_sys_fops
+  CPU: 0 PID: 15 Comm: khubd Not tainted 3.11.0-rc7-00002-g50d62d4 #2
+  EIP: 0060:[<f811f56b>] EFLAGS: 00010292 CPU: 0
+  EIP is at picolcd_exit_framebuffer+0x1b/0x80 [hid_picolcd]
+  Call Trace:
+   [<f811d1ab>] picolcd_remove+0xcb/0x120 [hid_picolcd]
+   [<c1469b09>] hid_device_remove+0x59/0xc0
+   [<c13464ca>] __device_release_driver+0x5a/0xb0
+   [<c134653f>] device_release_driver+0x1f/0x30
+   [<c134603d>] bus_remove_device+0x9d/0xd0
+   [<c13439a5>] device_del+0xd5/0x150
+   [<c14696a4>] hid_destroy_device+0x24/0x60
+   [<c1474cbb>] usbhid_disconnect+0x1b/0x40
+   ...
 
-However, it turns out that the adjust_link() callback was not
-configuring the hardware in a completely correct way: while it was
-setting the speed and duplex bits correctly, it wasn't telling the
-hardware to actually take into account those bits rather than what the
-hardware-based PHY polling mechanism has concluded. So, in fact the
-adjust_link() callback was basically a no-op.
-
-However, the network happened to be working because on the network
-interfaces used by U-Boot for tftp on Armada 370 platforms because the
-hardware PHY polling was enabled by the bootloader, and left enabled
-by Linux. However, the second network interface not used for tftp (or
-both network interfaces if the kernel is loaded from USB, NAND or SD
-card) didn't had the hardware PHY polling enabled.
-
-This patch fixes this situation by:
-
- (1) Making sure that the hardware PHY polling is disabled by clearing
-     the MVNETA_PHY_POLLING_ENABLE bit in the MVNETA_UNIT_CONTROL
-     register in the driver ->probe() function.
-
- (2) Making sure that the duplex and speed selections made by the
-     adjust_link() callback are taken into account by clearing the
-     MVNETA_GMAC_AN_SPEED_EN and MVNETA_GMAC_AN_DUPLEX_EN bits in the
-     MVNETA_GMAC_AUTONEG_CONFIG register.
-
-This patch has been tested on Armada 370 Mirabox, and now both network
-interfaces are usable after boot.
-
-[ Problem introduced by commit c5aff18 ("net: mvneta: driver for
-  Marvell Armada 370/XP network unit") ]
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Willy Tarreau <w@1wt.eu>
-Cc: Jochen De Smet <jochen.armkernel@leahnim.org>
-Cc: Peter Sanford <psanford@nearbuy.io>
-Cc: Ethan Tuttle <ethan@ethantuttle.com>
-Cc: Chény Yves-Gael <yves@cheny.fr>
-Cc: Ryan Press <ryan@presslab.us>
-Cc: Simon Guinot <simon.guinot@sequanux.org>
-Cc: vdonnefort@lacie.com
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Tested-by: Vincent Donnefort <vdonnefort@gmail.com>
-Tested-by: Yves-Gael Cheny <yves@cheny.fr>
-Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/marvell/mvneta.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/hid/hid-picolcd_cir.c |    3 ++-
+ drivers/hid/hid-picolcd_fb.c  |    6 +++++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -138,7 +138,9 @@
- #define      MVNETA_GMAC_FORCE_LINK_PASS         BIT(1)
- #define      MVNETA_GMAC_CONFIG_MII_SPEED        BIT(5)
- #define      MVNETA_GMAC_CONFIG_GMII_SPEED       BIT(6)
-+#define      MVNETA_GMAC_AN_SPEED_EN             BIT(7)
- #define      MVNETA_GMAC_CONFIG_FULL_DUPLEX      BIT(12)
-+#define      MVNETA_GMAC_AN_DUPLEX_EN            BIT(13)
- #define MVNETA_MIB_COUNTERS_BASE                 0x3080
- #define      MVNETA_MIB_LATE_COLLISION           0x7c
- #define MVNETA_DA_FILT_SPEC_MCAST                0x3400
-@@ -915,6 +917,13 @@ static void mvneta_defaults_set(struct m
- 	/* Assign port SDMA configuration */
- 	mvreg_write(pp, MVNETA_SDMA_CONFIG, val);
+--- a/drivers/hid/hid-picolcd_cir.c
++++ b/drivers/hid/hid-picolcd_cir.c
+@@ -145,6 +145,7 @@ void picolcd_exit_cir(struct picolcd_dat
+ 	struct rc_dev *rdev = data->rc_dev;
  
-+	/* Disable PHY polling in hardware, since we're using the
-+	 * kernel phylib to do this.
-+	 */
-+	val = mvreg_read(pp, MVNETA_UNIT_CONTROL);
-+	val &= ~MVNETA_PHY_POLLING_ENABLE;
-+	mvreg_write(pp, MVNETA_UNIT_CONTROL, val);
+ 	data->rc_dev = NULL;
+-	rc_unregister_device(rdev);
++	if (rdev)
++		rc_unregister_device(rdev);
+ }
+ 
+--- a/drivers/hid/hid-picolcd_fb.c
++++ b/drivers/hid/hid-picolcd_fb.c
+@@ -593,10 +593,14 @@ err_nomem:
+ void picolcd_exit_framebuffer(struct picolcd_data *data)
+ {
+ 	struct fb_info *info = data->fb_info;
+-	struct picolcd_fb_data *fbdata = info->par;
++	struct picolcd_fb_data *fbdata;
+ 	unsigned long flags;
+ 
++	if (!info)
++		return;
 +
- 	mvneta_set_ucast_table(pp, -1);
- 	mvneta_set_special_mcast_table(pp, -1);
- 	mvneta_set_other_mcast_table(pp, -1);
-@@ -2307,7 +2316,9 @@ static void mvneta_adjust_link(struct ne
- 			val = mvreg_read(pp, MVNETA_GMAC_AUTONEG_CONFIG);
- 			val &= ~(MVNETA_GMAC_CONFIG_MII_SPEED |
- 				 MVNETA_GMAC_CONFIG_GMII_SPEED |
--				 MVNETA_GMAC_CONFIG_FULL_DUPLEX);
-+				 MVNETA_GMAC_CONFIG_FULL_DUPLEX |
-+				 MVNETA_GMAC_AN_SPEED_EN |
-+				 MVNETA_GMAC_AN_DUPLEX_EN);
+ 	device_remove_file(&data->hdev->dev, &dev_attr_fb_update_rate);
++	fbdata = info->par;
  
- 			if (phydev->duplex)
- 				val |= MVNETA_GMAC_CONFIG_FULL_DUPLEX;
+ 	/* disconnect framebuffer from HID dev */
+ 	spin_lock_irqsave(&fbdata->lock, flags);
 
 
