@@ -1,245 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab3IYWAn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 18:00:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:42032 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283Ab3IYWAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 18:00:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,981,1371106800"; 
-   d="scan'208";a="299385444"
-From: Jon Mason <jon.mason@intel.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH] ioat: PM Support
-Date: Wed, 25 Sep 2013 15:00:39 -0700
-Message-Id: <1380146439-26697-1-git-send-email-jon.mason@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754936Ab3IYWBS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 18:01:18 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:50512 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635Ab3IYWBR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 18:01:17 -0400
+Message-ID: <52435D2A.1000907@linaro.org>
+Date: Thu, 26 Sep 2013 00:01:14 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@sisk.pl
+CC: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/21] cpuidle: reduce code duplication inside cpuidle_idle_call()
+References: <cover.1379779777.git.viresh.kumar@linaro.org> <5e4629515deb76208df205210a77b1e8a9984f79.1379779777.git.viresh.kumar@linaro.org>
+In-Reply-To: <5e4629515deb76208df205210a77b1e8a9984f79.1379779777.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add power management support in the IOAT driver.  Adding this feature
-resolves a known issue when attempting to suspend on systems with IOAT
-enabled.  On those systems, IOAT would experience a DMA channel error
-when attempting to resume due to the channels not being suspended
-properly.  Currently, all channels errors cause panics, thus bringing
-the system down.
+On 09/22/2013 03:21 AM, Viresh Kumar wrote:
+> We are doing this twice in cpuidle_idle_call() routine:
+> 	drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP
+> 
+> Would be better if we actually store this in a local variable and use that. That
+> would remove code duplication as well as make this piece of code run fast (in
+> case compiler wasn't able to optimize it earlier)
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Unfortunately, a hardware errata needs to be worked around on Xeon IOAT
-devices.  The channel cannot be suspended or reset if there are active
-XOR transactions.  To get around this, check to see if XOR is enabled on
-the channel and the channel has pending transactions.  If so, then grab
-the lock and wait for the queue to drain.  It might be more elegant to
-see if there are any XOR operations pending in the list, but by that
-time the queue will have drained anyway.
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-See BF509S in
-http://www.intel.com/content/dam/www/public/us/en/documents/specification-updates/xeon-c5500-c3500-spec-update.pdf
-See BT92 in
-http://www.intel.com/content/dam/www/public/us/en/documents/specification-updates/xeon-e5-family-spec-update.pdf
+> ---
+>  drivers/cpuidle/cpuidle.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index b8c63cb..ed67e3c 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -118,6 +118,7 @@ int cpuidle_idle_call(void)
+>  	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+>  	struct cpuidle_driver *drv;
+>  	int next_state, entered_state;
+> +	bool broadcast;
+>  
+>  	if (cpuidle_disabled() || !initialized)
+>  		return -ENODEV;
+> @@ -141,7 +142,9 @@ int cpuidle_idle_call(void)
+>  
+>  	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+>  
+> -	if (drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP)
+> +	broadcast = drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP;
+> +
+> +	if (broadcast)
+>  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER,
+>  				   &dev->cpu);
+>  
+> @@ -151,7 +154,7 @@ int cpuidle_idle_call(void)
+>  	else
+>  		entered_state = cpuidle_enter_state(dev, drv, next_state);
+>  
+> -	if (drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP)
+> +	if (broadcast)
+>  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT,
+>  				   &dev->cpu);
+>  
+> 
 
-Tested-by: Gary Hade <garyhade@us.ibm.com>
-Signed-off-by: Jon Mason <jon.mason@intel.com>
----
- drivers/dma/ioat/dma.c    |    1 +
- drivers/dma/ioat/dma.h    |    1 +
- drivers/dma/ioat/dma_v2.c |    1 +
- drivers/dma/ioat/dma_v3.c |   60 ++++++++++++++++++++++++++++++++++++++++++---
- drivers/dma/ioat/pci.c    |   39 +++++++++++++++++++++++++++++
- 5 files changed, 99 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
-index 5ff6fc1..eeccfaa 100644
---- a/drivers/dma/ioat/dma.c
-+++ b/drivers/dma/ioat/dma.c
-@@ -1202,6 +1202,7 @@ int ioat1_dma_probe(struct ioatdma_device *device, int dca)
- 	device->self_test = ioat_dma_self_test;
- 	device->timer_fn = ioat1_timer_event;
- 	device->cleanup_fn = ioat1_cleanup_event;
-+	device->suspend = ioat_suspend;
- 	dma = &device->common;
- 	dma->device_prep_dma_memcpy = ioat1_dma_prep_memcpy;
- 	dma->device_issue_pending = ioat1_dma_memcpy_issue_pending;
-diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
-index 54fb7b9..1372c8e 100644
---- a/drivers/dma/ioat/dma.h
-+++ b/drivers/dma/ioat/dma.h
-@@ -97,6 +97,7 @@ struct ioatdma_device {
- 	void (*cleanup_fn)(unsigned long data);
- 	void (*timer_fn)(unsigned long data);
- 	int (*self_test)(struct ioatdma_device *device);
-+	void (*suspend)(struct ioat_chan_common *chan);
- };
- 
- struct ioat_chan_common {
-diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
-index b925e1b..bd21dcb 100644
---- a/drivers/dma/ioat/dma_v2.c
-+++ b/drivers/dma/ioat/dma_v2.c
-@@ -890,6 +890,7 @@ int ioat2_dma_probe(struct ioatdma_device *device, int dca)
- 	device->cleanup_fn = ioat2_cleanup_event;
- 	device->timer_fn = ioat2_timer_event;
- 	device->self_test = ioat_dma_self_test;
-+	device->suspend = ioat_suspend;
- 	dma = &device->common;
- 	dma->device_prep_dma_memcpy = ioat2_dma_prep_memcpy_lock;
- 	dma->device_issue_pending = ioat2_issue_pending;
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index b642e03..4147561 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -645,12 +645,63 @@ static void ioat3_cleanup_event(unsigned long data)
- 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
- }
- 
-+static inline void ioat3_suspend(struct ioat_chan_common *chan)
-+{
-+	struct pci_dev *pdev = to_pdev(chan);
-+	struct dma_device *dma = &chan->device->common;
-+	struct ioat2_dma_chan *ioat = container_of(chan, struct ioat2_dma_chan,
-+						   base);
-+
-+	/* Due to HW errata on Xeon, we must make sure to flush the device prior
-+	 * to suspend or reset of the device if there are any XOR operations
-+	 * pending.  Instead of inspecting the pending operations, just flush it
-+	 * if the channel supports XOR.
-+	 */
-+	if (is_xeon_cb32(pdev) && dma_has_cap(DMA_XOR, dma->cap_mask) &&
-+	    is_ioat_active(ioat_chansts(chan))) {
-+		unsigned long end = jiffies + msecs_to_jiffies(100);
-+
-+		spin_lock_bh(&ioat->prep_lock);
-+		while (is_ioat_active(ioat_chansts(chan))) {
-+			if (time_after(jiffies, end)) {
-+				dev_err(&pdev->dev, "Timeout trying to suspend");
-+				break;
-+			}
-+			cpu_relax();
-+		}
-+		ioat_suspend(chan);
-+		spin_unlock_bh(&ioat->prep_lock);
-+	} else
-+		ioat_suspend(chan);
-+}
-+
-+static int ioat3_quiesce(struct ioat_chan_common *chan, unsigned long tmo)
-+{
-+	unsigned long end = jiffies + tmo;
-+	int err = 0;
-+	u32 status;
-+
-+	status = ioat_chansts(chan);
-+	if (is_ioat_active(status) || is_ioat_idle(status))
-+		ioat3_suspend(chan);
-+	while (is_ioat_active(status) || is_ioat_idle(status)) {
-+		if (tmo && time_after(jiffies, end)) {
-+			err = -ETIMEDOUT;
-+			break;
-+		}
-+		status = ioat_chansts(chan);
-+		cpu_relax();
-+	}
-+
-+	return err;
-+}
-+
- static void ioat3_restart_channel(struct ioat2_dma_chan *ioat)
- {
- 	struct ioat_chan_common *chan = &ioat->base;
- 	u64 phys_complete;
- 
--	ioat2_quiesce(chan, 0);
-+	ioat3_quiesce(chan, 0);
- 	if (ioat3_cleanup_preamble(chan, &phys_complete))
- 		__cleanup(ioat, phys_complete);
- 
-@@ -1689,7 +1740,7 @@ static int ioat3_reset_hw(struct ioat_chan_common *chan)
- 	u16 dev_id;
- 	int err;
- 
--	ioat2_quiesce(chan, msecs_to_jiffies(100));
-+	ioat3_quiesce(chan, msecs_to_jiffies(100));
- 
- 	chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
- 	writel(chanerr, chan->reg_base + IOAT_CHANERR_OFFSET);
-@@ -1769,6 +1820,7 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
- 	device->reset_hw = ioat3_reset_hw;
- 	device->self_test = ioat3_dma_self_test;
- 	device->intr_quirk = ioat3_intr_quirk;
-+	device->suspend = ioat3_suspend;
- 	dma = &device->common;
- 	dma->device_prep_dma_memcpy = ioat2_dma_prep_memcpy_lock;
- 	dma->device_issue_pending = ioat2_issue_pending;
-@@ -1787,8 +1839,10 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
- 		device->cap &= ~(IOAT_CAP_XOR | IOAT_CAP_PQ | IOAT_CAP_RAID16SS);
- 
- 	/* dca is incompatible with raid operations */
--	if (dca_en && (device->cap & (IOAT_CAP_XOR|IOAT_CAP_PQ)))
-+	if (dca_en && (device->cap & (IOAT_CAP_XOR|IOAT_CAP_PQ))) {
-+		pr_info("%s: DCA enabled, disabling XOR\n", __func__);
- 		device->cap &= ~(IOAT_CAP_XOR|IOAT_CAP_PQ);
-+	}
- 
- 	if (device->cap & IOAT_CAP_XOR) {
- 		is_raid_device = true;
-diff --git a/drivers/dma/ioat/pci.c b/drivers/dma/ioat/pci.c
-index 2c8d560..136b10a 100644
---- a/drivers/dma/ioat/pci.c
-+++ b/drivers/dma/ioat/pci.c
-@@ -126,11 +126,50 @@ struct kmem_cache *ioat2_cache;
- 
- #define DRV_NAME "ioatdma"
- 
-+#ifdef CONFIG_PM
-+static int ioat_pm_suspend(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct ioatdma_device *device = pci_get_drvdata(pdev);
-+	struct dma_device *dma = &device->common;
-+	struct dma_chan *chan;
-+
-+	list_for_each_entry(chan, &dma->channels, device_node) {
-+		struct ioat_dma_chan *ioat = to_ioat_chan(chan);
-+
-+		dev_info(dev, "Suspending Chan %d\n", chan->chan_id);
-+		if (device->suspend)
-+			device->suspend(&ioat->base);
-+	}
-+
-+	return 0;
-+}
-+
-+static int ioat_pm_resume(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct ioatdma_device *device = pci_get_drvdata(pdev);
-+	struct dma_device *dma = &device->common;
-+	struct dma_chan *chan;
-+
-+	list_for_each_entry(chan, &dma->channels, device_node) {
-+		struct ioat_dma_chan *ioat = to_ioat_chan(chan);
-+		dev_info(dev, "Starting Chan %d\n", chan->chan_id);
-+		ioat_start(&ioat->base);
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
-+SIMPLE_DEV_PM_OPS(ioat_pm_ops, ioat_pm_suspend, ioat_pm_resume);
-+
- static struct pci_driver ioat_pci_driver = {
- 	.name		= DRV_NAME,
- 	.id_table	= ioat_pci_tbl,
- 	.probe		= ioat_pci_probe,
- 	.remove		= ioat_remove,
-+	.driver.pm	= &ioat_pm_ops,
- };
- 
- static struct ioatdma_device *
 -- 
-1.7.9.5
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
