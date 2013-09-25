@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3IYUZq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:25:46 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:37661 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942Ab3IYUZm (ORCPT
+	id S932077Ab3IYU0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:26:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49381 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755128Ab3IYU0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:25:42 -0400
-From: Djalal Harouni <tixxdz@opendz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        <kernel-hardening@lists.openwall.com>
-Cc: tixxdz@gmail.com, Djalal Harouni <tixxdz@opendz.org>
-Subject: [PATCH 08/12] procfs: add permission checks on the file's opener of /proc/*/personality
-Date: Wed, 25 Sep 2013 21:14:41 +0100
-Message-Id: <1380140085-29712-9-git-send-email-tixxdz@opendz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
-References: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
+	Wed, 25 Sep 2013 16:26:15 -0400
+Date: Wed, 25 Sep 2013 13:26:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sergei Trofimovich <slyfox@gentoo.org>,
+        Timur Tabi <timur@freescale.com>, Greg KH <greg@kroah.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-Id: <20130925132612.d1685bc8fb72558eef6fb09d@linux-foundation.org>
+In-Reply-To: <20130925110643.db5fa154bea3838ed6affa45@canb.auug.org.au>
+References: <20130925110643.db5fa154bea3838ed6affa45@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If current's cred have changed between ->open() and ->read(), then call
-proc_allow_access() to check if the original file's opener had enough
-permissions to access the /proc/*/personality entry during ->read().
+On Wed, 25 Sep 2013 11:06:43 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
----
- fs/proc/base.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+> Hi Andrew,
+> 
+> After merging the akpm tree, linux-next builds (powerpc allmodconfig)
+> fail like this:
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index d6a17b3..ed8e3f7 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2656,11 +2656,21 @@ static const struct file_operations proc_projid_map_operations = {
- static int proc_pid_personality(struct seq_file *m, struct pid_namespace *ns,
- 				struct pid *pid, struct task_struct *task)
- {
-+	const struct cred *fcred = seq_f_cred(m);
-+	int same_cred = proc_same_open_cred(fcred);
- 	int err = lock_trace(task);
--	if (!err) {
--		seq_printf(m, "%08x\n", task->personality);
--		unlock_trace(task);
-+	if (err)
-+		return err;
-+
-+	if (!same_cred &&
-+	    !proc_allow_access(fcred, task, PTRACE_MODE_ATTACH)) {
-+		err = -EPERM;
-+		goto out;
- 	}
-+
-+	seq_printf(m, "%08x\n", task->personality);
-+out:
-+	unlock_trace(task);
- 	return err;
- }
- 
--- 
-1.7.11.7
+I can't get powerpc to build at all at present:
 
+  CHK     include/config/kernel.release
+  CHK     include/generated/uapi/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CC      arch/powerpc/kernel/asm-offsets.s
+In file included from include/linux/vtime.h:6,
+                 from include/linux/hardirq.h:7,
+                 from include/linux/memcontrol.h:24,
+                 from include/linux/swap.h:8,
+                 from include/linux/suspend.h:4,
+                 from arch/powerpc/kernel/asm-offsets.c:24:
+arch/powerpc/include/generated/asm/vtime.h:1:31: error: asm-generic/vtime.h: No such file or directory
+
+> drivers/tty/ehv_bytechan.c:362:1: error: type defaults to 'int' in declaration of 'console_initcall' [-Werror=implicit-int]
+> 
+> Caused by commit 0f01cf96c2d4 ("./Makefile: enable -Werror=implicit-int
+> and -Werror=strict-prototypes by default") which has bee in linux-next
+> since Aug 16.  This commit exposed that fact that
+> drivers/tty/ehv_bytechan.c can be built as a module, but has a
+> console_initcall (which is not available to modules).  This was
+> originally introduced in commit dcd83aaff1c8 ("tty/powerpc: introduce the
+> ePAPR embedded hypervisor byte channel driver") in v3.2.
+> 
+> Anyone got a good solution?
+
+console_initcall() is a macro defined in init.h.  But we forgot to
+provide a version for #ifdef MODULE.
+
+At include/linux/init.h line 284 we see:
+
+/* Don't use these in loadable modules, but some people do... */
+#define early_initcall(fn)		module_init(fn)
+#define core_initcall(fn)		module_init(fn)
+...
+
+So we *could* add console_initcall() there.  But the problem is that it
+won't work as desired - when the driver is loaded as a module,
+ehv_bc_console_init() will be called at modprobe time, which is far far
+later than console_initcall-time.
+
+So the ehv_bytechan.c developers need to work out what they want to do
+here.  Do we disallow building that driver as a module?  Or do we
+permit that, and run ehv_bc_console_init() at modprobe time (needs
+testing!).
+
+If the latter then I'd be reluctant to add a modular version of
+console_initcall() because the thing's very presence is misleading. 
+otoh, drivers which use such a console_initcall() _might_ work, and
+everyone tests their drivers both built-in and as modules, don't they? 
+Don't they?
