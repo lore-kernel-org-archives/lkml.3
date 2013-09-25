@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab3IYAUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39543 "EHLO
+	id S1757379Ab3IYAkt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:40:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39567 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756589Ab3IYAUQ (ORCPT
+	with ESMTP id S932245Ab3IYAUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:16 -0400
+	Tue, 24 Sep 2013 20:20:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: [ 044/117] USB: fix build error when CONFIG_PM_SLEEP isnt enabled
-Date: Tue, 24 Sep 2013 17:18:30 -0700
-Message-Id: <20130925001745.648746669@linuxfoundation.org>
+        Mike Dyer <mike.dyer@md-soft.co.uk>, Mark Brown <broonie@linaro.org>
+Subject: [ 049/117] ASoC: wm8960: Fix PLL register writes
+Date: Tue, 24 Sep 2013 17:18:35 -0700
+Message-Id: <20130925001746.183480592@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,38 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Mike Dyer <mike.dyer@md-soft.co.uk>
 
-commit 9d8924297cd9c256c23c02abae40202563452453 upstream.
+commit 85fa532b6ef920b32598df86b194571a7059a77c upstream.
 
-This patch fixes a build error that occurs when CONFIG_PM is enabled
-and CONFIG_PM_SLEEP isn't:
+Bit 9 of PLL2,3 and 4 is reserved as '0'. The 24bit fractional part
+should be split across each register in 8bit chunks.
 
->> drivers/usb/host/ohci-pci.c:294:10: error: 'usb_hcd_pci_pm_ops' undeclared here (not in a function)
-      .pm = &usb_hcd_pci_pm_ops
-
-Since the usb_hcd_pci_pm_ops structure is defined and used when
-CONFIG_PM is enabled, its declaration should not be protected by
-CONFIG_PM_SLEEP.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Mike Dyer <mike.dyer@md-soft.co.uk>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/usb/hcd.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/wm8960.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/linux/usb/hcd.h
-+++ b/include/linux/usb/hcd.h
-@@ -411,7 +411,7 @@ extern int usb_hcd_pci_probe(struct pci_
- extern void usb_hcd_pci_remove(struct pci_dev *dev);
- extern void usb_hcd_pci_shutdown(struct pci_dev *dev);
+--- a/sound/soc/codecs/wm8960.c
++++ b/sound/soc/codecs/wm8960.c
+@@ -857,9 +857,9 @@ static int wm8960_set_dai_pll(struct snd
+ 	if (pll_div.k) {
+ 		reg |= 0x20;
  
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- extern const struct dev_pm_ops usb_hcd_pci_pm_ops;
- #endif
- #endif /* CONFIG_PCI */
+-		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 18) & 0x3f);
+-		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 9) & 0x1ff);
+-		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0x1ff);
++		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 16) & 0xff);
++		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 8) & 0xff);
++		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0xff);
+ 	}
+ 	snd_soc_write(codec, WM8960_PLL1, reg);
+ 
 
 
