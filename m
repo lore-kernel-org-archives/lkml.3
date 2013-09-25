@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab3IYRpw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 13:45:52 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:57037 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab3IYRpu (ORCPT
+	id S1754681Ab3IYRqR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 13:46:17 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:34372 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab3IYRqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 13:45:50 -0400
-Date: Wed, 25 Sep 2013 10:45:50 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Milosz Tanski <milosz@adfin.com>
-cc: ceph-devel@vger.kernel.org, zheng.z.yan@intel.com, dhowells@redhat.com,
-        linux-cachefs@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ceph: hung on ceph fscache invalidate in some cases
-In-Reply-To: <20130925151811.GA32800@gmail.com>
-Message-ID: <alpine.DEB.2.00.1309251045070.12714@cobra.newdream.net>
-References: <20130925151811.GA32800@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 25 Sep 2013 13:46:14 -0400
+Date: Wed, 25 Sep 2013 10:46:09 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "Gupta, Pekon" <pekon@ti.com>, "olof@lixom.net" <olof@lixom.net>,
+        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various
+ ECC schemes
+Message-ID: <20130925174609.GU4550@ld-irv-0074.broadcom.com>
+References: <1378986619-26765-1-git-send-email-pekon@ti.com>
+ <1378986619-26765-2-git-send-email-pekon@ti.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
+ <20130925134619.GG10746@radagast>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130925134619.GG10746@radagast>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied this to the ceph-client.git master branch.  I'll send this 
-upstream shortly after it gets some testing and/or any other fixes pile 
-up.
+On Wed, Sep 25, 2013 at 08:46:19AM -0500, Felipe Balbi wrote:
+> + akpm
+> 
+> On Tue, Sep 24, 2013 at 01:04:05PM -0500, Gupta, Pekon wrote:
+> > 
+> > > 
+> > > This patch
+> > > - updates DT binding for selection of ecc-scheme
+> > > - updates DT binding for detection of ELM h/w engine
+> > > - removes following obselete ECC schemes
+> > > 	OMAP_ECC_HAMMING_CODE_DEFAULT (S/W based 1-bit Hamming
+> > > ECC)
+> > > 	OMAP_ECC_HAMMING_CODE_HW_ROMCODE (H/W based 1-bit
+> > > Hamming ECC scheme)
+> > > - updates DT binding documentation for mtd/gpmc-nand
+> > > 
+> > > Signed-off-by: Pekon Gupta <pekon@ti.com>
+> > > ---
+> > 
+> > Dear Olof and other DT Maintainers,
+> > 
+> > This patch series has missed multiple merge windows, and
+> > much of the other development work on mtd/nand/omap
+> > driver is gated due to this.
+> > So, request you to please review this patch set and Ack it
+> > if all your mentioned concerns are resolved.
 
-Thanks!
-sage
+I've been waiting on Olof's response for this one. It seems like you
+addressed his comments well enough for me, although (in line with his
+comments) you are admittedly still breaking the DT ABI for these
+devices. IMO, that's OK given the low quality of the original bindings.
 
+I will make my own last pass at this series and push it to l2-mtd.git if
+it looks OK.
 
-
-On Wed, 25 Sep 2013, Milosz Tanski wrote:
-
-> In some cases I'm on my ceph client cluster I'm seeing hunk kernel tasks in
-> the invalidate page code path. This is due to the fact that we don't check if
-> the page is marked as cache before calling fscache_wait_on_page_write().
-> 
-> This is the log from the hang
-> 
-> INFO: task XXXXXX:12034 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->  ...
-> Call Trace:
-> [<ffffffff81568d09>] schedule+0x29/0x70
-> [<ffffffffa01d4cbd>] __fscache_wait_on_page_write+0x6d/0xb0 [fscache]
-> [<ffffffff81083520>] ? add_wait_queue+0x60/0x60
-> [<ffffffffa029a3e9>] ceph_invalidate_fscache_page+0x29/0x50 [ceph]
-> [<ffffffffa027df00>] ceph_invalidatepage+0x70/0x190 [ceph]
-> [<ffffffff8112656f>] ? delete_from_page_cache+0x5f/0x70
-> [<ffffffff81133cab>] truncate_inode_page+0x8b/0x90
-> [<ffffffff81133ded>] truncate_inode_pages_range.part.12+0x13d/0x620
-> [<ffffffff8113431d>] truncate_inode_pages_range+0x4d/0x60
-> [<ffffffff811343b5>] truncate_inode_pages+0x15/0x20
-> [<ffffffff8119bbf6>] evict+0x1a6/0x1b0
-> [<ffffffff8119c3f3>] iput+0x103/0x190
->  ...
-> 
-> Signed-off-by: Milosz Tanski <milosz@adfin.com>
-> ---
->  fs/ceph/cache.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/fs/ceph/cache.c b/fs/ceph/cache.c
-> index 6bfe65e..360b622 100644
-> --- a/fs/ceph/cache.c
-> +++ b/fs/ceph/cache.c
-> @@ -324,6 +324,9 @@ void ceph_invalidate_fscache_page(struct inode* inode, struct page *page)
->  {
->  	struct ceph_inode_info *ci = ceph_inode(inode);
->  
-> +	if (!PageFsCache(page))
-> +		return;
-> +
->  	fscache_wait_on_page_write(ci->fscache, page);
->  	fscache_uncache_page(ci->fscache, page);
->  }
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+Brian
