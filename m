@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888Ab3IYQav (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 12:30:51 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:18012 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750743Ab3IYQau (ORCPT
+	id S1751267Ab3IYQgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 12:36:38 -0400
+Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:47844 "EHLO
+	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750855Ab3IYQgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 12:30:50 -0400
-Date: Wed, 25 Sep 2013 12:30:45 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Jason Baron <jbaron@akamai.com>
-Subject: Re: [PATCH v1 7/7] jump_label: use defined macros instead of
- hard-coding for better readability
-Message-ID: <20130925123045.6e3a5b88@gandalf.local.home>
-In-Reply-To: <52430587.6050900@gmail.com>
-References: <1380105868-31985-1-git-send-email-liuj97@gmail.com>
-	<1380105868-31985-8-git-send-email-liuj97@gmail.com>
-	<20130925105330.4b717a80@gandalf.local.home>
-	<52430587.6050900@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Wed, 25 Sep 2013 12:36:36 -0400
+Date: Wed, 25 Sep 2013 18:36:32 +0200
+From: Benjamin Valentin <benpicco@zedat.fu-berlin.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        STAGING SUBSYSTEM <devel@driverdev.osuosl.org>
+Subject: Re: [PATCH] add exFAT driver
+Message-ID: <20130925183632.08a0d073@rechenknecht2k7>
+In-Reply-To: <20130830154205.GA1411@kroah.com>
+References: <20130830124622.5f81b7d4@rechenknecht2k7>
+	<20130830154205.GA1411@kroah.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+X-Originating-IP: 77.186.48.189
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Fri, 30 Aug 2013 08:42:05 -0700
+schrieb Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+ 
+> For staging drivers I need a maintainer that is going to take the time
+> to shephard it into the core kernel tree.  See other TODO files for
+> how that person is defined.  Are you going to be willing to do this?
 
-[ Added Jason to Cc. ]
+I can see what I can do.
 
-On Wed, 25 Sep 2013 23:47:19 +0800
-Jiang Liu <liuj97@gmail.com> wrote:
+I've cleaned up the code a bit, especially where it would redefine
+kernel functions. [1] Should I submit the end result, one file per
+patch, or begin with the original code and submit patches on top of
+that?
 
-> On 09/25/2013 10:53 PM, Steven Rostedt wrote:
-> > On Wed, 25 Sep 2013 18:44:27 +0800
-> > Jiang Liu <liuj97@gmail.com> wrote:
-> > 
-> >> From: Jiang Liu <jiang.liu@huawei.com>
-> >>
-> >> Use macro JUMP_LABEL_TRUE_BRANCH instead of hard-coding for better
-> >> readability.
-> >>
-> >> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> >> Cc: Jiang Liu <liuj97@gmail.com>
-> >> ---
-> >>  include/linux/jump_label.h | 3 ++-
-> >>  1 file changed, 2 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> >> index a507907..b697fbd 100644
-> >> --- a/include/linux/jump_label.h
-> >> +++ b/include/linux/jump_label.h
-> >> @@ -116,7 +116,8 @@ extern void static_key_slow_dec(struct static_key *key);
-> >>  extern void jump_label_apply_nops(struct module *mod);
-> >>  
-> >>  #define STATIC_KEY_INIT_TRUE ((struct static_key) \
-> >> -	{ .enabled = ATOMIC_INIT(1), .entries = (void *)1 })
-> >> +	{ .enabled = ATOMIC_INIT(1), \
-> >> +	  .entries = (void *)JUMP_LABEL_TRUE_BRANCH })
-> >>  #define STATIC_KEY_INIT_FALSE ((struct static_key) \
-> >>  	{ .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
-> >>  
-> > 
-> > Probably should add a comment that there is no
-> > "JUMP_LABEL_FALSE_BRANCH" or maybe we should add one?
-> Hi Steven,
-> 	How about
-> JUMP_LABEL_TYPE_MASK/JUMP_LABEL_TRUE_BRANCH/JUMP_LABEL_FALSE_BRANCH
-> tuple? That should have the best readability.
-> Thanks!
-> 
+Also, the driver would define it's own data types like
+    typedef unsigned int            UINT32;
 
-You mean a mask of ~1, and TRUE be 1 and FALSE be 0.
+I've replaced that with u32, etc as the naming implied the bit size
+would matter. (And it probably does for the on-disk file system
+structures, but they are used for everything) Is there any disadvantage
+to this over using the standard C types?
 
-That may work.
+> Also, I would really like to get a signed-off-by: from the Samsung
+> authors for this patch, can you do that as well please?
 
--- Steve
+I've tried reaching them by their last public e-mail addresses I could
+find, but they would either bounce or I got no reply.
+
+[1] https://github.com/benpicco/linux_exfat-staging/commits/exfat
