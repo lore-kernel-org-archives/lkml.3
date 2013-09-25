@@ -1,67 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab3IYAkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:40:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39571 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932255Ab3IYAUU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:20 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Mark Brown <broonie@linaro.org>
-Subject: [ 050/117] ASoC: mc13783: add spi errata fix
-Date: Tue, 24 Sep 2013 17:18:36 -0700
-Message-Id: <20130925001746.307865676@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
-References: <20130925001740.833541979@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1757361Ab3IYAk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:40:27 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1911 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755597Ab3IYAkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 20:40:24 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+From: "Tim Kryger" <tim.kryger@linaro.org>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Heikki Krogerus" <heikki.krogerus@linux.intel.com>
+cc: "Tim Kryger" <tim.kryger@linaro.org>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: [PATCH] serial: 8250_dw: Improve unwritable LCR workaround
+Date: Tue, 24 Sep 2013 17:39:09 -0700
+Message-ID: <1380069549-9176-1-git-send-email-tim.kryger@linaro.org>
+X-Mailer: git-send-email 1.8.0.1
+MIME-Version: 1.0
+X-WSS-ID: 7E5CF0750UO10711878-01-01
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+The Designware UART has a limitation where it ignores writes into the
+LCR if the UART is busy.  The current workaround stashes a copy of the
+last written LCR and writes it back down to the hardware if it receives
+a special busy interrupt which is raised when a write was ignored.
 
-------------------
+Unfortunately, interrupts are typically disabled prior to performing a
+sequence of register writes that include the LCR so the point at which
+the retry occurs is too late.  An example is serial8250_do_set_termios()
+where an ignored LCR write results in the baud divisor not being set and
+instead a garbage character is sent out the transmitter.
 
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Furthermore, since serial_port_out() offers no way to indicate failure,
+a serious effort must be made to ensure that the LCR is actually updated
+before returning back to the caller.  This is difficult, however, as a
+UART that was busy during the first attempt is likely to still be busy
+when a subsequent attempt is made unless some extra action is taken.
 
-commit 9f6f0afbb9fdabf6dcac642dfec457f28981e3f8 upstream.
+This updated workaround takes the extreme action of clearing the TX/RX
+FIFOs and reading the receive buffer before writing down the LCR in the
+hope that doing so will force the UART into an idle state.  While this
+may seem unnecessarily aggressive, writes to the LCR are used to change
+the baud rate, parity, stop bit, or data length so the data that may be
+lost is likely not important.  Admittedly, this is far from ideal but it
+seems to be the best that can be done given the hardware limitations.
 
-The MC13783 Chip Errata, Rev. 4 says, that depending on SPI clock
-and main audio clock speed, the Audio Codec or Stereo DAC do sometimes
-not start when programmed to do so. This is due to an internal clock
-timing issue related to the loading of the SPI bits into the audio block.
+Lastly, the revised workaround doesn't touch the LCR in the ISR, so it
+avoids the possibility of a "serial8250: too much work for irq" lock up.
+This problem is rare in real situations but can be reproduced easily by
+wiring up two UARTs and running the following commands.
 
-On an i.MX27 based system, this issue lead to switched audio channels under
-certain circumstances: RTC + Touch + Audio are used and loaded at startup.
+  # stty -F /dev/ttyS1 echo
+  # stty -F /dev/ttyS2 echo
+  # cat /dev/ttyS1 &
+  [1] 375
+  # echo asdf > /dev/ttyS1
+  asdf
 
-The mentioned workaround of writing registers 40 and 41 two times is implemented
-here.
+  [   27.700000] serial8250: too much work for irq96
+  [   27.700000] serial8250: too much work for irq96
+  [   27.710000] serial8250: too much work for irq96
+  [   27.710000] serial8250: too much work for irq96
+  [   27.720000] serial8250: too much work for irq96
+  [   27.720000] serial8250: too much work for irq96
+  [   27.730000] serial8250: too much work for irq96
+  [   27.730000] serial8250: too much work for irq96
+  [   27.740000] serial8250: too much work for irq96
 
-Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+Reviewed-by: Matt Porter <matt.porter@linaro.org>
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 ---
- sound/soc/codecs/mc13783.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/tty/serial/8250/8250_dw.c | 57 +++++++++++++++++++++++++++------------
+ 1 file changed, 40 insertions(+), 17 deletions(-)
 
---- a/sound/soc/codecs/mc13783.c
-+++ b/sound/soc/codecs/mc13783.c
-@@ -126,6 +126,10 @@ static int mc13783_write(struct snd_soc_
+diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
+index daf710f..ffbb69c 100644
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -56,7 +56,6 @@
  
- 	ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
  
-+	/* include errata fix for spi audio problems */
-+	if (reg == MC13783_AUDIO_CODEC || reg == MC13783_AUDIO_DAC)
-+		ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
+ struct dw8250_data {
+-	int		last_lcr;
+ 	int		last_mcr;
+ 	int		line;
+ 	struct clk	*clk;
+@@ -76,17 +75,35 @@ static inline int dw8250_modify_msr(struct uart_port *p, int offset, int value)
+ 	return value;
+ }
+ 
++/* The UART will ignore writes to LCR when busy we take aggressive steps
++ * to ensure that it is idle before attempting to write to LCR */
++static void dw8250_force_idle(struct uart_port *p)
++{
++	serial8250_clear_and_reinit_fifos(container_of
++					  (p, struct uart_8250_port, port));
++	(void)p->serial_in(p, UART_LSR);
++	(void)p->serial_in(p, UART_MSR);
++	(void)p->serial_in(p, UART_RX);
++}
 +
- 	mc13xxx_unlock(priv->mc13xxx);
+ static void dw8250_serial_out(struct uart_port *p, int offset, int value)
+ {
+ 	struct dw8250_data *d = p->private_data;
  
- 	return ret;
+-	if (offset == UART_LCR)
+-		d->last_lcr = value;
+-
+-	if (offset == UART_MCR)
+-		d->last_mcr = value;
+-
+-	writeb(value, p->membase + (offset << p->regshift));
++	if (offset == UART_LCR) {
++		int tries = 1000;
++		while (tries--) {
++			if (value == p->serial_in(p, UART_LCR))
++				return;
++			dw8250_force_idle(p);
++			writeb(value, p->membase + (UART_LCR << p->regshift));
++		}
++		dev_err(p->dev, "Couldn't set LCR to %d\n", value);
++	} else {
++		if (offset == UART_MCR)
++			d->last_mcr = value;
++		writeb(value, p->membase + (offset << p->regshift));
++	}
+ }
+ 
+ static unsigned int dw8250_serial_in(struct uart_port *p, int offset)
+@@ -107,13 +124,20 @@ static void dw8250_serial_out32(struct uart_port *p, int offset, int value)
+ {
+ 	struct dw8250_data *d = p->private_data;
+ 
+-	if (offset == UART_LCR)
+-		d->last_lcr = value;
+-
+-	if (offset == UART_MCR)
+-		d->last_mcr = value;
+-
+-	writel(value, p->membase + (offset << p->regshift));
++	if (offset == UART_LCR) {
++		int tries = 1000;
++		while (tries--) {
++			if (value == p->serial_in(p, UART_LCR))
++				return;
++			dw8250_force_idle(p);
++			writel(value, p->membase + (UART_LCR << p->regshift));
++		}
++		dev_err(p->dev, "Couldn't set LCR to %d\n", value);
++	} else {
++		if (offset == UART_MCR)
++			d->last_mcr = value;
++		writel(value, p->membase + (offset << p->regshift));
++	}
+ }
+ 
+ static unsigned int dw8250_serial_in32(struct uart_port *p, int offset)
+@@ -131,9 +155,8 @@ static int dw8250_handle_irq(struct uart_port *p)
+ 	if (serial8250_handle_irq(p, iir)) {
+ 		return 1;
+ 	} else if ((iir & UART_IIR_BUSY) == UART_IIR_BUSY) {
+-		/* Clear the USR and write the LCR again. */
++		/* Clear the USR */
+ 		(void)p->serial_in(p, d->usr_reg);
+-		p->serial_out(p, UART_LCR, d->last_lcr);
+ 
+ 		return 1;
+ 	}
+-- 
+1.8.0.1
 
 
