@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab3IYV3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 17:29:12 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:41154 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755269Ab3IYV3K (ORCPT
+	id S1756060Ab3IYVaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 17:30:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49634 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754982Ab3IYVaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 17:29:10 -0400
-Date: Wed, 25 Sep 2013 14:29:03 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: "Gupta, Pekon" <pekon@ti.com>,
-        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various
- ECC schemes
-Message-ID: <20130925212903.GI23337@ld-irv-0074.broadcom.com>
-References: <1378986619-26765-1-git-send-email-pekon@ti.com>
- <1378986619-26765-2-git-send-email-pekon@ti.com>
- <20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
- <20130925134619.GG10746@radagast>
- <20130925175527.GA23337@ld-irv-0074.broadcom.com>
- <20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
- <20130925200539.GH23337@ld-irv-0074.broadcom.com>
- <CAOesGMif301iBe9zxHudkC_G9SzPPy1Mj4XYvQ-MY8nmx4wO+A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOesGMif301iBe9zxHudkC_G9SzPPy1Mj4XYvQ-MY8nmx4wO+A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 25 Sep 2013 17:30:11 -0400
+Date: Wed, 25 Sep 2013 14:30:09 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Dave Jones <davej@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Chen Gang <gang.chen@asianux.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, mempolicy: make mpol_to_str robust and always
+ succeed
+Message-Id: <20130925143009.913fb1c042abe10d91c86c8b@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1309251057080.17676@chino.kir.corp.google.com>
+References: <5215639D.1080202@asianux.com>
+	<5227CF48.5080700@asianux.com>
+	<alpine.DEB.2.02.1309241957280.26415@chino.kir.corp.google.com>
+	<20130925031127.GA4210@redhat.com>
+	<alpine.DEB.2.02.1309242012070.27940@chino.kir.corp.google.com>
+	<20130925032530.GA4771@redhat.com>
+	<alpine.DEB.2.02.1309251057080.17676@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 01:33:27PM -0700, Olof Johansson wrote:
-> On Wed, Sep 25, 2013 at 1:05 PM, Brian Norris
-> <computersforpeace@gmail.com> wrote:
+On Wed, 25 Sep 2013 10:58:27 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+
+> On Tue, 24 Sep 2013, Dave Jones wrote:
 > 
-> > Olof has given good advice on your DT binding and has (slowly) been
-> > responding to other requests for DT review that make it to his list. I
-> > see that he hasn't followed up on your changes (this v6), so pinging him
-> > (as you did) is probably the correct approach. But please do recognize
-> > that the DT list is very high volume, so it's hard to get good timely
-> > responses there.
+> >  > 	/* fall through */
+> >  > 
+> >  > for all of them would be pretty annoying.
+> >  
+> > agreed, but with that example, it seems pretty obvious (to me at least)
+> > that the lack of break's is intentional.  Where it gets trickier to
+> > make quick judgment calls is cases like the one I mentioned above,
+> > where there are only a few cases, and there's real code involved in
+> > some but not all cases.
+> > 
 > 
-> I am not a DT mainainer, but sometimes when I see a binding that
-> appears to be wrong I speak up. In this case, the binding was one of
-> those.
+> I fully agree and have code in the oom killer that has the "fall through" 
+> comment if there's code in between the case statements, but I think things 
+> like
+> 
+> 	case MPOL_BIND:
+> 	case MPOL_INTERLEAVE:
+> 		...
+> 
+> is quite easy to read.  I don't feel strongly at all, though, so I'll just 
+> leave it to Andrew's preference.
 
-Whoops, my bad. I was deceived by the responses I've seen from you on
-other issues (thanks, BTW). In that case, I haven't seen any response
-from a proper DT binding maintainer :(
- 
-> So, I have no more objections to it, and I hope you can get a quick
-> review from a DT maintainer on the rest of the binding.
+I've never even thought about it, but that won't prevent me from
+pretending otherwise!  How about:
 
-At this point, I'm comfortable going ahead without their ack, since they
-obviously don't care/don't have the manpower to review.
+This:
 
-Brian
+	case WIBBLE:
+		something();
+		something_else();
+	case WOBBLE:
+
+needs a /* fall through */ comment (because it *looks* like a mistake),
+whereas
+
+	case WIBBLE:
+	case WOBBLE:
+
+does not?
