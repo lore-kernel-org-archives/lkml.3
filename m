@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab3IYQjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 12:39:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40180 "EHLO
+	id S1754373Ab3IYQjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 12:39:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40187 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab3IYQjC (ORCPT
+	with ESMTP id S1750896Ab3IYQjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 12:39:02 -0400
-Date: Wed, 25 Sep 2013 09:38:28 -0700
+	Wed, 25 Sep 2013 12:39:12 -0400
+Date: Wed, 25 Sep 2013 09:38:38 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-orxrbycjozopqfhb4dxdkdvb@git.kernel.org>
+Message-ID: <tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Introduce preempt_count accessor functions
-Git-Commit-ID: 4a2b4b222743bb07fedf985b884550f2ca067ea9
+Subject: [tip:sched/core] sched: Add NEED_RESCHED to the preempt_count
+Git-Commit-ID: f27dde8deef33c9e58027df11ceab2198601d6a6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -26,212 +25,274 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 25 Sep 2013 09:38:35 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 25 Sep 2013 09:38:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4a2b4b222743bb07fedf985b884550f2ca067ea9
-Gitweb:     http://git.kernel.org/tip/4a2b4b222743bb07fedf985b884550f2ca067ea9
+Commit-ID:  f27dde8deef33c9e58027df11ceab2198601d6a6
+Gitweb:     http://git.kernel.org/tip/f27dde8deef33c9e58027df11ceab2198601d6a6
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 14 Aug 2013 14:55:24 +0200
+AuthorDate: Wed, 14 Aug 2013 14:55:31 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 25 Sep 2013 14:07:32 +0200
+CommitDate: Wed, 25 Sep 2013 14:07:49 +0200
 
-sched: Introduce preempt_count accessor functions
+sched: Add NEED_RESCHED to the preempt_count
 
-Replace the single preempt_count() 'function' that's an lvalue with
-two proper functions:
+In order to combine the preemption and need_resched test we need to
+fold the need_resched information into the preempt_count value.
 
- preempt_count() - returns the preempt_count value as rvalue
- preempt_count_set() - Allows setting the preempt-count value
+Since the NEED_RESCHED flag is set across CPUs this needs to be an
+atomic operation, however we very much want to avoid making
+preempt_count atomic, therefore we keep the existing TIF_NEED_RESCHED
+infrastructure in place but at 3 sites test it and fold its value into
+preempt_count; namely:
 
-Also provide preempt_count_ptr() as a convenience wrapper to implement
-all modifying operations.
+ - resched_task() when setting TIF_NEED_RESCHED on the current task
+ - scheduler_ipi() when resched_task() sets TIF_NEED_RESCHED on a
+                   remote task it follows it up with a reschedule IPI
+                   and we can modify the cpu local preempt_count from
+                   there.
+ - cpu_idle_loop() for when resched_task() found tsk_is_polling().
 
+We use an inverted bitmask to indicate need_resched so that a 0 means
+both need_resched and !atomic.
+
+Also remove the barrier() in preempt_enable() between
+preempt_enable_no_resched() and preempt_check_resched() to avoid
+having to reload the preemption value and allow the compiler to use
+the flags of the previuos decrement. I couldn't come up with any sane
+reason for this barrier() to be there as preempt_enable_no_resched()
+already has a barrier() before doing the decrement.
+
+Suggested-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-orxrbycjozopqfhb4dxdkdvb@git.kernel.org
-[ Fixed build failure. ]
+Link: http://lkml.kernel.org/n/tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/preempt.h | 25 +++++++++++++++++++------
- init/main.c             |  2 +-
- kernel/sched/core.c     |  4 ++--
- kernel/softirq.c        |  4 ++--
- kernel/timer.c          |  8 ++++----
- lib/locking-selftest.c  |  2 +-
- lib/smp_processor_id.c  |  3 +--
- 7 files changed, 30 insertions(+), 18 deletions(-)
+ include/linux/preempt.h | 47 ++++++++++++++++++++++++++++++++++++++++++-----
+ include/linux/sched.h   |  7 +++++--
+ kernel/cpu/idle.c       |  7 +++++++
+ kernel/sched/core.c     | 20 +++++++++++++++-----
+ 4 files changed, 69 insertions(+), 12 deletions(-)
 
 diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-index f5d4723..eaac52a 100644
+index eaac52a..92e3418 100644
 --- a/include/linux/preempt.h
 +++ b/include/linux/preempt.h
-@@ -10,19 +10,32 @@
+@@ -10,9 +10,19 @@
  #include <linux/linkage.h>
  #include <linux/list.h>
  
-+static __always_inline int preempt_count(void)
++/*
++ * We use the MSB mostly because its available; see <linux/preempt_mask.h> for
++ * the other bits -- can't include that header due to inclusion hell.
++ */
++#define PREEMPT_NEED_RESCHED	0x80000000
++
++/*
++ * We mask the PREEMPT_NEED_RESCHED bit so as not to confuse all current users
++ * that think a non-zero value indicates we cannot preempt.
++ */
+ static __always_inline int preempt_count(void)
+ {
+-	return current_thread_info()->preempt_count;
++	return current_thread_info()->preempt_count & ~PREEMPT_NEED_RESCHED;
+ }
+ 
+ static __always_inline int *preempt_count_ptr(void)
+@@ -20,11 +30,40 @@ static __always_inline int *preempt_count_ptr(void)
+ 	return &current_thread_info()->preempt_count;
+ }
+ 
++/*
++ * We now loose PREEMPT_NEED_RESCHED and cause an extra reschedule; however the
++ * alternative is loosing a reschedule. Better schedule too often -- also this
++ * should be a very rare operation.
++ */
+ static __always_inline void preempt_count_set(int pc)
+ {
+ 	*preempt_count_ptr() = pc;
+ }
+ 
++/*
++ * We fold the NEED_RESCHED bit into the preempt count such that
++ * preempt_enable() can decrement and test for needing to reschedule with a
++ * single instruction.
++ *
++ * We invert the actual bit, so that when the decrement hits 0 we know we both
++ * need to resched (the bit is cleared) and can resched (no preempt count).
++ */
++
++static __always_inline void set_preempt_need_resched(void)
 +{
-+	return current_thread_info()->preempt_count;
++	*preempt_count_ptr() &= ~PREEMPT_NEED_RESCHED;
 +}
 +
-+static __always_inline int *preempt_count_ptr(void)
++static __always_inline void clear_preempt_need_resched(void)
 +{
-+	return &current_thread_info()->preempt_count;
++	*preempt_count_ptr() |= PREEMPT_NEED_RESCHED;
 +}
 +
-+static __always_inline void preempt_count_set(int pc)
++static __always_inline bool test_preempt_need_resched(void)
 +{
-+	*preempt_count_ptr() = pc;
++	return !(*preempt_count_ptr() & PREEMPT_NEED_RESCHED);
 +}
 +
  #if defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER)
    extern void add_preempt_count(int val);
    extern void sub_preempt_count(int val);
+@@ -42,7 +81,7 @@ asmlinkage void preempt_schedule(void);
+ 
+ #define preempt_check_resched() \
+ do { \
+-	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
++	if (unlikely(!*preempt_count_ptr())) \
+ 		preempt_schedule(); \
+ } while (0)
+ 
+@@ -52,7 +91,7 @@ void preempt_schedule_context(void);
+ 
+ #define preempt_check_resched_context() \
+ do { \
+-	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
++	if (unlikely(!*preempt_count_ptr())) \
+ 		preempt_schedule_context(); \
+ } while (0)
  #else
--# define add_preempt_count(val)	do { preempt_count() += (val); } while (0)
--# define sub_preempt_count(val)	do { preempt_count() -= (val); } while (0)
-+# define add_preempt_count(val)	do { *preempt_count_ptr() += (val); } while (0)
-+# define sub_preempt_count(val)	do { *preempt_count_ptr() -= (val); } while (0)
- #endif
+@@ -88,7 +127,6 @@ do { \
+ #define preempt_enable() \
+ do { \
+ 	preempt_enable_no_resched(); \
+-	barrier(); \
+ 	preempt_check_resched(); \
+ } while (0)
  
- #define inc_preempt_count() add_preempt_count(1)
- #define dec_preempt_count() sub_preempt_count(1)
+@@ -116,7 +154,6 @@ do { \
+ #define preempt_enable_notrace() \
+ do { \
+ 	preempt_enable_no_resched_notrace(); \
+-	barrier(); \
+ 	preempt_check_resched_context(); \
+ } while (0)
  
--#define preempt_count()	(current_thread_info()->preempt_count)
--
- #ifdef CONFIG_PREEMPT
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e783ec5..9fa151f 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -22,6 +22,7 @@ struct sched_param {
+ #include <linux/errno.h>
+ #include <linux/nodemask.h>
+ #include <linux/mm_types.h>
++#include <linux/preempt.h>
  
- asmlinkage void preempt_schedule(void);
-@@ -81,9 +94,9 @@ do { \
+ #include <asm/page.h>
+ #include <asm/ptrace.h>
+@@ -434,7 +435,9 @@ struct task_cputime {
+  * We include PREEMPT_ACTIVE to avoid cond_resched() from working
+  * before the scheduler is active -- see should_resched().
+  */
+-#define INIT_PREEMPT_COUNT	(1 + PREEMPT_ACTIVE)
++#define INIT_PREEMPT_COUNT	(1 + PREEMPT_ACTIVE + PREEMPT_NEED_RESCHED)
++#define PREEMPT_ENABLED		(PREEMPT_NEED_RESCHED)
++#define PREEMPT_DISABLED	(1 + PREEMPT_NEED_RESCHED)
  
- /* For debugging and tracer internals only! */
- #define add_preempt_count_notrace(val)			\
--	do { preempt_count() += (val); } while (0)
-+	do { *preempt_count_ptr() += (val); } while (0)
- #define sub_preempt_count_notrace(val)			\
--	do { preempt_count() -= (val); } while (0)
-+	do { *preempt_count_ptr() -= (val); } while (0)
- #define inc_preempt_count_notrace() add_preempt_count_notrace(1)
- #define dec_preempt_count_notrace() sub_preempt_count_notrace(1)
+ /**
+  * struct thread_group_cputimer - thread group interval timer counts
+@@ -2408,7 +2411,7 @@ static inline int signal_pending_state(long state, struct task_struct *p)
  
-diff --git a/init/main.c b/init/main.c
-index af310af..7cc4b78 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -692,7 +692,7 @@ int __init_or_module do_one_initcall(initcall_t fn)
+ static inline int need_resched(void)
+ {
+-	return unlikely(test_thread_flag(TIF_NEED_RESCHED));
++	return unlikely(test_preempt_need_resched());
+ }
  
- 	if (preempt_count() != count) {
- 		sprintf(msgbuf, "preemption imbalance ");
--		preempt_count() = count;
-+		preempt_count_set(count);
- 	}
- 	if (irqs_disabled()) {
- 		strlcat(msgbuf, "disabled interrupts ", sizeof(msgbuf));
+ /*
+diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
+index c261409..988573a 100644
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -105,6 +105,13 @@ static void cpu_idle_loop(void)
+ 				__current_set_polling();
+ 			}
+ 			arch_cpu_idle_exit();
++			/*
++			 * We need to test and propagate the TIF_NEED_RESCHED
++			 * bit here because we might not have send the
++			 * reschedule IPI to idle tasks.
++			 */
++			if (tif_need_resched())
++				set_preempt_need_resched();
+ 		}
+ 		tick_nohz_idle_exit();
+ 		schedule_preempt_disabled();
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 242da0c..fe89afa 100644
+index fe89afa..ee61f5a 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -2219,7 +2219,7 @@ void __kprobes add_preempt_count(int val)
- 	if (DEBUG_LOCKS_WARN_ON((preempt_count() < 0)))
+@@ -525,8 +525,10 @@ void resched_task(struct task_struct *p)
+ 	set_tsk_need_resched(p);
+ 
+ 	cpu = task_cpu(p);
+-	if (cpu == smp_processor_id())
++	if (cpu == smp_processor_id()) {
++		set_preempt_need_resched();
  		return;
++	}
+ 
+ 	/* NEED_RESCHED must be visible before we test polling */
+ 	smp_mb();
+@@ -1391,6 +1393,14 @@ static void sched_ttwu_pending(void)
+ 
+ void scheduler_ipi(void)
+ {
++	/*
++	 * Fold TIF_NEED_RESCHED into the preempt_count; anybody setting
++	 * TIF_NEED_RESCHED remotely (for the first time) will also send
++	 * this IPI.
++	 */
++	if (tif_need_resched())
++		set_preempt_need_resched();
++
+ 	if (llist_empty(&this_rq()->wake_list)
+ 			&& !tick_nohz_full_cpu(smp_processor_id())
+ 			&& !got_nohz_idle_kick())
+@@ -1714,7 +1724,7 @@ void sched_fork(struct task_struct *p)
  #endif
--	preempt_count() += val;
-+	add_preempt_count_notrace(val);
- #ifdef CONFIG_DEBUG_PREEMPT
- 	/*
- 	 * Spinlock count overflowing soon?
-@@ -2250,7 +2250,7 @@ void __kprobes sub_preempt_count(int val)
+ #ifdef CONFIG_PREEMPT_COUNT
+ 	/* Want to start with kernel preemption disabled. */
+-	task_thread_info(p)->preempt_count = 1;
++	task_thread_info(p)->preempt_count = PREEMPT_DISABLED;
+ #endif
+ #ifdef CONFIG_SMP
+ 	plist_node_init(&p->pushable_tasks, MAX_PRIO);
+@@ -2425,6 +2435,7 @@ need_resched:
+ 	put_prev_task(rq, prev);
+ 	next = pick_next_task(rq);
+ 	clear_tsk_need_resched(prev);
++	clear_preempt_need_resched();
+ 	rq->skip_clock_update = 0;
  
- 	if (preempt_count() == val)
- 		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
--	preempt_count() -= val;
-+	sub_preempt_count_notrace(val);
- }
- EXPORT_SYMBOL(sub_preempt_count);
- 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 53cc09c..a90de70 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -106,7 +106,7 @@ static void __local_bh_disable(unsigned long ip, unsigned int cnt)
- 	 * We must manually increment preempt_count here and manually
- 	 * call the trace_preempt_off later.
- 	 */
--	preempt_count() += cnt;
-+	add_preempt_count_notrace(cnt);
- 	/*
- 	 * Were softirqs turned off above:
- 	 */
-@@ -256,7 +256,7 @@ restart:
- 				       " exited with %08x?\n", vec_nr,
- 				       softirq_to_name[vec_nr], h->action,
- 				       prev_count, preempt_count());
--				preempt_count() = prev_count;
-+				preempt_count_set(prev_count);
- 			}
- 
- 			rcu_bh_qs(cpu);
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 4296d13..6582b82 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1092,7 +1092,7 @@ static int cascade(struct tvec_base *base, struct tvec *tv, int index)
- static void call_timer_fn(struct timer_list *timer, void (*fn)(unsigned long),
- 			  unsigned long data)
+ 	if (likely(prev != next)) {
+@@ -2536,11 +2547,10 @@ EXPORT_SYMBOL(preempt_schedule);
+  */
+ asmlinkage void __sched preempt_schedule_irq(void)
  {
--	int preempt_count = preempt_count();
-+	int count = preempt_count();
+-	struct thread_info *ti = current_thread_info();
+ 	enum ctx_state prev_state;
  
- #ifdef CONFIG_LOCKDEP
+ 	/* Catch callers which need to be fixed */
+-	BUG_ON(ti->preempt_count || !irqs_disabled());
++	BUG_ON(preempt_count() || !irqs_disabled());
+ 
+ 	prev_state = exception_enter();
+ 
+@@ -4207,7 +4217,7 @@ void init_idle(struct task_struct *idle, int cpu)
+ 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 
+ 	/* Set the preempt count _outside_ the spinlocks! */
+-	task_thread_info(idle)->preempt_count = 0;
++	task_thread_info(idle)->preempt_count = PREEMPT_ENABLED;
+ 
  	/*
-@@ -1119,16 +1119,16 @@ static void call_timer_fn(struct timer_list *timer, void (*fn)(unsigned long),
- 
- 	lock_map_release(&lockdep_map);
- 
--	if (preempt_count != preempt_count()) {
-+	if (count != preempt_count()) {
- 		WARN_ONCE(1, "timer: %pF preempt leak: %08x -> %08x\n",
--			  fn, preempt_count, preempt_count());
-+			  fn, count, preempt_count());
- 		/*
- 		 * Restore the preempt count. That gives us a decent
- 		 * chance to survive and extract information. If the
- 		 * callback kept a lock held, bad luck, but not worse
- 		 * than the BUG() we had.
- 		 */
--		preempt_count() = preempt_count;
-+		preempt_count_set(count);
- 	}
- }
- 
-diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
-index 6dc09d8..872a15a 100644
---- a/lib/locking-selftest.c
-+++ b/lib/locking-selftest.c
-@@ -1002,7 +1002,7 @@ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
- 	 * Some tests (e.g. double-unlock) might corrupt the preemption
- 	 * count, so restore it:
- 	 */
--	preempt_count() = saved_preempt_count;
-+	preempt_count_set(saved_preempt_count);
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	if (softirq_count())
- 		current->softirqs_enabled = 0;
-diff --git a/lib/smp_processor_id.c b/lib/smp_processor_id.c
-index 4c0d0e5..04abe53 100644
---- a/lib/smp_processor_id.c
-+++ b/lib/smp_processor_id.c
-@@ -9,10 +9,9 @@
- 
- notrace unsigned int debug_smp_processor_id(void)
- {
--	unsigned long preempt_count = preempt_count();
- 	int this_cpu = raw_smp_processor_id();
- 
--	if (likely(preempt_count))
-+	if (likely(preempt_count()))
- 		goto out;
- 
- 	if (irqs_disabled())
+ 	 * The idle tasks have their own, simple scheduling class:
