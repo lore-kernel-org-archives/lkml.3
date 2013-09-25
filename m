@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab3IYT3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 15:29:39 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:23293 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007Ab3IYT3i (ORCPT
+	id S1755132Ab3IYT3o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 15:29:44 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:47612 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab3IYT3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 15:29:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: jbeulich@suse.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] xen/mmu: Correct PAT MST setting.
-Date: Wed, 25 Sep 2013 15:29:27 -0400
-Message-Id: <1380137367-8357-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 25 Sep 2013 15:29:41 -0400
+Message-ID: <52433978.9050302@ahsoftware.de>
+Date: Wed, 25 Sep 2013 21:28:56 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130712 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
+        STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] add exFAT driver
+References: <20130830124622.5f81b7d4@rechenknecht2k7> <20130830154205.GA1411@kroah.com> <20130925183632.08a0d073@rechenknecht2k7> <20130925172704.GB5258@kroah.com> <20130925183235.GA9659@srcf.ucam.org> <20130925184539.GA4208@kroah.com>
+In-Reply-To: <20130925184539.GA4208@kroah.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Beulich spotted that the PAT MSR settings in the Xen public
-document that "the first (PAT6) column was wrong across the
-board, and the column for PAT7 was missing altogether."
+Am 25.09.2013 20:45, schrieb Greg Kroah-Hartman:
+> On Wed, Sep 25, 2013 at 07:32:36PM +0100, Matthew Garrett wrote:
+>> On Wed, Sep 25, 2013 at 10:27:04AM -0700, Greg Kroah-Hartman wrote:
+>>
+>>> Who did you contact at Samsung?  I'll be visiting there in a week so I
+>>> can try to track some people done in person.  I really want their
+>>> signed-off-by: on the patch, as it is their code to start with, and it's
+>>> a bit rude to not get their approval for the code to be merged.
+>>
+>> It's arguably rude, but it's fine under the certificate of origin.
+> 
+> Oh, I totally agree, just trying to be nice here.  If a company objects
+> to having their code included in the tree, we should always take that
+> into consideration, especially given the ability for others to maintain
+> it.  We've done this for years, nothing new here at all.
 
-This updates it to be in sync.
+Maybe a silly question, but isn't exFAT protected by some MS owned
+patents which might drive Linux users into the hand of MS lawyers as
+already happened with FAT? It would make me wonder if not. Maybe you
+could ask Samsung about that too, when you are there.
 
-CC: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/mmu.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Regards,
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index fdc3ba2..c9631e7 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -468,8 +468,8 @@ PV_CALLEE_SAVE_REGS_THUNK(xen_pgd_val);
-  * 3        PCD PWT      UC       UC     UC
-  * 4    PAT              WB       WC     WB
-  * 5    PAT     PWT      WC       WP     WT
-- * 6    PAT PCD          UC-      UC     UC-
-- * 7    PAT PCD PWT      UC       UC     UC
-+ * 6    PAT PCD          UC-      rsv    UC-
-+ * 7    PAT PCD PWT      UC       rsv    UC
-  */
- 
- void xen_set_pat(u64 pat)
--- 
-1.8.3.1
-
+Alexander Holler
