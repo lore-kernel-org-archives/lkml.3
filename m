@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab3IYBE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:04:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39140 "EHLO
+	id S1755184Ab3IYAQj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:16:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39103 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756051Ab3IYAQk (ORCPT
+	with ESMTP id S1756051Ab3IYAQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:40 -0400
+	Tue, 24 Sep 2013 20:16:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Kriwanek <mail@stefankriwanek.de>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 064/110] HID: Fix Speedlink VAD Cezanne support for some devices
-Date: Tue, 24 Sep 2013 17:15:02 -0700
-Message-Id: <20130925001330.341271688@linuxfoundation.org>
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [ 056/110] pinctrl: at91: fix get_pullup/down function return
+Date: Tue, 24 Sep 2013 17:14:54 -0700
+Message-Id: <20130925001329.479106483@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,52 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Kriwanek <dev@stefankriwanek.de>
+From: Boris BREZILLON <b.brezillon@overkiz.com>
 
-commit 06bb5219118fb098f4b0c7dcb484b28a52bf1c14 upstream.
+commit 05d3534a321d7fe4524b3b83bb20318282f3ec2c upstream.
 
-Some devices of the "Speedlink VAD Cezanne" model need more aggressive fixing
-than already done.
+In PIO_PUSR and PIO_PPDSR register if a given bit is set 1 this means the
+pullup/down for this pin (pin is represented as a bit position) is
+disabled.
 
-I made sure through testing that this patch would not interfere with the proper
-working of a device that is bug-free. (The driver drops EV_REL events with
-abs(val) >= 256, which are not achievable even on the highest laser resolution
-hardware setting.)
-
-Signed-off-by: Stefan Kriwanek <mail@stefankriwanek.de>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-speedlink.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/pinctrl/pinctrl-at91.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-speedlink.c
-+++ b/drivers/hid/hid-speedlink.c
-@@ -3,7 +3,7 @@
-  *  Fixes "jumpy" cursor and removes nonexistent keyboard LEDS from
-  *  the HID descriptor.
-  *
-- *  Copyright (c) 2011 Stefan Kriwanek <mail@stefankriwanek.de>
-+ *  Copyright (c) 2011, 2013 Stefan Kriwanek <dev@stefankriwanek.de>
-  */
+--- a/drivers/pinctrl/pinctrl-at91.c
++++ b/drivers/pinctrl/pinctrl-at91.c
+@@ -325,7 +325,7 @@ static void at91_mux_disable_interrupt(v
  
- /*
-@@ -46,8 +46,13 @@ static int speedlink_event(struct hid_de
- 		struct hid_usage *usage, __s32 value)
+ static unsigned at91_mux_get_pullup(void __iomem *pio, unsigned pin)
  {
- 	/* No other conditions due to usage_table. */
--	/* Fix "jumpy" cursor (invalid events sent by device). */
--	if (value == 256)
-+
-+	/* This fixes the "jumpy" cursor occuring due to invalid events sent
-+	 * by the device. Some devices only send them with value==+256, others
-+	 * don't. However, catching abs(value)>=256 is restrictive enough not
-+	 * to interfere with devices that were bug-free (has been tested).
-+	 */
-+	if (abs(value) >= 256)
- 		return 1;
- 	/* Drop useless distance 0 events (on button clicks etc.) as well */
- 	if (value == 0)
+-	return (readl_relaxed(pio + PIO_PUSR) >> pin) & 0x1;
++	return !((readl_relaxed(pio + PIO_PUSR) >> pin) & 0x1);
+ }
+ 
+ static void at91_mux_set_pullup(void __iomem *pio, unsigned mask, bool on)
+@@ -445,7 +445,7 @@ static void at91_mux_pio3_set_debounce(v
+ 
+ static bool at91_mux_pio3_get_pulldown(void __iomem *pio, unsigned pin)
+ {
+-	return (__raw_readl(pio + PIO_PPDSR) >> pin) & 0x1;
++	return !((__raw_readl(pio + PIO_PPDSR) >> pin) & 0x1);
+ }
+ 
+ static void at91_mux_pio3_set_pulldown(void __iomem *pio, unsigned mask, bool is_on)
 
 
