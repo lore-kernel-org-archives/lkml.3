@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab3IYJLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 05:11:20 -0400
-Received: from 8bytes.org ([85.214.48.195]:47102 "EHLO mail.8bytes.org"
+	id S1754595Ab3IYJP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 05:15:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34808 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253Ab3IYJLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 05:11:19 -0400
-Date: Wed, 25 Sep 2013 11:11:12 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: alex.williamson@redhat.com, Varun.Sethi@freescale.com, udknight@gmail.com,
-        aik@ozlabs.ru, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, shuahkhan@gmail.com
-Subject: Re: [PATCH v4 0/2] iommu: Add iommu_error class event to iommu trace
-Message-ID: <20130925091104.GA2850@8bytes.org>
-References: <cover.1380056222.git.shuah.kh@samsung.com>
+	id S1750949Ab3IYJPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 05:15:54 -0400
+Message-ID: <5242A9C6.9040606@suse.cz>
+Date: Wed, 25 Sep 2013 11:15:50 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1380056222.git.shuah.kh@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Sep 25 11:11:17 2013
-X-DSPAM-Confidence: 0.9985
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5242a8b520861339175435
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] modpost: Fix secondary errors seen if a single module
+ build fails
+References: <1379219942-31545-1-git-send-email-linux@roeck-us.net> <52384C72.4040403@suse.cz> <20130918140549.GA15490@roeck-us.net>
+In-Reply-To: <20130918140549.GA15490@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 03:21:18PM -0600, Shuah Khan wrote:
-> Shuah Khan (2):
->   iommu: Add iommu_error class event to iommu trace
->   iommu: Change iommu driver to call io_page_fault trace event
+On 18.9.2013 16:05, Guenter Roeck wrote:
+> To follow up on this - are you at the Linux Plumbers conference ?
+> If yes maybe we can meet briefly and discuss how to proceed.
+> I'd volunteer to create a patch to add the above functionality if
+> people think it is valuable, but I would like to keep it as
+> separate patch.
 
-Applied to the tracing branch, thanks Shuah.
+Sorry, I was not at the LPC and had vacation at that time. I see Rusty
+already merged your patch, that's great.
 
+Michal
 
