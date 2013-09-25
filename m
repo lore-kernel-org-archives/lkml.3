@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab3IYNrV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 09:47:21 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45201 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754775Ab3IYNrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 09:47:19 -0400
-Date: Wed, 25 Sep 2013 08:46:19 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: "Gupta, Pekon" <pekon@ti.com>
-CC: "olof@lixom.net" <olof@lixom.net>,
-        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various ECC
- schemes
-Message-ID: <20130925134619.GG10746@radagast>
-Reply-To: <balbi@ti.com>
-References: <1378986619-26765-1-git-send-email-pekon@ti.com>
- <1378986619-26765-2-git-send-email-pekon@ti.com>
- <20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
+	id S1755656Ab3IYNsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 09:48:13 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:59965 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755415Ab3IYNsM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 09:48:12 -0400
+Date: Wed, 25 Sep 2013 06:48:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH tip/core/rcu 01/11] mm: Place preemption point in
+ do_mlockall() loop
+Message-ID: <20130925134803.GQ9093@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130925012750.GA30601@linux.vnet.ibm.com>
+ <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130924211047.57f9d9c8.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xjyYRNSh/RebjC6o"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
+In-Reply-To: <20130924211047.57f9d9c8.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092513-1542-0000-0000-000001BC58B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---xjyYRNSh/RebjC6o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 24, 2013 at 09:10:47PM -0700, Andrew Morton wrote:
+> On Tue, 24 Sep 2013 18:29:11 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > --- a/mm/mlock.c
+> > +++ b/mm/mlock.c
+> > @@ -736,6 +736,7 @@ static int do_mlockall(int flags)
+> >  
+> >  		/* Ignore errors */
+> >  		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
+> > +		cond_resched();
+> >  	}
+> >  out:
+> >  	return 0;
+> 
+> Might need one in munlock_vma_pages_range() as well - it's a matter of
+> finding the right test case.  This will be neverending :(
 
-+ akpm
+Indeed...  I suspect that Trinity running on big-memory systems will
+eventually find most of them via RCU CPU stall warnings, but as you say...
 
-On Tue, Sep 24, 2013 at 01:04:05PM -0500, Gupta, Pekon wrote:
->=20
-> >=20
-> > This patch
-> > - updates DT binding for selection of ecc-scheme
-> > - updates DT binding for detection of ELM h/w engine
-> > - removes following obselete ECC schemes
-> > 	OMAP_ECC_HAMMING_CODE_DEFAULT (S/W based 1-bit Hamming
-> > ECC)
-> > 	OMAP_ECC_HAMMING_CODE_HW_ROMCODE (H/W based 1-bit
-> > Hamming ECC scheme)
-> > - updates DT binding documentation for mtd/gpmc-nand
-> >=20
-> > Signed-off-by: Pekon Gupta <pekon@ti.com>
-> > ---
->=20
-> Dear Olof and other DT Maintainers,
->=20
-> This patch series has missed multiple merge windows, and
-> much of the other development work on mtd/nand/omap
-> driver is gated due to this.
-> So, request you to please review this patch set and Ack it
-> if all your mentioned concerns are resolved.
+Would you like the corresponding change to munlock_vma_pages_range()
+beforehand?
 
---=20
-balbi
+							Thanx, Paul
 
---xjyYRNSh/RebjC6o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSQukqAAoJEIaOsuA1yqREmG4QAI4Uzvi3VHdrNmTGNjGJz3VN
-j3RxXtbD6I1ZvHqfmR841RYk6HwgSpJiU8Wt8ymOJUNSFHRKWMsMheih/L789g7c
-NkhNVeHgMpvvROWOUxiQkSGDGI72hOm4bgYT7Y7taRbcQrb7LNQYSg1hwWH4Vt+e
-cxlpw58/s6AaOZpCRNstyjUoZvIjVi4OiCxK7rK3HrH9+xZORE4Fz5vYjqHv9Ndu
-VubHmK/3D8tMqw4rGQbapLUHzjnpT2eHPwe2vikZ0wjoccdmrDCIA3VgPYSounrY
-wsqEpY4+pTgFD/BAXV61tfIj5sKxpFizkGe911dC7E7fCCEIryhZSuT0MY4wk/MJ
-peazcFQTlVRFOIRJV/nn9paJXtN64Dkf5vhqu3yjBMenvqMJUZTjezF8+B01+uvr
-REd+1EQce5Is649vJpmNLFiihqhp6IKE8tuaRW50b5zY8mC+ip8Sr3+ENmAcBECd
-DC/DdVIzizZKknb3v2+ODuBdBvLC/6+/V5I9AqMeNd7PbaIowjGSbb4kLKfGFIq7
-P4WsJRJTYzrEbty4+V/i2l1tOJS6iefJ1qGqHusmtNJ5KxFjN3yGIe85KJr3c2Au
-pAfWy6h1oJ5wuq746wHfMc1sQB0kExR0yNJyIkeqIVKQLPmjA82yKJh3m6ZWSGwT
-woHvdfOmSAzhnUw1rh7w
-=gQOf
------END PGP SIGNATURE-----
-
---xjyYRNSh/RebjC6o--
