@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746Ab3IYBax (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:30:53 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53562 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756958Ab3IYB3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:29:31 -0400
+	id S1758250Ab3IYBbp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:31:45 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:43652 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756745Ab3IYB3a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 21:29:30 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,79 +15,147 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 08/11] rcu: Micro-optimize rcu_cpu_has_callbacks()
-Date: Tue, 24 Sep 2013 18:29:18 -0700
-Message-Id: <1380072561-31134-8-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 09/11] rcu: Reject memory-order-induced stall-warning false positives
+Date: Tue, 24 Sep 2013 18:29:19 -0700
+Message-Id: <1380072561-31134-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130925012750.GA30601@linux.vnet.ibm.com>
  <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-7182-0000-0000-000008839849
+x-cbid: 13092501-6688-0000-0000-000001F8AAB7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The for_each_rcu_flavor() loop unconditionally scans all flavors, even
-when the first flavor might have some non-lazy callbacks.  Once the
-loop has seen a non-lazy callback, further passes through the loop
-cannot change the state.  This is not a huge problem, given that there
-can be at most three RCU flavors (RCU-bh, RCU-preempt, and RCU-sched),
-but this code is on the path to idle, so speeding it up even a small
-amount would have some benefit.
+If a system is idle from an RCU perspective for longer than specified
+by CONFIG_RCU_CPU_STALL_TIMEOUT, and if one CPU starts a grace period
+just as a second checks for CPU stalls, and if this second CPU happens
+to see the old value of rsp->jiffies_stall, it will incorrectly report a
+CPU stall.  This is quite rare, but apparently occurs deterministically
+on systems with about 6TB of memory.
 
-This commit therefore does two things:
+This commit therefore orders accesses to the data used to determine
+whether or not a CPU stall is in progress.  Grace-period initialization
+and cleanup first increments rsp->completed to mark the end of the
+previous grace period, then records the current jiffies in rsp->gp_start,
+then records the jiffies at which a stall can be expected to occur in
+rsp->jiffies_stall, and finally increments rsp->gpnum to mark the start
+of the new grace period.  Now, this ordering by itself does not prevent
+false positives.  For example, if grace-period initialization was delayed
+between recording rsp->gp_start and rsp->jiffies_stall, the CPU stall
+warning code might still see an old value of rsp->jiffies_stall.
 
-1.	Rearranges the order of the list of RCU flavors in order to
-	place the most active flavor first in the list.  The most active
-	RCU flavor is RCU-preempt, or, if there is no RCU-preempt,
-	RCU-sched.
+Therefore, this commit also orders the CPU stall warning accesses as
+well, loading rsp->gpnum and jiffies, then rsp->jiffies_stall, then
+rsp->gp_start, and finally rsp->completed.  This ordering means that
+the false-positive scenario in the previous paragraph would result
+in rsp->completed being greater than or equal to rsp->gpnum, which is
+never valid for a CPU stall, allowing the false positive to be rejected.
+Furthermore, any fetch that gets an old value of rsp->jiffies_stall
+must also get an old value of rsp->gpnum, which will again be rejected
+by the comparison of rsp->gpnum and rsp->completed.  Situations where
+rsp->gp_start is later than rsp->jiffies_stall are also rejected, as
+are situations where jiffies is less than rsp->jiffies_stall.
 
-2.	Reworks the for_each_rcu_flavor() to exit early when the first
-	non-lazy callback is seen, or, in the case where the caller
-	does not care about non-lazy callbacks (RCU_FAST_NO_HZ=n),
-	when the first callback is seen.
+Although use of unsynchronized accesses means that there are likely
+still some false-positive scenarios (synchronization has proven to be
+a very bad idea on large systems), this should get rid of a large class
+of these scenarios.
 
-Reported-by: Chen Gang <gang.chen@asianux.com>
+Reported-by: Fabian Herschel <fabian.herschel@suse.com>
+Reported-by: Michal Hocko <mhocko@suse.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Tested-by: Jochen Striepe <jochen@tolot.escape.de>
 ---
- kernel/rcutree.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ kernel/rcutree.c | 45 ++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 40 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e6f2e8f..49464ad 100644
+index 49464ad..b618d72 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -2727,10 +2727,13 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
+@@ -804,8 +804,11 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
  
- 	for_each_rcu_flavor(rsp) {
- 		rdp = per_cpu_ptr(rsp->rda, cpu);
--		if (rdp->qlen != rdp->qlen_lazy)
-+		if (!rdp->nxtlist)
-+			continue;
-+		hc = true;
-+		if (rdp->qlen != rdp->qlen_lazy || !all_lazy) {
- 			al = false;
--		if (rdp->nxtlist)
--			hc = true;
-+			break;
-+		}
+ static void record_gp_stall_check_time(struct rcu_state *rsp)
+ {
+-	rsp->gp_start = jiffies;
+-	rsp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
++	unsigned long j = ACCESS_ONCE(jiffies);
++
++	rsp->gp_start = j;
++	smp_wmb(); /* Record start time before stall time. */
++	rsp->jiffies_stall = j + rcu_jiffies_till_stall_check();
+ }
+ 
+ /*
+@@ -934,17 +937,48 @@ static void print_cpu_stall(struct rcu_state *rsp)
+ 
+ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
+ {
++	unsigned long completed;
++	unsigned long gpnum;
++	unsigned long gps;
+ 	unsigned long j;
+ 	unsigned long js;
+ 	struct rcu_node *rnp;
+ 
+-	if (rcu_cpu_stall_suppress)
++	if (rcu_cpu_stall_suppress || !rcu_gp_in_progress(rsp))
+ 		return;
+ 	j = ACCESS_ONCE(jiffies);
++
++	/*
++	 * Lots of memory barriers to reject false positives.
++	 *
++	 * The idea is to pick up rsp->gpnum, then rsp->jiffies_stall,
++	 * then rsp->gp_start, and finally rsp->completed.  These values
++	 * are updated in the opposite order with memory barriers (or
++	 * equivalent) during grace-period initialization and cleanup.
++	 * Now, a false positive can occur if we get an new value of
++	 * rsp->gp_start and a old value of rsp->jiffies_stall.  But given
++	 * the memory barriers, the only way that this can happen is if one
++	 * grace period ends and another starts between these two fetches.
++	 * Detect this by comparing rsp->completed with the previous fetch
++	 * from rsp->gpnum.
++	 *
++	 * Given this check, comparisons of jiffies, rsp->jiffies_stall,
++	 * and rsp->gp_start suffice to forestall false positives.
++	 */
++	gpnum = ACCESS_ONCE(rsp->gpnum);
++	smp_rmb(); /* Pick up ->gpnum first... */
+ 	js = ACCESS_ONCE(rsp->jiffies_stall);
++	smp_rmb(); /* ...then ->jiffies_stall before the rest... */
++	gps = ACCESS_ONCE(rsp->gp_start);
++	smp_rmb(); /* ...and finally ->gp_start before ->completed. */
++	completed = ACCESS_ONCE(rsp->completed);
++	if (ULONG_CMP_GE(completed, gpnum) ||
++	    ULONG_CMP_LT(j, js) ||
++	    ULONG_CMP_GE(gps, js))
++		return; /* No stall or GP completed since entering function. */
+ 	rnp = rdp->mynode;
+ 	if (rcu_gp_in_progress(rsp) &&
+-	    (ACCESS_ONCE(rnp->qsmask) & rdp->grpmask) && ULONG_CMP_GE(j, js)) {
++	    (ACCESS_ONCE(rnp->qsmask) & rdp->grpmask)) {
+ 
+ 		/* We haven't checked in, so go dump stack. */
+ 		print_cpu_stall(rsp);
+@@ -1317,9 +1351,10 @@ static int rcu_gp_init(struct rcu_state *rsp)
  	}
- 	if (all_lazy)
- 		*all_lazy = al;
-@@ -3297,8 +3300,8 @@ void __init rcu_init(void)
  
- 	rcu_bootup_announce();
- 	rcu_init_geometry();
--	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
- 	rcu_init_one(&rcu_bh_state, &rcu_bh_data);
-+	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
- 	__rcu_init_preempt();
- 	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
+ 	/* Advance to a new grace period and initialize state. */
++	record_gp_stall_check_time(rsp);
++	smp_wmb(); /* Record GP times before starting GP. */
+ 	rsp->gpnum++;
+ 	trace_rcu_grace_period(rsp->name, rsp->gpnum, TPS("start"));
+-	record_gp_stall_check_time(rsp);
+ 	raw_spin_unlock_irq(&rnp->lock);
  
+ 	/* Exclude any concurrent CPU-hotplug operations. */
 -- 
 1.8.1.5
 
