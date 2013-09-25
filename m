@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab3IYARD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:17:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39252 "EHLO
+	id S1757106Ab3IYA4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:56:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39279 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074Ab3IYARA (ORCPT
+	with ESMTP id S932106Ab3IYARD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:00 -0400
+	Tue, 24 Sep 2013 20:17:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Colin Walters <walters@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 090/110] pidns: fix vfork() after unshare(CLONE_NEWPID)
-Date: Tue, 24 Sep 2013 17:15:28 -0700
-Message-Id: <20130925001333.174738667@linuxfoundation.org>
+        Mark Brown <broonie@linaro.org>, Bryan Wu <cooloney@gmail.com>
+Subject: [ 085/110] leds: wm831x-status: Request a REG resource
+Date: Tue, 24 Sep 2013 17:15:23 -0700
+Message-Id: <20130925001332.637730738@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -30,63 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Mark Brown <broonie@linaro.org>
 
-commit e79f525e99b04390ca4d2366309545a836c03bf1 upstream.
+commit 61abeba5222895d6900b13115f5d8eba7988d7d6 upstream.
 
-Commit 8382fcac1b81 ("pidns: Outlaw thread creation after
-unshare(CLONE_NEWPID)") nacks CLONE_VM if the forking process unshared
-pid_ns, this obviously breaks vfork:
+The wm831x-status driver was not converted to use a REG resource when they
+were introduced and the rest of the wm831x drivers converted, causing it
+to fail to probe due to requesting the wrong resource type.
 
-	int main(void)
-	{
-		assert(unshare(CLONE_NEWUSER | CLONE_NEWPID) == 0);
-		assert(vfork() >= 0);
-		_exit(0);
-		return 0;
-	}
-
-fails without this patch.
-
-Change this check to use CLONE_SIGHAND instead.  This also forbids
-CLONE_THREAD automatically, and this is what the comment implies.
-
-We could probably even drop CLONE_SIGHAND and use CLONE_THREAD, but it
-would be safer to not do this.  The current check denies CLONE_SIGHAND
-implicitely and there is no reason to change this.
-
-Eric said "CLONE_SIGHAND is fine.  CLONE_THREAD would be even better.
-Having shared signal handling between two different pid namespaces is
-the case that we are fundamentally guarding against."
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Colin Walters <walters@redhat.com>
-Acked-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Bryan Wu <cooloney@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/fork.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/leds/leds-wm831x-status.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1171,10 +1171,11 @@ static struct task_struct *copy_process(
- 		return ERR_PTR(-EINVAL);
+--- a/drivers/leds/leds-wm831x-status.c
++++ b/drivers/leds/leds-wm831x-status.c
+@@ -230,9 +230,9 @@ static int wm831x_status_probe(struct pl
+ 	int id = pdev->id % ARRAY_SIZE(chip_pdata->status);
+ 	int ret;
  
- 	/*
--	 * If the new process will be in a different pid namespace
--	 * don't allow the creation of threads.
-+	 * If the new process will be in a different pid namespace don't
-+	 * allow it to share a thread group or signal handlers with the
-+	 * forking task.
- 	 */
--	if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
-+	if ((clone_flags & (CLONE_SIGHAND | CLONE_NEWPID)) &&
- 	    (task_active_pid_ns(current) != current->nsproxy->pid_ns))
- 		return ERR_PTR(-EINVAL);
- 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No register resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
 
 
