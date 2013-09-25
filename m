@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab3IYHwO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 03:52:14 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:30338 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab3IYHwM (ORCPT
+	id S1753754Ab3IYHxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 03:53:00 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:23713 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab3IYHw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 03:52:12 -0400
-X-AuditID: cbfee68f-b7f1e6d000004e8d-f0-5242961ec993
+	Wed, 25 Sep 2013 03:52:59 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-07-5242965a2352
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>
 Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
@@ -15,40 +15,47 @@ Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
         "'Bengt Jonsson'" <bengt.g.jonsson@stericsson.com>
 References: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
 In-reply-to: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
-Subject: [PATCH 02/20] regulator: ab8500: use devm_regulator_register()
-Date: Wed, 25 Sep 2013 16:51:58 +0900
-Message-id: <000b01ceb9c4$1c77e0b0$5567a210$%han@samsung.com>
+Subject: [PATCH 03/20] regulator: ab8500-ext: use devm_regulator_register()
+Date: Wed, 25 Sep 2013 16:52:57 +0900
+Message-id: <000c01ceb9c4$40152820$c03f7860$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65w5fHnzL+CpaSR8SldcZ2fs0oxwAADPYg
+Thread-index: Ac65w5fHnzL+CpaSR8SldcZ2fs0oxwAAIaTQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zQ125aU5BBovuS1msf3CMyWLqwyds
-	FpcXXmK1+Halg8ni8q45bA6sHjtn3WX32LSqk82jb8sqRo/vS9ewe3zeJBfAGsVlk5Kak1mW
-	WqRvl8CV0frpBmvBSZ6K7y3zWRsY13F1MXJwSAiYSDw+W97FyAlkiklcuLeerYuRi0NIYBmj
-	xO4p09ggEiYS0x8uhEpMZ5TY1rCECcL5xShxYP0RZpAqNgE1iS9fDrODTBURUJX4/8odpIZZ
-	YCGjxJQlD8BqhARsJZb/vc0CYnMK2Eksu/cZbIOwgLvEpQ9L2EFsFqDe81MuMIHYvED1jddv
-	M0LYghI/Jt8D62UW0JJYv/M4E4QtL7F5zVtmiG/UJR791YU4wUji22ZeiAoRiX0v3jGCnCMh
-	cI9d4triU4wQqwQkvk0+xALRKiux6QAzxL+SEgdX3GCZwCgxC8niWUgWz0KyeBaSFQsYWVYx
-	iqYWJBcUJ6UXGesVJ+YWl+al6yXn525ihMRp/w7GuwesDzEmA62fyCwlmpwPjPO8knhDYzMj
-	C1MTU2Mjc0sz0oSVxHnVWqwDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTB2VXnpJ5581cU+
-	d8buH/xbC9S5W6XMNLundURsP8Hl48TTc5/XaXKyxirNJ5m3J1zVebPijBq7AY9zzK9j885Z
-	R3W+87hxc/PKo5slMtO8Prgp2aZsiFuSun5CjKN0B4f7AYnPd2K/d33tr3k2g4XDPLbYfLON
-	1DqRhTqP1ZdN+fLUbtYyj0IlluKMREMt5qLiRAA7lEEy6QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQV25aU5BBtvniFusf3CMyWLqwyds
-	FpcXXmK1+Halg8ni8q45bA6sHjtn3WX32LSqk82jb8sqRo/vS9ewe3zeJBfAGtXAaJORmpiS
-	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmNH66QZrwUmeiu8t81kbGNdxdTFyckgImEhM
-	f7iQDcIWk7hwbz2QzcUhJDCdUWJbwxImCOcXo8SB9UeYQarYBNQkvnw5zN7FyMEhIqAq8f+V
-	O0gNs8BCRokpSx6A1QgJ2Eos/3ubBcTmFLCTWHbvM9gGYQF3iUsflrCD2CxAveenXGACsXmB
-	6huv32aEsAUlfky+B9bLLKAlsX7ncSYIW15i85q3zCB7JQTUJR791YU4wUji22ZeiAoRiX0v
-	3jFOYBSahWTQLCSDZiEZNAtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwWngmdQO
-	xpUNFocYBTgYlXh4BY46BgmxJpYVV+YeYpTgYFYS4S2a6hQkxJuSWFmVWpQfX1Sak1p8iDEZ
-	6M+JzFKiyfnAFJVXEm9obGJmZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxS
-	DYwVwonTlx6LUJc7m1H7onDWx4LQczzqFrJLmf6vjDRTZ4/83LFt7WbvaSaWYYn6tRUaRou3
-	zZym07/qljF70xVbZrkLE3Vi5OW0tn8q+j03/cn+hjn7GSZusN5erTHXZeuuwJdnalu547bq
-	uU1r3Bu2R/Wx965bYjU5FdL3D8pqca98NjcxXFCJpTgj0VCLuag4EQCE/FF+RwMAAA==
+x-cr-hashedpuzzle: QReU T84C UTJh WEYF Xeqm X3Te ZRGC bZK+ elxl gyoo iT1y mJr+
+ mU9J m93m zPEV
+ 0IOh;5;YgBlAG4AZwB0AC4AZwAuAGoAbwBuAHMAcwBvAG4AQABzAHQAZQByAGkAYwBzAHMAbwBuAC4AYwBvAG0AOwBiAHIAbwBvAG4AaQBlAEAAawBlAHIAbgBlAGwALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGcAaQByAGQAdwBvAG8AZABAAGcAbQBhAGkAbAAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{F549E6D3-E627-4BA9-91A4-A03942D03333};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Wed,
+ 25 Sep 2013 07:52:50
+ GMT;WwBQAEEAVABDAEgAIAAwADMALwAyADAAXQAgAHIAZQBnAHUAbABhAHQAbwByADoAIABhAGIAOAA1ADAAMAAtAGUAeAB0ADoAIAB1AHMAZQAgAGQAZQB2AG0AXwByAGUAZwB1AGwAYQB0AG8AcgBfAHIAZQBnAGkAcwB0AGUAcgAoACkA
+x-cr-puzzleid: {F549E6D3-E627-4BA9-91A4-A03942D03333}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t8zQ92oaU5BBudb2C3WPzjGZDH14RM2
+	i8sLL7FafLvSwWRxedccNgdWj52z7rJ7bFrVyebRt2UVo8f3pWvYPT5vkgtgjeKySUnNySxL
+	LdK3S+DKOLxwA0vBLb6Ka1++MTYw/uLuYuTgkBAwkfj6xLmLkRPIFJO4cG89G4gtJLCMUWL6
+	wRKIuInEhz8rWCHi0xklek77dDFyAdm/GCWaDx1iBkmwCahJfPlymB1kpoiAqsT/V+4gNcwC
+	Cxklpix5wAzRbCux/O9tFhCbU8BOYtm9z2DLhAW8Jc5efQ4WZwHqPXN7KVicF6h+yaR3ULag
+	xI/J98BqmAW0JNbvPM4EYctLbF7zlhniF3WJR391QcIiAkYSn3ovMUKUiEjse/GOEeQeCYEH
+	rBKnbjSyQDxmKnHi+QqoxE92ib9bp7JCHCEg8W3yIRaIobISmw4wQ9RLShxccYNlAqPULCQn
+	zUJy0iwkJ81CsnsBI8sqRtHUguSC4qT0IkO94sTc4tK8dL3k/NxNjJC47t3BePuA9SHGZKD1
+	E5mlRJPzgWkhryTe0NjMyMLUxNTYyNzSjDRhJXFetRbrQCGB9MSS1OzU1ILUovii0pzU4kOM
+	TBycUg2M9l/+L0libgq3L5ymdi1Vy72bV2wPk8q8m7ujN4oETD3lMWnDm8PxGxNc9Z8lLbYz
+	djraXVRiE1S5K2+v+zd7OQ+LKJt+trkioQZmhQe23BG9wMmQfF7t6OH66oSHC5/OuLZ15fYK
+	v2OuBjHBGzqlar4UR367x2Fou5vlnId9r4lOy5r13IZKLMUZiYZazEXFiQB5nsMuAQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLKsWRmVeSWpSXmKPExsVy+t9jQd2oaU5BBj9amS3WPzjGZDH14RM2
+	i8sLL7FafLvSwWRxedccNgdWj52z7rJ7bFrVyebRt2UVo8f3pWvYPT5vkgtgjWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzDi8cANLwS2+imtfvjE2MP7i7mLk5JAQMJH4
+	8GcFK4QtJnHh3no2EFtIYDqjRM9pny5GLiD7F6NE86FDzCAJNgE1iS9fDrN3MXJwiAioSvx/
+	5Q5SwyywkFFiypIHzBDNthLL/95mAbE5Bewklt37DDZUWMBb4uzV52BxFqDeM7eXgsV5geqX
+	THoHZQtK/Jh8D6yGWUBLYv3O40wQtrzE5jVvmUH2SgioSzz6qwsSFhEwkvjUe4kRokREYt+L
+	d4wg90gIPGCVOHWjkQXiMVOJE89XME5gFJmFZMUsJCtmIVkxC8msBYwsqxhFUwuSC4qT0nON
+	9IoTc4tL89L1kvNzNzGCE8cz6R2MqxosDjEKcDAq8fAKHHUMEmJNLCuuzD3EKMHBrCTCWzTV
+	KUiINyWxsiq1KD++qDQntfgQYzIwBCYyS4km5wOTWl5JvKGxiZmRpZGZhZGJuTlpwkrivAdb
+	rQOFBNITS1KzU1MLUotgtjBxcEo1MFazeCnvKq7daXTEZX6IcLV3UtYK00XFQRxT/WdMXfDJ
+	u1t2iSnPswMWId7nmRrFrHJXiU92eJxrpyFyMfZN36NEjn8l9Xpx97drzNooc+juM4WEqq+N
+	pl71cg2TZ80qfdp5J3R98dQXemr/TdM+b1sUe29RR8eUNZ9ert3imf3CaWtdf5g+hxJLcUai
+	oRZzUXEiAAJDT+ZgAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,55 +63,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_regulator_register() to make cleanup paths simpler.
+Use devm_regulator_register() to make cleanup paths simpler,
+and remove unnecessary remove().
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/regulator/ab8500.c |   20 +++-----------------
- 1 file changed, 3 insertions(+), 17 deletions(-)
+ drivers/regulator/ab8500-ext.c |   26 ++------------------------
+ 1 file changed, 2 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 603f192..a4a4a42 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -3058,16 +3058,12 @@ static int ab8500_regulator_register(struct platform_device *pdev,
- 	}
+diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+index 02ff691..29c0faa 100644
+--- a/drivers/regulator/ab8500-ext.c
++++ b/drivers/regulator/ab8500-ext.c
+@@ -413,16 +413,12 @@ static int ab8500_ext_regulator_probe(struct platform_device *pdev)
+ 			&pdata->ext_regulator[i];
  
- 	/* register regulator with framework */
--	info->regulator = regulator_register(&info->desc, &config);
-+	info->regulator = devm_regulator_register(&pdev->dev, &info->desc,
-+						  &config);
- 	if (IS_ERR(info->regulator)) {
- 		err = PTR_ERR(info->regulator);
- 		dev_err(&pdev->dev, "failed to register regulator %s\n",
- 			info->desc.name);
--		/* when we fail, un-register all earlier regulators */
--		while (--id >= 0) {
--			info = &abx500_regulator.info[id];
--			regulator_unregister(info->regulator);
--		}
- 		return err;
- 	}
+ 		/* register regulator with framework */
+-		info->rdev = regulator_register(&info->desc, &config);
++		info->rdev = devm_regulator_register(&pdev->dev, &info->desc,
++						     &config);
+ 		if (IS_ERR(info->rdev)) {
+ 			err = PTR_ERR(info->rdev);
+ 			dev_err(&pdev->dev, "failed to register regulator %s\n",
+ 					info->desc.name);
+-			/* when we fail, un-register all earlier regulators */
+-			while (--i >= 0) {
+-				info = &ab8500_ext_regulator_info[i];
+-				regulator_unregister(info->rdev);
+-			}
+ 			return err;
+ 		}
  
-@@ -3172,17 +3168,7 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+@@ -433,26 +429,8 @@ static int ab8500_ext_regulator_probe(struct platform_device *pdev)
+ 	return 0;
+ }
  
- static int ab8500_regulator_remove(struct platform_device *pdev)
- {
--	int i, err;
+-static int ab8500_ext_regulator_remove(struct platform_device *pdev)
+-{
+-	int i;
 -
--	for (i = 0; i < abx500_regulator.info_size; i++) {
--		struct ab8500_regulator_info *info = NULL;
--		info = &abx500_regulator.info[i];
+-	for (i = 0; i < ARRAY_SIZE(ab8500_ext_regulator_info); i++) {
+-		struct ab8500_ext_regulator_info *info = NULL;
+-		info = &ab8500_ext_regulator_info[i];
 -
--		dev_vdbg(rdev_get_dev(info->regulator),
+-		dev_vdbg(rdev_get_dev(info->rdev),
 -			"%s-remove\n", info->desc.name);
 -
--		regulator_unregister(info->regulator);
+-		regulator_unregister(info->rdev);
 -	}
-+	int err;
- 
- 	/* remove regulator debug */
- 	err = ab8500_regulator_debug_exit(pdev);
+-
+-	return 0;
+-}
+-
+ static struct platform_driver ab8500_ext_regulator_driver = {
+ 	.probe = ab8500_ext_regulator_probe,
+-	.remove = ab8500_ext_regulator_remove,
+ 	.driver         = {
+ 		.name   = "ab8500-ext-regulator",
+ 		.owner  = THIS_MODULE,
 -- 
 1.7.10.4
 
