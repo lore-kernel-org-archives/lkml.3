@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656Ab3IYNsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 09:48:13 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:59965 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415Ab3IYNsM (ORCPT
+	id S1755709Ab3IYNta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 09:49:30 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60540 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755328Ab3IYNt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 09:48:12 -0400
-Date: Wed, 25 Sep 2013 06:48:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH tip/core/rcu 01/11] mm: Place preemption point in
- do_mlockall() loop
-Message-ID: <20130925134803.GQ9093@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130925012750.GA30601@linux.vnet.ibm.com>
- <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130924211047.57f9d9c8.akpm@linux-foundation.org>
+	Wed, 25 Sep 2013 09:49:29 -0400
+X-Sasl-enc: ZCVxYNt36oHHaY/YBeeD9zM8KCuNsORV5LtbYpTs4Roa 1380116968
+Date: Wed, 25 Sep 2013 10:49:22 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Sherry Hurwitz <sherry.hurwitz@amd.com>
+Cc: Borislav Petkov <bp@alien8.de>, Jacob Shin <jacob.shin@amd.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Issues with AMD microcode updates
+Message-ID: <20130925134922.GA14087@khazad-dum.debian.net>
+References: <20130919145834.GA4298@khazad-dum.debian.net>
+ <20130919164409.GA9427@pd.tnic>
+ <524221A5.9070808@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130924211047.57f9d9c8.akpm@linux-foundation.org>
+In-Reply-To: <524221A5.9070808@amd.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092513-1542-0000-0000-000001BC58B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 09:10:47PM -0700, Andrew Morton wrote:
-> On Tue, 24 Sep 2013 18:29:11 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > --- a/mm/mlock.c
-> > +++ b/mm/mlock.c
-> > @@ -736,6 +736,7 @@ static int do_mlockall(int flags)
-> >  
-> >  		/* Ignore errors */
-> >  		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
-> > +		cond_resched();
-> >  	}
-> >  out:
-> >  	return 0;
-> 
-> Might need one in munlock_vma_pages_range() as well - it's a matter of
-> finding the right test case.  This will be neverending :(
+On Tue, 24 Sep 2013, Sherry Hurwitz wrote:
+> You can direct AMD microcode issues to me now.
+> We are setting up some systems in the lab and trying to duplicate
+> the problem now.
 
-Indeed...  I suspect that Trinity running on big-memory systems will
-eventually find most of them via RCU CPU stall warnings, but as you say...
+Thank you!
 
-Would you like the corresponding change to munlock_vma_pages_range()
-beforehand?
+If you're going to be taking care of AMD microcode update issues, maybe it
+would be a good idea to add your name to the MAINTAINERS file for the "AMD
+MICROCODE UPDATE SUPPORT", and remove the (dead for a while now)
+amd64-microcode@amd64.org mailing list?
 
-							Thanx, Paul
-
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
