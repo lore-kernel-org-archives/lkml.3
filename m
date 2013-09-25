@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab3IYWLv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 18:11:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50214 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755878Ab3IYWLu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 18:11:50 -0400
-Date: Wed, 25 Sep 2013 15:11:49 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Benjamin Valentin <benpicco@zedat.fu-berlin.de>
-Cc: STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] add exFAT driver
-Message-ID: <20130925221149.GA32760@kroah.com>
-References: <20130830124622.5f81b7d4@rechenknecht2k7>
- <20130830154205.GA1411@kroah.com>
- <20130925183632.08a0d073@rechenknecht2k7>
- <20130925172704.GB5258@kroah.com>
- <20130925235721.12d2fcec@rechenknecht2k7>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925235721.12d2fcec@rechenknecht2k7>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755934Ab3IYWMp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 18:12:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21569 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755447Ab3IYWKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 18:10:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,981,1371106800"; 
+   d="scan'208";a="383568290"
+Subject: [PATCH v6 1/6] rwsem: check the lock before cpmxchg in
+ down_write_trylock
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Sep 2013 15:10:34 -0700
+Message-ID: <1380147034.3467.63.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 11:57:21PM +0200, Benjamin Valentin wrote:
-> Am Wed, 25 Sep 2013 10:27:04 -0700
-> schrieb Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
-> 
-> > > > Also, I would really like to get a signed-off-by: from the Samsung
-> > > > authors for this patch, can you do that as well please?
-> > > 
-> > > I've tried reaching them by their last public e-mail addresses I
-> > > could find, but they would either bounce or I got no reply.
-> > 
-> > Who did you contact at Samsung?  I'll be visiting there in a week so I
-> > can try to track some people done in person.  I really want their
-> > signed-off-by: on the patch, as it is their code to start with, and
-> > it's a bit rude to not get their approval for the code to be merged.
-> 
-> I didn't really know who to contact at Samsung, so I've searched the web
-> for Joosun Hahn and Sung-Kwan Kim. They both had addresses from the
-> Memory & Storage Architecture Lab at Seoul National University, but
-> they seem no longer active.
-> I've also tried the inquiry form on the Samsung web page, but got no
-> reply.
+Cmpxchg will cause the cacheline bouning when do the value checking,
+that cause scalability issue in a large machine (like a 80 core box).
 
-Ok, I'll try to track the people responsible for this down when I visit.
-In the mean time, you can continue to work on cleaning up the code :)
+So a lock pre-read can relief this contention.
 
-thanks,
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ include/asm-generic/rwsem.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-greg k-h
+diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+index bb1e2cd..5ba80e7 100644
+--- a/include/asm-generic/rwsem.h
++++ b/include/asm-generic/rwsem.h
+@@ -70,11 +70,11 @@ static inline void __down_write(struct rw_semaphore *sem)
+ 
+ static inline int __down_write_trylock(struct rw_semaphore *sem)
+ {
+-	long tmp;
++	if (unlikely(sem->count != RWSEM_UNLOCKED_VALUE))
++		return 0;
+ 
+-	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+-		      RWSEM_ACTIVE_WRITE_BIAS);
+-	return tmp == RWSEM_UNLOCKED_VALUE;
++	return cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
++		      RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_UNLOCKED_VALUE;
+ }
+ 
+ /*
+-- 
+1.7.4.4
+
+
+
