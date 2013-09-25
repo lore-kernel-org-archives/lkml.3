@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab3IYBay (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:30:54 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:42644 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244Ab3IYB3b (ORCPT
+	id S1758235Ab3IYBa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:30:56 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49351 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757044Ab3IYB3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 21:29:31 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -14,116 +14,62 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH tip/core/rcu 01/11] mm: Place preemption point in do_mlockall() loop
-Date: Tue, 24 Sep 2013 18:29:11 -0700
-Message-Id: <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
+        sbw@mit.edu, Kirill Tkhai <tkhai@yandex.ru>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 11/11] rcu: Fix CONFIG_RCU_NOCB_CPU_ALL panic on machines with sparse CPU mask
+Date: Tue, 24 Sep 2013 18:29:21 -0700
+Message-Id: <1380072561-31134-11-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <20130925012750.GA30601@linux.vnet.ibm.com>
+In-Reply-To: <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130925012750.GA30601@linux.vnet.ibm.com>
+ <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-1542-0000-0000-000001B89158
+x-cbid: 13092501-1344-0000-0000-000001EAFF0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-There is a loop in do_mlockall() that lacks a preemption point, which
-means that the following can happen on non-preemptible builds of the
-kernel:
+Some architectures have sparse cpu mask. UltraSparc's cpuinfo for example:
 
-> My fuzz tester keeps hitting this. Every instance shows the non-irq stack
-> came in from mlockall.  I'm only seeing this on one box, but that has more
-> ram (8gb) than my other machines, which might explain it.
->
-> 	Dave
->
-> INFO: rcu_preempt self-detected stall on CPU { 3}  (t=6500 jiffies g=470344 c=470343 q=0)
-> sending NMI to all CPUs:
-> NMI backtrace for cpu 3
-> CPU: 3 PID: 29664 Comm: trinity-child2 Not tainted 3.11.0-rc1+ #32
-> task: ffff88023e743fc0 ti: ffff88022f6f2000 task.ti: ffff88022f6f2000
-> RIP: 0010:[<ffffffff810bf7d1>]  [<ffffffff810bf7d1>] trace_hardirqs_off_caller+0x21/0xb0
-> RSP: 0018:ffff880244e03c30  EFLAGS: 00000046
-> RAX: ffff88023e743fc0 RBX: 0000000000000001 RCX: 000000000000003c
-> RDX: 000000000000000f RSI: 0000000000000004 RDI: ffffffff81033cab
-> RBP: ffff880244e03c38 R08: ffff880243288a80 R09: 0000000000000001
-> R10: 0000000000000000 R11: 0000000000000001 R12: ffff880243288a80
-> R13: ffff8802437eda40 R14: 0000000000080000 R15: 000000000000d010
-> FS:  00007f50ae33b740(0000) GS:ffff880244e00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 000000000097f000 CR3: 0000000240fa0000 CR4: 00000000001407e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-> Stack:
->  ffffffff810bf86d ffff880244e03c98 ffffffff81033cab 0000000000000096
->  000000000000d008 0000000300000002 0000000000000004 0000000000000003
->  0000000000002710 ffffffff81c50d00 ffffffff81c50d00 ffff880244fcde00
-> Call Trace:
->  <IRQ>
->  [<ffffffff810bf86d>] ? trace_hardirqs_off+0xd/0x10
->  [<ffffffff81033cab>] __x2apic_send_IPI_mask+0x1ab/0x1c0
->  [<ffffffff81033cdc>] x2apic_send_IPI_all+0x1c/0x20
->  [<ffffffff81030115>] arch_trigger_all_cpu_backtrace+0x65/0xa0
->  [<ffffffff811144b1>] rcu_check_callbacks+0x331/0x8e0
->  [<ffffffff8108bfa0>] ? hrtimer_run_queues+0x20/0x180
->  [<ffffffff8109e905>] ? sched_clock_cpu+0xb5/0x100
->  [<ffffffff81069557>] update_process_times+0x47/0x80
->  [<ffffffff810bd115>] tick_sched_handle.isra.16+0x25/0x60
->  [<ffffffff810bd231>] tick_sched_timer+0x41/0x60
->  [<ffffffff8108ace1>] __run_hrtimer+0x81/0x4e0
->  [<ffffffff810bd1f0>] ? tick_sched_do_timer+0x60/0x60
->  [<ffffffff8108b93f>] hrtimer_interrupt+0xff/0x240
->  [<ffffffff8102de84>] local_apic_timer_interrupt+0x34/0x60
->  [<ffffffff81718c5f>] smp_apic_timer_interrupt+0x3f/0x60
->  [<ffffffff817178ef>] apic_timer_interrupt+0x6f/0x80
->  [<ffffffff8170e8e0>] ? retint_restore_args+0xe/0xe
->  [<ffffffff8105f101>] ? __do_softirq+0xb1/0x440
->  [<ffffffff8105f64d>] irq_exit+0xcd/0xe0
->  [<ffffffff81718c65>] smp_apic_timer_interrupt+0x45/0x60
->  [<ffffffff817178ef>] apic_timer_interrupt+0x6f/0x80
->  <EOI>
->  [<ffffffff8170e8e0>] ? retint_restore_args+0xe/0xe
->  [<ffffffff8170b830>] ? wait_for_completion_killable+0x170/0x170
->  [<ffffffff8170c853>] ? preempt_schedule_irq+0x53/0x90
->  [<ffffffff8170e9f6>] retint_kernel+0x26/0x30
->  [<ffffffff8107a523>] ? queue_work_on+0x43/0x90
->  [<ffffffff8107c369>] schedule_on_each_cpu+0xc9/0x1a0
->  [<ffffffff81167770>] ? lru_add_drain+0x50/0x50
->  [<ffffffff811677c5>] lru_add_drain_all+0x15/0x20
->  [<ffffffff81186965>] SyS_mlockall+0xa5/0x1a0
->  [<ffffffff81716e94>] tracesys+0xdd/0xe2
+CPU0: online
+CPU2: online
 
-This commit addresses this problem by inserting the required preemption
-point.
+So, set only possible CPUs when CONFIG_RCU_NOCB_CPU_ALL is enabled.
 
-Reported-by: Dave Jones <davej@redhat.com>
+Also, check that user passes right 'rcu_nocbs=' option.
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: Dipankar Sarma <dipankar@in.ibm.com>
+[ paulmck: Fix pr_info() issue noted by scripts/checkpatch.pl. ]
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- mm/mlock.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/rcutree_plugin.h | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/mm/mlock.c b/mm/mlock.c
-index d638026..67ba6da 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -736,6 +736,7 @@ static int do_mlockall(int flags)
- 
- 		/* Ignore errors */
- 		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
-+		cond_resched();
- 	}
- out:
- 	return 0;
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index c684f7a..1855d66 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -96,10 +96,15 @@ static void __init rcu_bootup_announce_oddness(void)
+ #endif /* #ifdef CONFIG_RCU_NOCB_CPU_ZERO */
+ #ifdef CONFIG_RCU_NOCB_CPU_ALL
+ 	pr_info("\tOffload RCU callbacks from all CPUs\n");
+-	cpumask_setall(rcu_nocb_mask);
++	cpumask_copy(rcu_nocb_mask, cpu_possible_mask);
+ #endif /* #ifdef CONFIG_RCU_NOCB_CPU_ALL */
+ #endif /* #ifndef CONFIG_RCU_NOCB_CPU_NONE */
+ 	if (have_rcu_nocb_mask) {
++		if (!cpumask_subset(rcu_nocb_mask, cpu_possible_mask)) {
++			pr_info("\tNote: kernel parameter 'rcu_nocbs=' contains nonexistent CPUs.\n");
++			cpumask_and(rcu_nocb_mask, cpu_possible_mask,
++				    rcu_nocb_mask);
++		}
+ 		cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
+ 		pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
+ 		if (rcu_nocb_poll)
 -- 
 1.8.1.5
 
