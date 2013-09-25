@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab3IYTy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 15:54:57 -0400
-Received: from smtprelay0214.hostedemail.com ([216.40.44.214]:37386 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751315Ab3IYTy4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 15:54:56 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1540:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2561:2564:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3872:3876:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:7809:8599:9025:9388:10004:10049:10400:10848:11232:11658:11914:12043:12114:12517:12519:12555:13069:13311:13357:13846,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: blade06_821b262514618
-X-Filterd-Recvd-Size: 1588
-Message-ID: <1380138892.17366.24.camel@joe-AO722>
-Subject: [PATCH] MAINTAINERS: wimax@linuxwimax.org is subscribers-only
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
-Date: Wed, 25 Sep 2013 12:54:52 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754996Ab3IYTzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 15:55:33 -0400
+Received: from fieldses.org ([174.143.236.118]:60564 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753333Ab3IYTzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 15:55:31 -0400
+Date: Wed, 25 Sep 2013 15:55:26 -0400
+To: Zach Brown <zab@redhat.com>
+Cc: Anna Schumaker <schumaker.anna@gmail.com>,
+        Szeredi Miklos <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+Message-ID: <20130925195526.GA18971@fieldses.org>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+ <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
+ <20130925183828.GA30372@lenny.home.zabbo.net>
+ <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
+ <20130925190620.GB30372@lenny.home.zabbo.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130925190620.GB30372@lenny.home.zabbo.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark it so.
+On Wed, Sep 25, 2013 at 12:06:20PM -0700, Zach Brown wrote:
+> On Wed, Sep 25, 2013 at 03:02:29PM -0400, Anna Schumaker wrote:
+> > On Wed, Sep 25, 2013 at 2:38 PM, Zach Brown <zab@redhat.com> wrote:
+> > >
+> > > Hrmph.  I had composed a reply to you during Plumbers but.. something
+> > > happened to it :).  Here's another try now that I'm back.
+> > >
+> > >> > Some things to talk about:
+> > >> > - I really don't care about the naming here.  If you do, holler.
+> > >> > - We might want different flags for file-to-file splicing and acceleration
+> > >>
+> > >> Yes, I think "copy" and "reflink" needs to be differentiated.
+> > >
+> > > I initially agreed but I'm not so sure now.  The problem is that we
+> > > can't know whether the acceleration is copying or not.  XCOPY on some
+> > > array may well do some shared referencing tricks.  The nfs COPY op can
+> > > have a server use btrfs reflink, or ext* and XCOPY, or .. who knows.  At
+> > > some point we have to admit that we have no way to determine the
+> > > relative durability of writes.  Storage can do a lot to make writes more
+> > > or less fragile that we have no visibility of.  SSD FTLs can log a bunch
+> > > of unrelated sectors on to one flash failure domain.
+> > >
+> > > And if such a flag couldn't *actually* guarantee anything for a bunch of
+> > > storage topologies, well, let's not bother with it.
+> > >
+> > > The only flag I'm in favour of now is one that has splice return rather
+> > > than falling back to manual page cache reads and writes.  It's more like
+> > > O_NONBLOCK than any kind of data durability hint.
+> > 
+> > For reference, I'm planning to have the NFS server do the fallback
+> > when it copies since any local copy will be faster than a read and
+> > write over the network.
+> 
+> Agreed, this is definitely the reasonable thing to do.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- MAINTAINERS | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+A client-side copy will be slower, but I guess it does have the
+advantage that the application can track progress to some degree, and
+abort it fairly quickly without leaving the file in a totally undefined
+state--and both might be useful if the copy's not a simple constant-time
+operation.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index e61c2e8..a386a22 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4414,7 +4414,7 @@ F:	arch/x86/kernel/tboot.c
- INTEL WIRELESS WIMAX CONNECTION 2400
- M:	Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
- M:	linux-wimax@intel.com
--L:	wimax@linuxwimax.org
-+L:	wimax@linuxwimax.org (subscribers-only)
- S:	Supported
- W:	http://linuxwimax.org
- F:	Documentation/wimax/README.i2400m
-@@ -9225,7 +9225,7 @@ F:	drivers/media/rc/winbond-cir.c
- WIMAX STACK
- M:	Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
- M:	linux-wimax@intel.com
--L:	wimax@linuxwimax.org
-+L:	wimax@linuxwimax.org (subscribers-only)
- S:	Supported
- W:	http://linuxwimax.org
- F:	Documentation/wimax/README.wimax
+So maybe a way to pass your NONBLOCKy flag to the server would be
+useful?
 
+FWIW the protocol doesn't seem frozen yet, so I assume we could still
+add an extra flag field if you think it would be worthwhile.
 
+--b.
