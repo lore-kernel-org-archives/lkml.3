@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab3IYCbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 22:31:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9512 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754603Ab3IYCbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 22:31:45 -0400
-Date: Wed, 25 Sep 2013 10:31:17 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-Message-ID: <20130925023117.GA7434@dhcp-16-126.nay.redhat.com>
-References: <e39e1065bddc2afee2cb6eed957e3ba8.squirrel@www.skyhub.de>
+	id S1755413Ab3IYCe6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 22:34:58 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:60365 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156Ab3IYCe4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 22:34:56 -0400
+Date: Tue, 24 Sep 2013 19:34:54 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ming Liu <ming.liu@windriver.com>
+cc: akpm@linux-foundation.org, mhocko@suse.cz, rusty@rustcorp.com.au,
+        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom: avoid killing init if it assume the oom killed
+ thread's mm
+In-Reply-To: <1379929528-19179-1-git-send-email-ming.liu@windriver.com>
+Message-ID: <alpine.DEB.2.02.1309241933590.26187@chino.kir.corp.google.com>
+References: <1379929528-19179-1-git-send-email-ming.liu@windriver.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e39e1065bddc2afee2cb6eed957e3ba8.squirrel@www.skyhub.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/13 at 04:56pm, Borislav Petkov wrote:
-> On Tue, September 24, 2013 2:45 pm, Dave Young wrote:
-> > Think again about this, how about 1:1 map them from a base address
-> > like -64G phy_addr -> (-64G + phy_addr), in this way we can avoid
-> > depending on the previous region size.
-> 
-> Right, how we layout the regions is arbitrary as long as we start at
-> the same VA and use the same regions, in the same order and of the same
-> size...
-> 
-> > For the zero region problem, we can resolve it as a standalone
-> > problem.
-> 
-> ... however, we still need to understand why it fails mapping the boot
-> services region as some implementations apparently do call boot services
-> even after ExitBootServices(). IOW, we need that region mapped in the
-> kexec'ed kernel too.
+On Mon, 23 Sep 2013, Ming Liu wrote:
 
-In 1st kernel, the memmap is provided by firmware and unchanged before
-we do the mapping, later efi_reserve_boot_services() try to reserve the
-mem range, but failed due to conflict with other region (why?), then the
-memmap item size is set to 0 (why?).
+> After selecting a task to kill, the oom killer iterates all processes and
+> kills all other user threads that share the same mm_struct in different
+> thread groups.
+> 
+> But in some extreme cases, the selected task happens to be a vfork child
+> of init process sharing the same mm_struct with it, which causes kernel
+> panic on init getting killed. This panic is observed in a busybox shell
+> that busybox itself is init, with a kthread keeps consuming memories.
+> 
 
-In 2nd kernel, we use same memmap from firmware, but the boot service
-ranges size have been set to 0, thus efi mapping code will mapping runtime
-regions to different va from 1st kernel.
-
---
-Thanks
-Dave
+We shouldn't be selecting a process where mm == init_mm in the first 
+place, so this wouldn't fix the issue entirely.
