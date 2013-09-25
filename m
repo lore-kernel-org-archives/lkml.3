@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471Ab3IYAT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:19:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39406 "EHLO
+	id S932479Ab3IYAro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:47:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39454 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755303Ab3IYATv (ORCPT
+	with ESMTP id S1756477Ab3IYAUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:51 -0400
+	Tue, 24 Sep 2013 20:20:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 011/117] crypto: api - Fix race condition in larval lookup
-Date: Tue, 24 Sep 2013 17:17:57 -0700
-Message-Id: <20130925001742.094994905@linuxfoundation.org>
+        Peter Maydell <peter.maydell@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [ 023/117] ARM: PCI: versatile: Fix SMAP register offsets
+Date: Tue, 24 Sep 2013 17:18:09 -0700
+Message-Id: <20130925001743.367280501@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,49 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Peter Maydell <peter.maydell@linaro.org>
 
-commit 77dbd7a95e4a4f15264c333a9e9ab97ee27dc2aa upstream.
+commit 99f2b130370b904ca5300079243fdbcafa2c708b upstream.
 
-crypto_larval_lookup should only return a larval if it created one.
-Any larval created by another entity must be processed through
-crypto_larval_wait before being returned.
+The SMAP register offsets in the versatile PCI controller code were
+all off by four.  (This didn't have any observable bad effects
+because on this board PHYS_OFFSET is zero, and (a) writing zero to
+the flags register at offset 0x10 has no effect and (b) the reset
+value of the SMAP register is zero anyway, so failing to write SMAP2
+didn't matter.)
 
-Otherwise this will lead to a larval being killed twice, which
-will most likely lead to a crash.
-
-Reported-by: Kees Cook <keescook@chromium.org>
-Tested-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Peter Maydell <peter.maydell@linaro.org>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/api.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/arm/mach-versatile/pci.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/crypto/api.c
-+++ b/crypto/api.c
-@@ -34,6 +34,8 @@ EXPORT_SYMBOL_GPL(crypto_alg_sem);
- BLOCKING_NOTIFIER_HEAD(crypto_chain);
- EXPORT_SYMBOL_GPL(crypto_chain);
+--- a/arch/arm/mach-versatile/pci.c
++++ b/arch/arm/mach-versatile/pci.c
+@@ -43,9 +43,9 @@
+ #define PCI_IMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x0)
+ #define PCI_IMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x4)
+ #define PCI_IMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x8)
+-#define PCI_SMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x10)
+-#define PCI_SMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x14)
+-#define PCI_SMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x18)
++#define PCI_SMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x14)
++#define PCI_SMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x18)
++#define PCI_SMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x1c)
+ #define PCI_SELFID		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0xc)
  
-+static struct crypto_alg *crypto_larval_wait(struct crypto_alg *alg);
-+
- struct crypto_alg *crypto_mod_get(struct crypto_alg *alg)
- {
- 	return try_module_get(alg->cra_module) ? crypto_alg_get(alg) : NULL;
-@@ -144,8 +146,11 @@ static struct crypto_alg *crypto_larval_
- 	}
- 	up_write(&crypto_alg_sem);
- 
--	if (alg != &larval->alg)
-+	if (alg != &larval->alg) {
- 		kfree(larval);
-+		if (crypto_is_larval(alg))
-+			alg = crypto_larval_wait(alg);
-+	}
- 
- 	return alg;
- }
+ #define DEVICE_ID_OFFSET		0x00
 
 
