@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab3IYAQr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:16:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
+	id S1757364Ab3IYBBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:01:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39185 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756164Ab3IYAQo (ORCPT
+	with ESMTP id S1754635Ab3IYAQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:44 -0400
+	Tue, 24 Sep 2013 20:16:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Ryniker <ryniker@alum.mit.edu>,
-        Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 070/110] HID: battery: dont do DMA from stack
-Date: Tue, 24 Sep 2013 17:15:08 -0700
-Message-Id: <20130925001331.002062239@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 066/110] HID: validate HID report id size
+Date: Tue, 24 Sep 2013 17:15:04 -0700
+Message-Id: <20130925001330.572617003@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,62 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Kees Cook <keescook@chromium.org>
 
-commit 6c2794a2984f4c17a58117a68703cc7640f01c5a upstream.
+commit 43622021d2e2b82ea03d883926605bdd0525e1d1 upstream.
 
-Instead of using data from stack for DMA in hidinput_get_battery_property(),
-allocate the buffer dynamically.
+The "Report ID" field of a HID report is used to build indexes of
+reports. The kernel's index of these is limited to 256 entries, so any
+malicious device that sets a Report ID greater than 255 will trigger
+memory corruption on the host:
 
-Reported-by: Richard Ryniker <ryniker@alum.mit.edu>
-Reported-by: Alan Stern <stern@rowland.harvard.edu>
+[ 1347.156239] BUG: unable to handle kernel paging request at ffff88094958a878
+[ 1347.156261] IP: [<ffffffff813e4da0>] hid_register_report+0x2a/0x8b
+
+CVE-2013-2888
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-input.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/hid/hid-core.c |   10 +++++++---
+ include/linux/hid.h    |    4 +++-
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -340,7 +340,7 @@ static int hidinput_get_battery_property
- {
- 	struct hid_device *dev = container_of(psy, struct hid_device, battery);
- 	int ret = 0;
--	__u8 buf[2] = {};
-+	__u8 *buf;
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -63,6 +63,8 @@ struct hid_report *hid_register_report(s
+ 	struct hid_report_enum *report_enum = device->report_enum + type;
+ 	struct hid_report *report;
  
- 	switch (prop) {
- 	case POWER_SUPPLY_PROP_PRESENT:
-@@ -349,13 +349,20 @@ static int hidinput_get_battery_property
- 		break;
++	if (id >= HID_MAX_IDS)
++		return NULL;
+ 	if (report_enum->report_id_hash[id])
+ 		return report_enum->report_id_hash[id];
  
- 	case POWER_SUPPLY_PROP_CAPACITY:
-+
-+		buf = kmalloc(2 * sizeof(__u8), GFP_KERNEL);
-+		if (!buf) {
-+			ret = -ENOMEM;
-+			break;
-+		}
- 		ret = dev->hid_get_raw_report(dev, dev->battery_report_id,
--					      buf, sizeof(buf),
-+					      buf, 2,
- 					      dev->battery_report_type);
+@@ -404,8 +406,10 @@ static int hid_parser_global(struct hid_
  
- 		if (ret != 2) {
- 			if (ret >= 0)
- 				ret = -EINVAL;
-+			kfree(buf);
- 			break;
+ 	case HID_GLOBAL_ITEM_TAG_REPORT_ID:
+ 		parser->global.report_id = item_udata(item);
+-		if (parser->global.report_id == 0) {
+-			hid_err(parser->device, "report_id 0 is invalid\n");
++		if (parser->global.report_id == 0 ||
++		    parser->global.report_id >= HID_MAX_IDS) {
++			hid_err(parser->device, "report_id %u is invalid\n",
++				parser->global.report_id);
+ 			return -1;
  		}
+ 		return 0;
+@@ -575,7 +579,7 @@ static void hid_close_report(struct hid_
+ 	for (i = 0; i < HID_REPORT_TYPES; i++) {
+ 		struct hid_report_enum *report_enum = device->report_enum + i;
  
-@@ -364,6 +371,7 @@ static int hidinput_get_battery_property
- 		    buf[1] <= dev->battery_max)
- 			val->intval = (100 * (buf[1] - dev->battery_min)) /
- 				(dev->battery_max - dev->battery_min);
-+		kfree(buf);
- 		break;
+-		for (j = 0; j < 256; j++) {
++		for (j = 0; j < HID_MAX_IDS; j++) {
+ 			struct hid_report *report = report_enum->report_id_hash[j];
+ 			if (report)
+ 				hid_free_report(report);
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -393,10 +393,12 @@ struct hid_report {
+ 	struct hid_device *device;			/* associated device */
+ };
  
- 	case POWER_SUPPLY_PROP_MODEL_NAME:
++#define HID_MAX_IDS 256
++
+ struct hid_report_enum {
+ 	unsigned numbered;
+ 	struct list_head report_list;
+-	struct hid_report *report_id_hash[256];
++	struct hid_report *report_id_hash[HID_MAX_IDS];
+ };
+ 
+ #define HID_REPORT_TYPES 3
 
 
