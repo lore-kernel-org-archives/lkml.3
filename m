@@ -1,101 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab3IYWWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 18:22:44 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:44488 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab3IYWWm (ORCPT
+	id S1755183Ab3IYWXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 18:23:09 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:45415 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432Ab3IYWWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 18:22:42 -0400
+	Wed, 25 Sep 2013 18:22:50 -0400
+Message-ID: <52436237.3040500@linaro.org>
+Date: Thu, 26 Sep 2013 00:22:47 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMi=xBXTdMm+-yTRVVFf0VR-7gy6xTrdeAupyo7OWVb3iQ@mail.gmail.com>
-References: <1378986619-26765-1-git-send-email-pekon@ti.com>
-	<1378986619-26765-2-git-send-email-pekon@ti.com>
-	<20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
-	<20130925134619.GG10746@radagast>
-	<20130925175527.GA23337@ld-irv-0074.broadcom.com>
-	<20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
-	<20130925200539.GH23337@ld-irv-0074.broadcom.com>
-	<CAOesGMif301iBe9zxHudkC_G9SzPPy1Mj4XYvQ-MY8nmx4wO+A@mail.gmail.com>
-	<20130925212903.GI23337@ld-irv-0074.broadcom.com>
-	<CAOesGMi=xBXTdMm+-yTRVVFf0VR-7gy6xTrdeAupyo7OWVb3iQ@mail.gmail.com>
-Date: Wed, 25 Sep 2013 15:22:41 -0700
-Message-ID: <CAN8TOE9Mo6sHWjy7ebtxTqZoDTM9dzcBqdu_qsZfP_ELtSufWw@mail.gmail.com>
-Subject: Re: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various ECC schemes
-From: Brian Norris <computersforpeace@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: "Gupta, Pekon" <pekon@ti.com>,
-        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@sisk.pl
+CC: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/21] cpuidle: don't call poll_idle_init() for every
+ cpu
+References: <cover.1379779777.git.viresh.kumar@linaro.org> <495ffb1175175b0180ca3da96eb5ed72a8280364.1379779777.git.viresh.kumar@linaro.org>
+In-Reply-To: <495ffb1175175b0180ca3da96eb5ed72a8280364.1379779777.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 2:32 PM, Olof Johansson <olof@lixom.net> wrote:
-> On Wed, Sep 25, 2013 at 2:29 PM, Brian Norris
-> <computersforpeace@gmail.com> wrote:
->> On Wed, Sep 25, 2013 at 01:33:27PM -0700, Olof Johansson wrote:
->>> On Wed, Sep 25, 2013 at 1:05 PM, Brian Norris
->>> <computersforpeace@gmail.com> wrote:
->>>
->>> > Olof has given good advice on your DT binding and has (slowly) been
->>> > responding to other requests for DT review that make it to his list. I
->>> > see that he hasn't followed up on your changes (this v6), so pinging him
->>> > (as you did) is probably the correct approach. But please do recognize
->>> > that the DT list is very high volume, so it's hard to get good timely
->>> > responses there.
->>>
->>> I am not a DT mainainer, but sometimes when I see a binding that
->>> appears to be wrong I speak up. In this case, the binding was one of
->>> those.
->>
->> Whoops, my bad. I was deceived by the responses I've seen from you on
->> other issues (thanks, BTW). In that case, I haven't seen any response
->> from a proper DT binding maintainer :(
->>
->>> So, I have no more objections to it, and I hope you can get a quick
->>> review from a DT maintainer on the rest of the binding.
->>
->> At this point, I'm comfortable going ahead without their ack, since they
->> obviously don't care/don't have the manpower to review.
->
-> No, that is not how we handle device tree bindings. They need to be
-> reviewed, since we are moving over to a model where they will be
-> considered ABI and can't be changed after the fact. We have a long
-> backlog of mostly-unreviewed old bindings that we're going to do a
-> pass through and then lock down, but it would be good to not add to
-> that backlog with newer bindings.
->
-> In other words, there's a strong desire for actual acks on bindings
-> from those maintainers these days.
+On 09/22/2013 03:21 AM, Viresh Kumar wrote:
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-This only works if we get a response. I'll repeat this fact: I have
-seen absolutely zero response from any DT maintainer regarding this
-binding, and they've been CC'd in some capacity since July:
+The optimization sounds good but IMHO if we can move this state out of
+the cpuidle common framework that would be nicer.
 
-Old revision from July (cross-posted, including the old DT list):
-http://thread.gmane.org/gmane.linux.ports.arm.omap/100484/
+The poll_idle is only applicable for x86 (acpi_driver and intel_idle),
+hence I suggest we move this state to these drivers, that will cleanup
+the framework code and will remove index shift macro
+CPUIDLE_DRIVER_STATE_START which IMHO is weid and prone-to-error.
 
-New list:
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg95238.html
+> ---
+>  drivers/cpuidle/cpuidle.c | 41 -----------------------------------------
+>  drivers/cpuidle/driver.c  | 42 ++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 42 insertions(+), 41 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index 43d5836..bf80236 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -226,45 +226,6 @@ void cpuidle_resume(void)
+>  	mutex_unlock(&cpuidle_lock);
+>  }
+>  
+> -#ifdef CONFIG_ARCH_HAS_CPU_RELAX
+> -static int poll_idle(struct cpuidle_device *dev,
+> -		struct cpuidle_driver *drv, int index)
+> -{
+> -	ktime_t	t1, t2;
+> -	s64 diff;
+> -
+> -	t1 = ktime_get();
+> -	local_irq_enable();
+> -	while (!need_resched())
+> -		cpu_relax();
+> -
+> -	t2 = ktime_get();
+> -	diff = ktime_to_us(ktime_sub(t2, t1));
+> -	if (diff > INT_MAX)
+> -		diff = INT_MAX;
+> -
+> -	dev->last_residency = (int) diff;
+> -
+> -	return index;
+> -}
+> -
+> -static void poll_idle_init(struct cpuidle_driver *drv)
+> -{
+> -	struct cpuidle_state *state = &drv->states[0];
+> -
+> -	snprintf(state->name, CPUIDLE_NAME_LEN, "POLL");
+> -	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
+> -	state->exit_latency = 0;
+> -	state->target_residency = 0;
+> -	state->power_usage = -1;
+> -	state->flags = 0;
+> -	state->enter = poll_idle;
+> -	state->disabled = false;
+> -}
+> -#else
+> -static void poll_idle_init(struct cpuidle_driver *drv) {}
+> -#endif /* CONFIG_ARCH_HAS_CPU_RELAX */
+> -
+>  /**
+>   * cpuidle_enable_device - enables idle PM for a CPU
+>   * @dev: the CPU
+> @@ -294,8 +255,6 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
+>  	if (!dev->state_count)
+>  		dev->state_count = drv->state_count;
+>  
+> -	poll_idle_init(drv);
+> -
+>  	ret = cpuidle_add_device_sysfs(dev);
+>  	if (ret)
+>  		return ret;
+> diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+> index 7b2510a..a4a93b4 100644
+> --- a/drivers/cpuidle/driver.c
+> +++ b/drivers/cpuidle/driver.c
+> @@ -10,6 +10,7 @@
+>  
+>  #include <linux/mutex.h>
+>  #include <linux/module.h>
+> +#include <linux/sched.h>
+>  #include <linux/cpuidle.h>
+>  #include <linux/cpumask.h>
+>  #include <linux/clockchips.h>
+> @@ -179,6 +180,45 @@ static void __cpuidle_driver_init(struct cpuidle_driver *drv)
+>  	}
+>  }
+>  
+> +#ifdef CONFIG_ARCH_HAS_CPU_RELAX
+> +static int poll_idle(struct cpuidle_device *dev,
+> +		struct cpuidle_driver *drv, int index)
+> +{
+> +	ktime_t	t1, t2;
+> +	s64 diff;
+> +
+> +	t1 = ktime_get();
+> +	local_irq_enable();
+> +	while (!need_resched())
+> +		cpu_relax();
+> +
+> +	t2 = ktime_get();
+> +	diff = ktime_to_us(ktime_sub(t2, t1));
+> +	if (diff > INT_MAX)
+> +		diff = INT_MAX;
+> +
+> +	dev->last_residency = (int) diff;
+> +
+> +	return index;
+> +}
+> +
+> +static void poll_idle_init(struct cpuidle_driver *drv)
+> +{
+> +	struct cpuidle_state *state = &drv->states[0];
+> +
+> +	snprintf(state->name, CPUIDLE_NAME_LEN, "POLL");
+> +	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
+> +	state->exit_latency = 0;
+> +	state->target_residency = 0;
+> +	state->power_usage = -1;
+> +	state->flags = 0;
+> +	state->enter = poll_idle;
+> +	state->disabled = false;
+> +}
+> +#else
+> +static void poll_idle_init(struct cpuidle_driver *drv) {}
+> +#endif /* !CONFIG_ARCH_HAS_CPU_RELAX */
+> +
+>  /**
+>   * __cpuidle_register_driver: register the driver
+>   * @drv: a valid pointer to a struct cpuidle_driver
+> @@ -212,6 +252,8 @@ static int __cpuidle_register_driver(struct cpuidle_driver *drv)
+>  		on_each_cpu_mask(drv->cpumask, cpuidle_setup_broadcast_timer,
+>  				 (void *)CLOCK_EVT_NOTIFY_BROADCAST_ON, 1);
+>  
+> +	poll_idle_init(drv);
+> +
+>  	return 0;
+>  }
+>  
+> 
 
-All official DT binding maintainers are CC'd here: you can't say you
-want more review of bindings, yet fail to review them across 3
-versions and almost 3 months. Ball's in your court.
 
-Brian
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
