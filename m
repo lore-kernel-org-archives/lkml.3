@@ -1,81 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab3IYWKJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 18:10:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50210 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab3IYWKI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 18:10:08 -0400
-Date: Wed, 25 Sep 2013 15:10:06 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Anton Altaparmakov <aia21@cam.ac.uk>
-Cc: Alexander Holler <holler@ahsoftware.de>,
-        STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] add exFAT driver
-Message-ID: <20130925221006.GB32312@kroah.com>
-References: <20130830124622.5f81b7d4@rechenknecht2k7>
- <20130830154205.GA1411@kroah.com>
- <20130925183632.08a0d073@rechenknecht2k7>
- <20130925172704.GB5258@kroah.com>
- <20130925183235.GA9659@srcf.ucam.org>
- <20130925184539.GA4208@kroah.com>
- <52433978.9050302@ahsoftware.de>
- <20130925202151.GA6149@kroah.com>
- <57387214-F138-4471-996E-3FB1ED28346C@cam.ac.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <57387214-F138-4471-996E-3FB1ED28346C@cam.ac.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755400Ab3IYWKd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 18:10:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:28802 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253Ab3IYWKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 18:10:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,981,1371106800"; 
+   d="scan'208";a="383568205"
+Subject: [PATCH v6 0/6] rwsem: performance optimizations
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 25 Sep 2013 15:10:28 -0700
+Message-ID: <1380147028.3467.62.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 10:44:15PM +0100, Anton Altaparmakov wrote:
-> Hi,
-> 
-> On 25 Sep 2013, at 21:21, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Sep 25, 2013 at 09:28:56PM +0200, Alexander Holler wrote:
-> >> 
-> >> Maybe a silly question, but isn't exFAT protected by some MS owned
-> >> patents which might drive Linux users into the hand of MS lawyers as
-> >> already happened with FAT?
-> 
-> Yes, it is.  You cannot use exFAT without a Microsoft patent license
-> (unless you live in countries without software patents perhaps).
+We fixed a missing file and fixed various style issues for
+version 6 of this patchset. We will like to have it merged if
+there are no objections.
 
-Given that you that you are not a Microsoft representative, nor a
-Samsung employee, I don't understand how you can make such a definitive
-statement.
+In this patchset, we introduce two categories of optimizations to read
+write semaphore.  The first four patches from Alex Shi reduce cache
+bouncing of the sem->count field by doing a pre-read of the sem->count
+and avoid cmpxchg if possible.
 
-> >> It would make me wonder if not. Maybe you could ask Samsung about
-> >> that too, when you are there.
-> > 
-> > Because Samsung released the code under the GPLv2, and their lawyers
-> > understand what that means, should answer any question you might have
-> > about this.
-> 
-> Sorry but you have no idea what you are talking about.
+The last two patches introduce similar optimistic spinning logic as the
+mutex code for the writer lock acquisition of rwsem. This addresses the
+general 'mutexes out perform writer-rwsems' situations that has been
+seen in more than one case.  Users now need not worry about performance
+issues when choosing between these two locking mechanisms.
 
-Ah, that's a lovely way to engage in a conversation.
+Without these optimizations, Davidlohr Bueso saw a -8% regression to
+aim7's shared and high_systime workloads when he switched i_mmap_mutex
+to rwsem.  Tests were on 8 socket 80 cores system.  With the patchset,
+he got significant improvements to the aim7 suite instead of regressions:
 
-> Samsung modified the GPL-ed FAT driver to make it work with exFAT.
-> Therefore their exFAT driver was GPL as a derived work.  They got
-> caught and had to release the source code.
+alltests (+16.3%), custom (+20%), disk (+19.5%), high_systime (+7%),
+shared (+18.4%) and short (+6.3%).
 
-And now you claim to be a Samsung representative again, I think your
-country has some bad liable laws you might wish to watch out for...
+Tim Chen also got a +5% improvements to exim mail server workload on a
+40 core system.
 
-This isn't going to go very far, so I'll just not respond anymore, it's
-not going to be productive, and given that I don't see your name on the
-code here, I don't see why I need to.
+Thanks to Ingo Molnar, Peter Hurley and Peter Zijlstra for reviewing
+this patchset.
 
-Please stick to technical discussions about the code on the kernel
-mailing lists.  Legal discussions can be left up to the lawyers, of
-which we are not.
+Regards,
+Tim Chen
 
-greg k-h
+Changelog:
+
+v6:
+1. Fix missing mcslock.h file.
+2. Fix various code style issues.
+
+v5:
+1. Try optimistic spinning before we put the writer on the wait queue
+to avoid bottlenecking at wait queue.  This provides 5% boost to exim workload
+and between 2% to 8% boost to aim7. 
+2. Put MCS locking code into its own mcslock.h file for better reuse
+between mutex.c and rwsem.c
+3. Remove the configuration RWSEM_SPIN_ON_WRITE_OWNER and make the 
+operations default per Ingo's suggestions.
+
+v4:
+1. Fixed a bug in task_struct definition in rwsem_can_spin_on_owner
+2. Fix another typo for RWSEM_SPIN_ON_WRITE_OWNER config option
+
+v3:
+1. Added ACCESS_ONCE to sem->count access in rwsem_can_spin_on_owner.
+2. Fix typo bug for RWSEM_SPIN_ON_WRITE_OWNER option in init/Kconfig
+
+v2:
+1. Reorganize changes to down_write_trylock and do_wake into 4 patches and fixed
+   a bug referencing &sem->count when sem->count is intended.
+2. Fix unsafe sem->owner de-reference in rwsem_can_spin_on_owner.
+the option to be on for more seasoning but can be turned off should it be detrimental.
+3. Various patch comments update
+
+Alex Shi (4):
+  rwsem: check the lock before cpmxchg in down_write_trylock
+  rwsem: remove 'out' label in do_wake
+  rwsem: remove try_reader_grant label do_wake
+  rwsem/wake: check lock before do atomic update
+
+Tim Chen (2):
+  MCS Lock: Restructure the MCS lock defines and locking code into its
+    own file
+  rwsem: do optimistic spinning for writer lock acquisition
+
+ include/asm-generic/rwsem.h |    8 +-
+ include/linux/mcslock.h     |   58 +++++++++++
+ include/linux/rwsem.h       |    6 +-
+ kernel/mutex.c              |   58 ++----------
+ kernel/rwsem.c              |   19 ++++-
+ lib/rwsem.c                 |  228 +++++++++++++++++++++++++++++++++++++-----
+ 6 files changed, 292 insertions(+), 85 deletions(-)
+ create mode 100644 include/linux/mcslock.h
+
+-- 
+1.7.4.4
+
+
