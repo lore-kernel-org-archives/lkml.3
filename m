@@ -1,107 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab3IYH4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 03:56:33 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:31299 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab3IYH4c (ORCPT
+	id S1754376Ab3IYH4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 03:56:41 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33443 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753034Ab3IYH4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 03:56:32 -0400
-X-AuditID: cbfee68d-b7fe86d0000077a5-68-5242972f3414
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Steve Twiss'" <stwiss.opensource@diasemi.com>,
-        "'David Dajun Chen'" <david.chen@diasemi.com>
-References: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
-In-reply-to: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
-Subject: [PATCH 05/20] regulator: da9210: use devm_regulator_register()
-Date: Wed, 25 Sep 2013 16:56:31 +0900
-Message-id: <000e01ceb9c4$bf4d5d10$3de81730$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65w5fHnzL+CpaSR8SldcZ2fs0oxwAAPrMg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t8zY1396U5BBrufKlhMffiEzeL2j9Os
-	FpcXXmK1+Halg8ni8q45bBZXf69ncWDzWPFJ32PnrLvsHptWdbJ59G1ZxejxeZNcAGsUl01K
-	ak5mWWqRvl0CV8bFT4dYChq4Kw68nszUwDiVs4uRk0NCwESiaf01VghbTOLCvfVsILaQwDJG
-	iTWnGGFqHt7/CFTDBRRfxCix4ecKKOcXo8T1azvAqtgE1CS+fDnM3sXIwSEioCrx/5U7SJhZ
-	4CyjxN0OPYihthLL/95mAbE5Bewklt37DLZMWMBd4svcJ0wgNgtQ64sJ78FG8gLVn7n3lg3C
-	FpT4MfkeC8RMLYn1O48zQdjyEpvXvGUGWSshoC7x6K8uSFhEwEii4chpdogSEYl9L94xgpws
-	IfCWXWL5qi3MELsEJL5NPsQC0SsrsekAM8S/khIHV9xgmcAoMQvJ5llINs9CsnkWkhULGFlW
-	MYqmFiQXFCelFxnqFSfmFpfmpesl5+duYoTEa+8OxtsHrA8xJgOtn8gsJZqcD4z3vJJ4Q2Mz
-	IwtTE1NjI3NLM9KElcR51VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwarVXBf6RnM3G
-	JNDMxRDivHXRZilHzd9Ni/YuaDLbHhg8tUfORjbXus5I++D3/gzBAtZ5F+dO3Hrw6D5Vl2dX
-	LrkeWxodHiku8z3sZTnreicpz6VfROtytkys8b281y60Sy+RQX1Oe9bUmT/6p31MmpEs/sh/
-	Ym2hi8Du76ePzSn80Pv2kpGfEktxRqKhFnNRcSIAJ5wMDu0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBKsWRmVeSWpSXmKPExsVy+t9jAV396U5BBht/yVhMffiEzeL2j9Os
-	FpcXXmK1+Halg8ni8q45bBZXf69ncWDzWPFJ32PnrLvsHptWdbJ59G1ZxejxeZNcAGtUA6NN
-	RmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtAFSgpliTml
-	QKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCOsaMi58OsRQ0cFcceD2ZqYFxKmcXIyeH
-	hICJxMP7H1khbDGJC/fWs3UxcnEICSxilNjwcwUrhPOLUeL6tR2MIFVsAmoSX74cZu9i5OAQ
-	EVCV+P/KHSTMLHCWUeJuhx6ILSRgK7H8720WEJtTwE5i2b3PbCC2sIC7xJe5T5hAbBag1hcT
-	3oON5AWqP3PvLRuELSjxY/I9FoiZWhLrdx5ngrDlJTavecsMslZCQF3i0V9dkLCIgJFEw5HT
-	7BAlIhL7XrxjnMAoNAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3
-	MYLTwTOpHYwrGywOMQpwMCrx8AocdQwSYk0sK67MPcQowcGsJMJbNNUpSIg3JbGyKrUoP76o
-	NCe1+BBjMtCjE5mlRJPzgakqryTe0NjEzMjSyMzCyMTcnDRhJXHeA63WgUIC6YklqdmpqQWp
-	RTBbmDg4pRoYHefyXnx4XI/3xqrN33kOTmBUuffk+NtFm969jPyesWaHZLd1+HHm7TMjtKdc
-	v6R4pf/i5eLUDffn7d/J4XPHdceEhaW/NXLEWDsnqK6MfbrIoPH996v3tdSWCBZJ/P+3/0v4
-	1MDl0k5H7odVfPh9fUq1zfve+C/2nXO2B3nYrfXZJ3Te5zbjTkUlluKMREMt5qLiRABX9Djb
-	SwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 25 Sep 2013 03:56:36 -0400
+Date: Wed, 25 Sep 2013 09:56:52 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Sedat Dilek <sedat.dilek@gmail.com>
+Subject: Re: Fwd: linux-next: Tree for Jul 1 [ drm-intel-next: Several
+ call-traces ]
+Message-ID: <20130925075652.GG12663@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	"Michael S. Tsirkin" <mst@redhat.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	linux-next <linux-next@vger.kernel.org>,
+	DRI <dri-devel@lists.freedesktop.org>,
+	Sedat Dilek <sedat.dilek@gmail.com>
+References: <CA+icZUXyizuCR3YDfFXD5hCkgycFYGzMHaJxg=m9UackT7uzGQ@mail.gmail.com>
+ <CAKMK7uFzwiztE8H1rvSDWQmw08JGoKdnTs5BYqxdrHwb=pK50A@mail.gmail.com>
+ <CA+icZUXnHaT75NhhSx+AhcMEKybHugH9+hV_mS5h5-cimFdz6A@mail.gmail.com>
+ <CA+icZUVQ_UO_VnN9+Q7B3hhuFmw4XPEw19rhO+T4jU5hLGWaTQ@mail.gmail.com>
+ <CA+icZUW3K7RyUcfdos7aOkrEOd3To0kSns+G3GSfkPqqwo7z=w@mail.gmail.com>
+ <20130826130511.GA21082@redhat.com>
+ <20130922141410.GA1974@redhat.com>
+ <CAPM=9ty_o7VZx+sfDRSwh7U9BC+gOLd7P-cc856+PDBXR-UMEA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9ty_o7VZx+sfDRSwh7U9BC+gOLd7P-cc856+PDBXR-UMEA@mail.gmail.com>
+X-Operating-System: Linux phenom 3.10-2-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_regulator_register() to make cleanup paths simpler,
-and remove unnecessary remove().
+On Wed, Sep 25, 2013 at 01:17:52PM +1000, Dave Airlie wrote:
+> On Mon, Sep 23, 2013 at 12:14 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > On Mon, Aug 26, 2013 at 04:05:11PM +0300, Michael S. Tsirkin wrote:
+> >> On Wed, Aug 21, 2013 at 11:22:58AM +0200, Sedat Dilek wrote:
+> >> > [ Re: [Intel-gfx] i915 producing warnings with kernel 3.11-rc5 ]
+> >> >
+> >> > Hi,
+> >> >
+> >> > saw your posting in [1]... can you try the patches below?
+> >> > Not sure if they apply.
+> >> > Did you try v3.11-rc6(+)... or drm-intel-nightly?
+> >> >
+> >> > Regards,
+> >> > - Sedat -
+> >> >
+> >> > [1] http://lists.freedesktop.org/archives/intel-gfx/2013-August/032154.html
+> >>
+> >> Same thing observed with v3.11-rc7.
+> >
+> > I still see this with 3.11.
+> > Following this message, my VGA monitor goes blank and
+> > shows an error suggesting a wrong resolution or frequency are set.
+> > Anyone?
+> 
+> Daniel, Jesse?
+> 
+> still ongoing I think.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/regulator/da9210-regulator.c |   10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+Yeah, I've dismissed it since the original issue in this thread is
+resolved. But it's something else.
 
-diff --git a/drivers/regulator/da9210-regulator.c b/drivers/regulator/da9210-regulator.c
-index f0fe54b..82368a3 100644
---- a/drivers/regulator/da9210-regulator.c
-+++ b/drivers/regulator/da9210-regulator.c
-@@ -152,7 +152,7 @@ static int da9210_i2c_probe(struct i2c_client *i2c,
- 	config.driver_data = chip;
- 	config.regmap = chip->regmap;
- 
--	rdev = regulator_register(&da9210_reg, &config);
-+	rdev = devm_regulator_register(&i2c->dev, &da9210_reg, &config);
- 	if (IS_ERR(rdev)) {
- 		dev_err(&i2c->dev, "Failed to register DA9210 regulator\n");
- 		return PTR_ERR(rdev);
-@@ -165,13 +165,6 @@ static int da9210_i2c_probe(struct i2c_client *i2c,
- 	return 0;
- }
- 
--static int da9210_i2c_remove(struct i2c_client *i2c)
--{
--	struct da9210 *chip = i2c_get_clientdata(i2c);
--	regulator_unregister(chip->rdev);
--	return 0;
--}
--
- static const struct i2c_device_id da9210_i2c_id[] = {
- 	{"da9210", 0},
- 	{},
-@@ -185,7 +178,6 @@ static struct i2c_driver da9210_regulator_driver = {
- 		.owner = THIS_MODULE,
- 	},
- 	.probe = da9210_i2c_probe,
--	.remove = da9210_i2c_remove,
- 	.id_table = da9210_i2c_id,
- };
- 
+Note to bug reporters: Please don't me-too, but start a new thread/report
+- almost every gfx bug is different, even if it superficially looks the
+same.
+
+Michael, can you please boot with drm.debug=0xe, reproduce the problem and
+then attach the complete dmesg? Please make sure dmesg contains everything
+since boot-up, if not please increase the dmesg buffer size with
+log_buf_len=4M.
+
+Also please test the latest drm-intel-fixes release to check that we
+haven't just forgotten to send the patch to stable (there's at least one
+flags mismatch fix already in-flight to 3.11 stable kernels).
+
+Thanks, Daniel
 -- 
-1.7.10.4
-
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
