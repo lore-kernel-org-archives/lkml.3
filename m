@@ -1,171 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab3IYUMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:12:06 -0400
-Received: from mail-ye0-f169.google.com ([209.85.213.169]:42704 "EHLO
-	mail-ye0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584Ab3IYUME (ORCPT
+	id S1755154Ab3IYUPi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:15:38 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:34284 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab3IYUPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:12:04 -0400
-Date: Wed, 25 Sep 2013 13:05:39 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: "Gupta, Pekon" <pekon@ti.com>
-Cc: "olof@lixom.net" <olof@lixom.net>,
-        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>,
+	Wed, 25 Sep 2013 16:15:37 -0400
+From: Djalal Harouni <tixxdz@opendz.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: Re: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various
- ECC schemes
-Message-ID: <20130925200539.GH23337@ld-irv-0074.broadcom.com>
-References: <1378986619-26765-1-git-send-email-pekon@ti.com>
- <1378986619-26765-2-git-send-email-pekon@ti.com>
- <20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
- <20130925134619.GG10746@radagast>
- <20130925175527.GA23337@ld-irv-0074.broadcom.com>
- <20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        <kernel-hardening@lists.openwall.com>
+Cc: tixxdz@gmail.com, Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH 0/12] procfs: protect /proc/<pid>/* files with file->f_cred
+Date: Wed, 25 Sep 2013 21:14:33 +0100
+Message-Id: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 07:24:26PM +0000, Gupta, Pekon wrote:
-> > On Wed, Sep 25, 2013 at 08:46:19AM -0500, Felipe Balbi wrote:
-> > > + akpm
-> > >
-> > > On Tue, Sep 24, 2013 at 01:04:05PM -0500, Gupta, Pekon wrote:
-> [snip]
-> > > >
-> > > > Dear Olof and other DT Maintainers,
-> > > >
-> > > > This patch series has missed multiple merge windows, and
-> > > > much of the other development work on mtd/nand/omap
-> > > > driver is gated due to this.
-> > 
-> > Also, to be fair here: you only started CC'ing the appropriate DT
-> > people/list around v4, after which you got a (somewhat) prompt and
-> > thorough review of the DT bindings. Then several months passed before
-> > you addressed the reviews. So the "multiple merge windows" is not
-> > entirely to be blamed on others ;)
-> > 
-> > Brian
-> 
-> Few points I would like to clarify here, *without* pointing anyone..
-> 
-> (1) It was Olof's comments which directed me to cc: devicetree-discuss list.
-> So wrong list was always cc-ed till v4.
-> Refer http://permalink.gmane.org/gmane.linux.ports.arm.kernel/249662
-> 
-> (2) The devicetree list has been updated in MAINTAINER file towards
-> end of July (22/July/2013) in following commit. Whereas the patch v4
-> was submitted on 2/July/2013. So I wasn't aware of this new DT maillist.
-> commit d0fb18c5c0caf2ed0eecf3d0145450ae708ed75a
-> Commit:     Grant Likely <grant.likely@linaro.org>
-> CommitDate: 2013-07-22
 
-Did you not notice the 'bounce' emails once Grant made the (IMO unwise)
-decision to shut down the DT mailing list instead of just redirecting?
+/proc/<pid>/* entries varies at runtime, appropriate permission checks
+need to happen during each system call.
 
-> (3) When a maintainer gives a NAK, I expect him to at-least give
-> directions on what to change in the patch. There were no comments
-> given, neither new patch reviewed by the DT maintainer even after
-> sending multiple request directly.
-> http://lists.infradead.org/pipermail/linux-mtd/2013-July/047441.html
-> http://lists.infradead.org/pipermail/linux-mtd/2013-July/047629.html
+Currently some of these sensitive entries are protected by performing
+the ptrace_may_access() check. However even with that the /proc file
+descriptors can be passed to a more privileged process
+(e.g. a suid-exec) which will pass the classic ptrace_may_access()
+check. In general the ->open() call will be issued by an unprivileged
+process while the ->read(),->write() calls by a more privileged one.
 
-Those are links to your own emails, not to any NAKs. Any NAKs I saw
-listed reasons. I NAK'd based on the ABI breakage and lack of review by
-the DT maintainership; Arnd NAK'd based on similar reasons; Olof later
-(once you got the right list) gave constructive criticism on how to
-remove the Linux-isms and other software implementation details from the
-DT binding.
+Example of these files are:
+/proc/*/syscall, /proc/*/stack etc.
 
-> Its only when Artem and yourself pitched in by sending a mail to
-> new DT mail-list that the DT maintainer reviewed and provided the
-> comments for fixes.
-> But by that time 3.11-rc6 had already gone past, and so I knew this
-> Series cannot go in, so I wanted to wait some more, to see if there
-> were any more comments on this. And frankly I was too much
-> frustrated by then.
-> 
-> Just to speak my opinion.
-> We all understand that maintainers are heavily loaded by tons of
-> emails, And reviewing each patch instantly is not possible.
-> 
-> But this load is now passing to developers like me as frustration,
-> because most of energy is being spent in re-submitting patches
-> again and again, without any proper direction or conclusion.
-> And then there is no time and energy left for good work, where
-> we can contribute to optimizing frame-works for performance or
-> adding new features.
-> So I see many good developers distracting away from mainline.
+And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
 
-I sincerely hope that this isn't (or at least doesn't continue to be)
-the norm.
 
-> Thus, there should be a mechanism, where such load can be
-> distributed, and there are less emails. And developers don't
-> have to re-submit patch multiple times, by collecting most reviews
-> at once.  This way developer's like me can spend more time in doing
-> other constructive things.
+These files are protected during read() by the ptrace_may_access(),
+however the file descriptor can be passed to a suid-exec which can be
+used to read data and bypass ASLR. Of course this was discussed several
+times on LKML.
 
-I understand your concerns. I have been frustrated with slow responses
-on MTD stuff as well, which is why I'm stepping in to review and commit
-more. But I see that your patch hit a unique combination of events that
-helped slow things down even more than usual.
 
-MTD maintainership has been slowing down for a while, and in the
-midst of your patch series, I began stepping in to take care of some of
-that load. I didn't quite have a good picture of what patches were
-pending without comments at that point, so patch series like yours were
-in limbo with no one to review.
+Solution:
+Here we propose a clean solution that uses available mechanisms. No
+additions, nor new structs/memory allocation...
 
-Additionally, Grant stepped down from DT maintainership and
-correspondingly shut down and transitioned the DT mailing list. This
-directly affected your patch series.
+After a discussion about some /proc/<pid>/* file permissions [1],
+Eric W. Biederman proposed to use the file->f_cred to check if current's
+cred have changed [2], actually he said that Linus was looking
+on using the file->f_cred to implement a similar thing! But run in
+problems with Chromes sandbox ? a link please ?
 
-Lastly, it is extra difficult to deal with patch sets like this that
-cross subsystems and require reviews from multiple constituencies. And
-that is even more difficult when you aren't even emailing the correct
-people (for whatever reason).
 
-I believe that many of the factors that slowed down your particular
-series have been ameliorated.
+So here are my experiments:
+The idea is to track the cred of current. If the cred change between
+->open() and read()/write() this means that current has lost or gained
+some X privileges. If so, in addition to the classic ptrace_may_access()
+check, perform a second check using the file's opener cred. This means,
+if an unprivileged process that tries to use a privileged one
+(e.g. suid-exec) to read privileged files will get caught. The original
+process that opened the file does not have the appropriate permissions
+to read()/write() the target /proc/<pid>/* entry.
 
-Time has allowed developers to become more aware of the change in DT
-maintainership and mailing list, and I can more promptly redirect
-developers who are still CC'ing the wrong people/lists.
+This second check is done of course during read(),write()...
 
-I am able to spend a little more time on MTD stuff, to help push
-development along a little faster.
 
-Olof has given good advice on your DT binding and has (slowly) been
-responding to other requests for DT review that make it to his list. I
-see that he hasn't followed up on your changes (this v6), so pinging him
-(as you did) is probably the correct approach. But please do recognize
-that the DT list is very high volume, so it's hard to get good timely
-responses there.
+Advantages of the proposed solution:
+* It uses available mechanisms: file->f_cred which is a const cred
+  that reference the cred of the opener.
 
-Anyway, at this point I think your patch series should be nearly
-complete. I made a few comments on your patches, and I'd imagine you
-only should need one more revision (v7) before I can accept it to the
-l2-mtd.git tree.
+* The file->f_cred can be easily referenced  and it will live until
+  fput()
 
-> Please consider this as constructive feedback, without targeting
-> any individual or team.
+* Does not pin or grab any counter on any extra struct.
 
-Thank you for your thoughtful response.
+* It allows to pass file descriptors under certain conditions:
+  (1) current at open time may have enough permissions
+  (2) current does a suid-exec or change its ruid/euid (new cred)
+  (3) current or suid-exec tries to read from the task /proc entry
+     Allow the ->read() only if the file's opener cred at (1)
+     have enough permissions on *this* task /proc entry during
+     *this* ->read() moment. Otherwise fail.
 
-Brian
+  IOW allow it if the opener does not need the help of a suid-exec to
+  read/write data.
+
+
+Disadvantage:
+* Currently only /proc/*/{stack,syscall,stat,personality} are handled
+  If the solution is accepted I'll continue with other files, taking
+  care to not break userspace. All the facilities are provided.
+* Your feedback
+
+
+The following series tries to implement what I describe.
+
+1) Add the proc_same_open_cred() helper
+This function will check if the file's opener cred matches the current
+cred. The match concerns the cred that are used in the
+ptrace_may_access() check to allow /proc task access. These cred are:
+uid,gid and cap_permitted.
+
+2) Add the proc_allow_access() helper
+Check if the file's opener had enough permissions to access the target
+process.
+
+3) Make seq_file struct able to access the file's opener cred.
+Since seq_file struct is used by procfs entries, embed a pointer to the
+file->f_cred into the seq_file struct.
+
+4) Add permission checks on the file's opener of /proc/*/stack
+
+5) Add permission checks on the file's opener of /proc/*/personality
+
+6) Add permission checks on the file's opener of /proc/*/stat
+
+7) Improve permission checks on /proc/*/syscall
+
+8) Finally the last patch is user_ns and seq_file cleaning.
+
+
+Thanks!
+
+[1] https://lkml.org/lkml/2013/8/26/354
+[2] https://lkml.org/lkml/2013/8/31/209
+
+
+Djalal Harouni (12):
+ procfs: add proc_same_open_cred() to check if the cred have changed
+ procfs: add proc_allow_access() to check if file's opener may access task
+ procfs: Document the proposed solution to protect procfs entries
+ seq_file: Make seq_file able to access the file's opener cred
+ seq_file: set the seq_file->f_cred during seq_open()
+ procfs: make /proc/*/stack 0400
+ procfs: add permission checks on the file's opener of /proc/*/stack
+ procfs: add permission checks on the file's opener of /proc/*/personality
+ procfs: add permission checks on the file's opener of /proc/*/stat
+ procfs: move PROC_BLOCK_SIZE declaration up to make it visible
+ procfs: improve permission checks on /proc/*/syscall
+ user_ns: seq_file: use the user_ns that is embedded in the f_cred struct
+
+ fs/proc/array.c          |  14 ++++++-
+ fs/proc/base.c           | 233 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------
+ fs/proc/internal.h       |   3 ++
+ fs/seq_file.c            |   4 +-
+ include/linux/seq_file.h |  13 +++++--
+ 5 files changed, 238 insertions(+), 29 deletions(-)
