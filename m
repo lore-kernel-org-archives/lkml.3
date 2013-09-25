@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab3IYASb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:18:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39339 "EHLO
+	id S932183Ab3IYARM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:17:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39295 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab3IYARN (ORCPT
+	with ESMTP id S932103Ab3IYARG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:13 -0400
+	Tue, 24 Sep 2013 20:17:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anand Avati <avati@redhat.com>, Brian Foster <bfoster@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 108/110] fuse: invalidate inode attributes on xattr modification
-Date: Tue, 24 Sep 2013 17:15:46 -0700
-Message-Id: <20130925001335.105660175@linuxfoundation.org>
+        Richard Weinberger <richard@nod.at>, stian@nixia.no, tj@kernel.org
+Subject: [ 098/110] um: Implement probe_kernel_read()
+Date: Tue, 24 Sep 2013 17:15:36 -0700
+Message-Id: <20130925001334.027172582@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,41 +26,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anand Avati <avati@redhat.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit d331a415aef98717393dda0be69b7947da08eba3 upstream.
+commit f75b1b1bedfb498cc43a992ce4d7ed8df3b1e770 upstream.
 
-Calls like setxattr and removexattr result in updation of ctime.
-Therefore invalidate inode attributes to force a refresh.
+UML needs it's own probe_kernel_read() to handle kernel
+mode faults correctly.
+The implementation uses mincore() on the host side to detect
+whether a page is owned by the UML kernel process.
 
-Signed-off-by: Anand Avati <avati@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+This fixes also a possible crash when sysrq-t is used.
+Starting with 3.10 sysrq-t calls probe_kernel_read() to
+read details from the kernel workers. As kernel worker are
+completely async pointers may turn NULL while reading them.
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Cc: <stian@nixia.no>
+Cc: <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/dir.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/um/include/shared/os.h |    1 
+ arch/um/kernel/Makefile     |    2 -
+ arch/um/kernel/maccess.c    |   24 ++++++++++++++++++++
+ arch/um/os-Linux/process.c  |   52 ++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 78 insertions(+), 1 deletion(-)
 
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -1753,6 +1753,8 @@ static int fuse_setxattr(struct dentry *
- 		fc->no_setxattr = 1;
- 		err = -EOPNOTSUPP;
- 	}
-+	if (!err)
-+		fuse_invalidate_attr(inode);
- 	return err;
+--- a/arch/um/include/shared/os.h
++++ b/arch/um/include/shared/os.h
+@@ -200,6 +200,7 @@ extern int os_unmap_memory(void *addr, i
+ extern int os_drop_memory(void *addr, int length);
+ extern int can_drop_memory(void);
+ extern void os_flush_stdout(void);
++extern int os_mincore(void *addr, unsigned long len);
+ 
+ /* execvp.c */
+ extern int execvp_noalloc(char *buf, const char *file, char *const argv[]);
+--- a/arch/um/kernel/Makefile
++++ b/arch/um/kernel/Makefile
+@@ -13,7 +13,7 @@ clean-files :=
+ obj-y = config.o exec.o exitcode.o irq.o ksyms.o mem.o \
+ 	physmem.o process.o ptrace.o reboot.o sigio.o \
+ 	signal.o smp.o syscall.o sysrq.o time.o tlb.o trap.o \
+-	um_arch.o umid.o skas/
++	um_arch.o umid.o maccess.o skas/
+ 
+ obj-$(CONFIG_BLK_DEV_INITRD) += initrd.o
+ obj-$(CONFIG_GPROF)	+= gprof_syms.o
+--- /dev/null
++++ b/arch/um/kernel/maccess.c
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (C) 2013 Richard Weinberger <richrd@nod.at>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/uaccess.h>
++#include <linux/kernel.h>
++#include <os.h>
++
++long probe_kernel_read(void *dst, const void *src, size_t size)
++{
++	void *psrc = (void *)rounddown((unsigned long)src, PAGE_SIZE);
++
++	if ((unsigned long)src < PAGE_SIZE || size <= 0)
++		return -EFAULT;
++
++	if (os_mincore(psrc, size + src - psrc) <= 0)
++		return -EFAULT;
++
++	return __probe_kernel_read(dst, src, size);
++}
+--- a/arch/um/os-Linux/process.c
++++ b/arch/um/os-Linux/process.c
+@@ -4,6 +4,7 @@
+  */
+ 
+ #include <stdio.h>
++#include <stdlib.h>
+ #include <unistd.h>
+ #include <errno.h>
+ #include <signal.h>
+@@ -232,6 +233,57 @@ out:
+ 	return ok;
  }
  
-@@ -1882,6 +1884,8 @@ static int fuse_removexattr(struct dentr
- 		fc->no_removexattr = 1;
- 		err = -EOPNOTSUPP;
- 	}
-+	if (!err)
-+		fuse_invalidate_attr(inode);
- 	return err;
- }
- 
++static int os_page_mincore(void *addr)
++{
++	char vec[2];
++	int ret;
++
++	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
++	if (ret < 0) {
++		if (errno == ENOMEM || errno == EINVAL)
++			return 0;
++		else
++			return -errno;
++	}
++
++	return vec[0] & 1;
++}
++
++int os_mincore(void *addr, unsigned long len)
++{
++	char *vec;
++	int ret, i;
++
++	if (len <= UM_KERN_PAGE_SIZE)
++		return os_page_mincore(addr);
++
++	vec = calloc(1, (len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE);
++	if (!vec)
++		return -ENOMEM;
++
++	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
++	if (ret < 0) {
++		if (errno == ENOMEM || errno == EINVAL)
++			ret = 0;
++		else
++			ret = -errno;
++
++		goto out;
++	}
++
++	for (i = 0; i < ((len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE); i++) {
++		if (!(vec[i] & 1)) {
++			ret = 0;
++			goto out;
++		}
++	}
++
++	ret = 1;
++out:
++	free(vec);
++	return ret;
++}
++
+ void init_new_thread_signals(void)
+ {
+ 	set_handler(SIGSEGV);
 
 
