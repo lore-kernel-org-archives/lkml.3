@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab3IYB0A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:26:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38631 "EHLO
+	id S932564Ab3IYBZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:25:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755471Ab3IYAMg (ORCPT
+	with ESMTP id S1755476Ab3IYAMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:12:36 -0400
+	Tue, 24 Sep 2013 20:12:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Rafi Rubin <rafi@seas.upenn.edu>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 25/40] HID: ntrig: validate feature report details
-Date: Tue, 24 Sep 2013 17:11:57 -0700
-Message-Id: <20130925001044.680362179@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 27/40] HID: check for NULL field when setting values
+Date: Tue, 24 Sep 2013 17:11:59 -0700
+Message-Id: <20130925001044.898155335@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
 References: <20130925001041.939335518@linuxfoundation.org>
@@ -29,38 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kees Cook <keescook@chromium.org>
 
-commit 875b4e3763dbc941f15143dd1a18d10bb0be303b upstream.
+commit be67b68d52fa28b9b721c47bb42068f0c1214855 upstream.
 
-A HID device could send a malicious feature report that would cause the
-ntrig HID driver to trigger a NULL dereference during initialization:
-
-[57383.031190] usb 3-1: New USB device found, idVendor=1b96, idProduct=0001
-...
-[57383.315193] BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
-[57383.315308] IP: [<ffffffffa08102de>] ntrig_probe+0x25e/0x420 [hid_ntrig]
-
-CVE-2013-2896
+Defensively check that the field to be worked on is not NULL.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ntrig.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/hid/hid-core.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-ntrig.c
-+++ b/drivers/hid/hid-ntrig.c
-@@ -115,7 +115,8 @@ static inline int ntrig_get_mode(struct
- 	struct hid_report *report = hdev->report_enum[HID_FEATURE_REPORT].
- 				    report_id_hash[0x0d];
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -999,7 +999,12 @@ EXPORT_SYMBOL_GPL(hid_output_report);
  
--	if (!report)
-+	if (!report || report->maxfield < 1 ||
-+	    report->field[0]->report_count < 1)
- 		return -EINVAL;
+ int hid_set_field(struct hid_field *field, unsigned offset, __s32 value)
+ {
+-	unsigned size = field->report_size;
++	unsigned size;
++
++	if (!field)
++		return -1;
++
++	size = field->report_size;
  
- 	usbhid_submit_report(hdev, report, USB_DIR_IN);
+ 	hid_dump_input(field->report->device, field->usage + offset, value);
+ 
 
 
