@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab3IYGzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 02:55:23 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:48132 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab3IYGzW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 02:55:22 -0400
-Message-ID: <524288D4.9090407@colorfullife.com>
-Date: Wed, 25 Sep 2013 08:55:16 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1751097Ab3IYHDX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 03:03:23 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:45371 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750726Ab3IYHDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 03:03:22 -0400
+Date: Wed, 25 Sep 2013 10:08:29 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: Vincent Li <vincent.mc.li@gmail.com>
+cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH] Allow userspace code to use flag IFA_F_SECONDARY to
+ specify an ip address to be primary or secondary ip on an interface
+In-Reply-To: <CAK3+h2y8eAKFC7BbnDwfZLzTw=t-G9qWSqznp4ggwDy7R_O6Ag@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1309250925240.1971@ja.ssi.bg>
+References: <1380046281-6012-1-git-send-email-vincent.mc.li@gmail.com> <alpine.LFD.2.00.1309242255350.1875@ja.ssi.bg> <CAK3+h2y8eAKFC7BbnDwfZLzTw=t-G9qWSqznp4ggwDy7R_O6Ag@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jia He <jiakernel@gmail.com>
-CC: Mike Galbraith <bitbucket@online.de>, linux-kernel@vger.kernel.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] ipc/sem.c: fix update sem_otime when calling sem_op in
- semaphore initialization
-References: <1379815884-11035-1-git-send-email-jiakernel@gmail.com> <1379837823.5499.34.camel@marge.simpson.net> <1379838364.5499.39.camel@marge.simpson.net> <523EC97D.8020707@colorfullife.com> <523F0953.3070505@gmail.com> <5241FF8D.8000407@colorfullife.com> <52425316.8060101@gmail.com>
-In-Reply-To: <52425316.8060101@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jia,
 
-On 09/25/2013 05:05 AM, Jia He wrote:
->   Hi Manfred
-> IIUC after reivewing your patch and src code, does it seem
-> sem_otime lost the chance to be updated when calling
-> semctl_main/semctl_setval?
-> In old codes, even whendo_smart_update(sma, NULL, 0, 0, &tasks),
-> the otime can be updated after several conditions checking.
-The update is performed now performed inside perform_atomic_semop():
+	Hello,
 
-Old code:
-perform_atomic_semop() does not update sem_otime. It just returns 0 for 
-successfull operations.
-This "0 returned" is passed upwards ("semop_completed") into 
-do_smart_update()
-do_smart_update() updates sem_otime.
+On Tue, 24 Sep 2013, Vincent Li wrote:
 
-New code:
-perform_atomic_semop() updates sem_otime immediately (your change).
-No need to keep track if a waiting operation was completed (my change).
+> Thanks Julian for the comments, I imagined it would not be so simple
+> as it changed old behavior with ip binary and some actions in
+> __inet_del_ifa() that I am not fully aware of. my intention is to
+> preserve the old behavior and extend the flexibility, I am unable to
+> come up with a good patch to achieve the intended behavior.
 
-I don't see a problem - perhaps I overlook something.
-Which problem do you see?
+...
+
+> if someone can point me to the right patch directions or coming up
+> with better patches, it is very much appreciated.
+
+	My first idea was to use NLM_F_APPEND to implement
+'ip addr prepend' and 'ip addr append' but the default
+operation is 'append' without providing NLM_F_APPEND, so it
+does not work.
+
+	Another idea is to add new attribute IFA_PREFERENCE in
+include/uapi/linux/if_addr.h just before __IFA_MAX, integer,
+3 of the values are known. A preference for the used scope.
+
+/* Add as last, default */
+IFA_PREFERENCE_APPEND = 0,
+
+/* Add as last primary, before any present primary in subnet */
+IFA_PREFERENCE_PRIMARY = 128,
+
+/* First for scope */
+IFA_PREFERENCE_FIRST = 255,
+
+	We should keep it in ifa as priority, for
+sorting purposes. It can be 4-byte value, if user wants
+to copy user-defined order into preference.
+
+	Sorting order should be:
+
+- all primaries sorted by decreasing scope, decreasing
+priority and adding order
+
+- then all secondaries (IFA_F_SECONDARY) sorted by decreasing
+priority and adding order
+
+	Usage:
+
+ip addr add ... pref[erence] type_or_priority
+
+# Add floating IP (append at priority 128)
+# The primary mode is not guaranteed if another address from
+# the same subnet is already using the same or higher priority.
+ip addr add ... pref primary
+# More preferred primary
+ip addr add ... pref 129
+
+# Add first IP for scope
+ip addr add ... pref first
+
+	The scope has similar 'sorting' property but not
+for IPs in same subnet and it would be difficult to use
+it for global routes.
+
+	Thoughts?
+
+Regards
 
 --
-     Manfred
-
+Julian Anastasov <ja@ssi.bg>
