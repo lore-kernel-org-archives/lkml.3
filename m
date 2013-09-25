@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755032Ab3IYAVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:21:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39818 "EHLO
+	id S932403Ab3IYAVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:21:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39863 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362Ab3IYAVF (ORCPT
+	with ESMTP id S932346Ab3IYAVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:21:05 -0400
+	Tue, 24 Sep 2013 20:21:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>, Bryan Wu <cooloney@gmail.com>
-Subject: [ 092/117] leds: wm831x-status: Request a REG resource
-Date: Tue, 24 Sep 2013 17:19:18 -0700
-Message-Id: <20130925001750.966065104@linuxfoundation.org>
+        Brian Norris <computersforpeace@gmail.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Matthieu Castet <matthieu.castet@parrot.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 112/117] mtd: nand: fix NAND_BUSWIDTH_AUTO for x16 devices
+Date: Tue, 24 Sep 2013 17:19:38 -0700
+Message-Id: <20130925001753.181452673@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,35 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit 61abeba5222895d6900b13115f5d8eba7988d7d6 upstream.
+commit 68e8078072e802e77134664f11d2ffbfbd2f8fbe upstream.
 
-The wm831x-status driver was not converted to use a REG resource when they
-were introduced and the rest of the wm831x drivers converted, causing it
-to fail to probe due to requesting the wrong resource type.
+The code for NAND_BUSWIDTH_AUTO is broken. According to Alexander:
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Bryan Wu <cooloney@gmail.com>
+  "I have a problem with attach NAND UBI in 16 bit mode.
+   NAND works fine if I specify NAND_BUSWIDTH_16 option, but not
+   working with NAND_BUSWIDTH_AUTO option. In second case NAND
+   chip is identifyed with ONFI."
+
+See his report for the rest of the details:
+
+  http://lists.infradead.org/pipermail/linux-mtd/2013-July/047515.html
+
+Anyway, the problem is that nand_set_defaults() is called twice, we
+intend it to reset the chip functions to their x16 buswidth verions
+if the buswidth changed from x8 to x16; however, nand_set_defaults()
+does exactly nothing if called a second time.
+
+Fix this by hacking nand_set_defaults() to reset the buswidth-dependent
+functions if they were set to the x8 version the first time. Note that
+this does not do anything to reset from x16 to x8, but that's not the
+supported use case for NAND_BUSWIDTH_AUTO anyway.
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Reported-by: Alexander Shiyan <shc_work@mail.ru>
+Tested-by: Alexander Shiyan <shc_work@mail.ru>
+Cc: Matthieu Castet <matthieu.castet@parrot.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/leds/leds-wm831x-status.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mtd/nand/nand_base.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/leds/leds-wm831x-status.c
-+++ b/drivers/leds/leds-wm831x-status.c
-@@ -230,9 +230,9 @@ static int wm831x_status_probe(struct pl
- 	int id = pdev->id % ARRAY_SIZE(chip_pdata->status);
- 	int ret;
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2793,7 +2793,9 @@ static void nand_set_defaults(struct nan
  
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No register resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
+ 	if (!chip->select_chip)
+ 		chip->select_chip = nand_select_chip;
+-	if (!chip->read_byte)
++
++	/* If called twice, pointers that depend on busw may need to be reset */
++	if (!chip->read_byte || chip->read_byte == nand_read_byte)
+ 		chip->read_byte = busw ? nand_read_byte16 : nand_read_byte;
+ 	if (!chip->read_word)
+ 		chip->read_word = nand_read_word;
+@@ -2801,9 +2803,9 @@ static void nand_set_defaults(struct nan
+ 		chip->block_bad = nand_block_bad;
+ 	if (!chip->block_markbad)
+ 		chip->block_markbad = nand_default_block_markbad;
+-	if (!chip->write_buf)
++	if (!chip->write_buf || chip->write_buf == nand_write_buf)
+ 		chip->write_buf = busw ? nand_write_buf16 : nand_write_buf;
+-	if (!chip->read_buf)
++	if (!chip->read_buf || chip->read_buf == nand_read_buf)
+ 		chip->read_buf = busw ? nand_read_buf16 : nand_read_buf;
+ 	if (!chip->scan_bbt)
+ 		chip->scan_bbt = nand_default_bbt;
 
 
