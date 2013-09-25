@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758335Ab3IYBem (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:34:42 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53485 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225Ab3IYBek (ORCPT
+	id S1758355Ab3IYBfA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:35:00 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:57057 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756986Ab3IYBe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:34:40 -0400
-Date: Tue, 24 Sep 2013 21:34:35 -0400 (EDT)
-Message-Id: <20130924.213435.2244969028650079031.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: jeffrey.t.kirsher@intel.com, joe@perches.com, netdev@vger.kernel.org,
-        jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
-        carolyn.wyborny@intel.com, donald.c.skidmore@intel.com,
-        gregory.v.rose@intel.com, peter.p.waskiewicz.jr@intel.com,
-        alexander.h.duyck@intel.com, john.ronciak@intel.com,
-        tushar.n.dave@intel.com, e1000-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/10] intel: Remove extern from function prototypes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1380061012.2736.57.camel@bwh-desktop.uk.level5networks.com>
-References: <5ccc921af41a862fe969809228f029035f851502.1380056108.git.joe@perches.com>
-	<1380060449.2189.6.camel@jtkirshe-mobl>
-	<1380061012.2736.57.camel@bwh-desktop.uk.level5networks.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 24 Sep 2013 18:34:39 -0700 (PDT)
+	Tue, 24 Sep 2013 21:34:58 -0400
+Date: Tue, 24 Sep 2013 18:34:51 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/13] Sparse-related updates for 3.13
+Message-ID: <20130925013451.GA31260@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092501-1344-0000-0000-000001EB038B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Tue, 24 Sep 2013 23:16:52 +0100
+Hello!
 
-> On Tue, 2013-09-24 at 15:07 -0700, Jeff Kirsher wrote:
->> On Tue, 2013-09-24 at 14:09 -0700, Joe Perches wrote:
->> > There are a mix of function prototypes with and without extern
->> > in the kernel sources.  Standardize on not using extern for
->> > function prototypes.
->> > 
->> > Function prototypes don't need to be written with extern.
->> > extern is assumed by the compiler.  Its use is as unnecessary as
->> > using auto to declare automatic/local variables in a block.
->> 
->> So you are able to confirm that all compilers make this assumption
->> correctly?  The initial reason for using extern was because not all
->> compilers made the assumption or made it correctly.
-> 
-> You are probably thinking of global variables, where declarations
-> without either 'extern' or an initialiser might or might not be treated
-> as 'common'.  On function declarations, 'extern' really is redundant.
+This series features updates to allow sparse to do a better job of
+statically analyzing RCU usage:
 
-Furthermore, these networking headers include existing generic kernel
-headers which already have removed the 'extern' from function
-declarations in certain cases.
+1.	Apply ACCESS_ONCE() to rcu_assign_pointer()'s target to prevent
+	comiler mischief.  Also require that the source pointer be from
+	the kernel address space.  Sometimes it can be from the RCU address
+	space, which necessitates the remaining patches in this series.
+	Which, it must be admitted, apply to a very small fraction of
+	the rcu_assign_pointer() invocations in the kernel.  This commit
+	courtesy of Josh Triplett.
 
-So I don't think there isn't an issue, and if there is it has existed
-already for some time. :-)
+2-13.	Apply rcu_access_pointer() to avoid a number of false positives.
+
+							Thanx, Paul
+
+
+ b/drivers/net/bonding/bond_alb.c  |    3 ++-
+ b/drivers/net/bonding/bond_main.c |    8 +++++---
+ b/include/linux/rcupdate.h        |   12 +++++++++++-
+ b/kernel/notifier.c               |    2 +-
+ b/net/bridge/br_mdb.c             |    2 +-
+ b/net/bridge/br_multicast.c       |    4 ++--
+ b/net/decnet/dn_route.c           |    5 +++--
+ b/net/ipv4/ip_sockglue.c          |    2 +-
+ b/net/ipv6/ip6_gre.c              |    2 +-
+ b/net/ipv6/ip6_tunnel.c           |    2 +-
+ b/net/ipv6/sit.c                  |    2 +-
+ b/net/mac80211/sta_info.c         |    4 ++--
+ b/net/wireless/scan.c             |   14 +++++++-------
+ 13 files changed, 38 insertions(+), 24 deletions(-)
+
