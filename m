@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab3IYAx4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:53:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39315 "EHLO
+	id S932568Ab3IYAyX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:54:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39311 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab3IYARJ (ORCPT
+	with ESMTP id S932147Ab3IYARI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:09 -0400
+	Tue, 24 Sep 2013 20:17:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 103/110] mmc: tmio_mmc_dma: fix PIO fallback on SDHI
-Date: Tue, 24 Sep 2013 17:15:41 -0700
-Message-Id: <20130925001334.574159787@linuxfoundation.org>
+        Josh Durgin <josh.durgin@inktank.com>,
+        Alex Elder <alex.elder@linaro.org>
+Subject: [ 102/110] rbd: fix I/O error propagation for reads
+Date: Tue, 24 Sep 2013 17:15:40 -0700
+Message-Id: <20130925001334.468551389@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -28,62 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+From: Josh Durgin <josh.durgin@inktank.com>
 
-commit f936f9b67b7f8c2eae01dd303a0e90bd777c4679 upstream.
+commit 17c1cc1d9293a568a00545469078e29555cc7f39 upstream.
 
-I'm testing SH-Mobile SDHI driver in DMA mode with  a new DMA controller  using
-'bonnie++' and getting DMA error after which the tmio_mmc_dma.c code falls back
-to PIO but all commands time out after that.  It turned out that the fallback
-code calls tmio_mmc_enable_dma() with RX/TX channels already freed and pointers
-to them cleared, so that the function bails out early instead  of clearing the
-DMA bit in the CTL_DMA_ENABLE register. The regression was introduced by commit
-162f43e31c5a376ec16336e5d0ac973373d54c89 (mmc: tmio: fix a deadlock).
-Moving tmio_mmc_enable_dma() calls to the top of the PIO fallback code in
-tmio_mmc_start_dma_{rx|tx}() helps.
+When a request returns an error, the driver needs to report the entire
+extent of the request as completed.  Writes already did this, since
+they always set xferred = length, but reads were skipping that step if
+an error other than -ENOENT occurred.  Instead, rbd would end up
+passing 0 xferred to blk_end_request(), which would always report
+needing more data.  This resulted in an assert failing when more data
+was required by the block layer, but all the object requests were
+done:
 
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+[ 1868.719077] rbd: obj_request read result -108 xferred 0
+[ 1868.719077]
+[ 1868.719518] end_request: I/O error, dev rbd1, sector 0
+[ 1868.719739]
+[ 1868.719739] Assertion failure in rbd_img_obj_callback() at line 1736:
+[ 1868.719739]
+[ 1868.719739]   rbd_assert(more ^ (which == img_request->obj_request_count));
+
+Without this assert, reads that hit errors would hang forever, since
+the block layer considered them incomplete.
+
+Fixes: http://tracker.ceph.com/issues/5647
+Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
+Reviewed-by: Alex Elder <alex.elder@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/tmio_mmc_dma.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/rbd.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/mmc/host/tmio_mmc_dma.c
-+++ b/drivers/mmc/host/tmio_mmc_dma.c
-@@ -104,6 +104,7 @@ static void tmio_mmc_start_dma_rx(struct
- pio:
- 	if (!desc) {
- 		/* DMA failed, fall back to PIO */
-+		tmio_mmc_enable_dma(host, false);
- 		if (ret >= 0)
- 			ret = -EIO;
- 		host->chan_rx = NULL;
-@@ -116,7 +117,6 @@ pio:
- 		}
- 		dev_warn(&host->pdev->dev,
- 			 "DMA failed: %d, falling back to PIO\n", ret);
--		tmio_mmc_enable_dma(host, false);
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -1565,11 +1565,12 @@ rbd_img_obj_request_read_callback(struct
+ 		obj_request, obj_request->img_request, obj_request->result,
+ 		xferred, length);
+ 	/*
+-	 * ENOENT means a hole in the image.  We zero-fill the
+-	 * entire length of the request.  A short read also implies
+-	 * zero-fill to the end of the request.  Either way we
+-	 * update the xferred count to indicate the whole request
+-	 * was satisfied.
++	 * ENOENT means a hole in the image.  We zero-fill the entire
++	 * length of the request.  A short read also implies zero-fill
++	 * to the end of the request.  An error requires the whole
++	 * length of the request to be reported finished with an error
++	 * to the block layer.  In each case we update the xferred
++	 * count to indicate the whole request was satisfied.
+ 	 */
+ 	rbd_assert(obj_request->type != OBJ_REQUEST_NODATA);
+ 	if (obj_request->result == -ENOENT) {
+@@ -1578,14 +1579,13 @@ rbd_img_obj_request_read_callback(struct
+ 		else
+ 			zero_pages(obj_request->pages, 0, length);
+ 		obj_request->result = 0;
+-		obj_request->xferred = length;
+ 	} else if (xferred < length && !obj_request->result) {
+ 		if (obj_request->type == OBJ_REQUEST_BIO)
+ 			zero_bio_chain(obj_request->bio_list, xferred);
+ 		else
+ 			zero_pages(obj_request->pages, xferred, length);
+-		obj_request->xferred = length;
  	}
++	obj_request->xferred = length;
+ 	obj_request_done_set(obj_request);
+ }
  
- 	dev_dbg(&host->pdev->dev, "%s(): desc %p, cookie %d, sg[%d]\n", __func__,
-@@ -185,6 +185,7 @@ static void tmio_mmc_start_dma_tx(struct
- pio:
- 	if (!desc) {
- 		/* DMA failed, fall back to PIO */
-+		tmio_mmc_enable_dma(host, false);
- 		if (ret >= 0)
- 			ret = -EIO;
- 		host->chan_tx = NULL;
-@@ -197,7 +198,6 @@ pio:
- 		}
- 		dev_warn(&host->pdev->dev,
- 			 "DMA failed: %d, falling back to PIO\n", ret);
--		tmio_mmc_enable_dma(host, false);
- 	}
- 
- 	dev_dbg(&host->pdev->dev, "%s(): desc %p, cookie %d\n", __func__,
 
 
