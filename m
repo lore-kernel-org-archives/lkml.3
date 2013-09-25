@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab3IYAUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39495 "EHLO
+	id S1757437Ab3IYAnT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:43:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39520 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756528Ab3IYAUH (ORCPT
+	with ESMTP id S932230Ab3IYAUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:07 -0400
+	Tue, 24 Sep 2013 20:20:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 033/117] USB: OHCI: Allow runtime PM without system sleep
-Date: Tue, 24 Sep 2013 17:18:19 -0700
-Message-Id: <20130925001744.457777289@linuxfoundation.org>
+        kbuild test robot <fengguang.wu@intel.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 039/117] USB: mos7720: fix big-endian control requests
+Date: Tue, 24 Sep 2013 17:18:25 -0700
+Message-Id: <20130925001745.089653972@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,34 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 69820e01aa756b8d228143d997f71523c1e97984 upstream.
+commit 3b716caf190ccc6f2a09387210e0e6a26c1d81a4 upstream.
 
-Since ohci-hcd supports runtime PM, the .pm field in its pci_driver
-structure should be protected by CONFIG_PM rather than
-CONFIG_PM_SLEEP.
+Fix endianess bugs in parallel-port code which caused corrupt
+control-requests to be issued on big-endian machines.
 
-Without this change, OHCI controllers won't do runtime suspend if
-system suspend or hibernation isn't enabled.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ohci-pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/mos7720.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/ohci-pci.c
-+++ b/drivers/usb/host/ohci-pci.c
-@@ -289,7 +289,7 @@ static struct pci_driver ohci_pci_driver
- 	.remove =	usb_hcd_pci_remove,
- 	.shutdown =	usb_hcd_pci_shutdown,
- 
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver =	{
- 		.pm =	&usb_hcd_pci_pm_ops
- 	},
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -382,8 +382,8 @@ static int write_parport_reg_nonblock(st
+ 	}
+ 	urbtrack->setup->bRequestType = (__u8)0x40;
+ 	urbtrack->setup->bRequest = (__u8)0x0e;
+-	urbtrack->setup->wValue = get_reg_value(reg, dummy);
+-	urbtrack->setup->wIndex = get_reg_index(reg);
++	urbtrack->setup->wValue = cpu_to_le16(get_reg_value(reg, dummy));
++	urbtrack->setup->wIndex = cpu_to_le16(get_reg_index(reg));
+ 	urbtrack->setup->wLength = 0;
+ 	usb_fill_control_urb(urbtrack->urb, usbdev,
+ 			     usb_sndctrlpipe(usbdev, 0),
 
 
