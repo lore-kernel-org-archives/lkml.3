@@ -1,115 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab3IYS27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 14:28:59 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:38839 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab3IYS26 (ORCPT
+	id S1755101Ab3IYS3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 14:29:41 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:50266 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab3IYS3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 14:28:58 -0400
-Date: Wed, 25 Sep 2013 20:28:54 +0200
+	Wed, 25 Sep 2013 14:29:40 -0400
+Date: Wed, 25 Sep 2013 20:29:36 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/6] perf/urgent fixes
-Message-ID: <20130925182854.GC16693@gmail.com>
-References: <1380129628-16808-1-git-send-email-acme@infradead.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, huawei.libin@huawei.com,
+        wangyijing@huawei.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        guohanjun@huawei.com, paul.gortmaker@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/smpboot: Fix announce_cpu() to printk() the
+ last "OK" properly
+Message-ID: <20130925182936.GD16693@gmail.com>
+References: <1378378676-18276-1-git-send-email-huawei.libin@huawei.com>
+ <tip-52239484bf8aec031afa84ae08aa88224d819b93@git.kernel.org>
+ <20130925100722.GB3433@nazgul.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380129628-16808-1-git-send-email-acme@infradead.org>
+In-Reply-To: <20130925100722.GB3433@nazgul.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+* Borislav Petkov <bp@alien8.de> wrote:
 
-> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> On Thu, Sep 05, 2013 at 10:52:15AM -0700, tip-bot for Libin wrote:
+> > Commit-ID:  52239484bf8aec031afa84ae08aa88224d819b93
+> > Gitweb:     http://git.kernel.org/tip/52239484bf8aec031afa84ae08aa88224d819b93
+> > Author:     Libin <huawei.libin@huawei.com>
+> > AuthorDate: Thu, 5 Sep 2013 18:57:56 +0800
+> > Committer:  Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Thu, 5 Sep 2013 15:05:37 +0200
+> > 
+> > x86/smpboot: Fix announce_cpu() to printk() the last "OK" properly
+> > 
+> > When booting secondary CPUs, announce_cpu() is called to show which cpu has
+> > been brought up. For example:
+> > 
+> > [    0.402751] smpboot: Booting Node   0, Processors  #1 #2 #3 #4 #5 OK
+> > [    0.525667] smpboot: Booting Node   1, Processors  #6 #7 #8 #9 #10 #11 OK
+> > [    0.755592] smpboot: Booting Node   0, Processors  #12 #13 #14 #15 #16 #17 OK
+> > [    0.890495] smpboot: Booting Node   1, Processors  #18 #19 #20 #21 #22 #23
+> > 
+> > But the last "OK" is lost, because 'nr_cpu_ids-1' represents the maximum
+> > possible cpu id. It should use the maximum present cpu id in case not all
+> > CPUs booted up.
+> > 
+> > Signed-off-by: Libin <huawei.libin@huawei.com>
+> > Cc: <guohanjun@huawei.com>
+> > Cc: <wangyijing@huawei.com>
+> > Cc: <fenghua.yu@intel.com>
+> > Cc: <paul.gortmaker@windriver.com>
+> > Link: http://lkml.kernel.org/r/1378378676-18276-1-git-send-email-huawei.libin@huawei.com
+> > [ tweaked the changelog, removed unnecessary line break, tweaked the format to align the fields vertically. ]
+> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
 > 
-> Hi Ingo,
+> Hmm, this one kinda funnied up output on smaller boxes:
 > 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit cf3b425dd8d99e01214515a6754f9e69ecc6dce8:
-> 
->   perf/x86/intel: Add model number for Avoton Silvermont (2013-09-23 10:22:00 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
-> 
-> for you to fetch changes up to de95ab53645a2f0015e0f68ee723f18dce2b8b51:
-> 
->   perf symbols: Demangle cloned functions (2013-09-25 12:58:21 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/urgent fixes:
-> 
-> . It was possible to use an uninitialized buffer when reading
->   kernel modules information and checking if the file was a
->   /proc/sys/kernel/kptr_restrict'ed one, fix for this from
->   Adrian Hunter.
-> 
-> . The libbfd demangler doesn't handle cloned functions (e.g. symbol.clone.NUM),
->   feed it unsuffixed symbol names, workaround from Andi Kleen.
-> 
-> . Fix segfault in 'perf trace' when processing perf.data files with PERF_RECORD_MMAP2
->   records, recently added but not handled in this tool, from David Ahern.
-> 
-> . Fix libdl related build in old systems like Fedora 12, from David Ahern.
-> 
-> . Make 'perf kmem' work again on non NUMA machines, fix from Jiri Olsa.
-> 
-> . Fix probing symbols with optimization suffix in 'perf probe' where some
->   operations that are entirely user level and involves vmlinux/DWARF were working
->   but when the symbol name was fed to the kprobes tracer, the in kernel code
->   would use /proc/kallsyms where the name had the suffix, from Masami Hiramatsu.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Adrian Hunter (1):
->       perf machine: Fix path unpopulated in machine__create_modules()
-> 
-> Andi Kleen (1):
->       perf symbols: Demangle cloned functions
-> 
-> David Ahern (2):
->       perf trace: Add mmap2 handler
->       perf tools: Explicitly add libdl dependency
-> 
-> Jiri Olsa (1):
->       perf kmem: Make it work again on non NUMA machines
-> 
-> Masami Hiramatsu (1):
->       perf probe: Fix probing symbols with optimization suffix
-> 
->  tools/perf/builtin-kmem.c      |  2 +-
->  tools/perf/builtin-trace.c     |  1 +
->  tools/perf/config/Makefile     |  2 +-
->  tools/perf/util/machine.c      |  2 +-
->  tools/perf/util/probe-finder.c | 77 ++++++++++++++++++++++--------------------
->  tools/perf/util/probe-finder.h |  3 ++
->  tools/perf/util/symbol-elf.c   | 27 ++++++++++++++-
->  7 files changed, 74 insertions(+), 40 deletions(-)
+> [    0.089340] smpboot: Booting Node   0, Processors  #   1
+> [    0.105930] SMP alternatives: lockdep: fixing up alternatives
+> [    0.106073]  #   2
+> [    0.122237] SMP alternatives: lockdep: fixing up alternatives
+> [    0.122384]  #   3 OK
+> [    0.136464] Brought up 4 CPUs
+> [    0.136539] smpboot: Total of 4 processors activated (23146.40 BogoMIPS)
 
-Pulled, thanks a lot Arnaldo!
+Indeed, that should be fixed.
+
+Thanks,
 
 	Ingo
