@@ -1,115 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab3IYC4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 22:56:38 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:24229 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab3IYC4h (ORCPT
+	id S1755098Ab3IYC60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 22:58:26 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:35402 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754520Ab3IYC6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 22:56:37 -0400
-X-Spam-Score: -100.8
-Message-ID: <524250A2.3050502@asianux.com>
-Date: Wed, 25 Sep 2013 10:55:30 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 24 Sep 2013 22:58:24 -0400
+Date: Tue, 24 Sep 2013 19:58:22 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Chen Gang <gang.chen@asianux.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch] mm, mempolicy: make mpol_to_str robust and always succeed
+In-Reply-To: <5227CF48.5080700@asianux.com>
+Message-ID: <alpine.DEB.2.02.1309241957280.26415@chino.kir.corp.google.com>
+References: <5215639D.1080202@asianux.com> <5227CF48.5080700@asianux.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH tip/core/rcu 08/11] rcu: Micro-optimize rcu_cpu_has_callbacks()
-References: <20130925012750.GA30601@linux.vnet.ibm.com> <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com> <1380072561-31134-8-git-send-email-paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1380072561-31134-8-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+mpol_to_str() should not fail.  Currently, it either fails because the
+string buffer is too small or because a string hasn't been defined for a
+mempolicy mode.
 
-Thank you for your whole work, firstly  :-).
+If a new mempolicy mode is introduced and no string is defined for it,
+just warn and return "unknown".
 
+If the buffer is too small, just truncate the string and return, the same
+behavior as snprintf().
 
-And your suggestion about testing (in our discussion) is also valuable
-to me.
+This also fixes a bug where there was no NULL-byte termination when doing
+*p++ = '=' and *p++ ':' and maxlen has been reached.
 
-I need start LTP in q4. After referenced your suggestion, my first step
-for using/learning LTP is not mainly for finding kernel issues, but for
-testing kernel (to improve my kernel testing efficiency).
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ fs/proc/task_mmu.c        | 14 ++++++-------
+ include/linux/mempolicy.h |  5 ++---
+ mm/mempolicy.c            | 52 +++++++++++++++--------------------------------
+ 3 files changed, 24 insertions(+), 47 deletions(-)
 
-When I want to find issues by reading code, I will consider about LTP
-too (I will try to find issues which can be tested by LTP).
-
-
-On 09/25/2013 09:29 AM, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> The for_each_rcu_flavor() loop unconditionally scans all flavors, even
-> when the first flavor might have some non-lazy callbacks.  Once the
-> loop has seen a non-lazy callback, further passes through the loop
-> cannot change the state.  This is not a huge problem, given that there
-> can be at most three RCU flavors (RCU-bh, RCU-preempt, and RCU-sched),
-> but this code is on the path to idle, so speeding it up even a small
-> amount would have some benefit.
-> 
-> This commit therefore does two things:
-> 
-> 1.	Rearranges the order of the list of RCU flavors in order to
-> 	place the most active flavor first in the list.  The most active
-> 	RCU flavor is RCU-preempt, or, if there is no RCU-preempt,
-> 	RCU-sched.
-> 
-> 2.	Reworks the for_each_rcu_flavor() to exit early when the first
-> 	non-lazy callback is seen, or, in the case where the caller
-> 	does not care about non-lazy callbacks (RCU_FAST_NO_HZ=n),
-> 	when the first callback is seen.
-> 
-> Reported-by: Chen Gang <gang.chen@asianux.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  kernel/rcutree.c | 11 +++++++----
->  1 file changed, 7 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index e6f2e8f..49464ad 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -2727,10 +2727,13 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
->  
->  	for_each_rcu_flavor(rsp) {
->  		rdp = per_cpu_ptr(rsp->rda, cpu);
-> -		if (rdp->qlen != rdp->qlen_lazy)
-> +		if (!rdp->nxtlist)
-> +			continue;
-> +		hc = true;
-> +		if (rdp->qlen != rdp->qlen_lazy || !all_lazy) {
->  			al = false;
-> -		if (rdp->nxtlist)
-> -			hc = true;
-> +			break;
-> +		}
->  	}
->  	if (all_lazy)
->  		*all_lazy = al;
-> @@ -3297,8 +3300,8 @@ void __init rcu_init(void)
->  
->  	rcu_bootup_announce();
->  	rcu_init_geometry();
-> -	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
->  	rcu_init_one(&rcu_bh_state, &rcu_bh_data);
-> +	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
->  	__rcu_init_preempt();
->  	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
->  
-> 
-
-
--- 
-Chen Gang
-
--- 
-Chen Gang
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -1385,8 +1385,8 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	struct mm_walk walk = {};
+ 	struct mempolicy *pol;
+-	int n;
+-	char buffer[50];
++	char buffer[64];
++	int nid;
+ 
+ 	if (!mm)
+ 		return 0;
+@@ -1402,10 +1402,8 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	walk.mm = mm;
+ 
+ 	pol = get_vma_policy(task, vma, vma->vm_start);
+-	n = mpol_to_str(buffer, sizeof(buffer), pol);
++	mpol_to_str(buffer, sizeof(buffer), pol);
+ 	mpol_cond_put(pol);
+-	if (n < 0)
+-		return n;
+ 
+ 	seq_printf(m, "%08lx %s", vma->vm_start, buffer);
+ 
+@@ -1458,9 +1456,9 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	if (md->writeback)
+ 		seq_printf(m, " writeback=%lu", md->writeback);
+ 
+-	for_each_node_state(n, N_MEMORY)
+-		if (md->node[n])
+-			seq_printf(m, " N%d=%lu", n, md->node[n]);
++	for_each_node_state(nid, N_MEMORY)
++		if (md->node[nid])
++			seq_printf(m, " N%d=%lu", nid, md->node[nid]);
+ out:
+ 	seq_putc(m, '\n');
+ 
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -168,7 +168,7 @@ int do_migrate_pages(struct mm_struct *mm, const nodemask_t *from,
+ extern int mpol_parse_str(char *str, struct mempolicy **mpol);
+ #endif
+ 
+-extern int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol);
++extern void mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol);
+ 
+ /* Check if a vma is migratable */
+ static inline int vma_migratable(struct vm_area_struct *vma)
+@@ -306,9 +306,8 @@ static inline int mpol_parse_str(char *str, struct mempolicy **mpol)
+ }
+ #endif
+ 
+-static inline int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol)
++static inline void mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol)
+ {
+-	return 0;
+ }
+ 
+ static inline int mpol_misplaced(struct page *page, struct vm_area_struct *vma,
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2840,62 +2840,45 @@ out:
+  * @maxlen:  length of @buffer
+  * @pol:  pointer to mempolicy to be formatted
+  *
+- * Convert a mempolicy into a string.
+- * Returns the number of characters in buffer (if positive)
+- * or an error (negative)
++ * Convert @pol into a string.  If @buffer is too short, truncate the string.
++ * Recommend a @maxlen of at least 32 for the longest mode, "interleave", the
++ * longest flag, "relative", and to display at least a few node ids.
+  */
+-int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol)
++void mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol)
+ {
+ 	char *p = buffer;
+-	int l;
+-	nodemask_t nodes;
+-	unsigned short mode;
+-	unsigned short flags = pol ? pol->flags : 0;
+-
+-	/*
+-	 * Sanity check:  room for longest mode, flag and some nodes
+-	 */
+-	VM_BUG_ON(maxlen < strlen("interleave") + strlen("relative") + 16);
++	nodemask_t nodes = NODE_MASK_NONE;
++	unsigned short mode = MPOL_DEFAULT;
++	unsigned short flags = 0;
+ 
+-	if (!pol || pol == &default_policy)
+-		mode = MPOL_DEFAULT;
+-	else
++	if (pol && pol != &default_policy) {
+ 		mode = pol->mode;
++		flags = pol->flags;
++	}
+ 
+ 	switch (mode) {
+ 	case MPOL_DEFAULT:
+-		nodes_clear(nodes);
+ 		break;
+-
+ 	case MPOL_PREFERRED:
+-		nodes_clear(nodes);
+ 		if (flags & MPOL_F_LOCAL)
+ 			mode = MPOL_LOCAL;
+ 		else
+ 			node_set(pol->v.preferred_node, nodes);
+ 		break;
+-
+ 	case MPOL_BIND:
+-		/* Fall through */
+ 	case MPOL_INTERLEAVE:
+ 		nodes = pol->v.nodes;
+ 		break;
+-
+ 	default:
+-		return -EINVAL;
++		WARN_ON_ONCE(1);
++		snprintf(p, maxlen, "unknown");
++		return;
+ 	}
+ 
+-	l = strlen(policy_modes[mode]);
+-	if (buffer + maxlen < p + l + 1)
+-		return -ENOSPC;
+-
+-	strcpy(p, policy_modes[mode]);
+-	p += l;
++	p += snprintf(p, maxlen, policy_modes[mode]);
+ 
+ 	if (flags & MPOL_MODE_FLAGS) {
+-		if (buffer + maxlen < p + 2)
+-			return -ENOSPC;
+-		*p++ = '=';
++		p += snprintf(p, buffer + maxlen - p, "=");
+ 
+ 		/*
+ 		 * Currently, the only defined flags are mutually exclusive
+@@ -2907,10 +2890,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol)
+ 	}
+ 
+ 	if (!nodes_empty(nodes)) {
+-		if (buffer + maxlen < p + 2)
+-			return -ENOSPC;
+-		*p++ = ':';
++		p += snprintf(p, buffer + maxlen - p, ":");
+ 	 	p += nodelist_scnprintf(p, buffer + maxlen - p, nodes);
+ 	}
+-	return p - buffer;
+ }
