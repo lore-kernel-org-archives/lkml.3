@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab3IYA4H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:56:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39279 "EHLO
+	id S932591Ab3IYA41 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:56:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39268 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab3IYARD (ORCPT
+	with ESMTP id S932098Ab3IYARB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:03 -0400
+	Tue, 24 Sep 2013 20:17:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>, Bryan Wu <cooloney@gmail.com>
-Subject: [ 085/110] leds: wm831x-status: Request a REG resource
-Date: Tue, 24 Sep 2013 17:15:23 -0700
-Message-Id: <20130925001332.637730738@linuxfoundation.org>
+        Greg Thelen <gthelen@google.com>, Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 092/110] memcg: fix multiple large threshold notifications
+Date: Tue, 24 Sep 2013 17:15:30 -0700
+Message-Id: <20130925001333.388847247@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -26,35 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Greg Thelen <gthelen@google.com>
 
-commit 61abeba5222895d6900b13115f5d8eba7988d7d6 upstream.
+commit 2bff24a3707093c435ab3241c47dcdb5f16e432b upstream.
 
-The wm831x-status driver was not converted to use a REG resource when they
-were introduced and the rest of the wm831x drivers converted, causing it
-to fail to probe due to requesting the wrong resource type.
+A memory cgroup with (1) multiple threshold notifications and (2) at least
+one threshold >=2G was not reliable.  Specifically the notifications would
+either not fire or would not fire in the proper order.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Bryan Wu <cooloney@gmail.com>
+The __mem_cgroup_threshold() signaling logic depends on keeping 64 bit
+thresholds in sorted order.  mem_cgroup_usage_register_event() sorts them
+with compare_thresholds(), which returns the difference of two 64 bit
+thresholds as an int.  If the difference is positive but has bit[31] set,
+then sort() treats the difference as negative and breaks sort order.
+
+This fix compares the two arbitrary 64 bit thresholds returning the
+classic -1, 0, 1 result.
+
+The test below sets two notifications (at 0x1000 and 0x81001000):
+  cd /sys/fs/cgroup/memory
+  mkdir x
+  for x in 4096 2164264960; do
+    cgroup_event_listener x/memory.usage_in_bytes $x | sed "s/^/$x listener:/" &
+  done
+  echo $$ > x/cgroup.procs
+  anon_leaker 500M
+
+v3.11-rc7 fails to signal the 4096 event listener:
+  Leaking...
+  Done leaking pages.
+
+Patched v3.11-rc7 properly notifies:
+  Leaking...
+  4096 listener:2013:8:31:14:13:36
+  Done leaking pages.
+
+The fixed bug is old.  It appears to date back to the introduction of
+memcg threshold notifications in v2.6.34-rc1-116-g2e72b6347c94 "memcg:
+implement memory thresholds"
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/leds/leds-wm831x-status.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/memcontrol.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/leds/leds-wm831x-status.c
-+++ b/drivers/leds/leds-wm831x-status.c
-@@ -230,9 +230,9 @@ static int wm831x_status_probe(struct pl
- 	int id = pdev->id % ARRAY_SIZE(chip_pdata->status);
- 	int ret;
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5584,7 +5584,13 @@ static int compare_thresholds(const void
+ 	const struct mem_cgroup_threshold *_a = a;
+ 	const struct mem_cgroup_threshold *_b = b;
  
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No register resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
+-	return _a->threshold - _b->threshold;
++	if (_a->threshold > _b->threshold)
++		return 1;
++
++	if (_a->threshold < _b->threshold)
++		return -1;
++
++	return 0;
+ }
+ 
+ static int mem_cgroup_oom_notify_cb(struct mem_cgroup *memcg)
 
 
