@@ -1,154 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab3IYKjO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 06:39:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63439 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753371Ab3IYKjK convert rfc822-to-8bit (ORCPT
+	id S1755156Ab3IYKlk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 06:41:40 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45207 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab3IYKli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 06:39:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,977,1371106800"; 
-   d="scan'208";a="383288782"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Aaron Lu <aaron.lu@intel.com>,
-        =?utf-8?Q?J=C3=B6rg?= Otte <jrg.otte@gmail.com>
-Cc: Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Mike Galbraith <bitbucket@online.de>
-Subject: Re: [PATCH v3 0/4] Fix Win8 backlight issue
-In-Reply-To: <20130925091720.GA1921@aaronlu.sh.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com> <1380026575.3371.1.camel@ThinkPad-X230.localdomain> <CADDKRnCAZ0DtBUUaMfdTF=yk6PDLpbc9jkuvWWO8hYW4TDLxKw@mail.gmail.com> <20130925091720.GA1921@aaronlu.sh.intel.com>
-User-Agent: Notmuch/0.16+82~gc83e2d2 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 25 Sep 2013 13:41:28 +0300
-Message-ID: <87vc1p4207.fsf@intel.com>
+	Wed, 25 Sep 2013 06:41:38 -0400
+Message-ID: <5242BDDD.6040303@monstr.eu>
+Date: Wed, 25 Sep 2013 12:41:33 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Pavel Machek <pavel@denx.de>, Alan Tull <atull@altera.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+References: <cover.1379519753.git.michal.simek@xilinx.com> <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com> <20130918191517.GQ19937@titan.lakedaemon.net> <20130918203247.GA11181@obsidianresearch.com> <1379539063.31417.23.camel@atx-linux-37> <20130919100833.GC19346@amd.pavel.ucw.cz> <52421829.4050708@zytor.com>
+In-Reply-To: <52421829.4050708@zytor.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="PPHIrhwjOjWEdWphmfiDFSxujuFaf7LbB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Sep 2013, Aaron Lu <aaron.lu@intel.com> wrote:
-> On Wed, Sep 25, 2013 at 10:29:37AM +0200, Jörg Otte wrote:
->> Backlight can't be modified with this patch set - neither with
->> function keys nor with the gui. It is a step backward to v3.11-rc1
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--PPHIrhwjOjWEdWphmfiDFSxujuFaf7LbB
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-So both hotkeys and GUI work in v3.11-rc1? And v3.12-rc2?
+Hi,
 
-> Thanks for the test.
->
-> Please check /sys/class/backlight, is there only one link file
-> intel_backlight?
+On 09/25/2013 12:54 AM, H. Peter Anvin wrote:
+> On 09/19/2013 03:08 AM, Pavel Machek wrote:
+>>
+>>> The firmware approach is interesting.  It might be less flexible
+>>> compared with my original code (see link to git below) that this is
+>>
+>> On the other hand... that's the interface world wants, right? To most
+>> users, fpga bitstream is just a firmware.
+>>
+>=20
+> No, not really.
+>=20
+> The typical assumption with the firmware interface is that there is
+> exactly one possible firmware for each device (possibly modulated by
+> driver version, but still.)  This is blatantly not true for an FPGA in
+> the most extreme way possible -- there are an almost infinite number of=
 
-Indeed, are there others? fujitsu-laptop perhaps? If yes, try
-CONFIG_FUJITSU_LAPTOP=n or an appropriate module blacklist.
+> ways one can load an FPGA.
 
-Just checking, you do have CONFIG_BACKLIGHT_CLASS_DEVICE=y?
-Embarrassingly there was a bug in i915 fixed just recently where the
-backlight device wasn't registered for
-CONFIG_BACKLIGHT_CLASS_DEVICE=m...
+That's truth but on the other hand on target hw you probably have
+well known bitstream which you want to load to the device and your
+drivers exactly know based on board revision what firmware you want to lo=
+ad.
 
-> If so, please cd inside and try modify the brightness file using echo
-> with some values in the range of 0 - max_brightness, does the
-> backlight level change when you echo a new value? I guess it doesn't,
-> or you wouldn't notice problem. If indeed so, perhaps file a bug at
-> http://bugzilla.kernel.org, Drivers/Video(DRI-Intel)? I suppose Jani
-> and Daniel can help fix your problem.
+> However, I have to question the whole idea of an "FPGA subsystem" --
+> there is an almost infinite number of ways to program an FPGA or FPGA
+> programming device (which may even be a commodity flash with a
+> microcontroller or CPLD, and may be shared with other devices), and it
+> really doesn't make any inherent sense to lump them together.
 
-Yup, please check the above, and report back.
+That's exactly discussion what I would like to have about this concept
+in general.
+I can agree that there are number of ways how to program fpga/cpld and ot=
+hers.
+I wouldn't say infinite number just because of users can choose really
+custom options.
+I would say there are some standard ways how to load bitstream to fpga/cp=
+ld.
+The most of customers just use them and they can be described.
 
-BR,
-Jani.
+Currently I do more care about zynq devcfg driver for loading bitstream
+to zynq PL and partially icap driver just because it is in the mainline.
+But there are others way though gpio, etc. Altera has also their drivers
+for doing this type of work.
+If you look at current state in connection to the kernel then for example=
+
+hwicap just create char driver. zynq devcfg driver which we have in xilin=
+x tree
+just create another char driver. Altera (please guys correct me if I am w=
+rong)
+has one driver drivers/misc/altera-stapl in the kernel which is used by a=
+ny pci
+card which is working with firmware interface.
+Then they have any fpga-bridge in their tree which create any new class
++ origin fpga-mgr which is I think for their socfpga programming.
+
+In general all these drivers can just create whatever user interface
+they like and just start to pushing these drivers to the mainline
+to char or misc folders.
+But IMHO all of them just do the same program fpga/cpld trough particular=
+
+interface but why not just to have fpga core driver just to unify
+this user access.
+
+When we have agreement on this another valid discussion is
+if firmware interface is OK for this purpose or NOT. Or if make sense
+to create different interface or have all of them.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
->
-> Thanks,
-> Aaron
->
->> 
->> Video driver: i915
->> FUJITSU LIFEBOOK AH532/FJNBB1C, BIOS Version 1.09 05/22/2012
->> 
->> acpi_backlight=video works.
->> 
->> Jörg
->> 
->> 
->> 2013/9/24 Igor Gnatenko <i.gnatenko.brain@gmail.com>
->> 
->> > On Tue, 2013-09-24 at 17:47 +0800, Aaron Lu wrote:
->> > > v3:
->> > > 1 Add a new patch 4/4 to fix some problems in thinkpad-acpi module;
->> > > 2 Remove unnecessary function acpi_video_unregister introduced in
->> > >   patch 2/3 as pointed out by Jani Nikula.
->> > >
->> > > v2:
->> > > v1 has the subject of "Rework ACPI video driver" and is posted here:
->> > > http://lkml.org/lkml/2013/9/9/74
->> > > Since the objective is really to fix Win8 backlight issues, I changed
->> > > the subject in this version, sorry about that.
->> > >
->> > > This patchset has three patches, the first introduced a new API named
->> > > backlight_device_registered in backlight layer that can be used for
->> > > backlight interface provider module to check if a specific type backlight
->> > > interface has been registered, see changelog for patch 1/3 for details.
->> > > Then patch 2/3 does the cleanup to sepeate the backlight control and
->> > > event delivery functionality in the ACPI video module and patch 3/3
->> > > solves some Win8 backlight control problems by avoiding register ACPI
->> > > video's backlight interface if:
->> > > 1 Kernel cmdline option acpi_backlight=video is not given;
->> > > 2 This is a Win8 system;
->> > > 3 Native backlight control interface exists.
->> > >
->> > > Technically, patch 2/3 is not required to fix the issue here. So if you
->> > > think it is not necessary, I can remove it from the series.
->> > >
->> > > Aaron Lu (4):
->> > >   backlight: introduce backlight_device_registered
->> > >   ACPI / video: seperate backlight control and event interface
->> > >   ACPI / video: Do not register backlight if win8 and native interface
->> > >     exists
->> > >   thinkpad-acpi: fix handle locate for video and query of _BCL
->> > >
->> > >  drivers/acpi/internal.h              |   5 +-
->> > >  drivers/acpi/video.c                 | 442
->> > ++++++++++++++++++++---------------
->> > >  drivers/acpi/video_detect.c          |  14 +-
->> > >  drivers/platform/x86/thinkpad_acpi.c |  31 ++-
->> > >  drivers/video/backlight/backlight.c  |  31 +++
->> > >  include/acpi/video.h                 |   2 +
->> > >  include/linux/backlight.h            |   4 +
->> > >  7 files changed, 324 insertions(+), 205 deletions(-)
->> > >
->> >
->> > Excellent! I've tested this patch-set on ThinkPad X230 and backlight
->> > issue is exhausted.
->> >
->> > Thanks.
->> >
->> > --
->> > Igor Gnatenko
->> > Fedora release 20 (Heisenbug)
->> > Linux 3.11.1-300.fc20.x86_64
->> >
->> >
 
--- 
-Jani Nikula, Intel Open Source Technology Center
+--PPHIrhwjOjWEdWphmfiDFSxujuFaf7LbB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlJCvd0ACgkQykllyylKDCHkiQCeIvsEx/uDu12AEV/KeVp4wH5T
+r00An2XXmg0FoKrAUQStX5WlSh+aiwyy
+=Yapc
+-----END PGP SIGNATURE-----
+
+--PPHIrhwjOjWEdWphmfiDFSxujuFaf7LbB--
