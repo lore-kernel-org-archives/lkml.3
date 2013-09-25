@@ -1,105 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758557Ab3IYBkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:40:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38556 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350Ab3IYAMT (ORCPT
+	id S1758563Ab3IYBkq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:40:46 -0400
+Received: from tartarus.angband.pl ([89.206.35.136]:44918 "EHLO
+	tartarus.angband.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755350Ab3IYBkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:12:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shawn Nematbakhsh <shawnn@chromium.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 07/40] usb: xhci: Disable runtime PM suspend for quirky controllers
-Date: Tue, 24 Sep 2013 17:11:39 -0700
-Message-Id: <20130925001042.754937759@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
-References: <20130925001041.939335518@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 24 Sep 2013 21:40:43 -0400
+Date: Wed, 25 Sep 2013 03:40:42 +0200
+From: Adam Borowski <kilobyte@angband.pl>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Copy on write hard links?
+Message-ID: <20130925014042.GA30393@angband.pl>
+References: <0EF3994A-6BC7-4FC7-AD2D-B4BE087EBFCA@m3y3r.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <0EF3994A-6BC7-4FC7-AD2D-B4BE087EBFCA@m3y3r.de>
+X-Junkbait: adolf@angband.pl, zareba@angband.pl
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: kilobyte@tartarus.angband.pl
+X-SA-Exim-Scanned: No (on tartarus.angband.pl); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Sep 24, 2013 at 08:36:56PM +0200, Thomas Meyer wrote:
+> Is there such a thing?
 
-------------------
+In mainline, AFAIK no.  The vserver patchset, on the other hand, adds a new
+xattr, iunlink, that copies the whole file when needed.  That works on most
+filesystems.
 
-From: Shawn Nematbakhsh <shawnn@chromium.org>
+That's quite a hack, though, and I think you'd be better off using btrfs
+which does cow transparently at a lower level than hardlinks.
 
-commit c8476fb855434c733099079063990e5bfa7ecad6 upstream.
-
-If a USB controller with XHCI_RESET_ON_RESUME goes to runtime suspend,
-a reset will be performed upon runtime resume. Any previously suspended
-devices attached to the controller will be re-enumerated at this time.
-This will cause problems, for example, if an open system call on the
-device triggered the resume (the open call will fail).
-
-Note that this change is only relevant when persist_enabled is not set
-for USB devices.
-
-This patch should be backported to kernels as old as 3.0, that
-contain the commit c877b3b2ad5cb9d4fe523c5496185cc328ff3ae9 "xhci: Add
-reset on resume quirk for asrock p67 host".
-
-Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/xhci.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
-
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -3501,10 +3501,21 @@ void xhci_free_dev(struct usb_hcd *hcd,
- {
- 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
- 	struct xhci_virt_device *virt_dev;
-+	struct device *dev = hcd->self.controller;
- 	unsigned long flags;
- 	u32 state;
- 	int i, ret;
- 
-+#ifndef CONFIG_USB_DEFAULT_PERSIST
-+	/*
-+	 * We called pm_runtime_get_noresume when the device was attached.
-+	 * Decrement the counter here to allow controller to runtime suspend
-+	 * if no devices remain.
-+	 */
-+	if (xhci->quirks & XHCI_RESET_ON_RESUME)
-+		pm_runtime_put_noidle(dev);
-+#endif
-+
- 	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);
- 	/* If the host is halted due to driver unload, we still need to free the
- 	 * device.
-@@ -3576,6 +3587,7 @@ static int xhci_reserve_host_control_ep_
- int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
- {
- 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
-+	struct device *dev = hcd->self.controller;
- 	unsigned long flags;
- 	int timeleft;
- 	int ret;
-@@ -3628,6 +3640,16 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
- 		goto disable_slot;
- 	}
- 	udev->slot_id = xhci->slot_id;
-+
-+#ifndef CONFIG_USB_DEFAULT_PERSIST
-+	/*
-+	 * If resetting upon resume, we can't put the controller into runtime
-+	 * suspend if there is a device attached.
-+	 */
-+	if (xhci->quirks & XHCI_RESET_ON_RESUME)
-+		pm_runtime_get_noresume(dev);
-+#endif
-+
- 	/* Is this a LS or FS device under a HS hub? */
- 	/* Hub or peripherial? */
- 	return 1;
-
-
+-- 
+ᛊᚨᚾᛁᛏᚣ᛫ᛁᛊ᛫ᚠᛟᚱ᛫ᚦᛖ᛫ᚹᛖᚨᚲ
