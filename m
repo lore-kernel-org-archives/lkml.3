@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758631Ab3IYBmX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:42:23 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:56600 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755527Ab3IYBmT (ORCPT
+	id S1758620Ab3IYBmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:42:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38515 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755061Ab3IYAI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:42:19 -0400
-Date: Tue, 24 Sep 2013 18:42:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	Tue, 24 Sep 2013 20:08:29 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: [PATCH tip/core/rcu 0/10] Grace-period-related changes for 3.13
-Message-ID: <20130925014210.GA31690@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-8236-0000-0000-000002123FD3
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Anand Avati <avati@redhat.com>, Brian Foster <bfoster@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [ 28/28] fuse: invalidate inode attributes on xattr modification
+Date: Tue, 24 Sep 2013 17:07:59 -0700
+Message-Id: <20130925000655.102689645@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
+References: <20130925000648.404447782@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-This series contains updates to RCU's grace-period processsing, mostly
-to improve debuggability of RCU itself.
+------------------
 
-1.	Add consistency checks to the grace-period initialization logic.
+From: Anand Avati <avati@redhat.com>
 
-2.	Prevent spurious-wakeup DoS attack on rcu_gp_kthread.
+commit d331a415aef98717393dda0be69b7947da08eba3 upstream.
 
-3.	Flag lockless accesses to ->gp_flags with ACCESS_ONCE().
+Calls like setxattr and removexattr result in updation of ctime.
+Therefore invalidate inode attributes to force a refresh.
 
-4-6.	Add event tracing to various aspects of RCU grace period processing.
+Signed-off-by: Anand Avati <avati@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-7.	Distinguish between NOCB and non-NOCB rcu_callback trace events.
+---
+ fs/fuse/dir.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-8.	Add event tracing to track rcu_nocb_kthread() sleeping and awakening.
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -1439,6 +1439,8 @@ static int fuse_setxattr(struct dentry *
+ 		fc->no_setxattr = 1;
+ 		err = -EOPNOTSUPP;
+ 	}
++	if (!err)
++		fuse_invalidate_attr(inode);
+ 	return err;
+ }
+ 
+@@ -1568,6 +1570,8 @@ static int fuse_removexattr(struct dentr
+ 		fc->no_removexattr = 1;
+ 		err = -EOPNOTSUPP;
+ 	}
++	if (!err)
++		fuse_invalidate_attr(inode);
+ 	return err;
+ }
+ 
 
-9.	Avoid sparse warnings in rcu_nocb_wake trace event.
-
-10.	Make RCU use resched_cpu() instead of the current set_need_resched(),
-	courtesy of Peter Zijlstra.
-
-							Thanx, Paul
-
-
- b/include/trace/events/rcu.h |   80 +++++++++++++++++++++++++++++++++++--------
- b/kernel/rcutiny.c           |    2 -
- b/kernel/rcutree.c           |   71 ++++++++++++++++++++++++++++++++------
- b/kernel/rcutree_plugin.h    |   35 ++++++++++++++++--
- b/kernel/sched/core.c        |   10 +----
- 5 files changed, 160 insertions(+), 38 deletions(-)
 
