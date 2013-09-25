@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab3IYTh4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 15:37:56 -0400
-Received: from smtprelay0152.hostedemail.com ([216.40.44.152]:50048 "EHLO
+	id S1755221Ab3IYTiE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 15:38:04 -0400
+Received: from smtprelay0118.hostedemail.com ([216.40.44.118]:50059 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754894Ab3IYThx (ORCPT
+	by vger.kernel.org with ESMTP id S1755065Ab3IYTiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 15:37:53 -0400
+	Wed, 25 Sep 2013 15:38:01 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3870:3871:4321:4605:5007:6261:7903:10004:10026:10848:11658:11914:12043:12438:12517:12519:12555:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: soup70_7e9bdce79d148
-X-Filterd-Recvd-Size: 1988
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:1:41:69:355:379:541:800:960:973:982:988:989:1260:1345:1359:1437:1605:1730:1747:1777:1792:2194:2199:2393:2559:2562:2636:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:4321:4605:5007:6261:7903:9592:10004:10026:10848:11026:11473:11657:11658:11914:12043:12294:12296:12438:12517:12519:12555:12683:13161:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: watch71_7fad648961a63
+X-Filterd-Recvd-Size: 10899
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>,
-        Shreyas Bhatewara <sbhatewara@vmware.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/11] vmxnet3: Remove extern from function prototypes
-Date: Wed, 25 Sep 2013 12:37:19 -0700
-Message-Id: <d8dea1eb36bcc004416b9587f09730430905e5b7.1380137609.git.joe@perches.com>
+        Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
+        linux-wimax@intel.com, wimax@linuxwimax.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 03/11] wimax: Remove extern from function prototypes
+Date: Wed, 25 Sep 2013 12:37:21 -0700
+Message-Id: <8bedb968b246c5bf5009f8f083451506a496d6e8.1380137609.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1380137609.git.joe@perches.com>
 References: <cover.1380137609.git.joe@perches.com>
@@ -36,25 +37,234 @@ using auto to declare automatic/local variables in a block.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/vmxnet3/vmxnet3_int.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wimax/i2400m/i2400m-usb.h |  27 ++++----
+ drivers/net/wimax/i2400m/i2400m.h     | 117 +++++++++++++++++-----------------
+ 2 files changed, 70 insertions(+), 74 deletions(-)
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
-index a03f358..12040a3 100644
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -410,9 +410,9 @@ int
- vmxnet3_create_queues(struct vmxnet3_adapter *adapter,
- 		      u32 tx_ring_size, u32 rx_ring_size, u32 rx_ring2_size);
+diff --git a/drivers/net/wimax/i2400m/i2400m-usb.h b/drivers/net/wimax/i2400m/i2400m-usb.h
+index 9f1e947..649ecad 100644
+--- a/drivers/net/wimax/i2400m/i2400m-usb.h
++++ b/drivers/net/wimax/i2400m/i2400m-usb.h
+@@ -256,21 +256,20 @@ void i2400mu_init(struct i2400mu *i2400mu)
+ 	i2400mu->rx_size_auto_shrink = 1;
+ }
  
--extern void vmxnet3_set_ethtool_ops(struct net_device *netdev);
-+void vmxnet3_set_ethtool_ops(struct net_device *netdev);
+-extern int i2400mu_notification_setup(struct i2400mu *);
+-extern void i2400mu_notification_release(struct i2400mu *);
++int i2400mu_notification_setup(struct i2400mu *);
++void i2400mu_notification_release(struct i2400mu *);
  
--extern struct rtnl_link_stats64 *
-+struct rtnl_link_stats64 *
- vmxnet3_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats);
+-extern int i2400mu_rx_setup(struct i2400mu *);
+-extern void i2400mu_rx_release(struct i2400mu *);
+-extern void i2400mu_rx_kick(struct i2400mu *);
++int i2400mu_rx_setup(struct i2400mu *);
++void i2400mu_rx_release(struct i2400mu *);
++void i2400mu_rx_kick(struct i2400mu *);
  
- extern char vmxnet3_driver_name[];
+-extern int i2400mu_tx_setup(struct i2400mu *);
+-extern void i2400mu_tx_release(struct i2400mu *);
+-extern void i2400mu_bus_tx_kick(struct i2400m *);
++int i2400mu_tx_setup(struct i2400mu *);
++void i2400mu_tx_release(struct i2400mu *);
++void i2400mu_bus_tx_kick(struct i2400m *);
+ 
+-extern ssize_t i2400mu_bus_bm_cmd_send(struct i2400m *,
+-				       const struct i2400m_bootrom_header *,
+-				       size_t, int);
+-extern ssize_t i2400mu_bus_bm_wait_for_ack(struct i2400m *,
+-					   struct i2400m_bootrom_header *,
+-					   size_t);
++ssize_t i2400mu_bus_bm_cmd_send(struct i2400m *,
++				const struct i2400m_bootrom_header *, size_t,
++				int);
++ssize_t i2400mu_bus_bm_wait_for_ack(struct i2400m *,
++				    struct i2400m_bootrom_header *, size_t);
+ #endif /* #ifndef __I2400M_USB_H__ */
+diff --git a/drivers/net/wimax/i2400m/i2400m.h b/drivers/net/wimax/i2400m/i2400m.h
+index 79c6505..5a34e72 100644
+--- a/drivers/net/wimax/i2400m/i2400m.h
++++ b/drivers/net/wimax/i2400m/i2400m.h
+@@ -710,18 +710,18 @@ enum i2400m_bri {
+ 	I2400M_BRI_MAC_REINIT = 1 << 3,
+ };
+ 
+-extern void i2400m_bm_cmd_prepare(struct i2400m_bootrom_header *);
+-extern int i2400m_dev_bootstrap(struct i2400m *, enum i2400m_bri);
+-extern int i2400m_read_mac_addr(struct i2400m *);
+-extern int i2400m_bootrom_init(struct i2400m *, enum i2400m_bri);
+-extern int i2400m_is_boot_barker(struct i2400m *, const void *, size_t);
++void i2400m_bm_cmd_prepare(struct i2400m_bootrom_header *);
++int i2400m_dev_bootstrap(struct i2400m *, enum i2400m_bri);
++int i2400m_read_mac_addr(struct i2400m *);
++int i2400m_bootrom_init(struct i2400m *, enum i2400m_bri);
++int i2400m_is_boot_barker(struct i2400m *, const void *, size_t);
+ static inline
+ int i2400m_is_d2h_barker(const void *buf)
+ {
+ 	const __le32 *barker = buf;
+ 	return le32_to_cpu(*barker) == I2400M_D2H_MSG_BARKER;
+ }
+-extern void i2400m_unknown_barker(struct i2400m *, const void *, size_t);
++void i2400m_unknown_barker(struct i2400m *, const void *, size_t);
+ 
+ /* Make/grok boot-rom header commands */
+ 
+@@ -789,32 +789,31 @@ unsigned i2400m_brh_get_signature(const struct i2400m_bootrom_header *hdr)
+ /*
+  * Driver / device setup and internal functions
+  */
+-extern void i2400m_init(struct i2400m *);
+-extern int i2400m_reset(struct i2400m *, enum i2400m_reset_type);
+-extern void i2400m_netdev_setup(struct net_device *net_dev);
+-extern int i2400m_sysfs_setup(struct device_driver *);
+-extern void i2400m_sysfs_release(struct device_driver *);
+-extern int i2400m_tx_setup(struct i2400m *);
+-extern void i2400m_wake_tx_work(struct work_struct *);
+-extern void i2400m_tx_release(struct i2400m *);
+-
+-extern int i2400m_rx_setup(struct i2400m *);
+-extern void i2400m_rx_release(struct i2400m *);
+-
+-extern void i2400m_fw_cache(struct i2400m *);
+-extern void i2400m_fw_uncache(struct i2400m *);
+-
+-extern void i2400m_net_rx(struct i2400m *, struct sk_buff *, unsigned,
+-			  const void *, int);
+-extern void i2400m_net_erx(struct i2400m *, struct sk_buff *,
+-			   enum i2400m_cs);
+-extern void i2400m_net_wake_stop(struct i2400m *);
++void i2400m_init(struct i2400m *);
++int i2400m_reset(struct i2400m *, enum i2400m_reset_type);
++void i2400m_netdev_setup(struct net_device *net_dev);
++int i2400m_sysfs_setup(struct device_driver *);
++void i2400m_sysfs_release(struct device_driver *);
++int i2400m_tx_setup(struct i2400m *);
++void i2400m_wake_tx_work(struct work_struct *);
++void i2400m_tx_release(struct i2400m *);
++
++int i2400m_rx_setup(struct i2400m *);
++void i2400m_rx_release(struct i2400m *);
++
++void i2400m_fw_cache(struct i2400m *);
++void i2400m_fw_uncache(struct i2400m *);
++
++void i2400m_net_rx(struct i2400m *, struct sk_buff *, unsigned, const void *,
++		   int);
++void i2400m_net_erx(struct i2400m *, struct sk_buff *, enum i2400m_cs);
++void i2400m_net_wake_stop(struct i2400m *);
+ enum i2400m_pt;
+-extern int i2400m_tx(struct i2400m *, const void *, size_t, enum i2400m_pt);
++int i2400m_tx(struct i2400m *, const void *, size_t, enum i2400m_pt);
+ 
+ #ifdef CONFIG_DEBUG_FS
+-extern int i2400m_debugfs_add(struct i2400m *);
+-extern void i2400m_debugfs_rm(struct i2400m *);
++int i2400m_debugfs_add(struct i2400m *);
++void i2400m_debugfs_rm(struct i2400m *);
+ #else
+ static inline int i2400m_debugfs_add(struct i2400m *i2400m)
+ {
+@@ -824,8 +823,8 @@ static inline void i2400m_debugfs_rm(struct i2400m *i2400m) {}
+ #endif
+ 
+ /* Initialize/shutdown the device */
+-extern int i2400m_dev_initialize(struct i2400m *);
+-extern void i2400m_dev_shutdown(struct i2400m *);
++int i2400m_dev_initialize(struct i2400m *);
++void i2400m_dev_shutdown(struct i2400m *);
+ 
+ extern struct attribute_group i2400m_dev_attr_group;
+ 
+@@ -873,21 +872,21 @@ void i2400m_put(struct i2400m *i2400m)
+ 	dev_put(i2400m->wimax_dev.net_dev);
+ }
+ 
+-extern int i2400m_dev_reset_handle(struct i2400m *, const char *);
+-extern int i2400m_pre_reset(struct i2400m *);
+-extern int i2400m_post_reset(struct i2400m *);
+-extern void i2400m_error_recovery(struct i2400m *);
++int i2400m_dev_reset_handle(struct i2400m *, const char *);
++int i2400m_pre_reset(struct i2400m *);
++int i2400m_post_reset(struct i2400m *);
++void i2400m_error_recovery(struct i2400m *);
+ 
+ /*
+  * _setup()/_release() are called by the probe/disconnect functions of
+  * the bus-specific drivers.
+  */
+-extern int i2400m_setup(struct i2400m *, enum i2400m_bri bm_flags);
+-extern void i2400m_release(struct i2400m *);
++int i2400m_setup(struct i2400m *, enum i2400m_bri bm_flags);
++void i2400m_release(struct i2400m *);
+ 
+-extern int i2400m_rx(struct i2400m *, struct sk_buff *);
+-extern struct i2400m_msg_hdr *i2400m_tx_msg_get(struct i2400m *, size_t *);
+-extern void i2400m_tx_msg_sent(struct i2400m *);
++int i2400m_rx(struct i2400m *, struct sk_buff *);
++struct i2400m_msg_hdr *i2400m_tx_msg_get(struct i2400m *, size_t *);
++void i2400m_tx_msg_sent(struct i2400m *);
+ 
+ 
+ /*
+@@ -900,20 +899,19 @@ struct device *i2400m_dev(struct i2400m *i2400m)
+ 	return i2400m->wimax_dev.net_dev->dev.parent;
+ }
+ 
+-extern int i2400m_msg_check_status(const struct i2400m_l3l4_hdr *,
+-				   char *, size_t);
+-extern int i2400m_msg_size_check(struct i2400m *,
+-				 const struct i2400m_l3l4_hdr *, size_t);
+-extern struct sk_buff *i2400m_msg_to_dev(struct i2400m *, const void *, size_t);
+-extern void i2400m_msg_to_dev_cancel_wait(struct i2400m *, int);
+-extern void i2400m_report_hook(struct i2400m *,
+-			       const struct i2400m_l3l4_hdr *, size_t);
+-extern void i2400m_report_hook_work(struct work_struct *);
+-extern int i2400m_cmd_enter_powersave(struct i2400m *);
+-extern int i2400m_cmd_exit_idle(struct i2400m *);
+-extern struct sk_buff *i2400m_get_device_info(struct i2400m *);
+-extern int i2400m_firmware_check(struct i2400m *);
+-extern int i2400m_set_idle_timeout(struct i2400m *, unsigned);
++int i2400m_msg_check_status(const struct i2400m_l3l4_hdr *, char *, size_t);
++int i2400m_msg_size_check(struct i2400m *, const struct i2400m_l3l4_hdr *,
++			  size_t);
++struct sk_buff *i2400m_msg_to_dev(struct i2400m *, const void *, size_t);
++void i2400m_msg_to_dev_cancel_wait(struct i2400m *, int);
++void i2400m_report_hook(struct i2400m *, const struct i2400m_l3l4_hdr *,
++			size_t);
++void i2400m_report_hook_work(struct work_struct *);
++int i2400m_cmd_enter_powersave(struct i2400m *);
++int i2400m_cmd_exit_idle(struct i2400m *);
++struct sk_buff *i2400m_get_device_info(struct i2400m *);
++int i2400m_firmware_check(struct i2400m *);
++int i2400m_set_idle_timeout(struct i2400m *, unsigned);
+ 
+ static inline
+ struct usb_endpoint_descriptor *usb_get_epd(struct usb_interface *iface, int ep)
+@@ -921,10 +919,9 @@ struct usb_endpoint_descriptor *usb_get_epd(struct usb_interface *iface, int ep)
+ 	return &iface->cur_altsetting->endpoint[ep].desc;
+ }
+ 
+-extern int i2400m_op_rfkill_sw_toggle(struct wimax_dev *,
+-				      enum wimax_rf_state);
+-extern void i2400m_report_tlv_rf_switches_status(
+-	struct i2400m *, const struct i2400m_tlv_rf_switches_status *);
++int i2400m_op_rfkill_sw_toggle(struct wimax_dev *, enum wimax_rf_state);
++void i2400m_report_tlv_rf_switches_status(struct i2400m *,
++					  const struct i2400m_tlv_rf_switches_status *);
+ 
+ /*
+  * Helpers for firmware backwards compatibility
+@@ -968,8 +965,8 @@ void __i2400m_msleep(unsigned ms)
+ 
+ 
+ /* module initialization helpers */
+-extern int i2400m_barker_db_init(const char *);
+-extern void i2400m_barker_db_exit(void);
++int i2400m_barker_db_init(const char *);
++void i2400m_barker_db_exit(void);
+ 
+ 
+ 
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
