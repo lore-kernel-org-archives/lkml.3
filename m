@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab3IYAQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:16:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38872 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab3IYAP4 (ORCPT
+	id S1757971Ab3IYBRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:17:11 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:44360 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757507Ab3IYBRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:15:56 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Tue, 24 Sep 2013 21:17:07 -0400
+Date: Tue, 24 Sep 2013 18:16:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 003/110] SCSI: sd: Fix potential out-of-bounds access
-Date: Tue, 24 Sep 2013 17:14:01 -0700
-Message-Id: <20130925001323.769255261@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
-References: <20130925001323.387158698@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/3] Documentation updates for 3.13
+Message-ID: <20130925011657.GA29958@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092501-9332-0000-0000-000001875378
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hello!
 
-------------------
+This series provides a few documentation updates:
 
-From: Alan Stern <stern@rowland.harvard.edu>
+1.	Update stall-warning documentation to catch up with recent updates.
 
-commit 984f1733fcee3fbc78d47e26c5096921c5d9946a upstream.
+2.	Add a reference to the new vmstat-avoidance patch to the
+	file describing how to quiet per-CPU kthreads.
 
-This patch fixes an out-of-bounds error in sd_read_cache_type(), found
-by Google's AddressSanitizer tool.  When the loop ends, we know that
-"offset" lies beyond the end of the data in the buffer, so no Caching
-mode page was found.  In theory it may be present, but the buffer size
-is limited to 512 bytes.
+3.	Fix a typo in Documentation/RCU/checklist.txt, courtesy of
+	Michael Opdenacker.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+							Thanx, Paul
 
----
- drivers/scsi/sd.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2409,14 +2409,9 @@ sd_read_cache_type(struct scsi_disk *sdk
- 			}
- 		}
- 
--		if (modepage == 0x3F) {
--			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
--				  "present\n");
--			goto defaults;
--		} else if ((buffer[offset] & 0x3f) != modepage) {
--			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
--			goto defaults;
--		}
-+		sd_printk(KERN_ERR, sdkp, "No Caching mode page found\n");
-+		goto defaults;
-+
- 	Page_found:
- 		if (modepage == 8) {
- 			sdkp->WCE = ((buffer[offset + 2] & 0x04) != 0);
-
+ b/Documentation/RCU/checklist.txt           |    2 +-
+ b/Documentation/RCU/stallwarn.txt           |   22 +++++++++++++++-------
+ b/Documentation/kernel-per-CPU-kthreads.txt |   17 +++++++++++------
+ 3 files changed, 27 insertions(+), 14 deletions(-)
 
