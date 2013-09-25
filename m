@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab3IYBTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:19:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38922 "EHLO
+	id S1758051Ab3IYBUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:20:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38918 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755891Ab3IYAQE (ORCPT
+	with ESMTP id S1755888Ab3IYAQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:16:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [ 016/110] arm64: perf: fix ARMv8 EVTYPE_MASK to include NSH bit
-Date: Tue, 24 Sep 2013 17:14:14 -0700
-Message-Id: <20130925001325.185745362@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [ 013/110] ARM: dts: add missing cpu #address-cell values
+Date: Tue, 24 Sep 2013 17:14:11 -0700
+Message-Id: <20130925001324.844716003@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,32 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit 178cd9ce377232518ec17ff2ecab2e80fa60784c upstream.
+commit 8b2efa896cc618e055e90c9d9600e7c8388ae3b7 upstream.
 
-This is a port of f2fe09b055e2 ("ARM: 7663/1: perf: fix ARMv7 EVTYPE_MASK
-to include NSH bit") to arm64, which fixes the broken evtype mask to
-include the NSH bit, allowing profiling at EL2.
+A recent series has added CPU numbers to a lot of dts files,
+but unfortunately in a few cases the #address-cells
+and #size-cells values are missing, which causes build warnings.
+This adds the missing ones for sunxi and sama5 that I found
+through build testing.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/perf_event.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/sama5d3.dtsi   |    2 ++
+ arch/arm/boot/dts/sun4i-a10.dtsi |    2 ++
+ arch/arm/boot/dts/sun5i-a13.dtsi |    2 ++
+ 3 files changed, 6 insertions(+)
 
---- a/arch/arm64/kernel/perf_event.c
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -784,7 +784,7 @@ static const unsigned armv8_pmuv3_perf_c
- /*
-  * PMXEVTYPER: Event selection reg
-  */
--#define	ARMV8_EVTYPE_MASK	0xc00000ff	/* Mask for writable bits */
-+#define	ARMV8_EVTYPE_MASK	0xc80000ff	/* Mask for writable bits */
- #define	ARMV8_EVTYPE_EVENT	0xff		/* Mask for EVENT bits */
+--- a/arch/arm/boot/dts/sama5d3.dtsi
++++ b/arch/arm/boot/dts/sama5d3.dtsi
+@@ -35,6 +35,8 @@
+ 		ssc1 = &ssc1;
+ 	};
+ 	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
+ 		cpu@0 {
+ 			device_type = "cpu";
+ 			compatible = "arm,cortex-a5";
+--- a/arch/arm/boot/dts/sun4i-a10.dtsi
++++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+@@ -16,6 +16,8 @@
+ 	interrupt-parent = <&intc>;
  
- /*
+ 	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
+ 		cpu@0 {
+ 			device_type = "cpu";
+ 			compatible = "arm,cortex-a8";
+--- a/arch/arm/boot/dts/sun5i-a13.dtsi
++++ b/arch/arm/boot/dts/sun5i-a13.dtsi
+@@ -17,6 +17,8 @@
+ 	interrupt-parent = <&intc>;
+ 
+ 	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
+ 		cpu@0 {
+ 			device_type = "cpu";
+ 			compatible = "arm,cortex-a8";
 
 
