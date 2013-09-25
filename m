@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab3IYXUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 19:20:32 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43461 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232Ab3IYXU3 (ORCPT
+	id S1755732Ab3IYXUs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 19:20:48 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:49960 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755685Ab3IYXUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 19:20:29 -0400
+	Wed, 25 Sep 2013 19:20:46 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v4 11/40] mm: A new optimized O(log n) sorting algo to
- speed up buddy-sorting
+Subject: [RFC PATCH v4 12/40] mm: Add support to accurately track
+ per-memory-region allocation
 To: akpm@linux-foundation.org, mgorman@suse.de, dave@sr71.net,
         hannes@cmpxchg.org, tony.luck@intel.com, matthew.garrett@nebula.com,
         riel@redhat.com, arjan@linux.intel.com,
@@ -21,8 +21,8 @@ Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
         kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 26 Sep 2013 04:46:12 +0530
-Message-ID: <20130925231610.26184.36504.stgit@srivatsabhat.in.ibm.com>
+Date: Thu, 26 Sep 2013 04:46:28 +0530
+Message-ID: <20130925231626.26184.25777.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com>
 References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -31,236 +31,241 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092523-0260-0000-0000-000003AFFBDE
+x-cbid: 13092523-7014-0000-0000-000003AB4ED7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sorted-buddy design for memory power management depends on
-keeping the buddy freelists region-sorted. And this sorting operation
-has been pushed to the free() logic, keeping the alloc() path fast.
-
-However, we would like to also keep the free() path as fast as possible,
-since it holds the zone->lock, which will indirectly affect alloc() also.
-
-So replace the existing O(n) sorting logic used in the free-path, with
-a new special-case sorting algorithm of time complexity O(log n), in order
-to optimize the free() path further. This algorithm uses a bitmap-based
-radix tree to help speed up the sorting.
-
-One of the other main advantages of this O(log n) design is that it can
-support large amounts of RAM (upto 2 TB and beyond) quite effortlessly.
+The page allocator can make smarter decisions to influence memory power
+management, if we track the per-region memory allocations closely.
+So add the necessary support to accurately track allocations on a per-region
+basis.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
  include/linux/mmzone.h |    2 +
- mm/page_alloc.c        |  142 ++++++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 137 insertions(+), 7 deletions(-)
+ mm/page_alloc.c        |   65 +++++++++++++++++++++++++++++++++++-------------
+ 2 files changed, 50 insertions(+), 17 deletions(-)
 
 diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 4721a22..472c76a 100644
+index 472c76a..155c1a1 100644
 --- a/include/linux/mmzone.h
 +++ b/include/linux/mmzone.h
-@@ -102,6 +102,8 @@ struct free_list {
- 	 * this freelist.
- 	 */
- 	struct mem_region_list	mr_list[MAX_NR_ZONE_REGIONS];
-+	DECLARE_BITMAP(region_root_mask, BITS_PER_LONG);
-+	DECLARE_BITMAP(region_leaf_mask, MAX_NR_ZONE_REGIONS);
+@@ -86,6 +86,7 @@ static inline int get_pageblock_migratetype(struct page *page)
+ struct mem_region_list {
+ 	struct list_head	*page_block;
+ 	unsigned long		nr_free;
++	struct zone_mem_region	*zone_region;
  };
  
- struct free_area {
+ struct free_list {
+@@ -342,6 +343,7 @@ struct zone_mem_region {
+ 	unsigned long end_pfn;
+ 	unsigned long present_pages;
+ 	unsigned long spanned_pages;
++	unsigned long nr_free;
+ };
+ 
+ struct zone {
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index fe812e0..daac5fd 100644
+index daac5fd..fbaa2dc 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -517,11 +517,129 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
- 	return 0;
+@@ -635,7 +635,8 @@ out:
+ 	return prev_region_id;
  }
  
-+/**
-+ *
-+ * An example should help illustrate the bitmap representation of memory
-+ * regions easily. So consider the following scenario:
-+ *
-+ * MAX_NR_ZONE_REGIONS = 256
-+ * DECLARE_BITMAP(region_leaf_mask, MAX_NR_ZONE_REGIONS);
-+ * DECLARE_BITMAP(region_root_mask, BITS_PER_LONG);
-+ *
-+ * Here region_leaf_mask is an array of unsigned longs. And region_root_mask
-+ * is a single unsigned long. The tree notion is constructed like this:
-+ * Each bit in the region_root_mask will correspond to an array element of
-+ * region_leaf_mask, as shown below. (The elements of the region_leaf_mask
-+ * array are shown as being discontiguous, only to help illustrate the
-+ * concept easily).
-+ *
-+ *                    Region Root Mask
-+ *                   ___________________
-+ *                  |____|____|____|____|
-+ *                    /    |     \     \
-+ *                   /     |      \     \
-+ *             ________    |   ________  \
-+ *            |________|   |  |________|  \
-+ *                         |               \
-+ *                      ________        ________
-+ *                     |________|      |________|   <--- Region Leaf Mask
-+ *                                                         array elements
-+ *
-+ * If an array element in the leaf mask is non-zero, the corresponding bit
-+ * for that array element will be set in the root mask. Every bit in the
-+ * region_leaf_mask will correspond to a memory region; it is set if that
-+ * region is present in that free list, cleared otherwise.
-+ *
-+ * This arrangement helps us find the previous set bit in region_leaf_mask
-+ * using at most 2 bitmask-searches (each bitmask of size BITS_PER_LONG),
-+ * one at the root-level, and one at the leaf level. Thus, this design of
-+ * an optimized access structure reduces the search-complexity when dealing
-+ * with large amounts of memory. The worst-case time-complexity of buddy
-+ * sorting comes to O(log n) using this algorithm, where 'n' is the no. of
-+ * memory regions in the zone.
-+ *
-+ * For example, with MEM_REGION_SIZE = 512 MB, on 64-bit machines, we can
-+ * deal with upto 2TB of RAM (MAX_NR_ZONE_REGIONS = 4096) efficiently (just
-+ * 12 ops in the worst case, as opposed to 4096 ops in an O(n) algorithm)
-+ * with such an arrangement, without even needing to extend this 2-level
-+ * hierarchy any further.
-+ */
-+
-+static void set_region_bit(int region_id, struct free_list *free_list)
-+{
-+	set_bit(region_id, free_list->region_leaf_mask);
-+	set_bit(BIT_WORD(region_id), free_list->region_root_mask);
-+}
-+
-+static void clear_region_bit(int region_id, struct free_list *free_list)
-+{
-+	clear_bit(region_id, free_list->region_leaf_mask);
-+
-+	if (!(free_list->region_leaf_mask[BIT_WORD(region_id)]))
-+		clear_bit(BIT_WORD(region_id), free_list->region_root_mask);
-+
-+}
-+
-+/* Note that Region 0 corresponds to bit position 1 (0x1) and so on */
-+static int find_prev_region(int region_id, struct free_list *free_list)
-+{
-+	int leaf_word, prev_region_id;
-+	unsigned long *region_root_mask, *region_leaf_mask;
-+	unsigned long tmp_root_mask, tmp_leaf_mask;
-+
-+	if (!region_id)
-+		return -1; /* No previous region */
-+
-+	leaf_word = BIT_WORD(region_id);
-+
-+	region_root_mask = free_list->region_root_mask;
-+	region_leaf_mask = free_list->region_leaf_mask;
-+
-+	/* Note that region_id itself has NOT been set in the bitmasks yet. */
-+
-+	/* Try to get the prev region id without going to the root mask. */
-+	if (region_leaf_mask[leaf_word]) {
-+		tmp_leaf_mask = region_leaf_mask[leaf_word] &
-+							(BIT_MASK(region_id) - 1);
-+
-+		if (tmp_leaf_mask) {
-+			/* Prev region is in this leaf mask itself. Find it. */
-+			prev_region_id = leaf_word * BITS_PER_LONG +
-+							__fls(tmp_leaf_mask);
-+			goto out;
-+		}
-+	}
-+
-+	/* Search the root mask for the leaf mask having prev region */
-+	tmp_root_mask = *region_root_mask & (BIT(leaf_word) - 1);
-+	if (tmp_root_mask) {
-+		leaf_word = __fls(tmp_root_mask);
-+
-+		/* Get the prev region id from the leaf mask */
-+		prev_region_id = leaf_word * BITS_PER_LONG +
-+					__fls(region_leaf_mask[leaf_word]);
-+	} else {
-+		/*
-+		 * This itself is the first populated region in this
-+		 * freelist, so previous region doesn't exist.
-+		 */
-+		prev_region_id = -1;
-+	}
-+
-+out:
-+
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+	WARN(prev_region_id >= region_id, "%s: bitmap logic messed up\n",
-+								__func__);
-+#endif
-+	return prev_region_id;
-+}
-+
- static void add_to_freelist(struct page *page, struct free_list *free_list)
+-static void add_to_freelist(struct page *page, struct free_list *free_list)
++static void add_to_freelist(struct page *page, struct free_list *free_list,
++			    int order)
  {
  	struct list_head *prev_region_list, *lru;
  	struct mem_region_list *region;
--	int region_id, i;
-+	int region_id, prev_region_id;
+@@ -646,6 +647,7 @@ static void add_to_freelist(struct page *page, struct free_list *free_list)
  
- 	lru = &page->lru;
+ 	region = &free_list->mr_list[region_id];
+ 	region->nr_free++;
++	region->zone_region->nr_free += 1 << order;
+ 
+ 	if (region->page_block) {
+ 		list_add_tail(lru, region->page_block);
+@@ -700,9 +702,10 @@ out:
+  * inside the freelist.
+  */
+ static void rmqueue_del_from_freelist(struct page *page,
+-				      struct free_list *free_list)
++				      struct free_list *free_list, int order)
+ {
+ 	struct list_head *lru = &page->lru;
++	struct mem_region_list *mr_list;
+ 	int region_id;
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+@@ -712,8 +715,11 @@ static void rmqueue_del_from_freelist(struct page *page,
+ 
+ 	list_del(lru);
+ 
++	mr_list = free_list->next_region;
++	mr_list->zone_region->nr_free -= 1 << order;
++
+ 	/* Fastpath */
+-	if (--(free_list->next_region->nr_free)) {
++	if (--(mr_list->nr_free)) {
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+ 		WARN(free_list->next_region->nr_free < 0,
+@@ -735,7 +741,8 @@ static void rmqueue_del_from_freelist(struct page *page,
+ }
+ 
+ /* Generic delete function for region-aware buddy allocator. */
+-static void del_from_freelist(struct page *page, struct free_list *free_list)
++static void del_from_freelist(struct page *page, struct free_list *free_list,
++			      int order)
+ {
+ 	struct list_head *prev_page_lru, *lru, *p;
+ 	struct mem_region_list *region;
+@@ -745,11 +752,12 @@ static void del_from_freelist(struct page *page, struct free_list *free_list)
+ 
+ 	/* Try to fastpath, if deleting from the head of the list */
+ 	if (lru == free_list->list.next)
+-		return rmqueue_del_from_freelist(page, free_list);
++		return rmqueue_del_from_freelist(page, free_list, order);
+ 
  	region_id = page_zone_region_id(page);
-@@ -539,12 +657,17 @@ static void add_to_freelist(struct page *page, struct free_list *free_list)
- #endif
+ 	region = &free_list->mr_list[region_id];
+ 	region->nr_free--;
++	region->zone_region->nr_free -= 1 << order;
  
- 	if (!list_empty(&free_list->list)) {
--		for (i = region_id - 1; i >= 0; i--) {
--			if (free_list->mr_list[i].page_block) {
--				prev_region_list =
--					free_list->mr_list[i].page_block;
--				goto out;
--			}
-+		prev_region_id = find_prev_region(region_id, free_list);
-+		if (prev_region_id >= 0) {
-+			prev_region_list =
-+				free_list->mr_list[prev_region_id].page_block;
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+			WARN(prev_region_list == NULL,
-+				"%s: prev_region_list is NULL\n"
-+				"region_id=%d, prev_region_id=%d\n", __func__,
-+				 region_id, prev_region_id);
-+#endif
-+			goto out;
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+ 	WARN(region->nr_free < 0, "%s: nr_free is negative\n", __func__);
+@@ -804,10 +812,10 @@ page_found:
+  * Move a given page from one freelist to another.
+  */
+ static void move_page_freelist(struct page *page, struct free_list *old_list,
+-			       struct free_list *new_list)
++			       struct free_list *new_list, int order)
+ {
+-	del_from_freelist(page, old_list);
+-	add_to_freelist(page, new_list);
++	del_from_freelist(page, old_list, order);
++	add_to_freelist(page, new_list, order);
+ }
+ 
+ /*
+@@ -877,7 +885,7 @@ static inline void __free_one_page(struct page *page,
+ 
+ 			area = &zone->free_area[order];
+ 			mt = get_freepage_migratetype(buddy);
+-			del_from_freelist(buddy, &area->free_list[mt]);
++			del_from_freelist(buddy, &area->free_list[mt], order);
+ 			area->nr_free--;
+ 			rmv_page_order(buddy);
+ 			set_freepage_migratetype(buddy, migratetype);
+@@ -913,12 +921,13 @@ static inline void __free_one_page(struct page *page,
+ 			 * switch off this entire "is next-higher buddy free?"
+ 			 * logic when memory regions are used.
+ 			 */
+-			add_to_freelist(page, &area->free_list[migratetype]);
++			add_to_freelist(page, &area->free_list[migratetype],
++					order);
+ 			goto out;
  		}
  	}
  
-@@ -565,6 +688,7 @@ out:
+-	add_to_freelist(page, &area->free_list[migratetype]);
++	add_to_freelist(page, &area->free_list[migratetype], order);
+ out:
+ 	area->nr_free++;
+ }
+@@ -1139,7 +1148,8 @@ static inline void expand(struct zone *zone, struct page *page,
+ 			continue;
+ 		}
+ #endif
+-		add_to_freelist(&page[size], &area->free_list[migratetype]);
++		add_to_freelist(&page[size], &area->free_list[migratetype],
++				high);
+ 		area->nr_free++;
+ 		set_page_order(&page[size], high);
  
- 	/* Save pointer to page block of this region */
- 	region->page_block = lru;
-+	set_region_bit(region_id, free_list);
+@@ -1213,7 +1223,8 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+ 
+ 		page = list_entry(area->free_list[migratetype].list.next,
+ 							struct page, lru);
+-		rmqueue_del_from_freelist(page, &area->free_list[migratetype]);
++		rmqueue_del_from_freelist(page, &area->free_list[migratetype],
++					  current_order);
+ 		rmv_page_order(page);
+ 		area->nr_free--;
+ 		expand(zone, page, order, current_order, area, migratetype);
+@@ -1286,7 +1297,7 @@ int move_freepages(struct zone *zone,
+ 		old_mt = get_freepage_migratetype(page);
+ 		area = &zone->free_area[order];
+ 		move_page_freelist(page, &area->free_list[old_mt],
+-				    &area->free_list[migratetype]);
++				    &area->free_list[migratetype], order);
+ 		set_freepage_migratetype(page, migratetype);
+ 		page += 1 << order;
+ 		pages_moved += 1 << order;
+@@ -1406,7 +1417,8 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 
+ 			/* Remove the page from the freelists */
+ 			mt = get_freepage_migratetype(page);
+-			del_from_freelist(page, &area->free_list[mt]);
++			del_from_freelist(page, &area->free_list[mt],
++					  current_order);
+ 			rmv_page_order(page);
+ 
+ 			/*
+@@ -1767,7 +1779,7 @@ static int __isolate_free_page(struct page *page, unsigned int order)
+ 
+ 	/* Remove page from free list */
+ 	mt = get_freepage_migratetype(page);
+-	del_from_freelist(page, &zone->free_area[order].free_list[mt]);
++	del_from_freelist(page, &zone->free_area[order].free_list[mt], order);
+ 	zone->free_area[order].nr_free--;
+ 	rmv_page_order(page);
+ 
+@@ -5204,6 +5216,22 @@ static void __meminit init_node_memory_regions(struct pglist_data *pgdat)
+ 	pgdat->nr_node_regions = idx;
  }
  
- /**
-@@ -579,6 +703,7 @@ static void rmqueue_del_from_freelist(struct page *page,
- 				      struct free_list *free_list)
- {
- 	struct list_head *lru = &page->lru;
-+	int region_id;
++static void __meminit zone_init_free_lists_late(struct zone *zone)
++{
++	struct mem_region_list *mr_list;
++	int order, t, i;
++
++	for_each_migratetype_order(order, t) {
++		for (i = 0; i < zone->nr_zone_regions; i++) {
++			mr_list =
++				&zone->free_area[order].free_list[t].mr_list[i];
++
++			mr_list->nr_free = 0;
++			mr_list->zone_region = &zone->zone_regions[i];
++		}
++	}
++}
++
+ /*
+  * Zone-region indices are used to map node-memory-regions to
+  * zone-memory-regions. Initialize all of them to an invalid value (-1),
+@@ -5272,6 +5300,8 @@ static void __meminit init_zone_memory_regions(struct pglist_data *pgdat)
  
- #ifdef CONFIG_DEBUG_PAGEALLOC
- 	WARN((free_list->list.next != lru),
-@@ -602,6 +727,8 @@ static void rmqueue_del_from_freelist(struct page *page,
- 	 * in this freelist.
- 	 */
- 	free_list->next_region->page_block = NULL;
-+	region_id = free_list->next_region - free_list->mr_list;
-+	clear_region_bit(region_id, free_list);
+ 		z->nr_zone_regions = idx;
  
- 	/* Set 'next_region' to the new first region in the freelist. */
- 	set_next_region_in_freelist(free_list);
-@@ -662,6 +789,7 @@ page_found:
- 
- 	if (region->nr_free == 0) {
- 		region->page_block = NULL;
-+		clear_region_bit(region_id, free_list);
- 	} else {
- 		region->page_block = prev_page_lru;
- #ifdef CONFIG_DEBUG_PAGEALLOC
++		zone_init_free_lists_late(z);
++
+ 		/*
+ 		 * Revisit the last visited node memory region, in case it
+ 		 * spans multiple zones.
+@@ -6795,7 +6825,8 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 		       pfn, 1 << order, end_pfn);
+ #endif
+ 		mt = get_freepage_migratetype(page);
+-		del_from_freelist(page, &zone->free_area[order].free_list[mt]);
++		del_from_freelist(page, &zone->free_area[order].free_list[mt],
++				  order);
+ 		rmv_page_order(page);
+ 		zone->free_area[order].nr_free--;
+ #ifdef CONFIG_HIGHMEM
 
