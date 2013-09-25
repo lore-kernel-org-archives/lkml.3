@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab3IYVoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 17:44:23 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:48964 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab3IYVoW convert rfc822-to-8bit (ORCPT
+	id S1754188Ab3IYVrP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 17:47:15 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:37705 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab3IYVrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 17:44:22 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: [PATCH] add exFAT driver
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
+	Wed, 25 Sep 2013 17:47:13 -0400
+X-SENDER-IP: [85.230.168.69]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiVOADlZQ1JV5qhFPGdsb2JhbABbgweDS4UitXeCeoEhFwMBAQEBODWCJQEBBScTHCMQCAMOCgklDwUlChqIHbxDFo87B4MdgQADl3uGRo5YOg
+X-IronPort-AV: E=Sophos;i="4.90,980,1371074400"; 
+   d="scan'208";a="326278586"
+Date: Wed, 25 Sep 2013 23:48:07 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        bugzilla@colorremedies.com
+Subject: Re: applesmc oops in 3.10/3.11
+Message-ID: <20130925214807.GA3234@polaris.bitmath.org>
+References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com>
+ <20130925195628.GA1532@roeck-us.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-In-Reply-To: <20130925202151.GA6149@kroah.com>
-Date: Wed, 25 Sep 2013 22:44:15 +0100
-Cc: Alexander Holler <holler@ahsoftware.de>,
-        STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <57387214-F138-4471-996E-3FB1ED28346C@cam.ac.uk>
-References: <20130830124622.5f81b7d4@rechenknecht2k7> <20130830154205.GA1411@kroah.com> <20130925183632.08a0d073@rechenknecht2k7> <20130925172704.GB5258@kroah.com> <20130925183235.GA9659@srcf.ucam.org> <20130925184539.GA4208@kroah.com> <52433978.9050302@ahsoftware.de> <20130925202151.GA6149@kroah.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1510)
+Content-Disposition: inline
+In-Reply-To: <20130925195628.GA1532@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 25 Sep 2013, at 21:21, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-> On Wed, Sep 25, 2013 at 09:28:56PM +0200, Alexander Holler wrote:
->> 
->> Maybe a silly question, but isn't exFAT protected by some MS owned
->> patents which might drive Linux users into the hand of MS lawyers as
->> already happened with FAT?
-
-Yes, it is.  You cannot use exFAT without a Microsoft patent license (unless you live in countries without software patents perhaps).
-
->> It would make me wonder if not. Maybe you could ask Samsung about that too, when you are there.
+On Wed, Sep 25, 2013 at 12:56:28PM -0700, Guenter Roeck wrote:
+> On Wed, Sep 25, 2013 at 03:06:25PM -0400, Josh Boyer wrote:
+> > Hi All,
+> > 
+> > Chris has reported[1] an issue with the applesmc driver in the 3.10
+> > and 3.11 kernels.  This seems to be a bit transient, but the oops is
+> > consistent across those releases.  This is with a MacBook Pro 4,1.
+> > The backtrace is below.
+> > 
+> > Any ideas on this one?
+> > 
+> Some of the bug reports suggest that there are related messages in at least some
+> of the kernel logs.
 > 
-> Because Samsung released the code under the GPLv2, and their lawyers
-> understand what that means, should answer any question you might have
-> about this.
-
-Sorry but you have no idea what you are talking about.  Samsung modified the GPL-ed FAT driver to make it work with exFAT.  Therefore their exFAT driver was GPL as a derived work.  They got caught and had to release the source code.
-
-It has NOTHING to do with what their lawyers understand, etc, and if you are really going to be visiting Samsung and if they are willing to talk to you about it you will be retracting what you wrote above in a hurry...  Sorry I cannot say more but I strongly suggest NOT to use this "GPL-ed exFAT driver" under any circumstances unless you get a patent license from Microsoft first.
-
-Best regards,
-
-	Anton
-
-> thanks,
+> Jul 02 22:23:22 f19s.local kernel: applesmc: send_byte(0x04, 0x0300) fail: 0x01
+> Jul 02 22:23:22 f19s.local kernel: applesmc: : read len fail
 > 
-> greg k-h
+> This suggests that initialization may be attempted more than once. The key cache
+> is allocated only once, but the number of keys is read for each attempt.
+> 
+> No idea if that can happen, but if the number of keys can increase after
+> the first initialization attempt you would have an explanation for the crash.
 
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge
-J.J. Thomson Avenue, Cambridge, CB3 0RB, UK
+Good idea, and easy enough to test with the patch below.
 
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 62c2e32..d962c4d 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -525,16 +525,24 @@ static int applesmc_init_smcreg_try(void)
+ {
+        struct applesmc_registers *s = &smcreg;
+        bool left_light_sensor, right_light_sensor;
++       unsigned int count;
+        u8 tmp[1];
+        int ret;
+ 
+        if (s->init_complete)
+                return 0;
+ 
+-       ret = read_register_count(&s->key_count);
++       ret = read_register_count(&count);
+        if (ret)
+                return ret;
+ 
++       if (s->cache && s->key_count != count) {
++               pr_warn("key count changed from %d to %d\n", s->key_count, count);
++               kfree(s->cache);
++               s->cache = NULL;
++       }
++       s->key_count = count;
++
+        if (!s->cache)
+                s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
+        if (!s->cache)
+ 
+Thanks,
+Henrik
