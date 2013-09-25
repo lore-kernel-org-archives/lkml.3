@@ -1,84 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab3IYTzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 15:55:33 -0400
-Received: from fieldses.org ([174.143.236.118]:60564 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753333Ab3IYTzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 15:55:31 -0400
-Date: Wed, 25 Sep 2013 15:55:26 -0400
-To: Zach Brown <zab@redhat.com>
-Cc: Anna Schumaker <schumaker.anna@gmail.com>,
-        Szeredi Miklos <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-Message-ID: <20130925195526.GA18971@fieldses.org>
-References: <1378919210-10372-1-git-send-email-zab@redhat.com>
- <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
- <20130925183828.GA30372@lenny.home.zabbo.net>
- <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
- <20130925190620.GB30372@lenny.home.zabbo.net>
+	id S1755177Ab3IYTzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 15:55:47 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:53036 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754751Ab3IYTzc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 15:55:32 -0400
+Message-ID: <52433F89.5050104@ahsoftware.de>
+Date: Wed, 25 Sep 2013 21:54:49 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130712 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925190620.GB30372@lenny.home.zabbo.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Joe Perches <joe@perches.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch: Find CamelCase definitions of struct/union/enum
+References: <1380047934.3575.100.camel@joe-AO722>  <20130925152432.GY13318@ZenIV.linux.org.uk>  <1380123344.17366.5.camel@joe-AO722>  <20130925161949.GZ13318@ZenIV.linux.org.uk>  <1380136920.17366.15.camel@joe-AO722> <20130925193035.GA11905@thunk.org> <1380138515.17366.22.camel@joe-AO722>
+In-Reply-To: <1380138515.17366.22.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 12:06:20PM -0700, Zach Brown wrote:
-> On Wed, Sep 25, 2013 at 03:02:29PM -0400, Anna Schumaker wrote:
-> > On Wed, Sep 25, 2013 at 2:38 PM, Zach Brown <zab@redhat.com> wrote:
-> > >
-> > > Hrmph.  I had composed a reply to you during Plumbers but.. something
-> > > happened to it :).  Here's another try now that I'm back.
-> > >
-> > >> > Some things to talk about:
-> > >> > - I really don't care about the naming here.  If you do, holler.
-> > >> > - We might want different flags for file-to-file splicing and acceleration
-> > >>
-> > >> Yes, I think "copy" and "reflink" needs to be differentiated.
-> > >
-> > > I initially agreed but I'm not so sure now.  The problem is that we
-> > > can't know whether the acceleration is copying or not.  XCOPY on some
-> > > array may well do some shared referencing tricks.  The nfs COPY op can
-> > > have a server use btrfs reflink, or ext* and XCOPY, or .. who knows.  At
-> > > some point we have to admit that we have no way to determine the
-> > > relative durability of writes.  Storage can do a lot to make writes more
-> > > or less fragile that we have no visibility of.  SSD FTLs can log a bunch
-> > > of unrelated sectors on to one flash failure domain.
-> > >
-> > > And if such a flag couldn't *actually* guarantee anything for a bunch of
-> > > storage topologies, well, let's not bother with it.
-> > >
-> > > The only flag I'm in favour of now is one that has splice return rather
-> > > than falling back to manual page cache reads and writes.  It's more like
-> > > O_NONBLOCK than any kind of data durability hint.
-> > 
-> > For reference, I'm planning to have the NFS server do the fallback
-> > when it copies since any local copy will be faster than a read and
-> > write over the network.
-> 
-> Agreed, this is definitely the reasonable thing to do.
+Am 25.09.2013 21:48, schrieb Joe Perches:
 
-A client-side copy will be slower, but I guess it does have the
-advantage that the application can track progress to some degree, and
-abort it fairly quickly without leaving the file in a totally undefined
-state--and both might be useful if the copy's not a simple constant-time
-operation.
+> As I've said multiple times, checkpatch is a stupid
+> little tool that can be ignored by anyone with
+> different tastes.
 
-So maybe a way to pass your NONBLOCKy flag to the server would be
-useful?
+Just that this isn't true for ordinary innocent people posting patches.
+Their patches, if not passed by checkpatch.pl, usally get a full stop at
+the first barrier.
 
-FWIW the protocol doesn't seem frozen yet, so I assume we could still
-add an extra flag field if you think it would be worthwhile.
+Regards,
 
---b.
+Alexander Holler
+
