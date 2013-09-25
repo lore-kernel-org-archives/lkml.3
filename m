@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab3IYAMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:12:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38697 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512Ab3IYAMq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:12:46 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxim Patlasov <mpatlasov@parallels.com>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 39/40] fuse: postpone end_page_writeback() in fuse_writepage_locked()
-Date: Tue, 24 Sep 2013 17:12:11 -0700
-Message-Id: <20130925001046.167168621@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
-References: <20130925001041.939335518@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1755611Ab3IYAND (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:13:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32910 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755591Ab3IYANA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 20:13:00 -0400
+Message-ID: <52422A6A.8080305@zytor.com>
+Date: Tue, 24 Sep 2013 17:12:26 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Dave Young <dyoung@redhat.com>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+References: <e39e1065bddc2afee2cb6eed957e3ba8.squirrel@www.skyhub.de>
+In-Reply-To: <e39e1065bddc2afee2cb6eed957e3ba8.squirrel@www.skyhub.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 09/24/2013 07:56 AM, Borislav Petkov wrote:
+> On Tue, September 24, 2013 2:45 pm, Dave Young wrote:
+>> Think again about this, how about 1:1 map them from a base address
+>> like -64G phy_addr -> (-64G + phy_addr), in this way we can avoid
+>> depending on the previous region size.
+> 
+> Right, how we layout the regions is arbitrary as long as we start at
+> the same VA and use the same regions, in the same order and of the same
+> size...
+> 
+>> For the zero region problem, we can resolve it as a standalone
+>> problem.
+> 
+> ... however, we still need to understand why it fails mapping the boot
+> services region as some implementations apparently do call boot services
+> even after ExitBootServices(). IOW, we need that region mapped in the
+> kexec'ed kernel too.
+> 
 
-------------------
+I am starting to think that we really should explicitly pass along the
+EFI mappings to the secondary kernel.  This will also help if we have to
+change the algorithm in a future kernel.
 
-From: Maxim Patlasov <MPatlasov@parallels.com>
+The most logical way to do this is to define a new setup_data type and
+pass the entire set of physical-to-virtual mappings that way.
 
-commit 4a4ac4eba1010ef9a804569058ab29e3450c0315 upstream.
+For example:
 
-The patch fixes a race between ftruncate(2), mmap-ed write and write(2):
+struct efi_mapping {
+	u64 va;			/* Virtual start address */
+	u64 pa;			/* Physical start address */
+	u64 len;		/* Length in bytes */
+	u64 type;		/* Mapping type */
+	u64 reserved[3];	/* Reserved, must be zero */
+};
 
-1) An user makes a page dirty via mmap-ed write.
-2) The user performs shrinking truncate(2) intended to purge the page.
-3) Before fuse_do_setattr calls truncate_pagecache, the page goes to
-   writeback. fuse_writepage_locked fills FUSE_WRITE request and releases
-   the original page by end_page_writeback.
-4) fuse_do_setattr() completes and successfully returns. Since now, i_mutex
-   is free.
-5) Ordinary write(2) extends i_size back to cover the page. Note that
-   fuse_send_write_pages do wait for fuse writeback, but for another
-   page->index.
-6) fuse_writepage_locked proceeds by queueing FUSE_WRITE request.
-   fuse_send_writepage is supposed to crop inarg->size of the request,
-   but it doesn't because i_size has already been extended back.
+Adding some reserved fields seems like a prudent precaution; the map
+shouldn't be all that large anyway.
 
-Moving end_page_writeback to the end of fuse_writepage_locked fixes the
-race because now the fact that truncate_pagecache is successfully returned
-infers that fuse_writepage_locked has already called end_page_writeback.
-And this, in turn, infers that fuse_flush_writepages has already called
-fuse_send_writepage, and the latter used valid (shrunk) i_size. write(2)
-could not extend it because of i_mutex held by ftruncate(2).
-
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/fuse/file.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1294,7 +1294,6 @@ static int fuse_writepage_locked(struct
- 
- 	inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
- 	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
--	end_page_writeback(page);
- 
- 	spin_lock(&fc->lock);
- 	list_add(&req->writepages_entry, &fi->writepages);
-@@ -1302,6 +1301,8 @@ static int fuse_writepage_locked(struct
- 	fuse_flush_writepages(inode);
- 	spin_unlock(&fc->lock);
- 
-+	end_page_writeback(page);
-+
- 	return 0;
- 
- err_free:
-
+	-hpa
 
