@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab3IYMwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 08:52:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2217 "EHLO mx1.redhat.com"
+	id S1755719Ab3IYMvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 08:51:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31267 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755743Ab3IYMvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 08:51:46 -0400
+	id S1755688Ab3IYMvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 08:51:38 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -13,20 +13,25 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 18/21] perf tools: Rename term related parsing function/variable properly
-Date: Wed, 25 Sep 2013 14:50:44 +0200
-Message-Id: <1380113447-17144-19-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 14/21] perf tests: Adding event group toggling test
+Date: Wed, 25 Sep 2013 14:50:40 +0200
+Message-Id: <1380113447-17144-15-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
 References: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The config_attr_term name is more suitable for the function
-as it configures perf_event_attr data using term.
+Adding ioctl toggle test to measure instructions
+enclosed within following syscall groups:
 
-Using more suitable name 'terms' for list head of terms,
-instead of list 'head_config' name.
+  geteuid
+    openat
+     --> measure instructions
+    close
+  getppid
+
+To show/test we could chain multiple togglers.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -37,106 +42,252 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events.c | 22 +++++++++++-----------
- tools/perf/util/parse-events.h |  4 ++--
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ tools/perf/Makefile                   |   1 +
+ tools/perf/tests/builtin-test.c       |   4 +
+ tools/perf/tests/tests.h              |   1 +
+ tools/perf/tests/toggle-event-group.c | 195 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 201 insertions(+)
+ create mode 100644 tools/perf/tests/toggle-event-group.c
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 37b9cb7..899c59e 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -540,8 +540,8 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
- 	return add_event(list, idx, &attr, NULL);
- }
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 2072389..90d7127 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -399,6 +399,7 @@ LIB_OBJS += $(OUTPUT)tests/code-reading.o
+ LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
+ LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
+ LIB_OBJS += $(OUTPUT)tests/toggle-event-raw.o
++LIB_OBJS += $(OUTPUT)tests/toggle-event-group.o
+ ifeq ($(RAW_ARCH),x86_64)
+ LIB_OBJS += $(OUTPUT)arch/x86/tests/toggle-event-raw-64.o
+ endif
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index db9d924b..7e96550 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -120,6 +120,10 @@ static struct test {
+ 		.func = test__toggle_event_raw,
+ 	},
+ 	{
++		.desc = "Toggle event group",
++		.func = test__toggle_event_group,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index 4f2a8a1..db692bf 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -41,5 +41,6 @@ int test__sample_parsing(void);
+ int test__keep_tracking(void);
+ int test__parse_no_sample_id_all(void);
+ int test__toggle_event_raw(void);
++int test__toggle_event_group(void);
  
--static int config_term(struct perf_event_attr *attr,
--		       struct parse_events_term *term)
-+static int config_attr_term(struct perf_event_attr *attr,
-+			    struct parse_events_term *term)
- {
- #define CHECK_TYPE_VAL(type)					\
- do {								\
-@@ -608,7 +608,7 @@ static int config_attr(struct perf_event_attr *attr,
- 	struct parse_events_term *term;
- 
- 	list_for_each_entry(term, head, list)
--		if (config_term(attr, term) && fail)
-+		if (config_attr_term(attr, term) && fail)
- 			return -EINVAL;
- 
- 	return 0;
-@@ -616,7 +616,7 @@ static int config_attr(struct perf_event_attr *attr,
- 
- int parse_events_add_numeric(struct list_head *list, int *idx,
- 			     u32 type, u64 config,
--			     struct list_head *head_config)
-+			     struct list_head *terms)
- {
- 	struct perf_event_attr attr;
- 
-@@ -624,15 +624,15 @@ int parse_events_add_numeric(struct list_head *list, int *idx,
- 	attr.type = type;
- 	attr.config = config;
- 
--	if (head_config &&
--	    config_attr(&attr, head_config, 1))
-+	if (terms &&
-+	    config_attr(&attr, terms, 1))
- 		return -EINVAL;
- 
- 	return add_event(list, idx, &attr, pmu_event_name(terms));
- }
- 
- int parse_events_add_pmu(struct list_head *list, int *idx,
--			 char *name, struct list_head *head_config)
-+			 char *name, struct list_head *terms)
- {
- 	struct perf_event_attr attr;
- 	struct perf_pmu *pmu;
-@@ -643,19 +643,19 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 
- 	memset(&attr, 0, sizeof(attr));
- 
--	if (perf_pmu__check_alias(pmu, head_config))
-+	if (perf_pmu__check_alias(pmu, terms))
- 		return -EINVAL;
- 
- 	/*
- 	 * Configure hardcoded terms first, no need to check
- 	 * return value when called with fail == 0 ;)
- 	 */
--	config_attr(&attr, head_config, 0);
-+	config_attr(&attr, terms, 0);
- 
--	if (perf_pmu__config(pmu, &attr, head_config))
-+	if (perf_pmu__config(pmu, &attr, terms))
- 		return -EINVAL;
- 
--	return __add_event(list, idx, &attr, pmu_event_name(head_config),
-+	return __add_event(list, idx, &attr, pmu_event_name(terms),
- 			   pmu->cpus);
- }
- 
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index f1cb4c4..a9db24f 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -89,13 +89,13 @@ int parse_events_add_tracepoint(struct list_head *list, int *idx,
- 				char *sys, char *event);
- int parse_events_add_numeric(struct list_head *list, int *idx,
- 			     u32 type, u64 config,
--			     struct list_head *head_config);
-+			     struct list_head *terms);
- int parse_events_add_cache(struct list_head *list, int *idx,
- 			   char *type, char *op_result1, char *op_result2);
- int parse_events_add_breakpoint(struct list_head *list, int *idx,
- 				void *ptr, char *type);
- int parse_events_add_pmu(struct list_head *list, int *idx,
--			 char *pmu , struct list_head *head_config);
-+			 char *pmu , struct list_head *terms);
- void parse_events__set_leader(char *name, struct list_head *list);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
+ #endif /* TESTS_H */
+diff --git a/tools/perf/tests/toggle-event-group.c b/tools/perf/tests/toggle-event-group.c
+new file mode 100644
+index 0000000..e781b30
+--- /dev/null
++++ b/tools/perf/tests/toggle-event-group.c
+@@ -0,0 +1,195 @@
++#include <sys/types.h>
++#include <unistd.h>
++#include <traceevent/event-parse.h>
++#include "thread_map.h"
++#include "evsel.h"
++#include "debug.h"
++#include "tests.h"
++
++/*
++ * We want to toggle instructions on/off only after chained
++ * execution of defined tracepoints, like:
++ *
++ * getuid();
++ *    openat();
++ *       instructions to count
++ *    close();
++ * getppid();
++ *
++ * This test creates following events:
++ *
++ * 1) tracepoint sys_enter_getuid
++ * 2) tracepoint sys_enter_getppid
++ * 3) tracepoint sys_enter_openat
++ * 4) tracepoint sys_enter_close
++ * 5) HW event instruction
++ *
++ *
++ * Events 3) and 4) are created as a group with 3) as the leader.
++ * Events 3) and 4) toggle ON and OFF respectively event 5).
++ * Events 1) and 2) toggle ON and OFF respectively event 3).
++ *
++ * This means:
++ *   - when the workload executes getuid(), the group (events 3
++ *     and 4) is toggled ON.
++ *   - when the workload executes close, the group (events 3
++ *     and 4) is toggled OFF.
++ *   - when the workload executes started events 3) and 4) they
++ *     toggle ON and OFF respectively instructions event.
++ *
++ */
++
++extern int test__toggle_event_raw_arch(void);
++
++static int get_tp_id(const char *name)
++{
++	struct event_format *tp_format = event_format__new("syscalls", name);
++	u64 id = 0;
++
++	if (tp_format) {
++		id = tp_format->id;
++		pevent_free_format(tp_format);
++	}
++
++	return id;
++}
++
++#ifndef __x86_64__
++int test__toggle_event_group(void)
++{
++	pr_err("The toggle event test not implemented for arch.\n");
++	return 0;
++}
++#else
++
++static int test(void)
++{
++	int instr;
++
++	getuid();
++	instr = test__toggle_event_raw_arch();
++	getppid();
++	return instr;
++}
++
++#ifndef PERF_EVENT_IOC_SET_TOGGLE
++#define PERF_EVENT_IOC_SET_TOGGLE 1074275336
++#endif
++
++static int toggle_event(int fd_event, int flag, int fd_toggled)
++{
++	u64 args[2] = { fd_toggled, flag };
++	return ioctl(fd_event, PERF_EVENT_IOC_SET_TOGGLE, args);
++}
++
++int test__toggle_event_group(void)
++{
++	struct perf_event_attr attr_group_on = {
++		.type   = PERF_TYPE_TRACEPOINT,
++		.config = get_tp_id("sys_enter_getuid"),
++		.sample_period = 1,
++	};
++	struct perf_event_attr attr_group_off = {
++		.type   = PERF_TYPE_TRACEPOINT,
++		.config = get_tp_id("sys_enter_getppid"),
++		.sample_period = 1,
++	};
++	struct perf_event_attr attr_on = {
++		.type   = PERF_TYPE_TRACEPOINT,
++		.config = get_tp_id("sys_enter_openat"),
++		.sample_period = 1,
++		.paused		= 1,
++	};
++	struct perf_event_attr attr_off = {
++		.type   = PERF_TYPE_TRACEPOINT,
++		.config = get_tp_id("sys_enter_close"),
++		.sample_period = 1,
++		.paused		= 1,
++	};
++	struct perf_event_attr attr_instr = {
++		.type		= PERF_TYPE_HARDWARE,
++		.config		= PERF_COUNT_HW_INSTRUCTIONS,
++		.paused		= 1,
++		.exclude_kernel = 1,
++		.exclude_hv	= 1,
++	};
++	int fd_group_on, fd_group_off, fd_on, fd_off, fd_instr;
++	__u64 value, instr;
++
++	fd_instr = sys_perf_event_open(&attr_instr, 0, -1, -1, 0);
++	if (fd_instr < 0) {
++		pr_err("failed to open instruction event, errno %d\n", errno);
++		return -1;
++	}
++
++	fd_on = sys_perf_event_open(&attr_on, 0, -1, -1, 0);
++	if (fd_on < 0) {
++		pr_err("failed to open 'on' event, errno %d\n", errno);
++		return -1;
++	}
++
++	fd_off = sys_perf_event_open(&attr_off, 0, -1, fd_on, 0);
++	if (fd_off < 0) {
++		pr_err("failed to open 'off' event, errno %d\n", errno);
++		return -1;
++	}
++
++	if (toggle_event(fd_on, PERF_FLAG_TOGGLE_ON, fd_instr)) {
++		pr_err("failed to set toggle 'on', errno %d\n", errno);
++		return -1;
++	}
++
++	if (toggle_event(fd_off, PERF_FLAG_TOGGLE_OFF, fd_instr)) {
++		pr_err("failed to set toggle 'off', errno %d\n", errno);
++		return -1;
++	}
++
++	fd_group_on = sys_perf_event_open(&attr_group_on, 0, -1,
++					  fd_on, PERF_FLAG_TOGGLE_ON);
++	if (fd_group_on < 0) {
++		pr_err("failed to open 'group_on' event, errno %d\n", errno);
++		return -1;
++	}
++
++	fd_group_off = sys_perf_event_open(&attr_group_off, 0, -1,
++					   fd_on, PERF_FLAG_TOGGLE_OFF);
++	if (fd_group_off < 0) {
++		pr_err("failed to open 'group_off' event, errno %d\n", errno);
++		return -1;
++	}
++
++#define READ(i, exp)								\
++do {										\
++	if (sizeof(value) != read(fd_instr, &value, sizeof(value))) {		\
++		pr_err("failed to read instruction event, errno %d\n", errno);	\
++		return -1;							\
++	}									\
++	pr_debug("%d got count %llu vs %lu\n", i, value, (unsigned long) exp);	\
++} while (0)
++
++
++	READ(1, 0);
++
++	test__toggle_event_raw_arch();
++
++	READ(2, 0);
++
++	instr = test();
++
++	READ(3, instr);
++
++	test__toggle_event_raw_arch();
++
++	READ(4, instr);
++
++	close(fd_on);
++	close(fd_off);
++	close(fd_group_on);
++	close(fd_group_off);
++
++	READ(5, instr);
++
++	close(fd_instr);
++	return instr != value;
++}
++#endif /* __x86_64__ */
 -- 
 1.7.11.7
 
