@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab3IYHS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 03:18:28 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:36458 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab3IYHS1 (ORCPT
+	id S1754076Ab3IYHV6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 03:21:58 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:51295 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab3IYHVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 03:18:27 -0400
+	Wed, 25 Sep 2013 03:21:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130924135649.GB16407@lee--X1>
-References: <1379879358-7297-1-git-send-email-linus.walleij@linaro.org>
-	<20130923080532.GD2185@lee--X1>
-	<CACRpkdaytQMhPRK59nrXDFhY7e1UyYC3X461-LS-5xymgM36sw@mail.gmail.com>
-	<20130923084447.GG2185@lee--X1>
-	<CACRpkdYqXqGrMVLA81+cDRFQWGOZxO5mhmJqXS-AnqD4gz9VPw@mail.gmail.com>
-	<20130924135649.GB16407@lee--X1>
-Date: Wed, 25 Sep 2013 09:18:26 +0200
-Message-ID: <CACRpkdY7wm2wMsejnHmCNT68Gc_sZw6oWqCJzaiaYBxzQOy2xQ@mail.gmail.com>
-Subject: Re: [PATCH v3] mfd: add STw481x driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wang Shilong <wangshilong1991@gmail.com>
+In-Reply-To: <20130924011134.GI17725@bbox>
+References: <000001ceb835$f0899910$d19ccb30$%yang@samsung.com>
+	<20130924011134.GI17725@bbox>
+Date: Wed, 25 Sep 2013 15:21:54 +0800
+Message-ID: <CAL1ERfPNzMBgX7yGDpVRQP-OZPMZWg0wHOXt75px6uxkHD8CpQ@mail.gmail.com>
+Subject: Re: [PATCH v3 0/3] mm/zswap bugfix: memory leaks and other problems
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Weijie Yang <weijie.yang@samsung.com>, akpm@linux-foundation.org,
+        sjenning@linux.vnet.ibm.com, bob.liu@oracle.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        d.j.shin@samsung.com, heesub.shin@samsung.com,
+        kyungmin.park@samsung.com, hau.chen@samsung.com,
+        bifeng.tong@samsung.com, rui.xie@samsung.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 3:56 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Mon, 23 Sep 2013, Linus Walleij wrote:
->
->> On Mon, Sep 23, 2013 at 10:44 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> >> > I'm happy to change it myself, rather that asking you to resubmit.
->> >> >
->> >> > Which do you prefer?
->> >>
->> >> Pls fix it if you have time!
->> >
->> > Sorry, I should have been more clear.
->> >
->> > Which method do you prefer?
+On Tue, Sep 24, 2013 at 9:11 AM, Minchan Kim <minchan@kernel.org> wrote:
+> On Mon, Sep 23, 2013 at 04:19:36PM +0800, Weijie Yang wrote:
+>> This patch series fix a few bugs in mm/zswap based on Linux-3.11.
 >>
->> The method where you fix it up when applying it...
+>> v2 --> v3
+>>       - keep GFP_KERNEL flag
 >
-> Clearly I still wasn't clear enough.
+> Why do you drop this?
 >
-> I'll select a 'format' myself. ;)
+> It's plain BUG. I read Bob's reply but it couldn't justify to let the pain
+> remain. First of all, let's fix it and better idea could come later.
 
-Aha all the time I thought you were asking which of the two methods of:
+Hi, Minchan. Thanks for review
 
-- Me sending a new patch
-- You fixing it up when applying it
+What I thought is that better idea could come sooner if I keep this
+flag rather than fixing it
 
-I wanted to use ...
+Yes, you are right. Fixing a bug has a higher priority than waiting
+for better idea.
 
-As for the actual question: flip a coin.
+I will add it again in the next version patch set.
 
-Yours,
-Linus Walleij
+>>
+>> v1 --> v2
+>>       - free memory in zswap_frontswap_invalidate_area(in patch 1)
+>>       - fix whitespace corruption (line wrapping)
+>>
+>> Corresponding mail thread: https://lkml.org/lkml/2013/8/18/59
+>>
+>> These issues fixed/optimized are:
+>>
+>>  1. memory leaks when re-swapon
+>>
+>>  2. memory leaks when invalidate and reclaim occur concurrently
+>>
+>>  3. avoid unnecessary page scanning
+>>
+>>
+>> Issues discussed in that mail thread NOT fixed as it happens rarely or
+>> not a big problem or controversial:
+>>
+>>  1. a "theoretical race condition" when reclaim page
+>> When a handle alloced from zbud, zbud considers this handle is used
+>> validly by upper(zswap) and can be a candidate for reclaim. But zswap has
+>> to initialize it such as setting swapentry and adding it to rbtree.
+>> so there is a race condition, such as:
+>>  thread 0: obtain handle x from zbud_alloc
+>>  thread 1: zbud_reclaim_page is called
+>>  thread 1: callback zswap_writeback_entry to reclaim handle x
+>>  thread 1: get swpentry from handle x (it is random value now)
+>>  thread 1: bad thing may happen
+>>  thread 0: initialize handle x with swapentry
+>>
+>> 2. frontswap_map bitmap not cleared after zswap reclaim
+>> Frontswap uses frontswap_map bitmap to track page in "backend" implementation,
+>> when zswap reclaim a page, the corresponding bitmap record is not cleared.
+>>
+>> 3. the potential that zswap store and reclaim functions called recursively
+>>
+>>
+>>  mm/zswap.c |   28 ++++++++++++++++++++--------
+>>  1 file changed, 20 insertions(+), 8 deletions(-)
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+> --
+> Kind regards,
+> Minchan Kim
