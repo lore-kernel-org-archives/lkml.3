@@ -1,129 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336Ab3IYUL2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:11:28 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37521 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab3IYUL1 (ORCPT
+	id S1755392Ab3IYUMG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:12:06 -0400
+Received: from mail-ye0-f169.google.com ([209.85.213.169]:42704 "EHLO
+	mail-ye0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754584Ab3IYUME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:11:27 -0400
-Date: Wed, 25 Sep 2013 21:11:24 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch: Find CamelCase definitions of
- struct/union/enum
-Message-ID: <20130925201124.GA13318@ZenIV.linux.org.uk>
-References: <1380047934.3575.100.camel@joe-AO722>
- <20130925152432.GY13318@ZenIV.linux.org.uk>
- <1380123344.17366.5.camel@joe-AO722>
- <20130925161949.GZ13318@ZenIV.linux.org.uk>
- <1380136920.17366.15.camel@joe-AO722>
+	Wed, 25 Sep 2013 16:12:04 -0400
+Date: Wed, 25 Sep 2013 13:05:39 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: "Gupta, Pekon" <pekon@ti.com>
+Cc: "olof@lixom.net" <olof@lixom.net>,
+        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: Re: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various
+ ECC schemes
+Message-ID: <20130925200539.GH23337@ld-irv-0074.broadcom.com>
+References: <1378986619-26765-1-git-send-email-pekon@ti.com>
+ <1378986619-26765-2-git-send-email-pekon@ti.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
+ <20130925134619.GG10746@radagast>
+ <20130925175527.GA23337@ld-irv-0074.broadcom.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380136920.17366.15.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 12:22:00PM -0700, Joe Perches wrote:
-> It's pretty obvious from fs/binfmt_misc.c that you have
-> your own taste.
+On Wed, Sep 25, 2013 at 07:24:26PM +0000, Gupta, Pekon wrote:
+> > On Wed, Sep 25, 2013 at 08:46:19AM -0500, Felipe Balbi wrote:
+> > > + akpm
+> > >
+> > > On Tue, Sep 24, 2013 at 01:04:05PM -0500, Gupta, Pekon wrote:
+> [snip]
+> > > >
+> > > > Dear Olof and other DT Maintainers,
+> > > >
+> > > > This patch series has missed multiple merge windows, and
+> > > > much of the other development work on mtd/nand/omap
+> > > > driver is gated due to this.
+> > 
+> > Also, to be fair here: you only started CC'ing the appropriate DT
+> > people/list around v4, after which you got a (somewhat) prompt and
+> > thorough review of the DT bindings. Then several months passed before
+> > you addressed the reviews. So the "multiple merge windows" is not
+> > entirely to be blamed on others ;)
+> > 
+> > Brian
 > 
-> $ scripts/checkpatch.pl -f --strict fs/binfmt_misc.c
-> [...]
-> total: 45 errors, 39 warnings, 10 checks, 725 lines checked
+> Few points I would like to clarify here, *without* pointing anyone..
+> 
+> (1) It was Olof's comments which directed me to cc: devicetree-discuss list.
+> So wrong list was always cc-ed till v4.
+> Refer http://permalink.gmane.org/gmane.linux.ports.arm.kernel/249662
+> 
+> (2) The devicetree list has been updated in MAINTAINER file towards
+> end of July (22/July/2013) in following commit. Whereas the patch v4
+> was submitted on 2/July/2013. So I wasn't aware of this new DT maillist.
+> commit d0fb18c5c0caf2ed0eecf3d0145450ae708ed75a
+> Commit:     Grant Likely <grant.likely@linaro.org>
+> CommitDate: 2013-07-22
 
-*snort*
+Did you not notice the 'bounce' emails once Grant made the (IMO unwise)
+decision to shut down the DT mailing list instead of just redirecting?
 
-Most of those are whitespace noise, mostly having nothing whatsoever
-to do with me or my taste.  The rest...  Let's see:
+> (3) When a maintainer gives a NAK, I expect him to at-least give
+> directions on what to change in the patch. There were no comments
+> given, neither new patch reviewed by the DT maintainer even after
+> sending multiple request directly.
+> http://lists.infradead.org/pipermail/linux-mtd/2013-July/047441.html
+> http://lists.infradead.org/pipermail/linux-mtd/2013-July/047629.html
 
-linux/uaccess.h instead of asm/uaccess.h.  Reasonable enough these
-days.
+Those are links to your own emails, not to any NAKs. Any NAKs I saw
+listed reasons. I NAK'd based on the ABI breakage and lack of review by
+the DT maintainership; Arnd NAK'd based on similar reasons; Olof later
+(once you got the right list) gave constructive criticism on how to
+remove the Linux-isms and other software implementation details from the
+DT binding.
 
-Several instances of CamelCase that isn't.  Discussed upthread.
+> Its only when Artem and yourself pitched in by sending a mail to
+> new DT mail-list that the DT maintainer reviewed and provided the
+> comments for fixes.
+> But by that time 3.11-rc6 had already gone past, and so I knew this
+> Series cannot go in, so I wanted to wait some more, to see if there
+> were any more comments on this. And frankly I was too much
+> frustrated by then.
+> 
+> Just to speak my opinion.
+> We all understand that maintainers are heavily loaded by tons of
+> emails, And reviewing each patch instantly is not possible.
+> 
+> But this load is now passing to developers like me as frustration,
+> because most of energy is being spent in re-submitting patches
+> again and again, without any proper direction or conclusion.
+> And then there is no time and energy left for good work, where
+> we can contribute to optimizing frame-works for performance or
+> adding new features.
+> So I see many good developers distracting away from mainline.
 
-"WARNING: do not add new typedefs".  Agreed for non-locals, strongly
-disagreed in cases like that.
+I sincerely hope that this isn't (or at least doesn't continue to be)
+the norm.
 
-CHECK: Blank lines aren't necessary after an open brace '{'
-#137: FILE: binfmt_misc.c:137:
-+       if (fmt->flags & MISC_FMT_OPEN_BINARY) {
-+
+> Thus, there should be a mechanism, where such load can be
+> distributed, and there are less emails. And developers don't
+> have to re-submit patch multiple times, by collecting most reviews
+> at once.  This way developer's like me can spend more time in doing
+> other constructive things.
 
-Agreed, ain't mine...
+I understand your concerns. I have been frustrated with slow responses
+on MTD stuff as well, which is why I'm stepping in to review and commit
+more. But I see that your patch hit a unique combination of events that
+helped slow things down even more than usual.
 
-CHECK: braces {} should be used on all arms of this statement
-#187: FILE: binfmt_misc.c:187:
-+       if (fmt->flags & MISC_FMT_CREDENTIALS) {
-[...]
-+       } else
-[...]
+MTD maintainership has been slowing down for a while, and in the
+midst of your patch series, I began stepping in to take care of some of
+that load. I didn't quite have a good picture of what patches were
+pending without comments at that point, so patch series like yours were
+in limbo with no one to review.
 
-Umm...  Again, that's not mine and while I agree in principle, in this case
-I'm not sure it's worth bothering.
+Additionally, Grant stepped down from DT maintainership and
+correspondingly shut down and transitioned the DT mailing list. This
+directly affected your patch series.
 
-ERROR: switch and case should be at the same indent
-#245: FILE: binfmt_misc.c:245:
-+               switch (*p) {
-+                       case 'P':
-[...]
-+                       case 'O':
-[...]
-+                       case 'C':
-[...]
-+                       default:
+Lastly, it is extra difficult to deal with patch sets like this that
+cross subsystems and require reviews from multiple constituencies. And
+that is even more difficult when you aren't even emailing the correct
+people (for whatever reason).
 
-Not mine.  I agree about indentation level, but there's more serious
-style problem with that sucker - while (cont) thing would be better off
-as while (1) { ... { ...  default: return p; } }
+I believe that many of the factors that slowed down your particular
+series have been ameliorated.
 
-CHECK: multiple assignments should be avoided
-#291: FILE: binfmt_misc.c:291:
-+       p = buf = (char *)e + sizeof(Node);
+Time has allowed developers to become more aware of the change in DT
+maintainership and mailing list, and I can more promptly redirect
+developers who are still CC'ing the wrong people/lists.
 
-I hate it when they get religion.  Should be avoided because of...?
+I am able to spend a little more time on MTD stuff, to help push
+development along a little faster.
 
-A lot of complaints about
-+       switch (*p++) {
-+               case 'E': e->flags = 1<<Enabled; break;
-+               case 'M': e->flags = (1<<Enabled) | (1<<Magic); break;
-+               default: goto Einval;
-and several other switches like that.  IMO in a situation when all cases are
-short, this kind of layout is OK.
+Olof has given good advice on your DT binding and has (slowly) been
+responding to other requests for DT review that make it to his list. I
+see that he hasn't followed up on your changes (this v6), so pinging him
+(as you did) is probably the correct approach. But please do recognize
+that the DT list is very high volume, so it's hard to get good timely
+responses there.
 
-WARNING: simple_strtoul is obsolete, use kstrtoul instead
-#323: FILE: binfmt_misc.c:323:
-+               e->offset = simple_strtoul(p, &p, 10);
-Makes sense these days...
+Anyway, at this point I think your patch series should be nearly
+complete. I made a few comments on your patches, and I'd imagine you
+only should need one more revision (v7) before I can accept it to the
+l2-mtd.git tree.
 
-Several ones like this:
-WARNING: braces {} are not necessary for single statement blocks
-#438: FILE: binfmt_misc.c:438:
-+       if (e->flags & MISC_FMT_PRESERVE_ARGV0) {
-+               *dp++ = 'P';
-+       }
-Matter of taste...  I probably would've skipped {} here, but it's not something
-I'd bother changing in somebody else's patch (and it hadn't passed through
-my hands, BTW - hist.git seems to indicate that it was passed by akpm; guess
-he also hadn't bothered changing that)
+> Please consider this as constructive feedback, without targeting
+> any individual or team.
 
-CHECK: multiple assignments should be avoided
-#481: FILE: binfmt_misc.c:481:
-+               inode->i_atime = inode->i_mtime = inode->i_ctime =
-I *do* hate it when they get religion.
+Thank you for your thoughtful response.
 
-ERROR: do not use assignment in if condition
-#522: FILE: binfmt_misc.c:522:
-+       if (!(page = (char *)__get_free_page(GFP_KERNEL)))
-Ditto.
-
-
-Overall: checkpatch.pl has produced 2 reasonable suggestions and pointed to
-a place that is badly written for reasons unrelated to ones mentioned in
-the output.  That, along with some amount of BS was buried under tons of noise
-about whitespace.
+Brian
