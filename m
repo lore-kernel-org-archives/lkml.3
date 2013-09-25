@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab3IYN4F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 09:56:05 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:44020 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755620Ab3IYN4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 09:56:03 -0400
-Date: Wed, 25 Sep 2013 06:55:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 0/3] Documentation updates for 3.13
-Message-ID: <20130925135548.GT9093@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130925011657.GA29958@linux.vnet.ibm.com>
- <20130925034818.GB2016@leaf>
+	id S1755783Ab3IYNzz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 09:55:55 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:52968 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755619Ab3IYNzy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 09:55:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925034818.GB2016@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092513-5806-0000-0000-000022D8A91F
+In-Reply-To: <20130924221802.GC3837@kroah.com>
+References: <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
+	<20130918191517.GQ19937@titan.lakedaemon.net>
+	<20130918203247.GA11181@obsidianresearch.com>
+	<1379539063.31417.23.camel@atx-linux-37>
+	<20130919100833.GC19346@amd.pavel.ucw.cz>
+	<523AD9C5.8060006@monstr.eu>
+	<1379710523.21515.4.camel@atx-linux-37>
+	<1380038126.13235.12.camel@atx-linux-37>
+	<5241B6BC.1010301@monstr.eu>
+	<1380039774.14129.6.camel@atx-linux-37>
+	<20130924221802.GC3837@kroah.com>
+Date: Wed, 25 Sep 2013 08:55:53 -0500
+Message-ID: <CADuitaBT2xqPoSRUTU13GXsayJNHfPcM7ZoSLEy5Ai+W+htmRg@mail.gmail.com>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+From: Yves Vandervennet <rocket.yvanderv@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Tull <atull@altera.com>, Michal Simek <monstr@monstr.eu>,
+        Pavel Machek <pavel@denx.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 08:48:18PM -0700, Josh Triplett wrote:
-> On Tue, Sep 24, 2013 at 06:16:57PM -0700, Paul E. McKenney wrote:
-> > Hello!
-> > 
-> > This series provides a few documentation updates:
-> > 
-> > 1.	Update stall-warning documentation to catch up with recent updates.
-> > 
-> > 2.	Add a reference to the new vmstat-avoidance patch to the
-> > 	file describing how to quiet per-CPU kthreads.
-> > 
-> > 3.	Fix a typo in Documentation/RCU/checklist.txt, courtesy of
-> > 	Michael Opdenacker.
-> 
-> I replied to 3 with a comment; for 1 and 2:
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Greg,
 
-Thank you for the review, applied to 1 and 2.
+>> The default hotplug-script doesn't do anything special (that the kernel
+>> couldn't do by itself).  What's great is that it could call another
+>> script that adds headers or does whatever other special un-gzipping or
+>> other massaging that the firmware image needs before it gets loaded.
+>
+> Only if you need to do something "special" like this could it justify
+> not using the in-kernel firmware loader.  Also note that I think future
+> versions of udev will have the udev firmware loader removed entirely, so
+> watch out for that.
+If the bit stream is in raw format, the kernel can deal with it.
+however, there are "richer" formats for the FPGA bit streams that need
+to be parsed in order to extract the raw data that an FPGA accepts. In
+this case, user space must be involved.
 
-							Thanx, Paul
+Regards
+Yves
 
+>
+> thanks,
+>
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
