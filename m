@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757913Ab3IYBN4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:13:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39006 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755976Ab3IYAQT (ORCPT
+	id S1757927Ab3IYBOS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:14:18 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:49596 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756676Ab3IYBOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Vasut <marex@denx.de>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Jonathan Cameron <jic23@kernel.org>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 031/110] iio: mxs-lradc: Fix misuse of iio->trig
-Date: Tue, 24 Sep 2013 17:14:29 -0700
-Message-Id: <20130925001326.787125595@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
-References: <20130925001323.387158698@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 24 Sep 2013 21:14:08 -0400
+Date: Tue, 24 Sep 2013 21:14:04 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info' in
+ all related extern functions
+Message-ID: <20130925011404.GB25777@htj.dyndns.org>
+References: <5212DBFA.8030805@asianux.com>
+ <20130923150625.GB14547@htj.dyndns.org>
+ <52410A40.1000304@asianux.com>
+ <20130924040601.GA31575@mtj.dyndns.org>
+ <524114B8.3070903@asianux.com>
+ <20130924120429.GA2366@htj.dyndns.org>
+ <5242331B.4010309@asianux.com>
+ <20130925005802.GA25777@htj.dyndns.org>
+ <5242372C.4010509@asianux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5242372C.4010509@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Sep 25, 2013 at 09:06:52AM +0800, Chen Gang wrote:
+> OK, I see, the 'root cause' is: "you are not the related maintainer
+> either", so it is really necessary for me to spend additional time
+> resource on it :-(.
 
-------------------
+Yeah, at least partly.  That and the fact that I'm not too willing to
+dig into the code without further evidence.  It isn't anything strange
+to ask tho and I'm likely to do that even for subsystems that I know
+intimately if the subject code has been stable / stale for years and
+the analysis doesn't seem immediately convincing.  And, if my
+experience is anything to go by, it's not too unlikely that you might
+hit something which doesn't agree with your current assumptions while
+trying to actually trigger the problem.
 
-From: Marek Vasut <marex@denx.de>
+Thanks.
 
-commit e1b1fa66a0398f0b52ae79a2bdc7de87c205d074 upstream.
-
-The struct iio_dev .trig field is to be used only by the IIO core,
-the driver shall not fill this field. This fixes ugly crash when
-the driver is compiled as a module and the module is rmmod'd.
-
-Signed-off-by: Marek Vasut <marex@denx.de>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: Jonathan Cameron <jic23@kernel.org>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/staging/iio/adc/mxs-lradc.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
---- a/drivers/staging/iio/adc/mxs-lradc.c
-+++ b/drivers/staging/iio/adc/mxs-lradc.c
-@@ -661,12 +661,13 @@ static int mxs_lradc_trigger_init(struct
- {
- 	int ret;
- 	struct iio_trigger *trig;
-+	struct mxs_lradc *lradc = iio_priv(iio);
- 
- 	trig = iio_trigger_alloc("%s-dev%i", iio->name, iio->id);
- 	if (trig == NULL)
- 		return -ENOMEM;
- 
--	trig->dev.parent = iio->dev.parent;
-+	trig->dev.parent = lradc->dev;
- 	iio_trigger_set_drvdata(trig, iio);
- 	trig->ops = &mxs_lradc_trigger_ops;
- 
-@@ -676,15 +677,17 @@ static int mxs_lradc_trigger_init(struct
- 		return ret;
- 	}
- 
--	iio->trig = trig;
-+	lradc->trig = trig;
- 
- 	return 0;
- }
- 
- static void mxs_lradc_trigger_remove(struct iio_dev *iio)
- {
--	iio_trigger_unregister(iio->trig);
--	iio_trigger_free(iio->trig);
-+	struct mxs_lradc *lradc = iio_priv(iio);
-+
-+	iio_trigger_unregister(lradc->trig);
-+	iio_trigger_free(lradc->trig);
- }
- 
- static int mxs_lradc_buffer_preenable(struct iio_dev *iio)
-
-
+-- 
+tejun
