@@ -1,155 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab3IYDLO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 23:11:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51500 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361Ab3IYDLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 23:11:13 -0400
-Message-ID: <52425444.204@suse.com>
-Date: Tue, 24 Sep 2013 23:11:00 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
-Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] blktrace: fix race with open trace files and directory removal
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754645Ab3IYDL0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 23:11:26 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41135 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325Ab3IYDLX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 23:11:23 -0400
+Date: Wed, 25 Sep 2013 13:11:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: linux-next: manual merge of the block tree with Linus' tree
+Message-Id: <20130925131113.5106bbddf4b56b77c7ba12ca@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__25_Sep_2013_13_11_13_+1000_v_stM=jMstKfRuJS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a bug in the blktrace client where it will stop and tear down
-all of the tracing instances for devices it's opened whether it
-successfully completed the setup or not.
+--Signature=_Wed__25_Sep_2013_13_11_13_+1000_v_stM=jMstKfRuJS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-By starting multiple blktrace processes on the same device, it's possible
-to permanently disable blktrace on that device. The cause is that when
-the first blktrace process to exit tears down the directory structure,
-the trace files are still held open. Debugfs removes the dentries for the
-open files just fine but the relay implementation doesn't remove the
-dentries until all of the references to the file are dropped. This means
-that if there are open files when debugfs_remove is called for the device
-directory, the directory is not empty and can't be removed. Since the
-shutdown of the blktrace structure xchg's the structure out, there's no
-way to clean up the directory and any new blktrace processes will fail
-to start because it can't create the directory.
+Hi Jens,
 
-This patch adds a kref to blk_trace so that we can release it after the
-initial reference as well as all of the references accumulated by the
-relay files are dropped.
+Today's linux-next merge of the block tree got a conflict in
+drivers/md/bcache/request.c between commit c0f04d88e46d ("bcache: Fix
+flushes in writeback mode") from Linus' tree and commit 53027147e43c
+("bcache: Prune struct btree_op") and dd879364df83 ("bcache: Break up struc=
+t search") from the block tree.
 
-I have a fix for the blktrace client to avoid the situation on older
-kernels as well.
+I fixed it up (I wasn't sure, but I used the version from Linus' tree -
+see below) and can carry the fix as necessary (no action is required).
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
- include/linux/blktrace_api.h |    2 ++
- kernel/trace/blktrace.c      |   37 +++++++++++++++++++++++++++++++++----
- 2 files changed, 35 insertions(+), 4 deletions(-)
+There were several other patches that affect this area that were commited
+directly to Linus' tree today ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---- a/include/linux/blktrace_api.h	2013-09-24 22:39:53.342710250 -0400
-+++ b/include/linux/blktrace_api.h	2013-09-24 22:55:11.376936518 -0400
-@@ -4,6 +4,7 @@
- #include <linux/blkdev.h>
- #include <linux/relay.h>
- #include <linux/compat.h>
-+#include <linux/kref.h>
- #include <uapi/linux/blktrace_api.h>
- 
- #if defined(CONFIG_BLK_DEV_IO_TRACE)
-@@ -24,6 +25,7 @@ struct blk_trace {
- 	struct dentry *dropped_file;
- 	struct dentry *msg_file;
- 	atomic_t dropped;
-+	struct kref kref;
- };
- 
- extern int blk_trace_ioctl(struct block_device *, unsigned, char __user *);
---- a/kernel/trace/blktrace.c	2013-09-24 22:39:53.342710250 -0400
-+++ b/kernel/trace/blktrace.c	2013-09-24 22:55:39.004572055 -0400
-@@ -278,17 +278,33 @@ record_it:
- static struct dentry *blk_tree_root;
- static DEFINE_MUTEX(blk_tree_mutex);
- 
--static void blk_trace_free(struct blk_trace *bt)
-+static void blk_trace_release(struct kref *kref)
- {
-+	struct blk_trace *bt = container_of(kref, struct blk_trace, kref);
- 	debugfs_remove(bt->msg_file);
- 	debugfs_remove(bt->dropped_file);
--	relay_close(bt->rchan);
- 	debugfs_remove(bt->dir);
- 	free_percpu(bt->sequence);
- 	free_percpu(bt->msg_data);
- 	kfree(bt);
- }
- 
-+static void blk_trace_free(struct blk_trace *bt)
-+{
-+	/*
-+	 * The directory can't be removed until it's empty.
-+	 * The debugfs files created directly can be removed while
-+	 * they're open. The debugfs files created by relay won't
-+	 * be removed until they've been released. This drops our
-+	 * references to the files but the directory (and the rest
-+	 * of the blk_trace structure) won't be cleaned up until
-+	 * all of the relay files are closed by the user.
-+	 */
-+	relay_close(bt->rchan);
-+	bt->rchan = NULL;
-+	kref_put(&bt->kref, blk_trace_release);
-+}
-+
- static void blk_trace_cleanup(struct blk_trace *bt)
- {
- 	blk_trace_free(bt);
-@@ -381,8 +397,10 @@ static int blk_subbuf_start_callback(str
- 
- static int blk_remove_buf_file_callback(struct dentry *dentry)
- {
-+	struct blk_trace *bt = dentry->d_parent->d_inode->i_private;
- 	debugfs_remove(dentry);
- 
-+	kref_put(&bt->kref, blk_trace_release);
- 	return 0;
- }
- 
-@@ -392,8 +410,15 @@ static struct dentry *blk_create_buf_fil
- 						   struct rchan_buf *buf,
- 						   int *is_global)
- {
--	return debugfs_create_file(filename, mode, parent, buf,
--					&relay_file_operations);
-+	struct blk_trace *bt = parent->d_inode->i_private;
-+	struct dentry *dentry;
-+
-+	dentry = debugfs_create_file(filename, mode, parent, buf,
-+				     &relay_file_operations);
-+	if (dentry)
-+		kref_get(&bt->kref);
-+
-+	return dentry;
- }
- 
- static struct rchan_callbacks blk_relay_callbacks = {
-@@ -448,6 +473,8 @@ int do_blk_trace_setup(struct request_qu
- 	if (!bt)
- 		return -ENOMEM;
- 
-+	kref_init(&bt->kref);
-+
- 	ret = -ENOMEM;
- 	bt->sequence = alloc_percpu(unsigned long);
- 	if (!bt->sequence)
-@@ -474,6 +501,8 @@ int do_blk_trace_setup(struct request_qu
- 	if (!dir)
- 		goto err;
- 
-+	dir->d_inode->i_private = bt;
-+
- 	bt->dir = dir;
- 	bt->dev = dev;
- 	atomic_set(&bt->dropped, 0);
+diff --cc drivers/md/bcache/request.c
+index 71eb233,231b108..0000000
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@@ -979,68 -1059,52 +1059,55 @@@ static void cached_dev_write(struct cac
+ =20
+  	if (should_writeback(dc, s->orig_bio,
+  			     cache_mode(dc, bio),
+- 			     s->op.skip)) {
+- 		s->op.skip =3D false;
+- 		s->writeback =3D true;
++ 			     s->iop.bypass)) {
++ 		s->iop.bypass =3D false;
++ 		s->iop.writeback =3D true;
+  	}
+ =20
+- 	if (s->op.skip)
+- 		goto skip;
+-=20
+- 	trace_bcache_write(s->orig_bio, s->writeback, s->op.skip);
++ 	if (s->iop.bypass) {
++ 		s->iop.bio =3D s->orig_bio;
++ 		bio_get(s->iop.bio);
+ =20
+- 	if (!s->writeback) {
+- 		s->op.cache_bio =3D bio_clone_bioset(bio, GFP_NOIO,
+- 						   dc->disk.bio_split);
+-=20
+- 		closure_bio_submit(bio, cl, s->d);
+- 	} else {
++ 		if (!(bio->bi_rw & REQ_DISCARD) ||
++ 		    blk_queue_discard(bdev_get_queue(dc->bdev)))
++ 			closure_bio_submit(bio, cl, s->d);
++ 	} else if (s->iop.writeback) {
+  		bch_writeback_add(dc);
+ =20
+ -		if (s->iop.flush_journal) {
+ +		if (bio->bi_rw & REQ_FLUSH) {
+  			/* Also need to send a flush to the backing device */
+ -			s->iop.bio =3D bio_clone_bioset(bio, GFP_NOIO,
+ -						      dc->disk.bio_split);
+ +			struct bio *flush =3D bio_alloc_bioset(0, GFP_NOIO,
+ +							     dc->disk.bio_split);
+ =20
+ -			bio->bi_size =3D 0;
+ -			bio->bi_vcnt =3D 0;
+ -			closure_bio_submit(bio, cl, s->d);
+ +			flush->bi_rw	=3D WRITE_FLUSH;
+ +			flush->bi_bdev	=3D bio->bi_bdev;
+ +			flush->bi_end_io =3D request_endio;
+ +			flush->bi_private =3D cl;
+ +
+ +			closure_bio_submit(flush, cl, s->d);
+  		} else {
+- 			s->op.cache_bio =3D bio;
++ 			s->iop.bio =3D bio;
+  		}
+- 	}
+- out:
+- 	closure_call(&s->op.cl, bch_insert_data, NULL, cl);
+- 	continue_at(cl, cached_dev_write_complete, NULL);
+- skip:
+- 	s->op.skip =3D true;
+- 	s->op.cache_bio =3D s->orig_bio;
+- 	bio_get(s->op.cache_bio);
++ 	} else {
++ 		s->iop.bio =3D bio_clone_bioset(bio, GFP_NOIO,
++ 					      dc->disk.bio_split);
+ =20
+- 	if ((bio->bi_rw & REQ_DISCARD) &&
+- 	    !blk_queue_discard(bdev_get_queue(dc->bdev)))
+- 		goto out;
++ 		closure_bio_submit(bio, cl, s->d);
++ 	}
+ =20
+- 	closure_bio_submit(bio, cl, s->d);
+- 	goto out;
++ 	closure_call(&s->iop.cl, bch_data_insert, NULL, cl);
++ 	continue_at(cl, cached_dev_write_complete, NULL);
+  }
+ =20
+- static void request_nodata(struct cached_dev *dc, struct search *s)
++ static void cached_dev_nodata(struct closure *cl)
+  {
+- 	struct closure *cl =3D &s->cl;
++ 	struct search *s =3D container_of(cl, struct search, cl);
+  	struct bio *bio =3D &s->bio.bio;
+ =20
+- 	if (bio->bi_rw & REQ_DISCARD) {
+- 		request_write(dc, s);
+- 		return;
+- 	}
+-=20
+- 	if (s->op.flush_journal)
+- 		bch_journal_meta(s->op.c, cl);
++ 	if (s->iop.flush_journal)
++ 		bch_journal_meta(s->iop.c, cl);
+ =20
++ 	/* If it's a flush, we send the flush to the backing device too */
+  	closure_bio_submit(bio, cl, s->d);
+ =20
+  	continue_at(cl, cached_dev_bio_complete, NULL);
+
+--Signature=_Wed__25_Sep_2013_13_11_13_+1000_v_stM=jMstKfRuJS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSQlRWAAoJEECxmPOUX5FEd4IP/2fcq686jj9l4utnre6y3Q8M
+bx/lvN6bCfsiheCheNHNEPUy1XjeIhFpudWNk2Utbajl4xxWXxBNLHlLq8zsPYsn
+AISRjapQsO1DNxGrXSQckmsYPvnnQ4TuEBV92Unvqr0tBUiiTtPacxGdURwwDpXC
+zkdtgRGWgJo8GqRv9Y3zy8NOrp0TAVP9vwhDzHFjtf8I+PeY+gG7FR9z1+Brrk82
+G9DrDja68Jc80o6j9X4SZyg/kw9mGvtp0DDc+giatsDrEBdQh3YJdb5tyQCqU4vH
+eb+Y57cAq6jlH23t0EQ+isVbBZjKSK+GtaPUOAMXXjdRufM510BZjkfCXM8DkpIP
+BjuJdUbJOZqduWHtY1bzt8b7iEiMhRUAnLIIiXnzLBFHCCp90zNIXEwJdC7saEX1
+yqB2Ysal7ML1U/mmnYBYcGtIQyJJizFzsjoJVkLObe8WRHT4/B+QsY+SXsrbDRmJ
+aSCoQgYYQvK5IFjnFQKggnlC0ZBoJBtxHX5zNpOCdqgkXjR8WUHO/GAk5tOdR0nU
+T5kMk1f+c5HB6FleX+PpExcnR5xd/h2GhUvr3e7mB+YysFdd3wr2X8p1ixHRGs7A
+J86qZYhZRE7PaaFnmw2G+isGLNHqwvJeCEBmSSRuyK9JblCmKfHoMkpEoY8S1DaI
+0sFaXH1HQz0BWYEJEcBU
+=ZTHw
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__25_Sep_2013_13_11_13_+1000_v_stM=jMstKfRuJS--
