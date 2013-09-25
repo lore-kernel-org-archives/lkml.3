@@ -1,94 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab3IYIAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 04:00:09 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:64274 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab3IYIAH (ORCPT
+	id S1753565Ab3IYIBd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 04:01:33 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:59961 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab3IYIBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 04:00:07 -0400
-X-AuditID: cbfee68d-b7fe86d0000077a5-ce-52429806c07f
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Heiko Stuebner'" <heiko@sntech.de>,
-        "'Axel Lin'" <axel.lin@ingics.com>
-References: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
-In-reply-to: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
-Subject: [PATCH 07/20] regulator: gpio-regulator: use devm_regulator_register()
-Date: Wed, 25 Sep 2013 17:00:05 +0900
-Message-id: <001001ceb9c5$3f2d91d0$bd88b570$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65w5fHnzL+CpaSR8SldcZ2fs0oxwAAVupg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPIsWRmVeSWpSXmKPExsVy+t8zI122GU5BBs9PsVocmfOV2WLqwyds
-	Fv8fvWa1uLzwEqvFtysdTBaXd81hc2Dz2DnrLrtH288yj02rOtk8+rasYvTYfm0es8fnTXIB
-	bFFcNimpOZllqUX6dglcGRdnTWYv+MtR8WXZHtYGxjPsXYycHBICJhJTLn9ghLDFJC7cW8/W
-	xcjFISSwjFFi59JFLDBFc2ZeYYFILGKU+Hr+HhtIQkjgF6PElImSIDabgJrEly+HgaZycIgI
-	qEr8f+UOUs8ssJVRYsukk+wQ9bYSy//eBhvKKWAnsezeZ7A5wgL+EtO2nmAG6WUB6p39LxAk
-	zAtUPmUjxHG8AoISPybfA2tlFtCSWL/zOBOELS+xec1bsFYJAXWJR391QcIiAkYSZ47PYoco
-	EZHY9+IdI8g5EgJv2SWeLn4CNodFQEDi2+RDLBC9shKbDjBDvCspcXDFDZYJjBKzkGyehWTz
-	LCSbZyFZsYCRZRWjaGpBckFxUnqRoV5xYm5xaV66XnJ+7iZGSOT27mC8fcD6EGMy0PqJzFKi
-	yfnAyM8riTc0NjOyMDUxNTYytzQjTVhJnFetxTpQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dU
-	A+MkGeVr2TLvc+L/L17B9XDnrZmspiwmUYwvY3SMA6Y3rdvNsuBK6vxVQsbfbZZKXN1QtZvh
-	wIl3LzYtXpr8PIPhk1rHnnyzeU+i/lgrdK2JqP2xpC9nWexE1m9TF59I00y4XsTKIiWwQIlr
-	n4q6106nORP/lVYe3lzx5sn5R57fwl0sew0zF7EosRRnJBpqMRcVJwIAccKUhPICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDKsWRmVeSWpSXmKPExsVy+t9jAV22GU5BBssOMVocmfOV2WLqwyds
-	Fv8fvWa1uLzwEqvFtysdTBaXd81hc2Dz2DnrLrtH288yj02rOtk8+rasYvTYfm0es8fnTXIB
-	bFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QGco
-	KZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnrGDMuzprMXvCXo+LLsj2sDYxn
-	2LsYOTkkBEwk5sy8wgJhi0lcuLeerYuRi0NIYBGjxNfz99hAEkICvxglpkyUBLHZBNQkvnw5
-	DNTMwSEioCrx/5U7SD2zwFZGiS2TTrJD1NtKLP97G2wop4CdxLJ7n8HmCAv4S0zbeoIZpJcF
-	qHf2v0CQMC9Q+ZSNHxghbEGJH5PvgbUyC2hJrN95nAnClpfYvOYtWKuEgLrEo7+6IGERASOJ
-	M8dnsUOUiEjse/GOcQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dL
-	zs/dxAhOC8+kdjCubLA4xCjAwajEwytw1DFIiDWxrLgy9xCjBAezkghv0VSnICHelMTKqtSi
-	/Pii0pzU4kOMyUB/TmSWEk3OB6asvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGan
-	phakFsFsYeLglGpgbDba7nrG+3bC6oCcec+yT/1LOsvi8K5KRpj5wZr5U7zSFcsXB0/nU+Jx
-	yd61lkm9UD9wc87xZYeuenXqm9xIFE6QW224L6klYMnZjMKMpMmTkza2vWe0PDRJdJ0tz+n+
-	/b+/bnvAIzk3TmOh80GuvZ8+sZ6N2/Fi3qGXJwu6LqUpp7h8fetUpcRSnJFoqMVcVJwIADld
-	cgpPAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 25 Sep 2013 04:01:31 -0400
+Date: Wed, 25 Sep 2013 17:01:29 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: Re: [PATCH v5 6/7] ARM: shmobile: r8a73a4: add a DT node and a clock
+ alias for the DMAC
+Message-ID: <20130925080129.GB3747@verge.net.au>
+References: <1375455042-24093-1-git-send-email-g.liakhovetski@gmx.de>
+ <1375455042-24093-7-git-send-email-g.liakhovetski@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375455042-24093-7-git-send-email-g.liakhovetski@gmx.de>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_regulator_register() to make cleanup paths simpler.
+On Fri, Aug 02, 2013 at 04:50:41PM +0200, Guennadi Liakhovetski wrote:
+> Add a DT node for the only system DMAC instance on r8a73a4. The RT DMAC
+> can be added later under the same multiplexer, because they can serve the
+> same slaves and use the same MID-RID values. Configuration data is
+> supplied to the driver, using a compatibility match string.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/regulator/gpio-regulator.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Hi Guennadi,
 
-diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
-index 98a98ff..92aaec6 100644
---- a/drivers/regulator/gpio-regulator.c
-+++ b/drivers/regulator/gpio-regulator.c
-@@ -322,7 +322,8 @@ static int gpio_regulator_probe(struct platform_device *pdev)
- 			cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
- 	}
- 
--	drvdata->dev = regulator_register(&drvdata->desc, &cfg);
-+	drvdata->dev = devm_regulator_register(&pdev->dev, &drvdata->desc,
-+					       &cfg);
- 	if (IS_ERR(drvdata->dev)) {
- 		ret = PTR_ERR(drvdata->dev);
- 		dev_err(&pdev->dev, "Failed to register regulator: %d\n", ret);
-@@ -349,8 +350,6 @@ static int gpio_regulator_remove(struct platform_device *pdev)
- {
- 	struct gpio_regulator_data *drvdata = platform_get_drvdata(pdev);
- 
--	regulator_unregister(drvdata->dev);
--
- 	gpio_free_array(drvdata->gpios, drvdata->nr_gpios);
- 
- 	kfree(drvdata->states);
--- 
-1.7.10.4
+please split this up into two patches.
+A DT patch that modifies r8a73a4.dtsi and an SoC patch that modifies
+clock-r8a73a4.c.
 
+Thanks.
 
+> 
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+> ---
+>  arch/arm/boot/dts/r8a73a4.dtsi         |   43 ++++++++++++++++++++++++++++++++
+>  arch/arm/mach-shmobile/clock-r8a73a4.c |    1 +
+>  2 files changed, 44 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/r8a73a4.dtsi b/arch/arm/boot/dts/r8a73a4.dtsi
+> index e344b10..3c9c7f2 100644
+> --- a/arch/arm/boot/dts/r8a73a4.dtsi
+> +++ b/arch/arm/boot/dts/r8a73a4.dtsi
+> @@ -78,6 +78,49 @@
+>  				<0 56 4>, <0 57 4>;
+>  	};
+>  
+> +	dmac: dma-multiplexer@0 {
+> +		compatible = "renesas,shdma-mux";
+> +		#dma-cells = <1>;
+> +		dma-channels = <20>;
+> +		dma-requests = <256>;
+> +		#address-cells = <2>;
+> +		#size-cells = <2>;
+> +		ranges;
+> +
+> +		dma0: dma-controller@e6700020 {
+> +			compatible = "renesas,shdma-r8a73a4";
+> +			reg = <0 0xe6700020 0 0x89e0>;
+> +			interrupt-parent = <&gic>;
+> +			interrupts = <0 220 4
+> +					0 200 4
+> +					0 201 4
+> +					0 202 4
+> +					0 203 4
+> +					0 204 4
+> +					0 205 4
+> +					0 206 4
+> +					0 207 4
+> +					0 208 4
+> +					0 209 4
+> +					0 210 4
+> +					0 211 4
+> +					0 212 4
+> +					0 213 4
+> +					0 214 4
+> +					0 215 4
+> +					0 216 4
+> +					0 217 4
+> +					0 218 4
+> +					0 219 4>;
+> +			interrupt-names = "error",
+> +					"ch0", "ch1", "ch2", "ch3",
+> +					"ch4", "ch5", "ch6", "ch7",
+> +					"ch8", "ch9", "ch10", "ch11",
+> +					"ch12", "ch13", "ch14", "ch15",
+> +					"ch16", "ch17", "ch18", "ch19";
+> +		};
+> +	};
+> +
+>  	thermal@e61f0000 {
+>  		compatible = "renesas,rcar-thermal";
+>  		reg = <0 0xe61f0000 0 0x14>, <0 0xe61f0100 0 0x38>,
+> diff --git a/arch/arm/mach-shmobile/clock-r8a73a4.c b/arch/arm/mach-shmobile/clock-r8a73a4.c
+> index 357b9bc..74841ed 100644
+> --- a/arch/arm/mach-shmobile/clock-r8a73a4.c
+> +++ b/arch/arm/mach-shmobile/clock-r8a73a4.c
+> @@ -580,6 +580,7 @@ static struct clk_lookup lookups[] = {
+>  	CLKDEV_DEV_ID("sh-sci.4", &mstp_clks[MSTP216]),
+>  	CLKDEV_DEV_ID("sh-sci.5", &mstp_clks[MSTP217]),
+>  	CLKDEV_DEV_ID("sh-dma-engine.0", &mstp_clks[MSTP218]),
+> +	CLKDEV_DEV_ID("e6700020.dma-controller", &mstp_clks[MSTP218]),
+>  	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
+>  	CLKDEV_DEV_ID("e6520000.i2c", &mstp_clks[MSTP300]),
+>  	CLKDEV_DEV_ID("sh_mmcif.1", &mstp_clks[MSTP305]),
+> -- 
+> 1.7.2.5
+> 
