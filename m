@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab3IYA1x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:27:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39763 "EHLO
+	id S932324Ab3IYAU5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:20:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39729 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756783Ab3IYAU6 (ORCPT
+	with ESMTP id S1756750Ab3IYAUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:58 -0400
+	Tue, 24 Sep 2013 20:20:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vasily Titskiy <qehgt0@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 083/117] HID: usbhid: quirk for N-Trig DuoSense Touch Screen
-Date: Tue, 24 Sep 2013 17:19:09 -0700
-Message-Id: <20130925001750.023269911@linuxfoundation.org>
+        Arun Kumar K <arun.kk@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [ 084/117] media: exynos4-is: Fix fimc-lite bayer formats
+Date: Tue, 24 Sep 2013 17:19:10 -0700
+Message-Id: <20130925001750.131326193@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,42 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasily Titskiy <qehgt0@gmail.com>
+From: Arun Kumar K <arun.kk@samsung.com>
 
-commit 9e0bf92c223dabe0789714f8f85f6e26f8f9cda4 upstream.
+commit 3396b096c54a84603c51bd705effa88f7f5b0d76 upstream.
 
-The DuoSense touchscreen device causes a 10 second timeout. This fix
-removes the delay.
+The 10-bit and 12-bit Bayer output formats supported by FIMC-LITE
+actually use 16 bits where the extra bits are padded with zeros.
+The patch corrects buffer allocation for these two formats by
+modifying the depth field. This prevents memory corruption by the
+output DMA due to insufficient buffer size.
 
-Signed-off-by: Vasily Titskiy <qehgt0@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Arun Kumar K <arun.kk@samsung.com>
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    1 +
- drivers/hid/usbhid/hid-quirks.c |    2 ++
- 2 files changed, 3 insertions(+)
+ drivers/media/platform/exynos4-is/fimc-lite.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -659,6 +659,7 @@
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16   0x0012
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17   0x0013
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18   0x0014
-+#define USB_DEVICE_ID_NTRIG_DUOSENSE 0x1500
- 
- #define USB_VENDOR_ID_ONTRAK		0x0a07
- #define USB_DEVICE_ID_ONTRAK_ADU100	0x0064
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -109,6 +109,8 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_SIGMA_MICRO, USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X, HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_M610X, HID_QUIRK_MULTI_INPUT },
-+	{ USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NO_INIT_REPORTS },
-+
- 	{ 0, 0 }
- };
- 
+--- a/drivers/media/platform/exynos4-is/fimc-lite.c
++++ b/drivers/media/platform/exynos4-is/fimc-lite.c
+@@ -90,7 +90,7 @@ static const struct fimc_fmt fimc_lite_f
+ 		.name		= "RAW10 (GRBG)",
+ 		.fourcc		= V4L2_PIX_FMT_SGRBG10,
+ 		.colorspace	= V4L2_COLORSPACE_SRGB,
+-		.depth		= { 10 },
++		.depth		= { 16 },
+ 		.color		= FIMC_FMT_RAW10,
+ 		.memplanes	= 1,
+ 		.mbus_code	= V4L2_MBUS_FMT_SGRBG10_1X10,
+@@ -99,7 +99,7 @@ static const struct fimc_fmt fimc_lite_f
+ 		.name		= "RAW12 (GRBG)",
+ 		.fourcc		= V4L2_PIX_FMT_SGRBG12,
+ 		.colorspace	= V4L2_COLORSPACE_SRGB,
+-		.depth		= { 12 },
++		.depth		= { 16 },
+ 		.color		= FIMC_FMT_RAW12,
+ 		.memplanes	= 1,
+ 		.mbus_code	= V4L2_MBUS_FMT_SGRBG12_1X12,
 
 
