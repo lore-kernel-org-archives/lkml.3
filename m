@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab3IYAQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:16:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38850 "EHLO
+	id S1758061Ab3IYBVF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:21:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38903 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755814Ab3IYAPx (ORCPT
+	with ESMTP id S1755876Ab3IYAQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:15:53 -0400
+	Tue, 24 Sep 2013 20:16:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Zhang <zhangwm@marvell.com>, Colin Cross <ccross@android.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 010/110] cpuidle: coupled: fix race condition between pokes and safe state
-Date: Tue, 24 Sep 2013 17:14:08 -0700
-Message-Id: <20130925001324.512409323@linuxfoundation.org>
+        Shawn Nematbakhsh <shawnn@chromium.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 022/110] usb: xhci: Disable runtime PM suspend for quirky controllers
+Date: Tue, 24 Sep 2013 17:14:20 -0700
+Message-Id: <20130925001325.817185430@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,93 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Shawn Nematbakhsh <shawnn@chromium.org>
 
-commit 9e19b73c30a5fa42a53583a1f7817dd857126156 upstream.
+commit c8476fb855434c733099079063990e5bfa7ecad6 upstream.
 
-The coupled cpuidle waiting loop clears pending pokes before
-entering the safe state.  If a poke arrives just before the
-pokes are cleared, but after the while loop condition checks,
-the poke will be lost and the cpu will stay in the safe state
-until another interrupt arrives.  This may cause the cpu that
-sent the poke to spin in the ready loop with interrupts off
-until another cpu receives an interrupt, and if no other cpus
-have interrupts routed to them it can spin forever.
+If a USB controller with XHCI_RESET_ON_RESUME goes to runtime suspend,
+a reset will be performed upon runtime resume. Any previously suspended
+devices attached to the controller will be re-enumerated at this time.
+This will cause problems, for example, if an open system call on the
+device triggered the resume (the open call will fail).
 
-Change the return value of cpuidle_coupled_clear_pokes to
-return if a poke was cleared, and move the need_resched()
-checks into the callers.  In the waiting loop, if
-a poke was cleared restart the loop to repeat the while
-condition checks.
+Note that this change is only relevant when persist_enabled is not set
+for USB devices.
 
-Reported-by: Neil Zhang <zhangwm@marvell.com>
-Signed-off-by: Colin Cross <ccross@android.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This patch should be backported to kernels as old as 3.0, that
+contain the commit c877b3b2ad5cb9d4fe523c5496185cc328ff3ae9 "xhci: Add
+reset on resume quirk for asrock p67 host".
+
+Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpuidle/coupled.c |   20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
+ drivers/usb/host/xhci.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/cpuidle/coupled.c
-+++ b/drivers/cpuidle/coupled.c
-@@ -408,19 +408,22 @@ static void cpuidle_coupled_set_done(int
-  * been processed and the poke bit has been cleared.
-  *
-  * Other interrupts may also be processed while interrupts are enabled, so
-- * need_resched() must be tested after turning interrupts off again to make sure
-+ * need_resched() must be tested after this function returns to make sure
-  * the interrupt didn't schedule work that should take the cpu out of idle.
-  *
-- * Returns 0 if need_resched was false, -EINTR if need_resched was true.
-+ * Returns 0 if no poke was pending, 1 if a poke was cleared.
-  */
- static int cpuidle_coupled_clear_pokes(int cpu)
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -3511,10 +3511,21 @@ void xhci_free_dev(struct usb_hcd *hcd,
  {
-+	if (!cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
-+		return 0;
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+ 	struct xhci_virt_device *virt_dev;
++	struct device *dev = hcd->self.controller;
+ 	unsigned long flags;
+ 	u32 state;
+ 	int i, ret;
+ 
++#ifndef CONFIG_USB_DEFAULT_PERSIST
++	/*
++	 * We called pm_runtime_get_noresume when the device was attached.
++	 * Decrement the counter here to allow controller to runtime suspend
++	 * if no devices remain.
++	 */
++	if (xhci->quirks & XHCI_RESET_ON_RESUME)
++		pm_runtime_put_noidle(dev);
++#endif
 +
- 	local_irq_enable();
- 	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
- 		cpu_relax();
- 	local_irq_disable();
- 
--	return need_resched() ? -EINTR : 0;
-+	return 1;
- }
- 
- static bool cpuidle_coupled_any_pokes_pending(struct cpuidle_coupled *coupled)
-@@ -464,7 +467,8 @@ int cpuidle_enter_state_coupled(struct c
- 		return -EINVAL;
- 
- 	while (coupled->prevent) {
--		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
-+		cpuidle_coupled_clear_pokes(dev->cpu);
-+		if (need_resched()) {
- 			local_irq_enable();
- 			return entered_state;
- 		}
-@@ -502,7 +506,10 @@ retry:
- 	 */
- 	while (!cpuidle_coupled_cpus_waiting(coupled) ||
- 			!cpumask_test_cpu(dev->cpu, &cpuidle_coupled_poked)) {
--		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
-+		if (cpuidle_coupled_clear_pokes(dev->cpu))
-+			continue;
+ 	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);
+ 	/* If the host is halted due to driver unload, we still need to free the
+ 	 * device.
+@@ -3586,6 +3597,7 @@ static int xhci_reserve_host_control_ep_
+ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
++	struct device *dev = hcd->self.controller;
+ 	unsigned long flags;
+ 	int timeleft;
+ 	int ret;
+@@ -3638,6 +3650,16 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 		goto disable_slot;
+ 	}
+ 	udev->slot_id = xhci->slot_id;
 +
-+		if (need_resched()) {
- 			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
- 			goto out;
- 		}
-@@ -516,7 +523,8 @@ retry:
- 			dev->safe_state_index);
- 	}
- 
--	if (cpuidle_coupled_clear_pokes(dev->cpu)) {
-+	cpuidle_coupled_clear_pokes(dev->cpu);
-+	if (need_resched()) {
- 		cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
- 		goto out;
- 	}
++#ifndef CONFIG_USB_DEFAULT_PERSIST
++	/*
++	 * If resetting upon resume, we can't put the controller into runtime
++	 * suspend if there is a device attached.
++	 */
++	if (xhci->quirks & XHCI_RESET_ON_RESUME)
++		pm_runtime_get_noresume(dev);
++#endif
++
+ 	/* Is this a LS or FS device under a HS hub? */
+ 	/* Hub or peripherial? */
+ 	return 1;
 
 
