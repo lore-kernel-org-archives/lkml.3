@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab3IYSoq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 14:44:46 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39574 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750814Ab3IYSop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 14:44:45 -0400
-Date: Wed, 25 Sep 2013 21:44:35 +0300
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: cinifr <cinifr@gmail.com>
-Cc: coosty@163.com, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "pawel.moll@arm.co" <pawel.moll@arm.co>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>
-Subject: Re: [PATCH V3: Add Smp support for Allwinner A20. 1/3] Add smp
- support for Allwinner A20(sunxi 7i).
-Message-ID: <20130925184435.GH2954@lukather>
-References: <1379852488-32147-1-git-send-email-cinifr@gmail.com>
- <1379852488-32147-2-git-send-email-cinifr@gmail.com>
- <20130923181707.GR2779@lukather>
- <CAK3cCBwLrnV7L9WzJ+1P_62PEjEEtgzVjFH8m6SZzWG1O+2vEw@mail.gmail.com>
+	id S1754711Ab3IYSue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 14:50:34 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:20357
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751242Ab3IYSuc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 14:50:32 -0400
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz1432I1447Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh2a8h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h1155h)
+Message-ID: <1380135024.4810.8.camel@atx-linux-37>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+From: Alan Tull <atull@altera.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Michal Simek <monstr@monstr.eu>, Pavel Machek <pavel@denx.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Date: Wed, 25 Sep 2013 13:50:24 -0500
+In-Reply-To: <20130924221802.GC3837@kroah.com>
+References: <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
+	 <20130918191517.GQ19937@titan.lakedaemon.net>
+	 <20130918203247.GA11181@obsidianresearch.com>
+	 <1379539063.31417.23.camel@atx-linux-37>
+	 <20130919100833.GC19346@amd.pavel.ucw.cz> <523AD9C5.8060006@monstr.eu>
+	 <1379710523.21515.4.camel@atx-linux-37>
+	 <1380038126.13235.12.camel@atx-linux-37> <5241B6BC.1010301@monstr.eu>
+	 <1380039774.14129.6.camel@atx-linux-37> <20130924221802.GC3837@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xHbokkKX1kTiQeDC"
-Content-Disposition: inline
-In-Reply-To: <CAK3cCBwLrnV7L9WzJ+1P_62PEjEEtgzVjFH8m6SZzWG1O+2vEw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: altera.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > 
+> >  * Add this udev rule:
+> >    SUBSYSTEM=="firmware", ACTION=="add", RUN+="/lib/udev/hotplug-script"
+> > 
+> >  * Check that there aren't other 'firmware' udev rules to get in the
+> > way.
+> 
+> Hm, don't do that, all "modern" distros will not do firmware loading
+> through udev anymore, so please don't try to add it back in.  The kernel
+> handles the loading of the firmware directly, with no need to call any
+> usermodehelper program at all.
+> 
+> >  * Add your firmware files to /usr/lib/hotplug/firmware/ or change that
+> >    path in hotplug-script to point to where your firmware files.
+> > 
+> > The default hotplug-script doesn't do anything special (that the kernel
+> > couldn't do by itself).  What's great is that it could call another
+> > script that adds headers or does whatever other special un-gzipping or
+> > other massaging that the firmware image needs before it gets loaded.
+> 
+> Only if you need to do something "special" like this could it justify
+> not using the in-kernel firmware loader.  Also note that I think future
+> versions of udev will have the udev firmware loader removed entirely, so
+> watch out for that.
+> 
 
---xHbokkKX1kTiQeDC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Greg,
 
-Hi Fan,
+Thanks for the heads-up on the direction the firmware class is taking.
+Well, that's kind of disappointing.  I was just getting excited about
+how flexible the firmware class currently is.  In the simpler fpga use
+cases, using the in-kernel loader to load static raw images would be
+great.  But we are really excited about exploiting the possibilities
+that fpga's give in terms of reconfiguration and partial reconfiguration
+on the fly, so we will be needing to do 'special' things (unpacking
+images, stripping headers, lots of stuff that userspace would better for
+and that we wouldn't want to put into the kernel).  I hope that we can
+arrive at a framework with a unified interface that suites this.
 
-On Wed, Sep 25, 2013 at 12:22:44AM +0800, cinifr wrote:
-> > You still haven't said why you don't want to use smp_init_cpus there.
-> I find that of_funcation liking of_find_matching_node and of_iomap can
-> not run well in smp_init_cpus. It cause kernel crash. So I have to use
-> early_initcall.
+Alan
 
-Ah, right.
-
-Then, can't we use smp_prepare_cpus for this? it looks to be late enough
-so that we can use ioremap there.
-
-I don't want it to be an initcall. The code will be different on the
-A31, and we don't want it to be run on all the other machines whenever
-we boot a multiplatform kernel anyway.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---xHbokkKX1kTiQeDC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSQy8TAAoJEBx+YmzsjxAgEJMQALv6+l3exqacAQSZl2VX72qB
-T4u3FduML2CLMERDdp9B22uL5UecDSxn7dkWF8Q/IpUsJ1m2YeFOVqELCjkIa313
-/qwuuKoH0dS99ClmviSqaKZDRqMYVmsZHcVY/isw25RYJa1tMIXTrxfi1Hy2rjSl
-bJCIZ2mVRNXLlb4x0d/p56Wh9Zfs7+Byg7yBoVBjE2jWeQmxi7l2sQfgXVy2q1sU
-Vp/YiJ4lHft5E0ms05YrJq8OXnwc8x2URCrwgvB2qeXgMY64EoJoD4f6Gyws6b0M
-2+JrjRJnW9xWV4IWMMbcXA5w0r3N+LbovPqkQlpL/RrY/WxwBhWapWde4k4S95NU
-vfpKKY5hkNru9Mlg3b+UByxHDxLO8LznIyhQiJfgc+EtAaSb4M+eqXsHHcj31J5S
-F+tXgdF6uftTf8z3gxkpIw/md/+pjEbU3wLpvM10ftwb3ySSZCna1+7rN7UyOXXI
-fmZgd4EC7C9pqp1SAYJnc6SaABB79zpWr2lCLL9PBkbWecSebayW7gsd5DtQhHLz
-KxVef/WkhdMh0mv4UbaAs71FxVMpwQE8DvKIX09r5WgKyCDCg7hW2BSW4LkLqsbH
-vYDkEwHZJ9Ofxxl8m1E6NM2CHEVjIDcJ5XFYxFrO8wj0ZXw6W992koJDqnsBKXyn
-yaTlzzvQpjonnokQiOeB
-=OvUD
------END PGP SIGNATURE-----
-
---xHbokkKX1kTiQeDC--
