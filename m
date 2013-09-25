@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab3IYATz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:19:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39394 "EHLO
+	id S1756897Ab3IYAs7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:48:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39427 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756425Ab3IYATv (ORCPT
+	with ESMTP id S1756448Ab3IYATz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:51 -0400
+	Tue, 24 Sep 2013 20:19:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 009/117] UBI: Fix PEB leak in wear_leveling_worker()
-Date: Tue, 24 Sep 2013 17:17:55 -0700
-Message-Id: <20130925001741.881099298@linuxfoundation.org>
+        Rob Herring <rob.herring@calxeda.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [ 016/117] ARM: xen: only set pm function ptrs for Xen guests
+Date: Tue, 24 Sep 2013 17:18:02 -0700
+Message-Id: <20130925001742.627159232@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,37 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Rob Herring <rob.herring@calxeda.com>
 
-commit 5ef4414f4bc26a19cfd5cd11aee9697a863e4d51 upstream.
+commit 9dd4b2944c46e1fdbd0a516c221c8a2670cbf005 upstream.
 
-get_peb_for_wl() removes the PEB from the free list.
-If the WL subsystem detects that no wear leveling is needed
-it cancels the operation and drops the gained PEB.
-In this case we have to put the PEB back into the free list.
+xen_pm_init was unconditionally setting pm_power_off and arm_pm_restart
+function pointers. This breaks multi-platform kernels. Make this
+conditional on running as a Xen guest and make it a late_initcall to
+ensure it is setup after platform code for Dom0.
 
-This issue was introduced with commit ed4b7021c
-(UBI: remove PEB from free tree in get_peb_for_wl()).
-
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/wl.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/xen/enlighten.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -1069,6 +1069,9 @@ static int wear_leveling_worker(struct u
- 		if (!(e2->ec - e1->ec >= UBI_WL_THRESHOLD)) {
- 			dbg_wl("no WL needed: min used EC %d, max free EC %d",
- 			       e1->ec, e2->ec);
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -273,12 +273,15 @@ core_initcall(xen_guest_init);
+ 
+ static int __init xen_pm_init(void)
+ {
++	if (!xen_domain())
++		return -ENODEV;
 +
-+			/* Give the unused PEB back */
-+			wl_tree_add(e2, &ubi->free);
- 			goto out_cancel;
- 		}
- 		self_check_in_wl_tree(ubi, e1, &ubi->used);
+ 	pm_power_off = xen_power_off;
+ 	arm_pm_restart = xen_restart;
+ 
+ 	return 0;
+ }
+-subsys_initcall(xen_pm_init);
++late_initcall(xen_pm_init);
+ 
+ static irqreturn_t xen_arm_callback(int irq, void *arg)
+ {
 
 
