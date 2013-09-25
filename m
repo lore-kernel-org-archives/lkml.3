@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab3IYU3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:29:48 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:54209 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297Ab3IYU3r (ORCPT
+	id S1755822Ab3IYUbf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:31:35 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:43748 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672Ab3IYUbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:29:47 -0400
-From: Djalal Harouni <tixxdz@opendz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+	Wed, 25 Sep 2013 16:31:34 -0400
+Date: Wed, 25 Sep 2013 13:31:32 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sergey Dyasly <dserrg@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        <kernel-hardening@lists.openwall.com>
-Cc: tixxdz@gmail.com, Djalal Harouni <tixxdz@opendz.org>
-Subject: [PATCH 12/12] user_ns: seq_file: use the user_ns that is embedded in the f_cred struct
-Date: Wed, 25 Sep 2013 21:14:45 +0100
-Message-Id: <1380140085-29712-13-git-send-email-tixxdz@opendz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
-References: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
+        Michal Hocko <mhocko@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+        Sha Zhengju <handai.szj@taobao.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] OOM killer: wait for tasks with pending SIGKILL to
+ exit
+In-Reply-To: <20130911190605.5528ee4563272dbea1ed56a6@gmail.com>
+Message-ID: <alpine.DEB.2.02.1309251328130.24412@chino.kir.corp.google.com>
+References: <1378740624-2456-1-git-send-email-dserrg@gmail.com> <alpine.DEB.2.02.1309091303010.12523@chino.kir.corp.google.com> <20130911190605.5528ee4563272dbea1ed56a6@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-seq_file struct now has a reference on the file->f_cred struct which
-includes a pointer on user_ns. So remove the user_ns field from seq_file
-struct and use the one provided by seq_file->f_cred.
+On Wed, 11 Sep 2013, Sergey Dyasly wrote:
 
-Update seq_user_ns() to return the user_ns of seq_file->f_cred.
+> > >  		/*
+> > >  		 * If this task is not being ptraced on exit, then wait for it
+> > >  		 * to finish before killing some other task unnecessarily.
+> > >  		 */
+> > > -		if (!(task->group_leader->ptrace & PT_TRACE_EXIT))
+> > > +		if (!(task->group_leader->ptrace & PT_TRACE_EXIT)) {
+> > > +			set_tsk_thread_flag(task, TIF_MEMDIE);
+> > 
+> > This does not, we do not give access to memory reserves unless the process 
+> > needs it to allocate memory.  The task here, which is not current, can 
+> > call into the oom killer and be granted memory reserves if necessary.
+> 
+> True. However, why TIF_MEMDIE is set for PF_EXITING task in oom_kill_process()
+> then?
 
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
----
- fs/seq_file.c            | 3 ---
- include/linux/seq_file.h | 6 ++----
- 2 files changed, 2 insertions(+), 7 deletions(-)
+If current needs access to memory reserves while PF_EXITING, it should 
+call the page allocator, find that it is out of memory, and call the oom 
+killer to silently be granted memory reserves.
 
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index a5e5b98..ee1c36d 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -58,9 +58,6 @@ int seq_open(struct file *file, const struct seq_operations *op)
- 	mutex_init(&p->lock);
- 	p->op = op;
- 	p->f_cred = file->f_cred;
--#ifdef CONFIG_USER_NS
--	p->user_ns = file->f_cred->user_ns;
--#endif
- 
- 	/*
- 	 * Wrappers around seq_open(e.g. swaps_open) need to be
-diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-index ec07709..5db1e39 100644
---- a/include/linux/seq_file.h
-+++ b/include/linux/seq_file.h
-@@ -7,6 +7,7 @@
- #include <linux/mutex.h>
- #include <linux/cpumask.h>
- #include <linux/nodemask.h>
-+#include <linux/cred.h>
- 
- struct seq_operations;
- struct file;
-@@ -28,9 +29,6 @@ struct seq_file {
- 	const struct seq_operations *op;
- 	int poll_event;
- 	const struct cred *f_cred;
--#ifdef CONFIG_USER_NS
--	struct user_namespace *user_ns;
--#endif
- 	void *private;
- };
- 
-@@ -143,7 +141,7 @@ static inline const struct cred *seq_f_cred(struct seq_file *seq)
- static inline struct user_namespace *seq_user_ns(struct seq_file *seq)
- {
- #ifdef CONFIG_USER_NS
--	return seq->user_ns;
-+	return seq_f_cred(seq)->user_ns;
- #else
- 	extern struct user_namespace init_user_ns;
- 	return &init_user_ns;
--- 
-1.7.11.7
+> > > @@ -412,16 +415,6 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+> > >  	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+> > >  					      DEFAULT_RATELIMIT_BURST);
+> > >  
+> > > -	/*
+> > > -	 * If the task is already exiting, don't alarm the sysadmin or kill
+> > > -	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+> > > -	 */
+> > > -	if (p->flags & PF_EXITING) {
+> > > -		set_tsk_thread_flag(p, TIF_MEMDIE);
+> > > -		put_task_struct(p);
+> > > -		return;
+> > > -	}
+> > 
+> > I think you misunderstood the point of this; if a selected process is 
+> > already in the exit path then this is simply avoiding dumping oom kill 
+> > lines to the kernel log.  We want to keep doing that.
+> 
+> This happens in oom_kill_process() after victim has been selected by
+> select_bad_process(). But there is already PF_EXITING check in
+> oom_scan_process_thread() and in this case OOM code won't call oom_kill_process.
 
+select_bad_process() is one of three callers to oom_kill_process().
+
+> The only difference is in force_kill flag, and the only case where it's set
+> is SysRq. And I think in this case OOM killer messages are a good thing to have
+> even when victim is already exiting, instead of just silence.
+> 
+
+Read the comment about why we don't emit anything to the kernel log in 
+this case; the process is already exiting, there's no need to kill it or 
+make anyone believe that it was killed.
