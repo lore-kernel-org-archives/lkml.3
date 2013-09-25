@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820Ab3IYAdj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:33:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39682 "EHLO
+	id S1757194Ab3IYAdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:33:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39678 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755282Ab3IYAUk (ORCPT
+	with ESMTP id S1756608Ab3IYAUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:20:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 064/117] mac80211: ignore (E)CSA in probe response frames
-Date: Tue, 24 Sep 2013 17:18:50 -0700
-Message-Id: <20130925001747.849356789@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 072/117] HID: kye: Add report fixup for Genius Gx Imperator Keyboard
+Date: Tue, 24 Sep 2013 17:18:58 -0700
+Message-Id: <20130925001748.786828582@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,56 +27,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit d70b7616d9080ec9f868fbd31db5fd4341435d61 upstream.
+commit 0adb9c2c5ed42f199cb2a630c37d18dee385fae2 upstream.
 
-Seth reports that some APs, notably the Netgear WNDAP360, send
-invalid ECSA IEs in probe response frames with the operating
-class and channel number both set to zero, even when no channel
-switch is being done. As a result, any scan while connected to
-such an AP results in the connection being dropped.
+Genius Gx Imperator Keyboard presents the same problem in its report
+descriptors than Genius Gila Gaming Mouse.
+Use the same fixup for both.
 
-Fix this by ignoring any channel switch announcment in probe
-response frames entirely, since we're connected to the AP we
-will be receiving a beacon (and maybe even an action frame) if
-a channel switch is done, which is sufficient.
+Fixes:
+https://bugzilla.redhat.com/show_bug.cgi?id=928561
 
-Reported-by: Seth Forshee <seth.forshee@canonical.com>
-Tested-by: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-and-tested-by: Honza Brazdil <jbrazdil@redhat.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mlme.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ drivers/hid/hid-core.c |    1 +
+ drivers/hid/hid-ids.h  |    1 +
+ drivers/hid/hid-kye.c  |   45 ++++++++++++++++++++++++++++-----------------
+ 3 files changed, 30 insertions(+), 17 deletions(-)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -2851,14 +2851,6 @@ static void ieee80211_rx_bss_info(struct
- 		ieee80211_rx_bss_put(local, bss);
- 		sdata->vif.bss_conf.beacon_rate = bss->beacon_rate;
- 	}
--
--	if (!sdata->u.mgd.associated ||
--	    !ether_addr_equal(mgmt->bssid, sdata->u.mgd.associated->bssid))
--		return;
--
--	ieee80211_sta_process_chanswitch(sdata, rx_status->mactime,
--					 elems, true);
--
- }
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1597,6 +1597,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYTOUCH, USB_DEVICE_ID_KEYTOUCH_IEC) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_I405X) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -482,6 +482,7 @@
+ #define USB_VENDOR_ID_KYE		0x0458
+ #define USB_DEVICE_ID_KYE_ERGO_525V	0x0087
+ #define USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE	0x0138
++#define USB_DEVICE_ID_GENIUS_GX_IMPERATOR	0x4018
+ #define USB_DEVICE_ID_KYE_GPEN_560	0x5003
+ #define USB_DEVICE_ID_KYE_EASYPEN_I405X	0x5010
+ #define USB_DEVICE_ID_KYE_MOUSEPEN_I608X	0x5011
+--- a/drivers/hid/hid-kye.c
++++ b/drivers/hid/hid-kye.c
+@@ -268,6 +268,26 @@ static __u8 easypen_m610x_rdesc_fixed[]
+ 	0xC0                          /*  End Collection                  */
+ };
  
- 
-@@ -3147,6 +3139,9 @@ static void ieee80211_rx_mgmt_beacon(str
- 
- 	ieee80211_rx_bss_info(sdata, mgmt, len, rx_status, &elems);
- 
-+	ieee80211_sta_process_chanswitch(sdata, rx_status->mactime,
-+					 &elems, true);
++static __u8 *kye_consumer_control_fixup(struct hid_device *hdev, __u8 *rdesc,
++		unsigned int *rsize, int offset, const char *device_name) {
++	/*
++	 * the fixup that need to be done:
++	 *   - change Usage Maximum in the Comsumer Control
++	 *     (report ID 3) to a reasonable value
++	 */
++	if (*rsize >= offset + 31 &&
++	    /* Usage Page (Consumer Devices) */
++	    rdesc[offset] == 0x05 && rdesc[offset + 1] == 0x0c &&
++	    /* Usage (Consumer Control) */
++	    rdesc[offset + 2] == 0x09 && rdesc[offset + 3] == 0x01 &&
++	    /*   Usage Maximum > 12287 */
++	    rdesc[offset + 10] == 0x2a && rdesc[offset + 12] > 0x2f) {
++		hid_info(hdev, "fixing up %s report descriptor\n", device_name);
++		rdesc[offset + 12] = 0x2f;
++	}
++	return rdesc;
++}
 +
- 	if (ieee80211_sta_wmm_params(local, sdata, elems.wmm_param,
- 				     elems.wmm_param_len))
- 		changed |= BSS_CHANGED_QOS;
+ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+@@ -315,23 +335,12 @@ static __u8 *kye_report_fixup(struct hid
+ 		}
+ 		break;
+ 	case USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE:
+-		/*
+-		 * the fixup that need to be done:
+-		 *   - change Usage Maximum in the Comsumer Control
+-		 *     (report ID 3) to a reasonable value
+-		 */
+-		if (*rsize >= 135 &&
+-			/* Usage Page (Consumer Devices) */
+-			rdesc[104] == 0x05 && rdesc[105] == 0x0c &&
+-			/* Usage (Consumer Control) */
+-			rdesc[106] == 0x09 && rdesc[107] == 0x01 &&
+-			/*   Usage Maximum > 12287 */
+-			rdesc[114] == 0x2a && rdesc[116] > 0x2f) {
+-			hid_info(hdev,
+-				 "fixing up Genius Gila Gaming Mouse "
+-				 "report descriptor\n");
+-			rdesc[116] = 0x2f;
+-		}
++		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
++					"Genius Gila Gaming Mouse");
++		break;
++	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
++		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
++					"Genius Gx Imperator Keyboard");
+ 		break;
+ 	}
+ 	return rdesc;
+@@ -428,6 +437,8 @@ static const struct hid_device_id kye_de
+ 				USB_DEVICE_ID_KYE_EASYPEN_M610X) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
+ 				USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
++				USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, kye_devices);
 
 
