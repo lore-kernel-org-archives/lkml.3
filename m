@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab3IYLWd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 07:22:33 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:44002 "EHLO
+	id S1755353Ab3IYLWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 07:22:38 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:44008 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab3IYLWb (ORCPT
+	with ESMTP id S1755153Ab3IYLWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 07:22:31 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-cc-5242c7755a8c
+	Wed, 25 Sep 2013 07:22:35 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-d0-5242c77a6364
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
 Cc: Linux PM list <linux-pm@vger.kernel.org>,
@@ -18,43 +18,88 @@ Cc: Linux PM list <linux-pm@vger.kernel.org>,
         Tomasz Figa <t.figa@samsung.com>,
         Myungjoo Ham <myungjoo.ham@samsung.com>, Kukjin Kim <kgene@kernel.org>,
         Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
-Subject: [PATCH 0/2] cpufreq: exynos: Fixes for v3.12
-Date: Wed, 25 Sep 2013 13:22:16 +0200
-Message-id: <1380108138-30402-1-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH 1/2] cpufreq: exynos4x12: Use the common clock framework to set
+ APLL clock rate
+Date: Wed, 25 Sep 2013 13:22:17 +0200
+Message-id: <1380108138-30402-2-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jQd2y405BBhNqLDbOWM9q0bvgKptF
-	/+PXzBZvHnFbvHm4mdHi8q45bBafe48wWsw4v4/J4nbjCqCKhb1MFutnvGax2PjVw4HHY9Oq
-	TjaPO9f2sHmsm/aW2aNvyypGj0eLWxg9Pm+SC2CL4rJJSc3JLEst0rdL4MqYfOkuY8E91oqj
-	DyexNzDeYOli5OSQEDCRWLrjAJQtJnHh3nq2LkYuDiGB6YwSbTsnMEE4XUwSnS9mMINUsQno
-	SXy++5QJxBYR8JVY+/gyI0gRs8ACZoklp7axgiSEBUwlfk54yQZiswioSqxrPwvWwCvgJnFu
-	/V5GiHXyEk/v97FNYORewMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4vJ5J7WBc2WBx
-	iFGAg1GJh1fgqGOQEGtiWXFl7iFGCQ5mJRHe8MVOQUK8KYmVValF+fFFpTmpxYcYpTlYlMR5
-	D7RaBwoJpCeWpGanphakFsFkmTg4pRoYk2atXOEr96mn+YnvsdMu7spnpk7gNMvqEGd9PNPR
-	ZP2L2C8WvSePz8ndv9Ms0OD4pMrdTcz3+vNW99yYn7umj/Hc2q0XOFZXdn/RMTjTX7dg2wHu
-	1Rs59Drn9j9a9GBJxzOVwqUx6RbrtdMdvP4m/OON9awsbxJeGWkfVbGrmikjtl171ic3JZbi
-	jERDLeai4kQAj9AaLisCAAA=
+In-reply-to: <1380108138-30402-1-git-send-email-l.majewski@samsung.com>
+References: <1380108138-30402-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrILMWRmVeSWpSXmKPExsVy+t9jQd2q405BBjdmqllsnLGe1aJ3wVU2
+	i/7Hr5kt3jzitnjzcDOjxeVdc9gsPvceYbSYcX4fk8XtxhVAFQt7mSzWz3jNYrHxq4cDj8em
+	VZ1sHneu7WHzWDftLbNH35ZVjB6PFrcwenzeJBfAFsVlk5Kak1mWWqRvl8CVsf7OXqaC9QIV
+	z+8+YmxgPMDbxcjJISFgInHs/HlGCFtM4sK99WxdjFwcQgLTGSWe7zwM5XQxSazrOQNWxSag
+	J/H57lMmEFtEwFdi7ePLjCBFzAILmCWWnNrGCpIQFkiUuLhuClgDi4CqxIV939hAbF4BN4m3
+	WzaxQKyTl3h6vw8szingLrF8/WqwXiGgmiMX77BMYORdwMiwilE0tSC5oDgpPddQrzgxt7g0
+	L10vOT93EyM4IJ9J7WBc2WBxiFGAg1GJh1fgqGOQEGtiWXFl7iFGCQ5mJRHe8MVOQUK8KYmV
+	ValF+fFFpTmpxYcYpTlYlMR5D7RaBwoJpCeWpGanphakFsFkmTg4pRoYmVgW6Py87lE+m71E
+	P/CPs/WUVVv2vN9VusCuQvintXDWKndukydtzc6epYvrc6S8jaZ+PH7/1J2Xu233lSp/LVB9
+	xv5tpmbZRga/l81HuqUnN8xmemCs42N4ZMIih2+LTjcefpj73/b7Tv9W+TNL5zU+1L6y+35/
+	AW/FmTdn75j8CFKXPWbxSYmlOCPRUIu5qDgRADapT7xEAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attached commits provide cpufreq regression fixes for Trats and Trats2
-Exynos4 boards.
-Since v3.12 Exynos4 uses common clock framework for clock manipulation.
-Those patches restore correct output for cpuinfo_cur_freq [1] sysfs
-attribute.
-Without them, the [1] provides default frequency (800 MHz) set at driver
-initialization.
+In the exynos4x12_set_apll() function, the APLL frequency is set with
+direct register manipulation.
 
-Lukasz Majewski (2):
-  cpufreq: exynos4x12: Use the common clock framework to set APLL clock
-    rate
-  cpufreq: exynos4210: Use the common clock framework to set APLL clock
-    rate
+Such approach is not allowed in the common clock framework. The frequency
+is changed, but the corresponding clock value is not updated. This causes
+wrong frequency read from cpufreq's cpuinfo_cur_freq sysfs attribute.
 
- drivers/cpufreq/exynos4210-cpufreq.c |   20 ++++----------------
+Tested at:
+- Exynos4412 - Trats2 board (linux 3.12-rc1)
+
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+---
  drivers/cpufreq/exynos4x12-cpufreq.c |   23 ++++-------------------
- 2 files changed, 8 insertions(+), 35 deletions(-)
+ 1 file changed, 4 insertions(+), 19 deletions(-)
 
+diff --git a/drivers/cpufreq/exynos4x12-cpufreq.c b/drivers/cpufreq/exynos4x12-cpufreq.c
+index 08b7477..b2f51c9 100644
+--- a/drivers/cpufreq/exynos4x12-cpufreq.c
++++ b/drivers/cpufreq/exynos4x12-cpufreq.c
+@@ -128,9 +128,9 @@ static void exynos4x12_set_clkdiv(unsigned int div_index)
+ 
+ static void exynos4x12_set_apll(unsigned int index)
+ {
+-	unsigned int tmp, pdiv;
++	unsigned int tmp, freq = apll_freq_4x12[index].freq;
+ 
+-	/* 1. MUX_CORE_SEL = MPLL, ARMCLK uses MPLL for lock time */
++	/* MUX_CORE_SEL = MPLL, ARMCLK uses MPLL for lock time */
+ 	clk_set_parent(moutcore, mout_mpll);
+ 
+ 	do {
+@@ -140,24 +140,9 @@ static void exynos4x12_set_apll(unsigned int index)
+ 		tmp &= 0x7;
+ 	} while (tmp != 0x2);
+ 
+-	/* 2. Set APLL Lock time */
+-	pdiv = ((apll_freq_4x12[index].mps >> 8) & 0x3f);
++	clk_set_rate(mout_apll, freq * 1000);
+ 
+-	__raw_writel((pdiv * 250), EXYNOS4_APLL_LOCK);
+-
+-	/* 3. Change PLL PMS values */
+-	tmp = __raw_readl(EXYNOS4_APLL_CON0);
+-	tmp &= ~((0x3ff << 16) | (0x3f << 8) | (0x7 << 0));
+-	tmp |= apll_freq_4x12[index].mps;
+-	__raw_writel(tmp, EXYNOS4_APLL_CON0);
+-
+-	/* 4. wait_lock_time */
+-	do {
+-		cpu_relax();
+-		tmp = __raw_readl(EXYNOS4_APLL_CON0);
+-	} while (!(tmp & (0x1 << EXYNOS4_APLLCON0_LOCKED_SHIFT)));
+-
+-	/* 5. MUX_CORE_SEL = APLL */
++	/* MUX_CORE_SEL = APLL */
+ 	clk_set_parent(moutcore, mout_apll);
+ 
+ 	do {
 -- 
 1.7.10.4
 
