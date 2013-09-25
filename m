@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab3IYWMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 18:12:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21569 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755447Ab3IYWKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 18:10:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,981,1371106800"; 
-   d="scan'208";a="383568290"
-Subject: [PATCH v6 1/6] rwsem: check the lock before cpmxchg in
- down_write_trylock
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <cover.1380144003.git.tim.c.chen@linux.intel.com>
-References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Sep 2013 15:10:34 -0700
-Message-ID: <1380147034.3467.63.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1755968Ab3IYWM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 18:12:56 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:56387 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754220Ab3IYWMz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 18:12:55 -0400
+Message-ID: <52435FE2.20805@linaro.org>
+Date: Thu, 26 Sep 2013 00:12:50 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@sisk.pl
+CC: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 16/21] cpuidle: avoid unnecessary kzalloc/free of struct
+ cpuidle_device_kobj
+References: <cover.1379779777.git.viresh.kumar@linaro.org> <fb67ff6fa01bde06aeab43c4a02da2923615e6ef.1379779777.git.viresh.kumar@linaro.org>
+In-Reply-To: <fb67ff6fa01bde06aeab43c4a02da2923615e6ef.1379779777.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cmpxchg will cause the cacheline bouning when do the value checking,
-that cause scalability issue in a large machine (like a 80 core box).
+On 09/22/2013 03:21 AM, Viresh Kumar wrote:
+> We always need to allocate struct cpuidle_device_kobj for all CPUs and so there
+> is no real need to have a pointer to it inside struct cpuidle_device.
+> 
+> This patch makes a object instance of struct cpuidle_device_kobj inside struct
+> cpuidle_device instead of a pointer.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-So a lock pre-read can relief this contention.
+nack, it was made in purpose for kobject_init_and_add.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- include/asm-generic/rwsem.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+see commit 728ce22b696f9f1404a74d7b2279a65933553a1b
 
-diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
-index bb1e2cd..5ba80e7 100644
---- a/include/asm-generic/rwsem.h
-+++ b/include/asm-generic/rwsem.h
-@@ -70,11 +70,11 @@ static inline void __down_write(struct rw_semaphore *sem)
- 
- static inline int __down_write_trylock(struct rw_semaphore *sem)
- {
--	long tmp;
-+	if (unlikely(sem->count != RWSEM_UNLOCKED_VALUE))
-+		return 0;
- 
--	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
--		      RWSEM_ACTIVE_WRITE_BIAS);
--	return tmp == RWSEM_UNLOCKED_VALUE;
-+	return cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
-+		      RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_UNLOCKED_VALUE;
- }
- 
- /*
+
+
 -- 
-1.7.4.4
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
