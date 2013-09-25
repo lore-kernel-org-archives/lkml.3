@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab3IYAyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:54:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39291 "EHLO
+	id S1757197Ab3IYAzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:55:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39288 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab3IYARF (ORCPT
+	with ESMTP id S932119Ab3IYARE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:05 -0400
+	Tue, 24 Sep 2013 20:17:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 097/110] drm/edid: add quirk for Medion MD30217PG
-Date: Tue, 24 Sep 2013 17:15:35 -0700
-Message-Id: <20130925001333.918713136@linuxfoundation.org>
+        Borislav Petkov <bp@suse.de>
+Subject: [ 096/110] amd64_edac: Fix single-channel setups
+Date: Tue, 24 Sep 2013 17:15:34 -0700
+Message-Id: <20130925001333.814679389@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -26,76 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Borislav Petkov <bp@suse.de>
 
-commit 118bdbd86b39dbb843155054021d2c59058f1e05 upstream.
+commit f0a56c480196a98479760862468cc95879df3de0 upstream.
 
-This LCD monitor (1280x1024 native) has a completely
-bogus detailed timing (640x350@70hz).  User reports that
-1280x1024@60 has waves so prefer 1280x1024@75.
+It can happen that configurations are running in a single-channel mode
+even with a dual-channel memory controller, by, say, putting the DIMMs
+only on the one channel and leaving the other empty. This causes a
+problem in init_csrows which implicitly assumes that when the second
+channel is enabled, i.e. channel 1, the struct dimm hierarchy will be
+present. Which is not.
 
-Manufacturer: MED  Model: 7b8  Serial#: 99188
-Year: 2005  Week: 5
-EDID Version: 1.3
-Analog Display Input,  Input Voltage Level: 0.700/0.700 V
-Sync:  Separate
-Max Image Size [cm]: horiz.: 34  vert.: 27
-Gamma: 2.50
-DPMS capabilities: Off; RGB/Color Display
-First detailed timing is preferred mode
-redX: 0.645 redY: 0.348   greenX: 0.280 greenY: 0.605
-blueX: 0.142 blueY: 0.071   whiteX: 0.313 whiteY: 0.329
-Supported established timings:
-720x400@70Hz
-640x480@60Hz
-640x480@72Hz
-640x480@75Hz
-800x600@56Hz
-800x600@60Hz
-800x600@72Hz
-800x600@75Hz
-1024x768@60Hz
-1024x768@70Hz
-1024x768@75Hz
-1280x1024@75Hz
-Manufacturer's mask: 0
-Supported standard timings:
-Supported detailed timing:
-clock: 25.2 MHz   Image Size:  337 x 270 mm
-h_active: 640  h_sync: 688  h_sync_end 784 h_blank_end 800 h_border: 0
-v_active: 350  v_sync: 350  v_sync_end 352 v_blanking: 449 v_border: 0
-Monitor name: MD30217PG
-Ranges: V min: 56 V max: 76 Hz, H min: 30 H max: 83 kHz, PixClock max 145 MHz
-Serial No: 501099188
-EDID (in hex):
-          00ffffffffffff0034a4b80774830100
-          050f010368221b962a0c55a559479b24
-          125054afcf00310a0101010101018180
-          000000000000d60980a0205e63103060
-          0200510e1100001e000000fc004d4433
-          3032313750470a202020000000fd0038
-          4c1e530e000a202020202020000000ff
-          003530313039393138380a2020200078
+So always allocate two channels unconditionally.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reported-by: friedrich@mailstation.de
+This provides for the nice side effect that the data structures are
+initialized so some day, when memory hotplug is supported, it should
+just work out of the box when all of a sudden a second channel appears.
+
+Reported-and-tested-by: Roger Leigh <rleigh@debian.org>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_edid.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/edac/amd64_edac.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -125,6 +125,9 @@ static struct edid_quirk {
- 
- 	/* ViewSonic VA2026w */
- 	{ "VSC", 5020, EDID_QUIRK_FORCE_REDUCED_BLANKING },
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -2470,8 +2470,15 @@ static int amd64_init_one_instance(struc
+ 	layers[0].size = pvt->csels[0].b_cnt;
+ 	layers[0].is_virt_csrow = true;
+ 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
+-	layers[1].size = pvt->channel_count;
 +
-+	/* Medion MD 30217 PG */
-+	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
- };
- 
- /*
++	/*
++	 * Always allocate two channels since we can have setups with DIMMs on
++	 * only one channel. Also, this simplifies handling later for the price
++	 * of a couple of KBs tops.
++	 */
++	layers[1].size = 2;
+ 	layers[1].is_virt_csrow = false;
++
+ 	mci = edac_mc_alloc(nid, ARRAY_SIZE(layers), layers, 0);
+ 	if (!mci)
+ 		goto err_siblings;
 
 
