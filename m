@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527Ab3IYBTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:19:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38919 "EHLO
+	id S932498Ab3IYBTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:19:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38920 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890Ab3IYAQE (ORCPT
+	with ESMTP id S1755814Ab3IYAQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:16:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Kim Phillips <kim.phillips@linaro.org>, Gleb Natapov <gleb@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 014/110] ARM: KVM: Fix 64-bit coprocessor handling
-Date: Tue, 24 Sep 2013 17:14:12 -0700
-Message-Id: <20130925001324.956843903@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [ 015/110] arm64: perf: fix group validation when using enable_on_exec
+Date: Tue, 24 Sep 2013 17:14:13 -0700
+Message-Id: <20130925001325.074891153@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -30,145 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoffer Dall <christoffer.dall@linaro.org>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 240e99cbd00aa541b572480e3ea7ecb0d480bc79 upstream.
+commit 8455e6ec70f33b0e8c3ffd47067e00481f09f454 upstream.
 
-The PAR was exported as CRn == 7 and CRm == 0, but in fact the primary
-coprocessor register number was determined by CRm for 64-bit coprocessor
-registers as the user space API was modeled after the coprocessor
-access instructions (see the ARM ARM rev. C - B3-1445).
+This is a port of cb2d8b342aa0 ("ARM: 7698/1: perf: fix group validation
+when using enable_on_exec") to arm64, which fixes the event validation
+checking so that events in the OFF state are still considered when
+enable_on_exec is true.
 
-However, just changing the CRn to CRm breaks the sorting check when
-booting the kernel, because the internal kernel logic always treats CRn
-as the primary register number, and it makes the table sorting
-impossible to understand for humans.
-
-Alternatively we could change the logic to always have CRn == CRm, but
-that becomes unclear in the number of ways we do look up of a coprocessor
-register.  We could also have a separate 64-bit table but that feels
-somewhat over-engineered.  Instead, keep CRn the primary representation
-of the primary coproc. register number in-kernel and always export the
-primary number as CRm as per the existing user space ABI.
-
-Note: The TTBR registers just magically worked because they happened to
-follow the CRn(0) regs and were considered CRn(0) in the in-kernel
-representation.
-
-Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
-Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kvm/coproc.c     |   26 +++++++++++++++++++-------
- arch/arm/kvm/coproc.h     |    3 +++
- arch/arm/kvm/coproc_a15.c |    6 +++++-
- 3 files changed, 27 insertions(+), 8 deletions(-)
+ arch/arm64/kernel/perf_event.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/arm/kvm/coproc.c
-+++ b/arch/arm/kvm/coproc.c
-@@ -146,7 +146,11 @@ static bool pm_fake(struct kvm_vcpu *vcp
- #define access_pmintenclr pm_fake
+--- a/arch/arm64/kernel/perf_event.c
++++ b/arch/arm64/kernel/perf_event.c
+@@ -325,7 +325,10 @@ validate_event(struct pmu_hw_events *hw_
+ 	if (is_software_event(event))
+ 		return 1;
  
- /* Architected CP15 registers.
-- * Important: Must be sorted ascending by CRn, CRM, Op1, Op2
-+ * CRn denotes the primary register number, but is copied to the CRm in the
-+ * user space API for 64-bit register access in line with the terminology used
-+ * in the ARM ARM.
-+ * Important: Must be sorted ascending by CRn, CRM, Op1, Op2 and with 64-bit
-+ *            registers preceding 32-bit ones.
-  */
- static const struct coproc_reg cp15_regs[] = {
- 	/* CSSELR: swapped by interrupt.S. */
-@@ -154,8 +158,8 @@ static const struct coproc_reg cp15_regs
- 			NULL, reset_unknown, c0_CSSELR },
+-	if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
++	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
++		return 1;
++
++	if (event->state == PERF_EVENT_STATE_OFF && !event->attr.enable_on_exec)
+ 		return 1;
  
- 	/* TTBR0/TTBR1: swapped by interrupt.S. */
--	{ CRm( 2), Op1( 0), is64, NULL, reset_unknown64, c2_TTBR0 },
--	{ CRm( 2), Op1( 1), is64, NULL, reset_unknown64, c2_TTBR1 },
-+	{ CRm64( 2), Op1( 0), is64, NULL, reset_unknown64, c2_TTBR0 },
-+	{ CRm64( 2), Op1( 1), is64, NULL, reset_unknown64, c2_TTBR1 },
- 
- 	/* TTBCR: swapped by interrupt.S. */
- 	{ CRn( 2), CRm( 0), Op1( 0), Op2( 2), is32,
-@@ -182,7 +186,7 @@ static const struct coproc_reg cp15_regs
- 			NULL, reset_unknown, c6_IFAR },
- 
- 	/* PAR swapped by interrupt.S */
--	{ CRn( 7), Op1( 0), is64, NULL, reset_unknown64, c7_PAR },
-+	{ CRm64( 7), Op1( 0), is64, NULL, reset_unknown64, c7_PAR },
- 
- 	/*
- 	 * DC{C,I,CI}SW operations:
-@@ -399,12 +403,13 @@ static bool index_to_params(u64 id, stru
- 			      | KVM_REG_ARM_OPC1_MASK))
- 			return false;
- 		params->is_64bit = true;
--		params->CRm = ((id & KVM_REG_ARM_CRM_MASK)
-+		/* CRm to CRn: see cp15_to_index for details */
-+		params->CRn = ((id & KVM_REG_ARM_CRM_MASK)
- 			       >> KVM_REG_ARM_CRM_SHIFT);
- 		params->Op1 = ((id & KVM_REG_ARM_OPC1_MASK)
- 			       >> KVM_REG_ARM_OPC1_SHIFT);
- 		params->Op2 = 0;
--		params->CRn = 0;
-+		params->CRm = 0;
- 		return true;
- 	default:
- 		return false;
-@@ -898,7 +903,14 @@ static u64 cp15_to_index(const struct co
- 	if (reg->is_64) {
- 		val |= KVM_REG_SIZE_U64;
- 		val |= (reg->Op1 << KVM_REG_ARM_OPC1_SHIFT);
--		val |= (reg->CRm << KVM_REG_ARM_CRM_SHIFT);
-+		/*
-+		 * CRn always denotes the primary coproc. reg. nr. for the
-+		 * in-kernel representation, but the user space API uses the
-+		 * CRm for the encoding, because it is modelled after the
-+		 * MRRC/MCRR instructions: see the ARM ARM rev. c page
-+		 * B3-1445
-+		 */
-+		val |= (reg->CRn << KVM_REG_ARM_CRM_SHIFT);
- 	} else {
- 		val |= KVM_REG_SIZE_U32;
- 		val |= (reg->Op1 << KVM_REG_ARM_OPC1_SHIFT);
---- a/arch/arm/kvm/coproc.h
-+++ b/arch/arm/kvm/coproc.h
-@@ -135,6 +135,8 @@ static inline int cmp_reg(const struct c
- 		return -1;
- 	if (i1->CRn != i2->CRn)
- 		return i1->CRn - i2->CRn;
-+	if (i1->is_64 != i2->is_64)
-+		return i2->is_64 - i1->is_64;
- 	if (i1->CRm != i2->CRm)
- 		return i1->CRm - i2->CRm;
- 	if (i1->Op1 != i2->Op1)
-@@ -145,6 +147,7 @@ static inline int cmp_reg(const struct c
- 
- #define CRn(_x)		.CRn = _x
- #define CRm(_x) 	.CRm = _x
-+#define CRm64(_x)       .CRn = _x, .CRm = 0
- #define Op1(_x) 	.Op1 = _x
- #define Op2(_x) 	.Op2 = _x
- #define is64		.is_64 = true
---- a/arch/arm/kvm/coproc_a15.c
-+++ b/arch/arm/kvm/coproc_a15.c
-@@ -114,7 +114,11 @@ static bool access_l2ectlr(struct kvm_vc
- 
- /*
-  * A15-specific CP15 registers.
-- * Important: Must be sorted ascending by CRn, CRM, Op1, Op2
-+ * CRn denotes the primary register number, but is copied to the CRm in the
-+ * user space API for 64-bit register access in line with the terminology used
-+ * in the ARM ARM.
-+ * Important: Must be sorted ascending by CRn, CRM, Op1, Op2 and with 64-bit
-+ *            registers preceding 32-bit ones.
-  */
- static const struct coproc_reg a15_regs[] = {
- 	/* MPIDR: we use VMPIDR for guest access. */
+ 	return armpmu->get_event_idx(hw_events, &fake_event) >= 0;
 
 
