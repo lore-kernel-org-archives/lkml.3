@@ -1,74 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab3IYOjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 10:39:45 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:33225 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755473Ab3IYOjo (ORCPT
+	id S1755943Ab3IYOmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 10:42:21 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:49527 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755789Ab3IYOmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 10:39:44 -0400
-From: Iker Pedrosa <ikerpedrosam@gmail.com>
-To: pavel@ucw.cz, gregkh@linuxfoundation.org, harsh1kumar@gmail.com,
-        ikerpedrosam@gmail.com, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        joe@perches.com
-Subject: [PATCH v3 21/24] Staging: winbond: wb35tx: Replace printk with netdev
-Date: Wed, 25 Sep 2013 16:39:29 +0200
-Message-Id: <1380119969-21267-1-git-send-email-ikerpedrosam@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379339024-12157-22-git-send-email-ikerpedrosam@gmail.com>
-References: <1379339024-12157-22-git-send-email-ikerpedrosam@gmail.com>
+	Wed, 25 Sep 2013 10:42:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130925103535.2249f617@gandalf.local.home>
+References: <1380105868-31985-1-git-send-email-liuj97@gmail.com>
+	<1380105868-31985-3-git-send-email-liuj97@gmail.com>
+	<20130925103535.2249f617@gandalf.local.home>
+Date: Wed, 25 Sep 2013 20:12:17 +0530
+Message-ID: <CA+b37P0P0RhUytnkLSXmz28wzzsoL3-viV2oxNJqq2nP7kZBFA@mail.gmail.com>
+Subject: Re: [PATCH v1 2/7] arm64: introduce interfaces to hotpatch kernel and
+ module code
+From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jiang Liu <liuj97@gmail.com>, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previously used printk lacked the warning level, now we've got a more accurate way to know the error.
+On 25 September 2013 20:05, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Wed, 25 Sep 2013 18:44:22 +0800
+> Jiang Liu <liuj97@gmail.com> wrote:
+>> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
+>> index 8541c3a..50facfc 100644
+>> --- a/arch/arm64/kernel/insn.c
+>> +++ b/arch/arm64/kernel/insn.c
+>> @@ -15,6 +15,8 @@
+>>   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>>   */
+>>  #include <linux/kernel.h>
+>> +#include <linux/stop_machine.h>
+>> +#include <asm/cacheflush.h>
+>>  #include <asm/insn.h>
+>>
+>>  static int aarch64_insn_cls[] = {
+>> @@ -69,3 +71,65 @@ bool __kprobes aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn)
+>>       return __aarch64_insn_hotpatch_safe(old_insn) &&
+>>              __aarch64_insn_hotpatch_safe(new_insn);
+>>  }
+>> +
+>> +struct aarch64_insn_patch {
+>> +     void    *text_addr;
+>> +     u32     *new_insns;
+>> +     int     insn_cnt;
+>> +};
+>> +
+>> +int __kprobes __aarch64_insn_patch_text(void *addr, u32 *insns, int cnt)
+>> +{
+>> +     int i;
+>> +     u32 *tp = addr;
+>> +
+>> +     /* instructions must be word aligned */
+>> +     if (cnt <= 0 || ((uintptr_t)addr & 0x3))
+>> +             return -EINVAL;
+>
+> On aarch64, are instructions always word aligned? If not, it should be
+> safe for stop machine to modify non word aligned instructions, but this
+> patch looks like it doesn't allow stop_machine() to do so.
+Steve,
 
-Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
----
- drivers/staging/winbond/wb35tx.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Yes, aarch64 instructions must be word-aligned, else instruction fetch
+would generate Misaligned PC fault.
 
-diff --git a/drivers/staging/winbond/wb35tx.c b/drivers/staging/winbond/wb35tx.c
-index 8c25cbd..02e77de 100644
---- a/drivers/staging/winbond/wb35tx.c
-+++ b/drivers/staging/winbond/wb35tx.c
-@@ -32,7 +32,7 @@ static void Wb35Tx_complete(struct urb *pUrb)
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
- 	struct wb35_mds *pMds = &adapter->Mds;
- 
--	printk("wb35: tx complete\n");
-+	netdev_dbg(pUrb->dev, "tx complete\n");
- 	/* Variable setting */
- 	pWb35Tx->EP4vm_state = VM_COMPLETED;
- 	pWb35Tx->EP4VM_status = pUrb->status; /* Store the last result of Irp */
-@@ -49,7 +49,7 @@ static void Wb35Tx_complete(struct urb *pUrb)
- 
- 	/* The URB is completed, check the result */
- 	if (pWb35Tx->EP4VM_status != 0) {
--		printk("URB submission failed\n");
-+		netdev_err(pUrb->dev, "URB submission failed\n");
- 		pWb35Tx->EP4vm_state = VM_STOP;
- 		goto error;
- 	}
-@@ -96,7 +96,7 @@ static void Wb35Tx(struct wbsoft_priv *adapter)
- 	pWb35Tx->EP4vm_state = VM_RUNNING;
- 	retv = usb_submit_urb(pUrb, GFP_ATOMIC);
- 	if (retv < 0) {
--		printk("EP4 Tx Irp sending error\n");
-+		netdev_err(pUrb->dev, "EP4 Tx Irp sending error\n");
- 		goto cleanup;
- 	}
- 
-@@ -218,7 +218,7 @@ static void Wb35Tx_EP2VM_complete(struct urb *pUrb)
- 
- 	/* The Urb is completed, check the result */
- 	if (pWb35Tx->EP2VM_status != 0) {
--		printk("EP2 IoCompleteRoutine return error\n");
-+		netdev_err(pUrb->dev, "EP2 IoCompleteRoutine return error\n");
- 		pWb35Tx->EP2vm_state = VM_STOP;
- 		goto error;
- 	}
--- 
-1.8.1.2
-
+Thanks,
+Sandeepa
+>
+> -- Steve
+>
+>> +
+>> +     for (i = 0; i < cnt; i++)
+>> +             tp[i] = insns[i];
+>> +
+>> +     flush_icache_range((uintptr_t)tp, (uintptr_t)tp + cnt * sizeof(u32));
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int __kprobes aarch64_insn_patch_text_cb(void *arg)
+>> +{
+>> +     struct aarch64_insn_patch *pp = arg;
+>> +
+>> +     return __aarch64_insn_patch_text(pp->text_addr, pp->new_insns,
+>> +                                      pp->insn_cnt);
+>> +}
+>> +
+>> +int __kprobes aarch64_insn_patch_text(void *addr, u32 *insns, int cnt)
+>> +{
+>> +     int ret;
+>> +     bool safe = false;
+>> +
+>> +     /* instructions must be word aligned */
+>> +     if (cnt <= 0 || ((uintptr_t)addr & 0x3))
+>> +             return -EINVAL;
+>> +
+>> +     if (cnt == 1)
+>> +             safe = aarch64_insn_hotpatch_safe(*(u32 *)addr, insns[0]);
+>> +
+>> +     if (safe) {
+>> +             ret = __aarch64_insn_patch_text(addr, insns, cnt);
+>> +     } else {
+>> +             struct aarch64_insn_patch patch = {
+>> +                     .text_addr = addr,
+>> +                     .new_insns = insns,
+>> +                     .insn_cnt = cnt,
+>> +             };
+>> +
+>> +             /*
+>> +              * Execute __aarch64_insn_patch_text() on every online CPU,
+>> +              * which ensure serialization among all online CPUs.
+>> +              */
+>> +             ret = stop_machine(aarch64_insn_patch_text_cb, &patch, NULL);
+>> +     }
+>> +
+>> +     return ret;
+>> +}
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
