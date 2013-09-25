@@ -1,51 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578Ab3IYAyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:54:39 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:44550 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755164Ab3IYAyi (ORCPT
+	id S1756935Ab3IYAyy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:54:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39291 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132Ab3IYARF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:54:38 -0400
-Message-ID: <5242344B.8020002@linaro.org>
-Date: Tue, 24 Sep 2013 17:54:35 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL] drivers/clocksource: sched_clock_register() conversion
- for 3.13 (via tip/timers/core)
-References: <52422732.5000501@linaro.org>
-In-Reply-To: <52422732.5000501@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Sep 2013 20:17:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 097/110] drm/edid: add quirk for Medion MD30217PG
+Date: Tue, 24 Sep 2013 17:15:35 -0700
+Message-Id: <20130925001333.918713136@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
+References: <20130925001323.387158698@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 04:58 PM, John Stultz wrote:
-> Hey Daniel,
->     Here's the sched_clock_register conversion that Stephen did earlier
-> this summer, as part of extending the generic sched_clock code to
-> support 64bit counters. Unfortunately the prereqs for this series missed
-> getting into tip/timers/core for 3.12, so I never sent out this pull
-> request. But now that the prereqs are in tip/timers/core for 3.13, I've
-> merge it up and I wanted to go ahead and send this out.
->
-> Let me know if you have any issues or concerns.
-Hey Daniel,
-    Maybe hold off on this one. The kbuild test robot is has some
-complaints aobut the deprecation of setup_sched_clock() while there are
-still users in arch/arm.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-I'll likely rework a new branch for you to pull that will be all but the
-"Deprecate setup_sched_clock()" patch.
+------------------
 
+From: Alex Deucher <alexander.deucher@amd.com>
 
-thanks
--john
+commit 118bdbd86b39dbb843155054021d2c59058f1e05 upstream.
+
+This LCD monitor (1280x1024 native) has a completely
+bogus detailed timing (640x350@70hz).  User reports that
+1280x1024@60 has waves so prefer 1280x1024@75.
+
+Manufacturer: MED  Model: 7b8  Serial#: 99188
+Year: 2005  Week: 5
+EDID Version: 1.3
+Analog Display Input,  Input Voltage Level: 0.700/0.700 V
+Sync:  Separate
+Max Image Size [cm]: horiz.: 34  vert.: 27
+Gamma: 2.50
+DPMS capabilities: Off; RGB/Color Display
+First detailed timing is preferred mode
+redX: 0.645 redY: 0.348   greenX: 0.280 greenY: 0.605
+blueX: 0.142 blueY: 0.071   whiteX: 0.313 whiteY: 0.329
+Supported established timings:
+720x400@70Hz
+640x480@60Hz
+640x480@72Hz
+640x480@75Hz
+800x600@56Hz
+800x600@60Hz
+800x600@72Hz
+800x600@75Hz
+1024x768@60Hz
+1024x768@70Hz
+1024x768@75Hz
+1280x1024@75Hz
+Manufacturer's mask: 0
+Supported standard timings:
+Supported detailed timing:
+clock: 25.2 MHz   Image Size:  337 x 270 mm
+h_active: 640  h_sync: 688  h_sync_end 784 h_blank_end 800 h_border: 0
+v_active: 350  v_sync: 350  v_sync_end 352 v_blanking: 449 v_border: 0
+Monitor name: MD30217PG
+Ranges: V min: 56 V max: 76 Hz, H min: 30 H max: 83 kHz, PixClock max 145 MHz
+Serial No: 501099188
+EDID (in hex):
+          00ffffffffffff0034a4b80774830100
+          050f010368221b962a0c55a559479b24
+          125054afcf00310a0101010101018180
+          000000000000d60980a0205e63103060
+          0200510e1100001e000000fc004d4433
+          3032313750470a202020000000fd0038
+          4c1e530e000a202020202020000000ff
+          003530313039393138380a2020200078
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: friedrich@mailstation.de
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/drm_edid.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -125,6 +125,9 @@ static struct edid_quirk {
+ 
+ 	/* ViewSonic VA2026w */
+ 	{ "VSC", 5020, EDID_QUIRK_FORCE_REDUCED_BLANKING },
++
++	/* Medion MD 30217 PG */
++	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
+ };
+ 
+ /*
+
 
