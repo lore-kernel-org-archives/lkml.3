@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab3IYAm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:42:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39525 "EHLO
+	id S932228Ab3IYAUM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:20:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39495 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557Ab3IYAUN (ORCPT
+	with ESMTP id S1756528Ab3IYAUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:13 -0400
+	Tue, 24 Sep 2013 20:20:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [ 040/117] usb: ehci-mxc: check for pdata before dereferencing
-Date: Tue, 24 Sep 2013 17:18:26 -0700
-Message-Id: <20130925001745.203913181@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 033/117] USB: OHCI: Allow runtime PM without system sleep
+Date: Tue, 24 Sep 2013 17:18:19 -0700
+Message-Id: <20130925001744.457777289@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,34 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit f375fc520d4df0cd9fcb570f33c103c6c0311f9e upstream.
+commit 69820e01aa756b8d228143d997f71523c1e97984 upstream.
 
-Commit 7e8d5cd93fac ("USB: Add EHCI support for MX27 and MX31 based
-boards") introduced code that could potentially lead to a NULL pointer
-dereference on driver removal.
+Since ohci-hcd supports runtime PM, the .pm field in its pci_driver
+structure should be protected by CONFIG_PM rather than
+CONFIG_PM_SLEEP.
 
-Fix this by checking for the value of pdata before dereferencing it.
+Without this change, OHCI controllers won't do runtime suspend if
+system suspend or hibernation isn't enabled.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-mxc.c |    2 +-
+ drivers/usb/host/ohci-pci.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-mxc.c
-+++ b/drivers/usb/host/ehci-mxc.c
-@@ -184,7 +184,7 @@ static int ehci_mxc_drv_remove(struct pl
- 	if (pdata && pdata->exit)
- 		pdata->exit(pdev);
+--- a/drivers/usb/host/ohci-pci.c
++++ b/drivers/usb/host/ohci-pci.c
+@@ -289,7 +289,7 @@ static struct pci_driver ohci_pci_driver
+ 	.remove =	usb_hcd_pci_remove,
+ 	.shutdown =	usb_hcd_pci_shutdown,
  
--	if (pdata->otg)
-+	if (pdata && pdata->otg)
- 		usb_phy_shutdown(pdata->otg);
- 
- 	clk_disable_unprepare(priv->usbclk);
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ 	.driver =	{
+ 		.pm =	&usb_hcd_pci_pm_ops
+ 	},
 
 
