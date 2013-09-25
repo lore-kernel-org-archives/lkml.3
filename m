@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab3IYAWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:22:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39875 "EHLO
+	id S1756859Ab3IYAWb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:22:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39872 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932398Ab3IYAVO (ORCPT
+	with ESMTP id S932390Ab3IYAVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:21:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anand Avati <avati@redhat.com>, Brian Foster <bfoster@redhat.com>,
+        Maxim Patlasov <mpatlasov@parallels.com>,
         Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 115/117] fuse: invalidate inode attributes on xattr modification
-Date: Tue, 24 Sep 2013 17:19:41 -0700
-Message-Id: <20130925001753.494277084@linuxfoundation.org>
+Subject: [ 114/117] fuse: postpone end_page_writeback() in fuse_writepage_locked()
+Date: Tue, 24 Sep 2013 17:19:40 -0700
+Message-Id: <20130925001753.386191677@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,41 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anand Avati <avati@redhat.com>
+From: Maxim Patlasov <MPatlasov@parallels.com>
 
-commit d331a415aef98717393dda0be69b7947da08eba3 upstream.
+commit 4a4ac4eba1010ef9a804569058ab29e3450c0315 upstream.
 
-Calls like setxattr and removexattr result in updation of ctime.
-Therefore invalidate inode attributes to force a refresh.
+The patch fixes a race between ftruncate(2), mmap-ed write and write(2):
 
-Signed-off-by: Anand Avati <avati@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
+1) An user makes a page dirty via mmap-ed write.
+2) The user performs shrinking truncate(2) intended to purge the page.
+3) Before fuse_do_setattr calls truncate_pagecache, the page goes to
+   writeback. fuse_writepage_locked fills FUSE_WRITE request and releases
+   the original page by end_page_writeback.
+4) fuse_do_setattr() completes and successfully returns. Since now, i_mutex
+   is free.
+5) Ordinary write(2) extends i_size back to cover the page. Note that
+   fuse_send_write_pages do wait for fuse writeback, but for another
+   page->index.
+6) fuse_writepage_locked proceeds by queueing FUSE_WRITE request.
+   fuse_send_writepage is supposed to crop inarg->size of the request,
+   but it doesn't because i_size has already been extended back.
+
+Moving end_page_writeback to the end of fuse_writepage_locked fixes the
+race because now the fact that truncate_pagecache is successfully returned
+infers that fuse_writepage_locked has already called end_page_writeback.
+And this, in turn, infers that fuse_flush_writepages has already called
+fuse_send_writepage, and the latter used valid (shrunk) i_size. write(2)
+could not extend it because of i_mutex held by ftruncate(2).
+
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/dir.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/fuse/file.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -1749,6 +1749,8 @@ static int fuse_setxattr(struct dentry *
- 		fc->no_setxattr = 1;
- 		err = -EOPNOTSUPP;
- 	}
-+	if (!err)
-+		fuse_invalidate_attr(inode);
- 	return err;
- }
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1529,7 +1529,6 @@ static int fuse_writepage_locked(struct
  
-@@ -1878,6 +1880,8 @@ static int fuse_removexattr(struct dentr
- 		fc->no_removexattr = 1;
- 		err = -EOPNOTSUPP;
- 	}
-+	if (!err)
-+		fuse_invalidate_attr(inode);
- 	return err;
- }
+ 	inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
+ 	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
+-	end_page_writeback(page);
  
+ 	spin_lock(&fc->lock);
+ 	list_add(&req->writepages_entry, &fi->writepages);
+@@ -1537,6 +1536,8 @@ static int fuse_writepage_locked(struct
+ 	fuse_flush_writepages(inode);
+ 	spin_unlock(&fc->lock);
+ 
++	end_page_writeback(page);
++
+ 	return 0;
+ 
+ err_free:
 
 
