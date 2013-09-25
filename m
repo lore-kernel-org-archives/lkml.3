@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab3IYAU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39729 "EHLO
+	id S932446Ab3IYA2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:28:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39756 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756750Ab3IYAUu (ORCPT
+	with ESMTP id S1756750Ab3IYAU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:50 -0400
+	Tue, 24 Sep 2013 20:20:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arun Kumar K <arun.kk@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [ 084/117] media: exynos4-is: Fix fimc-lite bayer formats
-Date: Tue, 24 Sep 2013 17:19:10 -0700
-Message-Id: <20130925001750.131326193@linuxfoundation.org>
+        Mikhail Kulemin <Mikhail.Kulemin@ru.ibm.com>,
+        Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Anton Arapov <anton@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, masami.hiramatsu.pt@hitachi.com,
+        srikar@linux.vnet.ibm.com, systemtap@sourceware.org
+Subject: [ 091/117] uprobes: Fix utask->depth accounting in handle_trampoline()
+Date: Tue, 24 Sep 2013 17:19:17 -0700
+Message-Id: <20130925001750.865517088@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -28,44 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arun Kumar K <arun.kk@samsung.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 3396b096c54a84603c51bd705effa88f7f5b0d76 upstream.
+commit 878b5a6efd38030c7a90895dc8346e8fb1e09b4c upstream.
 
-The 10-bit and 12-bit Bayer output formats supported by FIMC-LITE
-actually use 16 bits where the extra bits are padded with zeros.
-The patch corrects buffer allocation for these two formats by
-modifying the depth field. This prevents memory corruption by the
-output DMA due to insufficient buffer size.
+Currently utask->depth is simply the number of allocated/pending
+return_instance's in uprobe_task->return_instances list.
 
-Signed-off-by: Arun Kumar K <arun.kk@samsung.com>
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+handle_trampoline() should decrement this counter every time we
+handle/free an instance, but due to typo it does this only if
+->chained == T. This means that in the likely case this counter
+is never decremented and the probed task can't report more than
+MAX_URETPROBE_DEPTH events.
+
+Reported-by: Mikhail Kulemin <Mikhail.Kulemin@ru.ibm.com>
+Reported-by: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Anton Arapov <anton@redhat.com>
+Cc: masami.hiramatsu.pt@hitachi.com
+Cc: srikar@linux.vnet.ibm.com
+Cc: systemtap@sourceware.org
+Link: http://lkml.kernel.org/r/20130911154726.GA8093@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/exynos4-is/fimc-lite.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/events/uprobes.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/media/platform/exynos4-is/fimc-lite.c
-+++ b/drivers/media/platform/exynos4-is/fimc-lite.c
-@@ -90,7 +90,7 @@ static const struct fimc_fmt fimc_lite_f
- 		.name		= "RAW10 (GRBG)",
- 		.fourcc		= V4L2_PIX_FMT_SGRBG10,
- 		.colorspace	= V4L2_COLORSPACE_SRGB,
--		.depth		= { 10 },
-+		.depth		= { 16 },
- 		.color		= FIMC_FMT_RAW10,
- 		.memplanes	= 1,
- 		.mbus_code	= V4L2_MBUS_FMT_SGRBG10_1X10,
-@@ -99,7 +99,7 @@ static const struct fimc_fmt fimc_lite_f
- 		.name		= "RAW12 (GRBG)",
- 		.fourcc		= V4L2_PIX_FMT_SGRBG12,
- 		.colorspace	= V4L2_COLORSPACE_SRGB,
--		.depth		= { 12 },
-+		.depth		= { 16 },
- 		.color		= FIMC_FMT_RAW12,
- 		.memplanes	= 1,
- 		.mbus_code	= V4L2_MBUS_FMT_SGRBG12_1X12,
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1682,12 +1682,10 @@ static bool handle_trampoline(struct pt_
+ 		tmp = ri;
+ 		ri = ri->next;
+ 		kfree(tmp);
++		utask->depth--;
+ 
+ 		if (!chained)
+ 			break;
+-
+-		utask->depth--;
+-
+ 		BUG_ON(!ri);
+ 	}
+ 
 
 
