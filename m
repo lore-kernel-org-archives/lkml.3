@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932591Ab3IYA41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:56:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39268 "EHLO
+	id S932089Ab3IYARA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:17:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39233 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098Ab3IYARB (ORCPT
+	with ESMTP id S932074Ab3IYAQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:01 -0400
+	Tue, 24 Sep 2013 20:16:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Greg Thelen <gthelen@google.com>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 092/110] memcg: fix multiple large threshold notifications
-Date: Tue, 24 Sep 2013 17:15:30 -0700
-Message-Id: <20130925001333.388847247@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>, Gabor Juhos <juhosg@openwrt.org>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [ 086/110] MIPS: ath79: Fix ar933x watchdog clock
+Date: Tue, 24 Sep 2013 17:15:24 -0700
+Message-Id: <20130925001332.749799302@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -30,73 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Thelen <gthelen@google.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 2bff24a3707093c435ab3241c47dcdb5f16e432b upstream.
+commit a1191927ace7e6f827132aa9e062779eb3f11fa5 upstream.
 
-A memory cgroup with (1) multiple threshold notifications and (2) at least
-one threshold >=2G was not reliable.  Specifically the notifications would
-either not fire or would not fire in the proper order.
+The watchdog device on the AR933x is connected to
+the AHB clock, however the current code uses the
+reference clock. Due to the wrong rate, the watchdog
+driver can't calculate correct register values for
+a given timeout value and the watchdog unexpectedly
+restarts the system.
 
-The __mem_cgroup_threshold() signaling logic depends on keeping 64 bit
-thresholds in sorted order.  mem_cgroup_usage_register_event() sorts them
-with compare_thresholds(), which returns the difference of two 64 bit
-thresholds as an int.  If the difference is positive but has bit[31] set,
-then sort() treats the difference as negative and breaks sort order.
+The code uses the wrong value since the initial
+commit 04225e1d227c8e68d685936ecf42ac175fec0e54
+(MIPS: ath79: add AR933X specific clock init)
 
-This fix compares the two arbitrary 64 bit thresholds returning the
-classic -1, 0, 1 result.
+The patch fixes the code to use the correct clock
+rate to avoid the problem.
 
-The test below sets two notifications (at 0x1000 and 0x81001000):
-  cd /sys/fs/cgroup/memory
-  mkdir x
-  for x in 4096 2164264960; do
-    cgroup_event_listener x/memory.usage_in_bytes $x | sed "s/^/$x listener:/" &
-  done
-  echo $$ > x/cgroup.procs
-  anon_leaker 500M
-
-v3.11-rc7 fails to signal the 4096 event listener:
-  Leaking...
-  Done leaking pages.
-
-Patched v3.11-rc7 properly notifies:
-  Leaking...
-  4096 listener:2013:8:31:14:13:36
-  Done leaking pages.
-
-The fixed bug is old.  It appears to date back to the introduction of
-memcg threshold notifications in v2.6.34-rc1-116-g2e72b6347c94 "memcg:
-implement memory thresholds"
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/5777/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memcontrol.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/mips/ath79/clock.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5584,7 +5584,13 @@ static int compare_thresholds(const void
- 	const struct mem_cgroup_threshold *_a = a;
- 	const struct mem_cgroup_threshold *_b = b;
+--- a/arch/mips/ath79/clock.c
++++ b/arch/mips/ath79/clock.c
+@@ -164,7 +164,7 @@ static void __init ar933x_clocks_init(vo
+ 		ath79_ahb_clk.rate = freq / t;
+ 	}
  
--	return _a->threshold - _b->threshold;
-+	if (_a->threshold > _b->threshold)
-+		return 1;
-+
-+	if (_a->threshold < _b->threshold)
-+		return -1;
-+
-+	return 0;
+-	ath79_wdt_clk.rate = ath79_ref_clk.rate;
++	ath79_wdt_clk.rate = ath79_ahb_clk.rate;
+ 	ath79_uart_clk.rate = ath79_ref_clk.rate;
  }
  
- static int mem_cgroup_oom_notify_cb(struct mem_cgroup *memcg)
 
 
