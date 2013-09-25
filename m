@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab3IYJS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 05:18:58 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:38542 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab3IYJS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 05:18:56 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-15
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-ed-5242aa7e66f7
-Content-transfer-encoding: 8BIT
-Message-id: <5242AA7C.4010905@samsung.com>
-Date: Wed, 25 Sep 2013 11:18:52 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-To: =?ISO-8859-15?Q?J=FCrgen_Beisert?= <jbe@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: Re: ARM/Samsung/S3C24xx: Linux-3.11 crashes when using PWM
-References: <201309251029.44265.jbe@pengutronix.de>
-In-reply-to: <201309251029.44265.jbe@pengutronix.de>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t/xq7p1q5yCDBZM4rOYtO4Ak8XBLQuZ
-	LXoXXGWz2PT4GqvF5V1z2CxmnN/H5MDm8XfVC2aPzUvqPfr/Gnj0bVnF6PF5k1wAaxSXTUpq
-	TmZZapG+XQJXxtJ3l5kKjrFVHJ4s2MC4gLWLkYNDQsBEYv1uiy5GTiBTTOLCvfVsXYxcHEIC
-	SxklNs/8xgyS4BUQlPgx+R4LSD2zgLzEkUvZIGFmAV2Jdy2bWSHqPzFKrNi8jB2iXkvi6beN
-	YDaLgKrE3RO/mUBsNgFDid6jfYwgtqhAgMTiJefYQWaKCFhLXF1pCDKHWWATo8TDq7dZQGqE
-	BZwlZt15C1YvJGAsceXNSjYQmxPo5tPbrzJPYBSYheS8WQjnzUJy3gJG5lWMoqmlyQXFSem5
-	hnrFibnFpXnpesn5uZsYIQH9ZQfj4mNWhxgFOBiVeHgFjjoGCbEmlhVX5h5ilOBgVhLhDV/s
-	FCTEm5JYWZValB9fVJqTWnyIkYmDU6qBUbnovK7Jopr+S9fNHnBH9Ot8+M+be77cSNiZ+dCp
-	xytnase1crI9vdgSESUqGuXz+bLQ2m93di7VemvYdqJFyE1avfKloMMx0bsLp9ieCuJZJHmi
-	t5aB4Xa9XNt3m5SJXZLlZ7u0n2+awOVtISL9O3tzpdSbkMtROewKYqsZry/7dvnupxkblViK
-	MxINtZiLihMBcbVWREYCAAA=
+	id S1754856Ab3IYJYH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 05:24:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20292 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751260Ab3IYJYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 05:24:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,977,1371106800"; 
+   d="scan'208";a="383263810"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Ning Qu <quning@google.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CACz4_2drFs5LsM8mTFNOWGHAs0QbsNfHAhiBXJ7jM3qkGerd5w@mail.gmail.com>
+References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <CACz4_2drFs5LsM8mTFNOWGHAs0QbsNfHAhiBXJ7jM3qkGerd5w@mail.gmail.com>
+Subject: Re: [PATCHv6 00/22] Transparent huge page cache: phase 1, everything
+ but mmap()
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130925092355.E785EE0090@blue.fi.intel.com>
+Date: Wed, 25 Sep 2013 12:23:55 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jürgen,
-
-On 25/09/13 10:29, Jürgen Beisert wrote:
-> Change one single line:
+Ning Qu wrote:
+> Hi, Kirill,
 > 
-> diff --git a/arch/arm/mach-s3c24xx/mach-mini2440.c b/arch/arm/mach-s3c24xx/mach-mini2440.c
-> index a83db46..d8273da 100644
-> --- a/arch/arm/mach-s3c24xx/mach-mini2440.c
-> +++ b/arch/arm/mach-s3c24xx/mach-mini2440.c
-> @@ -519,6 +519,7 @@ static struct platform_device *mini2440_devices[] __initdata = {
->         &s3c_device_iis,
->         &uda1340_codec,
->         &mini2440_audio,
-> +       &s3c_device_timer[0],
->  };
+> Seems you dropped one patch in v5, is that intentional? Just wondering ...
+> 
+>   thp, mm: handle tail pages in page_cache_get_speculative()
 
-I think you need to add instead:
+It's not needed anymore, since we don't have tail pages in radix tree.
 
-	&samsung_device_pwm,
-
-IIRC I had this working, can't verify at the moment as I don't
-have access to the board right now. Please see commit:
-
-7fa33bdb4c44155e390c9ebbc5aa4c5cfc73f6fa
-ARM: SAMSUNG: Modify board files to use new PWM platform device
-
---
-Regards,
-Sylwester
+-- 
+ Kirill A. Shutemov
