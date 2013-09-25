@@ -1,111 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750997Ab3IYE2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 00:28:35 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:53515 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab3IYE2e (ORCPT
+	id S1751140Ab3IYEfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 00:35:31 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:53673 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816Ab3IYEfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 00:28:34 -0400
+	Wed, 25 Sep 2013 00:35:30 -0400
+X-Spam-Score: -100.8
+Message-ID: <524267CD.4030007@asianux.com>
+Date: Wed, 25 Sep 2013 12:34:21 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1380014422.31179.4.camel@AMDC1943>
-References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
-	<5237FDCC.5010109@oracle.com>
-	<20130923220757.GC16191@variantweb.net>
-	<1380014422.31179.4.camel@AMDC1943>
-Date: Wed, 25 Sep 2013 12:28:33 +0800
-Message-ID: <CAA_GA1f_vpJ+Ou3ANcrK5_Bd-vu+-cnCgEhQ3USiW3MpNX7Opw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] mm: migrate zbud pages
-From: Bob Liu <lliubbo@gmail.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info'
+ in all related extern functions
+References: <5212DBFA.8030805@asianux.com> <20130923150625.GB14547@htj.dyndns.org> <52410A40.1000304@asianux.com> <20130924040601.GA31575@mtj.dyndns.org> <524114B8.3070903@asianux.com> <20130924120429.GA2366@htj.dyndns.org> <5242331B.4010309@asianux.com> <20130925005802.GA25777@htj.dyndns.org> <5242372C.4010509@asianux.com> <20130925011404.GB25777@htj.dyndns.org> <52424094.3020504@asianux.com>
+In-Reply-To: <52424094.3020504@asianux.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 5:20 PM, Krzysztof Kozlowski
-<k.kozlowski@samsung.com> wrote:
-> Hi,
->
-> On pon, 2013-09-23 at 17:07 -0500, Seth Jennings wrote:
->> On Tue, Sep 17, 2013 at 02:59:24PM +0800, Bob Liu wrote:
->> > Mel mentioned several problems about zswap/zbud in thread "[PATCH v6
->> > 0/5] zram/zsmalloc promotion".
->> >
->> > Like "it's clunky as hell and the layering between zswap and zbud is
->> > twisty" and "I think I brought up its stalling behaviour during review
->> > when it was being merged. It would have been preferable if writeback
->> > could be initiated in batches and then waited on at the very least..
->> >  It's worse that it uses _swap_writepage directly instead of going
->> > through a writepage ops.  It would have been better if zbud pages
->> > existed on the LRU and written back with an address space ops and
->> > properly handled asynchonous writeback."
->> >
->> > So I think it would be better if we can address those issues at first
->> > and it would be easier to address these issues before adding more new
->> > features. Welcome any ideas.
+On 09/25/2013 09:47 AM, Chen Gang wrote:
+> On 09/25/2013 09:14 AM, Tejun Heo wrote:
+>> On Wed, Sep 25, 2013 at 09:06:52AM +0800, Chen Gang wrote:
+>>> OK, I see, the 'root cause' is: "you are not the related maintainer
+>>> either", so it is really necessary for me to spend additional time
+>>> resource on it :-(.
 >>
->> I just had an idea this afternoon to potentially kill both these birds with one
->> stone: Replace the rbtree in zswap with an address_space.
+>> Yeah, at least partly.  That and the fact that I'm not too willing to
+>> dig into the code without further evidence.  It isn't anything strange
+>> to ask tho and I'm likely to do that even for subsystems that I know
+>> intimately if the subject code has been stable / stale for years and
+>> the analysis doesn't seem immediately convincing.  And, if my
+>> experience is anything to go by, it's not too unlikely that you might
+>> hit something which doesn't agree with your current assumptions while
+>> trying to actually trigger the problem.
 >>
->> Each swap type would have its own page_tree to organize the compressed objects
->> by type and offset (radix tree is more suited for this anyway) and a_ops that
->> could be called by shrink_page_list() (writepage) or the migration code
->> (migratepage).
+>> Thanks.
 >>
->> Then zbud pages could be put on the normal LRU list, maybe at the beginning of
->> the inactive LRU so they would live for another cycle through the list, then be
->> reclaimed in the normal way with the mapping->a_ops->writepage() pointing to a
->> zswap_writepage() function that would decompress the pages and call
->> __swap_writepage() on them.
->
-> How exactly the address space can be used here? Do you want to point to
-> zbud pages in address_space.page_tree? If yes then which index should be
-> used?
->
+> 
 
-I didn't get the point neither. I think introduce address_space is enough.
-1. zbud.c:
-static struct address_space_operations zbud_aops = {
-.writepage= zswap_write_page,
-};
-struct address_space zbud_space = {
-.a_ops = &zbud_aops,
-};
+Excuse me, I have to do some urgent internal things within my company,
+so the test and confirmation may be delayed (I will try to finish test
+within this month: 2013-09-30).
 
-zbud_alloc() {
-zbud_page = alloc_page();
-zbud_page->mapping = (struct address_space *)&zbud_space;
-set_page_private(page, (unsigned long)pool);
-lru_add_anon(zbud_page);
-}
+> Excuse me, my English is not quite well, I do not quite understand what
+> you said (but it seems what you said is reasonable, and not need reply).
+> 
+> 
+> Thanks.
+> 
 
-2. zswap.c
-static int zswap_writepage(struct page *page, struct writeback_control *wbc)
-{
-handle = encode_handle(page_address(page), FIRST));
-zswap_writeback_entry(pool, handle);
-
-handle = encode_handle(page_address(page), LAST));
-zswap_writeback_entry(pool, handle);
-}
-
-Of course it may need lots of work for core MM subsystem can maintain
-zbud pages.
-But in this way, we can get rid of the clunky reclaiming layer and
-integrate zswap closely with core MM subsystem which knows better how
-many zbud pages can be used and when should trigger the zbud pages
-reclaim.
 
 -- 
-Regards,
---Bob
+Chen Gang
