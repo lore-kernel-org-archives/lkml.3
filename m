@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab3IYOZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 10:25:45 -0400
-Received: from mga01.intel.com ([192.55.52.88]:14494 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755789Ab3IYOZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 10:25:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,978,1371106800"; 
-   d="scan'208";a="406984286"
-Message-ID: <1380119126.4879.0.camel@rzhang1-mobl4>
-Subject: Re: [PATCH] typo in drivers/thermal/Kconfig: lpatform instead of
- platform
-From: Zhang Rui <rui.zhang@intel.com>
-To: Regid Ichira <regid23@nt1.in>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 25 Sep 2013 22:25:26 +0800
-In-Reply-To: <20130908215853.GD8821@nt1.in>
-References: <20130908215853.GD8821@nt1.in>
+	id S1755921Ab3IYO3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 10:29:09 -0400
+Received: from www17.your-server.de ([213.133.104.17]:36549 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754886Ab3IYO3H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 10:29:07 -0400
+Message-ID: <1380119333.7453.4.camel@localhost.localdomain>
+Subject: Re: Copy on write hard links?
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Rob Landley <rob@landley.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 25 Sep 2013 16:28:53 +0200
+In-Reply-To: <1380117572.1974.81@driftwood>
+References: <0EF3994A-6BC7-4FC7-AD2D-B4BE087EBFCA@m3y3r.de>
+	 <1380117572.1974.81@driftwood>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-09 at 00:58 +0300, Regid Ichira wrote:
-> Applied to the HEAD of linux.git,
->                        VERSION = 3 PATCHLEVEL = 11 SUBLEVEL = 0
-> Signed-off-by: Regid Ichira <regid23@nt1.in>
-
-applied to thermal -next.
-
-thanks,
-rui
-> ---
->  drivers/thermal/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+Am Mittwoch, den 25.09.2013, 08:59 -0500 schrieb Rob Landley:
+> On 09/24/2013 01:36:56 PM, Thomas Meyer wrote:
+> > Hi,
+> > 
+> > Is there such a thing?
 > 
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index e988c81..3f99f79 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -47,7 +47,7 @@ config THERMAL_DEFAULT_GOV_USER_SPACE
->  	select THERMAL_GOV_USER_SPACE
->  	help
->  	  Select this if you want to let the user space manage the
-> -	  lpatform thermals.
-> +	  platform thermals.
->  
->  endchoice
->  
+> In the kernel's vfs layer? 
+
+Yes, that would be a nice feature!
+
+> No, although some filesystems (ala btrfs) do  
+> things like that with snapshots.
+> 
+> In userspace? Breaking hardlinks when updating a file is fairly normal,  
+> that's why they distinguish between "truncate and rewrite" (preserve  
+> hardlinks) and "write new file and rename over old file" (break  
+> hardlinks, avoiding the more obvious race conditions).
+
+so every user space application needs to implement that for itself?
+I wonder how hard it would be to implement this on vfs layer? linkat()
+with a new flag as api or something like that.
+
+> 
+> Rob
 
 
