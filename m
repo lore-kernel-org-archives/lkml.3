@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab3IYI41 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 04:56:27 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:56506 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab3IYI4Y (ORCPT
+	id S1754739Ab3IYI47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 04:56:59 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:43930 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab3IYI45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 04:56:24 -0400
-Message-ID: <1380099377.8523.9.camel@marge.simpson.net>
-Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for
- wake_affine(.sync=true)
-From: Mike Galbraith <bitbucket@online.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
-Date: Wed, 25 Sep 2013 10:56:17 +0200
-In-Reply-To: <20130925075341.GB3081@twins.programming.kicks-ass.net>
-References: <20130925075341.GB3081@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:lbi1/+3K4O+2/1tn1gm3Ec7ZFfYImQhMz3DFgfjG/Vv
- liYxzuGNYdKZxm48DYD3syWK95Tnc35vbKuxRn0O6bTLlMPsPv
- /51gBi0UIY73fabR+ANlJDTtlXYUrRADR2A81WYWrG+4gbMEZU
- J9FU3ZQyRHxzpc53dP/wDS7tc9HhqH9TOqOyGdT+WBKRI04DBK
- pBKylQoEDVkKSDsoPDM41ZoV7WmAa7CYbistA91gB3We44Yx/n
- VGAEfvpgKGSL5T+NmByO44tsGD5meZZwc7q6PtmrSoXtmnVBaC
- DYh/sToOHoRbYlIVgW1GZdgjukdyxuxG+4MsDRzbV6b9B86BPe
- w9fAL8ZMDzMMtOG7SItb9aMnh04t73KVySW94azDQR7AtB4kL8
- 1KLrqFtzqRetA==
+	Wed, 25 Sep 2013 04:56:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <1380099255-25559-1-git-send-email-geert@linux-m68k.org>
+References: <1380099255-25559-1-git-send-email-geert@linux-m68k.org>
+Date: Wed, 25 Sep 2013 10:56:57 +0200
+X-Google-Sender-Auth: aqdiQFvfxH7rXO14OD38_wTsgw4
+Message-ID: <CAMuHMdUBaFWH6rmUMpr=fJ2J_bXjnK2CqdZaCWxqqQFXutuEGQ@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.12-rc2
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-25 at 09:53 +0200, Peter Zijlstra wrote: 
-> Subject: sched: Avoid select_idle_sibling() for wake_affine(.sync=true)
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Wed Sep 25 08:28:39 CEST 2013
-> 
-> When a task is the only running task and does a sync wakeup; avoid
-> going through select_idle_sibling() as it doesn't know the current CPU
-> is going to be idle shortly.
-> 
-> Without this two sync wakers will ping-pong between CPUs for no
-> reason.
+On Wed, Sep 25, 2013 at 10:54 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.12-rc2 to v3.12-rc1[3], the summaries are:
+>   - build errors: +15/-11
 
-That will make pipe-test go fugly -> pretty, and help very fast/light
-localhost network, but eat heavier localhost overlap recovery.  We need
-a working (and cheap) overlap detector scheme, so we can know when there
-is enough to be worth going after.
+  + error: arch/powerpc/kernel/entry_32.S: undefined reference to
+`uprobe_post_sstep_notifier':  => .text+0x10570)
+  + error: arch/powerpc/kernel/entry_32.S: undefined reference to
+`uprobe_pre_sstep_notifier':  => .text+0x10564)
+  + error: fork.c: undefined reference to `uprobe_clear_state':  => .text+0xff4)
+  + error: fork.c: undefined reference to `uprobe_copy_process':  =>
+.text+0x1974)
+  + error: fork.c: undefined reference to `uprobe_dup_mmap':  => .text+0x5d0)
+  + error: fork.c: undefined reference to `uprobe_end_dup_mmap':  =>
+.text+0x890)
+  + error: fork.c: undefined reference to `uprobe_start_dup_mmap':  =>
+.text+0x5b4)
+  + error: memory.c: undefined reference to `uprobe_munmap':  => .text+0x27c78)
+  + error: trace_uprobe.c: undefined reference to `uprobe_register':
+=> .text+0x9aaa0)
+  + error: trace_uprobe.c: undefined reference to `uprobe_unregister':
+ => .text+0x9a9fc)
 
-(I sent you some lmbench numbers offline a while back showing the
-two-faced little <b-word> in action, doing both good and evil)
-> Suggested-by: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  kernel/sched/fair.c |   10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3461,6 +3461,16 @@ select_task_rq_fair(struct task_struct *
->  		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
->  			prev_cpu = cpu;
->  
-> +		/*
-> +		 * Don't bother with select_idle_sibling() in the case of a sync wakeup
-> +		 * where we know the only running task will soon go away. Going
-> +		 * through select_idle_sibling will only lead to pointless ping-pong.
-> +		 */
-> +		if (sync && prev_cpu == cpu && cpu_rq(cpu)->nr_running == 1) {
-> +			new_cpu = cpu;
-> +			goto unlock;
-> +		}
-> +
->  		new_cpu = select_idle_sibling(p, prev_cpu);
->  		goto unlock;
->  	}
+powerpc-randconfig
 
+> [1] http://kisskb.ellerman.id.au/kisskb/head/6701/ (all 120 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/6676/ (all 120 configs)
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
