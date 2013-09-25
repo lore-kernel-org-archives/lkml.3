@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051Ab3IYBUq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:20:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38918 "EHLO
+	id S1755886Ab3IYAQD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:16:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38850 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755888Ab3IYAQE (ORCPT
+	with ESMTP id S1755814Ab3IYAPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:04 -0400
+	Tue, 24 Sep 2013 20:15:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [ 013/110] ARM: dts: add missing cpu #address-cell values
-Date: Tue, 24 Sep 2013 17:14:11 -0700
-Message-Id: <20130925001324.844716003@linuxfoundation.org>
+        Neil Zhang <zhangwm@marvell.com>, Colin Cross <ccross@android.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 010/110] cpuidle: coupled: fix race condition between pokes and safe state
+Date: Tue, 24 Sep 2013 17:14:08 -0700
+Message-Id: <20130925001324.512409323@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -29,60 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Colin Cross <ccross@android.com>
 
-commit 8b2efa896cc618e055e90c9d9600e7c8388ae3b7 upstream.
+commit 9e19b73c30a5fa42a53583a1f7817dd857126156 upstream.
 
-A recent series has added CPU numbers to a lot of dts files,
-but unfortunately in a few cases the #address-cells
-and #size-cells values are missing, which causes build warnings.
-This adds the missing ones for sunxi and sama5 that I found
-through build testing.
+The coupled cpuidle waiting loop clears pending pokes before
+entering the safe state.  If a poke arrives just before the
+pokes are cleared, but after the while loop condition checks,
+the poke will be lost and the cpu will stay in the safe state
+until another interrupt arrives.  This may cause the cpu that
+sent the poke to spin in the ready loop with interrupts off
+until another cpu receives an interrupt, and if no other cpus
+have interrupts routed to them it can spin forever.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Change the return value of cpuidle_coupled_clear_pokes to
+return if a poke was cleared, and move the need_resched()
+checks into the callers.  In the waiting loop, if
+a poke was cleared restart the loop to repeat the while
+condition checks.
+
+Reported-by: Neil Zhang <zhangwm@marvell.com>
+Signed-off-by: Colin Cross <ccross@android.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/sama5d3.dtsi   |    2 ++
- arch/arm/boot/dts/sun4i-a10.dtsi |    2 ++
- arch/arm/boot/dts/sun5i-a13.dtsi |    2 ++
- 3 files changed, 6 insertions(+)
+ drivers/cpuidle/coupled.c |   20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
---- a/arch/arm/boot/dts/sama5d3.dtsi
-+++ b/arch/arm/boot/dts/sama5d3.dtsi
-@@ -35,6 +35,8 @@
- 		ssc1 = &ssc1;
- 	};
- 	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
- 		cpu@0 {
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a5";
---- a/arch/arm/boot/dts/sun4i-a10.dtsi
-+++ b/arch/arm/boot/dts/sun4i-a10.dtsi
-@@ -16,6 +16,8 @@
- 	interrupt-parent = <&intc>;
+--- a/drivers/cpuidle/coupled.c
++++ b/drivers/cpuidle/coupled.c
+@@ -408,19 +408,22 @@ static void cpuidle_coupled_set_done(int
+  * been processed and the poke bit has been cleared.
+  *
+  * Other interrupts may also be processed while interrupts are enabled, so
+- * need_resched() must be tested after turning interrupts off again to make sure
++ * need_resched() must be tested after this function returns to make sure
+  * the interrupt didn't schedule work that should take the cpu out of idle.
+  *
+- * Returns 0 if need_resched was false, -EINTR if need_resched was true.
++ * Returns 0 if no poke was pending, 1 if a poke was cleared.
+  */
+ static int cpuidle_coupled_clear_pokes(int cpu)
+ {
++	if (!cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
++		return 0;
++
+ 	local_irq_enable();
+ 	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
+ 		cpu_relax();
+ 	local_irq_disable();
  
- 	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
- 		cpu@0 {
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a8";
---- a/arch/arm/boot/dts/sun5i-a13.dtsi
-+++ b/arch/arm/boot/dts/sun5i-a13.dtsi
-@@ -17,6 +17,8 @@
- 	interrupt-parent = <&intc>;
+-	return need_resched() ? -EINTR : 0;
++	return 1;
+ }
  
- 	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
- 		cpu@0 {
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a8";
+ static bool cpuidle_coupled_any_pokes_pending(struct cpuidle_coupled *coupled)
+@@ -464,7 +467,8 @@ int cpuidle_enter_state_coupled(struct c
+ 		return -EINVAL;
+ 
+ 	while (coupled->prevent) {
+-		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
++		cpuidle_coupled_clear_pokes(dev->cpu);
++		if (need_resched()) {
+ 			local_irq_enable();
+ 			return entered_state;
+ 		}
+@@ -502,7 +506,10 @@ retry:
+ 	 */
+ 	while (!cpuidle_coupled_cpus_waiting(coupled) ||
+ 			!cpumask_test_cpu(dev->cpu, &cpuidle_coupled_poked)) {
+-		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
++		if (cpuidle_coupled_clear_pokes(dev->cpu))
++			continue;
++
++		if (need_resched()) {
+ 			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
+ 			goto out;
+ 		}
+@@ -516,7 +523,8 @@ retry:
+ 			dev->safe_state_index);
+ 	}
+ 
+-	if (cpuidle_coupled_clear_pokes(dev->cpu)) {
++	cpuidle_coupled_clear_pokes(dev->cpu);
++	if (need_resched()) {
+ 		cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
+ 		goto out;
+ 	}
 
 
