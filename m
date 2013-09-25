@@ -1,82 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab3IYTWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 15:22:07 -0400
-Received: from smtprelay0092.hostedemail.com ([216.40.44.92]:34378 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754304Ab3IYTWG (ORCPT
+	id S1754807Ab3IYTZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 15:25:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40569 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751315Ab3IYTZb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 15:22:06 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2828:2917:2987:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4559:5007:6119:7652:7903:8957:10004:10400:10848:11232:11658:11914:12517:12519:12663:12679:12740:13069:13163:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: toad48_8650b5f15eb48
-X-Filterd-Recvd-Size: 2622
-Message-ID: <1380136920.17366.15.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: Find CamelCase definitions of
- struct/union/enum
-From: Joe Perches <joe@perches.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 25 Sep 2013 12:22:00 -0700
-In-Reply-To: <20130925161949.GZ13318@ZenIV.linux.org.uk>
-References: <1380047934.3575.100.camel@joe-AO722>
-	 <20130925152432.GY13318@ZenIV.linux.org.uk>
-	 <1380123344.17366.5.camel@joe-AO722>
-	 <20130925161949.GZ13318@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Sep 2013 15:25:31 -0400
+From: "Gupta, Pekon" <pekon@ti.com>
+To: Brian Norris <computersforpeace@gmail.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: RE: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various
+ ECC schemes
+Thread-Topic: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various
+ ECC schemes
+Thread-Index: AQHOr65J/YAMcn2UDkuZTZSW+mOACZnVQHoggADFRoCAAEWcgIAAihnw
+Date: Wed, 25 Sep 2013 19:24:26 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
+References: <1378986619-26765-1-git-send-email-pekon@ti.com>
+ <1378986619-26765-2-git-send-email-pekon@ti.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
+ <20130925134619.GG10746@radagast>
+ <20130925175527.GA23337@ld-irv-0074.broadcom.com>
+In-Reply-To: <20130925175527.GA23337@ld-irv-0074.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-25 at 17:19 +0100, Al Viro wrote:
-> On Wed, Sep 25, 2013 at 08:35:44AM -0700, Joe Perches wrote:
-> > I think Propercase should be discouraged.
-> > ie: Qdisc et al.
+Hi Brian,
+
 > 
-> Excuse me, but "Joe happens to think that something should be discouraged"
-> is not a problem.  "Joe uses checkpatch.pl as force multiplier, recruiting
-> hundreds of monkeys to enforce his personal preferences", OTOH, very much is.
+> Hi Pekon,
+> 
+> On Wed, Sep 25, 2013 at 08:46:19AM -0500, Felipe Balbi wrote:
+> > + akpm
+> >
+> > On Tue, Sep 24, 2013 at 01:04:05PM -0500, Gupta, Pekon wrote:
+[snip]
+> > >
+> > > Dear Olof and other DT Maintainers,
+> > >
+> > > This patch series has missed multiple merge windows, and
+> > > much of the other development work on mtd/nand/omap
+> > > driver is gated due to this.
+> 
+> Also, to be fair here: you only started CC'ing the appropriate DT
+> people/list around v4, after which you got a (somewhat) prompt and
+> thorough review of the DT bindings. Then several months passed before
+> you addressed the reviews. So the "multiple merge windows" is not
+> entirely to be blamed on others ;)
+> 
+> Brian
 
-Hah.  I'm still looking to acquire minions not monkeys,
-and the force seems weak in that one.  Enthralling the
-wannabe thralls isn't working...
+Few points I would like to clarify here, *without* pointing anyone..
 
-CamelCase uses are not reported by default.
+(1) It was Olof's comments which directed me to cc: devicetree-discuss list.
+So wrong list was always cc-ed till v4.
+Refer http://permalink.gmane.org/gmane.linux.ports.arm.kernel/249662
 
-So not to worry Al, CamelCase is a --strict (CHECK) test
-and almost no one ever uses --strict.  
+(2) The devicetree list has been updated in MAINTAINER file towards
+end of July (22/July/2013) in following commit. Whereas the patch v4
+was submitted on 2/July/2013. So I wasn't aware of this new DT maillist.
+commit d0fb18c5c0caf2ed0eecf3d0145450ae708ed75a
+Commit:     Grant Likely <grant.likely@linaro.org>
+CommitDate: 2013-07-22
 
-> You are calling for ban on any mixed-case identifiers.  I see at least three
-> cases where they can be legitimate:
+(3) When a maintainer gives a NAK, I expect him to at-least give
+directions on what to change in the patch. There were no comments
+given, neither new patch reviewed by the DT maintainer even after
+sending multiple request directly.
+http://lists.infradead.org/pipermail/linux-mtd/2013-July/047441.html
+http://lists.infradead.org/pipermail/linux-mtd/2013-July/047629.html
 
-If I was calling for anything remotely like a "ban",
-I'd try to add it to CodingStyle.
+Its only when Artem and yourself pitched in by sending a mail to
+new DT mail-list that the DT maintainer reviewed and provided the
+comments for fixes.
+But by that time 3.11-rc6 had already gone past, and so I knew this
+Series cannot go in, so I wanted to wait some more, to see if there
+were any more comments on this. And frankly I was too much
+frustrated by then.
 
-> 	* labels a-la Enomem, etc.  I've been using those and I will
-> keep doing so, checkpatch.pl and its users be damned.
+Just to speak my opinion.
+We all understand that maintainers are heavily loaded by tons of
+emails, And reviewing each patch instantly is not possible.
 
-Good on you.
+But this load is now passing to developers like me as frustration,
+because most of energy is being spent in re-submitting patches
+again and again, without any proper direction or conclusion.
+And then there is no time and energy left for good work, where
+we can contribute to optimizing frame-works for performance or
+adding new features.
+So I see many good developers distracting away from mainline.
 
-> 	* enum members, to distinguish those from defines (first letter
-> capitalized vs. all-caps).
+Thus, there should be a mechanism, where such load can be
+distributed, and there are less emails. And developers don't
+have to re-submit patch multiple times, by collecting most reviews
+at once.  This way developer's like me can spend more time in doing
+other constructive things.
 
-Shrug.  There aren't that many uses of that style.
-
-> 	* (local) typedefs for structs; I really don't like their use for
-> anything non-local, but IMO they have their uses in cases like e.g.
-> fs/binfmt_misc.c
-
-Fine by me.  Don't use checkpatch.  No stress from me.
-
-It's pretty obvious from fs/binfmt_misc.c that you have
-your own taste.
-
-$ scripts/checkpatch.pl -f --strict fs/binfmt_misc.c
-[...]
-total: 45 errors, 39 warnings, 10 checks, 725 lines checked
+Please consider this as constructive feedback, without targeting
+any individual or team.
 
 
+with regards, pekon
