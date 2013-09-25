@@ -1,102 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab3IYGEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 02:04:08 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:45003 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab3IYGEG (ORCPT
+	id S1752706Ab3IYGQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 02:16:20 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:33029 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab3IYGQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 02:04:06 -0400
-Message-ID: <52427CAE.8030600@linux.vnet.ibm.com>
-Date: Wed, 25 Sep 2013 11:33:26 +0530
-From: Hemant <hkshaw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 25 Sep 2013 02:16:19 -0400
+Message-ID: <52427F76.8040608@linux.vnet.ibm.com>
+Date: Wed, 25 Sep 2013 11:45:18 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org
-Subject: Re: [PATCH 1/2] SDT markers listing by perf
-References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903073655.4793.20013.stgit@hemant-fedora> <87ioyht7e4.fsf@sejong.aot.lge.com> <5226E8F4.5060505@hitachi.com> <523599C2.6020204@linux.vnet.ibm.com> <5242687A.9030209@hitachi.com>
-In-Reply-To: <5242687A.9030209@hitachi.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Michael Ellerman <michael@ellerman.id.au>
+CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Michael Neuling <michael.neuling@au1.ibm.com>
+Subject: Re: [PATCH V2 0/6] perf: New conditional branch filter
+References: <1377836690-32710-1-git-send-email-khandual@linux.vnet.ibm.com> <1378778772.25578.1.camel@concordia> <CABPqkBREXH5VUkULAsWvmpCer-s4SCxuof6LdqRO0i-iBOG8pA@mail.gmail.com> <524006C4.3010006@linux.vnet.ibm.com> <1380075585.14938.4.camel@concordia>
+In-Reply-To: <1380075585.14938.4.camel@concordia>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092506-9574-0000-0000-000009C9B98A
+x-cbid: 13092506-2000-0000-0000-00000DDB01F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2013 10:07 AM, Masami Hiramatsu wrote:
-> (2013/09/15 20:28), Hemant wrote:
->> Hi Masami,
-> Hi, and sorry for replying so late. I missed this in my mailbox.
->
->> On 09/04/2013 01:31 PM, Masami Hiramatsu wrote:
->>> (2013/09/04 15:42), Namhyung Kim wrote:
->>>> [SNIP]
->>>> You need to add it to Documentation/perf-probe.txt too.  In addition if
->>>> the --sdt option is only able to work with libelf, it should be wrapped
->>>> into the #ifdef LIBELF_SUPPORT pair.
->>>>
->>>> And I'm not sure that it's a good idea to have two behavior on a single
->>>> option (S) - show and probe (add).  Maybe it can be separated into two
->>>> or the S option can be used as a flag with existing --list and --add
->>>> option?
->>>>
->>> Good catch! :)
->>> No, that is really bad idea. All probes must be added by "--add" action.
->>> So we need a new probe syntax for specifying sdt marker.
+On 09/25/2013 07:49 AM, Michael Ellerman wrote:
+> On Mon, 2013-09-23 at 14:45 +0530, Anshuman Khandual wrote:
+>> On 09/21/2013 12:25 PM, Stephane Eranian wrote:
+>>> On Tue, Sep 10, 2013 at 4:06 AM, Michael Ellerman
+>>> <michael@ellerman.id.au> wrote:
+>>>>>
+>>>>> On Fri, 2013-08-30 at 09:54 +0530, Anshuman Khandual wrote:
+>>>>>>>       This patchset is the re-spin of the original branch stack sampling
+>>>>>>> patchset which introduced new PERF_SAMPLE_BRANCH_COND filter. This patchset
+>>>>>>> also enables SW based branch filtering support for PPC64 platforms which have
+>>>>>>> branch stack sampling support. With this new enablement, the branch filter support
+>>>>>>> for PPC64 platforms have been extended to include all these combinations discussed
+>>>>>>> below with a sample test application program.
+>>>>>
+>>>>> ...
+>>>>>
+>>>>>>> Mixed filters
+>>>>>>> -------------
+>>>>>>> (6) perf record -e branch-misses:u -j any_call,any_ret ./cprog
+>>>>>>> Error:
+>>>>>>> The perf.data file has no samples!
+>>>>>>>
+>>>>>>> NOTE: As expected. The HW filters all the branches which are calls and SW tries to find return
+>>>>>>> branches in that given set. Both the filters are mutually exclussive, so obviously no samples
+>>>>>>> found in the end profile.
+>>>>>
+>>>>> The semantics of multiple filters is not clear to me. It could be an OR,
+>>>>> or an AND. You have implemented AND, does that match existing behaviour
+>>>>> on x86 for example?
 >>>
->>> How about the below syntax?
->>>
->>> [EVENT=]%PROVIDER:MARKER [ARG ...]
->>>
->>> Of course, this will require to list up all markers with "%" prefix for
->>> continuity.
->>>
->>> And since --list option is to list up all existing(defined) probe events,
->>> I think --markers (as like as --funcs) is better for listing it up.
->>>
->>> Thank you!
->>>
->> I have one doubt here. Why do we need [ARG ...] in the syntax you
->> specified? I believe these args are to fetched from the sdt notes'
->> section of the elf of the executable/library. Or am I taking this in a
->> wrong way and this suggested syntax is actually for the uprobe_events
->> file in the tracing directory?
-> Hm, indeed. Since all the arguments of the marker is defined in sdt notes,
-> we actually don't need to specify each of them. However, other probe syntax
-> has those arguments. I'd like to keep the same syntax style in the
-> same command (action) for avoiding confusion.
+>>> The semantic on the API is OR. AND does not make sense: CALL & RETURN?
+>>> On x86, the HW filter is an OR (default: ALL, set bit to disable a
+>>> type). I suspect
+>>> it is similar on PPC.
+>>
+>> Given the situation as explained here, which semantic would be better for single
+>> HW and multiple SW filters. Accordingly validate_instruction() function will have
+>> to be re-implemented. But I believe OR-ing the SW filters will be preferable.
+>>
+>> 	(1) (HW_FILTER_1) && (SW_FILTER_1) && (SW_FILTER_2)
+>> 	or
+>> 	(2) (HW_FILTER_1) && (SW_FILTER_1 || SW_FILTER_2)
+>>
+>> Please let me know your inputs and suggestions on this. Thank you.
+> 
+> You need to implement the correct semantics, regardless of how the
+> hardware happens to work.
+> 
+> That means if multiple filters are specified you need to do all the
+> filtering in software.
 
-Hmm, got it.
+Hello Stephane,
 
-> I recommend this way; at the first step, we just find the marker address from
-> sdt. And next, we will make the argument available. And eventually,
-> it is better to introduce "$args" meta argument to fetch all the arguments
-> of the marker.
->
-> At this point, we can do
->
-> perf probe %foo:bar $args
+I looked at the X86 code on branch filtering implementation.
 
-So, at first step (ignoring the arguments), we can go with :
-perf probe %foo:bar
+(1) During event creation intel_pmu_hw_config calls intel_pmu_setup_lbr_filter when LBR sampling
+    is required, intel_pmu_setup_lbr_filter calls these two functions 
 
-And, once, the argument support is enabled (all the arguments will be
-fetched at the marker location), we can go with:
-perf probe %foo:bar $args
+	(a) intel_pmu_setup_sw_lbr_filter
 
->
-> to trace full information from the marker foo:bar.
->
-> Thank you,
->
+	"event->hw.branch_reg.reg" contains all the SW filter masks which can be
+	supported for the user requested filters event->attr.branch_sample_type (even
+	if some of them could implemented in PMU HW)
 
+	(b) intel_pmu_setup_hw_lbr_filter (when HW filtering is present)
 
--- 
-Thanks
-Hemant Kumar Shaw
+	"event->hw.branch_reg.config" contains all the PMU HW filter masks corresponding
+	to the requested filters in event->attr.branch_sample_type. One point to note
+	here is that if the user has requested for some branch filter which is not supported
+	in the HW LBR filter, the event creation request is rejected with EOPNOTSUPP. This
+	not true for the filters which can be ignored in the PMU.
+
+(2) When the event is enabled in the PMU
+
+	(a) cpuc->lbr_sel->config gets into the HW register to enable the filtering of branches
+	which was determined in the function intel_pmu_setup_hw_lbr_filter. 
+
+(3) After the IRQ happened, intel_pmu_lbr_read reads all the entries from the LBR  HW and then
+    applies the filter in the function intel_pmu_lbr_filter.
+
+	(a) intel_pmu_lbr_filter functions take into account cpuc->br_sel (which is nothing but
+	event->hw.branch_reg.reg as determined in the function intel_pmu_setup_sw_lbr_filter)
+	which contains the entire branch filter request set in terms applicable SW filter. Here
+	the semantic is OR when we look at from SW filter implementation point of view.
+
+   BUT what branch record set we are working on right now ? A set which was captured with LBR HW
+   with cpuc->lbr_sel->config filters enabled on it. So to me the X86 implementation of the semantics
+   look something like this.
+	
+	A - Branch filter set requested by the user
+	B - Subset of A which can be supported in HW
+	C - Subset of A which can be supported in SW
+
+	(B) && (C) 
+
+	NOTE: Individual filters are OR-ed inside both B and C sets.
+
+So here the semantics is not a true OR. This is my understanding till now which may be wrong. Please
+help me understand if the semantics is something otherwise than what is explained above.
+
+In POWER8 because we cannot OR individual HW PMU supported filters, till now the semantics looked a bit odd.
+But as Michael has pointed out here that if there are multiple branch filter requests implement all of them
+in SW. Only in case where the user requests for an individual filter and if it happen to be supported in HW
+PMU, we will use the PMU filters.
+
+Regards
+Anshuman
 
