@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab3IYAUD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39451 "EHLO
+	id S932314Ab3IYAqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:46:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39472 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756474Ab3IYAT7 (ORCPT
+	with ESMTP id S1756496Ab3IYAUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:59 -0400
+	Tue, 24 Sep 2013 20:20:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Maydell <peter.maydell@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [ 022/117] ARM: PCI: versatile: Fix PCI I/O
-Date: Tue, 24 Sep 2013 17:18:08 -0700
-Message-Id: <20130925001743.264297508@linuxfoundation.org>
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Steve Cotton <steve@s.cotton.clara.co.uk>
+Subject: [ 027/117] xhci: fix port BESL LPM capability checking
+Date: Tue, 24 Sep 2013 17:18:13 -0700
+Message-Id: <20130925001743.798271050@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -28,102 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Maydell <peter.maydell@linaro.org>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 829f9fedee30cde2ec15e88d57ec11074db791e2 upstream.
+commit dcf06a036848b4e8e6c8220f2e00b9adf6f84918 upstream.
 
-The versatile PCI controller code was confused between the
-PCI I/O window (at 0x43000000) and the first PCI memory
-window (at 0x44000000). Pass the correct base address to
-pci_remap_io() so that PCI I/O accesses work.
+Wrong capability bit was checked for best effort service latency.
+bit 20 indicate port is BESL LPM capable (BLC),
+bit 19 is hardware LPM capable (HLC)
 
-Since the first PCI memory window isn't used at all (it's
-an odd size), rename the associated variables and labels
-so that it's clear that it isn't related to the I/O window.
+This patch should be backported to kernels as old as 3.11, that
+contain the commit a558ccdcc71c7770c5e80c926a31cfe8a3892a09 "usb: xhci:
+add USB2 Link power management BESL support"
 
-This has been tested and confirmed to fix PCI I/O accesses
-both on physical PB926+PCI backplane hardware and on QEMU.
-
-Signed-off-by: Peter Maydell <peter.maydell@linaro.org>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Steve Cotton <steve@s.cotton.clara.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-versatile/include/mach/platform.h |    2 ++
- arch/arm/mach-versatile/pci.c                   |   16 ++++++++--------
- 2 files changed, 10 insertions(+), 8 deletions(-)
+ drivers/usb/host/xhci-ext-caps.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-versatile/include/mach/platform.h
-+++ b/arch/arm/mach-versatile/include/mach/platform.h
-@@ -231,12 +231,14 @@
- /* PCI space */
- #define VERSATILE_PCI_BASE             0x41000000	/* PCI Interface */
- #define VERSATILE_PCI_CFG_BASE	       0x42000000
-+#define VERSATILE_PCI_IO_BASE          0x43000000
- #define VERSATILE_PCI_MEM_BASE0        0x44000000
- #define VERSATILE_PCI_MEM_BASE1        0x50000000
- #define VERSATILE_PCI_MEM_BASE2        0x60000000
- /* Sizes of above maps */
- #define VERSATILE_PCI_BASE_SIZE	       0x01000000
- #define VERSATILE_PCI_CFG_BASE_SIZE    0x02000000
-+#define VERSATILE_PCI_IO_BASE_SIZE     0x01000000
- #define VERSATILE_PCI_MEM_BASE0_SIZE   0x0c000000	/* 32Mb */
- #define VERSATILE_PCI_MEM_BASE1_SIZE   0x10000000	/* 256Mb */
- #define VERSATILE_PCI_MEM_BASE2_SIZE   0x10000000	/* 256Mb */
---- a/arch/arm/mach-versatile/pci.c
-+++ b/arch/arm/mach-versatile/pci.c
-@@ -170,8 +170,8 @@ static struct pci_ops pci_versatile_ops
- 	.write	= versatile_write_config,
- };
+--- a/drivers/usb/host/xhci-ext-caps.h
++++ b/drivers/usb/host/xhci-ext-caps.h
+@@ -71,7 +71,7 @@
  
--static struct resource io_mem = {
--	.name	= "PCI I/O space",
-+static struct resource unused_mem = {
-+	.name	= "PCI unused",
- 	.start	= VERSATILE_PCI_MEM_BASE0,
- 	.end	= VERSATILE_PCI_MEM_BASE0+VERSATILE_PCI_MEM_BASE0_SIZE-1,
- 	.flags	= IORESOURCE_MEM,
-@@ -195,9 +195,9 @@ static int __init pci_versatile_setup_re
- {
- 	int ret = 0;
+ /* USB 2.0 xHCI 1.0 hardware LMP capability - section 7.2.2.1.3.2 */
+ #define XHCI_HLC               (1 << 19)
+-#define XHCI_BLC               (1 << 19)
++#define XHCI_BLC               (1 << 20)
  
--	ret = request_resource(&iomem_resource, &io_mem);
-+	ret = request_resource(&iomem_resource, &unused_mem);
- 	if (ret) {
--		printk(KERN_ERR "PCI: unable to allocate I/O "
-+		printk(KERN_ERR "PCI: unable to allocate unused "
- 		       "memory region (%d)\n", ret);
- 		goto out;
- 	}
-@@ -205,7 +205,7 @@ static int __init pci_versatile_setup_re
- 	if (ret) {
- 		printk(KERN_ERR "PCI: unable to allocate non-prefetchable "
- 		       "memory region (%d)\n", ret);
--		goto release_io_mem;
-+		goto release_unused_mem;
- 	}
- 	ret = request_resource(&iomem_resource, &pre_mem);
- 	if (ret) {
-@@ -225,8 +225,8 @@ static int __init pci_versatile_setup_re
- 
-  release_non_mem:
- 	release_resource(&non_mem);
-- release_io_mem:
--	release_resource(&io_mem);
-+ release_unused_mem:
-+	release_resource(&unused_mem);
-  out:
- 	return ret;
- }
-@@ -246,7 +246,7 @@ int __init pci_versatile_setup(int nr, s
- 		goto out;
- 	}
- 
--	ret = pci_ioremap_io(0, VERSATILE_PCI_MEM_BASE0);
-+	ret = pci_ioremap_io(0, VERSATILE_PCI_IO_BASE);
- 	if (ret)
- 		goto out;
- 
+ /* command register values to disable interrupts and halt the HC */
+ /* start/stop HC execution - do not write unless HC is halted*/
 
 
