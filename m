@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819Ab3IYBJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:09:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39073 "EHLO
+	id S932350Ab3IYBKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:10:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39055 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756052Ab3IYAQ2 (ORCPT
+	with ESMTP id S1756033Ab3IYAQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:28 -0400
+	Tue, 24 Sep 2013 20:16:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [ 049/110] pci_ids: Add PCI device ID functions 3 and 4 for newer F15h models.
-Date: Tue, 24 Sep 2013 17:14:47 -0700
-Message-Id: <20130925001328.707925706@linuxfoundation.org>
+        Mike Dyer <mike.dyer@md-soft.co.uk>, Mark Brown <broonie@linaro.org>
+Subject: [ 045/110] ASoC: wm8960: Fix PLL register writes
+Date: Tue, 24 Sep 2013 17:14:43 -0700
+Message-Id: <20130925001328.289998908@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,31 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+From: Mike Dyer <mike.dyer@md-soft.co.uk>
 
-commit 6bdaa63c2957ac04e8d596880f732b79f9c06c3c upstream.
+commit 85fa532b6ef920b32598df86b194571a7059a77c upstream.
 
-Add PCI device IDs for AMD F15h, model 30h. They will be used in
-amd_nb.c and amd64_edac.c
+Bit 9 of PLL2,3 and 4 is reserved as '0'. The 24bit fractional part
+should be split across each register in 8bit chunks.
 
-Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Mike Dyer <mike.dyer@md-soft.co.uk>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/pci_ids.h |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/soc/codecs/wm8960.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -518,6 +518,8 @@
- #define PCI_DEVICE_ID_AMD_11H_NB_MISC	0x1303
- #define PCI_DEVICE_ID_AMD_11H_NB_LINK	0x1304
- #define PCI_DEVICE_ID_AMD_15H_M10H_F3	0x1403
-+#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F3 0x141d
-+#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F4 0x141e
- #define PCI_DEVICE_ID_AMD_15H_NB_F0	0x1600
- #define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
- #define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
+--- a/sound/soc/codecs/wm8960.c
++++ b/sound/soc/codecs/wm8960.c
+@@ -857,9 +857,9 @@ static int wm8960_set_dai_pll(struct snd
+ 	if (pll_div.k) {
+ 		reg |= 0x20;
+ 
+-		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 18) & 0x3f);
+-		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 9) & 0x1ff);
+-		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0x1ff);
++		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 16) & 0xff);
++		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 8) & 0xff);
++		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0xff);
+ 	}
+ 	snd_soc_write(codec, WM8960_PLL1, reg);
+ 
 
 
