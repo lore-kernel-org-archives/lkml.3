@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757956Ab3IYBQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:16:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38946 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755930Ab3IYAQK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755931Ab3IYAQK (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Sep 2013 20:16:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38872 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755838Ab3IYAP4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 20:15:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Karel Srot <ksrot@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 024/110] tty: disassociate_ctty() sends the extra SIGCONT
-Date: Tue, 24 Sep 2013 17:14:22 -0700
-Message-Id: <20130925001326.032644514@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 003/110] SCSI: sd: Fix potential out-of-bounds access
+Date: Tue, 24 Sep 2013 17:14:01 -0700
+Message-Id: <20130925001323.769255261@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -28,48 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 03e1261778cca782d41a3d8e3945ca88cf93e01e upstream.
+commit 984f1733fcee3fbc78d47e26c5096921c5d9946a upstream.
 
-Starting from v3.10 (probably commit f91e2590410b: "tty: Signal
-foreground group processes in hangup") disassociate_ctty() sends SIGCONT
-if tty && on_exit.  This breaks LSB test-suite, in particular test8 in
-_exit.c and test40 in sigcon5.c.
+This patch fixes an out-of-bounds error in sd_read_cache_type(), found
+by Google's AddressSanitizer tool.  When the loop ends, we know that
+"offset" lies beyond the end of the data in the buffer, so no Caching
+mode page was found.  In theory it may be present, but the buffer size
+is limited to 512 bytes.
 
-Put the "!on_exit" check back to restore the old behaviour.
-
-Review by Peter Hurley:
- "Yes, this regression was introduced by me in that commit.  The effect
-  of the regression is that ptys will receive a SIGCONT when, in similar
-  circumstances, ttys would not.
-
-  The fact that two test vectors accidentally tripped over this
-  regression suggests that some other apps may as well.
-
-  Thanks for catching this"
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Karel Srot <ksrot@redhat.com>
-Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Dmitry Vyukov <dvyukov@google.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_io.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/scsi/sd.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -850,7 +850,8 @@ void disassociate_ctty(int on_exit)
- 			struct pid *tty_pgrp = tty_get_pgrp(tty);
- 			if (tty_pgrp) {
- 				kill_pgrp(tty_pgrp, SIGHUP, on_exit);
--				kill_pgrp(tty_pgrp, SIGCONT, on_exit);
-+				if (!on_exit)
-+					kill_pgrp(tty_pgrp, SIGCONT, on_exit);
- 				put_pid(tty_pgrp);
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2409,14 +2409,9 @@ sd_read_cache_type(struct scsi_disk *sdk
  			}
  		}
+ 
+-		if (modepage == 0x3F) {
+-			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
+-				  "present\n");
+-			goto defaults;
+-		} else if ((buffer[offset] & 0x3f) != modepage) {
+-			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
+-			goto defaults;
+-		}
++		sd_printk(KERN_ERR, sdkp, "No Caching mode page found\n");
++		goto defaults;
++
+ 	Page_found:
+ 		if (modepage == 8) {
+ 			sdkp->WCE = ((buffer[offset + 2] & 0x04) != 0);
 
 
