@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab3IYAlL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:41:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39566 "EHLO
+	id S1757404Ab3IYAle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:41:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39554 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab3IYAUT (ORCPT
+	with ESMTP id S1755183Ab3IYAUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:19 -0400
+	Tue, 24 Sep 2013 20:20:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
-        Patrick McHardy <kaber@trash.net>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [ 048/117] rculist: list_first_or_null_rcu() should use list_entry_rcu()
-Date: Tue, 24 Sep 2013 17:18:34 -0700
-Message-Id: <20130925001746.072511062@linuxfoundation.org>
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 037/117] ACPI / LPSS: dont crash if a device has no MMIO resources
+Date: Tue, 24 Sep 2013 17:18:23 -0700
+Message-Id: <20130925001744.880911324@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -31,68 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-commit c34ac00caefbe49d40058ae7200bd58725cebb45 upstream.
+commit af65cfe9aeae03e0682bebdf4db94582d75562dd upstream.
 
-list_first_or_null() should test whether the list is empty and return
-pointer to the first entry if not in a RCU safe manner.  It's broken
-in several ways.
+Intel LPSS devices that are enumerated from ACPI have both MMIO and IRQ
+resources returned in their _CRS method. However, Apple Macbook Air with
+Haswell has LPSS devices enumerated from PCI bus instead and _CRS method
+returns only an interrupt number (but the device has _HID set that causes
+the scan handler to match it).
 
-* It compares __kernel @__ptr with __rcu @__next triggering the
-  following sparse warning.
+The current ACPI / LPSS code sets pdata->dev_desc only when MMIO resource
+is found for the device and in case of Macbook Air it is never found. That
+leads to a NULL pointer dereference in register_device_clock().
 
-  net/core/dev.c:4331:17: error: incompatible types in comparison expression (different address spaces)
+Correct this by always setting the pdata->dev_desc.
 
-* It doesn't perform rcu_dereference*() and computes the entry address
-  using container_of() directly from the __rcu pointer which is
-  inconsitent with other rculist interface.  As a result, all three
-  in-kernel users - net/core/dev.c, macvlan, cgroup - are buggy.  They
-  dereference the pointer w/o going through read barrier.
-
-* While ->next dereference passes through list_next_rcu(), the
-  compiler is still free to fetch ->next more than once and thus
-  nullify the "__ptr != __next" condition check.
-
-Fix it by making list_first_or_null_rcu() dereference ->next directly
-using ACCESS_ONCE() and then use list_entry_rcu() on it like other
-rculist accessors.
-
-v2: Paul pointed out that the compiler may fetch the pointer more than
-    once nullifying the condition check.  ACCESS_ONCE() added on
-    ->next dereference.
-
-v3: Restored () around macro param which was accidentally removed.
-    Spotted by Paul.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Reported-and-tested-by: Imre Kaloz <kaloz@openwrt.org>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/rculist.h |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/acpi/acpi_lpss.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -267,8 +267,9 @@ static inline void list_splice_init_rcu(
-  */
- #define list_first_or_null_rcu(ptr, type, member) \
- 	({struct list_head *__ptr = (ptr); \
--	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
--	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
-+	  struct list_head *__next = ACCESS_ONCE(__ptr->next); \
-+	  likely(__ptr != __next) ? \
-+		list_entry_rcu(__next, type, member) : NULL; \
- 	})
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -257,12 +257,13 @@ static int acpi_lpss_create_device(struc
+ 				pdata->mmio_size = resource_size(&rentry->res);
+ 			pdata->mmio_base = ioremap(rentry->res.start,
+ 						   pdata->mmio_size);
+-			pdata->dev_desc = dev_desc;
+ 			break;
+ 		}
  
- /**
+ 	acpi_dev_free_resource_list(&resource_list);
+ 
++	pdata->dev_desc = dev_desc;
++
+ 	if (dev_desc->clk_required) {
+ 		ret = register_device_clock(adev, pdata);
+ 		if (ret) {
 
 
