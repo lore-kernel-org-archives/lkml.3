@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab3IYMqU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 08:46:20 -0400
-Received: from mailout08.t-online.de ([194.25.134.20]:38819 "EHLO
-	mailout08.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755040Ab3IYMqS (ORCPT
+	id S1755450Ab3IYMuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 08:50:07 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:53620 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755182Ab3IYMuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 08:46:18 -0400
-Message-ID: <5242DB0C.4070005@t-online.de>
-Date: Wed, 25 Sep 2013 14:46:04 +0200
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: Prevent divide by zero exception in kernel/events/core.c
-References: <5242D207.10306@t-online.de> <20130925121243.GK3081@twins.programming.kicks-ass.net>
-In-Reply-To: <20130925121243.GK3081@twins.programming.kicks-ass.net>
-Content-Type: multipart/mixed;
- boundary="------------010700070105000204090900"
-X-ID: JlLtp+ZTwhu+WEqkvzFgSnk4z6il9N-z35odQcVvu+P-aTimRXeBdIAVOFyj-OPg2d
-X-TOI-MSGID: 91b4f1ee-51dc-40e0-97a6-10918181f566
+	Wed, 25 Sep 2013 08:50:03 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-89-5242dbf930f2
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: balbi@ti.com, bcousson@baylibre.com, tony@atomide.com, balajitk@ti.com,
+        kishon@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC PATCH 09/15] ata: ti_sata: Add Texas Instruments SATA Wrapper
+ driver
+Date: Wed, 25 Sep 2013 14:49:56 +0200
+Message-id: <3930265.gHe05HETI5@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <5608096.0pgFIteLqQ@amdc1032>
+References: <1379595943-14622-1-git-send-email-rogerq@ti.com>
+ <1379595943-14622-10-git-send-email-rogerq@ti.com>
+ <5608096.0pgFIteLqQ@amdc1032>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t9jAd2ft52CDJ7M1baYOnk7m8XB+/UW
+	d+b/ZbWYf+Qcq8WFpz1sFpseX2O1OLbjEZPF5V1z2CxmL+lnseh5pGXxa/lRRov9V7wceDy+
+	fZ3E4vH+Riu7x6ZVnWwem5fUexy/sZ3J4/MmuQC2KC6blNSczLLUIn27BK6MQy1v2Qt+sVX8
+	WPSJsYHxLGsXIyeHhICJxI1zk9khbDGJC/fWs3UxcnEICSxilNi2aTkLhNPCJHGnZTYTSBWb
+	gJXExPZVjCC2iICixL2VEB3MApOZJHb9vA42VlggQmLT9WY2EJtFQFVi/++lYCt4BTQlmjbO
+	BouLCnhKfJq0lBnE5hTQkng85TTU6kmMEhPnNDJCNAhK/Jh8jwXEZhaQl9i3fyorhK0jsb91
+	GtsERoFZSMpmISmbhaRsASPzKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzg+HgmtYNxZYPF
+	IUYBDkYlHl6Bo45BQqyJZcWVuYcYJTiYlUR4+687BQnxpiRWVqUW5ccXleakFh9ilOZgURLn
+	PdBqHSgkkJ5YkpqdmlqQWgSTZeLglGpg3Lg03bEy9/9MLoEju/a2fTjydJ4Lp6H//rr7Z0/0
+	qfkvFXrkt9dthzffsteXVRXzohkLF4pHifjKsb0R+nFkW9WXjZJq3Ik/jaQVDmYaNsfmaSQU
+	FeZbzzQ97n+Wyzbs06W2bk1nzaolZcd3Kk41nPhA+T/bO5GE+x1nby/a5PX2jpjJ/dQPSizF
+	GYmGWsxFxYkAj2+4uosCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010700070105000204090900
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Wednesday, September 25, 2013 02:37:19 PM Bartlomiej Zolnierkiewicz wrote:
 
-On 25.09.2013 14:12, Peter Zijlstra wrote:
-> The 'normal' way of doing that is changing the sysctl table entry to use
-> proc_dointvec_minmax and set .extra = &one. See for example
-> &sysctl_sched_cfs_bandwidth_slice in kernel/sysctl.c
+[...]
 
-Thanks. V2 attached.
+> > +#ifdef CONFIG_PM
+> > +
+> > +static int ti_sata_resume(struct device *dev)
+> > +{
+> > +	pm_runtime_disable(dev);
+> > +	pm_runtime_set_active(dev);
+> > +	pm_runtime_enable(dev);
+> 
+> This doesn't look like a correct ->resume method:
+> * it shouldn't touch runtime PM at all
+> * for each ->resume method there should be a corresponding ->suspend method
+> 
+> Moreover this whole wrapper driver seems strange, why not just add a proper
+> runtime PM support to ahci_platform driver instead?
 
-cu,
-  Knut
+Hmm, even this shouldn't be needed as this wrapper driver doesn't have
+->runtime_suspend and ->runtime resume methods.
 
---------------010700070105000204090900
-Content-Type: text/x-patch;
- name="0001-Enforce-1-as-lower-limit-for-perf_event_max_sample_r.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-Enforce-1-as-lower-limit-for-perf_event_max_sample_r.pa";
- filename*1="tch"
+What exactly is the purpose of the existence of this wrapper driver?
 
->From 4ef9dabdd27a02e2ebd45c2d98afda7e43e82ab3 Mon Sep 17 00:00:00 2001
-From: Knut Petersen <Knut_Petersen@t-online.de>
-Date: Wed, 25 Sep 2013 14:29:37 +0200
-Subject: [PATCH] Enforce 1 as lower limit for perf_event_max_sample_rate
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-/proc/sys/kernel/perf_event_max_sample_rate will accept
-negative values as well as 0.
-
-Negative values are unreasonable, and 0 causes a
-divide by zero exception in perf_proc_update_handler.
-
-This patch enforces a lower limit of 1.
-
-v2: Use proc_dointvec_minmax() as suggested by
-Peter Zijlstra.
-
-Signed-off-by: Knut Petersen <Knut_Petersen@t-online.de>
----
- kernel/events/core.c | 2 +-
- kernel/sysctl.c      | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index dd236b6..8721a17 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -193,7 +193,7 @@ int perf_proc_update_handler(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos)
- {
--	int ret = proc_dointvec(table, write, buffer, lenp, ppos);
-+	int ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
- 
- 	if (ret || !write)
- 		return ret;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index b2f06f3..2a9db91 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1049,6 +1049,7 @@ static struct ctl_table kern_table[] = {
- 		.maxlen		= sizeof(sysctl_perf_event_sample_rate),
- 		.mode		= 0644,
- 		.proc_handler	= perf_proc_update_handler,
-+		.extra1		= &one,
- 	},
- 	{
- 		.procname	= "perf_cpu_time_max_percent",
--- 
-1.8.1.4
-
-
---------------010700070105000204090900--
