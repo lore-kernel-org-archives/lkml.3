@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab3IYAIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:08:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38443 "EHLO
+	id S1755134Ab3IYAIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:08:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38437 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754964Ab3IYAIL (ORCPT
+	with ESMTP id S1754953Ab3IYAIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:08:11 -0400
+	Tue, 24 Sep 2013 20:08:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
-        Patrick McHardy <kaber@trash.net>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [ 13/28] rculist: list_first_or_null_rcu() should use list_entry_rcu()
-Date: Tue, 24 Sep 2013 17:07:44 -0700
-Message-Id: <20130925000651.620941764@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [ 12/28] usb: config->desc.bLength may not exceed amount of data returned by the device
+Date: Tue, 24 Sep 2013 17:07:43 -0700
+Message-Id: <20130925000651.407725246@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
 References: <20130925000648.404447782@linuxfoundation.org>
@@ -31,68 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit c34ac00caefbe49d40058ae7200bd58725cebb45 upstream.
+commit b4f17a488ae2e09bfcf95c0e0b4219c246f1116a upstream.
 
-list_first_or_null() should test whether the list is empty and return
-pointer to the first entry if not in a RCU safe manner.  It's broken
-in several ways.
+While reading the config parsing code I noticed this check is missing, without
+this check config->desc.wTotalLength can end up with a value larger then the
+dev->rawdescriptors length for the config, and when userspace then tries to
+get the rawdescriptors bad things may happen.
 
-* It compares __kernel @__ptr with __rcu @__next triggering the
-  following sparse warning.
-
-  net/core/dev.c:4331:17: error: incompatible types in comparison expression (different address spaces)
-
-* It doesn't perform rcu_dereference*() and computes the entry address
-  using container_of() directly from the __rcu pointer which is
-  inconsitent with other rculist interface.  As a result, all three
-  in-kernel users - net/core/dev.c, macvlan, cgroup - are buggy.  They
-  dereference the pointer w/o going through read barrier.
-
-* While ->next dereference passes through list_next_rcu(), the
-  compiler is still free to fetch ->next more than once and thus
-  nullify the "__ptr != __next" condition check.
-
-Fix it by making list_first_or_null_rcu() dereference ->next directly
-using ACCESS_ONCE() and then use list_entry_rcu() on it like other
-rculist accessors.
-
-v2: Paul pointed out that the compiler may fetch the pointer more than
-    once nullifying the condition check.  ACCESS_ONCE() added on
-    ->next dereference.
-
-v3: Restored () around macro param which was accidentally removed.
-    Spotted by Paul.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/rculist.h |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/core/config.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -254,8 +254,9 @@ static inline void list_splice_init_rcu(
-  */
- #define list_first_or_null_rcu(ptr, type, member) \
- 	({struct list_head *__ptr = (ptr); \
--	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
--	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
-+	  struct list_head *__next = ACCESS_ONCE(__ptr->next); \
-+	  likely(__ptr != __next) ? \
-+		list_entry_rcu(__next, type, member) : NULL; \
- 	})
+--- a/drivers/usb/core/config.c
++++ b/drivers/usb/core/config.c
+@@ -424,7 +424,8 @@ static int usb_parse_configuration(struc
  
- /**
+ 	memcpy(&config->desc, buffer, USB_DT_CONFIG_SIZE);
+ 	if (config->desc.bDescriptorType != USB_DT_CONFIG ||
+-	    config->desc.bLength < USB_DT_CONFIG_SIZE) {
++	    config->desc.bLength < USB_DT_CONFIG_SIZE ||
++	    config->desc.bLength > size) {
+ 		dev_err(ddev, "invalid descriptor for config index %d: "
+ 		    "type = 0x%X, length = %d\n", cfgidx,
+ 		    config->desc.bDescriptorType, config->desc.bLength);
 
 
