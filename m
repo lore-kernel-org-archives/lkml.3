@@ -1,105 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab3IYPXL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 11:23:11 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:59175 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755752Ab3IYPXJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 11:23:09 -0400
-Date: Wed, 25 Sep 2013 10:23:06 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: new binutils needed for arm in 3.12-rc1
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        =?iso-8859-1?q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Andrew Morton <akpm@osdl.org>,
-        Trivial patch monkey <trivial@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <alpine.LFD.2.03.1309242158340.312@syhkavp.arg> (from
-	nico@fluxnic.net on Tue Sep 24 21:07:57 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1380122586.1974.84@driftwood>
+	id S1755697Ab3IYPYG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 11:24:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4707 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755270Ab3IYPYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 11:24:04 -0400
+Date: Wed, 25 Sep 2013 17:16:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130925151642.GA13244@redhat.com>
+References: <20130918154939.GZ26785@twins.programming.kicks-ass.net> <20130919143241.GB26785@twins.programming.kicks-ass.net> <20130923175052.GA20991@redhat.com> <20130924123821.GT12926@twins.programming.kicks-ass.net> <20130924160359.GA2739@redhat.com> <20130924124341.64d57912@gandalf.local.home> <20130924170631.GB5059@redhat.com> <20130924174717.GH9093@linux.vnet.ibm.com> <20130924180005.GA7148@redhat.com> <20130924203512.GS9326@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130924203512.GS9326@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 09:07:57 PM, Nicolas Pitre wrote:
-> On Tue, 24 Sep 2013, Rob Landley wrote:
-> 
-> > On 09/24/2013 04:48:00 PM, Russell King - ARM Linux wrote:
-> > > Now, if you feel strongly about this, we _could_ introduce a
-> > > CONFIG_OLD_BINUTILS and give everyone their cake - but it will be
-> > > fragile.  Not everyone will remember to get that right, because  
-> they'll
-> > > be using the later binutils.  Also, we already have an excessive  
-> number
-> > > of potential breakage-inducing options and we certainly don't need
-> > > another.
+On 09/24, Peter Zijlstra wrote:
+>
+> On Tue, Sep 24, 2013 at 08:00:05PM +0200, Oleg Nesterov wrote:
 > >
-> > I'm doing the regression testing either way, on several different
-> > architectures. (Although I tend to to only really do a thorough job  
-> quarterly
-> > when a new kernel comes out and it's time to make it work.) So I'm  
-> going to be
-> > doing something locally like this anyway, and if a  
-> CONFIG_OLD_BINUTILS is
-> > acceptable I might as well push it upstream.
-> 
-> If you are convinced you have no choice but to stick to old binutils,
+> > Yes, we need to ensure gcc doesn't reorder this code so that
+> > do_something() comes before get_online_cpus(). But it can't? At least
+> > it should check current->cpuhp_ref != 0 first? And if it is non-zero
+> > we do not really care, we are already in the critical section and
+> > this ->cpuhp_ref has only meaning in put_online_cpus().
+> >
+> > Confused...
+>
+>
+> So the reason I put it in was because of the inline; it could possibly
+> make it do:
 
-Oh no, long-term other choices include lld.llvm.org and  
-http://landley.net/code/qcc but they're not ready yet and I don't have  
-time to work on them right now. (I had high hopes for gold, until the  
-guy signed it over to the FSF and it vanished into the tiergruben. Oh  
-well.)
+[...snip...]
 
-> I'd strongly suggest you make your binutils compatible with newer
-> instruction syntax instead of making the kernel more complex.
+> In which case the recursive fast path doesn't have a barrier() between
+> taking the ref and starting do_something().
 
-Meaning I play whack-a-mole as this becomes permission to depend on  
-endless new gnuisms just because they're there and nobody else is  
-regression testing against them, not because they actually add anything.
+Yes, but my point was, this can only happen in recursive fast path.
+And in this case (I think) we do not care, we are already in the critical
+section.
 
-Whereas if I add an old binutils config option, other people might help  
-regression test it (if not actually fix it), and the other toolchain  
-projects have less of a moving target to catch up to.
+current->cpuhp_ref doesn't matter at all until we call put_online_cpus().
 
-> This is more in line with being future proof rather than stuck into  
-> the past.
+Suppose that gcc knows for sure that current->cpuhp_ref != 0. Then I
+think, for example,
 
-No, it's exactly the opposite of that. Future proof is getting off a  
-toolchain whose license is a moving target.
+	get_online_cpus();
+	do_something();
+	put_online_cpus();
 
-GPLv2: "shut up and show me the code"
-GPLv3: "I am altering the bargain, pray I don't alter it any further."
-GPLv4: ???
+converted to
 
-> It could be as simple as making gas accept an extra argument for
-> instructions like dsb and just ignoring it.
+	do_something();
+	current->cpuhp_ref++;
+	current->cpuhp_ref--;
 
-So you prefer I come up with the reversion patches locally and _not_  
-send them upstream?
+is fine. do_something() should not depend on ->cpuhp_ref.
 
-*shrug* That's what I've been doing for sh4 for around 4 years now.  
-(And their breakage still reverts cleanly even.) It's also what I did  
-when the arm versatile interrupts changed randomly 3 times in ways that  
-weren't backwards compatible with existing qemu versions. And I  
-maintained perl removal patches for 5 years before they finally went  
-upstream.
+OK, please forget. I guess I will never understand this ;)
 
-But I do at least post said patches publicly, and other people use 'em  
-when I do...
+Oleg.
 
-Rob
