@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758660Ab3IYBox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:44:53 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:36950 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758644Ab3IYBm5 (ORCPT
+	id S1758672Ab3IYBpR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:45:17 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:56753 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758637Ab3IYBm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:42:57 -0400
+	Tue, 24 Sep 2013 21:42:56 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,97 +15,105 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 08/10] rcu: Track rcu_nocb_kthread()'s sleeping and awakening
-Date: Tue, 24 Sep 2013 18:42:37 -0700
-Message-Id: <1380073359-31959-8-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 10/10] sched, rcu: Make RCU use resched_cpu()
+Date: Tue, 24 Sep 2013 18:42:39 -0700
+Message-Id: <1380073359-31959-10-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1380073359-31959-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130925014210.GA31690@linux.vnet.ibm.com>
  <1380073359-31959-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-0928-0000-0000-000001DBA009
+x-cbid: 13092501-8236-0000-0000-000002124077
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-This commit adds event traces to track all of rcu_nocb_kthread()'s
-blocking and awakening.
+We're going to deprecate and remove set_need_resched() for it will do
+the wrong thing. Make an exception for RCU and allow it to use
+resched_cpu() which will do the right thing.
 
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/trace/events/rcu.h |  4 ++++
- kernel/rcutree_plugin.h    | 15 ++++++++++++++-
- 2 files changed, 18 insertions(+), 1 deletion(-)
+ kernel/rcutree.c    | 15 ++++++++++++++-
+ kernel/sched/core.c | 10 ++--------
+ 2 files changed, 16 insertions(+), 9 deletions(-)
 
-diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
-index 4301cd9..a087d82 100644
---- a/include/trace/events/rcu.h
-+++ b/include/trace/events/rcu.h
-@@ -183,8 +183,12 @@ TRACE_EVENT(rcu_grace_period_init,
-  *	"WakeOvf": Wake rcuo kthread, CB list is huge.
-  *	"WakeNot": Don't wake rcuo kthread.
-  *	"WakeNotPoll": Don't wake rcuo kthread because it is polling.
-+ *	"Poll": Start of new polling cycle for rcu_nocb_poll.
-+ *	"Sleep": Sleep waiting for CBs for !rcu_nocb_poll.
-  *	"WokeEmpty": rcuo kthread woke to find empty list.
-  *	"WokeNonEmpty": rcuo kthread woke to find non-empty list.
-+ *	"WaitQueue": Enqueue partially done, timed wait for it to complete.
-+ *	"WokeQueue": Partial enqueue now complete.
-  */
- TRACE_EVENT(rcu_nocb_wake,
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 54dd6d0..bd170f5 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -898,6 +898,12 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+ 	force_quiescent_state(rsp);  /* Kick them all. */
+ }
  
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 24b01b6..21205b1 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -2230,6 +2230,7 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- static int rcu_nocb_kthread(void *arg)
++/*
++ * This function really isn't for public consumption, but RCU is special in
++ * that context switches can allow the state machine to make progress.
++ */
++extern void resched_cpu(int cpu);
++
+ static void print_cpu_stall(struct rcu_state *rsp)
  {
- 	int c, cl;
-+	bool firsttime = 1;
- 	struct rcu_head *list;
- 	struct rcu_head *next;
- 	struct rcu_head **tail;
-@@ -2238,8 +2239,15 @@ static int rcu_nocb_kthread(void *arg)
- 	/* Each pass through this loop invokes one batch of callbacks */
- 	for (;;) {
- 		/* If not polling, wait for next batch of callbacks. */
--		if (!rcu_nocb_poll)
-+		if (!rcu_nocb_poll) {
-+			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-+					    TPS("Sleep"));
- 			wait_event_interruptible(rdp->nocb_wq, rdp->nocb_head);
-+		} else if (firsttime) {
-+			firsttime = 0;
-+			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-+					    TPS("Poll"));
-+		}
- 		list = ACCESS_ONCE(rdp->nocb_head);
- 		if (!list) {
- 			if (!rcu_nocb_poll)
-@@ -2249,6 +2257,7 @@ static int rcu_nocb_kthread(void *arg)
- 			flush_signals(current);
- 			continue;
- 		}
-+		firsttime = 1;
- 		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
- 				    TPS("WokeNonEmpty"));
+ 	int cpu;
+@@ -927,7 +933,14 @@ static void print_cpu_stall(struct rcu_state *rsp)
+ 				     3 * rcu_jiffies_till_stall_check() + 3;
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
  
-@@ -2271,7 +2280,11 @@ static int rcu_nocb_kthread(void *arg)
- 			next = list->next;
- 			/* Wait for enqueuing to complete, if needed. */
- 			while (next == NULL && &list->next != tail) {
-+				trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-+						    TPS("WaitQueue"));
- 				schedule_timeout_interruptible(1);
-+				trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-+						    TPS("WokeQueue"));
- 				next = list->next;
- 			}
- 			debug_rcu_head_unqueue(list);
+-	set_need_resched();  /* kick ourselves to get things going. */
++	/*
++	 * Attempt to revive the RCU machinery by forcing a context switch.
++	 *
++	 * A context switch would normally allow the RCU state machine to make
++	 * progress and it could be we're stuck in kernel space without context
++	 * switches for an entirely unreasonable amount of time.
++	 */
++	resched_cpu(smp_processor_id());
+ }
+ 
+ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5ac63c9..bd37fcc 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -513,12 +513,11 @@ static inline void init_hrtick(void)
+  * might also involve a cross-CPU call to trigger the scheduler on
+  * the target CPU.
+  */
+-#ifdef CONFIG_SMP
+ void resched_task(struct task_struct *p)
+ {
+ 	int cpu;
+ 
+-	assert_raw_spin_locked(&task_rq(p)->lock);
++	lockdep_assert_held(&task_rq(p)->lock);
+ 
+ 	if (test_tsk_need_resched(p))
+ 		return;
+@@ -546,6 +545,7 @@ void resched_cpu(int cpu)
+ 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ }
+ 
++#ifdef CONFIG_SMP
+ #ifdef CONFIG_NO_HZ_COMMON
+ /*
+  * In the semi idle case, use the nearest busy cpu for migrating timers
+@@ -693,12 +693,6 @@ void sched_avg_update(struct rq *rq)
+ 	}
+ }
+ 
+-#else /* !CONFIG_SMP */
+-void resched_task(struct task_struct *p)
+-{
+-	assert_raw_spin_locked(&task_rq(p)->lock);
+-	set_tsk_need_resched(p);
+-}
+ #endif /* CONFIG_SMP */
+ 
+ #if defined(CONFIG_RT_GROUP_SCHED) || (defined(CONFIG_FAIR_GROUP_SCHED) && \
 -- 
 1.8.1.5
 
