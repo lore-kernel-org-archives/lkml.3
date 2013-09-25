@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab3IYAsB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:48:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39444 "EHLO
+	id S932503Ab3IYAsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:48:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39441 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756466Ab3IYAT6 (ORCPT
+	with ESMTP id S1756461Ab3IYAT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:58 -0400
+	Tue, 24 Sep 2013 20:19:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 010/117] SCSI: sd: Fix potential out-of-bounds access
-Date: Tue, 24 Sep 2013 17:17:56 -0700
-Message-Id: <20130925001741.988849176@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [ 019/117] arm64: perf: fix group validation when using enable_on_exec
+Date: Tue, 24 Sep 2013 17:18:05 -0700
+Message-Id: <20130925001742.947969670@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -28,44 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 984f1733fcee3fbc78d47e26c5096921c5d9946a upstream.
+commit 8455e6ec70f33b0e8c3ffd47067e00481f09f454 upstream.
 
-This patch fixes an out-of-bounds error in sd_read_cache_type(), found
-by Google's AddressSanitizer tool.  When the loop ends, we know that
-"offset" lies beyond the end of the data in the buffer, so no Caching
-mode page was found.  In theory it may be present, but the buffer size
-is limited to 512 bytes.
+This is a port of cb2d8b342aa0 ("ARM: 7698/1: perf: fix group validation
+when using enable_on_exec") to arm64, which fixes the event validation
+checking so that events in the OFF state are still considered when
+enable_on_exec is true.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/sd.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ arch/arm64/kernel/perf_event.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2419,14 +2419,9 @@ sd_read_cache_type(struct scsi_disk *sdk
- 			}
- 		}
+--- a/arch/arm64/kernel/perf_event.c
++++ b/arch/arm64/kernel/perf_event.c
+@@ -325,7 +325,10 @@ validate_event(struct pmu_hw_events *hw_
+ 	if (is_software_event(event))
+ 		return 1;
  
--		if (modepage == 0x3F) {
--			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
--				  "present\n");
--			goto defaults;
--		} else if ((buffer[offset] & 0x3f) != modepage) {
--			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
--			goto defaults;
--		}
-+		sd_printk(KERN_ERR, sdkp, "No Caching mode page found\n");
-+		goto defaults;
+-	if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
++	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
++		return 1;
 +
- 	Page_found:
- 		if (modepage == 8) {
- 			sdkp->WCE = ((buffer[offset + 2] & 0x04) != 0);
++	if (event->state == PERF_EVENT_STATE_OFF && !event->attr.enable_on_exec)
+ 		return 1;
+ 
+ 	return armpmu->get_event_idx(hw_events, &fake_event) >= 0;
 
 
