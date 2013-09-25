@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479Ab3IYAro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:47:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39454 "EHLO
+	id S932493Ab3IYAsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:48:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39444 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756477Ab3IYAUA (ORCPT
+	with ESMTP id S1756466Ab3IYAT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:00 -0400
+	Tue, 24 Sep 2013 20:19:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Maydell <peter.maydell@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [ 023/117] ARM: PCI: versatile: Fix SMAP register offsets
-Date: Tue, 24 Sep 2013 17:18:09 -0700
-Message-Id: <20130925001743.367280501@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 010/117] SCSI: sd: Fix potential out-of-bounds access
+Date: Tue, 24 Sep 2013 17:17:56 -0700
+Message-Id: <20130925001741.988849176@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -28,40 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Maydell <peter.maydell@linaro.org>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 99f2b130370b904ca5300079243fdbcafa2c708b upstream.
+commit 984f1733fcee3fbc78d47e26c5096921c5d9946a upstream.
 
-The SMAP register offsets in the versatile PCI controller code were
-all off by four.  (This didn't have any observable bad effects
-because on this board PHYS_OFFSET is zero, and (a) writing zero to
-the flags register at offset 0x10 has no effect and (b) the reset
-value of the SMAP register is zero anyway, so failing to write SMAP2
-didn't matter.)
+This patch fixes an out-of-bounds error in sd_read_cache_type(), found
+by Google's AddressSanitizer tool.  When the loop ends, we know that
+"offset" lies beyond the end of the data in the buffer, so no Caching
+mode page was found.  In theory it may be present, but the buffer size
+is limited to 512 bytes.
 
-Signed-off-by: Peter Maydell <peter.maydell@linaro.org>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Dmitry Vyukov <dvyukov@google.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-versatile/pci.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/scsi/sd.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
---- a/arch/arm/mach-versatile/pci.c
-+++ b/arch/arm/mach-versatile/pci.c
-@@ -43,9 +43,9 @@
- #define PCI_IMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x0)
- #define PCI_IMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x4)
- #define PCI_IMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x8)
--#define PCI_SMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x10)
--#define PCI_SMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x14)
--#define PCI_SMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x18)
-+#define PCI_SMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x14)
-+#define PCI_SMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x18)
-+#define PCI_SMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x1c)
- #define PCI_SELFID		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0xc)
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2419,14 +2419,9 @@ sd_read_cache_type(struct scsi_disk *sdk
+ 			}
+ 		}
  
- #define DEVICE_ID_OFFSET		0x00
+-		if (modepage == 0x3F) {
+-			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
+-				  "present\n");
+-			goto defaults;
+-		} else if ((buffer[offset] & 0x3f) != modepage) {
+-			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
+-			goto defaults;
+-		}
++		sd_printk(KERN_ERR, sdkp, "No Caching mode page found\n");
++		goto defaults;
++
+ 	Page_found:
+ 		if (modepage == 8) {
+ 			sdkp->WCE = ((buffer[offset + 2] & 0x04) != 0);
 
 
