@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab3IYPLw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 11:11:52 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:57948 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755423Ab3IYPLv (ORCPT
+	id S1755988Ab3IYPQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 11:16:09 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:16404 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755427Ab3IYPQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 11:11:51 -0400
-Message-ID: <5242FD32.7030008@linaro.org>
-Date: Wed, 25 Sep 2013 17:11:46 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Preeti Murthy <preeti.lkml@gmail.com>
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/4] tick: broadcast: Deny per-cpu clockevents from
- being broadcast sources
-References: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com> <1379530118-22813-4-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1379530118-22813-4-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 25 Sep 2013 11:16:07 -0400
+Date: Wed, 25 Sep 2013 11:16:05 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: Jiang Liu <liuj97@gmail.com>, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 2/7] arm64: introduce interfaces to hotpatch kernel
+ and module code
+Message-ID: <20130925111605.7437f70f@gandalf.local.home>
+In-Reply-To: <CA+b37P0P0RhUytnkLSXmz28wzzsoL3-viV2oxNJqq2nP7kZBFA@mail.gmail.com>
+References: <1380105868-31985-1-git-send-email-liuj97@gmail.com>
+	<1380105868-31985-3-git-send-email-liuj97@gmail.com>
+	<20130925103535.2249f617@gandalf.local.home>
+	<CA+b37P0P0RhUytnkLSXmz28wzzsoL3-viV2oxNJqq2nP7kZBFA@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2013 08:48 PM, Soren Brinkmann wrote:
-> On most ARM systems the per-cpu clockevents are truly per-cpu in
-> the sense that they can't be controlled on any other CPU besides
-> the CPU that they interrupt. If one of these clockevents were to
-> become a broadcast source we will run into a lot of trouble
-> because the broadcast source is enabled on the first CPU to go
-> into deep idle (if that CPU suffers from FEAT_C3_STOP) and that
-> could be a different CPU than what the clockevent is interrupting
-> (or even worse the CPU that the clockevent interrupts could be
-> offline).
-> 
-> Theoretically it's possible to support per-cpu clockevents as the
-> broadcast source but so far we haven't needed this and supporting
-> it is rather complicated. Let's just deny the possibility for now
-> until this becomes a reality (let's hope it never does!).
-> 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+On Wed, 25 Sep 2013 20:12:17 +0530
+Sandeepa Prabhu <sandeepa.prabhu@linaro.org> wrote:
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-> ---
->  kernel/time/tick-broadcast.c | 1 +
->  1 file changed, 1 insertion(+)
+> > On aarch64, are instructions always word aligned? If not, it should be
+> > safe for stop machine to modify non word aligned instructions, but this
+> > patch looks like it doesn't allow stop_machine() to do so.
+> Steve,
 > 
-> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-> index 218bcb5..9532690 100644
-> --- a/kernel/time/tick-broadcast.c
-> +++ b/kernel/time/tick-broadcast.c
-> @@ -70,6 +70,7 @@ static bool tick_check_broadcast_device(struct clock_event_device *curdev,
->  					struct clock_event_device *newdev)
->  {
->  	if ((newdev->features & CLOCK_EVT_FEAT_DUMMY) ||
-> +	    (newdev->features & CLOCK_EVT_FEAT_PERCPU) ||
->  	    (newdev->features & CLOCK_EVT_FEAT_C3STOP))
->  		return false;
->  
+> Yes, aarch64 instructions must be word-aligned, else instruction fetch
+> would generate Misaligned PC fault.
 > 
 
+Thanks for clarifying, as IIUC, there's ARM architectures that allow
+for 2 and 4 byte instructions.
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+-- Steve
