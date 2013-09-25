@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405Ab3IYA1g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:27:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39773 "EHLO
+	id S932433Ab3IYA1x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:27:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932327Ab3IYAU7 (ORCPT
+	with ESMTP id S1756783Ab3IYAU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:59 -0400
+	Tue, 24 Sep 2013 20:20:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gera Kazakov <gkazakov@msn.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 094/117] target: Fix >= v3.9+ regression in PR APTPL + ALUA metadata write-out
-Date: Tue, 24 Sep 2013 17:19:20 -0700
-Message-Id: <20130925001751.178165451@linuxfoundation.org>
+        Vasily Titskiy <qehgt0@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 083/117] HID: usbhid: quirk for N-Trig DuoSense Touch Screen
+Date: Tue, 24 Sep 2013 17:19:09 -0700
+Message-Id: <20130925001750.023269911@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -28,69 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gera Kazakov <gkazakov@msn.com>
+From: Vasily Titskiy <qehgt0@gmail.com>
 
-commit f730f9158f6ee7b5c4d892af6b51a72194445ea4 upstream.
+commit 9e0bf92c223dabe0789714f8f85f6e26f8f9cda4 upstream.
 
-This patch fixes a >= v3.9+ regression in __core_scsi3_write_aptpl_to_file()
-+ core_alua_write_tpg_metadata() write-out, where a return value of -EIO was
-incorrectly being returned upon success.
+The DuoSense touchscreen device causes a 10 second timeout. This fix
+removes the delay.
 
-This bug was originally introduced in:
-
-commit 0e9b10a90f1c30f25dd6f130130240745ab14010
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Sat Feb 23 15:22:43 2013 -0500
-
-    target: writev() on single-element vector is pointless
-
-However, given that the return of core_scsi3_update_and_write_aptpl()
-was not used to determine if a command should be returned with non GOOD
-status, this bug was not being triggered in PR logic until v3.11-rc1 by
-commit:
-
-commit 459f213ba162bd13e113d6f92a8fa6c780fd67ed
-Author: Andy Grover <agrover@redhat.com>
-Date:   Thu May 16 10:41:02 2013 -0700
-
-    target: Allocate aptpl_buf inside update_and_write_aptpl()
-
-So, go ahead and only return -EIO if kernel_write() returned a
-negative value.
-
-Reported-by: Gera Kazakov <gkazakov@msn.com>
-Signed-off-by: Gera Kazakov <gkazakov@msn.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Vasily Titskiy <qehgt0@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_alua.c |    2 +-
- drivers/target/target_core_pr.c   |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/hid/hid-ids.h           |    1 +
+ drivers/hid/usbhid/hid-quirks.c |    2 ++
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -730,7 +730,7 @@ static int core_alua_write_tpg_metadata(
- 	if (ret < 0)
- 		pr_err("Error writing ALUA metadata file: %s\n", path);
- 	fput(file);
--	return ret ? -EIO : 0;
-+	return (ret < 0) ? -EIO : 0;
- }
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -659,6 +659,7 @@
+ #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16   0x0012
+ #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17   0x0013
+ #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18   0x0014
++#define USB_DEVICE_ID_NTRIG_DUOSENSE 0x1500
  
- /*
---- a/drivers/target/target_core_pr.c
-+++ b/drivers/target/target_core_pr.c
-@@ -1949,7 +1949,7 @@ static int __core_scsi3_write_aptpl_to_f
- 		pr_debug("Error writing APTPL metadata file: %s\n", path);
- 	fput(file);
+ #define USB_VENDOR_ID_ONTRAK		0x0a07
+ #define USB_DEVICE_ID_ONTRAK_ADU100	0x0064
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -109,6 +109,8 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_SIGMA_MICRO, USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X, HID_QUIRK_MULTI_INPUT },
+ 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_M610X, HID_QUIRK_MULTI_INPUT },
++	{ USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NO_INIT_REPORTS },
++
+ 	{ 0, 0 }
+ };
  
--	return ret ? -EIO : 0;
-+	return (ret < 0) ? -EIO : 0;
- }
- 
- /*
 
 
