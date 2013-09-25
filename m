@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703Ab3IYAPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:15:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38682 "EHLO
+	id S1756049Ab3IYAQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:16:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495Ab3IYAMn (ORCPT
+	with ESMTP id S1755958Ab3IYAQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:12:43 -0400
+	Tue, 24 Sep 2013 20:16:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hui Wang <hui.wang@canonical.com>, Jan Kara <jack@suse.cz>
-Subject: [ 35/40] isofs: Refuse RW mount of the filesystem instead of making it RO
-Date: Tue, 24 Sep 2013 17:12:07 -0700
-Message-Id: <20130925001045.757050855@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 028/110] USB: OHCI: Allow runtime PM without system sleep
+Date: Tue, 24 Sep 2013 17:14:26 -0700
+Message-Id: <20130925001326.457042683@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
-References: <20130925001041.939335518@linuxfoundation.org>
+In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
+References: <20130925001323.387158698@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 17b7f7cf58926844e1dd40f5eb5348d481deca6a upstream.
+commit 69820e01aa756b8d228143d997f71523c1e97984 upstream.
 
-Refuse RW mount of isofs filesystem. So far we just silently changed it
-to RO mount but when the media is writeable, block layer won't notice
-this change and thus will think device is used RW and will block eject
-button of the drive. That is unexpected by users because for
-non-writeable media eject button works just fine.
+Since ohci-hcd supports runtime PM, the .pm field in its pci_driver
+structure should be protected by CONFIG_PM rather than
+CONFIG_PM_SLEEP.
 
-Userspace mount(8) command handles this just fine and retries mounting
-with MS_RDONLY set so userspace shouldn't see any regression.  Plus any
-tool mounting isofs is likely confronted with the case of read-only
-media where block layer already refuses to mount the filesystem without
-MS_RDONLY set so our behavior shouldn't be anything new for it.
+Without this change, OHCI controllers won't do runtime suspend if
+system suspend or hibernation isn't enabled.
 
-Reported-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/isofs/inode.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+ drivers/usb/host/ohci-pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -119,8 +119,8 @@ static void destroy_inodecache(void)
+--- a/drivers/usb/host/ohci-pci.c
++++ b/drivers/usb/host/ohci-pci.c
+@@ -371,7 +371,7 @@ static struct pci_driver ohci_pci_driver
+ 	.remove =	usb_hcd_pci_remove,
+ 	.shutdown =	usb_hcd_pci_shutdown,
  
- static int isofs_remount(struct super_block *sb, int *flags, char *data)
- {
--	/* we probably want a lot more here */
--	*flags |= MS_RDONLY;
-+	if (!(*flags & MS_RDONLY))
-+		return -EROFS;
- 	return 0;
- }
- 
-@@ -769,15 +769,6 @@ root_found:
- 	 */
- 	s->s_maxbytes = 0x80000000000LL;
- 
--	/*
--	 * The CDROM is read-only, has no nodes (devices) on it, and since
--	 * all of the files appear to be owned by root, we really do not want
--	 * to allow suid.  (suid or devices will not show up unless we have
--	 * Rock Ridge extensions)
--	 */
--
--	s->s_flags |= MS_RDONLY /* | MS_NODEV | MS_NOSUID */;
--
- 	/* Set this for reference. Its not currently used except on write
- 	   which we don't have .. */
- 
-@@ -1536,6 +1527,9 @@ struct inode *isofs_iget(struct super_bl
- static struct dentry *isofs_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
-+	/* We don't support read-write mounts */
-+	if (!(flags & MS_RDONLY))
-+		return ERR_PTR(-EACCES);
- 	return mount_bdev(fs_type, flags, dev_name, data, isofs_fill_super);
- }
- 
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ 	.driver =	{
+ 		.pm =	&usb_hcd_pci_pm_ops
+ 	},
 
 
