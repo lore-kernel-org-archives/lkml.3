@@ -1,296 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab3IYXgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 19:36:48 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:33075 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755836Ab3IYXgq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 19:36:46 -0400
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-sh@vger.kernel.org
-Cc: khilman@linaro.org, arnd@arndb.de, daniel.lezcano@linaro.org,
-        linux-kernel@vger.kernel.org, horms@verge.net.au, olof@lixom.net,
-        Magnus Damm <magnus.damm@gmail.com>, tglx@linutronix.de
-Date: Thu, 26 Sep 2013 08:37:09 +0900
-Message-Id: <20130925233709.16540.66903.sendpatchset@w520>
-Subject: [PATCH/RFC] clocksource: Consolidate SH and ARM mach-shmobile Kconfig bits
+	id S1755609Ab3IYXk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 19:40:29 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:37171 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751833Ab3IYXk2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 19:40:28 -0400
+From: Bing Zhao <bzhao@marvell.com>
+To: Joe Perches <joe@perches.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 25 Sep 2013 16:13:32 -0700
+Subject: RE: [PATCH 09/11] mwifiex: Remove extern from function prototypes
+Thread-Topic: [PATCH 09/11] mwifiex: Remove extern from function prototypes
+Thread-Index: Ac66JtavKUWU8lBGQECLWO7X5JlNrgAHdtcw
+Message-ID: <477F20668A386D41ADCC57781B1F70430F45077E54@SC-VEXCH1.marvell.com>
+References: <cover.1380137609.git.joe@perches.com>
+ <b3a7cd194857b3dc099e8f8bb0ed97bb4a1b5fde.1380137610.git.joe@perches.com>
+In-Reply-To: <b3a7cd194857b3dc099e8f8bb0ed97bb4a1b5fde.1380137610.git.joe@perches.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-09-25_12:2013-09-26,2013-09-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1309250141
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+Hi Joe,
 
-Based on request from Olof Johansson, move ARM mach-shmobile
-clocksource entries to drivers/clocksource/Kconfig, and at
-the same time make the SH architecture use these entries.
+Thanks for your patch.
 
-Kconfig entries for CMT, MTU2, TMU and STI are with this patch
-now kept in one place. The SH SYS_SUPPORTS_nnn bits are dropped
-to simplye let the user select the appropriate ones using Kconfig
-instead of trying to filter available timers based on SoC.
+> There are a mix of function prototypes with and without extern
+> in the kernel sources.  Standardize on not using extern for
+> function prototypes.
+> 
+> Function prototypes don't need to be written with extern.
+> extern is assumed by the compiler.  Its use is as unnecessary as
+> using auto to declare automatic/local variables in a block.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Known issues:
- 1) Not yet wrappend in menu/endmenu, populates the root driver menu
- -> proposal: Create separate patch to wrap all the clocksource entries?
+Acked-by: Bing Zhao <bzhao@marvell.com>
 
- 2) Should the entries be sorted?
- -> proposal: Ignore cosmetic bits
+Thanks,
+Bing
 
- 3) What is correct dependency for multiplatform and single platform?
- -> proposal: Perhaps we should simply default to no?
+> ---
+>  drivers/net/wireless/mwifiex/wmm.h | 24 ++++++++++--------------
+>  1 file changed, 10 insertions(+), 14 deletions(-)
 
- 4) Is single patch across 2 architectures and drivers/clocksource OK?
- -> proposal: Keep it like this if possible
-
-Not-yet-signed-off-by: Magnus Damm <damm@opensource.se>
----
-
- arch/arm/mach-shmobile/Kconfig |   19 --------------
- arch/sh/Kconfig                |   53 ----------------------------------------
- drivers/clocksource/Kconfig    |   25 ++++++++++++++++++
- 3 files changed, 25 insertions(+), 72 deletions(-)
-
---- 0004/arch/arm/mach-shmobile/Kconfig
-+++ work/arch/arm/mach-shmobile/Kconfig	2013-09-26 07:51:06.000000000 +0900
-@@ -307,25 +307,6 @@ config SHMOBILE_TIMER_HZ
- 	  SH-Mobile systems using a 32768 Hz RCLK for clock events may want
- 	  to select a HZ value such as 128 that can evenly divide RCLK.
- 	  A HZ value that does not divide evenly may cause timer drift.
--
--config SH_TIMER_CMT
--	bool "CMT timer driver"
--	default y
--	help
--	  This enables build of the CMT timer driver.
--
--config SH_TIMER_TMU
--	bool "TMU timer driver"
--	default y
--	help
--	  This enables build of the TMU timer driver.
--
--config EM_TIMER_STI
--	bool "STI timer driver"
--	default y
--	help
--	  This enables build of the STI timer driver.
--
- endmenu
- 
- endif
---- 0001/arch/sh/Kconfig
-+++ work/arch/sh/Kconfig	2013-09-26 08:00:49.000000000 +0900
-@@ -121,15 +121,6 @@ config SYS_SUPPORTS_NUMA
- config SYS_SUPPORTS_PCI
- 	bool
- 
--config SYS_SUPPORTS_CMT
--	bool
--
--config SYS_SUPPORTS_MTU2
--	bool
--
--config SYS_SUPPORTS_TMU
--	bool
--
- config STACKTRACE_SUPPORT
- 	def_bool y
- 
-@@ -189,14 +180,12 @@ config CPU_SH3
- 	bool
- 	select CPU_HAS_INTEVT
- 	select CPU_HAS_SR_RB
--	select SYS_SUPPORTS_TMU
- 
- config CPU_SH4
- 	bool
- 	select CPU_HAS_INTEVT
- 	select CPU_HAS_SR_RB
- 	select CPU_HAS_FPU if !CPU_SH4AL_DSP
--	select SYS_SUPPORTS_TMU
- 	select SYS_SUPPORTS_HUGETLBFS if MMU
- 
- config CPU_SH4A
-@@ -211,7 +200,6 @@ config CPU_SH4AL_DSP
- config CPU_SH5
- 	bool
- 	select CPU_HAS_FPU
--	select SYS_SUPPORTS_TMU
- 	select SYS_SUPPORTS_HUGETLBFS if MMU
- 
- config CPU_SHX2
-@@ -248,7 +236,6 @@ choice
- config CPU_SUBTYPE_SH7619
- 	bool "Support SH7619 processor"
- 	select CPU_SH2
--	select SYS_SUPPORTS_CMT
- 
- # SH-2A Processor Support
- 
-@@ -256,50 +243,38 @@ config CPU_SUBTYPE_SH7201
- 	bool "Support SH7201 processor"
- 	select CPU_SH2A
- 	select CPU_HAS_FPU
--	select SYS_SUPPORTS_MTU2
-  
- config CPU_SUBTYPE_SH7203
- 	bool "Support SH7203 processor"
- 	select CPU_SH2A
- 	select CPU_HAS_FPU
--	select SYS_SUPPORTS_CMT
--	select SYS_SUPPORTS_MTU2
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select PINCTRL
- 
- config CPU_SUBTYPE_SH7206
- 	bool "Support SH7206 processor"
- 	select CPU_SH2A
--	select SYS_SUPPORTS_CMT
--	select SYS_SUPPORTS_MTU2
- 
- config CPU_SUBTYPE_SH7263
- 	bool "Support SH7263 processor"
- 	select CPU_SH2A
- 	select CPU_HAS_FPU
--	select SYS_SUPPORTS_CMT
--	select SYS_SUPPORTS_MTU2
- 
- config CPU_SUBTYPE_SH7264
- 	bool "Support SH7264 processor"
- 	select CPU_SH2A
- 	select CPU_HAS_FPU
--	select SYS_SUPPORTS_CMT
--	select SYS_SUPPORTS_MTU2
- 	select PINCTRL
- 
- config CPU_SUBTYPE_SH7269
- 	bool "Support SH7269 processor"
- 	select CPU_SH2A
- 	select CPU_HAS_FPU
--	select SYS_SUPPORTS_CMT
--	select SYS_SUPPORTS_MTU2
- 	select PINCTRL
- 
- config CPU_SUBTYPE_MXG
- 	bool "Support MX-G processor"
- 	select CPU_SH2A
--	select SYS_SUPPORTS_MTU2
- 	help
- 	  Select MX-G if running on an R8A03022BG part.
- 
-@@ -352,7 +327,6 @@ config CPU_SUBTYPE_SH7720
- 	bool "Support SH7720 processor"
- 	select CPU_SH3
- 	select CPU_HAS_DSP
--	select SYS_SUPPORTS_CMT
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select USB_ARCH_HAS_OHCI
- 	select USB_OHCI_SH if USB_OHCI_HCD
-@@ -364,7 +338,6 @@ config CPU_SUBTYPE_SH7721
- 	bool "Support SH7721 processor"
- 	select CPU_SH3
- 	select CPU_HAS_DSP
--	select SYS_SUPPORTS_CMT
- 	select USB_ARCH_HAS_OHCI
- 	select USB_OHCI_SH if USB_OHCI_HCD
- 	help
-@@ -420,7 +393,6 @@ config CPU_SUBTYPE_SH7723
- 	select CPU_SHX2
- 	select ARCH_SHMOBILE
- 	select ARCH_SPARSEMEM_ENABLE
--	select SYS_SUPPORTS_CMT
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select PINCTRL
- 	help
-@@ -432,7 +404,6 @@ config CPU_SUBTYPE_SH7724
- 	select CPU_SHX2
- 	select ARCH_SHMOBILE
- 	select ARCH_SPARSEMEM_ENABLE
--	select SYS_SUPPORTS_CMT
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select PINCTRL
- 	help
-@@ -512,7 +483,6 @@ config CPU_SUBTYPE_SH7343
- 	bool "Support SH7343 processor"
- 	select CPU_SH4AL_DSP
- 	select ARCH_SHMOBILE
--	select SYS_SUPPORTS_CMT
- 
- config CPU_SUBTYPE_SH7722
- 	bool "Support SH7722 processor"
-@@ -521,7 +491,6 @@ config CPU_SUBTYPE_SH7722
- 	select ARCH_SHMOBILE
- 	select ARCH_SPARSEMEM_ENABLE
- 	select SYS_SUPPORTS_NUMA
--	select SYS_SUPPORTS_CMT
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select PINCTRL
- 
-@@ -532,7 +501,6 @@ config CPU_SUBTYPE_SH7366
- 	select ARCH_SHMOBILE
- 	select ARCH_SPARSEMEM_ENABLE
- 	select SYS_SUPPORTS_NUMA
--	select SYS_SUPPORTS_CMT
- 
- endchoice
- 
-@@ -565,27 +533,6 @@ source "arch/sh/boards/Kconfig"
- 
- menu "Timer and clock configuration"
- 
--config SH_TIMER_TMU
--	bool "TMU timer driver"
--	depends on SYS_SUPPORTS_TMU
--	default y
--	help
--	  This enables the build of the TMU timer driver.
--
--config SH_TIMER_CMT
--	bool "CMT timer driver"
--	depends on SYS_SUPPORTS_CMT
--	default y
--	help
--	  This enables build of the CMT timer driver.
--
--config SH_TIMER_MTU2
--	bool "MTU2 timer driver"
--	depends on SYS_SUPPORTS_MTU2
--	default y
--	help
--	  This enables build of the MTU2 timer driver.
--
- config SH_PCLK_FREQ
- 	int "Peripheral clock frequency (in Hz)"
- 	depends on SH_CLK_CPG_LEGACY
---- 0001/drivers/clocksource/Kconfig
-+++ work/drivers/clocksource/Kconfig	2013-09-26 07:59:19.000000000 +0900
-@@ -109,3 +109,28 @@ config VF_PIT_TIMER
- 	bool
- 	help
- 	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
-+
-+config SH_TIMER_CMT
-+	bool "CMT timer driver"
-+	default y
-+	help
-+	  This enables build of the CMT timer driver.
-+
-+config SH_TIMER_MTU2
-+	bool "MTU2 timer driver"
-+	default y
-+	help
-+	  This enables build of the MTU2 timer driver.
-+
-+config SH_TIMER_TMU
-+	bool "TMU timer driver"
-+	default y
-+	help
-+	  This enables build of the TMU timer driver.
-+
-+config EM_TIMER_STI
-+	bool "STI timer driver"
-+	default y
-+	help
-+	  This enables build of the STI timer driver.
-+
