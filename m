@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab3IYAub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:50:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39409 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755188Ab3IYATw (ORCPT
+	id S1757499Ab3IYAuj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:50:39 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:38014 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757486Ab3IYAue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:52 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [ 012/117] s390/bpf,jit: fix address randomization
-Date: Tue, 24 Sep 2013 17:17:58 -0700
-Message-Id: <20130925001742.204426403@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
-References: <20130925001740.833541979@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 24 Sep 2013 20:50:34 -0400
+X-Spam-Score: -100.7
+Message-ID: <5242331B.4010309@asianux.com>
+Date: Wed, 25 Sep 2013 08:49:31 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info'
+ in all related extern functions
+References: <5212DBFA.8030805@asianux.com> <20130923150625.GB14547@htj.dyndns.org> <52410A40.1000304@asianux.com> <20130924040601.GA31575@mtj.dyndns.org> <524114B8.3070903@asianux.com> <20130924120429.GA2366@htj.dyndns.org>
+In-Reply-To: <20130924120429.GA2366@htj.dyndns.org>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On 09/24/2013 08:04 PM, Tejun Heo wrote:
+> On Tue, Sep 24, 2013 at 12:27:36PM +0800, Chen Gang wrote:
+>> For real world, /sbin/init will call setgroups, so user space 'help'
+>> kernel itself to protect this issue, but I think, we don't only depend
+>> on the user space help checking.
+>>
+>> The proof is below:
+>>
+>>   [root@gchenlinux tmp]# grep setgroups /sbin/*
+>>   Binary file /sbin/init matches
+>>   Binary file /sbin/rpc.statd matches
+>>   Binary file /sbin/rsyslogd matches
+>>   Binary file /sbin/runuser matches
+>>
+>> From reading kernel source code, kernel itself does not intend to set
+>> 'group_info', it is triggered by user space or another kernel mode
+>> sub-systems.
+> 
+> Can you please demonstrate such failure?  You can tell kernel to
+> execute a given binary instead of init with "init=" param.
+> 
 
-------------------
+OK, I will/should try, today (although I have to spend my additional
+time resource on it. :-( ).
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+Hmm... in fact, in my opinion, interface (especially content system
+call) need make itself consistency, although at present, it can not
+cause issue.
 
-commit 4784955a5270f30c569fa95899979fd1805caf6c upstream.
+> Thanks.
+> 
 
-Add misssing braces to hole calculation. This resulted in an addition
-instead of an substraction. Which in turn means that the jit compiler
-could try to write out of bounds of the allocated piece of memory.
-
-This bug was introduced with aa2d2c73 "s390/bpf,jit: address randomize
-and write protect jit code".
-
-Fixes this one:
-
-[   37.320956] Unable to handle kernel pointer dereference at virtual kernel address 000003ff80231000
-[   37.320984] Oops: 0011 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   37.320993] Modules linked in: dm_multipath scsi_dh eadm_sch dm_mod ctcm fsm autofs4
-[   37.321007] CPU: 28 PID: 6443 Comm: multipathd Not tainted 3.10.9-61.x.20130829-s390xdefault #1
-[   37.321011] task: 0000004ada778000 ti: 0000004ae3304000 task.ti: 0000004ae3304000
-[   37.321014] Krnl PSW : 0704c00180000000 000000000012d1de (bpf_jit_compile+0x198e/0x23d0)
-[   37.321022]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:0 PM:0 EA:3
-               Krnl GPRS: 000000004350207d 0000004a00000001 0000000000000007 000003ff80231002
-[   37.321029]            0000000000000007 000003ff80230ffe 00000000a7740000 000003ff80230f76
-[   37.321032]            000003ffffffffff 000003ff00000000 000003ff0000007d 000000000071e820
-[   37.321035]            0000004adbe99950 000000000071ea18 0000004af3d9e7c0 0000004ae3307b80
-[   37.321046] Krnl Code: 000000000012d1d0: 41305004            la      %r3,4(%r5)
-                          000000000012d1d4: e330f0f80021        clg     %r3,248(%r15)
-                         #000000000012d1da: a7240009            brc     2,12d1ec
-                         >000000000012d1de: 50805000            st      %r8,0(%r5)
-                          000000000012d1e2: e330f0f00004        lg      %r3,240(%r15)
-                          000000000012d1e8: 41303004            la      %r3,4(%r3)
-                          000000000012d1ec: e380f0e00004        lg      %r8,224(%r15)
-                          000000000012d1f2: e330f0f00024        stg     %r3,240(%r15)
-[   37.321074] Call Trace:
-[   37.321077] ([<000000000012da78>] bpf_jit_compile+0x2228/0x23d0)
-[   37.321083]  [<00000000006007c2>] sk_attach_filter+0xfe/0x214
-[   37.321090]  [<00000000005d2d92>] sock_setsockopt+0x926/0xbdc
-[   37.321097]  [<00000000005cbfb6>] SyS_setsockopt+0x8a/0xe8
-[   37.321101]  [<00000000005ccaa8>] SyS_socketcall+0x264/0x364
-[   37.321106]  [<0000000000713f1c>] sysc_nr_ok+0x22/0x28
-[   37.321113]  [<000003fffce10ea8>] 0x3fffce10ea8
-[   37.321118] INFO: lockdep is turned off.
-[   37.321121] Last Breaking-Event-Address:
-[   37.321124]  [<000000000012d192>] bpf_jit_compile+0x1942/0x23d0
-[   37.321132]
-[   37.321135] Kernel panic - not syncing: Fatal exception: panic_on_oops
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/s390/net/bpf_jit_comp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/s390/net/bpf_jit_comp.c
-+++ b/arch/s390/net/bpf_jit_comp.c
-@@ -805,7 +805,7 @@ static struct bpf_binary_header *bpf_all
- 		return NULL;
- 	memset(header, 0, sz);
- 	header->pages = sz / PAGE_SIZE;
--	hole = sz - bpfsize + sizeof(*header);
-+	hole = sz - (bpfsize + sizeof(*header));
- 	/* Insert random number of illegal instructions before BPF code
- 	 * and make sure the first instruction starts at an even address.
- 	 */
-
-
+Thanks.
+-- 
+Chen Gang
