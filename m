@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab3IYA2R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:28:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39756 "EHLO
+	id S1757076Ab3IYA2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:28:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39753 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756750Ab3IYAU5 (ORCPT
+	with ESMTP id S932317Ab3IYAU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:57 -0400
+	Tue, 24 Sep 2013 20:20:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikhail Kulemin <Mikhail.Kulemin@ru.ibm.com>,
-        Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Anton Arapov <anton@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, systemtap@sourceware.org
-Subject: [ 091/117] uprobes: Fix utask->depth accounting in handle_trampoline()
-Date: Tue, 24 Sep 2013 17:19:17 -0700
-Message-Id: <20130925001750.865517088@linuxfoundation.org>
+        Stefan Behrens <sbehrens@giantdisaster.de>,
+        Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [ 090/117] Btrfs: dont allow the replace procedure on read only filesystems
+Date: Tue, 24 Sep 2013 17:19:16 -0700
+Message-Id: <20130925001750.766044601@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -30,49 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Stefan Behrens <sbehrens@giantdisaster.de>
 
-commit 878b5a6efd38030c7a90895dc8346e8fb1e09b4c upstream.
+commit bbb651e469d99f0088e286fdeb54acca7bb4ad4e upstream.
 
-Currently utask->depth is simply the number of allocated/pending
-return_instance's in uprobe_task->return_instances list.
+If you start the replace procedure on a read only filesystem, at
+the end the procedure fails to write the updated dev_items to the
+chunk tree. The problem is that this error is not indicated except
+for a WARN_ON(). If the user now thinks that everything was done
+as expected and destroys the source device (with mkfs or with a
+hammer). The next mount fails with "failed to read chunk root" and
+the filesystem is gone.
 
-handle_trampoline() should decrement this counter every time we
-handle/free an instance, but due to typo it does this only if
-->chained == T. This means that in the likely case this counter
-is never decremented and the probed task can't report more than
-MAX_URETPROBE_DEPTH events.
+This commit adds code to fail the attempt to start the replace
+procedure if the filesystem is mounted read-only.
 
-Reported-by: Mikhail Kulemin <Mikhail.Kulemin@ru.ibm.com>
-Reported-by: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Anton Arapov <anton@redhat.com>
-Cc: masami.hiramatsu.pt@hitachi.com
-Cc: srikar@linux.vnet.ibm.com
-Cc: systemtap@sourceware.org
-Link: http://lkml.kernel.org/r/20130911154726.GA8093@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Stefan Behrens <sbehrens@giantdisaster.de>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/uprobes.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ fs/btrfs/ioctl.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1682,12 +1682,10 @@ static bool handle_trampoline(struct pt_
- 		tmp = ri;
- 		ri = ri->next;
- 		kfree(tmp);
-+		utask->depth--;
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -3312,6 +3312,9 @@ static long btrfs_ioctl_dev_replace(stru
  
- 		if (!chained)
- 			break;
--
--		utask->depth--;
--
- 		BUG_ON(!ri);
- 	}
- 
+ 	switch (p->cmd) {
+ 	case BTRFS_IOCTL_DEV_REPLACE_CMD_START:
++		if (root->fs_info->sb->s_flags & MS_RDONLY)
++			return -EROFS;
++
+ 		if (atomic_xchg(
+ 			&root->fs_info->mutually_exclusive_operation_running,
+ 			1)) {
 
 
