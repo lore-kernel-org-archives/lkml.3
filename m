@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab3IYBLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:11:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39035 "EHLO
+	id S932665Ab3IYBMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:12:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39031 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756010Ab3IYAQX (ORCPT
+	with ESMTP id S1756000Ab3IYAQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:23 -0400
+	Tue, 24 Sep 2013 20:16:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [ 041/110] usb: config->desc.bLength may not exceed amount of data returned by the device
-Date: Tue, 24 Sep 2013 17:14:39 -0700
-Message-Id: <20130925001327.849473622@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: [ 040/110] USB: fix build error when CONFIG_PM_SLEEP isnt enabled
+Date: Tue, 24 Sep 2013 17:14:38 -0700
+Message-Id: <20130925001327.738675258@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -26,33 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit b4f17a488ae2e09bfcf95c0e0b4219c246f1116a upstream.
+commit 9d8924297cd9c256c23c02abae40202563452453 upstream.
 
-While reading the config parsing code I noticed this check is missing, without
-this check config->desc.wTotalLength can end up with a value larger then the
-dev->rawdescriptors length for the config, and when userspace then tries to
-get the rawdescriptors bad things may happen.
+This patch fixes a build error that occurs when CONFIG_PM is enabled
+and CONFIG_PM_SLEEP isn't:
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+>> drivers/usb/host/ohci-pci.c:294:10: error: 'usb_hcd_pci_pm_ops' undeclared here (not in a function)
+      .pm = &usb_hcd_pci_pm_ops
+
+Since the usb_hcd_pci_pm_ops structure is defined and used when
+CONFIG_PM is enabled, its declaration should not be protected by
+CONFIG_PM_SLEEP.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/config.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/usb/hcd.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/core/config.c
-+++ b/drivers/usb/core/config.c
-@@ -424,7 +424,8 @@ static int usb_parse_configuration(struc
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -410,7 +410,7 @@ extern int usb_hcd_pci_probe(struct pci_
+ extern void usb_hcd_pci_remove(struct pci_dev *dev);
+ extern void usb_hcd_pci_shutdown(struct pci_dev *dev);
  
- 	memcpy(&config->desc, buffer, USB_DT_CONFIG_SIZE);
- 	if (config->desc.bDescriptorType != USB_DT_CONFIG ||
--	    config->desc.bLength < USB_DT_CONFIG_SIZE) {
-+	    config->desc.bLength < USB_DT_CONFIG_SIZE ||
-+	    config->desc.bLength > size) {
- 		dev_err(ddev, "invalid descriptor for config index %d: "
- 		    "type = 0x%X, length = %d\n", cfgidx,
- 		    config->desc.bDescriptorType, config->desc.bLength);
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ extern const struct dev_pm_ops usb_hcd_pci_pm_ops;
+ #endif
+ #endif /* CONFIG_PCI */
 
 
