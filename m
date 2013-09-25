@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab3IYCGI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 22:06:08 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:43939 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab3IYCGG (ORCPT
+	id S1755776Ab3IYCIA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 22:08:00 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:29987 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754383Ab3IYCH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 22:06:06 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Paolo Pisati <paolo.pisati@canonical.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH v2] TTY: hvc_dcc: probe for a JTAG connection before registering
-Date: Tue, 24 Sep 2013 21:05:58 -0500
-Message-Id: <1380074758-19808-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379968234-23373-1-git-send-email-robherring2@gmail.com>
-References: <1379968234-23373-1-git-send-email-robherring2@gmail.com>
+	Tue, 24 Sep 2013 22:07:59 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Tue, 24 Sep 2013 22:07:57 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Rob Landley <rob@landley.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        =?ISO-8859-15?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Andrew Morton <akpm@osdl.org>,
+        Trivial patch monkey <trivial@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: new binutils needed for arm in 3.12-rc1
+In-reply-to: <1380071607.1974.78@driftwood>
+Message-id: <alpine.LFD.2.03.1309242158340.312@syhkavp.arg>
+References: <1380071607.1974.78@driftwood>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Tue, 24 Sep 2013, Rob Landley wrote:
 
-Enabling the ARM DCC console and using without a JTAG connection will
-simply hang the system. Since distros like to turn on all options, this
-is a reoccurring problem to debug. We can do better by checking if
-anything is attached and handling characters. There is no way to probe
-this, so send a newline and check that it is handled.
+> On 09/24/2013 04:48:00 PM, Russell King - ARM Linux wrote:
+> > Now, if you feel strongly about this, we _could_ introduce a
+> > CONFIG_OLD_BINUTILS and give everyone their cake - but it will be
+> > fragile.  Not everyone will remember to get that right, because they'll
+> > be using the later binutils.  Also, we already have an excessive number
+> > of potential breakage-inducing options and we certainly don't need
+> > another.
+> 
+> I'm doing the regression testing either way, on several different
+> architectures. (Although I tend to to only really do a thorough job quarterly
+> when a new kernel comes out and it's time to make it work.) So I'm going to be
+> doing something locally like this anyway, and if a CONFIG_OLD_BINUTILS is
+> acceptable I might as well push it upstream.
 
-Cc: Paolo Pisati <paolo.pisati@canonical.com>
-Cc: Tim Gardner <tim.gardner@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
----
-v2: use time_is_after_jiffies
+If you are convinced you have no choice but to stick to old binutils, 
+I'd strongly suggest you make your binutils compatible with newer 
+instruction syntax instead of making the kernel more complex.  This is 
+more in line with being future proof rather than stuck into the past.
 
- drivers/tty/hvc/hvc_dcc.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+It could be as simple as making gas accept an extra argument for 
+instructions like dsb and just ignoring it.
 
-diff --git a/drivers/tty/hvc/hvc_dcc.c b/drivers/tty/hvc/hvc_dcc.c
-index 44fbeba..3502a7b 100644
---- a/drivers/tty/hvc/hvc_dcc.c
-+++ b/drivers/tty/hvc/hvc_dcc.c
-@@ -86,6 +86,21 @@ static int hvc_dcc_get_chars(uint32_t vt, char *buf, int count)
- 	return i;
- }
- 
-+static bool hvc_dcc_check(void)
-+{
-+	unsigned long time = jiffies + (HZ / 10);
-+
-+	/* Write a test character to check if it is handled */
-+	__dcc_putchar('\n');
-+
-+	while (time_is_after_jiffies(time)) {
-+		if (!(__dcc_getstatus() & DCC_STATUS_TX))
-+			return true;
-+	}
-+
-+	return false;
-+}
-+
- static const struct hv_ops hvc_dcc_get_put_ops = {
- 	.get_chars = hvc_dcc_get_chars,
- 	.put_chars = hvc_dcc_put_chars,
-@@ -93,6 +108,9 @@ static const struct hv_ops hvc_dcc_get_put_ops = {
- 
- static int __init hvc_dcc_console_init(void)
- {
-+	if (!hvc_dcc_check())
-+		return -ENODEV;
-+
- 	hvc_instantiate(0, 0, &hvc_dcc_get_put_ops);
- 	return 0;
- }
-@@ -100,6 +118,9 @@ console_initcall(hvc_dcc_console_init);
- 
- static int __init hvc_dcc_init(void)
- {
-+	if (!hvc_dcc_check())
-+		return -ENODEV;
-+
- 	hvc_alloc(0, 0, &hvc_dcc_get_put_ops, 128);
- 	return 0;
- }
--- 
-1.8.1.2
 
+Nicolas
