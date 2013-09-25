@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab3IYBPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:15:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38993 "EHLO
+	id S1755950Ab3IYAQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:16:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38922 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755963Ab3IYAQR (ORCPT
+	with ESMTP id S1755910Ab3IYAQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:17 -0400
+	Tue, 24 Sep 2013 20:16:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 029/110] net: Check the correct namespace when spoofing pid over SCM_RIGHTS
-Date: Tue, 24 Sep 2013 17:14:27 -0700
-Message-Id: <20130925001326.564102433@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>
+Subject: [ 020/110] KVM: PPC: Book3S: Fix compile error in XICS emulation
+Date: Tue, 24 Sep 2013 17:14:18 -0700
+Message-Id: <20130925001325.611881733@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,34 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Paul Mackerras <paulus@samba.org>
 
-commit d661684cf6820331feae71146c35da83d794467e upstream.
+commit 7bfa9ad55d691f2b836b576769b11eca2cf50816 upstream.
 
-This is a security bug.
+Commit 8e44ddc3f3 ("powerpc/kvm/book3s: Add support for H_IPOLL and
+H_XIRR_X in XICS emulation") added a call to get_tb() but didn't
+include the header that defines it, and on some configs this means
+book3s_xics.c fails to compile:
 
-The follow-up will fix nsproxy to discourage this type of issue from
-happening again.
+arch/powerpc/kvm/book3s_xics.c: In function ‘kvmppc_xics_hcall’:
+arch/powerpc/kvm/book3s_xics.c:812:3: error: implicit declaration of function ‘get_tb’ [-Werror=implicit-function-declaration]
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Alexander Graf <agraf@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/core/scm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/kvm/book3s_xics.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/core/scm.c
-+++ b/net/core/scm.c
-@@ -54,7 +54,7 @@ static __inline__ int scm_check_creds(st
- 		return -EINVAL;
+--- a/arch/powerpc/kvm/book3s_xics.c
++++ b/arch/powerpc/kvm/book3s_xics.c
+@@ -19,6 +19,7 @@
+ #include <asm/hvcall.h>
+ #include <asm/xics.h>
+ #include <asm/debug.h>
++#include <asm/time.h>
  
- 	if ((creds->pid == task_tgid_vnr(current) ||
--	     ns_capable(current->nsproxy->pid_ns->user_ns, CAP_SYS_ADMIN)) &&
-+	     ns_capable(task_active_pid_ns(current)->user_ns, CAP_SYS_ADMIN)) &&
- 	    ((uid_eq(uid, cred->uid)   || uid_eq(uid, cred->euid) ||
- 	      uid_eq(uid, cred->suid)) || nsown_capable(CAP_SETUID)) &&
- 	    ((gid_eq(gid, cred->gid)   || gid_eq(gid, cred->egid) ||
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
 
 
