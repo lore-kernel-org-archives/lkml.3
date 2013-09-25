@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069Ab3IYUXC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:23:02 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:62428 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969Ab3IYUWz (ORCPT
+	id S1756100Ab3IYUXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:23:19 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:56216 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755403Ab3IYUXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:22:55 -0400
+	Wed, 25 Sep 2013 16:23:00 -0400
 From: Kent Overstreet <kmo@daterainc.com>
 To: hch@infradead.org, axboe@kernel.dk, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 2/6] block: Convert various code to bio_for_each_page()
-Date: Wed, 25 Sep 2013 13:22:40 -0700
-Message-Id: <1380140564-9030-3-git-send-email-kmo@daterainc.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Subject: [PATCH 6/6] Multipage bvecs
+Date: Wed, 25 Sep 2013 13:22:44 -0700
+Message-Id: <1380140564-9030-7-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1380140564-9030-1-git-send-email-kmo@daterainc.com>
 References: <1380140564-9030-1-git-send-email-kmo@daterainc.com>
@@ -22,430 +21,472 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kent Overstreet <koverstreet@google.com>
+Convert merging to bio_add_page()/blk_max_segment()
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 ---
- fs/btrfs/compression.c |  8 ++++----
- fs/btrfs/disk-io.c     | 11 ++++++-----
- fs/btrfs/extent_io.c   | 48 +++++++++++++++++++++++++-----------------------
- fs/btrfs/file-item.c   | 42 +++++++++++++++++++-----------------------
- fs/btrfs/inode.c       | 35 +++++++++++++++++++----------------
- fs/logfs/dev_bdev.c    | 10 +++++-----
- 6 files changed, 78 insertions(+), 76 deletions(-)
+ arch/x86/include/asm/io.h |   7 --
+ block/blk-merge.c         | 227 ++++++++++++----------------------------------
+ drivers/xen/biomerge.c    |  11 ---
+ fs/bio.c                  |  14 ++-
+ include/linux/bio.h       |  25 -----
+ include/linux/blk_types.h |   7 --
+ 6 files changed, 65 insertions(+), 226 deletions(-)
 
-diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
-index b4dc421..51e5cc5 100644
---- a/fs/btrfs/compression.c
-+++ b/fs/btrfs/compression.c
-@@ -200,15 +200,15 @@ csum_failed:
- 	if (cb->errors) {
- 		bio_io_error(cb->orig_bio);
- 	} else {
--		int i;
--		struct bio_vec *bvec;
-+		struct bio_vec bvec;
-+		struct bvec_iter iter;
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 4799845..9060a25 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -333,17 +333,10 @@ extern bool is_early_ioremap_ptep(pte_t *ptep);
  
- 		/*
- 		 * we have verified the checksum already, set page
- 		 * checked so the end_io handlers know about it
- 		 */
--		bio_for_each_segment_all(bvec, cb->orig_bio, i)
--			SetPageChecked(bvec->bv_page);
-+		bio_for_each_page_all(bvec, cb->orig_bio, iter)
-+			SetPageChecked(bvec.bv_page);
+ #ifdef CONFIG_XEN
+ #include <xen/xen.h>
+-struct bio_vec;
  
- 		bio_endio(cb->orig_bio, 0);
- 	}
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 6f84032..3ad7b5c 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -850,13 +850,14 @@ int btrfs_wq_submit_bio(struct btrfs_fs_info *fs_info, struct inode *inode,
+ extern bool xen_page_phys_mergeable(const struct page *p1,
+ 				    const struct page *p2);
  
- static int btree_csum_one_bio(struct bio *bio)
- {
--	struct bio_vec *bvec;
-+	struct bio_vec bvec;
-+	struct bvec_iter iter;
- 	struct btrfs_root *root;
--	int i, ret = 0;
-+	int ret = 0;
- 
--	bio_for_each_segment_all(bvec, bio, i) {
--		root = BTRFS_I(bvec->bv_page->mapping->host)->root;
--		ret = csum_dirty_buffer(root, bvec->bv_page);
-+	bio_for_each_page_all(bvec, bio, iter) {
-+		root = BTRFS_I(bvec.bv_page->mapping->host)->root;
-+		ret = csum_dirty_buffer(root, bvec.bv_page);
- 		if (ret)
- 			break;
- 	}
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index 27333ca..c4256ef 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2010,7 +2010,7 @@ int repair_io_failure(struct btrfs_fs_info *fs_info, u64 start,
- 	}
- 	bio->bi_bdev = dev->bdev;
- 	bio_add_page(bio, page, length, start - page_offset(page));
--	btrfsic_submit_bio(WRITE_SYNC, bio); /* XXX: submit_bio_wait() */
-+	btrfsic_submit_bio(WRITE_SYNC, bio);
- 	wait_for_completion(&compl);
- 
- 	if (!test_bit(BIO_UPTODATE, &bio->bi_flags)) {
-@@ -2336,14 +2336,14 @@ int end_extent_writepage(struct page *page, int err, u64 start, u64 end)
-  */
- static void end_bio_extent_writepage(struct bio *bio, int err)
- {
--	struct bio_vec *bvec;
-+	struct bio_vec bvec;
-+	struct bvec_iter iter;
- 	struct extent_io_tree *tree;
- 	u64 start;
- 	u64 end;
--	int i;
- 
--	bio_for_each_segment_all(bvec, bio, i) {
--		struct page *page = bvec->bv_page;
-+	bio_for_each_page_all(bvec, bio, iter) {
-+		struct page *page = bvec.bv_page;
- 		tree = &BTRFS_I(page->mapping->host)->io_tree;
- 
- 		/* We always issue full-page reads, but if some block
-@@ -2351,14 +2351,14 @@ static void end_bio_extent_writepage(struct bio *bio, int err)
- 		 * advance bv_offset and adjust bv_len to compensate.
- 		 * Print a warning for nonzero offsets, and an error
- 		 * if they don't add up to a full page.  */
--		if (bvec->bv_offset || bvec->bv_len != PAGE_CACHE_SIZE)
-+		if (bvec.bv_offset || bvec.bv_len != PAGE_CACHE_SIZE)
- 			printk("%s page write in btrfs with offset %u and length %u\n",
--			       bvec->bv_offset + bvec->bv_len != PAGE_CACHE_SIZE
-+			       bvec.bv_offset + bvec.bv_len != PAGE_CACHE_SIZE
- 			       ? KERN_ERR "partial" : KERN_INFO "incomplete",
--			       bvec->bv_offset, bvec->bv_len);
-+			       bvec.bv_offset, bvec.bv_len);
- 
- 		start = page_offset(page);
--		end = start + bvec->bv_offset + bvec->bv_len - 1;
-+		end = start + bvec.bv_offset + bvec.bv_len - 1;
- 
- 		if (end_extent_writepage(page, err, start, end))
- 			continue;
-@@ -2394,7 +2394,8 @@ endio_readpage_release_extent(struct extent_io_tree *tree, u64 start, u64 len,
-  */
- static void end_bio_extent_readpage(struct bio *bio, int err)
- {
--	struct bio_vec *bvec;
-+	struct bio_vec bvec;
-+	struct bvec_iter iter;
- 	int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
- 	struct btrfs_io_bio *io_bio = btrfs_io_bio(bio);
- 	struct extent_io_tree *tree;
-@@ -2406,13 +2407,12 @@ static void end_bio_extent_readpage(struct bio *bio, int err)
- 	u64 extent_len = 0;
- 	int mirror;
- 	int ret;
--	int i;
- 
- 	if (err)
- 		uptodate = 0;
- 
--	bio_for_each_segment_all(bvec, bio, i) {
--		struct page *page = bvec->bv_page;
-+	bio_for_each_page_all(bvec, bio, iter) {
-+		struct page *page = bvec.bv_page;
- 		struct inode *inode = page->mapping->host;
- 
- 		pr_debug("end_bio_extent_readpage: bi_sector=%llu, err=%d, "
-@@ -2425,15 +2425,15 @@ static void end_bio_extent_readpage(struct bio *bio, int err)
- 		 * advance bv_offset and adjust bv_len to compensate.
- 		 * Print a warning for nonzero offsets, and an error
- 		 * if they don't add up to a full page.  */
--		if (bvec->bv_offset || bvec->bv_len != PAGE_CACHE_SIZE)
-+		if (bvec.bv_offset || bvec.bv_len != PAGE_CACHE_SIZE)
- 			printk("%s page read in btrfs with offset %u and length %u\n",
--			       bvec->bv_offset + bvec->bv_len != PAGE_CACHE_SIZE
-+			       bvec.bv_offset + bvec.bv_len != PAGE_CACHE_SIZE
- 			       ? KERN_ERR "partial" : KERN_INFO "incomplete",
--			       bvec->bv_offset, bvec->bv_len);
-+			       bvec.bv_offset, bvec.bv_len);
- 
- 		start = page_offset(page);
--		end = start + bvec->bv_offset + bvec->bv_len - 1;
--		len = bvec->bv_len;
-+		end = start + bvec.bv_offset + bvec.bv_len - 1;
-+		len = bvec.bv_len;
- 
- 		mirror = io_bio->mirror_num;
- 		if (likely(uptodate && tree->ops &&
-@@ -3397,18 +3397,20 @@ static void end_extent_buffer_writeback(struct extent_buffer *eb)
- 
- static void end_bio_extent_buffer_writepage(struct bio *bio, int err)
- {
--	struct bio_vec *bvec;
-+	int uptodate = err == 0;
-+	struct bio_vec bvec;
-+	struct bvec_iter iter;
- 	struct extent_buffer *eb;
--	int i, done;
-+	int done;
- 
--	bio_for_each_segment_all(bvec, bio, i) {
--		struct page *page = bvec->bv_page;
-+	bio_for_each_page_all(bvec, bio, iter) {
-+		struct page *page = bvec.bv_page;
- 
- 		eb = (struct extent_buffer *)page->private;
- 		BUG_ON(!eb);
- 		done = atomic_dec_and_test(&eb->io_pages);
- 
--		if (err || test_bit(EXTENT_BUFFER_IOERR, &eb->bflags)) {
-+		if (!uptodate || test_bit(EXTENT_BUFFER_IOERR, &eb->bflags)) {
- 			set_bit(EXTENT_BUFFER_IOERR, &eb->bflags);
- 			ClearPageUptodate(page);
- 			SetPageError(page);
-diff --git a/fs/btrfs/file-item.c b/fs/btrfs/file-item.c
-index 997f951..ae328fb 100644
---- a/fs/btrfs/file-item.c
-+++ b/fs/btrfs/file-item.c
-@@ -162,7 +162,8 @@ static int __btrfs_lookup_bio_sums(struct btrfs_root *root,
- 				   struct inode *inode, struct bio *bio,
- 				   u64 logical_offset, u32 *dst, int dio)
- {
--	struct bio_vec *bvec = bio->bi_io_vec;
-+	struct bio_vec bvec;
-+	struct bvec_iter iter;
- 	struct btrfs_io_bio *btrfs_bio = btrfs_io_bio(bio);
- 	struct btrfs_csum_item *item = NULL;
- 	struct extent_io_tree *io_tree = &BTRFS_I(inode)->io_tree;
-@@ -204,8 +205,6 @@ static int __btrfs_lookup_bio_sums(struct btrfs_root *root,
- 	if (bio->bi_iter.bi_size > PAGE_CACHE_SIZE * 8)
- 		path->reada = 2;
- 
--	WARN_ON(bio->bi_vcnt <= 0);
+-extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
+-				      const struct bio_vec *vec2);
 -
- 	/*
- 	 * the free space stuff is only read when it hasn't been
- 	 * updated in the current transaction.  So, we can safely
-@@ -220,9 +219,9 @@ static int __btrfs_lookup_bio_sums(struct btrfs_root *root,
- 	disk_bytenr = (u64)bio->bi_iter.bi_sector << 9;
- 	if (dio)
- 		offset = logical_offset;
--	while (bio_index < bio->bi_vcnt) {
-+	bio_for_each_page_all(bvec, bio, iter) {
- 		if (!dio)
--			offset = page_offset(bvec->bv_page) + bvec->bv_offset;
-+			offset = page_offset(bvec.bv_page) + bvec.bv_offset;
- 		count = btrfs_find_ordered_sum(inode, offset, disk_bytenr,
- 					       (u32 *)csum, nblocks);
- 		if (count)
-@@ -243,7 +242,7 @@ static int __btrfs_lookup_bio_sums(struct btrfs_root *root,
- 				if (BTRFS_I(inode)->root->root_key.objectid ==
- 				    BTRFS_DATA_RELOC_TREE_OBJECTID) {
- 					set_extent_bits(io_tree, offset,
--						offset + bvec->bv_len - 1,
-+						offset + bvec.bv_len - 1,
- 						EXTENT_NODATASUM, GFP_NOFS);
- 				} else {
- 					printk(KERN_INFO "btrfs no csum found "
-@@ -282,10 +281,10 @@ found:
- 		csum += count * csum_size;
- 		nblocks -= count;
- 		while (count--) {
--			disk_bytenr += bvec->bv_len;
--			offset += bvec->bv_len;
--			bio_index++;
--			bvec++;
-+			bvec = bio_iovec_iter(bio, iter);
-+			disk_bytenr += bvec.bv_len;
-+			offset += bvec.bv_len;
-+			bio_advance_iter(bvec.bv_len);
- 		}
- 	}
- 	btrfs_free_path(path);
-@@ -436,14 +435,13 @@ int btrfs_csum_one_bio(struct btrfs_root *root, struct inode *inode,
- 	struct btrfs_ordered_sum *sums;
- 	struct btrfs_ordered_extent *ordered;
- 	char *data;
--	struct bio_vec *bvec = bio->bi_io_vec;
--	int bio_index = 0;
-+	struct bio_vec bvec;
-+	struct bvec_iter iter;
- 	int index;
- 	unsigned long total_bytes = 0;
- 	unsigned long this_sum_bytes = 0;
- 	u64 offset;
+-#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
+-	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
+-	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
+ #endif	/* CONFIG_XEN */
  
--	WARN_ON(bio->bi_vcnt <= 0);
- 	sums = kzalloc(btrfs_ordered_sum_size(root, bio->bi_iter.bi_size),
- 		       GFP_NOFS);
- 	if (!sums)
-@@ -455,16 +453,16 @@ int btrfs_csum_one_bio(struct btrfs_root *root, struct inode *inode,
- 	if (contig)
- 		offset = file_start;
- 	else
--		offset = page_offset(bvec->bv_page) + bvec->bv_offset;
-+		offset = page_offset(bio_page(bio)) + bio_offset(bio);
- 
- 	ordered = btrfs_lookup_ordered_extent(inode, offset);
- 	BUG_ON(!ordered); /* Logic error */
- 	sums->bytenr = (u64)bio->bi_iter.bi_sector << 9;
- 	index = 0;
- 
--	while (bio_index < bio->bi_vcnt) {
-+	bio_for_each_page_all(bvec, bio, iter) {
- 		if (!contig)
--			offset = page_offset(bvec->bv_page) + bvec->bv_offset;
-+			offset = page_offset(bvec.bv_page) + bvec.bv_offset;
- 
- 		if (offset >= ordered->file_offset + ordered->len ||
- 		    offset < ordered->file_offset) {
-@@ -489,19 +487,17 @@ int btrfs_csum_one_bio(struct btrfs_root *root, struct inode *inode,
- 
- 		data = kmap_atomic(bvec->bv_page);
- 		sums->sums[index] = ~(u32)0;
--		sums->sums[index] = btrfs_csum_data(data + bvec->bv_offset,
-+		sums->sums[index] = btrfs_csum_data(data + bvec.bv_offset,
- 						    sums->sums[index],
--						    bvec->bv_len);
-+						    bvec.bv_len);
- 		kunmap_atomic(data);
- 		btrfs_csum_final(sums->sums[index],
- 				 (char *)(sums->sums + index));
- 
--		bio_index++;
- 		index++;
--		total_bytes += bvec->bv_len;
--		this_sum_bytes += bvec->bv_len;
--		offset += bvec->bv_len;
--		bvec++;
-+		total_bytes += bvec.bv_len;
-+		this_sum_bytes += bvec.bv_len;
-+		offset += bvec.bv_len;
- 	}
- 	this_sum_bytes = 0;
- 	btrfs_add_ordered_sum(inode, ordered, sums);
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 5978a18..98de70c 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -6765,31 +6765,30 @@ unlock_err:
- static void btrfs_endio_direct_read(struct bio *bio, int err)
+ #define IO_SPACE_LIMIT 0xffff
+diff --git a/block/blk-merge.c b/block/blk-merge.c
+index c9c837b..c356e11 100644
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -116,10 +116,8 @@ static struct bio *blk_bio_write_same_split(struct request_queue *q,
+ struct bio *blk_bio_segment_split(struct request_queue *q, struct bio *bio,
+ 				  struct bio_set *bs)
  {
- 	struct btrfs_dio_private *dip = bio->bi_private;
--	struct bio_vec *bvec;
-+	struct bio_vec bvec;
-+	struct bvec_iter iter;
- 	struct inode *inode = dip->inode;
- 	struct btrfs_root *root = BTRFS_I(inode)->root;
- 	struct bio *dio_bio;
- 	u32 *csums = (u32 *)dip->csum;
- 	u64 start;
--	int i;
+-	struct bio_vec bv, bvprv;
+-	struct bvec_iter iter;
+-	unsigned seg_size = 0, nsegs = 0;
+-	int prev = 0;
++	struct bvec_iter iter = bio->bi_iter;
++	unsigned nsegs = 0;
  
- 	start = dip->logical_offset;
--	bio_for_each_segment_all(bvec, bio, i) {
-+	bio_for_each_page_all(bvec, bio, iter) {
- 		if (!(BTRFS_I(inode)->flags & BTRFS_INODE_NODATASUM)) {
--			struct page *page = bvec->bv_page;
- 			char *kaddr;
- 			u32 csum = ~(u32)0;
- 			unsigned long flags;
+ 	if (bio->bi_rw & REQ_DISCARD)
+ 		return blk_bio_discard_split(q, bio, bs);
+@@ -127,21 +125,10 @@ struct bio *blk_bio_segment_split(struct request_queue *q, struct bio *bio,
+ 	if (bio->bi_rw & REQ_WRITE_SAME)
+ 		return blk_bio_write_same_split(q, bio, bs);
  
- 			local_irq_save(flags);
--			kaddr = kmap_atomic(page);
--			csum = btrfs_csum_data(kaddr + bvec->bv_offset,
--					       csum, bvec->bv_len);
-+			kaddr = kmap_atomic(bvec.bv_page);
-+			csum = btrfs_csum_data(kaddr + bvec.bv_offset,
-+					       csum, bvec.bv_len);
- 			btrfs_csum_final(csum, (char *)&csum);
- 			kunmap_atomic(kaddr);
- 			local_irq_restore(flags);
- 
--			flush_dcache_page(bvec->bv_page);
-+			flush_dcache_page(bvec.bv_page);
- 			if (csum != csums[i]) {
- 				btrfs_err(root->fs_info, "csum failed ino %llu off %llu csum %u expected csum %u",
- 					  btrfs_ino(inode), start, csum,
-@@ -6798,7 +6797,7 @@ static void btrfs_endio_direct_read(struct bio *bio, int err)
- 			}
- 		}
- 
--		start += bvec->bv_len;
-+		start += bvec.bv_len;
- 	}
- 
- 	unlock_extent(&BTRFS_I(inode)->io_tree, dip->logical_offset,
-@@ -6964,7 +6963,8 @@ static int btrfs_submit_direct_hook(int rw, struct btrfs_dio_private *dip,
- 	struct btrfs_root *root = BTRFS_I(inode)->root;
- 	struct bio *bio;
- 	struct bio *orig_bio = dip->orig_bio;
--	struct bio_vec *bvec = orig_bio->bi_io_vec;
-+	struct bio_vec bvec;
-+	struct bvec_iter iter;
- 	u64 start_sector = orig_bio->bi_iter.bi_sector;
- 	u64 file_offset = dip->logical_offset;
- 	u64 submit_len = 0;
-@@ -7001,10 +7001,13 @@ static int btrfs_submit_direct_hook(int rw, struct btrfs_dio_private *dip,
- 	bio->bi_end_io = btrfs_end_dio_bio;
- 	atomic_inc(&dip->pending_bios);
- 
--	while (bvec <= (orig_bio->bi_io_vec + orig_bio->bi_vcnt - 1)) {
--		if (unlikely(map_length < submit_len + bvec->bv_len ||
--		    bio_add_page(bio, bvec->bv_page, bvec->bv_len,
--				 bvec->bv_offset) < bvec->bv_len)) {
-+	iter = orig_bio->bi_iter;
+-	bio_for_each_segment(bv, bio, iter) {
+-		if (prev && blk_queue_cluster(q)) {
+-			if (seg_size + bv.bv_len > queue_max_segment_size(q))
+-				goto new_segment;
+-			if (!BIOVEC_PHYS_MERGEABLE(&bvprv, &bv))
+-				goto new_segment;
+-			if (!BIOVEC_SEG_BOUNDARY(q, &bvprv, &bv))
+-				goto new_segment;
+-
+-			seg_size += bv.bv_len;
+-			bvprv = bv;
+-			prev = 1;
+-			continue;
+-		}
+-new_segment:
 +	while (iter.bi_size) {
-+		bvec = bio_iovec_iter(orig_bio, iter);
++		struct bio_vec bv = bio_iter_iovec(bio, iter);
++		unsigned nbytes = blk_max_segment(q, &bv);
 +
-+		if (unlikely(map_length < submit_len + bvec.bv_len ||
-+		    bio_add_page(bio, bvec.bv_page, bvec.bv_len,
-+				 bvec.bv_offset) < bvec.bv_len)) {
- 			/*
- 			 * inc the count before we submit the bio so
- 			 * we know the end IO handler won't happen before
-@@ -7043,9 +7046,9 @@ static int btrfs_submit_direct_hook(int rw, struct btrfs_dio_private *dip,
- 				goto out_err;
- 			}
- 		} else {
--			submit_len += bvec->bv_len;
-+			submit_len += bvec.bv_len;
- 			nr_pages ++;
--			bvec++;
-+			bio_advance_iter(orig_bio, &iter, bvec.bv_len);
+ 		if (nsegs == queue_max_segments(q)) {
+ 			struct bio *split;
+ 
+@@ -159,9 +146,7 @@ new_segment:
  		}
+ 
+ 		nsegs++;
+-		bvprv = bv;
+-		prev = 1;
+-		seg_size = bv.bv_len;
++		bio_advance_iter(bio, &iter, nbytes);
  	}
  
-diff --git a/fs/logfs/dev_bdev.c b/fs/logfs/dev_bdev.c
-index 685ae02..c3c6361 100644
---- a/fs/logfs/dev_bdev.c
-+++ b/fs/logfs/dev_bdev.c
-@@ -61,17 +61,17 @@ static DECLARE_WAIT_QUEUE_HEAD(wq);
- static void writeseg_end_io(struct bio *bio, int err)
+ 	return NULL;
+@@ -170,59 +155,29 @@ new_segment:
+ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
+ 					     struct bio *bio)
  {
- 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
--	struct bio_vec *bvec;
--	int i;
-+	struct bio_vec bvec;
-+	struct bvec_iter iter;
- 	struct super_block *sb = bio->bi_private;
- 	struct logfs_super *super = logfs_super(sb);
+-	struct bio_vec bv, bvprv;
+-	int cluster, prev = 0;
+-	unsigned int seg_size, nr_phys_segs;
+-	struct bio *fbio, *bbio;
+-	struct bvec_iter iter;
++	unsigned nr_phys_segs = 0;
  
- 	BUG_ON(!uptodate); /* FIXME: Retry io or write elsewhere */
- 	BUG_ON(err);
+-	if (!bio)
+-		return 0;
+-
+-	fbio = bio;
+-	cluster = blk_queue_cluster(q);
+-	seg_size = 0;
+-	nr_phys_segs = 0;
+ 	for_each_bio(bio) {
+-		bio_for_each_segment(bv, bio, iter) {
+-			if (prev && cluster) {
+-				if (seg_size + bv.bv_len
+-				    > queue_max_segment_size(q))
+-					goto new_segment;
+-				if (!BIOVEC_PHYS_MERGEABLE(&bvprv, &bv))
+-					goto new_segment;
+-				if (!BIOVEC_SEG_BOUNDARY(q, &bvprv, &bv))
+-					goto new_segment;
+-
+-				seg_size += bv.bv_len;
+-				bvprv = bv;
+-				prev = 1;
+-				continue;
+-			}
+-new_segment:
+-			if (nr_phys_segs == 1 && seg_size >
+-			    fbio->bi_seg_front_size)
+-				fbio->bi_seg_front_size = seg_size;
++		struct bvec_iter iter = bio->bi_iter;
++
++		while (iter.bi_size) {
++			struct bio_vec bv = bio_iter_iovec(bio, iter);
++			unsigned nbytes = blk_max_segment(q, &bv);
  
--	bio_for_each_segment_all(bvec, bio, i) {
--		end_page_writeback(bvec->bv_page);
--		page_cache_release(bvec->bv_page);
-+	bio_for_each_page_all(bvec, bio, iter) {
-+		end_page_writeback(bvec.bv_page);
-+		page_cache_release(bvec.bv_page);
+ 			nr_phys_segs++;
+-			bvprv = bv;
+-			prev = 1;
+-			seg_size = bv.bv_len;
++			bio_advance_iter(bio, &iter, nbytes);
+ 		}
+-		bbio = bio;
  	}
- 	bio_put(bio);
- 	if (atomic_dec_and_test(&super->s_pending_writes))
+ 
+-	if (nr_phys_segs == 1 && seg_size > fbio->bi_seg_front_size)
+-		fbio->bi_seg_front_size = seg_size;
+-	if (seg_size > bbio->bi_seg_back_size)
+-		bbio->bi_seg_back_size = seg_size;
+-
+ 	return nr_phys_segs;
+ }
+ 
+ void blk_recalc_rq_segments(struct request *rq)
+ {
+-	rq->nr_phys_segments = __blk_recalc_rq_segments(rq->q, rq->bio);
++	if (rq->bio)
++		rq->nr_phys_segments = __blk_recalc_rq_segments(rq->q, rq->bio);
++	else
++		rq->nr_phys_segments = 0;
+ }
+ 
+ void blk_recount_segments(struct request_queue *q, struct bio *bio)
+@@ -236,82 +191,43 @@ void blk_recount_segments(struct request_queue *q, struct bio *bio)
+ }
+ EXPORT_SYMBOL(blk_recount_segments);
+ 
+-static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
+-				   struct bio *nxt)
++static int __blk_segment_map_sg(struct request_queue *q, struct bio *bio,
++				struct scatterlist *sglist,
++				struct scatterlist **sg)
+ {
+-	struct bio_vec end_bv, nxt_bv;
+-	struct bvec_iter iter;
+-
+-	if (!blk_queue_cluster(q))
+-		return 0;
+-
+-	if (bio->bi_seg_back_size + nxt->bi_seg_front_size >
+-	    queue_max_segment_size(q))
+-		return 0;
+-
+-	if (!bio_has_data(bio))
+-		return 1;
+-
+-	bio_for_each_segment(end_bv, bio, iter)
+-		if (end_bv.bv_len == iter.bi_size)
+-			break;
+-
+-	nxt_bv = bio_iovec(nxt);
+-
+-	if (!BIOVEC_PHYS_MERGEABLE(&end_bv, &nxt_bv))
+-		return 0;
++	unsigned nsegs = 0;
+ 
+-	/*
+-	 * bio and nxt are contiguous in memory; check if the queue allows
+-	 * these two to be merged into one
+-	 */
+-	if (BIOVEC_SEG_BOUNDARY(q, &end_bv, &nxt_bv))
+-		return 1;
+-
+-	return 0;
+-}
+-
+-static inline void
+-__blk_segment_map_sg(struct request_queue *q, struct bio_vec *bvec,
+-		     struct scatterlist *sglist, struct bio_vec *bvprv,
+-		     struct scatterlist **sg, int *nsegs, int *cluster)
+-{
++	for_each_bio(bio) {
++		struct bvec_iter iter = bio->bi_iter;
++
++		while (iter.bi_size) {
++			struct bio_vec bv = bio_iter_iovec(bio, iter);
++			unsigned nbytes = blk_max_segment(q, &bv);
++
++			if (!*sg)
++				*sg = sglist;
++			else {
++				/*
++				 * If the driver previously mapped a shorter
++				 * list, we could see a termination bit
++				 * prematurely unless it fully inits the sg
++				 * table on each mapping. We KNOW that there
++				 * must be more entries here or the driver
++				 * would be buggy, so force clear the
++				 * termination bit to avoid doing a full
++				 * sg_init_table() in drivers for each command.
++				 */
++				sg_unmark_end(*sg);
++				*sg = sg_next(*sg);
++			}
+ 
+-	int nbytes = bvec->bv_len;
+-
+-	if (*sg && *cluster) {
+-		if ((*sg)->length + nbytes > queue_max_segment_size(q))
+-			goto new_segment;
+-
+-		if (!BIOVEC_PHYS_MERGEABLE(bvprv, bvec))
+-			goto new_segment;
+-		if (!BIOVEC_SEG_BOUNDARY(q, bvprv, bvec))
+-			goto new_segment;
+-
+-		(*sg)->length += nbytes;
+-	} else {
+-new_segment:
+-		if (!*sg)
+-			*sg = sglist;
+-		else {
+-			/*
+-			 * If the driver previously mapped a shorter
+-			 * list, we could see a termination bit
+-			 * prematurely unless it fully inits the sg
+-			 * table on each mapping. We KNOW that there
+-			 * must be more entries here or the driver
+-			 * would be buggy, so force clear the
+-			 * termination bit to avoid doing a full
+-			 * sg_init_table() in drivers for each command.
+-			 */
+-			sg_unmark_end(*sg);
+-			*sg = sg_next(*sg);
++			sg_set_page(*sg, bv.bv_page, nbytes, bv.bv_offset);
++			nsegs++;
++			bio_advance_iter(bio, &iter, nbytes);
+ 		}
+-
+-		sg_set_page(*sg, bvec->bv_page, nbytes, bvec->bv_offset);
+-		(*nsegs)++;
+ 	}
+-	*bvprv = *bvec;
++
++	return nsegs;
+ }
+ 
+ /*
+@@ -321,22 +237,13 @@ new_segment:
+ int blk_rq_map_sg(struct request_queue *q, struct request *rq,
+ 		  struct scatterlist *sglist)
+ {
+-	struct bio_vec bvec, bvprv;
+-	struct req_iterator iter;
+-	struct scatterlist *sg;
+-	int nsegs, cluster;
+-
+-	nsegs = 0;
+-	cluster = blk_queue_cluster(q);
++	struct scatterlist *sg = NULL;
++	unsigned nsegs;
+ 
+ 	/*
+ 	 * for each bio in rq
+ 	 */
+-	sg = NULL;
+-	rq_for_each_segment(bvec, rq, iter) {
+-		__blk_segment_map_sg(q, &bvec, sglist, &bvprv, &sg,
+-				     &nsegs, &cluster);
+-	} /* segments in rq */
++	nsegs = __blk_segment_map_sg(q, rq->bio, sglist, &sg);
+ 
+ 
+ 	if (unlikely(rq->cmd_flags & REQ_COPY_USER) &&
+@@ -383,24 +290,17 @@ EXPORT_SYMBOL(blk_rq_map_sg);
+ int blk_bio_map_sg(struct request_queue *q, struct bio *bio,
+ 		   struct scatterlist *sglist)
+ {
+-	struct bio_vec bvec, bvprv;
+-	struct scatterlist *sg;
+-	int nsegs, cluster;
+-	struct bvec_iter iter;
+-
+-	nsegs = 0;
+-	cluster = blk_queue_cluster(q);
++	struct scatterlist *sg = NULL;
++	struct bio *next = bio->bi_next;
++	unsigned nsegs;
+ 
+-	sg = NULL;
+-	bio_for_each_segment(bvec, bio, iter) {
+-		__blk_segment_map_sg(q, &bvec, sglist, &bvprv, &sg,
+-				     &nsegs, &cluster);
+-	} /* segments in bio */
++	bio->bi_next = NULL;
++	nsegs = __blk_segment_map_sg(q, bio, sglist, &sg);
++	bio->bi_next = next;
+ 
+ 	if (sg)
+ 		sg_mark_end(sg);
+ 
+-	BUG_ON(bio->bi_phys_segments && nsegs > bio->bi_phys_segments);
+ 	return nsegs;
+ }
+ EXPORT_SYMBOL(blk_bio_map_sg);
+@@ -471,8 +371,6 @@ static int ll_merge_requests_fn(struct request_queue *q, struct request *req,
+ 				struct request *next)
+ {
+ 	int total_phys_segments;
+-	unsigned int seg_size =
+-		req->biotail->bi_seg_back_size + next->bio->bi_seg_front_size;
+ 
+ 	/*
+ 	 * First check if the either of the requests are re-queued
+@@ -489,13 +387,6 @@ static int ll_merge_requests_fn(struct request_queue *q, struct request *req,
+ 		return 0;
+ 
+ 	total_phys_segments = req->nr_phys_segments + next->nr_phys_segments;
+-	if (blk_phys_contig_segment(q, req->biotail, next->bio)) {
+-		if (req->nr_phys_segments == 1)
+-			req->bio->bi_seg_front_size = seg_size;
+-		if (next->nr_phys_segments == 1)
+-			next->biotail->bi_seg_back_size = seg_size;
+-		total_phys_segments--;
+-	}
+ 
+ 	if (total_phys_segments > queue_max_segments(q))
+ 		return 0;
+diff --git a/drivers/xen/biomerge.c b/drivers/xen/biomerge.c
+index d9fb598..9934266 100644
+--- a/drivers/xen/biomerge.c
++++ b/drivers/xen/biomerge.c
+@@ -10,14 +10,3 @@ bool xen_page_phys_mergeable(const struct page *p1, const struct page *p2)
+ 
+ 	return mfn1 + 1 == mfn2;
+ }
+-
+-bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
+-			       const struct bio_vec *vec2)
+-{
+-	unsigned long mfn1 = pfn_to_mfn(page_to_pfn(vec1->bv_page));
+-	unsigned long mfn2 = pfn_to_mfn(page_to_pfn(vec2->bv_page));
+-
+-	return __BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&
+-		((mfn1 == mfn2) || ((mfn1+1) == mfn2));
+-}
+-EXPORT_SYMBOL(xen_biovec_phys_mergeable);
+diff --git a/fs/bio.c b/fs/bio.c
+index da8aa81..93aee5c 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -678,8 +678,8 @@ int bio_add_page(struct bio *bio, struct page *page,
+ 	if (bio->bi_vcnt > 0) {
+ 		bv = &bio->bi_io_vec[bio->bi_vcnt - 1];
+ 
+-		if (page == bv->bv_page &&
+-		    offset == bv->bv_offset + bv->bv_len) {
++		if (bvec_to_phys(bv) + bv->bv_len ==
++		    page_to_phys(page) + offset) {
+ 			bv->bv_len += len;
+ 			goto done;
+ 		}
+@@ -688,12 +688,10 @@ int bio_add_page(struct bio *bio, struct page *page,
+ 	if (bio->bi_vcnt >= bio->bi_max_vecs)
+ 		return 0;
+ 
+-	bv		= &bio->bi_io_vec[bio->bi_vcnt];
+-	bv->bv_page	= page;
+-	bv->bv_len	= len;
+-	bv->bv_offset	= offset;
+-
+-	bio->bi_vcnt++;
++	bv = &bio->bi_io_vec[bio->bi_vcnt++];
++	bv->bv_page = page;
++	bv->bv_len = len;
++	bv->bv_offset = offset;
+ done:
+ 	bio->bi_iter.bi_size += len;
+ 	return len;
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index f6f0e99..3d9473d 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -175,27 +175,6 @@ static inline void *bio_data(struct bio *bio)
+ 
+ #define __bio_kunmap_atomic(addr)	kunmap_atomic(addr)
+ 
+-/*
+- * merge helpers etc
+- */
+-
+-/* Default implementation of BIOVEC_PHYS_MERGEABLE */
+-#define __BIOVEC_PHYS_MERGEABLE(vec1, vec2)	\
+-	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
+-
+-/*
+- * allow arch override, for eg virtualized architectures (put in asm/io.h)
+- */
+-#ifndef BIOVEC_PHYS_MERGEABLE
+-#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)	\
+-	__BIOVEC_PHYS_MERGEABLE(vec1, vec2)
+-#endif
+-
+-#define __BIO_SEG_BOUNDARY(addr1, addr2, mask) \
+-	(((addr1) | (mask)) == (((addr2) - 1) | (mask)))
+-#define BIOVEC_SEG_BOUNDARY(q, b1, b2) \
+-	__BIO_SEG_BOUNDARY(bvec_to_phys((b1)), bvec_to_phys((b2)) + (b2)->bv_len, queue_segment_boundary((q)))
+-
+ #define bio_io_error(bio) bio_endio((bio), -EIO)
+ 
+ static inline void bvec_iter_advance(struct bio_vec *bv, struct bvec_iter *iter,
+@@ -652,10 +631,6 @@ struct biovec_slab {
+ #define bip_for_each_page(bvl, bip, iter)				\
+ 	__bip_for_each(bvl, bip, iter, bvec_iter_page_bytes)
+ 
+-#define bio_for_each_integrity_vec(_bvl, _bio, _iter)			\
+-	for_each_bio(_bio)						\
+-		bip_for_each_segment(_bvl, _bio->bi_integrity, _iter)
+-
+ #define bio_integrity(bio) (bio->bi_integrity != NULL)
+ 
+ extern struct bio_integrity_payload *bio_integrity_alloc(struct bio *, gfp_t, unsigned int);
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 8fca6e3..4aebb73 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -57,13 +57,6 @@ struct bio {
+ 	 */
+ 	unsigned int		bi_phys_segments;
+ 
+-	/*
+-	 * To keep track of the max segment size, we account for the
+-	 * sizes of the first and last mergeable segments in this bio.
+-	 */
+-	unsigned int		bi_seg_front_size;
+-	unsigned int		bi_seg_back_size;
+-
+ 	atomic_t		bi_remaining;
+ 
+ 	bio_end_io_t		*bi_end_io;
 -- 
 1.8.4.rc3
 
