@@ -1,62 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab3IYI47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 04:56:59 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:43930 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab3IYI45 (ORCPT
+	id S1754784Ab3IYJAi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 05:00:38 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:49796 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab3IYJAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 04:56:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <1380099255-25559-1-git-send-email-geert@linux-m68k.org>
-References: <1380099255-25559-1-git-send-email-geert@linux-m68k.org>
-Date: Wed, 25 Sep 2013 10:56:57 +0200
-X-Google-Sender-Auth: aqdiQFvfxH7rXO14OD38_wTsgw4
-Message-ID: <CAMuHMdUBaFWH6rmUMpr=fJ2J_bXjnK2CqdZaCWxqqQFXutuEGQ@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.12-rc2
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 25 Sep 2013 05:00:36 -0400
+Date: Wed, 25 Sep 2013 11:00:34 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Tom Herbert <therbert@google.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, jesse.brandeburg@intel.com, tytso@mit.edu,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] random: introduce get_random_bytes_busy_wait_initialized
+Message-ID: <20130925090034.GC4904@order.stressinduktion.org>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	Tom Herbert <therbert@google.com>, davem@davemloft.net,
+	netdev@vger.kernel.org, jesse.brandeburg@intel.com, tytso@mit.edu,
+	linux-kernel@vger.kernel.org
+References: <alpine.DEB.2.02.1309231535030.23896@tomh.mtv.corp.google.com> <1379980991.3165.37.camel@edumazet-glaptop> <20130924023038.GA22393@order.stressinduktion.org> <20130924033505.GB22393@order.stressinduktion.org> <1380001118.3165.41.camel@edumazet-glaptop> <20130924054532.GA24446@order.stressinduktion.org> <1380028797.3165.65.camel@edumazet-glaptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1380028797.3165.65.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 10:54 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.12-rc2 to v3.12-rc1[3], the summaries are:
->   - build errors: +15/-11
+On Tue, Sep 24, 2013 at 06:19:57AM -0700, Eric Dumazet wrote:
+> From: Eric Dumazet <edumazet@google.com>
+> 
+> A host might need net_secret[] and never open a single socket. 
+> 
+> Problem added in commit aebda156a570782
+> ("net: defer net_secret[] initialization")
+> 
+> Based on prior patch from Hannes Frederic Sowa.
+> 
+> Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
 
-  + error: arch/powerpc/kernel/entry_32.S: undefined reference to
-`uprobe_post_sstep_notifier':  => .text+0x10570)
-  + error: arch/powerpc/kernel/entry_32.S: undefined reference to
-`uprobe_pre_sstep_notifier':  => .text+0x10564)
-  + error: fork.c: undefined reference to `uprobe_clear_state':  => .text+0xff4)
-  + error: fork.c: undefined reference to `uprobe_copy_process':  =>
-.text+0x1974)
-  + error: fork.c: undefined reference to `uprobe_dup_mmap':  => .text+0x5d0)
-  + error: fork.c: undefined reference to `uprobe_end_dup_mmap':  =>
-.text+0x890)
-  + error: fork.c: undefined reference to `uprobe_start_dup_mmap':  =>
-.text+0x5b4)
-  + error: memory.c: undefined reference to `uprobe_munmap':  => .text+0x27c78)
-  + error: trace_uprobe.c: undefined reference to `uprobe_register':
-=> .text+0x9aaa0)
-  + error: trace_uprobe.c: undefined reference to `uprobe_unregister':
- => .text+0x9a9fc)
+Perhaps we can even do a bit better? This patch is a RFC and I could split the
+random and network parts if needed.
 
-powerpc-randconfig
+[PATCH RFC] random: introduce get_random_bytes_busy_wait_initialized
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6701/ (all 120 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6676/ (all 120 configs)
+We want to use good entropy for initializing the secret keys used for
+hashing in the core network stack. So busy wait before extracting random
+data until the nonblocking_pool is initialized.
 
-Gr{oetje,eeting}s,
+Further entropy is also gathered by interrupts, so we are guaranteed to
+make progress here.
 
-                        Geert
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+---
+ drivers/char/random.c  | 18 ++++++++++++++++++
+ include/linux/random.h |  1 +
+ net/core/secure_seq.c  |  3 ++-
+ net/ipv4/af_inet.c     |  2 +-
+ 4 files changed, 22 insertions(+), 2 deletions(-)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 7737b5b..50e8030 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1058,6 +1058,24 @@ void get_random_bytes(void *buf, int nbytes)
+ EXPORT_SYMBOL(get_random_bytes);
+ 
+ /*
++ * Busy loop until the nonblocking_pool is intialized and return
++ * random data in buf of size nbytes.
++ *
++ * This is used by the network stack to defer the extraction of
++ * entropy from the nonblocking_pool until the pool is initialized.
++ *
++ * We need to busy loop here, because we could be called from an
++ * atomic section.
++ */
++void get_random_bytes_busy_wait_initialized(void *buf, int nbytes)
++{
++	while (!nonblocking_pool.initialized)
++		cpu_relax();
++	get_random_bytes(buf, nbytes);
++}
++EXPORT_SYMBOL(get_random_bytes_busy_wait_initialized);
++
++/*
+  * This function will use the architecture-specific hardware random
+  * number generator if it is available.  The arch-specific hw RNG will
+  * almost certainly be faster than what we can do in software, but it
+diff --git a/include/linux/random.h b/include/linux/random.h
+index 3b9377d..0b7e7dd 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -15,6 +15,7 @@ extern void add_input_randomness(unsigned int type, unsigned int code,
+ extern void add_interrupt_randomness(int irq, int irq_flags);
+ 
+ extern void get_random_bytes(void *buf, int nbytes);
++void get_random_bytes_busy_wait_initialized(void *buf, int nbbytes);
+ extern void get_random_bytes_arch(void *buf, int nbytes);
+ void generate_random_uuid(unsigned char uuid_out[16]);
+ 
+diff --git a/net/core/secure_seq.c b/net/core/secure_seq.c
+index 3f1ec15..ac55cb7 100644
+--- a/net/core/secure_seq.c
++++ b/net/core/secure_seq.c
+@@ -24,7 +24,8 @@ static void net_secret_init(void)
+ 
+ 	for (i = NET_SECRET_SIZE; i > 0;) {
+ 		do {
+-			get_random_bytes(&tmp, sizeof(tmp));
++			get_random_bytes_busy_wait_initialized(&tmp,
++							       sizeof(tmp));
+ 		} while (!tmp);
+ 		cmpxchg(&net_secret[--i], 0, tmp);
+ 	}
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index cfeb85c..3edd277 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -260,7 +260,7 @@ void build_ehash_secret(void)
+ 	u32 rnd;
+ 
+ 	do {
+-		get_random_bytes(&rnd, sizeof(rnd));
++		get_random_bytes_busy_wait_initialized(&rnd, sizeof(rnd));
+ 	} while (rnd == 0);
+ 
+ 	if (cmpxchg(&inet_ehash_secret, 0, rnd) == 0)
+-- 
+1.8.3.1
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
