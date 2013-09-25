@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757194Ab3IYAdz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:33:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39678 "EHLO
+	id S1757201Ab3IYAeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:34:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39674 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756608Ab3IYAUk (ORCPT
+	with ESMTP id S1756670Ab3IYAUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:40 -0400
+	Tue, 24 Sep 2013 20:20:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 072/117] HID: kye: Add report fixup for Genius Gx Imperator Keyboard
-Date: Tue, 24 Sep 2013 17:18:58 -0700
-Message-Id: <20130925001748.786828582@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 071/117] HID: pantherlord: validate output report details
+Date: Tue, 24 Sep 2013 17:18:57 -0700
+Message-Id: <20130925001748.644715072@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,115 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 0adb9c2c5ed42f199cb2a630c37d18dee385fae2 upstream.
+commit 412f30105ec6735224535791eed5cdc02888ecb4 upstream.
 
-Genius Gx Imperator Keyboard presents the same problem in its report
-descriptors than Genius Gila Gaming Mouse.
-Use the same fixup for both.
+A HID device could send a malicious output report that would cause the
+pantherlord HID driver to write beyond the output report allocation
+during initialization, causing a heap overflow:
 
-Fixes:
-https://bugzilla.redhat.com/show_bug.cgi?id=928561
+[  310.939483] usb 1-1: New USB device found, idVendor=0e8f, idProduct=0003
+...
+[  315.980774] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
 
-Reported-and-tested-by: Honza Brazdil <jbrazdil@redhat.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+CVE-2013-2892
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c |    1 +
- drivers/hid/hid-ids.h  |    1 +
- drivers/hid/hid-kye.c  |   45 ++++++++++++++++++++++++++++-----------------
- 3 files changed, 30 insertions(+), 17 deletions(-)
+ drivers/hid/hid-pl.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1597,6 +1597,7 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYTOUCH, USB_DEVICE_ID_KEYTOUCH_IEC) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_I405X) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X) },
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -482,6 +482,7 @@
- #define USB_VENDOR_ID_KYE		0x0458
- #define USB_DEVICE_ID_KYE_ERGO_525V	0x0087
- #define USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE	0x0138
-+#define USB_DEVICE_ID_GENIUS_GX_IMPERATOR	0x4018
- #define USB_DEVICE_ID_KYE_GPEN_560	0x5003
- #define USB_DEVICE_ID_KYE_EASYPEN_I405X	0x5010
- #define USB_DEVICE_ID_KYE_MOUSEPEN_I608X	0x5011
---- a/drivers/hid/hid-kye.c
-+++ b/drivers/hid/hid-kye.c
-@@ -268,6 +268,26 @@ static __u8 easypen_m610x_rdesc_fixed[]
- 	0xC0                          /*  End Collection                  */
- };
- 
-+static __u8 *kye_consumer_control_fixup(struct hid_device *hdev, __u8 *rdesc,
-+		unsigned int *rsize, int offset, const char *device_name) {
-+	/*
-+	 * the fixup that need to be done:
-+	 *   - change Usage Maximum in the Comsumer Control
-+	 *     (report ID 3) to a reasonable value
-+	 */
-+	if (*rsize >= offset + 31 &&
-+	    /* Usage Page (Consumer Devices) */
-+	    rdesc[offset] == 0x05 && rdesc[offset + 1] == 0x0c &&
-+	    /* Usage (Consumer Control) */
-+	    rdesc[offset + 2] == 0x09 && rdesc[offset + 3] == 0x01 &&
-+	    /*   Usage Maximum > 12287 */
-+	    rdesc[offset + 10] == 0x2a && rdesc[offset + 12] > 0x2f) {
-+		hid_info(hdev, "fixing up %s report descriptor\n", device_name);
-+		rdesc[offset + 12] = 0x2f;
-+	}
-+	return rdesc;
-+}
-+
- static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
-@@ -315,23 +335,12 @@ static __u8 *kye_report_fixup(struct hid
- 		}
- 		break;
- 	case USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE:
--		/*
--		 * the fixup that need to be done:
--		 *   - change Usage Maximum in the Comsumer Control
--		 *     (report ID 3) to a reasonable value
--		 */
--		if (*rsize >= 135 &&
--			/* Usage Page (Consumer Devices) */
--			rdesc[104] == 0x05 && rdesc[105] == 0x0c &&
--			/* Usage (Consumer Control) */
--			rdesc[106] == 0x09 && rdesc[107] == 0x01 &&
--			/*   Usage Maximum > 12287 */
--			rdesc[114] == 0x2a && rdesc[116] > 0x2f) {
--			hid_info(hdev,
--				 "fixing up Genius Gila Gaming Mouse "
--				 "report descriptor\n");
--			rdesc[116] = 0x2f;
--		}
-+		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
-+					"Genius Gila Gaming Mouse");
-+		break;
-+	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
-+		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
-+					"Genius Gx Imperator Keyboard");
- 		break;
- 	}
- 	return rdesc;
-@@ -428,6 +437,8 @@ static const struct hid_device_id kye_de
- 				USB_DEVICE_ID_KYE_EASYPEN_M610X) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
- 				USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
-+				USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, kye_devices);
+--- a/drivers/hid/hid-pl.c
++++ b/drivers/hid/hid-pl.c
+@@ -132,8 +132,14 @@ static int plff_init(struct hid_device *
+ 			strong = &report->field[0]->value[2];
+ 			weak = &report->field[0]->value[3];
+ 			debug("detected single-field device");
+-		} else if (report->maxfield >= 4 && report->field[0]->maxusage == 1 &&
+-				report->field[0]->usage[0].hid == (HID_UP_LED | 0x43)) {
++		} else if (report->field[0]->maxusage == 1 &&
++			   report->field[0]->usage[0].hid ==
++				(HID_UP_LED | 0x43) &&
++			   report->maxfield >= 4 &&
++			   report->field[0]->report_count >= 1 &&
++			   report->field[1]->report_count >= 1 &&
++			   report->field[2]->report_count >= 1 &&
++			   report->field[3]->report_count >= 1) {
+ 			report->field[0]->value[0] = 0x00;
+ 			report->field[1]->value[0] = 0x00;
+ 			strong = &report->field[2]->value[0];
 
 
