@@ -1,147 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab3IYUY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:24:28 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:56934 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756005Ab3IYUW6 (ORCPT
+	id S1756196Ab3IYUYo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:24:44 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:33544 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755263Ab3IYUYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:22:58 -0400
-From: Kent Overstreet <kmo@daterainc.com>
-To: hch@infradead.org, axboe@kernel.dk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 5/6] convert integrity to new merging
-Date: Wed, 25 Sep 2013 13:22:43 -0700
-Message-Id: <1380140564-9030-6-git-send-email-kmo@daterainc.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1380140564-9030-1-git-send-email-kmo@daterainc.com>
-References: <1380140564-9030-1-git-send-email-kmo@daterainc.com>
+	Wed, 25 Sep 2013 16:24:41 -0400
+From: Djalal Harouni <tixxdz@opendz.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        <kernel-hardening@lists.openwall.com>
+Cc: tixxdz@gmail.com, Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH 07/12] procfs: add permission checks on the file's opener of /proc/*/stack
+Date: Wed, 25 Sep 2013 21:14:40 +0100
+Message-Id: <1380140085-29712-8-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
+References: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kent Overstreet <koverstreet@google.com>
+/proc file descriptors can be passed to a more privileged process
+(e.g. a suid-exec) which will pass the classic ptrace_may_access()
+permission check during read().
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Use proc_same_open_cred() to detect if the cred of current between
+->open() and ->read() have changed, if so then call proc_allow_access()
+to check if the original file's opener had enough privileges to access
+the /proc's task entries during ->read().
+The file's opener cred are obtained by seq_f_cred() on seq_file struct.
+
+The ptrace_may_access() + proc_allow_access() check is performed during
+->read() time, where the ptrace_may_access() check should also be
+performed during ->open(), however currently this is not the case.
+
+This is due to /procfs ONE files that share the same ->open() function
+proc_single_open(). Adding the ptrace_may_access() check to
+proc_single_open() might break userspace from accessing other ONE files
+like /proc/*/stat and /proc/*/statm.
+
+So just perform the checks during ->read() and if current's cred have
+changed, then check the file's opener cred with proc_allow_access().
+This will block passing the file descriptor to a more privileged
+process (e.g. a suid-exec).
+
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
 ---
- block/blk-integrity.c | 54 +++++++++++++--------------------------------------
- fs/bio-integrity.c    | 10 ++++++++++
- 2 files changed, 24 insertions(+), 40 deletions(-)
+ fs/proc/base.c | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
-diff --git a/block/blk-integrity.c b/block/blk-integrity.c
-index 861fcae..22d8e9c 100644
---- a/block/blk-integrity.c
-+++ b/block/blk-integrity.c
-@@ -43,33 +43,19 @@ static const char *bi_unsupported_name = "unsupported";
-  */
- int blk_rq_count_integrity_sg(struct request_queue *q, struct bio *bio)
- {
--	struct bio_vec iv, ivprv;
- 	unsigned int segments = 0;
--	unsigned int seg_size = 0;
--	struct bvec_iter iter;
--	int prev = 0;
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index bb90171..d6a17b3 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -402,6 +402,8 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
+ 	unsigned long *entries;
+ 	int err;
+ 	int i;
++	int same_cred;
++	const struct cred *fcred = seq_f_cred(m);
  
--	bio_for_each_integrity_vec(iv, bio, iter) {
-+	for_each_bio(bio) {
-+		struct bio_integrity_payload *bip = bio->bi_integrity;
-+		struct bvec_iter iter = bip->bip_iter;
+ 	entries = kmalloc(MAX_STACK_TRACE_DEPTH * sizeof(*entries), GFP_KERNEL);
+ 	if (!entries)
+@@ -412,18 +414,28 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
+ 	trace.entries		= entries;
+ 	trace.skip		= 0;
  
--		if (prev) {
--			if (!BIOVEC_PHYS_MERGEABLE(&ivprv, &iv))
--				goto new_segment;
-+		while (iter.bi_size) {
-+			struct bio_vec iv = bvec_iter_bvec(bip->bip_vec, iter);
-+			unsigned nbytes = blk_max_segment(q, &iv);
- 
--			if (!BIOVEC_SEG_BOUNDARY(q, &ivprv, &iv))
--				goto new_segment;
--
--			if (seg_size + iv.bv_len > queue_max_segment_size(q))
--				goto new_segment;
--
--			seg_size += iv.bv_len;
--		} else {
--new_segment:
- 			segments++;
--			seg_size = iv.bv_len;
-+			bio_advance_iter(bio, &iter, nbytes);
- 		}
--
--		prev = 1;
--		ivprv = iv;
- 	}
- 
- 	return segments;
-@@ -89,27 +75,17 @@ EXPORT_SYMBOL(blk_rq_count_integrity_sg);
- int blk_rq_map_integrity_sg(struct request_queue *q, struct bio *bio,
- 			    struct scatterlist *sglist)
- {
--	struct bio_vec iv, ivprv;
- 	struct scatterlist *sg = NULL;
- 	unsigned int segments = 0;
--	struct bvec_iter iter;
--	int prev = 0;
- 
--	bio_for_each_integrity_vec(iv, bio, iter) {
-+	for_each_bio(bio) {
-+		struct bio_integrity_payload *bip = bio->bi_integrity;
-+		struct bvec_iter iter = bip->bip_iter;
- 
--		if (prev) {
--			if (!BIOVEC_PHYS_MERGEABLE(&ivprv, &iv))
--				goto new_segment;
-+		while (iter.bi_size) {
-+			struct bio_vec iv= bvec_iter_bvec(bip->bip_vec, iter);
-+			unsigned nbytes = blk_max_segment(q, &iv);
- 
--			if (!BIOVEC_SEG_BOUNDARY(q, &ivprv, &iv))
--				goto new_segment;
--
--			if (sg->length + iv.bv_len > queue_max_segment_size(q))
--				goto new_segment;
--
--			sg->length += iv.bv_len;
--		} else {
--new_segment:
- 			if (!sg)
- 				sg = sglist;
- 			else {
-@@ -119,10 +95,8 @@ new_segment:
- 
- 			sg_set_page(sg, iv.bv_page, iv.bv_len, iv.bv_offset);
- 			segments++;
-+			bio_advance_iter(bio, &iter, nbytes);
- 		}
--
--		prev = 1;
--		ivprv = iv;
- 	}
- 
- 	if (sg)
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index 31f2d5a..2578c84 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -129,6 +129,16 @@ int bio_integrity_add_page(struct bio *bio, struct page *page,
- 	struct bio_integrity_payload *bip = bio->bi_integrity;
- 	struct bio_vec *iv;
- 
-+	if (bip->bip_vcnt) {
-+		iv = bip->bip_vec + bip->bip_vcnt - 1;
++	same_cred = proc_same_open_cred(fcred);
 +
-+		if (bvec_to_phys(iv) + iv->bv_len ==
-+		    page_to_phys(page) + offset) {
-+			iv->bv_len += len;
-+			return len;
-+		}
+ 	err = lock_trace(task);
+-	if (!err) {
+-		save_stack_trace_tsk(task, &trace);
++	if (err)
++		goto free;
+ 
+-		for (i = 0; i < trace.nr_entries; i++) {
+-			seq_printf(m, "[<%pK>] %pS\n",
+-				   (void *)entries[i], (void *)entries[i]);
+-		}
++	if (!same_cred && !proc_allow_access(fcred, task, PTRACE_MODE_ATTACH)) {
++		err = -EPERM;
+ 		unlock_trace(task);
++		goto free;
+ 	}
+-	kfree(entries);
+ 
++	save_stack_trace_tsk(task, &trace);
++	unlock_trace(task);
++
++	for (i = 0; i < trace.nr_entries; i++) {
++		seq_printf(m, "[<%pK>] %pS\n",
++			   (void *)entries[i], (void *)entries[i]);
 +	}
 +
- 	if (bip->bip_vcnt >= bvec_nr_vecs(bip->bip_slab)) {
- 		printk(KERN_ERR "%s: bip_vec full\n", __func__);
- 		return 0;
++free:
++	kfree(entries);
+ 	return err;
+ }
+ #endif
 -- 
-1.8.4.rc3
+1.7.11.7
 
