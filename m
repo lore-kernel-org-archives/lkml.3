@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab3IYA6K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:58:10 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:33915 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019Ab3IYA6G (ORCPT
+	id S1756821Ab3IYA6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:58:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39222 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756215Ab3IYAQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:58:06 -0400
-Date: Tue, 24 Sep 2013 20:58:02 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info' in
- all related extern functions
-Message-ID: <20130925005802.GA25777@htj.dyndns.org>
-References: <5212DBFA.8030805@asianux.com>
- <20130923150625.GB14547@htj.dyndns.org>
- <52410A40.1000304@asianux.com>
- <20130924040601.GA31575@mtj.dyndns.org>
- <524114B8.3070903@asianux.com>
- <20130924120429.GA2366@htj.dyndns.org>
- <5242331B.4010309@asianux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5242331B.4010309@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 24 Sep 2013 20:16:56 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mikhail Kulemin <Mikhail.Kulemin@ru.ibm.com>,
+        Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Anton Arapov <anton@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, masami.hiramatsu.pt@hitachi.com,
+        srikar@linux.vnet.ibm.com, systemtap@sourceware.org
+Subject: [ 084/110] uprobes: Fix utask->depth accounting in handle_trampoline()
+Date: Tue, 24 Sep 2013 17:15:22 -0700
+Message-Id: <20130925001332.526989070@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
+References: <20130925001323.387158698@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Chen.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-On Wed, Sep 25, 2013 at 08:49:31AM +0800, Chen Gang wrote:
-> > Can you please demonstrate such failure?  You can tell kernel to
-> > execute a given binary instead of init with "init=" param.
-> 
-> OK, I will/should try, today (although I have to spend my additional
-> time resource on it. :-( ).
+------------------
 
-Please note that that's not necessarily "additional" resource that you
-spend.  It's more of something necessary to justify the changes you're
-suggesting.  It's true that not all bug fixes / improvements require
-explicit demonstration but I'm not very convinced about your analysis
-partly because I'm not too familiar with the code path but also
-because the code has been stable with years and you seem pretty new to
-the area.
+From: Oleg Nesterov <oleg@redhat.com>
 
-> Hmm... in fact, in my opinion, interface (especially content system
-> call) need make itself consistency, although at present, it can not
-> cause issue.
+commit 878b5a6efd38030c7a90895dc8346e8fb1e09b4c upstream.
 
-Sure, it should be consistent but I'm not sure what you're perceiving
-as inconsistent is actually inconsistent.  Anyways, let's please have
-something deomnstratable.  We can think more about the interface
-niggles afterwards.
+Currently utask->depth is simply the number of allocated/pending
+return_instance's in uprobe_task->return_instances list.
 
-Thanks.
+handle_trampoline() should decrement this counter every time we
+handle/free an instance, but due to typo it does this only if
+->chained == T. This means that in the likely case this counter
+is never decremented and the probed task can't report more than
+MAX_URETPROBE_DEPTH events.
 
--- 
-tejun
+Reported-by: Mikhail Kulemin <Mikhail.Kulemin@ru.ibm.com>
+Reported-by: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Anton Arapov <anton@redhat.com>
+Cc: masami.hiramatsu.pt@hitachi.com
+Cc: srikar@linux.vnet.ibm.com
+Cc: systemtap@sourceware.org
+Link: http://lkml.kernel.org/r/20130911154726.GA8093@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/events/uprobes.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1682,12 +1682,10 @@ static bool handle_trampoline(struct pt_
+ 		tmp = ri;
+ 		ri = ri->next;
+ 		kfree(tmp);
++		utask->depth--;
+ 
+ 		if (!chained)
+ 			break;
+-
+-		utask->depth--;
+-
+ 		BUG_ON(!ri);
+ 	}
+ 
+
+
