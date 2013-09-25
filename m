@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab3IYQSc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 12:18:32 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:53581 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab3IYQSa (ORCPT
+	id S1753659Ab3IYQS3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 12:18:29 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:36699 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab3IYQS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 12:18:30 -0400
+	Wed, 25 Sep 2013 12:18:27 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 6/7] irq: Optimize softirq stack selection in irq exit
-Date: Wed, 25 Sep 2013 18:18:05 +0200
-Message-Id: <1380125886-10341-7-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 5/7] irq: Justify the various softirq stack choices
+Date: Wed, 25 Sep 2013 18:18:04 +0200
+Message-Id: <1380125886-10341-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
 References: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
@@ -33,22 +33,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If irq_exit() is called on the arch's specified irq stack,
-it should be safe to run softirqs inline under that same
-irq stack as it is near empty by the time we call irq_exit().
+For clarity, comment the various stack choices for softirqs
+processing, whether we execute them from ksoftirqd or
+local_irq_enable() calls.
 
-Hardirqs can nest but irq exit's processing of softirqs only
-happen in the inner most hardirq.
-
-So if we use the same stack for both the worst case scenario is:
-hardirq -> softirq -> hardirq. But then the first hardirq can be
-ignored as its stack is mostly empty. So the stack merge in this
-case looks acceptable.
-
-So lets adapt the irq exit's softirq stack on top of a new arch symbol
-that can be defined when irq_exit() runs on the irq stack. That way
-we can spare some stack switch on irq processing and all the cache
-issues that come along.
+Their use on irq_exit() is already commented.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
@@ -67,39 +56,39 @@ Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 Cc: David S. Miller <davem@davemloft.net>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- kernel/softirq.c | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ kernel/softirq.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 2b4328e..317778c 100644
+index 9f8092b..2b4328e 100644
 --- a/kernel/softirq.c
 +++ b/kernel/softirq.c
-@@ -332,15 +332,21 @@ void irq_enter(void)
- static inline void invoke_softirq(void)
- {
- 	if (!force_irqthreads) {
-+#ifdef __ARCH_IRQ_EXIT_ON_IRQ_STACK
- 		/*
- 		 * We can safely execute softirq on the current stack if
- 		 * it is the irq stack, because it should be near empty
--		 * at this stage. But we have no way to know if the arch
--		 * calls irq_exit() on the irq stack. So call softirq
--		 * in its own stack to prevent from any overrun on top
--		 * of a potentially deep task stack.
-+		 * at this stage.
-+		 */
-+		__do_softirq();
-+#else
+@@ -170,8 +170,13 @@ static inline void _local_bh_enable_ip(unsigned long ip)
+  	 */
+ 	sub_preempt_count(SOFTIRQ_DISABLE_OFFSET - 1);
+ 
+-	if (unlikely(!in_interrupt() && local_softirq_pending()))
++	if (unlikely(!in_interrupt() && local_softirq_pending())) {
 +		/*
-+		 * Otherwise, irq_exit() is called on the task stack that can
-+		 * be potentially deep already. So call softirq in its own stack
-+		 * to prevent from any overrun.
- 		 */
- 		do_softirq_own_stack();
-+#endif
- 	} else {
- 		wakeup_softirqd();
- 	}
++		 * Run softirq if any pending. And do it in its own stack
++		 * as we may be calling this deep in a task call stack already.
++		 */
+ 		do_softirq();
++	}
+ 
+ 	dec_preempt_count();
+ #ifdef CONFIG_TRACE_IRQFLAGS
+@@ -769,6 +774,10 @@ static void run_ksoftirqd(unsigned int cpu)
+ {
+ 	local_irq_disable();
+ 	if (local_softirq_pending()) {
++		/*
++		 * We can safely run softirq on inline stack, as we are not deep
++		 * in the task stack here.
++		 */
+ 		__do_softirq();
+ 		rcu_note_context_switch(cpu);
+ 		local_irq_enable();
 -- 
 1.8.3.1
 
