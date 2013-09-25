@@ -1,64 +1,533 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757499Ab3IYAuj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:50:39 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:38014 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757486Ab3IYAue (ORCPT
+	id S1756423Ab3IYATu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:19:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39359 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303Ab3IYATo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:50:34 -0400
-X-Spam-Score: -100.7
-Message-ID: <5242331B.4010309@asianux.com>
-Date: Wed, 25 Sep 2013 08:49:31 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 24 Sep 2013 20:19:44 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 000/117] 3.11.2-stable review
+Date: Tue, 24 Sep 2013 17:17:46 -0700
+Message-Id: <20130925001740.833541979@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+User-Agent: quilt/0.60-5.1.1
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info'
- in all related extern functions
-References: <5212DBFA.8030805@asianux.com> <20130923150625.GB14547@htj.dyndns.org> <52410A40.1000304@asianux.com> <20130924040601.GA31575@mtj.dyndns.org> <524114B8.3070903@asianux.com> <20130924120429.GA2366@htj.dyndns.org>
-In-Reply-To: <20130924120429.GA2366@htj.dyndns.org>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 08:04 PM, Tejun Heo wrote:
-> On Tue, Sep 24, 2013 at 12:27:36PM +0800, Chen Gang wrote:
->> For real world, /sbin/init will call setgroups, so user space 'help'
->> kernel itself to protect this issue, but I think, we don't only depend
->> on the user space help checking.
->>
->> The proof is below:
->>
->>   [root@gchenlinux tmp]# grep setgroups /sbin/*
->>   Binary file /sbin/init matches
->>   Binary file /sbin/rpc.statd matches
->>   Binary file /sbin/rsyslogd matches
->>   Binary file /sbin/runuser matches
->>
->> From reading kernel source code, kernel itself does not intend to set
->> 'group_info', it is triggered by user space or another kernel mode
->> sub-systems.
-> 
-> Can you please demonstrate such failure?  You can tell kernel to
-> execute a given binary instead of init with "init=" param.
-> 
+This is the start of the stable review cycle for the 3.11.2 release.
+There are 117 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-OK, I will/should try, today (although I have to spend my additional
-time resource on it. :-( ).
+Responses should be made by Fri Sep 27 00:16:31 UTC 2013.
+Anything received after that time might be too late.
 
-Hmm... in fact, in my opinion, interface (especially content system
-call) need make itself consistency, although at present, it can not
-cause issue.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.2-rc1.gz
+and the diffstat can be found below.
 
-> Thanks.
-> 
+thanks,
 
-Thanks.
--- 
-Chen Gang
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.11.2-rc1
+
+Miklos Szeredi <mszeredi@suse.cz>
+    fuse: readdir: check for slash in names
+
+Maxim Patlasov <MPatlasov@parallels.com>
+    fuse: hotfix truncate_pagecache() issue
+
+Anand Avati <avati@redhat.com>
+    fuse: invalidate inode attributes on xattr modification
+
+Maxim Patlasov <MPatlasov@parallels.com>
+    fuse: postpone end_page_writeback() in fuse_writepage_locked()
+
+Mark Brown <broonie@linaro.org>
+    clk: wm831x: Initialise wm831x pointer on init
+
+Brian Norris <computersforpeace@gmail.com>
+    mtd: nand: fix NAND_BUSWIDTH_AUTO for x16 devices
+
+Grant Likely <grant.likely@linaro.org>
+    of: Fix missing memory initialization on FDT unflattening
+
+Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+    mmc: tmio_mmc_dma: fix PIO fallback on SDHI
+
+Josh Durgin <josh.durgin@inktank.com>
+    rbd: fix I/O error propagation for reads
+
+majianpeng <majianpeng@gmail.com>
+    ceph: Don't forget the 'up_read(&osdc->map_sem)' if met error.
+
+Sage Weil <sage@inktank.com>
+    libceph: use pg_num_mask instead of pgp_num_mask for pg.seed calc
+
+majianpeng <majianpeng@gmail.com>
+    libceph: unregister request in __map_request failed and nofail == false
+
+Richard Weinberger <richard@nod.at>
+    um: Implement probe_kernel_read()
+
+Alex Deucher <alexander.deucher@amd.com>
+    drm/edid: add quirk for Medion MD30217PG
+
+Borislav Petkov <bp@suse.de>
+    amd64_edac: Fix single-channel setups
+
+Jan Kara <jack@suse.cz>
+    isofs: Refuse RW mount of the filesystem instead of making it RO
+
+Eric W. Biederman <ebiederm@xmission.com>
+    proc: Restrict mounting the proc filesystem
+
+Libin <huawei.libin@huawei.com>
+    mm/huge_memory.c: fix potential NULL pointer dereference
+
+Greg Thelen <gthelen@google.com>
+    memcg: fix multiple large threshold notifications
+
+Jie Liu <jeff.liu@oracle.com>
+    ocfs2: fix the end cluster offset of FIEMAP
+
+Oleg Nesterov <oleg@redhat.com>
+    pidns: fix vfork() after unshare(CLONE_NEWPID)
+
+Eric W. Biederman <ebiederm@xmission.com>
+    pidns: Fix hang in zap_pid_ns_processes by sending a potentially extra wakeup
+
+Alex Williamson <alex.williamson@redhat.com>
+    intel-iommu: Fix leaks in pagetable freeing
+
+Gera Kazakov <gkazakov@msn.com>
+    target: Fix >= v3.9+ regression in PR APTPL + ALUA metadata write-out
+
+Felix Fietkau <nbd@openwrt.org>
+    MIPS: ath79: Fix ar933x watchdog clock
+
+Mark Brown <broonie@linaro.org>
+    leds: wm831x-status: Request a REG resource
+
+Oleg Nesterov <oleg@redhat.com>
+    uprobes: Fix utask->depth accounting in handle_trampoline()
+
+Stefan Behrens <sbehrens@giantdisaster.de>
+    Btrfs: don't allow the replace procedure on read only filesystems
+
+Bjørn Mork <bjorn@mork.no>
+    media: siano: fix divide error on 0 counters
+
+Mauro Carvalho Chehab <m.chehab@samsung.com>
+    media: mb86a20s: Fix TS parallel mode
+
+Hans Verkuil <hans.verkuil@cisco.com>
+    media: cx88: Fix regression: CX88_AUDIO_WM8775 can't be 0
+
+Sylwester Nawrocki <s.nawrocki@samsung.com>
+    media: exynos4-is: Fix entity unregistration on error path
+
+Arun Kumar K <arun.kk@samsung.com>
+    media: exynos-gsc: Register v4l2 device
+
+Arun Kumar K <arun.kk@samsung.com>
+    media: exynos4-is: Fix fimc-lite bayer formats
+
+Vasily Titskiy <qehgt0@gmail.com>
+    HID: usbhid: quirk for N-Trig DuoSense Touch Screen
+
+Kees Cook <keescook@chromium.org>
+    HID: check for NULL field when setting values
+
+Manoj Chourasia <mchourasia@nvidia.com>
+    HID: hidraw: correctly deallocate memory on device disconnect
+
+Jiri Kosina <jkosina@suse.cz>
+    HID: battery: don't do DMA from stack
+
+Bruno Prémont <bonbons@linux-vserver.org>
+    HID: picolcd: Prevent NULL pointer dereference on _remove()
+
+Kees Cook <keescook@chromium.org>
+    HID: ntrig: validate feature report details
+
+Kees Cook <keescook@chromium.org>
+    HID: picolcd_core: validate output report details
+
+Kees Cook <keescook@chromium.org>
+    HID: validate HID report id size
+
+Kees Cook <keescook@chromium.org>
+    HID: sensor-hub: validate feature report details
+
+Stefan Kriwanek <dev@stefankriwanek.de>
+    HID: Fix Speedlink VAD Cezanne support for some devices
+
+David Herrmann <dh.herrmann@gmail.com>
+    HID: wiimote: work around broken DRM_KAI on GEN10
+
+Benjamin Tissoires <benjamin.tissoires@redhat.com>
+    HID: kye: Add report fixup for Genius Gx Imperator Keyboard
+
+Kees Cook <keescook@chromium.org>
+    HID: pantherlord: validate output report details
+
+Henrik Rydberg <rydberg@euromail.se>
+    HID: Correct the USB IDs for the new Macbook Air 6
+
+Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+    net: mvneta: properly disable HW PHY polling and ensure adjust_link() works
+
+Felix Fietkau <nbd@openwrt.org>
+    ath9k: avoid accessing MRC registers on single-chain devices
+
+Felix Fietkau <nbd@openwrt.org>
+    ath9k: fix rx descriptor related race condition
+
+Felix Fietkau <nbd@openwrt.org>
+    ath9k: always clear ps filter bit on new assoc
+
+John W. Linville <linville@tuxdriver.com>
+    brcmsmac: Fix WARNING caused by lack of calls to dma_mapping_error()
+
+Johannes Berg <johannes.berg@intel.com>
+    mac80211: ignore (E)CSA in probe response frames
+
+Jan Kara <jack@suse.cz>
+    ext4: simplify truncation code in ext4_setattr()
+
+Jan Kara <jack@suse.cz>
+    ext4: fix ext4_writepages() in presence of truncate
+
+Jan Kara <jack@suse.cz>
+    ext4: move test whether extent to map can be extended to one place
+
+Boris BREZILLON <b.brezillon@overkiz.com>
+    pinctrl: at91: fix get_pullup/down function return
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Add Toshiba Satellite C870 to MSI blacklist
+
+Anssi Hannula <anssi.hannula@iki.fi>
+    ALSA: hda - hdmi: Fallback to ALSA allocation when selecting CA
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Re-setup HDMI pin and audio infoframe on stream switches
+
+Rik van Riel <riel@redhat.com>
+    sched/x86: Optimize switch_mm() for multi-threaded workloads
+
+Tony Luck <tony.luck@intel.com>
+    x86/mce: Pay no attention to 'F' bit in MCACOD when parsing 'UC' errors
+
+Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+    x86, amd_nb: Clarify F15h, model 30h GART and L3 support
+
+Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+    pci_ids: Add PCI device ID functions 3 and 4 for newer F15h models.
+
+Al Viro <viro@ZenIV.linux.org.uk>
+    Introduce [compat_]save_altstack_ex() to unbreak x86 SMAP
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86, smap: Handle csum_partial_copy_*_user()
+
+Steffen Trumtrar <s.trumtrar@pengutronix.de>
+    ASoC: mc13783: add spi errata fix
+
+Mike Dyer <mike.dyer@md-soft.co.uk>
+    ASoC: wm8960: Fix PLL register writes
+
+Tejun Heo <tj@kernel.org>
+    rculist: list_first_or_null_rcu() should use list_entry_rcu()
+
+Lan Tianyu <tianyu.lan@intel.com>
+    usb: don't check pm qos NO_POWER_OFF flag in usb_port_suspend()
+
+Alan Stern <stern@rowland.harvard.edu>
+    USB: handle LPM errors during device suspend correctly
+
+Hans de Goede <hdegoede@redhat.com>
+    usb: config->desc.bLength may not exceed amount of data returned by the device
+
+Alan Stern <stern@rowland.harvard.edu>
+    USB: fix build error when CONFIG_PM_SLEEP isn't enabled
+
+Sarah Sharp <sarah.a.sharp@linux.intel.com>
+    usb: Don't fail port power resume on device disconnect.
+
+Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+    usb: gadget: uvc: Fix error handling in uvc_queue_buffer()
+
+Oliver Neukum <oneukum@suse.de>
+    USB: cdc-wdm: fix race between interrupt handler and tasklet
+
+Daniel Mack <zonque@gmail.com>
+    usb: ehci-mxc: check for pdata before dereferencing
+
+Johan Hovold <jhovold@gmail.com>
+    USB: mos7720: fix big-endian control requests
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    USB: mos7720: use GFP_ATOMIC under spinlock
+
+Mika Westerberg <mika.westerberg@linux.intel.com>
+    ACPI / LPSS: don't crash if a device has no MMIO resources
+
+Neil Horman <nhorman@tuxdriver.com>
+    PCI/ACPI: Fix _OSC ordering to allow PCIe hotplug use when available
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    staging: comedi: dt282x: dt282x_ai_insn_read() always fails
+
+Lars-Peter Clausen <lars@metafoo.de>
+    regmap: debugfs: Fix continued read from registers file
+
+Alan Stern <stern@rowland.harvard.edu>
+    USB: OHCI: Allow runtime PM without system sleep
+
+Pavel Shilovsky <pshilovsky@samba.org>
+    CIFS: Fix missing lease break
+
+Pavel Shilovsky <pshilovsky@samba.org>
+    CIFS: Fix a memory leak when a lease break comes
+
+Jeff Layton <jlayton@redhat.com>
+    cifs: ensure that srv_mutex is held when dealing with ssocket pointer
+
+Oleg Nesterov <oleg@redhat.com>
+    tty: disassociate_ctty() sends the extra SIGCONT
+
+Felipe Balbi <balbi@ti.com>
+    usb: dwc3: gadget: don't request IRQs in atomic
+
+Mathias Nyman <mathias.nyman@linux.intel.com>
+    xhci: fix port BESL LPM capability checking
+
+Shawn Nematbakhsh <shawnn@chromium.org>
+    usb: xhci: Disable runtime PM suspend for quirky controllers
+
+Sarah Sharp <sarah.a.sharp@linux.intel.com>
+    xhci-plat: Don't enable legacy PCI interrupts.
+
+Paul Mackerras <paulus@samba.org>
+    KVM: PPC: Book3S: Fix compile error in XICS emulation
+
+Peter Maydell <peter.maydell@linaro.org>
+    ARM: PCI: versatile: Fix SMAP register offsets
+
+Peter Maydell <peter.maydell@linaro.org>
+    ARM: PCI: versatile: Fix PCI I/O
+
+Peter Maydell <peter.maydell@linaro.org>
+    ARM: PCI: versatile: Fix map_irq function to match hardware
+
+Will Deacon <will.deacon@arm.com>
+    arm64: perf: fix ARMv8 EVTYPE_MASK to include NSH bit
+
+Will Deacon <will.deacon@arm.com>
+    arm64: perf: fix group validation when using enable_on_exec
+
+Colin Cross <ccross@android.com>
+    cpuidle: coupled: fix race condition between pokes and safe state
+
+Colin Cross <ccross@android.com>
+    cpuidle: coupled: abort idle if pokes are pending
+
+Rob Herring <rob.herring@calxeda.com>
+    ARM: xen: only set pm function ptrs for Xen guests
+
+Roger Pau Monne <roger.pau@citrix.com>
+    xen-gnt: prevent adding duplicate gnt callbacks
+
+Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+    powerpc: Default arch idle could cede processor on pseries
+
+Anton Blanchard <anton@samba.org>
+    powerpc: Handle unaligned ldbrx/stdbrx
+
+Heiko Carstens <heiko.carstens@de.ibm.com>
+    s390/bpf,jit: fix address randomization
+
+Herbert Xu <herbert@gondor.apana.org.au>
+    crypto: api - Fix race condition in larval lookup
+
+Alan Stern <stern@rowland.harvard.edu>
+    SCSI: sd: Fix potential out-of-bounds access
+
+Richard Weinberger <richard@nod.at>
+    UBI: Fix PEB leak in wear_leveling_worker()
+
+Minchan Kim <minchan@kernel.org>
+    zram: don't grab mutex in zram_slot_free_noity
+
+Minchan Kim <minchan@kernel.org>
+    zram: fix invalid memory access
+
+Maxime Bizon <mbizon@freebox.fr>
+    firmware loader: fix pending_fw_head list corruption
+
+Imre Deak <imre.deak@intel.com>
+    drm/i915: make user mode sync polarity setting explicit
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    SCSI: Allow MPT Fusion SAS 3.0 driver to be built into the kernel
+
+Guenter Roeck <linux@roeck-us.net>
+    xtensa: Fix broken allmodconfig build
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/msg.c: Fix lost wakeup in msgsnd().
+
+Noam Camus <noamc@ezchip.com>
+    ARC: SMP failed to boot due to missing IVT setup
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                        |   4 +-
+ arch/arc/include/asm/sections.h                 |   1 -
+ arch/arc/kernel/head.S                          |   5 +
+ arch/arc/kernel/irq.c                           |   1 -
+ arch/arc/kernel/setup.c                         |   3 -
+ arch/arm/mach-versatile/include/mach/platform.h |   2 +
+ arch/arm/mach-versatile/pci.c                   |  47 +++--
+ arch/arm/xen/enlighten.c                        |   5 +-
+ arch/arm64/kernel/perf_event.c                  |   7 +-
+ arch/mips/ath79/clock.c                         |   2 +-
+ arch/powerpc/kernel/align.c                     |  10 +
+ arch/powerpc/kvm/book3s_xics.c                  |   1 +
+ arch/powerpc/platforms/pseries/setup.c          |  31 ++-
+ arch/s390/net/bpf_jit_comp.c                    |   2 +-
+ arch/um/include/shared/os.h                     |   1 +
+ arch/um/kernel/Makefile                         |   2 +-
+ arch/um/kernel/maccess.c                        |  24 +++
+ arch/um/os-Linux/process.c                      |  52 +++++
+ arch/x86/ia32/ia32_signal.c                     |   2 +-
+ arch/x86/include/asm/checksum_32.h              |  22 +-
+ arch/x86/include/asm/mce.h                      |  13 +-
+ arch/x86/include/asm/mmu_context.h              |  20 +-
+ arch/x86/kernel/amd_nb.c                        |  13 +-
+ arch/x86/kernel/signal.c                        |   6 +-
+ arch/x86/lib/csum-wrappers_64.c                 |  12 +-
+ arch/xtensa/kernel/xtensa_ksyms.c               |   1 +
+ crypto/api.c                                    |   7 +-
+ drivers/acpi/acpi_lpss.c                        |   3 +-
+ drivers/acpi/pci_root.c                         |  62 +++---
+ drivers/base/firmware_class.c                   |  11 +-
+ drivers/base/regmap/regmap-debugfs.c            |   4 +-
+ drivers/block/rbd.c                             |  14 +-
+ drivers/clk/clk-wm831x.c                        |   2 +
+ drivers/cpuidle/coupled.c                       | 127 +++++++++---
+ drivers/edac/amd64_edac.c                       |   9 +-
+ drivers/gpu/drm/drm_edid.c                      |   3 +
+ drivers/gpu/drm/i915/intel_display.c            |  13 ++
+ drivers/hid/hid-core.c                          |  18 +-
+ drivers/hid/hid-ids.h                           |   8 +-
+ drivers/hid/hid-input.c                         |  12 +-
+ drivers/hid/hid-kye.c                           |  45 ++--
+ drivers/hid/hid-ntrig.c                         |   3 +-
+ drivers/hid/hid-picolcd_cir.c                   |   3 +-
+ drivers/hid/hid-picolcd_core.c                  |   2 +-
+ drivers/hid/hid-picolcd_fb.c                    |   6 +-
+ drivers/hid/hid-pl.c                            |  10 +-
+ drivers/hid/hid-sensor-hub.c                    |   3 +-
+ drivers/hid/hid-speedlink.c                     |  11 +-
+ drivers/hid/hid-wiimote-core.c                  |  10 +-
+ drivers/hid/hidraw.c                            |  60 +++---
+ drivers/hid/usbhid/hid-quirks.c                 |   2 +
+ drivers/input/mouse/bcm5974.c                   |   6 +-
+ drivers/iommu/intel-iommu.c                     |  72 ++++---
+ drivers/leds/leds-wm831x-status.c               |   4 +-
+ drivers/media/common/siano/smsdvb-main.c        |   3 +-
+ drivers/media/dvb-frontends/mb86a20s.c          |  16 +-
+ drivers/media/pci/cx88/cx88.h                   |   2 +-
+ drivers/media/platform/exynos-gsc/gsc-core.c    |   9 +-
+ drivers/media/platform/exynos-gsc/gsc-core.h    |   1 +
+ drivers/media/platform/exynos-gsc/gsc-m2m.c     |   1 +
+ drivers/media/platform/exynos4-is/fimc-lite.c   |   4 +-
+ drivers/media/platform/exynos4-is/media-dev.c   |   2 +-
+ drivers/mmc/host/tmio_mmc_dma.c                 |   4 +-
+ drivers/mtd/nand/nand_base.c                    |   8 +-
+ drivers/mtd/ubi/wl.c                            |   3 +
+ drivers/net/ethernet/marvell/mvneta.c           |  13 +-
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c     |   4 +
+ drivers/net/wireless/ath/ath9k/ath9k.h          |   5 +-
+ drivers/net/wireless/ath/ath9k/recv.c           |  17 +-
+ drivers/net/wireless/ath/ath9k/xmit.c           |   1 +
+ drivers/net/wireless/brcm80211/brcmsmac/dma.c   |  15 +-
+ drivers/of/base.c                               |   1 +
+ drivers/pinctrl/pinctrl-at91.c                  |   4 +-
+ drivers/scsi/mpt3sas/Makefile                   |   2 +-
+ drivers/scsi/sd.c                               |  11 +-
+ drivers/staging/comedi/drivers/dt282x.c         |   3 +-
+ drivers/staging/zram/zram_drv.c                 |  75 ++++++-
+ drivers/staging/zram/zram_drv.h                 |  10 +
+ drivers/target/target_core_alua.c               |   2 +-
+ drivers/target/target_core_pr.c                 |   2 +-
+ drivers/tty/tty_io.c                            |   3 +-
+ drivers/usb/class/cdc-wdm.c                     |  13 +-
+ drivers/usb/core/config.c                       |   3 +-
+ drivers/usb/core/hub.c                          |  65 +++---
+ drivers/usb/core/port.c                         |  13 +-
+ drivers/usb/dwc3/gadget.c                       |  39 ++--
+ drivers/usb/gadget/uvc_queue.c                  |   6 +-
+ drivers/usb/host/ehci-mxc.c                     |   2 +-
+ drivers/usb/host/ohci-pci.c                     |   2 +-
+ drivers/usb/host/xhci-ext-caps.h                |   2 +-
+ drivers/usb/host/xhci-plat.c                    |   2 +-
+ drivers/usb/host/xhci.c                         |  29 ++-
+ drivers/usb/host/xhci.h                         |   1 +
+ drivers/usb/serial/mos7720.c                    |   6 +-
+ drivers/xen/grant-table.c                       |  13 +-
+ fs/btrfs/ioctl.c                                |   3 +
+ fs/ceph/ioctl.c                                 |   4 +-
+ fs/cifs/connect.c                               |   2 +
+ fs/cifs/smb2misc.c                              | 148 +++++++------
+ fs/ext4/inode.c                                 | 263 +++++++++++++-----------
+ fs/fuse/dir.c                                   |  15 +-
+ fs/fuse/file.c                                  |  11 +-
+ fs/fuse/fuse_i.h                                |   2 +
+ fs/fuse/inode.c                                 |   3 +-
+ fs/isofs/inode.c                                |  16 +-
+ fs/ocfs2/extent_map.c                           |   1 -
+ fs/proc/root.c                                  |   3 +-
+ include/linux/compat.h                          |   7 +
+ include/linux/hid.h                             |   4 +-
+ include/linux/pci_ids.h                         |   2 +
+ include/linux/rculist.h                         |   5 +-
+ include/linux/signal.h                          |   8 +
+ include/linux/usb/hcd.h                         |   2 +-
+ ipc/msg.c                                       |  12 +-
+ kernel/events/uprobes.c                         |   4 +-
+ kernel/fork.c                                   |   7 +-
+ kernel/pid.c                                    |   1 +
+ mm/huge_memory.c                                |   2 +
+ mm/memcontrol.c                                 |   8 +-
+ net/ceph/osd_client.c                           |   2 +
+ net/ceph/osdmap.c                               |   2 +-
+ net/mac80211/mlme.c                             |  11 +-
+ sound/pci/hda/hda_intel.c                       |   1 +
+ sound/pci/hda/patch_hdmi.c                      |  52 ++++-
+ sound/soc/codecs/mc13783.c                      |   4 +
+ sound/soc/codecs/wm8960.c                       |   6 +-
+ 126 files changed, 1218 insertions(+), 629 deletions(-)
+
+
