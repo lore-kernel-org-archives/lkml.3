@@ -1,52 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab3IYQq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 12:46:57 -0400
-Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:36211 "EHLO
-	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750866Ab3IYQq5 (ORCPT
+	id S1751764Ab3IYQ4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 12:56:45 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:35089 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab3IYQ4o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 12:46:57 -0400
-Date: Wed, 25 Sep 2013 16:46:55 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ingo Molnar <mingo@kernel.org>
-cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [pchecks v1 4/4] percpu: Add preemption checks to __this_cpu
- ops
-In-Reply-To: <20130924172600.GD10261@gmail.com>
-Message-ID: <000001415604292f-63d4c50d-23e2-43ea-af60-f0e385c71661-000000@email.amazonses.com>
-References: <20130923191256.584672290@linux.com> <000001414c47a1da-a60858ec-6fe0-4560-a859-8274151411bf-000000@email.amazonses.com> <20130924080347.GH28538@gmail.com> <00000141505b72a3-6935722e-fdfb-4c46-b52c-bc40609144ac-000000@email.amazonses.com>
- <20130924151847.GB8494@gmail.com> <00000141509c4346-586ca654-989b-4a6a-ae30-592d2f8f11a8-000000@email.amazonses.com> <20130924172600.GD10261@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 25 Sep 2013 12:56:44 -0400
+Date: Wed, 25 Sep 2013 11:56:39 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 2/2] Export initial ramdisk compression config
+To: P J P <ppandit@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LFD.2.03.1309250035480.5312@erqung.pbz> (from
+	ppandit@redhat.com on Tue Sep 24 14:41:54 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1380128199.1974.89@driftwood>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.09.25-54.240.9.62
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Sep 2013, Ingo Molnar wrote:
+On 09/24/2013 02:41:54 PM, P J P wrote:
+>    Hello Andrew,
+> 
+> Thank you so much for reviewing these patches.
+> 
+> +-- On Mon, 23 Sep 2013, Andrew Morton wrote --+
+> | It's a bit confusing whether all this appiles to initrd, to  
+> initramfs
+> | or to both.  Can you please clarify all this and be sure that it's  
+> all
+> | consistent?
+> 
+>   IIUC, we no longer use initrd block device images. Instead we use  
+> initramfs
+> which is a cpio(1) archive image. Both mkinitrd(8) & dracut(8) are  
+> invoked
+> from /sbin/new-kernel-pkg tool. And mkinitrd(8) is nothing but a  
+> wrapper
+> around dracut(8) these days.
 
-> > > > And this kind of insulting behavior is really discouraging people to
-> > > > do work on the kernel.
->
-> You can stop playing the victim card: you are not a newbie anymore by any
-> definition, you've been hacking the Linux kernel for how long, 10+ years,
-> writing hundreds of patches? People expect higher quality series from you
-> and you need to learn to address criticism of your workflow as well.
->
-> You won't find a _single_ mail in the last 15+ years of lkml where I
-> reacted strongly to a newbie being dense or abusive. Newbies can make all
-> sorts of mistakes, it's part of the learning process - but after 10 years
-> you are not a newbie anymore...
+$ find . -name "Makefile*" | xargs grep new-kernel-pkg
+$ grep -r new-kernel-pkg scripts
+$
 
-This has nothing to do with newbieness but with general communication
-behavior. I am not a full time kernel developer (nor would I want to be
-because it seems to cause some sort of cabin fever) and need to take time
-off my other duties in order to work on these patches. Time is limited.
+Ah, so it's an out of tree bespoke Red Hat tool. No wonder I couldn't  
+find it.
 
-And then instead of thanks I get insults sprinkled with some paranoia.
+> Looking at the dracut(8) tool, it seems it can easily support any  
+> number of
+> compression tools, for it already has options --gzip, --bzip2, --xz &  
+> --lzma.
+> Adding --lzo, --lz4 etc won't be much difficult.
 
+You're reimplemented the posix "pax" command?
+
+> | - Can we avoid having to update dracut each time a new compression
+> |   scheme is added?  I assume your dracut changes will just exec
+> |   "$INITRD_COMPRESS -d", so as long as any new decompression
+> |   application uses the expected -d argument in the expected way, it
+> |   should work seamlessly?
+> 
+>   Yes, dracut(8) has | --compress=$INITRD_COMPRESS | option which  
+> could be
+> used to pass compression program to dracut(8).
+
+$ grep -r INITRD_COMPRESS linux
+$
+
+Is this what you're currently doing, or the change you're requesting in  
+the kernel?
+
+> Not sure if dracut(8) expects
+> an absolute path or just the program name. But to use this option,  
+> we'll need
+> to patch /sbin/new-kernel-pkg tool.
+> 
+> Alternatively, dracut(8) could be patched to recognise and read
+> $INITRD_COMPRESS variable and internally it can define precedence  
+> order
+> between environment variable, command-line options and default  
+> fall-back
+> option.
+
+How does your code get called?
+
+Rob
