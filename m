@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab3IYBjE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:39:04 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:51852 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758368Ab3IYBf1 (ORCPT
+	id S1758548Ab3IYBjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:39:48 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:53918 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753596Ab3IYBf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:35:27 -0400
+	Tue, 24 Sep 2013 21:35:26 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,105 +14,76 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH tip/core/rcu 04/13] wireless: Apply rcu_access_pointer() to avoid sparse false positive
-Date: Tue, 24 Sep 2013 18:35:07 -0700
-Message-Id: <1380072916-31557-4-git-send-email-paulmck@linux.vnet.ibm.com>
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 01/13] rcu: Make rcu_assign_pointer's assignment volatile and type-safe
+Date: Tue, 24 Sep 2013 18:35:04 -0700
+Message-Id: <1380072916-31557-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1380072916-31557-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20130925013451.GA31260@linux.vnet.ibm.com>
 References: <20130925013451.GA31260@linux.vnet.ibm.com>
- <1380072916-31557-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-8236-0000-0000-000002123965
+x-cbid: 13092501-9332-0000-0000-0000018760A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Josh Triplett <josh@joshtriplett.org>
 
-The sparse checking for rcu_assign_pointer() was recently upgraded
-to reject non-__kernel address spaces.  This also rejects __rcu,
-which is almost always the right thing to do.  However, the uses in
-cfg80211_combine_bsses() and cfg80211_bss_update() are legitimate:
-They is assigning a pointer to an element from an RCU-protected list,
-and all elements of this list are already visible to caller.
+rcu_assign_pointer needs to use ACCESS_ONCE to make the assignment to
+the destination pointer volatile, to protect against compilers too
+clever for their own good.
 
-This commit therefore silences these false positives by laundering the
-pointers using rcu_access_pointer() as suggested by Josh Triplett.
+In addition, since rcu_assign_pointer force-casts the source pointer to
+add the __rcu address space (overriding any existing address space), add
+an explicit check that the source pointer has the __kernel address space
+to start with.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
+This new check produces warnings like this, when attempting to assign
+from a __user pointer:
+
+test.c:25:9: warning: incorrect type in argument 2 (different address spaces)
+test.c:25:9:    expected struct foo *<noident>
+test.c:25:9:    got struct foo [noderef] <asn:1>*badsrc
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: bridge@lists.linux-foundation.org
-Cc: netdev@vger.kernel.org
 ---
- net/wireless/scan.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ include/linux/rcupdate.h | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/net/wireless/scan.c b/net/wireless/scan.c
-index eeb7148..edde117 100644
---- a/net/wireless/scan.c
-+++ b/net/wireless/scan.c
-@@ -671,7 +671,7 @@ static bool cfg80211_combine_bsses(struct cfg80211_registered_device *dev,
- 		bss->pub.hidden_beacon_bss = &new->pub;
- 		new->refcount += bss->refcount;
- 		rcu_assign_pointer(bss->pub.beacon_ies,
--				   new->pub.beacon_ies);
-+				   rcu_access_pointer(new->pub.beacon_ies));
- 	}
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index f1f1bc3..5b444e0 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -506,8 +506,17 @@ static inline void rcu_preempt_sleep_check(void)
+ #ifdef __CHECKER__
+ #define rcu_dereference_sparse(p, space) \
+ 	((void)(((typeof(*p) space *)p) == p))
++/* The dummy first argument in __rcu_assign_pointer_typecheck makes the
++ * typechecked pointer the second argument, matching rcu_assign_pointer itself;
++ * this avoids confusion about argument numbers in warning messages. */
++#define __rcu_assign_pointer_check_kernel(v) \
++	do { \
++		extern void __rcu_assign_pointer_typecheck(int, typeof(*(v)) __kernel *); \
++		__rcu_assign_pointer_typecheck(0, v); \
++	} while (0)
+ #else /* #ifdef __CHECKER__ */
+ #define rcu_dereference_sparse(p, space)
++#define __rcu_assign_pointer_check_kernel(v) do { } while (0)
+ #endif /* #else #ifdef __CHECKER__ */
  
- 	return true;
-@@ -706,10 +706,10 @@ cfg80211_bss_update(struct cfg80211_registered_device *dev,
- 			old = rcu_access_pointer(found->pub.proberesp_ies);
+ #define __rcu_access_pointer(p, space) \
+@@ -551,7 +560,8 @@ static inline void rcu_preempt_sleep_check(void)
+ #define __rcu_assign_pointer(p, v, space) \
+ 	do { \
+ 		smp_wmb(); \
+-		(p) = (typeof(*v) __force space *)(v); \
++		__rcu_assign_pointer_check_kernel(v); \
++		ACCESS_ONCE(p) = (typeof(*(v)) __force space *)(v); \
+ 	} while (0)
  
- 			rcu_assign_pointer(found->pub.proberesp_ies,
--					   tmp->pub.proberesp_ies);
-+					   rcu_access_pointer(tmp->pub.proberesp_ies));
- 			/* Override possible earlier Beacon frame IEs */
- 			rcu_assign_pointer(found->pub.ies,
--					   tmp->pub.proberesp_ies);
-+					   rcu_access_pointer(tmp->pub.proberesp_ies));
- 			if (old)
- 				kfree_rcu((struct cfg80211_bss_ies *)old,
- 					  rcu_head);
-@@ -740,12 +740,12 @@ cfg80211_bss_update(struct cfg80211_registered_device *dev,
- 			old = rcu_access_pointer(found->pub.beacon_ies);
  
- 			rcu_assign_pointer(found->pub.beacon_ies,
--					   tmp->pub.beacon_ies);
-+					   rcu_access_pointer(tmp->pub.beacon_ies));
- 
- 			/* Override IEs if they were from a beacon before */
- 			if (old == rcu_access_pointer(found->pub.ies))
- 				rcu_assign_pointer(found->pub.ies,
--						   tmp->pub.beacon_ies);
-+						   rcu_access_pointer(tmp->pub.beacon_ies));
- 
- 			/* Assign beacon IEs to all sub entries */
- 			list_for_each_entry(bss, &found->hidden_list,
-@@ -756,7 +756,7 @@ cfg80211_bss_update(struct cfg80211_registered_device *dev,
- 				WARN_ON(ies != old);
- 
- 				rcu_assign_pointer(bss->pub.beacon_ies,
--						   tmp->pub.beacon_ies);
-+						   rcu_access_pointer(tmp->pub.beacon_ies));
- 			}
- 
- 			if (old)
-@@ -804,7 +804,7 @@ cfg80211_bss_update(struct cfg80211_registered_device *dev,
- 					 &hidden->hidden_list);
- 				hidden->refcount++;
- 				rcu_assign_pointer(new->pub.beacon_ies,
--						   hidden->pub.beacon_ies);
-+						   rcu_access_pointer(hidden->pub.beacon_ies));
- 			}
- 		} else {
- 			/*
 -- 
 1.8.1.5
 
