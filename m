@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab3IYPvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 11:51:15 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:60666 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab3IYPvL convert rfc822-to-8bit (ORCPT
+	id S1755563Ab3IYPwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 11:52:50 -0400
+Received: from unicorn.mansr.com ([81.2.72.234]:35153 "EHLO unicorn.mansr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883Ab3IYPwt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 11:51:11 -0400
+	Wed, 25 Sep 2013 11:52:49 -0400
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Rob Landley <rob@landley.net>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Andrew Morton <akpm@osdl.org>,
+        Trivial patch monkey <trivial@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: new binutils needed for arm in 3.12-rc1
+References: <1380122586.1974.84@driftwood>
+Date: Wed, 25 Sep 2013 16:52:44 +0100
+In-Reply-To: <1380122586.1974.84@driftwood> (Rob Landley's message of "Wed, 25
+	Sep 2013 10:23:06 -0500")
+Message-ID: <yw1x7ge4x5ir.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <87vc1p4207.fsf@intel.com>
-References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
-	<1380026575.3371.1.camel@ThinkPad-X230.localdomain>
-	<CADDKRnCAZ0DtBUUaMfdTF=yk6PDLpbc9jkuvWWO8hYW4TDLxKw@mail.gmail.com>
-	<20130925091720.GA1921@aaronlu.sh.intel.com>
-	<87vc1p4207.fsf@intel.com>
-Date: Wed, 25 Sep 2013 17:51:10 +0200
-Message-ID: <CADDKRnDqDBfA6e6TE0VTLD9F=TjVZNov53Zk8ydnk2fS32rczQ@mail.gmail.com>
-Subject: Re: [PATCH v3 0/4] Fix Win8 backlight issue
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Aaron Lu <aaron.lu@intel.com>, Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Mike Galbraith <bitbucket@online.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/9/25 Jani Nikula <jani.nikula@linux.intel.com>:
-> On Wed, 25 Sep 2013, Aaron Lu <aaron.lu@intel.com> wrote:
->> On Wed, Sep 25, 2013 at 10:29:37AM +0200, JÃ¶rg Otte wrote:
->>> Backlight can't be modified with this patch set - neither with
->>> function keys nor with the gui. It is a step backward to v3.11-rc1
+Rob Landley <rob@landley.net> writes:
+
+> On 09/24/2013 09:07:57 PM, Nicolas Pitre wrote:
+>> I'd strongly suggest you make your binutils compatible with newer
+>> instruction syntax instead of making the kernel more complex.
 >
-> So both hotkeys and GUI work in v3.11-rc1? And v3.12-rc2?
+> Meaning I play whack-a-mole as this becomes permission to depend on  
+> endless new gnuisms just because they're there and nobody else is  
+> regression testing against them, not because they actually add anything.
 
-In  v3.11-rc1 it didn't work.
-Since a later rc (I don't remember exactly which) it did work.
-In v3.12-rc1/2 it does work.
-In v3.12-rc2 + Aaron's patch set it again doesn't work.
+Since when is assembling the instructions correctly, as specified in the
+arch ref, and not in some other random way a gnuism?
 
->
->> Thanks for the test.
->>
->> Please check /sys/class/backlight, is there only one link file
->> intel_backlight?
->
-> Indeed, are there others? fujitsu-laptop perhaps? If yes, try
-> CONFIG_FUJITSU_LAPTOP=n or an appropriate module blacklist.
->
-> Just checking, you do have CONFIG_BACKLIGHT_CLASS_DEVICE=y?
-
-There is only one intel_backlight link.
-Yes, I have CONFIG_BACKLIGHT_CLASS_DEVICE=y
-
-> Embarrassingly there was a bug in i915 fixed just recently where the
-> backlight device wasn't registered for
-> CONFIG_BACKLIGHT_CLASS_DEVICE=m...
->
->> If so, please cd inside and try modify the brightness file using echo
->> with some values in the range of 0 - max_brightness, does the
->> backlight level change when you echo a new value? I guess it doesn't,
->> or you wouldn't notice problem. If indeed so, perhaps file a bug at
->> http://bugzilla.kernel.org, Drivers/Video(DRI-Intel)? I suppose Jani
->> and Daniel can help fix your problem.
->
-> Yup, please check the above, and report back.
-
-- echo 0..max_brightness > brightness does not work.
-
->>>
->>> Video driver: i915
->>> FUJITSU LIFEBOOK AH532/FJNBB1C, BIOS Version 1.09 05/22/2012
->>>
->>> acpi_backlight=video works.
-
-JÃ¶rg
+-- 
+Måns Rullgård
+mans@mansr.com
