@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757166Ab3IYAtg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:49:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39418 "EHLO
+	id S1756917Ab3IYAtf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:49:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39421 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756444Ab3IYATy (ORCPT
+	with ESMTP id S1756446Ab3IYATy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:19:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 014/117] powerpc: Default arch idle could cede processor on pseries
-Date: Tue, 24 Sep 2013 17:18:00 -0700
-Message-Id: <20130925001742.418764921@linuxfoundation.org>
+        =?UTF-8?q?Roger=20Pau=20Monn=C3=A9?= <roger.pau@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, Matt Wilson <msw@amazon.com>
+Subject: [ 015/117] xen-gnt: prevent adding duplicate gnt callbacks
+Date: Tue, 24 Sep 2013 17:18:01 -0700
+Message-Id: <20130925001742.523767432@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,94 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+From: Roger Pau Monne <roger.pau@citrix.com>
 
-commit 363edbe2614aa90df706c0f19ccfa2a6c06af0be upstream.
+commit 5f338d9001094a56cf87bd8a280b4e7ff953bb59 upstream.
 
-When adding cpuidle support to pSeries, we introduced two
-regressions:
+With the current implementation, the callback in the tail of the list
+can be added twice, because the check done in
+gnttab_request_free_callback is bogus, callback->next can be NULL if
+it is the last callback in the list. If we add the same callback twice
+we end up with an infinite loop, were callback == callback->next.
 
-  - The new cpuidle backend driver only works under hypervisors
-    supporting the "SLPLAR" option, which isn't the case of the
-    old POWER4 hypervisor and the HV "light" used on js2x blades
+Replace this check with a proper one that iterates over the list to
+see if the callback has already been added.
 
-  - The cpuidle driver registers fairly late, meaning that for
-    a significant portion of the boot process, we end up having
-    all threads spinning. This slows down the boot process and
-    increases the overall resource usage if the hypervisor has
-    shared processors.
-
-This fixes both by implementing a "default" idle that will cede
-to the hypervisor when possible, in a very simple way without
-all the bells and whisles of cpuidle.
-
-Reported-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Matt Wilson <msw@amazon.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/setup.c |   31 +++++++++++++++++++++----------
- 1 file changed, 21 insertions(+), 10 deletions(-)
+ drivers/xen/grant-table.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/setup.c
-+++ b/arch/powerpc/platforms/pseries/setup.c
-@@ -354,7 +354,7 @@ static int alloc_dispatch_log_kmem_cache
- }
- early_initcall(alloc_dispatch_log_kmem_cache);
- 
--static void pSeries_idle(void)
-+static void pseries_lpar_idle(void)
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -730,9 +730,18 @@ void gnttab_request_free_callback(struct
+ 				  void (*fn)(void *), void *arg, u16 count)
  {
- 	/* This would call on the cpuidle framework, and the back-end pseries
- 	 * driver to  go to idle states
-@@ -362,10 +362,22 @@ static void pSeries_idle(void)
- 	if (cpuidle_idle_call()) {
- 		/* On error, execute default handler
- 		 * to go into low thread priority and possibly
--		 * low power mode.
-+		 * low power mode by cedeing processor to hypervisor
- 		 */
--		HMT_low();
--		HMT_very_low();
+ 	unsigned long flags;
++	struct gnttab_free_callback *cb;
 +
-+		/* Indicate to hypervisor that we are idle. */
-+		get_lppaca()->idle = 1;
+ 	spin_lock_irqsave(&gnttab_list_lock, flags);
+-	if (callback->next)
+-		goto out;
 +
-+		/*
-+		 * Yield the processor to the hypervisor.  We return if
-+		 * an external interrupt occurs (which are driven prior
-+		 * to returning here) or if a prod occurs from another
-+		 * processor. When returning here, external interrupts
-+		 * are enabled.
-+		 */
-+		cede_processor();
-+
-+		get_lppaca()->idle = 0;
- 	}
- }
- 
-@@ -456,15 +468,14 @@ static void __init pSeries_setup_arch(vo
- 
- 	pSeries_nvram_init();
- 
--	if (firmware_has_feature(FW_FEATURE_SPLPAR)) {
-+	if (firmware_has_feature(FW_FEATURE_LPAR)) {
- 		vpa_init(boot_cpuid);
--		ppc_md.power_save = pSeries_idle;
--	}
--
--	if (firmware_has_feature(FW_FEATURE_LPAR))
-+		ppc_md.power_save = pseries_lpar_idle;
- 		ppc_md.enable_pmcs = pseries_lpar_enable_pmcs;
--	else
-+	} else {
-+		/* No special idle routine */
- 		ppc_md.enable_pmcs = power4_enable_pmcs;
++	/* Check if the callback is already on the list */
++	cb = gnttab_free_callback_list;
++	while (cb) {
++		if (cb == callback)
++			goto out;
++		cb = cb->next;
 +	}
- 
- 	ppc_md.pcibios_root_bridge_prepare = pseries_root_bridge_prepare;
- 
++
+ 	callback->fn = fn;
+ 	callback->arg = arg;
+ 	callback->count = count;
 
 
