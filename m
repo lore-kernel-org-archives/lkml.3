@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757746Ab3IYBIa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:08:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39085 "EHLO
+	id S1757732Ab3IYBI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:08:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39091 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755958Ab3IYAQb (ORCPT
+	with ESMTP id S1756076Ab3IYAQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:16:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Don Zickus <dzickus@redhat.com>, Joe Mario <jmario@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Paul Turner <pjt@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 052/110] sched/x86: Optimize switch_mm() for multi-threaded workloads
-Date: Tue, 24 Sep 2013 17:14:50 -0700
-Message-Id: <20130925001329.046577656@linuxfoundation.org>
+        Mengdong Lin <mengdong.lin@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 053/110] ALSA: hda - Re-setup HDMI pin and audio infoframe on stream switches
+Date: Tue, 24 Sep 2013 17:14:51 -0700
+Message-Id: <20130925001329.158583754@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -29,90 +26,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rik van Riel <riel@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 8f898fbbe5ee5e20a77c4074472a1fd088dc47d1 upstream.
+commit b054087dbacee30a9dddaef2c9a96312146be04e upstream.
 
-Dick Fowles, Don Zickus and Joe Mario have been working on
-improvements to perf, and noticed heavy cache line contention
-on the mm_cpumask, running linpack on a 60 core / 120 thread
-system.
+When the transcoder:port mapping on Haswell HDMI/DP audio is changed
+during the stream playback, the sound gets lost.  Typically this
+problem is seen when the user switches the graphics mode from eDP+DP
+to DP-only configuration, where CRTC 1 is used for DP in the former
+while CRTC 0 is used for the latter.
 
-The cause turned out to be unnecessary atomic accesses to the
-mm_cpumask. When in lazy TLB mode, the CPU is only removed from
-the mm_cpumask if there is a TLB flush event.
+The graphics controller notifies the change via the normal ELD update
+procedure, so we get the intrinsic event.  For enabling the sound
+again, the HDMI audio driver needs to reset the pin and set up the
+audio infoframe again.
 
-Most of the time, no such TLB flush happens, and the kernel
-skips the TLB reload. It can also skip the atomic memory
-set & test.
+This patch achieves it by:
+- keep the current status of channels and info frame setup in per_pin
+  struct,
+- check the reconnection in the intrinsic event handler,
+- reset the pin and the re-invoke hdmi_setup_audio_infoframe()
+  accordingly.
 
-Here is a summary of Joe's test results:
+The hdmi_setup_audio_infoframe() function has been changed, too, so
+that it can be invoked without passing the substream instance.
 
- * The __schedule function dropped from 24% of all program cycles down
-   to 5.5%.
+The patch is mostly based on the work by Mengdong Lin.
 
- * The cacheline contention/hotness for accesses to that bitmask went
-   from being the 1st/2nd hottest - down to the 84th hottest (0.3% of
-   all shared misses which is now quite cold)
-
- * The average load latency for the bit-test-n-set instruction in
-   __schedule dropped from 10k-15k cycles down to an average of 600 cycles.
-
- * The linpack program results improved from 133 GFlops to 144 GFlops.
-   Peak GFlops rose from 133 to 153.
-
-Reported-by: Don Zickus <dzickus@redhat.com>
-Reported-by: Joe Mario <jmario@redhat.com>
-Tested-by: Joe Mario <jmario@redhat.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20130731221421.616d3d20@annuminas.surriel.com
-[ Made the comments consistent around the modified code. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Mengdong Lin <mengdong.lin@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/mmu_context.h |   20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ sound/pci/hda/patch_hdmi.c |   41 +++++++++++++++++++++++++++++++----------
+ 1 file changed, 31 insertions(+), 10 deletions(-)
 
---- a/arch/x86/include/asm/mmu_context.h
-+++ b/arch/x86/include/asm/mmu_context.h
-@@ -45,22 +45,28 @@ static inline void switch_mm(struct mm_s
- 		/* Re-load page tables */
- 		load_cr3(next->pgd);
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -67,6 +67,8 @@ struct hdmi_spec_per_pin {
+ 	struct delayed_work work;
+ 	struct snd_kcontrol *eld_ctl;
+ 	int repoll_count;
++	bool setup; /* the stream has been set up by prepare callback */
++	int channels; /* current number of channels */
+ 	bool non_pcm;
+ 	bool chmap_set;		/* channel-map override by ALSA API? */
+ 	unsigned char chmap[8]; /* ALSA API channel-map */
+@@ -868,18 +870,19 @@ static bool hdmi_infoframe_uptodate(stru
+ 	return true;
+ }
  
--		/* stop flush ipis for the previous mm */
-+		/* Stop flush ipis for the previous mm */
- 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+-static void hdmi_setup_audio_infoframe(struct hda_codec *codec, int pin_idx,
+-				       bool non_pcm,
+-				       struct snd_pcm_substream *substream)
++static void hdmi_setup_audio_infoframe(struct hda_codec *codec,
++				       struct hdmi_spec_per_pin *per_pin,
++				       bool non_pcm)
+ {
+-	struct hdmi_spec *spec = codec->spec;
+-	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
+ 	hda_nid_t pin_nid = per_pin->pin_nid;
+-	int channels = substream->runtime->channels;
++	int channels = per_pin->channels;
+ 	struct hdmi_eld *eld;
+ 	int ca;
+ 	union audio_infoframe ai;
  
--		/*
--		 * load the LDT, if the LDT is different:
--		 */
-+		/* Load the LDT, if the LDT is different: */
- 		if (unlikely(prev->context.ldt != next->context.ldt))
- 			load_LDT_nolock(&next->context);
++	if (!channels)
++		return;
++
+ 	eld = &per_pin->sink_eld;
+ 	if (!eld->monitor_present)
+ 		return;
+@@ -1263,6 +1266,7 @@ static void hdmi_present_sense(struct hd
+ 		eld_changed = true;
  	}
- #ifdef CONFIG_SMP
--	else {
-+	  else {
- 		this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
- 		BUG_ON(this_cpu_read(cpu_tlbstate.active_mm) != next);
+ 	if (update_eld) {
++		bool old_eld_valid = pin_eld->eld_valid;
+ 		pin_eld->eld_valid = eld->eld_valid;
+ 		eld_changed = pin_eld->eld_size != eld->eld_size ||
+ 			      memcmp(pin_eld->eld_buffer, eld->eld_buffer,
+@@ -1272,6 +1276,18 @@ static void hdmi_present_sense(struct hd
+ 			       eld->eld_size);
+ 		pin_eld->eld_size = eld->eld_size;
+ 		pin_eld->info = eld->info;
++
++		/* Haswell-specific workaround: re-setup when the transcoder is
++		 * changed during the stream playback
++		 */
++		if (codec->vendor_id == 0x80862807 &&
++		    eld->eld_valid && !old_eld_valid && per_pin->setup) {
++			snd_hda_codec_write(codec, pin_nid, 0,
++					    AC_VERB_SET_AMP_GAIN_MUTE,
++					    AMP_OUT_UNMUTE);
++			hdmi_setup_audio_infoframe(codec, per_pin,
++						   per_pin->non_pcm);
++		}
+ 	}
+ 	mutex_unlock(&pin_eld->lock);
  
--		if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next))) {
--			/* We were in lazy tlb mode and leave_mm disabled
-+		if (!cpumask_test_cpu(cpu, mm_cpumask(next))) {
-+			/*
-+			 * On established mms, the mm_cpumask is only changed
-+			 * from irq context, from ptep_clear_flush() while in
-+			 * lazy tlb mode, and here. Irqs are blocked during
-+			 * schedule, protecting us from simultaneous changes.
-+			 */
-+			cpumask_set_cpu(cpu, mm_cpumask(next));
-+			/*
-+			 * We were in lazy tlb mode and leave_mm disabled
- 			 * tlb flush IPI delivery. We must reload CR3
- 			 * to make sure to use no freed page tables.
- 			 */
+@@ -1444,14 +1460,17 @@ static int generic_hdmi_playback_pcm_pre
+ 	hda_nid_t cvt_nid = hinfo->nid;
+ 	struct hdmi_spec *spec = codec->spec;
+ 	int pin_idx = hinfo_to_pin_index(spec, hinfo);
+-	hda_nid_t pin_nid = get_pin(spec, pin_idx)->pin_nid;
++	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
++	hda_nid_t pin_nid = per_pin->pin_nid;
+ 	bool non_pcm;
+ 
+ 	non_pcm = check_non_pcm_per_cvt(codec, cvt_nid);
++	per_pin->channels = substream->runtime->channels;
++	per_pin->setup = true;
+ 
+ 	hdmi_set_channel_count(codec, cvt_nid, substream->runtime->channels);
+ 
+-	hdmi_setup_audio_infoframe(codec, pin_idx, non_pcm, substream);
++	hdmi_setup_audio_infoframe(codec, per_pin, non_pcm);
+ 
+ 	return hdmi_setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
+ }
+@@ -1491,6 +1510,9 @@ static int hdmi_pcm_close(struct hda_pcm
+ 		snd_hda_spdif_ctls_unassign(codec, pin_idx);
+ 		per_pin->chmap_set = false;
+ 		memset(per_pin->chmap, 0, sizeof(per_pin->chmap));
++
++		per_pin->setup = false;
++		per_pin->channels = 0;
+ 	}
+ 
+ 	return 0;
+@@ -1626,8 +1648,7 @@ static int hdmi_chmap_ctl_put(struct snd
+ 	per_pin->chmap_set = true;
+ 	memcpy(per_pin->chmap, chmap, sizeof(chmap));
+ 	if (prepared)
+-		hdmi_setup_audio_infoframe(codec, pin_idx, per_pin->non_pcm,
+-					   substream);
++		hdmi_setup_audio_infoframe(codec, per_pin, per_pin->non_pcm);
+ 
+ 	return 0;
+ }
 
 
