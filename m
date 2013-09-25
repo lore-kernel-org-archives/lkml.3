@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350Ab3IYBKe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:10:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39055 "EHLO
+	id S1756031Ab3IYAQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:16:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38984 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756033Ab3IYAQ0 (ORCPT
+	with ESMTP id S1755910Ab3IYAQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:26 -0400
+	Tue, 24 Sep 2013 20:16:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Dyer <mike.dyer@md-soft.co.uk>, Mark Brown <broonie@linaro.org>
-Subject: [ 045/110] ASoC: wm8960: Fix PLL register writes
-Date: Tue, 24 Sep 2013 17:14:43 -0700
-Message-Id: <20130925001328.289998908@linuxfoundation.org>
+        Pavel Shilovsky <pshilovsky@samba.org>,
+        Steve French <smfrench@gmail.com>
+Subject: [ 027/110] CIFS: Fix missing lease break
+Date: Tue, 24 Sep 2013 17:14:25 -0700
+Message-Id: <20130925001326.347284526@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -26,35 +27,205 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Dyer <mike.dyer@md-soft.co.uk>
+From: Pavel Shilovsky <pshilovsky@samba.org>
 
-commit 85fa532b6ef920b32598df86b194571a7059a77c upstream.
+commit 933d4b36576c951d0371bbfed05ec0135d516a6e upstream.
 
-Bit 9 of PLL2,3 and 4 is reserved as '0'. The 24bit fractional part
-should be split across each register in 8bit chunks.
+If a server sends a lease break to a connection that doesn't have
+opens with a lease key specified in the server response, we can't
+find an open file to send an ack. Fix this by walking through
+all connections we have.
 
-Signed-off-by: Mike Dyer <mike.dyer@md-soft.co.uk>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8960.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/cifs/smb2misc.c |  149 ++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 80 insertions(+), 69 deletions(-)
 
---- a/sound/soc/codecs/wm8960.c
-+++ b/sound/soc/codecs/wm8960.c
-@@ -857,9 +857,9 @@ static int wm8960_set_dai_pll(struct snd
- 	if (pll_div.k) {
- 		reg |= 0x20;
+--- a/fs/cifs/smb2misc.c
++++ b/fs/cifs/smb2misc.c
+@@ -413,19 +413,76 @@ cifs_ses_oplock_break(struct work_struct
+ }
  
--		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 18) & 0x3f);
--		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 9) & 0x1ff);
--		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0x1ff);
-+		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 16) & 0xff);
-+		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 8) & 0xff);
-+		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0xff);
+ static bool
+-smb2_is_valid_lease_break(char *buffer, struct TCP_Server_Info *server)
++smb2_tcon_has_lease(struct cifs_tcon *tcon, struct smb2_lease_break *rsp,
++		    struct smb2_lease_break_work *lw)
++{
++	bool found;
++	__u8 lease_state;
++	struct list_head *tmp;
++	struct cifsFileInfo *cfile;
++	struct cifs_pending_open *open;
++	struct cifsInodeInfo *cinode;
++	int ack_req = le32_to_cpu(rsp->Flags &
++				  SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED);
++
++	lease_state = smb2_map_lease_to_oplock(rsp->NewLeaseState);
++
++	list_for_each(tmp, &tcon->openFileList) {
++		cfile = list_entry(tmp, struct cifsFileInfo, tlist);
++		cinode = CIFS_I(cfile->dentry->d_inode);
++
++		if (memcmp(cinode->lease_key, rsp->LeaseKey,
++							SMB2_LEASE_KEY_SIZE))
++			continue;
++
++		cifs_dbg(FYI, "found in the open list\n");
++		cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
++			 le32_to_cpu(rsp->NewLeaseState));
++
++		smb2_set_oplock_level(cinode, lease_state);
++
++		if (ack_req)
++			cfile->oplock_break_cancelled = false;
++		else
++			cfile->oplock_break_cancelled = true;
++
++		queue_work(cifsiod_wq, &cfile->oplock_break);
++		kfree(lw);
++		return true;
++	}
++
++	found = false;
++	list_for_each_entry(open, &tcon->pending_opens, olist) {
++		if (memcmp(open->lease_key, rsp->LeaseKey,
++			   SMB2_LEASE_KEY_SIZE))
++			continue;
++
++		if (!found && ack_req) {
++			found = true;
++			memcpy(lw->lease_key, open->lease_key,
++			       SMB2_LEASE_KEY_SIZE);
++			lw->tlink = cifs_get_tlink(open->tlink);
++			queue_work(cifsiod_wq, &lw->lease_break);
++		}
++
++		cifs_dbg(FYI, "found in the pending open list\n");
++		cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
++			 le32_to_cpu(rsp->NewLeaseState));
++
++		open->oplock = lease_state;
++	}
++	return found;
++}
++
++static bool
++smb2_is_valid_lease_break(char *buffer)
+ {
+ 	struct smb2_lease_break *rsp = (struct smb2_lease_break *)buffer;
+ 	struct list_head *tmp, *tmp1, *tmp2;
++	struct TCP_Server_Info *server;
+ 	struct cifs_ses *ses;
+ 	struct cifs_tcon *tcon;
+-	struct cifsInodeInfo *cinode;
+-	struct cifsFileInfo *cfile;
+-	struct cifs_pending_open *open;
+ 	struct smb2_lease_break_work *lw;
+-	bool found;
+-	int ack_req = le32_to_cpu(rsp->Flags &
+-				  SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED);
+ 
+ 	lw = kmalloc(sizeof(struct smb2_lease_break_work), GFP_KERNEL);
+ 	if (!lw)
+@@ -438,72 +495,26 @@ smb2_is_valid_lease_break(char *buffer,
+ 
+ 	/* look up tcon based on tid & uid */
+ 	spin_lock(&cifs_tcp_ses_lock);
+-	list_for_each(tmp, &server->smb_ses_list) {
+-		ses = list_entry(tmp, struct cifs_ses, smb_ses_list);
++	list_for_each(tmp, &cifs_tcp_ses_list) {
++		server = list_entry(tmp, struct TCP_Server_Info, tcp_ses_list);
+ 
+-		spin_lock(&cifs_file_list_lock);
+-		list_for_each(tmp1, &ses->tcon_list) {
+-			tcon = list_entry(tmp1, struct cifs_tcon, tcon_list);
+-
+-			cifs_stats_inc(&tcon->stats.cifs_stats.num_oplock_brks);
+-			list_for_each(tmp2, &tcon->openFileList) {
+-				cfile = list_entry(tmp2, struct cifsFileInfo,
+-						   tlist);
+-				cinode = CIFS_I(cfile->dentry->d_inode);
+-
+-				if (memcmp(cinode->lease_key, rsp->LeaseKey,
+-					   SMB2_LEASE_KEY_SIZE))
+-					continue;
+-
+-				cifs_dbg(FYI, "found in the open list\n");
+-				cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
+-					 le32_to_cpu(rsp->NewLeaseState));
+-
+-				smb2_set_oplock_level(cinode,
+-				  smb2_map_lease_to_oplock(rsp->NewLeaseState));
+-
+-				if (ack_req)
+-					cfile->oplock_break_cancelled = false;
+-				else
+-					cfile->oplock_break_cancelled = true;
+-
+-				queue_work(cifsiod_wq, &cfile->oplock_break);
+-
+-				kfree(lw);
+-				spin_unlock(&cifs_file_list_lock);
+-				spin_unlock(&cifs_tcp_ses_lock);
+-				return true;
+-			}
++		list_for_each(tmp1, &server->smb_ses_list) {
++			ses = list_entry(tmp1, struct cifs_ses, smb_ses_list);
+ 
+-			found = false;
+-			list_for_each_entry(open, &tcon->pending_opens, olist) {
+-				if (memcmp(open->lease_key, rsp->LeaseKey,
+-					   SMB2_LEASE_KEY_SIZE))
+-					continue;
+-
+-				if (!found && ack_req) {
+-					found = true;
+-					memcpy(lw->lease_key, open->lease_key,
+-					       SMB2_LEASE_KEY_SIZE);
+-					lw->tlink = cifs_get_tlink(open->tlink);
+-					queue_work(cifsiod_wq,
+-						   &lw->lease_break);
++			spin_lock(&cifs_file_list_lock);
++			list_for_each(tmp2, &ses->tcon_list) {
++				tcon = list_entry(tmp2, struct cifs_tcon,
++						  tcon_list);
++				cifs_stats_inc(
++				    &tcon->stats.cifs_stats.num_oplock_brks);
++				if (smb2_tcon_has_lease(tcon, rsp, lw)) {
++					spin_unlock(&cifs_file_list_lock);
++					spin_unlock(&cifs_tcp_ses_lock);
++					return true;
+ 				}
+-
+-				cifs_dbg(FYI, "found in the pending open list\n");
+-				cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
+-					 le32_to_cpu(rsp->NewLeaseState));
+-
+-				open->oplock =
+-				  smb2_map_lease_to_oplock(rsp->NewLeaseState);
+-			}
+-			if (found) {
+-				spin_unlock(&cifs_file_list_lock);
+-				spin_unlock(&cifs_tcp_ses_lock);
+-				return true;
+ 			}
++			spin_unlock(&cifs_file_list_lock);
+ 		}
+-		spin_unlock(&cifs_file_list_lock);
  	}
- 	snd_soc_write(codec, WM8960_PLL1, reg);
- 
+ 	spin_unlock(&cifs_tcp_ses_lock);
+ 	kfree(lw);
+@@ -529,7 +540,7 @@ smb2_is_valid_oplock_break(char *buffer,
+ 	if (rsp->StructureSize !=
+ 				smb2_rsp_struct_sizes[SMB2_OPLOCK_BREAK_HE]) {
+ 		if (le16_to_cpu(rsp->StructureSize) == 44)
+-			return smb2_is_valid_lease_break(buffer, server);
++			return smb2_is_valid_lease_break(buffer);
+ 		else
+ 			return false;
+ 	}
 
 
