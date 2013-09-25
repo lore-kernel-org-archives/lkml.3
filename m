@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417Ab3IYAVT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:21:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39885 "EHLO
+	id S1756846Ab3IYAVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:21:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754982Ab3IYAVQ (ORCPT
+	with ESMTP id S932346Ab3IYAVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:21:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Wladislav Wiebe <wladislav.kw@gmail.com>
-Subject: [ 111/117] of: Fix missing memory initialization on FDT unflattening
-Date: Tue, 24 Sep 2013 17:19:37 -0700
-Message-Id: <20130925001753.060891663@linuxfoundation.org>
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [ 117/117] fuse: readdir: check for slash in names
+Date: Tue, 24 Sep 2013 17:19:43 -0700
+Message-Id: <20130925001753.726692827@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,33 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 0640332e073be9207f0784df43595c0c39716e42 upstream.
+commit efeb9e60d48f7778fdcad4a0f3ad9ea9b19e5dfd upstream.
 
-Any calls to dt_alloc() need to be zeroed. This is a temporary fix, but
-the allocation function itself needs to zero memory before returning
-it. This is a follow up to patch 9e4012752, "of: fdt: fix memory
-initialization for expanded DT" which fixed one call site but missed
-another.
+Userspace can add names containing a slash character to the directory
+listing.  Don't allow this as it could cause all sorts of trouble.
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Acked-by: Wladislav Wiebe <wladislav.kw@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/base.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/fuse/dir.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1629,6 +1629,7 @@ void of_alias_scan(void * (*dt_alloc)(u6
- 		ap = dt_alloc(sizeof(*ap) + len + 1, 4);
- 		if (!ap)
- 			continue;
-+		memset(ap, 0, sizeof(*ap) + len + 1);
- 		ap->alias = start;
- 		of_alias_add(ap, np, id, start, len);
- 	}
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -1174,6 +1174,8 @@ static int parse_dirfile(char *buf, size
+ 			return -EIO;
+ 		if (reclen > nbytes)
+ 			break;
++		if (memchr(dirent->name, '/', dirent->namelen) != NULL)
++			return -EIO;
+ 
+ 		if (!dir_emit(ctx, dirent->name, dirent->namelen,
+ 			       dirent->ino, dirent->type))
+@@ -1320,6 +1322,8 @@ static int parse_dirplusfile(char *buf,
+ 			return -EIO;
+ 		if (reclen > nbytes)
+ 			break;
++		if (memchr(dirent->name, '/', dirent->namelen) != NULL)
++			return -EIO;
+ 
+ 		if (!over) {
+ 			/* We fill entries into dstbuf only as much as
 
 
