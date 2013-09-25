@@ -1,66 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab3IYX2v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 19:28:51 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:42500 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755591Ab3IYX2t (ORCPT
+	id S1756519Ab3IYX3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 19:29:31 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:8506 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750825Ab3IYX33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 19:28:49 -0400
+	Wed, 25 Sep 2013 19:29:29 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ag8HANdwQ1J5LCC0/2dsb2JhbABagiVig0u4V4U8gRwXdIIlAQEEATocFQkFBQsIAxgJJQ8FJQMhE4gABbsOgT8WjzsHhB0Dl3uReIM2Kg
+Date: Thu, 26 Sep 2013 09:29:15 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Ning Qu <quning@google.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 00/22] Transparent huge page cache: phase 1, everything
+ but mmap()
+Message-ID: <20130925232915.GK26872@dastard>
+References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org>
+ <20130925095105.06464E0090@blue.fi.intel.com>
 MIME-Version: 1.0
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 25 Sep 2013 17:28:28 -0600
-Message-ID: <CAErSpo7UX6dt0CPZp3kEQrXXbMeArpu1iFfp=-FX46LVgq0iMw@mail.gmail.com>
-Subject: PCI host merge strategy and maintainers
-To: Frank Li <lznuaa@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Kevin Hilman <khilman@linaro.org>, Stephen Warren <swarren@nvidia.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130925095105.06464E0090@blue.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are patches for exynos, imx6, mvebu, and tegra on the PCI list,
-and I want to sort out how people expect them to be merged.
+On Wed, Sep 25, 2013 at 12:51:04PM +0300, Kirill A. Shutemov wrote:
+> Andrew Morton wrote:
+> > On Mon, 23 Sep 2013 15:05:28 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> > 
+> > > It brings thp support for ramfs, but without mmap() -- it will be posted
+> > > separately.
+> > 
+> > We were never going to do this :(
+> > 
+> > Has anyone reviewed these patches much yet?
+> 
+> Dave did very good review. Few other people looked to separate patches.
+> See Reviewed-by/Acked-by tags in patches.
+> 
+> It looks like most mm experts are busy with numa balancing nowadays, so
+> it's hard to get more review.
 
-My current assumption is the following:
+Nobody has reviewed it from the filesystem side, though.
 
-  drivers/pci/host/pcie-designware.c  via PCI tree since I applied
-recent changes
-  drivers/pci/host/pci-exynos.c  via PCI tree since I applied recent changes
-  drivers/pci/host/pci-imx6.c  via Shawn Guo per [1]
-  drivers/pci/host/pci-mvebu.c  ?? unclear; Jason Cooper has merged
-some, I've merged some
-  drivers/pci/host/pci-tegra.c  via PCI tree per Stephen Warren [2]
+The changes that require special code paths for huge pages in the
+write_begin/write_end paths are nasty. You're adding conditional
+code that depends on the page size and then having to add checks to
+ensure that large page operations don't step over small page
+boundaries and other such corner cases. It's an extremely fragile
+design, IMO.
 
-Please correct anything that's wrong above, and please give me some
-guidance on mvebu.  I'm happy to go either way; I just need to know
-whether to pay attention to them :)
+In general, I don't like all the if (thp) {} else {}; code that this
+series introduces - they are code paths that simply won't get tested
+with any sort of regularity and make the code more complex for those
+that aren't using THP to understand and debug...
 
-In addition, since I don't have time, expertise, or hardware to really
-review changes to these drivers, I'd like to have them acked by people
-who do.  My current assumption is that these are the right people:
+Then there is a new per-inode lock that is used in
+generic_perform_write() which is held across page faults and calls
+to filesystem block mapping callbacks. This inserts into the middle
+of an existing locking chain that needs to be strictly ordered, and
+as such will lead to the same type of lock inversion problems that
+the mmap_sem had.  We do not want to introduce a new lock that has
+this same problem just as we are getting rid of that long standing
+nastiness from the page fault path...
 
-  designware: Jingoo Han <jg1.han@samsung.com>
-  exynos: Jingoo Han <jg1.han@samsung.com>
-  imx6: Shawn Guo <shawn.guo@linaro.org>
-  mvebu: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn
-<andrew@lunn.ch>, Gregory Clement <gregory.clement@free-electrons.com>
-  tegra: Thierry Reding <thierry.reding@gmail.com>
+I also note that you didn't convert invalidate_inode_pages2_range()
+to support huge pages which is needed by real filesystems that
+support direct IO. There are other truncate/invalidate interfaces
+that you didn't convert, either, and some of them will present you
+with interesting locking challenges as a result of adding that new
+lock...
 
-Again, please correct anything that's wrong.  My plan is that I won't
-apply patches to these drivers unless they're acked by the folks
-above.
+> The patchset was mostly ignored for few rounds and Dave suggested to split
+> to have less scary patch number.
 
-Bjorn
+It's still being ignored by filesystem people because you haven't
+actually tried to implement support into a real filesystem.....
 
+> > > Please review and consider applying.
+> > 
+> > It appears rather too immature at this stage.
+> 
+> More review is always welcome and I'm committed to address issues.
 
-[1] http://lkml.kernel.org/r/20130916091059.GM31147@S2101-09.ap.freescale.net
-[2] http://lkml.kernel.org/r/521CCF9B.9000004@wwwdotorg.org
+IMO, supporting a real block based filesystem like ext4 or XFS and
+demonstrating that everything works is necessary before we go any
+further...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
