@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab3IYAgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:36:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39626 "EHLO
+	id S1757262Ab3IYAhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:37:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39621 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756614Ab3IYAUc (ORCPT
+	with ESMTP id S1755953Ab3IYAUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:32 -0400
+	Tue, 24 Sep 2013 20:20:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dave Jones <davej@redhat.com>, Zheng Liu <gnehzuil.liu@gmail.com>,
         Jan Kara <jack@suse.cz>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 063/117] ext4: simplify truncation code in ext4_setattr()
-Date: Tue, 24 Sep 2013 17:18:49 -0700
-Message-Id: <20130925001747.736784577@linuxfoundation.org>
+Subject: [ 062/117] ext4: fix ext4_writepages() in presence of truncate
+Date: Tue, 24 Sep 2013 17:18:48 -0700
+Message-Id: <20130925001747.625543023@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -28,153 +29,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Kara <jack@suse.cz>
 
-commit 5208386c501276df18fee464e21d3c58d2d79517 upstream.
+commit 5f1132b2ba8c873f25982cf45917e8455fb6c962 upstream.
 
-Merge conditions in ext4_setattr() handling inode size changes, also
-move ext4_begin_ordered_truncate() call somewhat earlier because it
-simplifies error recovery in case of failure. Also add error handling in
-case i_disksize update fails.
+Inode size can arbitrarily change while writeback is in progress. When
+ext4_writepages() has prepared a long extent for mapping and truncate
+then reduces i_size, mpage_map_and_submit_buffers() will always map just
+one buffer in a page instead of all of them due to lblk < blocks check.
+So we end up not using all blocks we've allocated (thus leaking them)
+and also delalloc accounting goes wrong manifesting as a warning like:
 
+ext4_da_release_space:1333: ext4_da_release_space: ino 12, to_free 1
+with only 0 reserved data blocks
+
+Note that the problem can happen only when blocksize < pagesize because
+otherwise we have only a single buffer in the page.
+
+Fix the problem by removing the size check from the mapping loop. We
+have an extent allocated so we have to use it all before checking for
+i_size. We also rename add_page_bufs_to_extent() to
+mpage_process_page_bufs() and make that function submit the page for IO
+if all buffers (upto EOF) in it are mapped.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Zheng Liu <gnehzuil.liu@gmail.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |  109 +++++++++++++++++++++++++-------------------------------
- 1 file changed, 49 insertions(+), 60 deletions(-)
+ fs/ext4/inode.c |  107 ++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 66 insertions(+), 41 deletions(-)
 
 --- a/fs/ext4/inode.c
 +++ b/fs/ext4/inode.c
-@@ -4600,7 +4600,9 @@ int ext4_setattr(struct dentry *dentry,
- 		ext4_journal_stop(handle);
- 	}
+@@ -1890,6 +1890,26 @@ static int ext4_writepage(struct page *p
+ 	return ret;
+ }
  
--	if (attr->ia_valid & ATTR_SIZE) {
-+	if (attr->ia_valid & ATTR_SIZE && attr->ia_size != inode->i_size) {
-+		handle_t *handle;
-+		loff_t oldsize = inode->i_size;
++static int mpage_submit_page(struct mpage_da_data *mpd, struct page *page)
++{
++	int len;
++	loff_t size = i_size_read(mpd->inode);
++	int err;
++
++	BUG_ON(page->index != mpd->first_page);
++	if (page->index == size >> PAGE_CACHE_SHIFT)
++		len = size & ~PAGE_CACHE_MASK;
++	else
++		len = PAGE_CACHE_SIZE;
++	clear_page_dirty_for_io(page);
++	err = ext4_bio_write_page(&mpd->io_submit, page, len, mpd->wbc);
++	if (!err)
++		mpd->wbc->nr_to_write--;
++	mpd->first_page++;
++
++	return err;
++}
++
+ #define BH_FLAGS ((1 << BH_Unwritten) | (1 << BH_Delay))
  
- 		if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
- 			struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-@@ -4608,73 +4610,60 @@ int ext4_setattr(struct dentry *dentry,
- 			if (attr->ia_size > sbi->s_bitmap_maxbytes)
- 				return -EFBIG;
+ /*
+@@ -1948,12 +1968,29 @@ static bool mpage_add_bh_to_extent(struc
+ 	return false;
+ }
+ 
+-static bool add_page_bufs_to_extent(struct mpage_da_data *mpd,
+-				    struct buffer_head *head,
+-				    struct buffer_head *bh,
+-				    ext4_lblk_t lblk)
++/*
++ * mpage_process_page_bufs - submit page buffers for IO or add them to extent
++ *
++ * @mpd - extent of blocks for mapping
++ * @head - the first buffer in the page
++ * @bh - buffer we should start processing from
++ * @lblk - logical number of the block in the file corresponding to @bh
++ *
++ * Walk through page buffers from @bh upto @head (exclusive) and either submit
++ * the page for IO if all buffers in this page were mapped and there's no
++ * accumulated extent of buffers to map or add buffers in the page to the
++ * extent of buffers to map. The function returns 1 if the caller can continue
++ * by processing the next page, 0 if it should stop adding buffers to the
++ * extent to map because we cannot extend it anymore. It can also return value
++ * < 0 in case of error during IO submission.
++ */
++static int mpage_process_page_bufs(struct mpage_da_data *mpd,
++				   struct buffer_head *head,
++				   struct buffer_head *bh,
++				   ext4_lblk_t lblk)
+ {
+ 	struct inode *inode = mpd->inode;
++	int err;
+ 	ext4_lblk_t blocks = (i_size_read(inode) + (1 << inode->i_blkbits) - 1)
+ 							>> inode->i_blkbits;
+ 
+@@ -1963,32 +2000,18 @@ static bool add_page_bufs_to_extent(stru
+ 		if (lblk >= blocks || !mpage_add_bh_to_extent(mpd, lblk, bh)) {
+ 			/* Found extent to map? */
+ 			if (mpd->map.m_len)
+-				return false;
++				return 0;
+ 			/* Everything mapped so far and we hit EOF */
+-			return true;
++			break;
  		}
--	}
+ 	} while (lblk++, (bh = bh->b_this_page) != head);
+-	return true;
+-}
 -
--	if (S_ISREG(inode->i_mode) &&
--	    attr->ia_valid & ATTR_SIZE &&
--	    (attr->ia_size < inode->i_size)) {
--		handle_t *handle;
+-static int mpage_submit_page(struct mpage_da_data *mpd, struct page *page)
+-{
+-	int len;
+-	loff_t size = i_size_read(mpd->inode);
+-	int err;
 -
--		handle = ext4_journal_start(inode, EXT4_HT_INODE, 3);
--		if (IS_ERR(handle)) {
--			error = PTR_ERR(handle);
--			goto err_out;
--		}
--		if (ext4_handle_valid(handle)) {
--			error = ext4_orphan_add(handle, inode);
--			orphan = 1;
--		}
--		EXT4_I(inode)->i_disksize = attr->ia_size;
--		rc = ext4_mark_inode_dirty(handle, inode);
--		if (!error)
--			error = rc;
--		ext4_journal_stop(handle);
+-	BUG_ON(page->index != mpd->first_page);
+-	if (page->index == size >> PAGE_CACHE_SHIFT)
+-		len = size & ~PAGE_CACHE_MASK;
+-	else
+-		len = PAGE_CACHE_SIZE;
+-	clear_page_dirty_for_io(page);
+-	err = ext4_bio_write_page(&mpd->io_submit, page, len, mpd->wbc);
+-	if (!err)
+-		mpd->wbc->nr_to_write--;
+-	mpd->first_page++;
 -
--		if (ext4_should_order_data(inode)) {
--			error = ext4_begin_ordered_truncate(inode,
-+		if (S_ISREG(inode->i_mode) &&
-+		    (attr->ia_size < inode->i_size)) {
-+			if (ext4_should_order_data(inode)) {
-+				error = ext4_begin_ordered_truncate(inode,
- 							    attr->ia_size);
--			if (error) {
--				/* Do as much error cleanup as possible */
--				handle = ext4_journal_start(inode,
--							    EXT4_HT_INODE, 3);
--				if (IS_ERR(handle)) {
--					ext4_orphan_del(NULL, inode);
-+				if (error)
- 					goto err_out;
--				}
--				ext4_orphan_del(handle, inode);
--				orphan = 0;
--				ext4_journal_stop(handle);
-+			}
-+			handle = ext4_journal_start(inode, EXT4_HT_INODE, 3);
-+			if (IS_ERR(handle)) {
-+				error = PTR_ERR(handle);
-+				goto err_out;
-+			}
-+			if (ext4_handle_valid(handle)) {
-+				error = ext4_orphan_add(handle, inode);
-+				orphan = 1;
-+			}
-+			EXT4_I(inode)->i_disksize = attr->ia_size;
-+			rc = ext4_mark_inode_dirty(handle, inode);
-+			if (!error)
-+				error = rc;
-+			ext4_journal_stop(handle);
-+			if (error) {
-+				ext4_orphan_del(NULL, inode);
- 				goto err_out;
- 			}
- 		}
--	}
--
--	if (attr->ia_valid & ATTR_SIZE) {
--		if (attr->ia_size != inode->i_size) {
--			loff_t oldsize = inode->i_size;
+-	return err;
++	/* So far everything mapped? Submit the page for IO. */
++	if (mpd->map.m_len == 0) {
++		err = mpage_submit_page(mpd, head->b_page);
++		if (err < 0)
++			return err;
++	}
++	return lblk < blocks;
+ }
  
--			i_size_write(inode, attr->ia_size);
--			/*
--			 * Blocks are going to be removed from the inode. Wait
--			 * for dio in flight.  Temporarily disable
--			 * dioread_nolock to prevent livelock.
--			 */
--			if (orphan) {
--				if (!ext4_should_journal_data(inode)) {
--					ext4_inode_block_unlocked_dio(inode);
--					inode_dio_wait(inode);
--					ext4_inode_resume_unlocked_dio(inode);
--				} else
--					ext4_wait_for_tail_page_commit(inode);
+ /*
+@@ -2012,8 +2035,6 @@ static int mpage_map_and_submit_buffers(
+ 	struct inode *inode = mpd->inode;
+ 	struct buffer_head *head, *bh;
+ 	int bpp_bits = PAGE_CACHE_SHIFT - inode->i_blkbits;
+-	ext4_lblk_t blocks = (i_size_read(inode) + (1 << inode->i_blkbits) - 1)
+-							>> inode->i_blkbits;
+ 	pgoff_t start, end;
+ 	ext4_lblk_t lblk;
+ 	sector_t pblock;
+@@ -2048,18 +2069,26 @@ static int mpage_map_and_submit_buffers(
+ 					 */
+ 					mpd->map.m_len = 0;
+ 					mpd->map.m_flags = 0;
+-					add_page_bufs_to_extent(mpd, head, bh,
+-								lblk);
++					/*
++					 * FIXME: If dioread_nolock supports
++					 * blocksize < pagesize, we need to make
++					 * sure we add size mapped so far to
++					 * io_end->size as the following call
++					 * can submit the page for IO.
++					 */
++					err = mpage_process_page_bufs(mpd, head,
++								      bh, lblk);
+ 					pagevec_release(&pvec);
+-					return 0;
++					if (err > 0)
++						err = 0;
++					return err;
+ 				}
+ 				if (buffer_delay(bh)) {
+ 					clear_buffer_delay(bh);
+ 					bh->b_blocknr = pblock++;
+ 				}
+ 				clear_buffer_unwritten(bh);
+-			} while (++lblk < blocks &&
+-				 (bh = bh->b_this_page) != head);
++			} while (lblk++, (bh = bh->b_this_page) != head);
+ 
+ 			/*
+ 			 * FIXME: This is going to break if dioread_nolock
+@@ -2328,14 +2357,10 @@ static int mpage_prepare_extent_to_map(s
+ 			lblk = ((ext4_lblk_t)page->index) <<
+ 				(PAGE_CACHE_SHIFT - blkbits);
+ 			head = page_buffers(page);
+-			if (!add_page_bufs_to_extent(mpd, head, head, lblk))
++			err = mpage_process_page_bufs(mpd, head, head, lblk);
++			if (err <= 0)
+ 				goto out;
+-			/* So far everything mapped? Submit the page for IO. */
+-			if (mpd->map.m_len == 0) {
+-				err = mpage_submit_page(mpd, page);
+-				if (err < 0)
+-					goto out;
 -			}
--			/*
--			 * Truncate pagecache after we've waited for commit
--			 * in data=journal mode to make pages freeable.
--			 */
--			truncate_pagecache(inode, oldsize, inode->i_size);
-+		i_size_write(inode, attr->ia_size);
-+		/*
-+		 * Blocks are going to be removed from the inode. Wait
-+		 * for dio in flight.  Temporarily disable
-+		 * dioread_nolock to prevent livelock.
-+		 */
-+		if (orphan) {
-+			if (!ext4_should_journal_data(inode)) {
-+				ext4_inode_block_unlocked_dio(inode);
-+				inode_dio_wait(inode);
-+				ext4_inode_resume_unlocked_dio(inode);
-+			} else
-+				ext4_wait_for_tail_page_commit(inode);
- 		}
--		ext4_truncate(inode);
-+		/*
-+		 * Truncate pagecache after we've waited for commit
-+		 * in data=journal mode to make pages freeable.
-+		 */
-+		truncate_pagecache(inode, oldsize, inode->i_size);
- 	}
-+	/*
-+	 * We want to call ext4_truncate() even if attr->ia_size ==
-+	 * inode->i_size for cases like truncation of fallocated space
-+	 */
-+	if (attr->ia_valid & ATTR_SIZE)
-+		ext4_truncate(inode);
++			err = 0;
  
- 	if (!rc) {
- 		setattr_copy(inode, attr);
+ 			/*
+ 			 * Accumulated enough dirty pages? This doesn't apply
 
 
