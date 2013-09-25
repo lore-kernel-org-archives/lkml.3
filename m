@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062Ab3IYA1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:27:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39778 "EHLO
+	id S932405Ab3IYA1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:27:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39773 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330Ab3IYAVA (ORCPT
+	with ESMTP id S932327Ab3IYAU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:21:00 -0400
+	Tue, 24 Sep 2013 20:20:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Joerg Roedel <joro@8bytes.org>
-Subject: [ 095/117] intel-iommu: Fix leaks in pagetable freeing
-Date: Tue, 24 Sep 2013 17:19:21 -0700
-Message-Id: <20130925001751.291672217@linuxfoundation.org>
+        Gera Kazakov <gkazakov@msn.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 094/117] target: Fix >= v3.9+ regression in PR APTPL + ALUA metadata write-out
+Date: Tue, 24 Sep 2013 17:19:20 -0700
+Message-Id: <20130925001751.178165451@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,122 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Gera Kazakov <gkazakov@msn.com>
 
-commit 3269ee0bd6686baf86630300d528500ac5b516d7 upstream.
+commit f730f9158f6ee7b5c4d892af6b51a72194445ea4 upstream.
 
-At best the current code only seems to free the leaf pagetables and
-the root.  If you're unlucky enough to have a large gap (like any
-QEMU guest with more than 3G of memory), only the first chunk of leaf
-pagetables are freed (plus the root).  This is a massive memory leak.
-This patch re-writes the pagetable freeing function to use a
-recursive algorithm and manages to not only free all the pagetables,
-but does it without any apparent performance loss versus the current
-broken version.
+This patch fixes a >= v3.9+ regression in __core_scsi3_write_aptpl_to_file()
++ core_alua_write_tpg_metadata() write-out, where a return value of -EIO was
+incorrectly being returned upon success.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+This bug was originally introduced in:
+
+commit 0e9b10a90f1c30f25dd6f130130240745ab14010
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Sat Feb 23 15:22:43 2013 -0500
+
+    target: writev() on single-element vector is pointless
+
+However, given that the return of core_scsi3_update_and_write_aptpl()
+was not used to determine if a command should be returned with non GOOD
+status, this bug was not being triggered in PR logic until v3.11-rc1 by
+commit:
+
+commit 459f213ba162bd13e113d6f92a8fa6c780fd67ed
+Author: Andy Grover <agrover@redhat.com>
+Date:   Thu May 16 10:41:02 2013 -0700
+
+    target: Allocate aptpl_buf inside update_and_write_aptpl()
+
+So, go ahead and only return -EIO if kernel_write() returned a
+negative value.
+
+Reported-by: Gera Kazakov <gkazakov@msn.com>
+Signed-off-by: Gera Kazakov <gkazakov@msn.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intel-iommu.c |   74 +++++++++++++++++++++-----------------------
- 1 file changed, 36 insertions(+), 38 deletions(-)
+ drivers/target/target_core_alua.c |    2 +-
+ drivers/target/target_core_pr.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -890,56 +890,54 @@ static int dma_pte_clear_range(struct dm
- 	return order;
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -730,7 +730,7 @@ static int core_alua_write_tpg_metadata(
+ 	if (ret < 0)
+ 		pr_err("Error writing ALUA metadata file: %s\n", path);
+ 	fput(file);
+-	return ret ? -EIO : 0;
++	return (ret < 0) ? -EIO : 0;
  }
  
-+static void dma_pte_free_level(struct dmar_domain *domain, int level,
-+			       struct dma_pte *pte, unsigned long pfn,
-+			       unsigned long start_pfn, unsigned long last_pfn)
-+{
-+	pfn = max(start_pfn, pfn);
-+	pte = &pte[pfn_level_offset(pfn, level)];
-+
-+	do {
-+		unsigned long level_pfn;
-+		struct dma_pte *level_pte;
-+
-+		if (!dma_pte_present(pte) || dma_pte_superpage(pte))
-+			goto next;
-+
-+		level_pfn = pfn & level_mask(level - 1);
-+		level_pte = phys_to_virt(dma_pte_addr(pte));
-+
-+		if (level > 2)
-+			dma_pte_free_level(domain, level - 1, level_pte,
-+					   level_pfn, start_pfn, last_pfn);
-+
-+		/* If range covers entire pagetable, free it */
-+		if (!(start_pfn > level_pfn ||
-+		      last_pfn < level_pfn + level_size(level))) {
-+			dma_clear_pte(pte);
-+			domain_flush_cache(domain, pte, sizeof(*pte));
-+			free_pgtable_page(level_pte);
-+		}
-+next:
-+		pfn += level_size(level);
-+	} while (!first_pte_in_page(++pte) && pfn <= last_pfn);
-+}
-+
- /* free page table pages. last level pte should already be cleared */
- static void dma_pte_free_pagetable(struct dmar_domain *domain,
- 				   unsigned long start_pfn,
- 				   unsigned long last_pfn)
- {
- 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
--	struct dma_pte *first_pte, *pte;
--	int total = agaw_to_level(domain->agaw);
--	int level;
--	unsigned long tmp;
--	int large_page = 2;
+ /*
+--- a/drivers/target/target_core_pr.c
++++ b/drivers/target/target_core_pr.c
+@@ -1949,7 +1949,7 @@ static int __core_scsi3_write_aptpl_to_f
+ 		pr_debug("Error writing APTPL metadata file: %s\n", path);
+ 	fput(file);
  
- 	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
- 	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
- 	BUG_ON(start_pfn > last_pfn);
+-	return ret ? -EIO : 0;
++	return (ret < 0) ? -EIO : 0;
+ }
  
- 	/* We don't need lock here; nobody else touches the iova range */
--	level = 2;
--	while (level <= total) {
--		tmp = align_to_level(start_pfn, level);
--
--		/* If we can't even clear one PTE at this level, we're done */
--		if (tmp + level_size(level) - 1 > last_pfn)
--			return;
--
--		do {
--			large_page = level;
--			first_pte = pte = dma_pfn_level_pte(domain, tmp, level, &large_page);
--			if (large_page > level)
--				level = large_page + 1;
--			if (!pte) {
--				tmp = align_to_level(tmp + 1, level + 1);
--				continue;
--			}
--			do {
--				if (dma_pte_present(pte)) {
--					free_pgtable_page(phys_to_virt(dma_pte_addr(pte)));
--					dma_clear_pte(pte);
--				}
--				pte++;
--				tmp += level_size(level);
--			} while (!first_pte_in_page(pte) &&
--				 tmp + level_size(level) - 1 <= last_pfn);
--
--			domain_flush_cache(domain, first_pte,
--					   (void *)pte - (void *)first_pte);
--			
--		} while (tmp && tmp + level_size(level) - 1 <= last_pfn);
--		level++;
--	}
-+	dma_pte_free_level(domain, agaw_to_level(domain->agaw),
-+			   domain->pgd, 0, start_pfn, last_pfn);
-+
- 	/* free pgd */
- 	if (start_pfn == 0 && last_pfn == DOMAIN_MAX_PFN(domain->gaw)) {
- 		free_pgtable_page(domain->pgd);
+ /*
 
 
