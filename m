@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757452Ab3IYAnm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:43:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39516 "EHLO
+	id S932339Ab3IYAn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:43:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39513 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217Ab3IYAUL (ORCPT
+	with ESMTP id S1756501Ab3IYAUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:20:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 038/117] USB: mos7720: use GFP_ATOMIC under spinlock
-Date: Tue, 24 Sep 2013 17:18:24 -0700
-Message-Id: <20130925001744.988172498@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>, Karel Srot <ksrot@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 029/117] tty: disassociate_ctty() sends the extra SIGCONT
+Date: Tue, 24 Sep 2013 17:18:15 -0700
+Message-Id: <20130925001744.016346794@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,31 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit d0bd9a41186e076ea543c397ad8a67a6cf604b55 upstream.
+commit 03e1261778cca782d41a3d8e3945ca88cf93e01e upstream.
 
-The write_parport_reg_nonblock() function shouldn't sleep because it's
-called with spinlocks held.
+Starting from v3.10 (probably commit f91e2590410b: "tty: Signal
+foreground group processes in hangup") disassociate_ctty() sends SIGCONT
+if tty && on_exit.  This breaks LSB test-suite, in particular test8 in
+_exit.c and test40 in sigcon5.c.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Johan Hovold <jhovold@gmail.com>
+Put the "!on_exit" check back to restore the old behaviour.
+
+Review by Peter Hurley:
+ "Yes, this regression was introduced by me in that commit.  The effect
+  of the regression is that ptys will receive a SIGCONT when, in similar
+  circumstances, ttys would not.
+
+  The fact that two test vectors accidentally tripped over this
+  regression suggests that some other apps may as well.
+
+  Thanks for catching this"
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Karel Srot <ksrot@redhat.com>
+Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7720.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/tty_io.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/mos7720.c
-+++ b/drivers/usb/serial/mos7720.c
-@@ -374,7 +374,7 @@ static int write_parport_reg_nonblock(st
- 		kfree(urbtrack);
- 		return -ENOMEM;
- 	}
--	urbtrack->setup = kmalloc(sizeof(*urbtrack->setup), GFP_KERNEL);
-+	urbtrack->setup = kmalloc(sizeof(*urbtrack->setup), GFP_ATOMIC);
- 	if (!urbtrack->setup) {
- 		usb_free_urb(urbtrack->urb);
- 		kfree(urbtrack);
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -850,7 +850,8 @@ void disassociate_ctty(int on_exit)
+ 			struct pid *tty_pgrp = tty_get_pgrp(tty);
+ 			if (tty_pgrp) {
+ 				kill_pgrp(tty_pgrp, SIGHUP, on_exit);
+-				kill_pgrp(tty_pgrp, SIGCONT, on_exit);
++				if (!on_exit)
++					kill_pgrp(tty_pgrp, SIGCONT, on_exit);
+ 				put_pid(tty_pgrp);
+ 			}
+ 		}
 
 
