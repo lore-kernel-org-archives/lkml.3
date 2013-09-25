@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab3IYSVQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 14:21:16 -0400
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:46135 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab3IYSVP (ORCPT
+	id S1754950Ab3IYSWK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 14:22:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39507 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750924Ab3IYSWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 14:21:15 -0400
+	Wed, 25 Sep 2013 14:22:08 -0400
+Message-ID: <524329CA.8060707@free-electrons.com>
+Date: Wed, 25 Sep 2013 20:22:02 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <87zjr04vnh.fsf@linaro.org>
-References: <1380117790-19390-1-git-send-email-maxime.ripard@free-electrons.com>
-	<87zjr04vnh.fsf@linaro.org>
-Date: Wed, 25 Sep 2013 11:14:46 -0700
-Message-ID: <CAOesGMhTZS1MdHW9cL4s_X8jUXHS3VkNZupCfX4ZGroL6k4gEw@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Allwinner SoCs High Speed Timer support
-From: Olof Johansson <olof@lixom.net>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, Emilio Lopez <emilio@elopez.com.ar>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Josh Triplett <josh@joshtriplett.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 3/3] rcu: Fix occurrence of "the the" in
+ checklist.txt
+References: <20130925011657.GA29958@linux.vnet.ibm.com> <1380071843-30362-1-git-send-email-paulmck@linux.vnet.ibm.com> <1380071843-30362-3-git-send-email-paulmck@linux.vnet.ibm.com> <20130925034739.GA2016@leaf> <20130925135527.GS9093@linux.vnet.ibm.com> <20130925153321.GA6269@leaf>
+In-Reply-To: <20130925153321.GA6269@leaf>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 11:13 AM, Kevin Hilman <khilman@linaro.org> wrote:
+On 09/25/2013 05:33 PM, Josh Triplett wrote:
+> On Wed, Sep 25, 2013 at 06:55:27AM -0700, Paul E. McKenney wrote:
+>> On Tue, Sep 24, 2013 at 08:47:39PM -0700, Josh Triplett wrote:
+>>> On Tue, Sep 24, 2013 at 06:17:23PM -0700, Paul E. McKenney wrote:
+>>>> From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+>>>>
+>>>> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+>>>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>>> ---
+>>> See comment below.
+>>>
+>>>>  Documentation/RCU/checklist.txt | 2 +-
+>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/Documentation/RCU/checklist.txt b/Documentation/RCU/checklist.txt
+>>>> index 7703ec7..ad6cba4 100644
+>>>> --- a/Documentation/RCU/checklist.txt
+>>>> +++ b/Documentation/RCU/checklist.txt
+>>>> @@ -203,7 +203,7 @@ over a rather long period of time, but improvements are always welcome!
+>>>>  	the corresponding readers must disable preemption, possibly
+>>>>  	by calling rcu_read_lock_sched() and rcu_read_unlock_sched().
+>>>>  	If the updater uses synchronize_srcu() or call_srcu(),
+>>>> -	the the corresponding readers must use srcu_read_lock() and
+>>>> +	the corresponding readers must use srcu_read_lock() and
+>>> I think this may have actually been a typo for "then", as in "If the
+>>> updater uses ..., then the corresponding readers must use ...".
+>> Good point -- that would make the sentence construction parallel with
+>> the surrounding sentences.  Updated patch below.
+>>
+>> 							Thanx, Paul
+Good catch! Thanks!
 
->> However, the A20 and A31 come with 4 of these high speed timers, while the A10s
->> and A13 only have two, hence why we introduce two different compatibles.
->
-> ...but the A10 has 2?
->
-> -ECONFUSED
+Michael.
 
-A10s != A10. Yes, confusing. :)
+-- 
+Michael Opdenacker, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
 
-
--Olof
