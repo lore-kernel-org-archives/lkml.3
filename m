@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab3IYM7A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 08:59:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60465 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755728Ab3IYM66 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 08:58:58 -0400
-Message-ID: <5242DE0F.1080601@codeaurora.org>
-Date: Wed, 25 Sep 2013 08:58:55 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755833Ab3IYM7u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 08:59:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38495 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755419Ab3IYM7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 08:59:49 -0400
+Date: Wed, 25 Sep 2013 07:59:42 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Mark Brown'" <broonie@kernel.org>,
+        "'Liam Girdwood'" <lgirdwood@gmail.com>,
+        <linux-kernel@vger.kernel.org>, "'Balaji T K'" <balajitk@ti.com>
+Subject: Re: [PATCH 19/20] regulator: twl: use devm_regulator_register()
+Message-ID: <20130925125942.GA21425@kahuna>
+References: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
+ <001c01ceb9c7$72a353e0$57e9fba0$%han@samsung.com>
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 1/7] arm64: introduce basic aarch64 instruction decoding
- helpers
-References: <1380105868-31985-1-git-send-email-liuj97@gmail.com> <1380105868-31985-2-git-send-email-liuj97@gmail.com>
-In-Reply-To: <1380105868-31985-2-git-send-email-liuj97@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <001c01ceb9c7$72a353e0$57e9fba0$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiang,
-
-On 09/25/2013 06:44 AM, Jiang Liu wrote:
-
-[...]
-
-> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
-
-[...]
-
-> +static int aarch64_insn_cls[] = {
-> +	AARCH64_INSN_CLS_UNKNOWN,	/* 0 0 X X */
-> +	AARCH64_INSN_CLS_UNKNOWN,	/* 0 0 X X */
-> +	AARCH64_INSN_CLS_UNKNOWN,	/* 0 0 X X */
-> +	AARCH64_INSN_CLS_UNKNOWN,	/* 0 0 X X */
-> +	AARCH64_INSN_CLS_LDST,		/* X 1 X 0 */
-> +	AARCH64_INSN_CLS_DP_REG,	/* X 1 0 1 */
-> +	AARCH64_INSN_CLS_LDST,		/* X 1 X 0 */
-> +	AARCH64_INSN_CLS_DP_FPSIMD,	/* 0 1 1 1 */
-> +	AARCH64_INSN_CLS_DP_IMM,	/* 1 0 0 X */
-> +	AARCH64_INSN_CLS_DP_IMM,	/* 1 0 0 X */
-> +	AARCH64_INSN_CLS_BR_SYS,	/* 1 0 1 X */
-> +	AARCH64_INSN_CLS_BR_SYS,	/* 1 0 1 X */
-> +	AARCH64_INSN_CLS_LDST,		/* X 1 X 0 */
-> +	AARCH64_INSN_CLS_DP_REG,	/* X 1 0 1 */
-> +	AARCH64_INSN_CLS_LDST,		/* X 1 X 0 */
-> +	AARCH64_INSN_CLS_DP_FPSIMD,	/* 1 1 1 1 */
-> +};
-
-As I read this, I was initially puzzled as to why there are duplicate entries
-in the list. Since the data structure doesn't really support don't-cares,
-perhaps it would be clearer to use 1's and 0's instead of X's.
-
-[...]
-
-Thanks,
-Christopher
-
+On 17:15-20130925, Jingoo Han wrote:
+> Use devm_regulator_register() to make cleanup paths simpler.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/regulator/twl-regulator.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+> index 78aae4c..8ebd785 100644
+> --- a/drivers/regulator/twl-regulator.c
+> +++ b/drivers/regulator/twl-regulator.c
+> @@ -1188,7 +1188,7 @@ static int twlreg_probe(struct platform_device *pdev)
+>  	config.driver_data = info;
+>  	config.of_node = pdev->dev.of_node;
+>  
+> -	rdev = regulator_register(&info->desc, &config);
+> +	rdev = devm_regulator_register(&pdev->dev, &info->desc, &config);
+>  	if (IS_ERR(rdev)) {
+>  		dev_err(&pdev->dev, "can't register %s, %ld\n",
+>  				info->desc.name, PTR_ERR(rdev));
+> @@ -1217,7 +1217,6 @@ static int twlreg_remove(struct platform_device *pdev)
+>  	struct regulator_dev *rdev = platform_get_drvdata(pdev);
+>  	struct twlreg_info *info = rdev->reg_data;
+>  
+> -	regulator_unregister(rdev);
+>  	kfree(info);
+>  	return 0;
+>  }
+> -- 
+> 1.7.10.4
+> 
+> 
+Acked-by: Nishanth Menon <nm@ti.com>
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+Regards,
+Nishanth Menon
