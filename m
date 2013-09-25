@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932871Ab3IYBpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:45:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38486 "EHLO
+	id S932859Ab3IYBpv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:45:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab3IYAIY (ORCPT
+	with ESMTP id S1755038Ab3IYAIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:08:24 -0400
+	Tue, 24 Sep 2013 20:08:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 15/28] ALSA: hda - Add Toshiba Satellite C870 to MSI blacklist
-Date: Tue, 24 Sep 2013 17:07:46 -0700
-Message-Id: <20130925000652.102701762@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 16/28] ath9k: always clear ps filter bit on new assoc
+Date: Tue, 24 Sep 2013 17:07:47 -0700
+Message-Id: <20130925000652.328062117@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
 References: <20130925000648.404447782@linuxfoundation.org>
@@ -26,31 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 83f72151352791836a1b9c1542614cc9bf71ac61 upstream.
+commit 026d5b07c03458f9c0ccd19c3850564a5409c325 upstream.
 
-Toshiba Satellite C870 shows interrupt problems occasionally when
-certain mixer controls like "Mic Switch" is toggled.  This seems
-worked around by not using MSI.
+Otherwise in some cases, EAPOL frames might be filtered during the
+initial handshake, causing delays and assoc failures.
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=833585
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_intel.c |    1 +
+ drivers/net/wireless/ath/ath9k/xmit.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2461,6 +2461,7 @@ static struct snd_pci_quirk msi_black_li
- 	SND_PCI_QUIRK(0x1043, 0x81f2, "ASUS", 0), /* Athlon64 X2 + nvidia */
- 	SND_PCI_QUIRK(0x1043, 0x81f6, "ASUS", 0), /* nvidia */
- 	SND_PCI_QUIRK(0x1043, 0x822d, "ASUS", 0), /* Athlon64 X2 + nvidia MCP55 */
-+	SND_PCI_QUIRK(0x1179, 0xfb44, "Toshiba Satellite C870", 0), /* AMD Hudson */
- 	SND_PCI_QUIRK(0x1849, 0x0888, "ASRock", 0), /* Athlon64 X2 + nvidia */
- 	SND_PCI_QUIRK(0xa0a0, 0x0575, "Aopen MZ915-M", 0), /* ICH6 */
- 	{}
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2433,6 +2433,7 @@ void ath_tx_node_init(struct ath_softc *
+ 	for (acno = 0, ac = &an->ac[acno];
+ 	     acno < WME_NUM_AC; acno++, ac++) {
+ 		ac->sched    = false;
++		ac->clear_ps_filter = true;
+ 		ac->txq = sc->tx.txq_map[acno];
+ 		INIT_LIST_HEAD(&ac->tid_q);
+ 	}
 
 
