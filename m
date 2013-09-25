@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab3IYAUZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39579 "EHLO
+	id S1757337Ab3IYAjk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:39:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39584 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264Ab3IYAUW (ORCPT
+	with ESMTP id S932267Ab3IYAUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:22 -0400
+	Tue, 24 Sep 2013 20:20:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 047/117] usb: dont check pm qos NO_POWER_OFF flag in usb_port_suspend()
-Date: Tue, 24 Sep 2013 17:18:33 -0700
-Message-Id: <20130925001745.967881355@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 052/117] Introduce [compat_]save_altstack_ex() to unbreak x86 SMAP
+Date: Tue, 24 Sep 2013 17:18:38 -0700
+Message-Id: <20130925001746.525671807@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,53 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 98a4f1ff7bea8002ab79d6776e30d27932e88244 upstream.
+commit bd1c149aa9915b9abb6d83d0f01dfd2ace0680b5 upstream.
 
-The pm qos NO_POWER_OFF flag is checked twice during usb device suspend
-to see if the usb port power off condition is met. This is redundant and
-also will prevent the port from being powered off if the NO_POWER_OFF
-flag is changed to 1 from 0 after the device was already suspended.
+For performance reasons, when SMAP is in use, SMAP is left open for an
+entire put_user_try { ... } put_user_catch(); block, however, calling
+__put_user() in the middle of that block will close SMAP as the
+STAC..CLAC constructs intentionally do not nest.
 
-More detail in the following link.
-	http://marc.info/?l=linux-usb&m=136543949130865&w=2
+Furthermore, using __put_user() rather than put_user_ex() here is bad
+for performance.
 
-This patch should be backported to kernels as old as 3.7, that
-contain the commit f7ac7787ad361e31a7972e2854ed8dc2eedfac3b "usb/acpi:
-Use ACPI methods to power off ports."
+Thus, introduce new [compat_]save_altstack_ex() helpers that replace
+__[compat_]save_altstack() for x86, being currently the only
+architecture which supports put_user_try { ... } put_user_catch().
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-es5p6y64if71k8p5u08agv9n@git.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   14 ++------------
- 1 file changed, 2 insertions(+), 12 deletions(-)
+ arch/x86/ia32/ia32_signal.c |    2 +-
+ arch/x86/kernel/signal.c    |    6 +++---
+ include/linux/compat.h      |    7 +++++++
+ include/linux/signal.h      |    8 ++++++++
+ 4 files changed, 19 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3043,19 +3043,9 @@ int usb_port_suspend(struct usb_device *
- 		usb_set_device_state(udev, USB_STATE_SUSPENDED);
- 	}
+--- a/arch/x86/ia32/ia32_signal.c
++++ b/arch/x86/ia32/ia32_signal.c
+@@ -457,7 +457,7 @@ int ia32_setup_rt_frame(int sig, struct
+ 		else
+ 			put_user_ex(0, &frame->uc.uc_flags);
+ 		put_user_ex(0, &frame->uc.uc_link);
+-		err |= __compat_save_altstack(&frame->uc.uc_stack, regs->sp);
++		compat_save_altstack_ex(&frame->uc.uc_stack, regs->sp);
  
--	/*
--	 * Check whether current status meets the requirement of
--	 * usb port power off mechanism
--	 */
- 	if (status == 0 && !udev->do_remote_wakeup && udev->persist_enabled) {
--		enum pm_qos_flags_status pm_qos_stat;
--
--		pm_qos_stat = dev_pm_qos_flags(&port_dev->dev,
--				PM_QOS_FLAG_NO_POWER_OFF);
--		if (pm_qos_stat != PM_QOS_FLAGS_ALL) {
--			pm_runtime_put_sync(&port_dev->dev);
--			port_dev->did_runtime_put = true;
--		}
-+		pm_runtime_put_sync(&port_dev->dev);
-+		port_dev->did_runtime_put = true;
- 	}
+ 		if (ksig->ka.sa.sa_flags & SA_RESTORER)
+ 			restorer = ksig->ka.sa.sa_restorer;
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -358,7 +358,7 @@ static int __setup_rt_frame(int sig, str
+ 		else
+ 			put_user_ex(0, &frame->uc.uc_flags);
+ 		put_user_ex(0, &frame->uc.uc_link);
+-		err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
++		save_altstack_ex(&frame->uc.uc_stack, regs->sp);
  
- 	usb_mark_last_busy(hub->hdev);
+ 		/* Set up to return from userspace.  */
+ 		restorer = VDSO32_SYMBOL(current->mm->context.vdso, rt_sigreturn);
+@@ -423,7 +423,7 @@ static int __setup_rt_frame(int sig, str
+ 		else
+ 			put_user_ex(0, &frame->uc.uc_flags);
+ 		put_user_ex(0, &frame->uc.uc_link);
+-		err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
++		save_altstack_ex(&frame->uc.uc_stack, regs->sp);
+ 
+ 		/* Set up to return from userspace.  If provided, use a stub
+ 		   already in userspace.  */
+@@ -490,7 +490,7 @@ static int x32_setup_rt_frame(struct ksi
+ 		else
+ 			put_user_ex(0, &frame->uc.uc_flags);
+ 		put_user_ex(0, &frame->uc.uc_link);
+-		err |= __compat_save_altstack(&frame->uc.uc_stack, regs->sp);
++		compat_save_altstack_ex(&frame->uc.uc_stack, regs->sp);
+ 		put_user_ex(0, &frame->uc.uc__pad0);
+ 
+ 		if (ksig->ka.sa.sa_flags & SA_RESTORER) {
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -669,6 +669,13 @@ asmlinkage long compat_sys_sigaltstack(c
+ 
+ int compat_restore_altstack(const compat_stack_t __user *uss);
+ int __compat_save_altstack(compat_stack_t __user *, unsigned long);
++#define compat_save_altstack_ex(uss, sp) do { \
++	compat_stack_t __user *__uss = uss; \
++	struct task_struct *t = current; \
++	put_user_ex(ptr_to_compat((void __user *)t->sas_ss_sp), &__uss->ss_sp); \
++	put_user_ex(sas_ss_flags(sp), &__uss->ss_flags); \
++	put_user_ex(t->sas_ss_size, &__uss->ss_size); \
++} while (0);
+ 
+ asmlinkage long compat_sys_sched_rr_get_interval(compat_pid_t pid,
+ 						 struct compat_timespec __user *interval);
+--- a/include/linux/signal.h
++++ b/include/linux/signal.h
+@@ -434,6 +434,14 @@ void signals_init(void);
+ int restore_altstack(const stack_t __user *);
+ int __save_altstack(stack_t __user *, unsigned long);
+ 
++#define save_altstack_ex(uss, sp) do { \
++	stack_t __user *__uss = uss; \
++	struct task_struct *t = current; \
++	put_user_ex((void __user *)t->sas_ss_sp, &__uss->ss_sp); \
++	put_user_ex(sas_ss_flags(sp), &__uss->ss_flags); \
++	put_user_ex(t->sas_ss_size, &__uss->ss_size); \
++} while (0);
++
+ #ifdef CONFIG_PROC_FS
+ struct seq_file;
+ extern void render_sigset_t(struct seq_file *, const char *, sigset_t *);
 
 
