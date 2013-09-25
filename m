@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757692Ab3IYBHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:07:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39096 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756079Ab3IYAQc (ORCPT
+	id S1757714Ab3IYBIA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:08:00 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:33823 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757697Ab3IYBH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:32 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frank Zafka <kafkaesque1978@gmail.com>,
-        =?UTF-8?q?Peter=20Fr=C3=BChberger?= <fritsch@xbmc.org>,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 054/110] ALSA: hda - hdmi: Fallback to ALSA allocation when selecting CA
-Date: Tue, 24 Sep 2013 17:14:52 -0700
-Message-Id: <20130925001329.265161528@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
-References: <20130925001323.387158698@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 24 Sep 2013 21:07:58 -0400
+X-Spam-Score: -100.7
+Message-ID: <5242372C.4010509@asianux.com>
+Date: Wed, 25 Sep 2013 09:06:52 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info'
+ in all related extern functions
+References: <5212DBFA.8030805@asianux.com> <20130923150625.GB14547@htj.dyndns.org> <52410A40.1000304@asianux.com> <20130924040601.GA31575@mtj.dyndns.org> <524114B8.3070903@asianux.com> <20130924120429.GA2366@htj.dyndns.org> <5242331B.4010309@asianux.com> <20130925005802.GA25777@htj.dyndns.org>
+In-Reply-To: <20130925005802.GA25777@htj.dyndns.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 09/25/2013 08:58 AM, Tejun Heo wrote:
+> Hello, Chen.
+> 
+> On Wed, Sep 25, 2013 at 08:49:31AM +0800, Chen Gang wrote:
+>>> Can you please demonstrate such failure?  You can tell kernel to
+>>> execute a given binary instead of init with "init=" param.
+>>
+>> OK, I will/should try, today (although I have to spend my additional
+>> time resource on it. :-( ).
+> 
+> Please note that that's not necessarily "additional" resource that you
+> spend.  It's more of something necessary to justify the changes you're
+> suggesting.  It's true that not all bug fixes / improvements require
+> explicit demonstration but I'm not very convinced about your analysis
+> partly because I'm not too familiar with the code path but also
+> because the code has been stable with years and you seem pretty new to
+> the area.
+> 
+>> Hmm... in fact, in my opinion, interface (especially content system
+>> call) need make itself consistency, although at present, it can not
+>> cause issue.
+> 
+> Sure, it should be consistent but I'm not sure what you're perceiving
+> as inconsistent is actually inconsistent.  Anyways, let's please have
+> something deomnstratable.  We can think more about the interface
+> niggles afterwards.
+> 
+> Thanks.
+> 
 
-------------------
+OK, I see, the 'root cause' is: "you are not the related maintainer
+either", so it is really necessary for me to spend additional time
+resource on it :-(.
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
-
-commit 18e391862cceaf43ddb8eb5cca05e1a83abdebaa upstream.
-
-hdmi_channel_allocation() tries to find a HDMI channel allocation that
-matches the number channels in the playback stream and contains only
-speakers that the HDMI sink has reported as available via EDID. If no
-such allocation is found, 0 (stereo audio) is used.
-
-Using CA 0 causes the audio causes the sink to discard everything except
-the first two channels (front left and front right).
-
-However, the sink may be capable of receiving more channels than it has
-speakers (and then perform downmix or discard the extra channels), in
-which case it is preferable to use a CA that contains extra channels
-than to use CA 0 which discards all the non-stereo channels.
-
-Additionally, it seems that HBR (HD) passthrough output does not work on
-Intel HDMI codecs when CA is set to 0 (possibly the codec zeroes
-channels not present in CA). This happens with all receivers that report
-a 5.1 speaker mask since a HBR stream is carried on 8 channels to the
-codec.
-
-Add a fallback in the CA selection so that the CA channel count at least
-matches the stream channel count, even if the stream contains channels
-not present in the sink speaker descriptor.
-
-Thanks to GrimGriefer at OpenELEC forums for discovering that changing
-the sink speaker mask allowed HBR output.
-
-Reported-by: GrimGriefer
-Reported-by: Ashecrow
-Reported-by: Frank Zafka <kafkaesque1978@gmail.com>
-Reported-by: Peter Frühberger <fritsch@xbmc.org>
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/hda/patch_hdmi.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
-
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -553,6 +553,17 @@ static int hdmi_channel_allocation(struc
- 		}
- 	}
- 
-+	if (!ca) {
-+		/* if there was no match, select the regular ALSA channel
-+		 * allocation with the matching number of channels */
-+		for (i = 0; i < ARRAY_SIZE(channel_allocations); i++) {
-+			if (channels == channel_allocations[i].channels) {
-+				ca = channel_allocations[i].ca_index;
-+				break;
-+			}
-+		}
-+	}
-+
- 	snd_print_channel_allocation(eld->info.spk_alloc, buf, sizeof(buf));
- 	snd_printdd("HDMI: select CA 0x%x for %d-channel allocation: %s\n",
- 		    ca, channels, buf);
+But all together, thank you for spending your time resource on it, let
+us continue :-).
 
 
+Thanks.
+-- 
+Chen Gang
