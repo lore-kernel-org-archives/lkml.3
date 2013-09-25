@@ -1,89 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab3IYANu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:13:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38704 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755537Ab3IYAMr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:12:47 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 37/40] mmc: tmio_mmc_dma: fix PIO fallback on SDHI
-Date: Tue, 24 Sep 2013 17:12:09 -0700
-Message-Id: <20130925001045.964218003@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
-References: <20130925001041.939335518@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1755640Ab3IYAN6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:13:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7802 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755304Ab3IYAN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 20:13:56 -0400
+Date: Tue, 24 Sep 2013 20:13:44 -0400
+From: Dave Jones <davej@redhat.com>
+To: x86@kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Fix apparent cut-n-paste mistake in Dell reboot workaround.
+Message-ID: <20130925001344.GA13554@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, x86@kernel.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This seems to have been copied from the Optiplex 990 entry above, but somoene
+forgot to change the ident text.
 
-------------------
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-
-commit f936f9b67b7f8c2eae01dd303a0e90bd777c4679 upstream.
-
-I'm testing SH-Mobile SDHI driver in DMA mode with  a new DMA controller  using
-'bonnie++' and getting DMA error after which the tmio_mmc_dma.c code falls back
-to PIO but all commands time out after that.  It turned out that the fallback
-code calls tmio_mmc_enable_dma() with RX/TX channels already freed and pointers
-to them cleared, so that the function bails out early instead  of clearing the
-DMA bit in the CTL_DMA_ENABLE register. The regression was introduced by commit
-162f43e31c5a376ec16336e5d0ac973373d54c89 (mmc: tmio: fix a deadlock).
-Moving tmio_mmc_enable_dma() calls to the top of the PIO fallback code in
-tmio_mmc_start_dma_{rx|tx}() helps.
-
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/mmc/host/tmio_mmc_dma.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/mmc/host/tmio_mmc_dma.c
-+++ b/drivers/mmc/host/tmio_mmc_dma.c
-@@ -104,6 +104,7 @@ static void tmio_mmc_start_dma_rx(struct
- pio:
- 	if (!desc) {
- 		/* DMA failed, fall back to PIO */
-+		tmio_mmc_enable_dma(host, false);
- 		if (ret >= 0)
- 			ret = -EIO;
- 		host->chan_rx = NULL;
-@@ -116,7 +117,6 @@ pio:
- 		}
- 		dev_warn(&host->pdev->dev,
- 			 "DMA failed: %d, falling back to PIO\n", ret);
--		tmio_mmc_enable_dma(host, false);
- 	}
- 
- 	dev_dbg(&host->pdev->dev, "%s(): desc %p, cookie %d, sg[%d]\n", __func__,
-@@ -185,6 +185,7 @@ static void tmio_mmc_start_dma_tx(struct
- pio:
- 	if (!desc) {
- 		/* DMA failed, fall back to PIO */
-+		tmio_mmc_enable_dma(host, false);
- 		if (ret >= 0)
- 			ret = -EIO;
- 		host->chan_tx = NULL;
-@@ -197,7 +198,6 @@ pio:
- 		}
- 		dev_warn(&host->pdev->dev,
- 			 "DMA failed: %d, falling back to PIO\n", ret);
--		tmio_mmc_enable_dma(host, false);
- 	}
- 
- 	dev_dbg(&host->pdev->dev, "%s(): desc %p, cookie %d\n", __func__,
-
-
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index f6835d8..ea2aaca 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -360,7 +360,7 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 	},
+ 	{	/* Handle problems with rebooting on the Precision M6600. */
+ 		.callback = set_pci_reboot,
+-		.ident = "Dell OptiPlex 990",
++		.ident = "Dell Precision M6600",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
