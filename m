@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab3IYBEi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:04:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39143 "EHLO
+	id S932655Ab3IYBE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:04:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39140 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756142Ab3IYAQl (ORCPT
+	with ESMTP id S1756051Ab3IYAQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:41 -0400
+	Tue, 24 Sep 2013 20:16:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Stefan Kriwanek <mail@stefankriwanek.de>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [ 065/110] HID: sensor-hub: validate feature report details
-Date: Tue, 24 Sep 2013 17:15:03 -0700
-Message-Id: <20130925001330.452889111@linuxfoundation.org>
+Subject: [ 064/110] HID: Fix Speedlink VAD Cezanne support for some devices
+Date: Tue, 24 Sep 2013 17:15:02 -0700
+Message-Id: <20130925001330.341271688@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -28,36 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Stefan Kriwanek <dev@stefankriwanek.de>
 
-commit 9e8910257397372633e74b333ef891f20c800ee4 upstream.
+commit 06bb5219118fb098f4b0c7dcb484b28a52bf1c14 upstream.
 
-A HID device could send a malicious feature report that would cause the
-sensor-hub HID driver to read past the end of heap allocation, leaking
-kernel memory contents to the caller.
+Some devices of the "Speedlink VAD Cezanne" model need more aggressive fixing
+than already done.
 
-CVE-2013-2898
+I made sure through testing that this patch would not interfere with the proper
+working of a device that is bug-free. (The driver drops EV_REL events with
+abs(val) >= 256, which are not achievable even on the highest laser resolution
+hardware setting.)
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Stefan Kriwanek <mail@stefankriwanek.de>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-sensor-hub.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/hid/hid-speedlink.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/hid/hid-sensor-hub.c
-+++ b/drivers/hid/hid-sensor-hub.c
-@@ -221,7 +221,8 @@ int sensor_hub_get_feature(struct hid_se
+--- a/drivers/hid/hid-speedlink.c
++++ b/drivers/hid/hid-speedlink.c
+@@ -3,7 +3,7 @@
+  *  Fixes "jumpy" cursor and removes nonexistent keyboard LEDS from
+  *  the HID descriptor.
+  *
+- *  Copyright (c) 2011 Stefan Kriwanek <mail@stefankriwanek.de>
++ *  Copyright (c) 2011, 2013 Stefan Kriwanek <dev@stefankriwanek.de>
+  */
  
- 	mutex_lock(&data->mutex);
- 	report = sensor_hub_report(report_id, hsdev->hdev, HID_FEATURE_REPORT);
--	if (!report || (field_index >=  report->maxfield)) {
-+	if (!report || (field_index >=  report->maxfield) ||
-+	    report->field[field_index]->report_count < 1) {
- 		ret = -EINVAL;
- 		goto done_proc;
- 	}
+ /*
+@@ -46,8 +46,13 @@ static int speedlink_event(struct hid_de
+ 		struct hid_usage *usage, __s32 value)
+ {
+ 	/* No other conditions due to usage_table. */
+-	/* Fix "jumpy" cursor (invalid events sent by device). */
+-	if (value == 256)
++
++	/* This fixes the "jumpy" cursor occuring due to invalid events sent
++	 * by the device. Some devices only send them with value==+256, others
++	 * don't. However, catching abs(value)>=256 is restrictive enough not
++	 * to interfere with devices that were bug-free (has been tested).
++	 */
++	if (abs(value) >= 256)
+ 		return 1;
+ 	/* Drop useless distance 0 events (on button clicks etc.) as well */
+ 	if (value == 0)
 
 
