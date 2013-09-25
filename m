@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab3IYAUn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39599 "EHLO
+	id S1757173Ab3IYAcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:32:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39703 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756605Ab3IYAU1 (ORCPT
+	with ESMTP id S1756605Ab3IYAUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:27 -0400
+	Tue, 24 Sep 2013 20:20:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mengdong Lin <mengdong.lin@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 057/117] ALSA: hda - Re-setup HDMI pin and audio infoframe on stream switches
-Date: Tue, 24 Sep 2013 17:18:43 -0700
-Message-Id: <20130925001747.079432507@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Rafi Rubin <rafi@seas.upenn.edu>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 078/117] HID: ntrig: validate feature report details
+Date: Tue, 24 Sep 2013 17:19:04 -0700
+Message-Id: <20130925001749.475706671@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,144 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Kees Cook <keescook@chromium.org>
 
-commit b054087dbacee30a9dddaef2c9a96312146be04e upstream.
+commit 875b4e3763dbc941f15143dd1a18d10bb0be303b upstream.
 
-When the transcoder:port mapping on Haswell HDMI/DP audio is changed
-during the stream playback, the sound gets lost.  Typically this
-problem is seen when the user switches the graphics mode from eDP+DP
-to DP-only configuration, where CRTC 1 is used for DP in the former
-while CRTC 0 is used for the latter.
+A HID device could send a malicious feature report that would cause the
+ntrig HID driver to trigger a NULL dereference during initialization:
 
-The graphics controller notifies the change via the normal ELD update
-procedure, so we get the intrinsic event.  For enabling the sound
-again, the HDMI audio driver needs to reset the pin and set up the
-audio infoframe again.
+[57383.031190] usb 3-1: New USB device found, idVendor=1b96, idProduct=0001
+...
+[57383.315193] BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+[57383.315308] IP: [<ffffffffa08102de>] ntrig_probe+0x25e/0x420 [hid_ntrig]
 
-This patch achieves it by:
-- keep the current status of channels and info frame setup in per_pin
-  struct,
-- check the reconnection in the intrinsic event handler,
-- reset the pin and the re-invoke hdmi_setup_audio_infoframe()
-  accordingly.
+CVE-2013-2896
 
-The hdmi_setup_audio_infoframe() function has been changed, too, so
-that it can be invoked without passing the substream instance.
-
-The patch is mostly based on the work by Mengdong Lin.
-
-Cc: Mengdong Lin <mengdong.lin@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   41 +++++++++++++++++++++++++++++++----------
- 1 file changed, 31 insertions(+), 10 deletions(-)
+ drivers/hid/hid-ntrig.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -67,6 +67,8 @@ struct hdmi_spec_per_pin {
- 	struct delayed_work work;
- 	struct snd_kcontrol *eld_ctl;
- 	int repoll_count;
-+	bool setup; /* the stream has been set up by prepare callback */
-+	int channels; /* current number of channels */
- 	bool non_pcm;
- 	bool chmap_set;		/* channel-map override by ALSA API? */
- 	unsigned char chmap[8]; /* ALSA API channel-map */
-@@ -868,18 +870,19 @@ static bool hdmi_infoframe_uptodate(stru
- 	return true;
- }
+--- a/drivers/hid/hid-ntrig.c
++++ b/drivers/hid/hid-ntrig.c
+@@ -115,7 +115,8 @@ static inline int ntrig_get_mode(struct
+ 	struct hid_report *report = hdev->report_enum[HID_FEATURE_REPORT].
+ 				    report_id_hash[0x0d];
  
--static void hdmi_setup_audio_infoframe(struct hda_codec *codec, int pin_idx,
--				       bool non_pcm,
--				       struct snd_pcm_substream *substream)
-+static void hdmi_setup_audio_infoframe(struct hda_codec *codec,
-+				       struct hdmi_spec_per_pin *per_pin,
-+				       bool non_pcm)
- {
--	struct hdmi_spec *spec = codec->spec;
--	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
- 	hda_nid_t pin_nid = per_pin->pin_nid;
--	int channels = substream->runtime->channels;
-+	int channels = per_pin->channels;
- 	struct hdmi_eld *eld;
- 	int ca;
- 	union audio_infoframe ai;
+-	if (!report)
++	if (!report || report->maxfield < 1 ||
++	    report->field[0]->report_count < 1)
+ 		return -EINVAL;
  
-+	if (!channels)
-+		return;
-+
- 	eld = &per_pin->sink_eld;
- 	if (!eld->monitor_present)
- 		return;
-@@ -1329,6 +1332,7 @@ static void hdmi_present_sense(struct hd
- 		eld_changed = true;
- 	}
- 	if (update_eld) {
-+		bool old_eld_valid = pin_eld->eld_valid;
- 		pin_eld->eld_valid = eld->eld_valid;
- 		eld_changed = pin_eld->eld_size != eld->eld_size ||
- 			      memcmp(pin_eld->eld_buffer, eld->eld_buffer,
-@@ -1338,6 +1342,18 @@ static void hdmi_present_sense(struct hd
- 			       eld->eld_size);
- 		pin_eld->eld_size = eld->eld_size;
- 		pin_eld->info = eld->info;
-+
-+		/* Haswell-specific workaround: re-setup when the transcoder is
-+		 * changed during the stream playback
-+		 */
-+		if (codec->vendor_id == 0x80862807 &&
-+		    eld->eld_valid && !old_eld_valid && per_pin->setup) {
-+			snd_hda_codec_write(codec, pin_nid, 0,
-+					    AC_VERB_SET_AMP_GAIN_MUTE,
-+					    AMP_OUT_UNMUTE);
-+			hdmi_setup_audio_infoframe(codec, per_pin,
-+						   per_pin->non_pcm);
-+		}
- 	}
- 	mutex_unlock(&pin_eld->lock);
- 
-@@ -1510,14 +1526,17 @@ static int generic_hdmi_playback_pcm_pre
- 	hda_nid_t cvt_nid = hinfo->nid;
- 	struct hdmi_spec *spec = codec->spec;
- 	int pin_idx = hinfo_to_pin_index(spec, hinfo);
--	hda_nid_t pin_nid = get_pin(spec, pin_idx)->pin_nid;
-+	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
-+	hda_nid_t pin_nid = per_pin->pin_nid;
- 	bool non_pcm;
- 
- 	non_pcm = check_non_pcm_per_cvt(codec, cvt_nid);
-+	per_pin->channels = substream->runtime->channels;
-+	per_pin->setup = true;
- 
- 	hdmi_set_channel_count(codec, cvt_nid, substream->runtime->channels);
- 
--	hdmi_setup_audio_infoframe(codec, pin_idx, non_pcm, substream);
-+	hdmi_setup_audio_infoframe(codec, per_pin, non_pcm);
- 
- 	return hdmi_setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
- }
-@@ -1557,6 +1576,9 @@ static int hdmi_pcm_close(struct hda_pcm
- 		snd_hda_spdif_ctls_unassign(codec, pin_idx);
- 		per_pin->chmap_set = false;
- 		memset(per_pin->chmap, 0, sizeof(per_pin->chmap));
-+
-+		per_pin->setup = false;
-+		per_pin->channels = 0;
- 	}
- 
- 	return 0;
-@@ -1692,8 +1714,7 @@ static int hdmi_chmap_ctl_put(struct snd
- 	per_pin->chmap_set = true;
- 	memcpy(per_pin->chmap, chmap, sizeof(chmap));
- 	if (prepared)
--		hdmi_setup_audio_infoframe(codec, pin_idx, per_pin->non_pcm,
--					   substream);
-+		hdmi_setup_audio_infoframe(codec, per_pin, per_pin->non_pcm);
- 
- 	return 0;
- }
+ 	hid_hw_request(hdev, report, HID_REQ_GET_REPORT);
 
 
