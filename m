@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab3IYA6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:58:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39222 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215Ab3IYAQ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756252Ab3IYAQ4 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Sep 2013 20:16:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39203 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756215Ab3IYAQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 20:16:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikhail Kulemin <Mikhail.Kulemin@ru.ibm.com>,
-        Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Anton Arapov <anton@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, systemtap@sourceware.org
-Subject: [ 084/110] uprobes: Fix utask->depth accounting in handle_trampoline()
-Date: Tue, 24 Sep 2013 17:15:22 -0700
-Message-Id: <20130925001332.526989070@linuxfoundation.org>
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [ 079/110] media: v4l2: added missing mutex.h include to v4l2-ctrls.h
+Date: Tue, 24 Sep 2013 17:15:17 -0700
+Message-Id: <20130925001331.976534794@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,49 +32,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Andrzej Hajda <a.hajda@samsung.com>
 
-commit 878b5a6efd38030c7a90895dc8346e8fb1e09b4c upstream.
+commit a19dec6ea94c036af68c31930c1c92681f55af41 upstream.
 
-Currently utask->depth is simply the number of allocated/pending
-return_instance's in uprobe_task->return_instances list.
+This patch fixes following error:
+include/media/v4l2-ctrls.h:193:15: error: field ‘_lock’ has incomplete type
+include/media/v4l2-ctrls.h: In function ‘v4l2_ctrl_lock’:
+include/media/v4l2-ctrls.h:570:2: error: implicit declaration of
+	function ‘mutex_lock’ [-Werror=implicit-function-declaration]
+include/media/v4l2-ctrls.h: In function ‘v4l2_ctrl_unlock’:
+include/media/v4l2-ctrls.h:579:2: error: implicit declaration of
+	function ‘mutex_unlock’ [-Werror=implicit-function-declaration]
 
-handle_trampoline() should decrement this counter every time we
-handle/free an instance, but due to typo it does this only if
-->chained == T. This means that in the likely case this counter
-is never decremented and the probed task can't report more than
-MAX_URETPROBE_DEPTH events.
-
-Reported-by: Mikhail Kulemin <Mikhail.Kulemin@ru.ibm.com>
-Reported-by: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Anton Arapov <anton@redhat.com>
-Cc: masami.hiramatsu.pt@hitachi.com
-Cc: srikar@linux.vnet.ibm.com
-Cc: systemtap@sourceware.org
-Link: http://lkml.kernel.org/r/20130911154726.GA8093@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/uprobes.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ include/media/v4l2-ctrls.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1682,12 +1682,10 @@ static bool handle_trampoline(struct pt_
- 		tmp = ri;
- 		ri = ri->next;
- 		kfree(tmp);
-+		utask->depth--;
+--- a/include/media/v4l2-ctrls.h
++++ b/include/media/v4l2-ctrls.h
+@@ -22,6 +22,7 @@
+ #define _V4L2_CTRLS_H
  
- 		if (!chained)
- 			break;
--
--		utask->depth--;
--
- 		BUG_ON(!ri);
- 	}
+ #include <linux/list.h>
++#include <linux/mutex.h>
+ #include <linux/videodev2.h>
  
+ /* forward references */
 
 
