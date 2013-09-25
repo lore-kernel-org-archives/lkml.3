@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab3IYAMt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:12:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38691 "EHLO
+	id S1755624Ab3IYANu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:13:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38704 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534Ab3IYAMq (ORCPT
+	with ESMTP id S1755537Ab3IYAMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:12:46 -0400
+	Tue, 24 Sep 2013 20:12:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Wladislav Wiebe <wladislav.kw@gmail.com>
-Subject: [ 38/40] of: Fix missing memory initialization on FDT unflattening
-Date: Tue, 24 Sep 2013 17:12:10 -0700
-Message-Id: <20130925001046.068045475@linuxfoundation.org>
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 37/40] mmc: tmio_mmc_dma: fix PIO fallback on SDHI
+Date: Tue, 24 Sep 2013 17:12:09 -0700
+Message-Id: <20130925001045.964218003@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
 References: <20130925001041.939335518@linuxfoundation.org>
@@ -27,33 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-commit 0640332e073be9207f0784df43595c0c39716e42 upstream.
+commit f936f9b67b7f8c2eae01dd303a0e90bd777c4679 upstream.
 
-Any calls to dt_alloc() need to be zeroed. This is a temporary fix, but
-the allocation function itself needs to zero memory before returning
-it. This is a follow up to patch 9e4012752, "of: fdt: fix memory
-initialization for expanded DT" which fixed one call site but missed
-another.
+I'm testing SH-Mobile SDHI driver in DMA mode with  a new DMA controller  using
+'bonnie++' and getting DMA error after which the tmio_mmc_dma.c code falls back
+to PIO but all commands time out after that.  It turned out that the fallback
+code calls tmio_mmc_enable_dma() with RX/TX channels already freed and pointers
+to them cleared, so that the function bails out early instead  of clearing the
+DMA bit in the CTL_DMA_ENABLE register. The regression was introduced by commit
+162f43e31c5a376ec16336e5d0ac973373d54c89 (mmc: tmio: fix a deadlock).
+Moving tmio_mmc_enable_dma() calls to the top of the PIO fallback code in
+tmio_mmc_start_dma_{rx|tx}() helps.
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Acked-by: Wladislav Wiebe <wladislav.kw@gmail.com>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/base.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mmc/host/tmio_mmc_dma.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1227,6 +1227,7 @@ void of_alias_scan(void * (*dt_alloc)(u6
- 		ap = dt_alloc(sizeof(*ap) + len + 1, 4);
- 		if (!ap)
- 			continue;
-+		memset(ap, 0, sizeof(*ap) + len + 1);
- 		ap->alias = start;
- 		of_alias_add(ap, np, id, start, len);
+--- a/drivers/mmc/host/tmio_mmc_dma.c
++++ b/drivers/mmc/host/tmio_mmc_dma.c
+@@ -104,6 +104,7 @@ static void tmio_mmc_start_dma_rx(struct
+ pio:
+ 	if (!desc) {
+ 		/* DMA failed, fall back to PIO */
++		tmio_mmc_enable_dma(host, false);
+ 		if (ret >= 0)
+ 			ret = -EIO;
+ 		host->chan_rx = NULL;
+@@ -116,7 +117,6 @@ pio:
+ 		}
+ 		dev_warn(&host->pdev->dev,
+ 			 "DMA failed: %d, falling back to PIO\n", ret);
+-		tmio_mmc_enable_dma(host, false);
  	}
+ 
+ 	dev_dbg(&host->pdev->dev, "%s(): desc %p, cookie %d, sg[%d]\n", __func__,
+@@ -185,6 +185,7 @@ static void tmio_mmc_start_dma_tx(struct
+ pio:
+ 	if (!desc) {
+ 		/* DMA failed, fall back to PIO */
++		tmio_mmc_enable_dma(host, false);
+ 		if (ret >= 0)
+ 			ret = -EIO;
+ 		host->chan_tx = NULL;
+@@ -197,7 +198,6 @@ pio:
+ 		}
+ 		dev_warn(&host->pdev->dev,
+ 			 "DMA failed: %d, falling back to PIO\n", ret);
+-		tmio_mmc_enable_dma(host, false);
+ 	}
+ 
+ 	dev_dbg(&host->pdev->dev, "%s(): desc %p, cookie %d\n", __func__,
 
 
