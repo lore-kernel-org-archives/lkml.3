@@ -1,177 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244Ab3IYVO1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 17:14:27 -0400
-Received: from mail-ye0-f202.google.com ([209.85.213.202]:65416 "EHLO
-	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924Ab3IYVM4 (ORCPT
+	id S1756247Ab3IYVPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 17:15:25 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60871 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992Ab3IYVPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 17:12:56 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Tomasz Figa <t.figa@samsung.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Padmavathi Venna <padma.v@samsung.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH V4 2/6] clk: exynos-audss: allow input clocks to be specified in device tree
-Date: Wed, 25 Sep 2013 14:12:48 -0700
-Message-Id: <1380143572-11741-2-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1380143572-11741-1-git-send-email-abrestic@chromium.org>
-References: <1380046016-5811-1-git-send-email-abrestic@chromium.org>
- <1380143572-11741-1-git-send-email-abrestic@chromium.org>
+	Wed, 25 Sep 2013 17:15:24 -0400
+Date: Wed, 25 Sep 2013 23:15:22 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: balbi@ti.com, kernel list <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org
+Subject: Re: Fix style in s3c-hsotg.c
+Message-ID: <20130925211522.GA21708@amd.pavel.ucw.cz>
+References: <20130902135832.GA22300@amd.pavel.ucw.cz>
+ <20130918092027.GA8325@amd.pavel.ucw.cz>
+ <20130918141106.GH21559@radagast>
+ <2758936.kqHJ9YzqCC@amdc1032>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2758936.kqHJ9YzqCC@amdc1032>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows the input clocks to the Exynos AudioSS block to be
-specified via device-tree bindings.  Default names will be used
-when an input clock is not given.
+Hi!
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
-Changes since v1:
- - listed input clocks as required properties
----
- .../devicetree/bindings/clock/clk-exynos-audss.txt | 32 ++++++++++++++++++++--
- drivers/clk/samsung/clk-exynos-audss.c             | 25 +++++++++++++----
- 2 files changed, 50 insertions(+), 7 deletions(-)
+> > > No, I'll not polish patch for hardware I don't have and have little
+> > > interest in.  wanted to help you, but according to your first reply,
+> > > you do not really want help.
+> > 
+> > that's your call. Now how about you stop being such a baby and go fix
+> > your mistakes to start with ? Just because I'm the maintainer of the
+> > gadget framework, doesn't mean I'm the maintainer of s3c-hsotc.c file.
+> > Maintainer != author too, btw.
+> > 
+> > Anyway, I got much better stuff to do than babysitting grown ups.
+> 
+> ..even if it could have been communicated in a gentler way.
+> 
+> Anyway s3c-hsotg.c is a driver for our hardware so I'm going to pick this
+> patch up, polish it and then re-submit it later. Thanks.
 
-diff --git a/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt b/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt
-index 75e2e19..85b9e28 100644
---- a/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt
-+++ b/Documentation/devicetree/bindings/clock/clk-exynos-audss.txt
-@@ -14,6 +14,21 @@ Required Properties:
+Here's version that should compile. Thanks,
+									Pavel
+
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index d69b36a..c8cdde0 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -2092,12 +2092,14 @@ static void kill_all_requests(struct s3c_hsotg *hsotg,
+ }
  
- - #clock-cells: should be 1.
+ #define call_gadget(_hs, _entry) \
++do { \
+ 	if ((_hs)->gadget.speed != USB_SPEED_UNKNOWN &&	\
+ 	    (_hs)->driver && (_hs)->driver->_entry) { \
+ 		spin_unlock(&_hs->lock); \
+ 		(_hs)->driver->_entry(&(_hs)->gadget); \
+ 		spin_lock(&_hs->lock); \
+-		}
++		} \
++} while (0)
  
-+- clocks:
-+  - pll_ref: Fixed rate PLL reference clock, parent of mout_audss. "fin_pll"
-+    is used if not specified.
-+  - pll_in: Input PLL to the AudioSS block, parent of mout_audss. "fout_epll"
-+    is used if not specified.
-+  - cdclk: External i2s clock, parent of mout_i2s. "cdclk0" is used if not
-+    specified.
-+  - sclk_audio: Audio bus clock, parent of mout_i2s. "sclk_audio0" is used if
-+    not specified.
-+  - sclk_pcm_in: PCM clock, parent of sclk_pcm.  "sclk_pcm0" is used if not
-+    specified.
-+
-+- clock-names: Aliases for the above clocks. They should be "pll_ref",
-+  "pll_in", "cdclk", "sclk_audio", and "sclk_pcm_in" respectively.
-+
- The following is the list of clocks generated by the controller. Each clock is
- assigned an identifier and client nodes use this identifier to specify the
- clock which they consume. Some of the clocks are available only on a particular
-@@ -35,15 +50,28 @@ sclk_i2s        7
- pcm_bus         8
- sclk_pcm        9
+ /**
+  * s3c_hsotg_disconnect - disconnect service
+@@ -3205,7 +3207,7 @@ static int state_show(struct seq_file *seq, void *v)
+ 		   readl(regs + GNPTXSTS),
+ 		   readl(regs + GRXSTSR));
  
--Example 1: An example of a clock controller node is listed below.
-+Example 1: An example of a clock controller node using the default input
-+	   clock names is listed below.
-+
-+clock_audss: audss-clock-controller@3810000 {
-+	compatible = "samsung,exynos5250-audss-clock";
-+	reg = <0x03810000 0x0C>;
-+	#clock-cells = <1>;
-+};
-+
-+Example 2: An example of a clock controller node with the input clocks
-+           specified.
+-	seq_printf(seq, "\nEndpoint status:\n");
++	seq_puts(seq, "\nEndpoint status:\n");
  
- clock_audss: audss-clock-controller@3810000 {
- 	compatible = "samsung,exynos5250-audss-clock";
- 	reg = <0x03810000 0x0C>;
- 	#clock-cells = <1>;
-+	clocks = <&clock 1>, <&clock 7>, <&clock 138>, <&clock 160>,
-+		<&ext_i2s_clk>;
-+	clock-names = "pll_ref", "pll_in", "sclk_audio", "sclk_pcm_in", "cdclk";
- };
+ 	for (idx = 0; idx < 15; idx++) {
+ 		u32 in, out;
+@@ -3222,7 +3224,7 @@ static int state_show(struct seq_file *seq, void *v)
+ 		seq_printf(seq, ", DIEPTSIZ=0x%08x, DOEPTSIZ=0x%08x",
+ 			   in, out);
  
--Example 2: I2S controller node that consumes the clock generated by the clock
-+Example 3: I2S controller node that consumes the clock generated by the clock
-            controller. Refer to the standard clock bindings for information
-            about 'clocks' and 'clock-names' property.
+-		seq_printf(seq, "\n");
++		seq_puts(seq, "\n");
+ 	}
  
-diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
-index 742dabc..7cb10f2 100644
---- a/drivers/clk/samsung/clk-exynos-audss.c
-+++ b/drivers/clk/samsung/clk-exynos-audss.c
-@@ -34,10 +34,6 @@ static unsigned long reg_save[][2] = {
- 	{ASS_CLK_GATE, 0},
- };
+ 	return 0;
+@@ -3256,7 +3258,7 @@ static int fifo_show(struct seq_file *seq, void *v)
+ 	u32 val;
+ 	int idx;
  
--/* list of all parent clock list */
--static const char *mout_audss_p[] = { "fin_pll", "fout_epll" };
--static const char *mout_i2s_p[] = { "mout_audss", "cdclk0", "sclk_audio0" };
--
- #ifdef CONFIG_PM_SLEEP
- static int exynos_audss_clk_suspend(void)
- {
-@@ -68,6 +64,10 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
- {
- 	int i, ret = 0;
- 	struct resource *res;
-+	const char *mout_audss_p[] = {"fin_pll", "fout_epll"};
-+	const char *mout_i2s_p[] = {"mout_audss", "cdclk0", "sclk_audio0"};
-+	const char *sclk_pcm_p = "sclk_pcm0";
-+	struct clk *pll_ref, *pll_in, *cdclk, *sclk_audio, *sclk_pcm_in;
+-	seq_printf(seq, "Non-periodic FIFOs:\n");
++	seq_puts(seq, "Non-periodic FIFOs:\n");
+ 	seq_printf(seq, "RXFIFO: Size %d\n", readl(regs + GRXFSIZ));
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	reg_base = devm_ioremap_resource(&pdev->dev, res);
-@@ -85,11 +85,23 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
- 	clk_data.clks = clk_table;
- 	clk_data.clk_num = EXYNOS_AUDSS_MAX_CLKS;
+ 	val = readl(regs + GNPTXFSIZ);
+@@ -3264,7 +3266,7 @@ static int fifo_show(struct seq_file *seq, void *v)
+ 		   val >> GNPTXFSIZ_NPTxFDep_SHIFT,
+ 		   val & GNPTXFSIZ_NPTxFStAddr_MASK);
  
-+	pll_ref = devm_clk_get(&pdev->dev, "pll_ref");
-+	pll_in = devm_clk_get(&pdev->dev, "pll_in");
-+	if (!IS_ERR(pll_ref))
-+		mout_audss_p[0] = __clk_get_name(pll_ref);
-+	if (!IS_ERR(pll_in))
-+		mout_audss_p[1] = __clk_get_name(pll_in);
- 	clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
- 				mout_audss_p, ARRAY_SIZE(mout_audss_p),
- 				CLK_SET_RATE_NO_REPARENT,
- 				reg_base + ASS_CLK_SRC, 0, 1, 0, &lock);
+-	seq_printf(seq, "\nPeriodic TXFIFOs:\n");
++	seq_puts(seq, "\nPeriodic TXFIFOs:\n");
  
-+	cdclk = devm_clk_get(&pdev->dev, "cdclk");
-+	sclk_audio = devm_clk_get(&pdev->dev, "sclk_audio");
-+	if (!IS_ERR(cdclk))
-+		mout_i2s_p[1] = __clk_get_name(cdclk);
-+	if (!IS_ERR(sclk_audio))
-+		mout_i2s_p[2] = __clk_get_name(sclk_audio);
- 	clk_table[EXYNOS_MOUT_I2S] = clk_register_mux(NULL, "mout_i2s",
- 				mout_i2s_p, ARRAY_SIZE(mout_i2s_p),
- 				CLK_SET_RATE_NO_REPARENT,
-@@ -123,8 +135,11 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
- 				 "sclk_pcm", CLK_SET_RATE_PARENT,
- 				reg_base + ASS_CLK_GATE, 4, 0, &lock);
+ 	for (idx = 1; idx <= 15; idx++) {
+ 		val = readl(regs + DPTXFSIZn(idx));
+@@ -3335,7 +3337,7 @@ static int ep_show(struct seq_file *seq, void *v)
+ 		   readl(regs + DIEPTSIZ(index)),
+ 		   readl(regs + DOEPTSIZ(index)));
  
-+	sclk_pcm_in = devm_clk_get(&pdev->dev, "sclk_pcm_in");
-+	if (!IS_ERR(sclk_pcm_in))
-+		sclk_pcm_p = __clk_get_name(sclk_pcm_in);
- 	clk_table[EXYNOS_SCLK_PCM] = clk_register_gate(NULL, "sclk_pcm",
--				"div_pcm0", CLK_SET_RATE_PARENT,
-+				sclk_pcm_p, CLK_SET_RATE_PARENT,
- 				reg_base + ASS_CLK_GATE, 5, 0, &lock);
+-	seq_printf(seq, "\n");
++	seq_puts(seq, "\n");
+ 	seq_printf(seq, "mps %d\n", ep->ep.maxpacket);
+ 	seq_printf(seq, "total_data=%ld\n", ep->total_data);
  
- 	for (i = 0; i < clk_data.clk_num; i++) {
+@@ -3346,7 +3348,7 @@ static int ep_show(struct seq_file *seq, void *v)
+ 
+ 	list_for_each_entry(req, &ep->queue, queue) {
+ 		if (--show_limit < 0) {
+-			seq_printf(seq, "not showing more requests...\n");
++			seq_puts(seq, "not showing more requests...\n");
+ 			break;
+ 		}
+ 
+
+
 -- 
-1.8.4
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
