@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab3IYP4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 11:56:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11263 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253Ab3IYP4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 11:56:16 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: majianpeng <majianpeng@gmail.com>
-Cc: axboe <axboe@kernel.dk>, viro <viro@zeniv.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/2] block: Set inode of block_device size to zero when delete gendisk.
-References: <201309171121587796647@gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 25 Sep 2013 11:56:12 -0400
-In-Reply-To: <201309171121587796647@gmail.com> (majianpeng@gmail.com's message
-	of "Tue, 17 Sep 2013 11:22:01 +0800")
-Message-ID: <x49ob7gevz7.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1755571Ab3IYP6m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 11:58:42 -0400
+Received: from exprod5og118.obsmtp.com ([64.18.0.160]:38107 "HELO
+	exprod5og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753505Ab3IYP6l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 11:58:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAOesGMj9qUKw9hTSmoV76bvbKHbapxyUss4JfrD0pg9=oPpLdg@mail.gmail.com>
+References: <CAL85gmAi9qZWdeHt5JWeEW-OuNKdxqt-0fPDeCugnpun_6BDKA@mail.gmail.com>
+	<CAOesGMj9qUKw9hTSmoV76bvbKHbapxyUss4JfrD0pg9=oPpLdg@mail.gmail.com>
+Date: Wed, 25 Sep 2013 08:58:40 -0700
+Message-ID: <CAL85gmA2V=vcPV3wP_LsU4V0_YSWUqHR_8qzfYJeZVg3PoCMQA@mail.gmail.com>
+Subject: Re: General placement of platform drivers and header files
+From: Feng Kan <fkan@apm.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-majianpeng <majianpeng@gmail.com> writes:
-
-> When remove gendisk, set the size of inode of block_device to zero.
-> This is mainly let the vfs know disk removed.
+On Tue, Sep 24, 2013 at 9:37 PM, Olof Johansson <olof@lixom.net> wrote:
+> Hi,
 >
-> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-
-> ---
->  block/genhd.c | 6 ++++++
->  1 file changed, 6 insertions(+)
+> On Tue, Sep 24, 2013 at 8:33 PM, Feng Kan <fkan@apm.com> wrote:
+>> Hi all:
+>>
+>> I have some drivers like Queue Manager and co-processor driver that
+>> are used by other
+>> drivers like Ethernet. Would it be appropriate to locate these drivers
+>> under one folder under
+>> drivers/misc/arch_name/xxx.
 >
-> diff --git a/block/genhd.c b/block/genhd.c
-> index dadf42b..9a4c245 100644
-> --- a/block/genhd.c
-> +++ b/block/genhd.c
-> @@ -1369,6 +1369,12 @@ int invalidate_partition(struct gendisk *disk, int partno)
->  	if (bdev) {
->  		fsync_bdev(bdev);
->  		res = __invalidate_device(bdev, true);
-> +		/*
-> +		 * When used buffer-mode on raw blockdevice,the disk removed.
-> +		 * But the vfs don't know.So tell the vfs size of disk
-> +		 * became zero, the buffer write can return
-> +		 */
-> +		i_size_write(bdev->bd_inode, 0);
->  		bdput(bdev);
->  	}
->  	return res;
+> drivers/misc is almost always the wrong answer to where to add a driver.
+>
+> It would help to also know how the devices interact to answer the
+> question of best location. Are the drivers for the coprocessor and for
+> the queue manager mostly a pass-through for some operations (and some
+> shared allocation of resources), i.e. more of a library, or is it a
+> full-fledged driver that will service interrupts, etc?
+
+Lets take QM for an example, the driver is used to allocate queues for
+the Ethernet driver and there are ISRs for QM to take care of
+errors and change in status.
+
+>
+>> My other question is on common header files (belonging to Queue
+>> Manager) but is sourced
+>> by Ethernet, where should those reside. Should they go under
+>> linux/include/misc/arch_name
+>> or directly sourced using the ../../../misc/arch_name/headerfile method.
+>
+> This depends somewhat on where the driver ends up, but somewhere under
+> include/linux is likely the right place for the in-kernel interface
+> header files.
+
+Given the above, how should the header file be handled?
+
+>
+>
+> -Olof
