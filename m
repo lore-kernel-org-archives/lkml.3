@@ -1,249 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530Ab3IYGw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 02:52:29 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:58956 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab3IYGw1 convert rfc822-to-8bit (ORCPT
+	id S1753836Ab3IYGxD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 02:53:03 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:62868 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab3IYGxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 02:52:27 -0400
-Date: Wed, 25 Sep 2013 08:52:17 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Simon Horman <horms@verge.net.au>
-cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Subject: Re: [PATCH v5 5/7] ARM: shmobile: r8a73a4: add a DMAC platform device
- and clock for it
-In-Reply-To: <20130925055036.GA6663@verge.net.au>
-Message-ID: <Pine.LNX.4.64.1309250850100.324@axis700.grange>
-References: <1375455042-24093-1-git-send-email-g.liakhovetski@gmx.de>
- <1375455042-24093-6-git-send-email-g.liakhovetski@gmx.de>
- <20130925055036.GA6663@verge.net.au>
+	Wed, 25 Sep 2013 02:53:01 -0400
+Date: Wed, 25 Sep 2013 08:52:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v5 6/6] rwsem: do optimistic spinning for writer lock
+ acquisition
+Message-ID: <20130925065256.GA27960@gmail.com>
+References: <cover.1380057198.git.tim.c.chen@linux.intel.com>
+ <1380061373.3467.55.camel@schen9-DESK>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:WrCsmCO5NvDDEHthSgPh7f17etI36AYx13tSKJkKrlq
- /Bxt9ofwHTyHpC6cczVDWePEokMt2oysDkLP/XBlJiAD2Wg3G4
- OMIpB4EUgqVyvqZlpXxXF4WRSbm2KJylP2ue8OtIcsaS40Sd9r
- s/xTmUPC2QT+OkqKyyaC8AqUDLpT7c2CbXK/5GUXuCDMTCWvN6
- RL+QRGvyw0UBtM/t8Dqwc2qTNaYLHb1TekPBxQ90lNbCcL7Lxf
- 2+fSabudVnxqcaK3lRax+0TWGOvyk42UYKmwv/fdkvGY8n+FsP
- usxynyK47SUa53rYSF18Nyam0/EldElNZa5MpQzgUuMIeTvTgD
- g6HUShJhk4EZq+ylJdOeZlS+xn0QFti+l9BfRaxENWYtafzPZ+
- riJAucBPBKJjw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380061373.3467.55.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
 
-Thanks for following up on this.
+just a few style nitpicks:
 
-On Wed, 25 Sep 2013, Simon Horman wrote:
+>  
+> +static inline int rwsem_try_write_lock(long count, struct rw_semaphore *sem)
+> +{
+> +	if (!(count & RWSEM_ACTIVE_MASK)) {
+> +		/* Try acquiring the write lock. */
+> +		if (sem->count == RWSEM_WAITING_BIAS &&
+> +		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
+> +			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
+> +			if (!list_is_singular(&sem->wait_list))
+> +				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
+> +			return 1;
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +static inline int rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
+> +{
+> +	long count;
+> +
+> +	count = ACCESS_ONCE(sem->count);
+> +retry:
+> +	if (count == RWSEM_WAITING_BIAS) {
+> +		count = cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
+> +			    RWSEM_ACTIVE_WRITE_BIAS + RWSEM_WAITING_BIAS);
+> +		/* allow write lock stealing, try acquiring the write lock. */
+> +		if (count == RWSEM_WAITING_BIAS)
+> +			goto acquired;
+> +		else if (count == 0)
+> +			goto retry;
+> +	} else if (count == 0) {
+> +		count = cmpxchg(&sem->count, 0,
+> +			    RWSEM_ACTIVE_WRITE_BIAS);
 
-> On Fri, Aug 02, 2013 at 04:50:40PM +0200, Guennadi Liakhovetski wrote:
-> > Add a DMAC platform device and clock definitions for it on r8a73a4.
-> > 
-> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> > ---
-> > 
-> > Depends on "DMA: shdma: support the new CHCLR register layout"
-> > https://lkml.org/lkml/2013/7/10/146
-> 
-> That change seems to be present upstream.
-> 
-> Does this patch depend on any of the other patches
-> in this series?
+So, you factored this out from within a deeply nested piece of code - but 
+the ugly line-break still remained - that can now be put into a single 
+line.
 
-I don't think this one does, however, üatches 6 and 7 do. But patches 1-4 
-from this series are already in next, so, the rest can go in too?
+> +		if (count == 0)
+> +			goto acquired;
+> +		else if (count == RWSEM_WAITING_BIAS)
+> +			goto retry;
+> +	}
+> +	return 0;
+> +
+> +acquired:
+> +	return 1;
+> +}
+> +
+> +
 
-Thanks
-Guennadi
+Unnecessary newline.
 
-> 
-> > 
-> >  arch/arm/mach-shmobile/clock-r8a73a4.c        |    4 +-
-> >  arch/arm/mach-shmobile/include/mach/r8a73a4.h |    9 +++
-> >  arch/arm/mach-shmobile/setup-r8a73a4.c        |   91 +++++++++++++++++++++++++
-> >  3 files changed, 103 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-shmobile/clock-r8a73a4.c b/arch/arm/mach-shmobile/clock-r8a73a4.c
-> > index 8ea5ef6..357b9bc 100644
-> > --- a/arch/arm/mach-shmobile/clock-r8a73a4.c
-> > +++ b/arch/arm/mach-shmobile/clock-r8a73a4.c
-> > @@ -504,7 +504,7 @@ static struct clk div6_clks[DIV6_NR] = {
-> >  
-> >  /* MSTP */
-> >  enum {
-> > -	MSTP217, MSTP216, MSTP207, MSTP206, MSTP204, MSTP203,
-> > +	MSTP218, MSTP217, MSTP216, MSTP207, MSTP206, MSTP204, MSTP203,
-> >  	MSTP329, MSTP323, MSTP318, MSTP317, MSTP316,
-> >  	MSTP315, MSTP314, MSTP313, MSTP312, MSTP305, MSTP300,
-> >  	MSTP411, MSTP410, MSTP409,
-> > @@ -519,6 +519,7 @@ static struct clk mstp_clks[MSTP_NR] = {
-> >  	[MSTP207] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 7, 0), /* SCIFB1 */
-> >  	[MSTP216] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 16, 0), /* SCIFB2 */
-> >  	[MSTP217] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 17, 0), /* SCIFB3 */
-> > +	[MSTP218] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR2, 18, 0), /* DMAC */
-> >  	[MSTP300] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR3, 0, 0), /* IIC2 */
-> >  	[MSTP305] = SH_CLK_MSTP32(&div6_clks[DIV6_MMC1],SMSTPCR3, 5, 0), /* MMCIF1 */
-> >  	[MSTP312] = SH_CLK_MSTP32(&div6_clks[DIV6_SDHI2],SMSTPCR3, 12, 0), /* SDHI2 */
-> > @@ -578,6 +579,7 @@ static struct clk_lookup lookups[] = {
-> >  	CLKDEV_DEV_ID("sh-sci.3", &mstp_clks[MSTP207]),
-> >  	CLKDEV_DEV_ID("sh-sci.4", &mstp_clks[MSTP216]),
-> >  	CLKDEV_DEV_ID("sh-sci.5", &mstp_clks[MSTP217]),
-> > +	CLKDEV_DEV_ID("sh-dma-engine.0", &mstp_clks[MSTP218]),
-> >  	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
-> >  	CLKDEV_DEV_ID("e6520000.i2c", &mstp_clks[MSTP300]),
-> >  	CLKDEV_DEV_ID("sh_mmcif.1", &mstp_clks[MSTP305]),
-> > diff --git a/arch/arm/mach-shmobile/include/mach/r8a73a4.h b/arch/arm/mach-shmobile/include/mach/r8a73a4.h
-> > index f3a9b70..3a0ea48 100644
-> > --- a/arch/arm/mach-shmobile/include/mach/r8a73a4.h
-> > +++ b/arch/arm/mach-shmobile/include/mach/r8a73a4.h
-> > @@ -1,6 +1,15 @@
-> >  #ifndef __ASM_R8A73A4_H__
-> >  #define __ASM_R8A73A4_H__
-> >  
-> > +/* DMA slave IDs */
-> > +enum {
-> > +	SHDMA_SLAVE_INVALID,
-> > +	SHDMA_SLAVE_MMCIF0_TX,
-> > +	SHDMA_SLAVE_MMCIF0_RX,
-> > +	SHDMA_SLAVE_MMCIF1_TX,
-> > +	SHDMA_SLAVE_MMCIF1_RX,
-> > +};
-> > +
-> >  void r8a73a4_add_standard_devices(void);
-> >  void r8a73a4_add_dt_devices(void);
-> >  void r8a73a4_clock_init(void);
-> > diff --git a/arch/arm/mach-shmobile/setup-r8a73a4.c b/arch/arm/mach-shmobile/setup-r8a73a4.c
-> > index 2ee45d5..ec77059 100644
-> > --- a/arch/arm/mach-shmobile/setup-r8a73a4.c
-> > +++ b/arch/arm/mach-shmobile/setup-r8a73a4.c
-> > @@ -22,8 +22,10 @@
-> >  #include <linux/of_platform.h>
-> >  #include <linux/platform_data/irq-renesas-irqc.h>
-> >  #include <linux/serial_sci.h>
-> > +#include <linux/sh_dma.h>
-> >  #include <linux/sh_timer.h>
-> >  #include <mach/common.h>
-> > +#include <mach/dma-register.h>
-> >  #include <mach/irqs.h>
-> >  #include <mach/r8a73a4.h>
-> >  #include <asm/mach/arch.h>
-> > @@ -199,12 +201,101 @@ void __init r8a73a4_add_dt_devices(void)
-> >  	r8a7790_register_cmt(10);
-> >  }
-> >  
-> > +/* DMA */
-> > +static const struct sh_dmae_slave_config dma_slaves[] = {
-> > +	{
-> > +		.slave_id	= SHDMA_SLAVE_MMCIF0_TX,
-> > +		.addr		= 0xee200034,
-> > +		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
-> > +		.mid_rid	= 0xd1,
-> > +	}, {
-> > +		.slave_id	= SHDMA_SLAVE_MMCIF0_RX,
-> > +		.addr		= 0xee200034,
-> > +		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
-> > +		.mid_rid	= 0xd2,
-> > +	}, {
-> > +		.slave_id	= SHDMA_SLAVE_MMCIF1_TX,
-> > +		.addr		= 0xee220034,
-> > +		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
-> > +		.mid_rid	= 0xe1,
-> > +	}, {
-> > +		.slave_id	= SHDMA_SLAVE_MMCIF1_RX,
-> > +		.addr		= 0xee220034,
-> > +		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
-> > +		.mid_rid	= 0xe2,
-> > +	},
-> > +};
-> > +
-> > +#define DMAE_CHANNEL(a, b)				\
-> > +	{						\
-> > +		.offset         = (a) - 0x20,		\
-> > +		.dmars          = (a) - 0x20 + 0x40,	\
-> > +		.chclr_bit	= (b),			\
-> > +		.chclr_offset	= 0x80 - 0x20,		\
-> > +	}
-> > +
-> > +static const struct sh_dmae_channel dma_channels[] = {
-> > +	DMAE_CHANNEL(0x8000, 0),
-> > +	DMAE_CHANNEL(0x8080, 1),
-> > +	DMAE_CHANNEL(0x8100, 2),
-> > +	DMAE_CHANNEL(0x8180, 3),
-> > +	DMAE_CHANNEL(0x8200, 4),
-> > +	DMAE_CHANNEL(0x8280, 5),
-> > +	DMAE_CHANNEL(0x8300, 6),
-> > +	DMAE_CHANNEL(0x8380, 7),
-> > +	DMAE_CHANNEL(0x8400, 8),
-> > +	DMAE_CHANNEL(0x8480, 9),
-> > +	DMAE_CHANNEL(0x8500, 10),
-> > +	DMAE_CHANNEL(0x8580, 11),
-> > +	DMAE_CHANNEL(0x8600, 12),
-> > +	DMAE_CHANNEL(0x8680, 13),
-> > +	DMAE_CHANNEL(0x8700, 14),
-> > +	DMAE_CHANNEL(0x8780, 15),
-> > +	DMAE_CHANNEL(0x8800, 16),
-> > +	DMAE_CHANNEL(0x8880, 17),
-> > +	DMAE_CHANNEL(0x8900, 18),
-> > +	DMAE_CHANNEL(0x8980, 19),
-> > +};
-> > +
-> > +static const struct sh_dmae_pdata dma_pdata = {
-> > +	.slave		= dma_slaves,
-> > +	.slave_num	= ARRAY_SIZE(dma_slaves),
-> > +	.channel	= dma_channels,
-> > +	.channel_num	= ARRAY_SIZE(dma_channels),
-> > +	.ts_low_shift	= TS_LOW_SHIFT,
-> > +	.ts_low_mask	= TS_LOW_BIT << TS_LOW_SHIFT,
-> > +	.ts_high_shift	= TS_HI_SHIFT,
-> > +	.ts_high_mask	= TS_HI_BIT << TS_HI_SHIFT,
-> > +	.ts_shift	= dma_ts_shift,
-> > +	.ts_shift_num	= ARRAY_SIZE(dma_ts_shift),
-> > +	.dmaor_init     = DMAOR_DME,
-> > +	.chclr_present	= 1,
-> > +	.chclr_bitwise	= 1,
-> > +};
-> > +
-> > +static struct resource dma_resources[] = {
-> > +	DEFINE_RES_MEM(0xe6700020, 0x89e0),
-> > +	DEFINE_RES_IRQ_NAMED(gic_spi(220), "error_irq"),
-> > +	{
-> > +		/* IRQ for channels 0-19 */
-> > +		.start  = gic_spi(200),
-> > +		.end    = gic_spi(219),
-> > +		.flags  = IORESOURCE_IRQ,
-> > +	},
-> > +};
-> > +
-> > +#define r8a73a4_register_dmac()							\
-> > +	platform_device_register_resndata(&platform_bus, "sh-dma-engine", 0,	\
-> > +				dma_resources, ARRAY_SIZE(dma_resources),	\
-> > +				&dma_pdata, sizeof(dma_pdata))
-> > +
-> >  void __init r8a73a4_add_standard_devices(void)
-> >  {
-> >  	r8a73a4_add_dt_devices();
-> >  	r8a73a4_register_irqc(0);
-> >  	r8a73a4_register_irqc(1);
-> >  	r8a73a4_register_thermal();
-> > +	r8a73a4_register_dmac();
-> >  }
-> >  
-> >  void __init r8a73a4_init_delay(void)
-> > -- 
-> > 1.7.2.5
-> > 
-> 
+> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+> +{
+> +	int retval;
+> +	struct task_struct *owner;
+> +
+> +	rcu_read_lock();
+> +	owner = ACCESS_ONCE(sem->owner);
+> +
+> +	/* Spin only if active writer running */
+> +	if (owner)
+> +		retval = owner->on_cpu;
+> +	else
+> +		retval = false;
+> +
+> +	rcu_read_unlock();
+> +	/*
+> +	 * if lock->owner is not set, the sem owner may have just acquired
+> +	 * it and not set the owner yet, or the sem has been released, or
+> +	 * reader active.
+> +	 */
+> +	return retval;
+> +}
+> +
+> +static inline bool owner_running(struct rw_semaphore *lock,
+> +				struct task_struct *owner)
+> +{
+> +	if (lock->owner != owner)
+> +		return false;
+> +
+> +	/*
+> +	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
+> +	 * lock->owner still matches owner, if that fails, owner might
+> +	 * point to free()d memory, if it still matches, the rcu_read_lock()
+> +	 * ensures the memory stays valid.
+> +	 */
+> +	barrier();
+> +
+> +	return owner->on_cpu;
+> +}
+> +
+> +static noinline
+> +int rwsem_spin_on_owner(struct rw_semaphore *lock, struct task_struct *owner)
+> +{
+> +	rcu_read_lock();
+> +	while (owner_running(lock, owner)) {
+> +		if (need_resched())
+> +			break;
+> +
+> +		arch_mutex_cpu_relax();
+> +	}
+> +	rcu_read_unlock();
+> +
+> +	/*
+> +	 * We break out the loop above on need_resched() or when the
+> +	 * owner changed, which is a sign for heavy contention. Return
+> +	 * success only when lock->owner is NULL.
+> +	 */
+> +	return lock->owner == NULL;
+> +}
+> +
+> +#define MLOCK(rwsem)    ((struct mcs_spin_node **)&((rwsem)->spin_mlock))
+> +
+> +int rwsem_optimistic_spin(struct rw_semaphore *sem)
+> +{
+> +	struct	task_struct	*owner;
+> +	int	ret = 0;
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Those tabs look weird.
+
+> +
+> +	/* sem->wait_lock should not be held when doing optimistic spinning */
+> +	if (!rwsem_can_spin_on_owner(sem))
+> +		return ret;
+> +
+> +	preempt_disable();
+> +	for (;;) {
+> +		struct mcs_spin_node node;
+> +
+> +		mcs_spin_lock(MLOCK(sem), &node);
+> +		owner = ACCESS_ONCE(sem->owner);
+> +		if (owner && !rwsem_spin_on_owner(sem, owner)) {
+> +			mcs_spin_unlock(MLOCK(sem), &node);
+> +			break;
+> +		}
+> +
+> +		/* wait_lock will be acquired if write_lock is obtained */
+> +		if (rwsem_try_write_lock_unqueued(sem)) {
+> +			mcs_spin_unlock(MLOCK(sem), &node);
+> +			ret = 1;
+> +			break;
+> +		}
+> +		mcs_spin_unlock(MLOCK(sem), &node);
+> +
+> +		/*
+> +		 * When there's no owner, we might have preempted between the
+> +		 * owner acquiring the lock and setting the owner field. If
+> +		 * we're an RT task that will live-lock because we won't let
+> +		 * the owner complete.
+> +		 */
+> +		if (!owner && (need_resched() || rt_task(current)))
+> +			break;
+> +
+> +		/*
+> +		 * The cpu_relax() call is a compiler barrier which forces
+> +		 * everything in this loop to be re-loaded. We don't need
+> +		 * memory barriers as we'll eventually observe the right
+> +		 * values at the cost of a few extra spins.
+> +		 */
+> +		arch_mutex_cpu_relax();
+> +
+
+Unnecessary newline.
+
+> +	}
+> +
+> +	preempt_enable();
+> +	return ret;
+> +}
+
+Please move the preempt_enable() one line higher, with the extra newline 
+after it - it pairs with the loop, not with the return statement.
+
+> +
+>  /*
+>   * wait until we successfully acquire the write lock
+>   */
+>  struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+>  {
+> -	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
+> +	long count;
+>  	struct rwsem_waiter waiter;
+>  	struct task_struct *tsk = current;
+> +	bool waiting = true;
+> +
+> +	count = rwsem_atomic_update(-RWSEM_ACTIVE_WRITE_BIAS, sem);
+> +	/* do optimistic spinning */
+> +	if (rwsem_optimistic_spin(sem))
+> +		goto done;
+>  
+>  	/* set up my own style of waitqueue */
+>  	waiter.task = tsk;
+> @@ -209,33 +376,26 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+>  
+>  	raw_spin_lock_irq(&sem->wait_lock);
+>  	if (list_empty(&sem->wait_list))
+> -		adjustment += RWSEM_WAITING_BIAS;
+> +		waiting = false;
+>  	list_add_tail(&waiter.list, &sem->wait_list);
+>  
+>  	/* we're now waiting on the lock, but no longer actively locking */
+> -	count = rwsem_atomic_update(adjustment, sem);
+> +	if (waiting)
+> +		count = ACCESS_ONCE(sem->count);
+> +	else
+> +		count = rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
+>  
+>  	/* If there were already threads queued before us and there are no
+>  	 * active writers, the lock must be read owned; so we try to wake
+>  	 * any read locks that were queued ahead of us. */
+
+Please convert this comment to the usual style while touching the code so 
+heavily.
+
+> -	if (count > RWSEM_WAITING_BIAS &&
+> -	    adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
+> +	if ((count > RWSEM_WAITING_BIAS) && waiting)
+>  		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
+>  
+>  	/* wait until we successfully acquire the lock */
+>  	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+>  	while (true) {
+
+the pattern we typically use in that case is:
+
+	for (;;) {
+
+Like you did in rwsem_optimistic_spin().
+
+There's a lot of style leeway in the kernel, but we try to 'harmonize' 
+such patterns as much as possible within the same subsystem, especially 
+when changing the code radically which will probably necessiate future 
+detective work on this code.
+
+	Ingo
