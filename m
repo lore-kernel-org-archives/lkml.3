@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab3IYW2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 18:28:36 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:54446 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab3IYW2e (ORCPT
+	id S1755453Ab3IYWaS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 18:30:18 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:49249 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab3IYWaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 18:28:34 -0400
-To: vinod.koul@intel.com, dan.j.williams@intel.com
-Subject: [PATCH 1/2] rcar-hpbdma: remove shdma_free_irq() calls
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org, horms@verge.net.au
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-Date: Thu, 26 Sep 2013 02:28:37 +0400
+	Wed, 25 Sep 2013 18:30:16 -0400
+Message-ID: <524363AF.1040502@ahsoftware.de>
+Date: Thu, 26 Sep 2013 00:29:03 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130712 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Anton Altaparmakov <aia21@cam.ac.uk>,
+        STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] add exFAT driver
+References: <20130830124622.5f81b7d4@rechenknecht2k7> <20130830154205.GA1411@kroah.com> <20130925183632.08a0d073@rechenknecht2k7> <20130925172704.GB5258@kroah.com> <20130925183235.GA9659@srcf.ucam.org> <20130925184539.GA4208@kroah.com> <52433978.9050302@ahsoftware.de> <20130925202151.GA6149@kroah.com> <57387214-F138-4471-996E-3FB1ED28346C@cam.ac.uk> <20130925221006.GB32312@kroah.com>
+In-Reply-To: <20130925221006.GB32312@kroah.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201309260228.37765.sergei.shtylyov@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit c1c63a14f4f2419d093acd7164eccdff315baa86 (DMA: shdma: switch to managed
-resource allocation) got rid of shdma_free_irq() but  unfortunately got merged
-later than commit c4f6c41ba790bbbfcebb4c47a709ac8ff1fe1af9 (dma: add driver for
-R-Car HPB-DMAC), so that the HPB-DMAC driver retained the calls and got broken:
+Am 26.09.2013 00:10, schrieb Greg Kroah-Hartman:
 
-drivers/dma/sh/rcar-hpbdma.c: In function `hpb_dmae_alloc_chan_resources':
-drivers/dma/sh/rcar-hpbdma.c:435: error: implicit declaration of function
-`shdma_free_irq'
+> Please stick to technical discussions about the code on the kernel
+> mailing lists.  Legal discussions can be left up to the lawyers, of
+> which we are not.
 
-Fix this compilation error by removing the remaining shdma_free_irq() calls.
+Hmm, but I would like to know if someone has to fear getting owned by
+Microsoft if he would use that driver.
 
-Reported-by: Simon Horman <horms@verge.net.au>
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Giving the rumours about Linux companies having to pay Microsoft and
+giving the fact that all of those licencees seem to don't have to speak
+about what Microsoft claims patents for and for what they have to pay, I
+obviously think adding that driver to Linux and thus making exFAT more
+general accepted is a very bad idea.
 
----
-The patch is against 'fixes-3.12' branch of Vinod Koul's 'slave-dma.git' repo.
+Of course, I'm not a lawyer too, but as a responsible Linux developer, I
+should at least be able to warn other parities when they approach me and
+want to use exFAT. Doing such without the maybe necessary license might
+drive small companies into the ground because most of them are unable to
+even think about having the money needed to talk with Microsoft lawyers
+in front of a court.
 
- drivers/dma/sh/rcar-hpbdma.c |    2 --
- 1 file changed, 2 deletions(-)
+Regards,
 
-Index: slave-dma/drivers/dma/sh/rcar-hpbdma.c
-===================================================================
---- slave-dma.orig/drivers/dma/sh/rcar-hpbdma.c
-+++ slave-dma/drivers/dma/sh/rcar-hpbdma.c
-@@ -432,7 +432,6 @@ hpb_dmae_alloc_chan_resources(struct hpb
- 		hpb_chan->xfer_mode = XFER_DOUBLE;
- 	} else {
- 		dev_err(hpb_chan->shdma_chan.dev, "DCR setting error");
--		shdma_free_irq(&hpb_chan->shdma_chan);
- 		return -EINVAL;
- 	}
- 
-@@ -614,7 +613,6 @@ static void hpb_dmae_chan_remove(struct 
- 	shdma_for_each_chan(schan, &hpbdev->shdma_dev, i) {
- 		BUG_ON(!schan);
- 
--		shdma_free_irq(schan);
- 		shdma_chan_remove(schan);
- 	}
- 	dma_dev->chancnt = 0;
+Alexander Holler
+
