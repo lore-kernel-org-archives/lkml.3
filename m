@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650Ab3IYAUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39605 "EHLO
+	id S1756949Ab3IYAf1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:35:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39646 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194Ab3IYAU3 (ORCPT
+	with ESMTP id S1755272Ab3IYAUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:29 -0400
+	Tue, 24 Sep 2013 20:20:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frank Zafka <kafkaesque1978@gmail.com>,
-        =?UTF-8?q?Peter=20Fr=C3=BChberger?= <fritsch@xbmc.org>,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 058/117] ALSA: hda - hdmi: Fallback to ALSA allocation when selecting CA
-Date: Tue, 24 Sep 2013 17:18:44 -0700
-Message-Id: <20130925001747.188429678@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 067/117] ath9k: fix rx descriptor related race condition
+Date: Tue, 24 Sep 2013 17:18:53 -0700
+Message-Id: <20130925001748.183107177@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,67 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 18e391862cceaf43ddb8eb5cca05e1a83abdebaa upstream.
+commit e96542e55a2aacf4bdeccfe2f17b77c4895b4df2 upstream.
 
-hdmi_channel_allocation() tries to find a HDMI channel allocation that
-matches the number channels in the playback stream and contains only
-speakers that the HDMI sink has reported as available via EDID. If no
-such allocation is found, 0 (stereo audio) is used.
+Similar to a race condition that exists in the tx path, the hardware
+might re-read the 'next' pointer of a descriptor of the last completed
+frame. This only affects non-EDMA (pre-AR93xx) devices.
 
-Using CA 0 causes the audio causes the sink to discard everything except
-the first two channels (front left and front right).
+To deal with this race, defer clearing and re-linking a completed rx
+descriptor until the next one has been processed.
 
-However, the sink may be capable of receiving more channels than it has
-speakers (and then perform downmix or discard the extra channels), in
-which case it is preferable to use a CA that contains extra channels
-than to use CA 0 which discards all the non-stereo channels.
-
-Additionally, it seems that HBR (HD) passthrough output does not work on
-Intel HDMI codecs when CA is set to 0 (possibly the codec zeroes
-channels not present in CA). This happens with all receivers that report
-a 5.1 speaker mask since a HBR stream is carried on 8 channels to the
-codec.
-
-Add a fallback in the CA selection so that the CA channel count at least
-matches the stream channel count, even if the stream contains channels
-not present in the sink speaker descriptor.
-
-Thanks to GrimGriefer at OpenELEC forums for discovering that changing
-the sink speaker mask allowed HBR output.
-
-Reported-by: GrimGriefer
-Reported-by: Ashecrow
-Reported-by: Frank Zafka <kafkaesque1978@gmail.com>
-Reported-by: Peter Frühberger <fritsch@xbmc.org>
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/net/wireless/ath/ath9k/ath9k.h |    5 +----
+ drivers/net/wireless/ath/ath9k/recv.c  |   17 +++++++++++++----
+ 2 files changed, 14 insertions(+), 8 deletions(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -553,6 +553,17 @@ static int hdmi_channel_allocation(struc
- 		}
+--- a/drivers/net/wireless/ath/ath9k/ath9k.h
++++ b/drivers/net/wireless/ath/ath9k/ath9k.h
+@@ -79,10 +79,6 @@ struct ath_config {
+ 		       sizeof(struct ath_buf_state));		\
+ 	} while (0)
+ 
+-#define ATH_RXBUF_RESET(_bf) do {		\
+-		(_bf)->bf_stale = false;	\
+-	} while (0)
+-
+ /**
+  * enum buffer_type - Buffer type flags
+  *
+@@ -317,6 +313,7 @@ struct ath_rx {
+ 	struct ath_descdma rxdma;
+ 	struct ath_rx_edma rx_edma[ATH9K_RX_QUEUE_MAX];
+ 
++	struct ath_buf *buf_hold;
+ 	struct sk_buff *frag;
+ 
+ 	u32 ampdu_ref;
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -42,8 +42,6 @@ static void ath_rx_buf_link(struct ath_s
+ 	struct ath_desc *ds;
+ 	struct sk_buff *skb;
+ 
+-	ATH_RXBUF_RESET(bf);
+-
+ 	ds = bf->bf_desc;
+ 	ds->ds_link = 0; /* link to null */
+ 	ds->ds_data = bf->bf_buf_addr;
+@@ -70,6 +68,14 @@ static void ath_rx_buf_link(struct ath_s
+ 	sc->rx.rxlink = &ds->ds_link;
+ }
+ 
++static void ath_rx_buf_relink(struct ath_softc *sc, struct ath_buf *bf)
++{
++	if (sc->rx.buf_hold)
++		ath_rx_buf_link(sc, sc->rx.buf_hold);
++
++	sc->rx.buf_hold = bf;
++}
++
+ static void ath_setdefantenna(struct ath_softc *sc, u32 antenna)
+ {
+ 	/* XXX block beacon interrupts */
+@@ -117,7 +123,6 @@ static bool ath_rx_edma_buf_link(struct
+ 
+ 	skb = bf->bf_mpdu;
+ 
+-	ATH_RXBUF_RESET(bf);
+ 	memset(skb->data, 0, ah->caps.rx_status_len);
+ 	dma_sync_single_for_device(sc->dev, bf->bf_buf_addr,
+ 				ah->caps.rx_status_len, DMA_TO_DEVICE);
+@@ -432,6 +437,7 @@ int ath_startrecv(struct ath_softc *sc)
+ 	if (list_empty(&sc->rx.rxbuf))
+ 		goto start_recv;
+ 
++	sc->rx.buf_hold = NULL;
+ 	sc->rx.rxlink = NULL;
+ 	list_for_each_entry_safe(bf, tbf, &sc->rx.rxbuf, list) {
+ 		ath_rx_buf_link(sc, bf);
+@@ -677,6 +683,9 @@ static struct ath_buf *ath_get_next_rx_b
  	}
  
-+	if (!ca) {
-+		/* if there was no match, select the regular ALSA channel
-+		 * allocation with the matching number of channels */
-+		for (i = 0; i < ARRAY_SIZE(channel_allocations); i++) {
-+			if (channels == channel_allocations[i].channels) {
-+				ca = channel_allocations[i].ca_index;
-+				break;
-+			}
-+		}
-+	}
+ 	bf = list_first_entry(&sc->rx.rxbuf, struct ath_buf, list);
++	if (bf == sc->rx.buf_hold)
++		return NULL;
 +
- 	snd_print_channel_allocation(eld->info.spk_alloc, buf, sizeof(buf));
- 	snd_printdd("HDMI: select CA 0x%x for %d-channel allocation: %s\n",
- 		    ca, channels, buf);
+ 	ds = bf->bf_desc;
+ 
+ 	/*
+@@ -1375,7 +1384,7 @@ requeue:
+ 		if (edma) {
+ 			ath_rx_edma_buf_link(sc, qtype);
+ 		} else {
+-			ath_rx_buf_link(sc, bf);
++			ath_rx_buf_relink(sc, bf);
+ 			ath9k_hw_rxena(ah);
+ 		}
+ 	} while (1);
 
 
