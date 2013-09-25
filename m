@@ -1,13 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab3IYBuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:50:06 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:57387 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab3IYBuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:50:03 -0400
-Date: Tue, 24 Sep 2013 18:49:55 -0700
+	id S1757792Ab3IYBuc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:50:32 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:46627 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755613Ab3IYBu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 21:50:26 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,51 +13,53 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: [PATCH tip/core/rcu 0/6] Idle entry/exit changes for 3.13
-Message-ID: <20130925014954.GA32109@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 3/6] rcu: Throttle invoke_rcu_core() invocations due to non-lazy callbacks
+Date: Tue, 24 Sep 2013 18:50:13 -0700
+Message-Id: <1380073816-32381-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1380073816-32381-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130925014954.GA32109@linux.vnet.ibm.com>
+ <1380073816-32381-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-1344-0000-0000-000001EB0D38
+x-cbid: 13092501-0320-0000-0000-0000011DABF4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This series updates RCU's idle entry/exit processing:
+If a non-lazy callback arrives on a CPU that has previously gone idle
+with no non-lazy callbacks, invoke_rcu_core() forces the RCU core to
+run.  However, it does not update the conditions, which could result
+in several closely spaced invocations of the RCU core, which in turn
+could result in an excessively high context-switch rate and resulting
+high overhead.
 
-1.	Remove redundant code from rcu_cleanup_after_idle().
+This commit therefore updates the ->all_lazy and ->nonlazy_posted_snap
+fields to prevent closely spaced invocations.
 
-2.	Throttle rcu_try_advance_all_cbs() execution to avoid kbuild
-	slowdowns.
+Reported-by: Tibor Billes <tbilles@gmx.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Tibor Billes <tbilles@gmx.com>
+---
+ kernel/rcutree_plugin.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-3.	Throttle non-lazy-callback-induced invoke_rcu_core() invocations.
-
-4.	Add primitive to determine whether it is safe to enter an RCU
-	read-side critical section.
-
-5.	Upgrade EXPORT_SYMBOL() to EXPORT_SYMBOL_GPL().
-
-6.	Change rcu_is_cpu_idle() function to __rcu_is_watching() for
-	naming consistency.
-
-							Thanx, Paul
-
-
- b/include/linux/rcupdate.h |   26 +++++++++++-----------
- b/include/linux/rcutiny.h  |   25 ++++++++++++++++++----
- b/include/linux/rcutree.h  |    4 ++-
- b/kernel/lockdep.c         |    4 +--
- b/kernel/rcupdate.c        |    2 -
- b/kernel/rcutiny.c         |   10 ++++----
- b/kernel/rcutree.c         |   51 ++++++++++++++++++++++++++++-----------------
- b/kernel/rcutree.h         |    2 +
- b/kernel/rcutree_plugin.h  |   24 +++++++++++----------
- 9 files changed, 92 insertions(+), 56 deletions(-)
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index d81e385..2c15d7c 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1745,6 +1745,8 @@ static void rcu_prepare_for_idle(int cpu)
+ 	 */
+ 	if (rdtp->all_lazy &&
+ 	    rdtp->nonlazy_posted != rdtp->nonlazy_posted_snap) {
++		rdtp->all_lazy = false;
++		rdtp->nonlazy_posted_snap = rdtp->nonlazy_posted;
+ 		invoke_rcu_core();
+ 		return;
+ 	}
+-- 
+1.8.1.5
 
