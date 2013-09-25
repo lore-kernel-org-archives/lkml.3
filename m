@@ -1,24 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab3IYAbZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:31:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39716 "EHLO
+	id S932300Ab3IYAUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:20:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39657 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756716Ab3IYAUq (ORCPT
+	with ESMTP id S1756656Ab3IYAUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:46 -0400
+	Tue, 24 Sep 2013 20:20:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Manoj Chourasia <mchourasia@nvidia.com>,
-        Peter Wu <lekensteyn@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 081/117] HID: hidraw: correctly deallocate memory on device disconnect
-Date: Tue, 24 Sep 2013 17:19:07 -0700
-Message-Id: <20130925001749.805989810@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Willy Tarreau <w@1wt.eu>,
+        Jochen De Smet <jochen.armkernel@leahnim.org>,
+        Peter Sanford <psanford@nearbuy.io>,
+        Ethan Tuttle <ethan@ethantuttle.com>,
+        =?UTF-8?q?Ch=C3=A9ny=20Yves-Gael?= <yves@cheny.fr>,
+        Ryan Press <ryan@presslab.us>,
+        Simon Guinot <simon.guinot@sequanux.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Vincent Donnefort <vdonnefort@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>, vdonnefort@lacie.com
+Subject: [ 069/117] net: mvneta: properly disable HW PHY polling and ensure adjust_link() works
+Date: Tue, 24 Sep 2013 17:18:55 -0700
+Message-Id: <20130925001748.398030649@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,134 +40,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manoj Chourasia <mchourasia@nvidia.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 212a871a3934beccf43431608c27ed2e05a476ec upstream.
+commit 714086029116b6b0a34e67ba1dd2f0d1cf26770c upstream.
 
-This changes puts the commit 4fe9f8e203f back in place
-with the fixes for slab corruption because of the commit.
+This commit fixes a long-standing bug that has been reported by many
+users: on some Armada 370 platforms, only the network interface that
+has been used in U-Boot to tftp the kernel works properly in
+Linux. The other network interfaces can see a 'link up', but are
+unable to transmit data. The reports were generally made on the Armada
+370-based Mirabox, but have also been given on the Armada 370-RD
+board.
 
-When a device is unplugged, wait for all processes that
-have opened the device to close before deallocating the device.
+The network MAC in the Armada 370/XP (supported by the mvneta driver
+in Linux) has a functionality that allows it to continuously poll the
+PHY and directly update the MAC configuration accordingly (speed,
+duplex, etc.). The very first versions of the driver submitted for
+review were using this hardware mechanism, but due to this, the driver
+was not integrated with the kernel phylib. Following reviews, the
+driver was changed to use the phylib, and therefore a software based
+polling. In software based polling, Linux regularly talks to the PHY
+over the MDIO bus, and sees if the link status has changed. If it's
+the case then the adjust_link() callback of the driver is called to
+update the MAC configuration accordingly.
 
-This commit was solving kernel crash because of the corruption in
-rb tree of vmalloc. The rootcause was the device data pointer was
-geting excessed after the memory associated with hidraw was freed.
+However, it turns out that the adjust_link() callback was not
+configuring the hardware in a completely correct way: while it was
+setting the speed and duplex bits correctly, it wasn't telling the
+hardware to actually take into account those bits rather than what the
+hardware-based PHY polling mechanism has concluded. So, in fact the
+adjust_link() callback was basically a no-op.
 
-The commit 4fe9f8e203f was buggy as it was also freeing the hidraw
-first and then calling delete operation on the list associated with
-that hidraw leading to slab corruption.
+However, the network happened to be working because on the network
+interfaces used by U-Boot for tftp on Armada 370 platforms because the
+hardware PHY polling was enabled by the bootloader, and left enabled
+by Linux. However, the second network interface not used for tftp (or
+both network interfaces if the kernel is loaded from USB, NAND or SD
+card) didn't had the hardware PHY polling enabled.
 
-Signed-off-by: Manoj Chourasia <mchourasia@nvidia.com>
-Tested-by: Peter Wu <lekensteyn@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+This patch fixes this situation by:
+
+ (1) Making sure that the hardware PHY polling is disabled by clearing
+     the MVNETA_PHY_POLLING_ENABLE bit in the MVNETA_UNIT_CONTROL
+     register in the driver ->probe() function.
+
+ (2) Making sure that the duplex and speed selections made by the
+     adjust_link() callback are taken into account by clearing the
+     MVNETA_GMAC_AN_SPEED_EN and MVNETA_GMAC_AN_DUPLEX_EN bits in the
+     MVNETA_GMAC_AUTONEG_CONFIG register.
+
+This patch has been tested on Armada 370 Mirabox, and now both network
+interfaces are usable after boot.
+
+[ Problem introduced by commit c5aff18 ("net: mvneta: driver for
+  Marvell Armada 370/XP network unit") ]
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: Jochen De Smet <jochen.armkernel@leahnim.org>
+Cc: Peter Sanford <psanford@nearbuy.io>
+Cc: Ethan Tuttle <ethan@ethantuttle.com>
+Cc: Chény Yves-Gael <yves@cheny.fr>
+Cc: Ryan Press <ryan@presslab.us>
+Cc: Simon Guinot <simon.guinot@sequanux.org>
+Cc: vdonnefort@lacie.com
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Tested-by: Vincent Donnefort <vdonnefort@gmail.com>
+Tested-by: Yves-Gael Cheny <yves@cheny.fr>
+Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hidraw.c |   60 +++++++++++++++++++++------------------------------
- 1 file changed, 25 insertions(+), 35 deletions(-)
+ drivers/net/ethernet/marvell/mvneta.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -113,7 +113,7 @@ static ssize_t hidraw_send_report(struct
- 	__u8 *buf;
- 	int ret = 0;
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -138,7 +138,9 @@
+ #define      MVNETA_GMAC_FORCE_LINK_PASS         BIT(1)
+ #define      MVNETA_GMAC_CONFIG_MII_SPEED        BIT(5)
+ #define      MVNETA_GMAC_CONFIG_GMII_SPEED       BIT(6)
++#define      MVNETA_GMAC_AN_SPEED_EN             BIT(7)
+ #define      MVNETA_GMAC_CONFIG_FULL_DUPLEX      BIT(12)
++#define      MVNETA_GMAC_AN_DUPLEX_EN            BIT(13)
+ #define MVNETA_MIB_COUNTERS_BASE                 0x3080
+ #define      MVNETA_MIB_LATE_COLLISION           0x7c
+ #define MVNETA_DA_FILT_SPEC_MCAST                0x3400
+@@ -915,6 +917,13 @@ static void mvneta_defaults_set(struct m
+ 	/* Assign port SDMA configuration */
+ 	mvreg_write(pp, MVNETA_SDMA_CONFIG, val);
  
--	if (!hidraw_table[minor]) {
-+	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
- 		ret = -ENODEV;
- 		goto out;
- 	}
-@@ -261,7 +261,7 @@ static int hidraw_open(struct inode *ino
- 	}
- 
- 	mutex_lock(&minors_lock);
--	if (!hidraw_table[minor]) {
-+	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
- 		err = -ENODEV;
- 		goto out_unlock;
- 	}
-@@ -302,39 +302,38 @@ static int hidraw_fasync(int fd, struct
- 	return fasync_helper(fd, file, on, &list->fasync);
- }
- 
-+static void drop_ref(struct hidraw *hidraw, int exists_bit)
-+{
-+	if (exists_bit) {
-+		hid_hw_close(hidraw->hid);
-+		hidraw->exist = 0;
-+		if (hidraw->open)
-+			wake_up_interruptible(&hidraw->wait);
-+	} else {
-+		--hidraw->open;
-+	}
++	/* Disable PHY polling in hardware, since we're using the
++	 * kernel phylib to do this.
++	 */
++	val = mvreg_read(pp, MVNETA_UNIT_CONTROL);
++	val &= ~MVNETA_PHY_POLLING_ENABLE;
++	mvreg_write(pp, MVNETA_UNIT_CONTROL, val);
 +
-+	if (!hidraw->open && !hidraw->exist) {
-+		device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
-+		hidraw_table[hidraw->minor] = NULL;
-+		kfree(hidraw);
-+	}
-+}
-+
- static int hidraw_release(struct inode * inode, struct file * file)
- {
- 	unsigned int minor = iminor(inode);
--	struct hidraw *dev;
- 	struct hidraw_list *list = file->private_data;
--	int ret;
--	int i;
+ 	mvneta_set_ucast_table(pp, -1);
+ 	mvneta_set_special_mcast_table(pp, -1);
+ 	mvneta_set_other_mcast_table(pp, -1);
+@@ -2307,7 +2316,9 @@ static void mvneta_adjust_link(struct ne
+ 			val = mvreg_read(pp, MVNETA_GMAC_AUTONEG_CONFIG);
+ 			val &= ~(MVNETA_GMAC_CONFIG_MII_SPEED |
+ 				 MVNETA_GMAC_CONFIG_GMII_SPEED |
+-				 MVNETA_GMAC_CONFIG_FULL_DUPLEX);
++				 MVNETA_GMAC_CONFIG_FULL_DUPLEX |
++				 MVNETA_GMAC_AN_SPEED_EN |
++				 MVNETA_GMAC_AN_DUPLEX_EN);
  
- 	mutex_lock(&minors_lock);
--	if (!hidraw_table[minor]) {
--		ret = -ENODEV;
--		goto unlock;
--	}
- 
- 	list_del(&list->node);
--	dev = hidraw_table[minor];
--	if (!--dev->open) {
--		if (list->hidraw->exist) {
--			hid_hw_power(dev->hid, PM_HINT_NORMAL);
--			hid_hw_close(dev->hid);
--		} else {
--			kfree(list->hidraw);
--		}
--	}
--
--	for (i = 0; i < HIDRAW_BUFFER_SIZE; ++i)
--		kfree(list->buffer[i].value);
- 	kfree(list);
--	ret = 0;
--unlock:
--	mutex_unlock(&minors_lock);
- 
--	return ret;
-+	drop_ref(hidraw_table[minor], 0);
-+
-+	mutex_unlock(&minors_lock);
-+	return 0;
- }
- 
- static long hidraw_ioctl(struct file *file, unsigned int cmd,
-@@ -539,18 +538,9 @@ void hidraw_disconnect(struct hid_device
- 	struct hidraw *hidraw = hid->hidraw;
- 
- 	mutex_lock(&minors_lock);
--	hidraw->exist = 0;
--
--	device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
- 
--	hidraw_table[hidraw->minor] = NULL;
-+	drop_ref(hidraw, 1);
- 
--	if (hidraw->open) {
--		hid_hw_close(hid);
--		wake_up_interruptible(&hidraw->wait);
--	} else {
--		kfree(hidraw);
--	}
- 	mutex_unlock(&minors_lock);
- }
- EXPORT_SYMBOL_GPL(hidraw_disconnect);
+ 			if (phydev->duplex)
+ 				val |= MVNETA_GMAC_CONFIG_FULL_DUPLEX;
 
 
