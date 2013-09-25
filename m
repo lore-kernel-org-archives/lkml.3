@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab3IYAlu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:41:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39551 "EHLO
+	id S1757055Ab3IYAmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:42:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39539 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab3IYAUR (ORCPT
+	with ESMTP id S1756574Ab3IYAUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:17 -0400
+	Tue, 24 Sep 2013 20:20:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
         Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 046/117] USB: handle LPM errors during device suspend correctly
-Date: Tue, 24 Sep 2013 17:18:32 -0700
-Message-Id: <20130925001745.857958484@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 043/117] usb: Dont fail port power resume on device disconnect.
+Date: Tue, 24 Sep 2013 17:18:29 -0700
+Message-Id: <20130925001745.546690240@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,150 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit aa5ceae24bf8dff1d6fe87c6c4b08e69c6d33550 upstream.
+commit d49dad3e11638f66be4e16573ffaa8c46a09e3b3 upstream.
 
-The hub driver's usb_port_suspend() routine doesn't handle errors
-related to Link Power Management properly.  It always returns failure,
-it doesn't try to clean up the wakeup setting, (in the case of system
-sleep) it doesn't try to go ahead with the port suspend regardless,
-and it doesn't try to apply the new power-off mechanism.
+Userspace can tell the kernel to power off any USB port, including ones
+that are visible and connectible to users.  When an attached USB device
+goes into suspend, the port will be powered off if the
+pm_qos_no_port_poweroff file for its port is set to 0, the device does
+not have remote wakeup enabled, and the device is marked as persistent.
 
-This patch fixes these problems.
+If the user disconnects the USB device while the port is powered off,
+the current code does not handle that properly.  If you disconnect a
+device, and then run `lsusb -v -s` for the device, the device disconnect
+does not get handled by the USB core.  The runtime resume of the port
+fails, because hub_port_debounce_be_connected() returns -ETIMEDOUT.
 
-Note: Sarah fixed this patch to apply against 3.11, since the original
-commit (4fae6f0fa86f92e6bc7429371b1e177ad0aaac66 "USB: handle LPM errors
-during device suspend correctly") called usb_disable_remote_wakeup,
-which won't be added until 3.12.
+This means the port resume fails and khubd doesn't handle the USB device
+disconnect.  This leaves the device listed in lsusb, and the port's
+runtime_status will be permanently marked as "error".
 
-This patch should be backported to kernels as old as 3.5, that
-contain the commit 8306095fd2c1100e8244c09bf560f97aca5a311d "USB:
-Disable USB 3.0 LPM in critical sections.".  There will be merge
-conflicts, since LTM wasn't added until 3.6.
+Fix this by ignoring the return value of hub_port_debounce_be_connected.
+Users can disconnect USB devices while the ports are powered off, and we
+must be able to handle that.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+This patch should be backported to kernels as old as 3.9, that
+contain the commit ad493e5e580546e6c3024b76a41535476da1546a "usb: add
+usb port auto power off mechanism"
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   71 ++++++++++++++++++++++++++-----------------------
- 1 file changed, 38 insertions(+), 33 deletions(-)
+ drivers/usb/core/port.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2918,7 +2918,6 @@ int usb_port_suspend(struct usb_device *
- {
- 	struct usb_hub	*hub = usb_hub_to_struct_hub(udev->parent);
- 	struct usb_port *port_dev = hub->ports[udev->portnum - 1];
--	enum pm_qos_flags_status pm_qos_stat;
- 	int		port1 = udev->portnum;
- 	int		status;
- 	bool		really_suspend = true;
-@@ -2956,7 +2955,7 @@ int usb_port_suspend(struct usb_device *
- 					status);
- 			/* bail if autosuspend is requested */
- 			if (PMSG_IS_AUTO(msg))
--				return status;
-+				goto err_wakeup;
- 		}
- 	}
- 
-@@ -2965,14 +2964,16 @@ int usb_port_suspend(struct usb_device *
- 		usb_set_usb2_hardware_lpm(udev, 0);
- 
- 	if (usb_disable_ltm(udev)) {
--		dev_err(&udev->dev, "%s Failed to disable LTM before suspend\n.",
--				__func__);
--		return -ENOMEM;
-+		dev_err(&udev->dev, "Failed to disable LTM before suspend\n.");
-+		status = -ENOMEM;
-+		if (PMSG_IS_AUTO(msg))
-+			goto err_ltm;
- 	}
- 	if (usb_unlocked_disable_lpm(udev)) {
--		dev_err(&udev->dev, "%s Failed to disable LPM before suspend\n.",
--				__func__);
--		return -ENOMEM;
-+		dev_err(&udev->dev, "Failed to disable LPM before suspend\n.");
-+		status = -ENOMEM;
-+		if (PMSG_IS_AUTO(msg))
-+			goto err_lpm3;
- 	}
- 
- 	/* see 7.1.7.6 */
-@@ -3000,28 +3001,31 @@ int usb_port_suspend(struct usb_device *
- 	if (status) {
- 		dev_dbg(hub->intfdev, "can't suspend port %d, status %d\n",
- 				port1, status);
--		/* paranoia:  "should not happen" */
--		if (udev->do_remote_wakeup) {
--			if (!hub_is_superspeed(hub->hdev)) {
--				(void) usb_control_msg(udev,
--						usb_sndctrlpipe(udev, 0),
--						USB_REQ_CLEAR_FEATURE,
--						USB_RECIP_DEVICE,
--						USB_DEVICE_REMOTE_WAKEUP, 0,
--						NULL, 0,
--						USB_CTRL_SET_TIMEOUT);
--			} else
--				(void) usb_disable_function_remotewakeup(udev);
--
+--- a/drivers/usb/core/port.c
++++ b/drivers/usb/core/port.c
+@@ -89,22 +89,19 @@ static int usb_port_runtime_resume(struc
+ 	retval = usb_hub_set_port_power(hdev, hub, port1, true);
+ 	if (port_dev->child && !retval) {
+ 		/*
+-		 * Wait for usb hub port to be reconnected in order to make
+-		 * the resume procedure successful.
++		 * Attempt to wait for usb hub port to be reconnected in order
++		 * to make the resume procedure successful.  The device may have
++		 * disconnected while the port was powered off, so ignore the
++		 * return status.
+ 		 */
+ 		retval = hub_port_debounce_be_connected(hub, port1);
+-		if (retval < 0) {
++		if (retval < 0)
+ 			dev_dbg(&port_dev->dev, "can't get reconnection after setting port  power on, status %d\n",
+ 					retval);
+-			goto out;
 -		}
- 
-+		/* Try to enable USB3 LPM and LTM again */
-+		usb_unlocked_enable_lpm(udev);
-+ err_lpm3:
-+		usb_enable_ltm(udev);
-+ err_ltm:
- 		/* Try to enable USB2 hardware LPM again */
- 		if (udev->usb2_hw_lpm_capable == 1)
- 			usb_set_usb2_hardware_lpm(udev, 1);
- 
--		/* Try to enable USB3 LTM and LPM again */
--		usb_enable_ltm(udev);
--		usb_unlocked_enable_lpm(udev);
-+		if (udev->do_remote_wakeup) {
-+			if (udev->speed < USB_SPEED_SUPER)
-+				usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
-+						USB_REQ_CLEAR_FEATURE,
-+						USB_RECIP_DEVICE,
-+						USB_DEVICE_REMOTE_WAKEUP, 0,
-+						NULL, 0, USB_CTRL_SET_TIMEOUT);
-+			else
-+				usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
-+						USB_REQ_CLEAR_FEATURE,
-+						USB_RECIP_INTERFACE,
-+						USB_INTRF_FUNC_SUSPEND, 0,
-+						NULL, 0, USB_CTRL_SET_TIMEOUT);
-+		}
-+ err_wakeup:
- 
- 		/* System sleep transitions should never fail */
- 		if (!PMSG_IS_AUTO(msg))
-@@ -3043,14 +3047,15 @@ int usb_port_suspend(struct usb_device *
- 	 * Check whether current status meets the requirement of
- 	 * usb port power off mechanism
- 	 */
--	pm_qos_stat = dev_pm_qos_flags(&port_dev->dev,
--			PM_QOS_FLAG_NO_POWER_OFF);
--	if (!udev->do_remote_wakeup
--			&& pm_qos_stat != PM_QOS_FLAGS_ALL
--			&& udev->persist_enabled
--			&& !status) {
--		pm_runtime_put_sync(&port_dev->dev);
--		port_dev->did_runtime_put = true;
-+	if (status == 0 && !udev->do_remote_wakeup && udev->persist_enabled) {
-+		enum pm_qos_flags_status pm_qos_stat;
-+
-+		pm_qos_stat = dev_pm_qos_flags(&port_dev->dev,
-+				PM_QOS_FLAG_NO_POWER_OFF);
-+		if (pm_qos_stat != PM_QOS_FLAGS_ALL) {
-+			pm_runtime_put_sync(&port_dev->dev);
-+			port_dev->did_runtime_put = true;
-+		}
+ 		usb_clear_port_feature(hdev, port1, USB_PORT_FEAT_C_ENABLE);
+-
+-		/* Set return value to 0 if debounce successful */
+ 		retval = 0;
  	}
  
- 	usb_mark_last_busy(hub->hdev);
+-out:
+ 	clear_bit(port1, hub->busy_bits);
+ 	usb_autopm_put_interface(intf);
+ 	return retval;
 
 
