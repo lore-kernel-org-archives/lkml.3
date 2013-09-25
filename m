@@ -1,99 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab3IYWIo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 18:08:44 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:62938 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab3IYWIn (ORCPT
+	id S1755168Ab3IYWJb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 18:09:31 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:64235 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab3IYWJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 18:08:43 -0400
-Date: Wed, 25 Sep 2013 15:08:38 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        bugzilla@colorremedies.com
-Subject: Re: applesmc oops in 3.10/3.11
-Message-ID: <20130925220838.GB4184@roeck-us.net>
-References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com>
- <20130925195628.GA1532@roeck-us.net>
- <20130925214807.GA3234@polaris.bitmath.org>
+	Wed, 25 Sep 2013 18:09:29 -0400
+Message-ID: <52435F16.5080806@linaro.org>
+Date: Thu, 26 Sep 2013 00:09:26 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925214807.GA3234@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@sisk.pl
+CC: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/21] cpuidle: free all state kobjects from cpuidle_free_state_kobj()
+References: <cover.1379779777.git.viresh.kumar@linaro.org> <503b7472308007b4c233b33d19f5a54c138212e7.1379779777.git.viresh.kumar@linaro.org>
+In-Reply-To: <503b7472308007b4c233b33d19f5a54c138212e7.1379779777.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 11:48:07PM +0200, Henrik Rydberg wrote:
-> On Wed, Sep 25, 2013 at 12:56:28PM -0700, Guenter Roeck wrote:
-> > On Wed, Sep 25, 2013 at 03:06:25PM -0400, Josh Boyer wrote:
-> > > Hi All,
-> > > 
-> > > Chris has reported[1] an issue with the applesmc driver in the 3.10
-> > > and 3.11 kernels.  This seems to be a bit transient, but the oops is
-> > > consistent across those releases.  This is with a MacBook Pro 4,1.
-> > > The backtrace is below.
-> > > 
-> > > Any ideas on this one?
-> > > 
-> > Some of the bug reports suggest that there are related messages in at least some
-> > of the kernel logs.
-> > 
-> > Jul 02 22:23:22 f19s.local kernel: applesmc: send_byte(0x04, 0x0300) fail: 0x01
-> > Jul 02 22:23:22 f19s.local kernel: applesmc: : read len fail
-> > 
-> > This suggests that initialization may be attempted more than once. The key cache
-> > is allocated only once, but the number of keys is read for each attempt.
-> > 
-> > No idea if that can happen, but if the number of keys can increase after
-> > the first initialization attempt you would have an explanation for the crash.
+On 09/22/2013 03:21 AM, Viresh Kumar wrote:
+> Loop for states is currently present on callers side and so is replicated at
+> several places. It would be better to move that inside cpuidle_free_state_kobj()
+> instead.
 > 
-> Good idea, and easy enough to test with the patch below.
+> This patch does it.
 > 
-Should we apply this patch even though it may not solve the specific problem ?
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Again, not sure if the key count can change, but the current code is at the very
-least inconsistent, as it keeps reading the key count without updating or
-verifying the cache size.
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-Thanks,
-Guenter
-
-> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-> index 62c2e32..d962c4d 100644
-> --- a/drivers/hwmon/applesmc.c
-> +++ b/drivers/hwmon/applesmc.c
-> @@ -525,16 +525,24 @@ static int applesmc_init_smcreg_try(void)
+> ---
+>  drivers/cpuidle/sysfs.c | 23 ++++++++++++-----------
+>  1 file changed, 12 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+> index e918b6d..ade31a9 100644
+> --- a/drivers/cpuidle/sysfs.c
+> +++ b/drivers/cpuidle/sysfs.c
+> @@ -378,12 +378,17 @@ static struct kobj_type ktype_state_cpuidle = {
+>  	.release = cpuidle_state_sysfs_release,
+>  };
+>  
+> -static inline void cpuidle_free_state_kobj(struct cpuidle_device *device, int i)
+> +static inline void cpuidle_free_state_kobj(struct cpuidle_device *device,
+> +		int count)
 >  {
->         struct applesmc_registers *s = &smcreg;
->         bool left_light_sensor, right_light_sensor;
-> +       unsigned int count;
->         u8 tmp[1];
->         int ret;
->  
->         if (s->init_complete)
->                 return 0;
->  
-> -       ret = read_register_count(&s->key_count);
-> +       ret = read_register_count(&count);
->         if (ret)
->                 return ret;
->  
-> +       if (s->cache && s->key_count != count) {
-> +               pr_warn("key count changed from %d to %d\n", s->key_count, count);
-> +               kfree(s->cache);
-> +               s->cache = NULL;
-> +       }
-> +       s->key_count = count;
+> -	kobject_put(&device->kobjs[i]->kobj);
+> -	wait_for_completion(&device->kobjs[i]->kobj_unregister);
+> -	kfree(device->kobjs[i]);
+> -	device->kobjs[i] = NULL;
+> +	int i;
 > +
->         if (!s->cache)
->                 s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
->         if (!s->cache)
+> +	for (i = 0; i < count; i++) {
+> +		kobject_put(&device->kobjs[i]->kobj);
+> +		wait_for_completion(&device->kobjs[i]->kobj_unregister);
+> +		kfree(device->kobjs[i]);
+> +		device->kobjs[i] = NULL;
+> +	}
+>  }
 >  
-> Thanks,
-> Henrik
+>  /**
+> @@ -419,8 +424,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
+>  	return 0;
+>  
+>  error_state:
+> -	for (i = i - 1; i >= 0; i--)
+> -		cpuidle_free_state_kobj(device, i);
+> +	cpuidle_free_state_kobj(device, i);
+>  	return ret;
+>  }
+>  
+> @@ -430,10 +434,7 @@ error_state:
+>   */
+>  static void cpuidle_remove_state_sysfs(struct cpuidle_device *device)
+>  {
+> -	int i;
+> -
+> -	for (i = 0; i < device->state_count; i++)
+> -		cpuidle_free_state_kobj(device, i);
+> +	cpuidle_free_state_kobj(device, device->state_count);
+>  }
+>  
+>  #ifdef CONFIG_CPU_IDLE_MULTIPLE_DRIVERS
 > 
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
