@@ -1,77 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab3IYCgi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 22:36:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40460 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449Ab3IYCgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 22:36:36 -0400
-Date: Wed, 25 Sep 2013 10:36:15 +0800
-From: Dave Young <dyoung@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-Message-ID: <20130925023615.GB7434@dhcp-16-126.nay.redhat.com>
-References: <e39e1065bddc2afee2cb6eed957e3ba8.squirrel@www.skyhub.de>
- <52422A6A.8080305@zytor.com>
+	id S1754738Ab3IYCxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 22:53:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50333 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753881Ab3IYCxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 22:53:10 -0400
+X-IronPort-AV: E=Sophos;i="4.90,975,1371052800"; 
+   d="scan'208";a="8613314"
+Message-ID: <52424EE5.3070807@cn.fujitsu.com>
+Date: Wed, 25 Sep 2013 10:48:05 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52422A6A.8080305@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russ Knize <rknize@gmail.com>
+CC: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russ Knize <Russ.Knize@motorola.com>
+Subject: Re: [RFC 1/1] f2fs: don't GC or take an fs_lock from f2fs_initxattrs()
+References: <n> <1380055763-13425-1-git-send-email-rknize@gmail.com>
+In-Reply-To: <1380055763-13425-1-git-send-email-rknize@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/25 10:51:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/25 10:51:25,
+	Serialize complete at 2013/09/25 10:51:25
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/13 at 05:12pm, H. Peter Anvin wrote:
-> On 09/24/2013 07:56 AM, Borislav Petkov wrote:
-> > On Tue, September 24, 2013 2:45 pm, Dave Young wrote:
-> >> Think again about this, how about 1:1 map them from a base address
-> >> like -64G phy_addr -> (-64G + phy_addr), in this way we can avoid
-> >> depending on the previous region size.
-> > 
-> > Right, how we layout the regions is arbitrary as long as we start at
-> > the same VA and use the same regions, in the same order and of the same
-> > size...
-> > 
-> >> For the zero region problem, we can resolve it as a standalone
-> >> problem.
-> > 
-> > ... however, we still need to understand why it fails mapping the boot
-> > services region as some implementations apparently do call boot services
-> > even after ExitBootServices(). IOW, we need that region mapped in the
-> > kexec'ed kernel too.
-> > 
-> 
-> I am starting to think that we really should explicitly pass along the
-> EFI mappings to the secondary kernel.  This will also help if we have to
-> change the algorithm in a future kernel.
+On 09/25/2013 04:49 AM, Russ Knize wrote:
 
-The 0 size mem region is still a problem even we pass the previous mapping
-to 2nd kernel. So will be be enough to 1:1 map on high address and leave the
-firmware provided memmap not touched, use a copy of memmap in kernel?
+> From: Russ Knize <Russ.Knize@motorola.com>
+> 
+> f2fs_initxattrs() is called internally from within F2FS and should
+> not call functions that are used by VFS handlers.  This avoids
+> certain deadlocks:
+> 
+> - vfs_create()
+>  - f2fs_create() <-- takes an fs_lock
+>   - f2fs_add_link()
+>    - __f2fs_add_link()
+>     - init_inode_metadata()
+>      - f2fs_init_security()
+>       - security_inode_init_security()
+>        - f2fs_initxattrs()
+>         - f2fs_setxattr() <-- also takes an fs_lock
+> 
+> If the caller happens to grab the same fs_lock from the pool in both
+> places, they will deadlock.  There are also deadlocks involving
+> multiple threads and mutexes:
+> 
+> - f2fs_write_begin()
+>  - f2fs_balance_fs() <-- takes gc_mutex
+>   - f2fs_gc()
+>    - write_checkpoint()
+>     - block_operations()
+>      - mutex_lock_all() <-- blocks trying to grab all fs_locks
+> 
+> - f2fs_mkdir() <-- takes an fs_lock
+>  - __f2fs_add_link()
+>   - f2fs_init_security()
+>    - security_inode_init_security()
+>     - f2fs_initxattrs()
+>      - f2fs_setxattr()
+>       - f2fs_balance_fs() <-- blocks trying to take gc_mutex
+> 
+> Signed-off-by: Russ Knize <Russ.Knize@motorola.com>
 
+This solution is more thorough.
+
+Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+
+> ---
+>  fs/f2fs/xattr.c |   35 +++++++++++++++++++++++++----------
+>  1 file changed, 25 insertions(+), 10 deletions(-)
 > 
-> The most logical way to do this is to define a new setup_data type and
-> pass the entire set of physical-to-virtual mappings that way.
-> 
-> For example:
-> 
-> struct efi_mapping {
-> 	u64 va;			/* Virtual start address */
-> 	u64 pa;			/* Physical start address */
-> 	u64 len;		/* Length in bytes */
-> 	u64 type;		/* Mapping type */
-> 	u64 reserved[3];	/* Reserved, must be zero */
-> };
-> 
-> Adding some reserved fields seems like a prudent precaution; the map
-> shouldn't be all that large anyway.
-> 
-> 	-hpa
-> 
+> diff --git a/fs/f2fs/xattr.c b/fs/f2fs/xattr.c
+> index 1ac8a5f..3d900ea 100644
+> --- a/fs/f2fs/xattr.c
+> +++ b/fs/f2fs/xattr.c
+> @@ -154,6 +154,9 @@ static int f2fs_xattr_advise_set(struct dentry *dentry, const char *name,
+>  }
+>  
+>  #ifdef CONFIG_F2FS_FS_SECURITY
+> +static int __f2fs_setxattr(struct inode *inode, int name_index,
+> +			const char *name, const void *value, size_t value_len,
+> +			struct page *ipage);
+>  static int f2fs_initxattrs(struct inode *inode, const struct xattr *xattr_array,
+>  		void *page)
+>  {
+> @@ -161,7 +164,7 @@ static int f2fs_initxattrs(struct inode *inode, const struct xattr *xattr_array,
+>  	int err = 0;
+>  
+>  	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
+> -		err = f2fs_setxattr(inode, F2FS_XATTR_INDEX_SECURITY,
+> +		err = __f2fs_setxattr(inode, F2FS_XATTR_INDEX_SECURITY,
+>  				xattr->name, xattr->value,
+>  				xattr->value_len, (struct page *)page);
+>  		if (err < 0)
+> @@ -469,16 +472,15 @@ cleanup:
+>  	return error;
+>  }
+>  
+> -int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
+> -			const void *value, size_t value_len, struct page *ipage)
+> +static int __f2fs_setxattr(struct inode *inode, int name_index,
+> +			const char *name, const void *value, size_t value_len,
+> +			struct page *ipage)
+>  {
+> -	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+>  	struct f2fs_inode_info *fi = F2FS_I(inode);
+>  	struct f2fs_xattr_entry *here, *last;
+>  	void *base_addr;
+>  	int found, newsize;
+>  	size_t name_len;
+> -	int ilock;
+>  	__u32 new_hsize;
+>  	int error = -ENOMEM;
+>  
+> @@ -493,10 +495,6 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
+>  	if (name_len > F2FS_NAME_LEN || value_len > MAX_VALUE_LEN(inode))
+>  		return -ERANGE;
+>  
+> -	f2fs_balance_fs(sbi);
+> -
+> -	ilock = mutex_lock_op(sbi);
+> -
+>  	base_addr = read_all_xattrs(inode, ipage);
+>  	if (!base_addr)
+>  		goto exit;
+> @@ -578,7 +576,24 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
+>  	else
+>  		update_inode_page(inode);
+>  exit:
+> -	mutex_unlock_op(sbi, ilock);
+>  	kzfree(base_addr);
+>  	return error;
+>  }
+> +
+> +int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
+> +			const void *value, size_t value_len, struct page *ipage)
+> +{
+> +	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> +	int ilock;
+> +	int err;
+> +
+> +	f2fs_balance_fs(sbi);
+> +
+> +	ilock = mutex_lock_op(sbi);
+> +
+> +	err = __f2fs_setxattr(inode, name_index, name, value, value_len, ipage);
+> +
+> +	mutex_unlock_op(sbi, ilock);
+> +
+> +	return err;
+> +}
+
+
