@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab3IYDLq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 23:11:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59085 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754502Ab3IYDLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 23:11:44 -0400
-Date: Tue, 24 Sep 2013 23:11:27 -0400
-From: Dave Jones <davej@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Chen Gang <gang.chen@asianux.com>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, mempolicy: make mpol_to_str robust and always succeed
-Message-ID: <20130925031127.GA4210@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Rientjes <rientjes@google.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Chen Gang <gang.chen@asianux.com>, Rik van Riel <riel@redhat.com>,
-	linux-kernel@vger.kernel.org, linux-mm@kvack.org
-References: <5215639D.1080202@asianux.com>
- <5227CF48.5080700@asianux.com>
- <alpine.DEB.2.02.1309241957280.26415@chino.kir.corp.google.com>
+	id S1754658Ab3IYDOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 23:14:14 -0400
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:59926 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439Ab3IYDOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 23:14:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1309241957280.26415@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52425041.6030609@gmail.com>
+References: <52425041.6030609@gmail.com>
+Date: Tue, 24 Sep 2013 20:14:11 -0700
+X-Google-Sender-Auth: uWLha29NxZsmfKdjS2ZQii0G8w0
+Message-ID: <CA+55aFxPHaTxixmmMZfKF-RzW4dfz=6o_1E5XR=GJ0qdSVNaxA@mail.gmail.com>
+Subject: Re: [GIT PULL] Devicetree fixes for 3.12
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Dinh Nguyen <dinguyen@altera.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 07:58:22PM -0700, David Rientjes wrote:
+On Tue, Sep 24, 2013 at 7:53 PM, Rob Herring <robherring2@gmail.com> wrote:
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git
 
- >  	case MPOL_BIND:
- > -		/* Fall through */
- >  	case MPOL_INTERLEAVE:
- >  		nodes = pol->v.nodes;
- >  		break;
+Hmm. Did you mean for me to pull the "devicetree-fixes" tag?
 
-Any reason not to leave this ?
+If so, please say so very explicitly. I don't want to have to search
+for these things..
 
-"missing break" is the 2nd most common thing that coverity picks up.
-Most of them are false positives like the above, but the lack of annotations
-in our source makes it time-consuming to pick through them all to find the
-real bugs.
+IOW, if that's what you meant, that line should have said
 
-	Dave
+  git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git
+tags/devicetree-fixes
 
+instead.
+
+             Linus
