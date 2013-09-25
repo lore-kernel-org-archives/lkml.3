@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab3IYUgO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:36:14 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46838 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755429Ab3IYUgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:36:12 -0400
-Date: Wed, 25 Sep 2013 15:35:58 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: <balbi@ti.com>, Pavel Machek <pavel@ucw.cz>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: Fix style in s3c-hsotg.c
-Message-ID: <20130925203558.GV10746@radagast>
-Reply-To: <balbi@ti.com>
-References: <20130902135832.GA22300@amd.pavel.ucw.cz>
- <20130918092027.GA8325@amd.pavel.ucw.cz>
- <20130918141106.GH21559@radagast>
- <2758936.kqHJ9YzqCC@amdc1032>
+	id S1755374Ab3IYUoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:44:12 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:33885 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754851Ab3IYUoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 16:44:10 -0400
+Message-ID: <52434AED.3000104@ahsoftware.de>
+Date: Wed, 25 Sep 2013 22:43:25 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oNLI4EWr1RPQuPCf"
-Content-Disposition: inline
-In-Reply-To: <2758936.kqHJ9YzqCC@amdc1032>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] add exFAT driver
+References: <20130830124622.5f81b7d4@rechenknecht2k7> <20130830154205.GA1411@kroah.com> <20130925183632.08a0d073@rechenknecht2k7> <20130925172704.GB5258@kroah.com> <20130925183235.GA9659@srcf.ucam.org> <20130925184539.GA4208@kroah.com> <52433978.9050302@ahsoftware.de> <20130925202151.GA6149@kroah.com>
+In-Reply-To: <20130925202151.GA6149@kroah.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---oNLI4EWr1RPQuPCf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Am 25.09.2013 22:21, schrieb Greg Kroah-Hartman:
+> On Wed, Sep 25, 2013 at 09:28:56PM +0200, Alexander Holler wrote:
 
-Hi,
+>> Maybe a silly question, but isn't exFAT protected by some MS owned
+>> patents which might drive Linux users into the hand of MS lawyers as
+>> already happened with FAT? It would make me wonder if not. Maybe you
+>> could ask Samsung about that too, when you are there.
+>
+> Because Samsung released the code under the GPLv2, and their lawyers
+> understand what that means, should answer any question you might have
+> about this.
+>
+> thanks,
 
-On Wed, Sep 25, 2013 at 05:39:39PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> Pavel, Felipe's remark was valid..
->=20
-> > > No, I'll not polish patch for hardware I don't have and have little
-> > > interest in.  wanted to help you, but according to your first reply,
-> > > you do not really want help.
-> >=20
-> > that's your call. Now how about you stop being such a baby and go fix
-> > your mistakes to start with ? Just because I'm the maintainer of the
-> > gadget framework, doesn't mean I'm the maintainer of s3c-hsotc.c file.
-> > Maintainer !=3D author too, btw.
-> >=20
-> > Anyway, I got much better stuff to do than babysitting grown ups.
->=20
-> ..even if it could have been communicated in a gentler way.
->=20
-> Anyway s3c-hsotg.c is a driver for our hardware so I'm going to pick this
-> patch up, polish it and then re-submit it later. Thanks.
+I'll have to thank for the clarification.
 
-I tried a few times being nice and the response was always in the lines
-of "you should go fix the patch yourself if you don't like it" (not
-exactly these words, but same message). After some time of being nice
-and get nowhere, I just got fed up.
+Alexander Holler
 
-cheers
-
---=20
-balbi
-
---oNLI4EWr1RPQuPCf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSQ0ktAAoJEIaOsuA1yqRE0asP/jIgs8AJ4P4JJDZnjJfhY15l
-LBvFJP+CdFm76nyZUhfdoVzg3XdHKTEFOLeqpzQOz/Tsozo/MIJGvQScMU+L3EM6
-eEhM6zS/Kx0MsXZm8k8nxws5CPfjZoUVb2noTSN9iS82LWuof7yzHiB1ppTb8g1q
-6r6onw+l0vQ8V0yKKZR3MfJHMLl4kVUaDZe3hjXkQRF4FazDHu9DxVmfYfdDAXYA
-wIRunnuxSiJbIcpK/dPYnLBpTn/Qjq3CZQmmahkDyma9IXyOobKIJSxDWXP1gAuq
-A0GEISTRdzTYgByHe6ZVKSw3BosAHkneB6285mXRsEAVIXluup+Hyoup8md0yi5u
-K4JsiP8fZwSzFvBEZzth1HSh8hZTf2sDLe6NTUUrvwJ5yrlVZP1ABrOQ37F+CpLZ
-kXECbXzuuquF3oyn2HsS6Y1mXjcE3cbxogncge3kH6euBrLOeSLtXRXpgR6Ypckj
-rIMfHeifQxQMLjifLcsma1SQ+GAa8wGpbLpA+zJr4RCl1meVF8/HmCelloHxNtxN
-+/tzvaxaHdTooMEoDPSBzN1F3p6flu6Mkdk8R960S3FRLUpy16Hj2XMHWapp5TiY
-QdtoP7RFK6HoTb1y3AN3yXSFBCuWvHMWyuOdNdNHA2aRl7O+cyJsvZFWjeKORoxh
-P9xGmRbmIjydkU+CK9FZ
-=4Bdu
------END PGP SIGNATURE-----
-
---oNLI4EWr1RPQuPCf--
