@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab3IYNAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 09:00:14 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:54834 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab3IYNAM (ORCPT
+	id S1755434Ab3IYNFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 09:05:20 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:57522 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754612Ab3IYNFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 09:00:12 -0400
-Message-ID: <5242DE54.8040607@gmail.com>
-Date: Wed, 25 Sep 2013 07:00:04 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 25 Sep 2013 09:05:18 -0400
+Date: Wed, 25 Sep 2013 14:05:14 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 2/3] mfd: mc13xxx: Move SPI erratum workaround into SPI
+ I/O function
+Message-ID: <20130925130514.GK5132@lee--X1>
+References: <1379960073-23245-1-git-send-email-broonie@kernel.org>
+ <1379960073-23245-2-git-send-email-broonie@kernel.org>
+ <20130925111954.GG5132@lee--X1>
+ <20130925113103.GN3226@sirena.org.uk>
+ <20130925114643.GH5132@lee--X1>
+ <20130925115502.GI5132@lee--X1>
+ <20130925123536.GO3226@sirena.org.uk>
+ <20130925125139.GJ5132@lee--X1>
+ <20130925125538.GP3226@sirena.org.uk>
 MIME-Version: 1.0
-To: acme@ghostprotocols.net
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] perf tool: Explicitly add libdl dependency
-References: <1379900700-5186-1-git-send-email-dsahern@gmail.com> <1379900700-5186-3-git-send-email-dsahern@gmail.com>
-In-Reply-To: <1379900700-5186-3-git-send-email-dsahern@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130925125538.GP3226@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo:
+On Wed, 25 Sep 2013, Mark Brown wrote:
 
-I am not seeing this one in your tree. Any objections to it? It is 
-required to fix static compiles. e.g.,
+> On Wed, Sep 25, 2013 at 01:51:39PM +0100, Lee Jones wrote:
+> > On Wed, 25 Sep 2013, Mark Brown wrote:
+> > > On Wed, Sep 25, 2013 at 12:55:02PM +0100, Lee Jones wrote:
+> 
+> > > > https://git.linaro.org/gitweb?p=people/ljones/mfd.git mfd-asoc
+> 
+> > > Thanks, could you include the first patch as well please (there's a
+> > > dependency for bisection due to the BUG_ONs)? 
+> 
+> > Okay, done. Same branch.
+> 
+> Pulled, thanks.  That URI isn't directly pullable BTW.
 
-make LDFLAGS=-static NO_LIBPYTHON=1 NO_LIBPERL=1
+I know.
 
-David
-
-On 9/22/13 7:44 PM, David Ahern wrote:
-> Fixes compile failure on Fedora 12.
->
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> ---
->   tools/perf/config/Makefile |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index 6850529..85fc870 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -87,7 +87,7 @@ CFLAGS += -Wall
->   CFLAGS += -Wextra
->   CFLAGS += -std=gnu99
->
-> -EXTLIBS = -lelf -lpthread -lrt -lm
-> +EXTLIBS = -lelf -lpthread -lrt -lm -ldl
->
->   ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
->     CFLAGS += -fstack-protector-all
->
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
