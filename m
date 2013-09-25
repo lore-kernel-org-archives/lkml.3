@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab3IYAIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:08:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38500 "EHLO
+	id S1755267Ab3IYAIt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:08:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38477 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755044Ab3IYAI1 (ORCPT
+	with ESMTP id S1755018Ab3IYAIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:08:27 -0400
+	Tue, 24 Sep 2013 20:08:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hui Wang <hui.wang@canonical.com>, Jan Kara <jack@suse.cz>
-Subject: [ 25/28] isofs: Refuse RW mount of the filesystem instead of making it RO
-Date: Tue, 24 Sep 2013 17:07:56 -0700
-Message-Id: <20130925000654.389757644@linuxfoundation.org>
+        Greg Thelen <gthelen@google.com>, Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 23/28] memcg: fix multiple large threshold notifications
+Date: Tue, 24 Sep 2013 17:07:54 -0700
+Message-Id: <20130925000653.923951107@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
 References: <20130925000648.404447782@linuxfoundation.org>
@@ -26,68 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Greg Thelen <gthelen@google.com>
 
-commit 17b7f7cf58926844e1dd40f5eb5348d481deca6a upstream.
+commit 2bff24a3707093c435ab3241c47dcdb5f16e432b upstream.
 
-Refuse RW mount of isofs filesystem. So far we just silently changed it
-to RO mount but when the media is writeable, block layer won't notice
-this change and thus will think device is used RW and will block eject
-button of the drive. That is unexpected by users because for
-non-writeable media eject button works just fine.
+A memory cgroup with (1) multiple threshold notifications and (2) at least
+one threshold >=2G was not reliable.  Specifically the notifications would
+either not fire or would not fire in the proper order.
 
-Userspace mount(8) command handles this just fine and retries mounting
-with MS_RDONLY set so userspace shouldn't see any regression.  Plus any
-tool mounting isofs is likely confronted with the case of read-only
-media where block layer already refuses to mount the filesystem without
-MS_RDONLY set so our behavior shouldn't be anything new for it.
+The __mem_cgroup_threshold() signaling logic depends on keeping 64 bit
+thresholds in sorted order.  mem_cgroup_usage_register_event() sorts them
+with compare_thresholds(), which returns the difference of two 64 bit
+thresholds as an int.  If the difference is positive but has bit[31] set,
+then sort() treats the difference as negative and breaks sort order.
 
-Reported-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+This fix compares the two arbitrary 64 bit thresholds returning the
+classic -1, 0, 1 result.
+
+The test below sets two notifications (at 0x1000 and 0x81001000):
+  cd /sys/fs/cgroup/memory
+  mkdir x
+  for x in 4096 2164264960; do
+    cgroup_event_listener x/memory.usage_in_bytes $x | sed "s/^/$x listener:/" &
+  done
+  echo $$ > x/cgroup.procs
+  anon_leaker 500M
+
+v3.11-rc7 fails to signal the 4096 event listener:
+  Leaking...
+  Done leaking pages.
+
+Patched v3.11-rc7 properly notifies:
+  Leaking...
+  4096 listener:2013:8:31:14:13:36
+  Done leaking pages.
+
+The fixed bug is old.  It appears to date back to the introduction of
+memcg threshold notifications in v2.6.34-rc1-116-g2e72b6347c94 "memcg:
+implement memory thresholds"
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/isofs/inode.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+ mm/memcontrol.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -119,8 +119,8 @@ static void destroy_inodecache(void)
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4433,7 +4433,13 @@ static int compare_thresholds(const void
+ 	const struct mem_cgroup_threshold *_a = a;
+ 	const struct mem_cgroup_threshold *_b = b;
  
- static int isofs_remount(struct super_block *sb, int *flags, char *data)
- {
--	/* we probably want a lot more here */
--	*flags |= MS_RDONLY;
-+	if (!(*flags & MS_RDONLY))
-+		return -EROFS;
- 	return 0;
+-	return _a->threshold - _b->threshold;
++	if (_a->threshold > _b->threshold)
++		return 1;
++
++	if (_a->threshold < _b->threshold)
++		return -1;
++
++	return 0;
  }
  
-@@ -769,15 +769,6 @@ root_found:
- 	 */
- 	s->s_maxbytes = 0x80000000000LL;
- 
--	/*
--	 * The CDROM is read-only, has no nodes (devices) on it, and since
--	 * all of the files appear to be owned by root, we really do not want
--	 * to allow suid.  (suid or devices will not show up unless we have
--	 * Rock Ridge extensions)
--	 */
--
--	s->s_flags |= MS_RDONLY /* | MS_NODEV | MS_NOSUID */;
--
- 	/* Set this for reference. Its not currently used except on write
- 	   which we don't have .. */
- 
-@@ -1528,6 +1519,9 @@ struct inode *isofs_iget(struct super_bl
- static struct dentry *isofs_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
-+	/* We don't support read-write mounts */
-+	if (!(flags & MS_RDONLY))
-+		return ERR_PTR(-EACCES);
- 	return mount_bdev(fs_type, flags, dev_name, data, isofs_fill_super);
- }
- 
+ static int mem_cgroup_oom_notify_cb(struct mem_cgroup *mem)
 
 
