@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750881Ab3IYEJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 00:09:28 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63603 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab3IYEJ1 (ORCPT
+	id S1751031Ab3IYEKm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 00:10:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42185 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab3IYEKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 00:09:27 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <524261F0.20202@roeck-us.net>
-Date: Tue, 24 Sep 2013 21:09:20 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: Re: [ 000/117] 3.11.2-stable review
-References: <20130925001740.833541979@linuxfoundation.org>
-In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 25 Sep 2013 00:10:41 -0400
+Date: Tue, 24 Sep 2013 21:10:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH tip/core/rcu 01/11] mm: Place preemption point in
+ do_mlockall() loop
+Message-Id: <20130924211047.57f9d9c8.akpm@linux-foundation.org>
+In-Reply-To: <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130925012750.GA30601@linux.vnet.ibm.com>
+	<1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 05:17 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.11.2 release.
-> There are 117 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Fri Sep 27 00:16:31 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.2-rc1.gz
-> and the diffstat can be found below.
->
+On Tue, 24 Sep 2013 18:29:11 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-Build test results:
-	total: 110 pass: 108 skipped: 2 fail: 0
+> --- a/mm/mlock.c
+> +++ b/mm/mlock.c
+> @@ -736,6 +736,7 @@ static int do_mlockall(int flags)
+>  
+>  		/* Ignore errors */
+>  		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
+> +		cond_resched();
+>  	}
+>  out:
+>  	return 0;
 
-3.11.1 had one failure (xtensa:allmodconfig) which has been fixed.
-
-qemu:
-	arm, microblaze, mips, mips64, ppc, sparc, sparc64, x86, x86_64 pass.
-	sh passed with warning (same as with 3.11.1).
-
-Guenter
-
+Might need one in munlock_vma_pages_range() as well - it's a matter of
+finding the right test case.  This will be neverending :(
