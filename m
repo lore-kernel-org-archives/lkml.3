@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab3IYAan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:30:43 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:60806 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755580Ab3IYAai (ORCPT
+	id S1756732Ab3IYAUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:20:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39690 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756611Ab3IYAUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:30:38 -0400
-Date: Wed, 25 Sep 2013 09:30:33 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Alexander Frolkin <avf@eldamar.org.uk>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Julian Anastasov <ja@ssi.bg>, lvs-devel@vger.kernel.org,
-        Wensong Zhang <wensong@linux-vs.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipvs: improved SH fallback strategy
-Message-ID: <20130925003033.GG26081@verge.net.au>
-References: <20130923115139.GA15034@eldamar.org.uk>
- <524099BA.5020303@cogentembedded.com>
- <20130924093238.GD18494@eldamar.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130924093238.GD18494@eldamar.org.uk>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 24 Sep 2013 20:20:42 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 075/117] HID: sensor-hub: validate feature report details
+Date: Tue, 24 Sep 2013 17:19:01 -0700
+Message-Id: <20130925001749.143419456@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
+References: <20130925001740.833541979@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 10:32:38AM +0100, Alexander Frolkin wrote:
-> Improve the SH fallback realserver selection strategy.
->  
-> With sh and sh-fallback, if a realserver is down, this attempts to
-> distribute the traffic that would have gone to that server evenly
-> among the remaining servers.
->  
-> Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Alexander,
+------------------
 
-could you add some comments to the code or at least a description of the
-algorithm to the above the function.  The intent of original code may not
-have been obvious to the eye but this version certainly isn't obvious to
-mine.
+From: Kees Cook <keescook@chromium.org>
 
-> --
-> diff --git a/net/netfilter/ipvs/ip_vs_sh.c b/net/netfilter/ipvs/ip_vs_sh.c
-> index 3588fae..0db7d01 100644
-> --- a/net/netfilter/ipvs/ip_vs_sh.c
-> +++ b/net/netfilter/ipvs/ip_vs_sh.c
-> @@ -120,22 +120,33 @@ static inline struct ip_vs_dest *
->  ip_vs_sh_get_fallback(struct ip_vs_service *svc, struct ip_vs_sh_state *s,
->  		      const union nf_inet_addr *addr, __be16 port)
->  {
-> -	unsigned int offset;
-> -	unsigned int hash;
-> +	unsigned int offset, roffset;
-> +	unsigned int hash, ihash;
->  	struct ip_vs_dest *dest;
->  
-> -	for (offset = 0; offset < IP_VS_SH_TAB_SIZE; offset++) {
-> -		hash = ip_vs_sh_hashkey(svc->af, addr, port, offset);
-> -		dest = rcu_dereference(s->buckets[hash].dest);
-> -		if (!dest)
-> -			break;
-> -		if (is_unavailable(dest))
-> -			IP_VS_DBG_BUF(6, "SH: selected unavailable server "
-> -				      "%s:%d (offset %d)",
-> +	ihash = ip_vs_sh_hashkey(svc->af, addr, port, 0);
-> +	dest = rcu_dereference(s->buckets[ihash].dest);
-> +	if (!dest)
-> +		return NULL;
-> +	if (is_unavailable(dest)) {
-> +		IP_VS_DBG_BUF(6, "SH: selected unavailable server "
-> +		      "%s:%d, reselecting",
-> +		      IP_VS_DBG_ADDR(svc->af, &dest->addr),
-> +		      ntohs(dest->port));
-> +		for (offset = 0; offset < IP_VS_SH_TAB_SIZE; offset++) {
-> +			roffset = (offset + ihash) % IP_VS_SH_TAB_SIZE;
-> +			hash = ip_vs_sh_hashkey(svc->af, addr, port, roffset);
-> +			dest = rcu_dereference(s->buckets[hash].dest);
-> +			if (is_unavailable(dest))
-> +				IP_VS_DBG_BUF(6, "SH: selected unavailable "
-> +				      "server %s:%d (offset %d), reselecting",
->  				      IP_VS_DBG_ADDR(svc->af, &dest->addr),
-> -				      ntohs(dest->port), offset);
-> -		else
-> -			return dest;
-> +				      ntohs(dest->port), roffset);
-> +			else
-> +				return dest;
-> +		}
-> +	} else {
-> +		return dest;
->  	}
->  
->  	return NULL;
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe lvs-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+commit 9e8910257397372633e74b333ef891f20c800ee4 upstream.
+
+A HID device could send a malicious feature report that would cause the
+sensor-hub HID driver to read past the end of heap allocation, leaking
+kernel memory contents to the caller.
+
+CVE-2013-2898
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/hid/hid-sensor-hub.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/hid/hid-sensor-hub.c
++++ b/drivers/hid/hid-sensor-hub.c
+@@ -221,7 +221,8 @@ int sensor_hub_get_feature(struct hid_se
+ 
+ 	mutex_lock(&data->mutex);
+ 	report = sensor_hub_report(report_id, hsdev->hdev, HID_FEATURE_REPORT);
+-	if (!report || (field_index >=  report->maxfield)) {
++	if (!report || (field_index >=  report->maxfield) ||
++	    report->field[field_index]->report_count < 1) {
+ 		ret = -EINVAL;
+ 		goto done_proc;
+ 	}
+
+
