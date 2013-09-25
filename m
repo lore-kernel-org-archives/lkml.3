@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab3IYAIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:08:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38458 "EHLO
+	id S1755209Ab3IYAIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:08:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38453 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754983Ab3IYAIT (ORCPT
+	with ESMTP id S1754985Ab3IYAIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:08:19 -0400
+	Tue, 24 Sep 2013 20:08:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Rafi Rubin <rafi@seas.upenn.edu>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 20/28] HID: ntrig: validate feature report details
-Date: Tue, 24 Sep 2013 17:07:51 -0700
-Message-Id: <20130925000653.231748565@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 19/28] HID: validate HID report id size
+Date: Tue, 24 Sep 2013 17:07:50 -0700
+Message-Id: <20130925000653.019753635@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
 References: <20130925000648.404447782@linuxfoundation.org>
@@ -29,38 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kees Cook <keescook@chromium.org>
 
-commit 875b4e3763dbc941f15143dd1a18d10bb0be303b upstream.
+commit 43622021d2e2b82ea03d883926605bdd0525e1d1 upstream.
 
-A HID device could send a malicious feature report that would cause the
-ntrig HID driver to trigger a NULL dereference during initialization:
+The "Report ID" field of a HID report is used to build indexes of
+reports. The kernel's index of these is limited to 256 entries, so any
+malicious device that sets a Report ID greater than 255 will trigger
+memory corruption on the host:
 
-[57383.031190] usb 3-1: New USB device found, idVendor=1b96, idProduct=0001
-...
-[57383.315193] BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
-[57383.315308] IP: [<ffffffffa08102de>] ntrig_probe+0x25e/0x420 [hid_ntrig]
+[ 1347.156239] BUG: unable to handle kernel paging request at ffff88094958a878
+[ 1347.156261] IP: [<ffffffff813e4da0>] hid_register_report+0x2a/0x8b
 
-CVE-2013-2896
+CVE-2013-2888
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ntrig.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/hid/hid-core.c |   12 ++++++++----
+ include/linux/hid.h    |    4 +++-
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
---- a/drivers/hid/hid-ntrig.c
-+++ b/drivers/hid/hid-ntrig.c
-@@ -115,7 +115,8 @@ static inline int ntrig_get_mode(struct
- 	struct hid_report *report = hdev->report_enum[HID_FEATURE_REPORT].
- 				    report_id_hash[0x0d];
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -58,6 +58,8 @@ struct hid_report *hid_register_report(s
+ 	struct hid_report_enum *report_enum = device->report_enum + type;
+ 	struct hid_report *report;
  
--	if (!report)
-+	if (!report || report->maxfield < 1 ||
-+	    report->field[0]->report_count < 1)
- 		return -EINVAL;
++	if (id >= HID_MAX_IDS)
++		return NULL;
+ 	if (report_enum->report_id_hash[id])
+ 		return report_enum->report_id_hash[id];
  
- 	usbhid_submit_report(hdev, report, USB_DIR_IN);
+@@ -379,9 +381,11 @@ static int hid_parser_global(struct hid_
+ 
+ 	case HID_GLOBAL_ITEM_TAG_REPORT_ID:
+ 		parser->global.report_id = item_udata(item);
+-		if (parser->global.report_id == 0) {
+-			dbg_hid("report_id 0 is invalid\n");
+-			return -1;
++		if (parser->global.report_id == 0 ||
++		    parser->global.report_id >= HID_MAX_IDS) {
++			hid_err(parser->device, "report_id %u is invalid\n",
++				parser->global.report_id);
++ 			return -1;
+ 		}
+ 		return 0;
+ 
+@@ -551,7 +555,7 @@ static void hid_device_release(struct de
+ 	for (i = 0; i < HID_REPORT_TYPES; i++) {
+ 		struct hid_report_enum *report_enum = device->report_enum + i;
+ 
+-		for (j = 0; j < 256; j++) {
++		for (j = 0; j < HID_MAX_IDS; j++) {
+ 			struct hid_report *report = report_enum->report_id_hash[j];
+ 			if (report)
+ 				hid_free_report(report);
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -414,10 +414,12 @@ struct hid_report {
+ 	struct hid_device *device;			/* associated device */
+ };
+ 
++#define HID_MAX_IDS 256
++
+ struct hid_report_enum {
+ 	unsigned numbered;
+ 	struct list_head report_list;
+-	struct hid_report *report_id_hash[256];
++	struct hid_report *report_id_hash[HID_MAX_IDS];
+ };
+ 
+ #define HID_REPORT_TYPES 3
 
 
