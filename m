@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab3IYHzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 03:55:13 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:24147 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab3IYHzL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 03:55:11 -0400
-X-AuditID: cbfee68e-b7f756d000004512-db-524296dd7162
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Geert Uytterhoeven'" <geert@linux-m68k.org>,
-        "'Krystian Garbaciak'" <krystian.garbaciak@diasemi.com>
-References: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
-In-reply-to: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
-Subject: [PATCH 04/20] regulator: da9063: use devm_regulator_register()
-Date: Wed, 25 Sep 2013 16:55:09 +0900
-Message-id: <000d01ceb9c4$8ea3ef80$abebce80$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65w5fHnzL+CpaSR8SldcZ2fs0oxwAAKTYA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsVy+t8zI91705yCDBbFWEx9+ITN4tmtvUwW
-	lxdeYrU48vgzm8W3Kx1A7q45bA5sHis+6XvsnHWX3WPTqk42j0OHOxg9+rasYvT4vEkugC2K
-	yyYlNSezLLVI3y6BK2N/v0HBXYGKr0+vMDYw3uLtYuTgkBAwkTh4WqGLkRPIFJO4cG89Wxcj
-	F4eQwDJGib2LX7BAJEwkuj5MZIJILGKU2Hi+C6rqF6PEodUb2UGq2ATUJL58OcwOMlVEQFXi
-	/yt3kBpmgauMEieebWMGqRESsJVY/vc22FROATuJZfc+s4HYwgLuEt9ff2ECsVmAev8uvwQ2
-	kxeofsmKWUwQtqDEj8n3wHqZBbQk1u88zgRhy0tsXvOWGeIbdYlHf3UhTjCS6NuZCFEhIrHv
-	xTtGkHMkBF6yS3x4tYYNYpWAxLfJh1ggWmUlNh1ghvhXUuLgihssExglZiFZPAvJ4llIFs9C
-	smIBI8sqRtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjJCo7dvBePOA9SHGZKD1E5mlRJPzgVGf
-	VxJvaGxmZGFqYmpsZG5pRpqwkjivWot1oJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQZGmXs3
-	z79b4bGl5MEqN02VI+92h/z7eH7DG8mXDL47P4V3ZV9gvDk12WGTVEjqjDZjjjMqXwQs3lS/
-	7WRRObdE84Flzoa+V7Fhq4OvXnWNF73M0n+1dO655E5JzS9dvpHLz69Myua+mlws3PncqdNM
-	cLvDHv++8x2L/ZU5rcV2xH4VXb2Vi3G+EktxRqKhFnNRcSIAevg+7PACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDKsWRmVeSWpSXmKPExsVy+t9jAd2705yCDGZftrSY+vAJm8WzW3uZ
-	LC4vvMRqceTxZzaLb1c6gNxdc9gc2DxWfNL32DnrLrvHplWdbB6HDncwevRtWcXo8XmTXABb
-	VAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QGUoK
-	ZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjP39BgV3BSq+Pr3C2MB4i7eL
-	kZNDQsBEouvDRCYIW0ziwr31bF2MXBxCAosYJTae74JyfjFKHFq9kR2kik1ATeLLl8NANgeH
-	iICqxP9X7iA1zAJXGSVOPNvGDFIjJGArsfzvbRYQm1PATmLZvc9sILawgLvE99dfwLaxAPX+
-	XX4JbCYvUP2SFbOYIGxBiR+T74H1MgtoSazfeZwJwpaX2LzmLTPIXgkBdYlHf3UhTjCS6NuZ
-	CFEhIrHvxTvGCYxCs5AMmoVk0Cwkg2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cT
-	IzgtPJPewbiqweIQowAHoxIPr8BRxyAh1sSy4srcQ4wSHMxKIrxFU52ChHhTEiurUovy44tK
-	c1KLDzEmA/05kVlKNDkfmLLySuINjU3MjCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBa
-	BLOFiYNTqoFRNb9ngdWRzGOu7l83VNdkXVt4Lvtgkr231I03G5K21p/xjfeoUVjcMSP9TKbr
-	S9HlG7YkmjsF3PtedylRwz773W1Tdl+/a5LLl4SbtT5W+zxBWTLgWDzXow1XTkRFBMTVHrs5
-	f/L9GrHdSw68M097NU/32IuUfdwV38NXLD0SGnt/+WW7r8fFlViKMxINtZiLihMBJCgrRk8D	AAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754062Ab3IYH4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 03:56:07 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:56888 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751172Ab3IYH4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 03:56:06 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Tejun Heo <tj@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>
+Subject: Re: [RFC PATCH] freezer: allow killing of frozen tasks
+Date: Wed, 25 Sep 2013 10:07:22 +0200
+Message-ID: <2084875.Px2m8K6oH7@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAH9JG2X3grVnUbuzksRLnDCT4dMQTyJuPa72qi4QmKTHo2QzEA@mail.gmail.com>
+References: <5917186.DMyAa9ofOj@amdc1032> <7588112.eXrFpITlCh@vostro.rjw.lan> <CAH9JG2X3grVnUbuzksRLnDCT4dMQTyJuPa72qi4QmKTHo2QzEA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_regulator_register() to make cleanup paths simpler.
+On Wednesday, September 25, 2013 02:52:26 PM Kyungmin Park wrote:
+> On Tue, Aug 20, 2013 at 9:41 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Tuesday, August 20, 2013 08:27:27 AM Tejun Heo wrote:
+> >> On Tue, Aug 20, 2013 at 02:34:14PM +0200, Rafael J. Wysocki wrote:
+> >> > On Tuesday, August 20, 2013 08:22:00 AM Tejun Heo wrote:
+> >> > > On Tue, Aug 20, 2013 at 02:30:18PM +0200, Rafael J. Wysocki wrote:
+> >> > > > > So, I don't think we can simply turn TASK_UNITERRUPTIBLE to
+> >> > > > > TASK_KILLABLE at this point.  We really need to strictly define where
+> >> > > > > a task can freeze before being able to do anything like this.
+> >> > > >
+> >> > > > But we could do that for user space tasks I suppose?
+> >> > >
+> >> > > Even for userland tasks, we don't know where the task is stuck at.  I
+> >> > > think there are enough freeze points in the kernel which are in the
+> >> > > middle of something which can be used by userland tasks excuting some
+> >> > > syscall.  We need to collect all those sites into well defined trap
+> >> > > points before doing this.
+> >> >
+> >> > OK, thanks!
+> >>
+> >> I scanned through try_to_freeze() users and it seems like we don't
+> >> have that many which can be hit by userland tasks.  I think it should
+> >> be doable to audit all the users, remove the ones which can be invoked
+> >> by userland and make try_to_freeze() whine loudly if it's running off
+> >> a userland task except from well-defined spots.
+> >
+> > Which might be worth doing anyway to be sure we know what's going on.
+> >
+> >> Anyways, we need to ensure that userland task doesn't get stuck deep in the
+> >> kernel before allowing this.
+> >
+> > Agreed.
+> 
+> Are there any update? we need this feature to kill frozen app easily.
+> Don't need to thaw app to kill.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/regulator/da9063-regulator.c |   21 ++++-----------------
- 1 file changed, 4 insertions(+), 17 deletions(-)
+No updates, but the above pretty much describes what needs to be done.
 
-diff --git a/drivers/regulator/da9063-regulator.c b/drivers/regulator/da9063-regulator.c
-index 3d910f4..56727eb 100644
---- a/drivers/regulator/da9063-regulator.c
-+++ b/drivers/regulator/da9063-regulator.c
-@@ -847,13 +847,13 @@ static int da9063_regulator_probe(struct platform_device *pdev)
- 		if (da9063_reg_matches)
- 			config.of_node = da9063_reg_matches[id].of_node;
- 		config.regmap = da9063->regmap;
--		regl->rdev = regulator_register(&regl->desc, &config);
-+		regl->rdev = devm_regulator_register(&pdev->dev, &regl->desc,
-+						     &config);
- 		if (IS_ERR(regl->rdev)) {
- 			dev_err(&pdev->dev,
- 				"Failed to register %s regulator\n",
- 				regl->desc.name);
--			ret = PTR_ERR(regl->rdev);
--			goto err;
-+			return PTR_ERR(regl->rdev);
- 		}
- 		id++;
- 		n++;
-@@ -862,9 +862,8 @@ static int da9063_regulator_probe(struct platform_device *pdev)
- 	/* LDOs overcurrent event support */
- 	irq = platform_get_irq_byname(pdev, "LDO_LIM");
- 	if (irq < 0) {
--		ret = irq;
- 		dev_err(&pdev->dev, "Failed to get IRQ.\n");
--		goto err;
-+		return irq;
- 	}
- 
- 	regulators->irq_ldo_lim = regmap_irq_get_virq(da9063->regmap_irq, irq);
-@@ -881,27 +880,15 @@ static int da9063_regulator_probe(struct platform_device *pdev)
- 	}
- 
- 	return 0;
--
--err:
--	/* Wind back regulators registeration */
--	while (--n >= 0)
--		regulator_unregister(regulators->regulator[n].rdev);
--
--	return ret;
- }
- 
- static int da9063_regulator_remove(struct platform_device *pdev)
- {
- 	struct da9063_regulators *regulators = platform_get_drvdata(pdev);
--	struct da9063_regulator *regl;
- 
- 	free_irq(regulators->irq_ldo_lim, regulators);
- 	free_irq(regulators->irq_uvov, regulators);
- 
--	for (regl = &regulators->regulator[regulators->n_regulators - 1];
--	     regl >= &regulators->regulator[0]; regl--)
--		regulator_unregister(regl->rdev);
--
- 	return 0;
- }
- 
--- 
-1.7.10.4
-
+Thanks,
+Rafael
 
