@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab3IYRqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 13:46:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43719 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753914Ab3IYRqV (ORCPT
+	id S1752802Ab3IYRsc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 13:48:32 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:24091 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726Ab3IYRsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 13:46:21 -0400
-Message-ID: <52432152.3030100@canonical.com>
-Date: Wed, 25 Sep 2013 13:45:54 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 25 Sep 2013 13:48:30 -0400
+Message-ID: <1380131303.2222.9.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH tip/core/rcu 04/13] wireless: Apply rcu_access_pointer()
+ to avoid sparse false positive
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, <mingo@kernel.org>, <laijs@cn.fujitsu.com>,
+        <dipankar@in.ibm.com>, <akpm@linux-foundation.org>,
+        <mathieu.desnoyers@efficios.com>, <josh@joshtriplett.org>,
+        <niv@us.ibm.com>, <tglx@linutronix.de>, <peterz@infradead.org>,
+        <rostedt@goodmis.org>, <dhowells@redhat.com>, <edumazet@google.com>,
+        <darren@dvhart.com>, <fweisbec@gmail.com>, <sbw@mit.edu>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        <bridge@lists.linux-foundation.org>, <netdev@vger.kernel.org>
+Date: Wed, 25 Sep 2013 18:48:23 +0100
+In-Reply-To: <1380072916-31557-4-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130925013451.GA31260@linux.vnet.ibm.com>
+	 <1380072916-31557-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1380072916-31557-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de, list@osuosl.org,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
-        HID CORE LAYER <linux-input@vger.kernel.org>,
-        devel@linuxdriverproject.org
-Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to memdup
-References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda> <5237A5D5.8010006@canonical.com> <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20172.005
+X-TM-AS-Result: No--10.050700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 05:29 AM, Jiri Kosina wrote:
-> On Mon, 16 Sep 2013, Joseph Salisbury wrote:
->
->>>> Can you explain a little further?  Mark commit a4a23f6 as bad?  An
->>>> initial bisect already reported that was the first bad commit, so it
->>>> can't be marked bad.  The oops on memcpy() happens after commit a4a23f6
->>>> is reverted.  The oops on memcpy() did not happen before a4a23f6 was
->>>> committed, so I assume this new oops was introduced by a change later.
->>>>
->>>> Right now I'm bisecting down the oops on memcpy() by updating the bisect
->>>> with good or bad, depending if the test kernel hit the oops.  I then
->>>> revert a4a23f6, so that revert is the HEAD of the tree each time before
->>>> building the kernel again(As long as the commit spit out by bisect is
->>>> after when a4a23f6 was introduced).
->>> Yep.  Please continue bisecting the memcpy() oops.
->>>
->>> kmemdup() is just a kzalloc() followed by a memcpy().  When we split it
->>> apart by reverting the patch then we would expect the oops to move to
->>> the memcpy() part.  Somehow "desc" is a bogus pointer, but I don't
->>> immediately see how that is possible.
->>>
->>> regards,
->>> dan carpenter
->> Thanks for the details.  We'll continue the bisect and let you know how
->> it goes.
-> Did this please yield any useful result?
->
-> Thanks,
->
+On Tue, 2013-09-24 at 18:35 -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> The sparse checking for rcu_assign_pointer() was recently upgraded
+> to reject non-__kernel address spaces.  This also rejects __rcu,
+> which is almost always the right thing to do.  However, the uses in
+> cfg80211_combine_bsses() and cfg80211_bss_update() are legitimate:
+> They is assigning a pointer to an element from an RCU-protected list,
+[...]
 
-After further testing reverting the following commit does in fact
-resolve the bug:
+'They is'?  This error is also in the commit messsages for the bridge
+and mac80211 patches, and maybe others that weren't sent to netdev.
 
-commit b1a1442a23776756b254b69786848a94d92445ba
-Author: Jiri Kosina <jkosina@suse.cz>
-Date: Mon Jun 3 11:27:48 2013 +0200
+Ben.
 
-    HID: core: fix reporting of raw events
-
-Reverting this commit in v3.12-rc2 prevents the system from locking up, which happens when connecting a bluetooth trackpad.
-
-Jiri,  do you think we should revert this patch, or is there some further debugging/data collecting you would like to do?
-
-Thanks,
-
-Joe
-
-
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
