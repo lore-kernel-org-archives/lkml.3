@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab3IYHhV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 03:37:21 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:63938 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab3IYHhQ (ORCPT
+	id S1753252Ab3IYHhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 03:37:48 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:53999 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033Ab3IYHhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 03:37:16 -0400
+	Wed, 25 Sep 2013 03:37:47 -0400
 MIME-Version: 1.0
-Date: Wed, 25 Sep 2013 15:37:15 +0800
-Message-ID: <CAPgLHd-xSjXvn51RUP+dY-9_pK=HhHzb_R6rb4mKcLufms_jQA@mail.gmail.com>
-Subject: [PATCH] mfd: twl6040: drop devm_free_irq of devm_ allocated irq
+Date: Wed, 25 Sep 2013 15:37:45 +0800
+Message-ID: <CAPgLHd-XqeHscSMmFuUH5gqrbuW6QDvHuLAR+9hPqtjiNXhKZQ@mail.gmail.com>
+Subject: [PATCH] mfd: ezx-pcap: drop devm_free_irq of devm_ allocated irq
 From: Wei Yongjun <weiyj.lk@gmail.com>
 To: sameo@linux.intel.com, lee.jones@linaro.org
 Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
@@ -27,45 +27,37 @@ call devm_free_irq in probe or remove functions.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/mfd/twl6040.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ drivers/mfd/ezx-pcap.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/twl6040.c b/drivers/mfd/twl6040.c
-index daf6694..7361dbe 100644
---- a/drivers/mfd/twl6040.c
-+++ b/drivers/mfd/twl6040.c
-@@ -619,7 +619,7 @@ static int twl6040_probe(struct i2c_client *client,
- 					"twl6040_irq_th", twl6040);
- 	if (ret) {
- 		dev_err(twl6040->dev, "Thermal IRQ request failed: %d\n", ret);
--		goto thirq_err;
-+		goto readyirq_err;
- 	}
+diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
+index 7245b0c..986d6d9 100644
+--- a/drivers/mfd/ezx-pcap.c
++++ b/drivers/mfd/ezx-pcap.c
+@@ -395,15 +395,12 @@ static int ezx_pcap_remove(struct spi_device *spi)
+ {
+ 	struct pcap_chip *pcap = spi_get_drvdata(spi);
+ 	struct pcap_platform_data *pdata = dev_get_platdata(&spi->dev);
+-	int i, adc_irq;
++	int i;
  
- 	/* dual-access registers controlled by I2C only */
-@@ -659,14 +659,10 @@ static int twl6040_probe(struct i2c_client *client,
- 	ret = mfd_add_devices(&client->dev, -1, twl6040->cells, children,
- 			      NULL, 0, NULL);
- 	if (ret)
--		goto mfd_err;
-+		goto readyirq_err;
+ 	/* remove all registered subdevs */
+ 	device_for_each_child(&spi->dev, NULL, pcap_remove_subdev);
  
- 	return 0;
+ 	/* cleanup ADC */
+-	adc_irq = pcap_to_irq(pcap, (pdata->config & PCAP_SECOND_PORT) ?
+-				PCAP_IRQ_ADCDONE2 : PCAP_IRQ_ADCDONE);
+-	devm_free_irq(&spi->dev, adc_irq, pcap);
+ 	mutex_lock(&pcap->adc_mutex);
+ 	for (i = 0; i < PCAP_ADC_MAXQ; i++)
+ 		kfree(pcap->adc_queue[i]);
+@@ -509,8 +506,6 @@ static int ezx_pcap_probe(struct spi_device *spi)
  
--mfd_err:
--	devm_free_irq(&client->dev, twl6040->irq_th, twl6040);
--thirq_err:
--	devm_free_irq(&client->dev, twl6040->irq_ready, twl6040);
- readyirq_err:
- 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
- gpio_err:
-@@ -684,8 +680,6 @@ static int twl6040_remove(struct i2c_client *client)
- 	if (twl6040->power_count)
- 		twl6040_power(twl6040, 0);
- 
--	devm_free_irq(&client->dev, twl6040->irq_ready, twl6040);
--	devm_free_irq(&client->dev, twl6040->irq_th, twl6040);
- 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
- 
- 	mfd_remove_devices(&client->dev);
+ remove_subdevs:
+ 	device_for_each_child(&spi->dev, NULL, pcap_remove_subdev);
+-/* free_adc: */
+-	devm_free_irq(&spi->dev, adc_irq, pcap);
+ free_irqchip:
+ 	for (i = pcap->irq_base; i < (pcap->irq_base + PCAP_NIRQS); i++)
+ 		irq_set_chip_and_handler(i, NULL, NULL);
 
