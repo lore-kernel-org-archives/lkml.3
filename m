@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab3IYXG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 19:06:29 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:38539 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755085Ab3IYXG0 (ORCPT
+	id S1753989Ab3IYXIZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 19:08:25 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:37548 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab3IYXIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 19:06:26 -0400
-Message-ID: <52436C6F.1010501@linaro.org>
-Date: Thu, 26 Sep 2013 01:06:23 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 25 Sep 2013 19:08:23 -0400
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-CC: Jean Pihet <jean.pihet@linaro.org>, john.stultz@linaro.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        patches@linaro.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] arm: mvebu: use the main timer as clock source from DT
-References: <1379530168-9359-1-git-send-email-jean.pihet@linaro.org> <20130918185611.GP19937@titan.lakedaemon.net> <20130925103902.GA2418@localhost>
-In-Reply-To: <20130925103902.GA2418@localhost>
+In-Reply-To: <1380125886-10341-8-git-send-email-fweisbec@gmail.com>
+References: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
+	<1380125886-10341-8-git-send-email-fweisbec@gmail.com>
+Date: Wed, 25 Sep 2013 16:08:20 -0700
+X-Google-Sender-Auth: NUOzO8oSqhVVmySmnBwMeY60F9A
+Message-ID: <CA+55aFzPArB0dotWZz8dLTPVM4MMT75NAb5_DVcPrNuvWu4QUA@mail.gmail.com>
+Subject: Re: [PATCH 7/7] x86: Tell about irq stack coverage
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2013 12:39 PM, Ezequiel Garcia wrote:
-> On Wed, Sep 18, 2013 at 02:56:11PM -0400, Jason Cooper wrote:
->> Adding clocksource maintainers to the Cc: ...
->>
->> On Wed, Sep 18, 2013 at 08:49:28PM +0200, Jean Pihet wrote:
->>> This commit:
->>>   573145f08c2b92c45498468afbbba909f6ce6135
->>>   clocksource: armada-370-xp: Use CLOCKSOURCE_OF_DECLARE
->>>
->>> replaced a call to the driver's timer initialization by a call to
->>> clocksource_of_init(). However, it failed to select CONFIG_CLKSRC_OF.
->>>
->>> Fix this by selecting CONFIG_CLKSRC_OF for Armada370/XP machines.
->>> Without this change the kernel is stuck at: 'Calibrating delay loop...'.
->>>
->>> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
->>> Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
->>> ---
->>>  drivers/clocksource/Kconfig | 1 +
->>>  1 file changed, 1 insertion(+)
->>
->> Acked-by: Jason Cooper <jason@lakedaemon.net>
->>
->> Daniel, John, Thomas,
->>
->> Can you queue this up for v3.12-rc2?  It fixes a boot breakage.
->>
-> 
-> Is this already merged somewhere? Is there any chance we can push
-> it through *any* tree so it makes -rc3?
+On Wed, Sep 25, 2013 at 9:18 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> +#ifdef CONFIG_X86_64
+> +# define __ARCH_IRQ_EXIT_ON_IRQ_STACK
+> +#endif
 
-Yes, I will take it in my tree.
+Ok, see the previous email, this should just be a single
 
+    select IRQ_EXIT_ON_IRQ_STACK
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+in under the "config X86_64" header in arch/x86/Kconfig.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+And as of right now, this patch series should do it for Power too,
+since I just merged Ben's branch, which contained commit 0366a1c70b89
+("powerpc/irq: Run softirqs off the top of the irq stack"). Again,
+just a single select in the arch/powerpc/Kconfig gile should be
+sufficient.
 
+                     Linus
