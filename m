@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324Ab3IYAi6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:38:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39587 "EHLO
+	id S1757308Ab3IYAi5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:38:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39590 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932279Ab3IYAUZ (ORCPT
+	with ESMTP id S1755020Ab3IYAU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:25 -0400
+	Tue, 24 Sep 2013 20:20:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
         Borislav Petkov <bp@suse.de>
-Subject: [ 053/117] pci_ids: Add PCI device ID functions 3 and 4 for newer F15h models.
-Date: Tue, 24 Sep 2013 17:18:39 -0700
-Message-Id: <20130925001746.632175865@linuxfoundation.org>
+Subject: [ 054/117] x86, amd_nb: Clarify F15h, model 30h GART and L3 support
+Date: Tue, 24 Sep 2013 17:18:40 -0700
+Message-Id: <20130925001746.741772045@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -29,29 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
 
-commit 6bdaa63c2957ac04e8d596880f732b79f9c06c3c upstream.
+commit 7d64ac6422092adbbdaa279ab32f9d4c90a84558 upstream.
 
-Add PCI device IDs for AMD F15h, model 30h. They will be used in
-amd_nb.c and amd64_edac.c
+F15h, models 0x30 and later don't have a GART. Note that. Also check
+CPUID leaf 0x80000006 for L3 prescence because there are models which
+don't sport an L3 cache.
 
 Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+[ Boris: rewrite commit message, cleanup comments. ]
 Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/pci_ids.h |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/amd_nb.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -518,6 +518,8 @@
- #define PCI_DEVICE_ID_AMD_11H_NB_MISC	0x1303
- #define PCI_DEVICE_ID_AMD_11H_NB_LINK	0x1304
- #define PCI_DEVICE_ID_AMD_15H_M10H_F3	0x1403
-+#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F3 0x141d
-+#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F4 0x141e
- #define PCI_DEVICE_ID_AMD_15H_NB_F0	0x1600
- #define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
- #define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -20,6 +20,7 @@ const struct pci_device_id amd_nb_misc_i
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+ 	{}
+ };
+@@ -27,6 +28,7 @@ EXPORT_SYMBOL(amd_nb_misc_ids);
+ 
+ static const struct pci_device_id amd_nb_link_ids[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F4) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
+ 	{}
+ };
+@@ -81,13 +83,20 @@ int amd_cache_northbridges(void)
+ 			next_northbridge(misc, amd_nb_misc_ids);
+ 		node_to_amd_nb(i)->link = link =
+ 			next_northbridge(link, amd_nb_link_ids);
+-        }
++	}
+ 
++	/* GART present only on Fam15h upto model 0fh */
+ 	if (boot_cpu_data.x86 == 0xf || boot_cpu_data.x86 == 0x10 ||
+-	    boot_cpu_data.x86 == 0x15)
++	    (boot_cpu_data.x86 == 0x15 && boot_cpu_data.x86_model < 0x10))
+ 		amd_northbridges.flags |= AMD_NB_GART;
+ 
+ 	/*
++	 * Check for L3 cache presence.
++	 */
++	if (!cpuid_edx(0x80000006))
++		return 0;
++
++	/*
+ 	 * Some CPU families support L3 Cache Index Disable. There are some
+ 	 * limitations because of E382 and E388 on family 0x10.
+ 	 */
 
 
