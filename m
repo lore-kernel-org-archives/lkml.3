@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab3IYAU6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39736 "EHLO
+	id S932360Ab3IYAVE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:21:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755158Ab3IYAUv (ORCPT
+	with ESMTP id S932346Ab3IYAVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:51 -0400
+	Tue, 24 Sep 2013 20:21:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [ 086/117] media: exynos4-is: Fix entity unregistration on error path
-Date: Tue, 24 Sep 2013 17:19:12 -0700
-Message-Id: <20130925001750.341130971@linuxfoundation.org>
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [ 096/117] pidns: Fix hang in zap_pid_ns_processes by sending a potentially extra wakeup
+Date: Tue, 24 Sep 2013 17:19:22 -0700
+Message-Id: <20130925001751.404690496@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -29,70 +28,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit d2b903b4427e417a73863cef36ad0796ea6b7404 upstream.
+commit a606488513543312805fab2b93070cefe6a3016c upstream.
 
-This patch corrects media entities unregistration order to make sure
-the fimc.N.capture and fimc-lite video nodes are unregistered with
-fimc->lock mutex held. This prevents races between video device open()
-and defered probing and NULL pointer dereference in open() callback
-as follows:
-[   77.645000] Unable to handle kernel NULL pointer dereference at virtual address 00000290t
-[   77.655000] pgd = ee7a8000
-[   77.660000] [00000290] *pgd=6e13c831, *pte=00000000, *ppte=00000000
-[   77.665000] Internal error: Oops: 17 [#1] PREEMPT SMP ARM
-[   77.670000] Modules linked in: s5p_fimc ipv6 exynos_fimc_is exynos_fimc_lite
- s5p_csis v4l2_mem2mem videobuf2_dma_contig videobuf2_memops exynos4_is_common videobuf2_core [last unloaded: s5p_fimc]
-[   77.685000] CPU: 0 PID : 2998 Comm: v4l_id Tainted: G        W   3.10.0-next-20130709-00039-g39f491b-dirty #1548
-[   77.695000] task: ee084000 ti: ee46e000 task.ti: ee46e000
-[   77.700000] PC is at __mutex_lock_slowpath+0x54/0x368
-[   77.705000] LR is at __mutex_lock_slowpath+0x24/0x368
-[   77.710000] pc : [<c038dc10>]    lr : [<c038dbe0>]    psr: 60000093
-[   77.710000] sp : ee46fd70  ip : 000008c8  fp : c054e34c
-[   77.725000] r10: ee084000  r9 : 00000000  r8 : ee439480
-[   77.730000] r7 : ee46e000  r6 : 60000013  r5 : 00000290  r4 : 0000028c
-[   77.735000] r3 : 00000000  r2 : 00000000  r1 : 20000093  r0 : 00000001
-[   77.740000] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM Segment user
-[   77.750000] Control: 10c5387d  Table: 6e7a804a  DAC: 00000015
-[   77.755000] Process v4l_id (pid: 2998, stack limit = 0xee46e238)
-[   77.760000] Stack: (0xee46fd70 to 0xee470000)
-    	       ...
-[   77.935000] [<c038dc10>] (__mutex_lock_slowpath+0x54/0x368) from [<c038df30>] (mutex_lock+0xc/0x24)
-[   77.945000] [<c038df30>] (mutex_lock+0xc/0x24) from [<bf03fa90>] (fimc_lite_open+0x12c/0x2bc [exynos_fimc_lite])
-[   77.955000] [<bf03fa90>] (fimc_lite_open+0x12c/0x2bc [exynos_fimc_lite]) from [<c02ab11c>] (v4l2_open+0xa0/0xe0)
-[   77.965000] [<c02ab11c>] (v4l2_open+0xa0/0xe0) from [<c00b1de4>] (chrdev_open+0x88/0x170)
-[   77.975000] [<c00b1de4>] (chrdev_open+0x88/0x170) from [<c00ac710>] (do_dentry_open.isra.14+0x1d8/0x258)
-[   77.985000] [<c00ac710>] (do_dentry_open.isra.14+0x1d8/0x258) from [<c00ac860>] (finish_open+0x20/0x38)
-[   77.995000] [<c00ac860>] (finish_open+0x20/0x38) from [<c00ba658>] (do_last.isra.43+0x538/0xb1c)
-[   78.000000] [<c00ba658>] (do_last.isra.43+0x538/0xb1c) from [<c00bacf0>] (path_openat+0xb4/0x5c4)
-[   78.010000] [<c00bacf0>] (path_openat+0xb4/0x5c4) from [<c00bb4b4>] (do_filp_open+0x2c/0x80)
-[   78.020000] [<c00bb4b4>] (do_filp_open+0x2c/0x80) from [<c00ad744>] (do_sys_open+0xf4/0x1a8)
-[   78.025000] [<c00ad744>] (do_sys_open+0xf4/0x1a8) from [<c000e320>] (ret_fast_syscall+0x0/0x30)
-[   78.035000] Code: 1a000093 e10f6000 f10c0080 e2845004 (e1953f9f)
+Serge Hallyn <serge.hallyn@ubuntu.com> writes:
 
-Reported-by: Andrzej Hajda <a.hajda@samsung.com>
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+> Since commit af4b8a83add95ef40716401395b44a1b579965f4 it's been
+> possible to get into a situation where a pidns reaper is
+> <defunct>, reparented to host pid 1, but never reaped.  How to
+> reproduce this is documented at
+>
+> https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526
+> (and see
+> https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526/comments/13)
+> In short, run repeated starts of a container whose init is
+>
+> Process.exit(0);
+>
+> sysrq-t when such a task is playing zombie shows:
+>
+> [  131.132978] init            x ffff88011fc14580     0  2084   2039 0x00000000
+> [  131.132978]  ffff880116e89ea8 0000000000000002 ffff880116e89fd8 0000000000014580
+> [  131.132978]  ffff880116e89fd8 0000000000014580 ffff8801172a0000 ffff8801172a0000
+> [  131.132978]  ffff8801172a0630 ffff88011729fff0 ffff880116e14650 ffff88011729fff0
+> [  131.132978] Call Trace:
+> [  131.132978]  [<ffffffff816f6159>] schedule+0x29/0x70
+> [  131.132978]  [<ffffffff81064591>] do_exit+0x6e1/0xa40
+> [  131.132978]  [<ffffffff81071eae>] ? signal_wake_up_state+0x1e/0x30
+> [  131.132978]  [<ffffffff8106496f>] do_group_exit+0x3f/0xa0
+> [  131.132978]  [<ffffffff810649e4>] SyS_exit_group+0x14/0x20
+> [  131.132978]  [<ffffffff8170102f>] tracesys+0xe1/0xe6
+>
+> Further debugging showed that every time this happened, zap_pid_ns_processes()
+> started with nr_hashed being 3, while we were expecting it to drop to 2.
+> Any time it didn't happen, nr_hashed was 1 or 2.  So the reaper was
+> waiting for nr_hashed to become 2, but free_pid() only wakes the reaper
+> if nr_hashed hits 1.
+
+The issue is that when the task group leader of an init process exits
+before other tasks of the init process when the init process finally
+exits it will be a secondary task sleeping in zap_pid_ns_processes and
+waiting to wake up when the number of hashed pids drops to two.  This
+case waits forever as free_pid only sends a wake up when the number of
+hashed pids drops to 1.
+
+To correct this the simple strategy of sending a possibly unncessary
+wake up when the number of hashed pids drops to 2 is adopted.
+
+Sending one extraneous wake up is relatively harmless, at worst we
+waste a little cpu time in the rare case when a pid namespace
+appropaches exiting.
+
+We can detect the case when the pid namespace drops to just two pids
+hashed race free in free_pid.
+
+Dereferencing pid_ns->child_reaper with the pidmap_lock held is safe
+without out the tasklist_lock because it is guaranteed that the
+detach_pid will be called on the child_reaper before it is freed and
+detach_pid calls __change_pid which calls free_pid which takes the
+pidmap_lock.  __change_pid only calls free_pid if this is the
+last use of the pid.  For a thread that is not the thread group leader
+the threads pid will only ever have one user because a threads pid
+is not allowed to be the pid of a process, of a process group or
+a session.  For a thread that is a thread group leader all of
+the other threads of that process will be reaped before it is allowed
+for the thread group leader to be reaped ensuring there will only
+be one user of the threads pid as a process pid.  Furthermore
+because the thread is the init process of a pid namespace all of the
+other processes in the pid namespace will have also been already freed
+leading to the fact that the pid will not be used as a session pid or
+a process group pid for any other running process.
+
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Tested-by: Serge Hallyn <serge.hallyn@canonical.com>
+Reported-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/exynos4-is/media-dev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/pid.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/media/platform/exynos4-is/media-dev.c
-+++ b/drivers/media/platform/exynos4-is/media-dev.c
-@@ -1530,9 +1530,9 @@ static int fimc_md_probe(struct platform
- err_unlock:
- 	mutex_unlock(&fmd->media_dev.graph_mutex);
- err_clk:
--	media_device_unregister(&fmd->media_dev);
- 	fimc_md_put_clocks(fmd);
- 	fimc_md_unregister_entities(fmd);
-+	media_device_unregister(&fmd->media_dev);
- err_md:
- 	v4l2_device_unregister(&fmd->v4l2_dev);
- 	return ret;
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -265,6 +265,7 @@ void free_pid(struct pid *pid)
+ 		struct pid_namespace *ns = upid->ns;
+ 		hlist_del_rcu(&upid->pid_chain);
+ 		switch(--ns->nr_hashed) {
++		case 2:
+ 		case 1:
+ 			/* When all that is left in the pid namespace
+ 			 * is the reaper wake up the reaper.  The reaper
 
 
