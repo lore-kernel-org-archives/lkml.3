@@ -1,79 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab3IYWRB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 18:17:01 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47866 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753833Ab3IYWQ7 (ORCPT
+	id S1754126Ab3IYWWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 18:22:44 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:44488 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab3IYWWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 18:16:59 -0400
-Message-ID: <1380147414.18835.36.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [RFC V4 PATCH 00/15] Signature verification of hibernate
- snapshot
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: David Howells <dhowells@redhat.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-crypto@vger.kernel.org,
-        opensuse-kernel@opensuse.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Josh Boyer <jwboyer@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Lee, Chun-Yi" <jlee@suse.com>
-Date: Wed, 25 Sep 2013 15:16:54 -0700
-In-Reply-To: <Pine.LNX.4.44L0.1309251723001.26508-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1309251723001.26508-100000@netrider.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Sep 2013 18:22:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOesGMi=xBXTdMm+-yTRVVFf0VR-7gy6xTrdeAupyo7OWVb3iQ@mail.gmail.com>
+References: <1378986619-26765-1-git-send-email-pekon@ti.com>
+	<1378986619-26765-2-git-send-email-pekon@ti.com>
+	<20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
+	<20130925134619.GG10746@radagast>
+	<20130925175527.GA23337@ld-irv-0074.broadcom.com>
+	<20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
+	<20130925200539.GH23337@ld-irv-0074.broadcom.com>
+	<CAOesGMif301iBe9zxHudkC_G9SzPPy1Mj4XYvQ-MY8nmx4wO+A@mail.gmail.com>
+	<20130925212903.GI23337@ld-irv-0074.broadcom.com>
+	<CAOesGMi=xBXTdMm+-yTRVVFf0VR-7gy6xTrdeAupyo7OWVb3iQ@mail.gmail.com>
+Date: Wed, 25 Sep 2013 15:22:41 -0700
+Message-ID: <CAN8TOE9Mo6sHWjy7ebtxTqZoDTM9dzcBqdu_qsZfP_ELtSufWw@mail.gmail.com>
+Subject: Re: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various ECC schemes
+From: Brian Norris <computersforpeace@gmail.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "Gupta, Pekon" <pekon@ti.com>,
+        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mark Rutland <mark.rutland@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-25 at 17:25 -0400, Alan Stern wrote:
-> On Wed, 25 Sep 2013, David Howells wrote:
-> 
-> > I have pushed some keyrings patches that will likely affect this to:
-> > 
-> > 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-devel
-> > 
-> > I intend to ask James to pull these into his next branch.  If he's happy to do
-> > so, I can look at pulling at least your asymmetric keys patch on top of them.
-> 
-> This suggests a point that I raised at the Linux Plumbers conference:
-> 
-> Why are asymmetric keys used for verifying the hibernation image?  It
-> seems that a symmetric key would work just as well.  And it would be a
-> lot quicker to generate, because it wouldn't need any high-precision
-> integer computations.
+On Wed, Sep 25, 2013 at 2:32 PM, Olof Johansson <olof@lixom.net> wrote:
+> On Wed, Sep 25, 2013 at 2:29 PM, Brian Norris
+> <computersforpeace@gmail.com> wrote:
+>> On Wed, Sep 25, 2013 at 01:33:27PM -0700, Olof Johansson wrote:
+>>> On Wed, Sep 25, 2013 at 1:05 PM, Brian Norris
+>>> <computersforpeace@gmail.com> wrote:
+>>>
+>>> > Olof has given good advice on your DT binding and has (slowly) been
+>>> > responding to other requests for DT review that make it to his list. I
+>>> > see that he hasn't followed up on your changes (this v6), so pinging him
+>>> > (as you did) is probably the correct approach. But please do recognize
+>>> > that the DT list is very high volume, so it's hard to get good timely
+>>> > responses there.
+>>>
+>>> I am not a DT mainainer, but sometimes when I see a binding that
+>>> appears to be wrong I speak up. In this case, the binding was one of
+>>> those.
+>>
+>> Whoops, my bad. I was deceived by the responses I've seen from you on
+>> other issues (thanks, BTW). In that case, I haven't seen any response
+>> from a proper DT binding maintainer :(
+>>
+>>> So, I have no more objections to it, and I hope you can get a quick
+>>> review from a DT maintainer on the rest of the binding.
+>>
+>> At this point, I'm comfortable going ahead without their ack, since they
+>> obviously don't care/don't have the manpower to review.
+>
+> No, that is not how we handle device tree bindings. They need to be
+> reviewed, since we are moving over to a model where they will be
+> considered ABI and can't be changed after the fact. We have a long
+> backlog of mostly-unreviewed old bindings that we're going to do a
+> pass through and then lock down, but it would be good to not add to
+> that backlog with newer bindings.
+>
+> In other words, there's a strong desire for actual acks on bindings
+> from those maintainers these days.
 
-The reason is the desire to validate that the previous kernel created
-something which it passed on to the current kernel (in this case, the
-hibernation image) untampered with.  To do that, something must be
-passed to the prior kernel that can be validated but *not* recreated by
-the current kernel.
+This only works if we get a response. I'll repeat this fact: I have
+seen absolutely zero response from any DT maintainer regarding this
+binding, and they've been CC'd in some capacity since July:
 
-The scheme for doing this is a public/private key pair generated for
-each boot incarnation N as a pair P_N (public key) and K_N (private
-key).  Then the Nth boot incarnation gets P_{N-1} and K_N (the boot
-environment holds P_N in inaccessible BS variables for passing into the
-next kernel) so the Nth kernel can validate information from the N-1th
-kernel using P_{N-1} and create information for passing on in a
-validated fashion to the next kernel using K_N.
+Old revision from July (cross-posted, including the old DT list):
+http://thread.gmane.org/gmane.linux.ports.arm.omap/100484/
 
-This scheme doesn't work with symmetric keys unless you have a
-modification I haven't seen?
+New list:
+http://www.mail-archive.com/linux-omap@vger.kernel.org/msg95238.html
 
-James
+All official DT binding maintainers are CC'd here: you can't say you
+want more review of bindings, yet fail to review them across 3
+versions and almost 3 months. Ball's in your court.
 
-
-
+Brian
