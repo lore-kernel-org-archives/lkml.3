@@ -1,129 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3IYQCY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 12:02:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883Ab3IYQCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 12:02:23 -0400
-Date: Wed, 25 Sep 2013 17:55:15 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130925155515.GA17447@redhat.com>
-References: <1378805550-29949-38-git-send-email-mgorman@suse.de> <20130917143003.GA29354@twins.programming.kicks-ass.net> <20130917162050.GK22421@suse.de> <20130917164505.GG12926@twins.programming.kicks-ass.net> <20130918154939.GZ26785@twins.programming.kicks-ass.net> <20130919143241.GB26785@twins.programming.kicks-ass.net> <20130921163404.GA8545@redhat.com> <20130923092955.GV9326@twins.programming.kicks-ass.net> <20130923173203.GA20392@redhat.com> <20130924202423.GW12926@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130924202423.GW12926@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756083Ab3IYQCn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 12:02:43 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:34550 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755443Ab3IYQCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 12:02:42 -0400
+Subject: Re: increased vmap_area_lock contentions on "n_tty: Move buffers
+ into n_tty_data"
+From: Lin Ming <minggr@gmail.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <5242C960.7050506@hurleysoftware.com>
+References: <20130913005133.GA32479@localhost>
+	 <20130913010936.GA1291@localhost>	<5238767D.1080606@hurleysoftware.com>
+	 <20130917232214.GA11390@localhost>	<5238F252.5070905@hurleysoftware.com>
+	 <CAF1ivSbYg296oHhO0_UXwkos8Ui_1C93pUnXPzow4qLWyAa2kg@mail.gmail.com>
+	 <5242C960.7050506@hurleysoftware.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 26 Sep 2013 00:02:24 +0800
+Message-ID: <1380124944.27676.1.camel@monkey32>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24, Peter Zijlstra wrote:
->
-> So now we drop from a no memory barriers fast path, into a memory
-> barrier 'slow' path into blocking.
+On Wed, 2013-09-25 at 07:30 -0400, Peter Hurley wrote:
+> On 09/25/2013 05:04 AM, Lin Ming wrote:
+> > On Wed, Sep 18, 2013 at 8:22 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> > [snip]
+> >>
+> >> Looking over vmalloc.c, the critical section footprint of the vmap_area_lock
+> >> could definitely be reduced (even nearly eliminated), but that's a project
+> >> for
+> >> another day :)
+> >
+> > Hi Peter,
+> >
+> > I also looked over vmallo.c, but didn't find obvious way to reduce the
+> > critical section footprint.
+> > Could you share some hints how to do this?
+> 
+> vmap_area_list is an RCU list.
+> get_vmalloc_info() doesn't need to take the vmap_area_lock at all.
+> Look at __purge_vmap_area_lazy() for a howto.
 
-Cough... can't understand the above ;) In fact I can't understand
-the patch... see below. But in any case, afaics the fast path
-needs mb() unless you add another synchronize_sched() into
-cpu_hotplug_done().
+Would you like below patch?
 
-> +static inline void get_online_cpus(void)
-> +{
-> +	might_sleep();
-> +
-> +	/* Support reader-in-reader recursion */
-> +	if (current->cpuhp_ref++) {
-> +		barrier();
-> +		return;
-> +	}
-> +
-> +	preempt_disable();
-> +	if (likely(!__cpuhp_writer))
-> +		__this_cpu_inc(__cpuhp_refcount);
+From: Lin Ming <minggr@gmail.com>
+Date: Wed, 25 Sep 2013 23:48:19 +0800
+Subject: [PATCH] mm/vmalloc.c: eliminate vmap_area_lock in get_vmalloc_info()
 
-mb() to ensure the reader can't miss, say, a STORE done inside
-the cpu_hotplug_begin/end section.
+vmap_area_list is an RCU list.
+get_vmalloc_info() doesn't need to take the vmap_area_lock at all.
+Use RCU to protect list scan.
 
-put_online_cpus() needs mb() as well.
+Signed-off-by: Lin Ming <minggr@gmail.com>
+---
+ mm/vmalloc.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-> +void __get_online_cpus(void)
-> +{
-> +	if (__cpuhp_writer == 1) {
-> +		/* See __srcu_read_lock() */
-> +		__this_cpu_inc(__cpuhp_refcount);
-> +		smp_mb();
-> +		__this_cpu_inc(cpuhp_seq);
-> +		return;
-> +	}
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 13a5495..4523c9c 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -2684,14 +2684,14 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
+ 
+ 	prev_end = VMALLOC_START;
+ 
+-	spin_lock(&vmap_area_lock);
++	rcu_read_lock();
+ 
+ 	if (list_empty(&vmap_area_list)) {
+ 		vmi->largest_chunk = VMALLOC_TOTAL;
+ 		goto out;
+ 	}
+ 
+-	list_for_each_entry(va, &vmap_area_list, list) {
++	list_for_each_entry_rcu(va, &vmap_area_list, list) {
+ 		unsigned long addr = va->va_start;
+ 
+ 		/*
+@@ -2718,7 +2718,7 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
+ 		vmi->largest_chunk = VMALLOC_END - prev_end;
+ 
+ out:
+-	spin_unlock(&vmap_area_lock);
++	rcu_read_unlock();
+ }
+ #endif
+ 
+-- 
+1.7.2.5
 
-OK, cpuhp_seq should guarantee cpuhp_readers_active_check() gets
-the "stable" numbers. Looks suspicious... but lets assume this
-works.
 
-However, I do not see how "__cpuhp_writer == 1" can work, please
-see below.
 
-> +	/*
-> +	 * XXX list_empty_careful(&cpuhp_readers.task_list) ?
-> +	 */
-> +	if (atomic_dec_and_test(&cpuhp_waitcount))
-> +		wake_up_all(&cpuhp_writer);
+> 
+> Regards,
+> Peter Hurley
+> 
 
-Same problem as in previous version. __get_online_cpus() succeeds
-without incrementing __cpuhp_refcount. "goto start" can't help
-afaics.
-
->  void cpu_hotplug_begin(void)
->  {
-> -	cpu_hotplug.active_writer = current;
-> +	unsigned int count = 0;
-> +	int cpu;
->  
-> -	for (;;) {
-> -		mutex_lock(&cpu_hotplug.lock);
-> -		if (likely(!cpu_hotplug.refcount))
-> -			break;
-> -		__set_current_state(TASK_UNINTERRUPTIBLE);
-> -		mutex_unlock(&cpu_hotplug.lock);
-> -		schedule();
-> -	}
-> +	lockdep_assert_held(&cpu_add_remove_lock);
-> +
-> +	/* allow reader-in-writer recursion */
-> +	current->cpuhp_ref++;
-> +
-> +	/* make readers take the slow path */
-> +	__cpuhp_writer = 1;
-> +
-> +	/* See percpu_down_write() */
-> +	synchronize_sched();
-
-Suppose there are no readers at this point,
-
-> +
-> +	/* make readers block */
-> +	__cpuhp_writer = 2;
-> +
-> +	/* Wait for all readers to go away */
-> +	wait_event(cpuhp_writer, cpuhp_readers_active_check());
-
-So wait_event() "quickly" returns.
-
-Now. Why the new reader should see __cpuhp_writer = 2 ? It can
-still see it == 1, and take that "if (__cpuhp_writer == 1)" path
-above.
-
-Oleg.
 
