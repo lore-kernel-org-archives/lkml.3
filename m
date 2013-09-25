@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883Ab3IYAXE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:23:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39858 "EHLO
+	id S1756900Ab3IYAX1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:23:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39852 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932381Ab3IYAVL (ORCPT
+	with ESMTP id S1756810Ab3IYAVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Sep 2013 20:21:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hui Wang <hui.wang@canonical.com>, Jan Kara <jack@suse.cz>
-Subject: [ 102/117] isofs: Refuse RW mount of the filesystem instead of making it RO
-Date: Tue, 24 Sep 2013 17:19:28 -0700
-Message-Id: <20130925001752.067482391@linuxfoundation.org>
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 110/117] mmc: tmio_mmc_dma: fix PIO fallback on SDHI
+Date: Tue, 24 Sep 2013 17:19:36 -0700
+Message-Id: <20130925001752.953317344@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,68 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-commit 17b7f7cf58926844e1dd40f5eb5348d481deca6a upstream.
+commit f936f9b67b7f8c2eae01dd303a0e90bd777c4679 upstream.
 
-Refuse RW mount of isofs filesystem. So far we just silently changed it
-to RO mount but when the media is writeable, block layer won't notice
-this change and thus will think device is used RW and will block eject
-button of the drive. That is unexpected by users because for
-non-writeable media eject button works just fine.
+I'm testing SH-Mobile SDHI driver in DMA mode with  a new DMA controller  using
+'bonnie++' and getting DMA error after which the tmio_mmc_dma.c code falls back
+to PIO but all commands time out after that.  It turned out that the fallback
+code calls tmio_mmc_enable_dma() with RX/TX channels already freed and pointers
+to them cleared, so that the function bails out early instead  of clearing the
+DMA bit in the CTL_DMA_ENABLE register. The regression was introduced by commit
+162f43e31c5a376ec16336e5d0ac973373d54c89 (mmc: tmio: fix a deadlock).
+Moving tmio_mmc_enable_dma() calls to the top of the PIO fallback code in
+tmio_mmc_start_dma_{rx|tx}() helps.
 
-Userspace mount(8) command handles this just fine and retries mounting
-with MS_RDONLY set so userspace shouldn't see any regression.  Plus any
-tool mounting isofs is likely confronted with the case of read-only
-media where block layer already refuses to mount the filesystem without
-MS_RDONLY set so our behavior shouldn't be anything new for it.
-
-Reported-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/isofs/inode.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+ drivers/mmc/host/tmio_mmc_dma.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -117,8 +117,8 @@ static void destroy_inodecache(void)
+--- a/drivers/mmc/host/tmio_mmc_dma.c
++++ b/drivers/mmc/host/tmio_mmc_dma.c
+@@ -104,6 +104,7 @@ static void tmio_mmc_start_dma_rx(struct
+ pio:
+ 	if (!desc) {
+ 		/* DMA failed, fall back to PIO */
++		tmio_mmc_enable_dma(host, false);
+ 		if (ret >= 0)
+ 			ret = -EIO;
+ 		host->chan_rx = NULL;
+@@ -116,7 +117,6 @@ pio:
+ 		}
+ 		dev_warn(&host->pdev->dev,
+ 			 "DMA failed: %d, falling back to PIO\n", ret);
+-		tmio_mmc_enable_dma(host, false);
+ 	}
  
- static int isofs_remount(struct super_block *sb, int *flags, char *data)
- {
--	/* we probably want a lot more here */
--	*flags |= MS_RDONLY;
-+	if (!(*flags & MS_RDONLY))
-+		return -EROFS;
- 	return 0;
- }
+ 	dev_dbg(&host->pdev->dev, "%s(): desc %p, cookie %d, sg[%d]\n", __func__,
+@@ -185,6 +185,7 @@ static void tmio_mmc_start_dma_tx(struct
+ pio:
+ 	if (!desc) {
+ 		/* DMA failed, fall back to PIO */
++		tmio_mmc_enable_dma(host, false);
+ 		if (ret >= 0)
+ 			ret = -EIO;
+ 		host->chan_tx = NULL;
+@@ -197,7 +198,6 @@ pio:
+ 		}
+ 		dev_warn(&host->pdev->dev,
+ 			 "DMA failed: %d, falling back to PIO\n", ret);
+-		tmio_mmc_enable_dma(host, false);
+ 	}
  
-@@ -763,15 +763,6 @@ root_found:
- 	 */
- 	s->s_maxbytes = 0x80000000000LL;
- 
--	/*
--	 * The CDROM is read-only, has no nodes (devices) on it, and since
--	 * all of the files appear to be owned by root, we really do not want
--	 * to allow suid.  (suid or devices will not show up unless we have
--	 * Rock Ridge extensions)
--	 */
--
--	s->s_flags |= MS_RDONLY /* | MS_NODEV | MS_NOSUID */;
--
- 	/* Set this for reference. Its not currently used except on write
- 	   which we don't have .. */
- 
-@@ -1530,6 +1521,9 @@ struct inode *isofs_iget(struct super_bl
- static struct dentry *isofs_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
-+	/* We don't support read-write mounts */
-+	if (!(flags & MS_RDONLY))
-+		return ERR_PTR(-EACCES);
- 	return mount_bdev(fs_type, flags, dev_name, data, isofs_fill_super);
- }
- 
+ 	dev_dbg(&host->pdev->dev, "%s(): desc %p, cookie %d\n", __func__,
 
 
