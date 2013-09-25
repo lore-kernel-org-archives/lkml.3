@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab3IYLT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 07:19:59 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:54757 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab3IYLT6 (ORCPT
+	id S1755320Ab3IYLWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 07:22:33 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:44002 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab3IYLWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 07:19:58 -0400
-Date: Wed, 25 Sep 2013 12:19:54 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH 2/3] mfd: mc13xxx: Move SPI erratum workaround into SPI
- I/O function
-Message-ID: <20130925111954.GG5132@lee--X1>
-References: <1379960073-23245-1-git-send-email-broonie@kernel.org>
- <1379960073-23245-2-git-send-email-broonie@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1379960073-23245-2-git-send-email-broonie@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 25 Sep 2013 07:22:31 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-cc-5242c7755a8c
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, Kukjin Kim <kgene@kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
+Subject: [PATCH 0/2] cpufreq: exynos: Fixes for v3.12
+Date: Wed, 25 Sep 2013 13:22:16 +0200
+Message-id: <1380108138-30402-1-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jQd2y405BBhNqLDbOWM9q0bvgKptF
+	/+PXzBZvHnFbvHm4mdHi8q45bBafe48wWsw4v4/J4nbjCqCKhb1MFutnvGax2PjVw4HHY9Oq
+	TjaPO9f2sHmsm/aW2aNvyypGj0eLWxg9Pm+SC2CL4rJJSc3JLEst0rdL4MqYfOkuY8E91oqj
+	DyexNzDeYOli5OSQEDCRWLrjAJQtJnHh3nq2LkYuDiGB6YwSbTsnMEE4XUwSnS9mMINUsQno
+	SXy++5QJxBYR8JVY+/gyI0gRs8ACZoklp7axgiSEBUwlfk54yQZiswioSqxrPwvWwCvgJnFu
+	/V5GiHXyEk/v97FNYORewMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4vJ5J7WBc2WBx
+	iFGAg1GJh1fgqGOQEGtiWXFl7iFGCQ5mJRHe8MVOQUK8KYmVValF+fFFpTmpxYcYpTlYlMR5
+	D7RaBwoJpCeWpGanphakFsFkmTg4pRoYk2atXOEr96mn+YnvsdMu7spnpk7gNMvqEGd9PNPR
+	ZP2L2C8WvSePz8ndv9Ms0OD4pMrdTcz3+vNW99yYn7umj/Hc2q0XOFZXdn/RMTjTX7dg2wHu
+	1Rs59Drn9j9a9GBJxzOVwqUx6RbrtdMdvP4m/OON9awsbxJeGWkfVbGrmikjtl171ic3JZbi
+	jERDLeai4kQAj9AaLisCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Sep 2013, Mark Brown wrote:
+Attached commits provide cpufreq regression fixes for Trats and Trats2
+Exynos4 boards.
+Since v3.12 Exynos4 uses common clock framework for clock manipulation.
+Those patches restore correct output for cpuinfo_cur_freq [1] sysfs
+attribute.
+Without them, the [1] provides default frequency (800 MHz) set at driver
+initialization.
 
-> From: Mark Brown <broonie@linaro.org>
-> 
-> Move the workaround for double sending AUDIO_CODEC and AUDIO_DAC writes
-> into the SPI core, aiding refactoring to eliminate the ASoC custom I/O
-> functions and avoiding the extra writes for I2C.
-> 
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> ---
->  drivers/mfd/mc13xxx-spi.c   | 5 +++++
->  include/linux/mfd/mc13xxx.h | 7 +++++++
->  sound/soc/codecs/mc13783.c  | 4 ----
->  3 files changed, 12 insertions(+), 4 deletions(-)
+Lukasz Majewski (2):
+  cpufreq: exynos4x12: Use the common clock framework to set APLL clock
+    rate
+  cpufreq: exynos4210: Use the common clock framework to set APLL clock
+    rate
 
-I assume this is okay to go in via the MFD tree.
-
-I've applied it until you say otherwise.
+ drivers/cpufreq/exynos4210-cpufreq.c |   20 ++++----------------
+ drivers/cpufreq/exynos4x12-cpufreq.c |   23 ++++-------------------
+ 2 files changed, 8 insertions(+), 35 deletions(-)
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.10.4
+
