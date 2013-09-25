@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab3IYARA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:17:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39233 "EHLO
+	id S1757272Ab3IYA4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:56:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39260 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074Ab3IYAQ5 (ORCPT
+	with ESMTP id S932091Ab3IYARB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:57 -0400
+	Tue, 24 Sep 2013 20:17:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>, Gabor Juhos <juhosg@openwrt.org>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [ 086/110] MIPS: ath79: Fix ar933x watchdog clock
-Date: Tue, 24 Sep 2013 17:15:24 -0700
-Message-Id: <20130925001332.749799302@linuxfoundation.org>
+        Jie Liu <jeff.liu@oracle.com>, David Weber <wb@munzinger.de>,
+        Sunil Mushran <sunil.mushran@gmail.com>, Mark Fashen <mfasheh@suse.de>,
+        Joel Becker <jlbec@evilplan.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 091/110] ocfs2: fix the end cluster offset of FIEMAP
+Date: Tue, 24 Sep 2013 17:15:29 -0700
+Message-Id: <20130925001333.278853749@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,45 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Jie Liu <jeff.liu@oracle.com>
 
-commit a1191927ace7e6f827132aa9e062779eb3f11fa5 upstream.
+commit 28e8be31803b19d0d8f76216cb11b480b8a98bec upstream.
 
-The watchdog device on the AR933x is connected to
-the AHB clock, however the current code uses the
-reference clock. Due to the wrong rate, the watchdog
-driver can't calculate correct register values for
-a given timeout value and the watchdog unexpectedly
-restarts the system.
+Call fiemap ioctl(2) with given start offset as well as an desired mapping
+range should show extents if possible.  However, we somehow figure out the
+end offset of mapping via 'mapping_end -= cpos' before iterating the
+extent records which would cause problems if the given fiemap length is
+too small to a cluster size, e.g,
 
-The code uses the wrong value since the initial
-commit 04225e1d227c8e68d685936ecf42ac175fec0e54
-(MIPS: ath79: add AR933X specific clock init)
+Cluster size 4096:
+debugfs.ocfs2 1.6.3
+        Block Size Bits: 12   Cluster Size Bits: 12
 
-The patch fixes the code to use the correct clock
-rate to avoid the problem.
+The extended fiemap test utility From David:
+https://gist.github.com/anonymous/6172331
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/5777/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+# dd if=/dev/urandom of=/ocfs2/test_file bs=1M count=1000
+# ./fiemap /ocfs2/test_file 4096 10
+start: 4096, length: 10
+File /ocfs2/test_file has 0 extents:
+#	Logical          Physical         Length           Flags
+	^^^^^ <-- No extent is shown
+
+In this case, at ocfs2_fiemap(): cpos == mapping_end == 1. Hence the
+loop of searching extent records was not executed at all.
+
+This patch remove the in question 'mapping_end -= cpos', and loops
+until the cpos is larger than the mapping_end as usual.
+
+# ./fiemap /ocfs2/test_file 4096 10
+start: 4096, length: 10
+File /ocfs2/test_file has 1 extents:
+#	Logical          Physical         Length           Flags
+0:	0000000000000000 0000000056a01000 0000000006a00000 0000
+
+Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+Reported-by: David Weber <wb@munzinger.de>
+Tested-by: David Weber <wb@munzinger.de>
+Cc: Sunil Mushran <sunil.mushran@gmail.com>
+Cc: Mark Fashen <mfasheh@suse.de>
+Cc: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/ath79/clock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ocfs2/extent_map.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/mips/ath79/clock.c
-+++ b/arch/mips/ath79/clock.c
-@@ -164,7 +164,7 @@ static void __init ar933x_clocks_init(vo
- 		ath79_ahb_clk.rate = freq / t;
- 	}
- 
--	ath79_wdt_clk.rate = ath79_ref_clk.rate;
-+	ath79_wdt_clk.rate = ath79_ahb_clk.rate;
- 	ath79_uart_clk.rate = ath79_ref_clk.rate;
- }
- 
+--- a/fs/ocfs2/extent_map.c
++++ b/fs/ocfs2/extent_map.c
+@@ -781,7 +781,6 @@ int ocfs2_fiemap(struct inode *inode, st
+ 	cpos = map_start >> osb->s_clustersize_bits;
+ 	mapping_end = ocfs2_clusters_for_bytes(inode->i_sb,
+ 					       map_start + map_len);
+-	mapping_end -= cpos;
+ 	is_last = 0;
+ 	while (cpos < mapping_end && !is_last) {
+ 		u32 fe_flags;
 
 
