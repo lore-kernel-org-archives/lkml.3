@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758617Ab3IYBly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:41:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38523 "EHLO
+	id S1755092Ab3IYAIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:08:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38425 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071Ab3IYAIa (ORCPT
+	with ESMTP id S1754931Ab3IYAII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:08:30 -0400
+	Tue, 24 Sep 2013 20:08:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Libin <huawei.libin@huawei.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 24/28] mm/huge_memory.c: fix potential NULL pointer dereference
-Date: Tue, 24 Sep 2013 17:07:55 -0700
-Message-Id: <20130925000654.152727471@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 08/28] staging: comedi: dt282x: dt282x_ai_insn_read() always fails
+Date: Tue, 24 Sep 2013 17:07:39 -0700
+Message-Id: <20130925000650.462720102@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
 References: <20130925000648.404447782@linuxfoundation.org>
@@ -30,42 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Libin <huawei.libin@huawei.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit a8f531ebc33052642b4bd7b812eedf397108ce64 upstream.
+commit 2c4283ca7cdcc6605859c836fc536fcd83a4525f upstream.
 
-In collapse_huge_page() there is a race window between releasing the
-mmap_sem read lock and taking the mmap_sem write lock, so find_vma() may
-return NULL.  So check the return value to avoid NULL pointer dereference.
+In dt282x_ai_insn_read() we call this macro like:
+wait_for(!mux_busy(), comedi_error(dev, "timeout\n"); return -ETIME;);
+Because the if statement doesn't have curly braces it means we always
+return -ETIME and the function never succeeds.
 
-collapse_huge_page
-	khugepaged_alloc_page
-		up_read(&mm->mmap_sem)
-	down_write(&mm->mmap_sem)
-	vma = find_vma(mm, address)
-
-Signed-off-by: Libin <huawei.libin@huawei.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/comedi/drivers/dt282x.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1838,6 +1838,8 @@ static void collapse_huge_page(struct mm
- 		goto out;
+--- a/drivers/staging/comedi/drivers/dt282x.c
++++ b/drivers/staging/comedi/drivers/dt282x.c
+@@ -406,8 +406,9 @@ struct dt282x_private {
+ 			}					\
+ 			udelay(5);				\
+ 		}						\
+-		if (_i)						\
++		if (_i) {					\
+ 			b					\
++		}						\
+ 	} while (0)
  
- 	vma = find_vma(mm, address);
-+	if (!vma)
-+		goto out;
- 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
- 	hend = vma->vm_end & HPAGE_PMD_MASK;
- 	if (address < hstart || address + HPAGE_PMD_SIZE > hend)
+ static int dt282x_attach(struct comedi_device *dev,
 
 
