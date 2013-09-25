@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649Ab3IYOJi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 10:09:38 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:33795 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754916Ab3IYOJh (ORCPT
+	id S1755795Ab3IYONG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 10:13:06 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:27807 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755587Ab3IYONE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 10:09:37 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] xen/spinlock: Document the xen_nopvspin parameter.
-Date: Wed, 25 Sep 2013 10:09:30 -0400
-Message-Id: <1380118170-5262-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 25 Sep 2013 10:13:04 -0400
+Date: Wed, 25 Sep 2013 10:13:01 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>
+Cc: Ville =?UTF-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Clark Williams <williams@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Subject: Re: [Intel-gfx] BUG: sleeping function called from invalid context
+ on 3.10.10-rt7
+Message-ID: <20130925101301.6cbe5d0f@gandalf.local.home>
+In-Reply-To: <5242674A.8020100@tuebingen.mpg.de>
+References: <20130911102809.GA31663@uudg.org>
+	<20130911092623.42efd930@gandalf.local.home>
+	<5230895B.5070400@hurleysoftware.com>
+	<20130911113845.6d56a556@gandalf.local.home>
+	<5230C52E.3050801@hurleysoftware.com>
+	<5238B288.3000704@hurleysoftware.com>
+	<CAKMK7uG9s8W6yebkmuJe0XHGsoru4_9FzGqfmKWtMFyCAfQZqA@mail.gmail.com>
+	<523CC728.4040302@tuebingen.mpg.de>
+	<20130923083841.GT4531@intel.com>
+	<5242674A.8020100@tuebingen.mpg.de>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Which disables in the ticketlock slowpath the Xen PV optimization's.
-Useful for diagnosing issues and comparing benchmarks in
-over-commit CPU scenarios.
+On Wed, 25 Sep 2013 06:32:10 +0200
+Mario Kleiner <mario.kleiner@tuebingen.mpg.de> wrote:
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- Documentation/kernel-parameters.txt | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 7f9d4f5..b958912 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -3412,6 +3412,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 				the unplug protocol
- 			never -- do not unplug even if version check succeeds
  
-+	xen_nopvspin	[X86,XEN]
-+			Disables the ticketlock slowpath using Xen PV
-+			optimizations.
-+
- 	xirc2ps_cs=	[NET,PCMCIA]
- 			Format:
- 			<irq>,<irq_mask>,<io>,<full_duplex>,<do_sound>,<lockup_hack>[,<irq2>[,<irq3>[,<irq4>]]]
--- 
-1.8.3.1
+> But given the new situation, your proposal is great! If we push the 
+> clock readouts into the get_scanoutpos routine, we can make this robust 
+> without causing grief for the rt people and without the need for a new 
+> separate lock for display regs in intel-kms.
+> 
+> E.g., for intel-kms:
+> 
+> i915_get_crtc_scanoutpos(..., ktime_t *stime, ktime_t *etime)
+> {
+>    ...
+>    spin_lock_irqsave(...uncore.lock);
+>    preempt_disable();
+>    *stime = ktime_get();
+>    position = __raw_i915_read32(dev_priv, PIPEDSL(pipe));
+>    *etime = ktime_get();
+>    preempt_enable();
+>    spin_unlock_irqrestore(...uncore.lock)
+>    ...
+> }
+> 
+> With your patchset to reduce the amount of register reads needed in that 
+> function, and given that forcewake handling isn't needed for these 
+> registers, this should make it robust again and wouldn't need new locks.
+> 
+> Unless ktime_get is also a bad thing to do in a preempt disabled section?
 
+ktime_get() works fine in preempt_disable sections, although it may add
+some latencies, but you shouldn't need to worry about it.
+
+I like this solution the best too, but if it does go in, I would ask to
+send us the patch for adding the preempt_disable() and we can add the
+preempt_disable_rt() to it. Why make mainline have a little more
+overhead?
+
+-- Steve
