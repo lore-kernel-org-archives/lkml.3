@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab3IYAUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39726 "EHLO
+	id S1757103Ab3IYA3u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:29:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39739 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756748Ab3IYAUt (ORCPT
+	with ESMTP id S1756755Ab3IYAUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:49 -0400
+	Tue, 24 Sep 2013 20:20:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Nicolas Adenis-Lamarre <nicolas.adenis.lamarre@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 073/117] HID: wiimote: work around broken DRM_KAI on GEN10
-Date: Tue, 24 Sep 2013 17:18:59 -0700
-Message-Id: <20130925001748.917813927@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [ 087/117] media: cx88: Fix regression: CX88_AUDIO_WM8775 cant be 0
+Date: Tue, 24 Sep 2013 17:19:13 -0700
+Message-Id: <20130925001750.454537747@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -28,51 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Herrmann <dh.herrmann@gmail.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit a6be8569b6705cbc26e7ae1a8be476067cc5a78b upstream.
+commit f66b2a1c7f2ae3fb0d5b67d07ab4f5055fd3cf16 upstream.
 
-GEN10 and earlier devices seem to not support DRM_KAI if we run in basic
-IR mode. Use DRM_KAIE instead. This might increases overhead slightly as
-the extension port is read and streamed but we stream accelerometer data
-constantly, too, so this is negligible.
+Cards using the wm8775 specify that in their card struct. Those that do not
+use it leave the audio_chip field to 0. Unfortunately, the CX88_AUDIO_WM8775
+enum is 0 as well, so boards that do not have the wm8775 still try to load
+and use that driver. Change it to 1 to fix this.
+This regression was introduced in commit facd23664f1d63c33fbc6da52261c8548ed3fbd4.
 
-Note that our parsers are hardcoded on IR-formats, so we cannot actually
-use 96-bit IR DRMs for basic IR data. We would have to adjust the parsers.
-But as only GEN20 and newer support this, we simply avoid mixed DRMs.
-
-This fixes a bug where GEN10 devices didn't provide IR data if
-accelerometer and IR are enabled simultaneously. As a workaround, you can
-enable DRM_KAIE without this patch via (disables device power-management):
-  echo "37" >/sys/kernel/debug/hid/<dev>/drm
-
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Reported-by: Nicolas Adenis-Lamarre <nicolas.adenis.lamarre@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
+Tested-by: Knut Petersen <Knut_Petersen@t-online.de>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-wiimote-core.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/media/pci/cx88/cx88.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-wiimote-core.c
-+++ b/drivers/hid/hid-wiimote-core.c
-@@ -212,10 +212,12 @@ static __u8 select_drm(struct wiimote_da
+--- a/drivers/media/pci/cx88/cx88.h
++++ b/drivers/media/pci/cx88/cx88.h
+@@ -259,7 +259,7 @@ struct cx88_input {
+ };
  
- 	if (ir == WIIPROTO_FLAG_IR_BASIC) {
- 		if (wdata->state.flags & WIIPROTO_FLAG_ACCEL) {
--			if (ext)
--				return WIIPROTO_REQ_DRM_KAIE;
--			else
--				return WIIPROTO_REQ_DRM_KAI;
-+			/* GEN10 and ealier devices bind IR formats to DRMs.
-+			 * Hence, we cannot use DRM_KAI here as it might be
-+			 * bound to IR_EXT. Use DRM_KAIE unconditionally so we
-+			 * work with all devices and our parsers can use the
-+			 * fixed formats, too. */
-+			return WIIPROTO_REQ_DRM_KAIE;
- 		} else {
- 			return WIIPROTO_REQ_DRM_KIE;
- 		}
+ enum cx88_audio_chip {
+-	CX88_AUDIO_WM8775,
++	CX88_AUDIO_WM8775 = 1,
+ 	CX88_AUDIO_TVAUDIO,
+ };
+ 
 
 
