@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab3IYAM3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:12:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38549 "EHLO
+	id S1755474Ab3IYAMg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:12:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38618 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755346Ab3IYAMR (ORCPT
+	with ESMTP id S1755432Ab3IYAMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:12:17 -0400
+	Tue, 24 Sep 2013 20:12:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Maydell <peter.maydell@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [ 05/40] ARM: PCI: versatile: Fix SMAP register offsets
-Date: Tue, 24 Sep 2013 17:11:37 -0700
-Message-Id: <20130925001042.543838343@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 22/40] HID: pantherlord: validate output report details
+Date: Tue, 24 Sep 2013 17:11:54 -0700
+Message-Id: <20130925001044.374785645@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
 References: <20130925001041.939335518@linuxfoundation.org>
@@ -28,40 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Maydell <peter.maydell@linaro.org>
+From: Kees Cook <keescook@chromium.org>
 
-commit 99f2b130370b904ca5300079243fdbcafa2c708b upstream.
+commit 412f30105ec6735224535791eed5cdc02888ecb4 upstream.
 
-The SMAP register offsets in the versatile PCI controller code were
-all off by four.  (This didn't have any observable bad effects
-because on this board PHYS_OFFSET is zero, and (a) writing zero to
-the flags register at offset 0x10 has no effect and (b) the reset
-value of the SMAP register is zero anyway, so failing to write SMAP2
-didn't matter.)
+A HID device could send a malicious output report that would cause the
+pantherlord HID driver to write beyond the output report allocation
+during initialization, causing a heap overflow:
 
-Signed-off-by: Peter Maydell <peter.maydell@linaro.org>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
+[  310.939483] usb 1-1: New USB device found, idVendor=0e8f, idProduct=0003
+...
+[  315.980774] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+
+CVE-2013-2892
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-versatile/pci.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/hid/hid-pl.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mach-versatile/pci.c
-+++ b/arch/arm/mach-versatile/pci.c
-@@ -42,9 +42,9 @@
- #define PCI_IMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x0)
- #define PCI_IMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x4)
- #define PCI_IMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x8)
--#define PCI_SMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x10)
--#define PCI_SMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x14)
--#define PCI_SMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x18)
-+#define PCI_SMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x14)
-+#define PCI_SMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x18)
-+#define PCI_SMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x1c)
- #define PCI_SELFID		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0xc)
- 
- #define DEVICE_ID_OFFSET		0x00
+--- a/drivers/hid/hid-pl.c
++++ b/drivers/hid/hid-pl.c
+@@ -129,8 +129,14 @@ static int plff_init(struct hid_device *
+ 			strong = &report->field[0]->value[2];
+ 			weak = &report->field[0]->value[3];
+ 			debug("detected single-field device");
+-		} else if (report->maxfield >= 4 && report->field[0]->maxusage == 1 &&
+-				report->field[0]->usage[0].hid == (HID_UP_LED | 0x43)) {
++		} else if (report->field[0]->maxusage == 1 &&
++			   report->field[0]->usage[0].hid ==
++				(HID_UP_LED | 0x43) &&
++			   report->maxfield >= 4 &&
++			   report->field[0]->report_count >= 1 &&
++			   report->field[1]->report_count >= 1 &&
++			   report->field[2]->report_count >= 1 &&
++			   report->field[3]->report_count >= 1) {
+ 			report->field[0]->value[0] = 0x00;
+ 			report->field[1]->value[0] = 0x00;
+ 			strong = &report->field[2]->value[0];
 
 
