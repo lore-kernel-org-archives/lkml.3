@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab3IYFyi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 01:54:38 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:42729 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab3IYFyg (ORCPT
+	id S1754818Ab3IYF41 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 01:56:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38007 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab3IYF40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 01:54:36 -0400
-Date: Wed, 25 Sep 2013 14:54:34 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: Re: [PATCH v5 7/7] ARM: shmobile: ape6evm-reference: enable DMA for
- the MMC interface
-Message-ID: <20130925055433.GC6663@verge.net.au>
-References: <1375455042-24093-1-git-send-email-g.liakhovetski@gmx.de>
- <1375455042-24093-8-git-send-email-g.liakhovetski@gmx.de>
+	Wed, 25 Sep 2013 01:56:26 -0400
+Date: Wed, 25 Sep 2013 07:55:56 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v5 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+Message-ID: <20130925055556.GA3081@twins.programming.kicks-ass.net>
+References: <cover.1380057198.git.tim.c.chen@linux.intel.com>
+ <1380061366.3467.54.camel@schen9-DESK>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375455042-24093-8-git-send-email-g.liakhovetski@gmx.de>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1380061366.3467.54.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 04:50:42PM +0200, Guennadi Liakhovetski wrote:
-> This patch adds DMA slave bindings for the two required DMA channels
-> for MMCIF0 to ape6evm-reference.
+On Tue, Sep 24, 2013 at 03:22:46PM -0700, Tim Chen wrote:
+> We will need the MCS lock code for doing optimistic spinning for rwsem.
+> Extracting the MCS code from mutex.c and put into its own file allow us
+> to reuse this code easily for rwsem.
 > 
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-
-Does this patch depend on any of the other paches in this series?
-
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 > ---
->  arch/arm/boot/dts/r8a73a4-ape6evm-reference.dts |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/r8a73a4-ape6evm-reference.dts b/arch/arm/boot/dts/r8a73a4-ape6evm-reference.dts
-> index 6797fac..631086a 100644
-> --- a/arch/arm/boot/dts/r8a73a4-ape6evm-reference.dts
-> +++ b/arch/arm/boot/dts/r8a73a4-ape6evm-reference.dts
-> @@ -112,6 +112,9 @@
->  	vmmc-supply = <&vcc_mmc0>;
->  	bus-width = <8>;
->  	non-removable;
-> +	dmas = <&dmac 0xd1
-> +		&dmac 0xd2>;
-> +	dma-names = "tx", "rx";
->  	pinctrl-names = "default";
->  	pinctrl-0 = <&mmc0_pins>;
->  	status = "okay";
-> -- 
-> 1.7.2.5
-> 
+>  kernel/mutex.c |   58 ++++++-------------------------------------------------
+>  1 files changed, 7 insertions(+), 51 deletions(-)
+
+Wasn't this patch supposed to add include/linux/mcslock.h ?
