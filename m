@@ -1,277 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3IYGxD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 02:53:03 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:62868 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab3IYGxB (ORCPT
+	id S1752223Ab3IYGxr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 02:53:47 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:45140 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab3IYGxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 02:53:01 -0400
-Date: Wed, 25 Sep 2013 08:52:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v5 6/6] rwsem: do optimistic spinning for writer lock
- acquisition
-Message-ID: <20130925065256.GA27960@gmail.com>
-References: <cover.1380057198.git.tim.c.chen@linux.intel.com>
- <1380061373.3467.55.camel@schen9-DESK>
+	Wed, 25 Sep 2013 02:53:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380061373.3467.55.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130924174318.GE3080@krava.brq.redhat.com>
+References: <1379323053-11458-1-git-send-email-jean.pihet@linaro.org>
+	<1379323053-11458-4-git-send-email-jean.pihet@linaro.org>
+	<20130917102904.GA27258@mudshark.cambridge.arm.com>
+	<CAFrcx1nnx0+kWx3z3A86Fwz13RYRVSPSG0YHBcxFeFQP8W7jBg@mail.gmail.com>
+	<20130924093450.GB1008@krava.brq.redhat.com>
+	<20130924100620.GG15119@mudshark.cambridge.arm.com>
+	<CAFrcx1k-sfHMRz6mvibBbph4vNOMkVddE4LEE4yXbWHC3DwMZA@mail.gmail.com>
+	<20130924174318.GE3080@krava.brq.redhat.com>
+Date: Wed, 25 Sep 2013 08:53:44 +0200
+Message-ID: <CAFrcx1kw-vEo8m0yNFK1d7Sw+o8C7K7j1feLdOk3Mcdmw9tPcw@mail.gmail.com>
+Subject: Re: [PATCH 3/4] perf tools: Check libunwind for availability of dwarf
+ parsing feature
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jiri,
 
-just a few style nitpicks:
+On 24 September 2013 19:43, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Tue, Sep 24, 2013 at 02:03:47PM +0200, Jean Pihet wrote:
+>> Hi Jiri, Will,
+>>
+>> On 24 September 2013 12:06, Will Deacon <will.deacon@arm.com> wrote:
+>> > On Tue, Sep 24, 2013 at 10:34:50AM +0100, Jiri Olsa wrote:
+>> >> On Tue, Sep 24, 2013 at 10:55:32AM +0200, Jean Pihet wrote:
+>> >> > Ping on the series. The two patches above (3/4 and 4/4) are generic
+>> >> > while the two others are impacting ARM only.
+>> >> > Is it possible to get an Ack for the generic ones?
+>> >>
+>> >> I'm fine with those changes.. still I'm sort of worried about
+>> >> current DWARF unwind users (but not sure if there're any),
+>> >> who depends on packaged libunwind compiled without
+>> >> --enable-debug-frame option.
+>> >
+>> > Since x86 is the only architecture using libunwind with perf at the moment,
+>> > and I'd expect it to use .eh_frame for unwinding, I'm also not sure there
+>> > are any existing users to worry about.
+>> Right
+>>
+>> >
+>> >> I've seen your libunwind patch to make it default, but
+>> >> not sure if it was accepted.. if not, maybe we should
+>> >> detect this and build that code conditionaly.
+>> >
+>> > It certainly defaults to "on" for ARM, but other architectures have to
+>> > enable it explicitly afaict.
+>> Yes that is correct.
+>> This patch (3/4) detects if the debug frame code is enabled in
+>> libunwind and uses the lib only if it is the case.
+>
+> My concern is about users (again, not sure if there are any ;-) )
+> that use this with packaged libunwind compiled without
+> --enable-debug-frame option.
+>
+> For them perf will consider libunwind as 'not available' with
+> your changes:
+>
+>       ...
+>       CHK libunwind
+>   config/Makefile:223: No libunwind found, disabling post unwind support.  Please install libunwind-dev[el] >= 1.1
+>       ...
+>
+> and they'll need to compile their own libunwind
+> (thats the case on Fedora).
+>
+> This could be solved by detecting this and make your
+> code conditional as attached below (not much tested).
+Ok that makes sense.
+Let me integrate this in the patch series, test it (on ARM and x86)
+and re-submit. Is that OK?
 
->  
-> +static inline int rwsem_try_write_lock(long count, struct rw_semaphore *sem)
+Regards,
+Jean
+
+>
+> thanks,
+> jirka
+>
+>
+> ---
+> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> index 134b36e..d40cf0a 100644
+> --- a/tools/perf/config/Makefile
+> +++ b/tools/perf/config/Makefile
+> @@ -223,6 +223,10 @@ ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
+>    msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 1.1);
+>    NO_LIBUNWIND := 1
+>  endif # Libunwind support
+> +ifneq ($(call try-cc,$(SOURCE_LIBUNWIND_DEBUG_FRAME),$(FLAGS_UNWIND),libunwind debug_frame),y)
+> +  msg := $(warning No debug_frame support found in libunwind);
+> +CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
+> +endif
+>  endif # NO_LIBUNWIND
+>
+>  ifndef NO_LIBUNWIND
+> diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+> index 87124d0..645141c 100644
+> --- a/tools/perf/config/feature-tests.mak
+> +++ b/tools/perf/config/feature-tests.mak
+> @@ -178,6 +178,28 @@ extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
+>
+>  #define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
+>
+> +int main(void)
 > +{
-> +	if (!(count & RWSEM_ACTIVE_MASK)) {
-> +		/* Try acquiring the write lock. */
-> +		if (sem->count == RWSEM_WAITING_BIAS &&
-> +		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> +			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-> +			if (!list_is_singular(&sem->wait_list))
-> +				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-> +			return 1;
-> +		}
-> +	}
-> +	return 0;
+> +       unw_addr_space_t addr_space;
+> +       addr_space = unw_create_addr_space(NULL, 0);
+> +       unw_init_remote(NULL, addr_space, NULL);
+> +       dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
+> +       return 0;
 > +}
-> +static inline int rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
-> +{
-> +	long count;
+> +endef
 > +
-> +	count = ACCESS_ONCE(sem->count);
-> +retry:
-> +	if (count == RWSEM_WAITING_BIAS) {
-> +		count = cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> +			    RWSEM_ACTIVE_WRITE_BIAS + RWSEM_WAITING_BIAS);
-> +		/* allow write lock stealing, try acquiring the write lock. */
-> +		if (count == RWSEM_WAITING_BIAS)
-> +			goto acquired;
-> +		else if (count == 0)
-> +			goto retry;
-> +	} else if (count == 0) {
-> +		count = cmpxchg(&sem->count, 0,
-> +			    RWSEM_ACTIVE_WRITE_BIAS);
-
-So, you factored this out from within a deeply nested piece of code - but 
-the ugly line-break still remained - that can now be put into a single 
-line.
-
-> +		if (count == 0)
-> +			goto acquired;
-> +		else if (count == RWSEM_WAITING_BIAS)
-> +			goto retry;
-> +	}
-> +	return 0;
+> +define SOURCE_LIBUNWIND_DEBUG_FRAME
+> +#include <libunwind.h>
+> +#include <stdlib.h>
 > +
-> +acquired:
-> +	return 1;
-> +}
+> +extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
+> +                                      unw_word_t ip,
+> +                                      unw_dyn_info_t *di,
+> +                                      unw_proc_info_t *pi,
+> +                                      int need_unwind_info, void *arg);
 > +
+> +#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
 > +
-
-Unnecessary newline.
-
-> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
-> +{
-> +	int retval;
-> +	struct task_struct *owner;
-> +
-> +	rcu_read_lock();
-> +	owner = ACCESS_ONCE(sem->owner);
-> +
-> +	/* Spin only if active writer running */
-> +	if (owner)
-> +		retval = owner->on_cpu;
-> +	else
-> +		retval = false;
-> +
-> +	rcu_read_unlock();
-> +	/*
-> +	 * if lock->owner is not set, the sem owner may have just acquired
-> +	 * it and not set the owner yet, or the sem has been released, or
-> +	 * reader active.
-> +	 */
-> +	return retval;
-> +}
-> +
-> +static inline bool owner_running(struct rw_semaphore *lock,
-> +				struct task_struct *owner)
-> +{
-> +	if (lock->owner != owner)
-> +		return false;
-> +
-> +	/*
-> +	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
-> +	 * lock->owner still matches owner, if that fails, owner might
-> +	 * point to free()d memory, if it still matches, the rcu_read_lock()
-> +	 * ensures the memory stays valid.
-> +	 */
-> +	barrier();
-> +
-> +	return owner->on_cpu;
-> +}
-> +
-> +static noinline
-> +int rwsem_spin_on_owner(struct rw_semaphore *lock, struct task_struct *owner)
-> +{
-> +	rcu_read_lock();
-> +	while (owner_running(lock, owner)) {
-> +		if (need_resched())
-> +			break;
-> +
-> +		arch_mutex_cpu_relax();
-> +	}
-> +	rcu_read_unlock();
-> +
-> +	/*
-> +	 * We break out the loop above on need_resched() or when the
-> +	 * owner changed, which is a sign for heavy contention. Return
-> +	 * success only when lock->owner is NULL.
-> +	 */
-> +	return lock->owner == NULL;
-> +}
-> +
-> +#define MLOCK(rwsem)    ((struct mcs_spin_node **)&((rwsem)->spin_mlock))
-> +
-> +int rwsem_optimistic_spin(struct rw_semaphore *sem)
-> +{
-> +	struct	task_struct	*owner;
-> +	int	ret = 0;
-
-Those tabs look weird.
-
-> +
-> +	/* sem->wait_lock should not be held when doing optimistic spinning */
-> +	if (!rwsem_can_spin_on_owner(sem))
-> +		return ret;
-> +
-> +	preempt_disable();
-> +	for (;;) {
-> +		struct mcs_spin_node node;
-> +
-> +		mcs_spin_lock(MLOCK(sem), &node);
-> +		owner = ACCESS_ONCE(sem->owner);
-> +		if (owner && !rwsem_spin_on_owner(sem, owner)) {
-> +			mcs_spin_unlock(MLOCK(sem), &node);
-> +			break;
-> +		}
-> +
-> +		/* wait_lock will be acquired if write_lock is obtained */
-> +		if (rwsem_try_write_lock_unqueued(sem)) {
-> +			mcs_spin_unlock(MLOCK(sem), &node);
-> +			ret = 1;
-> +			break;
-> +		}
-> +		mcs_spin_unlock(MLOCK(sem), &node);
-> +
-> +		/*
-> +		 * When there's no owner, we might have preempted between the
-> +		 * owner acquiring the lock and setting the owner field. If
-> +		 * we're an RT task that will live-lock because we won't let
-> +		 * the owner complete.
-> +		 */
-> +		if (!owner && (need_resched() || rt_task(current)))
-> +			break;
-> +
-> +		/*
-> +		 * The cpu_relax() call is a compiler barrier which forces
-> +		 * everything in this loop to be re-loaded. We don't need
-> +		 * memory barriers as we'll eventually observe the right
-> +		 * values at the cost of a few extra spins.
-> +		 */
-> +		arch_mutex_cpu_relax();
-> +
-
-Unnecessary newline.
-
-> +	}
-> +
-> +	preempt_enable();
-> +	return ret;
-> +}
-
-Please move the preempt_enable() one line higher, with the extra newline 
-after it - it pairs with the loop, not with the return statement.
-
-> +
->  /*
->   * wait until we successfully acquire the write lock
->   */
->  struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+>  extern int
+>  UNW_OBJ(dwarf_find_debug_frame) (int found, unw_dyn_info_t *di_debug,
+>                                  unw_word_t ip,
+> @@ -189,11 +211,7 @@ UNW_OBJ(dwarf_find_debug_frame) (int found, unw_dyn_info_t *di_debug,
+>
+>  int main(void)
 >  {
-> -	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
-> +	long count;
->  	struct rwsem_waiter waiter;
->  	struct task_struct *tsk = current;
-> +	bool waiting = true;
-> +
-> +	count = rwsem_atomic_update(-RWSEM_ACTIVE_WRITE_BIAS, sem);
-> +	/* do optimistic spinning */
-> +	if (rwsem_optimistic_spin(sem))
-> +		goto done;
->  
->  	/* set up my own style of waitqueue */
->  	waiter.task = tsk;
-> @@ -209,33 +376,26 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
->  
->  	raw_spin_lock_irq(&sem->wait_lock);
->  	if (list_empty(&sem->wait_list))
-> -		adjustment += RWSEM_WAITING_BIAS;
-> +		waiting = false;
->  	list_add_tail(&waiter.list, &sem->wait_list);
->  
->  	/* we're now waiting on the lock, but no longer actively locking */
-> -	count = rwsem_atomic_update(adjustment, sem);
-> +	if (waiting)
-> +		count = ACCESS_ONCE(sem->count);
-> +	else
-> +		count = rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
->  
->  	/* If there were already threads queued before us and there are no
->  	 * active writers, the lock must be read owned; so we try to wake
->  	 * any read locks that were queued ahead of us. */
-
-Please convert this comment to the usual style while touching the code so 
-heavily.
-
-> -	if (count > RWSEM_WAITING_BIAS &&
-> -	    adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
-> +	if ((count > RWSEM_WAITING_BIAS) && waiting)
->  		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
->  
->  	/* wait until we successfully acquire the lock */
->  	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
->  	while (true) {
-
-the pattern we typically use in that case is:
-
-	for (;;) {
-
-Like you did in rwsem_optimistic_spin().
-
-There's a lot of style leeway in the kernel, but we try to 'harmonize' 
-such patterns as much as possible within the same subsystem, especially 
-when changing the code radically which will probably necessiate future 
-detective work on this code.
-
-	Ingo
+> -       unw_addr_space_t addr_space;
+> -       addr_space = unw_create_addr_space(NULL, 0);
+> -       unw_init_remote(NULL, addr_space, NULL);
+>         dwarf_find_debug_frame(0, NULL, 0, 0, NULL, 0, 0);
+> -       dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
+>         return 0;
+>  }
+>  endef
+> diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
+> index 429a99c..231c941 100644
+> --- a/tools/perf/util/unwind.c
+> +++ b/tools/perf/util/unwind.c
+> @@ -277,6 +277,7 @@ static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
+>         return ret;
+>  }
+>
+> +#ifndef NO_LIBUNWIND_DEBUG_FRAME
+>  static int read_unwind_spec_debug_frame(struct dso *dso,
+>                                         struct machine *machine, u64 *offset)
+>  {
+> @@ -294,6 +295,7 @@ static int read_unwind_spec_debug_frame(struct dso *dso,
+>
+>         return -EINVAL;
+>  }
+> +#endif
+>
+>  static struct map *find_map(unw_word_t ip, struct unwind_info *ui)
+>  {
+> @@ -334,6 +336,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pi,
+>                                                  need_unwind_info, arg);
+>         }
+>
+> +#ifndef NO_LIBUNWIND_DEBUG_FRAME
+>         /* Check the .debug_frame section for unwinding info */
+>         if (!read_unwind_spec_debug_frame(map->dso, ui->machine, &segbase)) {
+>                 memset(&di, 0, sizeof(di));
+> @@ -342,7 +345,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pi,
+>                 return dwarf_search_unwind_table(as, ip, &di, pi,
+>                                                  need_unwind_info, arg);
+>         }
+> -
+> +#endif
+>         return -EINVAL;
+>  }
+>
