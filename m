@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab3IYAYt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:24:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39830 "EHLO
+	id S1756959Ab3IYAZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:25:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39827 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932374Ab3IYAVH (ORCPT
+	with ESMTP id S932367Ab3IYAVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:21:07 -0400
+	Tue, 24 Sep 2013 20:21:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, stian@nixia.no, tj@kernel.org
-Subject: [ 105/117] um: Implement probe_kernel_read()
-Date: Tue, 24 Sep 2013 17:19:31 -0700
-Message-Id: <20130925001752.389676652@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 104/117] drm/edid: add quirk for Medion MD30217PG
+Date: Tue, 24 Sep 2013 17:19:30 -0700
+Message-Id: <20130925001752.276545991@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,147 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit f75b1b1bedfb498cc43a992ce4d7ed8df3b1e770 upstream.
+commit 118bdbd86b39dbb843155054021d2c59058f1e05 upstream.
 
-UML needs it's own probe_kernel_read() to handle kernel
-mode faults correctly.
-The implementation uses mincore() on the host side to detect
-whether a page is owned by the UML kernel process.
+This LCD monitor (1280x1024 native) has a completely
+bogus detailed timing (640x350@70hz).  User reports that
+1280x1024@60 has waves so prefer 1280x1024@75.
 
-This fixes also a possible crash when sysrq-t is used.
-Starting with 3.10 sysrq-t calls probe_kernel_read() to
-read details from the kernel workers. As kernel worker are
-completely async pointers may turn NULL while reading them.
+Manufacturer: MED  Model: 7b8  Serial#: 99188
+Year: 2005  Week: 5
+EDID Version: 1.3
+Analog Display Input,  Input Voltage Level: 0.700/0.700 V
+Sync:  Separate
+Max Image Size [cm]: horiz.: 34  vert.: 27
+Gamma: 2.50
+DPMS capabilities: Off; RGB/Color Display
+First detailed timing is preferred mode
+redX: 0.645 redY: 0.348   greenX: 0.280 greenY: 0.605
+blueX: 0.142 blueY: 0.071   whiteX: 0.313 whiteY: 0.329
+Supported established timings:
+720x400@70Hz
+640x480@60Hz
+640x480@72Hz
+640x480@75Hz
+800x600@56Hz
+800x600@60Hz
+800x600@72Hz
+800x600@75Hz
+1024x768@60Hz
+1024x768@70Hz
+1024x768@75Hz
+1280x1024@75Hz
+Manufacturer's mask: 0
+Supported standard timings:
+Supported detailed timing:
+clock: 25.2 MHz   Image Size:  337 x 270 mm
+h_active: 640  h_sync: 688  h_sync_end 784 h_blank_end 800 h_border: 0
+v_active: 350  v_sync: 350  v_sync_end 352 v_blanking: 449 v_border: 0
+Monitor name: MD30217PG
+Ranges: V min: 56 V max: 76 Hz, H min: 30 H max: 83 kHz, PixClock max 145 MHz
+Serial No: 501099188
+EDID (in hex):
+          00ffffffffffff0034a4b80774830100
+          050f010368221b962a0c55a559479b24
+          125054afcf00310a0101010101018180
+          000000000000d60980a0205e63103060
+          0200510e1100001e000000fc004d4433
+          3032313750470a202020000000fd0038
+          4c1e530e000a202020202020000000ff
+          003530313039393138380a2020200078
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Cc: <stian@nixia.no>
-Cc: <tj@kernel.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: friedrich@mailstation.de
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/um/include/shared/os.h |    1 
- arch/um/kernel/Makefile     |    2 -
- arch/um/kernel/maccess.c    |   24 ++++++++++++++++++++
- arch/um/os-Linux/process.c  |   52 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 78 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/drm_edid.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/um/include/shared/os.h
-+++ b/arch/um/include/shared/os.h
-@@ -200,6 +200,7 @@ extern int os_unmap_memory(void *addr, i
- extern int os_drop_memory(void *addr, int length);
- extern int can_drop_memory(void);
- extern void os_flush_stdout(void);
-+extern int os_mincore(void *addr, unsigned long len);
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -125,6 +125,9 @@ static struct edid_quirk {
  
- /* execvp.c */
- extern int execvp_noalloc(char *buf, const char *file, char *const argv[]);
---- a/arch/um/kernel/Makefile
-+++ b/arch/um/kernel/Makefile
-@@ -13,7 +13,7 @@ clean-files :=
- obj-y = config.o exec.o exitcode.o irq.o ksyms.o mem.o \
- 	physmem.o process.o ptrace.o reboot.o sigio.o \
- 	signal.o smp.o syscall.o sysrq.o time.o tlb.o trap.o \
--	um_arch.o umid.o skas/
-+	um_arch.o umid.o maccess.o skas/
+ 	/* ViewSonic VA2026w */
+ 	{ "VSC", 5020, EDID_QUIRK_FORCE_REDUCED_BLANKING },
++
++	/* Medion MD 30217 PG */
++	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
+ };
  
- obj-$(CONFIG_BLK_DEV_INITRD) += initrd.o
- obj-$(CONFIG_GPROF)	+= gprof_syms.o
---- /dev/null
-+++ b/arch/um/kernel/maccess.c
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright (C) 2013 Richard Weinberger <richrd@nod.at>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/uaccess.h>
-+#include <linux/kernel.h>
-+#include <os.h>
-+
-+long probe_kernel_read(void *dst, const void *src, size_t size)
-+{
-+	void *psrc = (void *)rounddown((unsigned long)src, PAGE_SIZE);
-+
-+	if ((unsigned long)src < PAGE_SIZE || size <= 0)
-+		return -EFAULT;
-+
-+	if (os_mincore(psrc, size + src - psrc) <= 0)
-+		return -EFAULT;
-+
-+	return __probe_kernel_read(dst, src, size);
-+}
---- a/arch/um/os-Linux/process.c
-+++ b/arch/um/os-Linux/process.c
-@@ -4,6 +4,7 @@
-  */
- 
- #include <stdio.h>
-+#include <stdlib.h>
- #include <unistd.h>
- #include <errno.h>
- #include <signal.h>
-@@ -232,6 +233,57 @@ out:
- 	return ok;
- }
- 
-+static int os_page_mincore(void *addr)
-+{
-+	char vec[2];
-+	int ret;
-+
-+	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
-+	if (ret < 0) {
-+		if (errno == ENOMEM || errno == EINVAL)
-+			return 0;
-+		else
-+			return -errno;
-+	}
-+
-+	return vec[0] & 1;
-+}
-+
-+int os_mincore(void *addr, unsigned long len)
-+{
-+	char *vec;
-+	int ret, i;
-+
-+	if (len <= UM_KERN_PAGE_SIZE)
-+		return os_page_mincore(addr);
-+
-+	vec = calloc(1, (len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE);
-+	if (!vec)
-+		return -ENOMEM;
-+
-+	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
-+	if (ret < 0) {
-+		if (errno == ENOMEM || errno == EINVAL)
-+			ret = 0;
-+		else
-+			ret = -errno;
-+
-+		goto out;
-+	}
-+
-+	for (i = 0; i < ((len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE); i++) {
-+		if (!(vec[i] & 1)) {
-+			ret = 0;
-+			goto out;
-+		}
-+	}
-+
-+	ret = 1;
-+out:
-+	free(vec);
-+	return ret;
-+}
-+
- void init_new_thread_signals(void)
- {
- 	set_handler(SIGSEGV);
+ /*
 
 
