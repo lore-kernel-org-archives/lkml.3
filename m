@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab3IYURJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:17:09 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:56823 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147Ab3IYURH (ORCPT
+	id S1755489Ab3IYUS3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:18:29 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:55731 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab3IYUS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:17:07 -0400
-From: Djalal Harouni <tixxdz@opendz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        <kernel-hardening@lists.openwall.com>
-Cc: tixxdz@gmail.com, Djalal Harouni <tixxdz@opendz.org>
-Subject: [PATCH 01/12] procfs: add proc_same_open_cred() to check if the cred have changed
-Date: Wed, 25 Sep 2013 21:14:34 +0100
-Message-Id: <1380140085-29712-2-git-send-email-tixxdz@opendz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
-References: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
+	Wed, 25 Sep 2013 16:18:28 -0400
+Date: Wed, 25 Sep 2013 13:18:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH tip/core/rcu 01/11] mm: Place preemption point in
+ do_mlockall() loop
+Message-ID: <20130925201820.GA9093@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130925012750.GA30601@linux.vnet.ibm.com>
+ <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130924211047.57f9d9c8.akpm@linux-foundation.org>
+ <20130925134803.GQ9093@linux.vnet.ibm.com>
+ <20130925123537.c948095dd10fbf6e1b8708f4@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130925123537.c948095dd10fbf6e1b8708f4@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092520-7164-0000-0000-000001EC5B5E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since /proc entries varies at runtime, permission checks need to
-happen during each system call.
+On Wed, Sep 25, 2013 at 12:35:37PM -0700, Andrew Morton wrote:
+> On Wed, 25 Sep 2013 06:48:04 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > On Tue, Sep 24, 2013 at 09:10:47PM -0700, Andrew Morton wrote:
+> > > On Tue, 24 Sep 2013 18:29:11 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > --- a/mm/mlock.c
+> > > > +++ b/mm/mlock.c
+> > > > @@ -736,6 +736,7 @@ static int do_mlockall(int flags)
+> > > >  
+> > > >  		/* Ignore errors */
+> > > >  		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
+> > > > +		cond_resched();
+> > > >  	}
+> > > >  out:
+> > > >  	return 0;
+> > > 
+> > > Might need one in munlock_vma_pages_range() as well - it's a matter of
+> > > finding the right test case.  This will be neverending :(
+> > 
+> > Indeed...  I suspect that Trinity running on big-memory systems will
+> > eventually find most of them via RCU CPU stall warnings, but as you say...
+> > 
+> > Would you like the corresponding change to munlock_vma_pages_range()
+> > beforehand?
+> 
+> Can't decide.  If we went and poked holes in every place which looks
+> like it loops for a long time, we'd be poking holes everywhere, some of
+> them unnecessary.  otoh if we wait around for people to say "hey" then
+> it will take a very long time to poke all the needed holes.
 
-However even with that /proc file descriptors can be passed to a more
-privileged process (e.g. a suid-exec) which will pass the classic
-ptrace_may_access() permission check. The open() call will be issued in
-general by an unprivileged process while the disclosure of sensitive
-/proc information will happen using a more privileged process at
-read(), write()...
+Yep.
 
-The /proc need to know if the cred of the original opener matches the
-cred of current in order to take the appropriate actions.
+> The best approach would be for someone to sit down, identify all the
+> potential problem spots, attempt to craft a userspace exploit to verify
+> that each one really is a problem, then fix it.  Nobody will bother
+> doing this.
 
-The match concerns the cred fields that are used in the
-ptrace_may_access() check: uid, gid and cap_permitted.
+And if someone does bother doing this, there will no doubt be some debate
+about whether or not the exploit is reasonable.
 
-If there is a match then the current task that tries to read/write
-/proc entries has the same privileges as the task that issued the open()
-call.
+> So I dunno.  Stop asking difficult questions ;)
 
-However if the match fails then the cred have changed which means that
-perhaps we have gain or lost the privileges of processing the /proc
-file descriptor. So add proc_same_open_cred() to check if the cred have
-changed.
+;-) ;-) ;-)
 
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
----
- fs/proc/base.c     | 29 +++++++++++++++++++++++++++++
- fs/proc/internal.h |  1 +
- 2 files changed, 30 insertions(+)
-
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 1485e38..e834946 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -139,6 +139,35 @@ struct pid_entry {
- 		NULL, &proc_single_file_operations,	\
- 		{ .proc_show = show } )
- 
-+/**
-+ * proc_same_open_cred - Check if the file's opener cred matches the
-+ * current cred.
-+ * @fcred:  The file's opener cred (file->f_cred)
-+ *
-+ * Return 1 if the cred of the file's opener matches the cred of
-+ * current, otherwise 0.
-+ *
-+ * The match concerns the cred that are used in the ptrace_may_access()
-+ * check to allow /proc task access. These cred are: uid,gid and
-+ * cap_permitted.
-+ *
-+ * This function can be used to check if /proc file descriptors where
-+ * passed to a more privileged process (e.g. execs a suid executable).
-+ */
-+int proc_same_open_cred(const struct cred *fcred)
-+{
-+	const struct cred *cred = current_cred();
-+	const struct user_namespace *set_ns = fcred->user_ns;
-+	const struct user_namespace *subset_ns = cred->user_ns;
-+
-+	if (set_ns != subset_ns)
-+		return 0;
-+
-+	return (uid_eq(fcred->uid, cred->uid) &&
-+		gid_eq(fcred->gid, cred->gid) &&
-+		cap_issubset(cred->cap_permitted, fcred->cap_permitted));
-+}
-+
- /*
-  * Count the number of hardlinks for the pid_entry table, excluding the .
-  * and .. links.
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index 651d09a..e2459f4 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -159,6 +159,7 @@ extern int proc_pid_statm(struct seq_file *, struct pid_namespace *,
- /*
-  * base.c
-  */
-+extern int proc_same_open_cred(const struct cred *);
- extern const struct dentry_operations pid_dentry_operations;
- extern int pid_getattr(struct vfsmount *, struct dentry *, struct kstat *);
- extern int proc_setattr(struct dentry *, struct iattr *);
--- 
-1.7.11.7
+							Thanx, Paul
 
