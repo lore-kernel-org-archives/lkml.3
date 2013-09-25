@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932210Ab3IYBui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:50:38 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42477 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757015Ab3IYBu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:50:28 -0400
+	id S1757837Ab3IYBue (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:50:34 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:52010 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754917Ab3IYBuZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 21:50:25 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,283 +15,84 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 6/6] rcu: Consistent rcu_is_watching() naming
-Date: Tue, 24 Sep 2013 18:50:16 -0700
-Message-Id: <1380073816-32381-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/6] rcu: Throttle rcu_try_advance_all_cbs() execution
+Date: Tue, 24 Sep 2013 18:50:12 -0700
+Message-Id: <1380073816-32381-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1380073816-32381-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130925014954.GA32109@linux.vnet.ibm.com>
  <1380073816-32381-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-5806-0000-0000-000022D70E10
+x-cbid: 13092501-3532-0000-0000-000001ADD52D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The old rcu_is_cpu_idle() function is just __rcu_is_watching() with
-preemption disabled.  This commit therefore renames rcu_is_cpu_idle()
-to rcu_is_watching.
+The rcu_try_advance_all_cbs() function is invoked on each attempted
+entry to and every exit from idle.  If this function determines that
+there are callbacks ready to invoke, the caller will invoke the RCU
+core, which in turn will result in a pair of context switches.  If a
+CPU enters and exits idle extremely frequently, this can result in
+an excessive number of context switches and high CPU overhead.
 
+This commit therefore causes rcu_try_advance_all_cbs() to throttle
+itself, refusing to do work more than once per jiffy.
+
+Reported-by: Tibor Billes <tbilles@gmx.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Tibor Billes <tbilles@gmx.com>
 ---
- include/linux/rcupdate.h | 18 +++++++++---------
- include/linux/rcutiny.h  | 16 ++++++++++++----
- include/linux/rcutree.h  |  2 +-
- kernel/lockdep.c         |  4 ++--
- kernel/rcupdate.c        |  2 +-
- kernel/rcutiny.c         |  6 +++---
- kernel/rcutree.c         | 36 ++++++++++++++++++------------------
- 7 files changed, 46 insertions(+), 38 deletions(-)
+ kernel/rcutree.h        |  2 ++
+ kernel/rcutree_plugin.h | 12 +++++++++---
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index a53a21a..39cbb88 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -262,7 +262,7 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
- 	} while (0)
- 
- #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
--extern int rcu_is_cpu_idle(void);
-+extern bool __rcu_is_watching(void);
- #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 5f97eab..52be957 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -104,6 +104,8 @@ struct rcu_dynticks {
+ 				    /* idle-period nonlazy_posted snapshot. */
+ 	unsigned long last_accelerate;
+ 				    /* Last jiffy CBs were accelerated. */
++	unsigned long last_advance_all;
++				    /* Last jiffy CBs were all advanced. */
+ 	int tick_nohz_enabled_snap; /* Previously seen value from sysfs. */
+ #endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
+ };
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 18d9c91..d81e385 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1630,17 +1630,23 @@ module_param(rcu_idle_lazy_gp_delay, int, 0644);
+ extern int tick_nohz_enabled;
  
  /*
-@@ -351,7 +351,7 @@ static inline int rcu_read_lock_held(void)
- {
- 	if (!debug_lockdep_rcu_enabled())
- 		return 1;
--	if (rcu_is_cpu_idle())
-+	if (!rcu_is_watching())
- 		return 0;
- 	if (!rcu_lockdep_current_cpu_online())
- 		return 0;
-@@ -402,7 +402,7 @@ static inline int rcu_read_lock_sched_held(void)
- 
- 	if (!debug_lockdep_rcu_enabled())
- 		return 1;
--	if (rcu_is_cpu_idle())
-+	if (!rcu_is_watching())
- 		return 0;
- 	if (!rcu_lockdep_current_cpu_online())
- 		return 0;
-@@ -771,7 +771,7 @@ static inline void rcu_read_lock(void)
- 	__rcu_read_lock();
- 	__acquire(RCU);
- 	rcu_lock_acquire(&rcu_lock_map);
--	rcu_lockdep_assert(!rcu_is_cpu_idle(),
-+	rcu_lockdep_assert(rcu_is_watching(),
- 			   "rcu_read_lock() used illegally while idle");
- }
- 
-@@ -792,7 +792,7 @@ static inline void rcu_read_lock(void)
+- * Try to advance callbacks for all flavors of RCU on the current CPU.
+- * Afterwards, if there are any callbacks ready for immediate invocation,
+- * return true.
++ * Try to advance callbacks for all flavors of RCU on the current CPU, but
++ * only if it has been awhile since the last time we did so.  Afterwards,
++ * if there are any callbacks ready for immediate invocation, return true.
   */
- static inline void rcu_read_unlock(void)
+ static bool rcu_try_advance_all_cbs(void)
  {
--	rcu_lockdep_assert(!rcu_is_cpu_idle(),
-+	rcu_lockdep_assert(rcu_is_watching(),
- 			   "rcu_read_unlock() used illegally while idle");
- 	rcu_lock_release(&rcu_lock_map);
- 	__release(RCU);
-@@ -821,7 +821,7 @@ static inline void rcu_read_lock_bh(void)
- 	local_bh_disable();
- 	__acquire(RCU_BH);
- 	rcu_lock_acquire(&rcu_bh_lock_map);
--	rcu_lockdep_assert(!rcu_is_cpu_idle(),
-+	rcu_lockdep_assert(rcu_is_watching(),
- 			   "rcu_read_lock_bh() used illegally while idle");
- }
+ 	bool cbs_ready = false;
+ 	struct rcu_data *rdp;
++	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
+ 	struct rcu_node *rnp;
+ 	struct rcu_state *rsp;
  
-@@ -832,7 +832,7 @@ static inline void rcu_read_lock_bh(void)
-  */
- static inline void rcu_read_unlock_bh(void)
- {
--	rcu_lockdep_assert(!rcu_is_cpu_idle(),
-+	rcu_lockdep_assert(rcu_is_watching(),
- 			   "rcu_read_unlock_bh() used illegally while idle");
- 	rcu_lock_release(&rcu_bh_lock_map);
- 	__release(RCU_BH);
-@@ -857,7 +857,7 @@ static inline void rcu_read_lock_sched(void)
- 	preempt_disable();
- 	__acquire(RCU_SCHED);
- 	rcu_lock_acquire(&rcu_sched_lock_map);
--	rcu_lockdep_assert(!rcu_is_cpu_idle(),
-+	rcu_lockdep_assert(rcu_is_watching(),
- 			   "rcu_read_lock_sched() used illegally while idle");
- }
- 
-@@ -875,7 +875,7 @@ static inline notrace void rcu_read_lock_sched_notrace(void)
-  */
- static inline void rcu_read_unlock_sched(void)
- {
--	rcu_lockdep_assert(!rcu_is_cpu_idle(),
-+	rcu_lockdep_assert(rcu_is_watching(),
- 			   "rcu_read_unlock_sched() used illegally while idle");
- 	rcu_lock_release(&rcu_sched_lock_map);
- 	__release(RCU_SCHED);
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index bee6659..09ebcbe 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -132,13 +132,21 @@ static inline void rcu_scheduler_starting(void)
- }
- #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
- 
--#ifdef CONFIG_RCU_TRACE
-+#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE)
- 
--static inline bool __rcu_is_watching(void)
-+static inline bool rcu_is_watching(void)
- {
--	return !rcu_is_cpu_idle();
-+	return __rcu_is_watching();
- }
- 
--#endif /* #ifdef CONFIG_RCU_TRACE */
-+#else /* defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) */
++	/* Exit early if we advanced recently. */
++	if (jiffies == rdtp->last_advance_all)
++		return 0;
++	rdtp->last_advance_all = jiffies;
 +
-+static inline bool rcu_is_watching(void)
-+{
-+	return true;
-+}
-+
-+
-+#endif /* #else defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) */
- 
- #endif /* __LINUX_RCUTINY_H */
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index 293613d..4b9c815 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -90,6 +90,6 @@ extern void exit_rcu(void);
- extern void rcu_scheduler_starting(void);
- extern int rcu_scheduler_active __read_mostly;
- 
--extern bool __rcu_is_watching(void);
-+extern bool rcu_is_watching(void);
- 
- #endif /* __LINUX_RCUTREE_H */
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index e16c45b..4e8e14c 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -4224,7 +4224,7 @@ void lockdep_rcu_suspicious(const char *file, const int line, const char *s)
- 	printk("\n%srcu_scheduler_active = %d, debug_locks = %d\n",
- 	       !rcu_lockdep_current_cpu_online()
- 			? "RCU used illegally from offline CPU!\n"
--			: rcu_is_cpu_idle()
-+			: !rcu_is_watching()
- 				? "RCU used illegally from idle CPU!\n"
- 				: "",
- 	       rcu_scheduler_active, debug_locks);
-@@ -4247,7 +4247,7 @@ void lockdep_rcu_suspicious(const char *file, const int line, const char *s)
- 	 * So complain bitterly if someone does call rcu_read_lock(),
- 	 * rcu_read_lock_bh() and so on from extended quiescent states.
- 	 */
--	if (rcu_is_cpu_idle())
-+	if (!rcu_is_watching())
- 		printk("RCU used illegally from extended quiescent state!\n");
- 
- 	lockdep_print_held_locks(curr);
-diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-index b02a339..3b3c046 100644
---- a/kernel/rcupdate.c
-+++ b/kernel/rcupdate.c
-@@ -148,7 +148,7 @@ int rcu_read_lock_bh_held(void)
- {
- 	if (!debug_lockdep_rcu_enabled())
- 		return 1;
--	if (rcu_is_cpu_idle())
-+	if (!rcu_is_watching())
- 		return 0;
- 	if (!rcu_lockdep_current_cpu_online())
- 		return 0;
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index b4bc618..0fa061d 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -179,11 +179,11 @@ EXPORT_SYMBOL_GPL(rcu_irq_enter);
- /*
-  * Test whether RCU thinks that the current CPU is idle.
-  */
--int rcu_is_cpu_idle(void)
-+bool __rcu_is_watching(void)
- {
--	return !rcu_dynticks_nesting;
-+	return rcu_dynticks_nesting;
- }
--EXPORT_SYMBOL(rcu_is_cpu_idle);
-+EXPORT_SYMBOL(__rcu_is_watching);
- 
- #endif /* defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) */
- 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 1b123e1..981d0c1 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -655,34 +655,34 @@ void rcu_nmi_exit(void)
- }
- 
- /**
-- * rcu_is_cpu_idle - see if RCU thinks that the current CPU is idle
-+ * __rcu_is_watching - are RCU read-side critical sections safe?
-+ *
-+ * Return true if RCU is watching the running CPU, which means that
-+ * this CPU can safely enter RCU read-side critical sections.  Unlike
-+ * rcu_is_watching(), the caller of __rcu_is_watching() must have at
-+ * least disabled preemption.
-+ */
-+bool __rcu_is_watching(void)
-+{
-+	return atomic_read(this_cpu_ptr(&rcu_dynticks.dynticks)) & 0x1;
-+}
-+
-+/**
-+ * rcu_is_watching - see if RCU thinks that the current CPU is idle
-  *
-  * If the current CPU is in its idle loop and is neither in an interrupt
-  * or NMI handler, return true.
-  */
--int rcu_is_cpu_idle(void)
-+bool rcu_is_watching(void)
- {
- 	int ret;
- 
- 	preempt_disable();
--	ret = (atomic_read(&__get_cpu_var(rcu_dynticks).dynticks) & 0x1) == 0;
-+	ret = __rcu_is_watching();
- 	preempt_enable();
- 	return ret;
- }
--EXPORT_SYMBOL_GPL(rcu_is_cpu_idle);
--
--/**
-- * __rcu_is_watching - are RCU read-side critical sections safe?
-- *
-- * Return true if RCU is watching the running CPU, which means that
-- * this CPU can safely enter RCU read-side critical sections.  Unlike
-- * rcu_is_cpu_idle(), the caller of __rcu_is_watching() must have at
-- * least disabled preemption.
-- */
--bool __rcu_is_watching(void)
--{
--	return !!(atomic_read(this_cpu_ptr(&rcu_dynticks.dynticks)) & 0x1);
--}
-+EXPORT_SYMBOL_GPL(rcu_is_watching);
- 
- #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU)
- 
-@@ -2268,7 +2268,7 @@ static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
- 	 * If called from an extended quiescent state, invoke the RCU
- 	 * core in order to force a re-evaluation of RCU's idleness.
- 	 */
--	if (rcu_is_cpu_idle() && cpu_online(smp_processor_id()))
-+	if (!rcu_is_watching() && cpu_online(smp_processor_id()))
- 		invoke_rcu_core();
- 
- 	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
+ 	for_each_rcu_flavor(rsp) {
+ 		rdp = this_cpu_ptr(rsp->rda);
+ 		rnp = rdp->mynode;
 -- 
 1.8.1.5
 
