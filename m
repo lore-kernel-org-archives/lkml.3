@@ -1,107 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab3IYNwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 09:52:36 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:48245 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755289Ab3IYNwf (ORCPT
+	id S1755813Ab3IYNwo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 09:52:44 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:44070 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755784Ab3IYNwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 09:52:35 -0400
-Message-ID: <5242EAA1.7060507@hurleysoftware.com>
-Date: Wed, 25 Sep 2013 09:52:33 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 25 Sep 2013 09:52:41 -0400
 MIME-Version: 1.0
-To: Mikael Pettersson <mikpelinux@gmail.com>
-CC: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [REGRESSION][BISECTED] 3.12-rc "n_tty: Don't wait for buffer
- work in read() loop" patch breaks gcc's testsuite
-References: <21058.54396.663197.35823@pilspetsen.it.uu.se> <5242EA1C.7050008@hurleysoftware.com>
-In-Reply-To: <5242EA1C.7050008@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+In-Reply-To: <22596229.54071380086390046.JavaMail.weblogic@epv6ml04>
+References: <22596229.54071380086390046.JavaMail.weblogic@epv6ml04>
+From: Anna Schumaker <schumaker.anna@gmail.com>
+Date: Wed, 25 Sep 2013 09:52:19 -0400
+X-Google-Sender-Auth: zXPWAXTG_qJJaN2KBD1bUwVrDiY
+Message-ID: <CAFX2Jf=s0RmimpDM-KrujoxQ=LcJL2g0hR3w5JS+KXJd8Wbotw@mail.gmail.com>
+Subject: Re: Regression caused by commit 4bdc33ed ("NFSDv4.2: Add NFS v4.2
+ support to the NFS server")
+To: jongman.heo@samsung.com
+Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +cc Greg Kroah-Hartman ]
+Hi Jongman,
 
-On 09/25/2013 09:50 AM, Peter Hurley wrote:
-> On 09/25/2013 08:18 AM, Mikael Pettersson wrote:
->> With 3.12-rc[12] I see unexpected failures in gcc's Ada acats testsuite, e.g.
->>
->>                  === acats tests ===
->> FAIL:   a83009b
->> FAIL:   c37209a
->> FAIL:   c45531e
->> FAIL:   c45614a
->> FAIL:   c67005d
->> FAIL:   c730a01
->> FAIL:   c74302b
->> FAIL:   cc3004a
->> FAIL:   cd2a24j
->> FAIL:   cd2a53a
->> FAIL:   cxa3001
->> FAIL:   cxf3a07
->> FAIL:   cxf3a08
->>
->>                  === acats Summary ===
->> # of expected passes            2307
->> # of unexpected failures        13
->> Native configuration is x86_64-unknown-linux-gnu
->
-> Thanks for the report.
-> Would you please send me the acats.log file from a failed testsuite run with its
-> matching screen output?
->
-> Regards,
-> Peter Hurley
->
->
->> The exact failures vary from run to run, but some failures always occur on my
->> x86_64 machines, and all three open gcc branches (trunk, 4.8, 4.7) are affected.
->> With a 3.11 kernel the acats testsuite is always clean.
->>
->> A bisection identified:
->>
->>  From f95499c3030fe1bfad57745f2db1959c5b43dca8 Mon Sep 17 00:00:00 2001
->> From: Peter Hurley <peter@hurleysoftware.com>
->> Date: Sat, 15 Jun 2013 13:14:29 +0000
->> Subject: n_tty: Don't wait for buffer work in read() loop
->>
->> User-space read() can run concurrently with receiving from device;
->> waiting for receive_buf() to complete is not required.
->>
->> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> ---
->> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
->> index fe1c399..a6eea30 100644
->> --- a/drivers/tty/n_tty.c
->> +++ b/drivers/tty/n_tty.c
->> @@ -1724,7 +1724,6 @@ static inline int input_available_p(struct tty_struct *tty, int amt)
->>   {
->>          struct n_tty_data *ldata = tty->disc_data;
->>
->> -       tty_flush_to_ldisc(tty);
->>          if (ldata->icanon && !L_EXTPROC(tty)) {
->>                  if (ldata->canon_head != ldata->read_tail)
->>                          return 1;
->>
->> as the culprit.  Reverting that from 3.12-rc2 eliminates the acats failures
->> and brings the gcc testsuite results to what one gets with 3.11.
->>
->> I can't pretend to understand exactly what goes wrong, suffice it to say that
->> the gcc testsuite harness uses a combination of shell, expect, and tcl.  I
->> suspect ptys are also involved.
->>
->> To repeat, bootstrap a recent gcc 4.8 snapshot w/ ada in --enable-languages,
->> then run the test suite with "make -j6 -k check; make mail-report.log".
->> (Adjust -jN as appropriate, but -j6 is what I'm using on my quad-core i7s.)
->>
->> Please consider reverting or fixing this patch.
->>
->> /Mikael
+Is the panic on your client or server?  I don't see how the patch your
+bisect led you to could cause the problem, since all it does is expand
+the minor version array on the server.  Your client doesn't have NFSD
+enabled, so this code shouldn't even be affecting it.
 
+A few questions:  what is your /etc/exports on the server?  What
+version of NFS are you using for nfsroot?
 
+Thanks!
+Anna
+
+On Wed, Sep 25, 2013 at 1:19 AM, Jongman Heo <jongman.heo@samsung.com> wrote:
+>
+> Hi all,
+>
+> My embedded development box fails to NFS-boot with NFS server which uses recent kernel.
+>
+> Using git bisect, I found it is caused by commit 4bdc33ed ("NFSDv4.2: Add NFS v4.2 support to the NFS server").
+>
+>
+> 1. dmesg (NFS boot failure case)
+>
+> ...
+> [    2.040893] ADDRCONF(NETDEV_UP): eth0: link is not ready
+> [    2.046207] e1000: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: RX
+> [    2.053570] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+> [    3.055023] IP-Config: Guessing netmask 255.255.0.0
+> [    3.059979] IP-Config: Gateway not on directly connected network.
+> [    3.066330] Looking up port of RPC 100003/2 on 165.213.88.249
+> [    3.074001] Looking up port of RPC 100005/1 on 165.213.88.249
+> [    3.122878] VFS: Unable to mount root fs via NFS, trying floppy.
+> [    3.129134] VFS: Cannot open root device "nfs" or unknown-block(2,0)
+> [    3.135478] Please append a correct "root=" boot option; here are the available partitions:
+> [    3.143831] 1f00            3072 mtdblock0 (driver?)
+> [    3.148798] 1f01              64 mtdblock1 (driver?)
+> [    3.153758] 1f02              64 mtdblock2 (driver?)
+> [    3.158719] 1f03              64 mtdblock3 (driver?)
+> [    3.163682] 1f04              64 mtdblock4 (driver?)
+> [    3.168644] 1f05              64 mtdblock5 (driver?)
+> [    3.173607] 1f06              64 mtdblock6 (driver?)
+> [    3.178568] 0800       488386584 sda driver: sd
+> [    3.183099]   0801          506016 sda1
+> [    3.186927]   0802         4008217 sda2
+> [    3.190755]   0803       483869767 sda3
+> [    3.194584] b300         1880064 mmcblk0 driver: mmcblk
+> [    3.199802]   b301            4096 mmcblk0p1
+> [    3.204063]   b302          102400 mmcblk0p2
+> [    3.208330]   b303            4096 mmcblk0p3
+> [    3.212594]   b304               1 mmcblk0p4
+> [    3.216855]   b305            2048 mmcblk0p5
+> [    3.221116]   b306            2048 mmcblk0p6
+> [    3.225382]   b307            2048 mmcblk0p7
+> [    3.229644]   b308            4096 mmcblk0p8
+> [    3.233906]   b309           12288 mmcblk0p9
+> [    3.238176]   b30a           16384 mmcblk0p10
+> [    3.242524]   b30b          142336 mmcblk0p11
+> [    3.246869]   b30c         1572864 mmcblk0p12
+> [    3.251219] b320           12288 mmcblk0gp1 (driver?)
+> [    3.256272] b310           12288 mmcblk0gp0 (driver?)
+> [    3.261320] Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(2,0)
+> [    3.269566] Pid: 1, comm: swapper Not tainted 2.6.35 #1
+> [    3.274776] Call Trace:
+> [    3.277232]  [<80d0db5b>] ? printk+0x1e/0x20
+> [    3.281492]  [<80d0dad1>] panic+0x65/0xd1
+> [    3.285495]  [<80eb9ce3>] mount_block_root+0x125/0x1be
+> [    3.290631]  [<809d1f6d>] ? sys_mknod+0x2d/0x30
+> [    3.295156]  [<80eb9f6d>] mount_root+0xd0/0xf2
+> [    3.299591]  [<80eba0d9>] prepare_namespace+0x14a/0x184
+> [    3.304803]  [<809c44f6>] ? sys_access+0x26/0x30
+> [    3.309411]  [<80eb9a4e>] kernel_init+0x25e/0x26e
+> [    3.314105]  [<80eb97f0>] ? kernel_init+0x0/0x26e
+> [    3.318800]  [<80903242>] kernel_thread_helper+0x6/0x10
+>
+>
+> 2. Client (my embedded box) configuration
+>   It's kernel 2.6.35 based, and has following NFS kernel configs.
+>
+> # grep NFS .config
+> CONFIG_NFS_FS=y
+> CONFIG_NFS_V3=y
+> CONFIG_NFS_V3_ACL=y
+> CONFIG_NFS_V4=y
+> # CONFIG_NFS_V4_1 is not set
+> CONFIG_ROOT_NFS=y
+> # CONFIG_NFSD is not set
+> CONFIG_NFS_ACL_SUPPORT=y
+> CONFIG_NFS_COMMON=y
+>
+>
+> 3. Server (NFSD) configuration
+>    Fedora 19 + latest linus git kernel 3.12.0-rc2+ (commit 22356f44, mm: Place preemption point in do_mlockall() loop)
+>
+>
+> 4. workaround
+>
+> Reverting the commit 4bdc33ed resolves my issue, NFS boot is working then.
+> I've done git bisect, but lost the resulting bisect log due to sudden power loss :(.
+>
+> Best regards,
+> Jongman Heo
