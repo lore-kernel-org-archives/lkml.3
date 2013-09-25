@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab3IYAbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:31:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39708 "EHLO
+	id S1756709Ab3IYAUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:20:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932291Ab3IYAUp (ORCPT
+	with ESMTP id S1756605Ab3IYAU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:45 -0400
+	Tue, 24 Sep 2013 20:20:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 079/117] HID: picolcd: Prevent NULL pointer dereference on _remove()
-Date: Tue, 24 Sep 2013 17:19:05 -0700
-Message-Id: <20130925001749.587844641@linuxfoundation.org>
+        Mengdong Lin <mengdong.lin@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 057/117] ALSA: hda - Re-setup HDMI pin and audio infoframe on stream switches
+Date: Tue, 24 Sep 2013 17:18:43 -0700
+Message-Id: <20130925001747.079432507@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,71 +26,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruno Prémont <bonbons@linux-vserver.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 1cde501bb4655e98fb832194beb88ac73be5a05d upstream.
+commit b054087dbacee30a9dddaef2c9a96312146be04e upstream.
 
-When picolcd is switched into bootloader mode (for FW flashing) make
-sure not to try to dereference NULL-pointers of feature-devices during
-unplug/unbind.
+When the transcoder:port mapping on Haswell HDMI/DP audio is changed
+during the stream playback, the sound gets lost.  Typically this
+problem is seen when the user switches the graphics mode from eDP+DP
+to DP-only configuration, where CRTC 1 is used for DP in the former
+while CRTC 0 is used for the latter.
 
-This fixes following BUG:
-  BUG: unable to handle kernel NULL pointer dereference at 00000298
-  IP: [<f811f56b>] picolcd_exit_framebuffer+0x1b/0x80 [hid_picolcd]
-  *pde = 00000000
-  Oops: 0000 [#1]
-  Modules linked in: hid_picolcd syscopyarea sysfillrect sysimgblt fb_sys_fops
-  CPU: 0 PID: 15 Comm: khubd Not tainted 3.11.0-rc7-00002-g50d62d4 #2
-  EIP: 0060:[<f811f56b>] EFLAGS: 00010292 CPU: 0
-  EIP is at picolcd_exit_framebuffer+0x1b/0x80 [hid_picolcd]
-  Call Trace:
-   [<f811d1ab>] picolcd_remove+0xcb/0x120 [hid_picolcd]
-   [<c1469b09>] hid_device_remove+0x59/0xc0
-   [<c13464ca>] __device_release_driver+0x5a/0xb0
-   [<c134653f>] device_release_driver+0x1f/0x30
-   [<c134603d>] bus_remove_device+0x9d/0xd0
-   [<c13439a5>] device_del+0xd5/0x150
-   [<c14696a4>] hid_destroy_device+0x24/0x60
-   [<c1474cbb>] usbhid_disconnect+0x1b/0x40
-   ...
+The graphics controller notifies the change via the normal ELD update
+procedure, so we get the intrinsic event.  For enabling the sound
+again, the HDMI audio driver needs to reset the pin and set up the
+audio infoframe again.
 
-Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+This patch achieves it by:
+- keep the current status of channels and info frame setup in per_pin
+  struct,
+- check the reconnection in the intrinsic event handler,
+- reset the pin and the re-invoke hdmi_setup_audio_infoframe()
+  accordingly.
+
+The hdmi_setup_audio_infoframe() function has been changed, too, so
+that it can be invoked without passing the substream instance.
+
+The patch is mostly based on the work by Mengdong Lin.
+
+Cc: Mengdong Lin <mengdong.lin@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-picolcd_cir.c |    3 ++-
- drivers/hid/hid-picolcd_fb.c  |    6 +++++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_hdmi.c |   41 +++++++++++++++++++++++++++++++----------
+ 1 file changed, 31 insertions(+), 10 deletions(-)
 
---- a/drivers/hid/hid-picolcd_cir.c
-+++ b/drivers/hid/hid-picolcd_cir.c
-@@ -145,6 +145,7 @@ void picolcd_exit_cir(struct picolcd_dat
- 	struct rc_dev *rdev = data->rc_dev;
- 
- 	data->rc_dev = NULL;
--	rc_unregister_device(rdev);
-+	if (rdev)
-+		rc_unregister_device(rdev);
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -67,6 +67,8 @@ struct hdmi_spec_per_pin {
+ 	struct delayed_work work;
+ 	struct snd_kcontrol *eld_ctl;
+ 	int repoll_count;
++	bool setup; /* the stream has been set up by prepare callback */
++	int channels; /* current number of channels */
+ 	bool non_pcm;
+ 	bool chmap_set;		/* channel-map override by ALSA API? */
+ 	unsigned char chmap[8]; /* ALSA API channel-map */
+@@ -868,18 +870,19 @@ static bool hdmi_infoframe_uptodate(stru
+ 	return true;
  }
  
---- a/drivers/hid/hid-picolcd_fb.c
-+++ b/drivers/hid/hid-picolcd_fb.c
-@@ -593,10 +593,14 @@ err_nomem:
- void picolcd_exit_framebuffer(struct picolcd_data *data)
+-static void hdmi_setup_audio_infoframe(struct hda_codec *codec, int pin_idx,
+-				       bool non_pcm,
+-				       struct snd_pcm_substream *substream)
++static void hdmi_setup_audio_infoframe(struct hda_codec *codec,
++				       struct hdmi_spec_per_pin *per_pin,
++				       bool non_pcm)
  {
- 	struct fb_info *info = data->fb_info;
--	struct picolcd_fb_data *fbdata = info->par;
-+	struct picolcd_fb_data *fbdata;
- 	unsigned long flags;
+-	struct hdmi_spec *spec = codec->spec;
+-	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
+ 	hda_nid_t pin_nid = per_pin->pin_nid;
+-	int channels = substream->runtime->channels;
++	int channels = per_pin->channels;
+ 	struct hdmi_eld *eld;
+ 	int ca;
+ 	union audio_infoframe ai;
  
-+	if (!info)
++	if (!channels)
 +		return;
 +
- 	device_remove_file(&data->hdev->dev, &dev_attr_fb_update_rate);
-+	fbdata = info->par;
+ 	eld = &per_pin->sink_eld;
+ 	if (!eld->monitor_present)
+ 		return;
+@@ -1329,6 +1332,7 @@ static void hdmi_present_sense(struct hd
+ 		eld_changed = true;
+ 	}
+ 	if (update_eld) {
++		bool old_eld_valid = pin_eld->eld_valid;
+ 		pin_eld->eld_valid = eld->eld_valid;
+ 		eld_changed = pin_eld->eld_size != eld->eld_size ||
+ 			      memcmp(pin_eld->eld_buffer, eld->eld_buffer,
+@@ -1338,6 +1342,18 @@ static void hdmi_present_sense(struct hd
+ 			       eld->eld_size);
+ 		pin_eld->eld_size = eld->eld_size;
+ 		pin_eld->info = eld->info;
++
++		/* Haswell-specific workaround: re-setup when the transcoder is
++		 * changed during the stream playback
++		 */
++		if (codec->vendor_id == 0x80862807 &&
++		    eld->eld_valid && !old_eld_valid && per_pin->setup) {
++			snd_hda_codec_write(codec, pin_nid, 0,
++					    AC_VERB_SET_AMP_GAIN_MUTE,
++					    AMP_OUT_UNMUTE);
++			hdmi_setup_audio_infoframe(codec, per_pin,
++						   per_pin->non_pcm);
++		}
+ 	}
+ 	mutex_unlock(&pin_eld->lock);
  
- 	/* disconnect framebuffer from HID dev */
- 	spin_lock_irqsave(&fbdata->lock, flags);
+@@ -1510,14 +1526,17 @@ static int generic_hdmi_playback_pcm_pre
+ 	hda_nid_t cvt_nid = hinfo->nid;
+ 	struct hdmi_spec *spec = codec->spec;
+ 	int pin_idx = hinfo_to_pin_index(spec, hinfo);
+-	hda_nid_t pin_nid = get_pin(spec, pin_idx)->pin_nid;
++	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
++	hda_nid_t pin_nid = per_pin->pin_nid;
+ 	bool non_pcm;
+ 
+ 	non_pcm = check_non_pcm_per_cvt(codec, cvt_nid);
++	per_pin->channels = substream->runtime->channels;
++	per_pin->setup = true;
+ 
+ 	hdmi_set_channel_count(codec, cvt_nid, substream->runtime->channels);
+ 
+-	hdmi_setup_audio_infoframe(codec, pin_idx, non_pcm, substream);
++	hdmi_setup_audio_infoframe(codec, per_pin, non_pcm);
+ 
+ 	return hdmi_setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
+ }
+@@ -1557,6 +1576,9 @@ static int hdmi_pcm_close(struct hda_pcm
+ 		snd_hda_spdif_ctls_unassign(codec, pin_idx);
+ 		per_pin->chmap_set = false;
+ 		memset(per_pin->chmap, 0, sizeof(per_pin->chmap));
++
++		per_pin->setup = false;
++		per_pin->channels = 0;
+ 	}
+ 
+ 	return 0;
+@@ -1692,8 +1714,7 @@ static int hdmi_chmap_ctl_put(struct snd
+ 	per_pin->chmap_set = true;
+ 	memcpy(per_pin->chmap, chmap, sizeof(chmap));
+ 	if (prepared)
+-		hdmi_setup_audio_infoframe(codec, pin_idx, per_pin->non_pcm,
+-					   substream);
++		hdmi_setup_audio_infoframe(codec, per_pin, per_pin->non_pcm);
+ 
+ 	return 0;
+ }
 
 
