@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab3IYARM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:17:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39295 "EHLO
+	id S1755604Ab3IYASz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:18:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39336 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932103Ab3IYARG (ORCPT
+	with ESMTP id S932175Ab3IYARM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:06 -0400
+	Tue, 24 Sep 2013 20:17:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, stian@nixia.no, tj@kernel.org
-Subject: [ 098/110] um: Implement probe_kernel_read()
-Date: Tue, 24 Sep 2013 17:15:36 -0700
-Message-Id: <20130925001334.027172582@linuxfoundation.org>
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [ 107/110] fuse: postpone end_page_writeback() in fuse_writepage_locked()
+Date: Tue, 24 Sep 2013 17:15:45 -0700
+Message-Id: <20130925001334.996823764@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -26,147 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Maxim Patlasov <MPatlasov@parallels.com>
 
-commit f75b1b1bedfb498cc43a992ce4d7ed8df3b1e770 upstream.
+commit 4a4ac4eba1010ef9a804569058ab29e3450c0315 upstream.
 
-UML needs it's own probe_kernel_read() to handle kernel
-mode faults correctly.
-The implementation uses mincore() on the host side to detect
-whether a page is owned by the UML kernel process.
+The patch fixes a race between ftruncate(2), mmap-ed write and write(2):
 
-This fixes also a possible crash when sysrq-t is used.
-Starting with 3.10 sysrq-t calls probe_kernel_read() to
-read details from the kernel workers. As kernel worker are
-completely async pointers may turn NULL while reading them.
+1) An user makes a page dirty via mmap-ed write.
+2) The user performs shrinking truncate(2) intended to purge the page.
+3) Before fuse_do_setattr calls truncate_pagecache, the page goes to
+   writeback. fuse_writepage_locked fills FUSE_WRITE request and releases
+   the original page by end_page_writeback.
+4) fuse_do_setattr() completes and successfully returns. Since now, i_mutex
+   is free.
+5) Ordinary write(2) extends i_size back to cover the page. Note that
+   fuse_send_write_pages do wait for fuse writeback, but for another
+   page->index.
+6) fuse_writepage_locked proceeds by queueing FUSE_WRITE request.
+   fuse_send_writepage is supposed to crop inarg->size of the request,
+   but it doesn't because i_size has already been extended back.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Cc: <stian@nixia.no>
-Cc: <tj@kernel.org>
+Moving end_page_writeback to the end of fuse_writepage_locked fixes the
+race because now the fact that truncate_pagecache is successfully returned
+infers that fuse_writepage_locked has already called end_page_writeback.
+And this, in turn, infers that fuse_flush_writepages has already called
+fuse_send_writepage, and the latter used valid (shrunk) i_size. write(2)
+could not extend it because of i_mutex held by ftruncate(2).
+
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/um/include/shared/os.h |    1 
- arch/um/kernel/Makefile     |    2 -
- arch/um/kernel/maccess.c    |   24 ++++++++++++++++++++
- arch/um/os-Linux/process.c  |   52 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 78 insertions(+), 1 deletion(-)
+ fs/fuse/file.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/um/include/shared/os.h
-+++ b/arch/um/include/shared/os.h
-@@ -200,6 +200,7 @@ extern int os_unmap_memory(void *addr, i
- extern int os_drop_memory(void *addr, int length);
- extern int can_drop_memory(void);
- extern void os_flush_stdout(void);
-+extern int os_mincore(void *addr, unsigned long len);
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1530,7 +1530,6 @@ static int fuse_writepage_locked(struct
  
- /* execvp.c */
- extern int execvp_noalloc(char *buf, const char *file, char *const argv[]);
---- a/arch/um/kernel/Makefile
-+++ b/arch/um/kernel/Makefile
-@@ -13,7 +13,7 @@ clean-files :=
- obj-y = config.o exec.o exitcode.o irq.o ksyms.o mem.o \
- 	physmem.o process.o ptrace.o reboot.o sigio.o \
- 	signal.o smp.o syscall.o sysrq.o time.o tlb.o trap.o \
--	um_arch.o umid.o skas/
-+	um_arch.o umid.o maccess.o skas/
+ 	inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
+ 	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
+-	end_page_writeback(page);
  
- obj-$(CONFIG_BLK_DEV_INITRD) += initrd.o
- obj-$(CONFIG_GPROF)	+= gprof_syms.o
---- /dev/null
-+++ b/arch/um/kernel/maccess.c
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright (C) 2013 Richard Weinberger <richrd@nod.at>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/uaccess.h>
-+#include <linux/kernel.h>
-+#include <os.h>
-+
-+long probe_kernel_read(void *dst, const void *src, size_t size)
-+{
-+	void *psrc = (void *)rounddown((unsigned long)src, PAGE_SIZE);
-+
-+	if ((unsigned long)src < PAGE_SIZE || size <= 0)
-+		return -EFAULT;
-+
-+	if (os_mincore(psrc, size + src - psrc) <= 0)
-+		return -EFAULT;
-+
-+	return __probe_kernel_read(dst, src, size);
-+}
---- a/arch/um/os-Linux/process.c
-+++ b/arch/um/os-Linux/process.c
-@@ -4,6 +4,7 @@
-  */
+ 	spin_lock(&fc->lock);
+ 	list_add(&req->writepages_entry, &fi->writepages);
+@@ -1538,6 +1537,8 @@ static int fuse_writepage_locked(struct
+ 	fuse_flush_writepages(inode);
+ 	spin_unlock(&fc->lock);
  
- #include <stdio.h>
-+#include <stdlib.h>
- #include <unistd.h>
- #include <errno.h>
- #include <signal.h>
-@@ -232,6 +233,57 @@ out:
- 	return ok;
- }
++	end_page_writeback(page);
++
+ 	return 0;
  
-+static int os_page_mincore(void *addr)
-+{
-+	char vec[2];
-+	int ret;
-+
-+	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
-+	if (ret < 0) {
-+		if (errno == ENOMEM || errno == EINVAL)
-+			return 0;
-+		else
-+			return -errno;
-+	}
-+
-+	return vec[0] & 1;
-+}
-+
-+int os_mincore(void *addr, unsigned long len)
-+{
-+	char *vec;
-+	int ret, i;
-+
-+	if (len <= UM_KERN_PAGE_SIZE)
-+		return os_page_mincore(addr);
-+
-+	vec = calloc(1, (len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE);
-+	if (!vec)
-+		return -ENOMEM;
-+
-+	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
-+	if (ret < 0) {
-+		if (errno == ENOMEM || errno == EINVAL)
-+			ret = 0;
-+		else
-+			ret = -errno;
-+
-+		goto out;
-+	}
-+
-+	for (i = 0; i < ((len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE); i++) {
-+		if (!(vec[i] & 1)) {
-+			ret = 0;
-+			goto out;
-+		}
-+	}
-+
-+	ret = 1;
-+out:
-+	free(vec);
-+	return ret;
-+}
-+
- void init_new_thread_signals(void)
- {
- 	set_handler(SIGSEGV);
+ err_free:
 
 
