@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab3IYM42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 08:56:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42415 "EHLO mx1.redhat.com"
+	id S1755490Ab3IYMvL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 08:51:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34970 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755516Ab3IYMvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 08:51:16 -0400
+	id S1755330Ab3IYMvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 08:51:08 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -13,26 +13,19 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 04/21] perf: Move event state initialization before/behind the pmu add/del calls
-Date: Wed, 25 Sep 2013 14:50:30 +0200
-Message-Id: <1380113447-17144-5-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 02/21] perf tools: Separate sys_perf_event_open call into evsel_open
+Date: Wed, 25 Sep 2013 14:50:28 +0200
+Message-Id: <1380113447-17144-3-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
 References: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving event state initialization before the pmu->del
-and behind the pmu->add call.
+Separating sys_perf_event_open call and its setup into
+new evsel_open function.
 
-This way the toggler can refer to event->state and
-make sure the event is really scheduled before
-calling pmu->stop/start in case we get interrupted
-inside event_sched_in/event_sched_out functions.
-
-Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -41,53 +34,86 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- kernel/events/core.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ tools/perf/util/evsel.c | 48 ++++++++++++++++++++++++++++--------------------
+ 1 file changed, 28 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index dd236b6..e8674e4 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1388,14 +1388,16 @@ event_sched_out(struct perf_event *event,
- 	if (event->state != PERF_EVENT_STATE_ACTIVE)
- 		return;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 0ce9feb..95590fe 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1000,23 +1000,40 @@ static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
+ 	return ret;
+ }
  
-+	event->tstamp_stopped = tstamp;
-+	event->oncpu = -1;
- 	event->state = PERF_EVENT_STATE_INACTIVE;
++static int evsel_open(struct perf_evsel *evsel,
++		      struct thread_map *threads, struct cpu_map *cpus,
++		      int thread, int cpu)
++{
++	int group_fd, pid = -1;
++	unsigned long flags = 0;
 +
-+	event->pmu->del(event, 0);
++	/* cgroup config */
++	if (evsel->cgrp) {
++		flags = PERF_FLAG_PID_CGROUP;
++		pid = evsel->cgrp->fd;
++	} else
++		pid = threads->map[thread];
 +
- 	if (event->pending_disable) {
- 		event->pending_disable = 0;
- 		event->state = PERF_EVENT_STATE_OFF;
- 	}
--	event->tstamp_stopped = tstamp;
--	event->pmu->del(event, 0);
--	event->oncpu = -1;
++	/* group config */
++	group_fd = get_group_fd(evsel, cpu, thread);
++
++	pr_debug2("perf_event_open: pid %d  cpu %d  group_fd %d  flags %#lx\n",
++		  pid, cpus->map[cpu], group_fd, flags);
++
++	return sys_perf_event_open(&evsel->attr, pid, cpus->map[cpu],
++				   group_fd, flags);
++}
++
+ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 			      struct thread_map *threads)
+ {
+-	int cpu, thread;
+-	unsigned long flags = 0;
+-	int pid = -1, err;
++	int cpu, thread, err;
+ 	enum { NO_CHANGE, SET_TO_MAX, INCREASED_MAX } set_rlimit = NO_CHANGE;
  
- 	if (!is_software_event(event))
- 		cpuctx->active_oncpu--;
-@@ -1648,9 +1650,6 @@ event_sched_in(struct perf_event *event,
- 	if (event->state <= PERF_EVENT_STATE_OFF)
- 		return 0;
+ 	if (evsel->fd == NULL &&
+ 	    perf_evsel__alloc_fd(evsel, cpus->nr, threads->nr) < 0)
+ 		return -ENOMEM;
  
--	event->state = PERF_EVENT_STATE_ACTIVE;
--	event->oncpu = smp_processor_id();
+-	if (evsel->cgrp) {
+-		flags = PERF_FLAG_PID_CGROUP;
+-		pid = evsel->cgrp->fd;
+-	}
 -
- 	/*
- 	 * Unthrottle events, since we scheduled we might have missed several
- 	 * ticks already, also for a heavily scheduling task there is little
-@@ -1672,6 +1671,9 @@ event_sched_in(struct perf_event *event,
- 		return -EAGAIN;
- 	}
+ fallback_missing_features:
+ 	if (perf_missing_features.mmap2)
+ 		evsel->attr.mmap2 = 0;
+@@ -1032,20 +1049,11 @@ retry_sample_id:
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
  
-+	event->state = PERF_EVENT_STATE_ACTIVE;
-+	event->oncpu = smp_processor_id();
-+
- 	event->tstamp_running += tstamp - event->tstamp_stopped;
+ 		for (thread = 0; thread < threads->nr; thread++) {
+-			int group_fd;
  
- 	perf_set_shadow_time(event, ctx, tstamp);
+-			if (!evsel->cgrp)
+-				pid = threads->map[thread];
+-
+-			group_fd = get_group_fd(evsel, cpu, thread);
+ retry_open:
+-			pr_debug2("perf_event_open: pid %d  cpu %d  group_fd %d  flags %#lx\n",
+-				  pid, cpus->map[cpu], group_fd, flags);
+-
+-			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
+-								     pid,
+-								     cpus->map[cpu],
+-								     group_fd, flags);
++			FD(evsel, cpu, thread) = evsel_open(evsel,
++							    threads, cpus,
++							    thread, cpu);
+ 			if (FD(evsel, cpu, thread) < 0) {
+ 				err = -errno;
+ 				goto try_fallback;
 -- 
 1.7.11.7
 
