@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab3IYPut (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 11:50:49 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:39102 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492Ab3IYPus (ORCPT
+	id S1755993Ab3IYPvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 11:51:15 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:60666 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827Ab3IYPvL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 11:50:48 -0400
-Message-ID: <52430650.90300@gmail.com>
-Date: Wed, 25 Sep 2013 23:50:40 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 25 Sep 2013 11:51:11 -0400
 MIME-Version: 1.0
-To: Christopher Covington <cov@codeaurora.org>
-CC: Jiang Liu <jiang.liu@huawei.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 1/7] arm64: introduce basic aarch64 instruction decoding
- helpers
-References: <1380105868-31985-1-git-send-email-liuj97@gmail.com> <1380105868-31985-2-git-send-email-liuj97@gmail.com> <5242DE0F.1080601@codeaurora.org>
-In-Reply-To: <5242DE0F.1080601@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87vc1p4207.fsf@intel.com>
+References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
+	<1380026575.3371.1.camel@ThinkPad-X230.localdomain>
+	<CADDKRnCAZ0DtBUUaMfdTF=yk6PDLpbc9jkuvWWO8hYW4TDLxKw@mail.gmail.com>
+	<20130925091720.GA1921@aaronlu.sh.intel.com>
+	<87vc1p4207.fsf@intel.com>
+Date: Wed, 25 Sep 2013 17:51:10 +0200
+Message-ID: <CADDKRnDqDBfA6e6TE0VTLD9F=TjVZNov53Zk8ydnk2fS32rczQ@mail.gmail.com>
+Subject: Re: [PATCH v3 0/4] Fix Win8 backlight issue
+From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: Aaron Lu <aaron.lu@intel.com>, Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel@lists.freedesktop.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Mike Galbraith <bitbucket@online.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2013 08:58 PM, Christopher Covington wrote:
-> Hi Jiang,
-> 
-> On 09/25/2013 06:44 AM, Jiang Liu wrote:
-> 
-> [...]
-> 
->> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
-> 
-> [...]
-> 
->> +static int aarch64_insn_cls[] = {
->> +	AARCH64_INSN_CLS_UNKNOWN,	/* 0 0 X X */
->> +	AARCH64_INSN_CLS_UNKNOWN,	/* 0 0 X X */
->> +	AARCH64_INSN_CLS_UNKNOWN,	/* 0 0 X X */
->> +	AARCH64_INSN_CLS_UNKNOWN,	/* 0 0 X X */
->> +	AARCH64_INSN_CLS_LDST,		/* X 1 X 0 */
->> +	AARCH64_INSN_CLS_DP_REG,	/* X 1 0 1 */
->> +	AARCH64_INSN_CLS_LDST,		/* X 1 X 0 */
->> +	AARCH64_INSN_CLS_DP_FPSIMD,	/* 0 1 1 1 */
->> +	AARCH64_INSN_CLS_DP_IMM,	/* 1 0 0 X */
->> +	AARCH64_INSN_CLS_DP_IMM,	/* 1 0 0 X */
->> +	AARCH64_INSN_CLS_BR_SYS,	/* 1 0 1 X */
->> +	AARCH64_INSN_CLS_BR_SYS,	/* 1 0 1 X */
->> +	AARCH64_INSN_CLS_LDST,		/* X 1 X 0 */
->> +	AARCH64_INSN_CLS_DP_REG,	/* X 1 0 1 */
->> +	AARCH64_INSN_CLS_LDST,		/* X 1 X 0 */
->> +	AARCH64_INSN_CLS_DP_FPSIMD,	/* 1 1 1 1 */
->> +};
-> 
-> As I read this, I was initially puzzled as to why there are duplicate entries
-> in the list. Since the data structure doesn't really support don't-cares,
-> perhaps it would be clearer to use 1's and 0's instead of X's.
-Thanks for review, Chris!
-I will try to improve the comments in next version.
+2013/9/25 Jani Nikula <jani.nikula@linux.intel.com>:
+> On Wed, 25 Sep 2013, Aaron Lu <aaron.lu@intel.com> wrote:
+>> On Wed, Sep 25, 2013 at 10:29:37AM +0200, Jörg Otte wrote:
+>>> Backlight can't be modified with this patch set - neither with
+>>> function keys nor with the gui. It is a step backward to v3.11-rc1
+>
+> So both hotkeys and GUI work in v3.11-rc1? And v3.12-rc2?
 
-> 
-> [...]
-> 
-> Thanks,
-> Christopher
-> 
+In  v3.11-rc1 it didn't work.
+Since a later rc (I don't remember exactly which) it did work.
+In v3.12-rc1/2 it does work.
+In v3.12-rc2 + Aaron's patch set it again doesn't work.
 
+>
+>> Thanks for the test.
+>>
+>> Please check /sys/class/backlight, is there only one link file
+>> intel_backlight?
+>
+> Indeed, are there others? fujitsu-laptop perhaps? If yes, try
+> CONFIG_FUJITSU_LAPTOP=n or an appropriate module blacklist.
+>
+> Just checking, you do have CONFIG_BACKLIGHT_CLASS_DEVICE=y?
+
+There is only one intel_backlight link.
+Yes, I have CONFIG_BACKLIGHT_CLASS_DEVICE=y
+
+> Embarrassingly there was a bug in i915 fixed just recently where the
+> backlight device wasn't registered for
+> CONFIG_BACKLIGHT_CLASS_DEVICE=m...
+>
+>> If so, please cd inside and try modify the brightness file using echo
+>> with some values in the range of 0 - max_brightness, does the
+>> backlight level change when you echo a new value? I guess it doesn't,
+>> or you wouldn't notice problem. If indeed so, perhaps file a bug at
+>> http://bugzilla.kernel.org, Drivers/Video(DRI-Intel)? I suppose Jani
+>> and Daniel can help fix your problem.
+>
+> Yup, please check the above, and report back.
+
+- echo 0..max_brightness > brightness does not work.
+
+>>>
+>>> Video driver: i915
+>>> FUJITSU LIFEBOOK AH532/FJNBB1C, BIOS Version 1.09 05/22/2012
+>>>
+>>> acpi_backlight=video works.
+
+Jörg
