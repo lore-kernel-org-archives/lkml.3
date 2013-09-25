@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab3IYUXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:23:30 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37591 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755403Ab3IYUX2 (ORCPT
+	id S1756139Ab3IYUXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:23:41 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:58256 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755403Ab3IYUXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:23:28 -0400
-Date: Wed, 25 Sep 2013 21:23:22 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Holler <holler@ahsoftware.de>, Joe Perches <joe@perches.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Andy Whitcroft <apw@shadowen.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch: Find CamelCase definitions of
- struct/union/enum
-Message-ID: <20130925202322.GB13318@ZenIV.linux.org.uk>
-References: <1380047934.3575.100.camel@joe-AO722>
- <20130925152432.GY13318@ZenIV.linux.org.uk>
- <1380123344.17366.5.camel@joe-AO722>
- <20130925161949.GZ13318@ZenIV.linux.org.uk>
- <1380136920.17366.15.camel@joe-AO722>
- <20130925193035.GA11905@thunk.org>
- <1380138515.17366.22.camel@joe-AO722>
- <52433F89.5050104@ahsoftware.de>
- <20130925130352.0e89fd9439eff93c69cdcc32@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925130352.0e89fd9439eff93c69cdcc32@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 25 Sep 2013 16:23:40 -0400
+From: Djalal Harouni <tixxdz@opendz.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        <kernel-hardening@lists.openwall.com>
+Cc: tixxdz@gmail.com, Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH 06/12] procfs: make /proc/*/stack 0400
+Date: Wed, 25 Sep 2013 21:14:39 +0100
+Message-Id: <1380140085-29712-7-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
+References: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 01:03:52PM -0700, Andrew Morton wrote:
-> On Wed, 25 Sep 2013 21:54:49 +0200 Alexander Holler <holler@ahsoftware.de> wrote:
-> 
-> > Am 25.09.2013 21:48, schrieb Joe Perches:
-> > 
-> > > As I've said multiple times, checkpatch is a stupid
-> > > little tool that can be ignored by anyone with
-> > > different tastes.
-> > 
-> > Just that this isn't true for ordinary innocent people posting patches.
-> 
-> Nobody uses --strict.  Discussion is silly.
+The /proc/*/stack contains sensitive information and currently its mode
+is 0444. Change this to 0400 so the VFS will be able to block
+unprivileged processes to get file descriptors on arbitrary privileged
+/proc/*/stack files.
 
-That it is, but you are mistaken about nobody using --strict; I've been
-amused a while ago by a patch (duly forwarded to Dave Null for processing,
-of course) that "fixed" something like goto Efault, in I don't remember
-which file ;-)
+The /proc/*/stack is a /procfs ONE file that shares the same ->open()
+file operation with other ONE files. Doing a ptrace_may_access() check
+during open() might break userspace from accessing other ONE files
+like /proc/*/stat and /proc/*/statm.
+
+Therfore make it 0400 for now, and improve its check during ->read()
+in the next following patch.
+
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+---
+ fs/proc/base.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 8d21316..bb90171 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2710,7 +2710,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	INF("wchan",      S_IRUGO, proc_pid_wchan),
+ #endif
+ #ifdef CONFIG_STACKTRACE
+-	ONE("stack",      S_IRUGO, proc_pid_stack),
++	ONE("stack",      S_IRUSR, proc_pid_stack),
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+ 	INF("schedstat",  S_IRUGO, proc_pid_schedstat),
+@@ -3048,7 +3048,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	INF("wchan",     S_IRUGO, proc_pid_wchan),
+ #endif
+ #ifdef CONFIG_STACKTRACE
+-	ONE("stack",      S_IRUGO, proc_pid_stack),
++	ONE("stack",      S_IRUSR, proc_pid_stack),
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+ 	INF("schedstat", S_IRUGO, proc_pid_schedstat),
+-- 
+1.7.11.7
+
