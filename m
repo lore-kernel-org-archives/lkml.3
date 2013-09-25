@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab3IYVFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 17:05:10 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:39608 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755478Ab3IYVFF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 17:05:05 -0400
-Date: Wed, 25 Sep 2013 14:05:02 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-cc: akpm@linux-foundation.org, oleg@redhat.com, security@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] kthread: Make kthread_create() killable.
-In-Reply-To: <201309250017.HBG57846.VFOStOFFOLQJHM@I-love.SAKURA.ne.jp>
-Message-ID: <alpine.DEB.2.02.1309251351001.27471@chino.kir.corp.google.com>
-References: <20130914160515.GA8627@redhat.com> <201309150846.HED51521.tJOFOMVFSOHQFL@I-love.SAKURA.ne.jp> <20130915163919.GC13344@redhat.com> <201309160953.IGI12418.FOQHOFVJLOMFSt@I-love.SAKURA.ne.jp> <20130923160725.49093c565dcf6df7037dcc6b@linux-foundation.org>
- <201309250017.HBG57846.VFOStOFFOLQJHM@I-love.SAKURA.ne.jp>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755997Ab3IYVFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 17:05:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39253 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755480Ab3IYVFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 17:05:06 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1379206621-18639-1-git-send-email-jlee@suse.com>
+References: <1379206621-18639-1-git-send-email-jlee@suse.com>
+To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-crypto@vger.kernel.org,
+        opensuse-kernel@opensuse.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Josh Boyer <jwboyer@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Lee, Chun-Yi" <jlee@suse.com>
+Subject: Re: [RFC V4 PATCH 00/15] Signature verification of hibernate snapshot
+Date: Wed, 25 Sep 2013 22:04:33 +0100
+Message-ID: <29408.1380143073@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Sep 2013, Tetsuo Handa wrote:
 
-> Any users of wait_for_completion() might be chosen by the OOM killer while
-> waiting for completion() call by some process which does memory
-> allocation.  kthread_create() is one of such users.
-> 
+I have pushed some keyrings patches that will likely affect this to:
 
-Any user process callers of wait_for_completion() you mean.
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-devel
 
-> When such users are chosen by the OOM killer when they are waiting for
-> completion() in TASK_UNINTERRUPTIBLE, the system will be kept stressed
-> due to memory starvation because the OOM killer cannot kill such users.
-> 
+I intend to ask James to pull these into his next branch.  If he's happy to do
+so, I can look at pulling at least your asymmetric keys patch on top of them.
 
-Also results in a livelock if you're running in a memcg and have hit its 
-limit.
+It'd be helpful if you could see if you need to make any updates.
 
-> Fix this problem for kthreadd by making kthread_create() killable.
-> 
-
-There appear to be other potential callers of wait_for_completion() in the 
-tree as well that could be holding lots of memory besides 
-kthread_create().
-
-Perhaps that's beyond the scope of this particular patch, though.
-
-wait_for_completion() is scary if that completion requires memory that 
-cannot be allocated because the caller is killed but uninterruptible.
-
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-Acked-by: David Rientjes <rientjes@google.com>
+David
