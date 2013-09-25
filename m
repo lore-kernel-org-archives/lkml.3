@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab3IYXoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 19:44:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51105 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab3IYXoE (ORCPT
+	id S1754751Ab3IYXqz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 19:46:55 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52001 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3IYXqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 19:44:04 -0400
-Date: Wed, 25 Sep 2013 16:44:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Iker Pedrosa <ikerpedrosam@gmail.com>
-Cc: pavel@ucw.cz, devel@driverdev.osuosl.org, harsh1kumar@gmail.com,
-        linux-kernel@vger.kernel.org, mujeeb.adil@gmail.com,
-        dan.carpenter@oracle.com
-Subject: Re: [PATCH v2 08/24] Staging: winbond: reg: changed sleep function
- from msleep to usleep
-Message-ID: <20130925234403.GA4242@kroah.com>
-References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
- <1379339024-12157-9-git-send-email-ikerpedrosam@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1379339024-12157-9-git-send-email-ikerpedrosam@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 25 Sep 2013 19:46:53 -0400
+Date: Thu, 26 Sep 2013 09:46:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: old trees
+Message-Id: <20130926094643.af7512875525514047eb51c1@canb.auug.org.au>
+In-Reply-To: <20130925072729.351516b9@lwn.net>
+References: <20130917170124.0afa2e103a9977355ad7c72c@canb.auug.org.au>
+	<20130925072729.351516b9@lwn.net>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__26_Sep_2013_09_46_43_+1000_tYr4_pl/oUCpD6rZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 03:43:28PM +0200, Iker Pedrosa wrote:
-> According to the documentation it is not recommended to use msleep for 1ms - 20ms because it may sleep longer than 20ms. So, it is recommended to use usleep instead.
-> 
-> In the first revision Greg KH pointed out that this change broke the build. In my computer it builds properly so if someone has the same problem please copy the output so that I can figure out what is the problem.
+--Signature=_Thu__26_Sep_2013_09_46_43_+1000_tYr4_pl/oUCpD6rZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please wrap your changelog comments.
+Hi Jon,
 
-The error is:
-drivers/staging/winbond/reg.c: In function ‘Uxx_power_on_procedure’:
-drivers/staging/winbond/reg.c:887:3: error: implicit declaration of function ‘usleep’ [-Werror=implicit-function-declaration]
+On Wed, 25 Sep 2013 07:27:29 -0600 Jonathan Corbet <corbet@lwn.net> wrote:
+>
+> On Tue, 17 Sep 2013 17:01:24 +1000
+> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>=20
+> > jc_docs		2 years, 6 months ago
+>=20
+> I was afraid it would be the oldest tree on the list, but it's not even
+> close...:)
 
-And I'm still getting it on this patch, so please fix it up, it should
-be pretty obvious how to do it...
+Yeah, amazing innit! ;-)
 
-I've applied the first 7 patches here, but stopped now.  Please fix this
-up and resend the remaining patches.
+> I've been meaning to do some stuff there for a bit; the problem is that
+> life keeps getting in the way.  If it's not a hassle for you, I'd just
+> as soon keep it around, things have *got* to clear out one of these
+> days...
 
-thanks,
+No worries, consider it preserved :-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-greg k-h
+--Signature=_Thu__26_Sep_2013_09_46_43_+1000_tYr4_pl/oUCpD6rZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSQ3XoAAoJEECxmPOUX5FEcD0P/3354CuFdGs/J+izgE6TTmJR
+AN3Cek6tDgEw+qWKBfyTCuZKny0yBydd+szjIGLGQ6LSiBjg4CJVNszMqXbt20mh
+jT3HwRxsKk8ZFwLpQ0lmBtTFjh3MkBKF3gFInMscxVSFU5ehFV3fRHl7IZ2BxzY5
+DpcXyx6K9XoG8FUwbhXGZseB7CwLZlsg3XgvwFGPASk5r+DJvK/ASTZXDaherVen
+d3Jt890llQnkV690BprYJzOoG5fSOA6CvZfUZFNNTKv1YwkK1TE5Q3gc71/8p7ig
+SgEq2gpoOfKJwEyrjLhl6MN8T6QwUbLhTu9HoVRwEf5Isd8XYu2sh3sCjQY3Dte+
+HCdVAs1bLXO7Ho84LJjIHPOtsfM0onWM56kEJzSogpO1ov4PNqSK+yv5TCpNiHIn
+gcKwH3w59LG6rqeGcMKcA5E6ZmMNUr/a0N/fa/mcoN8HSMfAFNeRGOtHdOmmh//I
+XJRdPuvzBHI7660YxdfwtOPnnwdr5cl7TQKsrQCaYiz3TTrjWJ4adG6a44whFEpv
+g98rMH/gWG8jNhdKHXqGZBB2y8LdPkeETgpHhsfS07UXRoZD1wTX/KZb8naxCJOr
+1f5tKALjtovWVEcinQ+Wu86aYUxYidNe4rcmpzlehBF6yhl0Aqqyx7BUFUGpt5v+
+TBIMfuV61xMAzuHRmkP8
+=s0WH
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__26_Sep_2013_09_46_43_+1000_tYr4_pl/oUCpD6rZ--
