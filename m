@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab3IYAQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:16:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38989 "EHLO
+	id S1756094Ab3IYAQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:16:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39070 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755958Ab3IYAQQ (ORCPT
+	with ESMTP id S1756051Ab3IYAQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:16 -0400
+	Tue, 24 Sep 2013 20:16:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 028/110] USB: OHCI: Allow runtime PM without system sleep
-Date: Tue, 24 Sep 2013 17:14:26 -0700
-Message-Id: <20130925001326.457042683@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 048/110] Introduce [compat_]save_altstack_ex() to unbreak x86 SMAP
+Date: Tue, 24 Sep 2013 17:14:46 -0700
+Message-Id: <20130925001328.606104056@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -26,34 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 69820e01aa756b8d228143d997f71523c1e97984 upstream.
+commit bd1c149aa9915b9abb6d83d0f01dfd2ace0680b5 upstream.
 
-Since ohci-hcd supports runtime PM, the .pm field in its pci_driver
-structure should be protected by CONFIG_PM rather than
-CONFIG_PM_SLEEP.
+For performance reasons, when SMAP is in use, SMAP is left open for an
+entire put_user_try { ... } put_user_catch(); block, however, calling
+__put_user() in the middle of that block will close SMAP as the
+STAC..CLAC constructs intentionally do not nest.
 
-Without this change, OHCI controllers won't do runtime suspend if
-system suspend or hibernation isn't enabled.
+Furthermore, using __put_user() rather than put_user_ex() here is bad
+for performance.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Thus, introduce new [compat_]save_altstack_ex() helpers that replace
+__[compat_]save_altstack() for x86, being currently the only
+architecture which supports put_user_try { ... } put_user_catch().
+
+Reported-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-es5p6y64if71k8p5u08agv9n@git.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ohci-pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/ia32/ia32_signal.c |    2 +-
+ arch/x86/kernel/signal.c    |    6 +++---
+ include/linux/compat.h      |    7 +++++++
+ include/linux/signal.h      |    8 ++++++++
+ 4 files changed, 19 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/host/ohci-pci.c
-+++ b/drivers/usb/host/ohci-pci.c
-@@ -371,7 +371,7 @@ static struct pci_driver ohci_pci_driver
- 	.remove =	usb_hcd_pci_remove,
- 	.shutdown =	usb_hcd_pci_shutdown,
+--- a/arch/x86/ia32/ia32_signal.c
++++ b/arch/x86/ia32/ia32_signal.c
+@@ -459,7 +459,7 @@ int ia32_setup_rt_frame(int sig, struct
+ 		else
+ 			put_user_ex(0, &frame->uc.uc_flags);
+ 		put_user_ex(0, &frame->uc.uc_link);
+-		err |= __compat_save_altstack(&frame->uc.uc_stack, regs->sp);
++		compat_save_altstack_ex(&frame->uc.uc_stack, regs->sp);
  
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver =	{
- 		.pm =	&usb_hcd_pci_pm_ops
- 	},
+ 		if (ksig->ka.sa.sa_flags & SA_RESTORER)
+ 			restorer = ksig->ka.sa.sa_restorer;
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -364,7 +364,7 @@ static int __setup_rt_frame(int sig, str
+ 		else
+ 			put_user_ex(0, &frame->uc.uc_flags);
+ 		put_user_ex(0, &frame->uc.uc_link);
+-		err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
++		save_altstack_ex(&frame->uc.uc_stack, regs->sp);
+ 
+ 		/* Set up to return from userspace.  */
+ 		restorer = VDSO32_SYMBOL(current->mm->context.vdso, rt_sigreturn);
+@@ -429,7 +429,7 @@ static int __setup_rt_frame(int sig, str
+ 		else
+ 			put_user_ex(0, &frame->uc.uc_flags);
+ 		put_user_ex(0, &frame->uc.uc_link);
+-		err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
++		save_altstack_ex(&frame->uc.uc_stack, regs->sp);
+ 
+ 		/* Set up to return from userspace.  If provided, use a stub
+ 		   already in userspace.  */
+@@ -496,7 +496,7 @@ static int x32_setup_rt_frame(struct ksi
+ 		else
+ 			put_user_ex(0, &frame->uc.uc_flags);
+ 		put_user_ex(0, &frame->uc.uc_link);
+-		err |= __compat_save_altstack(&frame->uc.uc_stack, regs->sp);
++		compat_save_altstack_ex(&frame->uc.uc_stack, regs->sp);
+ 		put_user_ex(0, &frame->uc.uc__pad0);
+ 
+ 		if (ksig->ka.sa.sa_flags & SA_RESTORER) {
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -669,6 +669,13 @@ asmlinkage long compat_sys_sigaltstack(c
+ 
+ int compat_restore_altstack(const compat_stack_t __user *uss);
+ int __compat_save_altstack(compat_stack_t __user *, unsigned long);
++#define compat_save_altstack_ex(uss, sp) do { \
++	compat_stack_t __user *__uss = uss; \
++	struct task_struct *t = current; \
++	put_user_ex(ptr_to_compat((void __user *)t->sas_ss_sp), &__uss->ss_sp); \
++	put_user_ex(sas_ss_flags(sp), &__uss->ss_flags); \
++	put_user_ex(t->sas_ss_size, &__uss->ss_size); \
++} while (0);
+ 
+ asmlinkage long compat_sys_sched_rr_get_interval(compat_pid_t pid,
+ 						 struct compat_timespec __user *interval);
+--- a/include/linux/signal.h
++++ b/include/linux/signal.h
+@@ -434,6 +434,14 @@ void signals_init(void);
+ int restore_altstack(const stack_t __user *);
+ int __save_altstack(stack_t __user *, unsigned long);
+ 
++#define save_altstack_ex(uss, sp) do { \
++	stack_t __user *__uss = uss; \
++	struct task_struct *t = current; \
++	put_user_ex((void __user *)t->sas_ss_sp, &__uss->ss_sp); \
++	put_user_ex(sas_ss_flags(sp), &__uss->ss_flags); \
++	put_user_ex(t->sas_ss_size, &__uss->ss_size); \
++} while (0);
++
+ #ifdef CONFIG_PROC_FS
+ struct seq_file;
+ extern void render_sigset_t(struct seq_file *, const char *, sigset_t *);
 
 
