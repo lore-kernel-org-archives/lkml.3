@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab3IYT3o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 15:29:44 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:47612 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007Ab3IYT3l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 15:29:41 -0400
-Message-ID: <52433978.9050302@ahsoftware.de>
-Date: Wed, 25 Sep 2013 21:28:56 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130712 Thunderbird/17.0.7
+	id S1755192Ab3IYTak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 15:30:40 -0400
+Received: from imap.thunk.org ([74.207.234.97]:37974 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753365Ab3IYTai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 15:30:38 -0400
+Date: Wed, 25 Sep 2013 15:30:35 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Joe Perches <joe@perches.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch: Find CamelCase definitions of
+ struct/union/enum
+Message-ID: <20130925193035.GA11905@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Joe Perches <joe@perches.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andy Whitcroft <apw@shadowen.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <1380047934.3575.100.camel@joe-AO722>
+ <20130925152432.GY13318@ZenIV.linux.org.uk>
+ <1380123344.17366.5.camel@joe-AO722>
+ <20130925161949.GZ13318@ZenIV.linux.org.uk>
+ <1380136920.17366.15.camel@joe-AO722>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
-        STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] add exFAT driver
-References: <20130830124622.5f81b7d4@rechenknecht2k7> <20130830154205.GA1411@kroah.com> <20130925183632.08a0d073@rechenknecht2k7> <20130925172704.GB5258@kroah.com> <20130925183235.GA9659@srcf.ucam.org> <20130925184539.GA4208@kroah.com>
-In-Reply-To: <20130925184539.GA4208@kroah.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1380136920.17366.15.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 25.09.2013 20:45, schrieb Greg Kroah-Hartman:
-> On Wed, Sep 25, 2013 at 07:32:36PM +0100, Matthew Garrett wrote:
->> On Wed, Sep 25, 2013 at 10:27:04AM -0700, Greg Kroah-Hartman wrote:
->>
->>> Who did you contact at Samsung?  I'll be visiting there in a week so I
->>> can try to track some people done in person.  I really want their
->>> signed-off-by: on the patch, as it is their code to start with, and it's
->>> a bit rude to not get their approval for the code to be merged.
->>
->> It's arguably rude, but it's fine under the certificate of origin.
+On Wed, Sep 25, 2013 at 12:22:00PM -0700, Joe Perches wrote:
 > 
-> Oh, I totally agree, just trying to be nice here.  If a company objects
-> to having their code included in the tree, we should always take that
-> into consideration, especially given the ability for others to maintain
-> it.  We've done this for years, nothing new here at all.
+> > 	* labels a-la Enomem, etc.  I've been using those and I will
+> > keep doing so, checkpatch.pl and its users be damned.
+> 
+> Good on you.
 
-Maybe a silly question, but isn't exFAT protected by some MS owned
-patents which might drive Linux users into the hand of MS lawyers as
-already happened with FAT? It would make me wonder if not. Maybe you
-could ask Samsung about that too, when you are there.
+I'm with Al.  This is just silly to add to checkpatch.
 
-Regards,
+> Fine by me.  Don't use checkpatch.  No stress from me.
 
-Alexander Holler
+I still get some of your minions sending patches asking to "fix" ext4
+from time to time.  It wastes everyone's time.
+
+BTW, checkpatch barfs on pretty much everything in
+linux/trace/events/*.h
+
+						- Ted
