@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932392Ab3IYBvn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:51:43 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:40186 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756016Ab3IYBu1 (ORCPT
+	id S1755126Ab3IYCAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 22:00:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40204 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab3IYCAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:50:27 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 5/6] rcu: Change EXPORT_SYMBOL() to EXPORT_SYMBOL_GPL()
-Date: Tue, 24 Sep 2013 18:50:15 -0700
-Message-Id: <1380073816-32381-5-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1380073816-32381-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130925014954.GA32109@linux.vnet.ibm.com>
- <1380073816-32381-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-1542-0000-0000-000001B8A40F
+	Tue, 24 Sep 2013 22:00:50 -0400
+Date: Wed, 25 Sep 2013 12:00:35 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IlZpbGxlIFN5cmrDpGzDpCI=?= 
+	<ville.syrjala@linux.intel.com>
+Subject: linux-next: manual merge of the drm-intel tree with the
+ drm-intel-fixes tree
+Message-Id: <20130925120035.901f8f3eae222ae061fe3a07@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__25_Sep_2013_12_00_35_+1000_j3/RLc2heZv/nmto"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+--Signature=_Wed__25_Sep_2013_12_00_35_+1000_j3/RLc2heZv/nmto
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Commit e6b80a3b (rcu: Detect illegal rcu dereference in extended
-quiescent state) exported the pre-existing rcu_is_cpu_idle() function
-using EXPORT_SYMBOL().  However, this is inconsistent with the remaining
-exports from RCU, which are all EXPORT_SYMBOL_GPL().  The current state
-of affairs means that a non-GPL module could use rcu_is_cpu_idle(),
-but in a CONFIG_TREE_PREEMPT_RCU=y kernel would be unable to invoke
-rcu_read_lock() and rcu_read_unlock().
+Hi all,
 
-This commit therefore makes rcu_is_cpu_idle()'s export be consistent
-with the rest of RCU, namely EXPORT_SYMBOL_GPL().
+Today's linux-next merge of the drm-intel tree got a conflict in
+drivers/gpu/drm/i915/intel_display.c between commit 67c72a122541
+("drm/i915: preserve pipe A quirk in i9xx_set_pipeconf") from the
+drm-intel-fixes tree and commit cf532bb25592 ("drm/i915: Move double wide
+mode handling into pipe_config") from the drm-intel tree.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/rcutree.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 910d868..1b123e1 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -669,7 +669,7 @@ int rcu_is_cpu_idle(void)
- 	preempt_enable();
- 	return ret;
- }
--EXPORT_SYMBOL(rcu_is_cpu_idle);
-+EXPORT_SYMBOL_GPL(rcu_is_cpu_idle);
- 
- /**
-  * __rcu_is_watching - are RCU read-side critical sections safe?
--- 
-1.8.1.5
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/gpu/drm/i915/intel_display.c
+index e5822e7,d12d563..0000000
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@@ -4775,21 -4881,8 +4881,12 @@@ static void i9xx_set_pipeconf(struct in
+ =20
+  	pipeconf =3D 0;
+ =20
+ +	if (dev_priv->quirks & QUIRK_PIPEA_FORCE &&
+ +	    I915_READ(PIPECONF(intel_crtc->pipe)) & PIPECONF_ENABLE)
+ +		pipeconf |=3D PIPECONF_ENABLE;
+ +
+- 	if (intel_crtc->pipe =3D=3D 0 && INTEL_INFO(dev)->gen < 4) {
+- 		/* Enable pixel doubling when the dot clock is > 90% of the (display)
+- 		 * core speed.
+- 		 *
+- 		 * XXX: No double-wide on 915GM pipe B. Is that the only reason for the
+- 		 * pipe =3D=3D 0 check?
+- 		 */
+- 		if (intel_crtc->config.requested_mode.clock >
+- 		    dev_priv->display.get_display_clock_speed(dev) * 9 / 10)
+- 			pipeconf |=3D PIPECONF_DOUBLE_WIDE;
+- 	}
++ 	if (intel_crtc->config.double_wide)
++ 		pipeconf |=3D PIPECONF_DOUBLE_WIDE;
+ =20
+  	/* only g4x and later have fancy bpc/dither controls */
+  	if (IS_G4X(dev) || IS_VALLEYVIEW(dev)) {
+
+--Signature=_Wed__25_Sep_2013_12_00_35_+1000_j3/RLc2heZv/nmto
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSQkPHAAoJEECxmPOUX5FEgJIQAIn4FURSLPXfo8bqnZTyBQJa
+5PXYI4XinEc3b3CEX7iGDXMuXgeInee+UXYcCX//J2XG6FOiPG5doPFY/dS+td0x
+bJEnRC485Z+Sj4Uir3RmiZsUzUvWXRvh76zhz7gjYPXYFSTnKhRQ3iHWhfUDOf4H
+Mlj0jmVuNT6P9YsHity6qUywqq1YNAghDmr7s/OnQgomImEJh3/YPK9gE4+qPart
+e9ylVwOOtJfPFEBKOe4YoRqUxSmgL7zj6u4szz8wzazytlqLdJ8sNe7pTu7WzQIO
+iz2xMoNHVRkXsmtJ9D37TovGbNCCdgHWir6mtKoQFWm0a9kwV07Vmt4pfYttvvaU
+9ls8FbhqX4R57rK3vhJpqQ/IQJLAV9Mv+ZE1fSRT09PsVV0+ZqaKAlQzgf5xSuGe
+4te9aIdkTJch1/EYmdomKZVIc8umuwimFJYjdriR3zs4i9drXENnAyyinlaBkj7y
+AOO2mpDzF6Sawxv2EKBGa2iuVNUjs1H6MWFBblMlpraQ1fkuLHtpKVS2rO13Ak05
+Q9YFov/02A6N/2YhPMcnx0R/LGNDbGZpwhkxfHX6AIoxkHaKgEmLrObWdFCOpWd1
+IiParS5TvoRBhrSPzLDOuW20uUi2p/z2VAjwKqTKpXZqJ65/q5+LZK2bILmT8/gA
+L+xeGGu9iC/3xIHT1Pqc
+=O0nM
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__25_Sep_2013_12_00_35_+1000_j3/RLc2heZv/nmto--
