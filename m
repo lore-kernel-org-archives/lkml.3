@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab3IYIka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 04:40:30 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:43395 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab3IYIkZ (ORCPT
+	id S1753047Ab3IYIpc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 04:45:32 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:40431 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab3IYIp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 04:40:25 -0400
+	Wed, 25 Sep 2013 04:45:29 -0400
+Message-ID: <5242A2A3.303@hitachi.com>
+Date: Wed, 25 Sep 2013 17:45:23 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <bf168ab724a140f989ab3dfe877b750f@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
-	<20130920203222.GA14306@kroah.com>
-	<a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
-	<524180B7.7090307@gmail.com>
-	<3413dbd7fa254fd380a84fe6d9cd87e1@SN2PR03MB061.namprd03.prod.outlook.com>
-	<5241C9E7.2000404@cs.wisc.edu>
-	<bf168ab724a140f989ab3dfe877b750f@SN2PR03MB061.namprd03.prod.outlook.com>
-Date: Wed, 25 Sep 2013 10:40:24 +0200
-X-Google-Sender-Auth: BHctzfKEw7rfvnFwyyQdJikLCVg
-Message-ID: <CAMuHMdV-BsKc-c1YhzqFrUGJhw+jMZEXXTcT2xyDLnw-JQuVaQ@mail.gmail.com>
-Subject: Re: Drivers: scsi: FLUSH timeout
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>, Jack Wang <xjtuwjp@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Hemant <hkshaw@linux.vnet.ibm.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org
+Subject: Re: [PATCH 1/2] SDT markers listing by perf
+References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903073655.4793.20013.stgit@hemant-fedora> <87ioyht7e4.fsf@sejong.aot.lge.com> <5226E8F4.5060505@hitachi.com> <523599C2.6020204@linux.vnet.ibm.com> <5242687A.9030209@hitachi.com> <52427CAE.8030600@linux.vnet.ibm.com>
+In-Reply-To: <52427CAE.8030600@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 11:53 PM, KY Srinivasan <kys@microsoft.com> wrote:
-> I am not sure how that magic number was arrived at (the 60HZ number). We want this to be little higher -
+(2013/09/25 15:03), Hemant wrote:
+>>> I have one doubt here. Why do we need [ARG ...] in the syntax you
+>>> specified? I believe these args are to fetched from the sdt notes'
+>>> section of the elf of the executable/library. Or am I taking this in a
+>>> wrong way and this suggested syntax is actually for the uprobe_events
+>>> file in the tracing directory?
+>> Hm, indeed. Since all the arguments of the marker is defined in sdt notes,
+>> we actually don't need to specify each of them. However, other probe syntax
+>> has those arguments. I'd like to keep the same syntax style in the
+>> same command (action) for avoiding confusion.
+> 
+> Hmm, got it.
+> 
+>> I recommend this way; at the first step, we just find the marker address from
+>> sdt. And next, we will make the argument available. And eventually,
+>> it is better to introduce "$args" meta argument to fetch all the arguments
+>> of the marker.
+>>
+>> At this point, we can do
+>>
+>> perf probe %foo:bar $args
+> 
+> So, at first step (ignoring the arguments), we can go with :
+> perf probe %foo:bar
 
-"60 * HZ" means "60 seconds".
+Right,
 
-> would there be any issues raising this to say  180 seconds. This is the value we currently have for I/O
-> timeout.
+> And, once, the argument support is enabled (all the arguments will be
+> fetched at the marker location), we can go with:
+> perf probe %foo:bar $args
 
-So you want to replace it by "180 * HZ", which is ... another magic number?
+Correct ;). In my plan, $parms and $vars will be also introduced for
+accessing all function parameters and local variables correspondingly.
 
-Gr{oetje,eeting}s,
+Thank you!
 
-                        Geert
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
