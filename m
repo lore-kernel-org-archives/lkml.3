@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab3IYAqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:46:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39476 "EHLO
+	id S932429Ab3IYAqu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:46:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755645Ab3IYAUD (ORCPT
+	with ESMTP id S1756492Ab3IYAUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:03 -0400
+	Tue, 24 Sep 2013 20:20:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>, Felipe Balbi <balbi@ti.com>
-Subject: [ 028/117] usb: dwc3: gadget: dont request IRQs in atomic
-Date: Tue, 24 Sep 2013 17:18:14 -0700
-Message-Id: <20130925001743.910176839@linuxfoundation.org>
+        Shawn Nematbakhsh <shawnn@chromium.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 026/117] usb: xhci: Disable runtime PM suspend for quirky controllers
+Date: Tue, 24 Sep 2013 17:18:12 -0700
+Message-Id: <20130925001743.689446531@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,120 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Shawn Nematbakhsh <shawnn@chromium.org>
 
-commit b0d7ffd44ba9cd2dfbf299674418193a5f9ed21a upstream.
+commit c8476fb855434c733099079063990e5bfa7ecad6 upstream.
 
-We cannot request an IRQ with spinlocks held
-as that would trigger a sleeping inside
-spinlock warning.
+If a USB controller with XHCI_RESET_ON_RESUME goes to runtime suspend,
+a reset will be performed upon runtime resume. Any previously suspended
+devices attached to the controller will be re-enumerated at this time.
+This will cause problems, for example, if an open system call on the
+device triggered the resume (the open call will fail).
 
-Reported-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Note that this change is only relevant when persist_enabled is not set
+for USB devices.
+
+This patch should be backported to kernels as old as 3.0, that
+contain the commit c877b3b2ad5cb9d4fe523c5496185cc328ff3ae9 "xhci: Add
+reset on resume quirk for asrock p67 host".
+
+Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/gadget.c |   39 ++++++++++++++++++++++-----------------
- 1 file changed, 22 insertions(+), 17 deletions(-)
+ drivers/usb/host/xhci.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1508,6 +1508,15 @@ static int dwc3_gadget_start(struct usb_
- 	int			irq;
- 	u32			reg;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -3586,10 +3586,21 @@ void xhci_free_dev(struct usb_hcd *hcd,
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+ 	struct xhci_virt_device *virt_dev;
++	struct device *dev = hcd->self.controller;
+ 	unsigned long flags;
+ 	u32 state;
+ 	int i, ret;
  
-+	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
-+	ret = request_threaded_irq(irq, dwc3_interrupt, dwc3_thread_interrupt,
-+			IRQF_SHARED | IRQF_ONESHOT, "dwc3", dwc);
-+	if (ret) {
-+		dev_err(dwc->dev, "failed to request irq #%d --> %d\n",
-+				irq, ret);
-+		goto err0;
-+	}
++#ifndef CONFIG_USB_DEFAULT_PERSIST
++	/*
++	 * We called pm_runtime_get_noresume when the device was attached.
++	 * Decrement the counter here to allow controller to runtime suspend
++	 * if no devices remain.
++	 */
++	if (xhci->quirks & XHCI_RESET_ON_RESUME)
++		pm_runtime_put_noidle(dev);
++#endif
 +
- 	spin_lock_irqsave(&dwc->lock, flags);
- 
- 	if (dwc->gadget_driver) {
-@@ -1515,7 +1524,7 @@ static int dwc3_gadget_start(struct usb_
- 				dwc->gadget.name,
- 				dwc->gadget_driver->driver.name);
- 		ret = -EBUSY;
--		goto err0;
-+		goto err1;
+ 	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);
+ 	/* If the host is halted due to driver unload, we still need to free the
+ 	 * device.
+@@ -3661,6 +3672,7 @@ static int xhci_reserve_host_control_ep_
+ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
++	struct device *dev = hcd->self.controller;
+ 	unsigned long flags;
+ 	int timeleft;
+ 	int ret;
+@@ -3713,6 +3725,16 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 		goto disable_slot;
  	}
- 
- 	dwc->gadget_driver	= driver;
-@@ -1551,42 +1560,38 @@ static int dwc3_gadget_start(struct usb_
- 	ret = __dwc3_gadget_ep_enable(dep, &dwc3_gadget_ep0_desc, NULL, false);
- 	if (ret) {
- 		dev_err(dwc->dev, "failed to enable %s\n", dep->name);
--		goto err0;
-+		goto err2;
- 	}
- 
- 	dep = dwc->eps[1];
- 	ret = __dwc3_gadget_ep_enable(dep, &dwc3_gadget_ep0_desc, NULL, false);
- 	if (ret) {
- 		dev_err(dwc->dev, "failed to enable %s\n", dep->name);
--		goto err1;
-+		goto err3;
- 	}
- 
- 	/* begin to receive SETUP packets */
- 	dwc->ep0state = EP0_SETUP_PHASE;
- 	dwc3_ep0_out_start(dwc);
- 
--	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
--	ret = request_threaded_irq(irq, dwc3_interrupt, dwc3_thread_interrupt,
--			IRQF_SHARED | IRQF_ONESHOT, "dwc3", dwc);
--	if (ret) {
--		dev_err(dwc->dev, "failed to request irq #%d --> %d\n",
--				irq, ret);
--		goto err1;
--	}
--
- 	dwc3_gadget_enable_irq(dwc);
- 
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- 
- 	return 0;
- 
--err1:
-+err3:
- 	__dwc3_gadget_ep_disable(dwc->eps[0]);
- 
--err0:
-+err2:
- 	dwc->gadget_driver = NULL;
+ 	udev->slot_id = xhci->slot_id;
 +
-+err1:
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- 
-+	free_irq(irq, dwc);
++#ifndef CONFIG_USB_DEFAULT_PERSIST
++	/*
++	 * If resetting upon resume, we can't put the controller into runtime
++	 * suspend if there is a device attached.
++	 */
++	if (xhci->quirks & XHCI_RESET_ON_RESUME)
++		pm_runtime_get_noresume(dev);
++#endif
 +
-+err0:
- 	return ret;
- }
- 
-@@ -1600,9 +1605,6 @@ static int dwc3_gadget_stop(struct usb_g
- 	spin_lock_irqsave(&dwc->lock, flags);
- 
- 	dwc3_gadget_disable_irq(dwc);
--	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
--	free_irq(irq, dwc);
--
- 	__dwc3_gadget_ep_disable(dwc->eps[0]);
- 	__dwc3_gadget_ep_disable(dwc->eps[1]);
- 
-@@ -1610,6 +1612,9 @@ static int dwc3_gadget_stop(struct usb_g
- 
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- 
-+	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
-+	free_irq(irq, dwc);
-+
- 	return 0;
- }
- 
+ 	/* Is this a LS or FS device under a HS hub? */
+ 	/* Hub or peripherial? */
+ 	return 1;
 
 
