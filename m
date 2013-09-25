@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758701Ab3IYBri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:47:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38402 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754727Ab3IYAID (ORCPT
+	id S1756756Ab3IYBsG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:48:06 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:7717 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab3IYBsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:08:03 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 02/28] crypto: api - Fix race condition in larval lookup
-Date: Tue, 24 Sep 2013 17:07:33 -0700
-Message-Id: <20130925000649.022732448@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
-References: <20130925000648.404447782@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 24 Sep 2013 21:48:03 -0400
+X-Spam-Score: -100.7
+Message-ID: <52424094.3020504@asianux.com>
+Date: Wed, 25 Sep 2013 09:47:00 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info'
+ in all related extern functions
+References: <5212DBFA.8030805@asianux.com> <20130923150625.GB14547@htj.dyndns.org> <52410A40.1000304@asianux.com> <20130924040601.GA31575@mtj.dyndns.org> <524114B8.3070903@asianux.com> <20130924120429.GA2366@htj.dyndns.org> <5242331B.4010309@asianux.com> <20130925005802.GA25777@htj.dyndns.org> <5242372C.4010509@asianux.com> <20130925011404.GB25777@htj.dyndns.org>
+In-Reply-To: <20130925011404.GB25777@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 09/25/2013 09:14 AM, Tejun Heo wrote:
+> On Wed, Sep 25, 2013 at 09:06:52AM +0800, Chen Gang wrote:
+>> OK, I see, the 'root cause' is: "you are not the related maintainer
+>> either", so it is really necessary for me to spend additional time
+>> resource on it :-(.
+> 
+> Yeah, at least partly.  That and the fact that I'm not too willing to
+> dig into the code without further evidence.  It isn't anything strange
+> to ask tho and I'm likely to do that even for subsystems that I know
+> intimately if the subject code has been stable / stale for years and
+> the analysis doesn't seem immediately convincing.  And, if my
+> experience is anything to go by, it's not too unlikely that you might
+> hit something which doesn't agree with your current assumptions while
+> trying to actually trigger the problem.
+> 
+> Thanks.
+> 
 
-------------------
-
-From: Herbert Xu <herbert@gondor.apana.org.au>
-
-commit 77dbd7a95e4a4f15264c333a9e9ab97ee27dc2aa upstream.
-
-crypto_larval_lookup should only return a larval if it created one.
-Any larval created by another entity must be processed through
-crypto_larval_wait before being returned.
-
-Otherwise this will lead to a larval being killed twice, which
-will most likely lead to a crash.
-
-Reported-by: Kees Cook <keescook@chromium.org>
-Tested-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- crypto/api.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---- a/crypto/api.c
-+++ b/crypto/api.c
-@@ -40,6 +40,8 @@ static inline struct crypto_alg *crypto_
- 	return alg;
- }
- 
-+static struct crypto_alg *crypto_larval_wait(struct crypto_alg *alg);
-+
- struct crypto_alg *crypto_mod_get(struct crypto_alg *alg)
- {
- 	return try_module_get(alg->cra_module) ? crypto_alg_get(alg) : NULL;
-@@ -150,8 +152,11 @@ static struct crypto_alg *crypto_larval_
- 	}
- 	up_write(&crypto_alg_sem);
- 
--	if (alg != &larval->alg)
-+	if (alg != &larval->alg) {
- 		kfree(larval);
-+		if (crypto_is_larval(alg))
-+			alg = crypto_larval_wait(alg);
-+	}
- 
- 	return alg;
- }
+Excuse me, my English is not quite well, I do not quite understand what
+you said (but it seems what you said is reasonable, and not need reply).
 
 
+Thanks.
+-- 
+Chen Gang
