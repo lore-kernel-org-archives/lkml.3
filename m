@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab3IYAUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39497 "EHLO
+	id S932366Ab3IYAoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:44:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39506 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756501Ab3IYAUI (ORCPT
+	with ESMTP id S1756541Ab3IYAUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:08 -0400
+	Tue, 24 Sep 2013 20:20:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [ 034/117] regmap: debugfs: Fix continued read from registers file
-Date: Tue, 24 Sep 2013 17:18:20 -0700
-Message-Id: <20130925001744.576196356@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 036/117] PCI/ACPI: Fix _OSC ordering to allow PCIe hotplug use when available
+Date: Tue, 24 Sep 2013 17:18:22 -0700
+Message-Id: <20130925001744.776358223@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,43 +28,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 26ee47411ae22caa07d3f3b63ca6d097cba6681b upstream.
+commit 3dc48af310709b85d07c8b0d3aa8f1ead02829d3 upstream.
 
-The regmap_debugfs_get_dump_start() function maps from a file offset to the
-register that can be found at that position in the file. This is done using a
-look-up table. Commit d6814a7d ("regmap: debugfs: Suppress cache for partial
-register files") added a check to bypass the look-up table for partial register
-files, since the offsets in that table are only correct for the full register
-file. The check incorrectly uses the file offset instead of the register base
-address and returns it. This will cause the file offset to be interpreted as a
-register address which will result in a incorrect output from the registers file
-for all reads except at position 0.
+This fixes the problem of acpiphp claiming slots that should be managed
+by pciehp, which may keep ExpressCard slots from working.
 
-The issue can easily be reproduced by doing small reads the registers file, e.g.
-`dd if=registers bs=10 count=5`.
+The acpiphp driver claims PCIe slots unless the BIOS has granted us
+control of PCIe native hotplug via _OSC.  Prior to v3.10, the acpiphp
+.add method (add_bridge()) was always called *after* we had requested
+native hotplug control with _OSC.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+But after 3b63aaa70e ("PCI: acpiphp: Do not use ACPI PCI subdriver
+mechanism"), which appeared in v3.10, acpiphp initialization is done
+during the bus scan via the pcibios_add_bus() hook, and this happens
+*before* we request native hotplug control.
+
+Therefore, acpiphp doesn't know yet whether the BIOS will grant control,
+and it claims slots that we should be handling with native hotplug.
+
+This patch requests native hotplug control earlier, so we know whether
+the BIOS granted it to us before we initialize acpiphp.
+
+To avoid reintroducing the ASPM issue fixed by b8178f130e ('Revert
+"PCI/ACPI: Request _OSC control before scanning PCI root bus"'), we run
+_OSC earlier but defer the actual ASPM calls until after the bus scan is
+complete.
+
+Tested successfully by myself.
+
+[bhelgaas: changelog, mark for stable]
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=60736
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+CC: Len Brown <lenb@kernel.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/regmap/regmap-debugfs.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/pci_root.c |   62 +++++++++++++++++++++++++++++-------------------
+ 1 file changed, 38 insertions(+), 24 deletions(-)
 
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -85,8 +85,8 @@ static unsigned int regmap_debugfs_get_d
- 	unsigned int reg_offset;
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -378,6 +378,7 @@ static int acpi_pci_root_add(struct acpi
+ 	struct acpi_pci_root *root;
+ 	u32 flags, base_flags;
+ 	acpi_handle handle = device->handle;
++	bool no_aspm = false, clear_aspm = false;
  
- 	/* Suppress the cache if we're using a subrange */
--	if (from)
--		return from;
-+	if (base)
-+		return base;
+ 	root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
+ 	if (!root)
+@@ -437,27 +438,6 @@ static int acpi_pci_root_add(struct acpi
+ 	flags = base_flags = OSC_PCI_SEGMENT_GROUPS_SUPPORT;
+ 	acpi_pci_osc_support(root, flags);
  
- 	/*
- 	 * If we don't have a cache build one so we don't have to do a
+-	/*
+-	 * TBD: Need PCI interface for enumeration/configuration of roots.
+-	 */
+-
+-	/*
+-	 * Scan the Root Bridge
+-	 * --------------------
+-	 * Must do this prior to any attempt to bind the root device, as the
+-	 * PCI namespace does not get created until this call is made (and
+-	 * thus the root bridge's pci_dev does not exist).
+-	 */
+-	root->bus = pci_acpi_scan_root(root);
+-	if (!root->bus) {
+-		dev_err(&device->dev,
+-			"Bus %04x:%02x not present in PCI namespace\n",
+-			root->segment, (unsigned int)root->secondary.start);
+-		result = -ENODEV;
+-		goto end;
+-	}
+-
+-	/* Indicate support for various _OSC capabilities. */
+ 	if (pci_ext_cfg_avail())
+ 		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
+ 	if (pcie_aspm_support_enabled()) {
+@@ -471,7 +451,7 @@ static int acpi_pci_root_add(struct acpi
+ 		if (ACPI_FAILURE(status)) {
+ 			dev_info(&device->dev, "ACPI _OSC support "
+ 				"notification failed, disabling PCIe ASPM\n");
+-			pcie_no_aspm();
++			no_aspm = true;
+ 			flags = base_flags;
+ 		}
+ 	}
+@@ -503,7 +483,7 @@ static int acpi_pci_root_add(struct acpi
+ 				 * We have ASPM control, but the FADT indicates
+ 				 * that it's unsupported. Clear it.
+ 				 */
+-				pcie_clear_aspm(root->bus);
++				clear_aspm = true;
+ 			}
+ 		} else {
+ 			dev_info(&device->dev,
+@@ -512,7 +492,14 @@ static int acpi_pci_root_add(struct acpi
+ 				acpi_format_exception(status), flags);
+ 			dev_info(&device->dev,
+ 				 "ACPI _OSC control for PCIe not granted, disabling ASPM\n");
+-			pcie_no_aspm();
++			/*
++			 * We want to disable ASPM here, but aspm_disabled
++			 * needs to remain in its state from boot so that we
++			 * properly handle PCIe 1.1 devices.  So we set this
++			 * flag here, to defer the action until after the ACPI
++			 * root scan.
++			 */
++			no_aspm = true;
+ 		}
+ 	} else {
+ 		dev_info(&device->dev,
+@@ -520,6 +507,33 @@ static int acpi_pci_root_add(struct acpi
+ 			 "(_OSC support mask: 0x%02x)\n", flags);
+ 	}
+ 
++	/*
++	 * TBD: Need PCI interface for enumeration/configuration of roots.
++	 */
++
++	/*
++	 * Scan the Root Bridge
++	 * --------------------
++	 * Must do this prior to any attempt to bind the root device, as the
++	 * PCI namespace does not get created until this call is made (and
++	 * thus the root bridge's pci_dev does not exist).
++	 */
++	root->bus = pci_acpi_scan_root(root);
++	if (!root->bus) {
++		dev_err(&device->dev,
++			"Bus %04x:%02x not present in PCI namespace\n",
++			root->segment, (unsigned int)root->secondary.start);
++		result = -ENODEV;
++		goto end;
++	}
++
++	if (clear_aspm) {
++		dev_info(&device->dev, "Disabling ASPM (FADT indicates it is unsupported)\n");
++		pcie_clear_aspm(root->bus);
++	}
++	if (no_aspm)
++		pcie_no_aspm();
++
+ 	pci_acpi_add_bus_pm_notifier(device, root->bus);
+ 	if (device->wakeup.flags.run_wake)
+ 		device_set_run_wake(root->bus->bridge, true);
 
 
