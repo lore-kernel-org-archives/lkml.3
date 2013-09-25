@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419Ab3IYB3L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:29:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38592 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755416Ab3IYAM0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:12:26 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	id S932720Ab3IYB3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:29:36 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:46456 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755901Ab3IYB3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 21:29:30 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
-        Patrick McHardy <kaber@trash.net>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [ 15/40] rculist: list_first_or_null_rcu() should use list_entry_rcu()
-Date: Tue, 24 Sep 2013 17:11:47 -0700
-Message-Id: <20130925001043.606160853@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
-References: <20130925001041.939335518@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 02/11] rcu: Use proper cpp macro for ->gp_flags
+Date: Tue, 24 Sep 2013 18:29:12 -0700
+Message-Id: <1380072561-31134-2-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130925012750.GA30601@linux.vnet.ibm.com>
+ <1380072561-31134-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092501-0320-0000-0000-0000011DA440
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-------------------
+One of the ->gp_flags assignments used a raw number rather than the
+cpp macro that was intended for this purpose, which this commit fixes.
 
-From: Tejun Heo <tj@kernel.org>
-
-commit c34ac00caefbe49d40058ae7200bd58725cebb45 upstream.
-
-list_first_or_null() should test whether the list is empty and return
-pointer to the first entry if not in a RCU safe manner.  It's broken
-in several ways.
-
-* It compares __kernel @__ptr with __rcu @__next triggering the
-  following sparse warning.
-
-  net/core/dev.c:4331:17: error: incompatible types in comparison expression (different address spaces)
-
-* It doesn't perform rcu_dereference*() and computes the entry address
-  using container_of() directly from the __rcu pointer which is
-  inconsitent with other rculist interface.  As a result, all three
-  in-kernel users - net/core/dev.c, macvlan, cgroup - are buggy.  They
-  dereference the pointer w/o going through read barrier.
-
-* While ->next dereference passes through list_next_rcu(), the
-  compiler is still free to fetch ->next more than once and thus
-  nullify the "__ptr != __next" condition check.
-
-Fix it by making list_first_or_null_rcu() dereference ->next directly
-using ACCESS_ONCE() and then use list_entry_rcu() on it like other
-rculist accessors.
-
-v2: Paul pointed out that the compiler may fetch the pointer more than
-    once nullifying the condition check.  ACCESS_ONCE() added on
-    ->next dereference.
-
-v3: Restored () around macro param which was accidentally removed.
-    Spotted by Paul.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/rculist.h |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ kernel/rcutree.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -254,8 +254,9 @@ static inline void list_splice_init_rcu(
-  */
- #define list_first_or_null_rcu(ptr, type, member) \
- 	({struct list_head *__ptr = (ptr); \
--	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
--	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
-+	  struct list_head *__next = ACCESS_ONCE(__ptr->next); \
-+	  likely(__ptr != __next) ? \
-+		list_entry_rcu(__next, type, member) : NULL; \
- 	})
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 32618b3..e0fa192 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1452,7 +1452,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+ 	rdp = this_cpu_ptr(rsp->rda);
+ 	rcu_advance_cbs(rsp, rnp, rdp);  /* Reduce false positives below. */
+ 	if (cpu_needs_another_gp(rsp, rdp))
+-		rsp->gp_flags = 1;
++		rsp->gp_flags = RCU_GP_FLAG_INIT;
+ 	raw_spin_unlock_irq(&rnp->lock);
+ }
  
- /**
-
+-- 
+1.8.1.5
 
