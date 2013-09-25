@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab3IYMwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 08:52:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39602 "EHLO mx1.redhat.com"
+	id S1755846Ab3IYMwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 08:52:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61823 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755784Ab3IYMvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755781Ab3IYMvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Sep 2013 08:51:53 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
@@ -13,94 +13,22 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 21/21] perf tools: Add record/stat support for toggling events
-Date: Wed, 25 Sep 2013 14:50:47 +0200
-Message-Id: <1380113447-17144-22-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 20/21] perf tools: Add support to parse event on/off toggle terms
+Date: Wed, 25 Sep 2013 14:50:46 +0200
+Message-Id: <1380113447-17144-21-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
 References: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support for toggling events into record and stat
-command. It's now possible to meassure/sample code
-bounded by events.
+Adding parsing support for 'on' and 'off' terms within the
+event syntax. We can now specify on/off terms like:
 
-The toggling events are defined via on/off terms,
-assigned with the name of the event they should
-toggle.
+  -e 'cycles,irq_entry/on=cycles/,irq_exit/off=cycles/'
 
-- Example: using k(ret)probes:
-  Define toggle(on/off) events:
-  # perf probe -a fork_entry=do_fork
-  # perf probe -a fork_exit=do_fork%return
-
-  Following record session samples only within do_fork function:
-  # perf record -g -e '{cycles,cache-misses}:k,probe:fork_entry/on=cycles/,probe:fork_exit/off=cycles/' \
-    perf bench sched messaging
-
-  Following stat session measure cycles within do_fork function:
-  # perf stat -e '{cycles,cache-misses}:k,probe:fork_entry/on=cycles/,probe:fork_exit/off=cycles/' \
-    perf bench sched messaging
-
-  # Running sched/messaging benchmark...
-  # 20 sender and receiver processes per group
-  # 1 groups == 40 processes run
-
-       Total time: 0.073 [sec]
-
-   Performance counter stats for './perf bench sched messaging -g 1':
-
-          20,935,464 cycles                    #    0.000 GHz
-              18,897 cache-misses
-                  40 probe:fork_entry
-                  40 probe:fork_exit
-
-         0.086319682 seconds time elapsed
-
-- Example: using u(ret)probes:
-  Sample program:
-  ---
-  void krava(void)
-  {
-          asm volatile ("nop; nop");
-  }
-
-  int main(void)
-  {
-          krava();
-          return 0;
-  }
-  ---
-
-  Define toggle(on/off) events:
-  # perf probe -x ./ex entry=krava
-  # perf probe -x ./ex exit=krava%return
-
-  Following stat session measure instructions within krava function:
-  # perf stat -e instructions:u,probe_ex:entry/on=instructions/,probe_ex:exit/off=instructions/ ./ex
-
-      Performance counter stats for './ex':
-
-                   9 instructions:u            #    0.00  insns per cycle
-                   1 probe_ex:entry
-                   1 probe_ex:exit
-
-         0.000556743 seconds time elapsed
-
-  Following stat session measure cycles, instructions and cache-misses
-  within krava function:
-  # perf stat -e '{cycles,instructions,cache-misses}:u,probe_ex:entry/on=cycles/,probe_ex:exit/off=cycles/' ./ex
-
-       Performance counter stats for './ex':
-
-             2,068 cycles                    #    0.000 GHz
-                 9 instructions              #    0.00  insns per cycle
-                 0 cache-misses
-                 1 probe_ex:entry
-                 1 probe_ex:exit
-
-       0.000557504 seconds time elapsed
+Only string value is accepted for both terms. The name
+will be used in a search for toggled event.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -111,248 +39,246 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |  7 ++++
- tools/perf/builtin-stat.c   | 12 +++++++
- tools/perf/util/evlist.c    | 87 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/evlist.h    |  2 ++
- tools/perf/util/evsel.c     |  4 +++
- tools/perf/util/evsel.h     |  1 +
- tools/perf/util/record.c    |  2 ++
- 7 files changed, 115 insertions(+)
+ tools/perf/util/evsel.c        |  1 +
+ tools/perf/util/evsel.h        |  3 ++
+ tools/perf/util/parse-events.c | 69 +++++++++++++++++++++++++++++++++++-------
+ tools/perf/util/parse-events.h |  5 ++-
+ tools/perf/util/parse-events.l |  2 ++
+ tools/perf/util/parse-events.y |  6 ++--
+ 6 files changed, 71 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index da13840..a41d63c 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -225,6 +225,13 @@ try_again:
- 		goto out;
- 	}
- 
-+	if (perf_evlist__apply_toggle(evlist)) {
-+		error("failed to set toggling %d (%s)\n", errno,
-+			strerror(errno));
-+		rc = -1;
-+		goto out;
-+	}
-+
- 	if (perf_evlist__mmap(evlist, opts->mmap_pages, false) < 0) {
- 		if (errno == EPERM) {
- 			pr_err("Permission error mapping pages.\n"
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index f686d5f..86729ae 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -242,6 +242,7 @@ static void perf_stat__reset_stats(struct perf_evlist *evlist)
- static int create_perf_stat_counter(struct perf_evsel *evsel)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
-+	struct perf_evsel *leader = evsel->leader;
- 
- 	if (scale)
- 		attr->read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
-@@ -249,6 +250,9 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
- 
- 	attr->inherit = !no_inherit;
- 
-+	if (leader->is_toggled)
-+		attr->paused = 1;
-+
- 	if (perf_target__has_cpu(&target))
- 		return perf_evsel__open_per_cpu(evsel, perf_evsel__cpus(evsel));
- 
-@@ -462,6 +466,8 @@ static int __run_perf_stat(int argc, const char **argv)
- 	if (group)
- 		perf_evlist__set_leader(evsel_list);
- 
-+	perf_evlist__mark_toggled(evsel_list);
-+
- 	list_for_each_entry(counter, &evsel_list->entries, node) {
- 		if (create_perf_stat_counter(counter) < 0) {
- 			/*
-@@ -496,6 +502,12 @@ static int __run_perf_stat(int argc, const char **argv)
- 		return -1;
- 	}
- 
-+	if (perf_evlist__apply_toggle(evsel_list)) {
-+		error("failed to set toggling with %d (%s)\n", errno,
-+			strerror(errno));
-+		return -1;
-+	}
-+
- 	/*
- 	 * Enable counters and exec the command:
- 	 */
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index c4d382d..eda7907 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -16,6 +16,7 @@
- #include "evsel.h"
- #include "debug.h"
- #include <unistd.h>
-+#include "asm/bug.h"
- 
- #include "parse-events.h"
- #include "parse-options.h"
-@@ -819,6 +820,91 @@ void perf_evlist__delete_maps(struct perf_evlist *evlist)
- 	evlist->threads = NULL;
- }
- 
-+static struct perf_evsel *
-+perf_evlist__find_evsel_by_name(struct perf_evlist *evlist, char *name)
-+{
-+	struct perf_evsel *evsel;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node)
-+		if (strstr(perf_evsel__name(evsel), name))
-+			return evsel;
-+
-+	return NULL;
-+}
-+
-+static int apply_toggle(struct perf_evsel *evsel, struct perf_evsel *toggled,
-+			int ncpus, int nthreads)
-+{
-+	int cpu, thread, err = 0;
-+
-+	for (cpu = 0; cpu < ncpus; cpu++) {
-+		for (thread = 0; thread < nthreads; thread++) {
-+			int fd = FD(evsel, cpu, thread);
-+			u64 args[2] = {
-+				FD(toggled, cpu, thread),
-+				evsel->toggle_flag
-+			};
-+
-+			err = ioctl(fd, PERF_EVENT_IOC_SET_TOGGLE, args);
-+			if (err)
-+				break;
-+		}
-+	}
-+
-+	return err;
-+}
-+
-+int perf_evlist__apply_toggle(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel;
-+	int err = 0;
-+	const int ncpus = cpu_map__nr(evlist->cpus),
-+		  nthreads = thread_map__nr(evlist->threads);
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		struct perf_evsel *toggled;
-+
-+		if (!evsel->toggle_flag)
-+			continue;
-+
-+		toggled = perf_evlist__find_evsel_by_name(evlist,
-+							  evsel->toggle_name);
-+		if (WARN_ONCE(!toggled, "toggle apply: internal error\n"))
-+			return -1;
-+
-+		pr_debug("toggle: %s toggles %s %s\n",
-+			 perf_evsel__name(evsel),
-+			 evsel->toggle_flag == PERF_FLAG_TOGGLE_ON ?
-+					       "ON" : "OFF",
-+			 perf_evsel__name(toggled));
-+
-+		err = apply_toggle(evsel, toggled, ncpus, nthreads);
-+		if (err)
-+			break;
-+	}
-+
-+	return err;
-+}
-+
-+void perf_evlist__mark_toggled(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		struct perf_evsel *toggled;
-+
-+		if (!evsel->toggle_flag)
-+			continue;
-+
-+		toggled = perf_evlist__find_evsel_by_name(evlist,
-+							  evsel->toggle_name);
-+		if (WARN_ONCE(!toggled, "toggle mark: internal error\n"))
-+			continue;
-+
-+		toggled->is_toggled = true;
-+	}
-+}
-+
- int perf_evlist__apply_filters(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *evsel;
-@@ -827,6 +913,7 @@ int perf_evlist__apply_filters(struct perf_evlist *evlist)
- 		  nthreads = thread_map__nr(evlist->threads);
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
-+
- 		if (evsel->filter == NULL)
- 			continue;
- 
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 0dbd8f8..eb77c81 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -135,6 +135,8 @@ static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
- int perf_evlist__create_maps(struct perf_evlist *evlist,
- 			     struct perf_target *target);
- void perf_evlist__delete_maps(struct perf_evlist *evlist);
-+void perf_evlist__mark_toggled(struct perf_evlist *evlist);
-+int perf_evlist__apply_toggle(struct perf_evlist *evlist);
- int perf_evlist__apply_filters(struct perf_evlist *evlist);
- 
- void __perf_evlist__set_leader(struct list_head *list);
 diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 3ed7947..4e6db1c 100644
+index 95590fe..3ed7947 100644
 --- a/tools/perf/util/evsel.c
 +++ b/tools/perf/util/evsel.c
-@@ -696,6 +696,9 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 	 */
- 	if (perf_target__none(&opts->target) && perf_evsel__is_group_leader(evsel))
- 		attr->enable_on_exec = 1;
-+
-+	if (leader->is_toggled)
-+		attr->paused = 1;
+@@ -820,6 +820,7 @@ void perf_evsel__delete(struct perf_evsel *evsel)
+ 	free(evsel->group_name);
+ 	if (evsel->tp_format)
+ 		pevent_free_format(evsel->tp_format);
++	free(evsel->toggle_name);
+ 	free(evsel->name);
+ 	free(evsel);
  }
- 
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
-@@ -984,6 +987,7 @@ static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
- 	ret += PRINT_ATTR2(exclude_host, exclude_guest);
- 	ret += PRINT_ATTR2N("excl.callchain_kern", exclude_callchain_kernel,
- 			    "excl.callchain_user", exclude_callchain_user);
-+	ret += PRINT_ATTR2(paused, paused);
- 
- 	ret += PRINT_ATTR_U32(wakeup_events);
- 	ret += PRINT_ATTR_U32(wakeup_watermark);
 diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index e70415b..69f4183 100644
+index 4a7bdc7..e70415b 100644
 --- a/tools/perf/util/evsel.h
 +++ b/tools/perf/util/evsel.h
-@@ -93,6 +93,7 @@ struct perf_evsel {
- 	/* toggle event config */
- 	char			toggle_flag;
- 	char			*toggle_name;
-+	bool			is_toggled;
+@@ -90,6 +90,9 @@ struct perf_evsel {
+ 	int			sample_read;
+ 	struct perf_evsel	*leader;
+ 	char			*group_name;
++	/* toggle event config */
++	char			toggle_flag;
++	char			*toggle_name;
  };
  
  #define hists_to_evsel(h) container_of(h, struct perf_evsel, hists)
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index 18d73aa..7f7eeb4 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -88,6 +88,8 @@ void perf_evlist__config(struct perf_evlist *evlist,
- 	if (evlist->cpus->map[0] < 0)
- 		opts->no_inherit = true;
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 899c59e..4e8243f 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -267,7 +267,42 @@ const char *event_type(int type)
+ 	return "unknown";
+ }
  
-+	perf_evlist__mark_toggled(evlist);
++static int config_evsel_term(struct perf_evsel *evsel,
++			     struct parse_events_term *term)
++{
++	if (evsel->toggle_name)
++		return -EINVAL;
+ 
++	switch (term->type_term) {
++	case PARSE_EVENTS__TERM_TYPE_TOGGLE_ON:
++		evsel->toggle_flag = PERF_FLAG_TOGGLE_ON;
++		break;
++	case PARSE_EVENTS__TERM_TYPE_TOGGLE_OFF:
++		evsel->toggle_flag = PERF_FLAG_TOGGLE_OFF;
++		break;
++	default:
++		return -EINVAL;
++	}
 +
- 	list_for_each_entry(evsel, &evlist->entries, node)
- 		perf_evsel__config(evsel, opts);
++	evsel->toggle_name = strdup(term->val.str);
++	return 0;
++}
++
++static int config_evsel(struct perf_evsel *evsel,
++			struct list_head *head)
++{
++	struct parse_events_term *term;
++
++	list_for_each_entry(term, head, list) {
++		int ret;
++
++		ret = config_evsel_term(evsel, term);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
+ 
+ static int __add_event(struct list_head *list, int *idx,
+ 		       struct perf_event_attr *attr,
+@@ -374,7 +409,8 @@ int parse_events_add_cache(struct list_head *list, int *idx,
+ }
+ 
+ static int add_tracepoint(struct list_head *list, int *idx,
+-			  char *sys_name, char *evt_name)
++			  char *sys_name, char *evt_name,
++			  struct list_head *terms)
+ {
+ 	struct perf_evsel *evsel;
+ 
+@@ -382,13 +418,20 @@ static int add_tracepoint(struct list_head *list, int *idx,
+ 	if (!evsel)
+ 		return -ENOMEM;
+ 
++	if (terms && config_evsel(evsel, terms)) {
++		perf_evsel__delete(evsel);
++		free(list);
++		return -EINVAL;
++	}
++
+ 	list_add_tail(&evsel->node, list);
+ 
+ 	return 0;
+ }
+ 
+ static int add_tracepoint_multi_event(struct list_head *list, int *idx,
+-				      char *sys_name, char *evt_name)
++				      char *sys_name, char *evt_name,
++				      struct list_head *terms)
+ {
+ 	char evt_path[MAXPATHLEN];
+ 	struct dirent *evt_ent;
+@@ -412,7 +455,8 @@ static int add_tracepoint_multi_event(struct list_head *list, int *idx,
+ 		if (!strglobmatch(evt_ent->d_name, evt_name))
+ 			continue;
+ 
+-		ret = add_tracepoint(list, idx, sys_name, evt_ent->d_name);
++		ret = add_tracepoint(list, idx, sys_name,
++				     evt_ent->d_name, terms);
+ 	}
+ 
+ 	closedir(evt_dir);
+@@ -420,15 +464,17 @@ static int add_tracepoint_multi_event(struct list_head *list, int *idx,
+ }
+ 
+ static int add_tracepoint_event(struct list_head *list, int *idx,
+-				char *sys_name, char *evt_name)
++				char *sys_name, char *evt_name,
++				struct list_head *terms)
+ {
+ 	return strpbrk(evt_name, "*?") ?
+-	       add_tracepoint_multi_event(list, idx, sys_name, evt_name) :
+-	       add_tracepoint(list, idx, sys_name, evt_name);
++	       add_tracepoint_multi_event(list, idx, sys_name, evt_name, terms) :
++	       add_tracepoint(list, idx, sys_name, evt_name, terms);
+ }
+ 
+ static int add_tracepoint_multi_sys(struct list_head *list, int *idx,
+-				    char *sys_name, char *evt_name)
++				    char *sys_name, char *evt_name,
++				    struct list_head *terms)
+ {
+ 	struct dirent *events_ent;
+ 	DIR *events_dir;
+@@ -452,7 +498,7 @@ static int add_tracepoint_multi_sys(struct list_head *list, int *idx,
+ 			continue;
+ 
+ 		ret = add_tracepoint_event(list, idx, events_ent->d_name,
+-					   evt_name);
++					   evt_name, terms);
+ 	}
+ 
+ 	closedir(events_dir);
+@@ -460,7 +506,8 @@ static int add_tracepoint_multi_sys(struct list_head *list, int *idx,
+ }
+ 
+ int parse_events_add_tracepoint(struct list_head *list, int *idx,
+-				char *sys, char *event)
++				char *sys, char *event,
++				struct list_head *terms)
+ {
+ 	int ret;
+ 
+@@ -469,9 +516,9 @@ int parse_events_add_tracepoint(struct list_head *list, int *idx,
+ 		return ret;
+ 
+ 	if (strpbrk(sys, "*?"))
+-		return add_tracepoint_multi_sys(list, idx, sys, event);
++		return add_tracepoint_multi_sys(list, idx, sys, event, terms);
+ 	else
+-		return add_tracepoint_event(list, idx, sys, event);
++		return add_tracepoint_event(list, idx, sys, event, terms);
+ }
+ 
+ static int
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index a9db24f..8bd5995 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -49,6 +49,8 @@ enum {
+ 	PARSE_EVENTS__TERM_TYPE_NAME,
+ 	PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD,
+ 	PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
++	PARSE_EVENTS__TERM_TYPE_TOGGLE_ON,
++	PARSE_EVENTS__TERM_TYPE_TOGGLE_OFF,
+ };
+ 
+ struct parse_events_term {
+@@ -86,7 +88,8 @@ int parse_events__modifier_event(struct list_head *list, char *str, bool add);
+ int parse_events__modifier_group(struct list_head *list, char *event_mod);
+ int parse_events_name(struct list_head *list, char *name);
+ int parse_events_add_tracepoint(struct list_head *list, int *idx,
+-				char *sys, char *event);
++				char *sys, char *event,
++				struct list_head *terms);
+ int parse_events_add_numeric(struct list_head *list, int *idx,
+ 			     u32 type, u64 config,
+ 			     struct list_head *terms);
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 560ca86..afcc0d0 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -171,6 +171,8 @@ config2			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
+ name			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_NAME); }
+ period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
+ branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
++on			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_TOGGLE_ON); }
++off			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_TOGGLE_OFF); }
+ ,			{ return ','; }
+ "/"			{ BEGIN(INITIAL); return '/'; }
+ {name_minus}		{ return str(yyscanner, PE_NAME); }
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index ca93b72..7692562 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -200,7 +200,7 @@ event_def: event_pmu |
+ 	   event_legacy_symbol |
+ 	   event_legacy_cache sep_dc |
+ 	   event_legacy_mem |
+-	   event_legacy_tracepoint sep_dc |
++	   event_legacy_tracepoint |
+ 	   event_legacy_numeric sep_dc |
+ 	   event_legacy_raw sep_dc
+ 
+@@ -305,13 +305,13 @@ PE_PREFIX_MEM PE_VALUE sep_dc
+ }
+ 
+ event_legacy_tracepoint:
+-PE_NAME ':' PE_NAME
++PE_NAME ':' PE_NAME event_config_optional
+ {
+ 	struct parse_events_evlist *data = _data;
+ 	struct list_head *list;
+ 
+ 	ALLOC_LIST(list);
+-	ABORT_ON(parse_events_add_tracepoint(list, &data->idx, $1, $3));
++	ABORT_ON(parse_events_add_tracepoint(list, &data->idx, $1, $3, $4));
+ 	$$ = list;
+ }
  
 -- 
 1.7.11.7
