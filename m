@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab3IYAwa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:52:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39376 "EHLO
+	id S1757544Ab3IYAww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:52:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39372 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755758Ab3IYATr (ORCPT
+	with ESMTP id S1755800Ab3IYATq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:47 -0400
+	Tue, 24 Sep 2013 20:19:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Imre Deak <imre.deak@intel.com>, "cancan,feng" <cancan.feng@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 005/117] drm/i915: make user mode sync polarity setting explicit
-Date: Tue, 24 Sep 2013 17:17:51 -0700
-Message-Id: <20130925001741.446963782@linuxfoundation.org>
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 004/117] SCSI: Allow MPT Fusion SAS 3.0 driver to be built into the kernel
+Date: Tue, 24 Sep 2013 17:17:50 -0700
+Message-Id: <20130925001741.343451786@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -28,58 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Imre Deak <imre.deak@intel.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 2960bc9cceecb5d556ce1c07656a6609e2f7e8b0 upstream.
+commit 9807b4d94911be4e4efb9a08481b24292a9edf8a upstream.
 
-Userspace can pass a mode with an unspecified vsync/hsync polarity
-setting. All encoders in the Intel driver take this to mean a negative
-polarity setting. The HW readout/state checker code on the other hand
-needs these flags to be explicitly set, otherwise the state checker will
-WARN about the mismatch.
+Right now the Makefile for the mpt3sas driver does not even allow the
+driver to be built into the kernel.  So fix that up, as there doesn't
+seem to be any obvious reason why this shouldn't be done.
 
-Get rid of the WARN by making the polarity setting explicit in the
-adjusted mode flags based on the requested mode flags. This will keep
-the existing behavior otherwise.
-
-Note that we could guess from the other timing parameters whether the
-user wanted a VESA or other standard mode and set the polarity
-accordingly. This is what the NV driver does
-(drivers/gpu/drm/nouveau/dispnv04/crtc.c), but I think that's not very
-exact and would change the existing behavior of the Intel driver.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65442
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Tested-by: cancan,feng <cancan.feng@intel.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Acked-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/scsi/mpt3sas/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7809,6 +7809,19 @@ intel_modeset_pipe_config(struct drm_crt
- 	pipe_config->cpu_transcoder = to_intel_crtc(crtc)->pipe;
- 	pipe_config->shared_dpll = DPLL_ID_PRIVATE;
- 
-+	/*
-+	 * Sanitize sync polarity flags based on requested ones. If neither
-+	 * positive or negative polarity is requested, treat this as meaning
-+	 * negative polarity.
-+	 */
-+	if (!(pipe_config->adjusted_mode.flags &
-+	      (DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NHSYNC)))
-+		pipe_config->adjusted_mode.flags |= DRM_MODE_FLAG_NHSYNC;
-+
-+	if (!(pipe_config->adjusted_mode.flags &
-+	      (DRM_MODE_FLAG_PVSYNC | DRM_MODE_FLAG_NVSYNC)))
-+		pipe_config->adjusted_mode.flags |= DRM_MODE_FLAG_NVSYNC;
-+
- 	/* Compute a starting value for pipe_config->pipe_bpp taking the source
- 	 * plane pixel format and any sink constraints into account. Returns the
- 	 * source plane bpp so that dithering can be selected on mismatches
+--- a/drivers/scsi/mpt3sas/Makefile
++++ b/drivers/scsi/mpt3sas/Makefile
+@@ -1,5 +1,5 @@
+ # mpt3sas makefile
+-obj-m += mpt3sas.o
++obj-$(CONFIG_SCSI_MPT3SAS) += mpt3sas.o
+ mpt3sas-y +=  mpt3sas_base.o     \
+ 		mpt3sas_config.o \
+ 		mpt3sas_scsih.o      \
 
 
