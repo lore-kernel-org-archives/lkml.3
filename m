@@ -1,73 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab3IYOSI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 10:18:08 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:39501 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755641Ab3IYOSG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 10:18:06 -0400
-Date: Wed, 25 Sep 2013 10:18:03 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ville =?UTF-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>
-Cc: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Clark Williams <williams@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-Subject: Re: [Intel-gfx] BUG: sleeping function called from invalid context
- on 3.10.10-rt7
-Message-ID: <20130925101803.2848fc3c@gandalf.local.home>
-In-Reply-To: <20130925074936.GI4531@intel.com>
-References: <20130911102809.GA31663@uudg.org>
-	<20130911092623.42efd930@gandalf.local.home>
-	<5230895B.5070400@hurleysoftware.com>
-	<20130911113845.6d56a556@gandalf.local.home>
-	<5230C52E.3050801@hurleysoftware.com>
-	<5238B288.3000704@hurleysoftware.com>
-	<CAKMK7uG9s8W6yebkmuJe0XHGsoru4_9FzGqfmKWtMFyCAfQZqA@mail.gmail.com>
-	<523CC728.4040302@tuebingen.mpg.de>
-	<20130923083841.GT4531@intel.com>
-	<5242674A.8020100@tuebingen.mpg.de>
-	<20130925074936.GI4531@intel.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	id S1755721Ab3IYOZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 10:25:08 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58394 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754886Ab3IYOZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 10:25:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Toshi Kani <toshi.kani@hp.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [Bug report] Warning when hot-add an ACPI0004 device.
+Date: Wed, 25 Sep 2013 16:36:22 +0200
+Message-ID: <1885947.mO0H2ES2Cp@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <5242BB6D.3060504@cn.fujitsu.com>
+References: <52314A89.2060809@cn.fujitsu.com> <1378998712.12538.18.camel@misato.fc.hp.com> <5242BB6D.3060504@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Sep 2013 10:49:36 +0300
-Ville Syrjälä <ville.syrjala@linux.intel.com> wrote:
-
- 
-> The preempt_disable/enable is not needed. The spinlock serves the same
-> purpose already.
-
-As stated, that was only for the -rt patch, as spin_lock_irqsave does
-not disable preemption nor does it even disable interrupts.
-
-But I agree, the added preempt_disable() should be sent to us to keep
-in the -rt patch itself. We really appreciate that you are thinking
-about us :-)  But something like this will just confuse the mainline
-folks. Having a "preempt_disable_rt()" would make a lot more sense
-(which exists in the -rt patch).
-
+On Wednesday, September 25, 2013 06:31:09 PM Gu Zheng wrote:
+> Hi Toshi,
 > 
-> As far as ktime_get(), I've used it from spinlocked/irq disabled sections
-> and so far haven't seen it do bad things. But would be nice to get some
-> official statement to that effect.
+> On 09/12/2013 11:11 PM, Toshi Kani wrote:
+> 
+> > On Thu, 2013-09-12 at 13:00 +0800, Tang Chen wrote:
+> >> Hi Rafael, Toshi,
+> >>
+> >> When we hot-add an ACPI0004 device, we got the following warning:
+> >>
+> >> 	acpi ACPI0004:01: Attempt to re-insert
+> >>
+> >> The ACPI0004 device is a System Board in Fujitsu server, which has two
+> >> numa nodes (processors and memory).
+> >>
+> >> It seems that we reserved the ACPI_NOTIFY_DEVICE_CHECK event twice in
+> >> acpi_hotplug_notify_cb().
+> >>
+> >>
+> >> According to bisect, this happens after the following commit:
+> >>
+> >>  From 68a67f6c78b80525d9b3c6672e7782de95e56a83 Mon Sep 17 00:00:00 2001
+> >> From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+> >> Date: Sun, 3 Mar 2013 23:05:55 +0100
+> >> Subject: [PATCH 1/1] ACPI / container: Use common hotplug code
+> >>
+> >> Switch the ACPI container driver to using common device hotplug code
+> >> introduced previously.  This reduces the driver down to a trivial
+> >> definition and registration of a struct acpi_scan_handler object.
+> >>
+> >> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >> Acked-by: Toshi Kani <toshi.kani@hp.com>
+> >> Tested-by: Toshi Kani <toshi.kani@hp.com>
+> >> ---
+> >>   drivers/acpi/container.c | 146 
+> >> ++++-------------------------------------------
+> >>   1 file changed, 10 insertions(+), 136 deletions(-)
+> >>
+> >>
+> >> I'm now investigating this problem. If you have any idea about why this
+> >> happens, please let me know.
+> > 
+> > With the above change, container devices use the common notify handler,
+> > which logs the warning message in question when it receives device check
+> > twice on a same device.  Before the change, the container-specific
+> > notify handler did not log this message in the same case (but considered
+> > it as an eject request).
+> > 
+> > So, I suspect that you are getting device check twice regardless of the
+> > kernel change.  Can you check KERN_DEBUG messages to see if that is the
+> > case?  The notify handler logs all events with KERN_DEBUG.
+> 
+> Follow your suggestion, we confirm that it really received ACPI_NOTIFY_
+> DEVICE_CHECK event*twice*, but the original ACPI container driver only
+> received once, does the common device hotplug code introduce another device
+> check? any idea?
 
-It's just a read seqlock. It may do a few loops to get the correct
-time, but it's fine to have in a preempt/irq disabled section.
+Well, we couldn't possibly make the BIOS generate the event twice unless
+there's an _OST response missing somewhere or similar.
 
--- Steve
+In any case the second event should be harmless.
+
+> Container uses common device hotplug code:
+> [  142.937724] IPv6: ADDRCONF(NETDEV_CHANGE): eth8: link becomes ready
+> [  674.975575] ACPI: \_SB_.LSB1: ACPI_NOTIFY_DEVICE_CHECK event          <<<<
+> [  674.991604] ACPI: \_SB_.LSB1: ACPI_NOTIFY_DEVICE_CHECK event		 <<<<	
+
+Where exactly did you put that printk()?
+
+> [  675.613990] ACPI: PCI Root Bridge [UNC2] (domain 0000 [bus fd])
+> [  675.684970] acpi PNP0A03:01: ACPI _OSC support notification failed, disabling PCIe ASPM
+> [  675.780957] acpi PNP0A03:01: Unable to request _OSC control (_OSC support mask: 0x08)
+> [  675.874806] ACPI _OSC control for PCIe not granted, disabling ASPM
+> [  675.949005] pci_bus 0000:fd: Allocating resources
+> [  675.960145] ACPI: PCI Root Bridge [UNC3] (domain 0000 [bus fc])
+> [  676.031176] acpi PNP0A03:02: ACPI _OSC support notification failed, disabling PCIe ASPM
+> [  676.127129] acpi PNP0A03:02: Unable to request _OSC control (_OSC support mask: 0x08)
+> [  676.220943] ACPI _OSC control for PCIe not granted, disabling ASPM
+> [  676.295019] pci_bus 0000:fc: Allocating resources
+> 
+> Original ACPI container driver:
+> [ 1526.122933] Container driver received ACPI_NOTIFY_DEVICE_CHECK event <<<<
+
+And that?
+
+> [ 1526.800646] ACPI: PCI Root Bridge [UNC2] (domain 0000 [bus fd])
+> [ 1526.871682] acpi PNP0A03:01: ACPI _OSC support notification failed, disabling PCIe ASPM
+> [ 1526.967878] acpi PNP0A03:01: Unable to request _OSC control (_OSC support mask: 0x08)
+> [ 1527.061891] ACPI _OSC control for PCIe not granted, disabling ASPM
+> [ 1527.136036] pci_bus 0000:fd: Allocating resources
+> [ 1527.150747] ACPI: PCI Root Bridge [UNC3] (domain 0000 [bus fc])
+> [ 1527.221821] acpi PNP0A03:02: ACPI _OSC support notification failed, disabling PCIe ASPM
+> [ 1527.317738] acpi PNP0A03:02: Unable to request _OSC control (_OSC support mask: 0x08)
+> [ 1527.411795] ACPI _OSC control for PCIe not granted, disabling ASPM
+> [ 1527.485917] pci_bus 0000:fc: Allocating resources
+
+Thanks,
+Rafael
+
