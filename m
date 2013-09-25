@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab3IYAww (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:52:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39372 "EHLO
+	id S932161Ab3IYARL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:17:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39298 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755800Ab3IYATq (ORCPT
+	with ESMTP id S932136Ab3IYARG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:46 -0400
+	Tue, 24 Sep 2013 20:17:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 004/117] SCSI: Allow MPT Fusion SAS 3.0 driver to be built into the kernel
-Date: Tue, 24 Sep 2013 17:17:50 -0700
-Message-Id: <20130925001741.343451786@linuxfoundation.org>
+        Jianpeng Ma <majianpeng@gmail.com>, Sage Weil <sage@inktank.com>
+Subject: [ 099/110] libceph: unregister request in __map_request failed and nofail == false
+Date: Tue, 24 Sep 2013 17:15:37 -0700
+Message-Id: <20130925001334.136180200@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
-References: <20130925001740.833541979@linuxfoundation.org>
+In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
+References: <20130925001323.387158698@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: majianpeng <majianpeng@gmail.com>
 
-commit 9807b4d94911be4e4efb9a08481b24292a9edf8a upstream.
+commit 73d9f7eef3d98c3920e144797cc1894c6b005a1e upstream.
 
-Right now the Makefile for the mpt3sas driver does not even allow the
-driver to be built into the kernel.  So fix that up, as there doesn't
-seem to be any obvious reason why this shouldn't be done.
+For nofail == false request, if __map_request failed, the caller does
+cleanup work, like releasing the relative pages.  It doesn't make any sense
+to retry this request.
 
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Acked-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 
 ---
- drivers/scsi/mpt3sas/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ceph/osd_client.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/scsi/mpt3sas/Makefile
-+++ b/drivers/scsi/mpt3sas/Makefile
-@@ -1,5 +1,5 @@
- # mpt3sas makefile
--obj-m += mpt3sas.o
-+obj-$(CONFIG_SCSI_MPT3SAS) += mpt3sas.o
- mpt3sas-y +=  mpt3sas_base.o     \
- 		mpt3sas_config.o \
- 		mpt3sas_scsih.o      \
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -2130,6 +2130,8 @@ int ceph_osdc_start_request(struct ceph_
+ 			dout("osdc_start_request failed map, "
+ 				" will retry %lld\n", req->r_tid);
+ 			rc = 0;
++		} else {
++			__unregister_request(osdc, req);
+ 		}
+ 		goto out_unlock;
+ 	}
 
 
