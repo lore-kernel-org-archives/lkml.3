@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab3IYPKv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 11:10:51 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:60856 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab3IYPKt (ORCPT
+	id S1756078Ab3IYPLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 11:11:52 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:57948 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755423Ab3IYPLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 11:10:49 -0400
-Message-ID: <5242FCF5.9020003@linaro.org>
-Date: Wed, 25 Sep 2013 17:10:45 +0200
+	Wed, 25 Sep 2013 11:11:51 -0400
+Message-ID: <5242FD32.7030008@linaro.org>
+Date: Wed, 25 Sep 2013 17:11:46 +0200
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
@@ -25,10 +25,10 @@ To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
         Preeti Murthy <preeti.lkml@gmail.com>
 CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 2/4] clocksource/arm_global_timer: Set FEAT_PERCPU
- flag
-References: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com> <1379530118-22813-3-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1379530118-22813-3-git-send-email-soren.brinkmann@xilinx.com>
+Subject: Re: [PATCH v2 3/4] tick: broadcast: Deny per-cpu clockevents from
+ being broadcast sources
+References: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com> <1379530118-22813-4-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1379530118-22813-4-git-send-email-soren.brinkmann@xilinx.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,30 +36,41 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 09/18/2013 08:48 PM, Soren Brinkmann wrote:
-> The arm_global_timer is a per cpu device. Set the appropriate flag.
+> On most ARM systems the per-cpu clockevents are truly per-cpu in
+> the sense that they can't be controlled on any other CPU besides
+> the CPU that they interrupt. If one of these clockevents were to
+> become a broadcast source we will run into a lot of trouble
+> because the broadcast source is enabled on the first CPU to go
+> into deep idle (if that CPU suffers from FEAT_C3_STOP) and that
+> could be a different CPU than what the clockevent is interrupting
+> (or even worse the CPU that the clockevent interrupts could be
+> offline).
+> 
+> Theoretically it's possible to support per-cpu clockevents as the
+> broadcast source but so far we haven't needed this and supporting
+> it is rather complicated. Let's just deny the possibility for now
+> until this becomes a reality (let's hope it never does!).
 > 
 > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
 Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
 > ---
->  drivers/clocksource/arm_global_timer.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+>  kernel/time/tick-broadcast.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/drivers/clocksource/arm_global_timer.c b/drivers/clocksource/arm_global_timer.c
-> index b66c1f3..c639b1a 100644
-> --- a/drivers/clocksource/arm_global_timer.c
-> +++ b/drivers/clocksource/arm_global_timer.c
-> @@ -169,7 +169,8 @@ static int gt_clockevents_init(struct clock_event_device *clk)
->  	int cpu = smp_processor_id();
+> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+> index 218bcb5..9532690 100644
+> --- a/kernel/time/tick-broadcast.c
+> +++ b/kernel/time/tick-broadcast.c
+> @@ -70,6 +70,7 @@ static bool tick_check_broadcast_device(struct clock_event_device *curdev,
+>  					struct clock_event_device *newdev)
+>  {
+>  	if ((newdev->features & CLOCK_EVT_FEAT_DUMMY) ||
+> +	    (newdev->features & CLOCK_EVT_FEAT_PERCPU) ||
+>  	    (newdev->features & CLOCK_EVT_FEAT_C3STOP))
+>  		return false;
 >  
->  	clk->name = "arm_global_timer";
-> -	clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
-> +	clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT |
-> +		CLOCK_EVT_FEAT_PERCPU;
->  	clk->set_mode = gt_clockevent_set_mode;
->  	clk->set_next_event = gt_clockevent_set_next_event;
->  	clk->cpumask = cpumask_of(cpu);
 > 
 
 
