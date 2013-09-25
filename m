@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab3IYBAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:00:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39189 "EHLO
+	id S1756184Ab3IYAQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:16:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756190Ab3IYAQs (ORCPT
+	with ESMTP id S1756164Ab3IYAQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:48 -0400
+	Tue, 24 Sep 2013 20:16:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [ 076/110] media: s5p-g2d: Fix registration failure
-Date: Tue, 24 Sep 2013 17:15:14 -0700
-Message-Id: <20130925001331.651425999@linuxfoundation.org>
+        Richard Ryniker <ryniker@alum.mit.edu>,
+        Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 070/110] HID: battery: dont do DMA from stack
+Date: Tue, 24 Sep 2013 17:15:08 -0700
+Message-Id: <20130925001331.002062239@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -29,58 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Kamat <sachin.kamat@linaro.org>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 8a09a4cc9bd9389dc6a3b5b2dd3a7d64d2fab7e1 upstream.
+commit 6c2794a2984f4c17a58117a68703cc7640f01c5a upstream.
 
-Commit 1c1d86a1ea ("[media] v4l2: always require v4l2_dev,
-rename parent to dev_parent") expects v4l2_dev to be always set.
-It converted most of the drivers using the parent field of video_device
-to v4l2_dev field. G2D driver did not set the parent field. Hence it got
-left out. Without this patch we get the following boot warning and G2D
-driver fails to register the video device.
-WARNING: CPU: 0 PID: 1 at drivers/media/v4l2-core/v4l2-dev.c:775 __video_register_device+0xfc0/0x1028()
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.11.0-rc1-00001-g1c3e372-dirty #9
-[<c0014b7c>] (unwind_backtrace+0x0/0xf4) from [<c0011524>] (show_stack+0x10/0x14)
-[<c0011524>] (show_stack+0x10/0x14) from [<c041d7a8>] (dump_stack+0x7c/0xb0)
-[<c041d7a8>] (dump_stack+0x7c/0xb0) from [<c001dc94>] (warn_slowpath_common+0x6c/0x88)
-[<c001dc94>] (warn_slowpath_common+0x6c/0x88) from [<c001dd4c>] (warn_slowpath_null+0x1c/0x24)
-[<c001dd4c>] (warn_slowpath_null+0x1c/0x24) from [<c02cf8d4>] (__video_register_device+0xfc0/0x1028)
-[<c02cf8d4>] (__video_register_device+0xfc0/0x1028) from [<c0311a94>] (g2d_probe+0x1f8/0x398)
-[<c0311a94>] (g2d_probe+0x1f8/0x398) from [<c0247d54>] (platform_drv_probe+0x14/0x18)
-[<c0247d54>] (platform_drv_probe+0x14/0x18) from [<c0246b10>] (driver_probe_device+0x108/0x220)
-[<c0246b10>] (driver_probe_device+0x108/0x220) from [<c0246cf8>] (__driver_attach+0x8c/0x90)
-[<c0246cf8>] (__driver_attach+0x8c/0x90) from [<c0245050>] (bus_for_each_dev+0x60/0x94)
-[<c0245050>] (bus_for_each_dev+0x60/0x94) from [<c02462c8>] (bus_add_driver+0x1c0/0x24c)
-[<c02462c8>] (bus_add_driver+0x1c0/0x24c) from [<c02472d0>] (driver_register+0x78/0x140)
-[<c02472d0>] (driver_register+0x78/0x140) from [<c00087c8>] (do_one_initcall+0xf8/0x144)
-[<c00087c8>] (do_one_initcall+0xf8/0x144) from [<c05b29e8>] (kernel_init_freeable+0x13c/0x1d8)
-[<c05b29e8>] (kernel_init_freeable+0x13c/0x1d8) from [<c041a108>] (kernel_init+0xc/0x160)
-[<c041a108>] (kernel_init+0xc/0x160) from [<c000e2f8>] (ret_from_fork+0x14/0x3c)
----[ end trace 4e0ec028b0028e02 ]---
-s5p-g2d 12800000.g2d: Failed to register video device
-s5p-g2d: probe of 12800000.g2d failed with error -22
+Instead of using data from stack for DMA in hidinput_get_battery_property(),
+allocate the buffer dynamically.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Kamil Debski <k.debski@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reported-by: Richard Ryniker <ryniker@alum.mit.edu>
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/s5p-g2d/g2d.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hid/hid-input.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/media/platform/s5p-g2d/g2d.c
-+++ b/drivers/media/platform/s5p-g2d/g2d.c
-@@ -784,6 +784,7 @@ static int g2d_probe(struct platform_dev
- 	}
- 	*vfd = g2d_videodev;
- 	vfd->lock = &dev->mutex;
-+	vfd->v4l2_dev = &dev->v4l2_dev;
- 	ret = video_register_device(vfd, VFL_TYPE_GRABBER, 0);
- 	if (ret) {
- 		v4l2_err(&dev->v4l2_dev, "Failed to register video device\n");
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -340,7 +340,7 @@ static int hidinput_get_battery_property
+ {
+ 	struct hid_device *dev = container_of(psy, struct hid_device, battery);
+ 	int ret = 0;
+-	__u8 buf[2] = {};
++	__u8 *buf;
+ 
+ 	switch (prop) {
+ 	case POWER_SUPPLY_PROP_PRESENT:
+@@ -349,13 +349,20 @@ static int hidinput_get_battery_property
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_CAPACITY:
++
++		buf = kmalloc(2 * sizeof(__u8), GFP_KERNEL);
++		if (!buf) {
++			ret = -ENOMEM;
++			break;
++		}
+ 		ret = dev->hid_get_raw_report(dev, dev->battery_report_id,
+-					      buf, sizeof(buf),
++					      buf, 2,
+ 					      dev->battery_report_type);
+ 
+ 		if (ret != 2) {
+ 			if (ret >= 0)
+ 				ret = -EINVAL;
++			kfree(buf);
+ 			break;
+ 		}
+ 
+@@ -364,6 +371,7 @@ static int hidinput_get_battery_property
+ 		    buf[1] <= dev->battery_max)
+ 			val->intval = (100 * (buf[1] - dev->battery_min)) /
+ 				(dev->battery_max - dev->battery_min);
++		kfree(buf);
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_MODEL_NAME:
 
 
