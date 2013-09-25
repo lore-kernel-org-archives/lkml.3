@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab3IYAIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:08:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38477 "EHLO
+	id S1755252Ab3IYAIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:08:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755018Ab3IYAIX (ORCPT
+	with ESMTP id S1755004Ab3IYAIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:08:23 -0400
+	Tue, 24 Sep 2013 20:08:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Greg Thelen <gthelen@google.com>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
+        Jie Liu <jeff.liu@oracle.com>, David Weber <wb@munzinger.de>,
+        Sunil Mushran <sunil.mushran@gmail.com>, Mark Fashen <mfasheh@suse.de>,
+        Joel Becker <jlbec@evilplan.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 23/28] memcg: fix multiple large threshold notifications
-Date: Tue, 24 Sep 2013 17:07:54 -0700
-Message-Id: <20130925000653.923951107@linuxfoundation.org>
+Subject: [ 22/28] ocfs2: fix the end cluster offset of FIEMAP
+Date: Tue, 24 Sep 2013 17:07:53 -0700
+Message-Id: <20130925000653.675720009@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
 References: <20130925000648.404447782@linuxfoundation.org>
@@ -30,73 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Thelen <gthelen@google.com>
+From: Jie Liu <jeff.liu@oracle.com>
 
-commit 2bff24a3707093c435ab3241c47dcdb5f16e432b upstream.
+commit 28e8be31803b19d0d8f76216cb11b480b8a98bec upstream.
 
-A memory cgroup with (1) multiple threshold notifications and (2) at least
-one threshold >=2G was not reliable.  Specifically the notifications would
-either not fire or would not fire in the proper order.
+Call fiemap ioctl(2) with given start offset as well as an desired mapping
+range should show extents if possible.  However, we somehow figure out the
+end offset of mapping via 'mapping_end -= cpos' before iterating the
+extent records which would cause problems if the given fiemap length is
+too small to a cluster size, e.g,
 
-The __mem_cgroup_threshold() signaling logic depends on keeping 64 bit
-thresholds in sorted order.  mem_cgroup_usage_register_event() sorts them
-with compare_thresholds(), which returns the difference of two 64 bit
-thresholds as an int.  If the difference is positive but has bit[31] set,
-then sort() treats the difference as negative and breaks sort order.
+Cluster size 4096:
+debugfs.ocfs2 1.6.3
+        Block Size Bits: 12   Cluster Size Bits: 12
 
-This fix compares the two arbitrary 64 bit thresholds returning the
-classic -1, 0, 1 result.
+The extended fiemap test utility From David:
+https://gist.github.com/anonymous/6172331
 
-The test below sets two notifications (at 0x1000 and 0x81001000):
-  cd /sys/fs/cgroup/memory
-  mkdir x
-  for x in 4096 2164264960; do
-    cgroup_event_listener x/memory.usage_in_bytes $x | sed "s/^/$x listener:/" &
-  done
-  echo $$ > x/cgroup.procs
-  anon_leaker 500M
+# dd if=/dev/urandom of=/ocfs2/test_file bs=1M count=1000
+# ./fiemap /ocfs2/test_file 4096 10
+start: 4096, length: 10
+File /ocfs2/test_file has 0 extents:
+#	Logical          Physical         Length           Flags
+	^^^^^ <-- No extent is shown
 
-v3.11-rc7 fails to signal the 4096 event listener:
-  Leaking...
-  Done leaking pages.
+In this case, at ocfs2_fiemap(): cpos == mapping_end == 1. Hence the
+loop of searching extent records was not executed at all.
 
-Patched v3.11-rc7 properly notifies:
-  Leaking...
-  4096 listener:2013:8:31:14:13:36
-  Done leaking pages.
+This patch remove the in question 'mapping_end -= cpos', and loops
+until the cpos is larger than the mapping_end as usual.
 
-The fixed bug is old.  It appears to date back to the introduction of
-memcg threshold notifications in v2.6.34-rc1-116-g2e72b6347c94 "memcg:
-implement memory thresholds"
+# ./fiemap /ocfs2/test_file 4096 10
+start: 4096, length: 10
+File /ocfs2/test_file has 1 extents:
+#	Logical          Physical         Length           Flags
+0:	0000000000000000 0000000056a01000 0000000006a00000 0000
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+Reported-by: David Weber <wb@munzinger.de>
+Tested-by: David Weber <wb@munzinger.de>
+Cc: Sunil Mushran <sunil.mushran@gmail.com>
+Cc: Mark Fashen <mfasheh@suse.de>
+Cc: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memcontrol.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ fs/ocfs2/extent_map.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4433,7 +4433,13 @@ static int compare_thresholds(const void
- 	const struct mem_cgroup_threshold *_a = a;
- 	const struct mem_cgroup_threshold *_b = b;
- 
--	return _a->threshold - _b->threshold;
-+	if (_a->threshold > _b->threshold)
-+		return 1;
-+
-+	if (_a->threshold < _b->threshold)
-+		return -1;
-+
-+	return 0;
- }
- 
- static int mem_cgroup_oom_notify_cb(struct mem_cgroup *mem)
+--- a/fs/ocfs2/extent_map.c
++++ b/fs/ocfs2/extent_map.c
+@@ -782,7 +782,6 @@ int ocfs2_fiemap(struct inode *inode, st
+ 	cpos = map_start >> osb->s_clustersize_bits;
+ 	mapping_end = ocfs2_clusters_for_bytes(inode->i_sb,
+ 					       map_start + map_len);
+-	mapping_end -= cpos;
+ 	is_last = 0;
+ 	while (cpos < mapping_end && !is_last) {
+ 		u32 fe_flags;
 
 
