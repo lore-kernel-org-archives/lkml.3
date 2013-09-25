@@ -1,407 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab3IYOdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 10:33:31 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:50946 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755687Ab3IYOd3 (ORCPT
+	id S1755928Ab3IYOfG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 10:35:06 -0400
+Received: from starfish.geekisp.com ([216.168.135.166]:30030 "HELO
+	starfish.geekisp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755619Ab3IYOfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 10:33:29 -0400
-Message-ID: <5242F434.7060702@linaro.org>
-Date: Wed, 25 Sep 2013 16:33:24 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 25 Sep 2013 10:35:04 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Sep 2013 10:35:04 EDT
+Message-ID: <5242F2EF.2050900@balister.org>
+Date: Wed, 25 Sep 2013 10:27:59 -0400
+From: Philip Balister <philip@balister.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de
-Subject: Re: [RFC, PATCH] clocksource: provide timekeeping for efm32 SoCs
-References: <1379324644-20934-1-git-send-email-u.kleine-koenig@pengutronix.de>
-In-Reply-To: <1379324644-20934-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Pavel Machek <pavel@denx.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Alan Tull <atull@altera.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        monstr@monstr.eu, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+References: <cover.1379519753.git.michal.simek@xilinx.com> <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com> <20130918191517.GQ19937@titan.lakedaemon.net> <20130918203247.GA11181@obsidianresearch.com> <1379539063.31417.23.camel@atx-linux-37> <20130919100833.GC19346@amd.pavel.ucw.cz> <52421829.4050708@zytor.com> <20130925120052.GD9690@amd.pavel.ucw.cz>
+In-Reply-To: <20130925120052.GD9690@amd.pavel.ucw.cz>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2013 11:44 AM, Uwe Kleine-König wrote:
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
-> Hello,
+On 09/25/2013 08:00 AM, Pavel Machek wrote:
+> Hi!
 > 
-> I'm not sure that the way I implemented if a given timer is used as
-> clock_source or clock_event_device is robust. Does it need locking?
-> The reason to create a timer device for each timer instead of a single
-> device of all of them is that it makes it cleaner to specify irqs and
-> clks which each timer has one of each respectively. I didn't find an
-> example, but while looking I wondered if in zevio-timer.c a single timer
-> can really support both clock_event and clocksource.
+>>>> The firmware approach is interesting.  It might be less flexible
+>>>> compared with my original code (see link to git below) that this is
+>>>
+>>> On the other hand... that's the interface world wants, right? To most
+>>> users, fpga bitstream is just a firmware.
+>>>
+>>
+>> No, not really.
+>>
+>> The typical assumption with the firmware interface is that there is
+>> exactly one possible firmware for each device (possibly modulated by
+>> driver version, but still.)  
 > 
-> I guess for inclusion I need to write a document describing the
-> of-binding. I will include that in the next iteration.
+> Actually, I have seen counterexample there, too. Wifi card had
+> different firmware for host and access points mode, probably because
+> internal RAM could not fit both at same time. 
 
-Right and a nice description of the timer would be valuable.
+And another counter example ...
 
-The first letter of the description should be in capital "Provide".
+For the Zynq based product I am working on, we encourage the end user to
+create their own bitstreams to customize their application. So we need
+an easy way for the user to load a bitstream. cat foo.bin > /dev/xdevcfg
+works well for us.
 
-> checkpatch wails that the description of CLKSRC_EFM32 is too short. I
-> think it's OK though.
+Then we need to make sure that the interface supports partial
+reconfiguration.
+
+That said, having a sane user api that addresses the various fpga use
+cases would be a win for use since we would not need to write custom
+user space code for every platform created in the future. I'd like to
+see this api work with things like PCI based FPGA cards and discrete
+fpgas that are not integrated with an arm etc.
+
+Phlip
+
 > 
-> Best regards
-> Uwe
+> It is not really different; there's internal logic and you are
+> programming it to do something. You can program FPGA, CPLD, or
+> firmware for some embedded CPU.
 > 
->  drivers/clocksource/Kconfig      |   8 ++
->  drivers/clocksource/Makefile     |   1 +
->  drivers/clocksource/time-efm32.c | 274 +++++++++++++++++++++++++++++++++++++++
->  3 files changed, 283 insertions(+)
->  create mode 100644 drivers/clocksource/time-efm32.c
+>> This is blatantly not true for an FPGA in
+>> the most extreme way possible -- there are an almost infinite number of
+>> ways one can load an FPGA.
 > 
-> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-> index 41c6946..410b152 100644
-> --- a/drivers/clocksource/Kconfig
-> +++ b/drivers/clocksource/Kconfig
-> @@ -70,6 +70,14 @@ config CLKSRC_DBX500_PRCMU_SCHED_CLOCK
->  	help
->  	  Use the always on PRCMU Timer as sched_clock
->  
-> +config CLKSRC_EFM32
-> +	bool "Clocksource for Energy Micro's EFM32 SoCs" if !ARCH_EFM32
-> +	depends on OF && ARM && (ARCH_EFM32 || COMPILE_TEST)
-> +	default ARCH_EFM32
-> +	help
-> +	  Support to use the timers of EFM32 SoCs as clock source and clock
-> +	  event device.
-> +
-
-No option for the timer. It must be selected by the platform.
-
->  config ARM_ARCH_TIMER
->  	bool
->  	select CLKSRC_OF if OF
-> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-> index 704d6d3..33621ef 100644
-> --- a/drivers/clocksource/Makefile
-> +++ b/drivers/clocksource/Makefile
-> @@ -27,6 +27,7 @@ obj-$(CONFIG_VT8500_TIMER)	+= vt8500_timer.o
->  obj-$(CONFIG_ARCH_NSPIRE)	+= zevio-timer.o
->  obj-$(CONFIG_ARCH_BCM)		+= bcm_kona_timer.o
->  obj-$(CONFIG_CADENCE_TTC_TIMER)	+= cadence_ttc_timer.o
-> +obj-$(CONFIG_CLKSRC_EFM32)	+= time-efm32.o
->  obj-$(CONFIG_CLKSRC_EXYNOS_MCT)	+= exynos_mct.o
->  obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
->  obj-$(CONFIG_VF_PIT_TIMER)	+= vf_pit_timer.o
-> diff --git a/drivers/clocksource/time-efm32.c b/drivers/clocksource/time-efm32.c
-> new file mode 100644
-> index 0000000..6ead8d7
-> --- /dev/null
-> +++ b/drivers/clocksource/time-efm32.c
-> @@ -0,0 +1,274 @@
-> +/*
-> + * Copyright (C) 2013 Pengutronix
-> + * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it under
-> + * the terms of the GNU General Public License version 2 as published by the
-> + * Free Software Foundation.
-> + */
-> +
-> +#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/clocksource.h>
-> +#include <linux/clockchips.h>
-> +#include <linux/irq.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/clk.h>
-> +
-> +#define TIMERn_CTRL			0x00
-> +#define TIMERn_CTRL_PRESC(val)			(((val) & 0xf) << 24)
-
-You can replace all binary shift with the BIT macro.
-
-> +#define TIMERn_CTRL_PRESC_1024			TIMERn_CTRL_PRESC(10)
-> +#define TIMERn_CTRL_CLKSEL(val)			(((val) & 0x3) << 16)
-> +#define TIMERn_CTRL_CLKSEL_PRESCHFPERCLK	TIMERn_CTRL_CLKSEL(0)
-> +#define TIMERn_CTRL_OSMEN			0x00000010
-> +#define TIMERn_CTRL_MODE(val)			(((val) & 0x3) <<  0)
-> +#define TIMERn_CTRL_MODE_UP			TIMERn_CTRL_MODE(0)
-> +#define TIMERn_CTRL_MODE_DOWN			TIMERn_CTRL_MODE(1)
-> +
-> +#define TIMERn_CMD			0x04
-> +#define TIMERn_CMD_START			0x1
-> +#define TIMERn_CMD_STOP				0x2
-> +
-> +#define TIMERn_IEN			0x0c
-> +#define TIMERn_IF			0x10
-> +#define TIMERn_IFS			0x14
-> +#define TIMERn_IFC			0x18
-> +#define TIMERn_IRQ_UF				0x2
-> +#define TIMERn_IRQ_OF				0x1
-
-I see a wrong alignment with the values. May be it is due to my mailer.
-
-> +
-> +#define TIMERn_TOP			0x1c
-> +#define TIMERn_CNT			0x24
-> +
-> +#define TIMER_CLOCKSOURCE	0
-> +#define TIMER_CLOCKEVENT	1
-
-I don't see these macro used anywhere.
-
-> +struct efm32_clock_event_ddata {
-
-The structure name looks a bit long to me.
-
-> +	struct clock_event_device evtdev;
-> +	void __iomem *base;
-> +	unsigned periodic_top;
-> +};
-> +static void efm32_clock_event_set_mode(enum clock_event_mode mode,
-> +				       struct clock_event_device *evtdev)
-> +{
-> +	struct efm32_clock_event_ddata *ddata =
-> +		container_of(evtdev, struct efm32_clock_event_ddata, evtdev);
-
-Wouldn't be worth to check the previous mode of the timer before
-switching to a mode where it is already ?
-
-> +	switch (mode) {
-> +	case CLOCK_EVT_MODE_PERIODIC:
-> +		writel_relaxed(TIMERn_CMD_STOP, ddata->base + TIMERn_CMD);
-> +		writel_relaxed(ddata->periodic_top, ddata->base + TIMERn_TOP);
-> +		writel_relaxed(TIMERn_CTRL_PRESC_1024 |
-> +			       TIMERn_CTRL_CLKSEL_PRESCHFPERCLK |
-> +			       TIMERn_CTRL_MODE_DOWN,
-> +			       ddata->base + TIMERn_CTRL);
-> +		writel_relaxed(TIMERn_CMD_START, ddata->base + TIMERn_CMD);
-> +		break;
-> +
-> +	case CLOCK_EVT_MODE_ONESHOT:
-> +		writel_relaxed(TIMERn_CMD_STOP, ddata->base + TIMERn_CMD);
-> +		writel_relaxed(TIMERn_CTRL_PRESC_1024 |
-> +			       TIMERn_CTRL_CLKSEL_PRESCHFPERCLK |
-> +			       TIMERn_CTRL_OSMEN |
-> +			       TIMERn_CTRL_MODE_DOWN,
-> +			       ddata->base + TIMERn_CTRL);
-> +		break;
-
-IMO, these two routines are similar enough to factor them out in a
-single function.
-
-> +
-> +	case CLOCK_EVT_MODE_UNUSED:
-> +	case CLOCK_EVT_MODE_SHUTDOWN:
-> +		writel_relaxed(TIMERn_CMD_STOP, ddata->base + TIMERn_CMD);
-> +		break;
-> +
-> +	case CLOCK_EVT_MODE_RESUME:
-> +		break;
-> +	}
-> +}
-> +
-> +static int efm32_clock_event_set_next_event(unsigned long evt,
-> +					    struct clock_event_device *evtdev)
-> +{
-> +	struct efm32_clock_event_ddata *ddata =
-> +		container_of(evtdev, struct efm32_clock_event_ddata, evtdev);
-> +
-> +	writel_relaxed(TIMERn_CMD_STOP, ddata->base + TIMERn_CMD);
-> +	writel_relaxed(evt, ddata->base + TIMERn_CNT);
-> +	writel_relaxed(TIMERn_CMD_START, ddata->base + TIMERn_CMD);
-> +
-> +	return 0;
-> +}
-> +
-> +static irqreturn_t efm32_clock_event_handler(int irq, void *dev_id)
-> +{
-> +	struct efm32_clock_event_ddata *ddata = dev_id;
-> +
-> +	writel_relaxed(TIMERn_IRQ_UF, ddata->base + TIMERn_IFC);
-> +
-> +	ddata->evtdev.event_handler(&ddata->evtdev);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static struct efm32_clock_event_ddata clock_event_ddata = {
-> +	.evtdev = {
-> +		.name = "efm32 clockevent",
-> +		.features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_MODE_PERIODIC,
-> +		.set_mode = efm32_clock_event_set_mode,
-> +		.set_next_event = efm32_clock_event_set_next_event,
-> +		.rating = 200,
-> +	},
-> +};
-> +
-> +static struct irqaction efm32_clock_event_irq = {
-> +	.name = "efm32 clockevent",
-> +	.flags = IRQF_TIMER,
-> +	.handler = efm32_clock_event_handler,
-> +	.dev_id = &clock_event_ddata,
-> +};
-
-Function name looks a bit long.
-
-> +static int efm32_clocksource_init(struct device_node *np)
-> +{
-> +	struct clk *clk;
-> +	void __iomem *base;
-> +	unsigned long rate;
-> +	int ret;
-> +
-> +	clk = of_clk_get(np, 0);
-> +	if (IS_ERR(clk)) {
-> +		ret = PTR_ERR(clk);
-> +		pr_err("failed to get clock for clocksource (%d)\n", ret);
-> +		goto err_clk_get;
-> +	}
-> +
-> +	ret = clk_prepare_enable(clk);
-> +	if (ret) {
-> +		pr_err("failed to enable timer clock for clocksource (%d)\n",
-> +		       ret);
-> +		goto err_clk_enable;
-> +	}
-> +	rate = clk_get_rate(clk);
-> +
-> +	base = of_iomap(np, 0);
-> +	if (!base) {
-> +		ret = -EADDRNOTAVAIL;
-> +		pr_err("failed to map registers for clocksource\n");
-> +		goto err_iomap;
-> +	}
-> +
-> +	writel_relaxed(TIMERn_CTRL_PRESC_1024 |
-> +		       TIMERn_CTRL_CLKSEL_PRESCHFPERCLK |
-> +		       TIMERn_CTRL_MODE_UP, base + TIMERn_CTRL);
-> +	writel_relaxed(TIMERn_CMD_START, base + TIMERn_CMD);
-> +
-> +	ret = clocksource_mmio_init(base + TIMERn_CNT, "efm32 timer",
-> +				    DIV_ROUND_CLOSEST(rate, 1024), 200, 16,
-> +				    clocksource_mmio_readl_up);
-> +	if (ret) {
-> +		pr_err("failed to init clocksource (%d)\n", ret);
-> +		goto err_clocksource_init;
-> +	}
-> +
-> +	return 0;
-> +
-> +err_clocksource_init:
-> +
-> +	iounmap(base);
-> +err_iomap:
-> +
-> +	clk_disable_unprepare(clk);
-> +err_clk_enable:
-> +
-> +	clk_put(clk);
-> +err_clk_get:
-> +
-> +	return ret;
-> +}
-> +
-> +static int __init efm32_clockevent_init(struct device_node *np)
-> +{
-> +	struct clk *clk;
-> +	void __iomem *base;
-> +	unsigned long rate;
-> +	int irq;
-> +	int ret;
-> +
-> +	clk = of_clk_get(np, 0);
-> +	if (IS_ERR(clk)) {
-> +		ret = PTR_ERR(clk);
-> +		pr_err("failed to get clock for clockevent (%d)\n", ret);
-> +		goto err_clk_get;
-> +	}
-> +
-> +	ret = clk_prepare_enable(clk);
-> +	if (ret) {
-> +		pr_err("failed to enable timer clock for clockevent (%d)\n",
-> +		       ret);
-> +		goto err_clk_enable;
-> +	}
-> +	rate = clk_get_rate(clk);
-> +
-> +	base = of_iomap(np, 0);
-> +	if (!base) {
-> +		ret = -EADDRNOTAVAIL;
-> +		pr_err("failed to map registers for clockevent\n");
-> +		goto err_iomap;
-> +	}
-> +
-> +	irq = irq_of_parse_and_map(np, 0);
-> +	if (!irq) {
-> +		ret = -ENOENT;
-> +		pr_err("failed to get irq for clockevent\n");
-> +		goto err_get_irq;
-> +	}
-> +
-> +	writel_relaxed(TIMERn_IRQ_UF, base + TIMERn_IEN);
-> +
-> +	clock_event_ddata.base = base;
-> +	clock_event_ddata.periodic_top = DIV_ROUND_CLOSEST(rate, 1024 * HZ);
-> +
-> +	setup_irq(irq, &efm32_clock_event_irq);
-> +
-> +	clockevents_config_and_register(&clock_event_ddata.evtdev,
-> +			DIV_ROUND_CLOSEST(rate, 1024), 0xf, 0xffff);
-> +
-> +	return 0;
-> +
-> +err_get_irq:
-> +
-> +	iounmap(base);
-> +err_iomap:
-> +
-> +	clk_disable_unprepare(clk);
-> +err_clk_enable:
-> +
-> +	clk_put(clk);
-> +err_clk_get:
-> +
-> +	return ret;
-> +}
-> +
-> +static void __init efm32_timer_init(struct device_node *np)
-> +{
-> +	static int has_clocksource, has_clockevent;
-> +	int ret;
-> +
-> +	if (!has_clocksource) {
-> +		ret = efm32_clocksource_init(np);
-> +		if (!ret) {
-> +			has_clocksource = 1;
-> +			return;
-> +		}
-> +	}
-> +
-> +	if (!has_clockevent) {
-> +		ret = efm32_clockevent_init(np);
-> +		if (!ret) {
-> +			has_clockevent = 1;
-> +			return;
-> +		}
-> +	}
-> +}
-
-I don't get the purpose of this initialization, can you explain ?
-
-
-
-> +CLOCKSOURCE_OF_DECLARE(efm32, "efm32,timer", efm32_timer_init);
+> Well, usually the FPGA has some function on the board (unless you are
+> using it for compute acceleration), and it also wants just one
+> version. If you have FPGA-based GSM board, you'll want GSM
+> firmware. If you have FPGA-based WIFI, you'll want WIFI firmware. If
+> you load GSM firmware there, it will very likely not work because it
+> needs different amplifiers etc.
 > 
-
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+> Heck, you probably _could_ use your WIFI card for cryptographics
+> operations just by loading different firmware. People just don't do
+> that. I don't expect that to be too different in the FPGA case...
+> 
+>> However, I have to question the whole idea of an "FPGA subsystem" --
+>> there is an almost infinite number of ways to program an FPGA or FPGA
+>> programming device (which may even be a commodity flash with a
+>> microcontroller or CPLD, and may be shared with other devices), and it
+>> really doesn't make any inherent sense to lump them together.
+> 
+> Firmware loading methods are also different, yet it makes sense to
+> have uniform way of loading firmware. This is very similar situation.
+> 
+> 									Pavel
+> 
