@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab3IYA0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:26:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39795 "EHLO
+	id S1757030Ab3IYA0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:26:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39787 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755004Ab3IYAVC (ORCPT
+	with ESMTP id S932347Ab3IYAVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:21:02 -0400
+	Tue, 24 Sep 2013 20:21:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jie Liu <jeff.liu@oracle.com>, David Weber <wb@munzinger.de>,
-        Sunil Mushran <sunil.mushran@gmail.com>, Mark Fashen <mfasheh@suse.de>,
-        Joel Becker <jlbec@evilplan.org>,
+        Oleg Nesterov <oleg@redhat.com>, Colin Walters <walters@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 098/117] ocfs2: fix the end cluster offset of FIEMAP
-Date: Tue, 24 Sep 2013 17:19:24 -0700
-Message-Id: <20130925001751.624130953@linuxfoundation.org>
+Subject: [ 097/117] pidns: fix vfork() after unshare(CLONE_NEWPID)
+Date: Tue, 24 Sep 2013 17:19:23 -0700
+Message-Id: <20130925001751.510739575@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -30,65 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jie Liu <jeff.liu@oracle.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 28e8be31803b19d0d8f76216cb11b480b8a98bec upstream.
+commit e79f525e99b04390ca4d2366309545a836c03bf1 upstream.
 
-Call fiemap ioctl(2) with given start offset as well as an desired mapping
-range should show extents if possible.  However, we somehow figure out the
-end offset of mapping via 'mapping_end -= cpos' before iterating the
-extent records which would cause problems if the given fiemap length is
-too small to a cluster size, e.g,
+Commit 8382fcac1b81 ("pidns: Outlaw thread creation after
+unshare(CLONE_NEWPID)") nacks CLONE_VM if the forking process unshared
+pid_ns, this obviously breaks vfork:
 
-Cluster size 4096:
-debugfs.ocfs2 1.6.3
-        Block Size Bits: 12   Cluster Size Bits: 12
+	int main(void)
+	{
+		assert(unshare(CLONE_NEWUSER | CLONE_NEWPID) == 0);
+		assert(vfork() >= 0);
+		_exit(0);
+		return 0;
+	}
 
-The extended fiemap test utility From David:
-https://gist.github.com/anonymous/6172331
+fails without this patch.
 
-# dd if=/dev/urandom of=/ocfs2/test_file bs=1M count=1000
-# ./fiemap /ocfs2/test_file 4096 10
-start: 4096, length: 10
-File /ocfs2/test_file has 0 extents:
-#	Logical          Physical         Length           Flags
-	^^^^^ <-- No extent is shown
+Change this check to use CLONE_SIGHAND instead.  This also forbids
+CLONE_THREAD automatically, and this is what the comment implies.
 
-In this case, at ocfs2_fiemap(): cpos == mapping_end == 1. Hence the
-loop of searching extent records was not executed at all.
+We could probably even drop CLONE_SIGHAND and use CLONE_THREAD, but it
+would be safer to not do this.  The current check denies CLONE_SIGHAND
+implicitely and there is no reason to change this.
 
-This patch remove the in question 'mapping_end -= cpos', and loops
-until the cpos is larger than the mapping_end as usual.
+Eric said "CLONE_SIGHAND is fine.  CLONE_THREAD would be even better.
+Having shared signal handling between two different pid namespaces is
+the case that we are fundamentally guarding against."
 
-# ./fiemap /ocfs2/test_file 4096 10
-start: 4096, length: 10
-File /ocfs2/test_file has 1 extents:
-#	Logical          Physical         Length           Flags
-0:	0000000000000000 0000000056a01000 0000000006a00000 0000
-
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-Reported-by: David Weber <wb@munzinger.de>
-Tested-by: David Weber <wb@munzinger.de>
-Cc: Sunil Mushran <sunil.mushran@gmail.com>
-Cc: Mark Fashen <mfasheh@suse.de>
-Cc: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Colin Walters <walters@redhat.com>
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/extent_map.c |    1 -
- 1 file changed, 1 deletion(-)
+ kernel/fork.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/fs/ocfs2/extent_map.c
-+++ b/fs/ocfs2/extent_map.c
-@@ -781,7 +781,6 @@ int ocfs2_fiemap(struct inode *inode, st
- 	cpos = map_start >> osb->s_clustersize_bits;
- 	mapping_end = ocfs2_clusters_for_bytes(inode->i_sb,
- 					       map_start + map_len);
--	mapping_end -= cpos;
- 	is_last = 0;
- 	while (cpos < mapping_end && !is_last) {
- 		u32 fe_flags;
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1173,10 +1173,11 @@ static struct task_struct *copy_process(
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	/*
+-	 * If the new process will be in a different pid namespace
+-	 * don't allow the creation of threads.
++	 * If the new process will be in a different pid namespace don't
++	 * allow it to share a thread group or signal handlers with the
++	 * forking task.
+ 	 */
+-	if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
++	if ((clone_flags & (CLONE_SIGHAND | CLONE_NEWPID)) &&
+ 	    (task_active_pid_ns(current) !=
+ 	     current->nsproxy->pid_ns_for_children))
+ 		return ERR_PTR(-EINVAL);
 
 
