@@ -1,272 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751135Ab3IYGvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 02:51:47 -0400
-Received: from xmailer.gwdg.de ([134.76.10.29]:39750 "EHLO xmailer.gwdg.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab3IYGvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 02:51:45 -0400
-X-Greylist: delayed 8355 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Sep 2013 02:51:44 EDT
-Message-ID: <5242674A.8020100@tuebingen.mpg.de>
-Date: Wed, 25 Sep 2013 06:32:10 +0200
-From: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751530Ab3IYGw3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 02:52:29 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58956 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab3IYGw1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 02:52:27 -0400
+Date: Wed, 25 Sep 2013 08:52:17 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Simon Horman <horms@verge.net.au>
+cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Subject: Re: [PATCH v5 5/7] ARM: shmobile: r8a73a4: add a DMAC platform device
+ and clock for it
+In-Reply-To: <20130925055036.GA6663@verge.net.au>
+Message-ID: <Pine.LNX.4.64.1309250850100.324@axis700.grange>
+References: <1375455042-24093-1-git-send-email-g.liakhovetski@gmx.de>
+ <1375455042-24093-6-git-send-email-g.liakhovetski@gmx.de>
+ <20130925055036.GA6663@verge.net.au>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Clark Williams <williams@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>
-Subject: Re: [Intel-gfx] BUG: sleeping function called from invalid context
- on 3.10.10-rt7
-References: <20130911102809.GA31663@uudg.org> <20130911092623.42efd930@gandalf.local.home> <5230895B.5070400@hurleysoftware.com> <20130911113845.6d56a556@gandalf.local.home> <5230C52E.3050801@hurleysoftware.com> <5238B288.3000704@hurleysoftware.com> <CAKMK7uG9s8W6yebkmuJe0XHGsoru4_9FzGqfmKWtMFyCAfQZqA@mail.gmail.com> <523CC728.4040302@tuebingen.mpg.de> <20130923083841.GT4531@intel.com>
-In-Reply-To: <20130923083841.GT4531@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V02:K0:WrCsmCO5NvDDEHthSgPh7f17etI36AYx13tSKJkKrlq
+ /Bxt9ofwHTyHpC6cczVDWePEokMt2oysDkLP/XBlJiAD2Wg3G4
+ OMIpB4EUgqVyvqZlpXxXF4WRSbm2KJylP2ue8OtIcsaS40Sd9r
+ s/xTmUPC2QT+OkqKyyaC8AqUDLpT7c2CbXK/5GUXuCDMTCWvN6
+ RL+QRGvyw0UBtM/t8Dqwc2qTNaYLHb1TekPBxQ90lNbCcL7Lxf
+ 2+fSabudVnxqcaK3lRax+0TWGOvyk42UYKmwv/fdkvGY8n+FsP
+ usxynyK47SUa53rYSF18Nyam0/EldElNZa5MpQzgUuMIeTvTgD
+ g6HUShJhk4EZq+ylJdOeZlS+xn0QFti+l9BfRaxENWYtafzPZ+
+ riJAucBPBKJjw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.09.13 10:38, Ville Syrjälä wrote:
-> On Sat, Sep 21, 2013 at 12:07:36AM +0200, Mario Kleiner wrote:
->> On 09/17/2013 10:55 PM, Daniel Vetter wrote:
->>> On Tue, Sep 17, 2013 at 9:50 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
->>>> On 09/11/2013 03:31 PM, Peter Hurley wrote:
->>>>>
->>>>> [+cc dri-devel]
->>>>>
->>>>> On 09/11/2013 11:38 AM, Steven Rostedt wrote:
->>>>>>
->>>>>> On Wed, 11 Sep 2013 11:16:43 -0400
->>>>>> Peter Hurley <peter@hurleysoftware.com> wrote:
->>>>>>
->>>>>>>> The funny part is, there's a comment there that shows that this was
->>>>>>>> done even for "PREEMPT_RT". Unfortunately, the call to
->>>>>>>> "get_scanout_position()" can call functions that use the rt-mutex
->>>>>>>> "sleeping spin locks" and it breaks there.
->>>>>>>>
->>>>>>>> I guess we need to ask the authors of the mainline patch exactly why
->>>>>>>> that preempt_disable() is needed?
->>>>>>>
->>>>>>>
->>>>>>> The drm core associates a timestamp with each vertical blank frame #.
->>>>>>> Drm drivers can optionally support a 'high resolution' hw timestamp.
->>>>>>> The vblank frame #/timestamp tuple is user-space visible.
->>>>>>>
->>>>>>> The i915 drm driver supports a hw timestamp via this drm helper function
->>>>>>> which computes the timestamp from the crtc scan position (based on the
->>>>>>> pixel clock).
->>>>>>>
->>>>>>> For mainline, the preempt_disable/_enable() isn't actually necessary
->>>>>>> because every call tree that leads here already has preemption disabled.
->>>>>>>
->>>>>>> For -RT, the maybe i915 register spinlock (uncore.lock) should be raw?
->>>>>>>
->>>>>>
->>>>>> No, it should not. Note, any other lock that can be held when it is
->>>>>> held would also need to be raw.
->>>>>
->>>>>
->>>>> By that, you mean "any other lock" that might be claimed "would also need
->>>>> to be raw"?  Hopefully not "any other lock" already held?
->>>>>
->>>>>> And by taking a quick audit of the code, I see this:
->>>>>>
->>>>>>       spin_lock_irqsave(&dev_priv->uncore.lock, irqflags);
->>>>>>
->>>>>>       /* Reset the chip */
->>>>>>
->>>>>>       /* GEN6_GDRST is not in the gt power well, no need to check
->>>>>>        * for fifo space for the write or forcewake the chip for
->>>>>>        * the read
->>>>>>        */
->>>>>>       __raw_i915_write32(dev_priv, GEN6_GDRST, GEN6_GRDOM_FULL);
->>>>>>
->>>>>>       /* Spin waiting for the device to ack the reset request */
->>>>>>       ret = wait_for((__raw_i915_read32(dev_priv, GEN6_GDRST) &
->>>>>> GEN6_GRDOM_FULL) == 0, 500);
->>>>>>
->>>>>> That spin is unacceptable in RT with preemption and interrupts disabled.
->>>>>
->>>>>
->>>>> Yep. That would be bad.
->>>>>
->>>>> AFAICT the registers read in i915_get_crtc_scanoutpos() aren't included
->>>>> in the force-wake set, so raw reads of the registers would
->>>>> probably be acceptable (thus obviating the need for claiming the
->>>>> uncore.lock).
->>>>>
->>>>> Except that _ALL_ register access is disabled with the uncore.lock
->>>>> during a gpu reset. Not sure if that's meant to include crtc registers
->>>>> or not, or what other synchronization/serialization issues are being
->>>>> handled/hidden by forcing all register accesses to wait during a gpu
->>>>> reset.
->>>>>
->>>>> Hopefully an i915 expert can weigh in here?
->>>>
->>>>
->>>>
->>>> Daniel,
->>>>
->>>> Can you shed some light on whether the i915+ crtc registers (specifically
->>>> those in i915_get_crtc_scanoutpos() and i915_/gm45_get_vblank_counter())
->>>> read as part of the vblank counter/timestamp handling need to
->>>> be prevented during gpu reset?
->>>
->>> The depency here in the locking is a recent addition:
->>>
->>> commit a7cd1b8fea2f341b626b255d9898a5ca5fabbf0a
->>> Author: Chris Wilson <chris@chris-wilson.co.uk>
->>> Date:   Fri Jul 19 20:36:51 2013 +0100
->>>
->>>       drm/i915: Serialize almost all register access
->>>
->>> It's a (slightly) oversized hammer to work around a hardware issue -
->>> we could break it down to register blocks, which can be accessed
->>> concurrently, but that tends to be more fragile. But the chip really
->>> dies if you access (even just reads) the same block concurrently :(
->>>
->>> We could try break the spinlock protected section a bit in the reset
->>> handler - register access on a hung gpu tends to be ill-defined
->>> anyway.
->>>
->>>> The implied wait with preemption and interrupts disabled is causing grief
->>>> in -RT, but also a 4ms wait inside an irq handler seems like a bad idea.
->>>
->>> Oops, the magic code in wait_for which is just there to make the imo
->>> totally misguided kgdb support work papered over the aweful long wait
->>> in atomic context ever since we've added this in
->>>
->>> commit b6e45f866465f42b53d803b0c574da0fc508a0e9
->>> Author: Keith Packard <keithp@keithp.com>
->>> Date:   Fri Jan 6 11:34:04 2012 -0800
->>>
->>>       drm/i915: Move reset forcewake processing to gen6_do_reset
->>>
->>> Reverting this change should be enough (code moved obviously a bit).
->>>
->>> Cheers, Daniel
->>>
->>>>
->>>> Regards,
->>>> Peter Hurley
->>>>
->>>>
->>>>
->>>>>> What's the real issue here?
->>>>>
->>>>>
->>>>> That the vblank timestamp needs to be an accurate measurement of a
->>>>> realtime event. Sleeping/servicing interrupts while reading
->>>>> the registers necessary to compute the timestamp would be bad too.
->>>>>
->>>>> (edit: which hopefully Mario Kleiner clarified in his reply)
->>>>>
->>>>> My point earlier was three-fold:
->>>>> 1. Don't need the preempt_disable() for mainline: all callers are already
->>>>>       holding interrupt-disabling spinlocks.
->>>>> 2. -RT still needs to prevent scheduling there.
->>>>> 3. the problem is i915-specific.
->>>>>
->>>>> [update: the radeon driver should also BUG like the i915 driver but
->>>>> probably
->>>>> should have mmio_idx_lock spinlock as raw]
->>>>
->>
->> Ok, so register access must be serialized, at least within a register
->> block, no way around it. Thanks for explaining this. That makes me a bit
->> depressed. Is this also true for older hw generations than gen6?
->>
->> Daniel, could we move access to the display register block to a separate
->> lock, so the I915_READ to PIPEDSL in  i915_get_crtc_scanoutpos() can
->> avoid the uncore.lock? If the display registers don't need forcewake
->> then i assume we could have much shorter lock hold times by avoiding the
->> large up to 4 msecs waits in forcewake handling. Probably also much less
->> contention in normal operation when no modesetting happens? I think i
->> can get rid of the other register reads in that function. Those settings
->> are already cached and accessible from the intel_crtc_config->adjusted_mode.
->
-> I actually have a patch to kill most of the registers reads in
-> get_scanout_position on i915 somewhere. Let me dig that out and send it
-> to the list...
->
-> <snip>
->> In any case, maybe the simple retry 3x loop in the DRM for measuring the
->> timestamp is not good enough anymore to keep this reliable and accurate.
->> Maybe we would need some loop that retries until an accurate measurement
->> or a user configurable timeout is reached. Then users like  mine could
->> set a very high timeout which rather totally degrades the system and
->> causes severe stuttering of graphics updates than silently failing with
->> inaccurate timestamps. The default could be something safe for normal
->> desktop use.
->
-> I never really understood the need for the preempt disabled retry loop in
-> drm core. What I would do is just something like this:
->
-> get_scanoutpos_and_timestamp()
-> {
->   local_irq_disable();
->   get_scanoutpos();
->   get_timestamp();
->   local_irq_enable();
-> }
+Hi Simon,
 
-The preempt_disable serves the same purpose for PREEMPT_RT kernels as 
-your local_irq_disable in your example - get rid of any preventable 
-interruption, so a retry is unlikely to be ever needed. At least that 
-was the idea.
+Thanks for following up on this.
 
-I assume if a spin_lock_irqsave doesn't really disable interrupts on a 
-RT kernel with normal spinlocks then local_irq_disable won't really 
-disable interrupts either?
+On Wed, 25 Sep 2013, Simon Horman wrote:
 
->
-> If that has a lot of error, then it seems to me that the system is just
-> crap and we shouldn't care. Or if you're really worried about SMIs and
-> such then you could still do a retry loop.
->
+> On Fri, Aug 02, 2013 at 04:50:40PM +0200, Guennadi Liakhovetski wrote:
+> > Add a DMAC platform device and clock definitions for it on r8a73a4.
+> > 
+> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+> > ---
+> > 
+> > Depends on "DMA: shdma: support the new CHCLR register layout"
+> > https://lkml.org/lkml/2013/7/10/146
+> 
+> That change seems to be present upstream.
+> 
+> Does this patch depend on any of the other patches
+> in this series?
 
-I didn't expect a lot of error with preemption and interrupts disabled, 
-essentially only such infrequent things as smi's, that's why the retry 
-loop only tries 3x max, once for real, once in case the 1st one got 
-spoiled by a smi or such, and once because three times a charm ;-) - In 
-practice i didn't ever observe more than 3-4 usecs of delay, well below 
-the 20 usecs retry threshold. But i didn't expect 
-i915_crtc_get_scanoutpos() to ever take any locks or other stuff that 
-could induce long waits.
+I don't think this one does, however, üatches 6 and 7 do. But patches 1-4 
+from this series are already in next, so, the rest can go in too?
 
-But given the new situation, your proposal is great! If we push the 
-clock readouts into the get_scanoutpos routine, we can make this robust 
-without causing grief for the rt people and without the need for a new 
-separate lock for display regs in intel-kms.
+Thanks
+Guennadi
 
-E.g., for intel-kms:
+> 
+> > 
+> >  arch/arm/mach-shmobile/clock-r8a73a4.c        |    4 +-
+> >  arch/arm/mach-shmobile/include/mach/r8a73a4.h |    9 +++
+> >  arch/arm/mach-shmobile/setup-r8a73a4.c        |   91 +++++++++++++++++++++++++
+> >  3 files changed, 103 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-shmobile/clock-r8a73a4.c b/arch/arm/mach-shmobile/clock-r8a73a4.c
+> > index 8ea5ef6..357b9bc 100644
+> > --- a/arch/arm/mach-shmobile/clock-r8a73a4.c
+> > +++ b/arch/arm/mach-shmobile/clock-r8a73a4.c
+> > @@ -504,7 +504,7 @@ static struct clk div6_clks[DIV6_NR] = {
+> >  
+> >  /* MSTP */
+> >  enum {
+> > -	MSTP217, MSTP216, MSTP207, MSTP206, MSTP204, MSTP203,
+> > +	MSTP218, MSTP217, MSTP216, MSTP207, MSTP206, MSTP204, MSTP203,
+> >  	MSTP329, MSTP323, MSTP318, MSTP317, MSTP316,
+> >  	MSTP315, MSTP314, MSTP313, MSTP312, MSTP305, MSTP300,
+> >  	MSTP411, MSTP410, MSTP409,
+> > @@ -519,6 +519,7 @@ static struct clk mstp_clks[MSTP_NR] = {
+> >  	[MSTP207] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 7, 0), /* SCIFB1 */
+> >  	[MSTP216] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 16, 0), /* SCIFB2 */
+> >  	[MSTP217] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 17, 0), /* SCIFB3 */
+> > +	[MSTP218] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR2, 18, 0), /* DMAC */
+> >  	[MSTP300] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR3, 0, 0), /* IIC2 */
+> >  	[MSTP305] = SH_CLK_MSTP32(&div6_clks[DIV6_MMC1],SMSTPCR3, 5, 0), /* MMCIF1 */
+> >  	[MSTP312] = SH_CLK_MSTP32(&div6_clks[DIV6_SDHI2],SMSTPCR3, 12, 0), /* SDHI2 */
+> > @@ -578,6 +579,7 @@ static struct clk_lookup lookups[] = {
+> >  	CLKDEV_DEV_ID("sh-sci.3", &mstp_clks[MSTP207]),
+> >  	CLKDEV_DEV_ID("sh-sci.4", &mstp_clks[MSTP216]),
+> >  	CLKDEV_DEV_ID("sh-sci.5", &mstp_clks[MSTP217]),
+> > +	CLKDEV_DEV_ID("sh-dma-engine.0", &mstp_clks[MSTP218]),
+> >  	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
+> >  	CLKDEV_DEV_ID("e6520000.i2c", &mstp_clks[MSTP300]),
+> >  	CLKDEV_DEV_ID("sh_mmcif.1", &mstp_clks[MSTP305]),
+> > diff --git a/arch/arm/mach-shmobile/include/mach/r8a73a4.h b/arch/arm/mach-shmobile/include/mach/r8a73a4.h
+> > index f3a9b70..3a0ea48 100644
+> > --- a/arch/arm/mach-shmobile/include/mach/r8a73a4.h
+> > +++ b/arch/arm/mach-shmobile/include/mach/r8a73a4.h
+> > @@ -1,6 +1,15 @@
+> >  #ifndef __ASM_R8A73A4_H__
+> >  #define __ASM_R8A73A4_H__
+> >  
+> > +/* DMA slave IDs */
+> > +enum {
+> > +	SHDMA_SLAVE_INVALID,
+> > +	SHDMA_SLAVE_MMCIF0_TX,
+> > +	SHDMA_SLAVE_MMCIF0_RX,
+> > +	SHDMA_SLAVE_MMCIF1_TX,
+> > +	SHDMA_SLAVE_MMCIF1_RX,
+> > +};
+> > +
+> >  void r8a73a4_add_standard_devices(void);
+> >  void r8a73a4_add_dt_devices(void);
+> >  void r8a73a4_clock_init(void);
+> > diff --git a/arch/arm/mach-shmobile/setup-r8a73a4.c b/arch/arm/mach-shmobile/setup-r8a73a4.c
+> > index 2ee45d5..ec77059 100644
+> > --- a/arch/arm/mach-shmobile/setup-r8a73a4.c
+> > +++ b/arch/arm/mach-shmobile/setup-r8a73a4.c
+> > @@ -22,8 +22,10 @@
+> >  #include <linux/of_platform.h>
+> >  #include <linux/platform_data/irq-renesas-irqc.h>
+> >  #include <linux/serial_sci.h>
+> > +#include <linux/sh_dma.h>
+> >  #include <linux/sh_timer.h>
+> >  #include <mach/common.h>
+> > +#include <mach/dma-register.h>
+> >  #include <mach/irqs.h>
+> >  #include <mach/r8a73a4.h>
+> >  #include <asm/mach/arch.h>
+> > @@ -199,12 +201,101 @@ void __init r8a73a4_add_dt_devices(void)
+> >  	r8a7790_register_cmt(10);
+> >  }
+> >  
+> > +/* DMA */
+> > +static const struct sh_dmae_slave_config dma_slaves[] = {
+> > +	{
+> > +		.slave_id	= SHDMA_SLAVE_MMCIF0_TX,
+> > +		.addr		= 0xee200034,
+> > +		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
+> > +		.mid_rid	= 0xd1,
+> > +	}, {
+> > +		.slave_id	= SHDMA_SLAVE_MMCIF0_RX,
+> > +		.addr		= 0xee200034,
+> > +		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
+> > +		.mid_rid	= 0xd2,
+> > +	}, {
+> > +		.slave_id	= SHDMA_SLAVE_MMCIF1_TX,
+> > +		.addr		= 0xee220034,
+> > +		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
+> > +		.mid_rid	= 0xe1,
+> > +	}, {
+> > +		.slave_id	= SHDMA_SLAVE_MMCIF1_RX,
+> > +		.addr		= 0xee220034,
+> > +		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
+> > +		.mid_rid	= 0xe2,
+> > +	},
+> > +};
+> > +
+> > +#define DMAE_CHANNEL(a, b)				\
+> > +	{						\
+> > +		.offset         = (a) - 0x20,		\
+> > +		.dmars          = (a) - 0x20 + 0x40,	\
+> > +		.chclr_bit	= (b),			\
+> > +		.chclr_offset	= 0x80 - 0x20,		\
+> > +	}
+> > +
+> > +static const struct sh_dmae_channel dma_channels[] = {
+> > +	DMAE_CHANNEL(0x8000, 0),
+> > +	DMAE_CHANNEL(0x8080, 1),
+> > +	DMAE_CHANNEL(0x8100, 2),
+> > +	DMAE_CHANNEL(0x8180, 3),
+> > +	DMAE_CHANNEL(0x8200, 4),
+> > +	DMAE_CHANNEL(0x8280, 5),
+> > +	DMAE_CHANNEL(0x8300, 6),
+> > +	DMAE_CHANNEL(0x8380, 7),
+> > +	DMAE_CHANNEL(0x8400, 8),
+> > +	DMAE_CHANNEL(0x8480, 9),
+> > +	DMAE_CHANNEL(0x8500, 10),
+> > +	DMAE_CHANNEL(0x8580, 11),
+> > +	DMAE_CHANNEL(0x8600, 12),
+> > +	DMAE_CHANNEL(0x8680, 13),
+> > +	DMAE_CHANNEL(0x8700, 14),
+> > +	DMAE_CHANNEL(0x8780, 15),
+> > +	DMAE_CHANNEL(0x8800, 16),
+> > +	DMAE_CHANNEL(0x8880, 17),
+> > +	DMAE_CHANNEL(0x8900, 18),
+> > +	DMAE_CHANNEL(0x8980, 19),
+> > +};
+> > +
+> > +static const struct sh_dmae_pdata dma_pdata = {
+> > +	.slave		= dma_slaves,
+> > +	.slave_num	= ARRAY_SIZE(dma_slaves),
+> > +	.channel	= dma_channels,
+> > +	.channel_num	= ARRAY_SIZE(dma_channels),
+> > +	.ts_low_shift	= TS_LOW_SHIFT,
+> > +	.ts_low_mask	= TS_LOW_BIT << TS_LOW_SHIFT,
+> > +	.ts_high_shift	= TS_HI_SHIFT,
+> > +	.ts_high_mask	= TS_HI_BIT << TS_HI_SHIFT,
+> > +	.ts_shift	= dma_ts_shift,
+> > +	.ts_shift_num	= ARRAY_SIZE(dma_ts_shift),
+> > +	.dmaor_init     = DMAOR_DME,
+> > +	.chclr_present	= 1,
+> > +	.chclr_bitwise	= 1,
+> > +};
+> > +
+> > +static struct resource dma_resources[] = {
+> > +	DEFINE_RES_MEM(0xe6700020, 0x89e0),
+> > +	DEFINE_RES_IRQ_NAMED(gic_spi(220), "error_irq"),
+> > +	{
+> > +		/* IRQ for channels 0-19 */
+> > +		.start  = gic_spi(200),
+> > +		.end    = gic_spi(219),
+> > +		.flags  = IORESOURCE_IRQ,
+> > +	},
+> > +};
+> > +
+> > +#define r8a73a4_register_dmac()							\
+> > +	platform_device_register_resndata(&platform_bus, "sh-dma-engine", 0,	\
+> > +				dma_resources, ARRAY_SIZE(dma_resources),	\
+> > +				&dma_pdata, sizeof(dma_pdata))
+> > +
+> >  void __init r8a73a4_add_standard_devices(void)
+> >  {
+> >  	r8a73a4_add_dt_devices();
+> >  	r8a73a4_register_irqc(0);
+> >  	r8a73a4_register_irqc(1);
+> >  	r8a73a4_register_thermal();
+> > +	r8a73a4_register_dmac();
+> >  }
+> >  
+> >  void __init r8a73a4_init_delay(void)
+> > -- 
+> > 1.7.2.5
+> > 
+> 
 
-i915_get_crtc_scanoutpos(..., ktime_t *stime, ktime_t *etime)
-{
-   ...
-   spin_lock_irqsave(...uncore.lock);
-   preempt_disable();
-   *stime = ktime_get();
-   position = __raw_i915_read32(dev_priv, PIPEDSL(pipe));
-   *etime = ktime_get();
-   preempt_enable();
-   spin_unlock_irqrestore(...uncore.lock)
-   ...
-}
-
-With your patchset to reduce the amount of register reads needed in that 
-function, and given that forcewake handling isn't needed for these 
-registers, this should make it robust again and wouldn't need new locks.
-
-Unless ktime_get is also a bad thing to do in a preempt disabled section?
-
--mario
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
