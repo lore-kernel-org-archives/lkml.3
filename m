@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab3IYBJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:09:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39059 "EHLO
+	id S1757819Ab3IYBJo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:09:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39073 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756045Ab3IYAQ0 (ORCPT
+	with ESMTP id S1756052Ab3IYAQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:26 -0400
+	Tue, 24 Sep 2013 20:16:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Mark Brown <broonie@linaro.org>
-Subject: [ 046/110] ASoC: mc13783: add spi errata fix
-Date: Tue, 24 Sep 2013 17:14:44 -0700
-Message-Id: <20130925001328.396220268@linuxfoundation.org>
+        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [ 049/110] pci_ids: Add PCI device ID functions 3 and 4 for newer F15h models.
+Date: Tue, 24 Sep 2013 17:14:47 -0700
+Message-Id: <20130925001328.707925706@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,41 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
 
-commit 9f6f0afbb9fdabf6dcac642dfec457f28981e3f8 upstream.
+commit 6bdaa63c2957ac04e8d596880f732b79f9c06c3c upstream.
 
-The MC13783 Chip Errata, Rev. 4 says, that depending on SPI clock
-and main audio clock speed, the Audio Codec or Stereo DAC do sometimes
-not start when programmed to do so. This is due to an internal clock
-timing issue related to the loading of the SPI bits into the audio block.
+Add PCI device IDs for AMD F15h, model 30h. They will be used in
+amd_nb.c and amd64_edac.c
 
-On an i.MX27 based system, this issue lead to switched audio channels under
-certain circumstances: RTC + Touch + Audio are used and loaded at startup.
-
-The mentioned workaround of writing registers 40 and 41 two times is implemented
-here.
-
-Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/mc13783.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/pci_ids.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/soc/codecs/mc13783.c
-+++ b/sound/soc/codecs/mc13783.c
-@@ -126,6 +126,10 @@ static int mc13783_write(struct snd_soc_
- 
- 	ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
- 
-+	/* include errata fix for spi audio problems */
-+	if (reg == MC13783_AUDIO_CODEC || reg == MC13783_AUDIO_DAC)
-+		ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
-+
- 	mc13xxx_unlock(priv->mc13xxx);
- 
- 	return ret;
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -518,6 +518,8 @@
+ #define PCI_DEVICE_ID_AMD_11H_NB_MISC	0x1303
+ #define PCI_DEVICE_ID_AMD_11H_NB_LINK	0x1304
+ #define PCI_DEVICE_ID_AMD_15H_M10H_F3	0x1403
++#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F3 0x141d
++#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F4 0x141e
+ #define PCI_DEVICE_ID_AMD_15H_NB_F0	0x1600
+ #define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
+ #define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
 
 
