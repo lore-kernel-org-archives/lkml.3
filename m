@@ -1,132 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab3IYJQo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 05:16:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:3110 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752734Ab3IYJQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 05:16:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,977,1371106800"; 
-   d="scan'208";a="299116388"
-Date: Wed, 25 Sep 2013 17:17:20 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>
-Cc: Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Mike Galbraith <bitbucket@online.de>
-Subject: Re: [PATCH v3 0/4] Fix Win8 backlight issue
-Message-ID: <20130925091720.GA1921@aaronlu.sh.intel.com>
-References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
- <1380026575.3371.1.camel@ThinkPad-X230.localdomain>
- <CADDKRnCAZ0DtBUUaMfdTF=yk6PDLpbc9jkuvWWO8hYW4TDLxKw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CADDKRnCAZ0DtBUUaMfdTF=yk6PDLpbc9jkuvWWO8hYW4TDLxKw@mail.gmail.com>
+	id S1754836Ab3IYJS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 05:18:58 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:38542 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab3IYJS4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 05:18:56 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-15
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-ed-5242aa7e66f7
+Content-transfer-encoding: 8BIT
+Message-id: <5242AA7C.4010905@samsung.com>
+Date: Wed, 25 Sep 2013 11:18:52 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+To: =?ISO-8859-15?Q?J=FCrgen_Beisert?= <jbe@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>
+Subject: Re: ARM/Samsung/S3C24xx: Linux-3.11 crashes when using PWM
+References: <201309251029.44265.jbe@pengutronix.de>
+In-reply-to: <201309251029.44265.jbe@pengutronix.de>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t/xq7p1q5yCDBZM4rOYtO4Ak8XBLQuZ
+	LXoXXGWz2PT4GqvF5V1z2CxmnN/H5MDm8XfVC2aPzUvqPfr/Gnj0bVnF6PF5k1wAaxSXTUpq
+	TmZZapG+XQJXxtJ3l5kKjrFVHJ4s2MC4gLWLkYNDQsBEYv1uiy5GTiBTTOLCvfVsXYxcHEIC
+	SxklNs/8xgyS4BUQlPgx+R4LSD2zgLzEkUvZIGFmAV2Jdy2bWSHqPzFKrNi8jB2iXkvi6beN
+	YDaLgKrE3RO/mUBsNgFDid6jfYwgtqhAgMTiJefYQWaKCFhLXF1pCDKHWWATo8TDq7dZQGqE
+	BZwlZt15C1YvJGAsceXNSjYQmxPo5tPbrzJPYBSYheS8WQjnzUJy3gJG5lWMoqmlyQXFSem5
+	hnrFibnFpXnpesn5uZsYIQH9ZQfj4mNWhxgFOBiVeHgFjjoGCbEmlhVX5h5ilOBgVhLhDV/s
+	FCTEm5JYWZValB9fVJqTWnyIkYmDU6qBUbnovK7Jopr+S9fNHnBH9Ot8+M+be77cSNiZ+dCp
+	xytnase1crI9vdgSESUqGuXz+bLQ2m93di7VemvYdqJFyE1avfKloMMx0bsLp9ieCuJZJHmi
+	t5aB4Xa9XNt3m5SJXZLlZ7u0n2+awOVtISL9O3tzpdSbkMtROewKYqsZry/7dvnupxkblViK
+	MxINtZiLihMBcbVWREYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 10:29:37AM +0200, Jörg Otte wrote:
-> Backlight can't be modified with this patch set -  neither with function
-> keys nor
-> with the gui. It is a step backward to v3.11-rc1
+Hi Jürgen,
 
-Thanks for the test.
+On 25/09/13 10:29, Jürgen Beisert wrote:
+> Change one single line:
+> 
+> diff --git a/arch/arm/mach-s3c24xx/mach-mini2440.c b/arch/arm/mach-s3c24xx/mach-mini2440.c
+> index a83db46..d8273da 100644
+> --- a/arch/arm/mach-s3c24xx/mach-mini2440.c
+> +++ b/arch/arm/mach-s3c24xx/mach-mini2440.c
+> @@ -519,6 +519,7 @@ static struct platform_device *mini2440_devices[] __initdata = {
+>         &s3c_device_iis,
+>         &uda1340_codec,
+>         &mini2440_audio,
+> +       &s3c_device_timer[0],
+>  };
 
-Please check /sys/class/backlight, is there only one link file
-intel_backlight? If so, please cd inside and try modify the brightness
-file using echo with some values in the range of 0 - max_brightness,
-does the backlight level change when you echo a new value? I guess it
-doesn't, or you wouldn't notice problem. If indeed so, perhaps file a
-bug at http://bugzilla.kernel.org, Drivers/Video(DRI-Intel)? I suppose
-Jani and Daniel can help fix your problem.
+I think you need to add instead:
 
-Thanks,
-Aaron
+	&samsung_device_pwm,
 
-> 
-> Video driver: i915
-> FUJITSU LIFEBOOK AH532/FJNBB1C, BIOS Version 1.09 05/22/2012
-> 
-> acpi_backlight=video works.
-> 
-> Jörg
-> 
-> 
-> 2013/9/24 Igor Gnatenko <i.gnatenko.brain@gmail.com>
-> 
-> > On Tue, 2013-09-24 at 17:47 +0800, Aaron Lu wrote:
-> > > v3:
-> > > 1 Add a new patch 4/4 to fix some problems in thinkpad-acpi module;
-> > > 2 Remove unnecessary function acpi_video_unregister introduced in
-> > >   patch 2/3 as pointed out by Jani Nikula.
-> > >
-> > > v2:
-> > > v1 has the subject of "Rework ACPI video driver" and is posted here:
-> > > http://lkml.org/lkml/2013/9/9/74
-> > > Since the objective is really to fix Win8 backlight issues, I changed
-> > > the subject in this version, sorry about that.
-> > >
-> > > This patchset has three patches, the first introduced a new API named
-> > > backlight_device_registered in backlight layer that can be used for
-> > > backlight interface provider module to check if a specific type backlight
-> > > interface has been registered, see changelog for patch 1/3 for details.
-> > > Then patch 2/3 does the cleanup to sepeate the backlight control and
-> > > event delivery functionality in the ACPI video module and patch 3/3
-> > > solves some Win8 backlight control problems by avoiding register ACPI
-> > > video's backlight interface if:
-> > > 1 Kernel cmdline option acpi_backlight=video is not given;
-> > > 2 This is a Win8 system;
-> > > 3 Native backlight control interface exists.
-> > >
-> > > Technically, patch 2/3 is not required to fix the issue here. So if you
-> > > think it is not necessary, I can remove it from the series.
-> > >
-> > > Aaron Lu (4):
-> > >   backlight: introduce backlight_device_registered
-> > >   ACPI / video: seperate backlight control and event interface
-> > >   ACPI / video: Do not register backlight if win8 and native interface
-> > >     exists
-> > >   thinkpad-acpi: fix handle locate for video and query of _BCL
-> > >
-> > >  drivers/acpi/internal.h              |   5 +-
-> > >  drivers/acpi/video.c                 | 442
-> > ++++++++++++++++++++---------------
-> > >  drivers/acpi/video_detect.c          |  14 +-
-> > >  drivers/platform/x86/thinkpad_acpi.c |  31 ++-
-> > >  drivers/video/backlight/backlight.c  |  31 +++
-> > >  include/acpi/video.h                 |   2 +
-> > >  include/linux/backlight.h            |   4 +
-> > >  7 files changed, 324 insertions(+), 205 deletions(-)
-> > >
-> >
-> > Excellent! I've tested this patch-set on ThinkPad X230 and backlight
-> > issue is exhausted.
-> >
-> > Thanks.
-> >
-> > --
-> > Igor Gnatenko
-> > Fedora release 20 (Heisenbug)
-> > Linux 3.11.1-300.fc20.x86_64
-> >
-> >
+IIRC I had this working, can't verify at the moment as I don't
+have access to the board right now. Please see commit:
+
+7fa33bdb4c44155e390c9ebbc5aa4c5cfc73f6fa
+ARM: SAMSUNG: Modify board files to use new PWM platform device
+
+--
+Regards,
+Sylwester
