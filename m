@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734Ab3IYAs5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:48:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39430 "EHLO
+	id S1757166Ab3IYAtg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:49:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39418 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756425Ab3IYAT4 (ORCPT
+	with ESMTP id S1756444Ab3IYATy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:56 -0400
+	Tue, 24 Sep 2013 20:19:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 017/117] cpuidle: coupled: abort idle if pokes are pending
-Date: Tue, 24 Sep 2013 17:18:03 -0700
-Message-Id: <20130925001742.731170786@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 014/117] powerpc: Default arch idle could cede processor on pseries
+Date: Tue, 24 Sep 2013 17:18:00 -0700
+Message-Id: <20130925001742.418764921@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,246 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 
-commit f983827bcb9d2c34c4d8935861a1e9128aec2baf upstream.
+commit 363edbe2614aa90df706c0f19ccfa2a6c06af0be upstream.
 
-Joseph Lo <josephl@nvidia.com> reported a lockup on Tegra20 caused
-by a race condition in coupled cpuidle.  When two or more cpus
-enter idle at the same time, the first cpus to arrive may go to the
-ready loop without processing pending pokes from the last cpu to
-arrive.
+When adding cpuidle support to pSeries, we introduced two
+regressions:
 
-This patch adds a check for pending pokes once all cpus have been
-synchronized in the ready loop and resets the coupled state and
-retries if any cpus failed to handle their pending poke.
+  - The new cpuidle backend driver only works under hypervisors
+    supporting the "SLPLAR" option, which isn't the case of the
+    old POWER4 hypervisor and the HV "light" used on js2x blades
 
-Retrying on all cpus may trigger the same issue again, so this patch
-also adds a check to ensure that each cpu has received at least one
-poke between when it enters the waiting loop and when it moves on to
-the ready loop.
+  - The cpuidle driver registers fairly late, meaning that for
+    a significant portion of the boot process, we end up having
+    all threads spinning. This slows down the boot process and
+    increases the overall resource usage if the hypervisor has
+    shared processors.
 
-Reported-and-tested-by: Joseph Lo <josephl@nvidia.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Colin Cross <ccross@android.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This fixes both by implementing a "default" idle that will cede
+to the hypervisor when possible, in a very simple way without
+all the bells and whisles of cpuidle.
+
+Reported-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpuidle/coupled.c |  107 +++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 82 insertions(+), 25 deletions(-)
+ arch/powerpc/platforms/pseries/setup.c |   31 +++++++++++++++++++++----------
+ 1 file changed, 21 insertions(+), 10 deletions(-)
 
---- a/drivers/cpuidle/coupled.c
-+++ b/drivers/cpuidle/coupled.c
-@@ -106,6 +106,7 @@ struct cpuidle_coupled {
- 	cpumask_t coupled_cpus;
- 	int requested_state[NR_CPUS];
- 	atomic_t ready_waiting_counts;
-+	atomic_t abort_barrier;
- 	int online_count;
- 	int refcnt;
- 	int prevent;
-@@ -122,12 +123,19 @@ static DEFINE_MUTEX(cpuidle_coupled_lock
- static DEFINE_PER_CPU(struct call_single_data, cpuidle_coupled_poke_cb);
+--- a/arch/powerpc/platforms/pseries/setup.c
++++ b/arch/powerpc/platforms/pseries/setup.c
+@@ -354,7 +354,7 @@ static int alloc_dispatch_log_kmem_cache
+ }
+ early_initcall(alloc_dispatch_log_kmem_cache);
  
- /*
-- * The cpuidle_coupled_poked_mask mask is used to avoid calling
-+ * The cpuidle_coupled_poke_pending mask is used to avoid calling
-  * __smp_call_function_single with the per cpu call_single_data struct already
-  * in use.  This prevents a deadlock where two cpus are waiting for each others
-  * call_single_data struct to be available
-  */
--static cpumask_t cpuidle_coupled_poked_mask;
-+static cpumask_t cpuidle_coupled_poke_pending;
+-static void pSeries_idle(void)
++static void pseries_lpar_idle(void)
+ {
+ 	/* This would call on the cpuidle framework, and the back-end pseries
+ 	 * driver to  go to idle states
+@@ -362,10 +362,22 @@ static void pSeries_idle(void)
+ 	if (cpuidle_idle_call()) {
+ 		/* On error, execute default handler
+ 		 * to go into low thread priority and possibly
+-		 * low power mode.
++		 * low power mode by cedeing processor to hypervisor
+ 		 */
+-		HMT_low();
+-		HMT_very_low();
 +
-+/*
-+ * The cpuidle_coupled_poked mask is used to ensure that each cpu has been poked
-+ * once to minimize entering the ready loop with a poke pending, which would
-+ * require aborting and retrying.
-+ */
-+static cpumask_t cpuidle_coupled_poked;
- 
- /**
-  * cpuidle_coupled_parallel_barrier - synchronize all online coupled cpus
-@@ -291,10 +299,11 @@ static inline int cpuidle_coupled_get_st
- 	return state;
++		/* Indicate to hypervisor that we are idle. */
++		get_lppaca()->idle = 1;
++
++		/*
++		 * Yield the processor to the hypervisor.  We return if
++		 * an external interrupt occurs (which are driven prior
++		 * to returning here) or if a prod occurs from another
++		 * processor. When returning here, external interrupts
++		 * are enabled.
++		 */
++		cede_processor();
++
++		get_lppaca()->idle = 0;
+ 	}
  }
  
--static void cpuidle_coupled_poked(void *info)
-+static void cpuidle_coupled_handle_poke(void *info)
- {
- 	int cpu = (unsigned long)info;
--	cpumask_clear_cpu(cpu, &cpuidle_coupled_poked_mask);
-+	cpumask_set_cpu(cpu, &cpuidle_coupled_poked);
-+	cpumask_clear_cpu(cpu, &cpuidle_coupled_poke_pending);
- }
+@@ -456,15 +468,14 @@ static void __init pSeries_setup_arch(vo
  
- /**
-@@ -313,7 +322,7 @@ static void cpuidle_coupled_poke(int cpu
- {
- 	struct call_single_data *csd = &per_cpu(cpuidle_coupled_poke_cb, cpu);
+ 	pSeries_nvram_init();
  
--	if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poked_mask))
-+	if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poke_pending))
- 		__smp_call_function_single(cpu, csd, 0);
- }
- 
-@@ -340,30 +349,19 @@ static void cpuidle_coupled_poke_others(
-  * @coupled: the struct coupled that contains the current cpu
-  * @next_state: the index in drv->states of the requested state for this cpu
-  *
-- * Updates the requested idle state for the specified cpuidle device,
-- * poking all coupled cpus out of idle if necessary to let them see the new
-- * state.
-+ * Updates the requested idle state for the specified cpuidle device.
-+ * Returns the number of waiting cpus.
-  */
--static void cpuidle_coupled_set_waiting(int cpu,
-+static int cpuidle_coupled_set_waiting(int cpu,
- 		struct cpuidle_coupled *coupled, int next_state)
- {
--	int w;
+-	if (firmware_has_feature(FW_FEATURE_SPLPAR)) {
++	if (firmware_has_feature(FW_FEATURE_LPAR)) {
+ 		vpa_init(boot_cpuid);
+-		ppc_md.power_save = pSeries_idle;
+-	}
 -
- 	coupled->requested_state[cpu] = next_state;
- 
- 	/*
--	 * If this is the last cpu to enter the waiting state, poke
--	 * all the other cpus out of their waiting state so they can
--	 * enter a deeper state.  This can race with one of the cpus
--	 * exiting the waiting state due to an interrupt and
--	 * decrementing waiting_count, see comment below.
--	 *
- 	 * The atomic_inc_return provides a write barrier to order the write
- 	 * to requested_state with the later write that increments ready_count.
- 	 */
--	w = atomic_inc_return(&coupled->ready_waiting_counts) & WAITING_MASK;
--	if (w == coupled->online_count)
--		cpuidle_coupled_poke_others(cpu, coupled);
-+	return atomic_inc_return(&coupled->ready_waiting_counts) & WAITING_MASK;
- }
- 
- /**
-@@ -418,13 +416,24 @@ static void cpuidle_coupled_set_done(int
- static int cpuidle_coupled_clear_pokes(int cpu)
- {
- 	local_irq_enable();
--	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poked_mask))
-+	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
- 		cpu_relax();
- 	local_irq_disable();
- 
- 	return need_resched() ? -EINTR : 0;
- }
- 
-+static bool cpuidle_coupled_any_pokes_pending(struct cpuidle_coupled *coupled)
-+{
-+	cpumask_t cpus;
-+	int ret;
-+
-+	cpumask_and(&cpus, cpu_online_mask, &coupled->coupled_cpus);
-+	ret = cpumask_and(&cpus, &cpuidle_coupled_poke_pending, &cpus);
-+
-+	return ret;
-+}
-+
- /**
-  * cpuidle_enter_state_coupled - attempt to enter a state with coupled cpus
-  * @dev: struct cpuidle_device for the current cpu
-@@ -449,6 +458,7 @@ int cpuidle_enter_state_coupled(struct c
- {
- 	int entered_state = -1;
- 	struct cpuidle_coupled *coupled = dev->coupled;
-+	int w;
- 
- 	if (!coupled)
- 		return -EINVAL;
-@@ -465,14 +475,33 @@ int cpuidle_enter_state_coupled(struct c
- 	/* Read barrier ensures online_count is read after prevent is cleared */
- 	smp_rmb();
- 
--	cpuidle_coupled_set_waiting(dev->cpu, coupled, next_state);
-+reset:
-+	cpumask_clear_cpu(dev->cpu, &cpuidle_coupled_poked);
-+
-+	w = cpuidle_coupled_set_waiting(dev->cpu, coupled, next_state);
-+	/*
-+	 * If this is the last cpu to enter the waiting state, poke
-+	 * all the other cpus out of their waiting state so they can
-+	 * enter a deeper state.  This can race with one of the cpus
-+	 * exiting the waiting state due to an interrupt and
-+	 * decrementing waiting_count, see comment below.
-+	 */
-+	if (w == coupled->online_count) {
-+		cpumask_set_cpu(dev->cpu, &cpuidle_coupled_poked);
-+		cpuidle_coupled_poke_others(dev->cpu, coupled);
+-	if (firmware_has_feature(FW_FEATURE_LPAR))
++		ppc_md.power_save = pseries_lpar_idle;
+ 		ppc_md.enable_pmcs = pseries_lpar_enable_pmcs;
+-	else
++	} else {
++		/* No special idle routine */
+ 		ppc_md.enable_pmcs = power4_enable_pmcs;
 +	}
  
- retry:
- 	/*
- 	 * Wait for all coupled cpus to be idle, using the deepest state
--	 * allowed for a single cpu.
-+	 * allowed for a single cpu.  If this was not the poking cpu, wait
-+	 * for at least one poke before leaving to avoid a race where
-+	 * two cpus could arrive at the waiting loop at the same time,
-+	 * but the first of the two to arrive could skip the loop without
-+	 * processing the pokes from the last to arrive.
- 	 */
--	while (!cpuidle_coupled_cpus_waiting(coupled)) {
-+	while (!cpuidle_coupled_cpus_waiting(coupled) ||
-+			!cpumask_test_cpu(dev->cpu, &cpuidle_coupled_poked)) {
- 		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
- 			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
- 			goto out;
-@@ -493,6 +522,12 @@ retry:
- 	}
+ 	ppc_md.pcibios_root_bridge_prepare = pseries_root_bridge_prepare;
  
- 	/*
-+	 * Make sure final poke status for this cpu is visible before setting
-+	 * cpu as ready.
-+	 */
-+	smp_wmb();
-+
-+	/*
- 	 * All coupled cpus are probably idle.  There is a small chance that
- 	 * one of the other cpus just became active.  Increment the ready count,
- 	 * and spin until all coupled cpus have incremented the counter. Once a
-@@ -511,6 +546,28 @@ retry:
- 		cpu_relax();
- 	}
- 
-+	/*
-+	 * Make sure read of all cpus ready is done before reading pending pokes
-+	 */
-+	smp_rmb();
-+
-+	/*
-+	 * There is a small chance that a cpu left and reentered idle after this
-+	 * cpu saw that all cpus were waiting.  The cpu that reentered idle will
-+	 * have sent this cpu a poke, which will still be pending after the
-+	 * ready loop.  The pending interrupt may be lost by the interrupt
-+	 * controller when entering the deep idle state.  It's not possible to
-+	 * clear a pending interrupt without turning interrupts on and handling
-+	 * it, and it's too late to turn on interrupts here, so reset the
-+	 * coupled idle state of all cpus and retry.
-+	 */
-+	if (cpuidle_coupled_any_pokes_pending(coupled)) {
-+		cpuidle_coupled_set_done(dev->cpu, coupled);
-+		/* Wait for all cpus to see the pending pokes */
-+		cpuidle_coupled_parallel_barrier(dev, &coupled->abort_barrier);
-+		goto reset;
-+	}
-+
- 	/* all cpus have acked the coupled state */
- 	next_state = cpuidle_coupled_get_state(dev, coupled);
- 
-@@ -596,7 +653,7 @@ have_coupled:
- 	coupled->refcnt++;
- 
- 	csd = &per_cpu(cpuidle_coupled_poke_cb, dev->cpu);
--	csd->func = cpuidle_coupled_poked;
-+	csd->func = cpuidle_coupled_handle_poke;
- 	csd->info = (void *)(unsigned long)dev->cpu;
- 
- 	return 0;
 
 
