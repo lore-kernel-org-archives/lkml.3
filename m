@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab3IYAQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:16:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39070 "EHLO
+	id S932134Ab3IYARF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:17:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39275 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756051Ab3IYAQ2 (ORCPT
+	with ESMTP id S932103Ab3IYARC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:28 -0400
+	Tue, 24 Sep 2013 20:17:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 048/110] Introduce [compat_]save_altstack_ex() to unbreak x86 SMAP
-Date: Tue, 24 Sep 2013 17:14:46 -0700
-Message-Id: <20130925001328.606104056@linuxfoundation.org>
+        Libin <huawei.libin@huawei.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 093/110] mm/huge_memory.c: fix potential NULL pointer dereference
+Date: Tue, 24 Sep 2013 17:15:31 -0700
+Message-Id: <20130925001333.496467023@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,107 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Libin <huawei.libin@huawei.com>
 
-commit bd1c149aa9915b9abb6d83d0f01dfd2ace0680b5 upstream.
+commit a8f531ebc33052642b4bd7b812eedf397108ce64 upstream.
 
-For performance reasons, when SMAP is in use, SMAP is left open for an
-entire put_user_try { ... } put_user_catch(); block, however, calling
-__put_user() in the middle of that block will close SMAP as the
-STAC..CLAC constructs intentionally do not nest.
+In collapse_huge_page() there is a race window between releasing the
+mmap_sem read lock and taking the mmap_sem write lock, so find_vma() may
+return NULL.  So check the return value to avoid NULL pointer dereference.
 
-Furthermore, using __put_user() rather than put_user_ex() here is bad
-for performance.
+collapse_huge_page
+	khugepaged_alloc_page
+		up_read(&mm->mmap_sem)
+	down_write(&mm->mmap_sem)
+	vma = find_vma(mm, address)
 
-Thus, introduce new [compat_]save_altstack_ex() helpers that replace
-__[compat_]save_altstack() for x86, being currently the only
-architecture which supports put_user_try { ... } put_user_catch().
-
-Reported-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-es5p6y64if71k8p5u08agv9n@git.kernel.org
+Signed-off-by: Libin <huawei.libin@huawei.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/ia32/ia32_signal.c |    2 +-
- arch/x86/kernel/signal.c    |    6 +++---
- include/linux/compat.h      |    7 +++++++
- include/linux/signal.h      |    8 ++++++++
- 4 files changed, 19 insertions(+), 4 deletions(-)
+ mm/huge_memory.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/ia32/ia32_signal.c
-+++ b/arch/x86/ia32/ia32_signal.c
-@@ -459,7 +459,7 @@ int ia32_setup_rt_frame(int sig, struct
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __compat_save_altstack(&frame->uc.uc_stack, regs->sp);
-+		compat_save_altstack_ex(&frame->uc.uc_stack, regs->sp);
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2286,6 +2286,8 @@ static void collapse_huge_page(struct mm
+ 		goto out;
  
- 		if (ksig->ka.sa.sa_flags & SA_RESTORER)
- 			restorer = ksig->ka.sa.sa_restorer;
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -364,7 +364,7 @@ static int __setup_rt_frame(int sig, str
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
-+		save_altstack_ex(&frame->uc.uc_stack, regs->sp);
- 
- 		/* Set up to return from userspace.  */
- 		restorer = VDSO32_SYMBOL(current->mm->context.vdso, rt_sigreturn);
-@@ -429,7 +429,7 @@ static int __setup_rt_frame(int sig, str
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
-+		save_altstack_ex(&frame->uc.uc_stack, regs->sp);
- 
- 		/* Set up to return from userspace.  If provided, use a stub
- 		   already in userspace.  */
-@@ -496,7 +496,7 @@ static int x32_setup_rt_frame(struct ksi
- 		else
- 			put_user_ex(0, &frame->uc.uc_flags);
- 		put_user_ex(0, &frame->uc.uc_link);
--		err |= __compat_save_altstack(&frame->uc.uc_stack, regs->sp);
-+		compat_save_altstack_ex(&frame->uc.uc_stack, regs->sp);
- 		put_user_ex(0, &frame->uc.uc__pad0);
- 
- 		if (ksig->ka.sa.sa_flags & SA_RESTORER) {
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -669,6 +669,13 @@ asmlinkage long compat_sys_sigaltstack(c
- 
- int compat_restore_altstack(const compat_stack_t __user *uss);
- int __compat_save_altstack(compat_stack_t __user *, unsigned long);
-+#define compat_save_altstack_ex(uss, sp) do { \
-+	compat_stack_t __user *__uss = uss; \
-+	struct task_struct *t = current; \
-+	put_user_ex(ptr_to_compat((void __user *)t->sas_ss_sp), &__uss->ss_sp); \
-+	put_user_ex(sas_ss_flags(sp), &__uss->ss_flags); \
-+	put_user_ex(t->sas_ss_size, &__uss->ss_size); \
-+} while (0);
- 
- asmlinkage long compat_sys_sched_rr_get_interval(compat_pid_t pid,
- 						 struct compat_timespec __user *interval);
---- a/include/linux/signal.h
-+++ b/include/linux/signal.h
-@@ -434,6 +434,14 @@ void signals_init(void);
- int restore_altstack(const stack_t __user *);
- int __save_altstack(stack_t __user *, unsigned long);
- 
-+#define save_altstack_ex(uss, sp) do { \
-+	stack_t __user *__uss = uss; \
-+	struct task_struct *t = current; \
-+	put_user_ex((void __user *)t->sas_ss_sp, &__uss->ss_sp); \
-+	put_user_ex(sas_ss_flags(sp), &__uss->ss_flags); \
-+	put_user_ex(t->sas_ss_size, &__uss->ss_size); \
-+} while (0);
-+
- #ifdef CONFIG_PROC_FS
- struct seq_file;
- extern void render_sigset_t(struct seq_file *, const char *, sigset_t *);
+ 	vma = find_vma(mm, address);
++	if (!vma)
++		goto out;
+ 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
+ 	hend = vma->vm_end & HPAGE_PMD_MASK;
+ 	if (address < hstart || address + HPAGE_PMD_SIZE > hend)
 
 
