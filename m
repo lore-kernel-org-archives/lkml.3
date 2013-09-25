@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab3IYAVW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:21:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39882 "EHLO
+	id S1755665Ab3IYAWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:22:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39875 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932346Ab3IYAVQ (ORCPT
+	with ESMTP id S932398Ab3IYAVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:21:16 -0400
+	Tue, 24 Sep 2013 20:21:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Anand Avati <avati@redhat.com>, Brian Foster <bfoster@redhat.com>,
         Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 117/117] fuse: readdir: check for slash in names
-Date: Tue, 24 Sep 2013 17:19:43 -0700
-Message-Id: <20130925001753.726692827@linuxfoundation.org>
+Subject: [ 115/117] fuse: invalidate inode attributes on xattr modification
+Date: Tue, 24 Sep 2013 17:19:41 -0700
+Message-Id: <20130925001753.494277084@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,13 +27,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Anand Avati <avati@redhat.com>
 
-commit efeb9e60d48f7778fdcad4a0f3ad9ea9b19e5dfd upstream.
+commit d331a415aef98717393dda0be69b7947da08eba3 upstream.
 
-Userspace can add names containing a slash character to the directory
-listing.  Don't allow this as it could cause all sorts of trouble.
+Calls like setxattr and removexattr result in updation of ctime.
+Therefore invalidate inode attributes to force a refresh.
 
+Signed-off-by: Anand Avati <avati@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
@@ -42,23 +45,23 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/fs/fuse/dir.c
 +++ b/fs/fuse/dir.c
-@@ -1174,6 +1174,8 @@ static int parse_dirfile(char *buf, size
- 			return -EIO;
- 		if (reclen > nbytes)
- 			break;
-+		if (memchr(dirent->name, '/', dirent->namelen) != NULL)
-+			return -EIO;
+@@ -1749,6 +1749,8 @@ static int fuse_setxattr(struct dentry *
+ 		fc->no_setxattr = 1;
+ 		err = -EOPNOTSUPP;
+ 	}
++	if (!err)
++		fuse_invalidate_attr(inode);
+ 	return err;
+ }
  
- 		if (!dir_emit(ctx, dirent->name, dirent->namelen,
- 			       dirent->ino, dirent->type))
-@@ -1320,6 +1322,8 @@ static int parse_dirplusfile(char *buf,
- 			return -EIO;
- 		if (reclen > nbytes)
- 			break;
-+		if (memchr(dirent->name, '/', dirent->namelen) != NULL)
-+			return -EIO;
+@@ -1878,6 +1880,8 @@ static int fuse_removexattr(struct dentr
+ 		fc->no_removexattr = 1;
+ 		err = -EOPNOTSUPP;
+ 	}
++	if (!err)
++		fuse_invalidate_attr(inode);
+ 	return err;
+ }
  
- 		if (!over) {
- 			/* We fill entries into dstbuf only as much as
 
 
