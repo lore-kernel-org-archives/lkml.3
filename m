@@ -1,141 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab3IYWOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 18:14:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16654 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab3IYWOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 18:14:41 -0400
-Date: Thu, 26 Sep 2013 00:12:50 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 3/3] msi: free msi_desc entry only after we've released
- the kobject
-Message-ID: <20130925221250.GB26965@redhat.com>
-References: <1379382464-7920-1-git-send-email-vfalico@redhat.com>
- <1379382464-7920-4-git-send-email-vfalico@redhat.com>
- <CAErSpo77PrKi9nwBada444TOA5vwjWdt06Qv+GZLreh61kNH6g@mail.gmail.com>
+	id S1755354Ab3IYWRF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 18:17:05 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:53841 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754726Ab3IYWRB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 18:17:01 -0400
+Message-ID: <524360D9.3000706@linaro.org>
+Date: Thu, 26 Sep 2013 00:16:57 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <CAErSpo77PrKi9nwBada444TOA5vwjWdt06Qv+GZLreh61kNH6g@mail.gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@sisk.pl
+CC: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/21] cpuidle: avoid unnecessary kzalloc/free of struct
+ cpuidle_driver_kobj
+References: <cover.1379779777.git.viresh.kumar@linaro.org> <b9855839a2067249d5992acd46140e834737c1b7.1379779777.git.viresh.kumar@linaro.org>
+In-Reply-To: <b9855839a2067249d5992acd46140e834737c1b7.1379779777.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 03:34:58PM -0600, Bjorn Helgaas wrote:
->On Mon, Sep 16, 2013 at 7:47 PM, Veaceslav Falico <vfalico@redhat.com> wrote:
->> Currently, we first do kobject_put(&entry->kobj) and the kfree(entry),
->> however kobject_put() doesn't guarantee us that it was the last reference
->> and that the kobj isn't used currently by someone else, so after we
->> kfree(entry) with the struct kobject - other users will begin using the
->> freed memory, instead of the actual kobject.
->>
->> Fix this by using the kobject->release callback, which is called last when
->> the kobject is indeed not used and is cleaned up - it's msi_kobj_release(),
->> which can do the kfree(entry) safely (kobject_put/cleanup doesn't use the
->> kobj itself after ->release() was called, so we're safe).
->>
->> In case we've failed to create the sysfs directories - just kfree()
->> it - cause we don't have the kobjects attached.
->>
->> Also, remove the same functionality from populate_msi_sysfs(), cause on
->> failure we anyway call free_msi_irqs(), which will take care of all the
->> kobjects properly.
->
->I agree; it looks like populate_msi_sysfs() doesn't need to have the
->cleanup in it.  Can you split that into a separate patch, since I
->don't think it depends on the kfree() fix?
+On 09/22/2013 03:21 AM, Viresh Kumar wrote:
+> For CONFIG_CPU_IDLE_MULTIPLE_DRIVERS, struct cpuidle_device always needs to
+> allocate struct cpuidle_driver_kobj for all CPUs and so there is no real need to
+> have a pointer to it inside struct cpuidle_device.
+> 
+> This patch makes a object instance of struct cpuidle_driver_kobj inside struct
+> cpuidle_device instead of a pointer.
+> 
+> It also makes kobj_driver dependent on CONFIG_CPU_IDLE_MULTIPLE_DRIVERS.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Yep, will do and re-send in two patchsets.
+Comment similar to patch 16/21. If you try to offline/online a cpu, that
+should lead to a kernel warning.
 
-Thank you!
+> ---
+>  drivers/cpuidle/sysfs.c | 20 +++-----------------
+>  include/linux/cpuidle.h | 11 +++++++++--
+>  2 files changed, 12 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+> index db0aac3..3386d64 100644
+> --- a/drivers/cpuidle/sysfs.c
+> +++ b/drivers/cpuidle/sysfs.c
+> @@ -439,12 +439,6 @@ static void cpuidle_remove_state_sysfs(struct cpuidle_device *device)
+>  	static struct cpuidle_driver_attr attr_driver_##_name = \
+>  		__ATTR(_name, 0644, show, NULL)
+>  
+> -struct cpuidle_driver_kobj {
+> -	struct cpuidle_driver *drv;
+> -	struct completion kobj_unregister;
+> -	struct kobject kobj;
+> -};
+> -
+>  struct cpuidle_driver_attr {
+>  	struct attribute attr;
+>  	ssize_t (*show)(struct cpuidle_driver *, char *);
+> @@ -518,27 +512,20 @@ static struct kobj_type ktype_driver_cpuidle = {
+>   */
+>  static int cpuidle_add_driver_sysfs(struct cpuidle_device *dev)
+>  {
+> -	struct cpuidle_driver_kobj *kdrv;
+> +	struct cpuidle_driver_kobj *kdrv = &dev->kobj_driver;
+>  	struct cpuidle_device_kobj *kdev = &dev->kobj_dev;
+>  	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+>  	int ret;
+>  
+> -	kdrv = kzalloc(sizeof(*kdrv), GFP_KERNEL);
+> -	if (!kdrv)
+> -		return -ENOMEM;
+> -
+>  	kdrv->drv = drv;
+>  	init_completion(&kdrv->kobj_unregister);
+>  
+>  	ret = kobject_init_and_add(&kdrv->kobj, &ktype_driver_cpuidle,
+>  				   &kdev->kobj, "driver");
+> -	if (ret) {
+> -		kfree(kdrv);
+> +	if (ret)
+>  		return ret;
+> -	}
+>  
+>  	kobject_uevent(&kdrv->kobj, KOBJ_ADD);
+> -	dev->kobj_driver = kdrv;
+>  
+>  	return ret;
+>  }
+> @@ -549,10 +536,9 @@ static int cpuidle_add_driver_sysfs(struct cpuidle_device *dev)
+>   */
+>  static void cpuidle_remove_driver_sysfs(struct cpuidle_device *dev)
+>  {
+> -	struct cpuidle_driver_kobj *kdrv = dev->kobj_driver;
+> +	struct cpuidle_driver_kobj *kdrv = &dev->kobj_driver;
+>  	kobject_put(&kdrv->kobj);
+>  	wait_for_completion(&kdrv->kobj_unregister);
+> -	kfree(kdrv);
+>  }
+>  #else
+>  static inline int cpuidle_add_driver_sysfs(struct cpuidle_device *dev)
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 1fc5cb5..0f0da17 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -62,7 +62,6 @@ struct cpuidle_state {
+>  #define CPUIDLE_DRIVER_FLAGS_MASK (0xFFFF0000)
+>  
+>  struct cpuidle_state_kobj;
+> -struct cpuidle_driver_kobj;
+>  
+>  struct cpuidle_device_kobj {
+>  	struct cpuidle_device *dev;
+> @@ -70,6 +69,12 @@ struct cpuidle_device_kobj {
+>  	struct kobject kobj;
+>  };
+>  
+> +struct cpuidle_driver_kobj {
+> +	struct cpuidle_driver *drv;
+> +	struct completion kobj_unregister;
+> +	struct kobject kobj;
+> +};
+> +
+>  struct cpuidle_device {
+>  	unsigned int		registered:1;
+>  	unsigned int		enabled:1;
+> @@ -79,7 +84,9 @@ struct cpuidle_device {
+>  	int			state_count;
+>  	struct cpuidle_state_usage	states_usage[CPUIDLE_STATE_MAX];
+>  	struct cpuidle_state_kobj *kobjs[CPUIDLE_STATE_MAX];
+> -	struct cpuidle_driver_kobj *kobj_driver;
+> +#ifdef CONFIG_CPU_IDLE_MULTIPLE_DRIVERS
+> +	struct cpuidle_driver_kobj kobj_driver;
+> +#endif
+>  	struct cpuidle_device_kobj kobj_dev;
+>  	struct list_head 	device_list;
+>  
+> 
 
->
->Bjorn
->
->> CC: Bjorn Helgaas <bhelgaas@google.com>
->> CC: linux-pci@vger.kernel.org
->> CC: linux-kernel@vger.kernel.org
->> Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
->> ---
->>  drivers/pci/msi.c | 27 +++++++++------------------
->>  1 file changed, 9 insertions(+), 18 deletions(-)
->>
->> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
->> index 68da921..c9236e4 100644
->> --- a/drivers/pci/msi.c
->> +++ b/drivers/pci/msi.c
->> @@ -374,19 +374,22 @@ static void free_msi_irqs(struct pci_dev *dev)
->>                                 iounmap(entry->mask_base);
->>                 }
->>
->> +               list_del(&entry->list);
->> +
->>                 /*
->>                  * Its possible that we get into this path
->>                  * When populate_msi_sysfs fails, which means the entries
->>                  * were not registered with sysfs.  In that case don't
->> -                * unregister them.
->> +                * unregister them, and just free. Otherwise the
->> +                * kobject->release will take care of freeing the entry via
->> +                * msi_kobj_release().
->>                  */
->>                 if (entry->kobj.parent) {
->>                         kobject_del(&entry->kobj);
->>                         kobject_put(&entry->kobj);
->> +               } else {
->> +                       kfree(entry);
->>                 }
->> -
->> -               list_del(&entry->list);
->> -               kfree(entry);
->>         }
->>
->>         kset_unregister(dev->msi_kset);
->> @@ -512,6 +515,7 @@ static void msi_kobj_release(struct kobject *kobj)
->>         struct msi_desc *entry = to_msi_desc(kobj);
->>
->>         pci_dev_put(entry->dev);
->> +       kfree(entry);
->>  }
->>
->>  static struct kobj_type msi_irq_ktype = {
->> @@ -525,7 +529,6 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
->>         struct msi_desc *entry;
->>         struct kobject *kobj;
->>         int ret;
->> -       int count = 0;
->>
->>         pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
->>         if (!pdev->msi_kset)
->> @@ -539,23 +542,11 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
->>                                      "%u", entry->irq);
->>                 if (ret) {
->>                         pci_dev_put(pdev);
->> -                       goto out_unroll;
->> +                       return ret;
->>                 }
->> -
->> -               count++;
->>         }
->>
->>         return 0;
->> -
->> -out_unroll:
->> -       list_for_each_entry(entry, &pdev->msi_list, list) {
->> -               if (!count)
->> -                       break;
->> -               kobject_del(&entry->kobj);
->> -               kobject_put(&entry->kobj);
->> -               count--;
->> -       }
->> -       return ret;
->>  }
->>
->>  /**
->> --
->> 1.8.4
->>
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
