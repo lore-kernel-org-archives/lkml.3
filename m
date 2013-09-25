@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3IYAMd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:12:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38606 "EHLO
+	id S1755494Ab3IYAMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:12:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432Ab3IYAM3 (ORCPT
+	with ESMTP id S1755432Ab3IYAMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:12:29 -0400
+	Tue, 24 Sep 2013 20:12:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 19/40] ath9k: always clear ps filter bit on new assoc
-Date: Tue, 24 Sep 2013 17:11:51 -0700
-Message-Id: <20130925001044.052415131@linuxfoundation.org>
+        Richard Ryniker <ryniker@alum.mit.edu>,
+        Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 26/40] HID: battery: dont do DMA from stack
+Date: Tue, 24 Sep 2013 17:11:58 -0700
+Message-Id: <20130925001044.783936124@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
 References: <20130925001041.939335518@linuxfoundation.org>
@@ -27,30 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 026d5b07c03458f9c0ccd19c3850564a5409c325 upstream.
+commit 6c2794a2984f4c17a58117a68703cc7640f01c5a upstream.
 
-Otherwise in some cases, EAPOL frames might be filtered during the
-initial handshake, causing delays and assoc failures.
+Instead of using data from stack for DMA in hidinput_get_battery_property(),
+allocate the buffer dynamically.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Richard Ryniker <ryniker@alum.mit.edu>
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/xmit.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hid/hid-input.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -2479,6 +2479,7 @@ void ath_tx_node_init(struct ath_softc *
- 	for (acno = 0, ac = &an->ac[acno];
- 	     acno < WME_NUM_AC; acno++, ac++) {
- 		ac->sched    = false;
-+		ac->clear_ps_filter = true;
- 		ac->txq = sc->tx.txq_map[acno];
- 		INIT_LIST_HEAD(&ac->tid_q);
- 	}
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -314,7 +314,7 @@ static int hidinput_get_battery_property
+ {
+ 	struct hid_device *dev = container_of(psy, struct hid_device, battery);
+ 	int ret = 0;
+-	__u8 buf[2] = {};
++	__u8 *buf;
+ 
+ 	switch (prop) {
+ 	case POWER_SUPPLY_PROP_PRESENT:
+@@ -323,13 +323,20 @@ static int hidinput_get_battery_property
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_CAPACITY:
++
++		buf = kmalloc(2 * sizeof(__u8), GFP_KERNEL);
++		if (!buf) {
++			ret = -ENOMEM;
++			break;
++		}
+ 		ret = dev->hid_get_raw_report(dev, dev->battery_report_id,
+-					      buf, sizeof(buf),
++					      buf, 2,
+ 					      dev->battery_report_type);
+ 
+ 		if (ret != 2) {
+ 			if (ret >= 0)
+ 				ret = -EINVAL;
++			kfree(buf);
+ 			break;
+ 		}
+ 
+@@ -338,6 +345,7 @@ static int hidinput_get_battery_property
+ 		    buf[1] <= dev->battery_max)
+ 			val->intval = (100 * (buf[1] - dev->battery_min)) /
+ 				(dev->battery_max - dev->battery_min);
++		kfree(buf);
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_MODEL_NAME:
 
 
