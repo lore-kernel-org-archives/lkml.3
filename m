@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758061Ab3IYBVF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:21:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38903 "EHLO
+	id S1755873Ab3IYAQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:16:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38845 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755876Ab3IYAQB (ORCPT
+	with ESMTP id S1755218Ab3IYAPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:01 -0400
+	Tue, 24 Sep 2013 20:15:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shawn Nematbakhsh <shawnn@chromium.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 022/110] usb: xhci: Disable runtime PM suspend for quirky controllers
-Date: Tue, 24 Sep 2013 17:14:20 -0700
-Message-Id: <20130925001325.817185430@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 009/110] cpuidle: coupled: abort idle if pokes are pending
+Date: Tue, 24 Sep 2013 17:14:07 -0700
+Message-Id: <20130925001324.403174219@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,79 +27,246 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Nematbakhsh <shawnn@chromium.org>
+From: Colin Cross <ccross@android.com>
 
-commit c8476fb855434c733099079063990e5bfa7ecad6 upstream.
+commit f983827bcb9d2c34c4d8935861a1e9128aec2baf upstream.
 
-If a USB controller with XHCI_RESET_ON_RESUME goes to runtime suspend,
-a reset will be performed upon runtime resume. Any previously suspended
-devices attached to the controller will be re-enumerated at this time.
-This will cause problems, for example, if an open system call on the
-device triggered the resume (the open call will fail).
+Joseph Lo <josephl@nvidia.com> reported a lockup on Tegra20 caused
+by a race condition in coupled cpuidle.  When two or more cpus
+enter idle at the same time, the first cpus to arrive may go to the
+ready loop without processing pending pokes from the last cpu to
+arrive.
 
-Note that this change is only relevant when persist_enabled is not set
-for USB devices.
+This patch adds a check for pending pokes once all cpus have been
+synchronized in the ready loop and resets the coupled state and
+retries if any cpus failed to handle their pending poke.
 
-This patch should be backported to kernels as old as 3.0, that
-contain the commit c877b3b2ad5cb9d4fe523c5496185cc328ff3ae9 "xhci: Add
-reset on resume quirk for asrock p67 host".
+Retrying on all cpus may trigger the same issue again, so this patch
+also adds a check to ensure that each cpu has received at least one
+poke between when it enters the waiting loop and when it moves on to
+the ready loop.
 
-Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-and-tested-by: Joseph Lo <josephl@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Colin Cross <ccross@android.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/cpuidle/coupled.c |  107 +++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 82 insertions(+), 25 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -3511,10 +3511,21 @@ void xhci_free_dev(struct usb_hcd *hcd,
- {
- 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
- 	struct xhci_virt_device *virt_dev;
-+	struct device *dev = hcd->self.controller;
- 	unsigned long flags;
- 	u32 state;
- 	int i, ret;
+--- a/drivers/cpuidle/coupled.c
++++ b/drivers/cpuidle/coupled.c
+@@ -106,6 +106,7 @@ struct cpuidle_coupled {
+ 	cpumask_t coupled_cpus;
+ 	int requested_state[NR_CPUS];
+ 	atomic_t ready_waiting_counts;
++	atomic_t abort_barrier;
+ 	int online_count;
+ 	int refcnt;
+ 	int prevent;
+@@ -122,12 +123,19 @@ static DEFINE_MUTEX(cpuidle_coupled_lock
+ static DEFINE_PER_CPU(struct call_single_data, cpuidle_coupled_poke_cb);
  
-+#ifndef CONFIG_USB_DEFAULT_PERSIST
-+	/*
-+	 * We called pm_runtime_get_noresume when the device was attached.
-+	 * Decrement the counter here to allow controller to runtime suspend
-+	 * if no devices remain.
-+	 */
-+	if (xhci->quirks & XHCI_RESET_ON_RESUME)
-+		pm_runtime_put_noidle(dev);
-+#endif
+ /*
+- * The cpuidle_coupled_poked_mask mask is used to avoid calling
++ * The cpuidle_coupled_poke_pending mask is used to avoid calling
+  * __smp_call_function_single with the per cpu call_single_data struct already
+  * in use.  This prevents a deadlock where two cpus are waiting for each others
+  * call_single_data struct to be available
+  */
+-static cpumask_t cpuidle_coupled_poked_mask;
++static cpumask_t cpuidle_coupled_poke_pending;
 +
- 	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);
- 	/* If the host is halted due to driver unload, we still need to free the
- 	 * device.
-@@ -3586,6 +3597,7 @@ static int xhci_reserve_host_control_ep_
- int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
++/*
++ * The cpuidle_coupled_poked mask is used to ensure that each cpu has been poked
++ * once to minimize entering the ready loop with a poke pending, which would
++ * require aborting and retrying.
++ */
++static cpumask_t cpuidle_coupled_poked;
+ 
+ /**
+  * cpuidle_coupled_parallel_barrier - synchronize all online coupled cpus
+@@ -291,10 +299,11 @@ static inline int cpuidle_coupled_get_st
+ 	return state;
+ }
+ 
+-static void cpuidle_coupled_poked(void *info)
++static void cpuidle_coupled_handle_poke(void *info)
  {
- 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
-+	struct device *dev = hcd->self.controller;
- 	unsigned long flags;
- 	int timeleft;
- 	int ret;
-@@ -3638,6 +3650,16 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
- 		goto disable_slot;
- 	}
- 	udev->slot_id = xhci->slot_id;
+ 	int cpu = (unsigned long)info;
+-	cpumask_clear_cpu(cpu, &cpuidle_coupled_poked_mask);
++	cpumask_set_cpu(cpu, &cpuidle_coupled_poked);
++	cpumask_clear_cpu(cpu, &cpuidle_coupled_poke_pending);
+ }
+ 
+ /**
+@@ -313,7 +322,7 @@ static void cpuidle_coupled_poke(int cpu
+ {
+ 	struct call_single_data *csd = &per_cpu(cpuidle_coupled_poke_cb, cpu);
+ 
+-	if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poked_mask))
++	if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poke_pending))
+ 		__smp_call_function_single(cpu, csd, 0);
+ }
+ 
+@@ -340,30 +349,19 @@ static void cpuidle_coupled_poke_others(
+  * @coupled: the struct coupled that contains the current cpu
+  * @next_state: the index in drv->states of the requested state for this cpu
+  *
+- * Updates the requested idle state for the specified cpuidle device,
+- * poking all coupled cpus out of idle if necessary to let them see the new
+- * state.
++ * Updates the requested idle state for the specified cpuidle device.
++ * Returns the number of waiting cpus.
+  */
+-static void cpuidle_coupled_set_waiting(int cpu,
++static int cpuidle_coupled_set_waiting(int cpu,
+ 		struct cpuidle_coupled *coupled, int next_state)
+ {
+-	int w;
+-
+ 	coupled->requested_state[cpu] = next_state;
+ 
+ 	/*
+-	 * If this is the last cpu to enter the waiting state, poke
+-	 * all the other cpus out of their waiting state so they can
+-	 * enter a deeper state.  This can race with one of the cpus
+-	 * exiting the waiting state due to an interrupt and
+-	 * decrementing waiting_count, see comment below.
+-	 *
+ 	 * The atomic_inc_return provides a write barrier to order the write
+ 	 * to requested_state with the later write that increments ready_count.
+ 	 */
+-	w = atomic_inc_return(&coupled->ready_waiting_counts) & WAITING_MASK;
+-	if (w == coupled->online_count)
+-		cpuidle_coupled_poke_others(cpu, coupled);
++	return atomic_inc_return(&coupled->ready_waiting_counts) & WAITING_MASK;
+ }
+ 
+ /**
+@@ -418,13 +416,24 @@ static void cpuidle_coupled_set_done(int
+ static int cpuidle_coupled_clear_pokes(int cpu)
+ {
+ 	local_irq_enable();
+-	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poked_mask))
++	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
+ 		cpu_relax();
+ 	local_irq_disable();
+ 
+ 	return need_resched() ? -EINTR : 0;
+ }
+ 
++static bool cpuidle_coupled_any_pokes_pending(struct cpuidle_coupled *coupled)
++{
++	cpumask_t cpus;
++	int ret;
 +
-+#ifndef CONFIG_USB_DEFAULT_PERSIST
++	cpumask_and(&cpus, cpu_online_mask, &coupled->coupled_cpus);
++	ret = cpumask_and(&cpus, &cpuidle_coupled_poke_pending, &cpus);
++
++	return ret;
++}
++
+ /**
+  * cpuidle_enter_state_coupled - attempt to enter a state with coupled cpus
+  * @dev: struct cpuidle_device for the current cpu
+@@ -449,6 +458,7 @@ int cpuidle_enter_state_coupled(struct c
+ {
+ 	int entered_state = -1;
+ 	struct cpuidle_coupled *coupled = dev->coupled;
++	int w;
+ 
+ 	if (!coupled)
+ 		return -EINVAL;
+@@ -465,14 +475,33 @@ int cpuidle_enter_state_coupled(struct c
+ 	/* Read barrier ensures online_count is read after prevent is cleared */
+ 	smp_rmb();
+ 
+-	cpuidle_coupled_set_waiting(dev->cpu, coupled, next_state);
++reset:
++	cpumask_clear_cpu(dev->cpu, &cpuidle_coupled_poked);
++
++	w = cpuidle_coupled_set_waiting(dev->cpu, coupled, next_state);
 +	/*
-+	 * If resetting upon resume, we can't put the controller into runtime
-+	 * suspend if there is a device attached.
++	 * If this is the last cpu to enter the waiting state, poke
++	 * all the other cpus out of their waiting state so they can
++	 * enter a deeper state.  This can race with one of the cpus
++	 * exiting the waiting state due to an interrupt and
++	 * decrementing waiting_count, see comment below.
 +	 */
-+	if (xhci->quirks & XHCI_RESET_ON_RESUME)
-+		pm_runtime_get_noresume(dev);
-+#endif
++	if (w == coupled->online_count) {
++		cpumask_set_cpu(dev->cpu, &cpuidle_coupled_poked);
++		cpuidle_coupled_poke_others(dev->cpu, coupled);
++	}
+ 
+ retry:
+ 	/*
+ 	 * Wait for all coupled cpus to be idle, using the deepest state
+-	 * allowed for a single cpu.
++	 * allowed for a single cpu.  If this was not the poking cpu, wait
++	 * for at least one poke before leaving to avoid a race where
++	 * two cpus could arrive at the waiting loop at the same time,
++	 * but the first of the two to arrive could skip the loop without
++	 * processing the pokes from the last to arrive.
+ 	 */
+-	while (!cpuidle_coupled_cpus_waiting(coupled)) {
++	while (!cpuidle_coupled_cpus_waiting(coupled) ||
++			!cpumask_test_cpu(dev->cpu, &cpuidle_coupled_poked)) {
+ 		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
+ 			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
+ 			goto out;
+@@ -493,6 +522,12 @@ retry:
+ 	}
+ 
+ 	/*
++	 * Make sure final poke status for this cpu is visible before setting
++	 * cpu as ready.
++	 */
++	smp_wmb();
 +
- 	/* Is this a LS or FS device under a HS hub? */
- 	/* Hub or peripherial? */
- 	return 1;
++	/*
+ 	 * All coupled cpus are probably idle.  There is a small chance that
+ 	 * one of the other cpus just became active.  Increment the ready count,
+ 	 * and spin until all coupled cpus have incremented the counter. Once a
+@@ -511,6 +546,28 @@ retry:
+ 		cpu_relax();
+ 	}
+ 
++	/*
++	 * Make sure read of all cpus ready is done before reading pending pokes
++	 */
++	smp_rmb();
++
++	/*
++	 * There is a small chance that a cpu left and reentered idle after this
++	 * cpu saw that all cpus were waiting.  The cpu that reentered idle will
++	 * have sent this cpu a poke, which will still be pending after the
++	 * ready loop.  The pending interrupt may be lost by the interrupt
++	 * controller when entering the deep idle state.  It's not possible to
++	 * clear a pending interrupt without turning interrupts on and handling
++	 * it, and it's too late to turn on interrupts here, so reset the
++	 * coupled idle state of all cpus and retry.
++	 */
++	if (cpuidle_coupled_any_pokes_pending(coupled)) {
++		cpuidle_coupled_set_done(dev->cpu, coupled);
++		/* Wait for all cpus to see the pending pokes */
++		cpuidle_coupled_parallel_barrier(dev, &coupled->abort_barrier);
++		goto reset;
++	}
++
+ 	/* all cpus have acked the coupled state */
+ 	next_state = cpuidle_coupled_get_state(dev, coupled);
+ 
+@@ -596,7 +653,7 @@ have_coupled:
+ 	coupled->refcnt++;
+ 
+ 	csd = &per_cpu(cpuidle_coupled_poke_cb, dev->cpu);
+-	csd->func = cpuidle_coupled_poked;
++	csd->func = cpuidle_coupled_handle_poke;
+ 	csd->info = (void *)(unsigned long)dev->cpu;
+ 
+ 	return 0;
 
 
