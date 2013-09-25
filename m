@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab3IYMvn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 08:51:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52416 "EHLO mx1.redhat.com"
+	id S1755693Ab3IYMvi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 08:51:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61750 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755668Ab3IYMvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 08:51:40 -0400
+	id S1755615Ab3IYMvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 08:51:36 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -13,19 +13,23 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 15/21] perf tests: Adding event inherit toggling test
-Date: Wed, 25 Sep 2013 14:50:41 +0200
-Message-Id: <1380113447-17144-16-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 13/21] perf tests: Adding event simple toggling test
+Date: Wed, 25 Sep 2013 14:50:39 +0200
+Message-Id: <1380113447-17144-14-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
 References: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Does the same as raw toggling test except it also creates
-child process that runs same workload. Testing that the
-instructions event's toggling is properly inherited and
-count is propagated to the parent.
+Adding toggle toggle interface test into automated suite.
+
+The test creates HW userspace instruction counter, which is
+triggered by 'openat' tracepoint and disabled by 'close'
+tracepoint.
+
+The test compares number of the userspace instructions
+measured by counter with expected count.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -36,59 +40,97 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                     |   1 +
- tools/perf/tests/builtin-test.c         |   4 +
- tools/perf/tests/tests.h                |   1 +
- tools/perf/tests/toggle-event-inherit.c | 132 ++++++++++++++++++++++++++++++++
- 4 files changed, 138 insertions(+)
- create mode 100644 tools/perf/tests/toggle-event-inherit.c
+ tools/perf/Makefile                             |   4 +
+ tools/perf/arch/x86/tests/toggle-event-raw-64.S |  28 +++++++
+ tools/perf/tests/builtin-test.c                 |   4 +
+ tools/perf/tests/tests.h                        |   1 +
+ tools/perf/tests/toggle-event-raw.c             | 106 ++++++++++++++++++++++++
+ 5 files changed, 143 insertions(+)
+ create mode 100644 tools/perf/arch/x86/tests/toggle-event-raw-64.S
+ create mode 100644 tools/perf/tests/toggle-event-raw.c
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 90d7127..893c4a7 100644
+index 430878a..2072389 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -400,6 +400,7 @@ LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
+@@ -398,6 +398,10 @@ endif
+ LIB_OBJS += $(OUTPUT)tests/code-reading.o
+ LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
  LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
- LIB_OBJS += $(OUTPUT)tests/toggle-event-raw.o
- LIB_OBJS += $(OUTPUT)tests/toggle-event-group.o
-+LIB_OBJS += $(OUTPUT)tests/toggle-event-inherit.o
- ifeq ($(RAW_ARCH),x86_64)
- LIB_OBJS += $(OUTPUT)arch/x86/tests/toggle-event-raw-64.o
- endif
++LIB_OBJS += $(OUTPUT)tests/toggle-event-raw.o
++ifeq ($(RAW_ARCH),x86_64)
++LIB_OBJS += $(OUTPUT)arch/x86/tests/toggle-event-raw-64.o
++endif
+ 
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+diff --git a/tools/perf/arch/x86/tests/toggle-event-raw-64.S b/tools/perf/arch/x86/tests/toggle-event-raw-64.S
+new file mode 100644
+index 0000000..027fccd
+--- /dev/null
++++ b/tools/perf/arch/x86/tests/toggle-event-raw-64.S
+@@ -0,0 +1,28 @@
++
++/*
++ * XXX I'd normally do '#include <asm/unistd_64.h>', but it's
++ * overloaded in ./util/include/asm/ with empty file. So using
++ * my own syscall defines instead for now.
++ */
++#define __NR_openat 257
++#define __NR_close 3
++
++	.global test__toggle_event_raw_arch
++test__toggle_event_raw_arch:
++	movq $__NR_openat,%rax
++	xorq %rdi, %rdi
++	xorq %rdx, %rdx
++	xorq %rcx, %rcx
++	xorq %r8, %r8
++	xorq %r9, %r9
++	syscall
++
++	nop			# 1
++	nop			# 2
++
++	movq $__NR_close,%rax	# 3
++	movq $-1, %rdi		# 4
++	syscall			# 5
++
++	mov $5, %rax
++	retq
 diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 7e96550..6768266 100644
+index 1e67437..db9d924b 100644
 --- a/tools/perf/tests/builtin-test.c
 +++ b/tools/perf/tests/builtin-test.c
-@@ -124,6 +124,10 @@ static struct test {
- 		.func = test__toggle_event_group,
+@@ -116,6 +116,10 @@ static struct test {
+ 		.func = test__parse_no_sample_id_all,
  	},
  	{
-+		.desc = "Toggle event inherit",
-+		.func = test__toggle_event_inherit,
++		.desc = "Toggle event raw",
++		.func = test__toggle_event_raw,
 +	},
 +	{
  		.func = NULL,
  	},
  };
 diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index db692bf..f0ef1050 100644
+index e0ac713..4f2a8a1 100644
 --- a/tools/perf/tests/tests.h
 +++ b/tools/perf/tests/tests.h
-@@ -42,5 +42,6 @@ int test__keep_tracking(void);
+@@ -40,5 +40,6 @@ int test__code_reading(void);
+ int test__sample_parsing(void);
+ int test__keep_tracking(void);
  int test__parse_no_sample_id_all(void);
- int test__toggle_event_raw(void);
- int test__toggle_event_group(void);
-+int test__toggle_event_inherit(void);
++int test__toggle_event_raw(void);
  
  #endif /* TESTS_H */
-diff --git a/tools/perf/tests/toggle-event-inherit.c b/tools/perf/tests/toggle-event-inherit.c
+diff --git a/tools/perf/tests/toggle-event-raw.c b/tools/perf/tests/toggle-event-raw.c
 new file mode 100644
-index 0000000..0c02fd8
+index 0000000..5d4406d
 --- /dev/null
-+++ b/tools/perf/tests/toggle-event-inherit.c
-@@ -0,0 +1,132 @@
++++ b/tools/perf/tests/toggle-event-raw.c
+@@ -0,0 +1,106 @@
 +
-+#include <unistd.h>
 +#include <traceevent/event-parse.h>
 +#include "thread_map.h"
 +#include "evsel.h"
@@ -104,13 +146,6 @@ index 0000000..0c02fd8
 + *
 + * Events 1) and 2) are set to toggle ON and OFF
 + * respectively event 3).
-+ * All events are created with inherit flag set.
-+ *
-+ * Workload executes test__toggle_event_raw_arch
-+ * first in parent and then in the child. After
-+ * the child is finished, we check we got 10
-+ * instructions instead of 5, that means plus extra
-+ * 5 from the child.
 + *
 + * Workload in test__toggle_event_raw_arch:
 + *  - executes open_at syscall
@@ -121,7 +156,6 @@ index 0000000..0c02fd8
 + * we counted 5 instructions.
 + *
 + */
-+
 +extern int test__toggle_event_raw_arch(void);
 +
 +static int get_tp_id(const char *name)
@@ -138,25 +172,23 @@ index 0000000..0c02fd8
 +}
 +
 +#ifndef __x86_64__
-+int test__toggle_event_inherit(void)
++int test__toggle_event_raw(void)
 +{
 +	pr_err("The toggle event test not implemented for arch.\n");
 +	return 0;
 +}
 +#else
-+int test__toggle_event_inherit(void)
++int test__toggle_event_raw(void)
 +{
 +	struct perf_event_attr attr_on = {
-+		.type		= PERF_TYPE_TRACEPOINT,
-+		.config		= get_tp_id("sys_enter_openat"),
-+		.sample_period	= 1,
-+		.inherit	= 1,
++		.type   = PERF_TYPE_TRACEPOINT,
++		.config = get_tp_id("sys_enter_openat"),
++		.sample_period = 1,
 +	};
 +	struct perf_event_attr attr_off = {
-+		.type		= PERF_TYPE_TRACEPOINT,
-+		.config		= get_tp_id("sys_enter_close"),
-+		.sample_period	= 1,
-+		.inherit	= 1,
++		.type   = PERF_TYPE_TRACEPOINT,
++		.config = get_tp_id("sys_enter_close"),
++		.sample_period = 1,
 +	};
 +	struct perf_event_attr attr_instr = {
 +		.type		= PERF_TYPE_HARDWARE,
@@ -164,11 +196,9 @@ index 0000000..0c02fd8
 +		.paused		= 1,
 +		.exclude_kernel = 1,
 +		.exclude_hv	= 1,
-+		.inherit	= 1,
 +	};
 +	int fd_on, fd_off, fd_instr;
 +	__u64 value, instr;
-+	int err, status;
 +
 +	fd_instr = sys_perf_event_open(&attr_instr, 0, -1, -1, 0);
 +	if (fd_instr < 0) {
@@ -194,24 +224,11 @@ index 0000000..0c02fd8
 +
 +	instr = test__toggle_event_raw_arch();
 +
-+	err = fork();
-+	if (err == 0) {
-+		test__toggle_event_raw_arch();
-+		_exit(0);
-+	} else if (err < 0) {
-+		pr_err("fork failed\n");
-+		return -1;
-+	}
-+
-+	waitpid(-1, &status, 0);
-+
 +	close(fd_on);
 +	close(fd_off);
 +
 +	if (sizeof(value) != read(fd_instr, &value, sizeof(value)))
 +		pr_err("failed to read instruction event, errno %d\n", errno);
-+
-+	instr *= 2;
 +
 +	pr_debug("got count %llu vs %llu\n", value, instr);
 +
