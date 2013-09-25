@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab3IYMAz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 08:00:55 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45209 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab3IYMAy (ORCPT
+	id S1755355Ab3IYMBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 08:01:24 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:51495 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755198Ab3IYMBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 08:00:54 -0400
-Date: Wed, 25 Sep 2013 14:00:52 +0200
-From: Pavel Machek <pavel@denx.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alan Tull <atull@altera.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
-Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
-Message-ID: <20130925120052.GD9690@amd.pavel.ucw.cz>
-References: <cover.1379519753.git.michal.simek@xilinx.com>
- <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com>
- <20130918191517.GQ19937@titan.lakedaemon.net>
- <20130918203247.GA11181@obsidianresearch.com>
- <1379539063.31417.23.camel@atx-linux-37>
- <20130919100833.GC19346@amd.pavel.ucw.cz>
- <52421829.4050708@zytor.com>
+	Wed, 25 Sep 2013 08:01:23 -0400
+Date: Wed, 25 Sep 2013 13:01:18 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Roy Franz <roy.franz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        matt.fleming@intel.com, leif.lindholm@linaro.org,
+        grant.likely@linaro.org, msalter@redhat.com
+Subject: Re: [PATCH 06/18] Enforce minimum alignment of 1 page on allocations.
+Message-ID: <20130925120118.GE21381@console-pimps.org>
+References: <1379889942-3135-1-git-send-email-roy.franz@linaro.org>
+ <1379889942-3135-7-git-send-email-roy.franz@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52421829.4050708@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1379889942-3135-7-git-send-email-roy.franz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> >> The firmware approach is interesting.  It might be less flexible
-> >> compared with my original code (see link to git below) that this is
-> > 
-> > On the other hand... that's the interface world wants, right? To most
-> > users, fpga bitstream is just a firmware.
-> > 
+On Sun, 22 Sep, at 03:45:30PM, Roy Franz wrote:
+> The efi_high_alloc() and efi_low_alloc() functions
+> use the EFI_ALLOCATE_ADDRESS option to the EFI
+> function allocate_pages(), which requires a minimum
+> of page alignment, and rejects all other requests.
+> The existing code could fail to allocate depending
+> on allocation size, as although repeated allocation
+> attempts were made, none were guaranteed to be page
+> aligned.
 > 
-> No, not really.
 > 
-> The typical assumption with the firmware interface is that there is
-> exactly one possible firmware for each device (possibly modulated by
-> driver version, but still.)  
+> 
+> Signed-off-by: Roy Franz <roy.franz@linaro.org>
+> Acked-by: Mark Salter <msalter@redhat.com>
+> Reviewed-by: Grant Likely <grant.likely@linaro.org>
+> ---
+>  drivers/firmware/efi/efi-stub-helper.c |   14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
 
-Actually, I have seen counterexample there, too. Wifi card had
-different firmware for host and access points mode, probably because
-internal RAM could not fit both at same time. 
+[...]
 
-It is not really different; there's internal logic and you are
-programming it to do something. You can program FPGA, CPLD, or
-firmware for some embedded CPU.
+> +	/* Enforce minimum alignment that EFI requires when requesting
+> +	 * a specific address.  We are doing page-based allocations,
+> +	 * so we must be aligned to a page.
+> +	 */
+> +	if (align < EFI_PAGE_SIZE)
+> +		align = EFI_PAGE_SIZE;
+> +
 
-> This is blatantly not true for an FPGA in
-> the most extreme way possible -- there are an almost infinite number of
-> ways one can load an FPGA.
+FYI I manually fixed up these comments to use the multi-line form, e.g.
 
-Well, usually the FPGA has some function on the board (unless you are
-using it for compute acceleration), and it also wants just one
-version. If you have FPGA-based GSM board, you'll want GSM
-firmware. If you have FPGA-based WIFI, you'll want WIFI firmware. If
-you load GSM firmware there, it will very likely not work because it
-needs different amplifiers etc.
+	/*
+	 * Enforce minimum alignment that EFI requires when requesting
+	 * a specific address.  We are doing page-based allocations,
+	 * so we must be aligned to a page.
+	 */
 
-Heck, you probably _could_ use your WIFI card for cryptographics
-operations just by loading different firmware. People just don't do
-that. I don't expect that to be too different in the FPGA case...
+so that they match the rest of the comments in the file.
 
-> However, I have to question the whole idea of an "FPGA subsystem" --
-> there is an almost infinite number of ways to program an FPGA or FPGA
-> programming device (which may even be a commodity flash with a
-> microcontroller or CPLD, and may be shared with other devices), and it
-> really doesn't make any inherent sense to lump them together.
-
-Firmware loading methods are also different, yet it makes sense to
-have uniform way of loading firmware. This is very similar situation.
-
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Matt Fleming, Intel Open Source Technology Center
