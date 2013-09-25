@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597Ab3IYBFy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:05:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39128 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755111Ab3IYAQi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756116Ab3IYAQi (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Sep 2013 20:16:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39108 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756096Ab3IYAQe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 20:16:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus G Thiel <linus@hanssonlarsson.se>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 062/110] HID: Correct the USB IDs for the new Macbook Air 6
-Date: Tue, 24 Sep 2013 17:15:00 -0700
-Message-Id: <20130925001330.133222854@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 047/110] x86, smap: Handle csum_partial_copy_*_user()
+Date: Tue, 24 Sep 2013 17:14:45 -0700
+Message-Id: <20130925001328.500585149@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -29,57 +26,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henrik Rydberg <rydberg@euromail.se>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 8c89cc17b91992845bd635813cd162fe8dfcec6e upstream.
+commit 7263dda41b5a28ae6566fd126d9b06ada73dd721 upstream.
 
-A recent patch (9d9a04ee) added support for the new machine, but got
-the sequence of USB ids wrong. Reports from both Ian and Linus T show
-that the 0x0291 id is for ISO, not ANSI, which should have the missing
-number 0x0290. This patchs moves the three numbers accordingly, fixing
-the problem.
+Add SMAP annotations to csum_partial_copy_to/from_user().  These
+functions legitimately access user space and thus need to set the AC
+flag.
 
-Reported-and-tested-by: Ian Munsie <darkstarsword@gmail.com>
-Tested-by: Linus G Thiel <linus@hanssonlarsson.se>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+TODO: add explicit checks that the side with the kernel space pointer
+really points into kernel space.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-2aps0u00eer658fd5xyanan7@git.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h         |    6 +++---
- drivers/input/mouse/bcm5974.c |    6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/checksum_32.h |   22 +++++++++++++++++-----
+ arch/x86/lib/csum-wrappers_64.c    |   12 ++++++++++--
+ 2 files changed, 27 insertions(+), 7 deletions(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -135,9 +135,9 @@
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI  0x0255
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO   0x0256
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0290
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0291
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0292
- #define USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY	0x030a
- #define USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY	0x030b
- #define USB_DEVICE_ID_APPLE_IRCONTROL	0x8240
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -89,9 +89,9 @@
- #define USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO	0x025a
- #define USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS	0x025b
- /* MacbookAir6,2 (unibody, June 2013) */
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0290
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0291
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0292
+--- a/arch/x86/include/asm/checksum_32.h
++++ b/arch/x86/include/asm/checksum_32.h
+@@ -49,9 +49,15 @@ static inline __wsum csum_partial_copy_f
+ 						 int len, __wsum sum,
+ 						 int *err_ptr)
+ {
++	__wsum ret;
++
+ 	might_sleep();
+-	return csum_partial_copy_generic((__force void *)src, dst,
+-					 len, sum, err_ptr, NULL);
++	stac();
++	ret = csum_partial_copy_generic((__force void *)src, dst,
++					len, sum, err_ptr, NULL);
++	clac();
++
++	return ret;
+ }
  
- #define BCM5974_DEVICE(prod) {					\
- 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
+ /*
+@@ -176,10 +182,16 @@ static inline __wsum csum_and_copy_to_us
+ 					   int len, __wsum sum,
+ 					   int *err_ptr)
+ {
++	__wsum ret;
++
+ 	might_sleep();
+-	if (access_ok(VERIFY_WRITE, dst, len))
+-		return csum_partial_copy_generic(src, (__force void *)dst,
+-						 len, sum, NULL, err_ptr);
++	if (access_ok(VERIFY_WRITE, dst, len)) {
++		stac();
++		ret = csum_partial_copy_generic(src, (__force void *)dst,
++						len, sum, NULL, err_ptr);
++		clac();
++		return ret;
++	}
+ 
+ 	if (len)
+ 		*err_ptr = -EFAULT;
+--- a/arch/x86/lib/csum-wrappers_64.c
++++ b/arch/x86/lib/csum-wrappers_64.c
+@@ -6,6 +6,7 @@
+  */
+ #include <asm/checksum.h>
+ #include <linux/module.h>
++#include <asm/smap.h>
+ 
+ /**
+  * csum_partial_copy_from_user - Copy and checksum from user space.
+@@ -52,8 +53,10 @@ csum_partial_copy_from_user(const void _
+ 			len -= 2;
+ 		}
+ 	}
++	stac();
+ 	isum = csum_partial_copy_generic((__force const void *)src,
+ 				dst, len, isum, errp, NULL);
++	clac();
+ 	if (unlikely(*errp))
+ 		goto out_err;
+ 
+@@ -82,6 +85,8 @@ __wsum
+ csum_partial_copy_to_user(const void *src, void __user *dst,
+ 			  int len, __wsum isum, int *errp)
+ {
++	__wsum ret;
++
+ 	might_sleep();
+ 
+ 	if (unlikely(!access_ok(VERIFY_WRITE, dst, len))) {
+@@ -105,8 +110,11 @@ csum_partial_copy_to_user(const void *sr
+ 	}
+ 
+ 	*errp = 0;
+-	return csum_partial_copy_generic(src, (void __force *)dst,
+-					 len, isum, NULL, errp);
++	stac();
++	ret = csum_partial_copy_generic(src, (void __force *)dst,
++					len, isum, NULL, errp);
++	clac();
++	return ret;
+ }
+ EXPORT_SYMBOL(csum_partial_copy_to_user);
+ 
 
 
