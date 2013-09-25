@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab3IYAQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:16:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39118 "EHLO
+	id S932201Ab3IYBCS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:02:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39156 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756097Ab3IYAQf (ORCPT
+	with ESMTP id S1756161Ab3IYAQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:35 -0400
+	Tue, 24 Sep 2013 20:16:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 059/110] ath9k: always clear ps filter bit on new assoc
-Date: Tue, 24 Sep 2013 17:14:57 -0700
-Message-Id: <20130925001329.810160039@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Rafi Rubin <rafi@seas.upenn.edu>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 068/110] HID: ntrig: validate feature report details
+Date: Tue, 24 Sep 2013 17:15:06 -0700
+Message-Id: <20130925001330.789315666@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,30 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Kees Cook <keescook@chromium.org>
 
-commit 026d5b07c03458f9c0ccd19c3850564a5409c325 upstream.
+commit 875b4e3763dbc941f15143dd1a18d10bb0be303b upstream.
 
-Otherwise in some cases, EAPOL frames might be filtered during the
-initial handshake, causing delays and assoc failures.
+A HID device could send a malicious feature report that would cause the
+ntrig HID driver to trigger a NULL dereference during initialization:
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[57383.031190] usb 3-1: New USB device found, idVendor=1b96, idProduct=0001
+...
+[57383.315193] BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+[57383.315308] IP: [<ffffffffa08102de>] ntrig_probe+0x25e/0x420 [hid_ntrig]
+
+CVE-2013-2896
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/xmit.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hid/hid-ntrig.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -2387,6 +2387,7 @@ void ath_tx_node_init(struct ath_softc *
- 	for (acno = 0, ac = &an->ac[acno];
- 	     acno < IEEE80211_NUM_ACS; acno++, ac++) {
- 		ac->sched    = false;
-+		ac->clear_ps_filter = true;
- 		ac->txq = sc->tx.txq_map[acno];
- 		INIT_LIST_HEAD(&ac->tid_q);
- 	}
+--- a/drivers/hid/hid-ntrig.c
++++ b/drivers/hid/hid-ntrig.c
+@@ -115,7 +115,8 @@ static inline int ntrig_get_mode(struct
+ 	struct hid_report *report = hdev->report_enum[HID_FEATURE_REPORT].
+ 				    report_id_hash[0x0d];
+ 
+-	if (!report)
++	if (!report || report->maxfield < 1 ||
++	    report->field[0]->report_count < 1)
+ 		return -EINVAL;
+ 
+ 	hid_hw_request(hdev, report, HID_REQ_GET_REPORT);
 
 
