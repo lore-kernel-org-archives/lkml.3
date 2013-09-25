@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab3IYAi5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:38:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39590 "EHLO
+	id S932280Ab3IYAUZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:20:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39579 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755020Ab3IYAU0 (ORCPT
+	with ESMTP id S932264Ab3IYAUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:26 -0400
+	Tue, 24 Sep 2013 20:20:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [ 054/117] x86, amd_nb: Clarify F15h, model 30h GART and L3 support
-Date: Tue, 24 Sep 2013 17:18:40 -0700
-Message-Id: <20130925001746.741772045@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 047/117] usb: dont check pm qos NO_POWER_OFF flag in usb_port_suspend()
+Date: Tue, 24 Sep 2013 17:18:33 -0700
+Message-Id: <20130925001745.967881355@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,63 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 7d64ac6422092adbbdaa279ab32f9d4c90a84558 upstream.
+commit 98a4f1ff7bea8002ab79d6776e30d27932e88244 upstream.
 
-F15h, models 0x30 and later don't have a GART. Note that. Also check
-CPUID leaf 0x80000006 for L3 prescence because there are models which
-don't sport an L3 cache.
+The pm qos NO_POWER_OFF flag is checked twice during usb device suspend
+to see if the usb port power off condition is met. This is redundant and
+also will prevent the port from being powered off if the NO_POWER_OFF
+flag is changed to 1 from 0 after the device was already suspended.
 
-Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-[ Boris: rewrite commit message, cleanup comments. ]
-Signed-off-by: Borislav Petkov <bp@suse.de>
+More detail in the following link.
+	http://marc.info/?l=linux-usb&m=136543949130865&w=2
+
+This patch should be backported to kernels as old as 3.7, that
+contain the commit f7ac7787ad361e31a7972e2854ed8dc2eedfac3b "usb/acpi:
+Use ACPI methods to power off ports."
+
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/amd_nb.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ drivers/usb/core/hub.c |   14 ++------------
+ 1 file changed, 2 insertions(+), 12 deletions(-)
 
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -20,6 +20,7 @@ const struct pci_device_id amd_nb_misc_i
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
- 	{}
- };
-@@ -27,6 +28,7 @@ EXPORT_SYMBOL(amd_nb_misc_ids);
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3043,19 +3043,9 @@ int usb_port_suspend(struct usb_device *
+ 		usb_set_device_state(udev, USB_STATE_SUSPENDED);
+ 	}
  
- static const struct pci_device_id amd_nb_link_ids[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F4) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
- 	{}
- };
-@@ -81,13 +83,20 @@ int amd_cache_northbridges(void)
- 			next_northbridge(misc, amd_nb_misc_ids);
- 		node_to_amd_nb(i)->link = link =
- 			next_northbridge(link, amd_nb_link_ids);
--        }
-+	}
+-	/*
+-	 * Check whether current status meets the requirement of
+-	 * usb port power off mechanism
+-	 */
+ 	if (status == 0 && !udev->do_remote_wakeup && udev->persist_enabled) {
+-		enum pm_qos_flags_status pm_qos_stat;
+-
+-		pm_qos_stat = dev_pm_qos_flags(&port_dev->dev,
+-				PM_QOS_FLAG_NO_POWER_OFF);
+-		if (pm_qos_stat != PM_QOS_FLAGS_ALL) {
+-			pm_runtime_put_sync(&port_dev->dev);
+-			port_dev->did_runtime_put = true;
+-		}
++		pm_runtime_put_sync(&port_dev->dev);
++		port_dev->did_runtime_put = true;
+ 	}
  
-+	/* GART present only on Fam15h upto model 0fh */
- 	if (boot_cpu_data.x86 == 0xf || boot_cpu_data.x86 == 0x10 ||
--	    boot_cpu_data.x86 == 0x15)
-+	    (boot_cpu_data.x86 == 0x15 && boot_cpu_data.x86_model < 0x10))
- 		amd_northbridges.flags |= AMD_NB_GART;
- 
- 	/*
-+	 * Check for L3 cache presence.
-+	 */
-+	if (!cpuid_edx(0x80000006))
-+		return 0;
-+
-+	/*
- 	 * Some CPU families support L3 Cache Index Disable. There are some
- 	 * limitations because of E382 and E388 on family 0x10.
- 	 */
+ 	usb_mark_last_busy(hub->hdev);
 
 
