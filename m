@@ -1,100 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428Ab3IYQpt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 12:45:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11224 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845Ab3IYQps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 12:45:48 -0400
-Message-ID: <1380127533.3030.319.camel@ul30vt.home>
-Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bharat Bhushan <r65777@freescale.com>
-Cc: joro@8bytes.org, benh@kernel.crashing.org, galak@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-pci@vger.kernel.org, agraf@suse.de, scottwood@freescale.com,
-        iommu@lists.linux-foundation.org,
-        Bharat Bhushan <Bharat.Bhushan@freescale.com>
-Date: Wed, 25 Sep 2013 10:45:33 -0600
-In-Reply-To: <1379575763-2091-3-git-send-email-Bharat.Bhushan@freescale.com>
-References: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1379575763-2091-3-git-send-email-Bharat.Bhushan@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752973Ab3IYQq5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 12:46:57 -0400
+Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:36211 "EHLO
+	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750866Ab3IYQq5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 12:46:57 -0400
+Date: Wed, 25 Sep 2013 16:46:55 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ingo Molnar <mingo@kernel.org>
+cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [pchecks v1 4/4] percpu: Add preemption checks to __this_cpu
+ ops
+In-Reply-To: <20130924172600.GD10261@gmail.com>
+Message-ID: <000001415604292f-63d4c50d-23e2-43ea-af60-f0e385c71661-000000@email.amazonses.com>
+References: <20130923191256.584672290@linux.com> <000001414c47a1da-a60858ec-6fe0-4560-a859-8274151411bf-000000@email.amazonses.com> <20130924080347.GH28538@gmail.com> <00000141505b72a3-6935722e-fdfb-4c46-b52c-bc40609144ac-000000@email.amazonses.com>
+ <20130924151847.GB8494@gmail.com> <00000141509c4346-586ca654-989b-4a6a-ae30-592d2f8f11a8-000000@email.amazonses.com> <20130924172600.GD10261@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.09.25-54.240.9.62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-19 at 12:59 +0530, Bharat Bhushan wrote:
-> This api return the iommu domain to which the device is attached.
-> The iommu_domain is required for making API calls related to iommu.
-> Follow up patches which use this API to know iommu maping.
-> 
-> Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
-> ---
->  drivers/iommu/iommu.c |   10 ++++++++++
->  include/linux/iommu.h |    7 +++++++
->  2 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> index fbe9ca7..6ac5f50 100644
-> --- a/drivers/iommu/iommu.c
-> +++ b/drivers/iommu/iommu.c
-> @@ -696,6 +696,16 @@ void iommu_detach_device(struct iommu_domain *domain, struct device *dev)
->  }
->  EXPORT_SYMBOL_GPL(iommu_detach_device);
->  
-> +struct iommu_domain *iommu_get_dev_domain(struct device *dev)
-> +{
-> +	struct iommu_ops *ops = dev->bus->iommu_ops;
-> +
-> +	if (unlikely(ops == NULL || ops->get_dev_iommu_domain == NULL))
-> +		return NULL;
-> +
-> +	return ops->get_dev_iommu_domain(dev);
-> +}
-> +EXPORT_SYMBOL_GPL(iommu_get_dev_domain);
+On Tue, 24 Sep 2013, Ingo Molnar wrote:
 
-What prevents this from racing iommu_domain_free()?  There's no
-references acquired, so there's no reason for the caller to assume the
-pointer is valid.
+> > > > And this kind of insulting behavior is really discouraging people to
+> > > > do work on the kernel.
+>
+> You can stop playing the victim card: you are not a newbie anymore by any
+> definition, you've been hacking the Linux kernel for how long, 10+ years,
+> writing hundreds of patches? People expect higher quality series from you
+> and you need to learn to address criticism of your workflow as well.
+>
+> You won't find a _single_ mail in the last 15+ years of lkml where I
+> reacted strongly to a newbie being dense or abusive. Newbies can make all
+> sorts of mistakes, it's part of the learning process - but after 10 years
+> you are not a newbie anymore...
 
->  /*
->   * IOMMU groups are really the natrual working unit of the IOMMU, but
->   * the IOMMU API works on domains and devices.  Bridge that gap by
-> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-> index 7ea319e..fa046bd 100644
-> --- a/include/linux/iommu.h
-> +++ b/include/linux/iommu.h
-> @@ -127,6 +127,7 @@ struct iommu_ops {
->  	int (*domain_set_windows)(struct iommu_domain *domain, u32 w_count);
->  	/* Get the numer of window per domain */
->  	u32 (*domain_get_windows)(struct iommu_domain *domain);
-> +	struct iommu_domain *(*get_dev_iommu_domain)(struct device *dev);
->  
->  	unsigned long pgsize_bitmap;
->  };
-> @@ -190,6 +191,7 @@ extern int iommu_domain_window_enable(struct iommu_domain *domain, u32 wnd_nr,
->  				      phys_addr_t offset, u64 size,
->  				      int prot);
->  extern void iommu_domain_window_disable(struct iommu_domain *domain, u32 wnd_nr);
-> +extern struct iommu_domain *iommu_get_dev_domain(struct device *dev);
->  /**
->   * report_iommu_fault() - report about an IOMMU fault to the IOMMU framework
->   * @domain: the iommu domain where the fault has happened
-> @@ -284,6 +286,11 @@ static inline void iommu_domain_window_disable(struct iommu_domain *domain,
->  {
->  }
->  
-> +static inline struct iommu_domain *iommu_get_dev_domain(struct device *dev)
-> +{
-> +	return NULL;
-> +}
-> +
->  static inline phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain, dma_addr_t iova)
->  {
->  	return 0;
+This has nothing to do with newbieness but with general communication
+behavior. I am not a full time kernel developer (nor would I want to be
+because it seems to cause some sort of cabin fever) and need to take time
+off my other duties in order to work on these patches. Time is limited.
 
-
+And then instead of thanks I get insults sprinkled with some paranoia.
 
