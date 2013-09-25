@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112Ab3IYBXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:23:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38850 "EHLO
+	id S1755722Ab3IYAPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:15:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38670 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab3IYAPy (ORCPT
+	with ESMTP id S1755503Ab3IYAMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:15:54 -0400
+	Tue, 24 Sep 2013 20:12:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 002/110] UBI: Fix PEB leak in wear_leveling_worker()
-Date: Tue, 24 Sep 2013 17:14:00 -0700
-Message-Id: <20130925001323.669292910@linuxfoundation.org>
+        Greg Thelen <gthelen@google.com>, Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 33/40] memcg: fix multiple large threshold notifications
+Date: Tue, 24 Sep 2013 17:12:05 -0700
+Message-Id: <20130925001045.542629293@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
-References: <20130925001323.387158698@linuxfoundation.org>
+In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
+References: <20130925001041.939335518@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Greg Thelen <gthelen@google.com>
 
-commit 5ef4414f4bc26a19cfd5cd11aee9697a863e4d51 upstream.
+commit 2bff24a3707093c435ab3241c47dcdb5f16e432b upstream.
 
-get_peb_for_wl() removes the PEB from the free list.
-If the WL subsystem detects that no wear leveling is needed
-it cancels the operation and drops the gained PEB.
-In this case we have to put the PEB back into the free list.
+A memory cgroup with (1) multiple threshold notifications and (2) at least
+one threshold >=2G was not reliable.  Specifically the notifications would
+either not fire or would not fire in the proper order.
 
-This issue was introduced with commit ed4b7021c
-(UBI: remove PEB from free tree in get_peb_for_wl()).
+The __mem_cgroup_threshold() signaling logic depends on keeping 64 bit
+thresholds in sorted order.  mem_cgroup_usage_register_event() sorts them
+with compare_thresholds(), which returns the difference of two 64 bit
+thresholds as an int.  If the difference is positive but has bit[31] set,
+then sort() treats the difference as negative and breaks sort order.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+This fix compares the two arbitrary 64 bit thresholds returning the
+classic -1, 0, 1 result.
+
+The test below sets two notifications (at 0x1000 and 0x81001000):
+  cd /sys/fs/cgroup/memory
+  mkdir x
+  for x in 4096 2164264960; do
+    cgroup_event_listener x/memory.usage_in_bytes $x | sed "s/^/$x listener:/" &
+  done
+  echo $$ > x/cgroup.procs
+  anon_leaker 500M
+
+v3.11-rc7 fails to signal the 4096 event listener:
+  Leaking...
+  Done leaking pages.
+
+Patched v3.11-rc7 properly notifies:
+  Leaking...
+  4096 listener:2013:8:31:14:13:36
+  Done leaking pages.
+
+The fixed bug is old.  It appears to date back to the introduction of
+memcg threshold notifications in v2.6.34-rc1-116-g2e72b6347c94 "memcg:
+implement memory thresholds"
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/wl.c |    3 +++
- 1 file changed, 3 insertions(+)
+ mm/memcontrol.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -1069,6 +1069,9 @@ static int wear_leveling_worker(struct u
- 		if (!(e2->ec - e1->ec >= UBI_WL_THRESHOLD)) {
- 			dbg_wl("no WL needed: min used EC %d, max free EC %d",
- 			       e1->ec, e2->ec);
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4349,7 +4349,13 @@ static int compare_thresholds(const void
+ 	const struct mem_cgroup_threshold *_a = a;
+ 	const struct mem_cgroup_threshold *_b = b;
+ 
+-	return _a->threshold - _b->threshold;
++	if (_a->threshold > _b->threshold)
++		return 1;
 +
-+			/* Give the unused PEB back */
-+			wl_tree_add(e2, &ubi->free);
- 			goto out_cancel;
- 		}
- 		self_check_in_wl_tree(ubi, e1, &ubi->used);
++	if (_a->threshold < _b->threshold)
++		return -1;
++
++	return 0;
+ }
+ 
+ static int mem_cgroup_oom_notify_cb(struct mem_cgroup *memcg)
 
 
