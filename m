@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab3IYUcR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 16:32:17 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755305Ab3IYUcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 16:32:16 -0400
-From: Richard Weinberger <richard@nod.at>
-To: dedekind1@gmail.com
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, richard.genoud@gmail.com,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 2/2] UBI: Call scan_all() with correct offset in error case
-Date: Wed, 25 Sep 2013 22:32:05 +0200
-Message-Id: <1380141125-11063-2-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1380141125-11063-1-git-send-email-richard@nod.at>
-References: <1380141125-11063-1-git-send-email-richard@nod.at>
+	id S1756115Ab3IYUdb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 16:33:31 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:52412 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755534Ab3IYUd2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 16:33:28 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20130925200539.GH23337@ld-irv-0074.broadcom.com>
+References: <1378986619-26765-1-git-send-email-pekon@ti.com>
+	<1378986619-26765-2-git-send-email-pekon@ti.com>
+	<20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
+	<20130925134619.GG10746@radagast>
+	<20130925175527.GA23337@ld-irv-0074.broadcom.com>
+	<20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
+	<20130925200539.GH23337@ld-irv-0074.broadcom.com>
+Date: Wed, 25 Sep 2013 13:33:27 -0700
+Message-ID: <CAOesGMif301iBe9zxHudkC_G9SzPPy1Mj4XYvQ-MY8nmx4wO+A@mail.gmail.com>
+Subject: Re: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various ECC schemes
+From: Olof Johansson <olof@lixom.net>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: "Gupta, Pekon" <pekon@ti.com>,
+        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we find an invalid fastmap we have to scan from the very beginning.
-Otherwise we leak the first 64 PEBs.
+On Wed, Sep 25, 2013 at 1:05 PM, Brian Norris
+<computersforpeace@gmail.com> wrote:
 
-Reported-by: Richard Genoud <richard.genoud@gmail.com>
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/attach.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+> Olof has given good advice on your DT binding and has (slowly) been
+> responding to other requests for DT review that make it to his list. I
+> see that he hasn't followed up on your changes (this v6), so pinging him
+> (as you did) is probably the correct approach. But please do recognize
+> that the DT list is very high volume, so it's hard to get good timely
+> responses there.
 
-diff --git a/drivers/mtd/ubi/attach.c b/drivers/mtd/ubi/attach.c
-index c071d41..03b32b0 100644
---- a/drivers/mtd/ubi/attach.c
-+++ b/drivers/mtd/ubi/attach.c
-@@ -1417,9 +1417,11 @@ int ubi_attach(struct ubi_device *ubi, int force_scan)
- 				ai = alloc_ai("ubi_aeb_slab_cache2");
- 				if (!ai)
- 					return -ENOMEM;
--			}
- 
--			err = scan_all(ubi, ai, UBI_FM_MAX_START);
-+				err = scan_all(ubi, ai, 0);
-+			} else {
-+				err = scan_all(ubi, ai, UBI_FM_MAX_START);
-+			}
- 		}
- 	}
- #else
--- 
-1.8.1.4
+I am not a DT mainainer, but sometimes when I see a binding that
+appears to be wrong I speak up. In this case, the binding was one of
+those.
 
+That doesn't mean you should necessarily rely on me for the rest of
+the review, there are several dedicated maintainers right now that
+should be able to spread the load across them, and it is their ack you
+should seek on the binding, not mine.
+
+That being said: this latest version looks good to me. See how much
+simpler the binding got when you stopped trying to describe driver
+behavior and focused on describing hardware? That's the way we want it
+to look like.
+
+
+So, I have no more objections to it, and I hope you can get a quick
+review from a DT maintainer on the rest of the binding.
+
+
+-Olof
