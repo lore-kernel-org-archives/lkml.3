@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab3IYPQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 11:16:09 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:16404 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755427Ab3IYPQH (ORCPT
+	id S1756101Ab3IYPQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 11:16:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20576 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756018Ab3IYPQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 11:16:07 -0400
-Date: Wed, 25 Sep 2013 11:16:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Cc: Jiang Liu <liuj97@gmail.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 2/7] arm64: introduce interfaces to hotpatch kernel
- and module code
-Message-ID: <20130925111605.7437f70f@gandalf.local.home>
-In-Reply-To: <CA+b37P0P0RhUytnkLSXmz28wzzsoL3-viV2oxNJqq2nP7kZBFA@mail.gmail.com>
-References: <1380105868-31985-1-git-send-email-liuj97@gmail.com>
-	<1380105868-31985-3-git-send-email-liuj97@gmail.com>
-	<20130925103535.2249f617@gandalf.local.home>
-	<CA+b37P0P0RhUytnkLSXmz28wzzsoL3-viV2oxNJqq2nP7kZBFA@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Wed, 25 Sep 2013 11:16:45 -0400
+Date: Wed, 25 Sep 2013 11:16:38 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: [GIT PULL] (xen) stable/for-linus-3.12-rc2-tag
+Message-ID: <20130925151638.GA5856@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Sep 2013 20:12:17 +0530
-Sandeepa Prabhu <sandeepa.prabhu@linaro.org> wrote:
+
+--OgqxwSJOaUobr8KG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Hey Linus,
+
+Please git pull the following tag:
+
+git pull git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-3.12-rc2-tag
+
+which has bug-fixes and one update to the kernel-paramters.txt documentation.
+The signed tag says it all:
+<signed tag>
+Bug-fixes:
+ - Fix PV spinlocks triggering jump_label code bug
+ - Remove extraneous code in the tpm front driver
+ - Fix ballooning out of pages when non-preemptible
+ - Fix deadlock when using a 32-bit initial domain with large amount of memory.
+ - Add xen_nopvpsin parameter to the documentation
+</signed tag>
+
+Please pull!
+
+ Documentation/kernel-parameters.txt |  4 ++++
+ arch/x86/include/asm/xen/page.h     | 31 ++++++++++++++++++++-----------
+ arch/x86/xen/p2m.c                  | 10 ++++------
+ arch/x86/xen/spinlock.c             | 26 ++++++++++++++++++++++++--
+ drivers/char/tpm/xen-tpmfront.c     | 36 ------------------------------------
+ drivers/xen/balloon.c               | 23 +++++++++++------------
+ 6 files changed, 63 insertions(+), 67 deletions(-)
+
+David Vrabel (2):
+      xen/balloon: don't alloc page while non-preemptible
+      xen/p2m: check MFN is in range before using the m2p table
+
+Jason Gunthorpe (2):
+      tpm: xen-tpmfront: Fix default durations
+      tpm: xen-tpmfront: Remove the locality sysfs attribute
+
+Konrad Rzeszutek Wilk (2):
+      xen: Do not enable spinlocks before jump_label_init() has executed
+      xen/spinlock: Document the xen_nopvspin parameter.
 
 
-> > On aarch64, are instructions always word aligned? If not, it should be
-> > safe for stop machine to modify non word aligned instructions, but this
-> > patch looks like it doesn't allow stop_machine() to do so.
-> Steve,
-> 
-> Yes, aarch64 instructions must be word-aligned, else instruction fetch
-> would generate Misaligned PC fault.
-> 
+--OgqxwSJOaUobr8KG
+Content-Type: application/pgp-signature
 
-Thanks for clarifying, as IIUC, there's ARM architectures that allow
-for 2 and 4 byte instructions.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
--- Steve
+iQEcBAEBAgAGBQJSQv5QAAoJEFjIrFwIi8fJaGIH/jbvpJTR5Ayr6v9vNGkqiGI7
+6/684M2fZ0fInoex1UwhJynQWCYbS898DnLVuTwjUQSdhTVkOeiQphjata0VdniW
+Q5DHqiYKw0OSBG9V4/5WrPO0Qno250sooqrhsqnPu8J9kARJgIgxUxqOXJGVOv69
+8oftq2GPTyvPzMX11YS3SzfGfSFk+WmbRt7Rv8n0COHPrINkeryhkaG+cAEhitBX
+X2zovzfwyyEpt2jEb/82XHogFDSDabe5uqIQObWMn2Dvz66RpQAzBKdx9cSeJZd1
+tSaN3ftAaFvVjj4xiMUAWEXYkqX6t1LiUWXfeTI/V35TBIljr+OM0ASjAdeIREs=
+=KlDO
+-----END PGP SIGNATURE-----
+
+--OgqxwSJOaUobr8KG--
