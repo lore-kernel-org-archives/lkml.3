@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab3IYQTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 12:19:36 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:59143 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab3IYQSY (ORCPT
+	id S1754838Ab3IYQTz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 12:19:55 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36732 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab3IYQTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 12:18:24 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/7] irq: Optimize call to softirq on hardirq exit
-Date: Wed, 25 Sep 2013 18:18:02 +0200
-Message-Id: <1380125886-10341-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
-References: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
+	Wed, 25 Sep 2013 12:19:53 -0400
+Date: Wed, 25 Sep 2013 17:19:49 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch: Find CamelCase definitions of
+ struct/union/enum
+Message-ID: <20130925161949.GZ13318@ZenIV.linux.org.uk>
+References: <1380047934.3575.100.camel@joe-AO722>
+ <20130925152432.GY13318@ZenIV.linux.org.uk>
+ <1380123344.17366.5.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380123344.17366.5.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before processing softirqs on hardirq exit, we already
-do the check for pending softirqs while hardirqs are
-guaranteed to be disabled.
+On Wed, Sep 25, 2013 at 08:35:44AM -0700, Joe Perches wrote:
 
-So we can take a shortcut and safely jump to the arch
-specific implementation directly.
+> We disagree.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@au1.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul Mackerras <paulus@au1.ibm.com>
-Cc: James Hogan <james.hogan@imgtec.com>
-Cc: James E.J. Bottomley <jejb@parisc-linux.org>
-Cc: Helge Deller <deller@gmx.de>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- kernel/softirq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Obviously.
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 26ee727..17c5cd2 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -335,7 +335,7 @@ static inline void invoke_softirq(void)
- 		 * in its own stack to prevent from any overrun on top
- 		 * of a potentially deep task stack.
- 		 */
--		do_softirq();
-+		do_softirq_own_stack();
- 	} else {
- 		wakeup_softirqd();
- 	}
--- 
-1.8.3.1
+> I think Propercase should be discouraged.
+> ie: Qdisc et al.
 
+Excuse me, but "Joe happens to think that something should be discouraged"
+is not a problem.  "Joe uses checkpatch.pl as force multiplier, recruiting
+hundreds of monkeys to enforce his personal preferences", OTOH, very much is.
+
+You are calling for ban on any mixed-case identifiers.  I see at least three
+cases where they can be legitimate:
+	* labels a-la Enomem, etc.  I've been using those and I will
+keep doing so, checkpatch.pl and its users be damned.
+	* enum members, to distinguish those from defines (first letter
+capitalized vs. all-caps).
+	* (local) typedefs for structs; I really don't like their use for
+anything non-local, but IMO they have their uses in cases like e.g.
+fs/binfmt_misc.c
