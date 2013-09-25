@@ -1,541 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab3IYIEY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 04:04:24 -0400
-Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:48038
-	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752733Ab3IYIEQ (ORCPT
+	id S1754626Ab3IYIFq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 04:05:46 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:26756 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab3IYIFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 04:04:16 -0400
-Message-ID: <524298FE.4090200@newflow.co.uk>
-Date: Wed, 25 Sep 2013 09:04:14 +0100
-From: Mark Jackson <mpfj-list@newflow.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Javier Martinez Canillas <martinez.javier@gmail.com>,
-        device-tree <devicetree-discuss@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH v3] Add support for Newflow NanoBone board
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Wed, 25 Sep 2013 04:05:37 -0400
+X-AuditID: cbfee68e-b7f756d000004512-c0-5242994b1093
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Mark Brown'" <broonie@kernel.org>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>, "'Milo Kim'" <milo.kim@ti.com>
+References: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
+In-reply-to: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
+Subject: [PATCH 12/20] regulator: lp8788-ldo: use devm_regulator_register()
+Date: Wed, 25 Sep 2013 17:05:30 +0900
+Message-id: <001501ceb9c6$00e0f8d0$02a2ea70$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac65w5fHnzL+CpaSR8SldcZ2fs0oxwAAlGcg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zY13vmU5BBlfeM1tMffiEzeLywkus
+	Ft+udDBZXN41h81i+a91LA6sHjtn3WX32LSqk82jb8sqRo/jN7YzeXzeJBfAGsVlk5Kak1mW
+	WqRvl8CVsbTfrGCGYMX11kamBsblfF2MnBwSAiYST5reMUHYYhIX7q1n62Lk4hASWMYo8Wzd
+	BmaYokOte1ghEosYJU7NmMwC4fxilLi84DQLSBWbgJrEly+H2bsYOThEBFQl/r9yB6lhFuhm
+	lLi67DM7SI2QgK3E8r+3weo5Bewklt37zAZiCwt4S0zqnQ52BgtQ7/nlq8DivED1SzZ/YoWw
+	BSV+TL4H1sssoCWxfudxJghbXmLzmrfMIHslBNQlHv3VBQmLCBhJ3PrYwwxRIiKx78U7Rohn
+	HrFLrFgnDLFKQOLb5EMsEK2yEpsOQP0rKXFwxQ2WCYwSs5AsnoVk8Swki2ch2bCAkWUVo2hq
+	QXJBcVJ6kZFecWJucWleul5yfu4mRkic9u1gvHnA+hBjMtD6icxSosn5wDjPK4k3NDYzsjA1
+	MTU2Mrc0I01YSZxXrcU6UEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANj2ILFcv6blj181rL/
+	gWpgvzHr88UV51Wnm/abfak03fX41sTK1oW7rldaTrWI/Sh6Xn61/EX9VM+ZLOl3HziJpH71
+	5b582G7Hg/r9irOeRK16zRhzk+F7f4xEr5LlxfbOSLFGzUf8h1SVxCMnGXyVD3wxIXrz8b1c
+	iwOv7fTrrBH471WbddZSiaU4I9FQi7moOBEAi5Y+5OkCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jAV2vmU5BBnt6bSymPnzCZnF54SVW
+	i29XOpgsLu+aw2ax/Nc6FgdWj52z7rJ7bFrVyebRt2UVo8fxG9uZPD5vkgtgjWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzFjab1YwQ7DiemsjUwPjcr4uRk4OCQETiUOt
+	e1ghbDGJC/fWs3UxcnEICSxilDg1YzILhPOLUeLygtMsIFVsAmoSX74cZu9i5OAQEVCV+P/K
+	HaSGWaCbUeLqss/sIDVCArYSy//eBqvnFLCTWHbvMxuILSzgLTGpdzoTiM0C1Ht++SqwOC9Q
+	/ZLNn1ghbEGJH5PvgfUyC2hJrN95nAnClpfYvOYtM8heCQF1iUd/dUHCIgJGErc+9jBDlIhI
+	7HvxjnECo9AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQITgPP
+	pHcwrmqwOMQowMGoxMMrcNQxSIg1say4MvcQowQHs5IIb9FUpyAh3pTEyqrUovz4otKc1OJD
+	jMlAj05klhJNzgemqLySeENjEzMjSyMzCyMTc3PShJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi
+	4JRqYHRfbJwV7HW232XJfyWNWRYXmW4XLQ1mWc/9TvR7CavVzZ2mXcmls/Z/eZscmn7js7RP
+	3ePO7Q7yt/TiJ+zt0E/eUsU+hX/b1vci/StYdU8Edi3+uHv53eNpe48abj7U7VUxwduwc4vB
+	udAAe8mqqYzdIrMPrrDhTMlb+/p5yP5Jyw77/9+S0KjEUpyRaKjFXFScCAB0uTz8RwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NanoBone Specification:
------------------------
-CPU:
-  TI AM335x
+Use devm_regulator_register() to make cleanup paths simpler,
+and remove unnecessary remove().
 
-Memory:
-  256MB DDR3
-  128MB NOR flash
-  128KB FRAM
-
-Ethernet:
-  2 x 10/100 connected to SMSC LAN8710 PHY
-
-USB:
-  1 x USB2.0 Type A
-
-I2C:
-  2Kbit EEPROM (Microchip 24AA02)
-  RTC (Maxim DS1338)
-  GPIO Expander (Microchip MCP23017)
-
-Expansion connector:
-  6 x UART
-  1 x MMC/SD
-  1 x USB2.0
-
-Signed-off-by: Mark Jackson <mpfj@newflow.co.uk>
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
-Changes in v3:
-- Added MMC support
-- Fixed regulator limits
+ drivers/regulator/lp8788-ldo.c |   24 ++----------------------
+ 1 file changed, 2 insertions(+), 22 deletions(-)
 
-Changes in v2:
-- Reworked to use existing device nodes as suggested by Javier
-
- MAINTAINERS                       |    6 +
- arch/arm/boot/dts/Makefile        |    1 +
- arch/arm/boot/dts/am335x-nano.dts |  431 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 438 insertions(+)
- create mode 100644 arch/arm/boot/dts/am335x-nano.dts
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index e61c2e8..8a4c9d9 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6062,6 +6062,12 @@ L:	linux-omap@vger.kernel.org
- S:	Maintained
- F:	drivers/gpio/gpio-omap.c
+diff --git a/drivers/regulator/lp8788-ldo.c b/drivers/regulator/lp8788-ldo.c
+index 0527d87..b9a29a2 100644
+--- a/drivers/regulator/lp8788-ldo.c
++++ b/drivers/regulator/lp8788-ldo.c
+@@ -543,7 +543,7 @@ static int lp8788_dldo_probe(struct platform_device *pdev)
+ 	cfg.driver_data = ldo;
+ 	cfg.regmap = lp->regmap;
  
-+OMAP/NEWFLOW NANOBONE MACHINE SUPPORT
-+M:	Mark Jackson <mpfj@newflow.co.uk>
-+L:	linux-omap@vger.kernel.org
-+S:	Maintained
-+F:	arch/arm/boot/dts/am335x-nano.dts
-+
- OMFS FILESYSTEM
- M:	Bob Copeland <me@bobcopeland.com>
- L:	linux-karma-devel@lists.sourceforge.net
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index e95af3f..543e837 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -184,6 +184,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
- 	am335x-evmsk.dtb \
- 	am335x-bone.dtb \
- 	am335x-boneblack.dtb \
-+	am335x-nano.dtb \
- 	am3517-evm.dtb \
- 	am3517_mt_ventoux.dtb \
- 	am43x-epos-evm.dtb
-diff --git a/arch/arm/boot/dts/am335x-nano.dts b/arch/arm/boot/dts/am335x-nano.dts
-new file mode 100644
-index 0000000..9907b49
---- /dev/null
-+++ b/arch/arm/boot/dts/am335x-nano.dts
-@@ -0,0 +1,431 @@
-+/*
-+ * Copyright (C) 2013 Newflow Ltd - http://www.newflow.co.uk/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+
-+#include "am33xx.dtsi"
-+
-+/ {
-+	model = "Newflow AM335x NanoBone";
-+	compatible = "ti,am33xx";
-+
-+	cpus {
-+		cpu@0 {
-+			cpu0-supply = <&dcdc2_reg>;
-+		};
-+	};
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x80000000 0x10000000>; /* 256 MB */
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+
-+		led@0 {
-+			label = "nanobone:green:usr1";
-+			gpios = <&gpio1 5 0>;
-+			default-state = "off";
-+		};
-+	};
-+};
-+
-+&am33xx_pinmux {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&misc_pins>;
-+
-+	misc_pins: misc_pins {
-+		pinctrl-single,pins = <
-+			0x15c (PIN_OUTPUT | MUX_MODE7)	/* spi0_cs0.gpio0_5 */
-+		>;
-+	};
-+
-+	gpmc_pins: gpmc_pins {
-+		pinctrl-single,pins = <
-+			0x0 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad0.gpmc_ad0 */
-+			0x4 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad1.gpmc_ad1 */
-+			0x8 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad2.gpmc_ad2 */
-+			0xc (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad3.gpmc_ad3 */
-+			0x10 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad4.gpmc_ad4 */
-+			0x14 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad5.gpmc_ad5 */
-+			0x18 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad6.gpmc_ad6 */
-+			0x1c (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad7.gpmc_ad7 */
-+			0x20 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad8.gpmc_ad8 */
-+			0x24 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad9.gpmc_ad9 */
-+			0x28 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad10.gpmc_ad10 */
-+			0x2c (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad11.gpmc_ad11 */
-+			0x30 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad12.gpmc_ad12 */
-+			0x34 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad13.gpmc_ad13 */
-+			0x38 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad14.gpmc_ad14 */
-+			0x3c (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad15.gpmc_ad15 */
-+
-+			0x70 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_wait0.gpmc_wait0 */
-+			0x7c (PIN_OUTPUT | MUX_MODE0)		/* gpmc_csn0.gpmc_csn0 */
-+			0x80 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_csn1.gpmc_csn1 */
-+			0x84 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_csn2.gpmc_csn2 */
-+			0x88 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_csn3.gpmc_csn3 */
-+
-+			0x90 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_advn_ale.gpmc_advn_ale */
-+			0x94 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_oen_ren.gpmc_oen_ren */
-+			0x98 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_wen.gpmc_wen */
-+			0x9c (PIN_OUTPUT | MUX_MODE0)		/* gpmc_ben0_cle.gpmc_ben0_cle */
-+
-+			0xa4 (PIN_OUTPUT | MUX_MODE1)		/* lcd_data1.gpmc_a1 */
-+			0xa8 (PIN_OUTPUT | MUX_MODE1)		/* lcd_data2.gpmc_a2 */
-+			0xac (PIN_OUTPUT | MUX_MODE1)		/* lcd_data3.gpmc_a3 */
-+			0xb0 (PIN_OUTPUT | MUX_MODE1)		/* lcd_data4.gpmc_a4 */
-+			0xb4 (PIN_OUTPUT | MUX_MODE1)		/* lcd_data5.gpmc_a5 */
-+			0xb8 (PIN_OUTPUT | MUX_MODE1)		/* lcd_data6.gpmc_a6 */
-+			0xbc (PIN_OUTPUT | MUX_MODE1)		/* lcd_data7.gpmc_a7 */
-+
-+			0xe0 (PIN_OUTPUT | MUX_MODE1)		/* lcd_vsync.gpmc_a8 */
-+			0xe4 (PIN_OUTPUT | MUX_MODE1)		/* lcd_hsync.gpmc_a9 */
-+			0xe8 (PIN_OUTPUT | MUX_MODE1)		/* lcd_pclk.gpmc_a10 */
-+		>;
-+	};
-+
-+	i2c0_pins: i2c0_pins {
-+		pinctrl-single,pins = <
-+			0x188 (PIN_INPUT_PULLDOWN | MUX_MODE0)	/* i2c0_sda.i2c0_sda */
-+			0x18c (PIN_INPUT_PULLDOWN | MUX_MODE0)	/* i2c0_scl.i2c0_scl */
-+		>;
-+	};
-+
-+	uart0_pins: uart0_pins {
-+		pinctrl-single,pins = <
-+			0x170 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart0_rxd.uart0_rxd */
-+			0x174 (PIN_OUTPUT | MUX_MODE0)		/* uart0_txd.uart0_txd */
-+		>;
-+	};
-+
-+	uart1_pins: uart1_pins {
-+		pinctrl-single,pins = <
-+			0x178 (PIN_OUTPUT | MUX_MODE7)		/* uart1_ctsn.uart1_ctsn */
-+			0x17c (PIN_OUTPUT | MUX_MODE7)		/* uart1_rtsn.uart1_rtsn */
-+			0x180 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart1_rxd.uart1_rxd */
-+			0x184 (PIN_OUTPUT | MUX_MODE0)		/* uart1_txd.uart1_txd */
-+		>;
-+	};
-+
-+	uart2_pins: uart2_pins {
-+		pinctrl-single,pins = <
-+			0xc0 (PIN_INPUT_PULLUP | MUX_MODE7)	/* lcd_data8.gpio2[14] */
-+			0xc4 (PIN_OUTPUT | MUX_MODE7)		/* lcd_data9.gpio2[15] */
-+			0x150 (PIN_INPUT | MUX_MODE1)		/* spi0_sclk.uart2_rxd */
-+			0x154 (PIN_OUTPUT | MUX_MODE1)		/* spi0_d0.uart2_txd */
-+		>;
-+	};
-+
-+	uart3_pins: uart3_pins {
-+		pinctrl-single,pins = <
-+			0xc8 (PIN_INPUT_PULLUP | MUX_MODE6)	/* lcd_data10.uart3_ctsn */
-+			0xcc (PIN_OUTPUT | MUX_MODE6)		/* lcd_data11.uart3_rtsn */
-+			0x160 (PIN_INPUT | MUX_MODE1)		/* spi0_cs1.uart3_rxd */
-+			0x164 (PIN_OUTPUT | MUX_MODE1)		/* ecap0_in_pwm0_out.uart3_txd */
-+		>;
-+	};
-+
-+	uart4_pins: uart4_pins {
-+		pinctrl-single,pins = <
-+			0xd0 (PIN_INPUT_PULLUP | MUX_MODE6)	/* lcd_data12.uart4_ctsn */
-+			0xd4 (PIN_OUTPUT | MUX_MODE6)		/* lcd_data13.uart4_rtsn */
-+			0x168 (PIN_INPUT | MUX_MODE1)		/* uart0_ctsn.uart4_rxd */
-+			0x16c (PIN_OUTPUT | MUX_MODE1)		/* uart0_rtsn.uart4_txd */
-+		>;
-+	};
-+
-+	uart5_pins: uart5_pins {
-+		pinctrl-single,pins = <
-+			0xd8 (PIN_INPUT | MUX_MODE4)		/* lcd_data14.uart5_rxd */
-+			0x144 (PIN_OUTPUT | MUX_MODE3)		/* rmiii1_refclk.uart5_txd */
-+		>;
-+	};
-+
-+	mmc1_pins: mmc1_pins {
-+		pinctrl-single,pins = <
-+			0xf0 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_dat0.mmc0_dat0 */
-+			0xf4 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_dat1.mmc0_dat1 */
-+			0xf8 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_dat2.mmc0_dat2 */
-+			0xfc (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_dat3.mmc0_dat3 */
-+			0x100 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_clk.mmc0_clk */
-+			0x104 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_cmd.mmc0_cmd */
-+			0x1e8 (PIN_INPUT_PULLUP | MUX_MODE7)	/* emu1.gpio3[8] */
-+			0x1a0 (PIN_INPUT_PULLUP | MUX_MODE7)	/* mcasp0_aclkr.gpio3[18] */
-+		>;
-+	};
-+};
-+
-+&uart0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart0_pins>;
-+	status = "okay";
-+};
-+
-+&uart1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart1_pins>;
-+	status = "okay";
-+	rts-gpio = <&gpio0 13 GPIO_ACTIVE_HIGH>;
-+	rs485-rts-active-high;
-+	rs485-rx-during-tx;
-+	rs485-rts-delay = <1 1>;
-+	linux,rs485-enabled-at-boot-time;
-+};
-+
-+&uart2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart2_pins>;
-+	status = "okay";
-+	rts-gpio = <&gpio2 15 GPIO_ACTIVE_HIGH>;
-+	rs485-rts-active-high;
-+	rs485-rts-delay = <1 1>;
-+	linux,rs485-enabled-at-boot-time;
-+};
-+
-+&uart3 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart3_pins>;
-+	status = "okay";
-+};
-+
-+&uart4 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart4_pins>;
-+	status = "okay";
-+};
-+
-+&uart5 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart5_pins>;
-+	status = "okay";
-+};
-+
-+&i2c0 {
-+	status = "okay";
-+	pinctrl-names = "default";
-+	clock-frequency = <400000>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&i2c0_pins>;
-+
-+	gpio@20 {
-+		compatible = "mcp,mcp23017";
-+		reg = <0x20>;
-+	};
-+
-+	tps: tps@24 {
-+		reg = <0x24>;
-+	};
-+
-+	eeprom@53 {
-+		compatible = "mcp,24c02";
-+		reg = <0x53>;
-+		pagesize = <8>;
-+	};
-+
-+	rtc@68 {
-+		compatible = "dallas,ds1307";
-+		reg = <0x68>;
-+	};
-+};
-+
-+&elm {
-+	status = "okay";
-+};
-+
-+&gpmc {
-+	compatible = "ti,am3352-gpmc";
-+	ti,hwmods = "gpmc";
-+	status = "okay";
-+	gpmc,num-waitpins = <2>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&gpmc_pins>;
-+
-+	#address-cells = <2>;
-+	#size-cells = <1>;
-+	ranges = <0 0 0x08000000 0x08000000>;	/* CS0: NOR 128M */
-+
-+	nor@0,0 {
-+		reg = <0 0x00000000 0x08000000>;
-+		compatible = "cfi-flash";
-+		linux,mtd-name = "spansion,s29gl010p11t";
-+		bank-width = <2>;
-+
-+		gpmc,mux-add-data = <2>;
-+
-+		gpmc,sync-clk-ps = <0>;
-+		gpmc,cs-on-ns = <0>;
-+		gpmc,cs-rd-off-ns = <160>;
-+		gpmc,cs-wr-off-ns = <160>;
-+		gpmc,adv-on-ns = <10>;
-+		gpmc,adv-rd-off-ns = <30>;
-+		gpmc,adv-wr-off-ns = <30>;
-+		gpmc,oe-on-ns = <40>;
-+		gpmc,oe-off-ns = <160>;
-+		gpmc,we-on-ns = <40>;
-+		gpmc,we-off-ns = <160>;
-+		gpmc,rd-cycle-ns = <160>;
-+		gpmc,wr-cycle-ns = <160>;
-+		gpmc,access-ns = <150>;
-+		gpmc,page-burst-access-ns = <10>;
-+		gpmc,cycle2cycle-samecsen;
-+		gpmc,cycle2cycle-delay-ns = <20>;
-+		gpmc,wr-data-mux-bus-ns = <70>;
-+		gpmc,wr-access-ns = <80>;
-+
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		/*
-+		MTD partition table
-+		===================
-+		+------------+-->0x00000000-> U-Boot start
-+		|            |
-+		|            |-->0x000BFFFF-> U-Boot end
-+		|            |-->0x000C0000-> ENV1 start
-+		|            |
-+		|            |-->0x000DFFFF-> ENV1 end
-+		|            |-->0x000E0000-> ENV2 start
-+		|            |
-+		|            |-->0x000FFFFF-> ENV2 end
-+		|            |-->0x00100000-> Kernel start
-+		|            |
-+		|            |-->0x004FFFFF-> Kernel end
-+		|            |-->0x00500000-> File system start
-+		|            |
-+		|            |-->0x014FFFFF-> File system end
-+		|            |-->0x01500000-> User data start
-+		|            |
-+		|            |-->0x03FFFFFF-> User data end
-+		|            |-->0x04000000-> Data storage start
-+		|            |
-+		+------------+-->0x08000000-> NOR end (Free end)
-+		*/
-+		partition@0 {
-+			label = "boot";
-+			reg = <0x00000000 0x000c0000>; /* 768KB */
-+		};
-+
-+		partition@1 {
-+			label = "env1";
-+			reg = <0x000c0000 0x00020000>; /* 128KB */
-+		};
-+
-+		partition@2 {
-+			label = "env2";
-+			reg = <0x000e0000 0x00020000>; /* 128KB */
-+		};
-+
-+		partition@3 {
-+			label = "kernel";
-+			reg = <0x00100000 0x00400000>; /* 4MB */
-+		};
-+
-+		partition@4 {
-+			label = "rootfs";
-+			reg = <0x00500000 0x01000000>; /* 16MB */
-+		};
-+
-+		partition@5 {
-+			label = "user";
-+			reg = <0x01500000 0x02b00000>; /* 43MB */
-+		};
-+
-+		partition@6 {
-+			label = "data";
-+			reg = <0x04000000 0x04000000>; /* 64MB */
-+		};
-+	};
-+};
-+
-+&mac {
-+	dual_emac = <1>;
-+};
-+
-+&cpsw_emac0 {
-+	phy_id = <&davinci_mdio>, <0>;
-+	dual_emac_res_vlan = <1>;
-+};
-+
-+&cpsw_emac1 {
-+	phy_id = <&davinci_mdio>, <1>;
-+	dual_emac_res_vlan = <2>;
-+};
-+
-+&mmc1 {
-+	status = "okay";
-+	vmmc-supply = <&ldo4_reg>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&mmc1_pins>;
-+	bus-width = <4>;
-+	cd-gpios = <&gpio3 8 0>;
-+	wp-gpios = <&gpio3 18 0>;
-+};
-+
-+#include "tps65217.dtsi"
-+
-+&tps {
-+	regulators {
-+		dcdc1_reg: regulator@0 {
-+			/* +1.5V voltage with ±4% tolerance */
-+			regulator-min-microvolt = <1450000>;
-+			regulator-max-microvolt = <1550000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		dcdc2_reg: regulator@1 {
-+			/* VDD_MPU voltage limits 0.95V - 1.1V with ±4% tolerance */
-+			regulator-name = "vdd_mpu";
-+			regulator-min-microvolt = <915000>;
-+			regulator-max-microvolt = <1140000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		dcdc3_reg: regulator@2 {
-+			/* VDD_CORE voltage limits 0.95V - 1.1V with ±4% tolerance */
-+			regulator-name = "vdd_core";
-+			regulator-min-microvolt = <915000>;
-+			regulator-max-microvolt = <1140000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo1_reg: regulator@3 {
-+			/* +1.8V voltage with ±4% tolerance */
-+			regulator-min-microvolt = <1750000>;
-+			regulator-max-microvolt = <1870000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo2_reg: regulator@4 {
-+			/* +3.3V voltage with ±4% tolerance */
-+			regulator-min-microvolt = <3175000>;
-+			regulator-max-microvolt = <3430000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo3_reg: regulator@5 {
-+			/* +1.8V voltage with ±4% tolerance */
-+			regulator-min-microvolt = <1750000>;
-+			regulator-max-microvolt = <1870000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo4_reg: regulator@6 {
-+			/* +3.3V voltage with ±4% tolerance */
-+			regulator-min-microvolt = <3175000>;
-+			regulator-max-microvolt = <3430000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+	};
-+};
+-	rdev = regulator_register(&lp8788_dldo_desc[id], &cfg);
++	rdev = devm_regulator_register(&pdev->dev, &lp8788_dldo_desc[id], &cfg);
+ 	if (IS_ERR(rdev)) {
+ 		ret = PTR_ERR(rdev);
+ 		dev_err(&pdev->dev, "DLDO%d regulator register err = %d\n",
+@@ -557,18 +557,8 @@ static int lp8788_dldo_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int lp8788_dldo_remove(struct platform_device *pdev)
+-{
+-	struct lp8788_ldo *ldo = platform_get_drvdata(pdev);
+-
+-	regulator_unregister(ldo->regulator);
+-
+-	return 0;
+-}
+-
+ static struct platform_driver lp8788_dldo_driver = {
+ 	.probe = lp8788_dldo_probe,
+-	.remove = lp8788_dldo_remove,
+ 	.driver = {
+ 		.name = LP8788_DEV_DLDO,
+ 		.owner = THIS_MODULE,
+@@ -603,7 +593,7 @@ static int lp8788_aldo_probe(struct platform_device *pdev)
+ 	cfg.driver_data = ldo;
+ 	cfg.regmap = lp->regmap;
+ 
+-	rdev = regulator_register(&lp8788_aldo_desc[id], &cfg);
++	rdev = devm_regulator_register(&pdev->dev, &lp8788_aldo_desc[id], &cfg);
+ 	if (IS_ERR(rdev)) {
+ 		ret = PTR_ERR(rdev);
+ 		dev_err(&pdev->dev, "ALDO%d regulator register err = %d\n",
+@@ -617,18 +607,8 @@ static int lp8788_aldo_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int lp8788_aldo_remove(struct platform_device *pdev)
+-{
+-	struct lp8788_ldo *ldo = platform_get_drvdata(pdev);
+-
+-	regulator_unregister(ldo->regulator);
+-
+-	return 0;
+-}
+-
+ static struct platform_driver lp8788_aldo_driver = {
+ 	.probe = lp8788_aldo_probe,
+-	.remove = lp8788_aldo_remove,
+ 	.driver = {
+ 		.name = LP8788_DEV_ALDO,
+ 		.owner = THIS_MODULE,
 -- 
-1.7.9.5
+1.7.10.4
+
 
