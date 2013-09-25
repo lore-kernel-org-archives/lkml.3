@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab3IYIbL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 04:31:11 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:44727 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab3IYIbJ (ORCPT
+	id S1752841Ab3IYIka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 04:40:30 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:43395 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab3IYIkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 04:31:09 -0400
+	Wed, 25 Sep 2013 04:40:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
-References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
-	<52118042.30101@oracle.com>
-	<20130819054742.GA28062@bbox>
-	<CAL1ERfN3AUYwWTctGBjVcgb-mwAmc15-FayLz48P1d0GzogncA@mail.gmail.com>
-	<20130821074939.GE3022@bbox>
-	<CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
-Date: Wed, 25 Sep 2013 16:31:08 +0800
-Message-ID: <CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
-Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
-From: Bob Liu <lliubbo@gmail.com>
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, Bob Liu <bob.liu@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <bf168ab724a140f989ab3dfe877b750f@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
+	<20130920203222.GA14306@kroah.com>
+	<a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
+	<524180B7.7090307@gmail.com>
+	<3413dbd7fa254fd380a84fe6d9cd87e1@SN2PR03MB061.namprd03.prod.outlook.com>
+	<5241C9E7.2000404@cs.wisc.edu>
+	<bf168ab724a140f989ab3dfe877b750f@SN2PR03MB061.namprd03.prod.outlook.com>
+Date: Wed, 25 Sep 2013 10:40:24 +0200
+X-Google-Sender-Auth: BHctzfKEw7rfvnFwyyQdJikLCVg
+Message-ID: <CAMuHMdV-BsKc-c1YhzqFrUGJhw+jMZEXXTcT2xyDLnw-JQuVaQ@mail.gmail.com>
+Subject: Re: Drivers: scsi: FLUSH timeout
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>, Jack Wang <xjtuwjp@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 4:09 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
-> I think I find a new issue, for integrity of this mail thread, I reply
-> to this mail.
->
-> It is a concurrence issue either, when duplicate store and reclaim
-> concurrentlly.
->
-> zswap entry x with offset A is already stored in zswap backend.
-> Consider the following scenario:
->
-> thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
->
-> thread 1: store new page with the same offset A, alloc a new zswap entry y.
->   store finished. shrink_page_list() call __remove_mapping(), and now
-> it is not in swap_cache
->
+On Tue, Sep 24, 2013 at 11:53 PM, KY Srinivasan <kys@microsoft.com> wrote:
+> I am not sure how that magic number was arrived at (the 60HZ number). We want this to be little higher -
 
-But I don't think swap layer will call zswap with the same offset A.
+"60 * HZ" means "60 seconds".
 
-> thread 0: zswap_get_swap_cache_page called. old page data is added to swap_cache
->
-> Now, swap cache has old data rather than new data for offset A.
-> error will happen If do_swap_page() get page from swap_cache.
->
+> would there be any issues raising this to say  180 seconds. This is the value we currently have for I/O
+> timeout.
 
--- 
-Regards,
---Bob
+So you want to replace it by "180 * HZ", which is ... another magic number?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
