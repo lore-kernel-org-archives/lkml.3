@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab3IYBCQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:02:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39174 "EHLO
+	id S1757570Ab3IYBCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:02:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39150 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608Ab3IYAQp (ORCPT
+	with ESMTP id S1756151Ab3IYAQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:16:45 -0400
+	Tue, 24 Sep 2013 20:16:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 072/110] HID: check for NULL field when setting values
-Date: Tue, 24 Sep 2013 17:15:10 -0700
-Message-Id: <20130925001331.226584362@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 067/110] HID: picolcd_core: validate output report details
+Date: Tue, 24 Sep 2013 17:15:05 -0700
+Message-Id: <20130925001330.675778077@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,33 +33,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kees Cook <keescook@chromium.org>
 
-commit be67b68d52fa28b9b721c47bb42068f0c1214855 upstream.
+commit 1e87a2456b0227ca4ab881e19a11bb99d164e792 upstream.
 
-Defensively check that the field to be worked on is not NULL.
+A HID device could send a malicious output report that would cause the
+picolcd HID driver to trigger a NULL dereference during attr file writing.
+
+[jkosina@suse.cz: changed
+
+	report->maxfield < 1
+
+to
+
+	report->maxfield != 1
+
+as suggested by Bruno].
+
+CVE-2013-2899
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Bruno Prémont <bonbons@linux-vserver.org>
+Acked-by: Bruno Prémont <bonbons@linux-vserver.org>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/hid/hid-picolcd_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1156,7 +1156,12 @@ EXPORT_SYMBOL_GPL(hid_output_report);
+--- a/drivers/hid/hid-picolcd_core.c
++++ b/drivers/hid/hid-picolcd_core.c
+@@ -290,7 +290,7 @@ static ssize_t picolcd_operation_mode_st
+ 		buf += 10;
+ 		cnt -= 10;
+ 	}
+-	if (!report)
++	if (!report || report->maxfield != 1)
+ 		return -EINVAL;
  
- int hid_set_field(struct hid_field *field, unsigned offset, __s32 value)
- {
--	unsigned size = field->report_size;
-+	unsigned size;
-+
-+	if (!field)
-+		return -1;
-+
-+	size = field->report_size;
- 
- 	hid_dump_input(field->report->device, field->usage + offset, value);
- 
+ 	while (cnt > 0 && (buf[cnt-1] == '\n' || buf[cnt-1] == '\r'))
 
 
