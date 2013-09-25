@@ -1,102 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab3IYRJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 13:09:56 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:52727 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab3IYRJz (ORCPT
+	id S1753430Ab3IYRNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 13:13:52 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:41068 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab3IYRNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 13:09:55 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-2e-524318e02564
-Message-id: <524318DE.7070106@samsung.com>
-Date: Wed, 25 Sep 2013 19:09:50 +0200
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Bob Liu <bob.liu@oracle.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v2 0/5] mm: migrate zbud pages
-References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
- <5237FDCC.5010109@oracle.com> <20130923220757.GC16191@variantweb.net>
-In-reply-to: <20130923220757.GC16191@variantweb.net>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsVy+t/xa7oPJZyDDI5GWcxZv4bNYuOM9awW
-	Xaemslh8evmA0eL1C0OLs01v2C0u75rDZnFvzX9Wi7VH7rJbTH73jNFi2df37BaH9q1id+Dx
-	WLznJZPHplWdbB6bPk1i9zgx4zeLx4NDm1k8Pj69xeLRt2UVo8fm09UenzfJBXBGcdmkpOZk
-	lqUW6dslcGW8aj3KVjBboKJn9wW2BsZnPF2MnBwSAiYSHw79ZoSwxSQu3FvP1sXIxSEksJRR
-	Yu+ep6wQzmdGia+7PrKBVPEKaEmc3v4dzGYRUJXYcX8ymM0GNOnYks9gk0QFIiT+nN7HClEv
-	KPFj8j0WEJsPqGbi7l5mEFtEQF+ie/YKZpAFzAJrmSU+zL/ODpIQFjCSuLv7MDvE5n5GicVf
-	joF1cwJ1n3/9hgnEZhbQkdjfOo0NwpaX2LzmLfMERsFZSBbOQlI2C0nZAkbmVYyiqaXJBcVJ
-	6bmGesWJucWleel6yfm5mxghcfVlB+PiY1aHGAU4GJV4eDXZnIOEWBPLiitzDzFKcDArifCy
-	cgOFeFMSK6tSi/Lji0pzUosPMTJxcEo1MOYpKz4urmXVYmswf9ZyUbDhbTxT7bKLej3Rq36a
-	e+XLza9rVLsVdy1hrb9z8hT903fmBn23mrb4jk6X09q/YQpbJn4qVz+p3jnzaspPuVd/qzm2
-	fdo1s/3h9A+JJdvyutrd5kb6XQ/p/PFnQ+A6xknv9n4U/py/2axqwnbflv07dl/xYonfcUOJ
-	pTgj0VCLuag4EQDl2r/tiQIAAA==
+	Wed, 25 Sep 2013 13:13:49 -0400
+Date: Wed, 25 Sep 2013 10:13:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: Re: [PATCH tip/core/rcu 3/3] rcu: Fix occurrence of "the the" in
+ checklist.txt
+Message-ID: <20130925171341.GX9093@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130925011657.GA29958@linux.vnet.ibm.com>
+ <1380071843-30362-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1380071843-30362-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130925034739.GA2016@leaf>
+ <20130925135527.GS9093@linux.vnet.ibm.com>
+ <20130925153321.GA6269@leaf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130925153321.GA6269@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092517-9332-0000-0000-0000018A75C4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I just had an idea this afternoon to potentially kill both these birds with one
-> stone: Replace the rbtree in zswap with an address_space.
+On Wed, Sep 25, 2013 at 08:33:21AM -0700, Josh Triplett wrote:
+> On Wed, Sep 25, 2013 at 06:55:27AM -0700, Paul E. McKenney wrote:
+> > On Tue, Sep 24, 2013 at 08:47:39PM -0700, Josh Triplett wrote:
+> > > On Tue, Sep 24, 2013 at 06:17:23PM -0700, Paul E. McKenney wrote:
+> > > > From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> > > > 
+> > > > Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > ---
+> > > 
+> > > See comment below.
+> > > 
+> > > >  Documentation/RCU/checklist.txt | 2 +-
+> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > 
+> > > > diff --git a/Documentation/RCU/checklist.txt b/Documentation/RCU/checklist.txt
+> > > > index 7703ec7..ad6cba4 100644
+> > > > --- a/Documentation/RCU/checklist.txt
+> > > > +++ b/Documentation/RCU/checklist.txt
+> > > > @@ -203,7 +203,7 @@ over a rather long period of time, but improvements are always welcome!
+> > > >  	the corresponding readers must disable preemption, possibly
+> > > >  	by calling rcu_read_lock_sched() and rcu_read_unlock_sched().
+> > > >  	If the updater uses synchronize_srcu() or call_srcu(),
+> > > > -	the the corresponding readers must use srcu_read_lock() and
+> > > > +	the corresponding readers must use srcu_read_lock() and
+> > > 
+> > > I think this may have actually been a typo for "then", as in "If the
+> > > updater uses ..., then the corresponding readers must use ...".
+> > 
+> > Good point -- that would make the sentence construction parallel with
+> > the surrounding sentences.  Updated patch below.
+> > 
+> > 							Thanx, Paul
+> > 
+> > rcu: Fix occurrence of "the the" in checklist.txt
+> > 
+> > Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > [ paulmck: Add "then" as suggested by Josh Triplett. ]
 > 
-> Each swap type would have its own page_tree to organize the compressed objects
-> by type and offset (radix tree is more suited for this anyway) and a_ops that
-> could be called by shrink_page_list() (writepage) or the migration code
-> (migratepage).
-> 
-> Then zbud pages could be put on the normal LRU list, maybe at the beginning of
-> the inactive LRU so they would live for another cycle through the list, then be
-> reclaimed in the normal way with the mapping->a_ops->writepage() pointing to a
-> zswap_writepage() function that would decompress the pages and call
-> __swap_writepage() on them.
-> 
-> This might actually do away with the explicit pool size too as the compressed
-> pool pages wouldn't be outside the control of the MM anymore.
-> 
-> I'm just starting to explore this but I think it has promise.
-> 
-> Seth
-> 
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-Hi Seth,
-There is a problem with the proposed idea.
-The radix tree used 'struct address_space' is a part of
-a bigger data structure.
-The radix tree is used to translate an offset to a page.
-That is ok for zswap. But struct page has a field named 'index'.
-The MM assumes that this index is an offset in radix tree
-where one can find the page. A lot is done by MM to sustain
-this consistency.
+Got it, thank you again!
 
-In case of zbud, there are two swap offset pointing to
-the same page. There might be more if zsmalloc is used.
-What is worse it is possible that one swap entry could
-point to data that cross a page boundary.
+							Thanx, Paul
 
-Of course, one could try to modify MM to support
-multiple mapping of a page in the radix tree.
-But I think that MM guys will consider this as a hack
-and they will not accept it.
-
-Regards,
-Tomasz Stanislawski
-
-
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > diff --git a/Documentation/RCU/checklist.txt b/Documentation/RCU/checklist.txt
+> > index 7703ec7..9126619 100644
+> > --- a/Documentation/RCU/checklist.txt
+> > +++ b/Documentation/RCU/checklist.txt
+> > @@ -202,8 +202,8 @@ over a rather long period of time, but improvements are always welcome!
+> >  	updater uses call_rcu_sched() or synchronize_sched(), then
+> >  	the corresponding readers must disable preemption, possibly
+> >  	by calling rcu_read_lock_sched() and rcu_read_unlock_sched().
+> > -	If the updater uses synchronize_srcu() or call_srcu(),
+> > -	the the corresponding readers must use srcu_read_lock() and
+> > +	If the updater uses synchronize_srcu() or call_srcu(), then
+> > +	the corresponding readers must use srcu_read_lock() and
+> >  	srcu_read_unlock(), and with the same srcu_struct.  The rules for
+> >  	the expedited primitives are the same as for their non-expedited
+> >  	counterparts.  Mixing things up will result in confusion and
+> > 
 > 
 
