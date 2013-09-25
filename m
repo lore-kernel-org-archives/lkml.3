@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab3IYAfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:35:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39643 "EHLO
+	id S1756630Ab3IYAUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:20:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39611 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756637Ab3IYAUe (ORCPT
+	with ESMTP id S1756610Ab3IYAUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:34 -0400
+	Tue, 24 Sep 2013 20:20:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 066/117] ath9k: always clear ps filter bit on new assoc
-Date: Tue, 24 Sep 2013 17:18:52 -0700
-Message-Id: <20130925001748.073203415@linuxfoundation.org>
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [ 060/117] pinctrl: at91: fix get_pullup/down function return
+Date: Tue, 24 Sep 2013 17:18:46 -0700
+Message-Id: <20130925001747.418069328@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,30 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Boris BREZILLON <b.brezillon@overkiz.com>
 
-commit 026d5b07c03458f9c0ccd19c3850564a5409c325 upstream.
+commit 05d3534a321d7fe4524b3b83bb20318282f3ec2c upstream.
 
-Otherwise in some cases, EAPOL frames might be filtered during the
-initial handshake, causing delays and assoc failures.
+In PIO_PUSR and PIO_PPDSR register if a given bit is set 1 this means the
+pullup/down for this pin (pin is represented as a bit position) is
+disabled.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/xmit.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/pinctrl/pinctrl-at91.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -2602,6 +2602,7 @@ void ath_tx_node_init(struct ath_softc *
- 	for (acno = 0, ac = &an->ac[acno];
- 	     acno < IEEE80211_NUM_ACS; acno++, ac++) {
- 		ac->sched    = false;
-+		ac->clear_ps_filter = true;
- 		ac->txq = sc->tx.txq_map[acno];
- 		INIT_LIST_HEAD(&ac->tid_q);
- 	}
+--- a/drivers/pinctrl/pinctrl-at91.c
++++ b/drivers/pinctrl/pinctrl-at91.c
+@@ -325,7 +325,7 @@ static void at91_mux_disable_interrupt(v
+ 
+ static unsigned at91_mux_get_pullup(void __iomem *pio, unsigned pin)
+ {
+-	return (readl_relaxed(pio + PIO_PUSR) >> pin) & 0x1;
++	return !((readl_relaxed(pio + PIO_PUSR) >> pin) & 0x1);
+ }
+ 
+ static void at91_mux_set_pullup(void __iomem *pio, unsigned mask, bool on)
+@@ -445,7 +445,7 @@ static void at91_mux_pio3_set_debounce(v
+ 
+ static bool at91_mux_pio3_get_pulldown(void __iomem *pio, unsigned pin)
+ {
+-	return (__raw_readl(pio + PIO_PPDSR) >> pin) & 0x1;
++	return !((__raw_readl(pio + PIO_PPDSR) >> pin) & 0x1);
+ }
+ 
+ static void at91_mux_pio3_set_pulldown(void __iomem *pio, unsigned mask, bool is_on)
 
 
