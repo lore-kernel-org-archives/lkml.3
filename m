@@ -1,38 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab3IYJdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 05:33:24 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:64612 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab3IYJdX (ORCPT
+	id S1754949Ab3IYJdq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 05:33:46 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:53142 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754880Ab3IYJdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 05:33:23 -0400
-Date: Wed, 25 Sep 2013 11:33:20 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] printk: report console names during cut-over
-Message-ID: <20130925093318.GA2317@localhost.localdomain>
-References: <20130923213523.GA23478@www.outflux.net>
+	Wed, 25 Sep 2013 05:33:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130923213523.GA23478@www.outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
+References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
+	<52118042.30101@oracle.com>
+	<20130819054742.GA28062@bbox>
+	<CAL1ERfN3AUYwWTctGBjVcgb-mwAmc15-FayLz48P1d0GzogncA@mail.gmail.com>
+	<20130821074939.GE3022@bbox>
+	<CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
+	<CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
+Date: Wed, 25 Sep 2013 17:33:43 +0800
+Message-ID: <CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
+Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>, Bob Liu <bob.liu@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 02:35:24PM -0700, Kees Cook wrote:
-> This reports the names of consoles as they're being disabled to help
-> identify which is which during cut-over. Helps answer the question
-> "which boot console actually got activated?" once the regular console
-> is running, mostly when debugging boot console failures.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+On Wed, Sep 25, 2013 at 4:31 PM, Bob Liu <lliubbo@gmail.com> wrote:
+> On Wed, Sep 25, 2013 at 4:09 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
+>> I think I find a new issue, for integrity of this mail thread, I reply
+>> to this mail.
+>>
+>> It is a concurrence issue either, when duplicate store and reclaim
+>> concurrentlly.
+>>
+>> zswap entry x with offset A is already stored in zswap backend.
+>> Consider the following scenario:
+>>
+>> thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
+>>
+>> thread 1: store new page with the same offset A, alloc a new zswap entry y.
+>>   store finished. shrink_page_list() call __remove_mapping(), and now
+>> it is not in swap_cache
+>>
+>
+> But I don't think swap layer will call zswap with the same offset A.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+1. store page of offset A in zswap
+2. some time later, pagefault occur, load page data from zswap.
+  But notice that zswap entry x is still in zswap because it is not
+frontswap_tmem_exclusive_gets_enabled.
+ this page is with PageSwapCache(page) and page_private(page) = entry.val
+3. change this page data, and it become dirty
+4. some time later again, swap this page on the same offset A.
 
-Thanks!
+so, a duplicate store happens.
+
+what I can think is that use flags and CAS to protect store and reclaim on
+the same offset  happens concurrentlly.
+
+>> thread 0: zswap_get_swap_cache_page called. old page data is added to swap_cache
+>>
+>> Now, swap cache has old data rather than new data for offset A.
+>> error will happen If do_swap_page() get page from swap_cache.
+>>
+>
+> --
+> Regards,
+> --Bob
