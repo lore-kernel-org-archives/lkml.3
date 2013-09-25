@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab3IYR5C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 13:57:02 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:40370 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab3IYR5B (ORCPT
+	id S1753914Ab3IYR5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 13:57:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42960 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab3IYR5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 13:57:01 -0400
-Date: Wed, 25 Sep 2013 10:56:58 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ming Liu <ming.liu@windriver.com>
-cc: akpm@linux-foundation.org, mhocko@suse.cz, rusty@rustcorp.com.au,
-        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom: avoid killing init if it assume the oom killed
- thread's mm
-In-Reply-To: <52427970.8010905@windriver.com>
-Message-ID: <alpine.DEB.2.02.1309251056020.17676@chino.kir.corp.google.com>
-References: <1379929528-19179-1-git-send-email-ming.liu@windriver.com> <alpine.DEB.2.02.1309241933590.26187@chino.kir.corp.google.com> <52427970.8010905@windriver.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 25 Sep 2013 13:57:06 -0400
+Date: Wed, 25 Sep 2013 13:56:49 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCHv2] tracing/events: Add bounce tracing to swiotbl
+Message-ID: <20130925175649.GC7253@phenom.dumpdata.com>
+References: <1378325465-10384-1-git-send-email-zoltan.kiss@citrix.com>
+ <5239CF01.1010001@citrix.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5239CF01.1010001@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Sep 2013, Ming Liu wrote:
-
-> > We shouldn't be selecting a process where mm == init_mm in the first
-> > place, so this wouldn't fix the issue entirely.
+On Wed, Sep 18, 2013 at 05:04:17PM +0100, Zoltan Kiss wrote:
+> Hi,
 > 
-> But if we add a control point for "mm == init_mm" in the first place(ie. in
-> oom_unkillable_task), that would forbid the processes sharing mm with init to
-> be selected, is that reasonable? Actually my fix is just to protect init
-> process to be killed for its vfork child being selected and I think it's the
-> only place where there is the risk. If my understanding is wrong, pls correct
-> me.
-> 
+> I haven't got a reply in the past 2 weeks, so I would like to bump
+> the patch, just to make sure it haven't fell off the radar.
 
-We never want to select a process where task->mm == init_mm because if we 
-kill it we won't free any memory, regardless of vfork().  The goal of the 
-oom killer is solely to free memory, so it always tries to avoid needless 
-killing.
+Hey,
+
+I have this in my queue to put on 3.13 as it is past the merge window.
+.. with that in mind:
+
+
+.. snip..
+> >+	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
+> >+		"size=%zu swiotlb_force=%x",
+> >+		__get_str(dev_name),
+> >+		__entry->dma_mask,
+> >+		(unsigned long long)__entry->dev_addr,
+> >+		__entry->size,
+> >+		__entry->swiotlb_force)
+
+Would it make sense to do something like this:
+
+		__entry->swiotlb_force ? "swiotlb_force" : "")
+
