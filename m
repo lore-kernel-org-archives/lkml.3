@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab3IYAUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:20:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39530 "EHLO
+	id S932211Ab3IYAlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:41:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39551 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756567Ab3IYAUN (ORCPT
+	with ESMTP id S1754976Ab3IYAUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:13 -0400
+	Tue, 24 Sep 2013 20:20:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [ 041/117] USB: cdc-wdm: fix race between interrupt handler and tasklet
-Date: Tue, 24 Sep 2013 17:18:27 -0700
-Message-Id: <20130925001745.326515287@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 046/117] USB: handle LPM errors during device suspend correctly
+Date: Tue, 24 Sep 2013 17:18:32 -0700
+Message-Id: <20130925001745.857958484@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,63 +27,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 6dd433e6cf2475ce8abec1b467720858c24450eb upstream.
+commit aa5ceae24bf8dff1d6fe87c6c4b08e69c6d33550 upstream.
 
-Both could want to submit the same URB. Some checks of the flag
-intended to prevent that were missing.
+The hub driver's usb_port_suspend() routine doesn't handle errors
+related to Link Power Management properly.  It always returns failure,
+it doesn't try to clean up the wakeup setting, (in the case of system
+sleep) it doesn't try to go ahead with the port suspend regardless,
+and it doesn't try to apply the new power-off mechanism.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+This patch fixes these problems.
+
+Note: Sarah fixed this patch to apply against 3.11, since the original
+commit (4fae6f0fa86f92e6bc7429371b1e177ad0aaac66 "USB: handle LPM errors
+during device suspend correctly") called usb_disable_remote_wakeup,
+which won't be added until 3.12.
+
+This patch should be backported to kernels as old as 3.5, that
+contain the commit 8306095fd2c1100e8244c09bf560f97aca5a311d "USB:
+Disable USB 3.0 LPM in critical sections.".  There will be merge
+conflicts, since LTM wasn't added until 3.6.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-wdm.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/usb/core/hub.c |   71 ++++++++++++++++++++++++++-----------------------
+ 1 file changed, 38 insertions(+), 33 deletions(-)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -209,6 +209,7 @@ skip_error:
- static void wdm_int_callback(struct urb *urb)
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2918,7 +2918,6 @@ int usb_port_suspend(struct usb_device *
  {
- 	int rv = 0;
-+	int responding;
- 	int status = urb->status;
- 	struct wdm_device *desc;
- 	struct usb_cdc_notification *dr;
-@@ -262,8 +263,8 @@ static void wdm_int_callback(struct urb
+ 	struct usb_hub	*hub = usb_hub_to_struct_hub(udev->parent);
+ 	struct usb_port *port_dev = hub->ports[udev->portnum - 1];
+-	enum pm_qos_flags_status pm_qos_stat;
+ 	int		port1 = udev->portnum;
+ 	int		status;
+ 	bool		really_suspend = true;
+@@ -2956,7 +2955,7 @@ int usb_port_suspend(struct usb_device *
+ 					status);
+ 			/* bail if autosuspend is requested */
+ 			if (PMSG_IS_AUTO(msg))
+-				return status;
++				goto err_wakeup;
+ 		}
+ 	}
  
- 	spin_lock(&desc->iuspin);
- 	clear_bit(WDM_READ, &desc->flags);
--	set_bit(WDM_RESPONDING, &desc->flags);
--	if (!test_bit(WDM_DISCONNECTING, &desc->flags)
-+	responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
-+	if (!responding && !test_bit(WDM_DISCONNECTING, &desc->flags)
- 		&& !test_bit(WDM_SUSPENDING, &desc->flags)) {
- 		rv = usb_submit_urb(desc->response, GFP_ATOMIC);
- 		dev_dbg(&desc->intf->dev, "%s: usb_submit_urb %d",
-@@ -685,16 +686,20 @@ static void wdm_rxwork(struct work_struc
- {
- 	struct wdm_device *desc = container_of(work, struct wdm_device, rxwork);
- 	unsigned long flags;
--	int rv;
-+	int rv = 0;
-+	int responding;
+@@ -2965,14 +2964,16 @@ int usb_port_suspend(struct usb_device *
+ 		usb_set_usb2_hardware_lpm(udev, 0);
  
- 	spin_lock_irqsave(&desc->iuspin, flags);
- 	if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
- 		spin_unlock_irqrestore(&desc->iuspin, flags);
- 	} else {
-+		responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
- 		spin_unlock_irqrestore(&desc->iuspin, flags);
--		rv = usb_submit_urb(desc->response, GFP_KERNEL);
-+		if (!responding)
-+			rv = usb_submit_urb(desc->response, GFP_KERNEL);
- 		if (rv < 0 && rv != -EPERM) {
- 			spin_lock_irqsave(&desc->iuspin, flags);
-+			clear_bit(WDM_RESPONDING, &desc->flags);
- 			if (!test_bit(WDM_DISCONNECTING, &desc->flags))
- 				schedule_work(&desc->rxwork);
- 			spin_unlock_irqrestore(&desc->iuspin, flags);
+ 	if (usb_disable_ltm(udev)) {
+-		dev_err(&udev->dev, "%s Failed to disable LTM before suspend\n.",
+-				__func__);
+-		return -ENOMEM;
++		dev_err(&udev->dev, "Failed to disable LTM before suspend\n.");
++		status = -ENOMEM;
++		if (PMSG_IS_AUTO(msg))
++			goto err_ltm;
+ 	}
+ 	if (usb_unlocked_disable_lpm(udev)) {
+-		dev_err(&udev->dev, "%s Failed to disable LPM before suspend\n.",
+-				__func__);
+-		return -ENOMEM;
++		dev_err(&udev->dev, "Failed to disable LPM before suspend\n.");
++		status = -ENOMEM;
++		if (PMSG_IS_AUTO(msg))
++			goto err_lpm3;
+ 	}
+ 
+ 	/* see 7.1.7.6 */
+@@ -3000,28 +3001,31 @@ int usb_port_suspend(struct usb_device *
+ 	if (status) {
+ 		dev_dbg(hub->intfdev, "can't suspend port %d, status %d\n",
+ 				port1, status);
+-		/* paranoia:  "should not happen" */
+-		if (udev->do_remote_wakeup) {
+-			if (!hub_is_superspeed(hub->hdev)) {
+-				(void) usb_control_msg(udev,
+-						usb_sndctrlpipe(udev, 0),
+-						USB_REQ_CLEAR_FEATURE,
+-						USB_RECIP_DEVICE,
+-						USB_DEVICE_REMOTE_WAKEUP, 0,
+-						NULL, 0,
+-						USB_CTRL_SET_TIMEOUT);
+-			} else
+-				(void) usb_disable_function_remotewakeup(udev);
+-
+-		}
+ 
++		/* Try to enable USB3 LPM and LTM again */
++		usb_unlocked_enable_lpm(udev);
++ err_lpm3:
++		usb_enable_ltm(udev);
++ err_ltm:
+ 		/* Try to enable USB2 hardware LPM again */
+ 		if (udev->usb2_hw_lpm_capable == 1)
+ 			usb_set_usb2_hardware_lpm(udev, 1);
+ 
+-		/* Try to enable USB3 LTM and LPM again */
+-		usb_enable_ltm(udev);
+-		usb_unlocked_enable_lpm(udev);
++		if (udev->do_remote_wakeup) {
++			if (udev->speed < USB_SPEED_SUPER)
++				usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
++						USB_REQ_CLEAR_FEATURE,
++						USB_RECIP_DEVICE,
++						USB_DEVICE_REMOTE_WAKEUP, 0,
++						NULL, 0, USB_CTRL_SET_TIMEOUT);
++			else
++				usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
++						USB_REQ_CLEAR_FEATURE,
++						USB_RECIP_INTERFACE,
++						USB_INTRF_FUNC_SUSPEND, 0,
++						NULL, 0, USB_CTRL_SET_TIMEOUT);
++		}
++ err_wakeup:
+ 
+ 		/* System sleep transitions should never fail */
+ 		if (!PMSG_IS_AUTO(msg))
+@@ -3043,14 +3047,15 @@ int usb_port_suspend(struct usb_device *
+ 	 * Check whether current status meets the requirement of
+ 	 * usb port power off mechanism
+ 	 */
+-	pm_qos_stat = dev_pm_qos_flags(&port_dev->dev,
+-			PM_QOS_FLAG_NO_POWER_OFF);
+-	if (!udev->do_remote_wakeup
+-			&& pm_qos_stat != PM_QOS_FLAGS_ALL
+-			&& udev->persist_enabled
+-			&& !status) {
+-		pm_runtime_put_sync(&port_dev->dev);
+-		port_dev->did_runtime_put = true;
++	if (status == 0 && !udev->do_remote_wakeup && udev->persist_enabled) {
++		enum pm_qos_flags_status pm_qos_stat;
++
++		pm_qos_stat = dev_pm_qos_flags(&port_dev->dev,
++				PM_QOS_FLAG_NO_POWER_OFF);
++		if (pm_qos_stat != PM_QOS_FLAGS_ALL) {
++			pm_runtime_put_sync(&port_dev->dev);
++			port_dev->did_runtime_put = true;
++		}
+ 	}
+ 
+ 	usb_mark_last_busy(hub->hdev);
 
 
