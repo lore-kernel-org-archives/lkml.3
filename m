@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab3IYAYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:24:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39834 "EHLO
+	id S932346Ab3IYAYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:24:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39830 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756803Ab3IYAVI (ORCPT
+	with ESMTP id S932374Ab3IYAVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:21:08 -0400
+	Tue, 24 Sep 2013 20:21:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jianpeng Ma <majianpeng@gmail.com>, Sage Weil <sage@inktank.com>
-Subject: [ 106/117] libceph: unregister request in __map_request failed and nofail == false
-Date: Tue, 24 Sep 2013 17:19:32 -0700
-Message-Id: <20130925001752.501386312@linuxfoundation.org>
+        Richard Weinberger <richard@nod.at>, stian@nixia.no, tj@kernel.org
+Subject: [ 105/117] um: Implement probe_kernel_read()
+Date: Tue, 24 Sep 2013 17:19:31 -0700
+Message-Id: <20130925001752.389676652@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,32 +26,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: majianpeng <majianpeng@gmail.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit 73d9f7eef3d98c3920e144797cc1894c6b005a1e upstream.
+commit f75b1b1bedfb498cc43a992ce4d7ed8df3b1e770 upstream.
 
-For nofail == false request, if __map_request failed, the caller does
-cleanup work, like releasing the relative pages.  It doesn't make any sense
-to retry this request.
+UML needs it's own probe_kernel_read() to handle kernel
+mode faults correctly.
+The implementation uses mincore() on the host side to detect
+whether a page is owned by the UML kernel process.
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+This fixes also a possible crash when sysrq-t is used.
+Starting with 3.10 sysrq-t calls probe_kernel_read() to
+read details from the kernel workers. As kernel worker are
+completely async pointers may turn NULL while reading them.
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Cc: <stian@nixia.no>
+Cc: <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/osd_client.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/um/include/shared/os.h |    1 
+ arch/um/kernel/Makefile     |    2 -
+ arch/um/kernel/maccess.c    |   24 ++++++++++++++++++++
+ arch/um/os-Linux/process.c  |   52 ++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 78 insertions(+), 1 deletion(-)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -2129,6 +2129,8 @@ int ceph_osdc_start_request(struct ceph_
- 			dout("osdc_start_request failed map, "
- 				" will retry %lld\n", req->r_tid);
- 			rc = 0;
-+		} else {
-+			__unregister_request(osdc, req);
- 		}
- 		goto out_unlock;
- 	}
+--- a/arch/um/include/shared/os.h
++++ b/arch/um/include/shared/os.h
+@@ -200,6 +200,7 @@ extern int os_unmap_memory(void *addr, i
+ extern int os_drop_memory(void *addr, int length);
+ extern int can_drop_memory(void);
+ extern void os_flush_stdout(void);
++extern int os_mincore(void *addr, unsigned long len);
+ 
+ /* execvp.c */
+ extern int execvp_noalloc(char *buf, const char *file, char *const argv[]);
+--- a/arch/um/kernel/Makefile
++++ b/arch/um/kernel/Makefile
+@@ -13,7 +13,7 @@ clean-files :=
+ obj-y = config.o exec.o exitcode.o irq.o ksyms.o mem.o \
+ 	physmem.o process.o ptrace.o reboot.o sigio.o \
+ 	signal.o smp.o syscall.o sysrq.o time.o tlb.o trap.o \
+-	um_arch.o umid.o skas/
++	um_arch.o umid.o maccess.o skas/
+ 
+ obj-$(CONFIG_BLK_DEV_INITRD) += initrd.o
+ obj-$(CONFIG_GPROF)	+= gprof_syms.o
+--- /dev/null
++++ b/arch/um/kernel/maccess.c
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (C) 2013 Richard Weinberger <richrd@nod.at>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/uaccess.h>
++#include <linux/kernel.h>
++#include <os.h>
++
++long probe_kernel_read(void *dst, const void *src, size_t size)
++{
++	void *psrc = (void *)rounddown((unsigned long)src, PAGE_SIZE);
++
++	if ((unsigned long)src < PAGE_SIZE || size <= 0)
++		return -EFAULT;
++
++	if (os_mincore(psrc, size + src - psrc) <= 0)
++		return -EFAULT;
++
++	return __probe_kernel_read(dst, src, size);
++}
+--- a/arch/um/os-Linux/process.c
++++ b/arch/um/os-Linux/process.c
+@@ -4,6 +4,7 @@
+  */
+ 
+ #include <stdio.h>
++#include <stdlib.h>
+ #include <unistd.h>
+ #include <errno.h>
+ #include <signal.h>
+@@ -232,6 +233,57 @@ out:
+ 	return ok;
+ }
+ 
++static int os_page_mincore(void *addr)
++{
++	char vec[2];
++	int ret;
++
++	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
++	if (ret < 0) {
++		if (errno == ENOMEM || errno == EINVAL)
++			return 0;
++		else
++			return -errno;
++	}
++
++	return vec[0] & 1;
++}
++
++int os_mincore(void *addr, unsigned long len)
++{
++	char *vec;
++	int ret, i;
++
++	if (len <= UM_KERN_PAGE_SIZE)
++		return os_page_mincore(addr);
++
++	vec = calloc(1, (len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE);
++	if (!vec)
++		return -ENOMEM;
++
++	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
++	if (ret < 0) {
++		if (errno == ENOMEM || errno == EINVAL)
++			ret = 0;
++		else
++			ret = -errno;
++
++		goto out;
++	}
++
++	for (i = 0; i < ((len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE); i++) {
++		if (!(vec[i] & 1)) {
++			ret = 0;
++			goto out;
++		}
++	}
++
++	ret = 1;
++out:
++	free(vec);
++	return ret;
++}
++
+ void init_new_thread_signals(void)
+ {
+ 	set_handler(SIGSEGV);
 
 
