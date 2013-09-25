@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab3IYLLr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 07:11:47 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:59115 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755081Ab3IYLLq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 07:11:46 -0400
-From: Luis Ortega Perez de Villar <luiorpe1@upv.es>
-To: paulz@synopsys.com
-Cc: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Luis Ortega Perez de Villar <luiorpe1@upv.es>
-Subject: [PATCH] Staging: dwc2: core: coding style - indentation should use tabs
-Date: Wed, 25 Sep 2013 13:10:50 +0200
-Message-Id: <1380107450-7241-1-git-send-email-luiorpe1@upv.es>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755231Ab3IYLPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 07:15:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17143 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832Ab3IYLPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 07:15:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,978,1371106800"; 
+   d="scan'208";a="383299996"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Ning Qu <quning@google.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20130924165848.4f3ba25b4de236fa746fb7ee@linux-foundation.org>
+References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org>
+ <20130924234950.GC2018@tassilo.jf.intel.com>
+ <20130924165848.4f3ba25b4de236fa746fb7ee@linux-foundation.org>
+Subject: Re: [PATCHv6 00/22] Transparent huge page cache: phase 1, everything
+ but mmap()
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130925111538.CCE16E0090@blue.fi.intel.com>
+Date: Wed, 25 Sep 2013 14:15:38 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style issue where lines are indented with spaces
-instead of tabs.
+Andrew Morton wrote:
+> On Tue, 24 Sep 2013 16:49:50 -0700 Andi Kleen <ak@linux.intel.com> wrote:
+> 
+> > > At the very least we should get this done for a real filesystem to see
+> > > how intrusive the changes are and to evaluate the performance changes.
+> > 
+> > That would give even larger patches, and people already complain
+> > the patchkit is too large.
+> 
+> The thing is that merging an implementation for ramfs commits us to
+> doing it for the major real filesystems.  Before making that commitment
+> we should at least have a pretty good understanding of what those
+> changes will look like.
+> 
+> Plus I don't see how we can realistically performance-test it without
+> having real physical backing store in the picture?
 
-Signed-off-by: Luis Ortega Perez de Villar <luiorpe1@upv.es>
----
- drivers/staging/dwc2/core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+My plan for real filesystem is to get it first beneficial for read-mostly
+files:
+ - allocate huge pages on read (or collapse small pages) only if nobody
+   has the inode opened on write;
+ - split huge page on write to avoid dealing with write back patch at
+   first and dirty only 4k pages;
 
-diff --git a/drivers/staging/dwc2/core.c b/drivers/staging/dwc2/core.c
-index 06dae67..f8dfca1 100644
---- a/drivers/staging/dwc2/core.c
-+++ b/drivers/staging/dwc2/core.c
-@@ -2205,7 +2205,7 @@ int dwc2_set_param_phy_type(struct dwc2_hsotg *hsotg, int val)
- {
- #ifndef NO_FS_PHY_HW_CHECKS
- 	int valid = 0;
--        u32 hs_phy_type, fs_phy_type;
-+	u32 hs_phy_type, fs_phy_type;
- #endif
- 	int retval = 0;
- 
-@@ -2553,7 +2553,7 @@ int dwc2_set_param_ahbcfg(struct dwc2_hsotg *hsotg, int val)
- 		hsotg->core_params->ahbcfg = val;
- 	else
- 		hsotg->core_params->ahbcfg = GAHBCFG_HBSTLEN_INCR4 <<
--                                             GAHBCFG_HBSTLEN_SHIFT;
-+						GAHBCFG_HBSTLEN_SHIFT;
- 	return 0;
- }
- 
+This will will get most of elf executables and libraries mapped with huge
+pages (it may require dynamic linker change to align length to huge page
+boundary) which is not bad for start.
+
 -- 
-1.7.9.5
-
+ Kirill A. Shutemov
