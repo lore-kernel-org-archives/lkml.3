@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab3IYVvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 17:51:23 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:47803 "EHLO
+	id S1754892Ab3IYVvg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 17:51:36 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:47812 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754472Ab3IYVvU (ORCPT
+	with ESMTP id S1754726Ab3IYVvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 17:51:20 -0400
+	Wed, 25 Sep 2013 17:51:22 -0400
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: Re: [PATCH 2/4] ARM: shmobile: r8a7790: add I2C support in Device Tree mode
-Date: Wed, 25 Sep 2013 10:52:23 +0200
-Message-ID: <1681594.NCMRR5Vty1@avalon>
+        linux-sh@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/4] pinctrl: sh-pfc: r8a7790: add pin definitions for the I2C3 interface
+Date: Wed, 25 Sep 2013 10:46:20 +0200
+Message-ID: <1736434.JorZUzD5Dk@avalon>
 User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1378742636-11215-3-git-send-email-g.liakhovetski@gmx.de>
-References: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de> <1378742636-11215-3-git-send-email-g.liakhovetski@gmx.de>
+In-Reply-To: <1378742636-11215-2-git-send-email-g.liakhovetski@gmx.de>
+References: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de> <1378742636-11215-2-git-send-email-g.liakhovetski@gmx.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -29,109 +28,125 @@ Hi Guennadi,
 
 Thank you for the patch.
 
-On Monday 09 September 2013 18:03:54 Guennadi Liakhovetski wrote:
-> This patch adds clocks and clock lookup entries for the four I2C
-> controllers on r8a7790 and respective Device Tree nodes.
+On Monday 09 September 2013 18:03:53 Guennadi Liakhovetski wrote:
+> There are four I2C interfaces on r8a7790, each of them can be connected to
+> one of the two respective I2C controllers, e.g. interface #0 can be
+> configured to work with I2C0 or with IIC0. Additionally some of those
+> interfaces can also use one of several pin sets. Interface #3 is special,
+> because it can be used in automatic mode for DVFS. It only has one set
+> of pins available and those pins cannot be used for anything else, they
+> also lack the GPIO function.
 > 
+> This patch uses the sh-pfc ability to configure pins, not associated with
+> GPIOs and adds support for I2C3 to the r8a7790 PFC set up.
+
+Ulrich Hecht sent a patch titled "sh-pfc: r8a7790: Add I2C pin groups and 
+functions" that added pin groups for I2C1 and I2C2. The patch is available 
+from
+
+	git://linuxtv.org/pinchartl/fbdev.git pinmux/next
+
+If you need to resubmit this patch due to my comments below, could you please 
+rebase it on top of that branch ?
+
 > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 > ---
->  arch/arm/boot/dts/r8a7790.dtsi         |   36 +++++++++++++++++++++++++++++
->  arch/arm/mach-shmobile/clock-r8a7790.c |   10 ++++++++
->  2 files changed, 46 insertions(+), 0 deletions(-)
+>  drivers/pinctrl/sh-pfc/pfc-r8a7790.c |   28 ++++++++++++++++++++++++++++
+>  1 files changed, 28 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/arm/boot/dts/r8a7790.dtsi b/arch/arm/boot/dts/r8a7790.dtsi
-> index 885f9f4..a5021112 100644
-> --- a/arch/arm/boot/dts/r8a7790.dtsi
-> +++ b/arch/arm/boot/dts/r8a7790.dtsi
-> @@ -127,6 +127,42 @@
->  		interrupts = <0 0 4>, <0 1 4>, <0 2 4>,	<0 3 4>;
->  	};
-> 
-> +	i2c0: i2c@e6508000 {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		compatible = "renesas,i2c-rcar-h2";
-> +		reg = <0 0xe6508000 0 0x40>;
-> +		interrupt-parent = <&gic>;
-> +		interrupts = <0 287 0x4>;
-
-Shouldn't you add state = "disabled" to all I2C controllers in order not to 
-enable the unused controllers by default ?
-
-> +	};
+> diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
+> b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c index 64fcc006..c3c4d9b 100644
+> --- a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
+> +++ b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
+> @@ -781,6 +781,8 @@ enum {
+>  	ADICS_SAMP_MARK, DU2_CDE_MARK, QPOLB_MARK, SCIFA2_RXD_B_MARK,
+>  	USB1_PWEN_MARK, AUDIO_CLKOUT_D_MARK, USB1_OVC_MARK,
+>  	TCLK1_B_MARK,
 > +
-> +	i2c1: i2c@e6518000 {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		compatible = "renesas,i2c-rcar-h2";
-> +		reg = <0 0xe6518000 0 0x40>;
-> +		interrupt-parent = <&gic>;
-> +		interrupts = <0 288 0x4>;
-> +	};
-> +
-> +	i2c2: i2c@e6530000 {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		compatible = "renesas,i2c-rcar-h2";
-> +		reg = <0 0xe6530000 0 0x40>;
-> +		interrupt-parent = <&gic>;
-> +		interrupts = <0 286 0x4>;
-> +	};
-> +
-> +	i2c3: i2c@e6540000 {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		compatible = "renesas,i2c-rcar-h2";
-> +		reg = <0 0xe6540000 0 0x40>;
-> +		interrupt-parent = <&gic>;
-> +		interrupts = <0 290 0x4>;
-> +	};
-> +
->  	mmcif0: mmcif@ee200000 {
->  		compatible = "renesas,sh-mmcif";
->  		reg = <0 0xee200000 0 0x80>;
-> diff --git a/arch/arm/mach-shmobile/clock-r8a7790.c
-> b/arch/arm/mach-shmobile/clock-r8a7790.c index fc36d3d..8e5e90b 100644
-> --- a/arch/arm/mach-shmobile/clock-r8a7790.c
-> +++ b/arch/arm/mach-shmobile/clock-r8a7790.c
-> @@ -52,6 +52,7 @@
->  #define SMSTPCR5 0xe6150144
->  #define SMSTPCR7 0xe615014c
->  #define SMSTPCR8 0xe6150990
-> +#define SMSTPCR9 0xe6150994
-> 
->  #define SDCKCR		0xE6150074
->  #define SD2CKCR		0xE6150078
-> @@ -181,6 +182,7 @@ static struct clk div6_clks[DIV6_NR] = {
-> 
->  /* MSTP */
->  enum {
-> +	MSTP931, MSTP930, MSTP929, MSTP928,
->  	MSTP813,
->  	MSTP721, MSTP720,
->  	MSTP717, MSTP716,
-> @@ -192,6 +194,10 @@ enum {
+> +	I2C3_SCL_MARK, I2C3_SDA_MARK,
+>  	PINMUX_MARK_END,
 >  };
 > 
->  static struct clk mstp_clks[MSTP_NR] = {
-> +	[MSTP931] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 31, 0), /* I2C0 */
-> +	[MSTP930] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 30, 0), /* I2C1 */
-> +	[MSTP929] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 29, 0), /* I2C2 */
-> +	[MSTP928] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 28, 0), /* I2C3 */
->  	[MSTP813] = SH_CLK_MSTP32(&p_clk, SMSTPCR8, 13, 0), /* Ether */
->  	[MSTP721] = SH_CLK_MSTP32(&p_clk, SMSTPCR7, 21, 0), /* SCIF0 */
->  	[MSTP720] = SH_CLK_MSTP32(&p_clk, SMSTPCR7, 20, 0), /* SCIF1 */
-> @@ -261,6 +267,10 @@ static struct clk_lookup lookups[] = {
->  	CLKDEV_DEV_ID("sh-sci.7", &mstp_clks[MSTP720]),
->  	CLKDEV_DEV_ID("sh-sci.8", &mstp_clks[MSTP717]),
->  	CLKDEV_DEV_ID("sh-sci.9", &mstp_clks[MSTP716]),
-> +	CLKDEV_DEV_ID("e6508000.i2c", &mstp_clks[MSTP931]),
-> +	CLKDEV_DEV_ID("e6518000.i2c", &mstp_clks[MSTP930]),
-> +	CLKDEV_DEV_ID("e6530000.i2c", &mstp_clks[MSTP929]),
-> +	CLKDEV_DEV_ID("e6540000.i2c", &mstp_clks[MSTP928]),
->  	CLKDEV_DEV_ID("r8a7790-ether", &mstp_clks[MSTP813]),
->  	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
->  	CLKDEV_DEV_ID("ee200000.mmcif", &mstp_clks[MSTP315]),
+> @@ -1719,10 +1721,22 @@ static const u16 pinmux_data[] = {
+>  	PINMUX_IPSR_DATA(IP16_6, AUDIO_CLKOUT_D),
+>  	PINMUX_IPSR_DATA(IP16_7, USB1_OVC),
+>  	PINMUX_IPSR_MODSEL_DATA(IP16_7, TCLK1_B, SEL_TMU1_1),
+> +
+> +	PINMUX_DATA(I2C3_SCL_MARK, FN_SEL_IICDVFS_1),
+> +	PINMUX_DATA(I2C3_SDA_MARK, FN_SEL_IICDVFS_1),
+
+You introduce a way to mux the I2C3 function on those two pins, but no way to 
+select the IICDVFS back. I don't think it's an issue, we can always add that 
+later when (if) needed. Linus, is that fine with you ?
+
+>  };
+> 
+> +/* R8A7790 has 6 banks with 32 GPIOs in each = 192 GPIOs */
+> +#define ROW_GROUP_A(r) ('Z' - 'A' + 1 + (r))
+> +#define PIN_NUMBER(r, c) (((r) - 'A') * 16 + (c) + 200)
+
+The BGA package has 31 columns, shouldn't you multiply the row number by 31 
+instead of 16 ?
+
+As we have 192 GPIOs, shouldn't you use an offset of 192 instead of 200 ? This 
+doesn't matter too much I guess.
+
+> +#define PIN_A_NUMBER(r, c) PIN_NUMBER(ROW_GROUP_A(r), c)
+> +
+>  static struct sh_pfc_pin pinmux_pins[] = {
+>  	PINMUX_GPIO_GP_ALL(),
+> +
+> +	/* Pins not associated with a GPIO port */
+> +	SH_PFC_PIN_NAMED(ROW_GROUP_A('J'), 15, AJ15),
+> +	SH_PFC_PIN_NAMED(ROW_GROUP_A('H'), 15, AH15),
+>  };
+> 
+>  /* - DU RGB
+> ----------------------------------------------------------------- */ @@
+> -1990,6 +2004,14 @@ static const unsigned int hscif1_ctrl_b_pins[] = {
+> static const unsigned int hscif1_ctrl_b_mux[] = {
+>  	HRTS1_N_B_MARK, HCTS1_N_B_MARK,
+>  };
+> +/* - I2C3
+> ------------------------------------------------------------------- */
+> +static const unsigned int i2c3_pins[] = {
+> +	/* SCL, SDA */
+> +	PIN_A_NUMBER('J', 15), PIN_A_NUMBER('H', 15),
+> +};
+> +static const unsigned int i2c3_mux[] = {
+> +	I2C3_SCL_MARK, I2C3_SDA_MARK,
+> +};
+>  /* - INTC
+> ------------------------------------------------------------------- */
+> static const unsigned int intc_irq0_pins[] = {
+>  	/* IRQ */
+> @@ -3047,6 +3069,7 @@ static const struct sh_pfc_pin_group pinmux_groups[] =
+> { SH_PFC_PIN_GROUP(hscif1_data_b),
+>  	SH_PFC_PIN_GROUP(hscif1_clk_b),
+>  	SH_PFC_PIN_GROUP(hscif1_ctrl_b),
+> +	SH_PFC_PIN_GROUP(i2c3),
+>  	SH_PFC_PIN_GROUP(intc_irq0),
+>  	SH_PFC_PIN_GROUP(intc_irq1),
+>  	SH_PFC_PIN_GROUP(intc_irq2),
+> @@ -3243,6 +3266,10 @@ static const char * const hscif1_groups[] = {
+>  	"hscif1_ctrl_b",
+>  };
+> 
+> +static const char * const i2c3_groups[] = {
+> +	"i2c3",
+> +};
+> +
+>  static const char * const intc_groups[] = {
+>  	"intc_irq0",
+>  	"intc_irq1",
+> @@ -3469,6 +3496,7 @@ static const struct sh_pfc_function pinmux_functions[]
+> = { SH_PFC_FUNCTION(eth),
+>  	SH_PFC_FUNCTION(hscif0),
+>  	SH_PFC_FUNCTION(hscif1),
+> +	SH_PFC_FUNCTION(i2c3),
+>  	SH_PFC_FUNCTION(intc),
+>  	SH_PFC_FUNCTION(mmc0),
+>  	SH_PFC_FUNCTION(mmc1),
 -- 
 Regards,
 
