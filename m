@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3IYLeQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 07:34:16 -0400
-Received: from kiruna.synopsys.com ([198.182.44.80]:63755 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab3IYLeP (ORCPT
+	id S1755364Ab3IYLfP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 07:35:15 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:39543 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755256Ab3IYLfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 07:34:15 -0400
-Message-ID: <5242C99D.2010401@synopsys.com>
-Date: Wed, 25 Sep 2013 17:01:41 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 25 Sep 2013 07:35:12 -0400
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Shaohua Li <shli@kernel.org>
-CC: Jiang Liu <jiang.liu@huawei.com>, Ingo Molnar <mingo@elte.hu>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Jiri Kosina" <trivial@kernel.org>, Wang YanQing <udknight@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        Noam Camus <noamc@ezchip.com>, Gilad Ben Yossef <giladb@ezchip.com>
-Subject: Re: [RFC PATCH v2 03/25] smp, ARC: kill SMP single function call
- interrupt
-References: <1378915649-16395-1-git-send-email-liuj97@gmail.com> <1378915649-16395-4-git-send-email-liuj97@gmail.com>
-In-Reply-To: <1378915649-16395-4-git-send-email-liuj97@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.111]
+In-Reply-To: <1380108138-30402-2-git-send-email-l.majewski@samsung.com>
+References: <1380108138-30402-1-git-send-email-l.majewski@samsung.com>
+	<1380108138-30402-2-git-send-email-l.majewski@samsung.com>
+Date: Wed, 25 Sep 2013 17:05:11 +0530
+Message-ID: <CAK9yfHzb8VA+E38iQ3b31Yjfd9BvKcEMBc_gijJ3hERa_fBqFw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: exynos4x12: Use the common clock framework
+ to set APLL clock rate
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, Kukjin Kim <kgene@kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 09:37 PM, Jiang Liu wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
-> 
-> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
-> similar to smp_call_function_single()" has unified the way to handle
-> single and multiple cross-CPU function calls. Now only one interrupt
-> is needed for architecture specific code to support generic SMP function
-> call interfaces, so kill the redundant single function call interrupt.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: Jiang Liu <liuj97@gmail.com>
+Hi Lukasz,
 
-Verified that it works for ARC too.
+On 25 September 2013 16:52, Lukasz Majewski <l.majewski@samsung.com> wrote:
+>
+>  static void exynos4x12_set_apll(unsigned int index)
+>  {
+> -       unsigned int tmp, pdiv;
+> +       unsigned int tmp, freq = apll_freq_4x12[index].freq;
 
-Acked-by: Vineet Gupta <vgupta@synopsys.com>
+nit: It is better to put the 'freq' assignment on a new line.
 
-Thx,
--Vineet
+>
+> -       /* 1. MUX_CORE_SEL = MPLL, ARMCLK uses MPLL for lock time */
+> +       /* MUX_CORE_SEL = MPLL, ARMCLK uses MPLL for lock time */
+>         clk_set_parent(moutcore, mout_mpll);
+>
+>         do {
+> @@ -140,24 +140,9 @@ static void exynos4x12_set_apll(unsigned int index)
+>                 tmp &= 0x7;
+>         } while (tmp != 0x2);
+>
+> -       /* 2. Set APLL Lock time */
+> -       pdiv = ((apll_freq_4x12[index].mps >> 8) & 0x3f);
+> +       clk_set_rate(mout_apll, freq * 1000);
+
+Don't we need to check the return value of this?
+
+Same comments for the second patch too.
+
+-- 
+With warm regards,
+Sachin
