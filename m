@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab3IYAII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:08:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38398 "EHLO
+	id S1755149Ab3IYAIh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:08:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38434 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710Ab3IYAID (ORCPT
+	with ESMTP id S1754951Ab3IYAIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:08:03 -0400
+	Tue, 24 Sep 2013 20:08:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 01/28] SCSI: sd: Fix potential out-of-bounds access
-Date: Tue, 24 Sep 2013 17:07:32 -0700
-Message-Id: <20130925000648.770805490@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>
+Subject: [ 11/28] USB: cdc-wdm: fix race between interrupt handler and tasklet
+Date: Tue, 24 Sep 2013 17:07:42 -0700
+Message-Id: <20130925000651.128748740@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
 References: <20130925000648.404447782@linuxfoundation.org>
@@ -28,44 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 984f1733fcee3fbc78d47e26c5096921c5d9946a upstream.
+commit 6dd433e6cf2475ce8abec1b467720858c24450eb upstream.
 
-This patch fixes an out-of-bounds error in sd_read_cache_type(), found
-by Google's AddressSanitizer tool.  When the loop ends, we know that
-"offset" lies beyond the end of the data in the buffer, so no Caching
-mode page was found.  In theory it may be present, but the buffer size
-is limited to 512 bytes.
+Both could want to submit the same URB. Some checks of the flag
+intended to prevent that were missing.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/sd.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ drivers/usb/class/cdc-wdm.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2135,14 +2135,9 @@ sd_read_cache_type(struct scsi_disk *sdk
- 			}
- 		}
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -171,6 +171,7 @@ skip_error:
+ static void wdm_int_callback(struct urb *urb)
+ {
+ 	int rv = 0;
++	int responding;
+ 	int status = urb->status;
+ 	struct wdm_device *desc;
+ 	struct usb_ctrlrequest *req;
+@@ -244,8 +245,8 @@ static void wdm_int_callback(struct urb
+ 	desc->response->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+ 	spin_lock(&desc->iuspin);
+ 	clear_bit(WDM_READ, &desc->flags);
+-	set_bit(WDM_RESPONDING, &desc->flags);
+-	if (!test_bit(WDM_DISCONNECTING, &desc->flags)
++	responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
++	if (!responding && !test_bit(WDM_DISCONNECTING, &desc->flags)
+ 		&& !test_bit(WDM_SUSPENDING, &desc->flags)) {
+ 		rv = usb_submit_urb(desc->response, GFP_ATOMIC);
+ 		dev_dbg(&desc->intf->dev, "%s: usb_submit_urb %d",
+@@ -635,16 +636,20 @@ static void wdm_rxwork(struct work_struc
+ {
+ 	struct wdm_device *desc = container_of(work, struct wdm_device, rxwork);
+ 	unsigned long flags;
+-	int rv;
++	int rv = 0;
++	int responding;
  
--		if (modepage == 0x3F) {
--			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
--				  "present\n");
--			goto defaults;
--		} else if ((buffer[offset] & 0x3f) != modepage) {
--			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
--			goto defaults;
--		}
-+		sd_printk(KERN_ERR, sdkp, "No Caching mode page found\n");
-+		goto defaults;
-+
- 	Page_found:
- 		if (modepage == 8) {
- 			sdkp->WCE = ((buffer[offset + 2] & 0x04) != 0);
+ 	spin_lock_irqsave(&desc->iuspin, flags);
+ 	if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
+ 		spin_unlock_irqrestore(&desc->iuspin, flags);
+ 	} else {
++		responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
+ 		spin_unlock_irqrestore(&desc->iuspin, flags);
+-		rv = usb_submit_urb(desc->response, GFP_KERNEL);
++		if (!responding)
++			rv = usb_submit_urb(desc->response, GFP_KERNEL);
+ 		if (rv < 0 && rv != -EPERM) {
+ 			spin_lock_irqsave(&desc->iuspin, flags);
++			clear_bit(WDM_RESPONDING, &desc->flags);
+ 			if (!test_bit(WDM_DISCONNECTING, &desc->flags))
+ 				schedule_work(&desc->rxwork);
+ 			spin_unlock_irqrestore(&desc->iuspin, flags);
 
 
