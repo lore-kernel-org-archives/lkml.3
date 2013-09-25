@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab3IYQSf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 12:18:35 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:50165 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754431Ab3IYQSc (ORCPT
+	id S1754610Ab3IYQTR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 12:19:17 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:36761 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab3IYQS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 12:18:32 -0400
+	Wed, 25 Sep 2013 12:18:26 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 7/7] x86: Tell about irq stack coverage
-Date: Wed, 25 Sep 2013 18:18:06 +0200
-Message-Id: <1380125886-10341-8-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/7] irq: Improve a bit softirq debugging
+Date: Wed, 25 Sep 2013 18:18:03 +0200
+Message-Id: <1380125886-10341-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
 References: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
@@ -33,15 +33,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86-64 runs irq_exit() under the irq stack. So it can afford
-to run softirqs in hardirq exit without the need to switch
-the stacks. The hardirq stack is good enough for that.
+do_softirq() has a debug check that verifies that it is not nesting
+on softirqs processing, nor miscounting the softirq part of the preempt
+count.
 
-Now x86-64 runs softirqs in the hardirq stack anyway, so what we
-mostly skip is some needless per cpu refcounting updates there.
+But making sure that softirqs processing don't nest is actually a more
+generic concern that applies to any caller of __do_softirq().
 
-x86-32 is not concerned because it only runs the irq handler on
-the irq stack.
+Do take it one step further and generalize that debug check to
+any softirq processing.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
@@ -60,24 +60,45 @@ Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 Cc: David S. Miller <davem@davemloft.net>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- arch/x86/include/asm/irq.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/softirq.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
-index 0ea10f27..879bece 100644
---- a/arch/x86/include/asm/irq.h
-+++ b/arch/x86/include/asm/irq.h
-@@ -23,6 +23,10 @@ extern void irq_ctx_init(int cpu);
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 17c5cd2..9f8092b 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -133,7 +133,6 @@ EXPORT_SYMBOL(local_bh_disable);
  
- #define __ARCH_HAS_DO_SOFTIRQ
+ static void __local_bh_enable(unsigned int cnt)
+ {
+-	WARN_ON_ONCE(in_irq());
+ 	WARN_ON_ONCE(!irqs_disabled());
  
-+#ifdef CONFIG_X86_64
-+# define __ARCH_IRQ_EXIT_ON_IRQ_STACK
-+#endif
-+
- #ifdef CONFIG_HOTPLUG_CPU
- #include <linux/cpumask.h>
- extern void fixup_irqs(void);
+ 	if (softirq_count() == cnt)
+@@ -148,6 +147,7 @@ static void __local_bh_enable(unsigned int cnt)
+  */
+ void _local_bh_enable(void)
+ {
++	WARN_ON_ONCE(in_irq());
+ 	__local_bh_enable(SOFTIRQ_DISABLE_OFFSET);
+ }
+ 
+@@ -279,6 +279,7 @@ restart:
+ 
+ 	account_irq_exit_time(current);
+ 	__local_bh_enable(SOFTIRQ_OFFSET);
++	WARN_ON_ONCE(in_interrupt());
+ 	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
+ }
+ 
+@@ -299,7 +300,6 @@ asmlinkage void do_softirq(void)
+ 	if (pending)
+ 		do_softirq_own_stack();
+ 
+-	WARN_ON_ONCE(softirq_count());
+ 	local_irq_restore(flags);
+ }
+ 
 -- 
 1.8.3.1
 
