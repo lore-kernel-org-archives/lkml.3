@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082Ab3IYBWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:22:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38893 "EHLO
+	id S1755857Ab3IYAP5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:15:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38835 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861Ab3IYAP7 (ORCPT
+	with ESMTP id S1755810Ab3IYAPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:15:59 -0400
+	Tue, 24 Sep 2013 20:15:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [ 008/110] ARM: xen: only set pm function ptrs for Xen guests
-Date: Tue, 24 Sep 2013 17:14:06 -0700
-Message-Id: <20130925001324.298996233@linuxfoundation.org>
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 001/110] SCSI: Allow MPT Fusion SAS 3.0 driver to be built into the kernel
+Date: Tue, 24 Sep 2013 17:13:59 -0700
+Message-Id: <20130925001323.562340118@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -27,41 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Herring <rob.herring@calxeda.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 9dd4b2944c46e1fdbd0a516c221c8a2670cbf005 upstream.
+commit 9807b4d94911be4e4efb9a08481b24292a9edf8a upstream.
 
-xen_pm_init was unconditionally setting pm_power_off and arm_pm_restart
-function pointers. This breaks multi-platform kernels. Make this
-conditional on running as a Xen guest and make it a late_initcall to
-ensure it is setup after platform code for Dom0.
+Right now the Makefile for the mpt3sas driver does not even allow the
+driver to be built into the kernel.  So fix that up, as there doesn't
+seem to be any obvious reason why this shouldn't be done.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Acked-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 
 ---
- arch/arm/xen/enlighten.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/scsi/mpt3sas/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -273,12 +273,15 @@ core_initcall(xen_guest_init);
- 
- static int __init xen_pm_init(void)
- {
-+	if (!xen_domain())
-+		return -ENODEV;
-+
- 	pm_power_off = xen_power_off;
- 	arm_pm_restart = xen_restart;
- 
- 	return 0;
- }
--subsys_initcall(xen_pm_init);
-+late_initcall(xen_pm_init);
- 
- static irqreturn_t xen_arm_callback(int irq, void *arg)
- {
+--- a/drivers/scsi/mpt3sas/Makefile
++++ b/drivers/scsi/mpt3sas/Makefile
+@@ -1,5 +1,5 @@
+ # mpt3sas makefile
+-obj-m += mpt3sas.o
++obj-$(CONFIG_SCSI_MPT3SAS) += mpt3sas.o
+ mpt3sas-y +=  mpt3sas_base.o     \
+ 		mpt3sas_config.o \
+ 		mpt3sas_scsih.o      \
 
 
