@@ -1,361 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab3IYMzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 08:55:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755517Ab3IYMvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 08:51:16 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 05/21] perf: Add event toggle sys_perf_event_open interface
-Date: Wed, 25 Sep 2013 14:50:31 +0200
-Message-Id: <1380113447-17144-6-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
-References: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
+	id S1756064Ab3IYM4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 08:56:10 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40112 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755456Ab3IYM4H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 08:56:07 -0400
+Date: Wed, 25 Sep 2013 13:55:38 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Message-ID: <20130925125538.GP3226@sirena.org.uk>
+References: <1379960073-23245-1-git-send-email-broonie@kernel.org>
+ <1379960073-23245-2-git-send-email-broonie@kernel.org>
+ <20130925111954.GG5132@lee--X1>
+ <20130925113103.GN3226@sirena.org.uk>
+ <20130925114643.GH5132@lee--X1>
+ <20130925115502.GI5132@lee--X1>
+ <20130925123536.GO3226@sirena.org.uk>
+ <20130925125139.GJ5132@lee--X1>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="v9g2r9e2kvGs7M7R"
+Content-Disposition: inline
+In-Reply-To: <20130925125139.GJ5132@lee--X1>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3] mfd: mc13xxx: Move SPI erratum workaround into SPI
+ I/O function
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding perf interface that allows to create 'toggle' events,
-which can enable or disable another event. Whenever the toggle
-event is triggered (has overflow), it toggles another event
-state and either starts or stops it.
 
-The goal is to be able to create toggling tracepoint events
-to enable and disable HW counters, but the interface is generic
-enough to be used for any kind of event.
+--v9g2r9e2kvGs7M7R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The interface to create a toggle event is similar as the one
-for defining event group. Use perf syscall with:
+On Wed, Sep 25, 2013 at 01:51:39PM +0100, Lee Jones wrote:
+> On Wed, 25 Sep 2013, Mark Brown wrote:
+> > On Wed, Sep 25, 2013 at 12:55:02PM +0100, Lee Jones wrote:
 
-  flags    - PERF_FLAG_TOGGLE_ON or PERF_FLAG_TOGGLE_OFF
-  group_fd - event (or group) fd to be toggled
+> > > https://git.linaro.org/gitweb?p=3Dpeople/ljones/mfd.git mfd-asoc
 
-Created event will toggle ON(start) or OFF(stop) the event
-specified via group_fd.
+> > Thanks, could you include the first patch as well please (there's a
+> > dependency for bisection due to the BUG_ONs)?=20
 
-Obviously this way it's not possible for toggle event to
-be part of group other than group leader. This will be
-possible via ioctl coming in next patch.
+> Okay, done. Same branch.
 
-Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- include/linux/perf_event.h      |   9 +++
- include/uapi/linux/perf_event.h |   3 +
- kernel/events/core.c            | 158 ++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 164 insertions(+), 6 deletions(-)
+Pulled, thanks.  That URI isn't directly pullable BTW.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 866e85c..6ede25c 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -289,6 +289,12 @@ struct swevent_hlist {
- struct perf_cgroup;
- struct ring_buffer;
- 
-+enum perf_event_toggle_flag {
-+	PERF_TOGGLE_NONE	= 0,
-+	PERF_TOGGLE_ON		= 1,
-+	PERF_TOGGLE_OFF		= 2,
-+};
-+
- /**
-  * struct perf_event - performance event kernel representation:
-  */
-@@ -414,6 +420,9 @@ struct perf_event {
- 	int				cgrp_defer_enabled;
- #endif
- 
-+	struct perf_event		*toggled_event;
-+	enum perf_event_toggle_flag	toggle_flag;
-+	int				paused;
- #endif /* CONFIG_PERF_EVENTS */
- };
- 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index ca1d90b..ecb0474 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -694,6 +694,9 @@ enum perf_callchain_context {
- #define PERF_FLAG_FD_NO_GROUP		(1U << 0)
- #define PERF_FLAG_FD_OUTPUT		(1U << 1)
- #define PERF_FLAG_PID_CGROUP		(1U << 2) /* pid=cgroup id, per-cpu mode only */
-+#define PERF_FLAG_TOGGLE_ON		(1U << 3)
-+#define PERF_FLAG_TOGGLE_OFF		(1U << 4)
-+
- 
- union perf_mem_data_src {
- 	__u64 val;
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index e8674e4..40c792d 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -44,6 +44,8 @@
- 
- #include <asm/irq_regs.h>
- 
-+#define PERF_FLAG_TOGGLE (PERF_FLAG_TOGGLE_ON | PERF_FLAG_TOGGLE_OFF)
-+
- struct remote_function_call {
- 	struct task_struct	*p;
- 	int			(*func)(void *info);
-@@ -119,7 +121,9 @@ static int cpu_function_call(int cpu, int (*func) (void *info), void *info)
- 
- #define PERF_FLAG_ALL (PERF_FLAG_FD_NO_GROUP |\
- 		       PERF_FLAG_FD_OUTPUT  |\
--		       PERF_FLAG_PID_CGROUP)
-+		       PERF_FLAG_PID_CGROUP |\
-+		       PERF_FLAG_TOGGLE_ON  |\
-+		       PERF_FLAG_TOGGLE_OFF)
- 
- /*
-  * branch priv levels that need permission checks
-@@ -1358,6 +1362,25 @@ out:
- 		perf_event__header_size(tmp);
- }
- 
-+static void put_event(struct perf_event *event);
-+
-+static void __perf_event_toggle_detach(struct perf_event *event)
-+{
-+	struct perf_event *toggled_event = event->toggled_event;
-+
-+	event->toggle_flag      = PERF_TOGGLE_NONE;
-+	event->overflow_handler = NULL;
-+	event->toggled_event    = NULL;
-+
-+	put_event(toggled_event);
-+}
-+
-+static void perf_event_toggle_detach(struct perf_event *event)
-+{
-+	if (event->toggle_flag > PERF_TOGGLE_NONE)
-+		__perf_event_toggle_detach(event);
-+}
-+
- static inline int
- event_filter_match(struct perf_event *event)
- {
-@@ -1646,6 +1669,7 @@ event_sched_in(struct perf_event *event,
- 		 struct perf_event_context *ctx)
- {
- 	u64 tstamp = perf_event_time(event);
-+	int add_flags = PERF_EF_START;
- 
- 	if (event->state <= PERF_EVENT_STATE_OFF)
- 		return 0;
-@@ -1665,7 +1689,10 @@ event_sched_in(struct perf_event *event,
- 	 */
- 	smp_wmb();
- 
--	if (event->pmu->add(event, PERF_EF_START)) {
-+	if (event->paused)
-+		add_flags = 0;
-+
-+	if (event->pmu->add(event, add_flags)) {
- 		event->state = PERF_EVENT_STATE_INACTIVE;
- 		event->oncpu = -1;
- 		return -EAGAIN;
-@@ -2723,7 +2750,7 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
- 			event->pmu->start(event, 0);
- 		}
- 
--		if (!event->attr.freq || !event->attr.sample_freq)
-+		if (!event->attr.freq || !event->attr.sample_freq || event->paused)
- 			continue;
- 
- 		/*
-@@ -3240,7 +3267,7 @@ int perf_event_release_kernel(struct perf_event *event)
- 	raw_spin_unlock_irq(&ctx->lock);
- 	perf_remove_from_context(event);
- 	mutex_unlock(&ctx->mutex);
--
-+	perf_event_toggle_detach(event);
- 	free_event(event);
- 
- 	return 0;
-@@ -5231,6 +5258,72 @@ static void perf_log_throttle(struct perf_event *event, int enable)
- }
- 
- /*
-+ * TODO:
-+ * - fix race when interrupting event_sched_in/event_sched_out
-+ * - fix race against other toggler
-+ * - fix race against other callers of ->stop/start (adjust period/freq)
-+ */
-+static void perf_event_toggle(struct perf_event *event,
-+			      enum perf_event_toggle_flag flag)
-+{
-+	unsigned long flags;
-+	bool active;
-+
-+	/*
-+	 * Prevent from races against event->add/del through
-+	 * preempt_schedule_irq() or enable/disable IPIs
-+	 */
-+	local_irq_save(flags);
-+
-+	/* Could be out of HW counter. */
-+	active = event->state == PERF_EVENT_STATE_ACTIVE;
-+
-+	switch (flag) {
-+	case PERF_TOGGLE_ON:
-+		if (!event->paused)
-+			break;
-+		if (active)
-+			event->pmu->start(event, PERF_EF_RELOAD);
-+		event->paused = false;
-+		break;
-+	case PERF_TOGGLE_OFF:
-+		if (event->paused)
-+			break;
-+		if (active)
-+			event->pmu->stop(event, PERF_EF_UPDATE);
-+		event->paused = true;
-+		break;
-+	case PERF_TOGGLE_NONE:
-+		break;
-+	}
-+
-+	local_irq_restore(flags);
-+}
-+
-+static void
-+perf_event_toggle_overflow(struct perf_event *event,
-+			   struct perf_sample_data *data,
-+			   struct pt_regs *regs)
-+{
-+	struct perf_event *toggled_event;
-+
-+	if (!event->toggle_flag)
-+		return;
-+
-+	toggled_event = event->toggled_event;
-+
-+	if (WARN_ON_ONCE(!toggled_event))
-+		return;
-+
-+	perf_pmu_disable(toggled_event->pmu);
-+
-+	perf_event_toggle(toggled_event, event->toggle_flag);
-+	perf_event_output(event, data, regs);
-+
-+	perf_pmu_enable(toggled_event->pmu);
-+}
-+
-+/*
-  * Generic event overflow handling, sampling.
-  */
- 
-@@ -6887,6 +6980,43 @@ out:
- 	return ret;
- }
- 
-+static enum perf_event_toggle_flag get_toggle_flag(unsigned long flags)
-+{
-+	if ((flags & PERF_FLAG_TOGGLE) == PERF_FLAG_TOGGLE_ON)
-+		return PERF_TOGGLE_ON;
-+	else if ((flags & PERF_FLAG_TOGGLE) == PERF_FLAG_TOGGLE_OFF)
-+		return PERF_TOGGLE_OFF;
-+
-+	return PERF_TOGGLE_NONE;
-+}
-+
-+static int
-+perf_event_set_toggle(struct perf_event *event,
-+		      struct perf_event *toggled_event,
-+		      struct perf_event_context *ctx,
-+		      unsigned long flags)
-+{
-+	if (WARN_ON_ONCE(!(flags & PERF_FLAG_TOGGLE)))
-+		return -EINVAL;
-+
-+	/* It's either ON or OFF. */
-+	if ((flags & PERF_FLAG_TOGGLE) == PERF_FLAG_TOGGLE)
-+		return -EINVAL;
-+
-+	/* Allow only same cpu, */
-+	if (toggled_event->cpu != event->cpu)
-+		return -EINVAL;
-+
-+	/* or same task. */
-+	if (toggled_event->ctx->task != ctx->task)
-+		return -EINVAL;
-+
-+	event->overflow_handler = perf_event_toggle_overflow;
-+	event->toggle_flag      = get_toggle_flag(flags);
-+	event->toggled_event    = toggled_event;
-+	return 0;
-+}
-+
- /**
-  * sys_perf_event_open - open a performance event, associate it to a task/cpu
-  *
-@@ -6900,6 +7030,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		pid_t, pid, int, cpu, int, group_fd, unsigned long, flags)
- {
- 	struct perf_event *group_leader = NULL, *output_event = NULL;
-+	struct perf_event *toggled_event = NULL;
- 	struct perf_event *event, *sibling;
- 	struct perf_event_attr attr;
- 	struct perf_event_context *ctx;
-@@ -6949,7 +7080,9 @@ SYSCALL_DEFINE5(perf_event_open,
- 		group_leader = group.file->private_data;
- 		if (flags & PERF_FLAG_FD_OUTPUT)
- 			output_event = group_leader;
--		if (flags & PERF_FLAG_FD_NO_GROUP)
-+		if (flags & PERF_FLAG_TOGGLE)
-+			toggled_event = group_leader;
-+		if (flags & (PERF_FLAG_FD_NO_GROUP|PERF_FLAG_TOGGLE))
- 			group_leader = NULL;
- 	}
- 
-@@ -7060,10 +7193,20 @@ SYSCALL_DEFINE5(perf_event_open,
- 			goto err_context;
- 	}
- 
-+	if (toggled_event) {
-+		err = -EINVAL;
-+		if (!atomic_long_inc_not_zero(&toggled_event->refcount))
-+			goto err_context;
-+
-+		err = perf_event_set_toggle(event, toggled_event, ctx, flags);
-+		if (err)
-+			goto err_toggle;
-+	}
-+
- 	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event, O_RDWR);
- 	if (IS_ERR(event_file)) {
- 		err = PTR_ERR(event_file);
--		goto err_context;
-+		goto err_toggle;
- 	}
- 
- 	if (move_group) {
-@@ -7131,6 +7274,9 @@ SYSCALL_DEFINE5(perf_event_open,
- 	fd_install(event_fd, event_file);
- 	return event_fd;
- 
-+err_toggle:
-+	if (toggled_event)
-+		put_event(toggled_event);
- err_context:
- 	perf_unpin_context(ctx);
- 	put_ctx(ctx);
--- 
-1.7.11.7
+--v9g2r9e2kvGs7M7R
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSQt1HAAoJELSic+t+oim9jdgP/jv41dbYWWtFgmmrUSw84Xth
+MekE1Dm+57Vh8EXATIW60nbOO3lcg72msJrg+fdDzQasOWCbzb6AbMmwNYqp5kQt
+pZ1iRoHX348+De5rNeLxz5+V8gthqw0IET4dk2Dj8DKlCKABn7+kjvkgm228OMm9
+0+UoM3u4RvaxZNFNTJPpSn2C8EV5kmzJcQIDdMtxcKc56NztnU45YDWTBjRUs1tn
+xYZ76nK00/m9oLGmD+C4sN8W4H5+3UkuQqfqbUGnxIsmkvQ65qB//XnDy3bAJ6ZJ
+StgzG89pgqIY4mdyEGRdU3ItWscNfOq9b0VEG7QBkXHRCvjlms1w5L0H6BK0e5cJ
+4PH9nblKs/RbVJt2wKK/8fRKJGOT2R+a3Pivu6sRm/tEpBC4h7Ua3VPnhdRjNMv0
+v27jmAhslp7DuS3x19pckaKuuvo6Op0Ef05cLuZLnn9vYeTUxtSYywdC4v/Vc+E7
+6z9mtkQN2qPDY/zffQGdVGuHvhwJl7e6mj7q+ysb3sxdmp+krY2YBQHt4+TuT4Zd
+LX8DzW8L0C0rnTVwcUXzpZ/bEfKa0jmdVIYUmzh4NwZmLLS0O08EoIYI96ZwAnnh
+iEy283XMreWR9VLwlE4APcwrHlgQYa1kXVSZBSguVOn858yawLtDvjytgCz5NAoe
+4y0qKFrt1D1xVIDYk7Xg
+=4r01
+-----END PGP SIGNATURE-----
+
+--v9g2r9e2kvGs7M7R--
