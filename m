@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab3IYKRn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 06:17:43 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:58844 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075Ab3IYKRm (ORCPT
+	id S1755135Ab3IYKUd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 06:20:33 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:38976 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab3IYKUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 06:17:42 -0400
-Subject: Re: [PATCH] X.509: Remove validity check of certificate date
-From: joeyli <jlee@suse.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Josh Boyer <jwboyer@redhat.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Peter Jones <pjones@redhat.com>
-In-Reply-To: <5242A6CD.5010006@ahsoftware.de>
-References: <1380090051-19482-1-git-send-email-jlee@suse.com>
-	 <5242A6CD.5010006@ahsoftware.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 25 Sep 2013 18:17:52 +0800
-Message-ID: <1380104272.21947.504.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 25 Sep 2013 06:20:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <000b01ceb9c4$1c77e0b0$5567a210$%han@samsung.com>
+References: <000901ceb9c3$97fe74c0$c7fb5e40$%han@samsung.com>
+	<000b01ceb9c4$1c77e0b0$5567a210$%han@samsung.com>
+Date: Wed, 25 Sep 2013 15:50:31 +0530
+Message-ID: <CAK9yfHwJ57sH5ZfsTYzXBhSHyaw4YtYnPo6636x11tedQBX2Qg@mail.gmail.com>
+Subject: Re: [PATCH 02/20] regulator: ab8500: use devm_regulator_register()
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 三，2013-09-25 於 11:03 +0200，Alexander Holler 提到：
-> (I've resend this message, because the one I've replied to contained 
-> contained kernel@vger... and not linux-kernel@vger... as addressee)
-> 
-> I've already sent exactly the same patch here:
-> 
-> http://lkml.org/lkml/2013/3/27/449
-> 
-> and here:
-> 
-> https://lkml.org/lkml/2013/6/6/207
+On 25 September 2013 13:21, Jingoo Han <jg1.han@samsung.com> wrote:
+> Use devm_regulator_register() to make cleanup paths simpler.
 
-Ah! Thanks for your point out, I didn't search out it!
+> -       for (i = 0; i < abx500_regulator.info_size; i++) {
+> -               struct ab8500_regulator_info *info = NULL;
+> -               info = &abx500_regulator.info[i];
+> -
+> -               dev_vdbg(rdev_get_dev(info->regulator),
+> -                       "%s-remove\n", info->desc.name);
+> -
+> -               regulator_unregister(info->regulator);
+> -       }
+> +       int err;
+>
+>         /* remove regulator debug */
+>         err = ab8500_regulator_debug_exit(pdev);
 
-> 
-> but for some unspoken reason it always got ignored.
+Wouldn't re-ordering (unregistering after ab8500_regulator_debug_exit)
+cause any problems here ?
 
-Yes, looks your patch is waiting for merge...
-
-> 
-> It would make wonder if it would be accepted this time, just because of
-> another author name.
-
-I think just ignore my patch.
-
-> 
-> Regards,
-> 
-> Alexander Holler
-
-Thanks a lot!
-Joey Lee
-
+-- 
+With warm regards,
+Sachin
