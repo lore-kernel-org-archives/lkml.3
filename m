@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab3IYAoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:44:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39506 "EHLO
+	id S1756529Ab3IYAUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:20:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39480 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756541Ab3IYAUJ (ORCPT
+	with ESMTP id S1756501Ab3IYAUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:09 -0400
+	Tue, 24 Sep 2013 20:20:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 036/117] PCI/ACPI: Fix _OSC ordering to allow PCIe hotplug use when available
-Date: Tue, 24 Sep 2013 17:18:22 -0700
-Message-Id: <20130925001744.776358223@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [ 020/117] arm64: perf: fix ARMv8 EVTYPE_MASK to include NSH bit
+Date: Tue, 24 Sep 2013 17:18:06 -0700
+Message-Id: <20130925001743.055378539@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -28,154 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 3dc48af310709b85d07c8b0d3aa8f1ead02829d3 upstream.
+commit 178cd9ce377232518ec17ff2ecab2e80fa60784c upstream.
 
-This fixes the problem of acpiphp claiming slots that should be managed
-by pciehp, which may keep ExpressCard slots from working.
+This is a port of f2fe09b055e2 ("ARM: 7663/1: perf: fix ARMv7 EVTYPE_MASK
+to include NSH bit") to arm64, which fixes the broken evtype mask to
+include the NSH bit, allowing profiling at EL2.
 
-The acpiphp driver claims PCIe slots unless the BIOS has granted us
-control of PCIe native hotplug via _OSC.  Prior to v3.10, the acpiphp
-.add method (add_bridge()) was always called *after* we had requested
-native hotplug control with _OSC.
-
-But after 3b63aaa70e ("PCI: acpiphp: Do not use ACPI PCI subdriver
-mechanism"), which appeared in v3.10, acpiphp initialization is done
-during the bus scan via the pcibios_add_bus() hook, and this happens
-*before* we request native hotplug control.
-
-Therefore, acpiphp doesn't know yet whether the BIOS will grant control,
-and it claims slots that we should be handling with native hotplug.
-
-This patch requests native hotplug control earlier, so we know whether
-the BIOS granted it to us before we initialize acpiphp.
-
-To avoid reintroducing the ASPM issue fixed by b8178f130e ('Revert
-"PCI/ACPI: Request _OSC control before scanning PCI root bus"'), we run
-_OSC earlier but defer the actual ASPM calls until after the bus scan is
-complete.
-
-Tested successfully by myself.
-
-[bhelgaas: changelog, mark for stable]
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=60736
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-CC: Len Brown <lenb@kernel.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/pci_root.c |   62 +++++++++++++++++++++++++++++-------------------
- 1 file changed, 38 insertions(+), 24 deletions(-)
+ arch/arm64/kernel/perf_event.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -378,6 +378,7 @@ static int acpi_pci_root_add(struct acpi
- 	struct acpi_pci_root *root;
- 	u32 flags, base_flags;
- 	acpi_handle handle = device->handle;
-+	bool no_aspm = false, clear_aspm = false;
+--- a/arch/arm64/kernel/perf_event.c
++++ b/arch/arm64/kernel/perf_event.c
+@@ -784,7 +784,7 @@ static const unsigned armv8_pmuv3_perf_c
+ /*
+  * PMXEVTYPER: Event selection reg
+  */
+-#define	ARMV8_EVTYPE_MASK	0xc00000ff	/* Mask for writable bits */
++#define	ARMV8_EVTYPE_MASK	0xc80000ff	/* Mask for writable bits */
+ #define	ARMV8_EVTYPE_EVENT	0xff		/* Mask for EVENT bits */
  
- 	root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
- 	if (!root)
-@@ -437,27 +438,6 @@ static int acpi_pci_root_add(struct acpi
- 	flags = base_flags = OSC_PCI_SEGMENT_GROUPS_SUPPORT;
- 	acpi_pci_osc_support(root, flags);
- 
--	/*
--	 * TBD: Need PCI interface for enumeration/configuration of roots.
--	 */
--
--	/*
--	 * Scan the Root Bridge
--	 * --------------------
--	 * Must do this prior to any attempt to bind the root device, as the
--	 * PCI namespace does not get created until this call is made (and
--	 * thus the root bridge's pci_dev does not exist).
--	 */
--	root->bus = pci_acpi_scan_root(root);
--	if (!root->bus) {
--		dev_err(&device->dev,
--			"Bus %04x:%02x not present in PCI namespace\n",
--			root->segment, (unsigned int)root->secondary.start);
--		result = -ENODEV;
--		goto end;
--	}
--
--	/* Indicate support for various _OSC capabilities. */
- 	if (pci_ext_cfg_avail())
- 		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
- 	if (pcie_aspm_support_enabled()) {
-@@ -471,7 +451,7 @@ static int acpi_pci_root_add(struct acpi
- 		if (ACPI_FAILURE(status)) {
- 			dev_info(&device->dev, "ACPI _OSC support "
- 				"notification failed, disabling PCIe ASPM\n");
--			pcie_no_aspm();
-+			no_aspm = true;
- 			flags = base_flags;
- 		}
- 	}
-@@ -503,7 +483,7 @@ static int acpi_pci_root_add(struct acpi
- 				 * We have ASPM control, but the FADT indicates
- 				 * that it's unsupported. Clear it.
- 				 */
--				pcie_clear_aspm(root->bus);
-+				clear_aspm = true;
- 			}
- 		} else {
- 			dev_info(&device->dev,
-@@ -512,7 +492,14 @@ static int acpi_pci_root_add(struct acpi
- 				acpi_format_exception(status), flags);
- 			dev_info(&device->dev,
- 				 "ACPI _OSC control for PCIe not granted, disabling ASPM\n");
--			pcie_no_aspm();
-+			/*
-+			 * We want to disable ASPM here, but aspm_disabled
-+			 * needs to remain in its state from boot so that we
-+			 * properly handle PCIe 1.1 devices.  So we set this
-+			 * flag here, to defer the action until after the ACPI
-+			 * root scan.
-+			 */
-+			no_aspm = true;
- 		}
- 	} else {
- 		dev_info(&device->dev,
-@@ -520,6 +507,33 @@ static int acpi_pci_root_add(struct acpi
- 			 "(_OSC support mask: 0x%02x)\n", flags);
- 	}
- 
-+	/*
-+	 * TBD: Need PCI interface for enumeration/configuration of roots.
-+	 */
-+
-+	/*
-+	 * Scan the Root Bridge
-+	 * --------------------
-+	 * Must do this prior to any attempt to bind the root device, as the
-+	 * PCI namespace does not get created until this call is made (and
-+	 * thus the root bridge's pci_dev does not exist).
-+	 */
-+	root->bus = pci_acpi_scan_root(root);
-+	if (!root->bus) {
-+		dev_err(&device->dev,
-+			"Bus %04x:%02x not present in PCI namespace\n",
-+			root->segment, (unsigned int)root->secondary.start);
-+		result = -ENODEV;
-+		goto end;
-+	}
-+
-+	if (clear_aspm) {
-+		dev_info(&device->dev, "Disabling ASPM (FADT indicates it is unsupported)\n");
-+		pcie_clear_aspm(root->bus);
-+	}
-+	if (no_aspm)
-+		pcie_no_aspm();
-+
- 	pci_acpi_add_bus_pm_notifier(device, root->bus);
- 	if (device->wakeup.flags.run_wake)
- 		device_set_run_wake(root->bus->bridge, true);
+ /*
 
 
