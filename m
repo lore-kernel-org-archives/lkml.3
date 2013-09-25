@@ -1,37 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab3IYCfg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 22:35:36 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:64577 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755416Ab3IYCfc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 22:35:32 -0400
-Date: Tue, 24 Sep 2013 19:35:29 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Jianguo Wu <wujianguo@huawei.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mips@linux-mips.org, linux-parisc@vger.kernel.org,
-        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, x86@kernel.org
-Subject: Re: [Resend with ACK][PATCH] mm/arch: use NUMA_NODE
-In-Reply-To: <524019D0.9070706@huawei.com>
-Message-ID: <alpine.DEB.2.02.1309241935190.26187@chino.kir.corp.google.com>
-References: <524019D0.9070706@huawei.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755454Ab3IYCgi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 22:36:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40460 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753449Ab3IYCgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Sep 2013 22:36:36 -0400
+Date: Wed, 25 Sep 2013 10:36:15 +0800
+From: Dave Young <dyoung@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+Message-ID: <20130925023615.GB7434@dhcp-16-126.nay.redhat.com>
+References: <e39e1065bddc2afee2cb6eed957e3ba8.squirrel@www.skyhub.de>
+ <52422A6A.8080305@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52422A6A.8080305@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Sep 2013, Jianguo Wu wrote:
-
-> Use more appropriate NUMA_NO_NODE instead of -1 in all archs' module_alloc()
+On 09/24/13 at 05:12pm, H. Peter Anvin wrote:
+> On 09/24/2013 07:56 AM, Borislav Petkov wrote:
+> > On Tue, September 24, 2013 2:45 pm, Dave Young wrote:
+> >> Think again about this, how about 1:1 map them from a base address
+> >> like -64G phy_addr -> (-64G + phy_addr), in this way we can avoid
+> >> depending on the previous region size.
+> > 
+> > Right, how we layout the regions is arbitrary as long as we start at
+> > the same VA and use the same regions, in the same order and of the same
+> > size...
+> > 
+> >> For the zero region problem, we can resolve it as a standalone
+> >> problem.
+> > 
+> > ... however, we still need to understand why it fails mapping the boot
+> > services region as some implementations apparently do call boot services
+> > even after ExitBootServices(). IOW, we need that region mapped in the
+> > kexec'ed kernel too.
+> > 
 > 
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-> Acked-by: Ralf Baechle <ralf@linux-mips.org>
+> I am starting to think that we really should explicitly pass along the
+> EFI mappings to the secondary kernel.  This will also help if we have to
+> change the algorithm in a future kernel.
 
-Acked-by: David Rientjes <rientjes@google.com>
+The 0 size mem region is still a problem even we pass the previous mapping
+to 2nd kernel. So will be be enough to 1:1 map on high address and leave the
+firmware provided memmap not touched, use a copy of memmap in kernel?
+
+> 
+> The most logical way to do this is to define a new setup_data type and
+> pass the entire set of physical-to-virtual mappings that way.
+> 
+> For example:
+> 
+> struct efi_mapping {
+> 	u64 va;			/* Virtual start address */
+> 	u64 pa;			/* Physical start address */
+> 	u64 len;		/* Length in bytes */
+> 	u64 type;		/* Mapping type */
+> 	u64 reserved[3];	/* Reserved, must be zero */
+> };
+> 
+> Adding some reserved fields seems like a prudent precaution; the map
+> shouldn't be all that large anyway.
+> 
+> 	-hpa
+> 
