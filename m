@@ -1,65 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab3IYVuH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 17:50:07 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:58641 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752941Ab3IYVuE (ORCPT
+	id S1754808Ab3IYVvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 17:51:23 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:47803 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472Ab3IYVvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 17:50:04 -0400
-Date: Wed, 25 Sep 2013 14:49:10 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Zach Brown <zab@redhat.com>
-Cc: hch@infradead.org, axboe@kernel.dk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] block: Introduce bio_for_each_page()
-Message-ID: <20130925214910.GA8993@kmo-pixel>
-References: <1380140564-9030-1-git-send-email-kmo@daterainc.com>
- <1380140564-9030-2-git-send-email-kmo@daterainc.com>
- <20130925211702.GH30372@lenny.home.zabbo.net>
+	Wed, 25 Sep 2013 17:51:20 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        linux-sh@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: Re: [PATCH 2/4] ARM: shmobile: r8a7790: add I2C support in Device Tree mode
+Date: Wed, 25 Sep 2013 10:52:23 +0200
+Message-ID: <1681594.NCMRR5Vty1@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1378742636-11215-3-git-send-email-g.liakhovetski@gmx.de>
+References: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de> <1378742636-11215-3-git-send-email-g.liakhovetski@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925211702.GH30372@lenny.home.zabbo.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 02:17:02PM -0700, Zach Brown wrote:
-> >  void zero_fill_bio(struct bio *bio)
-> >  {
-> > -	unsigned long flags;
-> >  	struct bio_vec bv;
-> >  	struct bvec_iter iter;
-> >  
-> > -	bio_for_each_segment(bv, bio, iter) {
-> > +#if defined(CONFIG_HIGHMEM) || defined(ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE)
-> > +	bio_for_each_page(bv, bio, iter) {
-> > +		unsigned long flags;
-> >  		char *data = bvec_kmap_irq(&bv, &flags);
-> >  		memset(data, 0, bv.bv_len);
-> >  		flush_dcache_page(bv.bv_page);
-> >  		bvec_kunmap_irq(data, &flags);
-> >  	}
-> > +#else
-> > +	bio_for_each_segment(bv, bio, iter)
-> > +		memset(page_address(bv.bv_page) + bv.bv_offset,
-> > +		       0, bv.bv_len);
-> > +#endif
-> 
-> This looks pretty sketchy.  I'd expect this to be doable with one loop
-> and that bvec_kmap_irq() and flush_dcache_page() would fall back to
-> page_address() and nops when they're not needed.
-> 
-> Where did this come from?
+Hi Guennadi,
 
-It's just that if we need the kmap or the flush_dcache_page we have to
-process the bio one 4k page at a time - if not, we can process 64k (or
-whatever) bvecs all at once. That doesn't just save us memcpy calls, we
-can also avoid all the machinery in bio_for_each_page() for chunking up
-large bvecs into single page bvecs.
+Thank you for the patch.
 
-I can definitely think of better ways to do this, but I figured I'd wait
-and see if other code ends up wanting to switch between
-bio_for_each_page() and bio_for_each_segment() and why.
+On Monday 09 September 2013 18:03:54 Guennadi Liakhovetski wrote:
+> This patch adds clocks and clock lookup entries for the four I2C
+> controllers on r8a7790 and respective Device Tree nodes.
+> 
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+> ---
+>  arch/arm/boot/dts/r8a7790.dtsi         |   36 +++++++++++++++++++++++++++++
+>  arch/arm/mach-shmobile/clock-r8a7790.c |   10 ++++++++
+>  2 files changed, 46 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/r8a7790.dtsi b/arch/arm/boot/dts/r8a7790.dtsi
+> index 885f9f4..a5021112 100644
+> --- a/arch/arm/boot/dts/r8a7790.dtsi
+> +++ b/arch/arm/boot/dts/r8a7790.dtsi
+> @@ -127,6 +127,42 @@
+>  		interrupts = <0 0 4>, <0 1 4>, <0 2 4>,	<0 3 4>;
+>  	};
+> 
+> +	i2c0: i2c@e6508000 {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "renesas,i2c-rcar-h2";
+> +		reg = <0 0xe6508000 0 0x40>;
+> +		interrupt-parent = <&gic>;
+> +		interrupts = <0 287 0x4>;
+
+Shouldn't you add state = "disabled" to all I2C controllers in order not to 
+enable the unused controllers by default ?
+
+> +	};
+> +
+> +	i2c1: i2c@e6518000 {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "renesas,i2c-rcar-h2";
+> +		reg = <0 0xe6518000 0 0x40>;
+> +		interrupt-parent = <&gic>;
+> +		interrupts = <0 288 0x4>;
+> +	};
+> +
+> +	i2c2: i2c@e6530000 {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "renesas,i2c-rcar-h2";
+> +		reg = <0 0xe6530000 0 0x40>;
+> +		interrupt-parent = <&gic>;
+> +		interrupts = <0 286 0x4>;
+> +	};
+> +
+> +	i2c3: i2c@e6540000 {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "renesas,i2c-rcar-h2";
+> +		reg = <0 0xe6540000 0 0x40>;
+> +		interrupt-parent = <&gic>;
+> +		interrupts = <0 290 0x4>;
+> +	};
+> +
+>  	mmcif0: mmcif@ee200000 {
+>  		compatible = "renesas,sh-mmcif";
+>  		reg = <0 0xee200000 0 0x80>;
+> diff --git a/arch/arm/mach-shmobile/clock-r8a7790.c
+> b/arch/arm/mach-shmobile/clock-r8a7790.c index fc36d3d..8e5e90b 100644
+> --- a/arch/arm/mach-shmobile/clock-r8a7790.c
+> +++ b/arch/arm/mach-shmobile/clock-r8a7790.c
+> @@ -52,6 +52,7 @@
+>  #define SMSTPCR5 0xe6150144
+>  #define SMSTPCR7 0xe615014c
+>  #define SMSTPCR8 0xe6150990
+> +#define SMSTPCR9 0xe6150994
+> 
+>  #define SDCKCR		0xE6150074
+>  #define SD2CKCR		0xE6150078
+> @@ -181,6 +182,7 @@ static struct clk div6_clks[DIV6_NR] = {
+> 
+>  /* MSTP */
+>  enum {
+> +	MSTP931, MSTP930, MSTP929, MSTP928,
+>  	MSTP813,
+>  	MSTP721, MSTP720,
+>  	MSTP717, MSTP716,
+> @@ -192,6 +194,10 @@ enum {
+>  };
+> 
+>  static struct clk mstp_clks[MSTP_NR] = {
+> +	[MSTP931] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 31, 0), /* I2C0 */
+> +	[MSTP930] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 30, 0), /* I2C1 */
+> +	[MSTP929] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 29, 0), /* I2C2 */
+> +	[MSTP928] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 28, 0), /* I2C3 */
+>  	[MSTP813] = SH_CLK_MSTP32(&p_clk, SMSTPCR8, 13, 0), /* Ether */
+>  	[MSTP721] = SH_CLK_MSTP32(&p_clk, SMSTPCR7, 21, 0), /* SCIF0 */
+>  	[MSTP720] = SH_CLK_MSTP32(&p_clk, SMSTPCR7, 20, 0), /* SCIF1 */
+> @@ -261,6 +267,10 @@ static struct clk_lookup lookups[] = {
+>  	CLKDEV_DEV_ID("sh-sci.7", &mstp_clks[MSTP720]),
+>  	CLKDEV_DEV_ID("sh-sci.8", &mstp_clks[MSTP717]),
+>  	CLKDEV_DEV_ID("sh-sci.9", &mstp_clks[MSTP716]),
+> +	CLKDEV_DEV_ID("e6508000.i2c", &mstp_clks[MSTP931]),
+> +	CLKDEV_DEV_ID("e6518000.i2c", &mstp_clks[MSTP930]),
+> +	CLKDEV_DEV_ID("e6530000.i2c", &mstp_clks[MSTP929]),
+> +	CLKDEV_DEV_ID("e6540000.i2c", &mstp_clks[MSTP928]),
+>  	CLKDEV_DEV_ID("r8a7790-ether", &mstp_clks[MSTP813]),
+>  	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
+>  	CLKDEV_DEV_ID("ee200000.mmcif", &mstp_clks[MSTP315]),
+-- 
+Regards,
+
+Laurent Pinchart
+
