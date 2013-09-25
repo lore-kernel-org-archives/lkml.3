@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab3IYWJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 18:09:31 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:64235 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab3IYWJ3 (ORCPT
+	id S1755289Ab3IYWKJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 18:10:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50210 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab3IYWKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 18:09:29 -0400
-Message-ID: <52435F16.5080806@linaro.org>
-Date: Thu, 26 Sep 2013 00:09:26 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 25 Sep 2013 18:10:08 -0400
+Date: Wed, 25 Sep 2013 15:10:06 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Anton Altaparmakov <aia21@cam.ac.uk>
+Cc: Alexander Holler <holler@ahsoftware.de>,
+        STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] add exFAT driver
+Message-ID: <20130925221006.GB32312@kroah.com>
+References: <20130830124622.5f81b7d4@rechenknecht2k7>
+ <20130830154205.GA1411@kroah.com>
+ <20130925183632.08a0d073@rechenknecht2k7>
+ <20130925172704.GB5258@kroah.com>
+ <20130925183235.GA9659@srcf.ucam.org>
+ <20130925184539.GA4208@kroah.com>
+ <52433978.9050302@ahsoftware.de>
+ <20130925202151.GA6149@kroah.com>
+ <57387214-F138-4471-996E-3FB1ED28346C@cam.ac.uk>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@sisk.pl
-CC: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/21] cpuidle: free all state kobjects from cpuidle_free_state_kobj()
-References: <cover.1379779777.git.viresh.kumar@linaro.org> <503b7472308007b4c233b33d19f5a54c138212e7.1379779777.git.viresh.kumar@linaro.org>
-In-Reply-To: <503b7472308007b4c233b33d19f5a54c138212e7.1379779777.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <57387214-F138-4471-996E-3FB1ED28346C@cam.ac.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2013 03:21 AM, Viresh Kumar wrote:
-> Loop for states is currently present on callers side and so is replicated at
-> several places. It would be better to move that inside cpuidle_free_state_kobj()
-> instead.
+On Wed, Sep 25, 2013 at 10:44:15PM +0100, Anton Altaparmakov wrote:
+> Hi,
 > 
-> This patch does it.
+> On 25 Sep 2013, at 21:21, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> > On Wed, Sep 25, 2013 at 09:28:56PM +0200, Alexander Holler wrote:
+> >> 
+> >> Maybe a silly question, but isn't exFAT protected by some MS owned
+> >> patents which might drive Linux users into the hand of MS lawyers as
+> >> already happened with FAT?
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Yes, it is.  You cannot use exFAT without a Microsoft patent license
+> (unless you live in countries without software patents perhaps).
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Given that you that you are not a Microsoft representative, nor a
+Samsung employee, I don't understand how you can make such a definitive
+statement.
 
-> ---
->  drivers/cpuidle/sysfs.c | 23 ++++++++++++-----------
->  1 file changed, 12 insertions(+), 11 deletions(-)
+> >> It would make me wonder if not. Maybe you could ask Samsung about
+> >> that too, when you are there.
+> > 
+> > Because Samsung released the code under the GPLv2, and their lawyers
+> > understand what that means, should answer any question you might have
+> > about this.
 > 
-> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-> index e918b6d..ade31a9 100644
-> --- a/drivers/cpuidle/sysfs.c
-> +++ b/drivers/cpuidle/sysfs.c
-> @@ -378,12 +378,17 @@ static struct kobj_type ktype_state_cpuidle = {
->  	.release = cpuidle_state_sysfs_release,
->  };
->  
-> -static inline void cpuidle_free_state_kobj(struct cpuidle_device *device, int i)
-> +static inline void cpuidle_free_state_kobj(struct cpuidle_device *device,
-> +		int count)
->  {
-> -	kobject_put(&device->kobjs[i]->kobj);
-> -	wait_for_completion(&device->kobjs[i]->kobj_unregister);
-> -	kfree(device->kobjs[i]);
-> -	device->kobjs[i] = NULL;
-> +	int i;
-> +
-> +	for (i = 0; i < count; i++) {
-> +		kobject_put(&device->kobjs[i]->kobj);
-> +		wait_for_completion(&device->kobjs[i]->kobj_unregister);
-> +		kfree(device->kobjs[i]);
-> +		device->kobjs[i] = NULL;
-> +	}
->  }
->  
->  /**
-> @@ -419,8 +424,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
->  	return 0;
->  
->  error_state:
-> -	for (i = i - 1; i >= 0; i--)
-> -		cpuidle_free_state_kobj(device, i);
-> +	cpuidle_free_state_kobj(device, i);
->  	return ret;
->  }
->  
-> @@ -430,10 +434,7 @@ error_state:
->   */
->  static void cpuidle_remove_state_sysfs(struct cpuidle_device *device)
->  {
-> -	int i;
-> -
-> -	for (i = 0; i < device->state_count; i++)
-> -		cpuidle_free_state_kobj(device, i);
-> +	cpuidle_free_state_kobj(device, device->state_count);
->  }
->  
->  #ifdef CONFIG_CPU_IDLE_MULTIPLE_DRIVERS
-> 
+> Sorry but you have no idea what you are talking about.
 
+Ah, that's a lovely way to engage in a conversation.
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+> Samsung modified the GPL-ed FAT driver to make it work with exFAT.
+> Therefore their exFAT driver was GPL as a derived work.  They got
+> caught and had to release the source code.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+And now you claim to be a Samsung representative again, I think your
+country has some bad liable laws you might wish to watch out for...
 
+This isn't going to go very far, so I'll just not respond anymore, it's
+not going to be productive, and given that I don't see your name on the
+code here, I don't see why I need to.
+
+Please stick to technical discussions about the code on the kernel
+mailing lists.  Legal discussions can be left up to the lawyers, of
+which we are not.
+
+greg k-h
