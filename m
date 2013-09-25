@@ -1,120 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab3IYV5w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 17:57:52 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:39341 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752928Ab3IYV5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 17:57:51 -0400
-Date: Wed, 25 Sep 2013 16:57:44 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Cc: Bob Liu <bob.liu@oracle.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v2 0/5] mm: migrate zbud pages
-Message-ID: <20130925215744.GA25852@variantweb.net>
-References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
- <5237FDCC.5010109@oracle.com>
- <20130923220757.GC16191@variantweb.net>
- <524318DE.7070106@samsung.com>
+	id S1754606Ab3IYV7Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 17:59:24 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:54980 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab3IYV7X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 17:59:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524318DE.7070106@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092521-0320-0000-0000-00000120FC94
+In-Reply-To: <1377128574-19121-1-git-send-email-jon.mason@intel.com>
+References: <1377128574-19121-1-git-send-email-jon.mason@intel.com>
+Date: Wed, 25 Sep 2013 14:59:22 -0700
+X-Google-Sender-Auth: 36IN8iIyQV4q50PpjqRGAo_bpY4
+Message-ID: <CAA9_cmehC4Vdw-25n8mPvQ8L1Eu4spmsZ1FRD0iVpCfPCYmxaA@mail.gmail.com>
+Subject: Re: [PATCH] ioat: PM Support
+From: Dan Williams <djbw@fb.com>
+To: Jon Mason <jon.mason@intel.com>
+Cc: Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 07:09:50PM +0200, Tomasz Stanislawski wrote:
-> > I just had an idea this afternoon to potentially kill both these birds with one
-> > stone: Replace the rbtree in zswap with an address_space.
-> > 
-> > Each swap type would have its own page_tree to organize the compressed objects
-> > by type and offset (radix tree is more suited for this anyway) and a_ops that
-> > could be called by shrink_page_list() (writepage) or the migration code
-> > (migratepage).
-> > 
-> > Then zbud pages could be put on the normal LRU list, maybe at the beginning of
-> > the inactive LRU so they would live for another cycle through the list, then be
-> > reclaimed in the normal way with the mapping->a_ops->writepage() pointing to a
-> > zswap_writepage() function that would decompress the pages and call
-> > __swap_writepage() on them.
-> > 
-> > This might actually do away with the explicit pool size too as the compressed
-> > pool pages wouldn't be outside the control of the MM anymore.
-> > 
-> > I'm just starting to explore this but I think it has promise.
-> > 
-> > Seth
-> > 
-> 
-> Hi Seth,
-> There is a problem with the proposed idea.
-> The radix tree used 'struct address_space' is a part of
-> a bigger data structure.
-> The radix tree is used to translate an offset to a page.
-> That is ok for zswap. But struct page has a field named 'index'.
-> The MM assumes that this index is an offset in radix tree
-> where one can find the page. A lot is done by MM to sustain
-> this consistency.
+On Wed, Aug 21, 2013 at 4:42 PM, Jon Mason <jon.mason@intel.com> wrote:
+> Add power management support in the IOAT driver.  Adding this feature
+> resolves a known issue when attempting to suspend on systems with IOAT
+> enabled.  On those systems, IOAT would experience a DMA channel error
+> when attempting to resume due to the channels not being suspended
+> properly.  Currently, all channels errors cause panics, thus bringing
+> the system down.
+>
+> Unfortunately, a hardware errata needs to be worked around on Xeon IOAT
+> devices.  The channel cannot be suspended or reset if there are active
+> XOR transactions.  To get around this, check to see if XOR is enabled on
+> the channel and the channel has pending transactions.  If so, then grab
+> the lock and wait for the queue to drain.  It might be more elegant to
+> see if there are any XOR operations pending in the list, but by that
+> time the queue will have drained anyway.
+>
+> See BF509S in
+> http://www.intel.com/content/dam/www/public/us/en/documents/specification-updates/xeon-c5500-c3500-spec-update.pdf
+> See BT92 in
+> http://www.intel.com/content/dam/www/public/us/en/documents/specification-updates/xeon-e5-family-spec-update.pdf
+>
+> Tested-by: Gary Hade <garyhade@us.ibm.com>
+> Signed-off-by: Jon Mason <jon.mason@intel.com>
+> ---
+>  drivers/dma/ioat/dma.c    |    1 +
+>  drivers/dma/ioat/dma.h    |    1 +
+>  drivers/dma/ioat/dma_v2.c |    1 +
+>  drivers/dma/ioat/dma_v3.c |   60 ++++++++++++++++++++++++++++++++++++++++++---
+>  drivers/dma/ioat/pci.c    |   39 +++++++++++++++++++++++++++++
+>  5 files changed, 99 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+> index 17a2393..44d5f3a 100644
+> --- a/drivers/dma/ioat/dma.c
+> +++ b/drivers/dma/ioat/dma.c
+> @@ -1203,6 +1203,7 @@ int ioat1_dma_probe(struct ioatdma_device *device, int dca)
+>         device->self_test = ioat_dma_self_test;
+>         device->timer_fn = ioat1_timer_event;
+>         device->cleanup_fn = ioat1_cleanup_event;
+> +       device->suspend = ioat_suspend;
+>         dma = &device->common;
+>         dma->device_prep_dma_memcpy = ioat1_dma_prep_memcpy;
+>         dma->device_issue_pending = ioat1_dma_memcpy_issue_pending;
+> diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
+> index 54fb7b9..1372c8e 100644
+> --- a/drivers/dma/ioat/dma.h
+> +++ b/drivers/dma/ioat/dma.h
+> @@ -97,6 +97,7 @@ struct ioatdma_device {
+>         void (*cleanup_fn)(unsigned long data);
+>         void (*timer_fn)(unsigned long data);
+>         int (*self_test)(struct ioatdma_device *device);
+> +       void (*suspend)(struct ioat_chan_common *chan);
+>  };
+>
+>  struct ioat_chan_common {
+> diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+> index b925e1b..bd21dcb 100644
+> --- a/drivers/dma/ioat/dma_v2.c
+> +++ b/drivers/dma/ioat/dma_v2.c
+> @@ -890,6 +890,7 @@ int ioat2_dma_probe(struct ioatdma_device *device, int dca)
+>         device->cleanup_fn = ioat2_cleanup_event;
+>         device->timer_fn = ioat2_timer_event;
+>         device->self_test = ioat_dma_self_test;
+> +       device->suspend = ioat_suspend;
+>         dma = &device->common;
+>         dma->device_prep_dma_memcpy = ioat2_dma_prep_memcpy_lock;
+>         dma->device_issue_pending = ioat2_issue_pending;
+> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+> index a17ef21..2aaad1e 100644
+> --- a/drivers/dma/ioat/dma_v3.c
+> +++ b/drivers/dma/ioat/dma_v3.c
+> @@ -653,12 +653,63 @@ static void ioat3_cleanup_event(unsigned long data)
+>         writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
+>  }
+>
+> +static inline void ioat3_suspend(struct ioat_chan_common *chan)
 
-Yes, this is how it is for page cache pages.  However, the MM is able to
-work differently with anonymous pages.  In the case of an anonymous
-page, the mapping field points to an anon_vma struct, or, if ksm in
-enabled and dedup'ing the page, a private ksm tracking structure.  If
-the anonymous page is fully unmapped and resides only in the swap cache,
-the page mapping is NULL.  So there is precedent for the fields to mean
-other things.
+No need for inline.
 
-The question is how to mark and identify zbud pages among the other page
-types that will be on the LRU.  There are many ways.  The question is
-what is the best and most acceptable way.
+> +{
+> +       struct pci_dev *pdev = to_pdev(chan);
+> +       struct dma_device *dma = &chan->device->common;
+> +       struct ioat2_dma_chan *ioat = container_of(chan, struct ioat2_dma_chan,
+> +                                                  base);
+> +
+> +       /* Due to HW errata on Xeon, we must make sure to flush the device prior
+> +        * to suspend or reset of the device if there are any XOR operations
+> +        * pending.  Instead of inspecting the pending operations, just flush it
+> +        * if the channel supports XOR.
+> +        */
+> +       if (is_xeon_cb32(pdev) && dma_has_cap(DMA_XOR, dma->cap_mask) &&
 
-> 
-> In case of zbud, there are two swap offset pointing to
-> the same page. There might be more if zsmalloc is used.
-> What is worse it is possible that one swap entry could
-> point to data that cross a page boundary.
+Given this is always false in current kernels (admittedly not at the
+time you originally sent the patch) I think we can delete this.  There
+may still be cases where we want to force enable xor but at that point
+we should fail the suspend.
 
-We just won't set page->index since it doesn't have a good meaning in
-our case.  Swap cache pages also don't use index, although is seems to
-me that they could since there is a 1:1 mapping of a swap cache page to
-a swap offset and the index field isn't being used for anything else.
-But I digress...
+> +           is_ioat_active(ioat_chansts(chan))) {
+> +               unsigned long end = jiffies + msecs_to_jiffies(100);
+> +
+> +               spin_lock_bh(&ioat->prep_lock);
+> +               while (is_ioat_active(ioat_chansts(chan))) {
+> +                       if (time_after(jiffies, end)) {
+> +                               dev_err(&pdev->dev, "Timeout trying to suspend");
+> +                               break;
+> +                       }
+> +                       cpu_relax();
+> +               }
+> +               ioat_suspend(chan);
+> +               spin_unlock_bh(&ioat->prep_lock);
+> +       } else
+> +               ioat_suspend(chan);
+> +}
+> +
+> +static int ioat3_quiesce(struct ioat_chan_common *chan, unsigned long tmo)
+> +{
+> +       unsigned long end = jiffies + tmo;
+> +       int err = 0;
+> +       u32 status;
+> +
+> +       status = ioat_chansts(chan);
+> +       if (is_ioat_active(status) || is_ioat_idle(status))
+> +               ioat3_suspend(chan);
 
-> 
-> Of course, one could try to modify MM to support
-> multiple mapping of a page in the radix tree.
-> But I think that MM guys will consider this as a hack
-> and they will not accept it.
+this can just be chan->device->suspend and if that happens this
+routine can be replaced with ioat2_quiesce
 
-Yes, it will require some changes to the MM to handle zbud pages on the
-LRU.  I'm thinking that it won't be too intrusive, depending on how we
-choose to mark zbud pages.
+> +       while (is_ioat_active(status) || is_ioat_idle(status)) {
+> +               if (tmo && time_after(jiffies, end)) {
+> +                       err = -ETIMEDOUT;
+> +                       break;
+> +               }
+> +               status = ioat_chansts(chan);
+> +               cpu_relax();
+> +       }
+> +
+> +       return err;
+> +}
+> +
+>  static void ioat3_restart_channel(struct ioat2_dma_chan *ioat)
+>  {
+>         struct ioat_chan_common *chan = &ioat->base;
+>         u64 phys_complete;
+>
+> -       ioat2_quiesce(chan, 0);
+> +       ioat3_quiesce(chan, 0);
 
-Seth
+per-above I think we can ioat2_quiesce to do the right thing.
 
-> 
-> Regards,
-> Tomasz Stanislawski
-> 
-> 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > 
-> 
+>         if (ioat3_cleanup_preamble(chan, &phys_complete))
+>                 __cleanup(ioat, phys_complete);
+>
+> @@ -1793,7 +1844,7 @@ static int ioat3_reset_hw(struct ioat_chan_common *chan)
+>         u16 dev_id;
+>         int err;
+>
+> -       ioat2_quiesce(chan, msecs_to_jiffies(100));
+> +       ioat3_quiesce(chan, msecs_to_jiffies(100));
+>
+>         chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+>         writel(chanerr, chan->reg_base + IOAT_CHANERR_OFFSET);
+> @@ -1873,6 +1924,7 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
+>         device->reset_hw = ioat3_reset_hw;
+>         device->self_test = ioat3_dma_self_test;
+>         device->intr_quirk = ioat3_intr_quirk;
+> +       device->suspend = ioat3_suspend;
+>         dma = &device->common;
+>         dma->device_prep_dma_memcpy = ioat2_dma_prep_memcpy_lock;
+>         dma->device_issue_pending = ioat2_issue_pending;
+> @@ -1891,8 +1943,10 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
+>                 device->cap &= ~(IOAT_CAP_XOR | IOAT_CAP_PQ | IOAT_CAP_RAID16SS);
+>
+>         /* dca is incompatible with raid operations */
+> -       if (dca_en && (device->cap & (IOAT_CAP_XOR|IOAT_CAP_PQ)))
+> +       if (dca_en && (device->cap & (IOAT_CAP_XOR|IOAT_CAP_PQ))) {
+> +               pr_info("%s: DCA enabled, disabling XOR\n", __func__);
+>                 device->cap &= ~(IOAT_CAP_XOR|IOAT_CAP_PQ);
+> +       }
+>
+>         if (device->cap & IOAT_CAP_XOR) {
+>                 is_raid_device = true;
+> diff --git a/drivers/dma/ioat/pci.c b/drivers/dma/ioat/pci.c
+> index 2c8d560..136b10a 100644
+> --- a/drivers/dma/ioat/pci.c
+> +++ b/drivers/dma/ioat/pci.c
+> @@ -126,11 +126,50 @@ struct kmem_cache *ioat2_cache;
+>
+>  #define DRV_NAME "ioatdma"
+>
+> +#ifdef CONFIG_PM
+> +static int ioat_pm_suspend(struct device *dev)
+> +{
+> +       struct pci_dev *pdev = to_pci_dev(dev);
+> +       struct ioatdma_device *device = pci_get_drvdata(pdev);
+> +       struct dma_device *dma = &device->common;
+> +       struct dma_chan *chan;
+> +
+> +       list_for_each_entry(chan, &dma->channels, device_node) {
+> +               struct ioat_dma_chan *ioat = to_ioat_chan(chan);
+> +
+> +               dev_info(dev, "Suspending Chan %d\n", chan->chan_id);
+> +               if (device->suspend)
+> +                       device->suspend(&ioat->base);
 
+I think we should modify this to fail to suspend if the implementation
+does not have a suspend routine, and allow ->suspend to return an
+error (no point in timing out if it does not block the suspend).
+
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static int ioat_pm_resume(struct device *dev)
+> +{
+> +       struct pci_dev *pdev = to_pci_dev(dev);
+> +       struct ioatdma_device *device = pci_get_drvdata(pdev);
+> +       struct dma_device *dma = &device->common;
+> +       struct dma_chan *chan;
+> +
+> +       list_for_each_entry(chan, &dma->channels, device_node) {
+> +               struct ioat_dma_chan *ioat = to_ioat_chan(chan);
+> +               dev_info(dev, "Starting Chan %d\n", chan->chan_id);
+> +               ioat_start(&ioat->base);
+> +       }
+> +
+> +       return 0;
+> +}
+> +#endif
+> +
+> +SIMPLE_DEV_PM_OPS(ioat_pm_ops, ioat_pm_suspend, ioat_pm_resume);
+> +
+>  static struct pci_driver ioat_pci_driver = {
+>         .name           = DRV_NAME,
+>         .id_table       = ioat_pci_tbl,
+>         .probe          = ioat_pci_probe,
+>         .remove         = ioat_remove,
+> +       .driver.pm      = &ioat_pm_ops,
+>  };
+>
+>  static struct ioatdma_device *
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
