@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab3IYAdT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:33:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39687 "EHLO
+	id S1756820Ab3IYAdj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:33:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39682 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756681Ab3IYAUl (ORCPT
+	with ESMTP id S1755282Ab3IYAUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:41 -0400
+	Tue, 24 Sep 2013 20:20:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Kriwanek <mail@stefankriwanek.de>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 074/117] HID: Fix Speedlink VAD Cezanne support for some devices
-Date: Tue, 24 Sep 2013 17:19:00 -0700
-Message-Id: <20130925001749.035910690@linuxfoundation.org>
+        Seth Forshee <seth.forshee@canonical.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 064/117] mac80211: ignore (E)CSA in probe response frames
+Date: Tue, 24 Sep 2013 17:18:50 -0700
+Message-Id: <20130925001747.849356789@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,52 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Kriwanek <dev@stefankriwanek.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 06bb5219118fb098f4b0c7dcb484b28a52bf1c14 upstream.
+commit d70b7616d9080ec9f868fbd31db5fd4341435d61 upstream.
 
-Some devices of the "Speedlink VAD Cezanne" model need more aggressive fixing
-than already done.
+Seth reports that some APs, notably the Netgear WNDAP360, send
+invalid ECSA IEs in probe response frames with the operating
+class and channel number both set to zero, even when no channel
+switch is being done. As a result, any scan while connected to
+such an AP results in the connection being dropped.
 
-I made sure through testing that this patch would not interfere with the proper
-working of a device that is bug-free. (The driver drops EV_REL events with
-abs(val) >= 256, which are not achievable even on the highest laser resolution
-hardware setting.)
+Fix this by ignoring any channel switch announcment in probe
+response frames entirely, since we're connected to the AP we
+will be receiving a beacon (and maybe even an action frame) if
+a channel switch is done, which is sufficient.
 
-Signed-off-by: Stefan Kriwanek <mail@stefankriwanek.de>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Reported-by: Seth Forshee <seth.forshee@canonical.com>
+Tested-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-speedlink.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ net/mac80211/mlme.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
---- a/drivers/hid/hid-speedlink.c
-+++ b/drivers/hid/hid-speedlink.c
-@@ -3,7 +3,7 @@
-  *  Fixes "jumpy" cursor and removes nonexistent keyboard LEDS from
-  *  the HID descriptor.
-  *
-- *  Copyright (c) 2011 Stefan Kriwanek <mail@stefankriwanek.de>
-+ *  Copyright (c) 2011, 2013 Stefan Kriwanek <dev@stefankriwanek.de>
-  */
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -2851,14 +2851,6 @@ static void ieee80211_rx_bss_info(struct
+ 		ieee80211_rx_bss_put(local, bss);
+ 		sdata->vif.bss_conf.beacon_rate = bss->beacon_rate;
+ 	}
+-
+-	if (!sdata->u.mgd.associated ||
+-	    !ether_addr_equal(mgmt->bssid, sdata->u.mgd.associated->bssid))
+-		return;
+-
+-	ieee80211_sta_process_chanswitch(sdata, rx_status->mactime,
+-					 elems, true);
+-
+ }
  
- /*
-@@ -46,8 +46,13 @@ static int speedlink_event(struct hid_de
- 		struct hid_usage *usage, __s32 value)
- {
- 	/* No other conditions due to usage_table. */
--	/* Fix "jumpy" cursor (invalid events sent by device). */
--	if (value == 256)
+ 
+@@ -3147,6 +3139,9 @@ static void ieee80211_rx_mgmt_beacon(str
+ 
+ 	ieee80211_rx_bss_info(sdata, mgmt, len, rx_status, &elems);
+ 
++	ieee80211_sta_process_chanswitch(sdata, rx_status->mactime,
++					 &elems, true);
 +
-+	/* This fixes the "jumpy" cursor occuring due to invalid events sent
-+	 * by the device. Some devices only send them with value==+256, others
-+	 * don't. However, catching abs(value)>=256 is restrictive enough not
-+	 * to interfere with devices that were bug-free (has been tested).
-+	 */
-+	if (abs(value) >= 256)
- 		return 1;
- 	/* Drop useless distance 0 events (on button clicks etc.) as well */
- 	if (value == 0)
+ 	if (ieee80211_sta_wmm_params(local, sdata, elems.wmm_param,
+ 				     elems.wmm_param_len))
+ 		changed |= BSS_CHANGED_QOS;
 
 
