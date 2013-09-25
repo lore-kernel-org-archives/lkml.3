@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab3IYVxA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 17:53:00 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:34217 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049Ab3IYVw6 (ORCPT
+	id S1752743Ab3IYV51 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 17:57:27 -0400
+Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:42527 "EHLO
+	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750853Ab3IYV50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 17:52:58 -0400
-Message-ID: <52435B37.1040304@linaro.org>
-Date: Wed, 25 Sep 2013 23:52:55 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@sisk.pl
-CC: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/21] cpuidle: merge two if() statements for checking
- error cases
-References: <cover.1379779777.git.viresh.kumar@linaro.org> <63116bb9adaf7336a019ce087fbe17c4ace81cea.1379779777.git.viresh.kumar@linaro.org>
-In-Reply-To: <63116bb9adaf7336a019ce087fbe17c4ace81cea.1379779777.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 25 Sep 2013 17:57:26 -0400
+Date: Wed, 25 Sep 2013 23:57:21 +0200
+From: Benjamin Valentin <benpicco@zedat.fu-berlin.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] add exFAT driver
+Message-ID: <20130925235721.12d2fcec@rechenknecht2k7>
+In-Reply-To: <20130925172704.GB5258@kroah.com>
+References: <20130830124622.5f81b7d4@rechenknecht2k7>
+	<20130830154205.GA1411@kroah.com>
+	<20130925183632.08a0d073@rechenknecht2k7>
+	<20130925172704.GB5258@kroah.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 77.186.48.189
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2013 03:21 AM, Viresh Kumar wrote:
-> Both return same error message and so better write them in a single line.
+Am Wed, 25 Sep 2013 10:27:04 -0700
+schrieb Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+
+> > > Also, I would really like to get a signed-off-by: from the Samsung
+> > > authors for this patch, can you do that as well please?
+> > 
+> > I've tried reaching them by their last public e-mail addresses I
+> > could find, but they would either bounce or I got no reply.
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Who did you contact at Samsung?  I'll be visiting there in a week so I
+> can try to track some people done in person.  I really want their
+> signed-off-by: on the patch, as it is their code to start with, and
+> it's a bit rude to not get their approval for the code to be merged.
 
-modulo the comment on patch 08/21:
+I didn't really know who to contact at Samsung, so I've searched the web
+for Joosun Hahn and Sung-Kwan Kim. They both had addresses from the
+Memory & Storage Architecture Lab at Seoul National University, but
+they seem no longer active.
+I've also tried the inquiry form on the Samsung web page, but got no
+reply.
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+It'd be great if you could get Samsung to work on this too, I guess
+they weren't originally so keen on mainlining it when it took the
+Software Freedom Conservancy to get them to release the code [1],
+but now that it's out in the open they might as well take the benefits
+from mainline inclusion.
 
-> ---
->  drivers/cpuidle/cpuidle.c | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> index aec9029..b8c63cb 100644
-> --- a/drivers/cpuidle/cpuidle.c
-> +++ b/drivers/cpuidle/cpuidle.c
-> @@ -119,10 +119,7 @@ int cpuidle_idle_call(void)
->  	struct cpuidle_driver *drv;
->  	int next_state, entered_state;
->  
-> -	if (cpuidle_disabled())
-> -		return -ENODEV;
-> -
-> -	if (!initialized)
-> +	if (cpuidle_disabled() || !initialized)
->  		return -ENODEV;
->  
->  	/* check if the device is ready */
-> 
-
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+[1] http://sfconservancy.org/news/2013/aug/16/exfat-samsung/
