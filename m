@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322Ab3IYARk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:17:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39347 "EHLO
+	id S1756364Ab3IYASH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:18:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39342 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932194Ab3IYARO (ORCPT
+	with ESMTP id S932103Ab3IYARN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:17:14 -0400
+	Tue, 24 Sep 2013 20:17:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Maxim Patlasov <mpatlasov@parallels.com>,
         Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 110/110] fuse: readdir: check for slash in names
-Date: Tue, 24 Sep 2013 17:15:48 -0700
-Message-Id: <20130925001335.324446652@linuxfoundation.org>
+Subject: [ 109/110] fuse: hotfix truncate_pagecache() issue
+Date: Tue, 24 Sep 2013 17:15:47 -0700
+Message-Id: <20130925001335.222586418@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
 References: <20130925001323.387158698@linuxfoundation.org>
@@ -26,39 +27,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Maxim Patlasov <MPatlasov@parallels.com>
 
-commit efeb9e60d48f7778fdcad4a0f3ad9ea9b19e5dfd upstream.
+commit 06a7c3c2781409af95000c60a5df743fd4e2f8b4 upstream.
 
-Userspace can add names containing a slash character to the directory
-listing.  Don't allow this as it could cause all sorts of trouble.
+The way how fuse calls truncate_pagecache() from fuse_change_attributes()
+is completely wrong. Because, w/o i_mutex held, we never sure whether
+'oldsize' and 'attr->size' are valid by the time of execution of
+truncate_pagecache(inode, oldsize, attr->size). In fact, as soon as we
+released fc->lock in the middle of fuse_change_attributes(), we completely
+loose control of actions which may happen with given inode until we reach
+truncate_pagecache. The list of potentially dangerous actions includes
+mmap-ed reads and writes, ftruncate(2) and write(2) extending file size.
 
+The typical outcome of doing truncate_pagecache() with outdated arguments
+is data corruption from user point of view. This is (in some sense)
+acceptable in cases when the issue is triggered by a change of the file on
+the server (i.e. externally wrt fuse operation), but it is absolutely
+intolerable in scenarios when a single fuse client modifies a file without
+any external intervention. A real life case I discovered by fsx-linux
+looked like this:
+
+1. Shrinking ftruncate(2) comes to fuse_do_setattr(). The latter sends
+FUSE_SETATTR to the server synchronously, but before getting fc->lock ...
+2. fuse_dentry_revalidate() is asynchronously called. It sends FUSE_LOOKUP
+to the server synchronously, then calls fuse_change_attributes(). The
+latter updates i_size, releases fc->lock, but before comparing oldsize vs
+attr->size..
+3. fuse_do_setattr() from the first step proceeds by acquiring fc->lock and
+updating attributes and i_size, but now oldsize is equal to
+outarg.attr.size because i_size has just been updated (step 2). Hence,
+fuse_do_setattr() returns w/o calling truncate_pagecache().
+4. As soon as ftruncate(2) completes, the user extends file size by
+write(2) making a hole in the middle of file, then reads data from the hole
+either by read(2) or mmap-ed read. The user expects to get zero data from
+the hole, but gets stale data because truncate_pagecache() is not executed
+yet.
+
+The scenario above illustrates one side of the problem: not truncating the
+page cache even though we should. Another side corresponds to truncating
+page cache too late, when the state of inode changed significantly.
+Theoretically, the following is possible:
+
+1. As in the previous scenario fuse_dentry_revalidate() discovered that
+i_size changed (due to our own fuse_do_setattr()) and is going to call
+truncate_pagecache() for some 'new_size' it believes valid right now. But
+by the time that particular truncate_pagecache() is called ...
+2. fuse_do_setattr() returns (either having called truncate_pagecache() or
+not -- it doesn't matter).
+3. The file is extended either by write(2) or ftruncate(2) or fallocate(2).
+4. mmap-ed write makes a page in the extended region dirty.
+
+The result will be the lost of data user wrote on the fourth step.
+
+The patch is a hotfix resolving the issue in a simplistic way: let's skip
+dangerous i_size update and truncate_pagecache if an operation changing
+file size is in progress. This simplistic approach looks correct for the
+cases w/o external changes. And to handle them properly, more sophisticated
+and intrusive techniques (e.g. NFS-like one) would be required. I'd like to
+postpone it until the issue is well discussed on the mailing list(s).
+
+Changed in v2:
+ - improved patch description to cover both sides of the issue.
+
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/dir.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/fuse/dir.c    |    7 ++++++-
+ fs/fuse/file.c   |    8 +++++++-
+ fs/fuse/fuse_i.h |    2 ++
+ fs/fuse/inode.c  |    3 ++-
+ 4 files changed, 17 insertions(+), 3 deletions(-)
 
 --- a/fs/fuse/dir.c
 +++ b/fs/fuse/dir.c
-@@ -1175,6 +1175,8 @@ static int parse_dirfile(char *buf, size
- 			return -EIO;
- 		if (reclen > nbytes)
- 			break;
-+		if (memchr(dirent->name, '/', dirent->namelen) != NULL)
-+			return -EIO;
+@@ -1594,6 +1594,7 @@ int fuse_do_setattr(struct inode *inode,
+ 		    struct file *file)
+ {
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
++	struct fuse_inode *fi = get_fuse_inode(inode);
+ 	struct fuse_req *req;
+ 	struct fuse_setattr_in inarg;
+ 	struct fuse_attr_out outarg;
+@@ -1621,8 +1622,10 @@ int fuse_do_setattr(struct inode *inode,
+ 	if (IS_ERR(req))
+ 		return PTR_ERR(req);
  
- 		over = filldir(dstbuf, dirent->name, dirent->namelen,
- 			       file->f_pos, dirent->ino, dirent->type);
-@@ -1323,6 +1325,8 @@ static int parse_dirplusfile(char *buf,
- 			return -EIO;
- 		if (reclen > nbytes)
- 			break;
-+		if (memchr(dirent->name, '/', dirent->namelen) != NULL)
-+			return -EIO;
+-	if (is_truncate)
++	if (is_truncate) {
+ 		fuse_set_nowrite(inode);
++		set_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
++	}
  
- 		if (!over) {
- 			/* We fill entries into dstbuf only as much as
+ 	memset(&inarg, 0, sizeof(inarg));
+ 	memset(&outarg, 0, sizeof(outarg));
+@@ -1684,12 +1687,14 @@ int fuse_do_setattr(struct inode *inode,
+ 		invalidate_inode_pages2(inode->i_mapping);
+ 	}
+ 
++	clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
+ 	return 0;
+ 
+ error:
+ 	if (is_truncate)
+ 		fuse_release_nowrite(inode);
+ 
++	clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
+ 	return err;
+ }
+ 
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -630,7 +630,8 @@ static void fuse_read_update_size(struct
+ 	struct fuse_inode *fi = get_fuse_inode(inode);
+ 
+ 	spin_lock(&fc->lock);
+-	if (attr_ver == fi->attr_version && size < inode->i_size) {
++	if (attr_ver == fi->attr_version && size < inode->i_size &&
++	    !test_bit(FUSE_I_SIZE_UNSTABLE, &fi->state)) {
+ 		fi->attr_version = ++fc->attr_version;
+ 		i_size_write(inode, size);
+ 	}
+@@ -1033,12 +1034,16 @@ static ssize_t fuse_perform_write(struct
+ {
+ 	struct inode *inode = mapping->host;
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
++	struct fuse_inode *fi = get_fuse_inode(inode);
+ 	int err = 0;
+ 	ssize_t res = 0;
+ 
+ 	if (is_bad_inode(inode))
+ 		return -EIO;
+ 
++	if (inode->i_size < pos + iov_iter_count(ii))
++		set_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
++
+ 	do {
+ 		struct fuse_req *req;
+ 		ssize_t count;
+@@ -1074,6 +1079,7 @@ static ssize_t fuse_perform_write(struct
+ 	if (res > 0)
+ 		fuse_write_update_size(inode, pos);
+ 
++	clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
+ 	fuse_invalidate_attr(inode);
+ 
+ 	return res > 0 ? res : err;
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -115,6 +115,8 @@ struct fuse_inode {
+ enum {
+ 	/** Advise readdirplus  */
+ 	FUSE_I_ADVISE_RDPLUS,
++	/** An operation changing file size is in progress  */
++	FUSE_I_SIZE_UNSTABLE,
+ };
+ 
+ struct fuse_conn;
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -201,7 +201,8 @@ void fuse_change_attributes(struct inode
+ 	struct timespec old_mtime;
+ 
+ 	spin_lock(&fc->lock);
+-	if (attr_version != 0 && fi->attr_version > attr_version) {
++	if ((attr_version != 0 && fi->attr_version > attr_version) ||
++	    test_bit(FUSE_I_SIZE_UNSTABLE, &fi->state)) {
+ 		spin_unlock(&fc->lock);
+ 		return;
+ 	}
 
 
