@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab3IYAMj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:12:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38635 "EHLO
+	id S1755585Ab3IYAMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:12:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38697 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432Ab3IYAMh (ORCPT
+	with ESMTP id S1755512Ab3IYAMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:12:37 -0400
+	Tue, 24 Sep 2013 20:12:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Ryniker <ryniker@alum.mit.edu>,
-        Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 26/40] HID: battery: dont do DMA from stack
-Date: Tue, 24 Sep 2013 17:11:58 -0700
-Message-Id: <20130925001044.783936124@linuxfoundation.org>
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [ 39/40] fuse: postpone end_page_writeback() in fuse_writepage_locked()
+Date: Tue, 24 Sep 2013 17:12:11 -0700
+Message-Id: <20130925001046.167168621@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001041.939335518@linuxfoundation.org>
 References: <20130925001041.939335518@linuxfoundation.org>
@@ -27,62 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Maxim Patlasov <MPatlasov@parallels.com>
 
-commit 6c2794a2984f4c17a58117a68703cc7640f01c5a upstream.
+commit 4a4ac4eba1010ef9a804569058ab29e3450c0315 upstream.
 
-Instead of using data from stack for DMA in hidinput_get_battery_property(),
-allocate the buffer dynamically.
+The patch fixes a race between ftruncate(2), mmap-ed write and write(2):
 
-Reported-by: Richard Ryniker <ryniker@alum.mit.edu>
-Reported-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+1) An user makes a page dirty via mmap-ed write.
+2) The user performs shrinking truncate(2) intended to purge the page.
+3) Before fuse_do_setattr calls truncate_pagecache, the page goes to
+   writeback. fuse_writepage_locked fills FUSE_WRITE request and releases
+   the original page by end_page_writeback.
+4) fuse_do_setattr() completes and successfully returns. Since now, i_mutex
+   is free.
+5) Ordinary write(2) extends i_size back to cover the page. Note that
+   fuse_send_write_pages do wait for fuse writeback, but for another
+   page->index.
+6) fuse_writepage_locked proceeds by queueing FUSE_WRITE request.
+   fuse_send_writepage is supposed to crop inarg->size of the request,
+   but it doesn't because i_size has already been extended back.
+
+Moving end_page_writeback to the end of fuse_writepage_locked fixes the
+race because now the fact that truncate_pagecache is successfully returned
+infers that fuse_writepage_locked has already called end_page_writeback.
+And this, in turn, infers that fuse_flush_writepages has already called
+fuse_send_writepage, and the latter used valid (shrunk) i_size. write(2)
+could not extend it because of i_mutex held by ftruncate(2).
+
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-input.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ fs/fuse/file.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -314,7 +314,7 @@ static int hidinput_get_battery_property
- {
- 	struct hid_device *dev = container_of(psy, struct hid_device, battery);
- 	int ret = 0;
--	__u8 buf[2] = {};
-+	__u8 *buf;
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1294,7 +1294,6 @@ static int fuse_writepage_locked(struct
  
- 	switch (prop) {
- 	case POWER_SUPPLY_PROP_PRESENT:
-@@ -323,13 +323,20 @@ static int hidinput_get_battery_property
- 		break;
+ 	inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
+ 	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
+-	end_page_writeback(page);
  
- 	case POWER_SUPPLY_PROP_CAPACITY:
+ 	spin_lock(&fc->lock);
+ 	list_add(&req->writepages_entry, &fi->writepages);
+@@ -1302,6 +1301,8 @@ static int fuse_writepage_locked(struct
+ 	fuse_flush_writepages(inode);
+ 	spin_unlock(&fc->lock);
+ 
++	end_page_writeback(page);
 +
-+		buf = kmalloc(2 * sizeof(__u8), GFP_KERNEL);
-+		if (!buf) {
-+			ret = -ENOMEM;
-+			break;
-+		}
- 		ret = dev->hid_get_raw_report(dev, dev->battery_report_id,
--					      buf, sizeof(buf),
-+					      buf, 2,
- 					      dev->battery_report_type);
+ 	return 0;
  
- 		if (ret != 2) {
- 			if (ret >= 0)
- 				ret = -EINVAL;
-+			kfree(buf);
- 			break;
- 		}
- 
-@@ -338,6 +345,7 @@ static int hidinput_get_battery_property
- 		    buf[1] <= dev->battery_max)
- 			val->intval = (100 * (buf[1] - dev->battery_min)) /
- 				(dev->battery_max - dev->battery_min);
-+		kfree(buf);
- 		break;
- 
- 	case POWER_SUPPLY_PROP_MODEL_NAME:
+ err_free:
 
 
