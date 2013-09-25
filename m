@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab3IYJdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 05:33:46 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:53142 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880Ab3IYJdo (ORCPT
+	id S1755008Ab3IYJjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 05:39:12 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38137 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab3IYJjL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 05:33:44 -0400
+	Wed, 25 Sep 2013 05:39:11 -0400
+From: =?iso-8859-15?q?J=FCrgen_Beisert?= <jbe@pengutronix.de>
+Organization: Pengutronix e.K.
+To: linux-kernel@vger.kernel.org
+Subject: Re: ARM/Samsung/S3C24xx: Linux-3.11 crashes when using PWM
+Date: Wed, 25 Sep 2013 11:40:36 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>
+References: <201309251029.44265.jbe@pengutronix.de> <5242AA7C.4010905@samsung.com>
+In-Reply-To: <5242AA7C.4010905@samsung.com>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-In-Reply-To: <CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
-References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
-	<52118042.30101@oracle.com>
-	<20130819054742.GA28062@bbox>
-	<CAL1ERfN3AUYwWTctGBjVcgb-mwAmc15-FayLz48P1d0GzogncA@mail.gmail.com>
-	<20130821074939.GE3022@bbox>
-	<CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
-	<CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
-Date: Wed, 25 Sep 2013 17:33:43 +0800
-Message-ID: <CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
-Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Bob Liu <lliubbo@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, Bob Liu <bob.liu@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-Id: <201309251140.36582.jbe@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5e26:aff:fe2b:7cc4
+X-SA-Exim-Mail-From: jbe@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 4:31 PM, Bob Liu <lliubbo@gmail.com> wrote:
-> On Wed, Sep 25, 2013 at 4:09 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
->> I think I find a new issue, for integrity of this mail thread, I reply
->> to this mail.
->>
->> It is a concurrence issue either, when duplicate store and reclaim
->> concurrentlly.
->>
->> zswap entry x with offset A is already stored in zswap backend.
->> Consider the following scenario:
->>
->> thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
->>
->> thread 1: store new page with the same offset A, alloc a new zswap entry y.
->>   store finished. shrink_page_list() call __remove_mapping(), and now
->> it is not in swap_cache
->>
+Hi Sylwester,
+
+On Wednesday 25 September 2013 11:18:52 Sylwester Nawrocki wrote:
+> On 25/09/13 10:29, Jürgen Beisert wrote:
+> > Change one single line:
+> >
+> > diff --git a/arch/arm/mach-s3c24xx/mach-mini2440.c
+> > b/arch/arm/mach-s3c24xx/mach-mini2440.c index a83db46..d8273da 100644
+> > --- a/arch/arm/mach-s3c24xx/mach-mini2440.c
+> > +++ b/arch/arm/mach-s3c24xx/mach-mini2440.c
+> > @@ -519,6 +519,7 @@ static struct platform_device *mini2440_devices[]
+> > __initdata = { &s3c_device_iis,
+> >         &uda1340_codec,
+> >         &mini2440_audio,
+> > +       &s3c_device_timer[0],
+> >  };
 >
-> But I don't think swap layer will call zswap with the same offset A.
-
-1. store page of offset A in zswap
-2. some time later, pagefault occur, load page data from zswap.
-  But notice that zswap entry x is still in zswap because it is not
-frontswap_tmem_exclusive_gets_enabled.
- this page is with PageSwapCache(page) and page_private(page) = entry.val
-3. change this page data, and it become dirty
-4. some time later again, swap this page on the same offset A.
-
-so, a duplicate store happens.
-
-what I can think is that use flags and CAS to protect store and reclaim on
-the same offset  happens concurrentlly.
-
->> thread 0: zswap_get_swap_cache_page called. old page data is added to swap_cache
->>
->> Now, swap cache has old data rather than new data for offset A.
->> error will happen If do_swap_page() get page from swap_cache.
->>
+> I think you need to add instead:
 >
-> --
-> Regards,
-> --Bob
+> 	&samsung_device_pwm,
+>
+> IIRC I had this working, can't verify at the moment as I don't
+> have access to the board right now. Please see commit:
+>
+> 7fa33bdb4c44155e390c9ebbc5aa4c5cfc73f6fa
+> ARM: SAMSUNG: Modify board files to use new PWM platform device
+
+Seems valid for 3.12, but not for 3.11.
+
+Regards,
+Juergen
+
+-- 
+Pengutronix e.K.                              | Juergen Beisert             |
+Linux Solutions for Science and Industry      | http://www.pengutronix.de/  |
