@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab3IYATK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:19:10 -0400
-Received: from mail-ye0-f175.google.com ([209.85.213.175]:49464 "EHLO
-	mail-ye0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab3IYATG (ORCPT
+	id S1755763Ab3IYATf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:19:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39331 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932136Ab3IYARL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:06 -0400
-Date: Tue, 24 Sep 2013 18:19:02 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: tianyu.lan@intel.com
-Cc: lenb@kernel.org, rjw@sisk.pl, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] PCI/ACPI: Convert ACPI PCI Hot Plug core debug
- fuction to dynamic debug function
-Message-ID: <20130925001902.GF9302@google.com>
-References: <1378783035-15681-1-git-send-email-tianyu.lan@intel.com>
- <1378783035-15681-2-git-send-email-tianyu.lan@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378783035-15681-2-git-send-email-tianyu.lan@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 24 Sep 2013 20:17:11 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mark Brown <broonie@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [ 106/110] clk: wm831x: Initialise wm831x pointer on init
+Date: Tue, 24 Sep 2013 17:15:44 -0700
+Message-Id: <20130925001334.896357846@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130925001323.387158698@linuxfoundation.org>
+References: <20130925001323.387158698@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 11:17:15PM -0400, tianyu.lan@intel.com wrote:
-> From: Lan Tianyu <tianyu.lan@intel.com>
-> 
-> This patch is to use pr_debug/info/warn/err to replace acpiphp debug
-> functions and remove module's debug param.
-> ...
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
->  /* local variables */
-> @@ -61,9 +60,7 @@ static struct acpiphp_attention_info *attention_info;
->  MODULE_AUTHOR(DRIVER_AUTHOR);
->  MODULE_DESCRIPTION(DRIVER_DESC);
->  MODULE_LICENSE("GPL");
-> -MODULE_PARM_DESC(debug, "Debugging mode enabled or not");
->  MODULE_PARM_DESC(disable, "disable acpiphp driver");
-> -module_param_named(debug, acpiphp_debug, bool, 0644);
+------------------
 
-I have notes about booting with the "acpiphp.debug" parameter to turn
-on debugging.  Can you tell me the way to do the equivalent with
-dynamic debug?  I'll add that to the changelog before merging this.
+From: Mark Brown <broonie@linaro.org>
 
-Bjorn
+commit 08442ce993deeb15a070c14cc3f3459e87d111e0 upstream.
+
+Otherwise any attempt to interact with the hardware will crash. This is
+what happens when drivers get written blind.
+
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/clk/clk-wm831x.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/clk/clk-wm831x.c
++++ b/drivers/clk/clk-wm831x.c
+@@ -360,6 +360,8 @@ static int wm831x_clk_probe(struct platf
+ 	if (!clkdata)
+ 		return -ENOMEM;
+ 
++	clkdata->wm831x = wm831x;
++
+ 	/* XTAL_ENA can only be set via OTP/InstantConfig so just read once */
+ 	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
+ 	if (ret < 0) {
+
+
