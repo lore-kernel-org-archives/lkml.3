@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab3IYAvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:51:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39380 "EHLO
+	id S932397Ab3IYAvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:51:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39388 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756399Ab3IYATs (ORCPT
+	with ESMTP id S1755782Ab3IYATt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:19:48 -0400
+	Tue, 24 Sep 2013 20:19:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxime Bizon <mbizon@freebox.fr>, Ming Lei <ming.lei@canonical.com>
-Subject: [ 006/117] firmware loader: fix pending_fw_head list corruption
-Date: Tue, 24 Sep 2013 17:17:52 -0700
-Message-Id: <20130925001741.558238953@linuxfoundation.org>
+        Nitin Gupta <ngupta@vflare.org>, Jiang Liu <jiang.liu@huawei.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [ 007/117] zram: fix invalid memory access
+Date: Tue, 24 Sep 2013 17:17:53 -0700
+Message-Id: <20130925001741.663589370@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -26,79 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxime Bizon <mbizon@freebox.fr>
+From: Minchan Kim <minchan@kernel.org>
 
-commit 1eeeef153c02f5856ec109fa532eb5f31c39f85c upstream.
+commit 2b86ab9cc29fcd435cde9378c3b9ffe8b5c76128 upstream.
 
-Got the following oops just before reboot:
+[1] tried to fix invalid memory access on zram->disk but it didn't
+fix properly because get_disk failed during module exit path.
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-[<8028d300>] (__list_del_entry+0x44/0xac)
-[<802e3320>] (__fw_load_abort.part.13+0x1c/0x50)
-[<802e337c>] (fw_shutdown_notify+0x28/0x50)
-[<80034f80>] (notifier_call_chain.isra.1+0x5c/0x9c)
-[<800350ec>] (__blocking_notifier_call_chain+0x44/0x58)
-[<80035114>] (blocking_notifier_call_chain+0x14/0x18)
-[<80035d64>] (kernel_restart_prepare+0x14/0x38)
-[<80035d94>] (kernel_restart+0xc/0x50)
+Actually, we don't need to reset zram->disk's capacity to zero
+in module exit path so that this patch introduces new argument
+"reset_capacity" on zram_reset_divice and it only reset it when
+reset_store is called.
 
-The following race condition triggers here:
+[1] 6030ea9b,  zram: avoid invalid memory access in zram_exit()
 
-  _request_firmware_load()
-  device_create_file(...)
-  kobject_uevent(...)
-  (schedule)
-                                       (resume)
-                                       firmware_loading_store(1)
-                                       firmware_loading_store(0)
-                                       list_del_init(&buf->pending_list)
-                                       (schedule)
-  (resume)
-  list_add(&buf->pending_list, &pending_fw_head);
-  wait_for_completion(&buf->completion);
-
-causing an oops later when walking pending_list after the firmware has
-been released.
-
-The proposed fix is to move the list_add() before sysfs attribute
-creation.
-
-Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
-Acked-by: Ming Lei <ming.lei@canonical.com>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/firmware_class.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/staging/zram/zram_drv.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -868,8 +868,15 @@ static int _request_firmware_load(struct
- 		goto err_del_dev;
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -522,7 +522,7 @@ static int zram_bvec_rw(struct zram *zra
+ 	return ret;
+ }
+ 
+-static void zram_reset_device(struct zram *zram)
++static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ {
+ 	size_t index;
+ 	struct zram_meta *meta;
+@@ -551,7 +551,8 @@ static void zram_reset_device(struct zra
+ 	memset(&zram->stats, 0, sizeof(zram->stats));
+ 
+ 	zram->disksize = 0;
+-	set_capacity(zram->disk, 0);
++	if (reset_capacity)
++		set_capacity(zram->disk, 0);
+ 	up_write(&zram->init_lock);
+ }
+ 
+@@ -635,7 +636,7 @@ static ssize_t reset_store(struct device
+ 	if (bdev)
+ 		fsync_bdev(bdev);
+ 
+-	zram_reset_device(zram);
++	zram_reset_device(zram, true);
+ 	return len;
+ }
+ 
+@@ -902,10 +903,12 @@ static void __exit zram_exit(void)
+ 	for (i = 0; i < num_devices; i++) {
+ 		zram = &zram_devices[i];
+ 
+-		get_disk(zram->disk);
+ 		destroy_device(zram);
+-		zram_reset_device(zram);
+-		put_disk(zram->disk);
++		/*
++		 * Shouldn't access zram->disk after destroy_device
++		 * because destroy_device already released zram->disk.
++		 */
++		zram_reset_device(zram, false);
  	}
  
-+	mutex_lock(&fw_lock);
-+	list_add(&buf->pending_list, &pending_fw_head);
-+	mutex_unlock(&fw_lock);
-+
- 	retval = device_create_file(f_dev, &dev_attr_loading);
- 	if (retval) {
-+		mutex_lock(&fw_lock);
-+		list_del_init(&buf->pending_list);
-+		mutex_unlock(&fw_lock);
- 		dev_err(f_dev, "%s: device_create_file failed\n", __func__);
- 		goto err_del_bin_attr;
- 	}
-@@ -884,10 +891,6 @@ static int _request_firmware_load(struct
- 		kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
- 	}
- 
--	mutex_lock(&fw_lock);
--	list_add(&buf->pending_list, &pending_fw_head);
--	mutex_unlock(&fw_lock);
--
- 	wait_for_completion(&buf->completion);
- 
- 	cancel_delayed_work_sync(&fw_priv->timeout_work);
+ 	unregister_blkdev(zram_major, "zram");
 
 
