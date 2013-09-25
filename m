@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab3IYAle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 20:41:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39554 "EHLO
+	id S1756588Ab3IYAUQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 20:20:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39530 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183Ab3IYAUS (ORCPT
+	with ESMTP id S1756567Ab3IYAUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:20:18 -0400
+	Tue, 24 Sep 2013 20:20:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 037/117] ACPI / LPSS: dont crash if a device has no MMIO resources
-Date: Tue, 24 Sep 2013 17:18:23 -0700
-Message-Id: <20130925001744.880911324@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>
+Subject: [ 041/117] USB: cdc-wdm: fix race between interrupt handler and tasklet
+Date: Tue, 24 Sep 2013 17:18:27 -0700
+Message-Id: <20130925001745.326515287@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925001740.833541979@linuxfoundation.org>
 References: <20130925001740.833541979@linuxfoundation.org>
@@ -27,47 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit af65cfe9aeae03e0682bebdf4db94582d75562dd upstream.
+commit 6dd433e6cf2475ce8abec1b467720858c24450eb upstream.
 
-Intel LPSS devices that are enumerated from ACPI have both MMIO and IRQ
-resources returned in their _CRS method. However, Apple Macbook Air with
-Haswell has LPSS devices enumerated from PCI bus instead and _CRS method
-returns only an interrupt number (but the device has _HID set that causes
-the scan handler to match it).
+Both could want to submit the same URB. Some checks of the flag
+intended to prevent that were missing.
 
-The current ACPI / LPSS code sets pdata->dev_desc only when MMIO resource
-is found for the device and in case of Macbook Air it is never found. That
-leads to a NULL pointer dereference in register_device_clock().
-
-Correct this by always setting the pdata->dev_desc.
-
-Reported-and-tested-by: Imre Kaloz <kaloz@openwrt.org>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpi_lpss.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/class/cdc-wdm.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -257,12 +257,13 @@ static int acpi_lpss_create_device(struc
- 				pdata->mmio_size = resource_size(&rentry->res);
- 			pdata->mmio_base = ioremap(rentry->res.start,
- 						   pdata->mmio_size);
--			pdata->dev_desc = dev_desc;
- 			break;
- 		}
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -209,6 +209,7 @@ skip_error:
+ static void wdm_int_callback(struct urb *urb)
+ {
+ 	int rv = 0;
++	int responding;
+ 	int status = urb->status;
+ 	struct wdm_device *desc;
+ 	struct usb_cdc_notification *dr;
+@@ -262,8 +263,8 @@ static void wdm_int_callback(struct urb
  
- 	acpi_dev_free_resource_list(&resource_list);
+ 	spin_lock(&desc->iuspin);
+ 	clear_bit(WDM_READ, &desc->flags);
+-	set_bit(WDM_RESPONDING, &desc->flags);
+-	if (!test_bit(WDM_DISCONNECTING, &desc->flags)
++	responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
++	if (!responding && !test_bit(WDM_DISCONNECTING, &desc->flags)
+ 		&& !test_bit(WDM_SUSPENDING, &desc->flags)) {
+ 		rv = usb_submit_urb(desc->response, GFP_ATOMIC);
+ 		dev_dbg(&desc->intf->dev, "%s: usb_submit_urb %d",
+@@ -685,16 +686,20 @@ static void wdm_rxwork(struct work_struc
+ {
+ 	struct wdm_device *desc = container_of(work, struct wdm_device, rxwork);
+ 	unsigned long flags;
+-	int rv;
++	int rv = 0;
++	int responding;
  
-+	pdata->dev_desc = dev_desc;
-+
- 	if (dev_desc->clk_required) {
- 		ret = register_device_clock(adev, pdata);
- 		if (ret) {
+ 	spin_lock_irqsave(&desc->iuspin, flags);
+ 	if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
+ 		spin_unlock_irqrestore(&desc->iuspin, flags);
+ 	} else {
++		responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
+ 		spin_unlock_irqrestore(&desc->iuspin, flags);
+-		rv = usb_submit_urb(desc->response, GFP_KERNEL);
++		if (!responding)
++			rv = usb_submit_urb(desc->response, GFP_KERNEL);
+ 		if (rv < 0 && rv != -EPERM) {
+ 			spin_lock_irqsave(&desc->iuspin, flags);
++			clear_bit(WDM_RESPONDING, &desc->flags);
+ 			if (!test_bit(WDM_DISCONNECTING, &desc->flags))
+ 				schedule_work(&desc->rxwork);
+ 			spin_unlock_irqrestore(&desc->iuspin, flags);
 
 
