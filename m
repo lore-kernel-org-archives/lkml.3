@@ -1,132 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab3IYJJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 05:09:00 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:34943 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab3IYJI5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 05:08:57 -0400
-Message-ID: <5242A6CD.5010006@ahsoftware.de>
-Date: Wed, 25 Sep 2013 11:03:09 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1754765Ab3IYJLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 05:11:20 -0400
+Received: from 8bytes.org ([85.214.48.195]:47102 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253Ab3IYJLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 05:11:19 -0400
+Date: Wed, 25 Sep 2013 11:11:12 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: alex.williamson@redhat.com, Varun.Sethi@freescale.com, udknight@gmail.com,
+        aik@ozlabs.ru, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, shuahkhan@gmail.com
+Subject: Re: [PATCH v4 0/2] iommu: Add iommu_error class event to iommu trace
+Message-ID: <20130925091104.GA2850@8bytes.org>
+References: <cover.1380056222.git.shuah.kh@samsung.com>
 MIME-Version: 1.0
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-CC: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        "Lee, Chun-Yi" <jlee@suse.com>, David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Josh Boyer <jwboyer@redhat.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Peter Jones <pjones@redhat.com>
-Subject: Re: [PATCH] X.509: Remove validity check of certificate date
-References: <1380090051-19482-1-git-send-email-jlee@suse.com>
-In-Reply-To: <1380090051-19482-1-git-send-email-jlee@suse.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1380056222.git.shuah.kh@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Sep 25 11:11:17 2013
+X-DSPAM-Confidence: 0.9985
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5242a8b520861339175435
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I've resend this message, because the one I've replied to contained 
-contained kernel@vger... and not linux-kernel@vger... as addressee)
+On Tue, Sep 24, 2013 at 03:21:18PM -0600, Shuah Khan wrote:
+> Shuah Khan (2):
+>   iommu: Add iommu_error class event to iommu trace
+>   iommu: Change iommu driver to call io_page_fault trace event
 
-I've already sent exactly the same patch here:
+Applied to the tracing branch, thanks Shuah.
 
-http://lkml.org/lkml/2013/3/27/449
-
-and here:
-
-https://lkml.org/lkml/2013/6/6/207
-
-but for some unspoken reason it always got ignored.
-
-It would make wonder if it would be accepted this time, just because of
-another author name.
-
-Regards,
-
-Alexander Holler
-
-
-Am 25.09.2013 08:20, schrieb Lee, Chun-Yi:
-> The check of valid_from and valid_to fields on X.509 certificate is a
-> time bomb to MODSIGN function, It causes kernel module could not be
-> load because the RTC on system may messed by user action (e.g. refresh
-> BIOS) that should not be trusted.
->
-> Base on the discussion of David Howells's "[PATCH] X.509: Remove
-> certificate date checks":
->   https://lkml.org/lkml/2013/3/14/257
->
-> This patch removed the validity check of certificate date but still keep
-> the valid_from and valid_to fields for future usage.
->
-> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> cc: David Howells <dhowells@redhat.com>
-> cc: David Woodhouse <dwmw2@infradead.org>
-> cc: Rusty Russell <rusty@rustcorp.com.au>
-> cc: Josh Boyer <jwboyer@redhat.com>
-> cc: Alexander Holler <holler@ahsoftware.de>
-> cc: Matthew Garrett <mjg59@srcf.ucam.org>
-> cc: Peter Jones <pjones@redhat.com>
-> ---
->  crypto/asymmetric_keys/x509_public_key.c |   38 ------------------------------
->  1 files changed, 0 insertions(+), 38 deletions(-)
->
-> diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-> index 06007f0..52222a2 100644
-> --- a/crypto/asymmetric_keys/x509_public_key.c
-> +++ b/crypto/asymmetric_keys/x509_public_key.c
-> @@ -106,7 +106,6 @@ error_no_sig:
->  static int x509_key_preparse(struct key_preparsed_payload *prep)
->  {
->  	struct x509_certificate *cert;
-> -	struct tm now;
->  	size_t srlen, sulen;
->  	char *desc = NULL;
->  	int ret;
-> @@ -137,43 +136,6 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
->  		goto error_free_cert;
->  	}
->
-> -	time_to_tm(CURRENT_TIME.tv_sec, 0, &now);
-> -	pr_devel("Now: %04ld-%02d-%02d %02d:%02d:%02d\n",
-> -		 now.tm_year + 1900, now.tm_mon + 1, now.tm_mday,
-> -		 now.tm_hour, now.tm_min,  now.tm_sec);
-> -	if (now.tm_year < cert->valid_from.tm_year ||
-> -	    (now.tm_year == cert->valid_from.tm_year &&
-> -	     (now.tm_mon < cert->valid_from.tm_mon ||
-> -	      (now.tm_mon == cert->valid_from.tm_mon &&
-> -	       (now.tm_mday < cert->valid_from.tm_mday ||
-> -		(now.tm_mday == cert->valid_from.tm_mday &&
-> -		 (now.tm_hour < cert->valid_from.tm_hour ||
-> -		  (now.tm_hour == cert->valid_from.tm_hour &&
-> -		   (now.tm_min < cert->valid_from.tm_min ||
-> -		    (now.tm_min == cert->valid_from.tm_min &&
-> -		     (now.tm_sec < cert->valid_from.tm_sec
-> -		      ))))))))))) {
-> -		pr_warn("Cert %s is not yet valid\n", cert->fingerprint);
-> -		ret = -EKEYREJECTED;
-> -		goto error_free_cert;
-> -	}
-> -	if (now.tm_year > cert->valid_to.tm_year ||
-> -	    (now.tm_year == cert->valid_to.tm_year &&
-> -	     (now.tm_mon > cert->valid_to.tm_mon ||
-> -	      (now.tm_mon == cert->valid_to.tm_mon &&
-> -	       (now.tm_mday > cert->valid_to.tm_mday ||
-> -		(now.tm_mday == cert->valid_to.tm_mday &&
-> -		 (now.tm_hour > cert->valid_to.tm_hour ||
-> -		  (now.tm_hour == cert->valid_to.tm_hour &&
-> -		   (now.tm_min > cert->valid_to.tm_min ||
-> -		    (now.tm_min == cert->valid_to.tm_min &&
-> -		     (now.tm_sec > cert->valid_to.tm_sec
-> -		      ))))))))))) {
-> -		pr_warn("Cert %s has expired\n", cert->fingerprint);
-> -		ret = -EKEYEXPIRED;
-> -		goto error_free_cert;
-> -	}
-> -
->  	cert->pub->algo = x509_public_key_algorithms[cert->pkey_algo];
->  	cert->pub->id_type = PKEY_ID_X509;
->
->
 
