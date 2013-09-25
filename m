@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758355Ab3IYBfA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:35:00 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:57057 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756986Ab3IYBe6 (ORCPT
+	id S932806Ab3IYBfj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:35:39 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:53940 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758384Ab3IYBf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 21:34:58 -0400
-Date: Tue, 24 Sep 2013 18:34:51 -0700
+	Tue, 24 Sep 2013 21:35:28 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,51 +14,63 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: [PATCH tip/core/rcu 0/13] Sparse-related updates for 3.13
-Message-ID: <20130925013451.GA31260@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: [PATCH tip/core/rcu 06/13] ipv4/ip_socketglue: Apply rcu_access_pointer() to avoid sparse false positive
+Date: Tue, 24 Sep 2013 18:35:09 -0700
+Message-Id: <1380072916-31557-6-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1380072916-31557-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130925013451.GA31260@linux.vnet.ibm.com>
+ <1380072916-31557-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092501-1344-0000-0000-000001EB038B
+x-cbid: 13092501-9332-0000-0000-0000018760BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This series features updates to allow sparse to do a better job of
-statically analyzing RCU usage:
+The sparse checking for rcu_assign_pointer() was recently upgraded
+to reject non-__kernel address spaces.  This also rejects __rcu,
+which is almost always the right thing to do.  However, the use in
+ip_ra_control() is legitimate: It is assigning a pointer to an element
+from an RCU-protected list, and all elements of this list are already
+visible to caller.
 
-1.	Apply ACCESS_ONCE() to rcu_assign_pointer()'s target to prevent
-	comiler mischief.  Also require that the source pointer be from
-	the kernel address space.  Sometimes it can be from the RCU address
-	space, which necessitates the remaining patches in this series.
-	Which, it must be admitted, apply to a very small fraction of
-	the rcu_assign_pointer() invocations in the kernel.  This commit
-	courtesy of Josh Triplett.
+This commit therefore silences this false positive by laundering the
+pointer using rcu_access_pointer() as suggested by Josh Triplett.
 
-2-13.	Apply rcu_access_pointer() to avoid a number of false positives.
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org
+---
+ net/ipv4/ip_sockglue.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-							Thanx, Paul
-
-
- b/drivers/net/bonding/bond_alb.c  |    3 ++-
- b/drivers/net/bonding/bond_main.c |    8 +++++---
- b/include/linux/rcupdate.h        |   12 +++++++++++-
- b/kernel/notifier.c               |    2 +-
- b/net/bridge/br_mdb.c             |    2 +-
- b/net/bridge/br_multicast.c       |    4 ++--
- b/net/decnet/dn_route.c           |    5 +++--
- b/net/ipv4/ip_sockglue.c          |    2 +-
- b/net/ipv6/ip6_gre.c              |    2 +-
- b/net/ipv6/ip6_tunnel.c           |    2 +-
- b/net/ipv6/sit.c                  |    2 +-
- b/net/mac80211/sta_info.c         |    4 ++--
- b/net/wireless/scan.c             |   14 +++++++-------
- 13 files changed, 38 insertions(+), 24 deletions(-)
+diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
+index d9c4f11..d328f15 100644
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -269,7 +269,7 @@ int ip_ra_control(struct sock *sk, unsigned char on,
+ 			}
+ 			/* dont let ip_call_ra_chain() use sk again */
+ 			ra->sk = NULL;
+-			rcu_assign_pointer(*rap, ra->next);
++			rcu_assign_pointer(*rap, rcu_access_pointer(ra->next));
+ 			spin_unlock_bh(&ip_ra_lock);
+ 
+ 			if (ra->destructor)
+-- 
+1.8.1.5
 
