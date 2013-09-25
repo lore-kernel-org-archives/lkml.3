@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758681Ab3IYBpu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Sep 2013 21:45:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38493 "EHLO
+	id S1757804Ab3IYBql (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Sep 2013 21:46:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041Ab3IYAI0 (ORCPT
+	with ESMTP id S1754902Ab3IYAIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Sep 2013 20:08:26 -0400
+	Tue, 24 Sep 2013 20:08:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 17/28] ath9k: avoid accessing MRC registers on single-chain devices
-Date: Tue, 24 Sep 2013 17:07:48 -0700
-Message-Id: <20130925000652.560567713@linuxfoundation.org>
+        =?UTF-8?q?Roger=20Pau=20Monn=C3=A9?= <roger.pau@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, Matt Wilson <msw@amazon.com>
+Subject: [ 04/28] xen-gnt: prevent adding duplicate gnt callbacks
+Date: Tue, 24 Sep 2013 17:07:35 -0700
+Message-Id: <20130925000649.494286667@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130925000648.404447782@linuxfoundation.org>
 References: <20130925000648.404447782@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,32 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Roger Pau Monne <roger.pau@citrix.com>
 
-commit a1c781bb20ac1e03280e420abd47a99eb8bbdd3b upstream.
+commit 5f338d9001094a56cf87bd8a280b4e7ff953bb59 upstream.
 
-They are not implemented, and accessing them might trigger errors
+With the current implementation, the callback in the tail of the list
+can be added twice, because the check done in
+gnttab_request_free_callback is bogus, callback->next can be NULL if
+it is the last callback in the list. If we add the same callback twice
+we end up with an infinite loop, were callback == callback->next.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Replace this check with a proper one that iterates over the list to
+see if the callback has already been added.
+
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Matt Wilson <msw@amazon.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_phy.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/xen/grant-table.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-@@ -1005,6 +1005,10 @@ static bool ar9003_hw_ani_control(struct
- 		 * is_on == 0 means MRC CCK is OFF (more noise imm)
- 		 */
- 		bool is_on = param ? 1 : 0;
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -355,9 +355,18 @@ void gnttab_request_free_callback(struct
+ 				  void (*fn)(void *), void *arg, u16 count)
+ {
+ 	unsigned long flags;
++	struct gnttab_free_callback *cb;
 +
-+		if (ah->caps.rx_chainmask == 1)
-+			break;
+ 	spin_lock_irqsave(&gnttab_list_lock, flags);
+-	if (callback->next)
+-		goto out;
 +
- 		REG_RMW_FIELD(ah, AR_PHY_MRC_CCK_CTRL,
- 			      AR_PHY_MRC_CCK_ENABLE, is_on);
- 		REG_RMW_FIELD(ah, AR_PHY_MRC_CCK_CTRL,
++	/* Check if the callback is already on the list */
++	cb = gnttab_free_callback_list;
++	while (cb) {
++		if (cb == callback)
++			goto out;
++		cb = cb->next;
++	}
++
+ 	callback->fn = fn;
+ 	callback->arg = arg;
+ 	callback->count = count;
 
 
