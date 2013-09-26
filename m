@@ -1,185 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab3IZJYc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:24:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64091 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab3IZJYa (ORCPT
+	id S1756185Ab3IZJZs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:25:48 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:35929 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab3IZJZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:24:30 -0400
-Date: Thu, 26 Sep 2013 11:24:26 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 1/4] pinctrl: sh-pfc: r8a7790: add pin definitions for
- the I2C3 interface
-In-Reply-To: <1736434.JorZUzD5Dk@avalon>
-Message-ID: <Pine.LNX.4.64.1309261117510.11968@axis700.grange>
-References: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de>
- <1378742636-11215-2-git-send-email-g.liakhovetski@gmx.de> <1736434.JorZUzD5Dk@avalon>
+	Thu, 26 Sep 2013 05:25:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:KHDgNdcn0/lGRalUoJ6nWpAHLBP+PhoxeROsVCPj7Qg
- WH2CI9144ETeTHvufidgJ2IZnXy6V4h5jbxHfcX+IHpmwVmf6/
- TsHBIlf/29LbNtOi2J5CiJGIG4iqBloyfezWm5a9hCA4jZajwG
- rcTuHv7KVLrr8pLmiCjmrRYIxq8eXwEg6pbK0PzfYi+QvWvSEZ
- JDnYCkCvvdY2HK3i9VJo0UgRsRIi6AMWQvr7d4Vw1FdPGhGMv1
- 3VTeYp2o/KUhc6O5V4raF9OydvXCXzkdL3MgHBYbgs7dMtOYx3
- fBIwmLl/kWTDVGjkR5Rd0ONCPwNfSHImvT1wHViCXZTyJwllB9
- faGPh1c/pXfiBfa79FJwi3SgQWBrn0g01mFMfZgumsGYcDtxBp
- JumMZZ/GAFl9Q==
+In-Reply-To: <CACQ1gAgqfHXwLjxhy9RrzFWe93Vmnc0chOg6uRKyqb6sVVQKxw@mail.gmail.com>
+References: <1380141125-11063-1-git-send-email-richard@nod.at>
+ <5243E033.7010403@gmail.com> <5243E130.3040200@nod.at> <CACQ1gAgqfHXwLjxhy9RrzFWe93Vmnc0chOg6uRKyqb6sVVQKxw@mail.gmail.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Thu, 26 Sep 2013 11:25:23 +0200
+Message-ID: <CACQ1gAjrSZv61sow6Ows50fu+ptjr3swqXDQT7NYGWqEx-w2Lg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] UBI: Fix error path in scan_pool()
+To: Richard Weinberger <richard@nod.at>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent
+2013/9/26 Richard Genoud <richard.genoud@gmail.com>:
+> 2013/9/26 Richard Weinberger <richard@nod.at>:
+>> Am 26.09.2013 09:20, schrieb Richard Genoud:
+>>> On 25/09/2013 22:32, Richard Weinberger wrote:
+>>>> We have to set "ret", not "err" in case of an error.
+>>>>
+>>>> Reported-by: Richard Genoud <richard.genoud@gmail.com>
+>>>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>>>> ---
+>>>>  drivers/mtd/ubi/fastmap.c | 2 +-
+>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+>>>> index f5aa4b0..9b42add 100644
+>>>> --- a/drivers/mtd/ubi/fastmap.c
+>>>> +++ b/drivers/mtd/ubi/fastmap.c
+>>>> @@ -428,7 +428,7 @@ static int scan_pool(struct ubi_device *ubi, struct ubi_attach_info *ai,
+>>>>              if (be32_to_cpu(ech->image_seq) != ubi->image_seq) {
+>>>>                      ubi_err("bad image seq: 0x%x, expected: 0x%x",
+>>>>                              be32_to_cpu(ech->image_seq), ubi->image_seq);
+>>>> -                    err = UBI_BAD_FASTMAP;
+>>>> +                    ret = UBI_BAD_FASTMAP;
+>>>>                      goto out;
+>>>>              }
+>>>>
+>>>>
+>>>
+>>> Tested-by: Richard Genoud <richard.genoud@gmail.com>
+>>>
+>>> It reveals another bug though.
+>>>
+>>> [    0.812500] UBI: default fastmap pool size: 95
+>>> [    0.820312] UBI: default fastmap WL pool size: 25
+>>> [    0.820312] UBI: attaching mtd2 to ubi0
+>>> [    0.914062] UBI error: scan_pool: bad image seq: 0x0, expected: 0x352a9728
+>>
+>> This worries me more...
+>> The fastmap is corrupted, now we have to find out why.
+>> Broken driver? Powercut? IO errors?
+> I guess this is caused by u-boot when it deletes the UBI fastmap
+> internal volume.
+> I'm replaying the whole scenario with debug to see when it happens.
 
-On Wed, 25 Sep 2013, Laurent Pinchart wrote:
-
-> Hi Guennadi,
-> 
-> Thank you for the patch.
-> 
-> On Monday 09 September 2013 18:03:53 Guennadi Liakhovetski wrote:
-> > There are four I2C interfaces on r8a7790, each of them can be connected to
-> > one of the two respective I2C controllers, e.g. interface #0 can be
-> > configured to work with I2C0 or with IIC0. Additionally some of those
-> > interfaces can also use one of several pin sets. Interface #3 is special,
-> > because it can be used in automatic mode for DVFS. It only has one set
-> > of pins available and those pins cannot be used for anything else, they
-> > also lack the GPIO function.
-> > 
-> > This patch uses the sh-pfc ability to configure pins, not associated with
-> > GPIOs and adds support for I2C3 to the r8a7790 PFC set up.
-> 
-> Ulrich Hecht sent a patch titled "sh-pfc: r8a7790: Add I2C pin groups and 
-> functions" that added pin groups for I2C1 and I2C2. The patch is available 
-> from
-> 
-> 	git://linuxtv.org/pinchartl/fbdev.git pinmux/next
-> 
-> If you need to resubmit this patch due to my comments below, could you please 
-> rebase it on top of that branch ?
-> 
-> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> > ---
-> >  drivers/pinctrl/sh-pfc/pfc-r8a7790.c |   28 ++++++++++++++++++++++++++++
-> >  1 files changed, 28 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
-> > b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c index 64fcc006..c3c4d9b 100644
-> > --- a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
-> > +++ b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
-> > @@ -781,6 +781,8 @@ enum {
-> >  	ADICS_SAMP_MARK, DU2_CDE_MARK, QPOLB_MARK, SCIFA2_RXD_B_MARK,
-> >  	USB1_PWEN_MARK, AUDIO_CLKOUT_D_MARK, USB1_OVC_MARK,
-> >  	TCLK1_B_MARK,
-> > +
-> > +	I2C3_SCL_MARK, I2C3_SDA_MARK,
-> >  	PINMUX_MARK_END,
-> >  };
-> > 
-> > @@ -1719,10 +1721,22 @@ static const u16 pinmux_data[] = {
-> >  	PINMUX_IPSR_DATA(IP16_6, AUDIO_CLKOUT_D),
-> >  	PINMUX_IPSR_DATA(IP16_7, USB1_OVC),
-> >  	PINMUX_IPSR_MODSEL_DATA(IP16_7, TCLK1_B, SEL_TMU1_1),
-> > +
-> > +	PINMUX_DATA(I2C3_SCL_MARK, FN_SEL_IICDVFS_1),
-> > +	PINMUX_DATA(I2C3_SDA_MARK, FN_SEL_IICDVFS_1),
-> 
-> You introduce a way to mux the I2C3 function on those two pins, but no way to 
-> select the IICDVFS back. I don't think it's an issue, we can always add that 
-> later when (if) needed. Linus, is that fine with you ?
-
-I did it on purpose, since I didn't have a use case for IICDVFS. I prefer 
-not to add too many things, that cannot be tested.
-
-> >  };
-> > 
-> > +/* R8A7790 has 6 banks with 32 GPIOs in each = 192 GPIOs */
-> > +#define ROW_GROUP_A(r) ('Z' - 'A' + 1 + (r))
-> > +#define PIN_NUMBER(r, c) (((r) - 'A') * 16 + (c) + 200)
-> 
-> The BGA package has 31 columns, shouldn't you multiply the row number by 31 
-> instead of 16 ?
-
-Oops, you're right - the pin table is continued on the second page...
-
-> As we have 192 GPIOs, shouldn't you use an offset of 192 instead of 200 ? This 
-> doesn't matter too much I guess.
-
-On one of Renesas SoCs I've seen an offset of 2000 used. I thought it 
-would be an exaggeration in this case ;) but I followed the pattern of 
-using a round number for the offset, is this ok?
-
-Thanks
-Guennadi
-
-> > +#define PIN_A_NUMBER(r, c) PIN_NUMBER(ROW_GROUP_A(r), c)
-> > +
-> >  static struct sh_pfc_pin pinmux_pins[] = {
-> >  	PINMUX_GPIO_GP_ALL(),
-> > +
-> > +	/* Pins not associated with a GPIO port */
-> > +	SH_PFC_PIN_NAMED(ROW_GROUP_A('J'), 15, AJ15),
-> > +	SH_PFC_PIN_NAMED(ROW_GROUP_A('H'), 15, AH15),
-> >  };
-> > 
-> >  /* - DU RGB
-> > ----------------------------------------------------------------- */ @@
-> > -1990,6 +2004,14 @@ static const unsigned int hscif1_ctrl_b_pins[] = {
-> > static const unsigned int hscif1_ctrl_b_mux[] = {
-> >  	HRTS1_N_B_MARK, HCTS1_N_B_MARK,
-> >  };
-> > +/* - I2C3
-> > ------------------------------------------------------------------- */
-> > +static const unsigned int i2c3_pins[] = {
-> > +	/* SCL, SDA */
-> > +	PIN_A_NUMBER('J', 15), PIN_A_NUMBER('H', 15),
-> > +};
-> > +static const unsigned int i2c3_mux[] = {
-> > +	I2C3_SCL_MARK, I2C3_SDA_MARK,
-> > +};
-> >  /* - INTC
-> > ------------------------------------------------------------------- */
-> > static const unsigned int intc_irq0_pins[] = {
-> >  	/* IRQ */
-> > @@ -3047,6 +3069,7 @@ static const struct sh_pfc_pin_group pinmux_groups[] =
-> > { SH_PFC_PIN_GROUP(hscif1_data_b),
-> >  	SH_PFC_PIN_GROUP(hscif1_clk_b),
-> >  	SH_PFC_PIN_GROUP(hscif1_ctrl_b),
-> > +	SH_PFC_PIN_GROUP(i2c3),
-> >  	SH_PFC_PIN_GROUP(intc_irq0),
-> >  	SH_PFC_PIN_GROUP(intc_irq1),
-> >  	SH_PFC_PIN_GROUP(intc_irq2),
-> > @@ -3243,6 +3266,10 @@ static const char * const hscif1_groups[] = {
-> >  	"hscif1_ctrl_b",
-> >  };
-> > 
-> > +static const char * const i2c3_groups[] = {
-> > +	"i2c3",
-> > +};
-> > +
-> >  static const char * const intc_groups[] = {
-> >  	"intc_irq0",
-> >  	"intc_irq1",
-> > @@ -3469,6 +3496,7 @@ static const struct sh_pfc_function pinmux_functions[]
-> > = { SH_PFC_FUNCTION(eth),
-> >  	SH_PFC_FUNCTION(hscif0),
-> >  	SH_PFC_FUNCTION(hscif1),
-> > +	SH_PFC_FUNCTION(i2c3),
-> >  	SH_PFC_FUNCTION(intc),
-> >  	SH_PFC_FUNCTION(mmc0),
-> >  	SH_PFC_FUNCTION(mmc1),
-> -- 
-> Regards,
-> 
-> Laurent Pinchart
-> 
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+I added some traces and I found that : (dumping ec_header after
+"ubi_io_read_ec_hdr(ubi, pnum, ech, 0); " in ubi_scan_fastmap())
+[    0.812500] UBI: default fastmap pool size: 95
+[    0.820312] UBI: default fastmap WL pool size: 25
+[    0.828125] UBI: attaching mtd2 to ubi0
+[    0.851562] ubi_scan_fastmap:
+[    0.859375] Erase counter header dump:
+[    0.859375]  magic          0x55424923
+[    0.867187]  version        1
+[    0.867187]  ec             1
+[    0.867187]  vid_hdr_offset 2048
+[    0.875000]  data_offset    4096
+[    0.875000]  image_seq      891983656 <- image seq is good.
+[    0.875000]  hdr_crc        0x13cc9a78
+[    0.882812] erase counter header hexdump:
+[    0.882812] 00000000: 55 42 49 23 01 00 00 00 00 00 00 00 00 00 00
+01 00 00 08 00 00 00 10 00 35 2a 97
+28 00 00 00 00  UBI#....................5*.(....
+[    0.890625] 00000020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00
+00 13 cc 9a 78  ...............................x
+[    0.960937] UBI error: scan_pool: bad image seq: 0x0, expected: 0x352a9728
+[    0.968750] UBI error: ubi_scan_fastmap: Attach by fastmap failed,
+doing a full scan!
+[    0.976562] kmem_cache_destroy ubi_ainf_peb_slab: Slab cache still
+has objects
+[    0.976562] CPU: 0 PID: 1 Comm: swapper Not tainted 3.11.1 #20
+[    0.984375] [<c0012e20>] (unwind_backtrace+0x0/0xe0) from
+[<c0010bb8>] (show_stack+0x10/0x14)
+[    0.992187] [<c0010bb8>] (show_stack+0x10/0x14) from [<c01a15e4>]
+(destroy_ai+0x230/0x244)
+[    1.000000] [<c01a15e4>] (destroy_ai+0x230/0x244) from [<c01a2c4c>]
+(ubi_attach+0x1e8/0x34c)
+[    1.007812] [<c01a2c4c>] (ubi_attach+0x1e8/0x34c) from [<c0197678>]
+(ubi_attach_mtd_dev+0x2b8/0x86c)
+[    1.015625] [<c0197678>] (ubi_attach_mtd_dev+0x2b8/0x86c) from
+[<c0346630>] (ubi_init+0x1d8/0x29c)
+[    1.023437] [<c0346630>] (ubi_init+0x1d8/0x29c) from [<c0008810>]
+(do_one_initcall+0x94/0x144)
+[    1.031250] [<c0008810>] (do_one_initcall+0x94/0x144) from
+[<c0335a9c>] (kernel_init_freeable+0xe8/0x1a
+c)
+[    1.039062] [<c0335a9c>] (kernel_init_freeable+0xe8/0x1ac) from
+[<c0251528>] (kernel_init+0x8/0xe4)
+[    1.046875] [<c0251528>] (kernel_init+0x8/0xe4) from [<c000e590>]
+(ret_from_fork+0x14/0x24)
+[    1.804687] UBI: scanning is finished
