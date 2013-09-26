@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab3IZV6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 17:58:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34400 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754436Ab3IZV6Y (ORCPT
+	id S1754302Ab3IZWBM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:01:12 -0400
+Received: from smtprelay0191.hostedemail.com ([216.40.44.191]:55024 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753896Ab3IZWBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 17:58:24 -0400
-Date: Thu, 26 Sep 2013 14:58:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: increased vmap_area_lock contentions on
- "n_tty: Move buffers into n_tty_data"
-Message-Id: <20130926145822.640206da116cdaac521c8bde@linux-foundation.org>
-In-Reply-To: <5244AA5C.8060100@hurleysoftware.com>
-References: <20130913005133.GA32479@localhost>
-	<20130913010936.GA1291@localhost>
-	<5238767D.1080606@hurleysoftware.com>
-	<20130917232214.GA11390@localhost>
-	<5238F252.5070905@hurleysoftware.com>
-	<20130926003315.2e81bc84.akpm@linux-foundation.org>
-	<52441B23.7050704@hurleysoftware.com>
-	<20130926150421.GA25545@kroah.com>
-	<52447064.5030902@hurleysoftware.com>
-	<20130926110551.52ad8156.akpm@linux-foundation.org>
-	<5244AA5C.8060100@hurleysoftware.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Thu, 26 Sep 2013 18:01:08 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:2902:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:7576:7652:10004:10400:10848:11232:11658:11914:12114:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pull74_7e102f2e75f5f
+X-Filterd-Recvd-Size: 2019
+Message-ID: <1380232864.17366.84.camel@joe-AO722>
+Subject: Re: [PATCH] MAINTAINERS: wimax@linuxwimax.org is subscribers-only
+From: Joe Perches <joe@perches.com>
+To: "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>
+Cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 26 Sep 2013 15:01:04 -0700
+In-Reply-To: <3A78FAA0EC814D4B8ECC99B3AB32B33216375160@FMSMSX102.amr.corp.intel.com>
+References: <1380138892.17366.24.camel@joe-AO722>
+	 <20130925200950.GA10751@redhat.com> <1380147827.17366.25.camel@joe-AO722>
+	 <3A78FAA0EC814D4B8ECC99B3AB32B33216375160@FMSMSX102.amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Sep 2013 17:42:52 -0400 Peter Hurley <peter@hurleysoftware.com> wrote:
-
-> On 09/26/2013 02:05 PM, Andrew Morton wrote:
-> > On Thu, 26 Sep 2013 13:35:32 -0400 Peter Hurley <peter@hurleysoftware.com> wrote:
-> >
-> >> The issue with a single large kmalloc is that it may fail where
-> >> 3 separate, page-or-less kmallocs would not have.
-> >
-> > Or vmalloc fails first, because of internal fragmentation of the vmap
-> > arena.  This problem plus vmalloc's slowness are the reasons why
-> > vmalloc should be avoided.
+On Thu, 2013-09-26 at 18:11 +0000, Perez-Gonzalez, Inaky wrote:
+> > From: Joe Perches [mailto:joe@perches.com]
+> > >
+> > > The W: link is dead.
+> > >
+> > > Given wimax never really took off, is there any point in keeping this in the kernel at all ?
+> > > We turned off the drivers in Fedora a while ago, and just threw out the userspace parts.
+> > > I wouldn't be surprised to learn of other distributions doing the same.
+> > 
+> > Inaky?
+> > Are you doing any work on this at all?
+> > Should this be deleted?
 > 
-> Ok, no vmalloc.
+> I do minimal maintenance, which in the last two years has been close to zero.
 > 
-> > A tremendous number of places in the kernel perform higher-order
-> > allocations nowadays.  The page allocator works damn hard to service
-> > them and I expect that switching to kmalloc here will be OK.
+> I do get, however, occasional support requests (serviced as time permits) from 
+> South America and Russia, which makes me think they use it. How much, I don't
+> know.
 > 
-> I've had order-4 allocation failures before on 10Gb.
+> Unless it is a pain, I'd keep it there
 
-Yep.  But this allocation will be order=2, yes?  And
-PAGE_ALLOC_COSTLY_ORDER=3.  So if that thing is working correctly,
-order=2 will do a lot better than order=4.
+I think you should take the initial MAINTAINERS patch
+that marks the mailing lists as subscribers-only.
 
-> In fact, the
-> nouveau driver switched to vmalloc for that very reason (commit
-> d005f51eb93d71cd40ebd11dd377453fa8c8a42a, drm/nouveau: use vmalloc
-> for pgt allocation).
+I don't subscribe and got useless bounces.
 
-Sigh.  I'm not aware of any reports of anyone hitting arena
-fragmentation problems yet, so it remains a theoretical thing.  But the
-more we use vmalloc, the more likely it becomes.  And because the usage
-sites are so disparate, fixing it will be pretty horrid.
-
-For this reason (plus vmalloc is slow), I do think it's better to do
-the old
-
-	foo = kmalloc(__GFP_NOWARN);
-	if (!foo)
-		foo = vmalloc();
-
-thing.  It's ugly, but will greatly reduce the amount of vmallocing
-which happens.
-
-Someone had a patch a while back which wraps this operation (and the
-corresponding free) into library functions.  I said yuk and it wasn't
-merged.  Perhaps that was a mistake.
