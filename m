@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab3IZPh4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:37:56 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:36578 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab3IZPhx (ORCPT
+	id S1753256Ab3IZPiP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:38:15 -0400
+Received: from smtprelay0051.hostedemail.com ([216.40.44.51]:46384 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753211Ab3IZPiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:37:53 -0400
-Message-ID: <524454BE.4030602@gmail.com>
-Date: Thu, 26 Sep 2013 23:37:34 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v5 2/6] memblock: Introduce bottom-up allocation mode
-References: <5241D897.1090905@gmail.com> <5241D9A4.4080305@gmail.com> <20130926144516.GD3482@htj.dyndns.org>
-In-Reply-To: <20130926144516.GD3482@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 26 Sep 2013 11:38:12 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:4321:5007:7652:7808:7875:7903:8660:10011:10400:10848:11232:11658:11914:12517:12519:12740:13069:13148:13230:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: owl83_81879d9bbf128
+X-Filterd-Recvd-Size: 1763
+Message-ID: <1380209888.17366.68.camel@joe-AO722>
+Subject: Re: [PATCH 3/4] SunRPC: Use no_printk() for the null dprintk() and
+ dfprintk()
+From: Joe Perches <joe@perches.com>
+To: David Howells <dhowells@redhat.com>
+Cc: bfields@fieldses.org, Trond.Myklebust@netapp.com, olof@lixom.net,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 26 Sep 2013 08:38:08 -0700
+In-Reply-To: <30597.1380209743@warthog.procyon.org.uk>
+References: <1380209415.17366.66.camel@joe-AO722>
+	 <20130926144502.29424.21633.stgit@warthog.procyon.org.uk>
+	 <20130926144525.29424.11130.stgit@warthog.procyon.org.uk>
+	 <30597.1380209743@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello tejun,
-
-Thanks for your quick comments first:)
-
-On 09/26/2013 10:45 PM, Tejun Heo wrote:
-> Hello,
+On Thu, 2013-09-26 at 16:35 +0100, David Howells wrote:
+> Joe Perches <joe@perches.com> wrote:
 > 
-> On Wed, Sep 25, 2013 at 02:27:48AM +0800, Zhang Yanfei wrote:
->> +#ifdef CONFIG_MOVABLE_NODE
->> +static inline void memblock_set_bottom_up(bool enable)
->> +{
->> +	memblock.bottom_up = enable;
->> +}
->> +
->> +static inline bool memblock_bottom_up(void)
->> +{
->> +	return memblock.bottom_up;
->> +}
+> > no_printk doesn't prevent any argument side-effects
+> > from being optimized away by the compiler.
+> > 
+> > ie:
+> > 	dprintk("%d", func())
+> > func is now always called when before it wasn't.
 > 
-> Can you please explain what this is for here?
+> Yes, I know.  There are half a dozen places where this is the case.  Those
+> I've wrapped in ifdebug(FACILITY) { ... } in the code.  It's not the nicest,
+> but at least the compiler always gets to see everything, rather than bits of
+> it getting hidden by the preprocessor - which means the call points will be
+> less likely to bit rot over time.
 
-OK, will do.
+No code is eliminated by the preprocessor
+with the #define I suggest.
 
-> 
->> +		/*
->> +		 * we always limit bottom-up allocation above the kernel,
->> +		 * but top-down allocation doesn't have the limit, so
->> +		 * retrying top-down allocation may succeed when bottom-up
->> +		 * allocation failed.
->> +		 *
->> +		 * bottom-up allocation is expected to be fail very rarely,
->> +		 * so we use WARN_ONCE() here to see the stack trace if
->> +		 * fail happens.
->> +		 */
->> +		WARN_ONCE(1, "memblock: Failed to allocate memory in bottom up "
->> +			"direction. Now try top down direction.\n");
->> +	}
-> 
-> You and I would know what was going on and what the consequence of the
-> failure may be but the above warning message is kinda useless to a
-> user / admin, right?  It doesn't really say anything meaningful.
-> 
 
-Hmmmm.. May be something like this:
-
-WARN_ONCE(1, "Failed to allocated memory above the kernel in bottom-up,"
-          "so try to allocate memory below the kernel.");
-
-Thanks
-
--- 
-Thanks.
-Zhang Yanfei
