@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab3IZJwF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:52:05 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:40839 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750933Ab3IZJwC (ORCPT
+	id S1756366Ab3IZJyR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:54:17 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:35817 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752054Ab3IZJyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:52:02 -0400
-From: Alexandre TORGUE <alexandre.torgue@st.com>
+	Thu, 26 Sep 2013 05:54:15 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
 To: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
         Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -21,8 +21,8 @@ Cc: stephen.gallimore@st.com, stuart.menefy@st.com,
         Lee Jones <lee.jones@linaro.org>, gabriel.fernandez@st.com,
         kernel@stlinux.com, Maxime Coquelin <maxime.coquelin@st.com>
 Subject: [PATCH v2 0/4] Add I2C support to ST SoCs
-Date: Thu, 26 Sep 2013 11:51:12 +0200
-Message-Id: <1380189072-5551-1-git-send-email-maxime.coquelin@st.com>
+Date: Thu, 26 Sep 2013 11:53:33 +0200
+Message-Id: <1380189213-5667-1-git-send-email-maxime.coquelin@st.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
