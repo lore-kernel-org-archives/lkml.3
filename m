@@ -1,58 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab3IZJ7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:59:22 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751452Ab3IZJ7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:59:21 -0400
-Message-ID: <52440576.7040305@nod.at>
-Date: Thu, 26 Sep 2013 11:59:18 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Richard Genoud <richard.genoud@gmail.com>
-CC: Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] UBI: Fix error path in scan_pool()
-References: <1380141125-11063-1-git-send-email-richard@nod.at> <5243E033.7010403@gmail.com> <5243E130.3040200@nod.at> <CACQ1gAgqfHXwLjxhy9RrzFWe93Vmnc0chOg6uRKyqb6sVVQKxw@mail.gmail.com> <CACQ1gAjrSZv61sow6Ows50fu+ptjr3swqXDQT7NYGWqEx-w2Lg@mail.gmail.com>
-In-Reply-To: <CACQ1gAjrSZv61sow6Ows50fu+ptjr3swqXDQT7NYGWqEx-w2Lg@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756640Ab3IZJ7h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:59:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64537 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756547Ab3IZJ7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 05:59:35 -0400
+From: Veaceslav Falico <vfalico@redhat.com>
+To: linux-pci@vger.kernel.org
+Cc: Veaceslav Falico <vfalico@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] msi: free msi_desc entry only after we've released the kobject
+Date: Thu, 26 Sep 2013 11:59:51 +0200
+Message-Id: <1380189591-1368-1-git-send-email-vfalico@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.09.2013 11:25, schrieb Richard Genoud:
-> I added some traces and I found that : (dumping ec_header after
-> "ubi_io_read_ec_hdr(ubi, pnum, ech, 0); " in ubi_scan_fastmap())
+Currently, we first do kobject_put(&entry->kobj) and the kfree(entry),
+however kobject_put() doesn't guarantee us that it was the last reference
+and that the kobj isn't used currently by someone else, so after we
+kfree(entry) with the struct kobject - other users will begin using the
+freed memory, instead of the actual kobject.
 
-Please show me the diff to understand what exactly you did. :)
+Fix this by using the kobject->release callback, which is called last when
+the kobject is indeed not used and is cleaned up - it's msi_kobj_release(),
+which can do the kfree(entry) safely (kobject_put/cleanup doesn't use the
+kobj itself after ->release() was called, so we're safe).
 
-> [    0.812500] UBI: default fastmap pool size: 95
-> [    0.820312] UBI: default fastmap WL pool size: 25
-> [    0.828125] UBI: attaching mtd2 to ubi0
-> [    0.851562] ubi_scan_fastmap:
-> [    0.859375] Erase counter header dump:
-> [    0.859375]  magic          0x55424923
-> [    0.867187]  version        1
-> [    0.867187]  ec             1
-> [    0.867187]  vid_hdr_offset 2048
-> [    0.875000]  data_offset    4096
-> [    0.875000]  image_seq      891983656 <- image seq is good.
-> [    0.875000]  hdr_crc        0x13cc9a78
-> [    0.882812] erase counter header hexdump:
-> [    0.882812] 00000000: 55 42 49 23 01 00 00 00 00 00 00 00 00 00 00
-> 01 00 00 08 00 00 00 10 00 35 2a 97
-> 28 00 00 00 00  UBI#....................5*.(....
-> [    0.890625] 00000020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 00 00 00 00 00 00 00 00 00 00 00 00
-> 00 13 cc 9a 78  ...............................x
+In case we've failed to create the sysfs directories - just kfree()
+it - cause we don't have the kobjects attached.
 
-Hmm, maybe a memory corruption. Strange.
+Also, remove the same functionality from populate_msi_sysfs(), cause on
+failure we anyway call free_msi_irqs(), which will take care of all the
+kobjects properly.
 
-Thanks,
-//richard
+And add the forgotten pci_dev_put(pdev) in case of failure to register the
+kobject in populate_msi_sysfs().
+
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Neil Horman <nhorman@tuxdriver.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-pci@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+---
+
+Notes:
+    v1  -> v2:
+    Make it as a standalone patch, which is a bugfix, and add the forgotten
+    pci_dev_put() so that it won't break bisecting. The pci_dev_put() will
+    go away anyway in the following patchset, which cleans removes
+    kobject_del and useless pci_dev_get/put().  Rebased on linux-pci/next.
+
+ drivers/pci/msi.c | 31 ++++++++++++-------------------
+ 1 file changed, 12 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index d5f90d6..5d70f49 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -374,19 +374,22 @@ static void free_msi_irqs(struct pci_dev *dev)
+ 				iounmap(entry->mask_base);
+ 		}
+ 
++		list_del(&entry->list);
++
+ 		/*
+ 		 * Its possible that we get into this path
+ 		 * When populate_msi_sysfs fails, which means the entries
+ 		 * were not registered with sysfs.  In that case don't
+-		 * unregister them.
++		 * unregister them, and just free. Otherwise the
++		 * kobject->release will take care of freeing the entry via
++		 * msi_kobj_release().
+ 		 */
+ 		if (entry->kobj.parent) {
+ 			kobject_del(&entry->kobj);
+ 			kobject_put(&entry->kobj);
++		} else {
++			kfree(entry);
+ 		}
+-
+-		list_del(&entry->list);
+-		kfree(entry);
+ 	}
+ }
+ 
+@@ -509,6 +512,7 @@ static void msi_kobj_release(struct kobject *kobj)
+ 	struct msi_desc *entry = to_msi_desc(kobj);
+ 
+ 	pci_dev_put(entry->dev);
++	kfree(entry);
+ }
+ 
+ static struct kobj_type msi_irq_ktype = {
+@@ -522,7 +526,6 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
+ 	struct msi_desc *entry;
+ 	struct kobject *kobj;
+ 	int ret;
+-	int count = 0;
+ 
+ 	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
+ 	if (!pdev->msi_kset)
+@@ -534,23 +537,13 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
+ 		pci_dev_get(pdev);
+ 		ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
+ 				     "%u", entry->irq);
+-		if (ret)
+-			goto out_unroll;
+-
+-		count++;
++		if (ret) {
++			pci_dev_put(pdev);
++			return ret;
++		}
+ 	}
+ 
+ 	return 0;
+-
+-out_unroll:
+-	list_for_each_entry(entry, &pdev->msi_list, list) {
+-		if (!count)
+-			break;
+-		kobject_del(&entry->kobj);
+-		kobject_put(&entry->kobj);
+-		count--;
+-	}
+-	return ret;
+ }
+ 
+ /**
+-- 
+1.8.4
+
