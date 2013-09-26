@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364Ab3IZFPX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 01:15:23 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:45880 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab3IZFPV (ORCPT
+	id S1751474Ab3IZFRw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 01:17:52 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:52606 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab3IZFRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 01:15:21 -0400
-Date: Thu, 26 Sep 2013 13:15:53 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
-        Mike Galbraith <bitbucket@online.de>
-Subject: Re: [PATCH v3 3/4] ACPI / video: Do not register backlight if win8
- and native interface exists
-Message-ID: <20130926051552.GB14158@aaronlu.linux.com>
-References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
- <1380016052-15315-4-git-send-email-aaron.lu@intel.com>
- <2597446.Ay4U1OH2zV@vostro.rjw.lan>
+	Thu, 26 Sep 2013 01:17:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2597446.Ay4U1OH2zV@vostro.rjw.lan>
+In-Reply-To: <1379699036-7380-1-git-send-email-yinghai@kernel.org>
+References: <1379699036-7380-1-git-send-email-yinghai@kernel.org>
+Date: Wed, 25 Sep 2013 22:17:49 -0700
+X-Google-Sender-Auth: _7hCgmdKx69EbzaSjQbnnL63ZQg
+Message-ID: <CAE9FiQV+K9QSEiRMA8BtqC8k2OHm4aZWODNL+vgfFmpsuBfzQg@mail.gmail.com>
+Subject: Re: [PATCH -v2] cpufreq: skip loading acpi_cpufreq after intel_pstate
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 07:53:13PM +0200, Rafael J. Wysocki wrote:
-> On Tuesday, September 24, 2013 05:47:31 PM Aaron Lu wrote:
-> > According to Matthew Garrett, "Windows 8 leaves backlight control up
-> > to individual graphics drivers rather than making ACPI calls itself.
-> > There's plenty of evidence to suggest that the Intel driver for
-> > Windows [8] doesn't use the ACPI interface, including the fact that
-> > it's broken on a bunch of machines when the OS claims to support
-> > Windows 8.  The simplest thing to do appears to be to disable the
-> > ACPI backlight interface on these systems".
-> > 
-> > So for Win8 systems, if there is native backlight control interface
-> > registered by GPU driver, ACPI video will not register its own. For
-> > users who prefer to keep ACPI video's backlight interface, the existing
-> > kernel cmdline option acpi_backlight=video can be used.
-> 
-> I think the idea is to use the aggressive default for now and we can switch the
-> default back to the current behavior before the merge window in case there are
-> too many problems with it?
+On Fri, Sep 20, 2013 at 10:43 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> If the hw support intel_pstate and acpi_cpufreq, intel_pstate will
+> get loaded first.
+>
+> acpi_cpufreq_init will call acpi_cpufreq_early_init()
+> and that will allocate perf data and init those perf data in ACPI core,
+> (that will cover all cpus). But later it will free them as
+> cpufreq_register_driver(acpi_cpufreq) will fail as init_pstate is
+> already registered
+>
+> Use cpufreq_get_current_driver() to check if we can skip the
+> acpi_cpufreq loading.
+>
+> -v2: update changelog and separate second part to another patch, according
+>      to Viresh.
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>
+> ---
+>  drivers/cpufreq/acpi-cpufreq.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> Index: linux-2.6/drivers/cpufreq/acpi-cpufreq.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/cpufreq/acpi-cpufreq.c
+> +++ linux-2.6/drivers/cpufreq/acpi-cpufreq.c
+> @@ -986,6 +986,10 @@ static int __init acpi_cpufreq_init(void
+>  {
+>         int ret;
+>
+> +       /* don't keep reloading if cpufreq_driver exists */
+> +       if (cpufreq_get_current_driver())
+> +               return 0;
+> +
+>         if (acpi_disabled)
+>                 return 0;
+>
 
-Yes I think so.
+Rafael,
 
-Thanks,
-Aaron
+can you put this one in acpi tree?
+
+Thanks
+
+Yinghai
