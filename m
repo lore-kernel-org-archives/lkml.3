@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab3IZWrB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:47:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35434 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754268Ab3IZWq5 (ORCPT
+	id S1754690Ab3IZWse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:48:34 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:55767 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754390Ab3IZWsb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:46:57 -0400
-Date: Thu, 26 Sep 2013 15:46:55 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org
-Subject: Re: [PATCH] serial: 8250_dw: Improve unwritable LCR workaround
-Message-ID: <20130926224655.GA15106@kroah.com>
-References: <1380069549-9176-1-git-send-email-tim.kryger@linaro.org>
+	Thu, 26 Sep 2013 18:48:31 -0400
+Date: Thu, 26 Sep 2013 17:48:29 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: new binutils needed for arm in 3.12-rc1
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        =?iso-8859-1?q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Andrew Morton <akpm@osdl.org>,
+        Trivial patch monkey <trivial@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <alpine.LFD.2.03.1309251147320.312@syhkavp.arg> (from
+	nico@fluxnic.net on Wed Sep 25 11:13:17 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1380235709.1974.93@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <1380069549-9176-1-git-send-email-tim.kryger@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 05:39:09PM -0700, Tim Kryger wrote:
-> The Designware UART has a limitation where it ignores writes into the
-> LCR if the UART is busy.  The current workaround stashes a copy of the
-> last written LCR and writes it back down to the hardware if it receives
-> a special busy interrupt which is raised when a write was ignored.
+On 09/25/2013 11:13:17 AM, Nicolas Pitre wrote:
+> On Wed, 25 Sep 2013, Rob Landley wrote:
 > 
-> Unfortunately, interrupts are typically disabled prior to performing a
-> sequence of register writes that include the LCR so the point at which
-> the retry occurs is too late.  An example is serial8250_do_set_termios()
-> where an ignored LCR write results in the baud divisor not being set and
-> instead a garbage character is sent out the transmitter.
+> > On 09/24/2013 09:07:57 PM, Nicolas Pitre wrote:
+> > > I'd strongly suggest you make your binutils compatible with newer
+> > > instruction syntax instead of making the kernel more complex.
+> >
+> > Meaning I play whack-a-mole as this becomes permission to depend on  
+> endless
+> > new gnuisms just because they're there and nobody else is  
+> regression testing
+> > against them, not because they actually add anything.
 > 
-> Furthermore, since serial_port_out() offers no way to indicate failure,
-> a serious effort must be made to ensure that the LCR is actually updated
-> before returning back to the caller.  This is difficult, however, as a
-> UART that was busy during the first attempt is likely to still be busy
-> when a subsequent attempt is made unless some extra action is taken.
+> Gnuism?
 > 
-> This updated workaround takes the extreme action of clearing the TX/RX
-> FIFOs and reading the receive buffer before writing down the LCR in the
-> hope that doing so will force the UART into an idle state.  While this
-> may seem unnecessarily aggressive, writes to the LCR are used to change
-> the baud rate, parity, stop bit, or data length so the data that may be
-> lost is likely not important.  Admittedly, this is far from ideal but it
-> seems to be the best that can be done given the hardware limitations.
-> 
-> Lastly, the revised workaround doesn't touch the LCR in the ISR, so it
-> avoids the possibility of a "serial8250: too much work for irq" lock up.
-> This problem is rare in real situations but can be reproduced easily by
-> wiring up two UARTs and running the following commands.
-> 
->   # stty -F /dev/ttyS1 echo
->   # stty -F /dev/ttyS2 echo
->   # cat /dev/ttyS1 &
->   [1] 375
->   # echo asdf > /dev/ttyS1
->   asdf
-> 
->   [   27.700000] serial8250: too much work for irq96
->   [   27.700000] serial8250: too much work for irq96
->   [   27.710000] serial8250: too much work for irq96
->   [   27.710000] serial8250: too much work for irq96
->   [   27.720000] serial8250: too much work for irq96
->   [   27.720000] serial8250: too much work for irq96
->   [   27.730000] serial8250: too much work for irq96
->   [   27.730000] serial8250: too much work for irq96
->   [   27.740000] serial8250: too much work for irq96
-> 
-> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-> Reviewed-by: Matt Porter <matt.porter@linaro.org>
-> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> ---
->  drivers/tty/serial/8250/8250_dw.c | 57 +++++++++++++++++++++++++++------------
->  1 file changed, 40 insertions(+), 17 deletions(-)
+> Let me quote the ARM ARchitecture Reference Manual, version 7  
+> revision C,
+> section A8.8.44 (sorry for the whitespace dammage):
 
-This patch no longer applies to my tty-next tree, can you please refresh
-it and resend so that I can apply it?
+Globally changing the binutils requirement for all architectures, as  
+the doc patch at the start of this thread proposed doing, would mean  
+gnuisms in common code (ext2 and such) wouldn't get caught, giving llvm  
+and pcc and such a moving target when trying to build the kernel with  
+non-gnu toolchains. That's what I meant by gnuisms breeding.
 
-thanks,
+> So what's the link with the above and your issue with GPLv3, besides  
+> the
+> fact that the last binutils version to have been released under the
+> GPLv2 is defficient?
 
-greg k-h
+I apparently wasn't clear. The new instructions aren't gnuisms. The  
+lack of widespread regression testing for armv5l and such would allow  
+introduction of nonportable constructs in a larger context.
+
+(The fact that armv7 could apparently build fine for ~7 years with  
+binutils 2.18 through 2.21, and now it's suddenly can't Because Reasons  
+is kinda silly, but not really a big deal. That, I can patch my  
+toolchain.)
+
+> > > It could be as simple as making gas accept an extra argument for
+> > > instructions like dsb and just ignoring it.
+> >
+> > So you prefer I come up with the reversion patches locally and  
+> _not_ send them
+> > upstream?
+> 
+> Sort of.  And I'm suggesting you patch your binutils rather than the
+> kernel.
+
+I had this misidentified as a global arm problem and not specific to  
+arm7l. If armv5l still still builds with the old toolchains, it's not a  
+big deal.
+
+> Given you're not upgrading your binutils anymore that means
+> you'll have to apply that patch only once instead of having to apply  
+> it
+> to every kernel upgrade.
+
+Indeed. Patching my own toolchain isn't really a problem. My objection  
+was to the Documentation patch telling the world at large that for all  
+targets, older binutils aren't supported even on x86. That was worth  
+pushing back against.
+
+I don't indend to use old gcc/binutils versions forever, I just want to  
+be able to use them until I can replace them with llvm or similar.
+
+Rob
