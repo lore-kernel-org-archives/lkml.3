@@ -1,110 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab3IZLjE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 07:39:04 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:56283 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755712Ab3IZLjC (ORCPT
+	id S1756863Ab3IZLkE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 07:40:04 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:41915 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755712Ab3IZLkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 07:39:02 -0400
+	Thu, 26 Sep 2013 07:40:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130925073113.GA1027@krava.brq.redhat.com>
-References: <1379323053-11458-1-git-send-email-jean.pihet@linaro.org>
-	<1379323053-11458-4-git-send-email-jean.pihet@linaro.org>
-	<20130917102904.GA27258@mudshark.cambridge.arm.com>
-	<CAFrcx1nnx0+kWx3z3A86Fwz13RYRVSPSG0YHBcxFeFQP8W7jBg@mail.gmail.com>
-	<20130924093450.GB1008@krava.brq.redhat.com>
-	<20130924100620.GG15119@mudshark.cambridge.arm.com>
-	<CAFrcx1k-sfHMRz6mvibBbph4vNOMkVddE4LEE4yXbWHC3DwMZA@mail.gmail.com>
-	<20130924174318.GE3080@krava.brq.redhat.com>
-	<CAFrcx1kw-vEo8m0yNFK1d7Sw+o8C7K7j1feLdOk3Mcdmw9tPcw@mail.gmail.com>
-	<20130925073113.GA1027@krava.brq.redhat.com>
-Date: Thu, 26 Sep 2013 13:39:00 +0200
-Message-ID: <CAFrcx1m8BWd-4jktgsKUdFAoHXWS-eWkOKQroEcNYjDaoQ3pZA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] perf tools: Check libunwind for availability of dwarf
- parsing feature
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Jiri Olsa <jolsa@redhat.com>, Will Deacon <will.deacon@arm.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>
+In-Reply-To: <20130926111618.GU3081@twins.programming.kicks-ass.net>
+References: <20130925075341.GB3081@twins.programming.kicks-ass.net>
+ <1380099377.8523.9.camel@marge.simpson.net> <20130926095812.GR3081@twins.programming.kicks-ass.net>
+ <CAPM31RL9RGX=ohUVag=tD41MbXs47dDgpndGfjBt68QeL-De7g@mail.gmail.com> <20130926111618.GU3081@twins.programming.kicks-ass.net>
+From: Paul Turner <pjt@google.com>
+Date: Thu, 26 Sep 2013 04:39:30 -0700
+Message-ID: <CAPM31RKvhdDu_NmRd-hv7xBzM6qsS=Y0ey96GpLt36-oBrqdBg@mail.gmail.com>
+Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for wake_affine(.sync=true)
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri, Will,
-
-I just sent the reworked series as '[PATCH v3 0/4] perf: parse the
-dwarf backtrace info from .debug_frame section'.
-Tested on x86 and ARMv7.
-
-Regards,
-Jean
-
-
-On 25 September 2013 09:31, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Wed, Sep 25, 2013 at 08:53:44AM +0200, Jean Pihet wrote:
->> Hi Jiri,
+On Thu, Sep 26, 2013 at 4:16 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Sep 26, 2013 at 03:55:55AM -0700, Paul Turner wrote:
+>> > +               /*
+>> > +                * Don't bother with select_idle_sibling() in the case of a sync wakeup
+>> > +                * where we know the only running task will soon go-away. Going
+>> > +                * through select_idle_sibling will only lead to pointless ping-pong.
+>> > +                */
+>> > +               if (sync && prev_cpu == cpu && cpu_rq(cpu)->nr_running == 1 &&
 >>
->> On 24 September 2013 19:43, Jiri Olsa <jolsa@redhat.com> wrote:
->> > On Tue, Sep 24, 2013 at 02:03:47PM +0200, Jean Pihet wrote:
->> >> Hi Jiri, Will,
->> >>
->> >> On 24 September 2013 12:06, Will Deacon <will.deacon@arm.com> wrote:
->> >> > On Tue, Sep 24, 2013 at 10:34:50AM +0100, Jiri Olsa wrote:
->> >> >> On Tue, Sep 24, 2013 at 10:55:32AM +0200, Jean Pihet wrote:
->> >> >> > Ping on the series. The two patches above (3/4 and 4/4) are generic
->> >> >> > while the two others are impacting ARM only.
->> >> >> > Is it possible to get an Ack for the generic ones?
->> >> >>
->> >> >> I'm fine with those changes.. still I'm sort of worried about
->> >> >> current DWARF unwind users (but not sure if there're any),
->> >> >> who depends on packaged libunwind compiled without
->> >> >> --enable-debug-frame option.
->> >> >
->> >> > Since x86 is the only architecture using libunwind with perf at the moment,
->> >> > and I'd expect it to use .eh_frame for unwinding, I'm also not sure there
->> >> > are any existing users to worry about.
->> >> Right
->> >>
->> >> >
->> >> >> I've seen your libunwind patch to make it default, but
->> >> >> not sure if it was accepted.. if not, maybe we should
->> >> >> detect this and build that code conditionaly.
->> >> >
->> >> > It certainly defaults to "on" for ARM, but other architectures have to
->> >> > enable it explicitly afaict.
->> >> Yes that is correct.
->> >> This patch (3/4) detects if the debug frame code is enabled in
->> >> libunwind and uses the lib only if it is the case.
->> >
->> > My concern is about users (again, not sure if there are any ;-) )
->> > that use this with packaged libunwind compiled without
->> > --enable-debug-frame option.
->> >
->> > For them perf will consider libunwind as 'not available' with
->> > your changes:
->> >
->> >       ...
->> >       CHK libunwind
->> >   config/Makefile:223: No libunwind found, disabling post unwind support.  Please install libunwind-dev[el] >= 1.1
->> >       ...
->> >
->> > and they'll need to compile their own libunwind
->> > (thats the case on Fedora).
->> >
->> > This could be solved by detecting this and make your
->> > code conditional as attached below (not much tested).
->> Ok that makes sense.
->> Let me integrate this in the patch series, test it (on ARM and x86)
->> and re-submit. Is that OK?
+>> I've long thought of trying something like this.
+>>
+>> I like the intent but I'd go a step further in that I think we want to
+>> also implicitly extract WF_SYNC itself.
 >
-> that'd be great
+> I have vague memories of actually trying something like that a good
+> number of years ago.. sadly that's all I remember about it.
 >
-> thanks,
-> jirka
+>> What we really then care about is predicting the overlap associated
+>> with userspace synchronization objects, typically built on top of
+>> futexes.  Unfortunately the existence/use of per-thread futexes
+>> reduces how much state you could usefully associate with the futex.
+>> One approach might be to hash (with some small saturating counter)
+>> against rip.  But this gets more complicated quite quickly.
+>
+> Why would you need per object storage? To further granulate the
+> predicted overlap? instead of having one per task, you have one per
+> object?
+
+It is my intuition that there are a few common objects with fairly
+polarized behavior:  I.e. For condition variables and producer
+consumer queues, a wakeup strongly predicts blocking.  Whereas for
+locks protecting objects, e.g. a Mutex, would be expected to have the
+opposite behavior.
+
+For this hint to be beneficial you have to get it right frequently,
+getting it wrong in the first case hurts cache and in the second hurts
+parallelism.  Today we always err on the side of hurting locality
+since the cost of getting it wrong is better bounded.  These are
+sufficiently common, and likely to be interspersed, that I suspect
+allowing them to interact on a thread-wide counter will basically give
+a mush result (or even be an anti predictor since it will strongly
+favor the last observation) an an input.
