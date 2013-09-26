@@ -1,102 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab3IZWxi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:53:38 -0400
-Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:10265
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754407Ab3IZWxg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:53:36 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 00/13] hv: clean up dev_attr usage
-Thread-Topic: [PATCH 00/13] hv: clean up dev_attr usage
-Thread-Index: AQHOsK+1mcM+7wT8AkG+31wmWIBnRpnKSIeQgA345ICAAG7ioA==
-Date: Thu, 26 Sep 2013 22:36:29 +0000
-Message-ID: <6d9cd58d90574c3682a83d3a35cf5691@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
- <654a20fac822400798f991f33b699018@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130926155935.GA30834@kroah.com>
-In-Reply-To: <20130926155935.GA30834@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [212.238.76.143]
-x-forefront-prvs: 0981815F2F
-x-forefront-antispam-report: SFV:NSPM;SFS:(377454003)(52604005)(51704005)(13464003)(199002)(189002)(24454002)(49866001)(69226001)(47736001)(81542001)(81816001)(4396001)(33646001)(74316001)(74706001)(46102001)(74876001)(80022001)(81342001)(74366001)(83322001)(65816001)(50986001)(66066001)(19580395003)(19580405001)(76482001)(83072001)(54356001)(79102001)(56776001)(53806001)(47446002)(74502001)(76796001)(77096001)(76786001)(31966008)(81686001)(54316002)(80976001)(47976001)(76576001)(51856001)(59766001)(63696002)(56816003)(77982001)(74662001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:212.238.76.143;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
+	id S1754709Ab3IZW5v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:57:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51302 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754436Ab3IZW5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 18:57:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,989,1371106800"; 
+   d="scan'208";a="384127910"
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <1380235333.3229.39.camel@j-VirtualBox>
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+	 <1380147049.3467.67.camel@schen9-DESK>
+	 <CAGQ1y=7Ehkr+ot3tDZtHv6FR6RQ9fXBVY0=LOyWjmGH_UjH7xA@mail.gmail.com>
+	 <1380226007.2170.2.camel@buesod1.americas.hpqcorp.net>
+	 <1380226997.2602.11.camel@j-VirtualBox>
+	 <1380228059.2170.10.camel@buesod1.americas.hpqcorp.net>
+	 <1380229794.2602.36.camel@j-VirtualBox>
+	 <1380231702.3467.85.camel@schen9-DESK>
+	 <1380235333.3229.39.camel@j-VirtualBox>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Sep 2013 15:57:45 -0700
+Message-ID: <1380236265.3467.103.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+On Thu, 2013-09-26 at 15:42 -0700, Jason Low wrote:
+> On Thu, 2013-09-26 at 14:41 -0700, Tim Chen wrote:
+> > On Thu, 2013-09-26 at 14:09 -0700, Jason Low wrote:
+> > > On Thu, 2013-09-26 at 13:40 -0700, Davidlohr Bueso wrote:
+> > > > On Thu, 2013-09-26 at 13:23 -0700, Jason Low wrote:
+> > > > > On Thu, 2013-09-26 at 13:06 -0700, Davidlohr Bueso wrote:
+> > > > > > On Thu, 2013-09-26 at 12:27 -0700, Jason Low wrote:
+> > > > > > > On Wed, Sep 25, 2013 at 3:10 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > > > > > > > We will need the MCS lock code for doing optimistic spinning for rwsem.
+> > > > > > > > Extracting the MCS code from mutex.c and put into its own file allow us
+> > > > > > > > to reuse this code easily for rwsem.
+> > > > > > > >
+> > > > > > > > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> > > > > > > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > > > > > > > ---
+> > > > > > > >  include/linux/mcslock.h |   58 +++++++++++++++++++++++++++++++++++++++++++++++
+> > > > > > > >  kernel/mutex.c          |   58 +++++-----------------------------------------
+> > > > > > > >  2 files changed, 65 insertions(+), 51 deletions(-)
+> > > > > > > >  create mode 100644 include/linux/mcslock.h
+> > > > > > > >
+> > > > > > > > diff --git a/include/linux/mcslock.h b/include/linux/mcslock.h
+> > > > > > > > new file mode 100644
+> > > > > > > > index 0000000..20fd3f0
+> > > > > > > > --- /dev/null
+> > > > > > > > +++ b/include/linux/mcslock.h
+> > > > > > > > @@ -0,0 +1,58 @@
+> > > > > > > > +/*
+> > > > > > > > + * MCS lock defines
+> > > > > > > > + *
+> > > > > > > > + * This file contains the main data structure and API definitions of MCS lock.
+> > > > > > > > + */
+> > > > > > > > +#ifndef __LINUX_MCSLOCK_H
+> > > > > > > > +#define __LINUX_MCSLOCK_H
+> > > > > > > > +
+> > > > > > > > +struct mcs_spin_node {
+> > > > > > > > +       struct mcs_spin_node *next;
+> > > > > > > > +       int               locked;       /* 1 if lock acquired */
+> > > > > > > > +};
+> > > > > > > > +
+> > > > > > > > +/*
+> > > > > > > > + * We don't inline mcs_spin_lock() so that perf can correctly account for the
+> > > > > > > > + * time spent in this lock function.
+> > > > > > > > + */
+> > > > > > > > +static noinline
+> > > > > > > > +void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+> > > > > > > > +{
+> > > > > > > > +       struct mcs_spin_node *prev;
+> > > > > > > > +
+> > > > > > > > +       /* Init node */
+> > > > > > > > +       node->locked = 0;
+> > > > > > > > +       node->next   = NULL;
+> > > > > > > > +
+> > > > > > > > +       prev = xchg(lock, node);
+> > > > > > > > +       if (likely(prev == NULL)) {
+> > > > > > > > +               /* Lock acquired */
+> > > > > > > > +               node->locked = 1;
+> > > > > > > 
+> > > > > > > If we don't spin on the local node, is it necessary to set this variable?
+> > > > > > 
+> > > > > > I don't follow, the whole idea is to spin on the local variable.
+> > > > > 
+> > > > > If prev == NULL, doesn't that mean it won't proceed to spin on the
+> > > > > variable because the lock is already free and we call return? In that
+> > > > > case where we directly acquire the lock, I was wondering if it is
+> > > > > necessary to set node->locked = 1.
+> > > > 
+> > > > Yes, that's true, but we need to flag the lock as acquired (the node's
+> > > > lock is initially set to unlocked), otherwise others trying to acquire
+> > > > the lock can spin forever:
+> > > > 
+> > > > 	/* Wait until the lock holder passes the lock down */
+> > > > 	while (!ACCESS_ONCE(node->locked))
+> > > > 		arch_mutex_cpu_relax();
+> > > > 
+> > > > The ->locked variable in this implementation refers to if the lock is
+> > > > acquired, and *not* to if busy-waiting is necessary.
+> > > 
+> > > hmm, others threads acquiring the lock will be spinning on their own
+> > > local nodes, not this node's node->locked. And if prev == NULL, the
+> > > current thread won't be reading it's node->lock either since we return.
+> > > So what other thread is going to be reading this node's node->lock?
+> > > 
+> > > Thanks,
+> > > Jason
+> > 
+> > I think setting node->locked = 1 for the prev==NULL case is not
+> > necessary functionally, but was done for semantics consistency.
+> 
+> Okay, that would makes sense for consistency because we always
+> first set node->lock = 0 at the top of the function.
+> 
+> If we prefer to optimize this a bit though, perhaps we can
+> first move the node->lock = 0 so that it gets executed after the
+> "if (likely(prev == NULL)) {}" code block and then delete
+> "node->lock = 1" inside the code block.
 
-I am currently travelling; when I get back I will take a look.
+I suppose we can save one single assignment.
+The gain is probably not noticeable as once we set node->next to NULL,
+node->locked is likely in local cache line and the assignment operation
+is cheap.
 
-K. Y
+Regards,
+Tim
 
-> -----Original Message-----
-> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, September 26, 2013 9:00 AM
-> To: KY Srinivasan
-> Cc: Haiyang Zhang; devel@linuxdriverproject.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 00/13] hv: clean up dev_attr usage
 > 
-> On Tue, Sep 17, 2013 at 06:42:30PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
-> > > Sent: Friday, September 13, 2013 11:33 AM
-> > > To: KY Srinivasan; Haiyang Zhang
-> > > Cc: devel@linuxdriverproject.org; linux-kernel@vger.kernel.org
-> > > Subject: [PATCH 00/13] hv: clean up dev_attr usage
-> > >
-> > > Hi,
-> > >
-> > > Here's a set of 13 patches to get rid of the dev_attrs use in the hv bus
-> > > code, as it will be going away soon.  It's _way_ bigger than all other
-> > > conversions I've had to do so far in the kernel, as you were using a
-> > > "multiplexor" function for all of these files.
-> > >
-> > > So, I've broken it up into individual show/store sysfs functions, and
-> > > cleaned up a bunch of debug structures that aren't needed and shouldn't
-> > > be exported to the rest of the kernel.
-> > >
-> > > I've also fixed up some void * usage in the hv core, in patch 07, to
-> > > make things simpler and not so "magic" when dealing with these pages.
-> > > If you could review that one closely to ensure I didn't mess anything
-> > > up, I would appreciate it.
-> > >
-> > > Also, are all of these files really needed for sysfs?  They seem to be
-> > > all debugging stuff, shouldn't they go into debugfs if you really
-> > > need/use them anymore?
-> > >
-> > > KY, could you test these out?  I don't have access to a hv system at the
-> > > moment.  I'll wait for your ack before applying them to any of my trees.
-> >
-> > The patches look good and I tested them. The guest comes up and is functional.
-> > I did notice though that the pending state appears to be a signed entity now
-> which was not the
-> > the case  before - I see a negative sign when I cat the client/server pending
-> state.
+> static noinline
+> void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+> {
+>        struct mcs_spin_node *prev;
 > 
-> Which exact file is that?  I didn't change the % modifiers for any of
-> the data types, or at least I sure shouldn't have, if so, that's a bug
-> on my side.
+>        /* Init node */
+>        node->next   = NULL;
 > 
-> Thanks for testing, I'll queue these up, and if you can tell me which
-> sysfs file is different, I'll verify the code conversion again, but I
-> just reviewed it and can't seem to find anything.
+>        prev = xchg(lock, node);
+>        if (likely(prev == NULL)) {
+>                /* Lock acquired */
+>                return;
+>        }
+>        node->locked = 0;
+>        ACCESS_ONCE(prev->next) = node;
+>        smp_wmb();
+>        /* Wait until the lock holder passes the lock down */
+>        while (!ACCESS_ONCE(node->locked))
+>                arch_mutex_cpu_relax();
+> }
 > 
-> thanks,
-> 
-> greg k-h
+
+
