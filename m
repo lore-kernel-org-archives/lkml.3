@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075Ab3IZI7n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:59:43 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46685 "EHLO
+	id S1755941Ab3IZI6U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:58:20 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50010 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849Ab3IZI6V (ORCPT
+	with ESMTP id S1755849Ab3IZI6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:58:21 -0400
-X-AuditID: 9c93016f-b7bc8ae000004e6e-e8-5243f726fd00
+	Thu, 26 Sep 2013 04:58:15 -0400
+X-AuditID: 9c93016f-b7bc8ae000004e6e-d6-5243f7257d21
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 6/8] perf tools: Add new comm infrastructure
-Date: Thu, 26 Sep 2013 17:58:08 +0900
-Message-Id: <1380185890-25758-7-git-send-email-namhyung@kernel.org>
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 1/8] perf callchain: Convert children list to rbtree
+Date: Thu, 26 Sep 2013 17:58:03 +0900
+Message-Id: <1380185890-25758-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
 References: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
@@ -29,383 +26,369 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This new comm infrastructure provides two features:
+Current collapse stage has a scalability problem which can be
+reproduced easily with parallel kernel build.  This is because it
+needs to traverse every children of callchain linearly during the
+collapse/merge stage.  Convert it to rbtree reduced the overhead
+significantly.
 
-1) It keeps track of all comms lifecycle for a given thread. This
-way we can associate a timeframe to any thread comm, as long as
-PERF_SAMPLE_TIME samples are joined to comm and fork events.
+On my 400MB perf.data file which recorded with make -j32 kernel build:
 
-As a result we should have more precise comm sorted hists with
-seperated entries for pre and post exec time after a fork.
+  $ time perf --no-pager report --stdio > /dev/null
 
-2) It also makes sure that a given comm string is not duplicated
-but rather shared among the threads that refer to it. This way the
-threads comm can be compared against pointer values from the sort
-infrastructure.
+before:
+  real	6m22.073s
+  user	6m18.683s
+  sys	0m0.706s
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+after:
+  real	0m20.780s
+  user	0m19.962s
+  sys	0m0.689s
+
+During the perf report the overhead on append_chain_children went down
+from 96.69% to 18.16%:
+
+  -  18.16%  perf  perf                [.] append_chain_children
+     - append_chain_children
+        - 77.48% append_chain_children
+           + 69.79% merge_chain_branch
+           - 22.96% append_chain_children
+              + 67.44% merge_chain_branch
+              + 30.15% append_chain_children
+              + 2.41% callchain_append
+           + 7.25% callchain_append
+        + 12.26% callchain_append
+        + 10.22% merge_chain_branch
+  +  11.58%  perf  perf                [.] dso__find_symbol
+  +   8.02%  perf  perf                [.] sort__comm_cmp
+  +   5.48%  perf  libc-2.17.so        [.] malloc_consolidate
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-hwjf70b2wve9m2kosxiq8bb3@git.kernel.org
-[ Fixed up minor const pointer issues and removed 'self' usage ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/n/tip-d9tcfow6stbrp4btvgs51y67@git.kernel.org
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Makefile      |   2 +
- tools/perf/util/comm.c   | 106 +++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/comm.h   |  20 +++++++++
- tools/perf/util/thread.c | 100 +++++++++++++++++++++++++++++++-------------
- tools/perf/util/thread.h |   3 +-
- 5 files changed, 202 insertions(+), 29 deletions(-)
- create mode 100644 tools/perf/util/comm.c
- create mode 100644 tools/perf/util/comm.h
+ tools/perf/util/callchain.c | 147 +++++++++++++++++++++++++++++++++-----------
+ tools/perf/util/callchain.h |  11 ++--
+ 2 files changed, 116 insertions(+), 42 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b62e12d2ba6b..42001f387e7f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -272,6 +272,7 @@ LIB_H += util/color.h
- LIB_H += util/values.h
- LIB_H += util/sort.h
- LIB_H += util/hist.h
-+LIB_H += util/comm.h
- LIB_H += util/thread.h
- LIB_H += util/thread_map.h
- LIB_H += util/trace-event.h
-@@ -339,6 +340,7 @@ LIB_OBJS += $(OUTPUT)util/machine.o
- LIB_OBJS += $(OUTPUT)util/map.o
- LIB_OBJS += $(OUTPUT)util/pstack.o
- LIB_OBJS += $(OUTPUT)util/session.o
-+LIB_OBJS += $(OUTPUT)util/comm.o
- LIB_OBJS += $(OUTPUT)util/thread.o
- LIB_OBJS += $(OUTPUT)util/thread_map.o
- LIB_OBJS += $(OUTPUT)util/trace-event-parse.o
-diff --git a/tools/perf/util/comm.c b/tools/perf/util/comm.c
-new file mode 100644
-index 000000000000..0cfb55202537
---- /dev/null
-+++ b/tools/perf/util/comm.c
-@@ -0,0 +1,106 @@
-+#include "comm.h"
-+#include "util.h"
-+#include <stdlib.h>
-+#include <stdio.h>
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 482f68081cd8..e3970e3eaacf 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -21,12 +21,6 @@
+ 
+ __thread struct callchain_cursor callchain_cursor;
+ 
+-#define chain_for_each_child(child, parent)	\
+-	list_for_each_entry(child, &parent->children, siblings)
+-
+-#define chain_for_each_child_safe(child, next, parent)	\
+-	list_for_each_entry_safe(child, next, &parent->children, siblings)
+-
+ static void
+ rb_insert_callchain(struct rb_root *root, struct callchain_node *chain,
+ 		    enum chain_mode mode)
+@@ -71,10 +65,16 @@ static void
+ __sort_chain_flat(struct rb_root *rb_root, struct callchain_node *node,
+ 		  u64 min_hit)
+ {
++	struct rb_node *n;
+ 	struct callchain_node *child;
+ 
+-	chain_for_each_child(child, node)
++	n = rb_first(&node->rb_root_in);
++	while (n) {
++		child = rb_entry(n, struct callchain_node, rb_node_in);
++		n = rb_next(n);
 +
-+struct comm_str {
-+	char *str;
-+	struct rb_node rb_node;
-+	int ref;
-+};
-+
-+/* Should perhaps be moved to struct machine */
-+static struct rb_root comm_str_root;
-+
-+static void comm_str_get(struct comm_str *cs)
-+{
-+	cs->ref++;
-+}
-+
-+static void comm_str_put(struct comm_str *cs)
-+{
-+	if (!--cs->ref) {
-+		rb_erase(&cs->rb_node, &comm_str_root);
-+		free(cs->str);
-+		free(cs);
+ 		__sort_chain_flat(rb_root, child, min_hit);
 +	}
-+}
+ 
+ 	if (node->hit && node->hit >= min_hit)
+ 		rb_insert_callchain(rb_root, node, CHAIN_FLAT);
+@@ -94,11 +94,16 @@ sort_chain_flat(struct rb_root *rb_root, struct callchain_root *root,
+ static void __sort_chain_graph_abs(struct callchain_node *node,
+ 				   u64 min_hit)
+ {
++	struct rb_node *n;
+ 	struct callchain_node *child;
+ 
+ 	node->rb_root = RB_ROOT;
++	n = rb_first(&node->rb_root_in);
 +
-+static struct comm_str *comm_str_alloc(const char *str)
-+{
-+	struct comm_str *cs;
++	while (n) {
++		child = rb_entry(n, struct callchain_node, rb_node_in);
++		n = rb_next(n);
+ 
+-	chain_for_each_child(child, node) {
+ 		__sort_chain_graph_abs(child, min_hit);
+ 		if (callchain_cumul_hits(child) >= min_hit)
+ 			rb_insert_callchain(&node->rb_root, child,
+@@ -117,13 +122,18 @@ sort_chain_graph_abs(struct rb_root *rb_root, struct callchain_root *chain_root,
+ static void __sort_chain_graph_rel(struct callchain_node *node,
+ 				   double min_percent)
+ {
++	struct rb_node *n;
+ 	struct callchain_node *child;
+ 	u64 min_hit;
+ 
+ 	node->rb_root = RB_ROOT;
+ 	min_hit = ceil(node->children_hit * min_percent);
+ 
+-	chain_for_each_child(child, node) {
++	n = rb_first(&node->rb_root_in);
++	while (n) {
++		child = rb_entry(n, struct callchain_node, rb_node_in);
++		n = rb_next(n);
 +
-+	cs = zalloc(sizeof(*cs));
-+	if (!cs)
-+		return NULL;
+ 		__sort_chain_graph_rel(child, min_percent);
+ 		if (callchain_cumul_hits(child) >= min_hit)
+ 			rb_insert_callchain(&node->rb_root, child,
+@@ -173,19 +183,26 @@ create_child(struct callchain_node *parent, bool inherit_children)
+ 		return NULL;
+ 	}
+ 	new->parent = parent;
+-	INIT_LIST_HEAD(&new->children);
+ 	INIT_LIST_HEAD(&new->val);
+ 
+ 	if (inherit_children) {
+-		struct callchain_node *next;
++		struct rb_node *n;
++		struct callchain_node *child;
 +
-+	cs->str = strdup(str);
-+	if (!cs->str) {
-+		free(cs);
-+		return NULL;
-+	}
-+
-+	return cs;
-+}
-+
-+static struct comm_str *comm_str_findnew(const char *str, struct rb_root *root)
-+{
-+	struct rb_node **p = &root->rb_node;
-+	struct rb_node *parent = NULL;
-+	struct comm_str *iter, *new;
-+	int cmp;
-+
-+	while (*p != NULL) {
-+		parent = *p;
-+		iter = rb_entry(parent, struct comm_str, rb_node);
-+
-+		cmp = strcmp(str, iter->str);
-+		if (!cmp)
-+			return iter;
-+
-+		if (cmp < 0)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+
-+	new = comm_str_alloc(str);
-+	if (!new)
-+		return NULL;
-+
-+	rb_link_node(&new->rb_node, parent, p);
-+	rb_insert_color(&new->rb_node, root);
-+
++		new->rb_root_in = parent->rb_root_in;
++		parent->rb_root_in = RB_ROOT;
+ 
+-		list_splice(&parent->children, &new->children);
+-		INIT_LIST_HEAD(&parent->children);
++		n = rb_first(&new->rb_root_in);
++		while (n) {
++			child = rb_entry(n, struct callchain_node, rb_node_in);
++			child->parent = new;
++			n = rb_next(n);
++		}
+ 
+-		chain_for_each_child(next, new)
+-			next->parent = new;
++		/* make it the first child */
++		rb_link_node(&new->rb_node_in, NULL, &parent->rb_root_in.rb_node);
++		rb_insert_color(&new->rb_node_in, &parent->rb_root_in);
+ 	}
+-	list_add_tail(&new->siblings, &parent->children);
+ 
+ 	return new;
+ }
+@@ -223,7 +240,7 @@ fill_node(struct callchain_node *node, struct callchain_cursor *cursor)
+ 	}
+ }
+ 
+-static void
++static struct callchain_node *
+ add_child(struct callchain_node *parent,
+ 	  struct callchain_cursor *cursor,
+ 	  u64 period)
+@@ -235,6 +252,19 @@ add_child(struct callchain_node *parent,
+ 
+ 	new->children_hit = 0;
+ 	new->hit = period;
 +	return new;
 +}
 +
-+struct comm *comm__new(const char *str, u64 timestamp)
++static s64 match_chain(struct callchain_cursor_node *node,
++		      struct callchain_list *cnode)
 +{
-+	struct comm *comm = zalloc(sizeof(*comm));
++	struct symbol *sym = node->sym;
 +
-+	if (!comm)
-+		return NULL;
-+
-+	comm->start = timestamp;
-+
-+	comm->comm_str = comm_str_findnew(str, &comm_str_root);
-+	if (!comm->comm_str) {
-+		free(comm);
-+		return NULL;
-+	}
-+
-+	comm_str_get(comm->comm_str);
-+
-+	return comm;
-+}
-+
-+void comm__free(struct comm *comm)
-+{
-+	comm_str_put(comm->comm_str);
-+	free(comm);
-+}
-+
-+const char *comm__str(const struct comm *comm)
-+{
-+	return comm->comm_str->str;
-+}
-diff --git a/tools/perf/util/comm.h b/tools/perf/util/comm.h
-new file mode 100644
-index 000000000000..f62d215bede2
---- /dev/null
-+++ b/tools/perf/util/comm.h
-@@ -0,0 +1,20 @@
-+#ifndef __PERF_COMM_H
-+#define __PERF_COMM_H
-+
-+#include "../perf.h"
-+#include <linux/rbtree.h>
-+#include <linux/list.h>
-+
-+struct comm_str;
-+
-+struct comm {
-+	struct comm_str *comm_str;
-+	u64 start;
-+	struct list_head list;
-+};
-+
-+void comm__free(struct comm *comm);
-+struct comm *comm__new(const char *str, u64 timestamp);
-+const char *comm__str(const struct comm *comm);
-+
-+#endif  /* __PERF_COMM_H */
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 509abed750e6..9cb01566eff1 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -6,9 +6,12 @@
- #include "thread.h"
- #include "util.h"
- #include "debug.h"
-+#include "comm.h"
++	if (cnode->ms.sym && sym &&
++	    callchain_param.key == CCKEY_FUNCTION)
++		return cnode->ms.sym->start - sym->start;
++	else
++		return cnode->ip - node->ip;
+ }
  
- struct thread *thread__new(pid_t pid, pid_t tid)
- {
-+	char *comm_str;
-+	struct comm *comm;
- 	struct thread *self = zalloc(sizeof(*self));
+ /*
+@@ -272,9 +302,33 @@ split_add_child(struct callchain_node *parent,
  
- 	if (self != NULL) {
-@@ -16,47 +19,88 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- 		self->pid_ = pid;
- 		self->tid = tid;
- 		self->ppid = -1;
--		self->comm = malloc(32);
--		if (self->comm)
--			snprintf(self->comm, 32, ":%d", self->tid);
-+		INIT_LIST_HEAD(&self->comm_list);
+ 	/* create a new child for the new branch if any */
+ 	if (idx_total < cursor->nr) {
++		struct callchain_node *first;
++		struct callchain_list *cnode;
++		struct callchain_cursor_node *node;
++		struct rb_node *p, **pp;
 +
-+		comm_str = malloc(32);
-+		if (!comm_str)
-+			goto err_thread;
+ 		parent->hit = 0;
+-		add_child(parent, cursor, period);
+ 		parent->children_hit += period;
 +
-+		snprintf(comm_str, 32, ":%d", tid);
-+		comm = comm__new(comm_str, 0);
-+		free(comm_str);
-+		if (!comm)
-+			goto err_thread;
++		node = callchain_cursor_current(cursor);
++		new = add_child(parent, cursor, period);
 +
-+		list_add(&comm->list, &self->comm_list);
++		/*
++		 * This is second child since we moved parent's children
++		 * to new (first) child above.
++		 */
++		p = parent->rb_root_in.rb_node;
++		first = rb_entry(p, struct callchain_node, rb_node_in);
++		cnode = list_first_entry(&first->val, struct callchain_list,
++					 list);
++
++		if (match_chain(node, cnode) < 0)
++			pp = &p->rb_left;
++		else
++			pp = &p->rb_right;
++
++		rb_link_node(&new->rb_node_in, p, pp);
++		rb_insert_color(&new->rb_node_in, &parent->rb_root_in);
+ 	} else {
+ 		parent->hit = period;
  	}
- 
- 	return self;
-+
-+err_thread:
-+	free(self);
-+	return NULL;
- }
- 
- void thread__delete(struct thread *self)
+@@ -291,16 +345,40 @@ append_chain_children(struct callchain_node *root,
+ 		      u64 period)
  {
-+	struct comm *comm, *tmp;
+ 	struct callchain_node *rnode;
++	struct callchain_cursor_node *node;
++	struct rb_node **p = &root->rb_root_in.rb_node;
++	struct rb_node *parent = NULL;
 +
- 	map_groups__exit(&self->mg);
--	free(self->comm);
-+	list_for_each_entry_safe(comm, tmp, &self->comm_list, list) {
-+		list_del(&comm->list);
-+		comm__free(comm);
-+	}
-+
- 	free(self);
- }
++	node = callchain_cursor_current(cursor);
++	if (!node)
++		return;
  
--int thread__set_comm(struct thread *self, const char *comm,
--		     u64 timestamp __maybe_unused)
-+static struct comm *curr_comm(const struct thread *thread)
- {
--	int err;
+ 	/* lookup in childrens */
+-	chain_for_each_child(rnode, root) {
+-		unsigned int ret = append_chain(rnode, cursor, period);
++	while (*p) {
++		s64 ret;
++		struct callchain_list *cnode;
+ 
+-		if (!ret)
++		parent = *p;
++		rnode = rb_entry(parent, struct callchain_node, rb_node_in);
++		cnode = list_first_entry(&rnode->val, struct callchain_list,
++					 list);
++
++		/* just check first entry */
++		ret = match_chain(node, cnode);
++		if (ret == 0) {
++			append_chain(rnode, cursor, period);
+ 			goto inc_children_hit;
++		}
++
++		if (ret < 0)
++			p = &parent->rb_left;
++		else
++			p = &parent->rb_right;
+ 	}
+ 	/* nothing in children, add to the current node */
+-	add_child(root, cursor, period);
++	rnode = add_child(root, cursor, period);
++	rb_link_node(&rnode->rb_node_in, parent, p);
++	rb_insert_color(&rnode->rb_node_in, &root->rb_root_in);
+ 
+ inc_children_hit:
+ 	root->children_hit += period;
+@@ -325,28 +403,20 @@ append_chain(struct callchain_node *root,
+ 	 */
+ 	list_for_each_entry(cnode, &root->val, list) {
+ 		struct callchain_cursor_node *node;
+-		struct symbol *sym;
+ 
+ 		node = callchain_cursor_current(cursor);
+ 		if (!node)
+ 			break;
+ 
+-		sym = node->sym;
 -
--	if (self->comm)
--		free(self->comm);
--	self->comm = strdup(comm);
--	err = self->comm == NULL ? -ENOMEM : 0;
--	if (!err) {
--		self->comm_set = true;
-+	if (list_empty(&thread->comm_list))
-+		return NULL;
-+
-+	return list_first_entry(&thread->comm_list, struct comm, list);
-+}
-+
-+/* CHECKME: time should always be 0 if event aren't ordered */
-+int thread__set_comm(struct thread *thread, const char *str, u64 timestamp)
-+{
-+	struct comm *new, *curr = curr_comm(thread);
-+
-+	/* Override latest entry if it had no specific time coverage */
-+	if (!curr->start) {
-+		list_del(&curr->list);
-+		comm__free(curr);
- 	}
--	return err;
-+
-+	new = comm__new(str, timestamp);
-+	if (!new)
-+		return -ENOMEM;
-+
-+	list_add(&new->list, &thread->comm_list);
-+	thread->comm_set = true;
-+
-+	return 0;
- }
+-		if (cnode->ms.sym && sym &&
+-		    callchain_param.key == CCKEY_FUNCTION) {
+-			if (cnode->ms.sym->start != sym->start)
+-				break;
+-		} else if (cnode->ip != node->ip)
++		if (match_chain(node, cnode) != 0)
+ 			break;
  
- const char *thread__comm_curr(const struct thread *thread)
- {
--	return thread->comm;
-+	const struct comm *comm = curr_comm(thread);
-+
-+	if (!comm)
-+		return NULL;
-+
-+	return comm__str(comm);
- }
+-		if (!found)
+-			found = true;
++		found = true;
  
-+/* CHECKME: it should probably better return the max comm len from its comm list */
- int thread__comm_len(struct thread *self)
- {
- 	if (!self->comm_len) {
--		if (!self->comm)
-+		const char *comm = thread__comm_curr(self);
-+		if (!comm)
- 			return 0;
--		self->comm_len = strlen(self->comm);
-+		self->comm_len = strlen(comm);
+ 		callchain_cursor_advance(cursor);
  	}
  
- 	return self->comm_len;
-@@ -74,25 +118,25 @@ void thread__insert_map(struct thread *self, struct map *map)
- 	map_groups__insert(&self->mg, map);
- }
- 
--int thread__fork(struct thread *self, struct thread *parent,
--		 u64 timestamp __maybe_unused)
-+int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
+-	/* matches not, relay on the parent */
++	/* matches not, relay no the parent */
+ 	if (!found) {
+ 		cursor->curr = curr_snap;
+ 		cursor->pos = start;
+@@ -395,8 +465,9 @@ merge_chain_branch(struct callchain_cursor *cursor,
+ 		   struct callchain_node *dst, struct callchain_node *src)
  {
--	int i;
-+	int i, err;
+ 	struct callchain_cursor_node **old_last = cursor->last;
+-	struct callchain_node *child, *next_child;
++	struct callchain_node *child;
+ 	struct callchain_list *list, *next_list;
++	struct rb_node *n;
+ 	int old_pos = cursor->nr;
+ 	int err = 0;
  
- 	if (parent->comm_set) {
--		if (self->comm)
--			free(self->comm);
--		self->comm = strdup(parent->comm);
--		if (!self->comm)
-+		const char *comm = thread__comm_curr(parent);
-+		if (!comm)
- 			return -ENOMEM;
--		self->comm_set = true;
-+		err = thread__set_comm(thread, comm, timestamp);
-+		if (!err)
-+			return err;
-+		thread->comm_set = true;
+@@ -412,12 +483,16 @@ merge_chain_branch(struct callchain_cursor *cursor,
+ 		append_chain_children(dst, cursor, src->hit);
  	}
  
- 	for (i = 0; i < MAP__NR_TYPES; ++i)
--		if (map_groups__clone(&self->mg, &parent->mg, i) < 0)
-+		if (map_groups__clone(&thread->mg, &parent->mg, i) < 0)
- 			return -ENOMEM;
+-	chain_for_each_child_safe(child, next_child, src) {
++	n = rb_first(&src->rb_root_in);
++	while (n) {
++		child = container_of(n, struct callchain_node, rb_node_in);
++		n = rb_next(n);
++		rb_erase(&child->rb_node_in, &src->rb_root_in);
++
+ 		err = merge_chain_branch(cursor, dst, child);
+ 		if (err)
+ 			break;
  
--	self->ppid = parent->tid;
-+	thread->ppid = parent->tid;
+-		list_del(&child->siblings);
+ 		free(child);
+ 	}
  
- 	return 0;
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 2b585bc308cf..7bb36022377f 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -21,11 +21,11 @@ enum chain_order {
+ 
+ struct callchain_node {
+ 	struct callchain_node	*parent;
+-	struct list_head	siblings;
+-	struct list_head	children;
+ 	struct list_head	val;
+-	struct rb_node		rb_node; /* to sort nodes in an rbtree */
+-	struct rb_root		rb_root; /* sorted tree of children */
++	struct rb_node		rb_node_in; /* to insert nodes in an rbtree */
++	struct rb_node		rb_node;    /* to sort nodes in an output tree */
++	struct rb_root		rb_root_in; /* input tree of children */
++	struct rb_root		rb_root;    /* sorted output tree of children */
+ 	unsigned int		val_nr;
+ 	u64			hit;
+ 	u64			children_hit;
+@@ -86,13 +86,12 @@ extern __thread struct callchain_cursor callchain_cursor;
+ 
+ static inline void callchain_init(struct callchain_root *root)
+ {
+-	INIT_LIST_HEAD(&root->node.siblings);
+-	INIT_LIST_HEAD(&root->node.children);
+ 	INIT_LIST_HEAD(&root->node.val);
+ 
+ 	root->node.parent = NULL;
+ 	root->node.hit = 0;
+ 	root->node.children_hit = 0;
++	root->node.rb_root_in = RB_ROOT;
+ 	root->max_depth = 0;
  }
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index b738c9948508..0ec37bae88d0 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -2,6 +2,7 @@
- #define __PERF_THREAD_H
  
- #include <linux/rbtree.h>
-+#include <linux/list.h>
- #include <unistd.h>
- #include <sys/types.h>
- #include "symbol.h"
-@@ -18,7 +19,7 @@ struct thread {
- 	char			shortname[3];
- 	bool			comm_set;
- 	bool			dead; /* if set thread has exited */
--	char			*comm;
-+	struct list_head	comm_list;
- 	int			comm_len;
- 
- 	void			*priv;
 -- 
 1.7.11.7
 
