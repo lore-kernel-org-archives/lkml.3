@@ -1,129 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab3IZBUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 21:20:45 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:51176 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab3IZBUn (ORCPT
+	id S1754875Ab3IZBVc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 21:21:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51937 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab3IZBVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 21:20:43 -0400
-Date: Thu, 26 Sep 2013 09:20:39 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: "Stephen Rothwell" <sfr@canb.auug.org.au>, "Sage Weil" <sage@newdream.net>
-Cc: linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kent Overstreet" <koverstreet@google.com>,
-        "Benjamin LaHaise" <bcrl@kvack.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: Re: linux-next: build failure after merge of the ceph tree
-References: <20130926111500.cb583a5fe861bd4699a4e9d7@canb.auug.org.au>
-X-Priority: 3
-X-GUID: 017CF41D-DBB0-440C-ACFC-5C9F6F80C141
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.93[cn]
+	Wed, 25 Sep 2013 21:21:31 -0400
+Date: Wed, 25 Sep 2013 18:21:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mgorman@suse.de,
+        dave@sr71.net, hannes@cmpxchg.org, tony.luck@intel.com,
+        matthew.garrett@nebula.com, riel@redhat.com,
+        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
+        gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
+        santosh.shilimkar@ti.com, kosaki.motohiro@gmail.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Results] [RFC PATCH v4 00/40] mm: Memory Power Management
+Message-Id: <20130925182129.a7db6a0fd2c7cc3b43fda92d@linux-foundation.org>
+In-Reply-To: <52438AA9.3020809@linux.intel.com>
+References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com>
+	<52437128.7030402@linux.vnet.ibm.com>
+	<20130925164057.6bbaf23bdc5057c42b2ab010@linux-foundation.org>
+	<20130925234734.GK18242@two.firstfloor.org>
+	<52438AA9.3020809@linux.intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Message-ID: <201309260920374598440@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8Q1KpBl010481
 
-Sorry for that, i notice the commit 73a7075e3f6e.But i misread it.
-I'll modify this as soon as possible.
+On Wed, 25 Sep 2013 18:15:21 -0700 Arjan van de Ven <arjan@linux.intel.com> wrote:
 
-Thanks!
-Jianpeng Ma
->Hi Sage,
->
->After merging the ceph tree, today's linux-next build (x86_64
->allmodconfig) failed like this:
->
->In file included from include/linux/kernel.h:14:0,
->                 from include/linux/cache.h:4,
->                 from include/linux/time.h:4,
->                 from include/linux/stat.h:18,
->                 from include/linux/module.h:10,
->                 from fs/ceph/file.c:3:
->fs/ceph/file.c: In function 'ceph_sync_read':
->fs/ceph/file.c:421:21: error: 'struct kiocb' has no member named 'ki_left'
->       (unsigned)iocb->ki_left,
->                     ^
->include/linux/dynamic_debug.h:79:10: note: in definition of macro 'dynamic_pr_debug'
->        ##__VA_ARGS__);  \
->          ^
->include/linux/ceph/ceph_debug.h:17:2: note: in expansion of macro 'pr_debug'
->  pr_debug("%.*s %12.12s:%-4d : " fmt,    \
->  ^
->fs/ceph/file.c:420:2: note: in expansion of macro 'dout'
->  dout("sync_read on file %p %llu~%u %s\n", file, off,
->  ^
->fs/ceph/file.c:430:17: error: 'struct kiocb' has no member named 'ki_left'
->       off + iocb->ki_left);
->                 ^
->fs/ceph/file.c:436:25: error: 'struct iov_iter' has no member named 'iov'
->    void __user *data = i->iov[0].iov_base + i->iov_offset;
->                         ^
->fs/ceph/file.c:437:18: error: 'struct iov_iter' has no member named 'iov'
->    size_t len = i->iov[0].iov_len - i->iov_offset;
->                  ^
->fs/ceph/file.c:458:20: error: 'struct kiocb' has no member named 'ki_left'
->   size_t len = iocb->ki_left;
->                    ^
->fs/ceph/file.c:471:26: error: 'struct iov_iter' has no member named 'iov'
->     void __user *data = i->iov[0].iov_base
->                          ^
->In file included from include/linux/cache.h:4:0,
->                 from include/linux/time.h:4,
->                 from include/linux/stat.h:18,
->                 from include/linux/module.h:10,
->                 from fs/ceph/file.c:3:
->fs/ceph/file.c:473:14: error: 'struct iov_iter' has no member named 'iov'
->     l = min(i->iov[0].iov_len - i->iov_offset,
->              ^
->include/linux/kernel.h:670:9: note: in definition of macro 'min'
->  typeof(x) _min1 = (x);   \
->         ^
->fs/ceph/file.c:473:14: error: 'struct iov_iter' has no member named 'iov'
->     l = min(i->iov[0].iov_len - i->iov_offset,
->              ^
->include/linux/kernel.h:670:21: note: in definition of macro 'min'
->  typeof(x) _min1 = (x);   \
->                     ^
->include/linux/kernel.h:672:17: warning: comparison of distinct pointer types lacks a cast [enabled by default]
->  (void) (&_min1 == &_min2);  \
->                 ^
->fs/ceph/file.c:473:9: note: in expansion of macro 'min'
->     l = min(i->iov[0].iov_len - i->iov_offset,
->         ^
->fs/ceph/file.c:496:7: error: 'struct kiocb' has no member named 'ki_left'
->   iocb->ki_left -= ret;
->       ^
->fs/ceph/file.c: In function 'ceph_sync_direct_write':
->fs/ceph/file.c:588:24: error: 'struct iov_iter' has no member named 'iov'
->   void __user *data = i.iov->iov_base + i.iov_offset;
->                        ^
->fs/ceph/file.c:589:14: error: 'struct iov_iter' has no member named 'iov'
->   u64 len = i.iov->iov_len - i.iov_offset;
->              ^
->fs/ceph/file.c: In function 'ceph_aio_read':
->fs/ceph/file.c:839:7: error: 'struct kiocb' has no member named 'ki_left'
->   iocb->ki_left = len;
->       ^
->fs/ceph/file.c:870:8: error: 'struct kiocb' has no member named 'ki_left'
->    iocb->ki_left) {
->        ^
->
->Caused by commit e6c9af8b8f11 ("ceph: implement readv/preadv for sync
->operation").  ki_left was removed by commit 73a7075e3f6e ("aio: Kill
->aio_rw_vect_retry()") during the merge window ... basing new work for
->v3.13 on v3.11 is a bit problematic.
->
->I have used the ceph tree from next-20130925 for today.
->
->-- 
->Cheers,
->Stephen Rothwell                    sfr@canb.auug.org.au
->ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> On 9/25/2013 4:47 PM, Andi Kleen wrote:
+> >> Also, the changelogs don't appear to discuss one obvious downside: the
+> >> latency incurred in bringing a bank out of one of the low-power states
+> >> and back into full operation.  Please do discuss and quantify that to
+> >> the best of your knowledge.
+> >
+> > On Sandy Bridge the memry wakeup overhead is really small. It's on by default
+> > in most setups today.
+> 
+> btw note that those kind of memory power savings are content-preserving,
+> so likely a whole chunk of these patches is not actually needed on SNB
+> (or anything else Intel sells or sold)
+
+(head spinning a bit).  Could you please expand on this rather a lot?
+
