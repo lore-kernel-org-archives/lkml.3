@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab3IZPDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:03:06 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:52248 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829Ab3IZOzG (ORCPT
+	id S1753425Ab3IZPE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:04:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57651 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab3IZPEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 10:55:06 -0400
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>
-Subject: [PATCH 02/27] mmc: au1xmmc: Move away from using deprecated APIs
-Date: Thu, 26 Sep 2013 16:54:27 +0200
-Message-Id: <1380207292-16968-3-git-send-email-ulf.hansson@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
-References: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
+	Thu, 26 Sep 2013 11:04:22 -0400
+Date: Thu, 26 Sep 2013 08:04:21 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: increased vmap_area_lock contentions on "n_tty: Move buffers
+ into n_tty_data"
+Message-ID: <20130926150421.GA25545@kroah.com>
+References: <20130913005133.GA32479@localhost>
+ <20130913010936.GA1291@localhost>
+ <5238767D.1080606@hurleysoftware.com>
+ <20130917232214.GA11390@localhost>
+ <5238F252.5070905@hurleysoftware.com>
+ <20130926003315.2e81bc84.akpm@linux-foundation.org>
+ <52441B23.7050704@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52441B23.7050704@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suspend and resume of cards are being handled from the protocol layer
-and consequently the mmc_suspend|resume_host APIs are deprecated.
+On Thu, Sep 26, 2013 at 07:31:47AM -0400, Peter Hurley wrote:
+> On 09/26/2013 03:33 AM, Andrew Morton wrote:
+> >On Tue, 17 Sep 2013 20:22:42 -0400 Peter Hurley <peter@hurleysoftware.com> wrote:
+> >
+> >>Looking over vmalloc.c, the critical section footprint of the vmap_area_lock
+> >>could definitely be reduced (even nearly eliminated), but that's a project for
+> >>another day :)
+> >
+> >20bafb3d23d10 ("n_tty: Move buffers into n_tty_data") switched a
+> >kmalloc (which is very fast) to a vmalloc (which is very slow) without
+> >so much as mentioning it in the changelog.  This should have been
+> >picked up at review, btw.
+> >
+> >Revert that part of the patch and the problem will be solved.
+> >
+> >If we are really really worried that a ~9k kmalloc might fail or will
+> >be slow, then implement a fallback to vmalloc() if kmalloc(GFP_NOWARN)
+> >failed.  This kinda sucks, but is practical, but really should only be
+> >done if necessary - ie, if problems with using plain old kmalloc are
+> >demonstrable.
+> >
+> >Or just revert all of 20bafb3d23d10 - it was supposed to be a small
+> >performance improvement but turned out to be a significant performance
+> >loss.  Therefore zap.
+> 
+> I have no particular objection to reverting the entire patch.
 
-This means we can simplify the suspend|resume callbacks by removing the
-use of the deprecated APIs.
+How about just switching the call to vmalloc to kmalloc?  Yes, it's a
+larger size that is being allocated here, but we were allocating that
+much memory anyway before, so it should be the same "speed", if not
+faster than before (1 call to kmalloc instead of 3).
 
-Cc: Manuel Lauss <manuel.lauss@googlemail.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- drivers/mmc/host/au1xmmc.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+thanks,
 
-diff --git a/drivers/mmc/host/au1xmmc.c b/drivers/mmc/host/au1xmmc.c
-index df9becd..f5443a6 100644
---- a/drivers/mmc/host/au1xmmc.c
-+++ b/drivers/mmc/host/au1xmmc.c
-@@ -1157,11 +1157,6 @@ static int au1xmmc_remove(struct platform_device *pdev)
- static int au1xmmc_suspend(struct platform_device *pdev, pm_message_t state)
- {
- 	struct au1xmmc_host *host = platform_get_drvdata(pdev);
--	int ret;
--
--	ret = mmc_suspend_host(host->mmc);
--	if (ret)
--		return ret;
- 
- 	au_writel(0, HOST_CONFIG2(host));
- 	au_writel(0, HOST_CONFIG(host));
-@@ -1178,7 +1173,7 @@ static int au1xmmc_resume(struct platform_device *pdev)
- 
- 	au1xmmc_reset_controller(host);
- 
--	return mmc_resume_host(host->mmc);
-+	return 0;
- }
- #else
- #define au1xmmc_suspend NULL
--- 
-1.7.9.5
-
+greg k-h
