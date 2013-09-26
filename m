@@ -1,47 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756398Ab3IZKFV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 06:05:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45926 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab3IZKFU (ORCPT
+	id S1756499Ab3IZKFw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 06:05:52 -0400
+Received: from mx0.eldamar.org.uk ([78.47.157.133]:42212 "EHLO
+	mx0.eldamar.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756412Ab3IZKFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 06:05:20 -0400
-Date: Thu, 26 Sep 2013 12:05:11 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for
- wake_affine(.sync=true)
-Message-ID: <20130926100511.GJ26785@twins.programming.kicks-ass.net>
-References: <20130925075341.GB3081@twins.programming.kicks-ass.net>
- <1380099377.8523.9.camel@marge.simpson.net>
- <20130926095812.GR3081@twins.programming.kicks-ass.net>
+	Thu, 26 Sep 2013 06:05:49 -0400
+Date: Thu, 26 Sep 2013 11:05:40 +0100
+From: Alexander Frolkin <avf@eldamar.org.uk>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: Simon Horman <horms@verge.net.au>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        lvs-devel@vger.kernel.org, Wensong Zhang <wensong@linux-vs.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipvs: improved SH fallback strategy
+Message-ID: <20130926100540.GB27583@eldamar.org.uk>
+References: <20130923115139.GA15034@eldamar.org.uk>
+ <524099BA.5020303@cogentembedded.com>
+ <20130924093238.GD18494@eldamar.org.uk>
+ <20130925003033.GG26081@verge.net.au>
+ <20130925092638.GD19768@eldamar.org.uk>
+ <alpine.LFD.2.00.1309260817290.1640@ja.ssi.bg>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130926095812.GR3081@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <alpine.LFD.2.00.1309260817290.1640@ja.ssi.bg>
+X-GPG-Key-Fingerprint: 7820 960F C361 C9CE 401F  D07D 993A 2951 D970 4FA4
+X-Operating-System: Linux 3.2.0-41-generic
+X-Editor: Vi
+X-Uptime: 17:43:23 up 136 days,  3:07, 11 users,  load average: 0.40, 0.40,
+ 0.47
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 11:58:12AM +0200, Peter Zijlstra wrote:
-> @@ -3429,6 +3440,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
->  	int want_affine = 0;
->  	int sync = wake_flags & WF_SYNC;
->  
-> +	if (sync)
-> +		p->se.last_sync_wakeup = sched_clock_cpu(cpu);
-> +
->  	if (p->nr_cpus_allowed == 1)
->  		return prev_cpu;
->  
+Improve the SH fallback realserver selection strategy.
 
-Oh, I suppose something like:
+With sh and sh-fallback, if a realserver is down, this attempts to
+distribute the traffic that would have gone to that server evenly
+among the remaining servers.
 
- if (sync && !p->se.last_sync_wakeup)
- 	p->se.last_sync_wakeup = sched_clock_cpu(cpu);
+Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
 
-is also a nice variation to try..
+--
+diff --git a/net/netfilter/ipvs/ip_vs_sh.c b/net/netfilter/ipvs/ip_vs_sh.c
+index 3588fae..533ea53 100644
+--- a/net/netfilter/ipvs/ip_vs_sh.c
++++ b/net/netfilter/ipvs/ip_vs_sh.c
+@@ -115,27 +115,49 @@ ip_vs_sh_get(struct ip_vs_service *svc, struct ip_vs_sh_state *s,
+ }
+ 
+ 
+-/* As ip_vs_sh_get, but with fallback if selected server is unavailable */
++/* As ip_vs_sh_get, but with fallback if selected server is unavailable
++ *
++ * The fallback strategy loops around the table starting from a "random"
++ * point (in fact, it is chosen to be the original hash value to make the
++ * algorithm deterministic) to find a new server.
++ */
+ static inline struct ip_vs_dest *
+ ip_vs_sh_get_fallback(struct ip_vs_service *svc, struct ip_vs_sh_state *s,
+ 		      const union nf_inet_addr *addr, __be16 port)
+ {
+-	unsigned int offset;
+-	unsigned int hash;
++	unsigned int offset, roffset;
++	unsigned int hash, ihash;
+ 	struct ip_vs_dest *dest;
+ 
++	/* first try the dest it's supposed to go to */
++	ihash = ip_vs_sh_hashkey(svc->af, addr, port, 0);
++	dest = rcu_dereference(s->buckets[ihash].dest);
++	if (!dest)
++		return NULL;
++	if (!is_unavailable(dest))
++		return dest;
++
++	IP_VS_DBG_BUF(6, "SH: selected unavailable server "
++		"%s:%d, reselecting",
++		IP_VS_DBG_ADDR(svc->af, &dest->addr),
++		ntohs(dest->port));
++
++	/* if the original dest is unavailable, loop around the table
++	 * starting from ihash to find a new dest
++	 */
+ 	for (offset = 0; offset < IP_VS_SH_TAB_SIZE; offset++) {
+-		hash = ip_vs_sh_hashkey(svc->af, addr, port, offset);
++		roffset = (offset + ihash) % IP_VS_SH_TAB_SIZE;
++		hash = ip_vs_sh_hashkey(svc->af, addr, port, roffset);
+ 		dest = rcu_dereference(s->buckets[hash].dest);
+ 		if (!dest)
+ 			break;
+-		if (is_unavailable(dest))
+-			IP_VS_DBG_BUF(6, "SH: selected unavailable server "
+-				      "%s:%d (offset %d)",
+-				      IP_VS_DBG_ADDR(svc->af, &dest->addr),
+-				      ntohs(dest->port), offset);
+-		else
++		if (!is_unavailable(dest))
+ 			return dest;
++		IP_VS_DBG_BUF(6, "SH: selected unavailable "
++			"server %s:%d (offset %d), reselecting",
++			IP_VS_DBG_ADDR(svc->af, &dest->addr),
++			ntohs(dest->port),
++			roffset);
+ 	}
+ 
+ 	return NULL;
+
