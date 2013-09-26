@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab3IZViV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 17:38:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18725 "EHLO mga11.intel.com"
+	id S1754510Ab3IZVk7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 17:40:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16335 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754302Ab3IZViP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 17:38:15 -0400
+	id S1754032Ab3IZVkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 17:40:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,988,1371106800"; 
-   d="scan'208";a="401636501"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Eric W . Biederman" <ebiederm@xmission.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <20130926211935.GJ2940@sgi.com>
-References: <1379330740-5602-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20130919171727.GC6802@sgi.com>
- <20130920123137.BE2F7E0090@blue.fi.intel.com>
- <20130924164443.GB2940@sgi.com>
- <20130926105052.0205AE0090@blue.fi.intel.com>
- <20130926211935.GJ2940@sgi.com>
-Subject: Re: [PATCHv2 0/9] split page table lock for PMD tables
+   d="scan'208";a="407770764"
+Subject: Re: [PATCH RESEND v3 0/7] Enable Drivers for Intel MIC X100
+ Coprocessors.
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
+        Asias He <asias@redhat.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>
+In-Reply-To: <1380231195.17366.82.camel@joe-AO722>
+References: <cover.1378423596.git.sudeep.dutt@intel.com>
+	 <1378431368.19204.3.camel@joe-AO722> <20130926205424.GB19455@kroah.com>
+	 <1380231195.17366.82.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Sep 2013 14:40:27 -0700
+Message-ID: <1380231627.116984.4.camel@blbiskey-desk1.amr.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130926213807.1D82AE0090@blue.fi.intel.com>
-Date: Fri, 27 Sep 2013 00:38:07 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex Thorlton wrote:
-> > Let me guess: you have HUGETLBFS enabled in your config, right? ;)
+On Thu, 2013-09-26 at 14:33 -0700, Joe Perches wrote:
+> On Thu, 2013-09-26 at 13:54 -0700, Greg Kroah-Hartman wrote:
+> > On Thu, Sep 05, 2013 at 06:36:08PM -0700, Joe Perches wrote:
+> > > Whitespace neatening...
+> > > 
+> > > Multiline statement argument alignment.
+> > > Argument wrapping.
+> > > Use kmalloc_array instead of kmalloc.
+> > > 
+> > > ---
 > > 
-> > HUGETLBFS hasn't converted to new locking and we disable split pmd lock if
-> > HUGETLBFS is enabled.
+> > -ENOSIGNEDOFFBY :(
 > 
-> Ahhhhh, that's got it!  I double checked my config a million times to
-> make sure that I wasn't going crazy, but I must've missed that. With
-> that fixed, it's performing exactly how I thought it should.  Looking
-> great to me!
+> These were just suggestions for Sudeep.
+> 
+> Sudeep said he'd incorporate and resend the series.
+> 
+> Sudeep?  Were you ever going to do that?
+> 
 
-Can I use your Reviewed-by?
+We were waiting for Greg to apply the base patches to the char misc next
+tree which happened today. We will send out the cleanup patch series
+which addresses all feedback soon.
 
--- 
- Kirill A. Shutemov
+Thanks,
+Sudeep Dutt
+
