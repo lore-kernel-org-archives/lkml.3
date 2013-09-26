@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab3IZVm4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 17:42:56 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59676 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753875Ab3IZVmz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 17:42:55 -0400
-Message-ID: <5244AA5C.8060100@hurleysoftware.com>
-Date: Thu, 26 Sep 2013 17:42:52 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754594Ab3IZVnS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 17:43:18 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:48042 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754426Ab3IZVnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 17:43:14 -0400
+Date: Thu, 26 Sep 2013 16:43:18 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCHv2 0/9] split page table lock for PMD tables
+Message-ID: <20130926214318.GA22939@sgi.com>
+References: <1379330740-5602-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130919171727.GC6802@sgi.com>
+ <20130920123137.BE2F7E0090@blue.fi.intel.com>
+ <20130924164443.GB2940@sgi.com>
+ <20130926105052.0205AE0090@blue.fi.intel.com>
+ <20130926211935.GJ2940@sgi.com>
+ <20130926213807.1D82AE0090@blue.fi.intel.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: increased vmap_area_lock contentions on "n_tty: Move buffers
- into n_tty_data"
-References: <20130913005133.GA32479@localhost>	<20130913010936.GA1291@localhost>	<5238767D.1080606@hurleysoftware.com>	<20130917232214.GA11390@localhost>	<5238F252.5070905@hurleysoftware.com>	<20130926003315.2e81bc84.akpm@linux-foundation.org>	<52441B23.7050704@hurleysoftware.com>	<20130926150421.GA25545@kroah.com>	<52447064.5030902@hurleysoftware.com> <20130926110551.52ad8156.akpm@linux-foundation.org>
-In-Reply-To: <20130926110551.52ad8156.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130926213807.1D82AE0090@blue.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 02:05 PM, Andrew Morton wrote:
-> On Thu, 26 Sep 2013 13:35:32 -0400 Peter Hurley <peter@hurleysoftware.com> wrote:
->
->> The issue with a single large kmalloc is that it may fail where
->> 3 separate, page-or-less kmallocs would not have.
->
-> Or vmalloc fails first, because of internal fragmentation of the vmap
-> arena.  This problem plus vmalloc's slowness are the reasons why
-> vmalloc should be avoided.
+On Fri, Sep 27, 2013 at 12:38:07AM +0300, Kirill A. Shutemov wrote:
+> Alex Thorlton wrote:
+> > > Let me guess: you have HUGETLBFS enabled in your config, right? ;)
+> > > 
+> > > HUGETLBFS hasn't converted to new locking and we disable split pmd lock if
+> > > HUGETLBFS is enabled.
+> > 
+> > Ahhhhh, that's got it!  I double checked my config a million times to
+> > make sure that I wasn't going crazy, but I must've missed that. With
+> > that fixed, it's performing exactly how I thought it should.  Looking
+> > great to me!
+> 
+> Can I use your Reviewed-by?
 
-Ok, no vmalloc.
+Sure, no problem.
 
-> A tremendous number of places in the kernel perform higher-order
-> allocations nowadays.  The page allocator works damn hard to service
-> them and I expect that switching to kmalloc here will be OK.
-
-I've had order-4 allocation failures before on 10Gb. In fact, the
-nouveau driver switched to vmalloc for that very reason (commit
-d005f51eb93d71cd40ebd11dd377453fa8c8a42a, drm/nouveau: use vmalloc
-for pgt allocation).
-
-Regards,
-Peter Hurley
+- Alex
