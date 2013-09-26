@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab3IZQ74 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 12:59:56 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:36299 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802Ab3IZQ7u (ORCPT
+	id S1753711Ab3IZRAI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 13:00:08 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:53735 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab3IZQ76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 12:59:50 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-06-524468050f3e
+	Thu, 26 Sep 2013 12:59:58 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-0b-5244680cbdb5
 From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
 To: kgene.kim@samsung.com
 Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
@@ -19,176 +19,1369 @@ Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
         k.debski@samsung.com, s.nawrocki@samsung.com, t.stanislaws@samsung.com,
         Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [RFC 1/3] ARM: s5pv210: Add board file for boot using Device Tree
-Date: Thu, 26 Sep 2013 18:59:27 +0200
-Message-id: <1380214769-7685-2-git-send-email-m.krawczuk@partner.samsung.com>
+Subject: [RFC 2/3] Samsung: DT: Add Device tree for s5pv210
+Date: Thu, 26 Sep 2013 18:59:28 +0200
+Message-id: <1380214769-7685-3-git-send-email-m.krawczuk@partner.samsung.com>
 X-Mailer: git-send-email 1.8.1.2
 In-reply-to: <1380214769-7685-1-git-send-email-m.krawczuk@partner.samsung.com>
 References: <1380214769-7685-1-git-send-email-m.krawczuk@partner.samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t9jQV3WDJcgg5OLhS02zljPajH/yDlW
-	i3OvVjJa/Hh9gc2id8FVNouzTW/YLTY9vsZqcXnXHDaLGef3MVncvsxrcXrNKWaLtUfuslss
-	vX6RyWLC9LUsFodXHGCyOPymndXi1cE2Fov1M16zWMxrf8nqIOyxZt4aRo+W5h42jwWfr7B7
-	rFz+hc1j85J6j4Pv9jB59G1ZxejxeZOcx8a5oQGcUVw2Kak5mWWpRfp2CVwZO5pLCw4qVfx8
-	9J25gfG5TBcjJ4eEgInEtsbl7BC2mMSFe+vZuhi5OIQEpjNKbJ/dC+W0M0k0frvICFLFJmAu
-	MfHZJhYQW0RAUqKp4Q8zSBGzwCQWiV9L3rKBJIQFvCTWHn4ONJaDg0VAVeJdjxRImFfAV2J3
-	/1+obQoSPy+fACvnFPCTuDuthxXEFgKqOd/7mnUCI+8CRoZVjKKpBckFxUnpuUZ6xYm5xaV5
-	6XrJ+bmbGMHh/kx6B+OqBotDjAIcjEo8vBeYnYOEWBPLiitzDzFKcDArifCuj3UJEuJNSays
-	Si3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cDI6XVSytqzQ/C1ZP7m
-	7Q6J816dS/jkfGrR0Y9thcvU6wxX5M7TLVvUbMl6e8vtXTyTv4se/WChe2wlS15jkFrtOV/b
-	Q/f7Tkqs3PVQKLF0z8pjFcfOSwl5RR3VKldKrReZPl1ai1NvSeeOySoxp1Zkhe1JFpd91yDN
-	d+vXr2utWcvcJ4mlZM5QYinOSDTUYi4qTgQAIwOkLHMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9jQV2eDJcgg6s9UhYbZ6xntZh/5Byr
+	xblXKxktfry+wGbRu+Aqm8XZpjfsFpseX2O1uLxrDpvFjPP7mCxuX+a1OL3mFLPF2iN32S2W
+	Xr/IZDFh+loWi8MrDjBZHH7Tzmrx6mAbi8X6Ga9ZLOa1v2R1EPZYM28No0dLcw+bx4LPV9g9
+	Vi7/wuaxeUm9x8F3e5g8+rasYvT4vEnOY+Pc0ADOKC6blNSczLLUIn27BK6M3w9+sRb8+clY
+	sfvlLqYGxrMHGLsYOTkkBEwknty+wAJhi0lcuLeerYuRi0NIYDqjxPsjIA4nkNPOJHH2JCuI
+	zSZgLjHx2SawBhEBSYmmhj/MIA3MApNYJH4teQvWICxgLdGy5D3YBhYBVYkfe88BFXFw8Ar4
+	Ssy9xw6xTEHi5+UTYOWcAn4Sd6f1sELs8pU43/uadQIj7wJGhlWMoqkFyQXFSem5RnrFibnF
+	pXnpesn5uZsYwSH/THoH46oGi0OMAhyMSjy8F5idg4RYE8uKK3MPMUpwMCuJ8K6PdQkS4k1J
+	rKxKLcqPLyrNSS0+xCjNwaIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwJj3qM7G0MBckol7
+	pbnvtyvLsubrBPAzywVrtAkYydYx3/l56+QVU8Hl1UkbLUv5Dybkc83pVuhYaOrVe41JeX5/
+	j/m9C+brdj893+DzZGbV5A0phzvEdwWJpbIfEvO5ef7onzmfuk6dXvsp8OSxu7trJ3fcerLu
+	cUxln9DrZAfrAwJrFj9a0KDEUpyRaKjFXFScCAAxlDjsdQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds board file that will be used to boot S5PV210/S5PC110-based
-boards using Device Tree.
+Add generic device tree for s5pv210 and s5pv210-pinctrl
 
 Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/mach-s5pv210/Kconfig           | 14 +++++
- arch/arm/mach-s5pv210/Makefile          |  2 +-
- arch/arm/mach-s5pv210/mach-s5pv210-dt.c | 92 +++++++++++++++++++++++++++++++++
- 3 files changed, 107 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/mach-s5pv210/mach-s5pv210-dt.c
+ arch/arm/boot/dts/s5pv210-pinctrl.dtsi | 820 +++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/s5pv210.dtsi         | 498 ++++++++++++++++++++
+ 2 files changed, 1318 insertions(+)
+ create mode 100644 arch/arm/boot/dts/s5pv210-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/s5pv210.dtsi
 
-diff --git a/arch/arm/mach-s5pv210/Kconfig b/arch/arm/mach-s5pv210/Kconfig
-index abad41f..be7a056 100644
---- a/arch/arm/mach-s5pv210/Kconfig
-+++ b/arch/arm/mach-s5pv210/Kconfig
-@@ -201,6 +201,20 @@ config MACH_TORBRECK
- 	help
- 	  Machine support for aESOP Torbreck
- 
-+config MACH_S5PV210_DT
-+	bool "Samsung S5PV210/S5PC110 machine using Device Tree"
-+	select CLKSRC_OF
-+	select CPU_S5PV210
-+	select PINCTRL
-+	select PINCTRL_S5PV210
-+	select USE_OF
-+	help
-+	  Machine support for Samsung S5PV210/S5PC110 machines with Device Tree
-+	  enabled.
-+	  Select this if a fdt blob is available for your S5PV210 SoC based
-+	  board.
-+	  Note: This is under development and not all peripherals can be
-+	  supported with this machine file.
- endmenu
- 
- endif
-diff --git a/arch/arm/mach-s5pv210/Makefile b/arch/arm/mach-s5pv210/Makefile
-index 0c67fe2..46277d0 100644
---- a/arch/arm/mach-s5pv210/Makefile
-+++ b/arch/arm/mach-s5pv210/Makefile
-@@ -25,7 +25,7 @@ obj-$(CONFIG_MACH_GONI)		+= mach-goni.o
- obj-$(CONFIG_MACH_SMDKC110)	+= mach-smdkc110.o
- obj-$(CONFIG_MACH_SMDKV210)	+= mach-smdkv210.o
- obj-$(CONFIG_MACH_TORBRECK)	+= mach-torbreck.o
--
-+obj-$(CONFIG_MACH_S5PV210_DT)	+= mach-s5pv210-dt.o
- # device support
- 
- obj-y				+= dev-audio.o
-diff --git a/arch/arm/mach-s5pv210/mach-s5pv210-dt.c b/arch/arm/mach-s5pv210/mach-s5pv210-dt.c
+diff --git a/arch/arm/boot/dts/s5pv210-pinctrl.dtsi b/arch/arm/boot/dts/s5pv210-pinctrl.dtsi
 new file mode 100644
-index 0000000..f7e5fa8
+index 0000000..0f7b611
 --- /dev/null
-+++ b/arch/arm/mach-s5pv210/mach-s5pv210-dt.c
-@@ -0,0 +1,92 @@
-+
++++ b/arch/arm/boot/dts/s5pv210-pinctrl.dtsi
+@@ -0,0 +1,820 @@
 +/*
-+ * Samsung's S5PV210/S5PC110 flattened device tree enabled machine
++ * Samsung's S5PV210 SoC device tree source
 + *
-+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-+ * Author: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
++ * Copyright (c) 2013 Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
++ *
++ * Samsung's S5PV210 SoC device nodes are listed in this file. S5PV210
++ * based board files can include this file and provide values for board specfic
++ * bindings.
++ *
++ * Note: This file does not include device nodes for all the controllers in
++ * S5PV210 SoC. As device tree coverage for S5PV210 increases, additional
++ * nodes can be added to this file.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
 + */
 +
-+#include <linux/clk-provider.h>
-+#include <linux/irqchip.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
++&pinctrl0 {
++	gpa0: gpa0 {
++		gpio-controller;
++		#gpio-cells = <2>;
 +
-+#include <asm/mach/arch.h>
-+#include <asm/mach/map.h>
-+#include <asm/system_misc.h>
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
 +
-+#include <plat/cpu.h>
-+#include <plat/watchdog-reset.h>
++	gpa1: gpa1 {
++		gpio-controller;
++		#gpio-cells = <2>;
 +
-+#include <mach/map.h>
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
 +
-+#include "common.h"
++	gpb: gpb {
++		gpio-controller;
++		#gpio-cells = <2>;
 +
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpc0: gpc0 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpc1: gpc1 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpd0: gpd0 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpd1: gpd1 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpe0: gpe0 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpe1: gpe1 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpf0: gpf0 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpf1: gpf1 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpf2: gpf2 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpf3: gpf3 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpg0: gpg0 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpg1: gpg1 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpg2: gpg2 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpg3: gpg3 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpj0: gpj0 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpj1: gpj1 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpj2: gpj2 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpj3: gpj3 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpj4: gpj4 {
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
++	gpgi: gpgi {
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	mp01: mp01 {
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	mp02: mp02 {
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	mp03: mp03 {
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	mp04: mp04 {
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	mp05: mp05 {
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	mp06: mp06 {
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	mp07: mp07 {
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	gph0: gph0 {
++		gpio-controller;
++			interrupt-controller;
++			interrupt-parent = <&vic0>;
++			interrupts = <0>, <1>, <2>, <3>,
++				<4>, <5>, <6>, <7>;
++		#gpio-cells = <2>;
++		#interrupt-cells = <2>;
++	};
++
++	gph1: gph1 {
++		gpio-controller;
++		#gpio-cells = <2>;
++			interrupt-controller;
++			interrupt-parent = <&vic0>;
++			interrupts = <8>, <9>, <10>, <11>,
++				<12>, <13>, <14>, <15>;
++		#interrupt-cells = <2>;
++	};
++
++	gph2: gph2 {
++		gpio-controller;
++		#gpio-cells = <2>;
++		#interrupt-cells = <2>;
++	};
++
++	gph3: gph3 {
++		gpio-controller;
++		#gpio-cells = <2>;
++		#interrupt-cells = <2>;
++	};
++
++	uart0_data: uart0-data {
++		samsung,pins = "gpa0-0", "gpa0-1";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	uart0_fctl: uart0-fctl {
++		samsung,pins = "gpa0-2", "gpa0-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	uart1_data: uart1-data {
++		samsung,pins = "gpa0-4", "gpa0-5";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	uart1_fctl: uart1-fctl {
++		samsung,pins = "gpa0-6", "gpa0-7";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	uart2_data: uart2-data {
++		samsung,pins = "gpa1-0", "gpa1-1";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	uart2_fctl: uart2-fctl {
++		samsung,pins = "gpa1-2", "gpa1-3";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	uart3_data: uart3-data {
++		samsung,pins = "gpa1-2", "gpa1-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	uart_audio: uart-audio {
++		samsung,pins = "gpa1-2", "gpa1-3";
++		samsung,pin-function = <4>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	spi0_bus: spi0-bus {
++		samsung,pins = "gpb-0", "gpb-2", "gpb-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <0>;
++	};
++
++	spi1_bus: spi1-bus {
++		samsung,pins = "gpb-4", "gpb-6", "gpb-7";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <0>;
++	};
++
++	i2s1_bus: i2s1-bus {
++		samsung,pins = "gpc0-0", "gpc0-1", "gpc0-2", "gpc0-3",
++				"gpc0-4";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	pcm1_bus: pcm1-bus {
++		samsung,pins = "gpc0-0", "gpc0-1", "gpc0-2", "gpc0-3",
++				"gpc0-4";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	ac97_bus: ac97-bus {
++		samsung,pins = "gpc0-0", "gpc0-1", "gpc0-2", "gpc0-3",
++				"gpc0-4";
++		samsung,pin-function = <4>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	i2s2_bus: i2s2-bus {
++		samsung,pins = "gpc1-0", "gpc1-1", "gpc1-2", "gpc1-3",
++				"gpc1-4";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	pcm2_bus: pcm2-bus {
++		samsung,pins = "gpc1-0", "gpc1-1", "gpc1-2", "gpc1-3",
++				"gpc1-4";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	spdif_bus: spdif-bus {
++		samsung,pins = "gpc1-0", "gpc1-1";
++		samsung,pin-function = <4>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	spi2_bus: spi2-bus {
++		samsung,pins = "gpc1-1", "gpc1-2", "gpc1-3", "gpc1-4";
++		samsung,pin-function = <5>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <0>;
++	};
++
++	i2c0_bus: i2c0-bus {
++		samsung,pins = "gpd1-0", "gpd1-1";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <0>;
++	};
++
++	i2c1_bus: i2c1-bus {
++		samsung,pins = "gpd1-2", "gpd1-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <0>;
++	};
++
++	i2c2_bus: i2c2-bus {
++		samsung,pins = "gpd1-4", "gpd1-5";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <0>;
++	};
++
++	pwm0_out: pwm0-out {
++		samsung,pins = "gpd0-0";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	pwm1_out: pwm1-out {
++		samsung,pins = "gpd0-1";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	pwm2_out: pwm2-out {
++		samsung,pins = "gpd0-2";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	pwm3_out: pwm3-out {
++		samsung,pins = "gpd0-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_row0: keypad-row-0 {
++		samsung,pins = "gph3-0";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_row1: keypad-row-1 {
++		samsung,pins = "gph3-1";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_row2: keypad-row-2 {
++		samsung,pins = "gph3-2";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_row3: keypad-row-3 {
++		samsung,pins = "gph3-3";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_row4: keypad-row-4 {
++		samsung,pins = "gph3-4";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_row5: keypad-row-5 {
++		samsung,pins = "gph3-5";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_row6: keypad-row-6 {
++		samsung,pins = "gph3-6";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_row7: keypad-row-7 {
++		samsung,pins = "gph3-7";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_col0: keypad-col-0 {
++		samsung,pins = "gph2-0";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_col1: keypad-col-1 {
++		samsung,pins = "gph2-1";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_col2: keypad-col-2 {
++		samsung,pins = "gph2-2";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_col3: keypad-col-3 {
++		samsung,pins = "gph2-3";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_col4: keypad-col-4 {
++		samsung,pins = "gph2-4";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_col5: keypad-col-5 {
++		samsung,pins = "gph2-5";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_col6: keypad-col-6 {
++		samsung,pins = "gph2-6";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	keypad_col7: keypad-col-7 {
++		samsung,pins = "gph2-7";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	sd0_clk: sd0-clk {
++		samsung,pins = "gpg0-0";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd0_cmd: sd0-cmd {
++		samsung,pins = "gpg0-1";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd0_cd: sd0-cd {
++		samsung,pins = "gpg0-2";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd0_bus1: sd0-bus-width1 {
++		samsung,pins = "gpg0-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd0_bus4: sd0-bus-width4 {
++		samsung,pins = "gpg0-3", "gpg0-4", "gpg0-5", "gpg0-6";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd0_bus8: sd0-bus-width8 {
++		samsung,pins = "gpg1-3", "gpg1-4", "gpg1-5", "gpg1-6";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd1_clk: sd1-clk {
++		samsung,pins = "gpg1-0";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd1_cmd: sd1-cmd {
++		samsung,pins = "gpg1-1";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd1_cd: sd1-cd {
++		samsung,pins = "gpg1-2";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd1_bus1: sd1-bus-width1 {
++		samsung,pins = "gpg1-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd1_bus4: sd1-bus-width4 {
++		samsung,pins = "gpg1-3", "gpg1-4", "gpg1-5", "gpg1-6";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd2_clk: sd2-clk {
++		samsung,pins = "gpg2-0";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd2_cmd: sd2-cmd {
++		samsung,pins = "gpg2-1";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd2_cd: sd2-cd {
++		samsung,pins = "gpg2-2";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd2_bus1: sd2-bus-width1 {
++		samsung,pins = "gpg2-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd2_bus4: sd2-bus-width4 {
++		samsung,pins = "gpg2-3", "gpg2-4", "gpg2-5", "gpg2-6";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd2_bus8: sd2-bus-width8 {
++		samsung,pins = "gpg3-3", "gpg3-4", "gpg3-5", "gpg3-6";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd3_clk: sd3-clk {
++		samsung,pins = "gpg3-0";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd3_cmd: sd3-cmd {
++		samsung,pins = "gpg3-1";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd3_cd: sd3-cd {
++		samsung,pins = "gpg3-2";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd3_bus1: sd3-bus-width1 {
++		samsung,pins = "gpg3-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	sd3_bus4: sd3-bus-width4 {
++		samsung,pins = "gpg3-3", "gpg3-4", "gpg3-5", "gpg3-6";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <2>;
++		samsung,pin-drv = <3>;
++	};
++
++	eint0: ext-int0 {
++		samsung,pins = "gph0-0";
++		samsung,pin-function = <0xf>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	eint8: ext-int8 {
++		samsung,pins = "gph1-0";
++		samsung,pin-function = <0xf>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	eint15: ext-int15 {
++		samsung,pins = "gph1-7";
++		samsung,pin-function = <0xf>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	eint16: ext-int16 {
++		samsung,pins = "gph2-0";
++		samsung,pin-function = <0xf>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	eint31: ext-int31 {
++		samsung,pins = "gph3-7";
++		samsung,pin-function = <0xf>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	cam_port_a_io: cam-port-a-io {
++		samsung,pins = "gpe0-0", "gpe0-1", "gpe0-2", "gpe0-3",
++				"gpe0-4", "gpe0-5", "gpe0-6", "gpe0-7",
++				"gpe1-0", "gpe1-1", "gpe1-2", "gpe1-4";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	cam_port_a_clk_active: cam-port-a-clk-active {
++		samsung,pins = "gpe1-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <3>;
++	};
++
++	cam_port_a_clk_idle: cam-port-a-clk-idle {
++		samsung,pins = "gpe1-3";
++		samsung,pin-function = <0>;
++		samsung,pin-pud = <1>;
++		samsung,pin-drv = <0>;
++	};
++
++	cam_port_b_io: cam-port-b-io {
++		samsung,pins = "gpj0-0", "gpj0-1", "gpj0-2", "gpj0-3",
++				"gpj0-4", "gpj0-5", "gpj0-6", "gpj0-7",
++				"gpj1-0", "gpj1-1", "gpj1-2", "gpj1-4";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	cam_port_b_clk_active: cam-port-b-clk-active {
++		samsung,pins = "gpj1-3";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <3>;
++	};
++
++	cam_port_b_clk_idle: cam-port-b-clk-idle {
++		samsung,pins = "gpj1-3";
++		samsung,pin-function = <0>;
++		samsung,pin-pud = <1>;
++		samsung,pin-drv = <0>;
++	};
++
++		lcd_ctrl: lcd-ctrl {
++		samsung,pins = "gpd0-0", "gpd0-1";
++		samsung,pin-function = <3>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	lcd_sync: lcd-sync {
++		samsung,pins = "gpf0-0", "gpf0-1";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	lcd_clk: lcd-clk {
++		samsung,pins = "gpf0-0", "gpf0-1", "gpf0-2", "gpf0-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	lcd_data24: lcd-data-width24 {
++		samsung,pins =  "gpf0-4", "gpf0-5", "gpf0-6", "gpf0-7",
++				"gpf1-0", "gpf1-1", "gpf1-2", "gpf1-3",
++				"gpf1-4", "gpf1-5", "gpf1-6", "gpf1-7",
++				"gpf2-0", "gpf2-1", "gpf2-2", "gpf2-3",
++				"gpf2-4", "gpf2-5", "gpf2-6", "gpf2-7",
++				"gpf3-0", "gpf3-1", "gpf3-2", "gpf3-3";
++		samsung,pin-function = <2>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++};
+diff --git a/arch/arm/boot/dts/s5pv210.dtsi b/arch/arm/boot/dts/s5pv210.dtsi
+new file mode 100644
+index 0000000..e61885b
+--- /dev/null
++++ b/arch/arm/boot/dts/s5pv210.dtsi
+@@ -0,0 +1,498 @@
 +/*
-+ * IO mapping for shared system controller IP.
++ * Samsung's S5PV210 SoC device tree source
 + *
-+ * FIXME: Make remaining drivers use dynamic mapping.
-+ */
-+static struct map_desc s5pv210_dt_iodesc[] __initdata = {
-+	{
-+		.virtual = (unsigned long)S3C_VA_SYS,
-+		.pfn = __phys_to_pfn(S5PV210_PA_SYSCON),
-+		.length = SZ_64K,
-+		.type = MT_DEVICE,
-+	},
++ * Copyright (c) 2013 Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
++ *
++ * Samsung's S5PV210 SoC device nodes are listed in this file. S5PV210
++ * based board files can include this file and provide values for board specfic
++ * bindings.
++ *
++ * Note: This file does not include device nodes for all the controllers in
++ * S5PV210 SoC. As device tree coverage for S5PV210 increases, additional
++ * nodes can be added to this file.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++*/
++
++#include "skeleton.dtsi"
++#include <dt-bindings/clock/samsung,s5pv210-clock.h>
++/ {
++	aliases {
++		pinctrl0 = &pinctrl0;
++		csis0 = &csis_0;
++		fimc0 = &fimc_0;
++		fimc1 = &fimc_1;
++		fimc2 = &fimc_2;
++		spi0 = &spi_0;
++		spi1 = &spi_1;
++	};
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a8";
++			reg = <0>;
++		};
++	};
++
++	soc {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		onenand: onenand@b0000000 {
++			compatible = "samsung,s5pv210-onenand";
++			reg = <0xb0000000 0x20000>, <0xb0600000 0x2000>;
++			interrupt-parent = <&vic1>;
++			interrupts = <31>;
++			clocks = <&clocks NANDXL>;
++			clock-names = "gate";
++			status = "disabled";
++		};
++
++		chipid@e0000000 {
++			compatible = "samsung,s5pv210-chipid";
++			reg = <0xe0000000 0x100>;
++		};
++
++		sys_reg: sysreg@e0100000 {
++			compatible = "samsung,s5pv210-sysreg", "syscon";
++			reg = <0xe0100000 0x400>;
++		};
++
++		clocks: clock-controller@e0100000 {
++			compatible = "samsung,s5pv210-clock";
++			reg = <0xe0100000 0x10000>;
++			#clock-cells = <1>;
++		};
++
++		pinctrl0: pinctrl@e0200000 {
++			compatible = "samsung,s5pv210-pinctrl";
++			reg = <0xe0200000 0x1000>;
++			interrupt-parent = <&vic0>;
++			interrupts = <30>;
++
++			wakeup-interrupt-controller {
++				compatible = "samsung,exynos4210-wakeup-eint";
++				interrupts = <16>;
++				interrupt-parent = <&vic0>;
++			};
++		};
++
++		pdma0: pdma@e0900000 {
++			compatible = "arm,pl330", "arm,primecell";
++			reg = <0xe0900000 0x1000>;
++			interrupt-parent = <&vic0>;
++			interrupts = <19>;
++			clocks = <&clocks PDMA0>;
++			clock-names = "apb_pclk";
++			#dma-cells = <1>;
++			#dma-channels = <8>;
++			#dma-requests = <32>;
++		};
++
++		pdma1: pdma@e0a00000 {
++			compatible = "arm,pl330", "arm,primecell";
++			reg = <0xe0a00000 0x1000>;
++			interrupt-parent = <&vic0>;
++			interrupts = <20>;
++			clocks = <&clocks PDMA1>;
++			clock-names = "apb_pclk";
++			#dma-cells = <1>;
++			#dma-channels = <8>;
++			#dma-requests = <32>;
++		};
++
++		spi_0: spi@e1300000 {
++			compatible = "samsung,s5pv210-spi";
++			reg = <0xe1300000 0x100>;
++			interrupt-parent = <&vic1>;
++			interrupts = <15>;
++			dmas = <&pdma0 7>, <&pdma0 6>;
++			dma-names = "tx", "rx";
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clocks = <&clocks SCLK_SPI0>, <&clocks SPI0>;
++			clock-names = "spi", "spi_busclk0";
++			pinctrl-names = "default";
++			pinctrl-0 = <&spi0_bus>;
++			status = "disabled";
++		};
++
++		spi_1: spi@e1400000 {
++			compatible = "samsung,s5pv210-spi";
++			reg = <0xe1400000 0x100>;
++			interrupt-parent = <&vic1>;
++			interrupts = <16>;
++			dmas = <&pdma1 7>, <&pdma1 6>;
++			dma-names = "tx", "rx";
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clocks = <&clocks SCLK_SPI1>, <&clocks SPI1>;
++			clock-names = "spi", "spi_busclk0";
++			pinctrl-names = "default";
++			pinctrl-0 = <&spi1_bus>;
++			status = "disabled";
++		};
++
++		i2c_0: i2c@e1800000 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			compatible = "samsung,s3c2440-i2c";
++			reg = <0xe1800000 0x100>;
++			interrupt-parent = <&vic1>;
++			interrupts = <14>;
++			clocks = <&clocks I2C0>;
++			clock-names = "i2c";
++			pinctrl-names = "default";
++			pinctrl-0 = <&i2c0_bus>;
++			status = "disabled";
++		};
++
++		i2c_2: i2c@e1a00000 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			compatible = "samsung,s3c2440-i2c";
++			reg = <0xe1a00000 0x100>;
++			interrupt-parent = <&vic1>;
++			interrupts = <19>;
++			clocks = <&clocks I2C2>;
++			clock-names = "i2c";
++			pinctrl-0 = <&i2c2_bus>;
++			pinctrl-names = "default";
++			status = "disabled";
++		};
++
++
++		i2s_1: i2s@e2100000 {
++			compatible = "samsung,s5pv210-i2s";
++			reg = <0x03830000 0x100>;
++			dmas = <&pdma0 10
++				&pdma0 9
++				&pdma0 8>;
++			dma-names = "tx", "rx", "tx-sec";
++			clocks = <&clocks I2S1>,
++				<&clocks I2S1>,
++				<&clocks SCLK_AUDIO1>;
++			clock-names = "iis", "i2s_opclk0", "i2s_opclk1";
++			samsung,idma-addr = <0x03000000>;
++			pinctrl-names = "default";
++			status = "disabled";
++		};
++
++
++		pwm: pwm@e2500000 {
++			compatible = "samsung,s5pc100-pwm";
++			reg = <0xe2500000 0x1000>;
++			interrupt-parent = <&vic0>;
++			interrupts = <21>, <22>, <23>, <24>, <25>;
++			clock-names = "timers";
++			clocks = <&clocks PWM>;
++			#pwm-cells = <3>;
++			status = "disabled";
++		};
++
++
++		watchdog: watchdog@e2700000 {
++			compatible = "samsung,s3c2410-wdt";
++			reg = <0xe2700000 0x1000>;
++			interrupt-parent = <&vic0>;
++			interrupts = <26>;
++			clock-names = "watchdog";
++			clocks = <&clocks WDT>;
++		};
++
++		rtc@e2800000 {
++			compatible = "samsung,s3c6410-rtc";
++			reg = <0xe2800000 0x100>;
++			interrupt-parent = <&vic0>;
++			interrupts = <28>, <29>;
++			clocks = <&clocks RTC>;
++			clock-names = "rtc";
++		};
++
++		uart0: serial@e2900000 {
++			compatible = "samsung,s5pv210-uart";
++			reg = <0xe2900000 0x400>;
++			interrupt-parent = <&vic1>;
++			interrupts = <10>;
++			clock-names = "uart", "clk_uart_baud0",
++					"clk_uart_baud1";
++			clocks = <&clocks UART0>, <&clocks UART0>,
++					<&clocks SCLK_UART0>;
++			status = "disabled";
++		};
++
++		uart1: serial@e2900400 {
++			compatible = "samsung,s5pv210-uart";
++			reg = <0xe2900400 0x400>;
++			interrupt-parent = <&vic1>;
++			interrupts = <11>;
++			clock-names = "uart", "clk_uart_baud0",
++					"clk_uart_baud1";
++			clocks = <&clocks UART1>, <&clocks UART1>,
++					<&clocks SCLK_UART1>;
++			status = "disabled";
++		};
++
++		uart2: serial@e2900800 {
++			compatible = "samsung,s5pv210-uart";
++			reg = <0xe2900800 0x400>;
++			interrupt-parent = <&vic1>;
++			interrupts = <12>;
++			clock-names = "uart", "clk_uart_baud0",
++					"clk_uart_baud1";
++			clocks = <&clocks UART2>, <&clocks UART2>,
++					<&clocks SCLK_UART2>;
++			status = "disabled";
++		};
++
++		uart3: serial@e2900c00 {
++			compatible = "samsung,s5pv210-uart";
++			reg = <0xe2900c00 0x400>;
++			interrupt-parent = <&vic1>;
++			interrupts = <13>;
++			clock-names = "uart", "clk_uart_baud0",
++					"clk_uart_baud1";
++			clocks = <&clocks UART3>, <&clocks UART3>,
++					<&clocks SCLK_UART3>;
++			status = "disabled";
++		};
++
++		sdhci0: sdhci@eb000000 {
++			compatible = "samsung,s5pv210-sdhci";
++			reg = <0xeb000000 0x100000>;
++			interrupt-parent = <&vic1>;
++			interrupts = <26>;
++			clock-names = "hsmmc", "mmc_busclk.0", "mmc_busclk.2";
++			clocks = <&clocks HSMMC0>, <&clocks HSMMC0>,
++					<&clocks SCLK_MMC0>;
++			status = "disabled";
++		};
++
++		sdhci1: sdhci@eb100000 {
++			compatible = "samsung,s5pv210-sdhci";
++			reg = <0xeb100000 0x100000>;
++			interrupt-parent = <&vic1>;
++			interrupts = <27>;
++			clock-names = "hsmmc", "mmc_busclk.0", "mmc_busclk.2";
++			clocks = <&clocks HSMMC1>, <&clocks HSMMC1>,
++					<&clocks SCLK_MMC1>;
++			status = "disabled";
++		};
++
++		sdhci2: sdhci@eb200000 {
++			compatible = "samsung,s5pv210-sdhci";
++			reg = <0xeb200000 0x100000>;
++			interrupt-parent = <&vic1>;
++			interrupts = <28>;
++			clock-names = "hsmmc", "mmc_busclk.0", "mmc_busclk.2";
++			clocks = <&clocks HSMMC2>, <&clocks HSMMC2>,
++					<&clocks SCLK_MMC2>;
++			status = "disabled";
++		};
++
++		sdhci3: sdhci@eb300000 {
++			compatible = "samsung,s5pv210-sdhci";
++			reg = <0xeb300000 0x100000>;
++			interrupt-parent = <&vic3>;
++			interrupts = <2>;
++			clock-names = "hsmmc", "mmc_busclk.0", "mmc_busclk.3";
++			clocks = <&clocks HSMMC3>, <&clocks HSMMC3>,
++					<&clocks SCLK_MMC3>;
++			status = "disabled";
++		};
++
++		hsotg: hsotg@ec000000 {
++			compatible = "samsung,s3c6400-hsotg";
++			reg = <0xec000000 0x20000>;
++			interrupt-parent = <&vic1>;
++			interrupts = <24>;
++			clocks = <&clocks USB_OTG>;
++			clock-names = "otg";
++			phy-names = "device";
++			phys = <&usbphy 0>;
++			status = "disabled";
++		};
++
++		usbphy: usbphy@ec100000 {
++			compatible = "samsung,s5pv210-usbphy";
++			reg = <0xec100000 0x100>, <0xe010e80c 0x0c>;
++			clocks = <&clocks USB_OTG>, <&clocks SCLK_USBPHY0>,
++				<&clocks SCLK_USBPHY1>;
++			clock-names = "phy", "device", "host";
++			status = "okay";
++			#phy-cells = <1>;
++		};
++
++		ehci: ehci@ec200000 {
++			compatible = "samsung,exynos-ehci";
++			reg = <0xec200000 0x100>;
++			interrupts = <23>;
++			interrupt-parent = <&vic1>;
++			clocks = <&clocks USB_HOST>;
++			clock-names = "usbhost";
++			phy-names = "hsic0";
++			phys = <&usbphy 1>;
++			status = "disabled";
++		};
++
++		ohci: ohci@ec300000 {
++			compatible = "samsung,exynos4210-ohci";
++			reg = <0xec300000 0x100>;
++			interrupts = <23>;
++			clocks = <&clocks USB_HOST>;
++			clock-names = "usbhost";
++			status = "disabled";
++		};
++
++		mfc: codec@f1700000 {
++			compatible = "samsung,mfc-v5";
++			reg = <0xf1700000 0x10000>;
++			interrupt-parent = <&vic2>;
++			interrupts = <14>;
++			clocks = <&clocks DOUT_MFC>, <&clocks MFC>;
++			clock-names = "sclk_mfc", "mfc";
++		};
++
++		vic0: interrupt-controller@f2000000 {
++			compatible = "arm,pl192-vic";
++			interrupt-controller;
++			reg = <0xf2000000 0x1000>;
++			#interrupt-cells = <1>;
++		};
++
++		vic1: interrupt-controller@f2100000 {
++			compatible = "arm,pl192-vic";
++			interrupt-controller;
++			reg = <0xf2100000 0x1000>;
++			#interrupt-cells = <1>;
++		};
++
++		vic2: interrupt-controller@f2200000 {
++			compatible = "arm,pl192-vic";
++			interrupt-controller;
++			reg = <0xf2200000 0x1000>;
++			#interrupt-cells = <1>;
++		};
++
++		vic3: interrupt-controller@f2300000 {
++			compatible = "arm,pl192-vic";
++			interrupt-controller;
++			reg = <0xf2300000 0x1000>;
++			#interrupt-cells = <1>;
++		};
++
++
++		fimd: fimd@f8000000 {
++			compatible = "samsung,exynos4210-fimd";
++			interrupt-parent = <&vic2>;
++			reg = <0xf8000000 0x20000>;
++			interrupt-names = "fifo", "vsync", "lcd_sys";
++			interrupts = <0>, <1>, <2>;
++			clocks = <&clocks SCLK_FIMD>, <&clocks FIMD>;
++			clock-names = "sclk_fimd", "fimd";
++			status = "disabled";
++		};
++
++		g2d: g2d@fa000000 {
++			compatible = "samsung,s5pv210-g2d";
++			reg = <0xfa000000 0x1000>;
++			interrupt-parent = <&vic2>;
++			interrupts = <9>;
++			clocks = <&clocks DOUT_G2D>, <&clocks G2D>;
++			clock-names = "sclk_fimg2d", "fimg2d";
++		};
++
++		mdma1: mdma@fa200000 {
++			compatible = "arm,pl330", "arm,primecell";
++			reg = <0xfa200000 0x1000>;
++			interrupt-parent = <&vic0>;
++			interrupts = <18>;
++			clocks = <&clocks MDMA>;
++			clock-names = "apb_pclk";
++			#dma-cells = <1>;
++			#dma-channels = <8>;
++			#dma-requests = <1>;
++		};
++
++		camera: camera {
++			compatible = "samsung,fimc", "simple-bus";
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++			pinctrl-names = "default";
++			pinctrl-0 = <>;
++			clocks = <&clocks SCLK_CAM0>, <&clocks SCLK_CAM1>;
++			clock-names = "sclk_cam0", "sclk_cam1";
++
++			clock_cam: clock-controller {
++				#clock-cells = <1>;
++			};
++
++			csis_0: csis@fa600000 {
++				compatible = "samsung,s5pv210-csis";
++				reg = <0xfa600000 0x4000>;
++				interrupt-parent = <&vic2>;
++				interrupts = <29>;
++				clocks = <&clocks CSIS>, <&clocks SCLK_CSIS>;
++				clock-names = "clk_csis", "sclk_csis";
++				bus-width = <4>;
++				status = "disabled";
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++
++			fimc_0: fimc@fb200000 {
++				compatible = "samsung,s5pv210-fimc";
++				reg = <0xfb200000 0x1000>;
++				interrupts = <5>;
++				interrupt-parent = <&vic2>;
++				clocks = <&clocks FIMC0>, <&clocks SCLK_FIMC0>;
++				clock-names = "fimc", "sclk_fimc";
++				samsung,sysreg = <&sys_reg>;
++				samsung,pix-limits = <4224 8192 1920 4224>;
++				samsung,mainscaler-ext;
++				samsung,cam-if;
++				status = "disabled";
++			};
++
++			fimc_1: fimc@fb300000 {
++				compatible = "samsung,s5pv210-fimc";
++				reg = <0xfb300000 0x1000>;
++				interrupt-parent = <&vic2>;
++				interrupts = <6>;
++				clocks = <&clocks FIMC1>, <&clocks SCLK_FIMC1>;
++				clock-names = "fimc", "sclk_fimc";
++				samsung,sysreg = <&sys_reg>;
++				samsung,pix-limits = <4224 8192 1920 4224>;
++				samsung,mainscaler-ext;
++				samsung,cam-if;
++				status = "disabled";
++			};
++
++			fimc_2: fimc@fb400000 {
++				compatible = "samsung,s5pv210-fimc";
++				reg = <0xfb400000 0x1000>;
++				interrupt-parent = <&vic2>;
++				interrupts = <7>;
++				clocks = <&clocks FIMC2>, <&clocks SCLK_FIMC2>;
++				clock-names = "fimc", "sclk_fimc";
++				samsung,sysreg = <&sys_reg>;
++				samsung,pix-limits = <4224 8192 1920 4224>;
++				samsung,mainscaler-ext;
++				samsung,lcd-wb;
++				status = "disabled";
++			};
++		};
++	};
 +};
 +
-+static void __init s5pv210_dt_map_io(void)
-+{
-+	debug_ll_io_init();
-+	iotable_init(s5pv210_dt_iodesc, ARRAY_SIZE(s5pv210_dt_iodesc));
-+}
-+
-+static void __init s5pv210_dt_init_irq(void)
-+{
-+	void __iomem *chipid_base;
-+	struct device_node *np;
-+
-+	np = of_find_compatible_node(NULL, NULL, "samsung,s5pv210-chipid");
-+	if (!np)
-+		panic("%s: Unable to find device node!", __func__);
-+
-+	chipid_base = of_iomap(np, 0);
-+	if (!chipid_base)
-+		panic("Unable get a chipid!");
-+
-+	s5p_init_cpu(chipid_base);
-+	iounmap(chipid_base);
-+
-+	if (!soc_is_s5pv210())
-+		panic("SoC is not S5PV210/S5PC110!");
-+
-+	of_clk_init(NULL);
-+	irqchip_init();
-+};
-+
-+static void __init s5pv210_dt_init_machine(void)
-+{
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+}
-+
-+static char const *s5pv210_dt_compat[] __initdata = {
-+	"samsung,s5pc110",
-+	"samsung,s5pv210",
-+	NULL
-+};
-+
-+DT_MACHINE_START(S3C6400_DT, "Samsung S5PV210/S5PC110 (Flattened Device Tree)")
-+	/* Maintainer: Mateusz Krawczuk <m.krawczuk@partner.samsung.com> */
-+	.dt_compat  = s5pv210_dt_compat,
-+	.map_io    = s5pv210_dt_map_io,
-+	.init_irq  = s5pv210_dt_init_irq,
-+	.init_machine  = s5pv210_dt_init_machine,
-+	.restart        = s5pv210_restart,
-+MACHINE_END
++#include "s5pv210-pinctrl.dtsi"
 -- 
 1.8.1.2
 
