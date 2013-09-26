@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab3IZWQh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:16:37 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:65053 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754512Ab3IZWQd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:16:33 -0400
+	id S1754626Ab3IZWQn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:16:43 -0400
+Received: from www.sr71.net ([198.145.64.142]:38671 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754512Ab3IZWQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 18:16:39 -0400
+Message-ID: <5244B22C.9020503@sr71.net>
+Date: Thu, 26 Sep 2013 15:16:12 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <CANEJEGt9E3apwKMpLFL8_5cy8GW9EdcNgXtm-XGAmQWgYftVjw@mail.gmail.com>
-References: <1379611214-1089-1-git-send-email-grundler@chromium.org>
-	<CAPDyKFr0h=uTz4xOAULLc0Ff23xB-xVuuk+XnBz_Uq5YMryHbA@mail.gmail.com>
-	<87fvss2uh9.fsf@octavius.laptop.org>
-	<8738os2tqt.fsf@octavius.laptop.org>
-	<CANEJEGt9E3apwKMpLFL8_5cy8GW9EdcNgXtm-XGAmQWgYftVjw@mail.gmail.com>
-Date: Thu, 26 Sep 2013 15:16:32 -0700
-X-Google-Sender-Auth: NL4gbamISjPA7zDXnoAJwx3yaKU
-Message-ID: <CANEJEGuGWKVudcKMrZKLPEMEpQ5sJFJn4xwOOe7N6q9_qfy3bw@mail.gmail.com>
-Subject: Re: [PATCH] mmc: core: remove issue_fn indirect function call
-From: Grant Grundler <grundler@chromium.org>
-To: Grant Grundler <grundler@chromium.org>
-Cc: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
+        tony.luck@intel.com, matthew.garrett@nebula.com, riel@redhat.com,
+        arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
+        willy@linux.intel.com, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
+        rjw@sisk.pl
+CC: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
+        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
+        kosaki.motohiro@gmail.com, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 06/40] mm: Demarcate and maintain pageblocks in
+ region-order in the zones' freelists
+References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <20130925231454.26184.19783.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130925231454.26184.19783.stgit@srivatsabhat.in.ibm.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 2:56 PM, Grant Grundler <grundler@chromium.org> wrote:
-> On Wed, Sep 25, 2013 at 7:37 PM, Chris Ball <cjb@laptop.org> wrote:
->> Hi,
->>
->> On Wed, Sep 25 2013, Chris Ball wrote:
->>> Hi,
->>>
->>> On Fri, Sep 20 2013, Ulf Hansson wrote:
->>>> On 19 September 2013 19:20, Grant Grundler <grundler@chromium.org> wrote:
->>>>> struct mmc_queue defines issue_fn as an indirect function call.
->>>>> issue_fn field only gets set to mmc_blk_issue_rq and only gets
->>>>> invoked immediately after calling blk_fetch_request().
->>>>> Don't bother with indirect function call - it's pointless and just
->>>>> obfuscates the code.
->>>>>
->>>>> Signed-off-by: Grant Grundler <grundler@chromium.org>
->>>>
->>>> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
->>>
->>> Thanks, pushed to mmc-next for 3.13.
->>
->> Have dropped this, it's breaking my build:
->>
->> /home/cjb/git/mmc/drivers/mmc/card/block.c:1955:12: warning: ‘mmc_blk_issue_rq’ defined but not used [-Wunused-function]
->
-> The function is declared static. :(  Let me respin to remove the
-> static and add a function prototype to a header file.
+On 09/25/2013 04:14 PM, Srivatsa S. Bhat wrote:
+> @@ -605,16 +713,22 @@ static inline void __free_one_page(struct page *page,
+>  		buddy_idx = __find_buddy_index(combined_idx, order + 1);
+>  		higher_buddy = higher_page + (buddy_idx - combined_idx);
+>  		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
+> -			list_add_tail(&page->lru,
+> -				&zone->free_area[order].free_list[migratetype].list);
+> +
+> +			/*
+> +			 * Implementing an add_to_freelist_tail() won't be
+> +			 * very useful because both of them (almost) add to
+> +			 * the tail within the region. So we could potentially
+> +			 * switch off this entire "is next-higher buddy free?"
+> +			 * logic when memory regions are used.
+> +			 */
+> +			add_to_freelist(page, &area->free_list[migratetype]);
+>  			goto out;
+>  		}
+>  	}
 
-block.o and queue.o are linked together into one .ko all the time:
-obj-$(CONFIG_MMC_BLOCK)         += mmc_block.o
-mmc_block-objs                  := block.o queue.o
+Commit 6dda9d55b says that this had some discrete performance gains.
+It's a bummer that this deoptimizes it, and I think that (expected)
+performance degredation at least needs to be referenced _somewhere_.
 
-Two ways to handle this: I can
-1) add a local function prototype of mmc_blk_issue_rq() to queue.c
-2) move mmc_init_queue() and mmc_queue_thread() from queue.c to block.c
+I also find it very hard to take code seriously which stuff like this:
 
-(2) actually makes sense since both functions are block IO specific.
+> +#ifdef CONFIG_DEBUG_PAGEALLOC
+> +		WARN(region->nr_free == 0, "%s: nr_free messed up\n", __func__);
+> +#endif
 
-Thoughts? Preference? Other ideas?
-
-thanks,
-grant
-
-ps. It's more obvious now that the return value from
-mmc_blk_issue_rq() is getting ignored. *sigh*
+nine times.
