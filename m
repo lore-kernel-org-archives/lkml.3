@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab3IZQ5D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 12:57:03 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:58195 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab3IZQ5A (ORCPT
+	id S1751677Ab3IZQ7B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 12:59:01 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:14094 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab3IZQ64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 12:57:00 -0400
-Message-ID: <52446748.7090001@gmail.com>
-Date: Fri, 27 Sep 2013 00:56:40 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Thu, 26 Sep 2013 12:58:56 -0400
+X-IronPort-AV: E=Sophos;i="4.90,986,1371081600"; 
+   d="scan'208";a="55226467"
+Message-ID: <524467CC.7040908@citrix.com>
+Date: Thu, 26 Sep 2013 17:58:52 +0100
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v5 3/6] x86/mm: Factor out of top-down direct mapping
- setup
-References: <5241D897.1090905@gmail.com> <5241D9F2.80908@gmail.com> <20130926144642.GE3482@htj.dyndns.org> <5244553A.2050700@gmail.com>
-In-Reply-To: <5244553A.2050700@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>,
+        <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCHv2] tracing/events: Add bounce tracing to swiotbl
+References: <1378325465-10384-1-git-send-email-zoltan.kiss@citrix.com> <5239CF01.1010001@citrix.com> <20130925175649.GC7253@phenom.dumpdata.com>
+In-Reply-To: <20130925175649.GC7253@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello tejun,
-
-On 09/26/2013 11:39 PM, Zhang Yanfei wrote:
-> On 09/26/2013 10:46 PM, Tejun Heo wrote:
->> On Wed, Sep 25, 2013 at 02:29:06AM +0800, Zhang Yanfei wrote:
->>> +/**
->>> + * memory_map_top_down - Map [map_start, map_end) top down
->>> + * @map_start: start address of the target memory range
->>> + * @map_end: end address of the target memory range
->>> + *
->>> + * This function will setup direct mapping for memory range
->>> + * [map_start, map_end) in top-down.
+On 25/09/13 18:56, Konrad Rzeszutek Wilk wrote:
+> On Wed, Sep 18, 2013 at 05:04:17PM +0100, Zoltan Kiss wrote:
+>> Hi,
 >>
->> Can you please put a bit more effort into the function description?
-> 
-> Sorry.... I will try to make a more detailed description.
+>> I haven't got a reply in the past 2 weeks, so I would like to bump
+>> the patch, just to make sure it haven't fell off the radar.
+>
+> Hey,
+>
+> I have this in my queue to put on 3.13 as it is past the merge window.
+> .. with that in mind:
+>
+>
+> .. snip..
+>>> +	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
+>>> +		"size=%zu swiotlb_force=%x",
+>>> +		__get_str(dev_name),
+>>> +		__entry->dma_mask,
+>>> +		(unsigned long long)__entry->dev_addr,
+>>> +		__entry->size,
+>>> +		__entry->swiotlb_force)
+>
+> Would it make sense to do something like this:
+>
+> 		__entry->swiotlb_force ? "swiotlb_force" : "")
+>
 
-Trying below:
+I would then rather do:
 
-/**
- * memory_map_top_down - Map [map_start, map_end) top down
- * @map_start: start address of the target memory range
- * @map_end: end address of the target memory range
- *
- * This function will setup direct mapping for memory range
- * [map_start, map_end) in top-down. That said, the page tables
- * will be allocated at the end of the memory, and we map the
- * memory top-down.
- */
-static void __init memory_map_top_down(unsigned long map_start,
-                                       unsigned long map_end)
-{
++	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
++		"size=%zu swiotlb_force=",
++               __entry->swiotlb_force ? " yes" : "no",
++		__get_str(dev_name),
 
-Thanks.
+Or do you mean?:
 
-> 
->>
->> Other than that,
->>
->>  Acked-by: Tejun Heo <tj@kernel.org>
-> 
-> Thanks.
-> 
++	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
++		"size=%zu",
++               __entry->swiotlb_force ? " swiotlb_force" : "",
++		__get_str(dev_name),
 
+This one doesn't tell you explicitly if swiotlb_force is NOT set, maybe 
+that's not so good? And adds a bit of complexity to your grep regexp?
+Either way is fine with me, but I think "swiotlb_force=0|1" is also 
+pretty straightforward to understand, and I guess it makes printk 
+slightly faster (I assume the conditional operator gives a little bit of 
+overhead)
 
--- 
-Thanks.
-Zhang Yanfei
+Regards,
+
+Zoli
