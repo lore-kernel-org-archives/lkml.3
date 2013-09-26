@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab3IZP3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:29:49 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43059 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752797Ab3IZP3o (ORCPT
+	id S1752971Ab3IZPaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:30:22 -0400
+Received: from smtprelay0078.hostedemail.com ([216.40.44.78]:33412 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751281Ab3IZPaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:29:44 -0400
-Date: Thu, 26 Sep 2013 16:29:41 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: devicetree@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mfd: arizona: Update device tree regulator bindings
-Message-ID: <20130926152941.GQ3635@opensource.wolfsonmicro.com>
-References: <1380131272-16982-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20130925183201.GT3226@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925183201.GT3226@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Thu, 26 Sep 2013 11:30:19 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3868:3871:3872:3874:4321:5007:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12679:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: owl13_3ca02458d5161
+X-Filterd-Recvd-Size: 1512
+Message-ID: <1380209415.17366.66.camel@joe-AO722>
+Subject: Re: [PATCH 3/4] SunRPC: Use no_printk() for the null dprintk() and
+ dfprintk()
+From: Joe Perches <joe@perches.com>
+To: David Howells <dhowells@redhat.com>
+Cc: bfields@fieldses.org, Trond.Myklebust@netapp.com, olof@lixom.net,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 26 Sep 2013 08:30:15 -0700
+In-Reply-To: <20130926144525.29424.11130.stgit@warthog.procyon.org.uk>
+References: <20130926144502.29424.21633.stgit@warthog.procyon.org.uk>
+	 <20130926144525.29424.11130.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
+On Thu, 2013-09-26 at 15:45 +0100, David Howells wrote:
+> Use no_printk() for the null dprintk() and dfprintk() so that the compiler
+> doesn't complain about unused variables for stuff that's just printed.
 
-What are your thoughts on this approach? I basically add a way to
-specify in the DAPM regulator supply widget that the supply lives
-on the parent rather than the current device. If you like it I
-will send it in as a proper patch.
+no_printk doesn't prevent any argument side-effects
+from being optimized away by the compiler.
 
-I had considered adding something like a recursive regulator get
-that works it's way up the tree but this felt rather invasive and
-most places the user code does the regulator get rather than a
-framework so the issue is only really likely to crop up with
-regards to ASoC.
+ie:
+	dprintk("%d", func())
+func is now always called when before it wasn't.
 
-Thanks,
-Charles
----
- include/sound/soc-dapm.h  |    2 ++
- sound/soc/codecs/wm5102.c |   13 +++++++------
- sound/soc/soc-dapm.c      |    7 ++++++-
- 3 files changed, 15 insertions(+), 7 deletions(-)
+Are there any side-effects?
 
-diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
-index 27a72d5..f21b261 100644
---- a/include/sound/soc-dapm.h
-+++ b/include/sound/soc-dapm.h
-@@ -360,6 +360,8 @@ struct device;
- 
- /* regulator widget flags */
- #define SND_SOC_DAPM_REGULATOR_BYPASS     0x1     /* bypass when disabled */
-+/* use codec parent device for regulator get */
-+#define SND_SOC_DAPM_REGULATOR_USE_PARENT 0x2
- 
- struct snd_soc_dapm_widget;
- enum snd_soc_dapm_type;
-diff --git a/sound/soc/codecs/wm5102.c b/sound/soc/codecs/wm5102.c
-index 8bbddc1..ee31f15 100644
---- a/sound/soc/codecs/wm5102.c
-+++ b/sound/soc/codecs/wm5102.c
-@@ -980,12 +980,13 @@ SND_SOC_DAPM_SUPPLY("OPCLK", ARIZONA_OUTPUT_SYSTEM_CLOCK,
- SND_SOC_DAPM_SUPPLY("ASYNCOPCLK", ARIZONA_OUTPUT_ASYNC_CLOCK,
- 		    ARIZONA_OPCLK_ASYNC_ENA_SHIFT, 0, NULL, 0),
- 
--SND_SOC_DAPM_REGULATOR_SUPPLY("DBVDD2", 0, 0),
--SND_SOC_DAPM_REGULATOR_SUPPLY("DBVDD3", 0, 0),
--SND_SOC_DAPM_REGULATOR_SUPPLY("CPVDD", 20, 0),
--SND_SOC_DAPM_REGULATOR_SUPPLY("MICVDD", 0, SND_SOC_DAPM_REGULATOR_BYPASS),
--SND_SOC_DAPM_REGULATOR_SUPPLY("SPKVDDL", 0, 0),
--SND_SOC_DAPM_REGULATOR_SUPPLY("SPKVDDR", 0, 0),
-+SND_SOC_DAPM_REGULATOR_SUPPLY("DBVDD2", 0, SND_SOC_DAPM_REGULATOR_USE_PARENT),
-+SND_SOC_DAPM_REGULATOR_SUPPLY("DBVDD3", 0, SND_SOC_DAPM_REGULATOR_USE_PARENT),
-+SND_SOC_DAPM_REGULATOR_SUPPLY("CPVDD", 20, SND_SOC_DAPM_REGULATOR_USE_PARENT),
-+SND_SOC_DAPM_REGULATOR_SUPPLY("MICVDD", 0, SND_SOC_DAPM_REGULATOR_BYPASS |
-+					   SND_SOC_DAPM_REGULATOR_USE_PARENT),
-+SND_SOC_DAPM_REGULATOR_SUPPLY("SPKVDDL", 0, SND_SOC_DAPM_REGULATOR_USE_PARENT),
-+SND_SOC_DAPM_REGULATOR_SUPPLY("SPKVDDR", 0, SND_SOC_DAPM_REGULATOR_USE_PARENT),
- 
- SND_SOC_DAPM_SIGGEN("TONE"),
- SND_SOC_DAPM_SIGGEN("NOISE"),
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index c17c14c..899bd2e 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -3181,7 +3181,12 @@ snd_soc_dapm_new_control(struct snd_soc_dapm_context *dapm,
- 
- 	switch (w->id) {
- 	case snd_soc_dapm_regulator_supply:
--		w->regulator = devm_regulator_get(dapm->dev, w->name);
-+		if (w->on_val & SND_SOC_DAPM_REGULATOR_USE_PARENT)
-+			w->regulator = devm_regulator_get(dapm->dev->parent,
-+							  w->name);
-+		else
-+			w->regulator = devm_regulator_get(dapm->dev, w->name);
-+
- 		if (IS_ERR(w->regulator)) {
- 			ret = PTR_ERR(w->regulator);
- 			dev_err(dapm->dev, "ASoC: Failed to request %s: %d\n",
--- 
-1.7.2.5
+btw: Using
+
+#define dprintk(fmt, ...)
+do {
+	if (0)
+		printk(fmt, ##__VA_ARGS__);
+} while (0)
+
+does away with side-effects.
+
 
