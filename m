@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057Ab3IZQVj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 12:21:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32808 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab3IZQVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 12:21:38 -0400
-Date: Thu, 26 Sep 2013 18:14:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
+	id S1753411Ab3IZQYy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 12:24:54 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:37846 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033Ab3IZQYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 12:24:53 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130926161426.GA14372@redhat.com>
-References: <20130923173203.GA20392@redhat.com> <20130924202423.GW12926@twins.programming.kicks-ass.net> <20130925155515.GA17447@redhat.com> <20130925174307.GA3220@laptop.programming.kicks-ass.net> <20130925175055.GA25914@redhat.com> <20130925184015.GC3657@laptop.programming.kicks-ass.net> <20130925212200.GA7959@linux.vnet.ibm.com> <20130926111042.GS3081@twins.programming.kicks-ass.net> <20130926155321.GA4342@redhat.com> <20130926161311.GG3657@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926161311.GG3657@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>
+Subject: [PATCH 0/8] softirq: Consolidation and stack overrun fix v3
+Date: Thu, 26 Sep 2013 18:24:38 +0200
+Message-Id: <1380212686-25897-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26, Peter Zijlstra wrote:
->
-> On Thu, Sep 26, 2013 at 05:53:21PM +0200, Oleg Nesterov wrote:
-> > On 09/26, Peter Zijlstra wrote:
-> > >  void cpu_hotplug_done(void)
-> > >  {
-> > > -	cpu_hotplug.active_writer = NULL;
-> > > -	mutex_unlock(&cpu_hotplug.lock);
-> > > +	/* Signal the writer is done, no fast path yet. */
-> > > +	__cpuhp_state = readers_slow;
-> > > +	wake_up_all(&cpuhp_readers);
-> > > +
-> > > +	/*
-> > > +	 * The wait_event()/wake_up_all() prevents the race where the readers
-> > > +	 * are delayed between fetching __cpuhp_state and blocking.
-> > > +	 */
-> > > +
-> > > +	/* See percpu_up_write(); readers will no longer attempt to block. */
-> > > +	synchronize_sched();
-> >
-> > Shouldn't you move wake_up_all(&cpuhp_readers) down after
-> > synchronize_sched() (or add another one) ? To ensure that a reader can't
-> > see state = BLOCK after wakeup().
->
-> Well, if they are blocked, the wake_up_all() will do an actual
-> try_to_wake_up() which issues a MB as per smp_mb__before_spinlock().
+Hi,
 
-Yes. Everything is fine with the already blocked readers.
+Series is fixed to address Linus and Ben comments:
 
-I meant the new reader which still can see state = BLOCK after we
-do wakeup(), but I didn't notice it should do __wait_event() which
-takes the lock unconditionally, it must see the change after that.
+* Turn __ARCH_IRQ_EXIT_ON_IRQ_STACK old ad-hoc style symbol to proper Kconfig
+(CONFIG_HAVE_IRQ_EXIT_ON_IRQ_STACK)
 
-> Right?
+* Activates it to powerpc as well.
 
-Yes, I was wrong, thanks.
+* Fix a bit the changelog of patch 6/8
 
-Oleg.
+This applies on top of 06367d58f487a592de50e6e2327371c5e3b6188f
+("Merge branch 'merge' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc")
+
+And it can be pulled from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	irq/core-v4
+
+HEAD: 0362b2ff8d67913a8ffc5d757500129ead56b007
+
+Frederic Weisbecker (8):
+  irq: Force hardirq exit's softirq processing on its own stack
+  irq: Consolidate do_softirq() arch overriden implementations
+  irq: Optimize call to softirq on hardirq exit
+  irq: Improve a bit softirq debugging
+  irq: Justify the various softirq stack choices
+  irq: Optimize softirq stack selection in irq exit
+  x86: Tell about irq stack coverage
+  powerpc: Tell about irq stack coverage
+
+ arch/Kconfig               | 10 ++++++++
+ arch/metag/kernel/irq.c    | 52 ++++++++++++++++--------------------------
+ arch/parisc/kernel/irq.c   | 17 ++------------
+ arch/powerpc/Kconfig       |  1 +
+ arch/powerpc/kernel/irq.c  | 17 +-------------
+ arch/s390/kernel/irq.c     | 52 +++++++++++++++++-------------------------
+ arch/sh/kernel/irq.c       | 57 +++++++++++++++++-----------------------------
+ arch/sparc/kernel/irq_64.c | 31 ++++++++-----------------
+ arch/x86/Kconfig           |  1 +
+ arch/x86/kernel/entry_64.S |  4 ++--
+ arch/x86/kernel/irq_32.c   | 30 +++++++-----------------
+ arch/x86/kernel/irq_64.c   | 21 -----------------
+ include/linux/interrupt.h  | 11 +++++++++
+ kernel/softirq.c           | 40 ++++++++++++++++++++++++--------
+ 14 files changed, 138 insertions(+), 206 deletions(-)
+
+-- 
+1.8.3.1
 
