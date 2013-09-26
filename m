@@ -1,68 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab3IZLkE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 07:40:04 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:41915 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755712Ab3IZLkB (ORCPT
+	id S1756788Ab3IZLob (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 07:44:31 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:59047 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab3IZLo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 07:40:01 -0400
+	Thu, 26 Sep 2013 07:44:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130926111618.GU3081@twins.programming.kicks-ass.net>
-References: <20130925075341.GB3081@twins.programming.kicks-ass.net>
- <1380099377.8523.9.camel@marge.simpson.net> <20130926095812.GR3081@twins.programming.kicks-ass.net>
- <CAPM31RL9RGX=ohUVag=tD41MbXs47dDgpndGfjBt68QeL-De7g@mail.gmail.com> <20130926111618.GU3081@twins.programming.kicks-ass.net>
-From: Paul Turner <pjt@google.com>
-Date: Thu, 26 Sep 2013 04:39:30 -0700
-Message-ID: <CAPM31RKvhdDu_NmRd-hv7xBzM6qsS=Y0ey96GpLt36-oBrqdBg@mail.gmail.com>
-Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for wake_affine(.sync=true)
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <52441407.9010603@nod.at>
+References: <1377073172-3662-1-git-send-email-richard@nod.at>
+ <1377073172-3662-3-git-send-email-richard@nod.at> <CALkWK0kCrQ9hPABD_XQ9QFG-vByP+xZWZs+RkVK77+cX7Odz7g@mail.gmail.com>
+ <52441025.9030308@nod.at> <CALkWK0k5neR50h+AWEF5AgnpbgWMitZUnbv_caVzt6HiUA6mXg@mail.gmail.com>
+ <52441407.9010603@nod.at>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Thu, 26 Sep 2013 17:13:46 +0530
+Message-ID: <CALkWK0=FG4COEjv5+mu1JRiiFQ2k6vop1mhFPmAT4bjtYeK6nA@mail.gmail.com>
+Subject: Re: [PATCH 2/8] um: Do not use SUBARCH
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-arch@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        geert@linux-m68k.org, ralf@linux-mips.org, lethal@linux-sh.org,
+        Jeff Dike <jdike@addtoit.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 4:16 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Sep 26, 2013 at 03:55:55AM -0700, Paul Turner wrote:
->> > +               /*
->> > +                * Don't bother with select_idle_sibling() in the case of a sync wakeup
->> > +                * where we know the only running task will soon go-away. Going
->> > +                * through select_idle_sibling will only lead to pointless ping-pong.
->> > +                */
->> > +               if (sync && prev_cpu == cpu && cpu_rq(cpu)->nr_running == 1 &&
->>
->> I've long thought of trying something like this.
->>
->> I like the intent but I'd go a step further in that I think we want to
->> also implicitly extract WF_SYNC itself.
+Richard Weinberger wrote:
+>> Auto-detection of SUBARCH, which can be done with a simple call to
+>> uname -m (the 90% case). The second patch I submitted prevented
+>> spawning xterms unnecessarily, which we discussed was a good move.
 >
-> I have vague memories of actually trying something like that a good
-> number of years ago.. sadly that's all I remember about it.
->
->> What we really then care about is predicting the overlap associated
->> with userspace synchronization objects, typically built on top of
->> futexes.  Unfortunately the existence/use of per-thread futexes
->> reduces how much state you could usefully associate with the futex.
->> One approach might be to hash (with some small saturating counter)
->> against rip.  But this gets more complicated quite quickly.
->
-> Why would you need per object storage? To further granulate the
-> predicted overlap? instead of having one per task, you have one per
-> object?
+> Covering only 90% of all cases is not enough.
+> We must not break existing setups.
+> That's also why my "Get rid of SUBARCH" series is not upstream.
 
-It is my intuition that there are a few common objects with fairly
-polarized behavior:  I.e. For condition variables and producer
-consumer queues, a wakeup strongly predicts blocking.  Whereas for
-locks protecting objects, e.g. a Mutex, would be expected to have the
-opposite behavior.
+Mine covers 100% of the cases. My series is about auto-detection of
+SUBARCH, not its removal: you can still set a SUBARCH from the
+command-line; existing setups don't break.
 
-For this hint to be beneficial you have to get it right frequently,
-getting it wrong in the first case hurts cache and in the second hurts
-parallelism.  Today we always err on the side of hurting locality
-since the cost of getting it wrong is better bounded.  These are
-sufficiently common, and likely to be interspersed, that I suspect
-allowing them to interact on a thread-wide counter will basically give
-a mush result (or even be an anti predictor since it will strongly
-favor the last observation) an an input.
+> Your second patch changed CONFIG_CON_CHAN to pts, which is ok but not
+> a major issue.
+
+"Major" or "minor" is purely your classification: don't impose your
+value judgement on reasonable patches. I am the user, and I demand a
+pleasant build process and ui. Moreover, how do you expect more
+contributions to come in until existing patches make it to upstream?
+
+> The xterms are also not spawning unnecessarily they spawn upon a tty device is opened.
+> With your patch UML create another pts. Thus, the spawning is hidden...
+
+It connects to an existing host pts device instead of spawning a new
+xterm and connecting to the console io on that. Why is that not
+desirable?
+
+> I did not push it upstream because it depended on your first one and as I said, it's not critical.
+> This does not mean that I moved it to /dev/null.
+
+... and you still haven't told me what's wrong with my first patch.
+
+> Again, the plan is to get rid of SUBARCH at all.
+
+You've been harping about this plan for the last N months, and nothing
+has happened so far. It's time to stop planning, and accept good work.
+
+>>> make defconfig ARCH=um SUBARCH=x86 (or SUBARCH=i386) will create a defconfig for 32bit.
+>>> make defconfig ARCH=um SUBARCH=x86_64 one for 64bit.
+>>
+>> Yes, that's how I prepared the patch in the first place.
+>
+> So, nothing is broken.
+
+So the user is Ugly and Stupid for expecting:
+
+  $ make defconfig ARCH=um
+  $ make -j 8 ARCH=um
+
+to work? Stop denying problems, no matter how "major" or "minor" they are.
+
+> If you want "make defconfig ARCH=um" creating a defconfig for the correct arch you need
+> more than your first patch.
+
+No, you don't. Try it for yourself and see. Set a SUBARCH if you like,
+and it'll still work fine.
+
+> Again, "Get rid of SUBARCH" series has the same goal.
+
+For the last time, getting rid of SUBARCH is Wrong and Undesirable.
+
+-- 8< --
+Here's a transcript spoonfeeding you the impact of my first patch:
+
+  $ make defconfig ARCH=um SUBARCH=i386
+  *** Default configuration is based on 'i386_defconfig'
+  #
+  # configuration written to .config
+  #
+  $ make defconfig ARCH=um SUBARCH=x86_64
+  *** Default configuration is based on 'x86_64_defconfig'
+  #
+  # configuration written to .config
+  #
+  $ make defconfig ARCH=um
+  *** Default configuration is based on 'x86_64_defconfig'
+  #
+  # configuration written to .config
+  #
+
+In the last case, notice how defconfig automatically picks up
+x86_64_defconfig correctly: if I were on an i386 machine, it would
+have picked up i386_defconfig like in the first case. Without my
+patch, the last case would have incorrectly picked up an i386
+defconfig, which is Stupid and Wrong.
