@@ -1,69 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab3IZSzq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 14:55:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47784 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752841Ab3IZSzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 14:55:39 -0400
-Date: Thu, 26 Sep 2013 20:55:24 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Eduardo Habkost <ehabkost@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Andre Przywara <andre@andrep.de>,
-        Joerg Roedel <joro@8bytes.org>, X86 ML <x86@kernel.org>,
-        KVM <kvm@vger.kernel.org>, qemu-devel@nongnu.org,
-        libvir-list@redhat.com, Jiri Denemark <jdenemar@redhat.com>
-Subject: Re: [PATCH 1/6] kvm: Add KVM_GET_EMULATED_CPUID
-Message-ID: <20130926185524.GA10123@pd.tnic>
-References: <1379861095-628-1-git-send-email-bp@alien8.de>
- <1379861095-628-2-git-send-email-bp@alien8.de>
- <20130923162856.GC7264@otherpad.lan.raisama.net>
- <2f5d83d4d90ba9c5930f099d6f73e61b.squirrel@www.skyhub.de>
- <20130924100414.GE17294@redhat.com>
- <20130926141915.GV2840@otherpad.lan.raisama.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130926141915.GV2840@otherpad.lan.raisama.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754624Ab3IZSzm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 14:55:42 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:35945 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab3IZSvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 14:51:25 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Michal Simek <monstr@monstr.eu>,
+        microblaze-uclinux@itee.uq.edu.au, netdev@vger.kernel.org
+Subject: [PATCH 09/21] microblaze: clean-up prom.h implicit includes
+Date: Thu, 26 Sep 2013 13:50:44 -0500
+Message-Id: <1380221456-11192-10-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
+References: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 11:19:15AM -0300, Eduardo Habkost wrote:
-> Then we may have a problem: some CPU models already have "movbe"
-> included (e.g. Haswell), and patch 6/6 will make "-cpu Haswell" get
-> movbe enabled even if it is being emulated.
+From: Rob Herring <rob.herring@calxeda.com>
 
-Huh? HSW has MOVBE so we won't #UD on it and MOVBE will get executed in
-hardware when executing the guest. IOW, we'll never get to the emulation
-path of piggybacking on the #UD.
+While powerpc is a mess of implicit includes by prom.h, microblaze just
+copied this and is easily fixed. Add the necessary explicit includes and
+remove unnecessary includes and other parts from prom.h
 
-> So if we really want to avoid enabling emulated features by mistake,
-> we may need a new CPU flag in addition to "enforce" to tell QEMU that
-> it is OK to enable emulated features (maybe "-cpu ...,emulate"?).
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Michal Simek <monstr@monstr.eu>
+Cc: microblaze-uclinux@itee.uq.edu.au
+Cc: netdev@vger.kernel.org
+---
+ arch/microblaze/include/asm/prom.h          | 28 +---------------------------
+ arch/microblaze/kernel/prom.c               |  1 +
+ arch/microblaze/kernel/setup.c              |  1 +
+ arch/microblaze/kernel/timer.c              |  1 +
+ arch/microblaze/pci/pci-common.c            |  1 +
+ drivers/net/ethernet/xilinx/ll_temac_main.c |  1 +
+ 6 files changed, 6 insertions(+), 27 deletions(-)
 
-EMULATED_CPUID are off by default and only if you request them
-specifically, they get enabled. If you start with "-cpu Haswell", MOVBE
-will be already set in the host CPUID.
-
-Or am I missing something?
-
-> But my question still stands: suppose we had x2apic emulation
-> implemented but for some reason it was painfully slow, we wouldn't
-> want to enable it by mistake. In this case, it would end up on
-> EMULATED_CPUID and not on SUPPORTED_CPUID, right?
-
-IMHO we want to enable emulation only when explicitly requested...
-regardless of the emulation performance.
-
-Thanks.
-
+diff --git a/arch/microblaze/include/asm/prom.h b/arch/microblaze/include/asm/prom.h
+index 9977816..f05bedc 100644
+--- a/arch/microblaze/include/asm/prom.h
++++ b/arch/microblaze/include/asm/prom.h
+@@ -11,17 +11,10 @@
+  * as published by the Free Software Foundation; either version
+  * 2 of the License, or (at your option) any later version.
+  */
+-
+-#include <linux/of.h>	/* linux/of.h gets to determine #include ordering */
+-
+ #ifndef _ASM_MICROBLAZE_PROM_H
+ #define _ASM_MICROBLAZE_PROM_H
+-#ifdef __KERNEL__
+-#ifndef __ASSEMBLY__
+ 
+-#include <linux/types.h>
+-#include <asm/irq.h>
+-#include <linux/atomic.h>
++#include <linux/of.h>
+ 
+ #define HAVE_ARCH_DEVTREE_FIXUPS
+ 
+@@ -42,23 +35,4 @@ extern unsigned long pci_address_to_pio(phys_addr_t address);
+ #define pci_address_to_pio pci_address_to_pio
+ #endif	/* CONFIG_PCI */
+ 
+-/* Parse the ibm,dma-window property of an OF node into the busno, phys and
+- * size parameters.
+- */
+-void of_parse_dma_window(struct device_node *dn, const void *dma_window_prop,
+-		unsigned long *busno, unsigned long *phys, unsigned long *size);
+-
+-extern void kdump_move_device_tree(void);
+-
+-#endif /* __ASSEMBLY__ */
+-#endif /* __KERNEL__ */
+-
+-/* These includes are put at the bottom because they may contain things
+- * that are overridden by this file.  Ideally they shouldn't be included
+- * by this file, but there are a bunch of .c files that currently depend
+- * on it.  Eventually they will be cleaned up. */
+-#include <linux/of_fdt.h>
+-#include <linux/of_irq.h>
+-#include <linux/platform_device.h>
+-
+ #endif /* _ASM_MICROBLAZE_PROM_H */
+diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/prom.c
+index 0c4453f..8118f03 100644
+--- a/arch/microblaze/kernel/prom.c
++++ b/arch/microblaze/kernel/prom.c
+@@ -30,6 +30,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/irq.h>
+ #include <linux/memblock.h>
++#include <linux/of_fdt.h>
+ 
+ #include <asm/prom.h>
+ #include <asm/page.h>
+diff --git a/arch/microblaze/kernel/setup.c b/arch/microblaze/kernel/setup.c
+index 0775e03..15b4ab1 100644
+--- a/arch/microblaze/kernel/setup.c
++++ b/arch/microblaze/kernel/setup.c
+@@ -16,6 +16,7 @@
+ #include <linux/initrd.h>
+ #include <linux/console.h>
+ #include <linux/debugfs.h>
++#include <linux/of_fdt.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/sections.h>
+diff --git a/arch/microblaze/kernel/timer.c b/arch/microblaze/kernel/timer.c
+index e4b3f33..827df4d 100644
+--- a/arch/microblaze/kernel/timer.c
++++ b/arch/microblaze/kernel/timer.c
+@@ -15,6 +15,7 @@
+ #include <linux/clk.h>
+ #include <linux/clockchips.h>
+ #include <linux/of_address.h>
++#include <linux/of_irq.h>
+ #include <asm/cpuinfo.h>
+ #include <linux/cnt32_to_63.h>
+ 
+diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
+index 1b93bf0..7c8a352 100644
+--- a/arch/microblaze/pci/pci-common.c
++++ b/arch/microblaze/pci/pci-common.c
+@@ -29,6 +29,7 @@
+ #include <linux/slab.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/of_irq.h>
+ #include <linux/of_pci.h>
+ #include <linux/export.h>
+ 
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index b88121f..22478d5 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -36,6 +36,7 @@
+ #include <linux/netdevice.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/of_irq.h>
+ #include <linux/of_mdio.h>
+ #include <linux/of_platform.h>
+ #include <linux/of_address.h>
 -- 
-Regards/Gruss,
-    Boris.
+1.8.1.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
