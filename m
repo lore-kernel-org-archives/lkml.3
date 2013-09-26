@@ -1,110 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab3IZJ6Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:58:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45732 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755712Ab3IZJ6W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:58:22 -0400
-Date: Thu, 26 Sep 2013 11:58:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for
- wake_affine(.sync=true)
-Message-ID: <20130926095812.GR3081@twins.programming.kicks-ass.net>
-References: <20130925075341.GB3081@twins.programming.kicks-ass.net>
- <1380099377.8523.9.camel@marge.simpson.net>
+	id S1756503Ab3IZJ7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:59:22 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751452Ab3IZJ7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 05:59:21 -0400
+Message-ID: <52440576.7040305@nod.at>
+Date: Thu, 26 Sep 2013 11:59:18 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380099377.8523.9.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Richard Genoud <richard.genoud@gmail.com>
+CC: Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] UBI: Fix error path in scan_pool()
+References: <1380141125-11063-1-git-send-email-richard@nod.at> <5243E033.7010403@gmail.com> <5243E130.3040200@nod.at> <CACQ1gAgqfHXwLjxhy9RrzFWe93Vmnc0chOg6uRKyqb6sVVQKxw@mail.gmail.com> <CACQ1gAjrSZv61sow6Ows50fu+ptjr3swqXDQT7NYGWqEx-w2Lg@mail.gmail.com>
+In-Reply-To: <CACQ1gAjrSZv61sow6Ows50fu+ptjr3swqXDQT7NYGWqEx-w2Lg@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 10:56:17AM +0200, Mike Galbraith wrote:
-> That will make pipe-test go fugly -> pretty, and help very fast/light
-> localhost network, but eat heavier localhost overlap recovery.  We need
-> a working (and cheap) overlap detector scheme, so we can know when there
-> is enough to be worth going after.
+Am 26.09.2013 11:25, schrieb Richard Genoud:
+> I added some traces and I found that : (dumping ec_header after
+> "ubi_io_read_ec_hdr(ubi, pnum, ech, 0); " in ubi_scan_fastmap())
 
-We used to have an overlap detectoring thing.. It went away though.
+Please show me the diff to understand what exactly you did. :)
 
-But see if you can make something like the below work?
+> [    0.812500] UBI: default fastmap pool size: 95
+> [    0.820312] UBI: default fastmap WL pool size: 25
+> [    0.828125] UBI: attaching mtd2 to ubi0
+> [    0.851562] ubi_scan_fastmap:
+> [    0.859375] Erase counter header dump:
+> [    0.859375]  magic          0x55424923
+> [    0.867187]  version        1
+> [    0.867187]  ec             1
+> [    0.867187]  vid_hdr_offset 2048
+> [    0.875000]  data_offset    4096
+> [    0.875000]  image_seq      891983656 <- image seq is good.
+> [    0.875000]  hdr_crc        0x13cc9a78
+> [    0.882812] erase counter header hexdump:
+> [    0.882812] 00000000: 55 42 49 23 01 00 00 00 00 00 00 00 00 00 00
+> 01 00 00 08 00 00 00 10 00 35 2a 97
+> 28 00 00 00 00  UBI#....................5*.(....
+> [    0.890625] 00000020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> 00 00 00 00 00 00 00 00 00 00 00 00
+> 00 13 cc 9a 78  ...............................x
 
-You could make it a general overlap thing and try without the sync too I
-suppose.. 
+Hmm, maybe a memory corruption. Strange.
 
----
- include/linux/sched.h |  3 +++
- kernel/sched/fair.c   | 25 +++++++++++++++++++++++++
- 2 files changed, 28 insertions(+)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index b5344de..5428016 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -974,6 +974,9 @@ struct sched_entity {
- 	u64			vruntime;
- 	u64			prev_sum_exec_runtime;
- 
-+	u64			last_sync_wakeup;
-+	u64			avg_overlap;
-+
- 	u64			nr_migrations;
- 
- #ifdef CONFIG_SCHEDSTATS
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2b89cd2..47b0d0f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2913,6 +2913,17 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 	struct sched_entity *se = &p->se;
- 	int task_sleep = flags & DEQUEUE_SLEEP;
- 
-+	if (se->last_sync_wakeup) {
-+		u64 overlap;
-+		s64 diff;
-+	       
-+		overlap = rq->clock - se->last_sync_wakeup;
-+		se->last_sync_wakeup = 0;
-+
-+		diff = overlap - se->avg_overlap;
-+		se->avg_overlap += diff >> 8;
-+	}
-+
- 	for_each_sched_entity(se) {
- 		cfs_rq = cfs_rq_of(se);
- 		dequeue_entity(cfs_rq, se, flags);
-@@ -3429,6 +3440,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 	int want_affine = 0;
- 	int sync = wake_flags & WF_SYNC;
- 
-+	if (sync)
-+		p->se.last_sync_wakeup = sched_clock_cpu(cpu);
-+
- 	if (p->nr_cpus_allowed == 1)
- 		return prev_cpu;
- 
-@@ -3461,6 +3475,17 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
- 			prev_cpu = cpu;
- 
-+		/*
-+		 * Don't bother with select_idle_sibling() in the case of a sync wakeup
-+		 * where we know the only running task will soon go-away. Going
-+		 * through select_idle_sibling will only lead to pointless ping-pong.
-+		 */
-+		if (sync && prev_cpu == cpu && cpu_rq(cpu)->nr_running == 1 &&
-+		    current->se.avg_overlap < 10000) {
-+			new_cpu = cpu;
-+			goto unlock;
-+		}
-+
- 		new_cpu = select_idle_sibling(p, prev_cpu);
- 		goto unlock;
- 	}
+Thanks,
+//richard
