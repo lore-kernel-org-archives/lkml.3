@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab3IZCmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 22:42:53 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38766 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab3IZCmw (ORCPT
+	id S1755437Ab3IZCoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 22:44:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52374 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab3IZCoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 22:42:52 -0400
-Date: Thu, 26 Sep 2013 03:42:34 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, tixxdz@gmail.com
-Subject: Re: [PATCH 04/12] seq_file: Make seq_file able to access the file's
- opener cred
-Message-ID: <20130926024234.GE13318@ZenIV.linux.org.uk>
-References: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
- <1380140085-29712-5-git-send-email-tixxdz@opendz.org>
+	Wed, 25 Sep 2013 22:44:16 -0400
+Date: Wed, 25 Sep 2013 19:45:17 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/28] 3.0.97-stable review
+Message-ID: <20130926024517.GA24271@kroah.com>
+References: <20130925000648.404447782@linuxfoundation.org>
+ <52439A60.3080501@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380140085-29712-5-git-send-email-tixxdz@opendz.org>
+In-Reply-To: <52439A60.3080501@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 09:14:37PM +0100, Djalal Harouni wrote:
-> The f_cred field of the file struct contains the cred of current at
-> open time. This field can be used to get the context of open, and track
-> current's cred changes after.
+On Wed, Sep 25, 2013 at 08:22:24PM -0600, Shuah Khan wrote:
+> On 09/24/2013 06:07 PM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.0.97 release.
+> > There are 28 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Fri Sep 27 00:05:34 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.97-rc1.gz
+> > and the diffstat can be found below.
+> >
+> > thanks,
+> >
+> > greg k-h
+> >
 > 
-> The procfs is one of those fs that need to track current cred changes
-> in order to implement proper permission checks on each system call.
+> 3.0.97-rc1 applied with the following warning from line 103 to 3.0.96
 > 
-> The procfs make use of seq_file struct and its iterators to step through
-> /proc objects. These iterators and seq_file helpers must be able to
-> access the file->f_cred to perform various permission checks at any
-> time.
-> 
-> Therefor add the f_cred field to the seq_file struct and a helper
-> seq_f_cred() to return it.
+> patch-3.0.97-rc1:103: space before tab in indent.
+>                          return -1;
+> warning: 1 line adds whitespace errors.
 
-NAK.  This is completely irrelevant for most of seq_file users and it simply
-does not belong in struct seq_file.
+Any hint as to what file that was for?
+
+> Compiled and booted on the following systems:
+> 
+> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+> 
+> dmesgs look good. No regressions compared to the previous dmesgs for 
+> this release. dmesg emerg, crit, alert, err are clean. No regressions in 
+> warn.
+
+Great, thanks for testing and letting me know.
+
+greg k-h
