@@ -1,200 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032Ab3IZM64 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 08:58:56 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43841 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756817Ab3IZM6z (ORCPT
+	id S1756922Ab3IZNBg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 09:01:36 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:40485 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756657Ab3IZNBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 08:58:55 -0400
-Date: Thu, 26 Sep 2013 15:58:52 +0300
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/5] clocksource: Add Allwinner SoCs HS timers driver
-Message-ID: <20130926125852.GP2954@lukather>
-References: <1380117790-19390-1-git-send-email-maxime.ripard@free-electrons.com>
- <1380117790-19390-3-git-send-email-maxime.ripard@free-electrons.com>
- <52436EBE.9010002@codeaurora.org>
+	Thu, 26 Sep 2013 09:01:33 -0400
+Date: Thu, 26 Sep 2013 14:59:54 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, Mike Dunn <mikedunn@newsguy.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-pwm@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>,
+        Marek Vasut <marex@denx.de>
+Subject: Re: [PATCH v2] pwm-backlight: allow for non-increasing brightness
+ levels
+Message-ID: <20130926125953.GB2141@ulmo>
+References: <1379869196-19377-1-git-send-email-mikedunn@newsguy.com>
+ <5244065A.8010408@ti.com>
+ <20130926115108.GA1680@ulmo>
+ <524423B6.4070609@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Zbynv6TNPa9FrOf6"
+	protocol="application/pgp-signature"; boundary="GID0FwUMdk1T2AWN"
 Content-Disposition: inline
-In-Reply-To: <52436EBE.9010002@codeaurora.org>
+In-Reply-To: <524423B6.4070609@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Zbynv6TNPa9FrOf6
+--GID0FwUMdk1T2AWN
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Stephen,
-
-On Wed, Sep 25, 2013 at 04:16:14PM -0700, Stephen Boyd wrote:
-> On 09/25/13 07:03, Maxime Ripard wrote:
-> > diff --git a/Documentation/devicetree/bindings/timer/allwinner,sun5i-a1=
-3-hstimer.txt b/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13=
--hstimer.txt
-> > new file mode 100644
-> > index 0000000..b1f81e9
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstim=
-er.txt
-> > @@ -0,0 +1,22 @@
-> > +Allwinner SoCs High Speed Timer Controller
-> > +
-> > +Required properties:
-> > +
-> > +- compatible :	should be "allwinner,sun5i-a13-hstimer" or
-> > +		"allwinner,sun7i-a20-hstimer"
-> > +- reg : Specifies base physical address and size of the registers.
-> > +- interrupts :	The interrupts of these timers (2 for the sun5i IP, 4 f=
-or the sun7i
-> > +		one)
-> > +- clocks: phandle to the source clock (usually the AHB clock)
-> > +
-> > +Example:
-> > +
-> > +hstimer@01c60000 {
+On Thu, Sep 26, 2013 at 03:08:22PM +0300, Tomi Valkeinen wrote:
+> On 26/09/13 14:51, Thierry Reding wrote:
+> > On Thu, Sep 26, 2013 at 01:03:06PM +0300, Tomi Valkeinen wrote:
+> > [...]
+> >> But if you and Thierry think this version is good, I'll take it.
+> >=20
+> > That sounds like you want to take it through the fbdev tree. Jingoo is
+> > listed (along with Richard, but he hasn't been responsive to email for
+> > years) as maintainer for the backlight subsystem. Furthermore back at
 >=20
-> This should just be 'timer@1c60000'
-
-Ok.
-
-> > +	compatible =3D "allwinner,sun7i-a20-hstimer";
-> > +        reg =3D <0x01c60000 0x1000>;
-> > +        interrupts =3D <0 51 1>,
-> > +                     <0 52 1>,
-> > +                     <0 53 1>,
-> > +                     <0 54 1>;
-> > +        clocks =3D <&ahb1_gates 19>;
-> > +};
+> Ah, so they are. I just thought it falls under fbdev, as it's under
+> drivers/video/ =3D).
 >=20
-> Weird mix of tabs and spaces here.
-
-Right.
-
-> > +
-> > +static void __iomem *timer_base;
-> > +static u32 ticks_per_jiffy;
-> > +
-> > +/*
-> > + * When we disable a timer, we need to wait at least for 2 cycles of
-> > + * the timer source clock. We will use for that the clocksource timer
-> > + * that is already setup and runs at the same frequency than the other
-> > + * timers, and we never will be disabled.
-> > + */
-> > +static void sun5i_clkevt_sync(void)
-> > +{
-> > +	u32 old =3D readl(timer_base + TIMER_CNTVAL_LO_REG(1));
-> > +
-> > +	while ((old - readl(timer_base + TIMER_CNTVAL_LO_REG(1))) < 3)
-> > +		cpu_relax();
-> > +}
-> > +
-> [...]
-> > +
-> > +static int sun5i_clkevt_next_event(unsigned long evt,
-> > +				   struct clock_event_device *unused)
-> > +{
-> > +	sun5i_clkevt_time_stop(0);
-> > +	sun5i_clkevt_time_setup(0, evt);
-> > +	sun5i_clkevt_time_start(0, false);
+> I don't have any particular "want" to take it through fbdev tree. But I
+> can take it.
 >=20
-> I suppose the min delta wants to be 3 instead of 1 because if we program
-> an evt one tick in the future first we'll wait for two ticks (or is that
-> three?) while we stop the timer and then program the timer to fire one
-> tick after that. Perhaps we should subtract two ticks from the evt as
-> well when we program it here?
-
-Hmmm, indeed.
-
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static struct clock_event_device sun5i_clockevent =3D {
-> > +	.name =3D "sun5i_tick",
-> > +	.rating =3D 350,
-> > +	.features =3D CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
-> > +	.set_mode =3D sun5i_clkevt_mode,
-> > +	.set_next_event =3D sun5i_clkevt_next_event,
-> > +};
-> > +
-> > +
-> > +static irqreturn_t sun5i_timer_interrupt(int irq, void *dev_id)
-> > +{
-> > +	struct clock_event_device *evt =3D (struct clock_event_device *)dev_i=
-d;
-> > +
-> > +	writel(0x1, timer_base + TIMER_IRQ_ST_REG);
-> > +	evt->event_handler(evt);
-> > +
-> > +	return IRQ_HANDLED;
-> > +}
-> > +
-> > +static struct irqaction sun5i_timer_irq =3D {
-> > +	.name =3D "sun5i_timer0",
-> > +	.flags =3D IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
+> > the time when I began working on the PWM subsystem, the backlight sub-
+> > system was pretty much orphaned, and pwm-backlight was by far the
+> > biggest user of the PWM subsystem. I adopted the driver at the time
+> > because it needed to be updated for PWM subsystem changes.
+> >=20
+> > What's the plan going forward? Given the coupling between the PWM
+> > subsystem and the pwm-backlight driver it might be useful to keep
+> > maintaining it as part of the PWM subsystem. On the other hand, there's
+> > some coupling between the driver and the backlight subsystem too.
 >=20
-> IRQF_DISABLED is a no-op and can be dropped.
-
-Right.
-
-> > +
-> > +static u32 sun5i_timer_sched_read(void)
-> > +{
-> > +	return ~readl(timer_base + TIMER_CNTVAL_LO_REG(1));
-> > +}
-> > +
-> > +static void __init sun5i_timer_init(struct device_node *node)
-> > +{
-> [...]
-> > +
-> > +	sun5i_clockevent.cpumask =3D cpumask_of(0);
+> And backlight is coupled with fbdev... Which is something I don't like.
 >=20
-> Can this timer interrupt any CPU or is it hardwired to CPU0? If the
-> interrupt can go to any CPU this should be cpu_possible_mask instead.
+> > I have a couple of patches queued up for 3.13 that rework parts of the
+> > driver, so it'd be good to know how you guys want to handle this.
+>=20
+> Well. I'm happy if somebody wants to maintain the backlight side. In
+> fact, I'd be happy if somebody would start restructuring it totally,
+> it's rather messy. The link with fbdev should be removed, and some
+> backlight drivers are actually panel drivers. However, perhaps Common
+> Display Framework is required until it can be fully cleaned.
+>=20
+> So... For the time being, I'm fine with merging pwm-backlight via any
+> tree that works best. I'm presuming here that backlight framework and
+> fbdev (for the parts that are relevant for backlight) are not really
+> being changed, so there shouldn't be conflicts.
 
-This is an interrupt that can interrupt any CPU available on the system,
-so yes, cpu_possible_mask would make sense.
+In that case I'll just take it through the PWM tree as I've done for the
+past year. I have some other changes planned for the PWM framework for
+the near future that'll create dependencies between the PWM tree and the
+pwm-backlight driver, so keeping them in one tree will make it easier to
+merge them.
 
-Thanks!
-Maxime
+Longer term it probably makes sense, as you say, for someone to take
+over the backlight subsystem completely and give it the love it could
+really use. If Jingoo can do that, it'd be great. Perhaps it'd be a good
+idea to remove Richard as maintainer since he's obviously no longer
+responding to emails. Keeping him Cc'ed on all patches is just
+pointless.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Thierry
 
---Zbynv6TNPa9FrOf6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--GID0FwUMdk1T2AWN
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSRC+MAAoJEBx+YmzsjxAgP2gQAJ9PV8vse7cuJITfksJ+3xy3
-79OF5AL+8Mwn11qEcBGOBoLinPH/CRf6dNMnPSTopEDb9jQRMNx4w+alKHocDcR6
-/4gkLyifVG4wHiWaFgvOD+Knh/o66GaI67K7t/Ae7clFRxf1fGcFC9uEX6fkeVfz
-QL4lYIlx1nvxSMep5iO/sxxHiHtE0lDSc3vxIVHXuQNWaKpRukNJOyNuL61Rg3Sv
-bujZy7oR5znmvhaoWmE1AupnPBe69rw9I9NkS5EYQMbl+SNCyhAqGkckU5TWF1hf
-tarWX7eSO5N0gkqpqnr18xSZEna4zh7jInmyWw3g13YKnoFrWinAndD5DMoyL29B
-i68FmYeftccpGM6jw03CuwROfEEOucCxvm1EED8JrdXsqH1OOxeXkI0jEC4Ea9Ue
-R+KHdAUiL5vQvRuDDAlpVKWKEbza6N5kZJkAQxOIeI+r50oeojZpMmJ9p7l66U6F
-YSUEVhYMBa3q9ZLhU1mAMspw8NNFjfM4rTFFnZhYjWkopS6YXW9g6pVarnAV5vZ6
-7K23hRDJImb0xIF/yHIPTtXeHhdiVYLWuKm1w4Nviz/giUJz3f8SqzQEe4uH9GWW
-tO0tlMj6nyDufJC7/vHhoeMYDcNua42o6VM3O5Tohk8PnPQBKIn3N5rYlM4v/BTg
-99dVtffvxntYHnWQKqe6
-=+Vw2
+iQIcBAEBAgAGBQJSRC/JAAoJEN0jrNd/PrOh7FIQAIN4Aw8XIjswMbmLF+kK0el2
+cZSuoyGBvZotfodaUi3/kdMS0nPWIYIsnVgHwqYCTFO37D8eHGwB6T67TwBHnolE
+hDCAWimitmyJa355uU2vodHQ05533Y1TC7NsqCQHIIY5r9889YuYrYKfYol7vB3O
+/5FrzcGaxwrXs0yxtsZa3uT6M6nll9U8eirhNZRwsbqpEDdIKmA0MTtsEMbXClBh
+wv7H81FGwgRwlynwfyrKlW4SEJCC41pDWf+N8ZfNyXIAZO8mmDPDs/NTHiEszmR/
+MEG3r8Pq4UCS1RNM231i3ZLdJebswe0B1nLaOdu/n9e4A3+RddlAepPM5ODtV87h
+b7l23eH1cdj+UAipdW/PParjVzjMvSlWZA0eS1BvOowWTpq0E4hI1igX/Q3zodLD
+lP3ie8xAUeXl2k/KBwPhB9GW1twWt/aEoO/a3g9EX+gCrSvYULi2G55l+3O7QjVO
+Ml6uphCG2mN1GTBoI5PC4FgCUnFl0moB9i6rdgLaLE593GhtnApGC9kQtXzL0VSt
+HwM+C50bkGobp5HFektJn6ApsmQZI8mP0oNVWK6j2zTFhpSlG+BPD4RvJa7A2tgK
+Yalp8OmErU5481iMe3JjEvBG7IRgZCqU4lb+1gt8M2CUGhamaXesz1FXrYwk4yhD
+jYQCRf3wOEzLj6njhiAk
+=3trL
 -----END PGP SIGNATURE-----
 
---Zbynv6TNPa9FrOf6--
+--GID0FwUMdk1T2AWN--
