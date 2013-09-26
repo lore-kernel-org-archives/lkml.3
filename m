@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab3IZQHj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 12:07:39 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:40496 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab3IZQHf (ORCPT
+	id S1753457Ab3IZQIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 12:08:49 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:54580 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab3IZQIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 12:07:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <52444CED.40401@nod.at>
-References: <1377073172-3662-1-git-send-email-richard@nod.at>
- <1377073172-3662-3-git-send-email-richard@nod.at> <CALkWK0kCrQ9hPABD_XQ9QFG-vByP+xZWZs+RkVK77+cX7Odz7g@mail.gmail.com>
- <52441025.9030308@nod.at> <CALkWK0k5neR50h+AWEF5AgnpbgWMitZUnbv_caVzt6HiUA6mXg@mail.gmail.com>
- <52441407.9010603@nod.at> <CALkWK0=FG4COEjv5+mu1JRiiFQ2k6vop1mhFPmAT4bjtYeK6nA@mail.gmail.com>
- <52442108.1020304@nod.at> <CALkWK0nm=9n7DiV0MaGKVLMs=vxAiiQUx=OFuOg-DinkdMej5A@mail.gmail.com>
- <CALkWK0ndMtyQxE0uK4H-Ly6oy+tRn-SFc=_1WoC2QAp2uy0dtw@mail.gmail.com>
- <CAMuHMdU3LdDhbp_AKjD7b8Wytbqfp29DrPwTdtwQa2hUNdcy3Q@mail.gmail.com>
- <524443AC.3040409@nod.at> <CALkWK0kcd03t9W4O24wiVBQ8SZQ8ZcrbvQaUkcCm+y5n=d1wPw@mail.gmail.com>
- <52444CED.40401@nod.at>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Thu, 26 Sep 2013 21:36:54 +0530
-Message-ID: <CALkWK0=u8CdtmbaOtA5=jxuWsei2ZQhxDwSsnhAR=ZRBNyoH6Q@mail.gmail.com>
-Subject: Re: [PATCH 2/8] um: Do not use SUBARCH
-To: Richard Weinberger <richard@nod.at>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+	Thu, 26 Sep 2013 12:08:47 -0400
+Date: Thu, 26 Sep 2013 12:08:42 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
         "H. Peter Anvin" <hpa@zytor.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v5 4/6] x86/mem-hotplug: Support initialize page tables
+ in bottom-up
+Message-ID: <20130926160842.GC32391@mtj.dyndns.org>
+References: <5241D897.1090905@gmail.com>
+ <5241DA5B.8000909@gmail.com>
+ <20130926144851.GF3482@htj.dyndns.org>
+ <52445606.7030108@gmail.com>
+ <20130926154813.GA32391@mtj.dyndns.org>
+ <52445AB5.8030306@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52445AB5.8030306@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger wrote:
-> And, of course, this makes your patch valid.
-> Can you also please ensure that your new defconfigs are minimal?
+On Fri, Sep 27, 2013 at 12:03:01AM +0800, Zhang Yanfei wrote:
+> Ah, I see. You are saying another issue. He is worrying that if we use
+> kexec to load the kernel high, say we have 16GB, we put the kernel in
+> 15.99GB (just an example), so we only have less than 100MB above the kernel.
+> 
+> But as I've explained to him, in almost all the cases, if we want our
+> memory hotplug work, we don't do that. And yeah, assume we have this
+> problem, it'd fall back to top down and that return backs to patch 2,
+> we will trigger the WARN_ONCE, and the admin will know what has happened.
 
-Yeah, it's close to a minimal configuration for the 3.10 kernel
-(latest at the time of patch submission). I was aiming to minimize the
-diff between the current defconfig and the two new defconfigs in
-configs/. The slim diffstat does the talking:
+Alright,
 
- arch/um/Kconfig.common                          |   5 -
- arch/um/Makefile                                |  11 ++
- arch/um/{defconfig => configs/i386_defconfig}   | 209 +++++++++++++-------
- arch/um/{defconfig => configs/x86_64_defconfig} | 250 +++++++++++++++---------
- arch/x86/um/Kconfig                             |   5 +
- 5 files changed, 306 insertions(+), 174 deletions(-)
- copy arch/um/{defconfig => configs/i386_defconfig} (86%)
- rename arch/um/{defconfig => configs/x86_64_defconfig} (83%)
-
-If we find some deficiencies, we can always update it. For now, please
-commit these two patches.
+ Acked-by: Tejun Heo <tj@kernel.org>
 
 Thanks.
+
+-- 
+tejun
