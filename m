@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab3IZW6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:58:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57458 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754436Ab3IZW6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:58:12 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130926155205.7f364b64c4a0fae77d4ca15d@linux-foundation.org>
-References: <5241D897.1090905@gmail.com> <5241DA5B.8000909@gmail.com> <20130926155205.7f364b64c4a0fae77d4ca15d@linux-foundation.org>
+	id S1754467Ab3IZXGa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 19:06:30 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:62296 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754086Ab3IZXG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 19:06:29 -0400
+Date: Fri, 27 Sep 2013 01:06:23 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: suravee.suthikulpanit@amd.com
+Cc: jacob.w.shin@gmail.com, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] x86, microcode, AMD: Fix patch level reporting for
+ family15h
+Message-ID: <20130926230623.GA1764@alberich>
+References: <1380232472-2589-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20130926221322.GC10123@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v5 4/6] x86/mem-hotplug: Support initialize page tables in bottom-up
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 26 Sep 2013 15:57:06 -0700
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>
-CC: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        Tejun Heo <tj@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Message-ID: <59d57cc9-9f4b-4f28-95d0-a526bd0b9a29@email.android.com>
+In-Reply-To: <20130926221322.GC10123@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can we put this in a common header somewhere?
+On Fri, Sep 27, 2013 at 12:13:22AM +0200, Borislav Petkov wrote:
+> On Thu, Sep 26, 2013 at 04:54:32PM -0500, suravee.suthikulpanit@amd.com wrote:
+> > From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> > 
+> > On AMD family15h, applying microcode patch on the a core (core0)
+> > would also affect the other core (core1) in the same compute unit.
+> > The driver would skip applying the patch on core1, but it still
+> > need to update kernel structures to reflect the proper patch level.
+> > 
+> > The current logic is not updating the struct ucode_cpu_info.cpu_sig.rev
+> > of the skipped core. This causes the /sys/devices/system/cpu/cpu1/microcode/version
+> > to report incorrect patch level as shown below:
+> > 
+> > [   10.708841] microcode: CPU0: new patch_level=0x0600063d
+> > [   10.714256] microcode: CPU1: patch_level=0x06000626
+> > [   10.719345] microcode: CPU2: patch_level=0x06000626
+> > [   10.748095] microcode: CPU2: new patch_level=0x0600063d
+> > [   10.753365] microcode: CPU3: patch_level=0x06000626
+> > [   10.758264] microcode: CPU4: patch_level=0x06000626
+> > [   10.786999] microcode: CPU4: new patch_level=0x0600063d
+> 
+> Actually, this is collect_cpu_info_amd()'s normal operation and shows
+> that there's no need to apply a microcode patch on the odd core since
+> the even core's ucode has been updated.
 
-Andrew Morton <akpm@linux-foundation.org> wrote:
->On Wed, 25 Sep 2013 02:30:51 +0800 Zhang Yanfei
-><zhangyanfei.yes@gmail.com> wrote:
->
->> From: Tang Chen <tangchen@cn.fujitsu.com>
->> 
->> The Linux kernel cannot migrate pages used by the kernel. As a
->> result, kernel pages cannot be hot-removed. So we cannot allocate
->> hotpluggable memory for the kernel.
->> 
->> In a memory hotplug system, any numa node the kernel resides in
->> should be unhotpluggable. And for a modern server, each node could
->> have at least 16GB memory. So memory around the kernel image is
->> highly likely unhotpluggable.
->> 
->> ACPI SRAT (System Resource Affinity Table) contains the memory
->> hotplug info. But before SRAT is parsed, memblock has already
->> started to allocate memory for the kernel. So we need to prevent
->> memblock from doing this.
->> 
->> So direct memory mapping page tables setup is the case.
->init_mem_mapping()
->> is called before SRAT is parsed. To prevent page tables being
->allocated
->> within hotpluggable memory, we will use bottom-up direction to
->allocate
->> page tables from the end of kernel image to the higher memory.
->> 
->> ...
->>
->> +		kernel_end = __pa_symbol(_end);
->
->__pa_symbol() is implemented only on mips and x86.
->
->I stole the mips implementation like this:
->
->--- a/mm/memblock.c~a
->+++ a/mm/memblock.c
->@@ -187,8 +187,11 @@ phys_addr_t __init_memblock memblock_fin
-> 	/* avoid allocating the first page */
-> 	start = max_t(phys_addr_t, start, PAGE_SIZE);
-> 	end = max(start, end);
->+#ifdef CONFIG_X86
-> 	kernel_end = __pa_symbol(_end);
->-
->+#else
->+	kernel_end = __pa(RELOC_HIDE((unsigned long)(_end), 0));
->+#endif
-> 	/*
-> 	 * try bottom-up allocation only when bottom-up mode
-> 	 * is set and @end is above the kernel image.
->
->just so I can get a -mm release out the door.
+Hmm, I think Boris is right, above messages are just logging what
+happened during µcode update. I think the patch_level in "CPU1:
+patch_level=0x06000626" is based on c->microcode which is updated
+shortly after this message was printed.
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+I assume with your patch, above message won't look different but just
+the contents in /sys/devices/system/cpu/cpu1/microcode/version will
+show the correct version, right?
+
+
+Andreas
