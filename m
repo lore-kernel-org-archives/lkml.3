@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab3IZPpW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:45:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:19220 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129Ab3IZPpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:45:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,986,1371106800"; 
-   d="scan'208";a="401438376"
-Date: Thu, 26 Sep 2013 08:45:19 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Don Zickus <dzickus@redhat.com>, Andi Kleen <ak@linux.jf.intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/21] perf tools: Add toggling events support
-Message-ID: <20130926154519.GH2018@tassilo.jf.intel.com>
-References: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
- <20130925191216.GE2018@tassilo.jf.intel.com>
- <20130926070307.GE19090@gmail.com>
+	id S1753292Ab3IZPqa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:46:30 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:39352 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab3IZPq3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 11:46:29 -0400
+Message-ID: <524456C3.4000904@gmail.com>
+Date: Thu, 26 Sep 2013 23:46:11 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926070307.GE19090@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v5 5/6] x86, acpi, crash, kdump: Do reserve_crashkernel()
+ after SRAT is parsed
+References: <5241D897.1090905@gmail.com> <5241DB3A.6090002@gmail.com> <20130926144958.GG3482@htj.dyndns.org>
+In-Reply-To: <20130926144958.GG3482@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > It would be better to keep counting and just do RDPMC on the switch 
-> > points, and then subtract for counting. For sampling could need a MSR 
-> > write to enable/disable. Still somewhat expensive, but nowhere near as 
-> > bad as a full switch.
+On 09/26/2013 10:49 PM, Tejun Heo wrote:
+> On Wed, Sep 25, 2013 at 02:34:34AM +0800, Zhang Yanfei wrote:
+>> From: Tang Chen <tangchen@cn.fujitsu.com>
+>>
+>> Memory reserved for crashkernel could be large. So we should not allocate
+>> this memory bottom up from the end of kernel image.
+>>
+>> When SRAT is parsed, we will be able to know whihc memory is hotpluggable,
+>> and we can avoid allocating this memory for the kernel. So reorder
+>> reserve_crashkernel() after SRAT is parsed.
+>>
+>> Acked-by: Tejun Heo <tj@kernel.org>
 > 
-> This is essentially an optimized event switch and should probably be done 
-> on a higher level so that other instances of event/context switching 
-> benefit as well.
+> So, I was hoping to hear from you on how you tested it when I wrote
+> the previous comment - the "provided..." part.
+> 
 
-Ok. Need to be a bit careful and it cannot be done in all cases.
+This function is actually used for kexec/kdump. So After applying 
+this patch, booting the kernel, this reservation is successful and
+the kdump service starts successfully.
 
-For non global counters this only works if RDPMC is disabled, otherwise
-it leaks counter interformation between unrelated processes, which
-may be a security problem.
+Thanks.
 
--Andu
+-- 
+Thanks.
+Zhang Yanfei
