@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab3IZHwu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:52:50 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:28209 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab3IZHws (ORCPT
+	id S1756089Ab3IZHxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:53:25 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:57123 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab3IZHxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:52:48 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-52-5243e7cf7508
+	Thu, 26 Sep 2013 03:53:24 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-4d-5243e7f3bcbd
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>
 Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>
+        "'Axel Lin'" <axel.lin@ingics.com>
 References: <003101ceba8c$88d6a840$9a83f8c0$%han@samsung.com>
 In-reply-to: <003101ceba8c$88d6a840$9a83f8c0$%han@samsung.com>
-Subject: [PATCH V3 11/14] regulator: tps6105x: use devm_regulator_register()
-Date: Thu, 26 Sep 2013 16:52:46 +0900
-Message-id: <003b01ceba8d$63c9aec0$2b5d0c40$%han@samsung.com>
+Subject: [PATCH V3 12/14] regulator: tps6524x: use devm_regulator_register()
+Date: Thu, 26 Sep 2013 16:53:23 +0900
+Message-id: <003c01ceba8d$79872c60$6c958520$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac66jIjCzH3ID+v5Qym5l1DxbvczrwAAMdPg
+Thread-index: Ac66jIjCzH3ID+v5Qym5l1DxbvczrwAAN0Hg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zA93zz52DDBa+0rKY+vAJm8XlhZdY
-	Lb5d6WCymPJnOZPF5V1z2BxYPXbOusvusWlVJ5vHnWt72Dz6tqxi9Pi8SS6ANYrLJiU1J7Ms
-	tUjfLoErY8f6lUwFm3kq/r2dxd7AuI6ri5GTQ0LAROLD5uusELaYxIV769m6GLk4hASWMUr8
-	X7ePFabo6MN9LBCJ6YwSi1c/ZgNJCAn8YpT48CETxGYTUJP48uUwexcjB4eIgKrE/1fuIPXM
-	AjMZJXb272CCqLeVaPz2lwXE5hSwk5i1/yQziC0s4CPRt34tWJwFqPfnmZtgc3iB6qc2eYKE
-	eQUEJX5MvgdWwiygJbF+53EmCFteYvOat8wg5RIC6hKP/uqChEUEjCTmPL3JDFEiIrHvxTtG
-	iFcesUu8uS4NsUlA4tvkQywQrbISmw4wQ5RIShxccYNlAqPELCSLZyFZPAvJ4llINixgZFnF
-	KJpakFxQnJReZKpXnJhbXJqXrpecn7uJERKlE3cw3j9gfYgxGWj9RGYp0eR8YJTnlcQbGpsZ
-	WZiamBobmVuakSasJM6r3mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFxkmD1zOvcLabL
-	j6qn1aya7RGz9tnxe2rna35U7udR+3nO4hHP3UNbGtwUYuO0vvmezp0XOHXJf735xvd1svOl
-	6+R+ruD9+0NU9eo/4+LGJ6f+neNaZfubJyev+HdPg0Kd3NP9SVlmyt1i24Q+chpOjD33eM2N
-	1Q7Wu//9TOI5brYgtapwhdkyJZbijERDLeai4kQA4eb42+gCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jQd3zz52DDG58VrOY+vAJm8XlhZdY
-	Lb5d6WCymPJnOZPF5V1z2BxYPXbOusvusWlVJ5vHnWt72Dz6tqxi9Pi8SS6ANaqB0SYjNTEl
-	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWPH+pVMBZt5Kv69ncXewLiOq4uRk0NCwETi
-	6MN9LBC2mMSFe+vZuhi5OIQEpjNKLF79mA0kISTwi1Hiw4dMEJtNQE3iy5fD7F2MHBwiAqoS
-	/1+5g9QzC8xklNjZv4MJot5WovHbX7ChnAJ2ErP2n2QGsYUFfCT61q8Fi7MA9f48cxNsDi9Q
-	/dQmT5Awr4CgxI/J98BKmAW0JNbvPM4EYctLbF7zlhmkXEJAXeLRX12QsIiAkcScpzeZIUpE
-	JPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBCeB
-	Z1I7GFc2WBxiFOBgVOLhvcDsHCTEmlhWXJl7iFGCg1lJhPebEVCINyWxsiq1KD++qDQntfgQ
-	YzLQnxOZpUST84EJKq8k3tDYxMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4
-	OKUaGIXi14VcZNJ9910+6vMb7oR5gTcWle7ds6OOd/p02btGt59u5UzLaWHjVdPJeClab/pj
-	l/s1mZYwFcZPdSzrkt2eynDXTLhjsHHWT92t/3bXfP6y4c1TG6nt53+5L1uZtvSoIEtozabD
-	it8v78wRWqzfvnNTc7HY5gX2iq6xzo/b4wMrtCMv/FViKc5INNRiLipOBAB4TQIoRgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zA93Pz52DDOY8krc4Mucrs8XUh0/Y
+	LC4vvMRq8e1KB5PF5V1z2BxYPXbOusvu0fazzGPTqk42j74tqxg9Pm+SC2CN4rJJSc3JLEst
+	0rdL4Mq4fv0AS8ExjoqlF9eyNTB+Zeti5OSQEDCR2Hj9CSOELSZx4d56oDgXh5DAMkaJDZeb
+	WWCKpr88xAiRmM4osbbpODtIQkjgF6PE3rsmIDabgJrEly+HgeIcHCICqhL/X7mD1DML9DNK
+	XNp5hwmi3lai8dtfsKGcAnYSs/afZAaxhQV8JD78fQFmswD1ft9xjBXE5gWqn3h8JzuELSjx
+	Y/I9sF5mAS2J9TuPM0HY8hKb17xlBtkrIaAu8eivLkhYRMBI4tPX3YwQJSIS+168A7tfQuAW
+	u8SxH0sYIXYJSHybfIgFoldWYtMBZoh/JSUOrrjBMoFRYhaSzbOQbJ6FZPMsJCsWMLKsYhRN
+	LUguKE5KLzLUK07MLS7NS9dLzs/dxAiJ094djLcPWB9iTAZaP5FZSjQ5HxjneSXxhsZmRham
+	JqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpg1Dm1wvusdklD7T2f
+	eQc8dq5an6e1spH1SETDke1tOvvPfudV/xbOpPjLuSx8w5bbRqEzL8v7Ol6f3qKzmJ3Lb2ul
+	oKp1UF/ppYhfgm/68pqknmo75T6Q5RE+oBHZ9Kvz9tysLC+F1ufTf6iLHOszf9JZKnL9uods
+	+6EU5U+L3FKnCFqJbWJVYinOSDTUYi4qTgQAUvmDxekCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jQd3Pz52DDP68k7Y4Mucrs8XUh0/Y
+	LC4vvMRq8e1KB5PF5V1z2BxYPXbOusvu0fazzGPTqk42j74tqxg9Pm+SC2CNamC0yUhNTEkt
+	UkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFarqRQlphTChQKSCwu
+	VtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMuH79AEvBMY6KpRfXsjUwfmXrYuTkkBAwkZj+
+	8hAjhC0mceHeeqA4F4eQwHRGibVNx9lBEkICvxgl9t41AbHZBNQkvnw5DBTn4BARUJX4/8od
+	pJ5ZoJ9R4tLOO0wQ9bYSjd/+soDYnAJ2ErP2n2QGsYUFfCQ+/H0BZrMA9X7fcYwVxOYFqp94
+	fCc7hC0o8WPyPbBeZgEtifU7jzNB2PISm9e8ZQbZKyGgLvHory5IWETASOLT192MECUiEvte
+	vGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgpPAM+kd
+	jKsaLA4xCnAwKvHwXmB2DhJiTSwrrsw9xCjBwawkwvvNCCjEm5JYWZValB9fVJqTWnyIMRno
+	0YnMUqLJ+cAElVcSb2hsYmZkaWRmYWRibk6asJI478FW60AhgfTEktTs1NSC1CKYLUwcnFIN
+	jGsD5ij8qlMtdpl87iXLuaNvvDf73jrZ8lP0X1uut+Ts3GYpj3s3bkY71Prz7Tm5d9/Pirfh
+	qUrfDA1Dd1+KCr/wWma6nutOOSWdODspxlctOfKak5YH3Quz+7a6sbL5EuObuD/mL4XVlaWW
+	/J25eFPl/mjr7qjDui7PNx7n6742ZUFP+0T7NCWW4oxEQy3mouJEAE102OhGAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,51 +56,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_regulator_register() to make cleanup paths simpler,
-and remove unnecessary remove().
+Use devm_regulator_register() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/regulator/tps6105x-regulator.c |   13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+ drivers/regulator/tps6524x-regulator.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/regulator/tps6105x-regulator.c b/drivers/regulator/tps6105x-regulator.c
-index ec9453f..e0e818d 100644
---- a/drivers/regulator/tps6105x-regulator.c
-+++ b/drivers/regulator/tps6105x-regulator.c
-@@ -146,8 +146,9 @@ static int tps6105x_regulator_probe(struct platform_device *pdev)
- 	config.driver_data = tps6105x;
+diff --git a/drivers/regulator/tps6524x-regulator.c b/drivers/regulator/tps6524x-regulator.c
+index 8b9ee39..8fe67fb 100644
+--- a/drivers/regulator/tps6524x-regulator.c
++++ b/drivers/regulator/tps6524x-regulator.c
+@@ -584,10 +584,8 @@ static int pmic_remove(struct spi_device *spi)
  
- 	/* Register regulator with framework */
--	tps6105x->regulator = regulator_register(&tps6105x_regulator_desc,
--						 &config);
-+	tps6105x->regulator = devm_regulator_register(&pdev->dev,
-+						      &tps6105x_regulator_desc,
-+						      &config);
- 	if (IS_ERR(tps6105x->regulator)) {
- 		ret = PTR_ERR(tps6105x->regulator);
- 		dev_err(&tps6105x->client->dev,
-@@ -159,20 +160,12 @@ static int tps6105x_regulator_probe(struct platform_device *pdev)
+ 	if (!hw)
+ 		return 0;
+-	for (i = 0; i < N_REGULATORS; i++) {
+-		regulator_unregister(hw->rdev[i]);
++	for (i = 0; i < N_REGULATORS; i++)
+ 		hw->rdev[i] = NULL;
+-	}
  	return 0;
  }
  
--static int tps6105x_regulator_remove(struct platform_device *pdev)
--{
--	struct tps6105x *tps6105x = dev_get_platdata(&pdev->dev);
--	regulator_unregister(tps6105x->regulator);
--	return 0;
--}
--
- static struct platform_driver tps6105x_regulator_driver = {
- 	.driver = {
- 		.name  = "tps6105x-regulator",
- 		.owner = THIS_MODULE,
- 	},
- 	.probe = tps6105x_regulator_probe,
--	.remove = tps6105x_regulator_remove,
- };
+@@ -631,7 +629,8 @@ static int pmic_probe(struct spi_device *spi)
+ 		config.init_data = init_data;
+ 		config.driver_data = hw;
  
- static __init int tps6105x_regulator_init(void)
+-		hw->rdev[i] = regulator_register(&hw->desc[i], &config);
++		hw->rdev[i] = devm_regulator_register(dev, &hw->desc[i],
++						      &config);
+ 		if (IS_ERR(hw->rdev[i])) {
+ 			ret = PTR_ERR(hw->rdev[i]);
+ 			hw->rdev[i] = NULL;
 -- 
 1.7.10.4
 
