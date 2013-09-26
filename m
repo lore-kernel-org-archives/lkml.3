@@ -1,121 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab3IZIwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:52:34 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60570 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471Ab3IZIwc (ORCPT
+	id S1755176Ab3IZIx0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:53:26 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:64781 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754502Ab3IZIxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:52:32 -0400
-Message-ID: <5243F5CD.6090709@linaro.org>
-Date: Thu, 26 Sep 2013 10:52:29 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 26 Sep 2013 04:53:23 -0400
+Message-ID: <5243F5FE.10103@gmail.com>
+Date: Thu, 26 Sep 2013 16:53:18 +0800
+From: Jia He <jiakernel@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [RFC, PATCH] clocksource: provide timekeeping for efm32 SoCs
-References: <1379324644-20934-1-git-send-email-u.kleine-koenig@pengutronix.de> <5242F434.7060702@linaro.org> <20130925153207.GG16106@pengutronix.de> <524376A0.7020405@linaro.org> <20130926082059.GI16106@pengutronix.de>
-In-Reply-To: <20130926082059.GI16106@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Manfred Spraul <manfred@colorfullife.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 2/2] Update sem_otime for all operations
+References: <1380172135-11025-1-git-send-email-manfred@colorfullife.com>
+In-Reply-To: <1380172135-11025-1-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 10:20 AM, Uwe Kleine-König wrote:
-> Hello Daniel,
+Tested-by: Jia He<jiakernel@gmail.com>
+
+# cat /proc/sysvipc/sem 
+       key      semid perms      nsems   uid   gid  cuid  cgid      otime      ctime
+        -1      32768   666          1     0     0     0     0 1380185570 1380185570
+
+
+On Thu, 26 Sep 2013 07:08:55 +0200 from manfred@colorfullife.com wrote:
+> Hi Jia,
 >
-> On Thu, Sep 26, 2013 at 01:49:52AM +0200, Daniel Lezcano wrote:
->> On 09/25/2013 05:32 PM, Uwe Kleine-König wrote:
->>>>> +static void __init efm32_timer_init(struct device_node *np)
->>>>> +{
->>>>> +	static int has_clocksource, has_clockevent;
->>>>> +	int ret;
->>>>> +
->>>>> +	if (!has_clocksource) {
->>>>> +		ret = efm32_clocksource_init(np);
->>>>> +		if (!ret) {
->>>>> +			has_clocksource = 1;
->>>>> +			return;
->>>>> +		}
->>>>> +	}
->>>>> +
->>>>> +	if (!has_clockevent) {
->>>>> +		ret = efm32_clockevent_init(np);
->>>>> +		if (!ret) {
->>>>> +			has_clockevent = 1;
->>>>> +			return;
->>>>> +		}
->>>>> +	}
->>>>> +}
->>>>
->>>> I don't get the purpose of this initialization, can you explain ?
->>> An efm32 SoC has four timer blocks. A single block can only be used for
->>> one of clocksource or clockevent device and having more than one
->>> clocksource or clockevent device doesn't make sense. So this routine
->>> asserts that the first timer is used as clocksource and the second as
->>> clockevent device. The others are unused.
->>
->> Shouldn't be up to the dt to give the timers you want ?
-> The dt looks as follows:
+> Could you check if the patch below resolves the bug you have reported?
+> Just this patch, i.e. without your proposal.
 >
->                  timer0: timer@40010000 {
->                          compatible = "efm32,timer";
->                          reg = <0x40010000 0x400>;
->                          interrupts = <2>;
->                          clocks = <&cmu clk_HFPERCLKTIMER0>;
->                  };
+> I want to leave the optimization for the get_seconds() call:
+> We must update sem_otime in two places anyway
+> (either perform_atomic_semop() and exit_sem() or
+> do_smart_update() and semtimedop())
 >
->                  timer1: timer@40010400 {
->                          compatible = "efm32,timer";
->                          reg = <0x40010400 0x400>;
->                          interrupts = <12>;
->                          clocks = <&cmu clk_HFPERCLKTIMER1>;
->                  };
+> --
+> 	Manfred
 >
->                  timer2: timer@40010800 {
->                          compatible = "efm32,timer";
->                          reg = <0x40010800 0x400>;
->                          interrupts = <13>;
->                          clocks = <&cmu clk_HFPERCLKTIMER2>;
->                  };
+> In commit 0a2b9d4c,the update of semaphore's sem_otime(last semop time)
+> was moved to one central position (do_smart_update).
 >
->                  timer3: timer@40010c00 {
->                          compatible = "efm32,timer";
->                          reg = <0x40010c00 0x400>;
->                          interrupts = <14>;
->                          clocks = <&cmu clk_HFPERCLKTIMER3>;
->                  };
+> But: Since do_smart_update() is only called for operations that modify
+> the array, this means that wait-for-zero semops do not update sem_otime
+> anymore.
 >
-> What is your suggestion now?
-> Add a property that specifies if the block
-> should be used as clocksource or clockevent_device? That isn't a
-> hardware description and so shouldn't go into the device tree.
-
-At this point, I just asked a question and did not make any suggestion.
-
-> Provide two drivers that match on "efm32,timer", one for clocksource and
-> another for clockevent_device? That wouldn't work, too, as the first
-> driver to be loaded would grab all four timers and the second would get
-> none.
-
-Thanks, now I understand the purpose of this routine, it is very similar 
-than:
-
-http://www.spinics.net/lists/arm-kernel/msg273984.html
-
-right ?
-
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+> The fix is simple:
+> Non-alter operations must update sem_otime.
+>
+> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+> Reported-by: Jia He <jiakernel@gmail.com>
+> ---
+>  ipc/sem.c | 41 +++++++++++++++++++++++++++++------------
+>  1 file changed, 29 insertions(+), 12 deletions(-)
+>
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index e5d9bb8..ec83f79 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -910,6 +910,24 @@ again:
+>  }
+>  
+>  /**
+> + * set_semotime(sma, sops) - set sem_otime
+> + * @sma: semaphore array
+> + * @sops: operations that modified the array, may be NULL
+> + *
+> + * sem_otime is replicated to avoid cache line trashing.
+> + * This function sets one instance to the current time.
+> + */
+> +static void set_semotime(struct sem_array *sma, struct sembuf *sops)
+> +{
+> +	if (sops == NULL) {
+> +		sma->sem_base[0].sem_otime = get_seconds();
+> +	} else {
+> +		sma->sem_base[sops[0].sem_num].sem_otime =
+> +							get_seconds();
+> +	}
+> +}
+> +
+> +/**
+>   * do_smart_update(sma, sops, nsops, otime, pt) - optimized update_queue
+>   * @sma: semaphore array
+>   * @sops: operations that were performed
+> @@ -959,17 +977,10 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
+>  			}
+>  		}
+>  	}
+> -	if (otime) {
+> -		if (sops == NULL) {
+> -			sma->sem_base[0].sem_otime = get_seconds();
+> -		} else {
+> -			sma->sem_base[sops[0].sem_num].sem_otime =
+> -								get_seconds();
+> -		}
+> -	}
+> +	if (otime)
+> +		set_semotime(sma, sops);
+>  }
+>  
+> -
+>  /* The following counts are associated to each semaphore:
+>   *   semncnt        number of tasks waiting on semval being nonzero
+>   *   semzcnt        number of tasks waiting on semval being zero
+> @@ -1831,10 +1842,16 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+>  
+>  	error = perform_atomic_semop(sma, sops, nsops, un,
+>  					task_tgid_vnr(current));
+> -	if (error <= 0) {
+> -		if (alter && error == 0)
+> +	if (error == 0) {
+> +		/* If the operation was successful, then do
+> +		 * the required updates.
+> +		 */
+> +		if (alter)
+>  			do_smart_update(sma, sops, nsops, 1, &tasks);
+> -
+> +		else
+> +			set_semotime(sma, sops);
+> +	}
+> +	if (error <= 0) {
+>  		goto out_unlock_free;
+>  	}
+>  
 
