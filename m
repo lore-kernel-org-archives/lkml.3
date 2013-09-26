@@ -1,70 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab3IZVk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 17:40:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:16335 "EHLO mga11.intel.com"
+	id S1754541Ab3IZVls (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 17:41:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8366 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754032Ab3IZVkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 17:40:55 -0400
+	id S1754519Ab3IZVlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 17:41:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,988,1371106800"; 
-   d="scan'208";a="407770764"
-Subject: Re: [PATCH RESEND v3 0/7] Enable Drivers for Intel MIC X100
- Coprocessors.
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
-        Asias He <asias@redhat.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>
-In-Reply-To: <1380231195.17366.82.camel@joe-AO722>
-References: <cover.1378423596.git.sudeep.dutt@intel.com>
-	 <1378431368.19204.3.camel@joe-AO722> <20130926205424.GB19455@kroah.com>
-	 <1380231195.17366.82.camel@joe-AO722>
+   d="scan'208";a="410059866"
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <1380229794.2602.36.camel@j-VirtualBox>
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+	 <1380147049.3467.67.camel@schen9-DESK>
+	 <CAGQ1y=7Ehkr+ot3tDZtHv6FR6RQ9fXBVY0=LOyWjmGH_UjH7xA@mail.gmail.com>
+	 <1380226007.2170.2.camel@buesod1.americas.hpqcorp.net>
+	 <1380226997.2602.11.camel@j-VirtualBox>
+	 <1380228059.2170.10.camel@buesod1.americas.hpqcorp.net>
+	 <1380229794.2602.36.camel@j-VirtualBox>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Sep 2013 14:40:27 -0700
-Message-ID: <1380231627.116984.4.camel@blbiskey-desk1.amr.corp.intel.com>
+Date: Thu, 26 Sep 2013 14:41:42 -0700
+Message-ID: <1380231702.3467.85.camel@schen9-DESK>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-26 at 14:33 -0700, Joe Perches wrote:
-> On Thu, 2013-09-26 at 13:54 -0700, Greg Kroah-Hartman wrote:
-> > On Thu, Sep 05, 2013 at 06:36:08PM -0700, Joe Perches wrote:
-> > > Whitespace neatening...
+On Thu, 2013-09-26 at 14:09 -0700, Jason Low wrote:
+> On Thu, 2013-09-26 at 13:40 -0700, Davidlohr Bueso wrote:
+> > On Thu, 2013-09-26 at 13:23 -0700, Jason Low wrote:
+> > > On Thu, 2013-09-26 at 13:06 -0700, Davidlohr Bueso wrote:
+> > > > On Thu, 2013-09-26 at 12:27 -0700, Jason Low wrote:
+> > > > > On Wed, Sep 25, 2013 at 3:10 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > > > > > We will need the MCS lock code for doing optimistic spinning for rwsem.
+> > > > > > Extracting the MCS code from mutex.c and put into its own file allow us
+> > > > > > to reuse this code easily for rwsem.
+> > > > > >
+> > > > > > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> > > > > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > > > > > ---
+> > > > > >  include/linux/mcslock.h |   58 +++++++++++++++++++++++++++++++++++++++++++++++
+> > > > > >  kernel/mutex.c          |   58 +++++-----------------------------------------
+> > > > > >  2 files changed, 65 insertions(+), 51 deletions(-)
+> > > > > >  create mode 100644 include/linux/mcslock.h
+> > > > > >
+> > > > > > diff --git a/include/linux/mcslock.h b/include/linux/mcslock.h
+> > > > > > new file mode 100644
+> > > > > > index 0000000..20fd3f0
+> > > > > > --- /dev/null
+> > > > > > +++ b/include/linux/mcslock.h
+> > > > > > @@ -0,0 +1,58 @@
+> > > > > > +/*
+> > > > > > + * MCS lock defines
+> > > > > > + *
+> > > > > > + * This file contains the main data structure and API definitions of MCS lock.
+> > > > > > + */
+> > > > > > +#ifndef __LINUX_MCSLOCK_H
+> > > > > > +#define __LINUX_MCSLOCK_H
+> > > > > > +
+> > > > > > +struct mcs_spin_node {
+> > > > > > +       struct mcs_spin_node *next;
+> > > > > > +       int               locked;       /* 1 if lock acquired */
+> > > > > > +};
+> > > > > > +
+> > > > > > +/*
+> > > > > > + * We don't inline mcs_spin_lock() so that perf can correctly account for the
+> > > > > > + * time spent in this lock function.
+> > > > > > + */
+> > > > > > +static noinline
+> > > > > > +void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+> > > > > > +{
+> > > > > > +       struct mcs_spin_node *prev;
+> > > > > > +
+> > > > > > +       /* Init node */
+> > > > > > +       node->locked = 0;
+> > > > > > +       node->next   = NULL;
+> > > > > > +
+> > > > > > +       prev = xchg(lock, node);
+> > > > > > +       if (likely(prev == NULL)) {
+> > > > > > +               /* Lock acquired */
+> > > > > > +               node->locked = 1;
+> > > > > 
+> > > > > If we don't spin on the local node, is it necessary to set this variable?
+> > > > 
+> > > > I don't follow, the whole idea is to spin on the local variable.
 > > > 
-> > > Multiline statement argument alignment.
-> > > Argument wrapping.
-> > > Use kmalloc_array instead of kmalloc.
-> > > 
-> > > ---
+> > > If prev == NULL, doesn't that mean it won't proceed to spin on the
+> > > variable because the lock is already free and we call return? In that
+> > > case where we directly acquire the lock, I was wondering if it is
+> > > necessary to set node->locked = 1.
 > > 
-> > -ENOSIGNEDOFFBY :(
+> > Yes, that's true, but we need to flag the lock as acquired (the node's
+> > lock is initially set to unlocked), otherwise others trying to acquire
+> > the lock can spin forever:
+> > 
+> > 	/* Wait until the lock holder passes the lock down */
+> > 	while (!ACCESS_ONCE(node->locked))
+> > 		arch_mutex_cpu_relax();
+> > 
+> > The ->locked variable in this implementation refers to if the lock is
+> > acquired, and *not* to if busy-waiting is necessary.
 > 
-> These were just suggestions for Sudeep.
+> hmm, others threads acquiring the lock will be spinning on their own
+> local nodes, not this node's node->locked. And if prev == NULL, the
+> current thread won't be reading it's node->lock either since we return.
+> So what other thread is going to be reading this node's node->lock?
 > 
-> Sudeep said he'd incorporate and resend the series.
-> 
-> Sudeep?  Were you ever going to do that?
-> 
+> Thanks,
+> Jason
 
-We were waiting for Greg to apply the base patches to the char misc next
-tree which happened today. We will send out the cleanup patch series
-which addresses all feedback soon.
+I think setting node->locked = 1 for the prev==NULL case is not
+necessary functionally, but was done for semantics consistency.
 
-Thanks,
-Sudeep Dutt
+Tim
 
