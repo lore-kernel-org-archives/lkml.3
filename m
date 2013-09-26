@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab3IZJB3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:01:29 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61659 "EHLO
+	id S1756288Ab3IZJB2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:01:28 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46685 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755847Ab3IZI6P (ORCPT
+	with ESMTP id S1755855Ab3IZI6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:58:15 -0400
-X-AuditID: 9c93016f-b7bc8ae000004e6e-db-5243f7254dba
+	Thu, 26 Sep 2013 04:58:16 -0400
+X-AuditID: 9c93016f-b7bc8ae000004e6e-de-5243f725f844
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/8] perf ui/progress: Add new helper functions for progress bar
-Date: Thu, 26 Sep 2013 17:58:04 +0900
-Message-Id: <1380185890-25758-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 3/8] perf tools: Show progress on histogram collapsing
+Date: Thu, 26 Sep 2013 17:58:05 +0900
+Message-Id: <1380185890-25758-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
 References: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
@@ -28,147 +28,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Introduce ui_progress_setup() and ui_progress__advance() to separate
-out from the session logic.  It'll be used by other places in the
-upcoming patch.
+It can take quite amount of time so add progress bar UI to inform user.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/progress.c  | 18 ++++++++++++++++++
- tools/perf/ui/progress.h  | 10 ++++++++++
- tools/perf/util/session.c | 24 ++++++++++++------------
- 3 files changed, 40 insertions(+), 12 deletions(-)
+ tools/perf/builtin-annotate.c |  2 +-
+ tools/perf/builtin-diff.c     |  2 +-
+ tools/perf/builtin-report.c   | 10 +++++++++-
+ tools/perf/builtin-top.c      |  4 ++--
+ tools/perf/tests/hists_link.c |  2 +-
+ tools/perf/util/hist.c        |  5 ++++-
+ tools/perf/util/hist.h        |  3 ++-
+ 7 files changed, 20 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/ui/progress.c b/tools/perf/ui/progress.c
-index 3ec695607a4d..b5c22c6b1d93 100644
---- a/tools/perf/ui/progress.c
-+++ b/tools/perf/ui/progress.c
-@@ -19,6 +19,24 @@ void ui_progress__update(u64 curr, u64 total, const char *title)
- 	return progress_fns->update(curr, total, title);
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 577c3a1cffea..958d5e280b1f 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -242,7 +242,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 
+ 		if (nr_samples > 0) {
+ 			total_nr_samples += nr_samples;
+-			hists__collapse_resort(hists);
++			hists__collapse_resort(hists, NULL);
+ 			hists__output_resort(hists);
+ 
+ 			if (symbol_conf.event_group &&
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index f28799e94f2a..f4ab7d210105 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -367,7 +367,7 @@ static void perf_evlist__collapse_resort(struct perf_evlist *evlist)
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		struct hists *hists = &evsel->hists;
+ 
+-		hists__collapse_resort(hists);
++		hists__collapse_resort(hists, NULL);
+ 	}
  }
  
-+void ui_progress__setup(struct perf_progress *p, u64 total)
-+{
-+	p->curr = 0;
-+	p->next = p->unit = total / 16;
-+	p->total = total;
-+
-+}
-+
-+void ui_progress__advance(struct perf_progress *p, u64 adv, const char *title)
-+{
-+	p->curr += adv;
-+
-+	if (p->curr >= p->next) {
-+		p->next += p->unit;
-+		ui_progress__update(p->curr, p->total, title);
-+	}
-+}
-+
- void ui_progress__finish(void)
- {
- 	if (progress_fns->finish)
-diff --git a/tools/perf/ui/progress.h b/tools/perf/ui/progress.h
-index 257cc224f9cf..3bd23e825953 100644
---- a/tools/perf/ui/progress.h
-+++ b/tools/perf/ui/progress.h
-@@ -8,10 +8,20 @@ struct ui_progress {
- 	void (*finish)(void);
- };
- 
-+struct perf_progress {
-+	u64 curr;
-+	u64 next;
-+	u64 unit;
-+	u64 total;
-+};
-+
- extern struct ui_progress *progress_fns;
- 
- void ui_progress__init(void);
- 
-+void ui_progress__setup(struct perf_progress *p, u64 total);
-+void ui_progress__advance(struct perf_progress *p, u64 adv, const char *title);
-+
- void ui_progress__update(u64 curr, u64 total, const char *title);
- void ui_progress__finish(void);
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6c1d4447c5b4..9f62be8bc167 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -538,13 +538,16 @@ static int flush_sample_queue(struct perf_session *s,
- 	struct perf_sample sample;
- 	u64 limit = os->next_flush;
- 	u64 last_ts = os->last_sample ? os->last_sample->timestamp : 0ULL;
--	unsigned idx = 0, progress_next = os->nr_samples / 16;
- 	bool show_progress = limit == ULLONG_MAX;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 295025e6b26e..3390d9a4e3bf 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -489,6 +489,7 @@ static int __cmd_report(struct perf_report *rep)
+ 	struct map *kernel_map;
+ 	struct kmap *kernel_kmap;
+ 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
 +	struct perf_progress prog;
- 	int ret;
  
- 	if (!tool->ordered_samples || !limit)
- 		return 0;
+ 	signal(SIGINT, sig_handler);
  
-+	if (show_progress)
-+		ui_progress__setup(&prog, os->nr_samples);
-+
- 	list_for_each_entry_safe(iter, tmp, head, list) {
- 		if (iter->timestamp > limit)
- 			break;
-@@ -562,10 +565,10 @@ static int flush_sample_queue(struct perf_session *s,
- 		os->last_flush = iter->timestamp;
- 		list_del(&iter->list);
- 		list_add(&iter->list, &os->sample_cache);
--		if (show_progress && (++idx >= progress_next)) {
--			progress_next += os->nr_samples / 16;
--			ui_progress__update(idx, os->nr_samples,
--					    "Processing time ordered events...");
-+
-+		if (show_progress) {
-+			ui_progress__advance(&prog, 1,
-+					     "Processing time ordered events...");
- 		}
+@@ -550,13 +551,19 @@ static int __cmd_report(struct perf_report *rep)
  	}
  
-@@ -1310,12 +1313,13 @@ int __perf_session__process_events(struct perf_session *session,
- 				   u64 data_offset, u64 data_size,
- 				   u64 file_size, struct perf_tool *tool)
+ 	nr_samples = 0;
++	list_for_each_entry(pos, &session->evlist->entries, node)
++		nr_samples += pos->hists.nr_entries;
++
++	ui_progress__setup(&prog, nr_samples);
++
++	nr_samples = 0;
+ 	list_for_each_entry(pos, &session->evlist->entries, node) {
+ 		struct hists *hists = &pos->hists;
+ 
+ 		if (pos->idx == 0)
+ 			hists->symbol_filter_str = rep->symbol_filter_str;
+ 
+-		hists__collapse_resort(hists);
++		hists__collapse_resort(hists, &prog);
+ 		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
+ 
+ 		/* Non-group events are considered as leader */
+@@ -568,6 +575,7 @@ static int __cmd_report(struct perf_report *rep)
+ 			hists__link(leader_hists, hists);
+ 		}
+ 	}
++	ui_progress__finish();
+ 
+ 	if (nr_samples == 0) {
+ 		ui__error("The %s file has no samples!\n", session->filename);
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index cf4bba07175a..0cb077f823de 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -287,7 +287,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
+ 		return;
+ 	}
+ 
+-	hists__collapse_resort(&top->sym_evsel->hists);
++	hists__collapse_resort(&top->sym_evsel->hists, NULL);
+ 	hists__output_resort(&top->sym_evsel->hists);
+ 	hists__decay_entries(&top->sym_evsel->hists,
+ 			     top->hide_user_symbols,
+@@ -553,7 +553,7 @@ static void perf_top__sort_new_samples(void *arg)
+ 	if (t->evlist->selected != NULL)
+ 		t->sym_evsel = t->evlist->selected;
+ 
+-	hists__collapse_resort(&t->sym_evsel->hists);
++	hists__collapse_resort(&t->sym_evsel->hists, NULL);
+ 	hists__output_resort(&t->sym_evsel->hists);
+ 	hists__decay_entries(&t->sym_evsel->hists,
+ 			     t->hide_user_symbols,
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 4228ffc0d968..3b5faaa5c8cf 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -465,7 +465,7 @@ int test__hists_link(void)
+ 		goto out;
+ 
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+-		hists__collapse_resort(&evsel->hists);
++		hists__collapse_resort(&evsel->hists, NULL);
+ 
+ 		if (verbose > 2)
+ 			print_hists(&evsel->hists);
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index fa695ce1662a..a2d58e7abdcf 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -395,6 +395,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	if (!he)
+ 		return NULL;
+ 
++	hists->nr_entries++;
+ 	rb_link_node(&he->rb_node_in, parent, p);
+ 	rb_insert_color(&he->rb_node_in, hists->entries_in);
+ out:
+@@ -599,7 +600,7 @@ static void hists__apply_filters(struct hists *hists, struct hist_entry *he)
+ 	hists__filter_entry_by_symbol(hists, he);
+ }
+ 
+-void hists__collapse_resort(struct hists *hists)
++void hists__collapse_resort(struct hists *hists, struct perf_progress *prog)
  {
--	u64 head, page_offset, file_offset, file_pos, progress_next;
-+	u64 head, page_offset, file_offset, file_pos;
- 	int err, mmap_prot, mmap_flags, map_idx = 0;
- 	size_t	mmap_size;
- 	char *buf, *mmaps[NUM_MMAPS];
- 	union perf_event *event;
- 	uint32_t size;
-+	struct perf_progress prog;
+ 	struct rb_root *root;
+ 	struct rb_node *next;
+@@ -624,6 +625,8 @@ void hists__collapse_resort(struct hists *hists)
+ 			 */
+ 			hists__apply_filters(hists, n);
+ 		}
++		if (prog)
++			ui_progress__advance(prog, 1, "Merging related events...");
+ 	}
+ }
  
- 	perf_tool__fill_defaults(tool);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 7f29792efc58..f3d6cf6bd7d4 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -5,6 +5,7 @@
+ #include <pthread.h>
+ #include "callchain.h"
+ #include "header.h"
++#include "ui/progress.h"
  
-@@ -1326,7 +1330,7 @@ int __perf_session__process_events(struct perf_session *session,
- 	if (data_offset + data_size < file_size)
- 		file_size = data_offset + data_size;
+ extern struct callchain_param callchain_param;
  
--	progress_next = file_size / 16;
-+	ui_progress__setup(&prog, file_size);
+@@ -104,7 +105,7 @@ struct hist_entry *__hists__add_mem_entry(struct hists *self,
+ 					  u64 weight);
  
- 	mmap_size = MMAP_SIZE;
- 	if (mmap_size > file_size)
-@@ -1381,11 +1385,7 @@ more:
- 	head += size;
- 	file_pos += size;
+ void hists__output_resort(struct hists *self);
+-void hists__collapse_resort(struct hists *self);
++void hists__collapse_resort(struct hists *self, struct perf_progress *prog);
  
--	if (file_pos >= progress_next) {
--		progress_next += file_size / 16;
--		ui_progress__update(file_pos, file_size,
--				    "Processing events...");
--	}
-+	ui_progress__advance(&prog, size, "Processing events...");
- 
- 	if (file_pos < file_size)
- 		goto more;
+ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel);
+ void hists__output_recalc_col_len(struct hists *hists, int max_rows);
 -- 
 1.7.11.7
 
