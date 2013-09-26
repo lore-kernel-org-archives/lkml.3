@@ -1,103 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab3IZKoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 06:44:14 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:50727 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756414Ab3IZKoK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 06:44:10 -0400
-Subject: Re: [RFC V4 PATCH 00/15] Signature verification of hibernate
- snapshot
-From: joeyli <jlee@suse.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-crypto@vger.kernel.org,
-        opensuse-kernel@opensuse.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Josh Boyer <jwboyer@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
-In-Reply-To: <1380161957.32302.42.camel@linux-s257.site>
-References: <Pine.LNX.4.44L0.1309251723001.26508-100000@netrider.rowland.org>
-	 <1380161957.32302.42.camel@linux-s257.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Sep 2013 18:43:38 +0800
-Message-ID: <1380192218.32302.69.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1756737Ab3IZKo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 06:44:59 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1664 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756301Ab3IZKo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 06:44:57 -0400
+Message-ID: <52441025.9030308@nod.at>
+Date: Thu, 26 Sep 2013 12:44:53 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: linux-arch@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        geert@linux-m68k.org, ralf@linux-mips.org, lethal@linux-sh.org,
+        Jeff Dike <jdike@addtoit.com>, gxt@mprc.pku.edu.cn,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH 2/8] um: Do not use SUBARCH
+References: <1377073172-3662-1-git-send-email-richard@nod.at> <1377073172-3662-3-git-send-email-richard@nod.at> <CALkWK0kCrQ9hPABD_XQ9QFG-vByP+xZWZs+RkVK77+cX7Odz7g@mail.gmail.com>
+In-Reply-To: <CALkWK0kCrQ9hPABD_XQ9QFG-vByP+xZWZs+RkVK77+cX7Odz7g@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 四，2013-09-26 於 10:19 +0800，joeyli 提到：
-> 於 三，2013-09-25 於 17:25 -0400，Alan Stern 提到：
-> > On Wed, 25 Sep 2013, David Howells wrote:
-> > 
-> > > I have pushed some keyrings patches that will likely affect this to:
-> > > 
-> > > 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-devel
-> > > 
-> > > I intend to ask James to pull these into his next branch.  If he's happy to do
-> > > so, I can look at pulling at least your asymmetric keys patch on top of them.
-> > 
-> > This suggests a point that I raised at the Linux Plumbers conference:
-> > 
-> > Why are asymmetric keys used for verifying the hibernation image?  It
-> > seems that a symmetric key would work just as well.  And it would be a
-> > lot quicker to generate, because it wouldn't need any high-precision
-> > integer computations.
-> > 
-> > Alan Stern
-> > 
-> > 
-> 
-> Per my understood, it's like add salt to snapshot when generate
-> signature, then remove the salt when store the snapshot to swap. (or
-> pass snapshot to userland).
-> 
-> Let me explain the symmetric key solution base on my understand:
-> 
->  + EFI stub kernel generate a hash value from a random seed, then store
-> it to EFi boot varaible. It should protected by UEFI secure boot
-> environment.
-> 
->  + When hibernate launched:
->     - Kernel create the snapshot image of memory. It's included the
-> random hash value(salt) that generated in EFI stub stage.
->     - Then kernel hash the snapshot image, put the hash to snapshot
-> header, just like current asymmetric keys solution.
->     - Kernel erase the salt in snapshot image before it go to swap or
-> pass to userspace tool.
-> 
->  + When hibernate resume:
->     - Kernel or userspace tool load the snapshot(without salt) from swap
-> to temporary memory space.
->     - Kernel fill the salt back to snapshot image in memory, hash it.
->     - Kernel compare the hash with the hash that put in snapshot header.
->     - Verification done! The follow-up action as current solution.
-> 
-> Please current me if I missed anything.
-> 
-> 
-> Thanks a lot!
-> Joey Lee
-> 
+Am 26.09.2013 12:40, schrieb Ramkumar Ramachandra:
+> Richard Weinberger wrote:
+> Forget all that. What matters is that upstream is still broken, and
+> users are suffering. Despite a reasonable fix being submitted in July.
 
-For the symmetric key solution, I will try HMAC (Hash Message
-Authentication Code). It's already used in networking, hope the
-performance is not too bad to a big image.
+So, what exactly is broken in upstream?
+make defconfig works as it always did.
 
+make defconfig ARCH=um SUBARCH=x86 (or SUBARCH=i386) will create a defconfig for 32bit.
+make defconfig ARCH=um SUBARCH=x86_64 one for 64bit.
 
-Thanks
-Joey Lee
-
+Thanks,
+//richard
