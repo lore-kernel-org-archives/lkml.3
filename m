@@ -1,202 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab3IZB7e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 21:59:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:21223 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751070Ab3IZB7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 21:59:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,982,1371106800"; 
-   d="scan'208";a="401173026"
-Date: Thu, 26 Sep 2013 09:59:24 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [munlock] BUG: Bad page map in process killall5 pte:cf17e720
- pmd:05a22067
-Message-ID: <20130926015924.GA10453@localhost>
-References: <20130926004028.GB9394@localhost>
- <52439258.3010904@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52439258.3010904@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753689Ab3IZCBC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 22:01:02 -0400
+Received: from smtprelay0241.hostedemail.com ([216.40.44.241]:55963 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752768Ab3IZCBA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 22:01:00 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::,RULES_HIT:41:334:355:368:369:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:1801:2197:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3355:3622:3653:3743:3865:3866:3867:3868:3870:3871
+X-HE-Tag: light22_7c9547e394044
+X-Filterd-Recvd-Size: 4999
+Message-ID: <1380160854.17366.49.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Add test for #defines of ARCH_HAS_<foo>
+From: Joe Perches <joe@perches.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 25 Sep 2013 19:00:54 -0700
+In-Reply-To: <CA+55aFycQ9XJvEOsiM3txHL5bjUc8CeKWJNR_H+MiicaddB42Q@mail.gmail.com>
+References: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
+	 <1380125886-10341-8-git-send-email-fweisbec@gmail.com>
+	 <CA+55aFzPArB0dotWZz8dLTPVM4MMT75NAb5_DVcPrNuvWu4QUA@mail.gmail.com>
+	 <20130925172121.00c23e416398139f4615943c@linux-foundation.org>
+	 <1380156027.17366.39.camel@joe-AO722>
+	 <CA+55aFycQ9XJvEOsiM3txHL5bjUc8CeKWJNR_H+MiicaddB42Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bob,
+On Wed, 2013-09-25 at 18:26 -0700, Linus Torvalds wrote:
+> On Wed, Sep 25, 2013 at 5:40 PM, Joe Perches <joe@perches.com> wrote:
+> >
+> > Huh?  That matches all the ARCH_HAS_<foo> patterns.
+> 
+> Right. And they are all crap. lib/string.c is a prime example of
+> something that should never have happened.
+> 
+> The ARCH_HAS_xyz pattern is totally retarded. It's wrong.
+> 
+> For big conceptual features, we should use Kconfig symbols.
+> 
+> And for smaller things - like lib/string.c - where we have
+> compatibility fallback functions but want architectures able to
+> override them with optimized ones one function at a time, we should
+> either use weak functions (appropriate for some cases), or the symbol
+> that protects them should the the SAME SYMBOL WE USE. Rather than some
+> made-up crap-for-brains new ARCH_HAS_xyz symbol. That way it shows up
+> in greps, and that way we don't have any question about what random
+> symbol pattern we use that particular day.
+> 
+> So for *bad* use, see lib/string.c, and the ARCH_AS_xyz horror.
+> 
+> For *good* use, see lib/div64.c or lib/find_next_bit.c.
+> 
+> Notice how div64.c doesn't make up new ARCH_HAS_random_crap names? And
+> no, you don't have to define those things as macros, you can define
+> them as functions (inline or not), and then just do
+> 
+>     #define find_next_zero_bit find_next_zero_bit
+> 
+> to tell the rest of the world "Look, I have this defined".
+> 
+> The whole "make up a totally unrelated second name for it" means that
+> we have things like __HAVE_ARCH_STRLEN but also things like
+> ARCH_HAS_PREFETCHW. Ugh.
+> 
+>                        Linus
 
-On Thu, Sep 26, 2013 at 09:48:08AM +0800, Bob Liu wrote:
-> Hi Fengguang,
-> 
-> Would you please have a try with the attached patch?
-> It added a small fix based on Vlastimil's patch.
+So, add a test for these #defines
 
-Thanks for the quick response! I just noticed Andrew added this patch
-to -mm tree:
+Additionally, moved string_find_replace sub as it
+screws up subsequent formatting when placed inside
+another sub.
 
-------------------------------------------------------
-From: Vlastimil Babka <vbabka@suse.cz>
-Subject: mm/mlock.c: prevent walking off the end of a pagetable in no-pmd configuration
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
 
-What's the git tree your v2 patch based on? If you already had a git
-tree, it'd be more simple to push it to a branch and tell me the
-tree/branch/commit to test.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index c03e427..e2e7703 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1512,6 +1512,14 @@ sub rtrim {
+ 	return $string;
+ }
+ 
++sub string_find_replace {
++	my ($string, $find, $replace) = @_;
++
++	$string =~ s/$find/$replace/g;
++
++	return $string;
++}
++
+ sub tabify {
+ 	my ($leading) = @_;
+ 
+@@ -3731,14 +3739,6 @@ sub process {
+ 			}
+ 		}
+ 
+-sub string_find_replace {
+-	my ($string, $find, $replace) = @_;
+-
+-	$string =~ s/$find/$replace/g;
+-
+-	return $string;
+-}
+-
+ # check for bad placement of section $InitAttribute (e.g.: __initdata)
+ 		if ($line =~ /(\b$InitAttribute\b)/) {
+ 			my $attr = $1;
+@@ -4196,6 +4196,12 @@ sub string_find_replace {
+ 			     "usage of NR_CPUS is often wrong - consider using cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc\n" . $herecurr);
+ 		}
+ 
++# Use of __ARCH_HAS_<FOO> or ARCH_HAVE_<BAR> is wrong.
++		if ($line =~ /\+\s*#\s*define\s+((?:__)?ARCH_(?:HAS|HAVE)\w*)\b/) {
++			ERROR("DEFINE_ARCH_HAS",
++			      "#define of '$1' is wrong - use Kconfig variables or standard guards instead\n" . $herecurr);
++		}
++
+ # check for %L{u,d,i} in strings
+ 		my $string;
+ 		while ($line =~ /(?:^|")([X\t]*)(?:"|$)/g) {
 
-Thanks,
-Fengguang
-
-> On 09/26/2013 08:40 AM, Fengguang Wu wrote:
-> > Hi Vlastimil,
-> > 
-> > FYI, this bug seems still not fixed in linux-next 20130925.
-> > 
-> > commit 7a8010cd36273ff5f6fea5201ef9232f30cebbd9
-> > Author: Vlastimil Babka <vbabka@suse.cz>
-> > Date:   Wed Sep 11 14:22:35 2013 -0700
-> > 
-> >     mm: munlock: manual pte walk in fast path instead of follow_page_mask()
-> >     
-> >     Currently munlock_vma_pages_range() calls follow_page_mask() to obtain
-> >     each individual struct page.  This entails repeated full page table
-> >     translations and page table lock taken for each page separately.
-> >     
-> >     This patch avoids the costly follow_page_mask() where possible, by
-> >     iterating over ptes within single pmd under single page table lock.  The
-> >     first pte is obtained by get_locked_pte() for non-THP page acquired by the
-> >     initial follow_page_mask().  The rest of the on-stack pagevec for munlock
-> >     is filled up using pte_walk as long as pte_present() and vm_normal_page()
-> >     are sufficient to obtain the struct page.
-> >     
-> >     After this patch, a 14% speedup was measured for munlocking a 56GB large
-> >     memory area with THP disabled.
-> >     
-> >     Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> >     Cc: Jörn Engel <joern@logfs.org>
-> >     Cc: Mel Gorman <mgorman@suse.de>
-> >     Cc: Michel Lespinasse <walken@google.com>
-> >     Cc: Hugh Dickins <hughd@google.com>
-> >     Cc: Rik van Riel <riel@redhat.com>
-> >     Cc: Johannes Weiner <hannes@cmpxchg.org>
-> >     Cc: Michal Hocko <mhocko@suse.cz>
-> >     Cc: Vlastimil Babka <vbabka@suse.cz>
-> >     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> >     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > 
-> > 
-> > [   89.835504] init: plymouth-upstart-bridge main process (3556) terminated with status 1
-> > [   89.986606] init: tty6 main process (3529) killed by TERM signal
-> > [   91.414086] BUG: Bad page map in process killall5  pte:cf17e720 pmd:05a22067
-> > [   91.416626] addr:bfc00000 vm_flags:00100173 anon_vma:cf128c80 mapping:  (null) index:bfff0
-> > [   91.419402] CPU: 0 PID: 3574 Comm: killall5 Not tainted 3.12.0-rc1-00010-g5fbc0a6 #24
-> > [   91.422171] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> > [   91.423998]  00000000 00000000 c0199e34 c1db5db4 00000000 c0199e54 c10e72d4 000bfff0
-> > [   91.427933]  00000000 bfc00000 00000000 000cf17e cf17e720 c0199e74 c10e7995 00000000
-> > [   91.431940]  bfc00000 cf1ca190 bfc00000 cf180000 cf1ca190 c0199ee0 c10eb8cf ce6d1900
-> > [   91.435894] Call Trace:
-> > [   91.436969]  [<c1db5db4>] dump_stack+0x4b/0x66
-> > [   91.438503]  [<c10e72d4>] print_bad_pte+0x14b/0x162
-> > [   91.440204]  [<c10e7995>] vm_normal_page+0x67/0x9b
-> > [   91.441811]  [<c10eb8cf>] munlock_vma_pages_range+0xf9/0x176
-> > [   91.443633]  [<c10ede09>] exit_mmap+0x86/0xf7
-> > [   91.445156]  [<c10885b8>] ? lock_release+0x169/0x1ef
-> > [   91.446795]  [<c113e5b6>] ? rcu_read_unlock+0x17/0x23
-> > [   91.448465]  [<c113effe>] ? exit_aio+0x2b/0x6c
-> > [   91.449990]  [<c103d4b0>] mmput+0x6a/0xcb
-> > [   91.451508]  [<c104141a>] do_exit+0x362/0x8be
-> > [   91.453013]  [<c105d280>] ? hrtimer_debug_hint+0xd/0xd
-> > [   91.454700]  [<c10419f8>] do_group_exit+0x51/0x9e
-> > [   91.456296]  [<c1041a5b>] SyS_exit_group+0x16/0x16
-> > [   91.457901]  [<c1dc6719>] sysenter_do_call+0x12/0x33
-> > [   91.459553] Disabling lock debugging due to kernel taint
-> > 
-> > git bisect start 272b98c6455f00884f0350f775c5342358ebb73f v3.11 --
-> > git bisect good 57d730924d5cc2c3e280af16a9306587c3a511db  # 02:21    495+  Merge branch 'timers-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> > git bisect good 3bb22ec53e2bd12a241ed84359bffd591a40ab87  # 12:03    495+  staging/lustre/ptlrpc: convert to new shrinker API
-> > git bisect  bad a5b7c87f92076352dbff2fe0423ec255e1c9a71b  # 12:18     31-  vmscan, memcg: do softlimit reclaim also for targeted reclaim
-> > git bisect good 3d94ea51c1d8db6f41268a9d2aea5f5771e9a8d3  # 15:40    495+  ocfs2: clean up dead code in ocfs2_acl_from_xattr()
-> > git bisect  bad d62a201f24cba74e2fbf9f6f7af86ff5f5e276fc  # 16:46     79-  checkpatch: enforce sane perl version
-> > git bisect good 83467efbdb7948146581a56cbd683a22a0684bbb  # 01:29    585+  mm: migrate: check movability of hugepage in unmap_and_move_huge_page()
-> > git bisect  bad 2bff24a3707093c435ab3241c47dcdb5f16e432b  # 02:07    148-  memcg: fix multiple large threshold notifications
-> > git bisect  bad 1ecfd533f4c528b0b4cc5bc115c4c47f0b5e4828  # 02:34     64-  mm/mremap.c: call pud_free() after fail calling pmd_alloc()
-> > git bisect good 0ec3b74c7f5599c8a4d2b33d430a5470af26ebf6  # 13:10   1170+  mm: putback_lru_page: remove unnecessary call to page_lru_base_type()
-> > git bisect good 5b40998ae35cf64561868370e6c9f3d3e94b6bf7  # 16:52   1170+  mm: munlock: remove redundant get_page/put_page pair on the fast path
-> > git bisect  bad 187320932dcece9c4b93f38f56d1f888bd5c325f  # 17:11      0-  mm/sparse: introduce alloc_usemap_and_memmap
-> > git bisect  bad 6e543d5780e36ff5ee56c44d7e2e30db3457a7ed  # 17:29      2-  mm: vmscan: fix do_try_to_free_pages() livelock
-> > git bisect  bad 7a8010cd36273ff5f6fea5201ef9232f30cebbd9  # 17:59     14-  mm: munlock: manual pte walk in fast path instead of follow_page_mask()
-> > git bisect good 5b40998ae35cf64561868370e6c9f3d3e94b6bf7  # 22:10   3510+  mm: munlock: remove redundant get_page/put_page pair on the fast path
-> > git bisect  bad 5fbc0a6263a147cde905affbfb6622c26684344f  # 22:10      0-  Merge remote-tracking branch 'pinctrl/for-next' into kbuild_tmp
-> > git bisect good 87e37036dcf96eb73a8627524be8b722bd1ac526  # 04:31   3510+  Revert "mm: munlock: manual pte walk in fast path instead of follow_page_mask()"
-> > git bisect  bad 22356f447ceb8d97a4885792e7d9e4607f712e1b  # 04:40     48-  mm: Place preemption point in do_mlockall() loop
-> > git bisect  bad 050f4da86e9bdbcc9e11789e0f291aafa57b8a20  # 04:55    133-  Add linux-next specific files for 20130925
-> > 
-> > Thanks,
-> > Fengguang
-> > 
-
-> >From aef673d802a92aef8dc082c244fef51ae9c4a13c Mon Sep 17 00:00:00 2001
-> From: Bob Liu <bob.liu@oracle.com>
-> Date: Thu, 26 Sep 2013 09:41:27 +0800
-> Subject: [PATCH v2] mm: munlock: Prevent walking off the end of a pagetable in
->  no-pmd configuration
-> 
-> The function __munlock_pagevec_fill() introduced in commit 7a8010cd3
-> ("mm: munlock: manual pte walk in fast path instead of follow_page_mask()")
-> uses pmd_addr_end() for restricting its operation within current page table.
-> This is insufficient on architectures/configurations where pmd is folded
-> and pmd_addr_end() just returns the end of the full range to be walked. In
-> this case, it allows pte++ to walk off the end of a page table resulting in
-> unpredictable behaviour.
-> 
-> This patch fixes the function by using pgd_addr_end() and pud_addr_end()
-> before pmd_addr_end(), which will yield correct page table boundary on all
-> configurations. This is similar to what existing page walkers do when walking
-> each level of the page table.
-> 
-> Additionaly, the patch clarifies a comment for get_locked_pte() call in the
-> function.
-> 
-> v2: walk page table after start += PAGESIZE
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Signed-off-by: Bob Liu <bob.liu@oracle.com>
-> ---
->  mm/mlock.c |   10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/mlock.c b/mm/mlock.c
-> index d638026..a91114a 100644
-> --- a/mm/mlock.c
-> +++ b/mm/mlock.c
-> @@ -379,13 +379,19 @@ static unsigned long __munlock_pagevec_fill(struct pagevec *pvec,
->  
->  	/*
->  	 * Initialize pte walk starting at the already pinned page where we
-> -	 * are sure that there is a pte.
-> +	 * are sure that there is a pte, as it was pinned under the same
-> +	 * mmap_sem write op.
->  	 */
->  	pte = get_locked_pte(vma->vm_mm, start,	&ptl);
-> -	end = min(end, pmd_addr_end(start, end));
->  
->  	/* The page next to the pinned page is the first we will try to get */
->  	start += PAGE_SIZE;
-> +
-> +	/* Make sure we do not cross the page table boundary */
-> +	end = pgd_addr_end(start, end);
-> +	end = pud_addr_end(start, end);
-> +	end = pmd_addr_end(start, end);
-> +
->  	while (start < end) {
->  		struct page *page = NULL;
->  		pte++;
-> -- 
-> 1.7.10.4
-> 
 
