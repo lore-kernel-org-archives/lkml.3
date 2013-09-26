@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab3IZCDj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 22:03:39 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:32243 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab3IZCDh (ORCPT
+	id S1755037Ab3IZCEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 22:04:21 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:20928 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab3IZCET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 22:03:37 -0400
-X-AuditID: cbfee690-b7f3b6d000007a15-98-524395f8b649
+	Wed, 25 Sep 2013 22:04:19 -0400
+X-AuditID: cbfee690-b7f3b6d000007a15-ca-52439622bc8c
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>
 Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
@@ -15,40 +15,40 @@ Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
         "'Bengt Jonsson'" <bengt.g.jonsson@stericsson.com>
 References: <000701ceba5c$69459b10$3bd0d130$%han@samsung.com>
 In-reply-to: <000701ceba5c$69459b10$3bd0d130$%han@samsung.com>
-Subject: [PATCH V2 02/18] regulator: ab8500-ext: use devm_regulator_register()
-Date: Thu, 26 Sep 2013 11:03:36 +0900
-Message-id: <000801ceba5c$9c450690$d4cf13b0$%han@samsung.com>
+Subject: [PATCH V2 03/18] regulator: da9063: use devm_regulator_register()
+Date: Thu, 26 Sep 2013 11:04:18 +0900
+Message-id: <000901ceba5c$b56e10d0$204a3270$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac66XGktrYXfQ+q4TvOtJpq/iZ1T4wAAB0IQ
+Thread-index: Ac66XGktrYXfQ+q4TvOtJpq/iZ1T4wAADQpg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zI90fU52DDK4uELdY/+AYk8XUh0/Y
-	LC4vvMRq8e1KB5PF5V1z2BxYPXbOusvusWlVJ5tH35ZVjB7fl65h9/i8SS6ANYrLJiU1J7Ms
-	tUjfLoEr4/DCDSwFt/gqrn35xtjA+Iu7i5GTQ0LAROLu7+VsELaYxIV764FsLg4hgWWMEg/W
-	nGeBKfq/Zx5UYhGjxKq3f5khnF+MEjP3dTOBVLEJqEl8+XKYvYuRg0NEQFXi/yt3kBpmgYWM
-	ElOWPGAGqRESsJU49fsi2DpOATuJ09c2soLYwgJ+Es++nwKbwwLUO3nDXbDNvED1b3e2sUPY
-	ghI/Jt8DizMLaEms33mcCcKWl9i85i0zyF4JAXWJR391IU4wkjj0LwWiQkRi34t3jCDnSAjc
-	Ypc4OWs2M8QqAYlvkw+xQLTKSmw6wAzxr6TEwRU3WCYwSsxCsngWksWzkCyehWTFAkaWVYyi
-	qQXJBcVJ6UUmesWJucWleel6yfm5mxghkTphB+O9A9aHGJOB1k9klhJNzgdGel5JvKGxmZGF
-	qYmpsZG5pRlpwkrivOot1oFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGFuF73rzltk2t4n7
-	hNkc4A8/ve1uodXytOkSz8S8nxyYfOW3Mc/drObfB0OYmLZoNScbBC5+Wx2/kaeRN8dgrvB9
-	5kkfcgVumYSENzmvOGlbbJXRkzTZ6PMS74fCF4yUjhm5TuVJV1u6hCU788C0d44X3fSmd4Vf
-	MX7IbPvvUbzFjidW3zgslViKMxINtZiLihMBdwUlUuoCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jAd0fU52DDJYsFbZY/+AYk8XUh0/Y
-	LC4vvMRq8e1KB5PF5V1z2BxYPXbOusvusWlVJ5tH35ZVjB7fl65h9/i8SS6ANaqB0SYjNTEl
-	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMePwwg0sBbf4Kq59+cbYwPiLu4uRk0NCwETi
-	/555bBC2mMSFe+uBbC4OIYFFjBKr3v5lhnB+MUrM3NfNBFLFJqAm8eXLYfYuRg4OEQFVif+v
-	3EFqmAUWMkpMWfKAGaRGSMBW4tTvi2BTOQXsJE5f28gKYgsL+Ek8+34KbA4LUO/kDXdZQGxe
-	oPq3O9vYIWxBiR+T74HFmQW0JNbvPM4EYctLbF7zlhlkr4SAusSjv7oQJxhJHPqXAlEhIrHv
-	xTvGCYxCs5AMmoVk0Cwkg2YhaVnAyLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzgNPJPa
-	wbiyweIQowAHoxIP7wVm5yAh1sSy4srcQ4wSHMxKIrzfjIBCvCmJlVWpRfnxRaU5qcWHGJOB
-	/pzILCWanA9MUXkl8YbGJmZGlkZmFkYm5uakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLEwSnV
-	wDgrp26p9jYjXcV8u5Lijzuuxn6U5rG8soQl3tLt3U5lUxfm21Ldu5+U1D6qzpK0mabY3j3h
-	8ATrJY5di4Mtji3YcM3QxC9jo7gw/51dt0sjytY7OHMeyzSXPv7gq3PFEZfzoZU/Fv+x+c60
-	5uyu+r75qqe2vWH6qafeeNuH812hplXkHcbZ9UosxRmJhlrMRcWJAG42RgJHAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zI12lac5BBv/fK1usf3CMyWLqwyds
+	FpcXXmK1+Halg8ni8q45bA6sHjtn3WX32LSqk82jb8sqRo/vS9ewe3zeJBfAGsVlk5Kak1mW
+	WqRvl8CVsb/foOCuQMXXp1cYGxhv8XYxcnJICJhIHDq5gxnCFpO4cG89WxcjF4eQwDJGiX1b
+	NjJ2MXKAFV26XAURn84oceX1Y0YI5xejxKU7D9hAutkE1CS+fDnMDtIgIqAq8f+VO0gNs8BC
+	RokpSx6AbRASsJU49fsiWD2ngJ3E6WsbWUFsYQEviRuLnrKA2CxAvd03WxlBbF6g+pu3VrJC
+	2IISPybfA6thFtCSWL/zOBOELS+xec1bZohD1SUe/dUFCYsIGEnMPriHEaJERGLfi3dgN0sI
+	3GOX2PH6HBvELgGJb5MPsUD0ykpsOgANCEmJgytusExglJiFZPMsJJtnIdk8C8mKBYwsqxhF
+	UwuSC4qT0otM9IoTc4tL89L1kvNzNzFC4nTCDsZ7B6wPMSYDrZ/ILCWanA+M87ySeENjMyML
+	UxNTYyNzSzPShJXEedVbrAOFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MM7bee7NhNB5CQyT
+	goQPcoZ/OSfD0ZigpH/cOy5lXWXdTn6TKubpM0Q/RR9KPyG47PTq/Zxdz80XPKlck/ygbNZ+
+	4fmvXmSFpIrtYn45K3LVPh9xq7VB5Wohz6QvinfUJ/Beuhp+N8+Dt2HqqY/FBud2Wsm7Pr2l
+	tlflgq5sXmS829KoyAd1i5RYijMSDbWYi4oTAQcorLDpAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jQV2lac5BBv9+y1usf3CMyWLqwyds
+	FpcXXmK1+Halg8ni8q45bA6sHjtn3WX32LSqk82jb8sqRo/vS9ewe3zeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmLG/36DgrkDF16dXGBsYb/F2MXJwSAiYSFy6
+	XNXFyAlkiklcuLeerYuRi0NIYDqjxJXXjxkhnF+MEpfuPGADqWITUJP48uUwO0iziICqxP9X
+	7iA1zAILGSWmLHnADFIjJGArcer3RbB6TgE7idPXNrKC2MICXhI3Fj1lAbFZgHq7b7Yygti8
+	QPU3b61khbAFJX5MvgdWwyygJbF+53EmCFteYvOat8wQR6tLPPqrCxIWETCSmH1wDyNEiYjE
+	vhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgJPBM
+	egfjqgaLQ4wCHIxKPLwXmJ2DhFgTy4orcw8xSnAwK4nwfjMCCvGmJFZWpRblxxeV5qQWH2JM
+	Bnp0IrOUaHI+MEHllcQbGpuYGVkamVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwen
+	VAOj+17xjL5j7loufIc+3P7tIvLsem6ZyYTHYSrtd+aYbnF7lGOZJ/DksWvQau6u2fqy3Dw7
+	9xjV7F0duGmz4MO6u2p5yyy6bt0pKdq6geNw250pO38mHOkyld19fAfrwc2PIhcdjy7tPcJ6
+	Umu/zYuGWLcfMrKWu1LifqieaeZpDWopXnppSu1UJZbijERDLeai4kQAJcbl40YDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,64 +56,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_regulator_register() to make cleanup paths simpler,
-and remove unnecessary remove().
+Use devm_regulator_register() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/regulator/ab8500-ext.c |   26 ++------------------------
- 1 file changed, 2 insertions(+), 24 deletions(-)
+ drivers/regulator/da9063-regulator.c |   21 ++++-----------------
+ 1 file changed, 4 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
-index 02ff691..29c0faa 100644
---- a/drivers/regulator/ab8500-ext.c
-+++ b/drivers/regulator/ab8500-ext.c
-@@ -413,16 +413,12 @@ static int ab8500_ext_regulator_probe(struct platform_device *pdev)
- 			&pdata->ext_regulator[i];
- 
- 		/* register regulator with framework */
--		info->rdev = regulator_register(&info->desc, &config);
-+		info->rdev = devm_regulator_register(&pdev->dev, &info->desc,
+diff --git a/drivers/regulator/da9063-regulator.c b/drivers/regulator/da9063-regulator.c
+index 3d910f4..56727eb 100644
+--- a/drivers/regulator/da9063-regulator.c
++++ b/drivers/regulator/da9063-regulator.c
+@@ -847,13 +847,13 @@ static int da9063_regulator_probe(struct platform_device *pdev)
+ 		if (da9063_reg_matches)
+ 			config.of_node = da9063_reg_matches[id].of_node;
+ 		config.regmap = da9063->regmap;
+-		regl->rdev = regulator_register(&regl->desc, &config);
++		regl->rdev = devm_regulator_register(&pdev->dev, &regl->desc,
 +						     &config);
- 		if (IS_ERR(info->rdev)) {
- 			err = PTR_ERR(info->rdev);
- 			dev_err(&pdev->dev, "failed to register regulator %s\n",
- 					info->desc.name);
--			/* when we fail, un-register all earlier regulators */
--			while (--i >= 0) {
--				info = &ab8500_ext_regulator_info[i];
--				regulator_unregister(info->rdev);
--			}
- 			return err;
+ 		if (IS_ERR(regl->rdev)) {
+ 			dev_err(&pdev->dev,
+ 				"Failed to register %s regulator\n",
+ 				regl->desc.name);
+-			ret = PTR_ERR(regl->rdev);
+-			goto err;
++			return PTR_ERR(regl->rdev);
  		}
+ 		id++;
+ 		n++;
+@@ -862,9 +862,8 @@ static int da9063_regulator_probe(struct platform_device *pdev)
+ 	/* LDOs overcurrent event support */
+ 	irq = platform_get_irq_byname(pdev, "LDO_LIM");
+ 	if (irq < 0) {
+-		ret = irq;
+ 		dev_err(&pdev->dev, "Failed to get IRQ.\n");
+-		goto err;
++		return irq;
+ 	}
  
-@@ -433,26 +429,8 @@ static int ab8500_ext_regulator_probe(struct platform_device *pdev)
+ 	regulators->irq_ldo_lim = regmap_irq_get_virq(da9063->regmap_irq, irq);
+@@ -881,27 +880,15 @@ static int da9063_regulator_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	return 0;
+-
+-err:
+-	/* Wind back regulators registeration */
+-	while (--n >= 0)
+-		regulator_unregister(regulators->regulator[n].rdev);
+-
+-	return ret;
+ }
+ 
+ static int da9063_regulator_remove(struct platform_device *pdev)
+ {
+ 	struct da9063_regulators *regulators = platform_get_drvdata(pdev);
+-	struct da9063_regulator *regl;
+ 
+ 	free_irq(regulators->irq_ldo_lim, regulators);
+ 	free_irq(regulators->irq_uvov, regulators);
+ 
+-	for (regl = &regulators->regulator[regulators->n_regulators - 1];
+-	     regl >= &regulators->regulator[0]; regl--)
+-		regulator_unregister(regl->rdev);
+-
  	return 0;
  }
  
--static int ab8500_ext_regulator_remove(struct platform_device *pdev)
--{
--	int i;
--
--	for (i = 0; i < ARRAY_SIZE(ab8500_ext_regulator_info); i++) {
--		struct ab8500_ext_regulator_info *info = NULL;
--		info = &ab8500_ext_regulator_info[i];
--
--		dev_vdbg(rdev_get_dev(info->rdev),
--			"%s-remove\n", info->desc.name);
--
--		regulator_unregister(info->rdev);
--	}
--
--	return 0;
--}
--
- static struct platform_driver ab8500_ext_regulator_driver = {
- 	.probe = ab8500_ext_regulator_probe,
--	.remove = ab8500_ext_regulator_remove,
- 	.driver         = {
- 		.name   = "ab8500-ext-regulator",
- 		.owner  = THIS_MODULE,
 -- 
 1.7.10.4
 
