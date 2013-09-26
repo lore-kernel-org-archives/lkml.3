@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466Ab3IZO50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 10:57:26 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:40541 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab3IZO4U (ORCPT
+	id S1753496Ab3IZO55 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 10:57:57 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:50566 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348Ab3IZO4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 10:56:20 -0400
+	Thu, 26 Sep 2013 10:56:11 -0400
 From: Ulf Hansson <ulf.hansson@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
         Chris Ball <cjb@laptop.org>
 Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 26/27] mmc: mmci: Move away from using deprecated APIs
-Date: Thu, 26 Sep 2013 16:54:51 +0200
-Message-Id: <1380207292-16968-27-git-send-email-ulf.hansson@linaro.org>
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: [PATCH 23/27] mmc: sh_mmcif: Move away from using deprecated APIs
+Date: Thu, 26 Sep 2013 16:54:48 +0200
+Message-Id: <1380207292-16968-24-git-send-email-ulf.hansson@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
 References: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
@@ -28,58 +28,39 @@ and consequently the mmc_suspend|resume_host APIs are deprecated.
 This means we can simplify the suspend|resume callbacks by removing the
 use of the deprecated APIs.
 
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 ---
- drivers/mmc/host/mmci.c |   17 ++++-------------
- 1 file changed, 4 insertions(+), 13 deletions(-)
+ drivers/mmc/host/sh_mmcif.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index c3785ed..9e8a482 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -1725,37 +1725,28 @@ static int mmci_suspend(struct device *dev)
+diff --git a/drivers/mmc/host/sh_mmcif.c b/drivers/mmc/host/sh_mmcif.c
+index 36629a0..6bffebe 100644
+--- a/drivers/mmc/host/sh_mmcif.c
++++ b/drivers/mmc/host/sh_mmcif.c
+@@ -1542,19 +1542,15 @@ static int sh_mmcif_remove(struct platform_device *pdev)
+ static int sh_mmcif_suspend(struct device *dev)
  {
- 	struct amba_device *adev = to_amba_device(dev);
- 	struct mmc_host *mmc = amba_get_drvdata(adev);
--	int ret = 0;
+ 	struct sh_mmcif_host *host = dev_get_drvdata(dev);
+-	int ret = mmc_suspend_host(host->mmc);
  
- 	if (mmc) {
- 		struct mmci_host *host = mmc_priv(mmc);
--
--		ret = mmc_suspend_host(mmc);
--		if (ret == 0) {
--			pm_runtime_get_sync(dev);
--			writel(0, host->base + MMCIMASK0);
--		}
-+		pm_runtime_get_sync(dev);
-+		writel(0, host->base + MMCIMASK0);
- 	}
+-	if (!ret)
+-		sh_mmcif_writel(host->addr, MMCIF_CE_INT_MASK, MASK_ALL);
++	sh_mmcif_writel(host->addr, MMCIF_CE_INT_MASK, MASK_ALL);
  
 -	return ret;
 +	return 0;
  }
  
- static int mmci_resume(struct device *dev)
+ static int sh_mmcif_resume(struct device *dev)
  {
- 	struct amba_device *adev = to_amba_device(dev);
- 	struct mmc_host *mmc = amba_get_drvdata(adev);
--	int ret = 0;
- 
- 	if (mmc) {
- 		struct mmci_host *host = mmc_priv(mmc);
+-	struct sh_mmcif_host *host = dev_get_drvdata(dev);
 -
- 		writel(MCI_IRQENABLE, host->base + MMCIMASK0);
- 		pm_runtime_put(dev);
--
--		ret = mmc_resume_host(mmc);
- 	}
- 
--	return ret;
+-	return mmc_resume_host(host->mmc);
 +	return 0;
  }
- #endif
- 
+ #else
+ #define sh_mmcif_suspend	NULL
 -- 
 1.7.9.5
 
