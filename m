@@ -1,105 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056Ab3IZHtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:49:08 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:38954 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab3IZHtD convert rfc822-to-8bit (ORCPT
+	id S1755901Ab3IZHty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:49:54 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:29695 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab3IZHtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:49:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <87eh8clvun.fsf@intel.com>
-References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
-	<1380026575.3371.1.camel@ThinkPad-X230.localdomain>
-	<CADDKRnCAZ0DtBUUaMfdTF=yk6PDLpbc9jkuvWWO8hYW4TDLxKw@mail.gmail.com>
-	<20130925091720.GA1921@aaronlu.sh.intel.com>
-	<87vc1p4207.fsf@intel.com>
-	<CADDKRnDqDBfA6e6TE0VTLD9F=TjVZNov53Zk8ydnk2fS32rczQ@mail.gmail.com>
-	<87eh8clvun.fsf@intel.com>
-Date: Thu, 26 Sep 2013 09:49:03 +0200
-Message-ID: <CADDKRnA7Eqox6s6t315c=OaEpAgRcX62_4rF8XuXaNRAipOqcQ@mail.gmail.com>
-Subject: Re: [PATCH v3 0/4] Fix Win8 backlight issue
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Aaron Lu <aaron.lu@intel.com>, Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Mike Galbraith <bitbucket@online.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 Sep 2013 03:49:52 -0400
+X-AuditID: cbfee68e-b7f756d000004512-b7-5243e717b7b9
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Mark Brown'" <broonie@kernel.org>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>, "'Milo Kim'" <milo.kim@ti.com>
+References: <003101ceba8c$88d6a840$9a83f8c0$%han@samsung.com>
+In-reply-to: <003101ceba8c$88d6a840$9a83f8c0$%han@samsung.com>
+Subject: [PATCH V3 05/14] regulator: lp872x: use devm_regulator_register()
+Date: Thu, 26 Sep 2013 16:49:43 +0900
+Message-id: <003501ceba8c$f6588ff0$e309afd0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac66jIjCzH3ID+v5Qym5l1DxbvczrwAAFPww
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zY13x585BBj/XSFhMffiEzeLywkus
+	Ft+udDBZXN41h81i+a91LA6sHjtn3WX32LSqk82jb8sqRo/jN7YzeXzeJBfAGsVlk5Kak1mW
+	WqRvl8CVceO9ZkG3YMXKc/0sDYxnebsYOTkkBEwkzp1vZ4awxSQu3FvP1sXIxSEksIxR4ntz
+	IztMUd/iDywQiUWMEnsvbGeHcH4xShy58JQFpIpNQE3iy5fDQAkODhEBVYn/r9xBapgFuhkl
+	ri77DDZJSMBWovHbX7B6TgE7iVn7T4KtFhbwknjYuokJxGYB6p3R/QmshheovuHUREYIW1Di
+	x+R7YHFmAS2J9TuPM0HY8hKb17xlBtkrIaAu8eivLkhYRMBI4syM5YwQJSIS+168Y4R45h67
+	xJsDxRCrBCS+TT7EAtEqK7HpADQgJCUOrrjBMoFRYhaSxbOQLJ6FZPEsJBsWMLKsYhRNLUgu
+	KE5KLzLSK07MLS7NS9dLzs/dxAiJ074djDcPWB9iTAZaP5FZSjQ5HxjneSXxhsZmRhamJqbG
+	RuaWZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpglNTao+awmvGAz9Q4t5hL
+	e3SW8mTyvi7g8L9n4r2hpvKrcqphvZJx7iG3ryftp89Z2nfniN7t7f/PlmR1Hi9apLzgEceL
+	7H+Z3edalgupz+p8UC68/bDak/DlKhczWNg3bTg6k/XM5vKMzQL7N62bwjsj1uucdCd/5lXj
+	bg/HU+2bfXf8MDUOUWIpzkg01GIuKk4EANCE1CrpAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jAV3x585BBq8Wi1hMffiEzeLywkus
+	Ft+udDBZXN41h81i+a91LA6sHjtn3WX32LSqk82jb8sqRo/jN7YzeXzeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmHHjvWZBt2DFynP9LA2MZ3m7GDk5JARMJPoW
+	f2CBsMUkLtxbz9bFyMUhJLCIUWLvhe3sEM4vRokjF56CVbEJqEl8+XIYKMHBISKgKvH/lTtI
+	DbNAN6PE1WWf2UFqhARsJRq//QWr5xSwk5i1/yQziC0s4CXxsHUTE4jNAtQ7o/sTWA0vUH3D
+	qYmMELagxI/J98DizAJaEut3HmeCsOUlNq95ywyyV0JAXeLRX12QsIiAkcSZGcsZIUpEJPa9
+	eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBKeBZ1I7
+	GFc2WBxiFOBgVOLhvcDsHCTEmlhWXJl7iFGCg1lJhPebEVCINyWxsiq1KD++qDQntfgQYzLQ
+	oxOZpUST84EpKq8k3tDYxMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUa
+	GCt2rNiws//l1aRDM16r/SmPXjUv1Lytw+hSQF7ngxXqR500Fz/JKV+7aisvo8fdd7YMM34f
+	rm8pkT8S8Dro6MpTN2/+jjw+/2JGj/P8t+mXC/bkvOfPsk0ttN49PXZV6tpNlZmCl2MdLikm
+	1eTW1WzpE2aW2+D44aLSqrvb1tfeYJbNrvaJEVBiKc5INNRiLipOBADdGfdJRwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/9/25 Jani Nikula <jani.nikula@linux.intel.com>:
-> On Wed, 25 Sep 2013, Jörg Otte <jrg.otte@gmail.com> wrote:
->> 2013/9/25 Jani Nikula <jani.nikula@linux.intel.com>:
->>> On Wed, 25 Sep 2013, Aaron Lu <aaron.lu@intel.com> wrote:
->>>> On Wed, Sep 25, 2013 at 10:29:37AM +0200, Jörg Otte wrote:
->>>>> Backlight can't be modified with this patch set - neither with
->>>>> function keys nor with the gui. It is a step backward to v3.11-rc1
->>>
->>> So both hotkeys and GUI work in v3.11-rc1? And v3.12-rc2?
->>
->> In  v3.11-rc1 it didn't work.
->> Since a later rc (I don't remember exactly which) it did work.
->> In v3.12-rc1/2 it does work.
->> In v3.12-rc2 + Aaron's patch set it again doesn't work.
->>
->>>
->>>> Thanks for the test.
->>>>
->>>> Please check /sys/class/backlight, is there only one link file
->>>> intel_backlight?
->>>
->>> Indeed, are there others? fujitsu-laptop perhaps? If yes, try
->>> CONFIG_FUJITSU_LAPTOP=n or an appropriate module blacklist.
->>>
->>> Just checking, you do have CONFIG_BACKLIGHT_CLASS_DEVICE=y?
->>
->> There is only one intel_backlight link.
->> Yes, I have CONFIG_BACKLIGHT_CLASS_DEVICE=y
->>
->>> Embarrassingly there was a bug in i915 fixed just recently where the
->>> backlight device wasn't registered for
->>> CONFIG_BACKLIGHT_CLASS_DEVICE=m...
->>>
->>>> If so, please cd inside and try modify the brightness file using echo
->>>> with some values in the range of 0 - max_brightness, does the
->>>> backlight level change when you echo a new value? I guess it doesn't,
->>>> or you wouldn't notice problem. If indeed so, perhaps file a bug at
->>>> http://bugzilla.kernel.org, Drivers/Video(DRI-Intel)? I suppose Jani
->>>> and Daniel can help fix your problem.
->>>
->>> Yup, please check the above, and report back.
->>
->> - echo 0..max_brightness > brightness does not work.
->
-> Thanks for the info.
->
-> How about v3.12-rc2 without Aaron's patches? Does intel_backlight also
-> not work there? How about the acpi_video0 (which I presume is present)
-> sysfs interface?
->
+Use devm_regulator_register() to make cleanup paths simpler,
+and remove unnecessary remove().
 
-Without Aaron's patches intel_backlight also does not work.
-But acpi_video0 does (and takes precedence I think).
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/regulator/lp872x.c |   33 +++------------------------------
+ 1 file changed, 3 insertions(+), 30 deletions(-)
 
->>>>> Video driver: i915
->>>>> FUJITSU LIFEBOOK AH532/FJNBB1C, BIOS Version 1.09 05/22/2012
->>
->> Jörg
+diff --git a/drivers/regulator/lp872x.c b/drivers/regulator/lp872x.c
+index 2b84b72..2e4734f 100644
+--- a/drivers/regulator/lp872x.c
++++ b/drivers/regulator/lp872x.c
+@@ -785,7 +785,7 @@ static int lp872x_regulator_register(struct lp872x *lp)
+ 	struct regulator_desc *desc;
+ 	struct regulator_config cfg = { };
+ 	struct regulator_dev *rdev;
+-	int i, ret;
++	int i;
+ 
+ 	for (i = 0; i < lp->num_regulators; i++) {
+ 		desc = (lp->chipid == LP8720) ? &lp8720_regulator_desc[i] :
+@@ -796,34 +796,16 @@ static int lp872x_regulator_register(struct lp872x *lp)
+ 		cfg.driver_data = lp;
+ 		cfg.regmap = lp->regmap;
+ 
+-		rdev = regulator_register(desc, &cfg);
++		rdev = devm_regulator_register(lp->dev, desc, &cfg);
+ 		if (IS_ERR(rdev)) {
+ 			dev_err(lp->dev, "regulator register err");
+-			ret =  PTR_ERR(rdev);
+-			goto err;
++			return PTR_ERR(rdev);
+ 		}
+ 
+ 		*(lp->regulators + i) = rdev;
+ 	}
+ 
+ 	return 0;
+-err:
+-	while (--i >= 0) {
+-		rdev = *(lp->regulators + i);
+-		regulator_unregister(rdev);
+-	}
+-	return ret;
+-}
+-
+-static void lp872x_regulator_unregister(struct lp872x *lp)
+-{
+-	struct regulator_dev *rdev;
+-	int i;
+-
+-	for (i = 0; i < lp->num_regulators; i++) {
+-		rdev = *(lp->regulators + i);
+-		regulator_unregister(rdev);
+-	}
+ }
+ 
+ static const struct regmap_config lp872x_regmap_config = {
+@@ -979,14 +961,6 @@ err_dev:
+ 	return ret;
+ }
+ 
+-static int lp872x_remove(struct i2c_client *cl)
+-{
+-	struct lp872x *lp = i2c_get_clientdata(cl);
+-
+-	lp872x_regulator_unregister(lp);
+-	return 0;
+-}
+-
+ static const struct of_device_id lp872x_dt_ids[] = {
+ 	{ .compatible = "ti,lp8720", },
+ 	{ .compatible = "ti,lp8725", },
+@@ -1008,7 +982,6 @@ static struct i2c_driver lp872x_driver = {
+ 		.of_match_table = of_match_ptr(lp872x_dt_ids),
+ 	},
+ 	.probe = lp872x_probe,
+-	.remove = lp872x_remove,
+ 	.id_table = lp872x_ids,
+ };
+ 
+-- 
+1.7.10.4
+
+
