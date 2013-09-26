@@ -1,95 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab3IZF3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 01:29:19 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:14026 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab3IZF3R (ORCPT
+	id S1751142Ab3IZFey (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 01:34:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:62559 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab3IZFex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 01:29:17 -0400
-X-AuditID: cbfee68e-b7f756d000004512-b9-5243c629a22e
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Cc: "'Mateusz Krawczuk'" <m.krawczuk@partner.samsung.com>,
-        t.stanislaws@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux@arm.linux.org.uk, s.nawrocki@samsung.com,
-        b.zolnierkie@samsung.com, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>, ben-linux@fluff.org,
-        m.szyprowski@samsung.com
-References: <1380038363-487-1-git-send-email-m.krawczuk@partner.samsung.com>
- <2123658.6S6hP57GRg@flatron>
-In-reply-to: <2123658.6S6hP57GRg@flatron>
-Subject: RE: [PATCH v2] ARM: SAMSUNG: S5P: If detected device tree skip irq init
-Date: Thu, 26 Sep 2013 14:29:13 +0900
-Message-id: <02c901ceba79$55b382c0$011a8840$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac65WwnstFZDvCfGRWKnTNbCOf1WlgBHdzgg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+Zka7mMecgg52TpS02zljPajFp3QEm
-	i7NNb9gtNj2+xmpxedccNosZ5/cxWdy+zGtxes0pZou1R+6yWxx+085qsX7GaxaLee0vWS1W
-	7frD6MDr0dLcw+bxd9ULZo+ds+6ye2xeUu9x8N0eJo++LasYPT5vkgtgj+KySUnNySxLLdK3
-	S+DKeLfqDHPBG9aKu81nWBoYL7J0MXJySAiYSCx8fYkNwhaTuHBvPZDNxSEksIxRovHwMkaY
-	ogULethBbCGBRYwSxw4pQRT9ZZTYsGIXK0iCTUBD4vD7Z2BFIgL+ElduHGcEKWIWuMYkMfFy
-	J1R3tsTWu9OZQGxOAU2Jg++mgG0QFgiQWHqnC6yGRUBVouXZLrAaXgFbiXdbLjNC2IISPybf
-	AzubWUBLYv3O40wQtrzE5jVvmbsYOYAuVZd49FcX4gYjiY8rH7NBlIhI7HvxDuweCYGlHBJr
-	zi1jgdglIPFt8iEWiF5ZiU0HmCEelpQ4uOIGywRGiVlINs9CsnkWks2zkKxYwMiyilE0tSC5
-	oDgpvchIrzgxt7g0L10vOT93EyMkFfTtYLx5wPoQYzLQ+onMUqLJ+cBUklcSb2hsZmRhamJq
-	bGRuaUaasJI4r1qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxt7gr4KL/hydWOw+T3+x
-	+4Oe+6f2rJije9uxa3Mb53enrZbdx4yTEg8sTsudsvgbM1tI2MbE4El8lo7SN/fdjq3R+fIn
-	XLrEmvntpVmOr3c3sG2R/Mu2mvN1sdCNuPN5B7hFzfIXJjsU1S5TvOO8XFp82gUpLYsPSyvT
-	L8nNDEj7p6/UfI+3RImlOCPRUIu5qDgRANZHK0AbAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKKsWRmVeSWpSXmKPExsVy+t9jAV3NY85BBs87xCw2zljPajFp3QEm
-	i7NNb9gtNj2+xmpxedccNosZ5/cxWdy+zGtxes0pZou1R+6yWxx+085qsX7GaxaLee0vWS1W
-	7frD6MDr0dLcw+bxd9ULZo+ds+6ye2xeUu9x8N0eJo++LasYPT5vkgtgj2pgtMlITUxJLVJI
-	zUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBulZJoSwxpxQoFJBYXKyk
-	b4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmPFu1RnmgjesFXebz7A0MF5k6WLk5JAQMJFYsKCH
-	HcIWk7hwbz0biC0ksIhR4tghpS5GLiD7L6PEhhW7WEESbAIaEoffPwNrEBHwl7hy4zgjSBGz
-	wDUmiYmXO9khurMltt6dzgRicwpoShx8N4URxBYWCJBYeqcLrIZFQFWi5dkusBpeAVuJd1su
-	M0LYghI/Jt8Du45ZQEti/c7jTBC2vMTmNW+Zuxg5gC5Vl3j0VxfiBiOJjysfs0GUiEjse/GO
-	cQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAhONM+kdjCu
-	bLA4xCjAwajEw3uB2TlIiDWxrLgy9xCjBAezkgjvNyOgEG9KYmVValF+fFFpTmrxIcZkoEcn
-	MkuJJucDk2BeSbyhsYmZkaWRmYWRibk5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTB6
-	6dmx9D7pEvkze50WX270+Zfx86NV9bf38ilkRZ+4fLBt+wR7xtBf7y+Gb652TzC+GGgQmm/L
-	9DHydfHOwg9Hlk/mq7G9/83p3cuPn42b1I33eAewPJ+5zEg54+qJF6onDt8WPJa5/NhpT4YZ
-	nzILX4XNTPFf3xrI2t/HcNZEn/VEi6TBdyslluKMREMt5qLiRACu6hnCeAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 26 Sep 2013 01:34:53 -0400
+Message-ID: <1380173688.7525.12.camel@marge.simpson.net>
+Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for
+ wake_affine(.sync=true)
+From: Mike Galbraith <bitbucket@online.de>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 26 Sep 2013 07:34:48 +0200
+In-Reply-To: <5243C24F.6070704@linux.vnet.ibm.com>
+References: <20130925075341.GB3081@twins.programming.kicks-ass.net>
+	 <1380099377.8523.9.camel@marge.simpson.net>
+	 <5243A0E9.4060802@linux.vnet.ibm.com>
+	 <1380166898.5431.40.camel@marge.simpson.net>
+	 <5243C24F.6070704@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:xAIJK8VN1A0wCi74xaGxU+NtYz8rTfFAV55qRVClcxR
+ Lt1jKKe+DLh5qJD8h0317b7Tohsvl1dxN8IEQkYFwAo+puSPLX
+ LvCLukSIKNWCufiG3vjdbKyplmkph6hegPP2hBj9cwc6kImUvA
+ 4HZtEaloXZ1diZ+IRZSezeoQVj7dahk7koAjMYnrNgW+YVFwAL
+ 4nN1Lr7DUFC5mim3cgHm1rbM1zYGnqusXpqh75985tGwBk3qEb
+ 7Iy31KtAeYkWhHm/5IkwiMZ7f4c7B6jR/WXmIEewMse3N9FCD6
+ f5qGaApMZTWKtw9RdUdo5/kNyIj8xApDZWYBaU13BhnbGTv0lE
+ sJyePXYvPWcLJEhIjvp0eE2Mcln8j7zaliUQJrD5QcZz6jO5sv
+ o/uQibeTpYbeA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomasz Figa wrote:
+On Thu, 2013-09-26 at 13:12 +0800, Michael wang wrote: 
+> On 09/26/2013 11:41 AM, Mike Galbraith wrote:
+> [snip]
+> >> Like the case when we have:
+> >>
+> >> 	core0 sg		core1 sg
+> >> 	cpu0	cpu1		cpu2	cpu3
+> >> 	waker	busy		idle	idle
+> >>
+> >> If the sync wakeup was on cpu0, we can:
+> >>
+> >> 1. choose cpu in core1 sg like we did usually
+> >>    some overhead but tend to make the load a little balance
+> >> 	core0 sg		core1 sg
+> >> 	cpu0	cpu1		cpu2	cpu3
+> >> 	idle	busy		wakee	idle
+> > 
+> > Reducing latency and increasing throughput when the waker isn't really
+> > really going to immediately schedule off as the hint implies.  Nice for
+> > bursty loads and ramp.
+> > 
+> > The breakeven point is going up though.  If you don't have nohz
+> > throttled, you eat tick start/stop overhead, and the menu governor
+> > recently added yet more overhead, so maybe we should say hell with it.
 > 
-> Hi Mateusz,
+> Exactly, more and more factors to be considered, we say things get
+> balanced but actually it's not the best choice...
 > 
-> On Tuesday 24 of September 2013 17:59:23 Mateusz Krawczuk wrote:
-> > It prevents from executing things already handled by pinctrl-exynos
-> > driver, when device tree is available.
-> >
-> > Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > ---
-> >  arch/arm/plat-samsung/s5p-irq-eint.c | 4 ++++
-> >  1 file changed, 4 insertions(+)
+> > 
+> >> 2. choose cpu0 like the patch proposed
+> >>    no overhead but tend to make the load a little more unbalance
+> >> 	core0 sg		core1 sg
+> >> 	cpu0	cpu1		cpu2	cpu3
+> >> 	wakee	busy		idle	idle
+> >>
+> >> May be we should add a higher scope load balance check in wake_affine(),
+> >> but that means higher overhead which is just what the patch want to
+> >> reduce...
+> > 
+> > Yeah, more overhead is the last thing we need.
+> > 
+> >> What about some discount for sync case inside select_idle_sibling()?
+> >> For example we consider sync cpu as idle and prefer it more than the others?
+> > 
+> > That's what the sync hint does.  Problem is, it's a hint.  If it were
+> > truth, there would be no point in calling select_idle_sibling().
 > 
-> Acked-by: Tomasz Figa <t.figa@samsung.com>
-> 
-> [as a temporary solution until we move all the users of this code to
-> device tree]
-> 
-Yes, agreed.
+> Just wondering if the hint was wrong in most of the time, then why don't
+> we remove it...
 
-The 'skip irq init' in subject would be changed to 'skip eint init' for
-clear meaning.
+For very fast/light network ping-pong micro-benchmarks, it is right.
+For pipe-test, it's absolutely right, jabbering parties are 100%
+synchronous, there is nada/nil/zip/diddly squat overlap reclaimable..
+but in the real world, it ain't necessarily so.
 
-Applied.
+> Otherwise I think we can still utilize it to make some decision tends to
+> be correct, don't we?
 
-Thanks,
-Kukjin
+Sometimes :)
+
+-Mike
 
