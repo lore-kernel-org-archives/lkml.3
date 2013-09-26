@@ -1,103 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589Ab3IZN0s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 09:26:48 -0400
-Received: from dkim2.fusionio.com ([66.114.96.54]:49939 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab3IZN0l (ORCPT
+	id S1750823Ab3IZNeE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 09:34:04 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:46700 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab3IZNeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 09:26:41 -0400
-X-ASG-Debug-ID: 1380202000-0421b50f503d2b0001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-From: Josef Bacik <jbacik@fusionio.com>
-To: <linux-btrfs@vger.kernel.org>
-CC: <walken@google.com>, <linux-kernel@vger.kernel.org>, <mingo@kernel.org>,
-        <peter@hurleysoftware.com>, <akpm@linux-foundation.org>
-Subject: [PATCH 2/2] Btrfs: stop caching thread if extent_commit_sem is contended
-Date: Thu, 26 Sep 2013 09:26:36 -0400
-X-ASG-Orig-Subj: [PATCH 2/2] Btrfs: stop caching thread if extent_commit_sem is contended
-Message-ID: <1380201996-17445-2-git-send-email-jbacik@fusionio.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380201996-17445-1-git-send-email-jbacik@fusionio.com>
-References: <1380201996-17445-1-git-send-email-jbacik@fusionio.com>
+	Thu, 26 Sep 2013 09:34:02 -0400
+Message-ID: <524437BE.8040106@gmail.com>
+Date: Thu, 26 Sep 2013 21:33:50 +0800
+From: Lennox Wu <lennox.wu@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
-X-Barracuda-Start-Time: 1380202000
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_MISMATCH_TO
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140942
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
+To: linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org
+Subject: [git pull] Score: Fix compiling error and updatr thee information
+ of maintainers
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="J7vtSFxkV30xoxPHw4i567qL7N2ROqqeK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can starve out the transaction commit with a bunch of caching threads all
-running at the same time.  This is because we will only drop the
-extent_commit_sem if we need_resched(), which isn't likely to happen since we
-will be reading a lot from the disk so have already schedule()'ed plenty.  Alex
-observed that he could starve out a transaction commit for up to a minute with
-32 caching threads all running at once.  This will allow us to drop the
-extent_commit_sem to allow the transaction commit to swap the commit_root out
-and then all the cachers will start back up. Here is an explanation provided by
-Igno
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--J7vtSFxkV30xoxPHw4i567qL7N2ROqqeK
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-So, just to fill in what happens in this loop:
+Hi Linus,
+Please pull these updates for S+core architecture. These updates include
+updating information of maintainers, fix some trivial errors, and add
+a necessary function for supporting ipv6.
 
-                                mutex_unlock(&caching_ctl->mutex);
-                                cond_resched();
-                                goto again;
+The following changes since commit 22356f447ceb8d97a4885792e7d9e4607f712e=
+1b
 
-where 'again:' takes caching_ctl->mutex and fs_info->extent_commit_sem
-again:
+mm: Place preemption point in do_mlockall() loop (2013-9-24 18:29:11 -070=
+0)
 
-        again:
-                mutex_lock(&caching_ctl->mutex);
-                /* need to make sure the commit_root doesn't disappear */
-                down_read(&fs_info->extent_commit_sem);
+are available in the git repository at:
 
-So, if I'm reading the code correct, there can be a fair amount of
-concurrency here: there may be multiple 'caching kthreads' per filesystem
-active, while there's one fs_info->extent_commit_sem per filesystem
-AFAICS.
+https://github.com/sctscore/official-linux.git release-up-to-date
 
-So, what happens if there are a lot of CPUs all busy holding the
-->extent_commit_sem rwsem read-locked and a writer arrives? They'd all
-rush to try to release the fs_info->extent_commit_sem, and they'd block in
-the down_read() because there's a writer waiting.
+For you to fetch changes up to ed38665eb50ef7ad530f9b2db531a09b8520ed32
 
-So there's a guarantee of forward progress. This should answer akpm's
-concern I think.
+Score: Update the information of Score maintaners (2013-9-26 01:41:22 +08=
+00)
 
-Thanks,
+Best,
+Lennox Wu
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
----
- fs/btrfs/extent-tree.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+-----------------------------------------------
+Summary these commits:
+1. Fix some trivial errors for successfully compiling the latest
+version Linux kernel.
+2. Provide necessary function for support IPV6.
+3. Update the information of maintainers.
 
-diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-index cfb3cf7..cc074c34 100644
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -442,7 +442,8 @@ next:
- 			if (ret)
- 				break;
- 
--			if (need_resched()) {
-+			if (need_resched() ||
-+			    rwsem_is_contended(&fs_info->extent_commit_sem)) {
- 				caching_ctl->progress = last;
- 				btrfs_release_path(path);
- 				up_read(&fs_info->extent_commit_sem);
--- 
-1.8.3.1
+Signed-off-by: Lennox Wu <lennox.wu@gmail.com>
 
+------------------------------------------------
+ MAINTAINERS                       |    4 +-
+ arch/score/Kconfig                |    4 ++
+ arch/score/Makefile               |    4 +-
+ arch/score/include/asm/checksum.h |   93 ++++++++++++++++++++-----------=
+------
+ arch/score/include/asm/io.h       |    1 -
+ arch/score/include/asm/pgalloc.h  |    2 +-
+ arch/score/kernel/entry.S         |    4 +-
+ arch/score/kernel/process.c       |    4 +-
+ 8 files changed, 64 insertions(+), 52 deletions(-)
+
+
+
+--J7vtSFxkV30xoxPHw4i567qL7N2ROqqeK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.7 (MingW32)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEVAwUBUkQ3whIBnItolwGVAQJ1zQgAjbZwQ7C3LeTtozvV8kcYTnaSIVh0CVwn
+4InzV/Y0ulN4Hmp4OJtI7wcfQVT07Kb2aQWDAG1Y/SymG7It9CHHRlzAhxt1LvzN
+7kgmUcVAMC9qHNo6l6jxCiW5kxIY2xgRdDSjASyibIJVlLHas5ZE93zCDz3lnKyF
+iFKoh2dJJ920WHkxwoe0jVUkcXxs3QIpaVOOM9p9/MOZZLZUynsvlnK+V4qo1hVC
++Z4Bsq7Puyqwp9tnICpamc+4ixcQMj2WLN6sSasiA2jw2v3b17gnhflzxsmS6c7K
+8QynRDo0dnQVcOMixJ8bnsKiY/5Y8Z7ozLarQ+DNd2Dfn6OHy9Ho8Q==
+=PVv1
+-----END PGP SIGNATURE-----
+
+--J7vtSFxkV30xoxPHw4i567qL7N2ROqqeK--
