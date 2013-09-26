@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab3IZPWr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:22:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57794 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab3IZPWq (ORCPT
+	id S1752353Ab3IZPXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:23:47 -0400
+Received: from mx11.netapp.com ([216.240.18.76]:26961 "EHLO mx11.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800Ab3IZPXq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:22:46 -0400
-Date: Thu, 26 Sep 2013 08:22:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 5/5] mei: revamp read and write length checks
-Message-ID: <20130926152245.GA26343@kroah.com>
-References: <1378080664-7274-1-git-send-email-tomas.winkler@intel.com>
- <1378080664-7274-6-git-send-email-tomas.winkler@intel.com>
+	Thu, 26 Sep 2013 11:23:46 -0400
+X-IronPort-AV: E=Sophos;i="4.90,986,1371106800"; 
+   d="scan'208";a="53561587"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>,
+        David Howells <dhowells@redhat.com>
+CC: "olof@lixom.net" <olof@lixom.net>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC][PATCH 0/4] SunRPC/NFS: Use no_printk() in
+Thread-Topic: [RFC][PATCH 0/4] SunRPC/NFS: Use no_printk() in
+Thread-Index: AQHOuswXLcLQi0hNs0m4vvJDyI+VYpnYIvAg
+Date: Thu, 26 Sep 2013 15:23:45 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9467EB040@SACEXCMBX04-PRD.hq.netapp.com>
+References: <20130926144502.29424.21633.stgit@warthog.procyon.org.uk>
+ <20130926152125.GD704@fieldses.org>
+In-Reply-To: <20130926152125.GD704@fieldses.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378080664-7274-6-git-send-email-tomas.winkler@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 03:11:04AM +0300, Tomas Winkler wrote:
-> 1. Return zero on zero length read and writes
-> 2. For a too large write return -EFBIG as defined in man write(2)
-> EFBIG  An attempt was made to write a file that
->         exceeds the implementation-defined maximum
->         file size or the process's file size limit,
->         or to  write  at  a  position  past  the  maximum
->         allowed offset.
+> -----Original Message-----
+> From: J. Bruce Fields [mailto:bfields@fieldses.org]
+> Sent: Thursday, September 26, 2013 10:21 AM
+> To: David Howells
+> Cc: Myklebust, Trond; olof@lixom.net; linux-nfs@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [RFC][PATCH 0/4] SunRPC/NFS: Use no_printk() in
 > 
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> ---
->  drivers/misc/mei/main.c | 16 ++++++++++++++--
->  1 file changed, 14 insertions(+), 2 deletions(-)
+> On Thu, Sep 26, 2013 at 03:45:02PM +0100, David Howells wrote:
+> >
+> >
+> > Here's a series of patches to make SunRPC/NFS use no_printk() to
+> > implement its null dfprintk() macro (ie. when RPC_DEBUG is disabled).
+> > This prevents 'unused variable' errors from occurring when a variable
+> > is set only for use in debugging statements and renders RPC/NFS_IFDEBUG
+> unnecessary.
 > 
-> diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-> index 5ff810b..7404584 100644
-> --- a/drivers/misc/mei/main.c
-> +++ b/drivers/misc/mei/main.c
-> @@ -203,12 +203,18 @@ static ssize_t mei_read(struct file *file, char __user *ubuf,
->  
->  	dev = cl->dev;
->  
-> +
->  	mutex_lock(&dev->device_lock);
+> Does this patch series fix any actual warnings?  Or does it just change the way
+> that we prevent the warnings?
+> 
 
-Not a big deal, but why the extra line?
+Right. If this is just code churn, then let's drop it. Otherwise, please explain why it is a good idea.
 
-greg k-h
+Cheers,
+  Trond
+
