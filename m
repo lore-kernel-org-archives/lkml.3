@@ -1,144 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757177Ab3IZM1z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 08:27:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756889Ab3IZM1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 08:27:53 -0400
-Date: Thu, 26 Sep 2013 14:25:52 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/3] msi: add forgotten pci_dev_put(pdev) to
- populate_msi_sysfs()
-Message-ID: <20130926122552.GB4783@redhat.com>
-References: <1379382464-7920-1-git-send-email-vfalico@redhat.com>
- <1379382464-7920-2-git-send-email-vfalico@redhat.com>
- <CAErSpo6+AQhpO2WvoKCSw7WokDiex_E43oi9xpuka7biPEx=7Q@mail.gmail.com>
- <20130925232300.GA7368@neilslaptop.think-freely.org>
- <CAErSpo6coKuf4f3j3zMwMNp7Uj3btN9UQyHpLPdq84aU-s=5UA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <CAErSpo6coKuf4f3j3zMwMNp7Uj3btN9UQyHpLPdq84aU-s=5UA@mail.gmail.com>
+	id S1756946Ab3IZMa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 08:30:58 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:16497 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756748Ab3IZMa4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 08:30:56 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-42-524428f91f9a
+Message-id: <524428FA.1010903@samsung.com>
+Date: Thu, 26 Sep 2013 21:30:50 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: myungjoo.ham@samsung.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 (RESEND)] extcon: arizona: Correct typo in headphone
+ detect range transitions
+References: <1379943239-2779-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+In-reply-to: <1379943239-2779-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCIsWRmVeSWpSXmKPExsWyRsSkRPenhkuQwdZOcYt/U26wW1zeNYfN
+	4nbjCjaL5W//szmweLyc+JvNo2/LKkaPz5vkApijuGxSUnMyy1KL9O0SuDKevv/KUrCKueLq
+	4h72BsYrTF2MnBwSAiYSu9fsZIewxSQu3FvP1sXIxSEksJRRYuHd/4wwRT2rD7JDJBYxSqzv
+	v8AE4bxilLh98CsrSBWvgJbEkd9HWUBsFgFViU/LboN1swHF97+4wQZiiwqESaycfoUFol5Q
+	4sfke2C2iICFxJQlt5hBbGaBRIk5574AbePgEBZIlzg5IRUkLCQQIrHx0wawck6BUImXC2ax
+	QJTrSOxvncYGYctLbF7zlhni6FXsEq+P1kCcIyDxbfIhFpCREgKyEpsOQJVIShxccYNlAqPY
+	LCQHzUIydRaSqQsYmVcxiqYWJBcUJ6UXGeoVJ+YWl+al6yXn525iBMbQ6X/Pencw3j5gfYgx
+	GWjlRGYp0eR8YAzmlcQbGpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNa
+	fIiRiYNTqoHxXEBJwan83EWXzZ/lhTJee22hWLZT/0/FgdYqjRl3zB2WLcium+VSxfLkod3l
+	wy/mNcQ+Mz3i/CQ+cOOazJvr1eM/HOKrVFSrz7ZVlnx/7vPDinctEjt2hH9X0HsZZRfiWKyS
+	eXbNk8WXHV+tmftE/JdeaTznm4h3B1bts6krbJdL31xw44mIEktxRqKhFnNRcSIAFWai+rcC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+xgO5PDZcgg90tAhb/ptxgt7i8aw6b
+	xe3GFWwWy9/+Z3Ng8Xg58TebR9+WVYwenzfJBTBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7
+	x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCtU1IoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHr
+	GxIE12NkgAYS1jBmPH3/laVgFXPF1cU97A2MV5i6GDk5JARMJHpWH2SHsMUkLtxbz9bFyMUh
+	JLCIUWJ9/wUmCOcVo8Ttg19ZQap4BbQkjvw+ygJiswioSnxadpsRxGYDiu9/cYMNxBYVCJNY
+	Of0KC0S9oMSPyffAbBEBC4kpS24xg9jMAokSc859AdrMwSEskC5xckIqSFhIIERi46cNYOWc
+	AqESLxfMYoEo15HY3zqNDcKWl9i85i3zBEaBWUg2zEJSNgtJ2QJG5lWMoqkFyQXFSem5RnrF
+	ibnFpXnpesn5uZsYwTH6THoH46oGi0OMAhyMSjy8F5idg4RYE8uKK3MPMUpwMCuJ8L6VdQkS
+	4k1JrKxKLcqPLyrNSS0+xJgMDICJzFKiyfnA9JFXEm9obGJmZGlkbmhhZGxOmrCSOO/BVutA
+	IYH0xJLU7NTUgtQimC1MHJxSDYxztTrmcE66cbtbVqu5y6ij6wwTw6SjHhnTU7ZWxCnfqZ7z
+	5692ou9alU7+y1YXenLkXRvFd/N4Pbz2I5mLx8X52dPbfXsmbglumZys3mikkXppmmrI0Q2R
+	X3zCC9xZvR/4zL5k8o8n7tXVLp5d0oaP3gh33GOMfmhzyn4K65R/FTdyuVpzhJRYijMSDbWY
+	i4oTAVB9sM8VAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 05:35:54PM -0600, Bjorn Helgaas wrote:
->On Wed, Sep 25, 2013 at 5:23 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
->> On Wed, Sep 25, 2013 at 03:08:05PM -0600, Bjorn Helgaas wrote:
->>> [+cc Neil (he added this code in da8d1c8ba4), Greg]
->>>
->>> On Mon, Sep 16, 2013 at 7:47 PM, Veaceslav Falico <vfalico@redhat.com> wrote:
->>> > Before trying to kobject_init_and_add(), we add a reference to pdev via
->>> > pci_dev_get(pdev). However, if it fails to init and/or add the kobject, we
->>> > don't return it back - even on out_unroll.
->>> >
->>> > Fix this by adding pci_dev_put(pdev) before going to unrolling section.
->>> >
->>> > CC: Bjorn Helgaas <bhelgaas@google.com>
->>> > CC: linux-pci@vger.kernel.org
->>> > CC: linux-kernel@vger.kernel.org
->>> > Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
->>> > ---
->>> >  drivers/pci/msi.c | 4 +++-
->>> >  1 file changed, 3 insertions(+), 1 deletion(-)
->>> >
->>> > diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
->>> > index d5f90d6..14bf578 100644
->>> > --- a/drivers/pci/msi.c
->>> > +++ b/drivers/pci/msi.c
->>> > @@ -534,8 +534,10 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
->>> >                 pci_dev_get(pdev);
->>> >                 ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
->>> >                                      "%u", entry->irq);
->>> > -               if (ret)
->>> > +               if (ret) {
->>> > +                       pci_dev_put(pdev);
->>> >                         goto out_unroll;
->>> > +               }
->>> >
->>> >                 count++;
->>> >         }
->>>
->>> I don't understand why this code does the pci_dev_get() in the first
->>> place.  The pdev->msi_list of msi_desc structs is private to the
->>> pci_dev, and even without bumping the refcount, there should be no way
->>> for the pci_dev to be freed before the msi_desc.
->>>
->> Its been a few years now, but IIRC I did the pci_dev_get/put here to ensure that
->> people didn't try to remove the device prior to freeing all their interrupts
->> (i.e I didn't want a broken driver to go through its remove routine without
->> freeing all its irqs).  That might have been the wrong thing to do, but thats
->> what bubbles to the front of my head when looking at this.
->
->That sounds plausible, but I think I'd rather deal with that by having
->the PCI core remove logic free all the interrupts.  I *think* that's
->already in place, i.e., pci_free_resources() calls
->msi_remove_pci_irq_vectors().  So I propose that we remove the
->pci_dev_get()/put() unless we come up with a more compelling reason
->for it.
+On 09/23/2013 10:33 PM, Charles Keepax wrote:
+> We should move range when the measured value is greater than or equal to
+> the max value not when greater than.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/extcon/extcon-arizona.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
 
-As an update - I've found an interesting case why exactly that
-kobject_del() might be needed:
+Applied this patchset on extcon-linus branch.
 
-in kobject_del() it removes instantly the link to kset - via
-kobj_kset_leave(), so that our kset remains without links and, thus, might
-be instantly removed.
+Thanks,
+Chanwoo Choi
 
-So, with kobject_del(), our kset (msi_irqs sysfs dir) remains instantly
-without any links (i.e. other kobjects) and, when we call kset_unregister()
-- it exits instantly (if it's not being hold somewhere elsewhere...).
-
-Without it, kset_unregister() will wait till all the kobjects will be gone.
-
-Now, the fun part starts - if we quickly call pci_disable_msi() and,
-afterwards, pci_enable_msi() - we might fail because the msi_irqs kset is
-still there, waiting to unregister, and the sysfs dir is still active.
-
-It's used, for example, in tg3_open/tg3_close, which are ndo_open/close,
-and are called on enslave/deslave in bonding.
-
-What I get:
-[   60.458319] WARNING: CPU: 0 PID: 5552 at fs/sysfs/dir.c:526 sysfs_add_one+0xbb/0xe0()
-[   60.458350] sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:1c.5/0000:3f:00.0/msi_irqs'
-
-I'll take a deeper look at the issue, though any feedback/advise is
-welcome. And I'll hold on with the patchset that removes pci_dev_get/put
-and kobject_del.
-
-
->
->>> I also don't understand this nearby code (the same pattern appears in
->>> free_msi_irqs()):
->>>
->>>     out_unroll:
->>>         list_for_each_entry(entry, &pdev->msi_list, list) {
->>>                 if (!count)
->>>                         break;
->>>                 kobject_del(&entry->kobj);
->>>                 kobject_put(&entry->kobj);
->>>                 count--;
->>>         }
->>>
->>> Why do we call kobject_del() here?  The kobject_put() will call
->>> kobject_del() anyway, so it looks redundant.
->>> Documentation/kobject.txt says kobject_del() must be called explicitly
->>> to break a circular reference, but I don't think we have that here.
->>>
->>  I think thats exactly why I did it, because of the documentation.  I agree
->> however, it does look redundant.  Harmless, but redundant.
->
->OK, thanks.  I think we should remove it on the grounds that it's not
->needed and removing it will make this code look more similar to other
->callers of kobject_init_and_add(), which means bugs will have fewer
->places to hide.
->
->Thanks, Neil!
->
->Bjorn
