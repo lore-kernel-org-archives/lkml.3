@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab3IZOwd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 10:52:33 -0400
-Received: from mail-wi0-f194.google.com ([209.85.212.194]:64101 "EHLO
-	mail-wi0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab3IZOwc (ORCPT
+	id S1752810Ab3IZOxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 10:53:32 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:35919 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab3IZOxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 10:52:32 -0400
-From: Oussama Ghorbel <oghorbell@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oussama Ghorbel <oghorbell@gmail.com>
-Subject: [PATCH] IPv6: Allow the MTU of ipip6 tunnel to be set below 1280
-Date: Thu, 26 Sep 2013 15:51:48 +0100
-Message-Id: <1380207108-20030-1-git-send-email-oghorbell@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 26 Sep 2013 10:53:31 -0400
+Date: Thu, 26 Sep 2013 10:53:26 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v5 6/6] mem-hotplug: Introduce movablenode boot option
+Message-ID: <20130926145326.GH3482@htj.dyndns.org>
+References: <5241D897.1090905@gmail.com>
+ <5241DB62.2090300@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5241DB62.2090300@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The (inner) MTU of a ipip6 (IPv4-in-IPv6) tunnel cannot be set below 1280, which is the minimum MTU in IPv6.
-However, there should be no IPv6 on the tunnel interface at all, so the IPv6 rules should not apply.
-More info at https://bugzilla.kernel.org/show_bug.cgi?id=15530
+On Wed, Sep 25, 2013 at 02:35:14AM +0800, Zhang Yanfei wrote:
+> From: Tang Chen <tangchen@cn.fujitsu.com>
+> 
+> The hot-Pluggable field in SRAT specifies which memory is hotpluggable.
+> As we mentioned before, if hotpluggable memory is used by the kernel,
+> it cannot be hot-removed. So memory hotplug users may want to set all
+> hotpluggable memory in ZONE_MOVABLE so that the kernel won't use it.
+> 
+> Memory hotplug users may also set a node as movable node, which has
+> ZONE_MOVABLE only, so that the whole node can be hot-removed.
+> 
+> But the kernel cannot use memory in ZONE_MOVABLE. By doing this, the
+> kernel cannot use memory in movable nodes. This will cause NUMA
+> performance down. And other users may be unhappy.
+> 
+> So we need a way to allow users to enable and disable this functionality.
+> In this patch, we introduce movablenode boot option to allow users to
+> choose to not to consume hotpluggable memory at early boot time and
+> later we can set it as ZONE_MOVABLE.
+> 
+> To achieve this, the movablenode boot option will control the memblock
+> allocation direction. That said, after memblock is ready, before SRAT is
+> parsed, we should allocate memory near the kernel image as we explained
+> in the previous patches. So if movablenode boot option is set, the kernel
+> does the following:
+> 
+> 1. After memblock is ready, make memblock allocate memory bottom up.
+> 2. After SRAT is parsed, make memblock behave as default, allocate memory
+>    top down.
+> 
+> Users can specify "movablenode" in kernel commandline to enable this
+> functionality. For those who don't use memory hotplug or who don't want
+> to lose their NUMA performance, just don't specify anything. The kernel
+> will work as before.
+> 
+> Suggested-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-This patch allows to check the minimum MTU for ipv6 tunnel according to these rules:
- -In case the tunnel is configured with ipip6 mode the minimum MTU is 68.
- -In case the tunnel is configured with ip6ip6 or any mode the minimum MTU is 1280.
+I hope the param description and comment were better.  Not necessarily
+longer, but clearer, so it'd be great if you can polish them a bit
+more.  Other than that,
 
-Signed-off-by: Oussama Ghorbel <oghorbell@gmail.com>
----
- net/ipv6/ip6_tunnel.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ Acked-by: Tejun Heo <tj@kernel.org>
 
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index 1e55866..a66ead2 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1423,8 +1423,14 @@ ip6_tnl_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- static int
- ip6_tnl_change_mtu(struct net_device *dev, int new_mtu)
- {
--	if (new_mtu < IPV6_MIN_MTU) {
--		return -EINVAL;
-+	struct ip6_tnl *t = netdev_priv(dev);
-+
-+	if (t->parms.proto == IPPROTO_IPIP) {
-+		if (new_mtu < 68)
-+			return -EINVAL;
-+	} else {
-+		if (new_mtu < IPV6_MIN_MTU)
-+			return -EINVAL;
- 	}
- 	dev->mtu = new_mtu;
- 	return 0;
+Thanks.
+
 -- 
-1.7.9.5
-
+tejun
