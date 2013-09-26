@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab3IZWTB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:19:01 -0400
-Received: from smtprelay0012.hostedemail.com ([216.40.44.12]:43106 "EHLO
+	id S1754747Ab3IZWTT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:19:19 -0400
+Received: from smtprelay0154.hostedemail.com ([216.40.44.154]:44781 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754658Ab3IZWSw (ORCPT
+	by vger.kernel.org with ESMTP id S1754121Ab3IZWS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:18:52 -0400
+	Thu, 26 Sep 2013 18:18:57 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:327:355:379:541:800:960:966:968:973:988:989:1042:1260:1345:1359:1437:1605:1730:1747:1777:1792:2194:2196:2198:2199:2200:2201:2393:2559:2562:2729:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:3872:3874:4225:4321:4385:4605:5007:6117:6119:6261:6691:7875:7903:8603:8784:9010:9121:9592:10004:10026:10848:11026:11233:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13161:13229:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: glue57_87563b03a7922
-X-Filterd-Recvd-Size: 27430
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:69:327:355:379:541:960:966:968:973:988:989:1260:1345:1359:1431:1437:1605:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:2729:2895:2904:3138:3139:3140:3141:3142:3165:3865:3866:3867:3868:3870:3871:3872:3874:4225:4250:4321:4385:4605:5007:6261:7875:7903:7974:9010:9038:9592:10004:10026:10848:11026:11233:11914:12043:12291:12296:12438:12517:12519:12555:12683:13161:13229:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: brake32_87f4dea512835
+X-Filterd-Recvd-Size: 40688
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] net.h/skbuff.h: Remove extern from function prototypes
-Date: Thu, 26 Sep 2013 15:18:32 -0700
-Message-Id: <7965bd4d71ef7cf1db00afb9e406ddfc13443c13.1380233637.git.joe@perches.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Jes Sorensen <jes@trained-monkey.org>, linux-kernel@vger.kernel.org,
+        linux-hippi@sunsite.dk
+Subject: [PATCH 3/3] [networking]device.h: Remove extern from function prototypes
+Date: Thu, 26 Sep 2013 15:18:33 -0700
+Message-Id: <f629d208d27a22f495b7734eede585b5d207e912.1380233637.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1380233637.git.joe@perches.com>
 References: <cover.1380233637.git.joe@perches.com>
@@ -34,578 +36,864 @@ using auto to declare automatic/local variables in a block.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/net.h    |  82 ++++++++--------
- include/linux/skbuff.h | 250 ++++++++++++++++++++++---------------------------
- 2 files changed, 148 insertions(+), 184 deletions(-)
+ include/linux/etherdevice.h |  35 ++--
+ include/linux/fcdevice.h    |   2 +-
+ include/linux/fddidevice.h  |   7 +-
+ include/linux/hippidevice.h |  10 +-
+ include/linux/inetdevice.h  |  28 +--
+ include/linux/netdevice.h   | 432 +++++++++++++++++++++-----------------------
+ 6 files changed, 248 insertions(+), 266 deletions(-)
 
-diff --git a/include/linux/net.h b/include/linux/net.h
-index 4f27575..ca9ec85 100644
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -195,27 +195,23 @@ enum {
- 	SOCK_WAKE_URG,
- };
+diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
+index d8b5124..fc4a9aa 100644
+--- a/include/linux/etherdevice.h
++++ b/include/linux/etherdevice.h
+@@ -28,27 +28,24 @@
+ #include <asm/unaligned.h>
  
--extern int	     sock_wake_async(struct socket *sk, int how, int band);
--extern int	     sock_register(const struct net_proto_family *fam);
--extern void	     sock_unregister(int family);
--extern int	     __sock_create(struct net *net, int family, int type, int proto,
--				 struct socket **res, int kern);
--extern int	     sock_create(int family, int type, int proto,
--				 struct socket **res);
--extern int	     sock_create_kern(int family, int type, int proto,
--				      struct socket **res);
--extern int	     sock_create_lite(int family, int type, int proto,
--				      struct socket **res); 
--extern void	     sock_release(struct socket *sock);
--extern int   	     sock_sendmsg(struct socket *sock, struct msghdr *msg,
--				  size_t len);
--extern int	     sock_recvmsg(struct socket *sock, struct msghdr *msg,
--				  size_t size, int flags);
--extern struct file  *sock_alloc_file(struct socket *sock, int flags, const char *dname);
--extern struct socket *sockfd_lookup(int fd, int *err);
--extern struct socket *sock_from_file(struct file *file, int *err);
-+int sock_wake_async(struct socket *sk, int how, int band);
-+int sock_register(const struct net_proto_family *fam);
-+void sock_unregister(int family);
-+int __sock_create(struct net *net, int family, int type, int proto,
-+		  struct socket **res, int kern);
-+int sock_create(int family, int type, int proto, struct socket **res);
-+int sock_create_kern(int family, int type, int proto, struct socket **res);
-+int sock_create_lite(int family, int type, int proto, struct socket **res);
-+void sock_release(struct socket *sock);
-+int sock_sendmsg(struct socket *sock, struct msghdr *msg, size_t len);
-+int sock_recvmsg(struct socket *sock, struct msghdr *msg, size_t size,
-+		 int flags);
-+struct file *sock_alloc_file(struct socket *sock, int flags, const char *dname);
-+struct socket *sockfd_lookup(int fd, int *err);
-+struct socket *sock_from_file(struct file *file, int *err);
- #define		     sockfd_put(sock) fput(sock->file)
--extern int	     net_ratelimit(void);
-+int net_ratelimit(void);
+ #ifdef __KERNEL__
+-extern __be16		eth_type_trans(struct sk_buff *skb, struct net_device *dev);
++__be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev);
+ extern const struct header_ops eth_header_ops;
  
- #define net_ratelimited_function(function, ...)			\
- do {								\
-@@ -243,32 +239,28 @@ do {								\
- #define net_random()		prandom_u32()
- #define net_srandom(seed)	prandom_seed((__force u32)(seed))
- 
--extern int   	     kernel_sendmsg(struct socket *sock, struct msghdr *msg,
--				    struct kvec *vec, size_t num, size_t len);
--extern int   	     kernel_recvmsg(struct socket *sock, struct msghdr *msg,
--				    struct kvec *vec, size_t num,
--				    size_t len, int flags);
-+int kernel_sendmsg(struct socket *sock, struct msghdr *msg, struct kvec *vec,
-+		   size_t num, size_t len);
-+int kernel_recvmsg(struct socket *sock, struct msghdr *msg, struct kvec *vec,
-+		   size_t num, size_t len, int flags);
- 
--extern int kernel_bind(struct socket *sock, struct sockaddr *addr,
--		       int addrlen);
--extern int kernel_listen(struct socket *sock, int backlog);
--extern int kernel_accept(struct socket *sock, struct socket **newsock,
--			 int flags);
--extern int kernel_connect(struct socket *sock, struct sockaddr *addr,
--			  int addrlen, int flags);
--extern int kernel_getsockname(struct socket *sock, struct sockaddr *addr,
--			      int *addrlen);
--extern int kernel_getpeername(struct socket *sock, struct sockaddr *addr,
--			      int *addrlen);
--extern int kernel_getsockopt(struct socket *sock, int level, int optname,
--			     char *optval, int *optlen);
--extern int kernel_setsockopt(struct socket *sock, int level, int optname,
--			     char *optval, unsigned int optlen);
--extern int kernel_sendpage(struct socket *sock, struct page *page, int offset,
--			   size_t size, int flags);
--extern int kernel_sock_ioctl(struct socket *sock, int cmd, unsigned long arg);
--extern int kernel_sock_shutdown(struct socket *sock,
--				enum sock_shutdown_cmd how);
-+int kernel_bind(struct socket *sock, struct sockaddr *addr, int addrlen);
-+int kernel_listen(struct socket *sock, int backlog);
-+int kernel_accept(struct socket *sock, struct socket **newsock, int flags);
-+int kernel_connect(struct socket *sock, struct sockaddr *addr, int addrlen,
-+		   int flags);
-+int kernel_getsockname(struct socket *sock, struct sockaddr *addr,
-+		       int *addrlen);
-+int kernel_getpeername(struct socket *sock, struct sockaddr *addr,
-+		       int *addrlen);
-+int kernel_getsockopt(struct socket *sock, int level, int optname, char *optval,
-+		      int *optlen);
-+int kernel_setsockopt(struct socket *sock, int level, int optname, char *optval,
-+		      unsigned int optlen);
-+int kernel_sendpage(struct socket *sock, struct page *page, int offset,
-+		    size_t size, int flags);
-+int kernel_sock_ioctl(struct socket *sock, int cmd, unsigned long arg);
-+int kernel_sock_shutdown(struct socket *sock, enum sock_shutdown_cmd how);
- 
- #define MODULE_ALIAS_NETPROTO(proto) \
- 	MODULE_ALIAS("net-pf-" __stringify(proto))
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 2ddb48d..6d56840 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -585,8 +585,8 @@ static inline void skb_dst_set(struct sk_buff *skb, struct dst_entry *dst)
- 	skb->_skb_refdst = (unsigned long)dst;
- }
- 
--extern void __skb_dst_set_noref(struct sk_buff *skb, struct dst_entry *dst,
--				bool force);
-+void __skb_dst_set_noref(struct sk_buff *skb, struct dst_entry *dst,
-+			 bool force);
- 
- /**
-  * skb_dst_set_noref - sets skb dst, hopefully, without taking reference
-@@ -634,20 +634,20 @@ static inline struct rtable *skb_rtable(const struct sk_buff *skb)
- 	return (struct rtable *)skb_dst(skb);
- }
- 
--extern void kfree_skb(struct sk_buff *skb);
--extern void kfree_skb_list(struct sk_buff *segs);
--extern void skb_tx_error(struct sk_buff *skb);
--extern void consume_skb(struct sk_buff *skb);
--extern void	       __kfree_skb(struct sk_buff *skb);
-+void kfree_skb(struct sk_buff *skb);
-+void kfree_skb_list(struct sk_buff *segs);
-+void skb_tx_error(struct sk_buff *skb);
-+void consume_skb(struct sk_buff *skb);
-+void  __kfree_skb(struct sk_buff *skb);
- extern struct kmem_cache *skbuff_head_cache;
- 
--extern void kfree_skb_partial(struct sk_buff *skb, bool head_stolen);
--extern bool skb_try_coalesce(struct sk_buff *to, struct sk_buff *from,
--			     bool *fragstolen, int *delta_truesize);
-+void kfree_skb_partial(struct sk_buff *skb, bool head_stolen);
-+bool skb_try_coalesce(struct sk_buff *to, struct sk_buff *from,
-+		      bool *fragstolen, int *delta_truesize);
- 
--extern struct sk_buff *__alloc_skb(unsigned int size,
--				   gfp_t priority, int flags, int node);
--extern struct sk_buff *build_skb(void *data, unsigned int frag_size);
-+struct sk_buff *__alloc_skb(unsigned int size, gfp_t priority, int flags,
-+			    int node);
-+struct sk_buff *build_skb(void *data, unsigned int frag_size);
- static inline struct sk_buff *alloc_skb(unsigned int size,
- 					gfp_t priority)
- {
-@@ -660,41 +660,33 @@ static inline struct sk_buff *alloc_skb_fclone(unsigned int size,
- 	return __alloc_skb(size, priority, SKB_ALLOC_FCLONE, NUMA_NO_NODE);
- }
- 
--extern struct sk_buff *__alloc_skb_head(gfp_t priority, int node);
-+struct sk_buff *__alloc_skb_head(gfp_t priority, int node);
- static inline struct sk_buff *alloc_skb_head(gfp_t priority)
- {
- 	return __alloc_skb_head(priority, -1);
- }
- 
--extern struct sk_buff *skb_morph(struct sk_buff *dst, struct sk_buff *src);
--extern int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask);
--extern struct sk_buff *skb_clone(struct sk_buff *skb,
--				 gfp_t priority);
--extern struct sk_buff *skb_copy(const struct sk_buff *skb,
--				gfp_t priority);
--extern struct sk_buff *__pskb_copy(struct sk_buff *skb,
--				 int headroom, gfp_t gfp_mask);
+-extern int eth_header(struct sk_buff *skb, struct net_device *dev,
+-		      unsigned short type,
+-		      const void *daddr, const void *saddr, unsigned len);
+-extern int eth_rebuild_header(struct sk_buff *skb);
+-extern int eth_header_parse(const struct sk_buff *skb, unsigned char *haddr);
+-extern int eth_header_cache(const struct neighbour *neigh, struct hh_cache *hh, __be16 type);
+-extern void eth_header_cache_update(struct hh_cache *hh,
+-				    const struct net_device *dev,
+-				    const unsigned char *haddr);
+-extern int eth_prepare_mac_addr_change(struct net_device *dev, void *p);
+-extern void eth_commit_mac_addr_change(struct net_device *dev, void *p);
+-extern int eth_mac_addr(struct net_device *dev, void *p);
+-extern int eth_change_mtu(struct net_device *dev, int new_mtu);
+-extern int eth_validate_addr(struct net_device *dev);
 -
--extern int	       pskb_expand_head(struct sk_buff *skb,
--					int nhead, int ntail,
--					gfp_t gfp_mask);
--extern struct sk_buff *skb_realloc_headroom(struct sk_buff *skb,
--					    unsigned int headroom);
--extern struct sk_buff *skb_copy_expand(const struct sk_buff *skb,
--				       int newheadroom, int newtailroom,
--				       gfp_t priority);
--extern int	       skb_to_sgvec(struct sk_buff *skb,
--				    struct scatterlist *sg, int offset,
--				    int len);
--extern int	       skb_cow_data(struct sk_buff *skb, int tailbits,
--				    struct sk_buff **trailer);
--extern int	       skb_pad(struct sk_buff *skb, int pad);
-+struct sk_buff *skb_morph(struct sk_buff *dst, struct sk_buff *src);
-+int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask);
-+struct sk_buff *skb_clone(struct sk_buff *skb, gfp_t priority);
-+struct sk_buff *skb_copy(const struct sk_buff *skb, gfp_t priority);
-+struct sk_buff *__pskb_copy(struct sk_buff *skb, int headroom, gfp_t gfp_mask);
+-
+-
+-extern struct net_device *alloc_etherdev_mqs(int sizeof_priv, unsigned int txqs,
++int eth_header(struct sk_buff *skb, struct net_device *dev, unsigned short type,
++	       const void *daddr, const void *saddr, unsigned len);
++int eth_rebuild_header(struct sk_buff *skb);
++int eth_header_parse(const struct sk_buff *skb, unsigned char *haddr);
++int eth_header_cache(const struct neighbour *neigh, struct hh_cache *hh,
++		     __be16 type);
++void eth_header_cache_update(struct hh_cache *hh, const struct net_device *dev,
++			     const unsigned char *haddr);
++int eth_prepare_mac_addr_change(struct net_device *dev, void *p);
++void eth_commit_mac_addr_change(struct net_device *dev, void *p);
++int eth_mac_addr(struct net_device *dev, void *p);
++int eth_change_mtu(struct net_device *dev, int new_mtu);
++int eth_validate_addr(struct net_device *dev);
 +
-+int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail, gfp_t gfp_mask);
-+struct sk_buff *skb_realloc_headroom(struct sk_buff *skb,
-+				     unsigned int headroom);
-+struct sk_buff *skb_copy_expand(const struct sk_buff *skb, int newheadroom,
-+				int newtailroom, gfp_t priority);
-+int skb_to_sgvec(struct sk_buff *skb, struct scatterlist *sg, int offset,
-+		 int len);
-+int skb_cow_data(struct sk_buff *skb, int tailbits, struct sk_buff **trailer);
-+int skb_pad(struct sk_buff *skb, int pad);
- #define dev_kfree_skb(a)	consume_skb(a)
++struct net_device *alloc_etherdev_mqs(int sizeof_priv, unsigned int txqs,
+ 					    unsigned int rxqs);
+ #define alloc_etherdev(sizeof_priv) alloc_etherdev_mq(sizeof_priv, 1)
+ #define alloc_etherdev_mq(sizeof_priv, count) alloc_etherdev_mqs(sizeof_priv, count, count)
+diff --git a/include/linux/fcdevice.h b/include/linux/fcdevice.h
+index e460ef8..5009fa1 100644
+--- a/include/linux/fcdevice.h
++++ b/include/linux/fcdevice.h
+@@ -27,7 +27,7 @@
+ #include <linux/if_fc.h>
  
--extern int skb_append_datato_frags(struct sock *sk, struct sk_buff *skb,
--			int getfrag(void *from, char *to, int offset,
--			int len,int odd, struct sk_buff *skb),
--			void *from, int length);
-+int skb_append_datato_frags(struct sock *sk, struct sk_buff *skb,
-+			    int getfrag(void *from, char *to, int offset,
-+					int len, int odd, struct sk_buff *skb),
-+			    void *from, int length);
- 
- struct skb_seq_state {
- 	__u32		lower_offset;
-@@ -706,18 +698,17 @@ struct skb_seq_state {
- 	__u8		*frag_data;
- };
- 
--extern void	      skb_prepare_seq_read(struct sk_buff *skb,
--					   unsigned int from, unsigned int to,
--					   struct skb_seq_state *st);
--extern unsigned int   skb_seq_read(unsigned int consumed, const u8 **data,
--				   struct skb_seq_state *st);
--extern void	      skb_abort_seq_read(struct skb_seq_state *st);
-+void skb_prepare_seq_read(struct sk_buff *skb, unsigned int from,
-+			  unsigned int to, struct skb_seq_state *st);
-+unsigned int skb_seq_read(unsigned int consumed, const u8 **data,
-+			  struct skb_seq_state *st);
-+void skb_abort_seq_read(struct skb_seq_state *st);
- 
--extern unsigned int   skb_find_text(struct sk_buff *skb, unsigned int from,
--				    unsigned int to, struct ts_config *config,
--				    struct ts_state *state);
-+unsigned int skb_find_text(struct sk_buff *skb, unsigned int from,
-+			   unsigned int to, struct ts_config *config,
-+			   struct ts_state *state);
- 
--extern void __skb_get_rxhash(struct sk_buff *skb);
-+void __skb_get_rxhash(struct sk_buff *skb);
- static inline __u32 skb_get_rxhash(struct sk_buff *skb)
- {
- 	if (!skb->l4_rxhash)
-@@ -1095,7 +1086,8 @@ static inline void skb_queue_head_init_class(struct sk_buff_head *list,
-  *	The "__skb_xxxx()" functions are the non-atomic ones that
-  *	can only be called with interrupts disabled.
-  */
--extern void        skb_insert(struct sk_buff *old, struct sk_buff *newsk, struct sk_buff_head *list);
-+void skb_insert(struct sk_buff *old, struct sk_buff *newsk,
-+		struct sk_buff_head *list);
- static inline void __skb_insert(struct sk_buff *newsk,
- 				struct sk_buff *prev, struct sk_buff *next,
- 				struct sk_buff_head *list)
-@@ -1201,8 +1193,8 @@ static inline void __skb_queue_after(struct sk_buff_head *list,
- 	__skb_insert(newsk, prev, prev->next, list);
- }
- 
--extern void skb_append(struct sk_buff *old, struct sk_buff *newsk,
--		       struct sk_buff_head *list);
-+void skb_append(struct sk_buff *old, struct sk_buff *newsk,
-+		struct sk_buff_head *list);
- 
- static inline void __skb_queue_before(struct sk_buff_head *list,
- 				      struct sk_buff *next,
-@@ -1221,7 +1213,7 @@ static inline void __skb_queue_before(struct sk_buff_head *list,
-  *
-  *	A buffer cannot be placed on two lists at the same time.
-  */
--extern void skb_queue_head(struct sk_buff_head *list, struct sk_buff *newsk);
-+void skb_queue_head(struct sk_buff_head *list, struct sk_buff *newsk);
- static inline void __skb_queue_head(struct sk_buff_head *list,
- 				    struct sk_buff *newsk)
- {
-@@ -1238,7 +1230,7 @@ static inline void __skb_queue_head(struct sk_buff_head *list,
-  *
-  *	A buffer cannot be placed on two lists at the same time.
-  */
--extern void skb_queue_tail(struct sk_buff_head *list, struct sk_buff *newsk);
-+void skb_queue_tail(struct sk_buff_head *list, struct sk_buff *newsk);
- static inline void __skb_queue_tail(struct sk_buff_head *list,
- 				   struct sk_buff *newsk)
- {
-@@ -1249,7 +1241,7 @@ static inline void __skb_queue_tail(struct sk_buff_head *list,
-  * remove sk_buff from list. _Must_ be called atomically, and with
-  * the list known..
-  */
--extern void	   skb_unlink(struct sk_buff *skb, struct sk_buff_head *list);
-+void skb_unlink(struct sk_buff *skb, struct sk_buff_head *list);
- static inline void __skb_unlink(struct sk_buff *skb, struct sk_buff_head *list)
- {
- 	struct sk_buff *next, *prev;
-@@ -1270,7 +1262,7 @@ static inline void __skb_unlink(struct sk_buff *skb, struct sk_buff_head *list)
-  *	so must be used with appropriate locks held only. The head item is
-  *	returned or %NULL if the list is empty.
-  */
--extern struct sk_buff *skb_dequeue(struct sk_buff_head *list);
-+struct sk_buff *skb_dequeue(struct sk_buff_head *list);
- static inline struct sk_buff *__skb_dequeue(struct sk_buff_head *list)
- {
- 	struct sk_buff *skb = skb_peek(list);
-@@ -1287,7 +1279,7 @@ static inline struct sk_buff *__skb_dequeue(struct sk_buff_head *list)
-  *	so must be used with appropriate locks held only. The tail item is
-  *	returned or %NULL if the list is empty.
-  */
--extern struct sk_buff *skb_dequeue_tail(struct sk_buff_head *list);
-+struct sk_buff *skb_dequeue_tail(struct sk_buff_head *list);
- static inline struct sk_buff *__skb_dequeue_tail(struct sk_buff_head *list)
- {
- 	struct sk_buff *skb = skb_peek_tail(list);
-@@ -1373,8 +1365,8 @@ static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
- 	skb_shinfo(skb)->nr_frags = i + 1;
- }
- 
--extern void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page,
--			    int off, int size, unsigned int truesize);
-+void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
-+		     int size, unsigned int truesize);
- 
- #define SKB_PAGE_ASSERT(skb) 	BUG_ON(skb_shinfo(skb)->nr_frags)
- #define SKB_FRAG_ASSERT(skb) 	BUG_ON(skb_has_frag_list(skb))
-@@ -1418,7 +1410,7 @@ static inline void skb_set_tail_pointer(struct sk_buff *skb, const int offset)
- /*
-  *	Add data to an sk_buff
-  */
--extern unsigned char *skb_put(struct sk_buff *skb, unsigned int len);
-+unsigned char *skb_put(struct sk_buff *skb, unsigned int len);
- static inline unsigned char *__skb_put(struct sk_buff *skb, unsigned int len)
- {
- 	unsigned char *tmp = skb_tail_pointer(skb);
-@@ -1428,7 +1420,7 @@ static inline unsigned char *__skb_put(struct sk_buff *skb, unsigned int len)
- 	return tmp;
- }
- 
--extern unsigned char *skb_push(struct sk_buff *skb, unsigned int len);
-+unsigned char *skb_push(struct sk_buff *skb, unsigned int len);
- static inline unsigned char *__skb_push(struct sk_buff *skb, unsigned int len)
- {
- 	skb->data -= len;
-@@ -1436,7 +1428,7 @@ static inline unsigned char *__skb_push(struct sk_buff *skb, unsigned int len)
- 	return skb->data;
- }
- 
--extern unsigned char *skb_pull(struct sk_buff *skb, unsigned int len);
-+unsigned char *skb_pull(struct sk_buff *skb, unsigned int len);
- static inline unsigned char *__skb_pull(struct sk_buff *skb, unsigned int len)
- {
- 	skb->len -= len;
-@@ -1449,7 +1441,7 @@ static inline unsigned char *skb_pull_inline(struct sk_buff *skb, unsigned int l
- 	return unlikely(len > skb->len) ? NULL : __skb_pull(skb, len);
- }
- 
--extern unsigned char *__pskb_pull_tail(struct sk_buff *skb, int delta);
-+unsigned char *__pskb_pull_tail(struct sk_buff *skb, int delta);
- 
- static inline unsigned char *__pskb_pull(struct sk_buff *skb, unsigned int len)
- {
-@@ -1753,7 +1745,7 @@ static inline int pskb_network_may_pull(struct sk_buff *skb, unsigned int len)
- #define NET_SKB_PAD	max(32, L1_CACHE_BYTES)
+ #ifdef __KERNEL__
+-extern struct net_device *alloc_fcdev(int sizeof_priv);
++struct net_device *alloc_fcdev(int sizeof_priv);
  #endif
  
--extern int ___pskb_trim(struct sk_buff *skb, unsigned int len);
-+int ___pskb_trim(struct sk_buff *skb, unsigned int len);
+ #endif	/* _LINUX_FCDEVICE_H */
+diff --git a/include/linux/fddidevice.h b/include/linux/fddidevice.h
+index 155bafd..9a79f01 100644
+--- a/include/linux/fddidevice.h
++++ b/include/linux/fddidevice.h
+@@ -25,10 +25,9 @@
+ #include <linux/if_fddi.h>
  
- static inline void __skb_trim(struct sk_buff *skb, unsigned int len)
+ #ifdef __KERNEL__
+-extern __be16	fddi_type_trans(struct sk_buff *skb,
+-				struct net_device *dev);
+-extern int fddi_change_mtu(struct net_device *dev, int new_mtu);
+-extern struct net_device *alloc_fddidev(int sizeof_priv);
++__be16 fddi_type_trans(struct sk_buff *skb, struct net_device *dev);
++int fddi_change_mtu(struct net_device *dev, int new_mtu);
++struct net_device *alloc_fddidev(int sizeof_priv);
+ #endif
+ 
+ #endif	/* _LINUX_FDDIDEVICE_H */
+diff --git a/include/linux/hippidevice.h b/include/linux/hippidevice.h
+index f148e49..8ec23fb 100644
+--- a/include/linux/hippidevice.h
++++ b/include/linux/hippidevice.h
+@@ -31,11 +31,11 @@ struct hippi_cb {
+ 	__u32	ifield;
+ };
+ 
+-extern __be16 hippi_type_trans(struct sk_buff *skb, struct net_device *dev);
+-extern int hippi_change_mtu(struct net_device *dev, int new_mtu);
+-extern int hippi_mac_addr(struct net_device *dev, void *p);
+-extern int hippi_neigh_setup_dev(struct net_device *dev, struct neigh_parms *p);
+-extern struct net_device *alloc_hippi_dev(int sizeof_priv);
++__be16 hippi_type_trans(struct sk_buff *skb, struct net_device *dev);
++int hippi_change_mtu(struct net_device *dev, int new_mtu);
++int hippi_mac_addr(struct net_device *dev, void *p);
++int hippi_neigh_setup_dev(struct net_device *dev, struct neigh_parms *p);
++struct net_device *alloc_hippi_dev(int sizeof_priv);
+ #endif
+ 
+ #endif	/* _LINUX_HIPPIDEVICE_H */
+diff --git a/include/linux/inetdevice.h b/include/linux/inetdevice.h
+index 79640e0..0d678ae 100644
+--- a/include/linux/inetdevice.h
++++ b/include/linux/inetdevice.h
+@@ -147,25 +147,27 @@ struct in_ifaddr {
+ 	unsigned long		ifa_tstamp; /* updated timestamp */
+ };
+ 
+-extern int register_inetaddr_notifier(struct notifier_block *nb);
+-extern int unregister_inetaddr_notifier(struct notifier_block *nb);
++int register_inetaddr_notifier(struct notifier_block *nb);
++int unregister_inetaddr_notifier(struct notifier_block *nb);
+ 
+-extern void inet_netconf_notify_devconf(struct net *net, int type, int ifindex,
+-					struct ipv4_devconf *devconf);
++void inet_netconf_notify_devconf(struct net *net, int type, int ifindex,
++				 struct ipv4_devconf *devconf);
+ 
+-extern struct net_device *__ip_dev_find(struct net *net, __be32 addr, bool devref);
++struct net_device *__ip_dev_find(struct net *net, __be32 addr, bool devref);
+ static inline struct net_device *ip_dev_find(struct net *net, __be32 addr)
  {
-@@ -1765,7 +1757,7 @@ static inline void __skb_trim(struct sk_buff *skb, unsigned int len)
- 	skb_set_tail_pointer(skb, len);
+ 	return __ip_dev_find(net, addr, true);
  }
  
--extern void skb_trim(struct sk_buff *skb, unsigned int len);
-+void skb_trim(struct sk_buff *skb, unsigned int len);
+-extern int		inet_addr_onlink(struct in_device *in_dev, __be32 a, __be32 b);
+-extern int		devinet_ioctl(struct net *net, unsigned int cmd, void __user *);
+-extern void		devinet_init(void);
+-extern struct in_device	*inetdev_by_index(struct net *, int);
+-extern __be32		inet_select_addr(const struct net_device *dev, __be32 dst, int scope);
+-extern __be32		inet_confirm_addr(struct in_device *in_dev, __be32 dst, __be32 local, int scope);
+-extern struct in_ifaddr *inet_ifa_byprefix(struct in_device *in_dev, __be32 prefix, __be32 mask);
++int inet_addr_onlink(struct in_device *in_dev, __be32 a, __be32 b);
++int devinet_ioctl(struct net *net, unsigned int cmd, void __user *);
++void devinet_init(void);
++struct in_device *inetdev_by_index(struct net *, int);
++__be32 inet_select_addr(const struct net_device *dev, __be32 dst, int scope);
++__be32 inet_confirm_addr(struct in_device *in_dev, __be32 dst, __be32 local,
++			 int scope);
++struct in_ifaddr *inet_ifa_byprefix(struct in_device *in_dev, __be32 prefix,
++				    __be32 mask);
  
- static inline int __pskb_trim(struct sk_buff *skb, unsigned int len)
+ static __inline__ int inet_ifa_match(__be32 addr, struct in_ifaddr *ifa)
  {
-@@ -1838,7 +1830,7 @@ static inline int skb_orphan_frags(struct sk_buff *skb, gfp_t gfp_mask)
-  *	the list and one reference dropped. This function does not take the
-  *	list lock and the caller must hold the relevant locks to use it.
+@@ -218,7 +220,7 @@ static inline struct in_device *__in_dev_get_rtnl(const struct net_device *dev)
+ 	return rtnl_dereference(dev->ip_ptr);
+ }
+ 
+-extern void in_dev_finish_destroy(struct in_device *idev);
++void in_dev_finish_destroy(struct in_device *idev);
+ 
+ static inline void in_dev_put(struct in_device *idev)
+ {
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index b4cfb63..5f01af3 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -60,8 +60,8 @@ struct wireless_dev;
+ #define SET_ETHTOOL_OPS(netdev,ops) \
+ 	( (netdev)->ethtool_ops = (ops) )
+ 
+-extern void netdev_set_default_ethtool_ops(struct net_device *dev,
+-					   const struct ethtool_ops *ops);
++void netdev_set_default_ethtool_ops(struct net_device *dev,
++				    const struct ethtool_ops *ops);
+ 
+ /* hardware address assignment types */
+ #define NET_ADDR_PERM		0	/* address is permanent (default) */
+@@ -298,7 +298,7 @@ struct netdev_boot_setup {
+ };
+ #define NETDEV_BOOT_SETUP_MAX 8
+ 
+-extern int __init netdev_boot_setup(char *str);
++int __init netdev_boot_setup(char *str);
+ 
+ /*
+  * Structure for NAPI scheduling similar to tasklet but with weighting
+@@ -394,7 +394,7 @@ enum rx_handler_result {
+ typedef enum rx_handler_result rx_handler_result_t;
+ typedef rx_handler_result_t rx_handler_func_t(struct sk_buff **pskb);
+ 
+-extern void __napi_schedule(struct napi_struct *n);
++void __napi_schedule(struct napi_struct *n);
+ 
+ static inline bool napi_disable_pending(struct napi_struct *n)
+ {
+@@ -445,8 +445,8 @@ static inline bool napi_reschedule(struct napi_struct *napi)
+  *
+  * Mark NAPI processing as complete.
   */
--extern void skb_queue_purge(struct sk_buff_head *list);
-+void skb_queue_purge(struct sk_buff_head *list);
- static inline void __skb_queue_purge(struct sk_buff_head *list)
- {
- 	struct sk_buff *skb;
-@@ -1850,11 +1842,10 @@ static inline void __skb_queue_purge(struct sk_buff_head *list)
- #define NETDEV_FRAG_PAGE_MAX_SIZE  (PAGE_SIZE << NETDEV_FRAG_PAGE_MAX_ORDER)
- #define NETDEV_PAGECNT_MAX_BIAS	   NETDEV_FRAG_PAGE_MAX_SIZE
- 
--extern void *netdev_alloc_frag(unsigned int fragsz);
-+void *netdev_alloc_frag(unsigned int fragsz);
- 
--extern struct sk_buff *__netdev_alloc_skb(struct net_device *dev,
--					  unsigned int length,
--					  gfp_t gfp_mask);
-+struct sk_buff *__netdev_alloc_skb(struct net_device *dev, unsigned int length,
-+				   gfp_t gfp_mask);
+-extern void __napi_complete(struct napi_struct *n);
+-extern void napi_complete(struct napi_struct *n);
++void __napi_complete(struct napi_struct *n);
++void napi_complete(struct napi_struct *n);
  
  /**
-  *	netdev_alloc_skb - allocate an skbuff for rx on a specific device
-@@ -2342,60 +2333,42 @@ static inline void skb_frag_add_head(struct sk_buff *skb, struct sk_buff *frag)
- #define skb_walk_frags(skb, iter)	\
- 	for (iter = skb_shinfo(skb)->frag_list; iter; iter = iter->next)
+  *	napi_by_id - lookup a NAPI by napi_id
+@@ -455,7 +455,7 @@ extern void napi_complete(struct napi_struct *n);
+  * lookup @napi_id in napi_hash table
+  * must be called under rcu_read_lock()
+  */
+-extern struct napi_struct *napi_by_id(unsigned int napi_id);
++struct napi_struct *napi_by_id(unsigned int napi_id);
  
--extern struct sk_buff *__skb_recv_datagram(struct sock *sk, unsigned flags,
--					   int *peeked, int *off, int *err);
--extern struct sk_buff *skb_recv_datagram(struct sock *sk, unsigned flags,
--					 int noblock, int *err);
--extern unsigned int    datagram_poll(struct file *file, struct socket *sock,
--				     struct poll_table_struct *wait);
--extern int	       skb_copy_datagram_iovec(const struct sk_buff *from,
--					       int offset, struct iovec *to,
--					       int size);
--extern int	       skb_copy_and_csum_datagram_iovec(struct sk_buff *skb,
--							int hlen,
--							struct iovec *iov);
--extern int	       skb_copy_datagram_from_iovec(struct sk_buff *skb,
--						    int offset,
--						    const struct iovec *from,
--						    int from_offset,
--						    int len);
--extern int	       zerocopy_sg_from_iovec(struct sk_buff *skb,
--					      const struct iovec *frm,
--					      int offset,
--					      size_t count);
--extern int	       skb_copy_datagram_const_iovec(const struct sk_buff *from,
--						     int offset,
--						     const struct iovec *to,
--						     int to_offset,
--						     int size);
--extern void	       skb_free_datagram(struct sock *sk, struct sk_buff *skb);
--extern void	       skb_free_datagram_locked(struct sock *sk,
--						struct sk_buff *skb);
--extern int	       skb_kill_datagram(struct sock *sk, struct sk_buff *skb,
--					 unsigned int flags);
--extern __wsum	       skb_checksum(const struct sk_buff *skb, int offset,
--				    int len, __wsum csum);
--extern int	       skb_copy_bits(const struct sk_buff *skb, int offset,
--				     void *to, int len);
--extern int	       skb_store_bits(struct sk_buff *skb, int offset,
--				      const void *from, int len);
--extern __wsum	       skb_copy_and_csum_bits(const struct sk_buff *skb,
--					      int offset, u8 *to, int len,
--					      __wsum csum);
--extern int             skb_splice_bits(struct sk_buff *skb,
--						unsigned int offset,
--						struct pipe_inode_info *pipe,
--						unsigned int len,
--						unsigned int flags);
--extern void	       skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
--extern void	       skb_split(struct sk_buff *skb,
--				 struct sk_buff *skb1, const u32 len);
--extern int	       skb_shift(struct sk_buff *tgt, struct sk_buff *skb,
--				 int shiftlen);
--extern void	       skb_scrub_packet(struct sk_buff *skb, bool xnet);
+ /**
+  *	napi_hash_add - add a NAPI to global hashtable
+@@ -463,7 +463,7 @@ extern struct napi_struct *napi_by_id(unsigned int napi_id);
+  *
+  * generate a new napi_id and store a @napi under it in napi_hash
+  */
+-extern void napi_hash_add(struct napi_struct *napi);
++void napi_hash_add(struct napi_struct *napi);
+ 
+ /**
+  *	napi_hash_del - remove a NAPI from global table
+@@ -472,7 +472,7 @@ extern void napi_hash_add(struct napi_struct *napi);
+  * Warning: caller must observe rcu grace period
+  * before freeing memory containing @napi
+  */
+-extern void napi_hash_del(struct napi_struct *napi);
++void napi_hash_del(struct napi_struct *napi);
+ 
+ /**
+  *	napi_disable - prevent NAPI from scheduling
+@@ -664,8 +664,8 @@ static inline void rps_reset_sock_flow(struct rps_sock_flow_table *table,
+ extern struct rps_sock_flow_table __rcu *rps_sock_flow_table;
+ 
+ #ifdef CONFIG_RFS_ACCEL
+-extern bool rps_may_expire_flow(struct net_device *dev, u16 rxq_index,
+-				u32 flow_id, u16 filter_id);
++bool rps_may_expire_flow(struct net_device *dev, u16 rxq_index, u32 flow_id,
++			 u16 filter_id);
+ #endif
+ 
+ /* This structure contains an instance of an RX queue. */
+@@ -1497,9 +1497,9 @@ static inline void netdev_for_each_tx_queue(struct net_device *dev,
+ 		f(dev, &dev->_tx[i], arg);
+ }
+ 
+-extern struct netdev_queue *netdev_pick_tx(struct net_device *dev,
+-					   struct sk_buff *skb);
+-extern u16 __netdev_pick_tx(struct net_device *dev, struct sk_buff *skb);
++struct netdev_queue *netdev_pick_tx(struct net_device *dev,
++				    struct sk_buff *skb);
++u16 __netdev_pick_tx(struct net_device *dev, struct sk_buff *skb);
+ 
+ /*
+  * Net namespace inlines
+@@ -1683,8 +1683,8 @@ struct packet_offload {
+ #define NETDEV_CHANGEUPPER	0x0015
+ #define NETDEV_RESEND_IGMP	0x0016
+ 
+-extern int register_netdevice_notifier(struct notifier_block *nb);
+-extern int unregister_netdevice_notifier(struct notifier_block *nb);
++int register_netdevice_notifier(struct notifier_block *nb);
++int unregister_netdevice_notifier(struct notifier_block *nb);
+ 
+ struct netdev_notifier_info {
+ 	struct net_device *dev;
+@@ -1707,9 +1707,9 @@ netdev_notifier_info_to_dev(const struct netdev_notifier_info *info)
+ 	return info->dev;
+ }
+ 
+-extern int call_netdevice_notifiers_info(unsigned long val, struct net_device *dev,
+-					 struct netdev_notifier_info *info);
+-extern int call_netdevice_notifiers(unsigned long val, struct net_device *dev);
++int call_netdevice_notifiers_info(unsigned long val, struct net_device *dev,
++				  struct netdev_notifier_info *info);
++int call_netdevice_notifiers(unsigned long val, struct net_device *dev);
+ 
+ 
+ extern rwlock_t				dev_base_lock;		/* Device list lock */
+@@ -1764,54 +1764,52 @@ static inline struct net_device *first_net_device_rcu(struct net *net)
+ 	return lh == &net->dev_base_head ? NULL : net_device_entry(lh);
+ }
+ 
+-extern int 			netdev_boot_setup_check(struct net_device *dev);
+-extern unsigned long		netdev_boot_base(const char *prefix, int unit);
+-extern struct net_device *dev_getbyhwaddr_rcu(struct net *net, unsigned short type,
+-					      const char *hwaddr);
+-extern struct net_device *dev_getfirstbyhwtype(struct net *net, unsigned short type);
+-extern struct net_device *__dev_getfirstbyhwtype(struct net *net, unsigned short type);
+-extern void		dev_add_pack(struct packet_type *pt);
+-extern void		dev_remove_pack(struct packet_type *pt);
+-extern void		__dev_remove_pack(struct packet_type *pt);
+-extern void		dev_add_offload(struct packet_offload *po);
+-extern void		dev_remove_offload(struct packet_offload *po);
+-extern void		__dev_remove_offload(struct packet_offload *po);
 -
--extern struct sk_buff *skb_segment(struct sk_buff *skb,
--				   netdev_features_t features);
-+struct sk_buff *__skb_recv_datagram(struct sock *sk, unsigned flags,
-+				    int *peeked, int *off, int *err);
-+struct sk_buff *skb_recv_datagram(struct sock *sk, unsigned flags, int noblock,
-+				  int *err);
-+unsigned int datagram_poll(struct file *file, struct socket *sock,
-+			   struct poll_table_struct *wait);
-+int skb_copy_datagram_iovec(const struct sk_buff *from, int offset,
-+			    struct iovec *to, int size);
-+int skb_copy_and_csum_datagram_iovec(struct sk_buff *skb, int hlen,
-+				     struct iovec *iov);
-+int skb_copy_datagram_from_iovec(struct sk_buff *skb, int offset,
-+				 const struct iovec *from, int from_offset,
-+				 int len);
-+int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *frm,
-+			   int offset, size_t count);
-+int skb_copy_datagram_const_iovec(const struct sk_buff *from, int offset,
-+				  const struct iovec *to, int to_offset,
-+				  int size);
-+void skb_free_datagram(struct sock *sk, struct sk_buff *skb);
-+void skb_free_datagram_locked(struct sock *sk, struct sk_buff *skb);
-+int skb_kill_datagram(struct sock *sk, struct sk_buff *skb, unsigned int flags);
-+__wsum skb_checksum(const struct sk_buff *skb, int offset, int len,
-+		    __wsum csum);
-+int skb_copy_bits(const struct sk_buff *skb, int offset, void *to, int len);
-+int skb_store_bits(struct sk_buff *skb, int offset, const void *from, int len);
-+__wsum skb_copy_and_csum_bits(const struct sk_buff *skb, int offset, u8 *to,
-+			      int len, __wsum csum);
-+int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
-+		    struct pipe_inode_info *pipe, unsigned int len,
-+		    unsigned int flags);
-+void skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
-+void skb_split(struct sk_buff *skb, struct sk_buff *skb1, const u32 len);
-+int skb_shift(struct sk_buff *tgt, struct sk_buff *skb, int shiftlen);
-+void skb_scrub_packet(struct sk_buff *skb, bool xnet);
+-extern struct net_device	*dev_get_by_flags_rcu(struct net *net, unsigned short flags,
+-						      unsigned short mask);
+-extern struct net_device	*dev_get_by_name(struct net *net, const char *name);
+-extern struct net_device	*dev_get_by_name_rcu(struct net *net, const char *name);
+-extern struct net_device	*__dev_get_by_name(struct net *net, const char *name);
+-extern int		dev_alloc_name(struct net_device *dev, const char *name);
+-extern int		dev_open(struct net_device *dev);
+-extern int		dev_close(struct net_device *dev);
+-extern void		dev_disable_lro(struct net_device *dev);
+-extern int		dev_loopback_xmit(struct sk_buff *newskb);
+-extern int		dev_queue_xmit(struct sk_buff *skb);
+-extern int		register_netdevice(struct net_device *dev);
+-extern void		unregister_netdevice_queue(struct net_device *dev,
+-						   struct list_head *head);
+-extern void		unregister_netdevice_many(struct list_head *head);
++int netdev_boot_setup_check(struct net_device *dev);
++unsigned long netdev_boot_base(const char *prefix, int unit);
++struct net_device *dev_getbyhwaddr_rcu(struct net *net, unsigned short type,
++				       const char *hwaddr);
++struct net_device *dev_getfirstbyhwtype(struct net *net, unsigned short type);
++struct net_device *__dev_getfirstbyhwtype(struct net *net, unsigned short type);
++void dev_add_pack(struct packet_type *pt);
++void dev_remove_pack(struct packet_type *pt);
++void __dev_remove_pack(struct packet_type *pt);
++void dev_add_offload(struct packet_offload *po);
++void dev_remove_offload(struct packet_offload *po);
++void __dev_remove_offload(struct packet_offload *po);
 +
-+struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features);
- 
- static inline void *skb_header_pointer(const struct sk_buff *skb, int offset,
- 				       int len, void *buffer)
-@@ -2440,7 +2413,7 @@ static inline void skb_copy_to_linear_data_offset(struct sk_buff *skb,
- 	memcpy(skb->data + offset, from, len);
- }
- 
--extern void skb_init(void);
-+void skb_init(void);
- 
- static inline ktime_t skb_get_ktime(const struct sk_buff *skb)
++struct net_device *dev_get_by_flags_rcu(struct net *net, unsigned short flags,
++					unsigned short mask);
++struct net_device *dev_get_by_name(struct net *net, const char *name);
++struct net_device *dev_get_by_name_rcu(struct net *net, const char *name);
++struct net_device *__dev_get_by_name(struct net *net, const char *name);
++int dev_alloc_name(struct net_device *dev, const char *name);
++int dev_open(struct net_device *dev);
++int dev_close(struct net_device *dev);
++void dev_disable_lro(struct net_device *dev);
++int dev_loopback_xmit(struct sk_buff *newskb);
++int dev_queue_xmit(struct sk_buff *skb);
++int register_netdevice(struct net_device *dev);
++void unregister_netdevice_queue(struct net_device *dev, struct list_head *head);
++void unregister_netdevice_many(struct list_head *head);
+ static inline void unregister_netdevice(struct net_device *dev)
  {
-@@ -2483,12 +2456,12 @@ static inline ktime_t net_invalid_timestamp(void)
- 	return ktime_set(0, 0);
+ 	unregister_netdevice_queue(dev, NULL);
  }
  
--extern void skb_timestamping_init(void);
-+void skb_timestamping_init(void);
+-extern int 		netdev_refcnt_read(const struct net_device *dev);
+-extern void		free_netdev(struct net_device *dev);
+-extern void		synchronize_net(void);
+-extern int		init_dummy_netdev(struct net_device *dev);
++int netdev_refcnt_read(const struct net_device *dev);
++void free_netdev(struct net_device *dev);
++void synchronize_net(void);
++int init_dummy_netdev(struct net_device *dev);
  
- #ifdef CONFIG_NETWORK_PHY_TIMESTAMPING
+-extern struct net_device	*dev_get_by_index(struct net *net, int ifindex);
+-extern struct net_device	*__dev_get_by_index(struct net *net, int ifindex);
+-extern struct net_device	*dev_get_by_index_rcu(struct net *net, int ifindex);
+-extern int		netdev_get_name(struct net *net, char *name, int ifindex);
+-extern int		dev_restart(struct net_device *dev);
++struct net_device *dev_get_by_index(struct net *net, int ifindex);
++struct net_device *__dev_get_by_index(struct net *net, int ifindex);
++struct net_device *dev_get_by_index_rcu(struct net *net, int ifindex);
++int netdev_get_name(struct net *net, char *name, int ifindex);
++int dev_restart(struct net_device *dev);
+ #ifdef CONFIG_NETPOLL_TRAP
+-extern int		netpoll_trap(void);
++int netpoll_trap(void);
+ #endif
+-extern int	       skb_gro_receive(struct sk_buff **head,
+-				       struct sk_buff *skb);
++int skb_gro_receive(struct sk_buff **head, struct sk_buff *skb);
  
--extern void skb_clone_tx_timestamp(struct sk_buff *skb);
--extern bool skb_defer_rx_timestamp(struct sk_buff *skb);
-+void skb_clone_tx_timestamp(struct sk_buff *skb);
-+bool skb_defer_rx_timestamp(struct sk_buff *skb);
+ static inline unsigned int skb_gro_offset(const struct sk_buff *skb)
+ {
+@@ -1883,7 +1881,7 @@ static inline int dev_parse_header(const struct sk_buff *skb,
+ }
  
- #else /* CONFIG_NETWORK_PHY_TIMESTAMPING */
+ typedef int gifconf_func_t(struct net_device * dev, char __user * bufptr, int len);
+-extern int		register_gifconf(unsigned int family, gifconf_func_t * gifconf);
++int register_gifconf(unsigned int family, gifconf_func_t *gifconf);
+ static inline int unregister_gifconf(unsigned int family)
+ {
+ 	return register_gifconf(family, NULL);
+@@ -1954,7 +1952,7 @@ static inline void input_queue_tail_incr_save(struct softnet_data *sd,
  
-@@ -2529,8 +2502,8 @@ void skb_complete_tx_timestamp(struct sk_buff *skb,
-  * generates a software time stamp (otherwise), then queues the clone
-  * to the error queue of the socket.  Errors are silently ignored.
+ DECLARE_PER_CPU_ALIGNED(struct softnet_data, softnet_data);
+ 
+-extern void __netif_schedule(struct Qdisc *q);
++void __netif_schedule(struct Qdisc *q);
+ 
+ static inline void netif_schedule_queue(struct netdev_queue *txq)
+ {
+@@ -2274,8 +2272,8 @@ static inline void netif_wake_subqueue(struct net_device *dev, u16 queue_index)
+ }
+ 
+ #ifdef CONFIG_XPS
+-extern int netif_set_xps_queue(struct net_device *dev, struct cpumask *mask,
+-			       u16 index);
++int netif_set_xps_queue(struct net_device *dev, struct cpumask *mask,
++			u16 index);
+ #else
+ static inline int netif_set_xps_queue(struct net_device *dev,
+ 				      struct cpumask *mask,
+@@ -2306,12 +2304,10 @@ static inline bool netif_is_multiqueue(const struct net_device *dev)
+ 	return dev->num_tx_queues > 1;
+ }
+ 
+-extern int netif_set_real_num_tx_queues(struct net_device *dev,
+-					unsigned int txq);
++int netif_set_real_num_tx_queues(struct net_device *dev, unsigned int txq);
+ 
+ #ifdef CONFIG_RPS
+-extern int netif_set_real_num_rx_queues(struct net_device *dev,
+-					unsigned int rxq);
++int netif_set_real_num_rx_queues(struct net_device *dev, unsigned int rxq);
+ #else
+ static inline int netif_set_real_num_rx_queues(struct net_device *dev,
+ 						unsigned int rxq)
+@@ -2338,28 +2334,27 @@ static inline int netif_copy_real_num_queues(struct net_device *to_dev,
+ }
+ 
+ #define DEFAULT_MAX_NUM_RSS_QUEUES	(8)
+-extern int netif_get_num_default_rss_queues(void);
++int netif_get_num_default_rss_queues(void);
+ 
+ /* Use this variant when it is known for sure that it
+  * is executing from hardware interrupt context or with hardware interrupts
+  * disabled.
   */
--extern void skb_tstamp_tx(struct sk_buff *orig_skb,
--			struct skb_shared_hwtstamps *hwtstamps);
-+void skb_tstamp_tx(struct sk_buff *orig_skb,
-+		   struct skb_shared_hwtstamps *hwtstamps);
+-extern void dev_kfree_skb_irq(struct sk_buff *skb);
++void dev_kfree_skb_irq(struct sk_buff *skb);
  
- static inline void sw_tx_timestamp(struct sk_buff *skb)
- {
-@@ -2562,8 +2535,8 @@ static inline void skb_tx_timestamp(struct sk_buff *skb)
+ /* Use this variant in places where it could be invoked
+  * from either hardware interrupt or other context, with hardware interrupts
+  * either disabled or enabled.
   */
- void skb_complete_wifi_ack(struct sk_buff *skb, bool acked);
+-extern void dev_kfree_skb_any(struct sk_buff *skb);
++void dev_kfree_skb_any(struct sk_buff *skb);
  
--extern __sum16 __skb_checksum_complete_head(struct sk_buff *skb, int len);
--extern __sum16 __skb_checksum_complete(struct sk_buff *skb);
-+__sum16 __skb_checksum_complete_head(struct sk_buff *skb, int len);
-+__sum16 __skb_checksum_complete(struct sk_buff *skb);
+-extern int		netif_rx(struct sk_buff *skb);
+-extern int		netif_rx_ni(struct sk_buff *skb);
+-extern int		netif_receive_skb(struct sk_buff *skb);
+-extern gro_result_t	napi_gro_receive(struct napi_struct *napi,
+-					 struct sk_buff *skb);
+-extern void		napi_gro_flush(struct napi_struct *napi, bool flush_old);
+-extern struct sk_buff *	napi_get_frags(struct napi_struct *napi);
+-extern gro_result_t	napi_gro_frags(struct napi_struct *napi);
++int netif_rx(struct sk_buff *skb);
++int netif_rx_ni(struct sk_buff *skb);
++int netif_receive_skb(struct sk_buff *skb);
++gro_result_t napi_gro_receive(struct napi_struct *napi, struct sk_buff *skb);
++void napi_gro_flush(struct napi_struct *napi, bool flush_old);
++struct sk_buff *napi_get_frags(struct napi_struct *napi);
++gro_result_t napi_gro_frags(struct napi_struct *napi);
  
- static inline int skb_csum_unnecessary(const struct sk_buff *skb)
+ static inline void napi_free_frags(struct napi_struct *napi)
  {
-@@ -2593,7 +2566,7 @@ static inline __sum16 skb_checksum_complete(struct sk_buff *skb)
+@@ -2367,40 +2362,35 @@ static inline void napi_free_frags(struct napi_struct *napi)
+ 	napi->skb = NULL;
  }
  
- #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
--extern void nf_conntrack_destroy(struct nf_conntrack *nfct);
-+void nf_conntrack_destroy(struct nf_conntrack *nfct);
- static inline void nf_conntrack_put(struct nf_conntrack *nfct)
- {
- 	if (nfct && atomic_dec_and_test(&nfct->use))
-@@ -2732,9 +2705,8 @@ static inline bool skb_rx_queue_recorded(const struct sk_buff *skb)
- 	return skb->queue_mapping != 0;
+-extern int netdev_rx_handler_register(struct net_device *dev,
+-				      rx_handler_func_t *rx_handler,
+-				      void *rx_handler_data);
+-extern void netdev_rx_handler_unregister(struct net_device *dev);
+-
+-extern bool		dev_valid_name(const char *name);
+-extern int		dev_ioctl(struct net *net, unsigned int cmd, void __user *);
+-extern int		dev_ethtool(struct net *net, struct ifreq *);
+-extern unsigned int	dev_get_flags(const struct net_device *);
+-extern int		__dev_change_flags(struct net_device *, unsigned int flags);
+-extern int		dev_change_flags(struct net_device *, unsigned int);
+-extern void		__dev_notify_flags(struct net_device *, unsigned int old_flags);
+-extern int		dev_change_name(struct net_device *, const char *);
+-extern int		dev_set_alias(struct net_device *, const char *, size_t);
+-extern int		dev_change_net_namespace(struct net_device *,
+-						 struct net *, const char *);
+-extern int		dev_set_mtu(struct net_device *, int);
+-extern void		dev_set_group(struct net_device *, int);
+-extern int		dev_set_mac_address(struct net_device *,
+-					    struct sockaddr *);
+-extern int		dev_change_carrier(struct net_device *,
+-					   bool new_carrier);
+-extern int		dev_get_phys_port_id(struct net_device *dev,
+-					     struct netdev_phys_port_id *ppid);
+-extern int		dev_hard_start_xmit(struct sk_buff *skb,
+-					    struct net_device *dev,
+-					    struct netdev_queue *txq);
+-extern int		dev_forward_skb(struct net_device *dev,
+-					struct sk_buff *skb);
++int netdev_rx_handler_register(struct net_device *dev,
++			       rx_handler_func_t *rx_handler,
++			       void *rx_handler_data);
++void netdev_rx_handler_unregister(struct net_device *dev);
++
++bool dev_valid_name(const char *name);
++int dev_ioctl(struct net *net, unsigned int cmd, void __user *);
++int dev_ethtool(struct net *net, struct ifreq *);
++unsigned int dev_get_flags(const struct net_device *);
++int __dev_change_flags(struct net_device *, unsigned int flags);
++int dev_change_flags(struct net_device *, unsigned int);
++void __dev_notify_flags(struct net_device *, unsigned int old_flags);
++int dev_change_name(struct net_device *, const char *);
++int dev_set_alias(struct net_device *, const char *, size_t);
++int dev_change_net_namespace(struct net_device *, struct net *, const char *);
++int dev_set_mtu(struct net_device *, int);
++void dev_set_group(struct net_device *, int);
++int dev_set_mac_address(struct net_device *, struct sockaddr *);
++int dev_change_carrier(struct net_device *, bool new_carrier);
++int dev_get_phys_port_id(struct net_device *dev,
++			 struct netdev_phys_port_id *ppid);
++int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev,
++			struct netdev_queue *txq);
++int dev_forward_skb(struct net_device *dev, struct sk_buff *skb);
+ 
+ extern int		netdev_budget;
+ 
+ /* Called by rtnetlink.c:rtnl_unlock() */
+-extern void netdev_run_todo(void);
++void netdev_run_todo(void);
+ 
+ /**
+  *	dev_put - release reference to device
+@@ -2433,9 +2423,9 @@ static inline void dev_hold(struct net_device *dev)
+  * kind of lower layer not just hardware media.
+  */
+ 
+-extern void linkwatch_init_dev(struct net_device *dev);
+-extern void linkwatch_fire_event(struct net_device *dev);
+-extern void linkwatch_forget_dev(struct net_device *dev);
++void linkwatch_init_dev(struct net_device *dev);
++void linkwatch_fire_event(struct net_device *dev);
++void linkwatch_forget_dev(struct net_device *dev);
+ 
+ /**
+  *	netif_carrier_ok - test if carrier present
+@@ -2448,13 +2438,13 @@ static inline bool netif_carrier_ok(const struct net_device *dev)
+ 	return !test_bit(__LINK_STATE_NOCARRIER, &dev->state);
  }
  
--extern u16 __skb_tx_hash(const struct net_device *dev,
--			 const struct sk_buff *skb,
--			 unsigned int num_tx_queues);
-+u16 __skb_tx_hash(const struct net_device *dev, const struct sk_buff *skb,
-+		  unsigned int num_tx_queues);
+-extern unsigned long dev_trans_start(struct net_device *dev);
++unsigned long dev_trans_start(struct net_device *dev);
  
- #ifdef CONFIG_XFRM
- static inline struct sec_path *skb_sec_path(struct sk_buff *skb)
-@@ -2788,7 +2760,7 @@ static inline bool skb_is_gso_v6(const struct sk_buff *skb)
- 	return skb_shinfo(skb)->gso_type & SKB_GSO_TCPV6;
+-extern void __netdev_watchdog_up(struct net_device *dev);
++void __netdev_watchdog_up(struct net_device *dev);
+ 
+-extern void netif_carrier_on(struct net_device *dev);
++void netif_carrier_on(struct net_device *dev);
+ 
+-extern void netif_carrier_off(struct net_device *dev);
++void netif_carrier_off(struct net_device *dev);
+ 
+ /**
+  *	netif_dormant_on - mark device as dormant.
+@@ -2522,9 +2512,9 @@ static inline bool netif_device_present(struct net_device *dev)
+ 	return test_bit(__LINK_STATE_PRESENT, &dev->state);
  }
  
--extern void __skb_warn_lro_forwarding(const struct sk_buff *skb);
-+void __skb_warn_lro_forwarding(const struct sk_buff *skb);
+-extern void netif_device_detach(struct net_device *dev);
++void netif_device_detach(struct net_device *dev);
  
- static inline bool skb_warn_if_lro(const struct sk_buff *skb)
+-extern void netif_device_attach(struct net_device *dev);
++void netif_device_attach(struct net_device *dev);
+ 
+ /*
+  * Network interface message level settings
+@@ -2733,98 +2723,93 @@ static inline void netif_addr_unlock_bh(struct net_device *dev)
+ 
+ /* These functions live elsewhere (drivers/net/net_init.c, but related) */
+ 
+-extern void		ether_setup(struct net_device *dev);
++void ether_setup(struct net_device *dev);
+ 
+ /* Support for loadable net-drivers */
+-extern struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
+-				       void (*setup)(struct net_device *),
+-				       unsigned int txqs, unsigned int rxqs);
++struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
++				    void (*setup)(struct net_device *),
++				    unsigned int txqs, unsigned int rxqs);
+ #define alloc_netdev(sizeof_priv, name, setup) \
+ 	alloc_netdev_mqs(sizeof_priv, name, setup, 1, 1)
+ 
+ #define alloc_netdev_mq(sizeof_priv, name, setup, count) \
+ 	alloc_netdev_mqs(sizeof_priv, name, setup, count, count)
+ 
+-extern int		register_netdev(struct net_device *dev);
+-extern void		unregister_netdev(struct net_device *dev);
++int register_netdev(struct net_device *dev);
++void unregister_netdev(struct net_device *dev);
+ 
+ /* General hardware address lists handling functions */
+-extern int __hw_addr_add_multiple(struct netdev_hw_addr_list *to_list,
+-				  struct netdev_hw_addr_list *from_list,
+-				  int addr_len, unsigned char addr_type);
+-extern void __hw_addr_del_multiple(struct netdev_hw_addr_list *to_list,
+-				   struct netdev_hw_addr_list *from_list,
+-				   int addr_len, unsigned char addr_type);
+-extern int __hw_addr_sync(struct netdev_hw_addr_list *to_list,
+-			  struct netdev_hw_addr_list *from_list,
+-			  int addr_len);
+-extern void __hw_addr_unsync(struct netdev_hw_addr_list *to_list,
+-			     struct netdev_hw_addr_list *from_list,
+-			     int addr_len);
+-extern void __hw_addr_flush(struct netdev_hw_addr_list *list);
+-extern void __hw_addr_init(struct netdev_hw_addr_list *list);
++int __hw_addr_add_multiple(struct netdev_hw_addr_list *to_list,
++			   struct netdev_hw_addr_list *from_list,
++			   int addr_len, unsigned char addr_type);
++void __hw_addr_del_multiple(struct netdev_hw_addr_list *to_list,
++			    struct netdev_hw_addr_list *from_list,
++			    int addr_len, unsigned char addr_type);
++int __hw_addr_sync(struct netdev_hw_addr_list *to_list,
++		   struct netdev_hw_addr_list *from_list, int addr_len);
++void __hw_addr_unsync(struct netdev_hw_addr_list *to_list,
++		      struct netdev_hw_addr_list *from_list, int addr_len);
++void __hw_addr_flush(struct netdev_hw_addr_list *list);
++void __hw_addr_init(struct netdev_hw_addr_list *list);
+ 
+ /* Functions used for device addresses handling */
+-extern int dev_addr_add(struct net_device *dev, const unsigned char *addr,
+-			unsigned char addr_type);
+-extern int dev_addr_del(struct net_device *dev, const unsigned char *addr,
+-			unsigned char addr_type);
+-extern int dev_addr_add_multiple(struct net_device *to_dev,
+-				 struct net_device *from_dev,
+-				 unsigned char addr_type);
+-extern int dev_addr_del_multiple(struct net_device *to_dev,
+-				 struct net_device *from_dev,
+-				 unsigned char addr_type);
+-extern void dev_addr_flush(struct net_device *dev);
+-extern int dev_addr_init(struct net_device *dev);
++int dev_addr_add(struct net_device *dev, const unsigned char *addr,
++		 unsigned char addr_type);
++int dev_addr_del(struct net_device *dev, const unsigned char *addr,
++		 unsigned char addr_type);
++int dev_addr_add_multiple(struct net_device *to_dev,
++			  struct net_device *from_dev, unsigned char addr_type);
++int dev_addr_del_multiple(struct net_device *to_dev,
++			  struct net_device *from_dev, unsigned char addr_type);
++void dev_addr_flush(struct net_device *dev);
++int dev_addr_init(struct net_device *dev);
+ 
+ /* Functions used for unicast addresses handling */
+-extern int dev_uc_add(struct net_device *dev, const unsigned char *addr);
+-extern int dev_uc_add_excl(struct net_device *dev, const unsigned char *addr);
+-extern int dev_uc_del(struct net_device *dev, const unsigned char *addr);
+-extern int dev_uc_sync(struct net_device *to, struct net_device *from);
+-extern int dev_uc_sync_multiple(struct net_device *to, struct net_device *from);
+-extern void dev_uc_unsync(struct net_device *to, struct net_device *from);
+-extern void dev_uc_flush(struct net_device *dev);
+-extern void dev_uc_init(struct net_device *dev);
++int dev_uc_add(struct net_device *dev, const unsigned char *addr);
++int dev_uc_add_excl(struct net_device *dev, const unsigned char *addr);
++int dev_uc_del(struct net_device *dev, const unsigned char *addr);
++int dev_uc_sync(struct net_device *to, struct net_device *from);
++int dev_uc_sync_multiple(struct net_device *to, struct net_device *from);
++void dev_uc_unsync(struct net_device *to, struct net_device *from);
++void dev_uc_flush(struct net_device *dev);
++void dev_uc_init(struct net_device *dev);
+ 
+ /* Functions used for multicast addresses handling */
+-extern int dev_mc_add(struct net_device *dev, const unsigned char *addr);
+-extern int dev_mc_add_global(struct net_device *dev, const unsigned char *addr);
+-extern int dev_mc_add_excl(struct net_device *dev, const unsigned char *addr);
+-extern int dev_mc_del(struct net_device *dev, const unsigned char *addr);
+-extern int dev_mc_del_global(struct net_device *dev, const unsigned char *addr);
+-extern int dev_mc_sync(struct net_device *to, struct net_device *from);
+-extern int dev_mc_sync_multiple(struct net_device *to, struct net_device *from);
+-extern void dev_mc_unsync(struct net_device *to, struct net_device *from);
+-extern void dev_mc_flush(struct net_device *dev);
+-extern void dev_mc_init(struct net_device *dev);
++int dev_mc_add(struct net_device *dev, const unsigned char *addr);
++int dev_mc_add_global(struct net_device *dev, const unsigned char *addr);
++int dev_mc_add_excl(struct net_device *dev, const unsigned char *addr);
++int dev_mc_del(struct net_device *dev, const unsigned char *addr);
++int dev_mc_del_global(struct net_device *dev, const unsigned char *addr);
++int dev_mc_sync(struct net_device *to, struct net_device *from);
++int dev_mc_sync_multiple(struct net_device *to, struct net_device *from);
++void dev_mc_unsync(struct net_device *to, struct net_device *from);
++void dev_mc_flush(struct net_device *dev);
++void dev_mc_init(struct net_device *dev);
+ 
+ /* Functions used for secondary unicast and multicast support */
+-extern void		dev_set_rx_mode(struct net_device *dev);
+-extern void		__dev_set_rx_mode(struct net_device *dev);
+-extern int		dev_set_promiscuity(struct net_device *dev, int inc);
+-extern int		dev_set_allmulti(struct net_device *dev, int inc);
+-extern void		netdev_state_change(struct net_device *dev);
+-extern void		netdev_notify_peers(struct net_device *dev);
+-extern void		netdev_features_change(struct net_device *dev);
++void dev_set_rx_mode(struct net_device *dev);
++void __dev_set_rx_mode(struct net_device *dev);
++int dev_set_promiscuity(struct net_device *dev, int inc);
++int dev_set_allmulti(struct net_device *dev, int inc);
++void netdev_state_change(struct net_device *dev);
++void netdev_notify_peers(struct net_device *dev);
++void netdev_features_change(struct net_device *dev);
+ /* Load a device via the kmod */
+-extern void		dev_load(struct net *net, const char *name);
+-extern struct rtnl_link_stats64 *dev_get_stats(struct net_device *dev,
+-					       struct rtnl_link_stats64 *storage);
+-extern void netdev_stats_to_stats64(struct rtnl_link_stats64 *stats64,
+-				    const struct net_device_stats *netdev_stats);
++void dev_load(struct net *net, const char *name);
++struct rtnl_link_stats64 *dev_get_stats(struct net_device *dev,
++					struct rtnl_link_stats64 *storage);
++void netdev_stats_to_stats64(struct rtnl_link_stats64 *stats64,
++			     const struct net_device_stats *netdev_stats);
+ 
+ extern int		netdev_max_backlog;
+ extern int		netdev_tstamp_prequeue;
+ extern int		weight_p;
+ extern int		bpf_jit_enable;
+ 
+-extern bool netdev_has_upper_dev(struct net_device *dev,
+-				 struct net_device *upper_dev);
+-extern bool netdev_has_any_upper_dev(struct net_device *dev);
+-extern struct net_device *netdev_all_upper_get_next_dev_rcu(struct net_device *dev,
+-							    struct list_head **iter);
++bool netdev_has_upper_dev(struct net_device *dev, struct net_device *upper_dev);
++bool netdev_has_any_upper_dev(struct net_device *dev);
++struct net_device *netdev_all_upper_get_next_dev_rcu(struct net_device *dev,
++						     struct list_head **iter);
+ 
+ /* iterate through upper list, must be called under RCU read lock */
+ #define netdev_for_each_all_upper_dev_rcu(dev, updev, iter) \
+@@ -2833,10 +2818,10 @@ extern struct net_device *netdev_all_upper_get_next_dev_rcu(struct net_device *d
+ 	     updev; \
+ 	     updev = netdev_all_upper_get_next_dev_rcu(dev, &(iter)))
+ 
+-extern void *netdev_lower_get_next_private(struct net_device *dev,
+-					   struct list_head **iter);
+-extern void *netdev_lower_get_next_private_rcu(struct net_device *dev,
+-					       struct list_head **iter);
++void *netdev_lower_get_next_private(struct net_device *dev,
++				    struct list_head **iter);
++void *netdev_lower_get_next_private_rcu(struct net_device *dev,
++					struct list_head **iter);
+ 
+ #define netdev_for_each_lower_private(dev, priv, iter) \
+ 	for (iter = (dev)->adj_list.lower.next, \
+@@ -2850,27 +2835,26 @@ extern void *netdev_lower_get_next_private_rcu(struct net_device *dev,
+ 	     priv; \
+ 	     priv = netdev_lower_get_next_private_rcu(dev, &(iter)))
+ 
+-extern void *netdev_adjacent_get_private(struct list_head *adj_list);
+-extern struct net_device *netdev_master_upper_dev_get(struct net_device *dev);
+-extern struct net_device *netdev_master_upper_dev_get_rcu(struct net_device *dev);
+-extern int netdev_upper_dev_link(struct net_device *dev,
++void *netdev_adjacent_get_private(struct list_head *adj_list);
++struct net_device *netdev_master_upper_dev_get(struct net_device *dev);
++struct net_device *netdev_master_upper_dev_get_rcu(struct net_device *dev);
++int netdev_upper_dev_link(struct net_device *dev, struct net_device *upper_dev);
++int netdev_master_upper_dev_link(struct net_device *dev,
+ 				 struct net_device *upper_dev);
+-extern int netdev_master_upper_dev_link(struct net_device *dev,
+-					struct net_device *upper_dev);
+-extern int netdev_master_upper_dev_link_private(struct net_device *dev,
+-						struct net_device *upper_dev,
+-						void *private);
+-extern void netdev_upper_dev_unlink(struct net_device *dev,
+-				    struct net_device *upper_dev);
+-extern void *netdev_lower_dev_get_private_rcu(struct net_device *dev,
+-					      struct net_device *lower_dev);
+-extern void *netdev_lower_dev_get_private(struct net_device *dev,
+-					  struct net_device *lower_dev);
+-extern int skb_checksum_help(struct sk_buff *skb);
+-extern struct sk_buff *__skb_gso_segment(struct sk_buff *skb,
+-	netdev_features_t features, bool tx_path);
+-extern struct sk_buff *skb_mac_gso_segment(struct sk_buff *skb,
+-					  netdev_features_t features);
++int netdev_master_upper_dev_link_private(struct net_device *dev,
++					 struct net_device *upper_dev,
++					 void *private);
++void netdev_upper_dev_unlink(struct net_device *dev,
++			     struct net_device *upper_dev);
++void *netdev_lower_dev_get_private_rcu(struct net_device *dev,
++				       struct net_device *lower_dev);
++void *netdev_lower_dev_get_private(struct net_device *dev,
++				   struct net_device *lower_dev);
++int skb_checksum_help(struct sk_buff *skb);
++struct sk_buff *__skb_gso_segment(struct sk_buff *skb,
++				  netdev_features_t features, bool tx_path);
++struct sk_buff *skb_mac_gso_segment(struct sk_buff *skb,
++				    netdev_features_t features);
+ 
+ static inline
+ struct sk_buff *skb_gso_segment(struct sk_buff *skb, netdev_features_t features)
+@@ -2892,30 +2876,30 @@ static inline bool can_checksum_protocol(netdev_features_t features,
+ }
+ 
+ #ifdef CONFIG_BUG
+-extern void netdev_rx_csum_fault(struct net_device *dev);
++void netdev_rx_csum_fault(struct net_device *dev);
+ #else
+ static inline void netdev_rx_csum_fault(struct net_device *dev)
  {
+ }
+ #endif
+ /* rx skb timestamps */
+-extern void		net_enable_timestamp(void);
+-extern void		net_disable_timestamp(void);
++void net_enable_timestamp(void);
++void net_disable_timestamp(void);
+ 
+ #ifdef CONFIG_PROC_FS
+-extern int __init dev_proc_init(void);
++int __init dev_proc_init(void);
+ #else
+ #define dev_proc_init() 0
+ #endif
+ 
+-extern int netdev_class_create_file(struct class_attribute *class_attr);
+-extern void netdev_class_remove_file(struct class_attribute *class_attr);
++int netdev_class_create_file(struct class_attribute *class_attr);
++void netdev_class_remove_file(struct class_attribute *class_attr);
+ 
+ extern struct kobj_ns_type_operations net_ns_type_operations;
+ 
+-extern const char *netdev_drivername(const struct net_device *dev);
++const char *netdev_drivername(const struct net_device *dev);
+ 
+-extern void linkwatch_run_queue(void);
++void linkwatch_run_queue(void);
+ 
+ static inline netdev_features_t netdev_get_wanted_features(
+ 	struct net_device *dev)
+@@ -3007,22 +2991,22 @@ static inline const char *netdev_name(const struct net_device *dev)
+ 	return dev->name;
+ }
+ 
+-extern __printf(3, 4)
++__printf(3, 4)
+ int netdev_printk(const char *level, const struct net_device *dev,
+ 		  const char *format, ...);
+-extern __printf(2, 3)
++__printf(2, 3)
+ int netdev_emerg(const struct net_device *dev, const char *format, ...);
+-extern __printf(2, 3)
++__printf(2, 3)
+ int netdev_alert(const struct net_device *dev, const char *format, ...);
+-extern __printf(2, 3)
++__printf(2, 3)
+ int netdev_crit(const struct net_device *dev, const char *format, ...);
+-extern __printf(2, 3)
++__printf(2, 3)
+ int netdev_err(const struct net_device *dev, const char *format, ...);
+-extern __printf(2, 3)
++__printf(2, 3)
+ int netdev_warn(const struct net_device *dev, const char *format, ...);
+-extern __printf(2, 3)
++__printf(2, 3)
+ int netdev_notice(const struct net_device *dev, const char *format, ...);
+-extern __printf(2, 3)
++__printf(2, 3)
+ int netdev_info(const struct net_device *dev, const char *format, ...);
+ 
+ #define MODULE_ALIAS_NETDEV(device) \
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
