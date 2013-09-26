@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab3IZIVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:21:52 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43190 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab3IZIVs (ORCPT
+	id S1756035Ab3IZIWw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:22:52 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:50094 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab3IZIWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:21:48 -0400
-Date: Thu, 26 Sep 2013 10:21:47 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: joeyli <jlee@suse.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
-        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH V4 13/15] Hibernate: introduced SNAPSHOT_SIG_HASH
- config for select hash algorithm
-Message-ID: <20130926082146.GA22286@amd.pavel.ucw.cz>
-References: <1379206621-18639-1-git-send-email-jlee@suse.com>
- <1379206621-18639-14-git-send-email-jlee@suse.com>
- <20130918134535.GA3748@amd.pavel.ucw.cz>
- <1380159819.32302.24.camel@linux-s257.site>
+	Thu, 26 Sep 2013 04:22:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380159819.32302.24.camel@linux-s257.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [111.240.64.25]
+In-Reply-To: <004101ceba90$50592700$f10b7500$%han@samsung.com>
+References: <003101ceba8c$88d6a840$9a83f8c0$%han@samsung.com>
+	<003c01ceba8d$79872c60$6c958520$%han@samsung.com>
+	<CAFRkauBTZQzSKgaNg781zsTU4u9V4rYATcWzC=BkJQy07sOBqA@mail.gmail.com>
+	<004101ceba90$50592700$f10b7500$%han@samsung.com>
+Date: Thu, 26 Sep 2013 16:22:50 +0800
+Message-ID: <CAFRkauBbwEEaCiP2bnm57jB6KR0fySgsyk4S4oRLwF_=bqwncA@mail.gmail.com>
+Subject: Re: [PATCH V3 12/14] regulator: tps6524x: use devm_regulator_register()
+From: Axel Lin <axel.lin@ingics.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+> Hi Axel,
+>
+> I really appreciate your comment.
+>
+> Then, you mean the following.
+> If I am wrong, please let me know. :-)
+> Thank you.
 
-> > On Sun 2013-09-15 08:56:59, Lee, Chun-Yi wrote:
-> > > This patch introduced SNAPSHOT_SIG_HASH config for user to select which
-> > > hash algorithm will be used during signature generation of snapshot.
-> > 
-> > This series is big enough already... and who is going to test it?
-> 
-> The hash config not just for testing, it's relate to the performance and
-> secure between different hash algorithms.
+Then you can remove pmic_remove() function,like below diff.
+With these change, you can add Reviewed-by: Axel Lin <axel.lin@ingics.com>
 
-I'm not saying it is for testing. I'm saying that selection makes
-testing harder.
+diff --git a/drivers/regulator/tps6524x-regulator.c
+b/drivers/regulator/tps6524x-regulator.c
+index 8b9ee39..0c0590d 100644
+--- a/drivers/regulator/tps6524x-regulator.c
++++ b/drivers/regulator/tps6524x-regulator.c
+@@ -577,20 +577,6 @@ static struct regulator_ops regulator_ops = {
+  .get_current_limit = get_current_limit,
+ };
 
-> There have person raised in LPC say he don't like SHA algorithm.
+-static int pmic_remove(struct spi_device *spi)
+-{
+- struct tps6524x *hw = spi_get_drvdata(spi);
+- int i;
+-
+- if (!hw)
+- return 0;
+- for (i = 0; i < N_REGULATORS; i++) {
+- regulator_unregister(hw->rdev[i]);
+- hw->rdev[i] = NULL;
+- }
+- return 0;
+-}
+-
+ static int pmic_probe(struct spi_device *spi)
+ {
+  struct tps6524x *hw;
+@@ -598,7 +584,7 @@ static int pmic_probe(struct spi_device *spi)
+  const struct supply_info *info = supply_info;
+  struct regulator_init_data *init_data;
+  struct regulator_config config = { };
+- int ret = 0, i;
++ int i;
 
-Well, I don't like the config option.
+  init_data = dev_get_platdata(dev);
+  if (!init_data) {
+@@ -631,24 +617,17 @@ static int pmic_probe(struct spi_device *spi)
+  config.init_data = init_data;
+  config.driver_data = hw;
 
-> > There's no need to make hash configurable. Just select one that works.
-> 
-> SHA1 has good performance, and SHA512 has better security, which one you
-> like it?
+- hw->rdev[i] = regulator_register(&hw->desc[i], &config);
+- if (IS_ERR(hw->rdev[i])) {
+- ret = PTR_ERR(hw->rdev[i]);
+- hw->rdev[i] = NULL;
+- goto fail;
+- }
++ hw->rdev[i] = devm_regulator_register(dev, &hw->desc[i],
++      &config);
++ if (IS_ERR(hw->rdev[i]))
++ return PTR_ERR(hw->rdev[i]);
+  }
 
-Use SHA1. It is completely adequate for what you are trying to do.
+  return 0;
+-
+-fail:
+- pmic_remove(spi);
+- return ret;
+ }
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+ static struct spi_driver pmic_driver = {
+  .probe = pmic_probe,
+- .remove = pmic_remove,
+  .driver = {
+  .name = "tps6524x",
+  .owner = THIS_MODULE,
