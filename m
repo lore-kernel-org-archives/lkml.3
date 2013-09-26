@@ -1,96 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab3IZLt4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 07:49:56 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17427 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756472Ab3IZLty (ORCPT
+	id S1756781Ab3IZLw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 07:52:27 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52343 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756350Ab3IZLw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 07:49:54 -0400
-Date: Thu, 26 Sep 2013 14:48:10 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Dominik Paulus <dominik@d-paulus.de>
-Cc: Anthony Foiani <anthony.foiani@gmail.com>, devel@driverdev.osuosl.org,
-        linux-usb@vger.kernel.org, linux-kernel@i4.cs.fau.de,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        usbip-devel@lists.sourceforge.net,
-        Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
-        Tobias Polzer <tobias.polzer@fau.de>,
-        Harvey Yang <harvey.huawei.yang@gmail.com>,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Bart Westgeest <bart@elbrys.com>,
-        Dominik Paulus <dominik.paulus@fau.de>,
-        Ilija Hadzic <ihadzic@research.bell-labs.com>,
-        Jake Champlin <jake.champlin.27@gmail.com>,
-        Stefan Reif <ke42caxa@cip.cs.fau.de>,
-        Bernard Blackham <b-linuxgit@largestprime.net>
-Subject: Re: [PATCH 5/7] staging: usbip: Add encryption support to kernel
-Message-ID: <20130926114810.GA6414@mwanda>
-References: <20130923105842.GH6192@mwanda>
- <20130923103504.GG6192@mwanda>
- <20130923095929.GF6192@mwanda>
- <20130926101833.GA8677@d-paulus.de>
+	Thu, 26 Sep 2013 07:52:26 -0400
+Message-ID: <52441FF7.1030405@hurleysoftware.com>
+Date: Thu, 26 Sep 2013 07:52:23 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926101833.GA8677@d-paulus.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Andi Kleen <andi@firstfloor.org>, Lin Ming <minggr@gmail.com>
+CC: Fengguang Wu <fengguang.wu@intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: increased vmap_area_lock contentions on "n_tty: Move buffers
+ into n_tty_data"
+References: <20130913005133.GA32479@localhost>	<20130913010936.GA1291@localhost>	<5238767D.1080606@hurleysoftware.com>	<20130917232214.GA11390@localhost>	<5238F252.5070905@hurleysoftware.com>	<CAF1ivSbYg296oHhO0_UXwkos8Ui_1C93pUnXPzow4qLWyAa2kg@mail.gmail.com>	<5242C960.7050506@hurleysoftware.com>	<1380124944.27676.1.camel@monkey32> <87r4cc8e0q.fsf@tassilo.jf.intel.com>
+In-Reply-To: <87r4cc8e0q.fsf@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 12:18:34PM +0200, Dominik Paulus wrote:
-> > I think a return of zero should mean total = -EBADMSG;.  In other words
-> > this check should be "if (ret < 0) {" and we hit the next else if.
-> > Same below again.
-> 
-> As we are wrapping kernel_recvmsg here, we wanted to leave the semantics
-> intact as far as possible. The calling code already checks for the correct
-> size.
+On 09/25/2013 11:20 PM, Andi Kleen wrote:
+> Lin Ming <minggr@gmail.com> writes:
+>>
+>> Would you like below patch?
+>
+> The loop body keeps rather complex state. It could easily
+> get confused by parallel RCU changes.
+>
+> So if the list changes in parallel you may suddenly
+> report very bogus values, as the va_start - prev_end
+> computation may be bogus.
+>
+> Perhaps it's ok (may report bogus gaps), but it seems a bit risky.
 
-Hm...  Ok.  Sometimes zero is interpretted as a connection closed and
-sometimes reading less than expected is considered a TCP error.
+I don't understand how the computed gap would be bogus; there
+_was_ a list state in which that particular gap existed. The fact
+that it may not exist anymore can also happen in the existing
+algorithm the instant get_vmalloc_info() drops the vmap_area_lock.
 
-> No, currently, the caller (usbip_sendmsg() / usbip_recvmsg() are the
-> only functions calling usbip_crypt(), which itself is static) ensures
-> this.
-> Admittedly, this isn't great design. We added a check for packetsize <
-> USBIP_AUTHSIZE and an appropiate return here.
-> 
-> > > +	if (encrypt)
-> > > +		ret = crypto_aead_encrypt(req);
-> > > +	else
-> > > +		ret = crypto_aead_decrypt(req);
-> > > +
-> > 
-> > Good on you for figuring out what crypto_aead_en/decrypt() returns.
-> > Where are these functions documented?
-> > 
-> > > +        switch (ret) {
-> > > +        case 0: /* Success */
-> > > +                break;
-> > > +        case -EINPROGRESS:
-> > > +        case -EBUSY:
-> > > +                wait_for_completion(&result.completion);
-> > > +                break;
-> > > +        default:
-> > > +                aead_request_free(req);
-> > > +                return ret;
-> > > +        }
-> > > +
-> 
-> They aren't, actually. Documentation/crypto/api-intro.txt refers to the
-> regression test module, which uses exactly those return-values in
-> crypto/testmgr.c.
+OTOH, parallel list changes could cause an rcu-based get_vmalloc_info()
+to over-report or under-report used memory due to parallel list
+changes.
 
-Well that sucks.
+If this is a problem in practice, then usage and largest chunk
+should be tracked by the allocator instead, obviating the need for
+get_vmalloc_info() to traverse the vmap_area_list at all.
 
-> We noticed that wait_for_completion might not be the best idea, since it could
-> hang indefinitely, testmgr.c uses wait_for_completion_interruptible. Do we
-> want 'interruptible' or 'killable' here?
-
-I think you want the interruptible one wait_for_completion_interruptible()
-
-regards,
-dan carpenter
+Regards,
+Peter Hurley
