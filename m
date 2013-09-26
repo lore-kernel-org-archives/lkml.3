@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab3IZWVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:21:08 -0400
+	id S1754819Ab3IZWVN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:21:13 -0400
 Received: from mga02.intel.com ([134.134.136.20]:6338 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754781Ab3IZWVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:21:05 -0400
+	id S1754781Ab3IZWVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 18:21:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,988,1371106800"; 
-   d="scan'208";a="384113138"
-Subject: [PATCH v7 1/6] rwsem: check the lock before cpmxchg in
- down_write_trylock
+   d="scan'208";a="410078638"
+Subject: [PATCH v7 2/6] rwsem: remove 'out' label in do_wake
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -28,8 +27,8 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
 In-Reply-To: <cover.1380231690.git.tim.c.chen@linux.intel.com>
 References: <cover.1380231690.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Sep 2013 15:21:02 -0700
-Message-ID: <1380234062.3467.87.camel@schen9-DESK>
+Date: Thu, 26 Sep 2013 15:21:05 -0700
+Message-ID: <1380234065.3467.88.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -37,36 +36,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cmpxchg will cause the cacheline bouning when do the value checking,
-that cause scalability issue in a large machine (like a 80 core box).
-
-So a lock pre-read can relief this contention.
+That make code simple and more readable.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- include/asm-generic/rwsem.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ lib/rwsem.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
-index bb1e2cd..5ba80e7 100644
---- a/include/asm-generic/rwsem.h
-+++ b/include/asm-generic/rwsem.h
-@@ -70,11 +70,11 @@ static inline void __down_write(struct rw_semaphore *sem)
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index 19c5fa9..42f1b1a 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -75,7 +75,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 			 * will block as they will notice the queued writer.
+ 			 */
+ 			wake_up_process(waiter->task);
+-		goto out;
++		return sem;
+ 	}
  
- static inline int __down_write_trylock(struct rw_semaphore *sem)
- {
--	long tmp;
-+	if (unlikely(sem->count != RWSEM_UNLOCKED_VALUE))
-+		return 0;
+ 	/* Writers might steal the lock before we grant it to the next reader.
+@@ -91,7 +91,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 			/* A writer stole the lock. Undo our reader grant. */
+ 			if (rwsem_atomic_update(-adjustment, sem) &
+ 						RWSEM_ACTIVE_MASK)
+-				goto out;
++				return sem;
+ 			/* Last active locker left. Retry waking readers. */
+ 			goto try_reader_grant;
+ 		}
+@@ -136,7 +136,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 	sem->wait_list.next = next;
+ 	next->prev = &sem->wait_list;
  
--	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
--		      RWSEM_ACTIVE_WRITE_BIAS);
--	return tmp == RWSEM_UNLOCKED_VALUE;
-+	return cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
-+		      RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_UNLOCKED_VALUE;
+- out:
+ 	return sem;
  }
  
- /*
 -- 
 1.7.4.4
 
