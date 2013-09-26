@@ -1,112 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab3IZH0f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:26:35 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:61024 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754775Ab3IZH0e (ORCPT
+	id S1755933Ab3IZH1F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:27:05 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:35509 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab3IZH1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:26:34 -0400
+	Thu, 26 Sep 2013 03:27:02 -0400
+Message-ID: <5243E1B5.4080409@linux.vnet.ibm.com>
+Date: Thu, 26 Sep 2013 15:26:45 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20130926055802.GA20634@bbox>
-References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
-	<52118042.30101@oracle.com>
-	<20130819054742.GA28062@bbox>
-	<CAL1ERfN3AUYwWTctGBjVcgb-mwAmc15-FayLz48P1d0GzogncA@mail.gmail.com>
-	<20130821074939.GE3022@bbox>
-	<CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
-	<CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
-	<CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
-	<20130926055802.GA20634@bbox>
-Date: Thu, 26 Sep 2013 15:26:33 +0800
-Message-ID: <CAL1ERfN8PpSZxRmLiwm4i-XZWzRaPJ0A=Af76Dtopcf2xYnBtQ@mail.gmail.com>
-Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Bob Liu <lliubbo@gmail.com>, Bob Liu <bob.liu@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mike Galbraith <bitbucket@online.de>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for wake_affine(.sync=true)
+References: <20130925075341.GB3081@twins.programming.kicks-ass.net> <1380099377.8523.9.camel@marge.simpson.net> <5243A0E9.4060802@linux.vnet.ibm.com> <1380166898.5431.40.camel@marge.simpson.net> <5243C24F.6070704@linux.vnet.ibm.com> <1380173688.7525.12.camel@marge.simpson.net> <5243D4E8.4000707@linux.vnet.ibm.com> <1380179397.7525.45.camel@marge.simpson.net>
+In-Reply-To: <1380179397.7525.45.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092607-8256-0000-0000-00000962FD94
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 1:58 PM, Minchan Kim <minchan@kernel.org> wrote:
-> Hello Weigie,
->
-> On Wed, Sep 25, 2013 at 05:33:43PM +0800, Weijie Yang wrote:
->> On Wed, Sep 25, 2013 at 4:31 PM, Bob Liu <lliubbo@gmail.com> wrote:
->> > On Wed, Sep 25, 2013 at 4:09 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
->> >> I think I find a new issue, for integrity of this mail thread, I reply
->> >> to this mail.
->> >>
->> >> It is a concurrence issue either, when duplicate store and reclaim
->> >> concurrentlly.
->> >>
->> >> zswap entry x with offset A is already stored in zswap backend.
->> >> Consider the following scenario:
->> >>
->> >> thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
->> >>
->> >> thread 1: store new page with the same offset A, alloc a new zswap entry y.
->> >>   store finished. shrink_page_list() call __remove_mapping(), and now
->> >> it is not in swap_cache
->> >>
->> >
->> > But I don't think swap layer will call zswap with the same offset A.
+On 09/26/2013 03:09 PM, Mike Galbraith wrote:
+[snip]
 >>
->> 1. store page of offset A in zswap
->> 2. some time later, pagefault occur, load page data from zswap.
->>   But notice that zswap entry x is still in zswap because it is not
->> frontswap_tmem_exclusive_gets_enabled.
->
-> frontswap_tmem_exclusive_gets_enabled is just option to see tradeoff
-> between CPU burining by frequent swapout and memory footprint by duplicate
-> copy in swap cache and frontswap backend so it shouldn't affect the stability.
+>> Ok, a double-edged sword I see :)
+>>
+>> May be we can wave it carefully here, give the discount to a bigger
+>> scope not the sync cpu, for example:
+>>
+>> 	sg1				sg2
+>> 	cpu0	cpu1	cpu2	cpu3	cpu4	cpu5	cpu6	cpu7
+>> 	waker	idle	idle	idle	idle	idle	idle	idle
+>>
+>> If it's sync wakeup on cpu0 (only waker), and the sg is wide enough,
+>> which means one cpu is not so influencial, then suppose cpu0 to be idle
+>> could be more safe, also prefer sg1 than sg2 is more likely to be right.
+>>
+>> And we can still choose idle-cpu at final step, like cpu1 in this case,
+>> to avoid the risk that waker don't get off as it said.
+>>
+>> The key point is to reduce the influence of sync, trust a little but not
+>> totally ;-)
+> 
+> What we need is a dirt cheap way to fairly accurately predict overlap
+> potential (todo: write omniscience().. patent, buy planet).
 
-Thanks for explain this.
-I don't mean to say this option affects the stability,  but that zswap
-only realize
-one option. Maybe it's better to realize both options for different workloads.
+Agree, solutions for such cases are usually incredible ;-)
 
->>  this page is with PageSwapCache(page) and page_private(page) = entry.val
->> 3. change this page data, and it become dirty
->
-> If non-shared swapin page become redirty, it should remove the page from
-> swapcache. If shared swapin page become redirty, it should do CoW so it's a
-> new page so that it doesn't live in swap cache. It means it should have new
-> offset which is different with old's one for swap out.
->
-> What's wrong with that?
+Regards,
+Michael Wang
 
-It is really not a right scene for duplicate store. And I can not think out one.
-If duplicate store is impossible, How about delete the handle code in zswap?
-If it does exist, I think there is a potential issue as I described.
-
->> 4. some time later again, swap this page on the same offset A.
->>
->> so, a duplicate store happens.
->>
->> what I can think is that use flags and CAS to protect store and reclaim on
->> the same offset  happens concurrentlly.
->>
->> >> thread 0: zswap_get_swap_cache_page called. old page data is added to swap_cache
->> >>
->> >> Now, swap cache has old data rather than new data for offset A.
->> >> error will happen If do_swap_page() get page from swap_cache.
->> >>
->> >
->> > --
->> > Regards,
->> > --Bob
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+> 
+> -Mike
+> 
 > --
-> Kind regards,
-> Minchan Kim
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
