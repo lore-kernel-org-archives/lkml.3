@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab3IZIdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:33:06 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:65222 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab3IZIdE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:33:04 -0400
-Message-ID: <5243F13C.7020409@linaro.org>
-Date: Thu, 26 Sep 2013 10:33:00 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1755574Ab3IZIkm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:40:42 -0400
+Received: from sauhun.de ([89.238.76.85]:46249 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750999Ab3IZIkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 04:40:40 -0400
+Date: Thu, 26 Sep 2013 10:40:32 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: James Ralston <james.d.ralston@intel.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>, Seth Heasley <seth.heasley@intel.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] i2c-ismt: add Initialize DMA buffer code
+ ismt_access()
+Message-ID: <20130926084032.GB3057@katana>
+References: <1380066475-2119-1-git-send-email-james.d.ralston@intel.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 20/21] cpuidle: don't calculate time-diff if entered_state
- == 0
-References: <cover.1379779777.git.viresh.kumar@linaro.org>	<acd1cc837f969a50582d2b25a73c5e247f40f843.1379779777.git.viresh.kumar@linaro.org>	<524365FA.4090108@linaro.org>	<CAKohpong15qzFg_sZVB77wVm4gu-4Se1E=eqvJOv96fgnyMXDA@mail.gmail.com>	<5243EF7F.4000606@linaro.org> <CAKohpongU4GpoEp5-WQJwxSbVFgAyWWcRDWo2zD+C8CGNhWwYQ@mail.gmail.com>
-In-Reply-To: <CAKohpongU4GpoEp5-WQJwxSbVFgAyWWcRDWo2zD+C8CGNhWwYQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cvVnyQ+4j833TQvp"
+Content-Disposition: inline
+In-Reply-To: <1380066475-2119-1-git-send-email-james.d.ralston@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 10:28 AM, Viresh Kumar wrote:
-> On 26 September 2013 13:55, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
->> Yes I agree, but why are you saying "If entered_state == 0, we don't need to
->> ..." ?
->
-> Ahh.. that's a mistake.. s/==/< :)
 
-Ah ok.
+--cvVnyQ+4j833TQvp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, Sep 24, 2013 at 04:47:55PM -0700, James Ralston wrote:
+> This patch adds code to Initialize the DMA buffer to compensate for possi=
+ble hardware data corruption.
 
+Take care of the line width here.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+> Signed-off-by: James Ralston <james.d.ralston@intel.com>
+> ---
+>  drivers/i2c/busses/i2c-ismt.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/drivers/i2c/busses/i2c-ismt.c b/drivers/i2c/busses/i2c-ismt.c
+> index 8ed79a0..d3f30ea 100644
+> --- a/drivers/i2c/busses/i2c-ismt.c
+> +++ b/drivers/i2c/busses/i2c-ismt.c
+> @@ -393,6 +393,9 @@ static int ismt_access(struct i2c_adapter *adap, u16 =
+addr,
+> =20
+>  	desc =3D &priv->hw[priv->head];
+> =20
+> +	/* Initialize the DMA buffer */
+> +	memset(priv->dma_buffer, 0, (I2C_SMBUS_BLOCK_MAX+1));
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+sizeof()?
 
+> +
+>  	/* Initialize the descriptor */
+>  	memset(desc, 0, sizeof(struct ismt_desc));
+>  	desc->tgtaddr_rw =3D ISMT_DESC_ADDR_RW(addr, read_write);
+> --=20
+> 1.7.7.6
+>=20
+
+--cvVnyQ+4j833TQvp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSQ/MAAAoJEBQN5MwUoCm2k6gQAJ40U4RR8yZ0F8b362yqX4Ga
+p+qVShXggMsDAD6kvdaz5AEgbCZqbSLthCeAgHH1LTnHyZPAEeBnaPe/Q9ZkoedK
+RtvuJR84fd0jOjCTejKXW21at2tUyrW5a1OUYBH01ng8VVvLzC2M6EZLnslB3qRn
+9oBfTiPp0Hc/pAuTFWmRJwMfCUv1yuhbW48ibqGcnt9WPPn+NhfgUTB5tb6TkMiM
+p1ZqMTDtZckNMWyDG+RDOq/i7w499AnWEifryK26GYtkpVpm0O0AAHtmw+3iR6ue
+LuKwq+XK4MBkDsny0vlTaQNuzOBnccTdrV1TLTNikgQlPfQbQwiZvDw/6b/cLTQ9
+9Kwgw5Jol3zggqx3pkKo8JbkGDL5co38Z5lP88g5WNRdGGv+T8Ie3gcbUAjHy1em
+G768eTr9fzyXNhVekrPaKXHa/kXVh+1pwGYgn7QGSvfdF5favzLniWBl+R8sHB55
++eP6/XSSsT/k7HByjOK+tHIYPyLNQyJJFl5qo+XJZu1j958XFIc/WuK1k+Lj3gNt
+S8LmgEtgFbqOYcKQFJ4IMfOvu4iyFS0AARwoNHo5zafaeS4I05+48BJgTlrERukG
+3A5FKqlYFu1/G4W5KlooonafSPTnZoJ1HUwWa7MiQ8mk+2Bx9TOSNhXiCZKuv0r5
+xCt2qIpT+7kdWfmDWRY8
+=1GxT
+-----END PGP SIGNATURE-----
+
+--cvVnyQ+4j833TQvp--
