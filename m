@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757127Ab3IZNPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 09:15:52 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:54701 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756689Ab3IZNPv (ORCPT
+	id S1757026Ab3IZNUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 09:20:43 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:47321 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab3IZNUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 09:15:51 -0400
-Date: Thu, 26 Sep 2013 09:15:44 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info' in
- all related extern functions
-Message-ID: <20130926131544.GB31249@mtj.dyndns.org>
-References: <524114B8.3070903@asianux.com>
- <20130924120429.GA2366@htj.dyndns.org>
- <5242331B.4010309@asianux.com>
- <20130925005802.GA25777@htj.dyndns.org>
- <5242372C.4010509@asianux.com>
- <20130925011404.GB25777@htj.dyndns.org>
- <52424094.3020504@asianux.com>
- <524267CD.4030007@asianux.com>
- <5243CD18.1060805@asianux.com>
- <5243D487.8000602@asianux.com>
+	Thu, 26 Sep 2013 09:20:41 -0400
+Message-ID: <524433AF.8010102@linux.vnet.ibm.com>
+Date: Thu, 26 Sep 2013 18:46:31 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5243D487.8000602@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arjan van de Ven <arjan@linux.intel.com>
+CC: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
+        dave@sr71.net, hannes@cmpxchg.org, tony.luck@intel.com,
+        matthew.garrett@nebula.com, riel@redhat.com,
+        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
+        gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
+        santosh.shilimkar@ti.com, kosaki.motohiro@gmail.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, maxime.coquelin@stericsson.com,
+        loic.pallardy@stericsson.com, thomas.abraham@linaro.org,
+        amit.kachhap@linaro.org
+Subject: Re: [Results] [RFC PATCH v4 00/40] mm: Memory Power Management
+References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <52437128.7030402@linux.vnet.ibm.com> <20130925164057.6bbaf23bdc5057c42b2ab010@linux-foundation.org> <20130925234734.GK18242@two.firstfloor.org> <52438AA9.3020809@linux.intel.com>
+In-Reply-To: <52438AA9.3020809@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092613-3864-0000-0000-00000A415CD5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Chen.
+On 09/26/2013 06:45 AM, Arjan van de Ven wrote:
+> On 9/25/2013 4:47 PM, Andi Kleen wrote:
+>>> Also, the changelogs don't appear to discuss one obvious downside: the
+>>> latency incurred in bringing a bank out of one of the low-power states
+>>> and back into full operation.  Please do discuss and quantify that to
+>>> the best of your knowledge.
+>>
+>> On Sandy Bridge the memry wakeup overhead is really small. It's on by
+>> default
+>> in most setups today.
+> 
+> btw note that those kind of memory power savings are content-preserving,
+> so likely a whole chunk of these patches is not actually needed on SNB
+> (or anything else Intel sells or sold)
+> 
 
-On Thu, Sep 26, 2013 at 02:30:31PM +0800, Chen Gang wrote:
-> > Oh, not cause issue, the reason is "'groups' exports extern variable
-> > 'init_groups', when start process, default 'cred' will set it to be
-> > sure of groups always be initialized".
-> > 
-> > Hmm... but after all, I still think this file need be improved: "remove
-> > the group_info checking in groups_search()", please help check, thanks.
+Umm, why not? By consolidating the allocations to fewer memory regions,
+this patchset also indirectly consolidates the *references* as well. And
+its the lack of memory references that really makes the hardware transition
+the unreferenced banks to low-power (content-preserving) states. So from what
+I understand, this patchset should provide noticeable benefits on Intel/SNB
+platforms as well.
 
-Given the track record upto this point and how marginal the benefit of
-the suggested change is, I'd rather not.  It's quite possible that we
-had specific issue where that extra conditional is necessary and I
-don't feel comfortable trusting your evaluation and analysis on the
-subject at the moment, so the benefit / risk ratio seems way off from
-my pov.
+(BTW, even in the prototype powerpc hardware that I mentioned, the primary
+memory power savings is expected to come from content-preserving states. So
+its not like this patchset was designed only for content-losing/full-poweroff
+type of scenarios).
 
-> >   If groups_alloc() fails, the caller must not call any related API again
-> >   with the related invalid 'group_info'.
-> > 
-> > 
-> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Regards,
+Srivatsa S. Bhat
 
-Nacked-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
-
--- 
-tejun
