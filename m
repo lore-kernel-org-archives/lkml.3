@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab3IZH1F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:27:05 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:35509 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab3IZH1C (ORCPT
+	id S1755956Ab3IZH1W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:27:22 -0400
+Received: from mx3.incra.gov.br ([200.252.80.72]:40403 "EHLO
+	sbsbz107.incra.gov.br" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753561Ab3IZH1U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:27:02 -0400
-Message-ID: <5243E1B5.4080409@linux.vnet.ibm.com>
-Date: Thu, 26 Sep 2013 15:26:45 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 26 Sep 2013 03:27:20 -0400
+X-Greylist: delayed 2457 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Sep 2013 03:27:20 EDT
+X-Spam-Flag: NO
+X-Spam-Score: 3.228
+Date: Thu, 26 Sep 2013 03:37:06 -0300 (BRT)
+From: Western Union =?utf-8?Q?Office=C2=AE?= 
+	<rogerio.mauro@incra.gov.br>
+Reply-To: Western Union =?utf-8?Q?Office=C2=AE?= 
+	  <westernunionmespn@yeah.net>
+Message-ID: <176385762.1066530.1380177426288.JavaMail.root@incra.gov.br>
+Subject: Dear Beneficiary
 MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for wake_affine(.sync=true)
-References: <20130925075341.GB3081@twins.programming.kicks-ass.net> <1380099377.8523.9.camel@marge.simpson.net> <5243A0E9.4060802@linux.vnet.ibm.com> <1380166898.5431.40.camel@marge.simpson.net> <5243C24F.6070704@linux.vnet.ibm.com> <1380173688.7525.12.camel@marge.simpson.net> <5243D4E8.4000707@linux.vnet.ibm.com> <1380179397.7525.45.camel@marge.simpson.net>
-In-Reply-To: <1380179397.7525.45.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092607-8256-0000-0000-00000962FD94
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.1.111]
+X-Mailer: Zimbra 8.0.3_GA_5664 (zclient/8.0.3_GA_5664)
+Thread-Topic: Dear Beneficiary
+Thread-Index: RS9y+roGzpVVtk4AImCpvHFmCb1alQ==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 03:09 PM, Mike Galbraith wrote:
-[snip]
->>
->> Ok, a double-edged sword I see :)
->>
->> May be we can wave it carefully here, give the discount to a bigger
->> scope not the sync cpu, for example:
->>
->> 	sg1				sg2
->> 	cpu0	cpu1	cpu2	cpu3	cpu4	cpu5	cpu6	cpu7
->> 	waker	idle	idle	idle	idle	idle	idle	idle
->>
->> If it's sync wakeup on cpu0 (only waker), and the sg is wide enough,
->> which means one cpu is not so influencial, then suppose cpu0 to be idle
->> could be more safe, also prefer sg1 than sg2 is more likely to be right.
->>
->> And we can still choose idle-cpu at final step, like cpu1 in this case,
->> to avoid the risk that waker don't get off as it said.
->>
->> The key point is to reduce the influence of sync, trust a little but not
->> totally ;-)
-> 
-> What we need is a dirt cheap way to fairly accurately predict overlap
-> potential (todo: write omniscience().. patent, buy planet).
 
-Agree, solutions for such cases are usually incredible ;-)
+-- 
+Dear Beneficiary,
 
-Regards,
-Michael Wang
+You have been selected as the sole beneficiary of the sum of Three Hundred Thousand Euros (€ 300,000.00 Eur) which has been deposited here in WESTERN UNION OFFICE by the United Nations Organization for you.
 
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Kindly contact us for claims Email: cliamswudept@outlook.com or claims.wu@yahoo.com.hk 
 
+                    
+Customer Service
+Western Union Office®
