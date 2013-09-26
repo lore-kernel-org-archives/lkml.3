@@ -1,146 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab3IZCBC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 22:01:02 -0400
-Received: from smtprelay0241.hostedemail.com ([216.40.44.241]:55963 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752768Ab3IZCBA (ORCPT
+	id S1754526Ab3IZCCP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 22:02:15 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:31921 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753991Ab3IZCCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 22:01:00 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::,RULES_HIT:41:334:355:368:369:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:1801:2197:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3355:3622:3653:3743:3865:3866:3867:3868:3870:3871
-X-HE-Tag: light22_7c9547e394044
-X-Filterd-Recvd-Size: 4999
-Message-ID: <1380160854.17366.49.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Add test for #defines of ARCH_HAS_<foo>
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Wed, 25 Sep 2013 19:00:54 -0700
-In-Reply-To: <CA+55aFycQ9XJvEOsiM3txHL5bjUc8CeKWJNR_H+MiicaddB42Q@mail.gmail.com>
-References: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
-	 <1380125886-10341-8-git-send-email-fweisbec@gmail.com>
-	 <CA+55aFzPArB0dotWZz8dLTPVM4MMT75NAb5_DVcPrNuvWu4QUA@mail.gmail.com>
-	 <20130925172121.00c23e416398139f4615943c@linux-foundation.org>
-	 <1380156027.17366.39.camel@joe-AO722>
-	 <CA+55aFycQ9XJvEOsiM3txHL5bjUc8CeKWJNR_H+MiicaddB42Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Sep 2013 22:02:13 -0400
+X-AuditID: cbfee68e-b7f756d000004512-55-524395a2c713
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Mark Brown'" <broonie@kernel.org>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>
+Subject: [PATCH V2 01/18] regulator: ab3100: use devm_regulator_register()
+Date: Thu, 26 Sep 2013 11:02:10 +0900
+Message-id: <000701ceba5c$69459b10$3bd0d130$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac66XGktrYXfQ+q4TvOtJpq/iZ1T4w==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zI91FU52DDD4dMbSY+vAJm8XlhZdY
+	Lb5d6WCymPJnOZPF5V1z2BxYPXbOusvusWlVJ5vHnWt72Dz6tqxi9Pi8SS6ANYrLJiU1J7Ms
+	tUjfLoEro+F8P0vBM/aK3W//Mzcw7mbrYuTkkBAwkVjbuZ0FwhaTuHBvPVCci0NIYBmjxJwp
+	s5i7GDnAil7PiICIT2eUuHajhxmkQUjgF6PE/s+qIDabgJrEly+H2UHqRQRUJf6/cgepZxaY
+	ySixs38HE0iNsICXxM7l78EWswDVnPz4A2wxr4CtxKtDs1khbEGJH5PvgcWZBbQk1u88zgRh
+	y0tsXvMW6h51iUd/dUHCIgJ6Er1/5jBDlIhI7HvxjhFkr4TAMXaJ5gefWCF2CUh8m3yIBaJX
+	VmLTAWaIfyUlDq64wTKBUWwWks2zkGyehWTzLCQrFjCyrGIUTS1ILihOSi8y0itOzC0uzUvX
+	S87P3cQIibu+HYw3D1gfYkwGWj+RWUo0OR8Yt3kl8YbGZkYWpiamxkbmlmakCSuJ86q1WAcK
+	CaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYGR/XZ2uFp6x0rZyusG2rnnXX/fovl/uYPZl29TD
+	k9/aTuXp+lT4an7XdCarO90ibNE9su8X/cmTX7+zQy3dcXvP3htRd7c8Xfl7Q5XpCa0cx6PW
+	G64veDxj85EjIdNP28W6rT29z/zF320S84TCXqr2CzsYB85YGjLZqZ738pqERtG9s556Sl5U
+	YinOSDTUYi4qTgQAqrcNZdECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQd1FU52DDLb80bWY+vAJm8XlhZdY
+	Lb5d6WCymPJnOZPF5V1z2BxYPXbOusvusWlVJ5vHnWt72Dz6tqxi9Pi8SS6ANaqB0SYjNTEl
+	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
+	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMaPhfD9LwTP2it1v/zM3MO5m62Lk4JAQMJF4
+	PSOii5ETyBSTuHBvPVCYi0NIYDqjxLUbPcwgCSGBX4wS+z+rgthsAmoSX74cZgfpFRFQlfj/
+	yh2knllgJqPEzv4dTCA1wgJeEjuXv2cDsVmAak5+/MECYvMK2Eq8OjSbFcIWlPgx+R5YnFlA
+	S2L9zuNMELa8xOY1b5khblOXePRXFyQsIqAn0ftnDjNEiYjEvhfvGCcwCsxCMmkWkkmzkEya
+	haRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgqH4mvYNxVYPFIUYBDkYlHt4LzM5B
+	QqyJZcWVuYcYJTiYlUR4vxkBhXhTEiurUovy44tKc1KLDzEmAz06kVlKNDkfmHDySuINjU3M
+	jCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoGR/y3v79cd+9lKbvDdqLx0
+	RLv947v/OtkMap+33jZ4cjtOfdeDh83TxNl/HanljHrLltZfFrdYRerjIR+/+7cS7B3W/Pl6
+	8WdulnjOuiN6+1mvRmc/LnRlYPrZ3s75R49ti2/k1Uxh9ZeKLzY2dS/3y72YMSMl9cH7D0/O
+	RfCk5j1con7knNNCJZbijERDLeai4kQABV9aMy4DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-25 at 18:26 -0700, Linus Torvalds wrote:
-> On Wed, Sep 25, 2013 at 5:40 PM, Joe Perches <joe@perches.com> wrote:
-> >
-> > Huh?  That matches all the ARCH_HAS_<foo> patterns.
-> 
-> Right. And they are all crap. lib/string.c is a prime example of
-> something that should never have happened.
-> 
-> The ARCH_HAS_xyz pattern is totally retarded. It's wrong.
-> 
-> For big conceptual features, we should use Kconfig symbols.
-> 
-> And for smaller things - like lib/string.c - where we have
-> compatibility fallback functions but want architectures able to
-> override them with optimized ones one function at a time, we should
-> either use weak functions (appropriate for some cases), or the symbol
-> that protects them should the the SAME SYMBOL WE USE. Rather than some
-> made-up crap-for-brains new ARCH_HAS_xyz symbol. That way it shows up
-> in greps, and that way we don't have any question about what random
-> symbol pattern we use that particular day.
-> 
-> So for *bad* use, see lib/string.c, and the ARCH_AS_xyz horror.
-> 
-> For *good* use, see lib/div64.c or lib/find_next_bit.c.
-> 
-> Notice how div64.c doesn't make up new ARCH_HAS_random_crap names? And
-> no, you don't have to define those things as macros, you can define
-> them as functions (inline or not), and then just do
-> 
->     #define find_next_zero_bit find_next_zero_bit
-> 
-> to tell the rest of the world "Look, I have this defined".
-> 
-> The whole "make up a totally unrelated second name for it" means that
-> we have things like __HAVE_ARCH_STRLEN but also things like
-> ARCH_HAS_PREFETCHW. Ugh.
-> 
->                        Linus
+Use devm_regulator_register() to make cleanup paths simpler.
 
-So, add a test for these #defines
-
-Additionally, moved string_find_replace sub as it
-screws up subsequent formatting when placed inside
-another sub.
-
-Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- scripts/checkpatch.pl | 22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
+ drivers/regulator/ab3100.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index c03e427..e2e7703 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1512,6 +1512,14 @@ sub rtrim {
- 	return $string;
- }
+diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
+index 7d5eaa8..77b46d0 100644
+--- a/drivers/regulator/ab3100.c
++++ b/drivers/regulator/ab3100.c
+@@ -535,7 +535,7 @@ static int ab3100_regulator_register(struct platform_device *pdev,
+ 	config.dev = &pdev->dev;
+ 	config.driver_data = reg;
  
-+sub string_find_replace {
-+	my ($string, $find, $replace) = @_;
-+
-+	$string =~ s/$find/$replace/g;
-+
-+	return $string;
-+}
-+
- sub tabify {
- 	my ($leading) = @_;
+-	rdev = regulator_register(desc, &config);
++	rdev = devm_regulator_register(&pdev->dev, desc, &config);
+ 	if (IS_ERR(rdev)) {
+ 		err = PTR_ERR(rdev);
+ 		dev_err(&pdev->dev,
+@@ -616,7 +616,6 @@ static int ab3100_regulators_remove(struct platform_device *pdev)
+ 	for (i = 0; i < AB3100_NUM_REGULATORS; i++) {
+ 		struct ab3100_regulator *reg = &ab3100_regulators[i];
  
-@@ -3731,14 +3739,6 @@ sub process {
- 			}
- 		}
- 
--sub string_find_replace {
--	my ($string, $find, $replace) = @_;
--
--	$string =~ s/$find/$replace/g;
--
--	return $string;
--}
--
- # check for bad placement of section $InitAttribute (e.g.: __initdata)
- 		if ($line =~ /(\b$InitAttribute\b)/) {
- 			my $attr = $1;
-@@ -4196,6 +4196,12 @@ sub string_find_replace {
- 			     "usage of NR_CPUS is often wrong - consider using cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc\n" . $herecurr);
- 		}
- 
-+# Use of __ARCH_HAS_<FOO> or ARCH_HAVE_<BAR> is wrong.
-+		if ($line =~ /\+\s*#\s*define\s+((?:__)?ARCH_(?:HAS|HAVE)\w*)\b/) {
-+			ERROR("DEFINE_ARCH_HAS",
-+			      "#define of '$1' is wrong - use Kconfig variables or standard guards instead\n" . $herecurr);
-+		}
-+
- # check for %L{u,d,i} in strings
- 		my $string;
- 		while ($line =~ /(?:^|")([X\t]*)(?:"|$)/g) {
+-		regulator_unregister(reg->rdev);
+ 		reg->rdev = NULL;
+ 	}
+ 	return 0;
+-- 
+1.7.10.4
 
 
