@@ -1,34 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751078Ab3IZFBz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 01:01:55 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:33471 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab3IZFBx (ORCPT
+	id S1751362Ab3IZFCo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 01:02:44 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:59685 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab3IZFCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 01:01:53 -0400
+	Thu, 26 Sep 2013 01:02:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <5243586A.1090605@linaro.org>
-References: <cover.1379779777.git.viresh.kumar@linaro.org>
-	<72ec40529db737fe0eea6d14fc43fa332f9c5d59.1379779777.git.viresh.kumar@linaro.org>
-	<5243586A.1090605@linaro.org>
-Date: Thu, 26 Sep 2013 10:31:52 +0530
-Message-ID: <CAKohponJ4WBKVcqQVRjsfWjU8a2XfhCMQHaU+QPp7Sy8E_7YMA@mail.gmail.com>
-Subject: Re: [PATCH 06/21] cpuidle: rearrange code in __cpuidle_driver_init()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <CACRpkdZ5G02w9JivgfVW4LvGe35=uCD+ROLC0+iL4HzFaAh9ng@mail.gmail.com>
+References: <1380103893-7119-1-git-send-email-joro@8bytes.org>
+	<CACRpkdZ5G02w9JivgfVW4LvGe35=uCD+ROLC0+iL4HzFaAh9ng@mail.gmail.com>
+Date: Wed, 25 Sep 2013 22:02:42 -0700
+Message-ID: <CAOesGMjFi8BdcYT7rswcAyvYVqJxBZeFNOEO8EJhj9uEp-wKGQ@mail.gmail.com>
+Subject: Re: [PATCH] arm: mach-integrator: Add stub for pci_v3_early_init()
+ for !CONFIG_PCI
+From: Olof Johansson <olof@lixom.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Joerg Roedel <joro@8bytes.org>, "arm@kernel.org" <arm@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 September 2013 03:10, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-> Well, I don't have a strong opinion on that, it is "Schtroumpf Vert et
-> Vert Schtroumpf" :)  [1]
+On Wed, Sep 25, 2013 at 6:39 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Wed, Sep 25, 2013 at 12:11 PM, Joerg Roedel <joro@8bytes.org> wrote:
+>
+>> This fixes a compile error where CONFIG_PCI is disabled:
+>
+> ARM SoC folks, can you please apply this directly for fixes?
 
-:)
+Done!
+
+Thanks,
+
+-Olof
