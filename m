@@ -1,200 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288Ab3IZJB2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:01:28 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46685 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755855Ab3IZI6Q (ORCPT
+	id S1756112Ab3IZJFx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:05:53 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41257 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab3IZJFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:58:16 -0400
-X-AuditID: 9c93016f-b7bc8ae000004e6e-de-5243f725f844
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/8] perf tools: Show progress on histogram collapsing
-Date: Thu, 26 Sep 2013 17:58:05 +0900
-Message-Id: <1380185890-25758-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
-References: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 26 Sep 2013 05:05:51 -0400
+Date: Thu, 26 Sep 2013 11:05:44 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [RFC, PATCH] clocksource: provide timekeeping for efm32 SoCs
+Message-ID: <20130926090544.GJ16106@pengutronix.de>
+References: <1379324644-20934-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <5242F434.7060702@linaro.org>
+ <20130925153207.GG16106@pengutronix.de>
+ <524376A0.7020405@linaro.org>
+ <20130926082059.GI16106@pengutronix.de>
+ <5243F5CD.6090709@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5243F5CD.6090709@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hello Daniel,
 
-It can take quite amount of time so add progress bar UI to inform user.
+On Thu, Sep 26, 2013 at 10:52:29AM +0200, Daniel Lezcano wrote:
+> On 09/26/2013 10:20 AM, Uwe Kleine-König wrote:
+> >Hello Daniel,
+> >
+> >On Thu, Sep 26, 2013 at 01:49:52AM +0200, Daniel Lezcano wrote:
+> >>On 09/25/2013 05:32 PM, Uwe Kleine-König wrote:
+> >>>>>+static void __init efm32_timer_init(struct device_node *np)
+> >>>>>+{
+> >>>>>+	static int has_clocksource, has_clockevent;
+> >>>>>+	int ret;
+> >>>>>+
+> >>>>>+	if (!has_clocksource) {
+> >>>>>+		ret = efm32_clocksource_init(np);
+> >>>>>+		if (!ret) {
+> >>>>>+			has_clocksource = 1;
+> >>>>>+			return;
+> >>>>>+		}
+> >>>>>+	}
+> >>>>>+
+> >>>>>+	if (!has_clockevent) {
+> >>>>>+		ret = efm32_clockevent_init(np);
+> >>>>>+		if (!ret) {
+> >>>>>+			has_clockevent = 1;
+> >>>>>+			return;
+> >>>>>+		}
+> >>>>>+	}
+> >>>>>+}
+> >>>>
+> >>>>I don't get the purpose of this initialization, can you explain ?
+> >>>An efm32 SoC has four timer blocks. A single block can only be used for
+> >>>one of clocksource or clockevent device and having more than one
+> >>>clocksource or clockevent device doesn't make sense. So this routine
+> >>>asserts that the first timer is used as clocksource and the second as
+> >>>clockevent device. The others are unused.
+> >>
+> >>Shouldn't be up to the dt to give the timers you want ?
+> >The dt looks as follows:
+> >
+> >                 timer0: timer@40010000 {
+> >                         compatible = "efm32,timer";
+> >                         reg = <0x40010000 0x400>;
+> >                         interrupts = <2>;
+> >                         clocks = <&cmu clk_HFPERCLKTIMER0>;
+> >                 };
+> >
+> >                 timer1: timer@40010400 {
+> >                         compatible = "efm32,timer";
+> >                         reg = <0x40010400 0x400>;
+> >                         interrupts = <12>;
+> >                         clocks = <&cmu clk_HFPERCLKTIMER1>;
+> >                 };
+> >
+> >                 timer2: timer@40010800 {
+> >                         compatible = "efm32,timer";
+> >                         reg = <0x40010800 0x400>;
+> >                         interrupts = <13>;
+> >                         clocks = <&cmu clk_HFPERCLKTIMER2>;
+> >                 };
+> >
+> >                 timer3: timer@40010c00 {
+> >                         compatible = "efm32,timer";
+> >                         reg = <0x40010c00 0x400>;
+> >                         interrupts = <14>;
+> >                         clocks = <&cmu clk_HFPERCLKTIMER3>;
+> >                 };
+> >
+> >What is your suggestion now?
+> >Add a property that specifies if the block
+> >should be used as clocksource or clockevent_device? That isn't a
+> >hardware description and so shouldn't go into the device tree.
+> 
+> At this point, I just asked a question and did not make any suggestion.
+I thought your question implied knowing a better way. I'd be happy if it
+did.
+ 
+> >Provide two drivers that match on "efm32,timer", one for clocksource and
+> >another for clockevent_device? That wouldn't work, too, as the first
+> >driver to be loaded would grab all four timers and the second would get
+> >none.
+> 
+> Thanks, now I understand the purpose of this routine, it is very
+> similar than:
+> 
+> http://www.spinics.net/lists/arm-kernel/msg273984.html
+> 
+> right ?
+Right. And as tglx points out in that post, it's not pretty, but I don't
+have an idea how to do it nicer. (BTW, I wonder if the of_node_put in
+that snipplet is correct, also the three static functions being called
+could be marked __init.) At least my implementation is a bit more robust
+as it handles the case that the timer intended to be used as clockevent
+device doesn't have an irq while the dw_apb_timer driver simply BUGs
+then.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-annotate.c |  2 +-
- tools/perf/builtin-diff.c     |  2 +-
- tools/perf/builtin-report.c   | 10 +++++++++-
- tools/perf/builtin-top.c      |  4 ++--
- tools/perf/tests/hists_link.c |  2 +-
- tools/perf/util/hist.c        |  5 ++++-
- tools/perf/util/hist.h        |  3 ++-
- 7 files changed, 20 insertions(+), 8 deletions(-)
+Best regards
+Uwe
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 577c3a1cffea..958d5e280b1f 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -242,7 +242,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
- 
- 		if (nr_samples > 0) {
- 			total_nr_samples += nr_samples;
--			hists__collapse_resort(hists);
-+			hists__collapse_resort(hists, NULL);
- 			hists__output_resort(hists);
- 
- 			if (symbol_conf.event_group &&
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index f28799e94f2a..f4ab7d210105 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -367,7 +367,7 @@ static void perf_evlist__collapse_resort(struct perf_evlist *evlist)
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		struct hists *hists = &evsel->hists;
- 
--		hists__collapse_resort(hists);
-+		hists__collapse_resort(hists, NULL);
- 	}
- }
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 295025e6b26e..3390d9a4e3bf 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -489,6 +489,7 @@ static int __cmd_report(struct perf_report *rep)
- 	struct map *kernel_map;
- 	struct kmap *kernel_kmap;
- 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
-+	struct perf_progress prog;
- 
- 	signal(SIGINT, sig_handler);
- 
-@@ -550,13 +551,19 @@ static int __cmd_report(struct perf_report *rep)
- 	}
- 
- 	nr_samples = 0;
-+	list_for_each_entry(pos, &session->evlist->entries, node)
-+		nr_samples += pos->hists.nr_entries;
-+
-+	ui_progress__setup(&prog, nr_samples);
-+
-+	nr_samples = 0;
- 	list_for_each_entry(pos, &session->evlist->entries, node) {
- 		struct hists *hists = &pos->hists;
- 
- 		if (pos->idx == 0)
- 			hists->symbol_filter_str = rep->symbol_filter_str;
- 
--		hists__collapse_resort(hists);
-+		hists__collapse_resort(hists, &prog);
- 		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
- 
- 		/* Non-group events are considered as leader */
-@@ -568,6 +575,7 @@ static int __cmd_report(struct perf_report *rep)
- 			hists__link(leader_hists, hists);
- 		}
- 	}
-+	ui_progress__finish();
- 
- 	if (nr_samples == 0) {
- 		ui__error("The %s file has no samples!\n", session->filename);
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index cf4bba07175a..0cb077f823de 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -287,7 +287,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
- 		return;
- 	}
- 
--	hists__collapse_resort(&top->sym_evsel->hists);
-+	hists__collapse_resort(&top->sym_evsel->hists, NULL);
- 	hists__output_resort(&top->sym_evsel->hists);
- 	hists__decay_entries(&top->sym_evsel->hists,
- 			     top->hide_user_symbols,
-@@ -553,7 +553,7 @@ static void perf_top__sort_new_samples(void *arg)
- 	if (t->evlist->selected != NULL)
- 		t->sym_evsel = t->evlist->selected;
- 
--	hists__collapse_resort(&t->sym_evsel->hists);
-+	hists__collapse_resort(&t->sym_evsel->hists, NULL);
- 	hists__output_resort(&t->sym_evsel->hists);
- 	hists__decay_entries(&t->sym_evsel->hists,
- 			     t->hide_user_symbols,
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 4228ffc0d968..3b5faaa5c8cf 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -465,7 +465,7 @@ int test__hists_link(void)
- 		goto out;
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
--		hists__collapse_resort(&evsel->hists);
-+		hists__collapse_resort(&evsel->hists, NULL);
- 
- 		if (verbose > 2)
- 			print_hists(&evsel->hists);
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index fa695ce1662a..a2d58e7abdcf 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -395,6 +395,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	if (!he)
- 		return NULL;
- 
-+	hists->nr_entries++;
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
-@@ -599,7 +600,7 @@ static void hists__apply_filters(struct hists *hists, struct hist_entry *he)
- 	hists__filter_entry_by_symbol(hists, he);
- }
- 
--void hists__collapse_resort(struct hists *hists)
-+void hists__collapse_resort(struct hists *hists, struct perf_progress *prog)
- {
- 	struct rb_root *root;
- 	struct rb_node *next;
-@@ -624,6 +625,8 @@ void hists__collapse_resort(struct hists *hists)
- 			 */
- 			hists__apply_filters(hists, n);
- 		}
-+		if (prog)
-+			ui_progress__advance(prog, 1, "Merging related events...");
- 	}
- }
- 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 7f29792efc58..f3d6cf6bd7d4 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -5,6 +5,7 @@
- #include <pthread.h>
- #include "callchain.h"
- #include "header.h"
-+#include "ui/progress.h"
- 
- extern struct callchain_param callchain_param;
- 
-@@ -104,7 +105,7 @@ struct hist_entry *__hists__add_mem_entry(struct hists *self,
- 					  u64 weight);
- 
- void hists__output_resort(struct hists *self);
--void hists__collapse_resort(struct hists *self);
-+void hists__collapse_resort(struct hists *self, struct perf_progress *prog);
- 
- void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel);
- void hists__output_recalc_col_len(struct hists *hists, int max_rows);
 -- 
-1.7.11.7
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
