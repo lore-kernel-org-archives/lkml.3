@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750939Ab3IZNwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 09:52:41 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:43981 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750750Ab3IZNwg (ORCPT
+	id S1751058Ab3IZN6L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 09:58:11 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:52543 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722Ab3IZN6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 09:52:36 -0400
-Message-ID: <52443B71.7060402@st.com>
-Date: Thu, 26 Sep 2013 14:49:37 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 26 Sep 2013 09:58:08 -0400
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-media@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] media: st-rc: Add ST remote control driver
-References: <1379581176-25078-1-git-send-email-srinivas.kandagatla@st.com> <5240A740.7000407@wwwdotorg.org> <5241488F.5010000@st.com> <5241ECCC.3020808@wwwdotorg.org>
-In-Reply-To: <5241ECCC.3020808@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMuHMdU3LdDhbp_AKjD7b8Wytbqfp29DrPwTdtwQa2hUNdcy3Q@mail.gmail.com>
+References: <1377073172-3662-1-git-send-email-richard@nod.at>
+ <1377073172-3662-3-git-send-email-richard@nod.at> <CALkWK0kCrQ9hPABD_XQ9QFG-vByP+xZWZs+RkVK77+cX7Odz7g@mail.gmail.com>
+ <52441025.9030308@nod.at> <CALkWK0k5neR50h+AWEF5AgnpbgWMitZUnbv_caVzt6HiUA6mXg@mail.gmail.com>
+ <52441407.9010603@nod.at> <CALkWK0=FG4COEjv5+mu1JRiiFQ2k6vop1mhFPmAT4bjtYeK6nA@mail.gmail.com>
+ <52442108.1020304@nod.at> <CALkWK0nm=9n7DiV0MaGKVLMs=vxAiiQUx=OFuOg-DinkdMej5A@mail.gmail.com>
+ <CALkWK0ndMtyQxE0uK4H-Ly6oy+tRn-SFc=_1WoC2QAp2uy0dtw@mail.gmail.com> <CAMuHMdU3LdDhbp_AKjD7b8Wytbqfp29DrPwTdtwQa2hUNdcy3Q@mail.gmail.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Thu, 26 Sep 2013 19:27:27 +0530
+Message-ID: <CALkWK0=6ThJtdu_tqqQFisJSFGE=bfsXAzEo+Yys7wjQS_eYCw@mail.gmail.com>
+Subject: Re: [PATCH 2/8] um: Do not use SUBARCH
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Richard Weinberger <richard@nod.at>,
+        Linux-Arch <linux-arch@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Geert Uytterhoeven wrote:
+> Sorry for chiming in, but... what about cross compiling?
+> SUBARCH=x86 should give you a 32-bit ia32 kernel, right?
 
-On 24/09/13 20:49, Stephen Warren wrote:
->>> >> Should those property names be prefixed with "st,"; I assume they're
->>> >> specific to this binding rather than something generic that applies to
->>> >> all IR controller bindings? If you expect them to be generic, it's fine.
->> > 
->> > Officially these bindings are not specified in ePAPR specs
-> Well, there are plenty of properties we now consider generic that aren't
-> in ePAPR...
-> 
->> > but I see no reason for not having these properties as generic ones.
->> >
->> > Are you ok with that?
-> I suppose that infrared-vs-uhf is a concept that's probably common
-> enough across any similar HW device, so it may make sense for these
-> properties to be generic. If we do intend them to be generic, I'd
-> suggest they be defined in some generic binding document though; perhaps
-> something like bindings/media/ir.txt or
-> bindings/media/remote-control.txt? That way, a HW-specific binding isn't
-> the only place where a supposedly generic property is defined.
-
-For now I will send a v5 for this driver with these generic properties.
-
-And, I will send an separate RFC for the generic binding document
-(bindings/media/remote-control.txt) so that we can get more inputs from
-others as well.
-
-Thanks,
-srini
-
-> 
-> 
-
+User-Mode Linux only supports two host architectures (called $SUBARCH)
+at the moment: i386 and x86_64. If you leave out the $SUBARCH on
+either an i386 or x86_64 machine, my patch will automatically pick the
+$(uname -m) architecture to build with. To cross-compile, specify the
+$SUBARCH explicitly.
