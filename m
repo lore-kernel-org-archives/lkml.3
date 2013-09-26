@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab3IZWQn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:16:43 -0400
-Received: from www.sr71.net ([198.145.64.142]:38671 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754512Ab3IZWQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:16:39 -0400
-Message-ID: <5244B22C.9020503@sr71.net>
-Date: Thu, 26 Sep 2013 15:16:12 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
-        tony.luck@intel.com, matthew.garrett@nebula.com, riel@redhat.com,
-        arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
-        willy@linux.intel.com, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
-        rjw@sisk.pl
-CC: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v4 06/40] mm: Demarcate and maintain pageblocks in
- region-order in the zones' freelists
-References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <20130925231454.26184.19783.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130925231454.26184.19783.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754653Ab3IZWSr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:18:47 -0400
+Received: from smtprelay0145.hostedemail.com ([216.40.44.145]:35300 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754121Ab3IZWSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 18:18:42 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:69:355:379:421:541:968:973:988:989:1260:1345:1437:1534:1541:1711:1730:1747:1777:1792:1801:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3867:3870:3873:4321:4605:5007:6261:7264:10004:10026:10848:10967:11026:11658:11914:12043:12438:12517:12519:12555:12679:12683:12740:13161:13229:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: love96_85ee7a8b40550
+X-Filterd-Recvd-Size: 2722
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-hippi@sunsite.dk, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org
+Subject: [PATCH 0/3 - GIT PULL] include/linux: Remove externs from networking function prototypes
+Date: Thu, 26 Sep 2013 15:18:30 -0700
+Message-Id: <cover.1380233637.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2013 04:14 PM, Srivatsa S. Bhat wrote:
-> @@ -605,16 +713,22 @@ static inline void __free_one_page(struct page *page,
->  		buddy_idx = __find_buddy_index(combined_idx, order + 1);
->  		higher_buddy = higher_page + (buddy_idx - combined_idx);
->  		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
-> -			list_add_tail(&page->lru,
-> -				&zone->free_area[order].free_list[migratetype].list);
-> +
-> +			/*
-> +			 * Implementing an add_to_freelist_tail() won't be
-> +			 * very useful because both of them (almost) add to
-> +			 * the tail within the region. So we could potentially
-> +			 * switch off this entire "is next-higher buddy free?"
-> +			 * logic when memory regions are used.
-> +			 */
-> +			add_to_freelist(page, &area->free_list[migratetype]);
->  			goto out;
->  		}
->  	}
 
-Commit 6dda9d55b says that this had some discrete performance gains.
-It's a bummer that this deoptimizes it, and I think that (expected)
-performance degredation at least needs to be referenced _somewhere_.
+The following changes since commit aae8c287e664d49df4aa315ad263c33b9a2af3e1:
 
-I also find it very hard to take code seriously which stuff like this:
+  Merge branch 'bonding_neighbours' (2013-09-26 16:02:19 -0400)
 
-> +#ifdef CONFIG_DEBUG_PAGEALLOC
-> +		WARN(region->nr_free == 0, "%s: nr_free messed up\n", __func__);
-> +#endif
+are available in the git repository at:
 
-nine times.
+  git://repo.or.cz/linux-2.6/trivial-mods.git 20130926_include_linux_networking_externs
+
+for you to fetch changes up to f629d208d27a22f495b7734eede585b5d207e912:
+
+  [networking]device.h: Remove extern from function prototypes (2013-09-26 15:06:58 -0700)
+
+----------------------------------------------------------------
+
+Joe Perches (3):
+  netfilter: Remove extern from function prototypes
+  net.h/skbuff.h: Remove extern from function prototypes
+  [networking]device.h: Remove extern from function prototypes
+
+ include/linux/etherdevice.h                      |  35 +-
+ include/linux/fcdevice.h                         |   2 +-
+ include/linux/fddidevice.h                       |   7 +-
+ include/linux/hippidevice.h                      |  10 +-
+ include/linux/inetdevice.h                       |  28 +-
+ include/linux/net.h                              |  82 ++---
+ include/linux/netdevice.h                        | 432 +++++++++++------------
+ include/linux/netfilter.h                        |  10 +-
+ include/linux/netfilter/nf_conntrack_common.h    |   2 +-
+ include/linux/netfilter/nf_conntrack_h323.h      |  14 +-
+ include/linux/netfilter/nf_conntrack_proto_gre.h |   4 +-
+ include/linux/netfilter/nf_conntrack_sip.h       |  57 ++-
+ include/linux/netfilter/nfnetlink.h              |  28 +-
+ include/linux/netfilter/nfnetlink_acct.h         |   6 +-
+ include/linux/netfilter/x_tables.h               | 128 ++++---
+ include/linux/netfilter_bridge.h                 |   4 +-
+ include/linux/netfilter_ipv4.h                   |   6 +-
+ include/linux/netfilter_ipv6.h                   |  10 +-
+ include/linux/skbuff.h                           | 250 ++++++-------
+ 19 files changed, 529 insertions(+), 586 deletions(-)
+
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
