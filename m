@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab3IZHuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:50:54 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:27725 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3IZHuw (ORCPT
+	id S1756000Ab3IZHvV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:51:21 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:45717 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab3IZHvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:50:52 -0400
-X-AuditID: cbfee690-b7f3b6d000007a15-f4-5243e75b9ea1
+	Thu, 26 Sep 2013 03:51:20 -0400
+X-AuditID: cbfee690-b7f3b6d000007a15-75-5243e7769a3a
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>
 Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>, "'Milo Kim'" <milo.kim@ti.com>
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Haojian Zhuang'" <haojian.zhuang@linaro.org>
 References: <003101ceba8c$88d6a840$9a83f8c0$%han@samsung.com>
 In-reply-to: <003101ceba8c$88d6a840$9a83f8c0$%han@samsung.com>
-Subject: From 782c15faac0a93cdac43b212073081707f669272 Mon Sep 17 00:00:00 2001
-Date: Thu, 26 Sep 2013 16:50:51 +0900
-Message-id: <003701ceba8d$1f1c5a70$5d550f50$%han@samsung.com>
+Subject: [PATCH V3 08/14] regulator: max8925: use devm_regulator_register()
+Date: Thu, 26 Sep 2013 16:51:18 +0900
+Message-id: <003801ceba8d$2f3bdb10$8db39130$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac66jIjCzH3ID+v5Qym5l1DxbvczrwAAIHIg
+Thread-index: Ac66jIjCzH3ID+v5Qym5l1DxbvczrwAAJKzw
 Content-language: ko
-x-cr-hashedpuzzle: Aq6I OpSD RY5a R0j3 VFYY YyDD cmQE dNGP mQQ9 rhzt v8pR zDl0
- 09TQ 18vu 2KdD
- 4MmU;5;YgByAG8AbwBuAGkAZQBAAGsAZQByAG4AZQBsAC4AbwByAGcAOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABnAGkAcgBkAHcAbwBvAGQAQABnAG0AYQBpAGwALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBtAGkAbABvAC4AawBpAG0AQAB0AGkALgBjAG8AbQA=;Sosha1_v1;7;{59B05508-F324-408E-AD03-A88FCBAD5A2F};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
- 26 Sep 2013 07:50:42
- GMT;RgByAG8AbQAgADcAOAAyAGMAMQA1AGYAYQBhAGMAMABhADkAMwBjAGQAYQBjADQAMwBiADIAMQAyADAANwAzADAAOAAxADcAMAA3AGYANgA2ADkAMgA3ADIAIABNAG8AbgAgAFMAZQBwACAAMQA3ACAAMAAwADoAMAAwADoAMAAwACAAMgAwADAAMQA=
-x-cr-puzzleid: {59B05508-F324-408E-AD03-A88FCBAD5A2F}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t8zY93o585BBi/3GVtMffiEzeLywkus
-	Ft+udDBZXN41h81i+a91LA6sHjtn3WX32LSqk82jb8sqRo/jN7YzeXzeJBfAGsVlk5Kak1mW
-	WqRvl8CVsbTfrGCGYMX11kamBsblfF2MnBwSAiYSu7cdYIewxSQu3FvP1sXIxSEksIxRonXf
-	PUaYoh1TnrNAJKYzSrT92sMM4fxilFi/ai4LSBWbgJrEly+HgUZxcIgIqEr8f+UOUsMs0M0o
-	cXXZZ7AVQgK2Eo3f/oLVcwrYSczaf5IZxBYW8JdY9nUrC0gvC1Dv738VIGFeoPLlHVuZIWxB
-	iR+T74G1MgtoSazfeZwJwpaX2LzmLTNIq4SAusSjv7ogYREBI4lV13cwQpSISOx78Y4R5BwJ
-	gSOsEtNWPWWFeMxUYtObjcwQib/sEnNuvgRbxiIgIPFt8iEWiKGyEpsOMEPUS0ocXHGDZQKj
-	1CwkJ81CctIsJCfNQrJ7ASPLKkbR1ILkguKk9CITveLE3OLSvHS95PzcTYyQyJ6wg/HeAetD
-	jMlA6ycyS4km5wMTQ15JvKGxmZGFqYmpsZG5pRlpwkrivOot1oFCAumJJanZqakFqUXxRaU5
-	qcWHGJk4OKUaGKezi03IDDsWmXVn5rv5XyZfn/jqUbEM45/L6lGh1xkXi95fH5nYs0ziJ/uR
-	4Osnl5n/u7Dv1CLTeWpfbs2zkEr9oFi/4HjkLmehipjHN20nzdi/i3Oi38fgK73JRxnzVJym
-	nJnF912lde/vVJN/+bmLPKsPfph2U7t5ScL1qSIdLs+uu6h1GU1WYinOSDTUYi4qTgQAQdb2
-	TgIDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDKsWRmVeSWpSXmKPExsVy+t9jQd3o585BBt+26FtMffiEzeLywkus
-	Ft+udDBZXN41h81i+a91LA6sHjtn3WX32LSqk82jb8sqRo/jN7YzeXzeJBfAGtXAaJORmpiS
-	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmLG036xghmDF9dZGpgbG5XxdjJwcEgImEjum
-	PGeBsMUkLtxbz9bFyMUhJDCdUaLt1x5mCOcXo8T6VXPBqtgE1CS+fDnM3sXIwSEioCrx/5U7
-	SA2zQDejxNVln9lBaoQEbCUav/0Fq+cUsJOYtf8kM4gtLOAvsezrVhaQXhag3t//KkDCvEDl
-	yzu2MkPYghI/Jt8Da2UW0JJYv/M4E4QtL7F5zVtmkFYJAXWJR391QcIiAkYSq67vYIQoEZHY
-	9+IdI8g5EgJHWCWmrXrKCvGYqcSmNxuZJzCKzEKyYhaSFbOQrJiFZNYCRpZVjKKpBckFxUnp
-	uYZ6xYm5xaV56XrJ+bmbGMFp45nUDsaVDRaHGAU4GJV4eC8wOwcJsSaWFVfmHmKU4GBWEuH9
-	ZgQU4k1JrKxKLcqPLyrNSS0+xJgMDICJzFKiyfnAlJZXEm9obGJmZGlkZmFkYm5OmrCSOO+B
-	VutAIYH0xJLU7NTUgtQimC1MHJxSDYwyCrdLFjTYZZf//z5DdU/qZeZz1298CGG8c1Upbu/s
-	nDkcbR3Hbm6L5bMJ2er/cdEVO5dp6/6Kvg3pNKziX7Pz2k6mwN0W1/xTjLXq1nv0ycSu253B
-	ZHm34L512ekPddofo74Kb3f3NkufK9T0YumLGYxiOhFnAm0LNbxZHdY12/fwmLy5PFWJpTgj
-	0VCLuag4EQBYsOwuXwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zQ92y585BBrPuGltMffiEzeLyucOM
+	FpcXXmK1+Halg8ni8q45bA6sHjtn3WX32LSqk83jzrU9bB59W1YxenzeJBfAGsVlk5Kak1mW
+	WqRvl8CVcXfbPeaCKdwVcxqnsDQwLufsYuTgkBAwkbi4R6eLkRPIFJO4cG89WxcjF4eQwDJG
+	iX9NT1khEiYSX9csY4dITGeUWHj6EiOE84tRovH+MxaQKjYBNYkvXw6zg0wVEVCV+P/KHaSG
+	WWAuo8S0xU3sIDVCArYSjd/+gtVzCthJzNp/khnEFhbwlrg44whYDQtQ76UVfWCbeYHqHz57
+	ygJhC0r8mHwPzGYW0JJYv/M4E4QtL7F5zVtmiG/UJR791QUJiwgYSRxpW8cOUSIise/FO7Cb
+	JQTusUvMn/ccapeAxLfJh1ggemUlNh1ghnhYUuLgihssExglZiHZPAvJ5llINs9CsmIBI8sq
+	RtHUguSC4qT0IhO94sTc4tK8dL3k/NxNjJBInbCD8d4B60OMyUDrJzJLiSbnAyM9ryTe0NjM
+	yMLUxNTYyNzSjDRhJXFe9RbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MzvEb7qZv/r6T
+	4YFbyr0Cqbnzl5fP2b30b2xMHouxxD1WX7O2w4ueHBF565sZp9QmWrZ42dJD579ZNuXMkD2q
+	Fzj9xOeamqlx33NzHTb0tk3/+Gd2Z3rNkRXLznwsWrLbzOzedZMX0YGLvyzqEo+Wn/XIjPWC
+	vBLD1yPWSVeXnd5yP+bZTOvt0kosxRmJhlrMRcWJAME2lJrqAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jQd2y585BBvsbDSymPnzCZnH53GFG
+	i8sLL7FafLvSwWRxedccNgdWj52z7rJ7bFrVyeZx59oeNo++LasYPT5vkgtgjWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzLi77R5zwRTuijmNU1gaGJdzdjFyckgImEh8
+	XbOMHcIWk7hwbz1bFyMXh5DAdEaJhacvMUI4vxglGu8/YwGpYhNQk/jy5TBQBweHiICqxP9X
+	7iA1zAJzGSWmLW4CmyQkYCvR+O0vWD2ngJ3ErP0nmUFsYQFviYszjoDVsAD1XlrRxwpi8wLV
+	P3z2lAXCFpT4MfkemM0soCWxfudxJghbXmLzmrfMIHslBNQlHv3VBQmLCBhJHGlbxw5RIiKx
+	78U7xgmMQrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4ETyT
+	2sG4ssHiEKMAB6MSD+8FZucgIdbEsuLK3EOMEhzMSiK834yAQrwpiZVVqUX58UWlOanFhxiT
+	gR6dyCwlmpwPTFJ5JfGGxiZmRpZGZhZGJubmpAkrifMeaLUOFBJITyxJzU5NLUgtgtnCxMEp
+	1cB48bUMy701j3N+bl+ce8OPu+LrQVmV11n9L1aZzvzUprsx3f459yYZnnvfO++w1nR/6chx
+	DQ44KVD9OvmdfJHYVb8ZP441nTE+zqdtJP7g23GBVZ0eZrtyGhQ9+8usTZ3ebLy+gnetKHOI
+	B2PS3fdS5bbP/9ytUD7+t6lWIDF3R9bbvCmpV2qUWIozEg21mIuKEwHQHt0RSAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -68,69 +61,45 @@ and remove unnecessary remove().
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/regulator/lp8788-ldo.c |   24 ++----------------------
- 1 file changed, 2 insertions(+), 22 deletions(-)
+ drivers/regulator/max8925-regulator.c |   12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
-diff --git a/drivers/regulator/lp8788-ldo.c b/drivers/regulator/lp8788-ldo.c
-index 0527d87..b9a29a2 100644
---- a/drivers/regulator/lp8788-ldo.c
-+++ b/drivers/regulator/lp8788-ldo.c
-@@ -543,7 +543,7 @@ static int lp8788_dldo_probe(struct platform_device *pdev)
- 	cfg.driver_data = ldo;
- 	cfg.regmap = lp->regmap;
+diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
+index d80b5fa..7595107 100644
+--- a/drivers/regulator/max8925-regulator.c
++++ b/drivers/regulator/max8925-regulator.c
+@@ -312,7 +312,7 @@ static int max8925_regulator_probe(struct platform_device *pdev)
+ 		if (pdata)
+ 			config.init_data = pdata;
  
--	rdev = regulator_register(&lp8788_dldo_desc[id], &cfg);
-+	rdev = devm_regulator_register(&pdev->dev, &lp8788_dldo_desc[id], &cfg);
+-	rdev = regulator_register(&ri->desc, &config);
++	rdev = devm_regulator_register(&pdev->dev, &ri->desc, &config);
  	if (IS_ERR(rdev)) {
- 		ret = PTR_ERR(rdev);
- 		dev_err(&pdev->dev, "DLDO%d regulator register err = %d\n",
-@@ -557,18 +557,8 @@ static int lp8788_dldo_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "failed to register regulator %s\n",
+ 				ri->desc.name);
+@@ -323,22 +323,12 @@ static int max8925_regulator_probe(struct platform_device *pdev)
  	return 0;
  }
  
--static int lp8788_dldo_remove(struct platform_device *pdev)
+-static int max8925_regulator_remove(struct platform_device *pdev)
 -{
--	struct lp8788_ldo *ldo = platform_get_drvdata(pdev);
+-	struct regulator_dev *rdev = platform_get_drvdata(pdev);
 -
--	regulator_unregister(ldo->regulator);
+-	regulator_unregister(rdev);
 -
 -	return 0;
 -}
 -
- static struct platform_driver lp8788_dldo_driver = {
- 	.probe = lp8788_dldo_probe,
--	.remove = lp8788_dldo_remove,
- 	.driver = {
- 		.name = LP8788_DEV_DLDO,
- 		.owner = THIS_MODULE,
-@@ -603,7 +593,7 @@ static int lp8788_aldo_probe(struct platform_device *pdev)
- 	cfg.driver_data = ldo;
- 	cfg.regmap = lp->regmap;
+ static struct platform_driver max8925_regulator_driver = {
+ 	.driver		= {
+ 		.name	= "max8925-regulator",
+ 		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= max8925_regulator_probe,
+-	.remove		= max8925_regulator_remove,
+ };
  
--	rdev = regulator_register(&lp8788_aldo_desc[id], &cfg);
-+	rdev = devm_regulator_register(&pdev->dev, &lp8788_aldo_desc[id], &cfg);
- 	if (IS_ERR(rdev)) {
- 		ret = PTR_ERR(rdev);
- 		dev_err(&pdev->dev, "ALDO%d regulator register err = %d\n",
-@@ -617,18 +607,8 @@ static int lp8788_aldo_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int lp8788_aldo_remove(struct platform_device *pdev)
--{
--	struct lp8788_ldo *ldo = platform_get_drvdata(pdev);
--
--	regulator_unregister(ldo->regulator);
--
--	return 0;
--}
--
- static struct platform_driver lp8788_aldo_driver = {
- 	.probe = lp8788_aldo_probe,
--	.remove = lp8788_aldo_remove,
- 	.driver = {
- 		.name = LP8788_DEV_ALDO,
- 		.owner = THIS_MODULE,
+ static int __init max8925_regulator_init(void)
 -- 
 1.7.10.4
 
