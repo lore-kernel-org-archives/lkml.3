@@ -1,123 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab3IZGcT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 02:32:19 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41120 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab3IZGcR (ORCPT
+	id S1755714Ab3IZGd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 02:33:58 -0400
+Received: from smtprelay-b31.telenor.se ([213.150.131.20]:43587 "EHLO
+	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab3IZGd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 02:32:17 -0400
-Message-ID: <5243D4E8.4000707@linux.vnet.ibm.com>
-Date: Thu, 26 Sep 2013 14:32:08 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 26 Sep 2013 02:33:56 -0400
+X-SENDER-IP: [85.230.168.69]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtE/ADzUQ1JV5qhFPGdsb2JhbABbgwfBX4EfFwMBAQEBODWCJQEBBAEnExwTAQ8FCwgDDgMDAQIKJQ8FJQoMDhOIAAq8ehaNcIFLB4MdgQEDl3uGRo5YOoEs
+X-IronPort-AV: E=Sophos;i="4.90,982,1371074400"; 
+   d="scan'208";a="400957054"
+Date: Thu, 26 Sep 2013 08:34:53 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        bugzilla@colorremedies.com
+Subject: Re: applesmc oops in 3.10/3.11
+Message-ID: <20130926063453.GA526@polaris.bitmath.org>
+References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com>
+ <20130925195628.GA1532@roeck-us.net>
+ <20130925214807.GA3234@polaris.bitmath.org>
+ <20130925220838.GB4184@roeck-us.net>
 MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for wake_affine(.sync=true)
-References: <20130925075341.GB3081@twins.programming.kicks-ass.net> <1380099377.8523.9.camel@marge.simpson.net> <5243A0E9.4060802@linux.vnet.ibm.com> <1380166898.5431.40.camel@marge.simpson.net> <5243C24F.6070704@linux.vnet.ibm.com> <1380173688.7525.12.camel@marge.simpson.net>
-In-Reply-To: <1380173688.7525.12.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092606-2000-0000-0000-00000DDEC28D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130925220838.GB4184@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 01:34 PM, Mike Galbraith wrote:
-> On Thu, 2013-09-26 at 13:12 +0800, Michael wang wrote: 
->> On 09/26/2013 11:41 AM, Mike Galbraith wrote:
->> [snip]
->>>> Like the case when we have:
->>>>
->>>> 	core0 sg		core1 sg
->>>> 	cpu0	cpu1		cpu2	cpu3
->>>> 	waker	busy		idle	idle
->>>>
->>>> If the sync wakeup was on cpu0, we can:
->>>>
->>>> 1. choose cpu in core1 sg like we did usually
->>>>    some overhead but tend to make the load a little balance
->>>> 	core0 sg		core1 sg
->>>> 	cpu0	cpu1		cpu2	cpu3
->>>> 	idle	busy		wakee	idle
->>>
->>> Reducing latency and increasing throughput when the waker isn't really
->>> really going to immediately schedule off as the hint implies.  Nice for
->>> bursty loads and ramp.
->>>
->>> The breakeven point is going up though.  If you don't have nohz
->>> throttled, you eat tick start/stop overhead, and the menu governor
->>> recently added yet more overhead, so maybe we should say hell with it.
->>
->> Exactly, more and more factors to be considered, we say things get
->> balanced but actually it's not the best choice...
->>
->>>
->>>> 2. choose cpu0 like the patch proposed
->>>>    no overhead but tend to make the load a little more unbalance
->>>> 	core0 sg		core1 sg
->>>> 	cpu0	cpu1		cpu2	cpu3
->>>> 	wakee	busy		idle	idle
->>>>
->>>> May be we should add a higher scope load balance check in wake_affine(),
->>>> but that means higher overhead which is just what the patch want to
->>>> reduce...
->>>
->>> Yeah, more overhead is the last thing we need.
->>>
->>>> What about some discount for sync case inside select_idle_sibling()?
->>>> For example we consider sync cpu as idle and prefer it more than the others?
->>>
->>> That's what the sync hint does.  Problem is, it's a hint.  If it were
->>> truth, there would be no point in calling select_idle_sibling().
->>
->> Just wondering if the hint was wrong in most of the time, then why don't
->> we remove it...
-> 
-> For very fast/light network ping-pong micro-benchmarks, it is right.
-> For pipe-test, it's absolutely right, jabbering parties are 100%
-> synchronous, there is nada/nil/zip/diddly squat overlap reclaimable..
-> but in the real world, it ain't necessarily so.
-> 
->> Otherwise I think we can still utilize it to make some decision tends to
->> be correct, don't we?
-> 
-> Sometimes :)
+> > > This suggests that initialization may be attempted more than once. The key cache
+> > > is allocated only once, but the number of keys is read for each attempt.
+> > > 
+> > > No idea if that can happen, but if the number of keys can increase after
+> > > the first initialization attempt you would have an explanation for the crash.
+> > 
+> > Good idea, and easy enough to test with the patch below.
+> > 
+> Should we apply this patch even though it may not solve the specific problem ?
 
-Ok, a double-edged sword I see :)
+Yes, why not - it certainly won't hurt. I am running it right now, so
+it is at least run-tested.
 
-May be we can wave it carefully here, give the discount to a bigger
-scope not the sync cpu, for example:
+> Again, not sure if the key count can change, but the current code is at the very
+> least inconsistent, as it keeps reading the key count without updating or
+> verifying the cache size.
 
-	sg1				sg2
-	cpu0	cpu1	cpu2	cpu3	cpu4	cpu5	cpu6	cpu7
-	waker	idle	idle	idle	idle	idle	idle	idle
+Yes - I agree that the error state is far-fetched, but it is hard to
+see any other logical explanation. There is of course always the
+possibility that the problem is somewhere else completely.
 
-If it's sync wakeup on cpu0 (only waker), and the sg is wide enough,
-which means one cpu is not so influencial, then suppose cpu0 to be idle
-could be more safe, also prefer sg1 than sg2 is more likely to be right.
+Proper patch attached.
 
-And we can still choose idle-cpu at final step, like cpu1 in this case,
-to avoid the risk that waker don't get off as it said.
+Thanks,
+Henrik
 
-The key point is to reduce the influence of sync, trust a little but not
-totally ;-)
+---
 
-Regards,
-Michael Wang
+>From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
+From: Henrik Rydberg <rydberg@euromail.se>
+Date: Thu, 26 Sep 2013 08:33:16 +0200
+Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
 
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+After reports from Chris and Josh Boyer of a rare crash in applesmc,
+Guenter pointed at the initialization problem fixed below. The patch
+has not been verified to fix the crash, but should be applied
+regardless.
+
+Reported-by: <jwboyer@fedoraproject.org>
+Suggested-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/hwmon/applesmc.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 62c2e32..98814d1 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -525,16 +525,25 @@ static int applesmc_init_smcreg_try(void)
+ {
+ 	struct applesmc_registers *s = &smcreg;
+ 	bool left_light_sensor, right_light_sensor;
++	unsigned int count;
+ 	u8 tmp[1];
+ 	int ret;
+ 
+ 	if (s->init_complete)
+ 		return 0;
+ 
+-	ret = read_register_count(&s->key_count);
++	ret = read_register_count(&count);
+ 	if (ret)
+ 		return ret;
+ 
++	if (s->cache && s->key_count != count) {
++		pr_warn("key count changed from %d to %d\n",
++			s->key_count, count);
++		kfree(s->cache);
++		s->cache = NULL;
++	}
++	s->key_count = count;
++
+ 	if (!s->cache)
+ 		s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
+ 	if (!s->cache)
+-- 
+1.8.3.4
 
