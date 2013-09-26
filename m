@@ -1,89 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab3IZRF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 13:05:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37628 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107Ab3IZRF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 13:05:56 -0400
-Date: Thu, 26 Sep 2013 18:58:40 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130926165840.GA863@redhat.com>
-References: <20130921163404.GA8545@redhat.com> <20130923092955.GV9326@twins.programming.kicks-ass.net> <20130923173203.GA20392@redhat.com> <20130924202423.GW12926@twins.programming.kicks-ass.net> <20130925155515.GA17447@redhat.com> <20130925174307.GA3220@laptop.programming.kicks-ass.net> <20130925175055.GA25914@redhat.com> <20130925184015.GC3657@laptop.programming.kicks-ass.net> <20130925212200.GA7959@linux.vnet.ibm.com> <20130926111042.GS3081@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926111042.GS3081@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753202Ab3IZRIR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 13:08:17 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:9445 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab3IZRIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 13:08:14 -0400
+X-AuditID: cbfec372-b7fe76d000003347-ce-524469fd5485
+Date: Thu, 26 Sep 2013 14:08:08 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: Re: [PATCH] [media] dvb_demux: fix deadlock in
+ dmx_section_feed_release_filter()
+Message-id: <20130926140808.729bad49@samsung.com>
+In-reply-to: <1376772531-8963-1-git-send-email-khoroshilov@ispras.ru>
+References: <1376772531-8963-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrELMWRmVeSWpSXmKPExsVy+t/hYN2/mS5BBh+Pc1jsWLeT3WJ5dxeL
+	xeVdc9gsejZsZXVg8Zjxbyqjx53Xf1k9Pm+SC2CO4rJJSc3JLEst0rdL4Mp4/qWHsWCSQMXP
+	I1MZGxhX8nYxcnJICJhIbN/SyAZhi0lcuLceyObiEBJYwihxYl8PK0hCSKCHSaLhWziIzSKg
+	KrHyeQMziM0mYCTxqrEFrEZEQE/i46utTF2MHBzMArESfc90QcLCAtESrd+/M4LYvAKGEv83
+	rWACsTkFXCXaT19ghhjvItGw+TgjSKuEgJPE1qm+EOWCEj8m32MBsZkFtCQ2b2tihbDlJTav
+	ecs8gVFgFpKyWUjKZiEpW8DIvIpRtLQ4uaA4KT3XUK84Mbe4NC9dLzk/dxMjJFyLdjA+22B1
+	iFGAg1GJh1cgwyVIiDWxrLgy9xCjBAezkgjv+ligEG9KYmVValF+fFFpTmrxIUYmDk6pBkb5
+	sJfyulmiX/QkYo0C/6/Zeee98AzTs59LehiWrZrwq+Kp6JzFc+/vPntai2eq3GnvlZxHpl3b
+	oBG/SWuZ5+T3gT4MZ7tKTDcc3cyy9DH35BvaGj07W8u1be83fYzdL3fq01uDF/dLp61gW6yi
+	k/jcdK/r982+Iqc838S8f+qlL9W+h0Xm/oS3SizFGYmGWsxFxYkAF/jBITUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+Em Sat, 17 Aug 2013 23:48:51 +0300
+Alexey Khoroshilov <khoroshilov@ispras.ru> escreveu:
 
-Sorry. Unlikely I will be able to read this patch today. So let me
-ask another potentially wrong question without any thinking.
+> dmx_section_feed_release_filter() locks dvbdmx->mutex and
+> if the feed is still filtering, it calls feed->stop_filtering(feed).
+> stop_filtering() is implemented by dmx_section_feed_stop_filtering()
+> that first of all try to lock the same mutex: dvbdmx->mutex.
+> That leads to a deadlock.
+> 
+> It does not happen often in practice because all callers of
+> release_filter() stop filtering by themselves.
+> So the problem can happen in case of race condition only.
+> 
+> The patch proposes to unlock dvbdmx->mutex before call feed->stop_filtering(feed)
+> and recheck feed->is_filtering after reacquiring mutex.
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>  drivers/media/dvb-core/dvb_demux.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/media/dvb-core/dvb_demux.c b/drivers/media/dvb-core/dvb_demux.c
+> index 3485655..9d517af 100644
+> --- a/drivers/media/dvb-core/dvb_demux.c
+> +++ b/drivers/media/dvb-core/dvb_demux.c
+> @@ -1027,8 +1027,11 @@ static int dmx_section_feed_release_filter(struct dmx_section_feed *feed,
+>  		return -EINVAL;
+>  	}
+>  
+> -	if (feed->is_filtering)
+> +	while (feed->is_filtering) {
 
-On 09/26, Peter Zijlstra wrote:
->
-> +void __get_online_cpus(void)
-> +{
-> +again:
-> +	/* See __srcu_read_lock() */
-> +	__this_cpu_inc(__cpuhp_refcount);
-> +	smp_mb(); /* A matches B, E */
-> +	__this_cpu_inc(cpuhp_seq);
-> +
-> +	if (unlikely(__cpuhp_state == readers_block)) {
+Changing from if to while here can cause a dead lock, as, if the device
+got removed, dmx_section_feed_stop_filtering() won't touch
+feed->is_filtering. So, the loop will happen forever.
 
-OK. Either we should see state = BLOCK or the writer should notice the
-change in __cpuhp_refcount/seq. (altough I'd like to recheck this
-cpuhp_seq logic ;)
+Except for that the patch looks correct on my eyes.
 
-> +		atomic_inc(&cpuhp_waitcount);
-> +		__put_online_cpus();
+> +		mutex_unlock(&dvbdmx->mutex);
 
-OK, this does wake(cpuhp_writer).
+Please add a small comment about why the mutex needs to be unlocked
+there, as this looks ugly, and likely deserve some cleanups in the future
+(as both the spinclock and the mutex are taken on both callback and at
+the release filter function).
 
->  void cpu_hotplug_begin(void)
->  {
-> ...
-> +	/*
-> +	 * Notify new readers to block; up until now, and thus throughout the
-> +	 * longish synchronize_sched() above, new readers could still come in.
-> +	 */
-> +	__cpuhp_state = readers_block;
-> +
-> +	smp_mb(); /* E matches A */
-> +
-> +	/*
-> +	 * If they don't see our writer of readers_block to __cpuhp_state,
-> +	 * then we are guaranteed to see their __cpuhp_refcount increment, and
-> +	 * therefore will wait for them.
-> +	 */
-> +
-> +	/* Wait for all now active readers to complete. */
-> +	wait_event(cpuhp_writer, cpuhp_readers_active_check());
+>  		feed->stop_filtering(feed);
+> +		mutex_lock(&dvbdmx->mutex);
+> +	}
+>  
+>  	spin_lock_irq(&dvbdmx->lock);
+>  	f = dvbdmxfeed->filter;
 
-But. doesn't this mean that we need __wait_event() here as well?
 
-Isn't it possible that the reader sees BLOCK but the writer does _not_
-see the change in __cpuhp_refcount/cpuhp_seq? Those mb's guarantee
-"either", not "both".
-
-Don't we need to ensure that we can't check cpuhp_readers_active_check()
-after wake(cpuhp_writer) was already called by the reader and before we
-take the same lock?
-
-Oleg.
-
+Thanks!
+Mauro
