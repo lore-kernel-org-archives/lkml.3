@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab3IZMsz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 08:48:55 -0400
-Received: from mouse.start.ca ([64.140.120.56]:47551 "EHLO mouse.start.ca"
+	id S1756984Ab3IZMtO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 08:49:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47957 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756643Ab3IZMsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 08:48:53 -0400
-X-Greylist: delayed 897 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Sep 2013 08:48:53 EDT
-Message-ID: <52442975.9000603@start.ca>
-Date: Thu, 26 Sep 2013 08:32:53 -0400
-From: Mark Lord <kernel@start.ca>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1756643Ab3IZMtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 08:49:02 -0400
+Date: Thu, 26 Sep 2013 14:48:29 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Ingo Molnar <mingo@kernel.org>,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org
+Subject: Re: [PATCH 3/4] perf tools: Check libunwind for availability of
+ dwarf parsing feature
+Message-ID: <20130926124829.GA3284@krava.brq.redhat.com>
+References: <1380195398-4402-1-git-send-email-jean.pihet@linaro.org>
+ <1380195398-4402-4-git-send-email-jean.pihet@linaro.org>
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-References: <20130905154041.GD30984@dhcp-26-207.brq.redhat.com> <20130905154436.GC24148@htj.dyndns.org> <20130905185440.GA13175@dhcp-26-207.brq.redhat.com> <20130905200608.GA3846@htj.dyndns.org> <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com> <20130906160621.GF22763@mtj.dyndns.org> <20130906233205.GF12956@google.com> <20130909152044.GA24962@dhcp-26-207.brq.redhat.com> <20130916102210.GA14102@dhcp-26-207.brq.redhat.com> <20130917143022.GA7707@concordia> <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380195398-4402-4-git-send-email-jean.pihet@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-09-18 05:48 AM, Alexander Gordeev wrote:
->
-> The last pattern makes most of sense to me and could be updated with a more
-> clear sequence - a call to (bit modified) pci_msix_table_size() followed
-> by a call to pci_enable_msix(). I think this pattern can effectively
-> supersede the currently recommended "loop" practice.
+On Thu, Sep 26, 2013 at 01:36:37PM +0200, Jean Pihet wrote:
+> The newly added dwarf unwinding feature [1] requires:
+> . a recent version (>= 1.1) of libunwind,
+> . libunwind to be configured with --enable-debug-frame.
+> 
+> [1] http://www.spinics.net/lists/kernel/msg1598951.html
+> 
+> Add the corresponding API tests in the feature check list.
 
-The loop is still necessary, because there's a race between those two calls,
-so that pci_enable_msix() can still fail due to lack of MSIX slots.
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+
+thanks,
+jirka
