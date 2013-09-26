@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab3IZMWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 08:22:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47334 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756570Ab3IZMWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 08:22:12 -0400
-Date: Thu, 26 Sep 2013 14:22:10 +0200
-From: Vojtech Pavlik <vojtech@suse.cz>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: joeyli <jlee@suse.com>, Alan Stern <stern@rowland.harvard.edu>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-crypto@vger.kernel.org,
-        opensuse-kernel@opensuse.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [RFC V4 PATCH 00/15] Signature verification of hibernate snapshot
-Message-ID: <20130926122210.GA30225@suse.cz>
-References: <Pine.LNX.4.44L0.1309251723001.26508-100000@netrider.rowland.org>
- <1380161957.32302.42.camel@linux-s257.site>
- <1380192218.32302.69.camel@linux-s257.site>
- <20130926120621.GA7537@amd.pavel.ucw.cz>
+	id S1756941Ab3IZMWl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 08:22:41 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:45682 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756560Ab3IZMWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 08:22:40 -0400
+Message-ID: <524426F5.5010106@huawei.com>
+Date: Thu, 26 Sep 2013 20:22:13 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926120621.GA7537@amd.pavel.ucw.cz>
-X-Bounce-Cookie: It's a lemon tree, dear Watson!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: IRQ Affinity Problem
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 02:06:21PM +0200, Pavel Machek wrote:
+Hi Yinghai,
+   I'm sorry to disturb you. These days I was confused about IRQ Affinity Set and IrqBalance utility. And I found you committed a patch to remove CONFIG_IRQBALANCE
+by git log. And recommend using IrqBalance instead in commit 8b8e8c1bf7275. So I try to seek help from you. :)
+I found Ingo said in Documentation/IRQ-affinity.txt, users can set /proc/irq/xxx/smp_affinity to balance IRQ between CPUs.
+But in my Intel Xeon, I can not balance IRQ by setting /proc/irq/xxx/smp_affinity, the interrupt always deliver to the first CPU in smp_affinity mask.
 
-> > For the symmetric key solution, I will try HMAC (Hash Message
-> > Authentication Code). It's already used in networking, hope the
-> > performance is not too bad to a big image.
-> 
-> Kernel already supports crc32 of the hibernation image, you may want
-> to take a look how that is done.
-> 
-> Maybe you want to replace crc32 with cryptographics hash (sha1?) and
-> then use only hash for more crypto? That way speed of whatever crypto
-> you do should not be an issue.
+Storage:~ # cat /proc/interrupts
+            CPU0       CPU1       CPU2       CPU3
+   0:        103          0          0          0   IO-APIC-edge      timer
+   4:        786         71          0          0   IO-APIC-edge      serial
+   5:         28          0          0          0   IO-APIC-edge      irqnum
+   8:        255          0          0          0   IO-APIC-edge      rtc0
+   9:          1          0          0          0   IO-APIC-fasteoi   acpi
+  16:         29          0          0          0   IO-APIC-fasteoi   ehci_hcd:usb1
+  23:         33          0          0          0   IO-APIC-fasteoi   ehci_hcd:usb2
+  64:          0          0          0          0   PCI-MSI-edge      PCIe PME
+  65:          0          0          0          0   PCI-MSI-edge      PCIe PME
+  66:          0          0          0          0   PCI-MSI-edge      PCIe PME
+  67:          0          0          0          0   PCI-MSI-edge      PCIe PME
+  68:          0          0          0          0   PCI-MSI-edge      PCIe PME
+  69:          0          0          0          0   PCI-MSI-edge      PCIe PME
+  70:          0          0          0          0   PCI-MSI-edge      PCIe PME
+  71:          0          0          0          0   PCI-MSI-edge      PCIe PME
+  72:          0          0          0          0   PCI-MSI-edge      PCIe PME
+  80:      63387        297          0          0   PCI-MSI-edge      ahci
+  84:     243698     201963        279     246029   PCI-MSI-edge      eth1-rx-0
+  85:     108983        213     116870      80864   PCI-MSI-edge      eth1-tx-0
+  86:        243          0          0         13   PCI-MSI-edge      eth1
+  87:      48053      57019     533965          0   PCI-MSI-edge      eth2-rx-0
+  88:      85205       3120     416349          0   PCI-MSI-edge      eth2-tx-0
 
-Well, yes, one could skip the CRC when the signing is enabled to gain a
-little speedup.
+Because nums of CPUs is 4 < 8, so I think apic will use apic_flat to configure LAPIC.
 
-> Actually...
-> 
-> Is not it as simple as storing hash of hibernation image into NVRAM
-> and then verifying the hash matches the value in NVRAM on next
-> startup? No encryption needed. 
+Storage:~ # cat /proc/irq/87/smp_affinity
+00000000,0000000c
+Storage:~ # cat /proc/irq/88/smp_affinity
+00000000,0000000c
 
-First, there is no encryption going on. Only doing a HMAC (digest (hash)
-using a key) of the image.
+But IRQ 87/88 always deliver to CPU2, no one to CPU3.
 
-Second, since NVRAM is accessible through efivarsfs, storing the hash in
-NVRAM wouldn't prevent an attacker from modifying the hash to match a
-modified image.
+I found Linux always set TPR to 0, and never change it, so IOAPIC always select CPU2 as the lowest priority CPU?. And this case like above is normal?
 
-There is a reason why the key for the HMAC is stored in the NVRAM in a
-BootServices variable that isn't accessible from the OS and is
-write-protected on hardware level from the OS.
+Thanks very much!
 
-> And that may even be useful for non-secure-boot people, as it ensures
-> you boot right image after resume, boot it just once, etc...
+Best Regards!
+Yijing.
 
-The HMAC approach isn't much more complicated, and it gives you all
-these benefits even with secure boot disabled.
 
 -- 
-Vojtech Pavlik
-Director SUSE Labs
+Thanks!
+Yijing
+
