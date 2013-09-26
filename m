@@ -1,365 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab3IZUqO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 16:46:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:64106 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753020Ab3IZUqG (ORCPT
+	id S1754192Ab3IZUq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 16:46:26 -0400
+Received: from mail.windriver.com ([147.11.1.11]:61156 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754078Ab3IZUqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 16:46:06 -0400
-Date: Thu, 26 Sep 2013 16:46:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizefan@huawei.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/4] [RFC] seqcount: Add lockdep functionality to
- seqcount/seqlock structures
-Message-ID: <20130926164600.5b91227e@gandalf.local.home>
-In-Reply-To: <1380220464-28840-3-git-send-email-john.stultz@linaro.org>
-References: <1380220464-28840-1-git-send-email-john.stultz@linaro.org>
-	<1380220464-28840-3-git-send-email-john.stultz@linaro.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 26 Sep 2013 16:46:13 -0400
+Message-ID: <52449CED.803@windriver.com>
+Date: Thu, 26 Sep 2013 15:45:33 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Mike Travis <travis@sgi.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] KGDB/KDB: add support for external NMI handler to
+ call KGDB/KDB.
+References: <20130923212459.544517569@asylum.americas.sgi.com> <20130923212500.866318244@asylum.americas.sgi.com>
+In-Reply-To: <20130923212500.866318244@asylum.americas.sgi.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Sep 2013 11:34:22 -0700
-John Stultz <john.stultz@linaro.org> wrote:
+On 09/23/2013 04:25 PM, Mike Travis wrote:
+> This patch adds a kgdb_nmicallin() interface that can be used by
+> external NMI handlers to call the KGDB/KDB handler.  The primary need
+> for this is for those types of NMI interrupts where all the CPUs
+> have already received the NMI signal.  Therefore no send_IPI(NMI)
+> is required, and in fact it will cause a 2nd unhandled NMI to occur.
+> This generates the "Dazed and Confuzed" messages.
+> 
+> Since all the CPUs are getting the NMI at roughly the same time, it's not
+> guaranteed that the first CPU that hits the NMI handler will manage to
+> enter KGDB and set the dbg_master_lock before the slaves start entering.
+> The new argument "send_ready" was added for KGDB to signal the NMI handler
+> to release the slave CPUs for entry into KGDB.
+> 
+> Signed-off-by: Mike Travis <travis@sgi.com>
+> Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
+> Reviewed-by: Hedi Berriche <hedi@sgi.com>
 
-> Currently seqlocks and seqcounts don't support lockdep.
-> 
-> After running across a seqcount related deadlock in the timekeeping
-> code, I used a less-refined and more focused variant of this patch
-> to narrow down the cause of the issue.
-> 
-> This is a first-pass attempt to properly enable lockdep functionality
-> on seqlocks and seqcounts.
-> 
-> Since seqcounts are used in the vdso gettimeofday code, I've provided
-> non-lockdep accessors for those needs.
-> 
-> I've also handled one cases where there were nested seqlock writers
 
-I wonder what's the plural of "cases" is.
+One problem that I pointed out before and then you can add 
 
-> and there may be more edge cases.
-> 
-> Comments and feedback would be appreciated!
-> 
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
+Acked-by: Jason Wessel <jason.wessel@windriver.com>
+
+
 > ---
->  arch/x86/vdso/vclock_gettime.c |  8 ++---
->  fs/dcache.c                    |  4 +--
->  fs/fs_struct.c                 |  2 +-
->  include/linux/init_task.h      |  8 ++---
->  include/linux/lockdep.h        |  8 +++--
->  include/linux/seqlock.h        | 79 ++++++++++++++++++++++++++++++++++++++----
->  mm/filemap_xip.c               |  2 +-
->  7 files changed, 91 insertions(+), 20 deletions(-)
+>  include/linux/kdb.h             |    1 +
+>  include/linux/kgdb.h            |    1 +
+>  kernel/debug/debug_core.c       |   30 +++++++++++++++++++++++++++++-
+>  kernel/debug/debug_core.h       |    1 +
+>  kernel/debug/kdb/kdb_debugger.c |    5 ++++-
+>  kernel/debug/kdb/kdb_main.c     |    3 +++
+>  6 files changed, 39 insertions(+), 2 deletions(-)
 > 
-> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-> index 72074d5..2ada505 100644
-> --- a/arch/x86/vdso/vclock_gettime.c
-> +++ b/arch/x86/vdso/vclock_gettime.c
-> @@ -178,7 +178,7 @@ notrace static int __always_inline do_realtime(struct timespec *ts)
+> --- linux.orig/include/linux/kdb.h
+> +++ linux/include/linux/kdb.h
+> @@ -109,6 +109,7 @@ typedef enum {
+>  	KDB_REASON_RECURSE,	/* Recursive entry to kdb;
+>  				 * regs probably valid */
+>  	KDB_REASON_SSTEP,	/* Single Step trap. - regs valid */
+> +	KDB_REASON_SYSTEM_NMI,	/* In NMI due to SYSTEM cmd; regs valid */
+>  } kdb_reason_t;
 >  
->  	ts->tv_nsec = 0;
->  	do {
-> -		seq = read_seqcount_begin(&gtod->seq);
-> +		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
->  		mode = gtod->clock.vclock_mode;
->  		ts->tv_sec = gtod->wall_time_sec;
->  		ns = gtod->wall_time_snsec;
-> @@ -198,7 +198,7 @@ notrace static int do_monotonic(struct timespec *ts)
+>  extern int kdb_trap_printk;
+> --- linux.orig/include/linux/kgdb.h
+> +++ linux/include/linux/kgdb.h
+> @@ -310,6 +310,7 @@ extern int
+>  kgdb_handle_exception(int ex_vector, int signo, int err_code,
+>  		      struct pt_regs *regs);
+>  extern int kgdb_nmicallback(int cpu, void *regs);
+> +extern int kgdb_nmicallin(int cpu, int trapnr, void *regs, atomic_t *snd_rdy);
+>  extern void gdbstub_exit(int status);
 >  
->  	ts->tv_nsec = 0;
->  	do {
-> -		seq = read_seqcount_begin(&gtod->seq);
-> +		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
->  		mode = gtod->clock.vclock_mode;
->  		ts->tv_sec = gtod->monotonic_time_sec;
->  		ns = gtod->monotonic_time_snsec;
-> @@ -214,7 +214,7 @@ notrace static int do_realtime_coarse(struct timespec *ts)
->  {
->  	unsigned long seq;
->  	do {
-> -		seq = read_seqcount_begin(&gtod->seq);
-> +		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
->  		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
->  		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
->  	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-> @@ -225,7 +225,7 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
->  {
->  	unsigned long seq;
->  	do {
-> -		seq = read_seqcount_begin(&gtod->seq);
-> +		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
->  		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
->  		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
->  	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 4100030..2f39b81 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -2574,7 +2574,7 @@ static void __d_move(struct dentry * dentry, struct dentry * target)
->  	dentry_lock_for_move(dentry, target);
+>  extern int			kgdb_single_step;
+> --- linux.orig/kernel/debug/debug_core.c
+> +++ linux/kernel/debug/debug_core.c
+> @@ -575,8 +575,12 @@ return_normal:
+>  		raw_spin_lock(&dbg_slave_lock);
 >  
->  	write_seqcount_begin(&dentry->d_seq);
-> -	write_seqcount_begin(&target->d_seq);
-> +	write_seqcount_begin_nested(&target->d_seq, DENTRY_D_LOCK_NESTED);
->  
->  	/* __d_drop does write_seqcount_barrier, but they're OK to nest. */
->  
-> @@ -2706,7 +2706,7 @@ static void __d_materialise_dentry(struct dentry *dentry, struct dentry *anon)
->  	dentry_lock_for_move(anon, dentry);
->  
->  	write_seqcount_begin(&dentry->d_seq);
-> -	write_seqcount_begin(&anon->d_seq);
-> +	write_seqcount_begin_nested(&anon->d_seq, DENTRY_D_LOCK_NESTED);
->  
->  	dparent = dentry->d_parent;
->  
-> diff --git a/fs/fs_struct.c b/fs/fs_struct.c
-> index d8ac61d..7dca743 100644
-> --- a/fs/fs_struct.c
-> +++ b/fs/fs_struct.c
-> @@ -161,6 +161,6 @@ EXPORT_SYMBOL(current_umask);
->  struct fs_struct init_fs = {
->  	.users		= 1,
->  	.lock		= __SPIN_LOCK_UNLOCKED(init_fs.lock),
-> -	.seq		= SEQCNT_ZERO,
-> +	.seq		= SEQCNT_ZERO(init_fs.seq),
->  	.umask		= 0022,
->  };
-> diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-> index 5cd0f09..b0ed422 100644
-> --- a/include/linux/init_task.h
-> +++ b/include/linux/init_task.h
-> @@ -32,10 +32,10 @@ extern struct fs_struct init_fs;
+>  #ifdef CONFIG_SMP
+> +	/* If SYSTEM_NMI, slaves are already waiting */
+> +	if (ks->err_code == KDB_REASON_SYSTEM_NMI)
+> +		atomic_set(ks->send_ready, 1);
+> +
+>  	/* Signal the other CPUs to enter kgdb_wait() */
+> -	if ((!kgdb_single_step) && kgdb_do_roundup)
+> +	else if ((!kgdb_single_step) && kgdb_do_roundup)
+>  		kgdb_roundup_cpus(flags);
 >  #endif
 >  
->  #ifdef CONFIG_CPUSETS
-> -#define INIT_CPUSET_SEQ							\
-> -	.mems_allowed_seq = SEQCNT_ZERO,
-> +#define INIT_CPUSET_SEQ(tsk)							\
-> +	.mems_allowed_seq = SEQCNT_ZERO(tsk.mems_allowed_seq),
->  #else
-> -#define INIT_CPUSET_SEQ
-> +#define INIT_CPUSET_SEQ(tsk)
->  #endif
->  
->  #define INIT_SIGNALS(sig) {						\
-> @@ -220,7 +220,7 @@ extern struct task_group root_task_group;
->  	INIT_FTRACE_GRAPH						\
->  	INIT_TRACE_RECURSION						\
->  	INIT_TASK_RCU_PREEMPT(tsk)					\
-> -	INIT_CPUSET_SEQ							\
-> +	INIT_CPUSET_SEQ(tsk)						\
->  	INIT_VTIME(tsk)							\
->  }
->  
-> diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-> index cfc2f11..92b1bfc 100644
-> --- a/include/linux/lockdep.h
-> +++ b/include/linux/lockdep.h
-> @@ -497,6 +497,10 @@ static inline void print_irqtrace_events(struct task_struct *curr)
->  #define rwlock_acquire_read(l, s, t, i)		lock_acquire_shared_recursive(l, s, t, NULL, i)
->  #define rwlock_release(l, n, i)			lock_release(l, n, i)
->  
-> +#define seqcount_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
-> +#define seqcount_acquire_read(l, s, t, i)	lock_acquire_shared_recursive(l, s, t, NULL, i)
-> +#define seqcount_release(l, n, i)		lock_release(l, n, i)
-> +
->  #define mutex_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
->  #define mutex_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
->  #define mutex_release(l, n, i)			lock_release(l, n, i)
-> @@ -504,11 +508,11 @@ static inline void print_irqtrace_events(struct task_struct *curr)
->  #define rwsem_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
->  #define rwsem_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
->  #define rwsem_acquire_read(l, s, t, i)		lock_acquire_shared(l, s, t, NULL, i)
-> -# define rwsem_release(l, n, i)			lock_release(l, n, i)
-> +#define rwsem_release(l, n, i)			lock_release(l, n, i)
->  
->  #define lock_map_acquire(l)			lock_acquire_exclusive(l, 0, 0, NULL, _THIS_IP_)
->  #define lock_map_acquire_read(l)		lock_acquire_shared_recursive(l, 0, 0, NULL, _THIS_IP_)
-> -# define lock_map_release(l)			lock_release(l, 1, _THIS_IP_)
-> +#define lock_map_release(l)			lock_release(l, 1, _THIS_IP_)
->  
->  #ifdef CONFIG_PROVE_LOCKING
->  # define might_lock(lock) 						\
-> diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
-> index 21a2093..cedb456 100644
-> --- a/include/linux/seqlock.h
-> +++ b/include/linux/seqlock.h
-> @@ -34,6 +34,7 @@
->  
->  #include <linux/spinlock.h>
->  #include <linux/preempt.h>
-> +#include <linux/lockdep.h>
->  #include <asm/processor.h>
->  
->  /*
-> @@ -44,10 +45,50 @@
->   */
->  typedef struct seqcount {
->  	unsigned sequence;
-> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> +	struct lockdep_map dep_map;
-> +#endif
->  } seqcount_t;
->  
-> -#define SEQCNT_ZERO { 0 }
-> -#define seqcount_init(x)	do { *(x) = (seqcount_t) SEQCNT_ZERO; } while (0)
-> +static inline void __seqcount_init(seqcount_t *s, const char *name,
-> +					  struct lock_class_key *key)
-> +{
-> +	/*
-> +	 * Make sure we are not reinitializing a held lock:
-> +	 */
-> +	lockdep_init_map(&s->dep_map, name, key, 0);
-> +	s->sequence = 0;
-> +}
-> +
-> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> +# define SEQCOUNT_DEP_MAP_INIT(lockname) \
-> +		.dep_map = { .name = #lockname } \
-> +
-> +# define seqcount_init(s)				\
-> +	do {						\
-> +		static struct lock_class_key __key;	\
-> +		__seqcount_init((s), #s, &__key);	\
-> +	} while (0)
-> +
-> +static inline void seqcount_lockdep_reader_access(const seqcount_t *s)
-> +{
-> +	seqcount_t *l = (seqcount_t *)s;
-> +	unsigned long flags;
-> +
-> +	local_irq_save(flags);
-> +	seqcount_acquire_read(&l->dep_map, 0, 0, _RET_IP_);
-> +	seqcount_release(&l->dep_map, 1, _RET_IP_);
-> +	local_irq_restore(flags);
-> +}
-> +
-> +#else
-> +# define SEQCOUNT_DEP_MAP_INIT(lockname)
-> +# define seqcount_init(s) __seqcount_init(s, NULL, NULL)
-> +# define seqcount_lockdep_reader_access(x)
-> +#endif
-> +
-> +#define SEQCNT_ZERO(lockname) { .sequence = 0, SEQCOUNT_DEP_MAP_INIT(lockname)}
-> +
->  
->  /**
->   * __read_seqcount_begin - begin a seq-read critical section (without barrier)
-> @@ -76,6 +117,22 @@ repeat:
->  }
->  
->  /**
-> + * read_seqcount_begin_no_lockdep - start seq-read critical section w/o lockdep
-> + * @s: pointer to seqcount_t
-> + * Returns: count to be passed to read_seqcount_retry
-> + *
-> + * read_seqcount_begin_no_lockdep opens a read critical section of the given
-> + * seqcount, but without any lockdep checking. Validity of the critical
-> + * section is tested by checking read_seqcount_retry function.
-> + */
-> +static inline unsigned read_seqcount_begin_no_lockdep(const seqcount_t *s)
-> +{
-> +	unsigned ret = __read_seqcount_begin(s);
-> +	smp_rmb();
-> +	return ret;
-> +}
-> +
-> +/**
->   * read_seqcount_begin - begin a seq-read critical section
->   * @s: pointer to seqcount_t
->   * Returns: count to be passed to read_seqcount_retry
-> @@ -86,9 +143,8 @@ repeat:
->   */
->  static inline unsigned read_seqcount_begin(const seqcount_t *s)
->  {
-> -	unsigned ret = __read_seqcount_begin(s);
-> -	smp_rmb();
-> -	return ret;
-> +	seqcount_lockdep_reader_access(s);
-> +	return read_seqcount_begin_no_lockdep(s);
->  }
->  
->  /**
-> @@ -108,6 +164,8 @@ static inline unsigned read_seqcount_begin(const seqcount_t *s)
->  static inline unsigned raw_seqcount_begin(const seqcount_t *s)
->  {
->  	unsigned ret = ACCESS_ONCE(s->sequence);
-> +
-> +	seqcount_lockdep_reader_access(s);
->  	smp_rmb();
->  	return ret & ~1;
->  }
-> @@ -156,10 +214,19 @@ static inline void write_seqcount_begin(seqcount_t *s)
->  {
->  	s->sequence++;
->  	smp_wmb();
-> +	seqcount_acquire(&s->dep_map, 0, 0, _RET_IP_);
-> +}
-> +
-> +static inline void write_seqcount_begin_nested(seqcount_t *s, int subclass)
-> +{
-> +	s->sequence++;
-> +	smp_wmb();
-> +	seqcount_acquire(&s->dep_map, subclass, 0, _RET_IP_);
->  }
-
-For more code reuse, I wonder if we should have:
-
-static inline void write_seqcount_begin(seqcount_t *s)
-{
-	write_seqcount_begine_nested(s, 0);
-}
-
--- Steve
-
-
->  
->  static inline void write_seqcount_end(seqcount_t *s)
->  {
-> +	seqcount_release(&s->dep_map, 1, _RET_IP_);
->  	smp_wmb();
->  	s->sequence++;
->  }
-> @@ -188,7 +255,7 @@ typedef struct {
->   */
->  #define __SEQLOCK_UNLOCKED(lockname)			\
->  	{						\
-> -		.seqcount = SEQCNT_ZERO,		\
-> +		.seqcount = SEQCNT_ZERO(lockname),	\
->  		.lock =	__SPIN_LOCK_UNLOCKED(lockname)	\
+> @@ -729,6 +733,30 @@ int kgdb_nmicallback(int cpu, void *regs
+>  		return 0;
 >  	}
+>  #endif
+> +	return 1;
+> +}
+> +
+> +int kgdb_nmicallin(int cpu, int trapnr, void *regs, atomic_t *send_ready)
+> +{
+> +#ifdef CONFIG_SMP
+> +	if (!kgdb_io_ready(0) || !send_ready)
+> +		return 1;
+> +
+> +	if (kgdb_info[cpu].enter_kgdb == 0) {
+> +		struct kgdb_state kgdb_var;
+> +		struct kgdb_state *ks = &kgdb_var;
+> +
+> +		memset(ks, 0, sizeof(struct kgdb_state));
+> +		ks->cpu			= cpu;
+> +		ks->ex_vector		= trapnr;
+> +		ks->signo		= SIGTRAP;
+> +		ks->err_code		= KDB_REASON_SYSTEM_NMI;
+> +		ks->linux_regs		= regs;
+> +		ks->send_ready		= send_ready;
+> +		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
+> +		return 0;
+> +	}
+> +#endif
+>  	return 1;
+>  }
 >  
-> diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-> index 28fe26b..d8d9fe3 100644
-> --- a/mm/filemap_xip.c
-> +++ b/mm/filemap_xip.c
-> @@ -26,7 +26,7 @@
->   * of ZERO_PAGE(), such as /dev/zero
->   */
->  static DEFINE_MUTEX(xip_sparse_mutex);
-> -static seqcount_t xip_sparse_seq = SEQCNT_ZERO;
-> +static seqcount_t xip_sparse_seq = SEQCNT_ZERO(xip_sparse_seq);
->  static struct page *__xip_sparse_page;
+> --- linux.orig/kernel/debug/debug_core.h
+> +++ linux/kernel/debug/debug_core.h
+> @@ -26,6 +26,7 @@ struct kgdb_state {
+>  	unsigned long		threadid;
+>  	long			kgdb_usethreadid;
+>  	struct pt_regs		*linux_regs;
+> +	atomic_t		*send_ready;
+>  };
 >  
->  /* called under xip_sparse_mutex */
+>  /* Exception state values */
+> --- linux.orig/kernel/debug/kdb/kdb_debugger.c
+> +++ linux/kernel/debug/kdb/kdb_debugger.c
+> @@ -69,7 +69,10 @@ int kdb_stub(struct kgdb_state *ks)
+>  	if (atomic_read(&kgdb_setting_breakpoint))
+>  		reason = KDB_REASON_KEYBOARD;
+>  
+> -	if (in_nmi())
+> +	if (ks->err_code == KDB_REASON_SYSTEM_NMI)
+
+
+This should be:
+
+(ks->err == KDB_REASON_SYSNMI && ks->signo == SIGTRAP)
+
+Other arch's in their arch specific handling code may set ks->err differently.  The err code is signal specific.  For example:
+
+arch/hexagon/kernel/kgdb.c:  if (kgdb_handle_exception(args->trapnr & 0xff, args->signr, args->err,
+
+The error passed in will be different for other signals and we do not want it to collide.
+
+Cheers,
+Jason.
+
+
+> +		reason = KDB_REASON_SYSTEM_NMI;
+> +
+> +	else if (in_nmi())
+>  		reason = KDB_REASON_NMI;
+>  
+>  	for (i = 0, bp = kdb_breakpoints; i < KDB_MAXBPT; i++, bp++) {
+> --- linux.orig/kernel/debug/kdb/kdb_main.c
+> +++ linux/kernel/debug/kdb/kdb_main.c
+> @@ -1200,6 +1200,9 @@ static int kdb_local(kdb_reason_t reason
+>  			   instruction_pointer(regs));
+>  		kdb_dumpregs(regs);
+>  		break;
+> +	case KDB_REASON_SYSTEM_NMI:
+> +		kdb_printf("due to System NonMaskable Interrupt\n");
+> +		break;
+>  	case KDB_REASON_NMI:
+>  		kdb_printf("due to NonMaskable Interrupt @ "
+>  			   kdb_machreg_fmt "\n",
+> 
+> -- 
+> 
 
