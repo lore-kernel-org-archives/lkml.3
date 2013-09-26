@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3IZPmt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:42:49 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:29319 "EHLO mx12.netapp.com"
+	id S1753481Ab3IZPm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:42:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3180 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775Ab3IZPmn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:42:43 -0400
-X-IronPort-AV: E=Sophos;i="4.90,986,1371106800"; 
-   d="scan'208";a="93593029"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>
-CC: "bfields@fieldses.org" <bfields@fieldses.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/4] SunRPC: Use no_printk() for the null dprintk() and
- dfprintk()
-Thread-Topic: [PATCH 3/4] SunRPC: Use no_printk() for the null dprintk() and
- dfprintk()
-Thread-Index: AQHOuscUy+RJ21hfR0agqijY0iXRTJnYmmOAgAABh4D//4wesA==
-Date: Thu, 26 Sep 2013 15:42:41 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9467EB252@SACEXCMBX04-PRD.hq.netapp.com>
-References: <1380209415.17366.66.camel@joe-AO722>
- <20130926144502.29424.21633.stgit@warthog.procyon.org.uk>
- <20130926144525.29424.11130.stgit@warthog.procyon.org.uk>
- <30597.1380209743@warthog.procyon.org.uk>
-In-Reply-To: <30597.1380209743@warthog.procyon.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751093Ab3IZPmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 11:42:55 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1380209888.17366.68.camel@joe-AO722>
+References: <1380209888.17366.68.camel@joe-AO722> <1380209415.17366.66.camel@joe-AO722> <20130926144502.29424.21633.stgit@warthog.procyon.org.uk> <20130926144525.29424.11130.stgit@warthog.procyon.org.uk> <30597.1380209743@warthog.procyon.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: dhowells@redhat.com, bfields@fieldses.org, Trond.Myklebust@netapp.com,
+        olof@lixom.net, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] SunRPC: Use no_printk() for the null dprintk() and dfprintk()
+Date: Thu, 26 Sep 2013 16:42:47 +0100
+Message-ID: <30738.1380210167@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: David Howells [mailto:dhowells@redhat.com]
-> Sent: Thursday, September 26, 2013 10:36 AM
-> To: Joe Perches
-> Cc: dhowells@redhat.com; bfields@fieldses.org; Myklebust, Trond;
-> olof@lixom.net; linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 3/4] SunRPC: Use no_printk() for the null dprintk() and
-> dfprintk()
-> 
-> Joe Perches <joe@perches.com> wrote:
-> 
-> > no_printk doesn't prevent any argument side-effects from being
-> > optimized away by the compiler.
-> >
-> > ie:
-> > 	dprintk("%d", func())
-> > func is now always called when before it wasn't.
-> 
-> Yes, I know.  There are half a dozen places where this is the case.  Those I've
-> wrapped in ifdebug(FACILITY) { ... } in the code.  It's not the nicest, but at
-> least the compiler always gets to see everything, rather than bits of it getting
-> hidden by the preprocessor - which means the call points will be less likely to
-> bit rot over time.
+Joe Perches <joe@perches.com> wrote:
 
-Your assumption is that RPC_DEBUG is disabled for most compiles. That is not the case.
+> No code is eliminated by the preprocessor
+> with the #define I suggest.
 
-Trond
+Sorry, I misunderstood.  I assumed you meant comparing to:
+
+	#ifdef RPC_DEBUG
+	#define dfprintk(...) ...
+	#else
+	#define dfprintk(...) do {} while(0)
+	#endif
+
+sort of thing which would certainly eliminate code in cpp.
+
+So, yes, you're right.  So I shouldn't need to put the
+
+	ifdebug(FACILITY) { ... }
+
+clauses into the code as the function calls in the argument list will be
+behind the if-statement anyway.
+
+David
