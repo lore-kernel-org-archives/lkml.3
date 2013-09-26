@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750775Ab3IZNZZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 09:25:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47693 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750710Ab3IZNZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 09:25:24 -0400
-Date: Thu, 26 Sep 2013 09:25:19 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] apparmor: remove the "task" arg from
- may_change_ptraced_domain()
-Message-ID: <20130926132519.GY13968@madcap2.tricolour.ca>
-References: <20130916142035.GA26661@redhat.com>
- <20130923215214.GV13968@madcap2.tricolour.ca>
- <20130924164442.GB4036@redhat.com>
+	id S1750818Ab3IZNZo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 09:25:44 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:16039 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab3IZNZn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 09:25:43 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 26 Sep 2013 06:25:43 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <mturquette@linaro.org>
+CC: <broonie@linaro.org>, <patches@opensource.wolfsonmicro.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] clk: wm831x: get rid of the implementation of remove function
+Date: Thu, 26 Sep 2013 19:18:15 +0530
+Message-ID: <1380203295-11030-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130924164442.GB4036@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 06:44:42PM +0200, Oleg Nesterov wrote:
-> On 09/23, Richard Guy Briggs wrote:
-> >
-> > On Mon, Sep 16, 2013 at 04:20:35PM +0200, Oleg Nesterov wrote:
-> > > Unless task == current ptrace_parent(task) is not safe even under
-> > > rcu_read_lock() and most of the current users are not right.
-> >
-> > Could you point to an explanation of this?
-> 
-> If this task exits before rcu_read_lock() ->parent can point to the
-> already freed/reused memory.
+The remove function implemented for platform driver's remove callback
+just return 0 as part of its implementation.
 
-Ok, understood.  So even though the task may have exited, the task
-struct pointer is still valid, but not the contents of the task struct
-to which it points.
+Remove this APIs and do not pass the valid .remove for platform driver.
 
-> (in the long term we should probably clear
->  ->parent/real_parent/group_leader/more in __unhash_process(), but
->  lets not discuss this right now ;)
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+I was referring this driver for clock driver implementation for Palma and
+realise that this remove function can be removed.
+This is just outcome of code reading.
 
-...so that the contents are valid in a task struct of a task that has
-exited.
+ drivers/clk/clk-wm831x.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-Thanks for the (more obvious to me now) explanation.
+diff --git a/drivers/clk/clk-wm831x.c b/drivers/clk/clk-wm831x.c
+index 805b4c3..b131041 100644
+--- a/drivers/clk/clk-wm831x.c
++++ b/drivers/clk/clk-wm831x.c
+@@ -391,14 +391,8 @@ static int wm831x_clk_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int wm831x_clk_remove(struct platform_device *pdev)
+-{
+-	return 0;
+-}
+-
+ static struct platform_driver wm831x_clk_driver = {
+ 	.probe = wm831x_clk_probe,
+-	.remove = wm831x_clk_remove,
+ 	.driver		= {
+ 		.name	= "wm831x-clk",
+ 		.owner	= THIS_MODULE,
+-- 
+1.7.1.1
 
-> Oleg.
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer
-Kernel Security
-AMER ENG Base Operating Systems
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635
-Internal: (81) 32635
-Alt: +1.613.693.0684x3545
