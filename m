@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab3IZO02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 10:26:28 -0400
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:42809 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab3IZO01 convert rfc822-to-8bit (ORCPT
+	id S1751838Ab3IZO2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 10:28:40 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:59223 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab3IZO2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 10:26:27 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: "arc-linux-dev@synopsys.com" <arc-linux-dev@synopsys.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Mischa Jonker <Mischa.Jonker@synopsys.com>
-Subject: Re: [arc-linux-dev] [PATCH] ARC: Fix array-out-of-bounds issue in
- tlb overlap handler
-Thread-Topic: [arc-linux-dev] [PATCH] ARC: Fix array-out-of-bounds issue in
- tlb overlap handler
-Thread-Index: AQHOusGKLl2fRh2O10CHc4PAGOZKfQ==
-Date: Thu, 26 Sep 2013 14:26:22 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514E9B0@IN01WEMBXA.internal.synopsys.com>
-References: <1380203182-5982-1-git-send-email-mjonker@synopsys.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.239.235]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 26 Sep 2013 10:28:38 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH] tools/perf: remove non-existent entries in MANIFEST
+Date: Thu, 26 Sep 2013 19:51:44 +0530
+Message-Id: <1380205304-32224-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.4.299.gb3e7d24.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 07:36 PM, Mischa Jonker wrote:
-> Even after fixing the issue, GCC 4.8 still complains with a warning,
-> but with the fix, I think it's a false positive. Therefore I have
-> also added a #pragma to ignore the warning.
->
-> Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
-> ---
->  arch/arc/mm/tlb.c |    9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arc/mm/tlb.c b/arch/arc/mm/tlb.c
-> index 129af50..5af7c98 100644
-> --- a/arch/arc/mm/tlb.c
-> +++ b/arch/arc/mm/tlb.c
-> @@ -635,13 +635,20 @@ void do_tlb_overlap_fault(unsigned long cause, unsigned long address,
->  			continue;
->  
->  		/* Scan the set for duplicate ways: needs a nested loop */
-> -		for (way = 0; way < mmu->ways; way++) {
-> +		for (way = 0; way < (mmu->ways - 1); way++) {
->  			if (!pd0[way])
->  				continue;
+The MANIFEST file is used in the following Makefile targets:
 
-While the fix is correct, it's not fixing out-of-bound array access since that is
-not what was happening. For the last way, the nested loop will not enter at all -
-your fix prevents it from trying to do that - so please fix the changlog.
+  $ make tar{,gz,bz2,xz}-src-pkg
 
->  			for (n = way + 1; n < mmu->ways; n++) {
-> +/*
-> + * GCC 4.8 does not understand that way < (mmu->ways - 1), and as such
-> + * n < mmu->ways. So, ignore the warning
-> + */
-> +#pragma GCC diagnostic push
-> +#pragma GCC diagnostic ignored "-Warray-bounds"
->  				if ((pd0[way] & PAGE_MASK) ==
->  				    (pd0[n] & PAGE_MASK)) {
-> +#pragma GCC diagnostic pop
->  
->  					if (dup_pd_verbose) {
->  						pr_info("Duplicate PD's @"
+to generate an archive that can be used outside the kernel tree. It
+contains entries that are used for pathspec filtering 'git archive',
+which ultimately generates the archive. Remove the stale
+entries (non-existent paths) by running:
 
-I'd prefer the following as it's less uglier.
+  $ while read l; do file $l; done <tools/perf/MANIFEST | grep ERROR
 
--       unsigned int pd0[4], pd1[4];    /* assume max 4 ways */
-        unsigned long flags, is_valid;
-        struct cpuinfo_arc_mmu *mmu = &cpuinfo_arc700[smp_processor_id()].mmu;
-+      unsigned int pd0[mmu->ways], pd1[mmu->ways];
- 
--Vineet
+in the toplevel kernel tree.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ Thanks to David for pointing out that the MANIFEST is used by
+ scripts/package. This patch safely removes the stale entries.
+
+ tools/perf/MANIFEST | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
+index 025de79..9c85dee 100644
+--- a/tools/perf/MANIFEST
++++ b/tools/perf/MANIFEST
+@@ -2,7 +2,6 @@ tools/perf
+ tools/scripts
+ tools/lib/traceevent
+ tools/lib/lk
+-include/linux/const.h
+ include/linux/perf_event.h
+ include/linux/rbtree.h
+ include/linux/list.h
+@@ -10,14 +9,7 @@ include/linux/hash.h
+ include/linux/stringify.h
+ lib/rbtree.c
+ include/linux/swab.h
+-arch/*/include/asm/unistd*.h
+-arch/*/include/asm/perf_regs.h
+-arch/*/include/uapi/asm/unistd*.h
+-arch/*/include/uapi/asm/perf_regs.h
+-arch/*/lib/memcpy*.S
+-arch/*/lib/memset*.S
+ include/linux/poison.h
+-include/linux/magic.h
+ include/linux/hw_breakpoint.h
+ include/linux/rbtree_augmented.h
+ include/uapi/linux/perf_event.h
+-- 
+1.8.4.299.gb3e7d24.dirty
+
