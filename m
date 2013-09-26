@@ -1,85 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab3IZJdw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:33:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36267 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314Ab3IZJdt convert rfc822-to-8bit (ORCPT
+	id S932110Ab3IZJeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:34:15 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:30174
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754762Ab3IZJeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:33:49 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: Mark Rutland <mark.rutland@arm.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: Olof Johansson <olof@lixom.net>,
-        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Stephen Warren" <swarren@wwwdotorg.org>
-Subject: RE: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various
- ECC schemes
-Thread-Topic: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various
- ECC schemes
-Thread-Index: AQHOr65J/YAMcn2UDkuZTZSW+mOACZnVQHoggADFRoCAAEWcgIAAihnw//+aR4CAAAfFgIAAD4mAgADGJoCAAIfkUA==
-Date: Thu, 26 Sep 2013 09:32:38 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EA16BF1@DBDE04.ent.ti.com>
-References: <1378986619-26765-1-git-send-email-pekon@ti.com>
- <1378986619-26765-2-git-send-email-pekon@ti.com>
- <20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
- <20130925134619.GG10746@radagast>
- <20130925175527.GA23337@ld-irv-0074.broadcom.com>
- <20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
- <20130925200539.GH23337@ld-irv-0074.broadcom.com>
- <CAOesGMif301iBe9zxHudkC_G9SzPPy1Mj4XYvQ-MY8nmx4wO+A@mail.gmail.com>
- <20130925212903.GI23337@ld-irv-0074.broadcom.com>
- <20130926091815.GC2411@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130926091815.GC2411@e106331-lin.cambridge.arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 Sep 2013 05:34:12 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
+        <vinod.koul@intel.com>, <djbw@fb.com>
+CC: <devicetree@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH v11 0/3]  DMA: Freescale: Add support for 8-channel DMA engine
+Date: Thu, 26 Sep 2013 17:33:40 +0800
+Message-ID: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-> 
-> Pekon, could you please re-send this version of the patches?
-> 
+Hi DMA and DT maintainers, please have a look at these V11 patches.
 
-As already there are feedbacks on the patches, so re-sending the
-Patch series might clutter someone else's mailbox.
-Will it be possible for you to fetch the patches from MTD archives?
-else I would send you the patches separately..
+Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
+adds support this DMA engine.
 
-I'm attaching the URL from MTD archives for each patch separately,
-and you can follow that thread to see existing comments.
+V10->V11 changes:
+- add "contains two entries" for reg description in patch [2/3]
 
-[PATCH v6 0/4] http://lists.infradead.org/pipermail/linux-mtd/2013-September/048613.html
+V9->V10 changes:
+- update binding description text, mainly about the reg property and also Elo3
+  DMA controller specification
 
-[PATCH v6 1/4] http://lists.infradead.org/pipermail/linux-mtd/2013-September/048611.html
+V8->V9 changes:
+- add "Acked-by: Mark Rutland <mark.rutland@arm.com>" into patch [1/3]
+- update reg entry <0x100300 0x4 0x100600 0x4> to two seperate ones
+  <0x100300 0x4>, <0x100600 0x4> in patch [2/3]
+- and also use "QorIQ Elo3 DMA" to mention previous "QorIQ DMA" in [2/3]
 
-[PATCH v6 2/4] http://lists.infradead.org/pipermail/linux-mtd/2013-September/048612.html
+V7->V8 changes:
+- change the word "mapping" to "specifier" for reg and interrupts description
 
-[PATCH v6 3/4] http://lists.infradead.org/pipermail/linux-mtd/2013-September/048615.html
+V6->V7 changes:
+- only remove unnecessary "CHIP-dma" explanations in [1/3]
 
-[PATCH v6 3/4] http://lists.infradead.org/pipermail/linux-mtd/2013-September/048614.html
+V5->V6 changes:
+- minor updates of descriptions in binding document and Kconfig
+- remove [4/4], that should be another patch in future
+
+V4->V5 changes:
+- update description in the dt binding document, to make it more resonable
+- add new patch [4/4] to eliminate a compiling warning which already exists
+  for a long time
+
+V3->V4 changes:
+- introduce new patch [1/3] to revise the legacy dma binding document
+- and then add new paragraph to describe new dt node binding in [2/3]
+- rebase to latest kernel v3.11-rc1
+
+V2->V3 changes:
+- edit Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+- edit text string in Kconfig and the driver files, using "elo series" to
+  mention all the current "elo*"
+
+V1->V2 changes:
+- removed the codes handling the register dgsr1, since it isn't used currently
+- renamed the DMA DT compatible to "fsl,elo3-dma"
+- renamed the new dts files to "elo3-dma-<n>.dtsi"
+
+Hongbo Zhang (3):
+  DMA: Freescale: revise device tree binding document
+  DMA: Freescale: Add new 8-channel DMA engine device tree nodes
+  DMA: Freescale: update driver to support 8-channel DMA engine
+
+ .../devicetree/bindings/powerpc/fsl/dma.txt        |  138 ++++++++++++++------
+ arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+ arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   82 ++++++++++++
+ arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   82 ++++++++++++
+ arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+ drivers/dma/Kconfig                                |    9 +-
+ drivers/dma/fsldma.c                               |    9 +-
+ drivers/dma/fsldma.h                               |    2 +-
+ 8 files changed, 281 insertions(+), 49 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+
+-- 
+1.7.9.5
 
 
-with regards, pekon
+
