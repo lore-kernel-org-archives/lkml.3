@@ -1,78 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab3IZGO7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 02:14:59 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:47459 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060Ab3IZGO5 (ORCPT
+	id S1754267Ab3IZGQF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 02:16:05 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:59417 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab3IZGQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 02:14:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <3068635.myUg9qMyJN@amdc1227>
-References: <1380108138-30402-1-git-send-email-l.majewski@samsung.com>
-	<1380108138-30402-2-git-send-email-l.majewski@samsung.com>
-	<CAKew6eW9-QHL5NKHV8roER_yuoLEiCoS53Gby8zC841fr=whqQ@mail.gmail.com>
-	<3068635.myUg9qMyJN@amdc1227>
-Date: Thu, 26 Sep 2013 11:44:56 +0530
-Message-ID: <CAKew6eVXw5qUuZ=Oc6ko3BkJj=iYqvN-NsrfmOHPQmMkxiv-nA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpufreq: exynos4x12: Use the common clock framework
- to set APLL clock rate
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Lukasz Majewski <l.majewski@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, Kukjin Kim <kgene@kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Sep 2013 02:16:04 -0400
+Message-ID: <1380176119.7525.27.camel@marge.simpson.net>
+Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for
+ wake_affine(.sync=true)
+From: Mike Galbraith <bitbucket@online.de>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 26 Sep 2013 08:15:19 +0200
+In-Reply-To: <1380173688.7525.12.camel@marge.simpson.net>
+References: <20130925075341.GB3081@twins.programming.kicks-ass.net>
+	 <1380099377.8523.9.camel@marge.simpson.net>
+	 <5243A0E9.4060802@linux.vnet.ibm.com>
+	 <1380166898.5431.40.camel@marge.simpson.net>
+	 <5243C24F.6070704@linux.vnet.ibm.com>
+	 <1380173688.7525.12.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:Su6VRGZrDpQKARCxNO9Je3AKZRHQJt7LMWg/zDPLzEj
+ 15+2EZ952x4GsGWxqfUxjIRNEX5te/0WykIGefWAYuRLstkjCT
+ aqM1bmvBSIfxnlKRVzakwriEuh0wO9Z/uD6psAo//62hpn/F5V
+ JpdcrwQMhSv/4yBlkaInj3+4c4QRNAtJz2xhH60ISsRz5Ly/FB
+ uWuGYkfwb3Rk4fqmrgGeNzsSsfRz2bx75d/ydtZX46EhZvEbC/
+ 1ZrIOBjzFcjuKC/6CCDJODYw5KNp35RwdqO4fFqcLfAEyzCXrJ
+ 117QDE7PeOqC2Jbxab8pCo+7V8nPKnXj5zGlgJdkybVPumw+7f
+ WWP3w3IoQna9MzgEW7ed1/XywvfO720N8AejXdkOHFJWJHxeOV
+ PmwkOjxHJUcug==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+On Thu, 2013-09-26 at 07:34 +0200, Mike Galbraith wrote: 
+> On Thu, 2013-09-26 at 13:12 +0800, Michael wang wrote: 
+> > On 09/26/2013 11:41 AM, Mike Galbraith wrote:
+> > [snip]
+> > >> Like the case when we have:
+> > >>
+> > >> 	core0 sg		core1 sg
+> > >> 	cpu0	cpu1		cpu2	cpu3
+> > >> 	waker	busy		idle	idle
+> > >>
+> > >> If the sync wakeup was on cpu0, we can:
+> > >>
+> > >> 1. choose cpu in core1 sg like we did usually
+> > >>    some overhead but tend to make the load a little balance
+> > >> 	core0 sg		core1 sg
+> > >> 	cpu0	cpu1		cpu2	cpu3
+> > >> 	idle	busy		wakee	idle
+> > > 
+> > > Reducing latency and increasing throughput when the waker isn't really
+> > > really going to immediately schedule off as the hint implies.  Nice for
+> > > bursty loads and ramp.
+> > > 
+> > > The breakeven point is going up though.  If you don't have nohz
+> > > throttled, you eat tick start/stop overhead, and the menu governor
+> > > recently added yet more overhead, so maybe we should say hell with it.
+> > 
+> > Exactly, more and more factors to be considered, we say things get
+> > balanced but actually it's not the best choice...
+> > 
+> > > 
+> > >> 2. choose cpu0 like the patch proposed
+> > >>    no overhead but tend to make the load a little more unbalance
+> > >> 	core0 sg		core1 sg
+> > >> 	cpu0	cpu1		cpu2	cpu3
+> > >> 	wakee	busy		idle	idle
+> > >>
+> > >> May be we should add a higher scope load balance check in wake_affine(),
+> > >> but that means higher overhead which is just what the patch want to
+> > >> reduce...
+> > > 
+> > > Yeah, more overhead is the last thing we need.
+> > > 
+> > >> What about some discount for sync case inside select_idle_sibling()?
+> > >> For example we consider sync cpu as idle and prefer it more than the others?
+> > > 
+> > > That's what the sync hint does.  Problem is, it's a hint.  If it were
+> > > truth, there would be no point in calling select_idle_sibling().
+> > 
+> > Just wondering if the hint was wrong in most of the time, then why don't
+> > we remove it...
+> 
+> For very fast/light network ping-pong micro-benchmarks, it is right.
+> For pipe-test, it's absolutely right, jabbering parties are 100%
+> synchronous, there is nada/nil/zip/diddly squat overlap reclaimable..
+> but in the real world, it ain't necessarily so.
+> 
+> > Otherwise I think we can still utilize it to make some decision tends to
+> > be correct, don't we?
+> 
+> Sometimes :)
 
->> On Wed, Sep 25, 2013 at 4:52 PM, Lukasz Majewski <l.majewski@samsung.com> wrote:
->> > In the exynos4x12_set_apll() function, the APLL frequency is set with
->> > direct register manipulation.
->> >
->> > Such approach is not allowed in the common clock framework. The frequency
->> > is changed, but the corresponding clock value is not updated. This causes
->> > wrong frequency read from cpufreq's cpuinfo_cur_freq sysfs attribute.
->> >
->>
->> This patch looks incomplete, leaving the driver in untidy state, perhaps its
->> doesn't fix the above stated problem completely. what about
->> if (!exynos4x12_pms_change(old_index, new_index)) becomes true?
->>
->> IMHO, this driver needs lot more work in addition to this patch to cleanly and
->> completely move the cpufreq driver to common clock framework.
->
-> I agree that the other case needs to be handled as well. Basically the
-> whole conditional block dependent on exynos4x12_pms_change() can be safely
-> dropped, because this condition is already handled in PLL driver.
->
+P.S.  while we're slapping select_idle_sibling()'s _evil_ face, let's
+give it a pat on the head too.  It showed regressions in bright red.
+Put pipe-test on one core, you only see scheduler weight.. but entering
+and exiting idle is part of the fast path, whether you're exercising it
+by doing something silly or not.
 
-Exactly!
+-Mike
 
-> Lukasz is already working on further rework of this driver to clean it up
-> from legacy code, but this will have to wait for 3.13, as 3.12 is already
-> in rc stage and only fixes can be accepted for it.
->
->> For fixing this issue urgently, setting CLK_GET_RATE_NOCACHE for apll
->> in clk driver can also be quicker fix.
->
-> Unfortunately this is not how this flag works. It only makes
-> clk_get_rate() call ->recalc_rate() operation of the clock instead of
-> instantly returning cached rate - it doesn't seem to work recursively.
->
-
-hmm.. yes it can't help in our case as it recursively walks only the subtree
-of clk but in our case we are changing rate of parent.
-
-Regards,
-Yadwinder
