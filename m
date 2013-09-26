@@ -1,113 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757151Ab3IZM1V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 08:27:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20372 "EHLO mx1.redhat.com"
+	id S1757177Ab3IZM1z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 08:27:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13338 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756841Ab3IZM1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 08:27:20 -0400
-Date: Thu, 26 Sep 2013 14:27:02 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 05/21] perf: Add event toggle sys_perf_event_open
- interface
-Message-ID: <20130926122702.GD1067@krava.brq.redhat.com>
-References: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
- <1380113447-17144-6-git-send-email-jolsa@redhat.com>
- <20130925223629.GA13425@us.ibm.com>
+	id S1756889Ab3IZM1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 08:27:53 -0400
+Date: Thu, 26 Sep 2013 14:25:52 +0200
+From: Veaceslav Falico <vfalico@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/3] msi: add forgotten pci_dev_put(pdev) to
+ populate_msi_sysfs()
+Message-ID: <20130926122552.GB4783@redhat.com>
+References: <1379382464-7920-1-git-send-email-vfalico@redhat.com>
+ <1379382464-7920-2-git-send-email-vfalico@redhat.com>
+ <CAErSpo6+AQhpO2WvoKCSw7WokDiex_E43oi9xpuka7biPEx=7Q@mail.gmail.com>
+ <20130925232300.GA7368@neilslaptop.think-freely.org>
+ <CAErSpo6coKuf4f3j3zMwMNp7Uj3btN9UQyHpLPdq84aU-s=5UA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <20130925223629.GA13425@us.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo6coKuf4f3j3zMwMNp7Uj3btN9UQyHpLPdq84aU-s=5UA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 03:36:29PM -0700, Sukadev Bhattiprolu wrote:
-> Jiri Olsa [jolsa@redhat.com] wrote:
+On Wed, Sep 25, 2013 at 05:35:54PM -0600, Bjorn Helgaas wrote:
+>On Wed, Sep 25, 2013 at 5:23 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
+>> On Wed, Sep 25, 2013 at 03:08:05PM -0600, Bjorn Helgaas wrote:
+>>> [+cc Neil (he added this code in da8d1c8ba4), Greg]
+>>>
+>>> On Mon, Sep 16, 2013 at 7:47 PM, Veaceslav Falico <vfalico@redhat.com> wrote:
+>>> > Before trying to kobject_init_and_add(), we add a reference to pdev via
+>>> > pci_dev_get(pdev). However, if it fails to init and/or add the kobject, we
+>>> > don't return it back - even on out_unroll.
+>>> >
+>>> > Fix this by adding pci_dev_put(pdev) before going to unrolling section.
+>>> >
+>>> > CC: Bjorn Helgaas <bhelgaas@google.com>
+>>> > CC: linux-pci@vger.kernel.org
+>>> > CC: linux-kernel@vger.kernel.org
+>>> > Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+>>> > ---
+>>> >  drivers/pci/msi.c | 4 +++-
+>>> >  1 file changed, 3 insertions(+), 1 deletion(-)
+>>> >
+>>> > diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+>>> > index d5f90d6..14bf578 100644
+>>> > --- a/drivers/pci/msi.c
+>>> > +++ b/drivers/pci/msi.c
+>>> > @@ -534,8 +534,10 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
+>>> >                 pci_dev_get(pdev);
+>>> >                 ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
+>>> >                                      "%u", entry->irq);
+>>> > -               if (ret)
+>>> > +               if (ret) {
+>>> > +                       pci_dev_put(pdev);
+>>> >                         goto out_unroll;
+>>> > +               }
+>>> >
+>>> >                 count++;
+>>> >         }
+>>>
+>>> I don't understand why this code does the pci_dev_get() in the first
+>>> place.  The pdev->msi_list of msi_desc structs is private to the
+>>> pci_dev, and even without bumping the refcount, there should be no way
+>>> for the pci_dev to be freed before the msi_desc.
+>>>
+>> Its been a few years now, but IIRC I did the pci_dev_get/put here to ensure that
+>> people didn't try to remove the device prior to freeing all their interrupts
+>> (i.e I didn't want a broken driver to go through its remove routine without
+>> freeing all its irqs).  That might have been the wrong thing to do, but thats
+>> what bubbles to the front of my head when looking at this.
+>
+>That sounds plausible, but I think I'd rather deal with that by having
+>the PCI core remove logic free all the interrupts.  I *think* that's
+>already in place, i.e., pci_free_resources() calls
+>msi_remove_pci_irq_vectors().  So I propose that we remove the
+>pci_dev_get()/put() unless we come up with a more compelling reason
+>for it.
 
-SNIP
+As an update - I've found an interesting case why exactly that
+kobject_del() might be needed:
 
-> | diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> | index 866e85c..6ede25c 100644
-> | --- a/include/linux/perf_event.h
-> | +++ b/include/linux/perf_event.h
-> | @@ -289,6 +289,12 @@ struct swevent_hlist {
-> |  struct perf_cgroup;
-> |  struct ring_buffer;
-> | 
-> | +enum perf_event_toggle_flag {
-> | +	PERF_TOGGLE_NONE	= 0,
-> | +	PERF_TOGGLE_ON		= 1,
-> | +	PERF_TOGGLE_OFF		= 2,
-> | +};
-> 
-> Can we call this 'perf_event_toggle_state' ? it can be confusing with
-> PERF_FLAG_TOGGLE* macros below which apply to a different field.
+in kobject_del() it removes instantly the link to kset - via
+kobj_kset_leave(), so that our kset remains without links and, thus, might
+be instantly removed.
 
-right, 'state' is probably better
+So, with kobject_del(), our kset (msi_irqs sysfs dir) remains instantly
+without any links (i.e. other kobjects) and, when we call kset_unregister()
+- it exits instantly (if it's not being hold somewhere elsewhere...).
 
-> 
-> | +
-> |  /**
-> |   * struct perf_event - performance event kernel representation:
-> |   */
-> | @@ -414,6 +420,9 @@ struct perf_event {
-> |  	int				cgrp_defer_enabled;
-> |  #endif
-> | 
-> | +	struct perf_event		*toggled_event;
-> | +	enum perf_event_toggle_flag	toggle_flag;
-> 
-> s/toggle_flag/toggle_state/ ?
-> 
-> | +	int				paused;
-> 
-> There is an 'event->state' field with OFF, INACTIVE, ACTIVE states.
-> Can we add a 'PAUSED' state to that instead ?
+Without it, kset_unregister() will wait till all the kobjects will be gone.
 
-good idea, I think that's possible
+Now, the fun part starts - if we quickly call pci_disable_msi() and,
+afterwards, pci_enable_msi() - we might fail because the msi_irqs kset is
+still there, waiting to unregister, and the sysfs dir is still active.
 
-> 
-> 
-> |  #endif /* CONFIG_PERF_EVENTS */
-> |  };
-> | 
-> | diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> | index ca1d90b..ecb0474 100644
-> | --- a/include/uapi/linux/perf_event.h
-> | +++ b/include/uapi/linux/perf_event.h
-> | @@ -694,6 +694,9 @@ enum perf_callchain_context {
-> |  #define PERF_FLAG_FD_NO_GROUP		(1U << 0)
-> |  #define PERF_FLAG_FD_OUTPUT		(1U << 1)
-> |  #define PERF_FLAG_PID_CGROUP		(1U << 2) /* pid=cgroup id, per-cpu mode only */
-> | +#define PERF_FLAG_TOGGLE_ON		(1U << 3)
-> | +#define PERF_FLAG_TOGGLE_OFF		(1U << 4)
-> | +
-> | 
+It's used, for example, in tg3_open/tg3_close, which are ndo_open/close,
+and are called on enslave/deslave in bonding.
 
-SNIP
+What I get:
+[   60.458319] WARNING: CPU: 0 PID: 5552 at fs/sysfs/dir.c:526 sysfs_add_one+0xbb/0xe0()
+[   60.458350] sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:1c.5/0000:3f:00.0/msi_irqs'
 
-> | +	/* It's either ON or OFF. */
-> | +	if ((flags & PERF_FLAG_TOGGLE) == PERF_FLAG_TOGGLE)
-> | +		return -EINVAL;
-> | +
-> | +	/* Allow only same cpu, */
-> | +	if (toggled_event->cpu != event->cpu)
-> | +		return -EINVAL;
-> | +
-> | +	/* or same task. */
-> 
-> nit: s/or/and/
-> 
+I'll take a deeper look at the issue, though any feedback/advise is
+welcome. And I'll hold on with the patchset that removes pci_dev_get/put
+and kobject_del.
 
-ok
 
-thanks,
-jirka
+>
+>>> I also don't understand this nearby code (the same pattern appears in
+>>> free_msi_irqs()):
+>>>
+>>>     out_unroll:
+>>>         list_for_each_entry(entry, &pdev->msi_list, list) {
+>>>                 if (!count)
+>>>                         break;
+>>>                 kobject_del(&entry->kobj);
+>>>                 kobject_put(&entry->kobj);
+>>>                 count--;
+>>>         }
+>>>
+>>> Why do we call kobject_del() here?  The kobject_put() will call
+>>> kobject_del() anyway, so it looks redundant.
+>>> Documentation/kobject.txt says kobject_del() must be called explicitly
+>>> to break a circular reference, but I don't think we have that here.
+>>>
+>>  I think thats exactly why I did it, because of the documentation.  I agree
+>> however, it does look redundant.  Harmless, but redundant.
+>
+>OK, thanks.  I think we should remove it on the grounds that it's not
+>needed and removing it will make this code look more similar to other
+>callers of kobject_init_and_add(), which means bugs will have fewer
+>places to hide.
+>
+>Thanks, Neil!
+>
+>Bjorn
