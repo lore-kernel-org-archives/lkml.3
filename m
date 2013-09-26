@@ -1,90 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab3IZGal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 02:30:41 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:38725 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063Ab3IZGaj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 02:30:39 -0400
-X-AuditID: cbfee68f-b7f1e6d000004e8d-51-5243d48e8dbb
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Cc: "'Mark Brown'" <broonie@kernel.org>,
-        "'Liam Girdwood'" <lgirdwood@gmail.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000701ceba5c$69459b10$3bd0d130$%han@samsung.com>
- <000c01ceba5d$014e32f0$03ea98d0$%han@samsung.com>
- <CAK9yfHy+96DfxKibu3nnT49EoxH_K9VaL4v+exC86qikxTWYyA@mail.gmail.com>
-In-reply-to: <CAK9yfHy+96DfxKibu3nnT49EoxH_K9VaL4v+exC86qikxTWYyA@mail.gmail.com>
-Subject: Re: [PATCH V2 06/18] regulator: gpio-regulator: use
- devm_regulator_register()
-Date: Thu, 26 Sep 2013 15:30:37 +0900
-Message-id: <002c01ceba81$ea03fb00$be0bf100$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac66gHmoBGb6JqUrTbuJmf6ioc9SewAATeqA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsVy+t8zfd2+K85BBsc+8llMffiEzeLywkus
-	Ft+udDBZXN41h83i5J9eRgdWj52z7rJ7bFrVyeZx59oeNo++LasYPT5vkgtgjeKySUnNySxL
-	LdK3S+DK2DT5EFPBFI6Kcw9UGhg3sXUxcnJICJhIbFt4mwXCFpO4cG89UJyLQ0hgGaPE02OX
-	WGGKenasY4VITGeUmNl4AqrqF6NEc9NfJpAqNgE1iS9fDrOD2CICOhIrdq1lAiliFpjJKLGn
-	dwMLRMcORokbj7sZQao4BYIlduxdAtYhLBAh8XHdcrCjWARUJd68mAZ2FK+ArcSur28YIWxB
-	iR+T74HFmQW0JNbvPM4EYctLbF7zlrmLkQPoVnWJR391IY4wklhxfi07RImIxL4X7xhBbpAQ
-	uMUucXZ2G9QuAYlvkw+xQPTKSmw6wAzxsqTEwRU3WCYwSsxCsnkWks2zkGyehWTFAkaWVYyi
-	qQXJBcVJ6UXGesWJucWleel6yfm5mxgh0dq/g/HuAetDjMlA6ycyS4km5wOjPa8k3tDYzMjC
-	1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjJrrPYQvl1z/eGrT
-	5Ecf61v/34hJ69pxP9dcle8f/4em3l+SCQ8scx9O3W74XfBUQlih37yfIUrLdWZKn9LtP37m
-	Y3iMPfv887M9c5aUNkgqCQixyrJPCTq+0/3frMbI1aH16gd42Jz8VJcUOx84mPZW8uRbURYF
-	PRmDh7sjvFg3XxMVzJixUomlOCPRUIu5qDgRAA4eNI3sAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGKsWRmVeSWpSXmKPExsVy+t9jQd2+K85BBjN7uC2mPnzCZnF54SVW
-	i29XOpgsLu+aw2Zx8k8vowOrx85Zd9k9Nq3qZPO4c20Pm0ffllWMHp83yQWwRjUw2mSkJqak
-	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
-	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZmyafIipYApHxbkHKg2Mm9i6GDk5JARMJHp2
-	rGOFsMUkLtxbDxTn4hASmM4oMbPxBJTzi1GiuekvE0gVm4CaxJcvh9lBbBEBHYkVu9YygRQx
-	C8xklNjTu4EFomMHo8SNx92MIFWcAsESO/YuAesQFoiQ+LhuOdhuFgFViTcvprGA2LwCthK7
-	vr5hhLAFJX5MvgcWZxbQkli/8zgThC0vsXnNW+YuRg6gW9UlHv3VhTjCSGLF+bXsECUiEvte
-	vGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxglPBM+kd
-	jKsaLA4xCnAwKvHwXmB2DhJiTSwrrsw9xCjBwawkwvvNCCjEm5JYWZValB9fVJqTWnyIMRno
-	0YnMUqLJ+cA0lVcSb2hsYmZkaWRmYWRibk6asJI478FW60AhgfTEktTs1NSC1CKYLUwcnFIN
-	jFsS5KQ8ZLZk6BwL/xRftO+WxKtt8o0fFp7+waK79EG0z3SPqZ6TbV3uftvY1fJOSejHkXNr
-	uw5NTmq4LuSdni5odSb7rnQJW4d19qepd35LrpObtHTqJS+5SV0+0nsNtE2cv6vZpna6GXM/
-	V3mwk6e+uoxBe77o5lVr1y+9KGaYb1+8IvHDeiWW4oxEQy3mouJEAOaVuL9JAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1755200Ab3IZGbc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 02:31:32 -0400
+Received: from ozlabs.org ([203.10.76.45]:47275 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751263Ab3IZGba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 02:31:30 -0400
+From: Michael Ellerman <michael@ellerman.id.au>
+To: <linux-kernel@vger.kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, gleb@redhat.com,
+        pbonzini@redhat.com, agraf@suse.de, mpm@selenic.com,
+        herbert@gondor.hengli.com.au, <linuxppc-dev@ozlabs.org>,
+        <kvm@vger.kernel.org>, <kvm-ppc@vger.kernel.org>, tytso@mit.edu
+Subject: [PATCH 2/3] hwrng: Add a driver for the hwrng found in power7+ systems
+Date: Thu, 26 Sep 2013 16:31:05 +1000
+Message-Id: <1380177066-3835-2-git-send-email-michael@ellerman.id.au>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1380177066-3835-1-git-send-email-michael@ellerman.id.au>
+References: <1380177066-3835-1-git-send-email-michael@ellerman.id.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 26, 2013 3:20 PM, Sachin Kamat wrote:
-> On 26 September 2013 07:36, Jingoo Han <jg1.han@samsung.com> wrote:
-> > Use devm_regulator_register() to make cleanup paths simpler.
-> > @@ -349,8 +350,6 @@ static int gpio_regulator_remove(struct platform_device *pdev)
-> >  {
-> >         struct gpio_regulator_data *drvdata = platform_get_drvdata(pdev);
-> >
-> > -       regulator_unregister(drvdata->dev);
-> > -
-> >         gpio_free_array(drvdata->gpios, drvdata->nr_gpios);
-> >
-> >         kfree(drvdata->states);
-> 
-> In most of the cases where unregister doesn't happen to be the only or
-> last call in the remove path,
-> I am not sure if change in ordering wouldn't cause any functional
-> issues. For. e.g., in this patch we are freeing the gpios and the
-> driver states even before unregistering the device which is logically
-> not right.
-> 
+Add a driver for the hwrng found in power7+ systems, based on the
+existing code for the arch_get_random_long() hook.
 
-OK, I see.
-I agree with your suggestion in order to keep the code stable.
-I will remove this patch from next v3 patch series.
+We only register a single instance of the driver, not one per device,
+because we use the existing per_cpu array of devices in the arch code.
+This means we always read from the "closest" device, avoiding inter-chip
+memory traffic.
 
-Best regards,
-Jingoo Han
+Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+---
+ drivers/char/hw_random/Kconfig       | 13 ++++++
+ drivers/char/hw_random/Makefile      |  1 +
+ drivers/char/hw_random/powernv-rng.c | 81 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 95 insertions(+)
+ create mode 100644 drivers/char/hw_random/powernv-rng.c
+
+diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
+index 0aa9d91..c206de2 100644
+--- a/drivers/char/hw_random/Kconfig
++++ b/drivers/char/hw_random/Kconfig
+@@ -290,6 +290,19 @@ config HW_RANDOM_PSERIES
+ 
+ 	  If unsure, say Y.
+ 
++config HW_RANDOM_POWERNV
++	tristate "PowerNV Random Number Generator support"
++	depends on HW_RANDOM && PPC_POWERNV
++	default HW_RANDOM
++	---help---
++	  This is the driver for Random Number Generator hardware found
++	  in POWER7+ and above machines for PowerNV platform.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called powernv-rng.
++
++	  If unsure, say Y.
++
+ config HW_RANDOM_EXYNOS
+ 	tristate "EXYNOS HW random number generator support"
+ 	depends on HW_RANDOM && HAS_IOMEM && HAVE_CLK
+diff --git a/drivers/char/hw_random/Makefile b/drivers/char/hw_random/Makefile
+index bed467c..d7d2435 100644
+--- a/drivers/char/hw_random/Makefile
++++ b/drivers/char/hw_random/Makefile
+@@ -24,6 +24,7 @@ obj-$(CONFIG_HW_RANDOM_NOMADIK) += nomadik-rng.o
+ obj-$(CONFIG_HW_RANDOM_PICOXCELL) += picoxcell-rng.o
+ obj-$(CONFIG_HW_RANDOM_PPC4XX) += ppc4xx-rng.o
+ obj-$(CONFIG_HW_RANDOM_PSERIES) += pseries-rng.o
++obj-$(CONFIG_HW_RANDOM_POWERNV) += powernv-rng.o
+ obj-$(CONFIG_HW_RANDOM_EXYNOS)	+= exynos-rng.o
+ obj-$(CONFIG_HW_RANDOM_TPM) += tpm-rng.o
+ obj-$(CONFIG_HW_RANDOM_BCM2835) += bcm2835-rng.o
+diff --git a/drivers/char/hw_random/powernv-rng.c b/drivers/char/hw_random/powernv-rng.c
+new file mode 100644
+index 0000000..e6965bf
+--- /dev/null
++++ b/drivers/char/hw_random/powernv-rng.c
+@@ -0,0 +1,81 @@
++/*
++ * Copyright 2013 Michael Ellerman, Guo Chao, IBM Corp.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/random.h>
++#include <linux/hw_random.h>
++
++static int powernv_rng_read(struct hwrng *rng, void *data, size_t max, bool wait)
++{
++	unsigned long *buf;
++	int i, len;
++
++	/* We rely on rng_buffer_size() being >= sizeof(unsigned long) */
++	len = max / sizeof(unsigned long);
++
++	buf = (unsigned long *)data;
++
++	for (i = 0; i < len; i++)
++		powernv_get_random_long(buf++);
++
++	return len * sizeof(unsigned long);
++}
++
++static struct hwrng powernv_hwrng = {
++	.name = "powernv-rng",
++	.read = powernv_rng_read,
++};
++
++static int powernv_rng_remove(struct platform_device *pdev)
++{
++	hwrng_unregister(&powernv_hwrng);
++
++	return 0;
++}
++
++static int powernv_rng_probe(struct platform_device *pdev)
++{
++	int rc;
++
++	rc = hwrng_register(&powernv_hwrng);
++	if (rc) {
++		/* We only register one device, ignore any others */
++		if (rc == -EEXIST)
++			rc = -ENODEV;
++
++		return rc;
++	}
++
++	pr_info("registered powernv hwrng.\n");
++
++	return 0;
++}
++
++static struct of_device_id powernv_rng_match[] = {
++	{ .compatible	= "ibm,power-rng",},
++	{},
++};
++MODULE_DEVICE_TABLE(of, powernv_rng_match);
++
++static struct platform_driver powernv_rng_driver = {
++	.driver = {
++		.name = "powernv_rng",
++		.of_match_table = powernv_rng_match,
++	},
++	.probe	= powernv_rng_probe,
++	.remove = powernv_rng_remove,
++};
++module_platform_driver(powernv_rng_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Bare metal HWRNG driver for POWER7+ and above");
+-- 
+1.8.1.2
 
