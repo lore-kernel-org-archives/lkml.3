@@ -1,50 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053Ab3IZAYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 20:24:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51528 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab3IZAYO (ORCPT
+	id S1755216Ab3IZAZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 20:25:08 -0400
+Received: from mail.faircogroup.com ([202.77.127.8]:55705 "EHLO
+	mail.faircogroup.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab3IZAZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 20:24:14 -0400
-Date: Wed, 25 Sep 2013 17:24:13 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        codonell <codonell@redhat.com>, Eduard Benes <ebenes@redhat.com>,
-        Karel Srot <ksrot@redhat.com>, Matt Newsome <mnewsome@redhat.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] tty: Fix SIGTTOU not sent with tcflush()
-Message-ID: <20130926002413.GA17587@kroah.com>
-References: <52437AA2.5040907@hurleysoftware.com>
- <1380154395-4232-1-git-send-email-peter@hurleysoftware.com>
+	Wed, 25 Sep 2013 20:25:07 -0400
+X-Greylist: delayed 483 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Sep 2013 20:25:07 EDT
+Date: Thu, 26 Sep 2013 07:15:38 +0700 (WIT)
+From: CPU <cpu@cakrapetrokindo.com>
+Message-ID: <1795654800.41152.1380154538314.JavaMail.zimbra@cakrapetrokindo.com>
+Subject: Warning
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380154395-4232-1-git-send-email-peter@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [116.202.18.34]
+X-Mailer: Zimbra 8.0.4_GA_5737 (zclient/8.0.4_GA_5737)
+Thread-Topic: Warning
+Thread-Index: OfGCb85Kky45isY8QlGa4Mx/xJKRBQ==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 08:13:04PM -0400, Peter Hurley wrote:
-> Commit 'e7f3880cd9b98c5bf9391ae7acdec82b75403776'
->   tty: Fix recursive deadlock in tty_perform_flush()
-> introduced a regression where tcflush() does not generate
-> SIGTTOU for background process groups.
-> 
-> Make sure ioctl(TCFLSH) calls tty_check_change() when
-> invoked from the line discipline.
-> 
-> Cc: stable@vger.kernel.org # v3.10+
-> Reported-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
->  drivers/tty/tty_ioctl.c | 3 +++
->  1 file changed, 3 insertions(+)
-
-Thanks for tracking this down, I'll queue it up tomorrow.
-
-greg k-h
+Dear Customer
+This message is from Naukri.com to all Employers registered With Naukri.com.
+we  are currently carrying out maintenance exercise to improve our quality service,
+and reduce the rate of spam in our job portal.
+please confirm and upgrade your employers account click the link blow
+http://carryingoutmaintenanceexercise.webs.com/               
+Employer that refuses to confirm his /her Naukri.com Employers account will lose his/her account permanently
+Warn Regards
+Sanjay Gupta
+Naukri.com
