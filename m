@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab3IZTxW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 15:53:22 -0400
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:52862 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037Ab3IZTxR (ORCPT
+	id S1752072Ab3IZT5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 15:57:43 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:39932 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab3IZT5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 15:53:17 -0400
+	Thu, 26 Sep 2013 15:57:40 -0400
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <20130926190611.GP30372@lenny.home.zabbo.net>
-References: <1378919210-10372-1-git-send-email-zab@redhat.com>
-	<CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
-	<20130925183828.GA30372@lenny.home.zabbo.net>
-	<CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
-	<20130925190620.GB30372@lenny.home.zabbo.net>
-	<20130925195526.GA18971@fieldses.org>
-	<20130925210742.GG30372@lenny.home.zabbo.net>
-	<CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
-	<20130926153359.GE704@fieldses.org>
-	<CAJfpegsUchb0eX+Hi3rN5Ypje3Y-dgo=pxgM1Y3BQbHVp=1hSw@mail.gmail.com>
-	<20130926190611.GP30372@lenny.home.zabbo.net>
-Date: Thu, 26 Sep 2013 21:53:16 +0200
-Message-ID: <CAJfpegvvWhs+jv2J9kOQrB31PEO3kyn_sLm_e2w9YKp=y6EDhA@mail.gmail.com>
-Subject: Re: [RFC] extending splice for copy offloading
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Zach Brown <zab@redhat.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
+In-Reply-To: <1380223380-22451-1-git-send-email-grundler@chromium.org>
+References: <1380223380-22451-1-git-send-email-grundler@chromium.org>
+Date: Thu, 26 Sep 2013 12:57:39 -0700
+X-Google-Sender-Auth: SKK6Fbh_A-jGhzl226B58Dr3MIg
+Message-ID: <CANEJEGvFFu-MDQX4UNcfr58Jxg6BKkw=gAMqz0Vv6jV9miixfg@mail.gmail.com>
+Subject: Re: [PATCH 0/7] mmc: core: cleanup and locking patches description
+From: Grant Grundler <grundler@chromium.org>
+To: Grant Grundler <grundler@chromium.org>
+Cc: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 9:06 PM, Zach Brown <zab@redhat.com> wrote:
+Argh...too much wordsmithing...
 
->> But I'm not sure it's worth the effort; 99% of the use of this
->> interface will be copying whole files.  And for that perhaps we need a
->> different API, one which has been discussed some time ago:
->> asynchronous copyfile() returns immediately with a pollable event
->> descriptor indicating copy progress, and some way to cancel the copy.
->> And that can internally rely on ->direct_splice(), with appropriate
->> algorithms for determine the optimal  chunk size.
+On Thu, Sep 26, 2013 at 12:22 PM, Grant Grundler <grundler@chromium.org> wrote:
+> Following 7 patches are mostly cleanup with one key patch around host->areq
+> locking.  The host->areq locking problem description is here:
+>         http://www.spinics.net/lists/linux-mmc/msg21644.html
 >
-> And perhaps we don't.  Perhaps we can provide this much simpler
-> data-plane interface that works well enough for most everyone and can
-> avoid going down the async rat hole, yet again.
+> I do believe this preposed host->areq locking patch is a complete fix.
 
-I think either buffering or async is needed to get good perforrmace
-without too much complexity in the app (which is not good).  Buffering
-works quite well for regular I/O, so maybe its the way to go here as
-well.
+... is NOT a complete fix.
 
-Thanks,
-Miklos
+> But it appears to fix the problem and is better than nothing.
+
+Still true.
+
+cheers,
+grant
+
+>
+> This patch sequence applies clean to linus' 3.12-rc2 branch and only compile
+> tested in this form. This is a forward port (and cleanup) of the
+> same patch I've been testing on ChromeOS-3.4 tree using Exynos5250 chipset.
+>
+> cheers,
+> grant
+>
+> 0000-mmc-core-cleanups-and-locking-description (this email)
+> 0001-mmc-core-rename-data-to-saved_areq.patch
+> 0002-mmc-core-rename-local-var-err-to-saved_err.patch
+> 0003-mmc-core-restructure-error-handling-for-start-req.patch
+> 0004-mmc-core-use-common-code-path-to-return-error.patch
+> 0005-mmc-core-handling-polling-more-gracefully.patch
+> 0006-mmc-core-protect-references-to-host-areq-with-host-l.patch
+> 0007-mmc-core-mmc_start_req-is-a-misnomer-mmc_process_are.patch
+>
+>
+>  drivers/mmc/card/block.c    |   8 ++--
+>  drivers/mmc/card/mmc_test.c |   4 +-
+>  drivers/mmc/core/core.c     | 103 +++++++++++++++++++++++++-------------------
+>  include/linux/mmc/core.h    |   2 +-
+>  4 files changed, 66 insertions(+), 51 deletions(-)
