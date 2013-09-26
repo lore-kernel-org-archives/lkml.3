@@ -1,329 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab3IZGb6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 02:31:58 -0400
-Received: from ozlabs.org ([203.10.76.45]:38366 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752591Ab3IZGbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 02:31:31 -0400
-From: Michael Ellerman <michael@ellerman.id.au>
-To: <linux-kernel@vger.kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, gleb@redhat.com,
-        pbonzini@redhat.com, agraf@suse.de, mpm@selenic.com,
-        herbert@gondor.hengli.com.au, <linuxppc-dev@ozlabs.org>,
-        <kvm@vger.kernel.org>, <kvm-ppc@vger.kernel.org>, tytso@mit.edu
-Subject: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on some powernv systems
-Date: Thu, 26 Sep 2013 16:31:06 +1000
-Message-Id: <1380177066-3835-3-git-send-email-michael@ellerman.id.au>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1380177066-3835-1-git-send-email-michael@ellerman.id.au>
-References: <1380177066-3835-1-git-send-email-michael@ellerman.id.au>
+	id S1755606Ab3IZGcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 02:32:19 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41120 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab3IZGcR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 02:32:17 -0400
+Message-ID: <5243D4E8.4000707@linux.vnet.ibm.com>
+Date: Thu, 26 Sep 2013 14:32:08 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Mike Galbraith <bitbucket@online.de>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for wake_affine(.sync=true)
+References: <20130925075341.GB3081@twins.programming.kicks-ass.net> <1380099377.8523.9.camel@marge.simpson.net> <5243A0E9.4060802@linux.vnet.ibm.com> <1380166898.5431.40.camel@marge.simpson.net> <5243C24F.6070704@linux.vnet.ibm.com> <1380173688.7525.12.camel@marge.simpson.net>
+In-Reply-To: <1380173688.7525.12.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092606-2000-0000-0000-00000DDEC28D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some powernv systems include a hwrng. Guests can access it via the
-H_RANDOM hcall.
+On 09/26/2013 01:34 PM, Mike Galbraith wrote:
+> On Thu, 2013-09-26 at 13:12 +0800, Michael wang wrote: 
+>> On 09/26/2013 11:41 AM, Mike Galbraith wrote:
+>> [snip]
+>>>> Like the case when we have:
+>>>>
+>>>> 	core0 sg		core1 sg
+>>>> 	cpu0	cpu1		cpu2	cpu3
+>>>> 	waker	busy		idle	idle
+>>>>
+>>>> If the sync wakeup was on cpu0, we can:
+>>>>
+>>>> 1. choose cpu in core1 sg like we did usually
+>>>>    some overhead but tend to make the load a little balance
+>>>> 	core0 sg		core1 sg
+>>>> 	cpu0	cpu1		cpu2	cpu3
+>>>> 	idle	busy		wakee	idle
+>>>
+>>> Reducing latency and increasing throughput when the waker isn't really
+>>> really going to immediately schedule off as the hint implies.  Nice for
+>>> bursty loads and ramp.
+>>>
+>>> The breakeven point is going up though.  If you don't have nohz
+>>> throttled, you eat tick start/stop overhead, and the menu governor
+>>> recently added yet more overhead, so maybe we should say hell with it.
+>>
+>> Exactly, more and more factors to be considered, we say things get
+>> balanced but actually it's not the best choice...
+>>
+>>>
+>>>> 2. choose cpu0 like the patch proposed
+>>>>    no overhead but tend to make the load a little more unbalance
+>>>> 	core0 sg		core1 sg
+>>>> 	cpu0	cpu1		cpu2	cpu3
+>>>> 	wakee	busy		idle	idle
+>>>>
+>>>> May be we should add a higher scope load balance check in wake_affine(),
+>>>> but that means higher overhead which is just what the patch want to
+>>>> reduce...
+>>>
+>>> Yeah, more overhead is the last thing we need.
+>>>
+>>>> What about some discount for sync case inside select_idle_sibling()?
+>>>> For example we consider sync cpu as idle and prefer it more than the others?
+>>>
+>>> That's what the sync hint does.  Problem is, it's a hint.  If it were
+>>> truth, there would be no point in calling select_idle_sibling().
+>>
+>> Just wondering if the hint was wrong in most of the time, then why don't
+>> we remove it...
+> 
+> For very fast/light network ping-pong micro-benchmarks, it is right.
+> For pipe-test, it's absolutely right, jabbering parties are 100%
+> synchronous, there is nada/nil/zip/diddly squat overlap reclaimable..
+> but in the real world, it ain't necessarily so.
+> 
+>> Otherwise I think we can still utilize it to make some decision tends to
+>> be correct, don't we?
+> 
+> Sometimes :)
 
-We add a real mode implementation of H_RANDOM when a hwrng is found.
-Userspace can detect the presence of the hwrng by quering the
-KVM_CAP_PPC_HWRNG capability.
+Ok, a double-edged sword I see :)
 
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
----
- arch/powerpc/include/asm/archrandom.h   |  11 ++-
- arch/powerpc/include/asm/kvm_ppc.h      |   2 +
- arch/powerpc/kvm/book3s_hv_builtin.c    |  15 ++++
- arch/powerpc/kvm/book3s_hv_rmhandlers.S | 119 ++++++++++++++++++++++++++++++++
- arch/powerpc/kvm/powerpc.c              |   3 +
- arch/powerpc/platforms/powernv/rng.c    |  25 +++++++
- include/uapi/linux/kvm.h                |   1 +
- 7 files changed, 174 insertions(+), 2 deletions(-)
+May be we can wave it carefully here, give the discount to a bigger
+scope not the sync cpu, for example:
 
-diff --git a/arch/powerpc/include/asm/archrandom.h b/arch/powerpc/include/asm/archrandom.h
-index d853d16..86296d5 100644
---- a/arch/powerpc/include/asm/archrandom.h
-+++ b/arch/powerpc/include/asm/archrandom.h
-@@ -25,8 +25,15 @@ static inline int arch_get_random_int(unsigned int *v)
- 	return rc;
- }
- 
--int powernv_get_random_long(unsigned long *v);
--
- #endif /* CONFIG_ARCH_RANDOM */
- 
-+#ifdef CONFIG_PPC_POWERNV
-+int powernv_hwrng_present(void);
-+int powernv_get_random_long(unsigned long *v);
-+int powernv_get_random_real_mode(unsigned long *v);
-+#else
-+static inline int powernv_hwrng_present(void) { return 0; }
-+static inline int powernv_get_random_real_mode(unsigned long *v) { return 0; }
-+#endif
-+
- #endif /* _ASM_POWERPC_ARCHRANDOM_H */
-diff --git a/arch/powerpc/include/asm/kvm_ppc.h b/arch/powerpc/include/asm/kvm_ppc.h
-index b15554a..51966fd 100644
---- a/arch/powerpc/include/asm/kvm_ppc.h
-+++ b/arch/powerpc/include/asm/kvm_ppc.h
-@@ -177,6 +177,8 @@ extern int kvmppc_xics_get_xive(struct kvm *kvm, u32 irq, u32 *server,
- extern int kvmppc_xics_int_on(struct kvm *kvm, u32 irq);
- extern int kvmppc_xics_int_off(struct kvm *kvm, u32 irq);
- 
-+extern int kvmppc_hwrng_present(void);
-+
- /*
-  * Cuts out inst bits with ordering according to spec.
-  * That means the leftmost bit is zero. All given bits are included.
-diff --git a/arch/powerpc/kvm/book3s_hv_builtin.c b/arch/powerpc/kvm/book3s_hv_builtin.c
-index 8cd0dae..de12592 100644
---- a/arch/powerpc/kvm/book3s_hv_builtin.c
-+++ b/arch/powerpc/kvm/book3s_hv_builtin.c
-@@ -19,6 +19,7 @@
- #include <asm/cputable.h>
- #include <asm/kvm_ppc.h>
- #include <asm/kvm_book3s.h>
-+#include <asm/archrandom.h>
- 
- #include "book3s_hv_cma.h"
- /*
-@@ -181,3 +182,17 @@ void __init kvm_cma_reserve(void)
- 		kvm_cma_declare_contiguous(selected_size, align_size);
- 	}
- }
-+
-+int kvmppc_hwrng_present(void)
-+{
-+	return powernv_hwrng_present();
-+}
-+EXPORT_SYMBOL_GPL(kvmppc_hwrng_present);
-+
-+long kvmppc_h_random(struct kvm_vcpu *vcpu)
-+{
-+	if (powernv_get_random_real_mode(&vcpu->arch.gpr[4]))
-+		return H_SUCCESS;
-+
-+	return H_HARDWARE;
-+}
-diff --git a/arch/powerpc/kvm/book3s_hv_rmhandlers.S b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
-index 294b7af..35ce59e 100644
---- a/arch/powerpc/kvm/book3s_hv_rmhandlers.S
-+++ b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
-@@ -1502,6 +1502,125 @@ hcall_real_table:
- 	.long	0		/* 0x11c */
- 	.long	0		/* 0x120 */
- 	.long	.kvmppc_h_bulk_remove - hcall_real_table
-+	.long	0		/* 0x128 */
-+	.long	0		/* 0x12c */
-+	.long	0		/* 0x130 */
-+	.long	0		/* 0x134 */
-+	.long	0		/* 0x138 */
-+	.long	0		/* 0x13c */
-+	.long	0		/* 0x140 */
-+	.long	0		/* 0x144 */
-+	.long	0		/* 0x148 */
-+	.long	0		/* 0x14c */
-+	.long	0		/* 0x150 */
-+	.long	0		/* 0x154 */
-+	.long	0		/* 0x158 */
-+	.long	0		/* 0x15c */
-+	.long	0		/* 0x160 */
-+	.long	0		/* 0x164 */
-+	.long	0		/* 0x168 */
-+	.long	0		/* 0x16c */
-+	.long	0		/* 0x170 */
-+	.long	0		/* 0x174 */
-+	.long	0		/* 0x178 */
-+	.long	0		/* 0x17c */
-+	.long	0		/* 0x180 */
-+	.long	0		/* 0x184 */
-+	.long	0		/* 0x188 */
-+	.long	0		/* 0x18c */
-+	.long	0		/* 0x190 */
-+	.long	0		/* 0x194 */
-+	.long	0		/* 0x198 */
-+	.long	0		/* 0x19c */
-+	.long	0		/* 0x1a0 */
-+	.long	0		/* 0x1a4 */
-+	.long	0		/* 0x1a8 */
-+	.long	0		/* 0x1ac */
-+	.long	0		/* 0x1b0 */
-+	.long	0		/* 0x1b4 */
-+	.long	0		/* 0x1b8 */
-+	.long	0		/* 0x1bc */
-+	.long	0		/* 0x1c0 */
-+	.long	0		/* 0x1c4 */
-+	.long	0		/* 0x1c8 */
-+	.long	0		/* 0x1cc */
-+	.long	0		/* 0x1d0 */
-+	.long	0		/* 0x1d4 */
-+	.long	0		/* 0x1d8 */
-+	.long	0		/* 0x1dc */
-+	.long	0		/* 0x1e0 */
-+	.long	0		/* 0x1e4 */
-+	.long	0		/* 0x1e8 */
-+	.long	0		/* 0x1ec */
-+	.long	0		/* 0x1f0 */
-+	.long	0		/* 0x1f4 */
-+	.long	0		/* 0x1f8 */
-+	.long	0		/* 0x1fc */
-+	.long	0		/* 0x200 */
-+	.long	0		/* 0x204 */
-+	.long	0		/* 0x208 */
-+	.long	0		/* 0x20c */
-+	.long	0		/* 0x210 */
-+	.long	0		/* 0x214 */
-+	.long	0		/* 0x218 */
-+	.long	0		/* 0x21c */
-+	.long	0		/* 0x220 */
-+	.long	0		/* 0x224 */
-+	.long	0		/* 0x228 */
-+	.long	0		/* 0x22c */
-+	.long	0		/* 0x230 */
-+	.long	0		/* 0x234 */
-+	.long	0		/* 0x238 */
-+	.long	0		/* 0x23c */
-+	.long	0		/* 0x240 */
-+	.long	0		/* 0x244 */
-+	.long	0		/* 0x248 */
-+	.long	0		/* 0x24c */
-+	.long	0		/* 0x250 */
-+	.long	0		/* 0x254 */
-+	.long	0		/* 0x258 */
-+	.long	0		/* 0x25c */
-+	.long	0		/* 0x260 */
-+	.long	0		/* 0x264 */
-+	.long	0		/* 0x268 */
-+	.long	0		/* 0x26c */
-+	.long	0		/* 0x270 */
-+	.long	0		/* 0x274 */
-+	.long	0		/* 0x278 */
-+	.long	0		/* 0x27c */
-+	.long	0		/* 0x280 */
-+	.long	0		/* 0x284 */
-+	.long	0		/* 0x288 */
-+	.long	0		/* 0x28c */
-+	.long	0		/* 0x290 */
-+	.long	0		/* 0x294 */
-+	.long	0		/* 0x298 */
-+	.long	0		/* 0x29c */
-+	.long	0		/* 0x2a0 */
-+	.long	0		/* 0x2a4 */
-+	.long	0		/* 0x2a8 */
-+	.long	0		/* 0x2ac */
-+	.long	0		/* 0x2b0 */
-+	.long	0		/* 0x2b4 */
-+	.long	0		/* 0x2b8 */
-+	.long	0		/* 0x2bc */
-+	.long	0		/* 0x2c0 */
-+	.long	0		/* 0x2c4 */
-+	.long	0		/* 0x2c8 */
-+	.long	0		/* 0x2cc */
-+	.long	0		/* 0x2d0 */
-+	.long	0		/* 0x2d4 */
-+	.long	0		/* 0x2d8 */
-+	.long	0		/* 0x2dc */
-+	.long	0		/* 0x2e0 */
-+	.long	0		/* 0x2e4 */
-+	.long	0		/* 0x2e8 */
-+	.long	0		/* 0x2ec */
-+	.long	0		/* 0x2f0 */
-+	.long	0		/* 0x2f4 */
-+	.long	0		/* 0x2f8 */
-+	.long	0		/* 0x2fc */
-+	.long	.kvmppc_h_random - hcall_real_table
- hcall_real_table_end:
- 
- ignore_hdec:
-diff --git a/arch/powerpc/kvm/powerpc.c b/arch/powerpc/kvm/powerpc.c
-index 07c0106..0d7208e 100644
---- a/arch/powerpc/kvm/powerpc.c
-+++ b/arch/powerpc/kvm/powerpc.c
-@@ -356,6 +356,9 @@ int kvm_dev_ioctl_check_extension(long ext)
- 		if (cpu_has_feature(CPU_FTR_ARCH_201))
- 			r = 2;
- 		break;
-+	case KVM_CAP_PPC_HWRNG:
-+		r = kvmppc_hwrng_present();
-+		break;
- #endif
- 	case KVM_CAP_SYNC_MMU:
- #ifdef CONFIG_KVM_BOOK3S_64_HV
-diff --git a/arch/powerpc/platforms/powernv/rng.c b/arch/powerpc/platforms/powernv/rng.c
-index 51d2e6a..ea7e5cd 100644
---- a/arch/powerpc/platforms/powernv/rng.c
-+++ b/arch/powerpc/platforms/powernv/rng.c
-@@ -20,12 +20,18 @@
- 
- struct powernv_rng {
- 	void __iomem *regs;
-+	void __iomem *regs_real;
- 	unsigned long mask;
- };
- 
- static DEFINE_PER_CPU(struct powernv_rng *, powernv_rng);
- 
- 
-+int powernv_hwrng_present(void)
-+{
-+	return __raw_get_cpu_var(powernv_rng) != NULL;
-+}
-+
- static unsigned long rng_whiten(struct powernv_rng *rng, unsigned long val)
- {
- 	unsigned long parity;
-@@ -42,6 +48,17 @@ static unsigned long rng_whiten(struct powernv_rng *rng, unsigned long val)
- 	return val;
- }
- 
-+int powernv_get_random_real_mode(unsigned long *v)
-+{
-+	struct powernv_rng *rng;
-+
-+	rng = __raw_get_cpu_var(powernv_rng);
-+
-+	*v = rng_whiten(rng, in_rm64(rng->regs_real));
-+
-+	return 1;
-+}
-+
- int powernv_get_random_long(unsigned long *v)
- {
- 	struct powernv_rng *rng;
-@@ -76,12 +93,20 @@ static __init void rng_init_per_cpu(struct powernv_rng *rng,
- static __init int rng_create(struct device_node *dn)
- {
- 	struct powernv_rng *rng;
-+	struct resource res;
- 	unsigned long val;
- 
- 	rng = kzalloc(sizeof(*rng), GFP_KERNEL);
- 	if (!rng)
- 		return -ENOMEM;
- 
-+	if (of_address_to_resource(dn, 0, &res)) {
-+		kfree(rng);
-+		return -ENXIO;
-+	}
-+
-+	rng->regs_real = (void __iomem *)res.start;
-+
- 	rng->regs = of_iomap(dn, 0);
- 	if (!rng->regs) {
- 		kfree(rng);
-diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-index 99c2533..493a409 100644
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@ -668,6 +668,7 @@ struct kvm_ppc_smmu_info {
- #define KVM_CAP_IRQ_XICS 92
- #define KVM_CAP_ARM_EL1_32BIT 93
- #define KVM_CAP_SPAPR_MULTITCE 94
-+#define KVM_CAP_PPC_HWRNG 95
- 
- #ifdef KVM_CAP_IRQ_ROUTING
- 
--- 
-1.8.1.2
+	sg1				sg2
+	cpu0	cpu1	cpu2	cpu3	cpu4	cpu5	cpu6	cpu7
+	waker	idle	idle	idle	idle	idle	idle	idle
+
+If it's sync wakeup on cpu0 (only waker), and the sg is wide enough,
+which means one cpu is not so influencial, then suppose cpu0 to be idle
+could be more safe, also prefer sg1 than sg2 is more likely to be right.
+
+And we can still choose idle-cpu at final step, like cpu1 in this case,
+to avoid the risk that waker don't get off as it said.
+
+The key point is to reduce the influence of sync, trust a little but not
+totally ;-)
+
+Regards,
+Michael Wang
+
+> 
+> -Mike
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
