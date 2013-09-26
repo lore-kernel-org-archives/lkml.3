@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab3IZTqa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 15:46:30 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:64718 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab3IZTq0 (ORCPT
+	id S1753441Ab3IZTxW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 15:53:22 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:52862 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab3IZTxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 15:46:26 -0400
-Message-ID: <52448F0F.9050408@linaro.org>
-Date: Thu, 26 Sep 2013 12:46:23 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 26 Sep 2013 15:53:17 -0400
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH 4/4] [RFC] ipv6: Fix for possible ipv6 seqlock deadlock
-References: <1380220464-28840-1-git-send-email-john.stultz@linaro.org>	 <1380220464-28840-5-git-send-email-john.stultz@linaro.org> <1380223848.3165.207.camel@edumazet-glaptop>
-In-Reply-To: <1380223848.3165.207.camel@edumazet-glaptop>
-X-Enigmail-Version: 1.5.2
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <20130926190611.GP30372@lenny.home.zabbo.net>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+	<CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
+	<20130925183828.GA30372@lenny.home.zabbo.net>
+	<CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
+	<20130925190620.GB30372@lenny.home.zabbo.net>
+	<20130925195526.GA18971@fieldses.org>
+	<20130925210742.GG30372@lenny.home.zabbo.net>
+	<CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+	<20130926153359.GE704@fieldses.org>
+	<CAJfpegsUchb0eX+Hi3rN5Ypje3Y-dgo=pxgM1Y3BQbHVp=1hSw@mail.gmail.com>
+	<20130926190611.GP30372@lenny.home.zabbo.net>
+Date: Thu, 26 Sep 2013 21:53:16 +0200
+Message-ID: <CAJfpegvvWhs+jv2J9kOQrB31PEO3kyn_sLm_e2w9YKp=y6EDhA@mail.gmail.com>
+Subject: Re: [RFC] extending splice for copy offloading
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Zach Brown <zab@redhat.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 12:30 PM, Eric Dumazet wrote:
-> On Thu, 2013-09-26 at 11:34 -0700, John Stultz wrote:
->> While enabling lockdep on seqlocks, I ran accross the warning below
->> caused by the ipv6 stats being updated in both irq and non-irq context.
->>
->> This is a novice attempt to correct the issue, and with this patch
->> the warning goes away. Any better solutions would be appreciated!
-> ...
->
->>  
->>  out_err_release:
->> -	if (err == -ENETUNREACH)
->> +	if (err == -ENETUNREACH) {
->> +		unsigned long flags;
->> +		/* some of the stats are locked in irq context */
->> +		local_irq_save(flags);
->>  		IP6_INC_STATS_BH(net, NULL, IPSTATS_MIB_OUTNOROUTES);
->> +		local_irq_restore(flags);
->> +	}
->>  	dst_release(*dst);
->>  	*dst = NULL;
->>  	return err;
-> You better change IP6_INC_STATS_BH() to IP6_INC_STATS()
->
-> On x86 for example, no extra code will be generated (no need to disable
-> hard or soft irqs)
+On Thu, Sep 26, 2013 at 9:06 PM, Zach Brown <zab@redhat.com> wrote:
 
-Ah, thanks! Verified it resolves the warning as well, so I've changed my
-patch to use your suggestion.
+>> But I'm not sure it's worth the effort; 99% of the use of this
+>> interface will be copying whole files.  And for that perhaps we need a
+>> different API, one which has been discussed some time ago:
+>> asynchronous copyfile() returns immediately with a pollable event
+>> descriptor indicating copy progress, and some way to cancel the copy.
+>> And that can internally rely on ->direct_splice(), with appropriate
+>> algorithms for determine the optimal  chunk size.
+>
+> And perhaps we don't.  Perhaps we can provide this much simpler
+> data-plane interface that works well enough for most everyone and can
+> avoid going down the async rat hole, yet again.
 
-thanks again
--john
+I think either buffering or async is needed to get good perforrmace
+without too much complexity in the app (which is not good).  Buffering
+works quite well for regular I/O, so maybe its the way to go here as
+well.
+
+Thanks,
+Miklos
