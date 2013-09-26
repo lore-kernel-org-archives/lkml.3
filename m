@@ -1,146 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab3IZH4x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:56:53 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61985 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab3IZH4v (ORCPT
+	id S1756232Ab3IZH5Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:57:24 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:29153 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab3IZH5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:56:51 -0400
-X-AuditID: 9c930179-b7c8bae000006c65-f3-5243e8c1571c
-Date: Thu, 26 Sep 2013 16:57:25 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Bob Liu <lliubbo@gmail.com>, Bob Liu <bob.liu@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
-Message-ID: <20130926075725.GA22339@bbox>
-References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
- <52118042.30101@oracle.com>
- <20130819054742.GA28062@bbox>
- <CAL1ERfN3AUYwWTctGBjVcgb-mwAmc15-FayLz48P1d0GzogncA@mail.gmail.com>
- <20130821074939.GE3022@bbox>
- <CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
- <CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
- <CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
- <20130926055802.GA20634@bbox>
- <CAL1ERfN8PpSZxRmLiwm4i-XZWzRaPJ0A=Af76Dtopcf2xYnBtQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL1ERfN8PpSZxRmLiwm4i-XZWzRaPJ0A=Af76Dtopcf2xYnBtQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 26 Sep 2013 03:57:22 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-f1-5243e8e142ee
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Mark Brown'" <broonie@kernel.org>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>, "'Milo Kim'" <milo.kim@ti.com>
+References: <003101ceba8c$88d6a840$9a83f8c0$%han@samsung.com>
+In-reply-to: <003101ceba8c$88d6a840$9a83f8c0$%han@samsung.com>
+Subject: [PATCH V3 07/14] regulator: lp8788-ldo: use devm_regulator_register()
+Date: Thu, 26 Sep 2013 16:57:20 +0900
+Message-id: <003f01ceba8e$07402610$15c07230$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac66jIjCzH3ID+v5Qym5l1DxbvczrwAAULhA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zI92HL5yDDGatULWY+vAJm8XlhZdY
+	Lb5d6WCyuLxrDpvF8l/rWBxYPXbOusvusWlVJ5tH35ZVjB7Hb2xn8vi8SS6ANYrLJiU1J7Ms
+	tUjfLoErY2m/WcEMwYrrrY1MDYzL+boYOTkkBEwkOn++YIKwxSQu3FvP1sXIxSEksIxR4vqG
+	aUwwRdsuTWSGSCxilHg74SSU84tRYuakU+wgVWwCahJfvhwGsjk4RARUJf6/cgepYRboZpS4
+	uuwzWI2QgK1E47e/LCA2p4CdxKz9IIM4OYQF/CTure1lA7FZgHoXLtjOCmLzAtWvO3GIEcIW
+	lPgx+R5YL7OAlsT6nceZIGx5ic1r3jKD7JUQUJd49FcX4gQjibXzNCEqRCT2vXjHCPHLNXaJ
+	98+kITYJSHybfIgFolNWYtMBZogSSYmDK26wTGCUmIVk7ywke2ch2TsLyYYFjCyrGEVTC5IL
+	ipPSiwz1ihNzi0vz0vWS83M3MUKitHcH4+0D1ocYk4HWT2SWEk3OB0Z5Xkm8obGZkYWpiamx
+	kbmlGWnCSuK8ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYM28+9C3g1c9l0/+89VxE
+	aEzJl4j586Z83Pyl2HkHY8+l5MsWc/5znVftP192Ld73qZomq6e7G+/uiJvCP4vtBfL0Jgim
+	5b7XETYJvueyNsNq8vlYnZXlrxwkWlQiElszYnVrw3xi2lcpcXZNZ/wXfaZDy+28xo1Xc1xK
+	M5NX7L+Y4c5uMEuJpTgj0VCLuag4EQAIYixl6AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jAd2HL5yDDP5PULSY+vAJm8XlhZdY
+	Lb5d6WCyuLxrDpvF8l/rWBxYPXbOusvusWlVJ5tH35ZVjB7Hb2xn8vi8SS6ANaqB0SYjNTEl
+	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
+	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWNpv1nBDMGK662NTA2My/m6GDk5JARMJLZd
+	msgMYYtJXLi3nq2LkYtDSGARo8TbCSeZIZxfjBIzJ51iB6liE1CT+PLlMJDNwSEioCrx/5U7
+	SA2zQDejxNVln8FqhARsJRq//WUBsTkF7CRm7T8JtkFYwE/i3tpeNhCbBah34YLtrCA2L1D9
+	uhOHGCFsQYkfk++B9TILaEms33mcCcKWl9i85i0zyF4JAXWJR391IU4wklg7TxOiQkRi34t3
+	jBMYhWYhGTQLyaBZSAbNQtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwEngmtYNx
+	ZYPFIUYBDkYlHt4LzM5BQqyJZcWVuYcYJTiYlUR4vxkBhXhTEiurUovy44tKc1KLDzEmA/05
+	kVlKNDkfmKDySuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoFR
+	KaZEhfG/a0SF5cwf2bWeM6KK3zd7xEWZn5WYl5mjnvVXXOow3wtd70MV/c/F7u/fzHTSRimP
+	f0nx/wbNp+6habn5EQYNup4SOjWMYh3nVjTuYi9TKLvWt9D8wNWj3HKXNc8X3gxWOnp07qLA
+	2N1ugpyNLMsmfly8VuyMm87M7ue8HeUntJRYijMSDbWYi4oTAfF8VH9GAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 03:26:33PM +0800, Weijie Yang wrote:
-> On Thu, Sep 26, 2013 at 1:58 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > Hello Weigie,
-> >
-> > On Wed, Sep 25, 2013 at 05:33:43PM +0800, Weijie Yang wrote:
-> >> On Wed, Sep 25, 2013 at 4:31 PM, Bob Liu <lliubbo@gmail.com> wrote:
-> >> > On Wed, Sep 25, 2013 at 4:09 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
-> >> >> I think I find a new issue, for integrity of this mail thread, I reply
-> >> >> to this mail.
-> >> >>
-> >> >> It is a concurrence issue either, when duplicate store and reclaim
-> >> >> concurrentlly.
-> >> >>
-> >> >> zswap entry x with offset A is already stored in zswap backend.
-> >> >> Consider the following scenario:
-> >> >>
-> >> >> thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
-> >> >>
-> >> >> thread 1: store new page with the same offset A, alloc a new zswap entry y.
-> >> >>   store finished. shrink_page_list() call __remove_mapping(), and now
-> >> >> it is not in swap_cache
-> >> >>
-> >> >
-> >> > But I don't think swap layer will call zswap with the same offset A.
-> >>
-> >> 1. store page of offset A in zswap
-> >> 2. some time later, pagefault occur, load page data from zswap.
-> >>   But notice that zswap entry x is still in zswap because it is not
-> >> frontswap_tmem_exclusive_gets_enabled.
-> >
-> > frontswap_tmem_exclusive_gets_enabled is just option to see tradeoff
-> > between CPU burining by frequent swapout and memory footprint by duplicate
-> > copy in swap cache and frontswap backend so it shouldn't affect the stability.
-> 
-> Thanks for explain this.
-> I don't mean to say this option affects the stability,  but that zswap
-> only realize
-> one option. Maybe it's better to realize both options for different workloads.
+Use devm_regulator_register() to make cleanup paths simpler,
+and remove unnecessary remove().
 
-"zswap only relize one option"
-What does it mena? Sorry. I couldn't parse your intention. :)
-You mean zswap should do something special to support frontswap_tmem_exclusive_gets?
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/regulator/lp8788-ldo.c |   24 ++----------------------
+ 1 file changed, 2 insertions(+), 22 deletions(-)
 
-> 
-> >>  this page is with PageSwapCache(page) and page_private(page) = entry.val
-> >> 3. change this page data, and it become dirty
-> >
-> > If non-shared swapin page become redirty, it should remove the page from
-> > swapcache. If shared swapin page become redirty, it should do CoW so it's a
-> > new page so that it doesn't live in swap cache. It means it should have new
-> > offset which is different with old's one for swap out.
-> >
-> > What's wrong with that?
-> 
-> It is really not a right scene for duplicate store. And I can not think out one.
-> If duplicate store is impossible, How about delete the handle code in zswap?
-> If it does exist, I think there is a potential issue as I described.
-
-You mean "zswap_duplicate_entry"?
-AFAIR, I already had a question to Seth when zswap was born but AFAIRC,
-he said that he didn't know exact reason but he saw that case during
-experiement so copy the code peice from zcache.
-
-Do you see the case, too?
-
-Anyway, we need to dive into that to know what happens and then open
-our eyes for clear solution before dumping meaningless patch.
-
-I hope Seth or Bob already know it.
-
-> 
-> >> 4. some time later again, swap this page on the same offset A.
-> >>
-> >> so, a duplicate store happens.
-> >>
-> >> what I can think is that use flags and CAS to protect store and reclaim on
-> >> the same offset  happens concurrentlly.
-> >>
-> >> >> thread 0: zswap_get_swap_cache_page called. old page data is added to swap_cache
-> >> >>
-> >> >> Now, swap cache has old data rather than new data for offset A.
-> >> >> error will happen If do_swap_page() get page from swap_cache.
-> >> >>
-> >> >
-> >> > --
-> >> > Regards,
-> >> > --Bob
-> >>
-> >> --
-> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> see: http://www.linux-mm.org/ .
-> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-> > --
-> > Kind regards,
-> > Minchan Kim
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/drivers/regulator/lp8788-ldo.c b/drivers/regulator/lp8788-ldo.c
+index 0527d87..b9a29a2 100644
+--- a/drivers/regulator/lp8788-ldo.c
++++ b/drivers/regulator/lp8788-ldo.c
+@@ -543,7 +543,7 @@ static int lp8788_dldo_probe(struct platform_device *pdev)
+ 	cfg.driver_data = ldo;
+ 	cfg.regmap = lp->regmap;
+ 
+-	rdev = regulator_register(&lp8788_dldo_desc[id], &cfg);
++	rdev = devm_regulator_register(&pdev->dev, &lp8788_dldo_desc[id], &cfg);
+ 	if (IS_ERR(rdev)) {
+ 		ret = PTR_ERR(rdev);
+ 		dev_err(&pdev->dev, "DLDO%d regulator register err = %d\n",
+@@ -557,18 +557,8 @@ static int lp8788_dldo_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int lp8788_dldo_remove(struct platform_device *pdev)
+-{
+-	struct lp8788_ldo *ldo = platform_get_drvdata(pdev);
+-
+-	regulator_unregister(ldo->regulator);
+-
+-	return 0;
+-}
+-
+ static struct platform_driver lp8788_dldo_driver = {
+ 	.probe = lp8788_dldo_probe,
+-	.remove = lp8788_dldo_remove,
+ 	.driver = {
+ 		.name = LP8788_DEV_DLDO,
+ 		.owner = THIS_MODULE,
+@@ -603,7 +593,7 @@ static int lp8788_aldo_probe(struct platform_device *pdev)
+ 	cfg.driver_data = ldo;
+ 	cfg.regmap = lp->regmap;
+ 
+-	rdev = regulator_register(&lp8788_aldo_desc[id], &cfg);
++	rdev = devm_regulator_register(&pdev->dev, &lp8788_aldo_desc[id], &cfg);
+ 	if (IS_ERR(rdev)) {
+ 		ret = PTR_ERR(rdev);
+ 		dev_err(&pdev->dev, "ALDO%d regulator register err = %d\n",
+@@ -617,18 +607,8 @@ static int lp8788_aldo_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int lp8788_aldo_remove(struct platform_device *pdev)
+-{
+-	struct lp8788_ldo *ldo = platform_get_drvdata(pdev);
+-
+-	regulator_unregister(ldo->regulator);
+-
+-	return 0;
+-}
+-
+ static struct platform_driver lp8788_aldo_driver = {
+ 	.probe = lp8788_aldo_probe,
+-	.remove = lp8788_aldo_remove,
+ 	.driver = {
+ 		.name = LP8788_DEV_ALDO,
+ 		.owner = THIS_MODULE,
 -- 
-Kind regards,
-Minchan Kim
+1.7.10.4
+
+
