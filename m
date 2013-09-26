@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab3IZKNm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 06:13:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36808 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755521Ab3IZKNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 06:13:41 -0400
-Message-ID: <524408BE.40402@ti.com>
-Date: Thu, 26 Sep 2013 13:13:18 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756610Ab3IZKOY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 06:14:24 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:47126 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755999Ab3IZKOW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 06:14:22 -0400
+Message-ID: <524408F9.3090702@linaro.org>
+Date: Thu, 26 Sep 2013 12:14:17 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Mike Dunn <mikedunn@newsguy.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, <linux-pwm@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Robert Jarzmik <robert.jarzmik@free.fr>,
-        Marek Vasut <marex@denx.de>
-Subject: Re: [PATCH] pwm-backlight: add support for device tree gpio control
-References: <1378236372-15711-1-git-send-email-mikedunn@newsguy.com> <20130910172130.GC22111@ulmo> <523056A6.5060000@newsguy.com>
-In-Reply-To: <523056A6.5060000@newsguy.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="NDDlI9o5jwvnxTdFENGHAnXjgNLGIg8Vv"
+To: Michal Simek <michal.simek@xilinx.com>
+CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Preeti Murthy <preeti.lkml@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 0/4] arm: zynq: Enable global timer
+References: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com> <5242FF4B.6050901@linaro.org> <62570dec-da98-42a2-93b9-6ab1f8adb30d@CH1EHSMHS037.ehs.local>
+In-Reply-To: <62570dec-da98-42a2-93b9-6ab1f8adb30d@CH1EHSMHS037.ehs.local>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---NDDlI9o5jwvnxTdFENGHAnXjgNLGIg8Vv
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 11/09/13 14:40, Mike Dunn wrote:
-> On 09/10/2013 10:21 AM, Thierry Reding wrote:
-
->> Do you have a real setup that actually needs multiple GPIOs? Usually
->> such a setup requires some kind of timing or other additional constrai=
-nt
->> which can't be represented by this simple binding.
+On 09/26/2013 10:16 AM, Michal Simek wrote:
+> Hi Daniel,
+>
+> On 09/25/2013 05:20 PM, Daniel Lezcano wrote:
+>> On 09/18/2013 08:48 PM, Soren Brinkmann wrote:
+>>> Hi all,
+>>>
+>>> here's a v2. I reused the subject from my v1 submission although the focus of
+>>> this series moved a bit towards the timer subsystem.
+>>> I replaced Stephen's fix to prevent per cpu devices from becoming
+>>> the broadcast device with Thomas' proposal, but I kept the original commit
+>>> message. I split the whole approach in small chunks that I found reasonable.
+>>>
+>>> In 4/4, I picked up Grant's comment regarding the DT node name.
+>>>
+>>> v2:
+>>>   - drop 1/2 of the original series
+>>>   - implement preventing per cpu devices from becoming broadcast device according
+>>>     to Thomas' proposal
+>>>     - introduce new CLOCK_EVT_FEAT_PERCPU flag
+>>>     - set the flag for the arm_global_timer
+>>>     - filter per cpu devices based on this flag when choosing the broadcast
+>>>       device
+>>>   - rename DT node to avoid '_'s
+>>>
+>>>
+>>> Soren Brinkmann (4):
+>>>    clockchips: Add FEAT_PERCPU clockevent flag
+>>>    clocksource/arm_global_timer: Set FEAT_PERCPU flag
+>>>    tick: broadcast: Deny per-cpu clockevents from being broadcast sources
+>>>    arm: zynq: Enable arm_global_timer
+>>>
+>>>   arch/arm/boot/dts/zynq-7000.dtsi       | 8 ++++++++
+>>>   arch/arm/mach-zynq/Kconfig             | 1 +
+>>>   drivers/clocksource/arm_global_timer.c | 3 ++-
+>>>   include/linux/clockchips.h             | 1 +
+>>>   kernel/time/tick-broadcast.c           | 1 +
+>>>   5 files changed, 13 insertions(+), 1 deletion(-)
 >>
->> Looking at the Palm Treo code it seems like the reason why multiple
->> GPIOs are needed is because one is to enable the backlight, while the
->> other is in fact used to enable the LCD panel.=20
->=20
->=20
-> There are actually four GPIOs involved!  (There is an embarrasingly hor=
-rible
-> hack in arch/arm/mach-pxa/palmtreo.c that handles the others.)  One is =
-almost
-> certainly simply backlight power.  The other three are probably LCD rel=
-ated.
+>> This patches falls under different maintainer's umbrella.
+>>
+>> I acked-by the patches, so if someone is willing to take the patches I
+>> am ok with that. I am ok also to pick them into my tree with the
+>> acked-by maintainer. Just let me know ...
+>>
+>
+> Yes, please add also this zynq specific patch through your tree.
+>
+> Here is my ACK for that.
+> Acked-by: Michal Simek <michal.simek@xilinx.com>
 
-When you say "power", do you mean the gpio enables a regulator to feed
-power to the backlight? If so, wouldn't that be a regulator, not gpio,
-from the bl driver's point of view?
+Thomas do you mind to ack the patches if you agree with it ?
 
-Generally speaking, this same problem appears in many places, but for
-some reason especially in display. I'm a bit hesitant in adding "free
-form" gpio/regulator support for drivers, as, as Thierry pointed out,
-there are often timing requirements, or sometimes the gpios are
-inverted, or sometimes the gpio is, in fact, a reset gpio, where you'll
-assert the gpio for a short moment only.
-
-I haven't seen new versions for the power sequences framework (without
-DT support), I think it could help us here a bit by simplifying how we
-present the sequences inside the driver. But we still need multiple
-drivers or the same driver supporting multiple devices.
-
-And I also think that the model where we have just one driver for, say,
-backlight may not be enough. There may be multiple hardware components,
-that used together will generate the backlight. And each component
-requires specific management.
-
- Tomi
+Thanks
+   -- Daniel
 
 
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
---NDDlI9o5jwvnxTdFENGHAnXjgNLGIg8Vv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSRAi+AAoJEPo9qoy8lh71yKgP/2Ru08KiKVeLi5TJ2a1T4yqH
-6+541TbX0JlvQECfoEJjJ98eZ4eJWGrRwa9Soy3A5WA17CEvM8xk7XXIM/0G8FqE
-mMJbSoIX2ccwseuLMwbYTGuPAsWh9yqZLF7hdDZ3nQV2uET02JYcKBili4iK9vzG
-g2S3J1mrBQPKAKlj90Vyx8EgCOy/735c/oAaSIEF43PHYmao1E1dwChBXm2U86nr
-yFyeDOx6ApVs49jtHQAuXk9lwNccVR/yOP+BLCBQrLm+GD3A0bZApYsn0+YbNoaC
-UFsGiUw0IOByLrCqpDtfr7Z9XkZZT1jVgd+SijD4qIrjkHt/JohBGW4OX9KzaocH
-F27hKzUOaptGewXEtcv0ICYNUdB6O+6sa67O9ngp0+TfXELrhKoxAvwvSIfMTyhi
-WQo5H5BNZ+cW5WSFCfT0/4PXI/PGa+yB0f1U4TWBYz+lYq+cNl+juG7lpzOHRboT
-UFOkbIy9sf3vZVuo+/rmkZHM2WffNNxPxsbw4bGDeWxUZVWdGr+xMx4CgltjN2/c
-GiePDAH853QSogR/ha8emF2RUzYfTJxSW5rq61iCUxMrIqUE03IzQxaZA47Gm+iU
-W6OeKIdaD+osDOEi86RRlBYHX/LA8cPpty8bgWdSX1aVb0hXjW2OvZIahS1LwdOk
-ybLKvLfHHU908D4TVB+Q
-=OehU
------END PGP SIGNATURE-----
-
---NDDlI9o5jwvnxTdFENGHAnXjgNLGIg8Vv--
