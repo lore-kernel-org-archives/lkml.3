@@ -1,132 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab3IZSeg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 14:34:36 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:35119 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005Ab3IZSeb (ORCPT
+	id S1754108Ab3IZSel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 14:34:41 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:49508 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754072Ab3IZSeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 14:34:31 -0400
+	Thu, 26 Sep 2013 14:34:37 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mirko Lindner <mlindner@marvell.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Roger Luethi <rl@hellgate.ch>, Patrick McHardy <kaber@trash.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
-        Jesse Gross <jesse@nicira.com>,
+Cc: John Stultz <john.stultz@linaro.org>, Li Zefan <lizefan@huawei.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: [PATCH 0/4][RFC] Lockdep enablement for seqcount/seqlocks
-Date: Thu, 26 Sep 2013 11:34:20 -0700
-Message-Id: <1380220464-28840-1-git-send-email-john.stultz@linaro.org>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3/4] [RFC] cpuset: Fix potential deadlock w/ set_mems_allowed
+Date: Thu, 26 Sep 2013 11:34:23 -0700
+Message-Id: <1380220464-28840-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1380220464-28840-1-git-send-email-john.stultz@linaro.org>
+References: <1380220464-28840-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I wanted to send this out again for feedback.
+After adding lockdep support to seqlock/seqcount structures,
+I started seeing the following warning:
 
-This patch series enables lockdep for seqcount/seqlock structures,
-as well as provides the required cleanups to explicitly initialize
-the seqcount structures on u64_stat_sync users.
+[    1.070907] ======================================================
+[    1.072015] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+[    1.073181] 3.11.0+ #67 Not tainted
+[    1.073801] ------------------------------------------------------
+[    1.074882] kworker/u4:2/708 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+[    1.076088]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff81187d7f>] new_slab+0x5f/0x280
+[    1.077572]
+[    1.077572] and this task is already holding:
+[    1.078593]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff81339f03>] blk_execute_rq_nowait+0x53/0xf0
+[    1.080042] which would create a new lock dependency:
+[    1.080042]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
+[    1.080042]
+[    1.080042] but this new dependency connects a SOFTIRQ-irq-safe lock:
+[    1.080042]  (&(&q->__queue_lock)->rlock){..-...}
+[    1.080042] ... which became SOFTIRQ-irq-safe at:
+[    1.080042]   [<ffffffff810ec179>] __lock_acquire+0x5b9/0x1db0
+[    1.080042]   [<ffffffff810edfe5>] lock_acquire+0x95/0x130
+[    1.080042]   [<ffffffff818968a1>] _raw_spin_lock+0x41/0x80
+[    1.080042]   [<ffffffff81560c9e>] scsi_device_unbusy+0x7e/0xd0
+[    1.080042]   [<ffffffff8155a612>] scsi_finish_command+0x32/0xf0
+[    1.080042]   [<ffffffff81560e91>] scsi_softirq_done+0xa1/0x130
+[    1.080042]   [<ffffffff8133b0f3>] blk_done_softirq+0x73/0x90
+[    1.080042]   [<ffffffff81095dc0>] __do_softirq+0x110/0x2f0
+[    1.080042]   [<ffffffff81095fcd>] run_ksoftirqd+0x2d/0x60
+[    1.080042]   [<ffffffff810bc506>] smpboot_thread_fn+0x156/0x1e0
+[    1.080042]   [<ffffffff810b3916>] kthread+0xd6/0xe0
+[    1.080042]   [<ffffffff818980ac>] ret_from_fork+0x7c/0xb0
+[    1.080042]
+[    1.080042] to a SOFTIRQ-irq-unsafe lock:
+[    1.080042]  (&p->mems_allowed_seq){+.+...}
+[    1.080042] ... which became SOFTIRQ-irq-unsafe at:
+[    1.080042] ...  [<ffffffff810ec1d3>] __lock_acquire+0x613/0x1db0
+[    1.080042]   [<ffffffff810edfe5>] lock_acquire+0x95/0x130
+[    1.080042]   [<ffffffff810b3df2>] kthreadd+0x82/0x180
+[    1.080042]   [<ffffffff818980ac>] ret_from_fork+0x7c/0xb0
+[    1.080042]
+[    1.080042] other info that might help us debug this:
+[    1.080042]
+[    1.080042]  Possible interrupt unsafe locking scenario:
+[    1.080042]
+[    1.080042]        CPU0                    CPU1
+[    1.080042]        ----                    ----
+[    1.080042]   lock(&p->mems_allowed_seq);
+[    1.080042]                                local_irq_disable();
+[    1.080042]                                lock(&(&q->__queue_lock)->rlock);
+[    1.080042]                                lock(&p->mems_allowed_seq);
+[    1.080042]   <Interrupt>
+[    1.080042]     lock(&(&q->__queue_lock)->rlock);
+[    1.080042]
+[    1.080042]  *** DEADLOCK ***
 
-In addition the last two patches in this provide naive fixes to
-some of the issues the new lockdep infrastructure caught.
+The issue stems from the kthreadd() function calling set_mems_allowed
+with irqs enabled. While its possibly unlikely for the actual deadlock
+to trigger, a fix is fairly simple: disable irqs before taking the
+mems_allowed_seq lock.
 
-I'd greatly appreciate any thoughts or feedback on the series!
-
-thanks
--john
-
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Mirko Lindner <mlindner@marvell.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Roger Luethi <rl@hellgate.ch>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Wensong Zhang <wensong@linux-vs.org>
-Cc: Simon Horman <horms@verge.net.au>
-Cc: Julian Anastasov <ja@ssi.bg>
-Cc: Jesse Gross <jesse@nicira.com>
+Cc: Li Zefan <lizefan@huawei.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
-Cc: netfilter-devel@vger.kernel.org
+Acked-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/cpuset.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-
-John Stultz (4):
-  [RFC] net: Explicitly initialize u64_stats_sync structures for lockdep
-  [RFC] seqcount: Add lockdep functionality to seqcount/seqlock
-    structures
-  [RFC] cpuset: Fix potential deadlock w/ set_mems_allowed
-  [RFC] ipv6: Fix for possible ipv6 seqlock deadlock
-
- arch/x86/vdso/vclock_gettime.c                 |  8 +--
- drivers/net/dummy.c                            |  6 ++
- drivers/net/ethernet/emulex/benet/be_main.c    |  4 ++
- drivers/net/ethernet/intel/igb/igb_main.c      |  5 ++
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  |  4 ++
- drivers/net/ethernet/marvell/mvneta.c          |  3 +
- drivers/net/ethernet/marvell/sky2.c            |  3 +
- drivers/net/ethernet/neterion/vxge/vxge-main.c |  4 ++
- drivers/net/ethernet/nvidia/forcedeth.c        |  2 +
- drivers/net/ethernet/realtek/8139too.c         |  3 +
- drivers/net/ethernet/tile/tilepro.c            |  2 +
- drivers/net/ethernet/via/via-rhine.c           |  3 +
- drivers/net/ifb.c                              |  5 ++
- drivers/net/loopback.c                         |  6 ++
- drivers/net/macvlan.c                          |  7 +++
- drivers/net/nlmon.c                            |  8 +++
- drivers/net/team/team.c                        |  6 ++
- drivers/net/team/team_mode_loadbalance.c       |  9 ++-
- drivers/net/veth.c                             |  8 +++
- drivers/net/virtio_net.c                       |  8 +++
- drivers/net/vxlan.c                            |  8 +++
- drivers/net/xen-netfront.c                     |  6 ++
- fs/dcache.c                                    |  4 +-
- fs/fs_struct.c                                 |  2 +-
- include/linux/cpuset.h                         |  4 ++
- include/linux/init_task.h                      |  8 +--
- include/linux/lockdep.h                        |  8 ++-
- include/linux/seqlock.h                        | 79 ++++++++++++++++++++++++--
- include/linux/u64_stats_sync.h                 |  7 +++
- mm/filemap_xip.c                               |  2 +-
- net/8021q/vlan_dev.c                           |  9 ++-
- net/bridge/br_device.c                         |  7 +++
- net/ipv4/af_inet.c                             | 14 +++++
- net/ipv4/ip_tunnel.c                           |  8 ++-
- net/ipv6/addrconf.c                            | 14 +++++
- net/ipv6/af_inet6.c                            | 14 +++++
- net/ipv6/ip6_gre.c                             | 15 +++++
- net/ipv6/ip6_output.c                          |  7 ++-
- net/ipv6/ip6_tunnel.c                          |  7 +++
- net/ipv6/sit.c                                 | 15 +++++
- net/netfilter/ipvs/ip_vs_ctl.c                 | 25 +++++++-
- net/openvswitch/datapath.c                     |  6 ++
- net/openvswitch/vport.c                        |  8 +++
- 43 files changed, 354 insertions(+), 27 deletions(-)
-
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index cc1b01c..3fe661f 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -110,10 +110,14 @@ static inline bool put_mems_allowed(unsigned int seq)
+ 
+ static inline void set_mems_allowed(nodemask_t nodemask)
+ {
++	unsigned long flags;
++
+ 	task_lock(current);
++	local_irq_save(flags);
+ 	write_seqcount_begin(&current->mems_allowed_seq);
+ 	current->mems_allowed = nodemask;
+ 	write_seqcount_end(&current->mems_allowed_seq);
++	local_irq_restore(flags);
+ 	task_unlock(current);
+ }
+ 
 -- 
 1.8.1.2
-
 
