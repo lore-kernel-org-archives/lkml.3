@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab3IZOza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 10:55:30 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:65281 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033Ab3IZOzX (ORCPT
+	id S1753687Ab3IZPBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:01:54 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:35144 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753044Ab3IZOz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 10:55:23 -0400
+	Thu, 26 Sep 2013 10:55:29 -0400
 From: Ulf Hansson <ulf.hansson@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
         Chris Ball <cjb@laptop.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>
-Subject: [PATCH 06/27] mmc: dw_mmc: Move away from using deprecated APIs
-Date: Thu, 26 Sep 2013 16:54:31 +0200
-Message-Id: <1380207292-16968-7-git-send-email-ulf.hansson@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-arm-msm@vger.kernel.org
+Subject: [PATCH 08/27] mmc: msm_sdcc: Move away from using deprecated APIs
+Date: Thu, 26 Sep 2013 16:54:33 +0200
+Message-Id: <1380207292-16968-9-git-send-email-ulf.hansson@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
 References: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
@@ -28,52 +29,76 @@ and consequently the mmc_suspend|resume_host APIs are deprecated.
 This means we can simplify the suspend|resume callbacks by removing the
 use of the deprecated APIs.
 
-Cc: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>
+Additionally, remove dead code which also used the deprecated APIs.
+
+Cc: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org
 Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 ---
- drivers/mmc/host/dw_mmc.c |   21 ---------------------
- 1 file changed, 21 deletions(-)
+ drivers/mmc/host/msm_sdcc.c |   27 ++-------------------------
+ 1 file changed, 2 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 0a6a512..4bce0de 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -2696,23 +2696,6 @@ EXPORT_SYMBOL(dw_mci_remove);
-  */
- int dw_mci_suspend(struct dw_mci *host)
- {
--	int i, ret = 0;
--
--	for (i = 0; i < host->num_slots; i++) {
--		struct dw_mci_slot *slot = host->slot[i];
--		if (!slot)
--			continue;
--		ret = mmc_suspend_host(slot->mmc);
--		if (ret < 0) {
--			while (--i >= 0) {
--				slot = host->slot[i];
--				if (slot)
--					mmc_resume_host(host->slot[i]->mmc);
--			}
--			return ret;
--		}
--	}
--
- 	if (host->vmmc)
- 		regulator_disable(host->vmmc);
- 
-@@ -2765,10 +2748,6 @@ int dw_mci_resume(struct dw_mci *host)
- 			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
- 			dw_mci_setup_bus(slot, true);
- 		}
--
--		ret = mmc_resume_host(host->slot[i]->mmc);
--		if (ret < 0)
--			return ret;
- 	}
- 	return 0;
+diff --git a/drivers/mmc/host/msm_sdcc.c b/drivers/mmc/host/msm_sdcc.c
+index b900de4..9405ecd 100644
+--- a/drivers/mmc/host/msm_sdcc.c
++++ b/drivers/mmc/host/msm_sdcc.c
+@@ -1416,28 +1416,10 @@ ioremap_free:
  }
+ 
+ #ifdef CONFIG_PM
+-#ifdef CONFIG_MMC_MSM7X00A_RESUME_IN_WQ
+-static void
+-do_resume_work(struct work_struct *work)
+-{
+-	struct msmsdcc_host *host =
+-		container_of(work, struct msmsdcc_host, resume_task);
+-	struct mmc_host	*mmc = host->mmc;
+-
+-	if (mmc) {
+-		mmc_resume_host(mmc);
+-		if (host->stat_irq)
+-			enable_irq(host->stat_irq);
+-	}
+-}
+-#endif
+-
+-
+ static int
+ msmsdcc_suspend(struct platform_device *dev, pm_message_t state)
+ {
+ 	struct mmc_host *mmc = mmc_get_drvdata(dev);
+-	int rc = 0;
+ 
+ 	if (mmc) {
+ 		struct msmsdcc_host *host = mmc_priv(mmc);
+@@ -1445,14 +1427,11 @@ msmsdcc_suspend(struct platform_device *dev, pm_message_t state)
+ 		if (host->stat_irq)
+ 			disable_irq(host->stat_irq);
+ 
+-		if (mmc->card && mmc->card->type != MMC_TYPE_SDIO)
+-			rc = mmc_suspend_host(mmc);
+-		if (!rc)
+-			msmsdcc_writel(host, 0, MMCIMASK0);
++		msmsdcc_writel(host, 0, MMCIMASK0);
+ 		if (host->clks_on)
+ 			msmsdcc_disable_clocks(host, 0);
+ 	}
+-	return rc;
++	return 0;
+ }
+ 
+ static int
+@@ -1467,8 +1446,6 @@ msmsdcc_resume(struct platform_device *dev)
+ 
+ 		msmsdcc_writel(host, host->saved_irq0mask, MMCIMASK0);
+ 
+-		if (mmc->card && mmc->card->type != MMC_TYPE_SDIO)
+-			mmc_resume_host(mmc);
+ 		if (host->stat_irq)
+ 			enable_irq(host->stat_irq);
+ #if BUSCLK_PWRSAVE
 -- 
 1.7.9.5
 
