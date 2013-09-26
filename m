@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab3IZQZN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 12:25:13 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:60234 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752867Ab3IZQZG (ORCPT
+	id S1753702Ab3IZQZt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 12:25:49 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:42734 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab3IZQZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 12:25:06 -0400
+	Thu, 26 Sep 2013 12:25:14 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 5/8] irq: Justify the various softirq stack choices
-Date: Thu, 26 Sep 2013 18:24:43 +0200
-Message-Id: <1380212686-25897-6-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 7/8] x86: Tell about irq stack coverage
+Date: Thu, 26 Sep 2013 18:24:45 +0200
+Message-Id: <1380212686-25897-8-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1380212686-25897-1-git-send-email-fweisbec@gmail.com>
 References: <1380212686-25897-1-git-send-email-fweisbec@gmail.com>
@@ -33,11 +33,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For clarity, comment the various stack choices for softirqs
-processing, whether we execute them from ksoftirqd or
-local_irq_enable() calls.
+x86-64 runs irq_exit() under the irq stack. So it can afford
+to run softirqs in hardirq exit without the need to switch
+the stacks. The hardirq stack is good enough for that.
 
-Their use on irq_exit() is already commented.
+Now x86-64 runs softirqs in the hardirq stack anyway, so what we
+mostly skip is some needless per cpu refcounting updates there.
+
+x86-32 is not concerned because it only runs the irq handler on
+the irq stack.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
@@ -56,39 +60,21 @@ Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 Cc: David S. Miller <davem@davemloft.net>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- kernel/softirq.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ arch/x86/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 9f8092b..2b4328e 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -170,8 +170,13 @@ static inline void _local_bh_enable_ip(unsigned long ip)
-  	 */
- 	sub_preempt_count(SOFTIRQ_DISABLE_OFFSET - 1);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ee2fb9d..99eb1cc 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -123,6 +123,7 @@ config X86
+ 	select COMPAT_OLD_SIGACTION if IA32_EMULATION
+ 	select RTC_LIB
+ 	select HAVE_DEBUG_STACKOVERFLOW
++	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
  
--	if (unlikely(!in_interrupt() && local_softirq_pending()))
-+	if (unlikely(!in_interrupt() && local_softirq_pending())) {
-+		/*
-+		 * Run softirq if any pending. And do it in its own stack
-+		 * as we may be calling this deep in a task call stack already.
-+		 */
- 		do_softirq();
-+	}
- 
- 	dec_preempt_count();
- #ifdef CONFIG_TRACE_IRQFLAGS
-@@ -769,6 +774,10 @@ static void run_ksoftirqd(unsigned int cpu)
- {
- 	local_irq_disable();
- 	if (local_softirq_pending()) {
-+		/*
-+		 * We can safely run softirq on inline stack, as we are not deep
-+		 * in the task stack here.
-+		 */
- 		__do_softirq();
- 		rcu_note_context_switch(cpu);
- 		local_irq_enable();
+ config INSTRUCTION_DECODER
+ 	def_bool y
 -- 
 1.8.3.1
 
