@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab3IZQr7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 12:47:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47792 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006Ab3IZQr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 12:47:56 -0400
-Message-ID: <524464E6.2060006@redhat.com>
-Date: Thu, 26 Sep 2013 12:46:30 -0400
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1753385Ab3IZQv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 12:51:58 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:44078 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab3IZQvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 12:51:55 -0400
+Message-ID: <52446618.7070703@gmail.com>
+Date: Fri, 27 Sep 2013 00:51:36 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Miklos Szeredi <miklos@szeredi.hu>, Zach Brown <zab@redhat.com>,
-        Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-References: <1378919210-10372-1-git-send-email-zab@redhat.com> <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com> <20130925183828.GA30372@lenny.home.zabbo.net> <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com> <20130925190620.GB30372@lenny.home.zabbo.net> <20130925195526.GA18971@fieldses.org> <20130925210742.GG30372@lenny.home.zabbo.net> <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com> <20130926153359.GE704@fieldses.org>
-In-Reply-To: <20130926153359.GE704@fieldses.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v5 2/6] memblock: Introduce bottom-up allocation mode
+References: <5241D897.1090905@gmail.com> <5241D9A4.4080305@gmail.com> <20130926144516.GD3482@htj.dyndns.org> <524454BE.4030602@gmail.com>
+In-Reply-To: <524454BE.4030602@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 11:34 AM, J. Bruce Fields wrote:
-> On Thu, Sep 26, 2013 at 10:58:05AM +0200, Miklos Szeredi wrote:
->> On Wed, Sep 25, 2013 at 11:07 PM, Zach Brown <zab@redhat.com> wrote:
->>>> A client-side copy will be slower, but I guess it does have the
->>>> advantage that the application can track progress to some degree, and
->>>> abort it fairly quickly without leaving the file in a totally undefined
->>>> state--and both might be useful if the copy's not a simple constant-time
->>>> operation.
->>> I suppose, but can't the app achieve a nice middle ground by copying the
->>> file in smaller syscalls?  Avoid bulk data motion back to the client,
->>> but still get notification every, I dunno, few hundred meg?
->> Yes.  And if "cp"  could just be switched from a read+write syscall
->> pair to a single splice syscall using the same buffer size.
-> Will the various magic fs-specific copy operations become inefficient
-> when the range copied is too small?
->
-> (Totally naive question, as I have no idea how they really work.)
->
-> --b.
-
-I think that is not really possible to tell when we invoke it. It is very much 
-target device (or file system, etc) dependent on how long it takes. It could be 
-as simple as a reflink copying in a smallish amount of metadata or fall back to 
-a full byte-by-byte copy.  Also note that speed is not the only impact here, 
-some of the mechanisms actually do not consume more space (just increment shared 
-data references).
-
-It would probably make more sense to send it off to the target device and have 
-it return an error when not appropriate (then the app can fall back to the old 
-fashion copy).
-
-ric
-
->
->> And then
->> the user would only notice that things got faster in case of server
->> side copy.  No problems with long blocking times (at least not much
->> worse than it was).
+On 09/26/2013 11:37 PM, Zhang Yanfei wrote:
+> Hello tejun,
+> 
+> Thanks for your quick comments first:)
+> 
+> On 09/26/2013 10:45 PM, Tejun Heo wrote:
+>> Hello,
 >>
->> However "cp" doesn't do reflinking by default, it has a switch for
->> that.  If we just want "cp" and the like to use splice without fearing
->> side effects then by default we should try to be as close to
->> read+write behavior as possible.  No?   That's what I'm really
->> worrying about when you want to wire up splice to reflink by default.
->> I do think there should be a flag for that.  And if on the block level
->> some magic happens, so be it.  It's not the fs deverloper's worry any
->> more ;)
+>> On Wed, Sep 25, 2013 at 02:27:48AM +0800, Zhang Yanfei wrote:
+>>> +#ifdef CONFIG_MOVABLE_NODE
+>>> +static inline void memblock_set_bottom_up(bool enable)
+>>> +{
+>>> +	memblock.bottom_up = enable;
+>>> +}
+>>> +
+>>> +static inline bool memblock_bottom_up(void)
+>>> +{
+>>> +	return memblock.bottom_up;
+>>> +}
 >>
->> Thanks,
->> Miklos
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>> Can you please explain what this is for here?
+> 
+> OK, will do.
 
+I write the function description here so you could give your
+comments still in this version.
+
+/*
+ * Set the allocation direction to bottom-up or top-down.
+ */
+static inline void memblock_set_bottom_up(bool enable)
+{
+        memblock.bottom_up = enable;
+}
+
+
+/*
+ * Check if the allocation direction is bottom-up or not.
+ * if this is true, that said, the boot option "movablenode"
+ * has been specified, and memblock will allocate memory
+ * just near the kernel image.
+ */
+static inline bool memblock_bottom_up(void)
+{
+        return memblock.bottom_up;
+}
+
+Thanks.
+
+-- 
+Thanks.
+Zhang Yanfei
