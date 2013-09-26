@@ -1,23 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab3IZWg4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:36:56 -0400
-Received: from smtprelay0021.hostedemail.com ([216.40.44.21]:57660 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754049Ab3IZWgz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:36:55 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1537:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3865:3867:3873:5007:7652:9010:10004:10400:10848:11657:11658:11914:12517:12519:13069:13161:13229:13311:13357:13846,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ray23_1fb3dc10a140
-X-Filterd-Recvd-Size: 903
-Message-ID: <1380235012.17366.87.camel@joe-AO722>
-Subject: hippi - linux MAINTAINERS
-From: Joe Perches <joe@perches.com>
-To: Jes Sorensen <jes@trained-monkey.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 26 Sep 2013 15:36:52 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754593Ab3IZWko (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:40:44 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55444 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754223Ab3IZWkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 18:40:43 -0400
+Message-ID: <1380234046.28561.73.camel@pasglop>
+Subject: Re: [PATCH 8/8] powerpc: Tell about irq stack coverage
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@au1.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 27 Sep 2013 08:20:46 +1000
+In-Reply-To: <1380212686-25897-9-git-send-email-fweisbec@gmail.com>
+References: <1380212686-25897-1-git-send-email-fweisbec@gmail.com>
+	 <1380212686-25897-9-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -25,18 +34,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-M:	Jes Sorensen <jes@trained-monkey.org>
-L:	linux-hippi@sunsite.dk
+On Thu, 2013-09-26 at 18:24 +0200, Frederic Weisbecker wrote:
+> Now that powerpc runs irq_exit() under the irq stack,
+> let the softirq core know about that so that we spare
+> the needless stack switch on irq exit's softirq processing.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-The list appears dead.
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc:
 
-Are you doing any work on this or should this
-be set to Orphan.
+>  Paul Mackerras <paulus@au1.ibm.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Paul Mackerras <paulus@au1.ibm.com>
+> Cc: James Hogan <james.hogan@imgtec.com>
+> Cc: James E.J. Bottomley <jejb@parisc-linux.org>
+> Cc: Helge Deller <deller@gmx.de>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  arch/powerpc/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+> index 38f3b7e..b365d5c 100644
+> --- a/arch/powerpc/Kconfig
+> +++ b/arch/powerpc/Kconfig
+> @@ -138,6 +138,7 @@ config PPC
+>  	select OLD_SIGSUSPEND
+>  	select OLD_SIGACTION if PPC32
+>  	select HAVE_DEBUG_STACKOVERFLOW
+> +	select HAVE_IRQ_EXIT_ON_IRQ_STACK
+>  
+>  config EARLY_PRINTK
+>  	bool
 
-HIPPI
-S:	Orphan
-F:	include/linux/hippidevice.h
-F:	include/uapi/linux/if_hippi.h
-F:	net/802/hippi.c
-F:	drivers/net/hippi/
 
