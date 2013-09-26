@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab3IZCNo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 22:13:44 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45189 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755345Ab3IZCNn (ORCPT
+	id S1755938Ab3IZCOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 22:14:21 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:34938 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab3IZCOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 22:13:43 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-7d-5243985555a6
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@linaro.org>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Pawel Moll'" <pawel.moll@arm.com>
-References: <000701ceba5c$69459b10$3bd0d130$%han@samsung.com>
-In-reply-to: <000701ceba5c$69459b10$3bd0d130$%han@samsung.com>
-Subject: [PATCH V2 18/18] regulator: vexpress: use devm_regulator_register()
-Date: Thu, 26 Sep 2013 11:13:41 +0900
-Message-id: <001801ceba5e$04fa2e80$0eee8b80$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac66XGktrYXfQ+q4TvOtJpq/iZ1T4wAAYm6A
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zQ93QGc5BBqvOGFpsun6d1eLywkus
-	Ft+udDBZXN41h81iwvS1LA6sHmvmrWH02DnrLrvHnWt72Dz6tqxi9Pi8SS6ANYrLJiU1J7Ms
-	tUjfLoErY97HeSwFBzkqVr54zNrAOJ+9i5GTQ0LARKLr3AVGCFtM4sK99WxdjFwcQgLLGCX6
-	Vx5lgym6/OMoK0RiOqPEtukHGSGcX4wSVy9uBatiE1CT+PLlMNhYEQFViT3Pn4DZzAITGCVe
-	PLEEsYUEbCVO/b4IVs8pYCdx+tpGoKkcHMICPhIzXoCVswC1nly5hh0kzAtU/u2WKkiYV0BQ
-	4sfkeywQE7Uk1u88zgRhy0tsXvOWGaRcQkBd4tFfXYgDjCSaL/ZBlYhI7HvxDuxiCYFr7BKf
-	p/6GWiUg8W3yIRaIXlmJTQeYId6VlDi44gYL0NmzkGyehWTzLCSbZyFZsYCRZRWjaGpBckFx
-	UnqRqV5xYm5xaV66XnJ+7iZGSJxO3MF4/4D1IcZkoPUTmaVEk/OBcZ5XEm9obGZkYWpiamxk
-	bmlGmrCSOK96i3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkb9ktsXbN8ecfS7uHnWzXV7
-	dAuf/th3qfre7uJKn1sTL8tu6lXSzrKIav/ZekPWM2Hz1+msXkb7gnXLFGbwdy52SHrJWNvY
-	rMIXsWX7Jd6cE9cCPsxRcGwPNA+c+p9Rah73Yf5rtXtPpda7iv2dOu3KrOJsmddljPfczvy4
-	9z+eWfCB0I6eCBUlluKMREMt5qLiRABmTWEB6QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jQd3QGc5BBn8a9Sw2Xb/OanF54SVW
-	i29XOpgsLu+aw2YxYfpaFgdWjzXz1jB67Jx1l93jzrU9bB59W1YxenzeJBfAGtXAaJORmpiS
-	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmDHv4zyWgoMcFStfPGZtYJzP3sXIySEhYCJx
-	+cdRVghbTOLCvfVsXYxcHEIC0xkltk0/yAjh/GKUuHpxKxtIFZuAmsSXL4fBukUEVCX2PH8C
-	ZjMLTGCUePHEEsQWErCVOPX7Ilg9p4CdxOlrG4E2cHAIC/hIzHgBVs4C1Hpy5Rp2kDAvUPm3
-	W6ogYV4BQYkfk++xQEzUkli/8zgThC0vsXnNW2aQcgkBdYlHf3UhDjCSaL7YB1UiIrHvxTvG
-	CYxCs5BMmoVk0iwkk2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzgJPJPewbiq
-	weIQowAHoxIP7wVm5yAh1sSy4srcQ4wSHMxKIrzfjIBCvCmJlVWpRfnxRaU5qcWHGJOB/pzI
-	LCWanA9MUHkl8YbGJmZGlkZmFkYm5uakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnVwDjx
-	HkuYQ2V+XI/FLhef5WxHG47ZJyeJ5aSt7L66++QG00mWK5cv/mXD+n17Xfq7NP41tge0PC83
-	hudutPbIq3mvVZkUrDpFJc7sia36Nv+wopRlLlNiIxcxSqv+fDKn/10Mk3bcTomJvAUH1nY8
-	8Od3ajk5z+2x0/uCd8db+b5+vbVRe0PVVSWW4oxEQy3mouJEAEgVa8hGAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 25 Sep 2013 22:14:20 -0400
+Date: Thu, 26 Sep 2013 11:14:17 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 1/2] rcar-hpbdma: remove shdma_free_irq() calls
+Message-ID: <20130926021417.GC18396@verge.net.au>
+References: <201309260228.37765.sergei.shtylyov@cogentembedded.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201309260228.37765.sergei.shtylyov@cogentembedded.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_regulator_register() to make cleanup paths simpler.
+On Thu, Sep 26, 2013 at 02:28:37AM +0400, Sergei Shtylyov wrote:
+> Commit c1c63a14f4f2419d093acd7164eccdff315baa86 (DMA: shdma: switch to managed
+> resource allocation) got rid of shdma_free_irq() but  unfortunately got merged
+> later than commit c4f6c41ba790bbbfcebb4c47a709ac8ff1fe1af9 (dma: add driver for
+> R-Car HPB-DMAC), so that the HPB-DMAC driver retained the calls and got broken:
+> 
+> drivers/dma/sh/rcar-hpbdma.c: In function `hpb_dmae_alloc_chan_resources':
+> drivers/dma/sh/rcar-hpbdma.c:435: error: implicit declaration of function
+> `shdma_free_irq'
+> 
+> Fix this compilation error by removing the remaining shdma_free_irq() calls.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Acked-by: Pawel Moll <pawel.moll@arm.com>
----
- drivers/regulator/vexpress.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Tested-by: Simon Horman <horms+renesas@verge.net.au>
 
-diff --git a/drivers/regulator/vexpress.c b/drivers/regulator/vexpress.c
-index 4668c7f..f3ae28a 100644
---- a/drivers/regulator/vexpress.c
-+++ b/drivers/regulator/vexpress.c
-@@ -96,7 +96,7 @@ static int vexpress_regulator_probe(struct platform_device *pdev)
- 	config.driver_data = reg;
- 	config.of_node = pdev->dev.of_node;
- 
--	reg->regdev = regulator_register(&reg->desc, &config);
-+	reg->regdev = devm_regulator_register(&pdev->dev, &reg->desc, &config);
- 	if (IS_ERR(reg->regdev)) {
- 		err = PTR_ERR(reg->regdev);
- 		goto error_regulator_register;
-@@ -119,7 +119,6 @@ static int vexpress_regulator_remove(struct platform_device *pdev)
- 	struct vexpress_regulator *reg = platform_get_drvdata(pdev);
- 
- 	vexpress_config_func_put(reg->func);
--	regulator_unregister(reg->regdev);
- 
- 	return 0;
- }
--- 
-1.7.10.4
-
-
+> Reported-by: Simon Horman <horms@verge.net.au>
+> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+> 
+> ---
+> The patch is against 'fixes-3.12' branch of Vinod Koul's 'slave-dma.git' repo.
+> 
+>  drivers/dma/sh/rcar-hpbdma.c |    2 --
+>  1 file changed, 2 deletions(-)
+> 
+> Index: slave-dma/drivers/dma/sh/rcar-hpbdma.c
+> ===================================================================
+> --- slave-dma.orig/drivers/dma/sh/rcar-hpbdma.c
+> +++ slave-dma/drivers/dma/sh/rcar-hpbdma.c
+> @@ -432,7 +432,6 @@ hpb_dmae_alloc_chan_resources(struct hpb
+>  		hpb_chan->xfer_mode = XFER_DOUBLE;
+>  	} else {
+>  		dev_err(hpb_chan->shdma_chan.dev, "DCR setting error");
+> -		shdma_free_irq(&hpb_chan->shdma_chan);
+>  		return -EINVAL;
+>  	}
+>  
+> @@ -614,7 +613,6 @@ static void hpb_dmae_chan_remove(struct 
+>  	shdma_for_each_chan(schan, &hpbdev->shdma_dev, i) {
+>  		BUG_ON(!schan);
+>  
+> -		shdma_free_irq(schan);
+>  		shdma_chan_remove(schan);
+>  	}
+>  	dma_dev->chancnt = 0;
+> 
