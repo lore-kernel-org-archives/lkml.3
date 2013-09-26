@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab3IZFGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 01:06:47 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:42596 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab3IZFGp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 01:06:45 -0400
+	id S1753625Ab3IZFHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 01:07:04 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49155 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751018Ab3IZFHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 01:07:00 -0400
+Message-ID: <5243C0E5.7020508@ti.com>
+Date: Thu, 26 Sep 2013 10:36:45 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <52435B05.9030201@linaro.org>
-References: <cover.1379779777.git.viresh.kumar@linaro.org>
-	<19979ce88726285c72dd6fe3d7b370d53669443c.1379779777.git.viresh.kumar@linaro.org>
-	<52435B05.9030201@linaro.org>
-Date: Thu, 26 Sep 2013 10:36:44 +0530
-Message-ID: <CAKohpon6fgCp2StW1=6JUua1xuZW8iS=0VLVCTsTD6JS027meg@mail.gmail.com>
-Subject: Re: [PATCH 08/21] cpuidle: use cpuidle_disabled() instead of "off"
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Pratyush Anand <pratyush.anand@st.com>, Jingoo Han <jg1.han@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        Mohit KUMAR DCG <Mohit.KUMAR@st.com>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys
+ part and Exynos part
+References: <000701ce8741$fe47deb0$fad79c10$@samsung.com> <20130923041427.GC2246@pratyush-vbox> <523FD286.608@ti.com> <201309242323.55323.arnd@arndb.de>
+In-Reply-To: <201309242323.55323.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 September 2013 03:22, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-> On 09/22/2013 03:21 AM, Viresh Kumar wrote:
->> We have a routine for getting value of "off", better call that instead of using
->> "off" directly.
->
-> We are in the fast path, I am not sure invoking a function here is
-> better than using directly the static variable.
+On Wednesday 25 September 2013 02:53 AM, Arnd Bergmann wrote:
+> On Monday 23 September 2013, Kishon Vijay Abraham I wrote:
+>> Btw if we hadn't programmed inbound translation table, the address will go
+>> untranslated (according to the data book). I guess that's how it was working
+>> for Jingoo Han.
+>>
+>> **
+>> 3.10.4
+>> Inbound iATU Operation
+>>
+>> When there is no match, then the address is untranslated
+>> **
+>>
+> 
+> Well, that should work just as well, since you have a 1:1 translation anyway.
+> Do you get the same error without the translation?
 
-I only did it for consistency as we have this routine specifically for reading
-value of "off" and so we better don't use off directly..
+Yes. I get the same non-fatal error interrupt in RC.
 
-Probably we can make it static inline and move it into
-drivers/cpuidle/cpuidle.h?
+Thanks
+Kishon
