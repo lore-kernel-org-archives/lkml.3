@@ -1,121 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab3IZJ44 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:56:56 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:48309 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314Ab3IZJ4m (ORCPT
+	id S1756445Ab3IZJ6Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:58:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45732 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755712Ab3IZJ6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:56:42 -0400
+	Thu, 26 Sep 2013 05:58:22 -0400
+Date: Thu, 26 Sep 2013 11:58:12 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for
+ wake_affine(.sync=true)
+Message-ID: <20130926095812.GR3081@twins.programming.kicks-ass.net>
+References: <20130925075341.GB3081@twins.programming.kicks-ass.net>
+ <1380099377.8523.9.camel@marge.simpson.net>
 MIME-Version: 1.0
-In-Reply-To: <CAL1ERfNh5ss2F6X8QuYxhZ7f2g6mcJvn6pJow2ecRk8dT13CGg@mail.gmail.com>
-References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
-	<52118042.30101@oracle.com>
-	<20130819054742.GA28062@bbox>
-	<CAL1ERfN3AUYwWTctGBjVcgb-mwAmc15-FayLz48P1d0GzogncA@mail.gmail.com>
-	<20130821074939.GE3022@bbox>
-	<CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
-	<CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
-	<CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
-	<20130926055802.GA20634@bbox>
-	<CAL1ERfN8PpSZxRmLiwm4i-XZWzRaPJ0A=Af76Dtopcf2xYnBtQ@mail.gmail.com>
-	<20130926075725.GA22339@bbox>
-	<CAL1ERfNh5ss2F6X8QuYxhZ7f2g6mcJvn6pJow2ecRk8dT13CGg@mail.gmail.com>
-Date: Thu, 26 Sep 2013 17:56:40 +0800
-Message-ID: <CAA_GA1cMRo6pOUJxh+gCT7BGv9_TAF0qDffR9X5k4JrpAPsUPg@mail.gmail.com>
-Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
-From: Bob Liu <lliubbo@gmail.com>
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, Bob Liu <bob.liu@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380099377.8523.9.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 4:48 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
-> On Thu, Sep 26, 2013 at 3:57 PM, Minchan Kim <minchan@kernel.org> wrote:
->> On Thu, Sep 26, 2013 at 03:26:33PM +0800, Weijie Yang wrote:
->>> On Thu, Sep 26, 2013 at 1:58 PM, Minchan Kim <minchan@kernel.org> wrote:
->>> > Hello Weigie,
->>> >
->>> > On Wed, Sep 25, 2013 at 05:33:43PM +0800, Weijie Yang wrote:
->>> >> On Wed, Sep 25, 2013 at 4:31 PM, Bob Liu <lliubbo@gmail.com> wrote:
->>> >> > On Wed, Sep 25, 2013 at 4:09 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
->>> >> >> I think I find a new issue, for integrity of this mail thread, I reply
->>> >> >> to this mail.
->>> >> >>
->>> >> >> It is a concurrence issue either, when duplicate store and reclaim
->>> >> >> concurrentlly.
->>> >> >>
->>> >> >> zswap entry x with offset A is already stored in zswap backend.
->>> >> >> Consider the following scenario:
->>> >> >>
->>> >> >> thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
->>> >> >>
->>> >> >> thread 1: store new page with the same offset A, alloc a new zswap entry y.
->>> >> >>   store finished. shrink_page_list() call __remove_mapping(), and now
->>> >> >> it is not in swap_cache
->>> >> >>
->>> >> >
->>> >> > But I don't think swap layer will call zswap with the same offset A.
->>> >>
->>> >> 1. store page of offset A in zswap
->>> >> 2. some time later, pagefault occur, load page data from zswap.
->>> >>   But notice that zswap entry x is still in zswap because it is not
->>> >> frontswap_tmem_exclusive_gets_enabled.
->>> >
->>> > frontswap_tmem_exclusive_gets_enabled is just option to see tradeoff
->>> > between CPU burining by frequent swapout and memory footprint by duplicate
->>> > copy in swap cache and frontswap backend so it shouldn't affect the stability.
->>>
->>> Thanks for explain this.
->>> I don't mean to say this option affects the stability,  but that zswap
->>> only realize
->>> one option. Maybe it's better to realize both options for different workloads.
->>
->> "zswap only relize one option"
->> What does it mena? Sorry. I couldn't parse your intention. :)
->> You mean zswap should do something special to support frontswap_tmem_exclusive_gets?
->
-> Yes. But I am not sure whether it is worth.
->
->>>
->>> >>  this page is with PageSwapCache(page) and page_private(page) = entry.val
->>> >> 3. change this page data, and it become dirty
->>> >
->>> > If non-shared swapin page become redirty, it should remove the page from
->>> > swapcache. If shared swapin page become redirty, it should do CoW so it's a
->>> > new page so that it doesn't live in swap cache. It means it should have new
->>> > offset which is different with old's one for swap out.
->>> >
->>> > What's wrong with that?
->>>
->>> It is really not a right scene for duplicate store. And I can not think out one.
->>> If duplicate store is impossible, How about delete the handle code in zswap?
->>> If it does exist, I think there is a potential issue as I described.
->>
->> You mean "zswap_duplicate_entry"?
->> AFAIR, I already had a question to Seth when zswap was born but AFAIRC,
->> he said that he didn't know exact reason but he saw that case during
->> experiement so copy the code peice from zcache.
->>
->> Do you see the case, too?
->
-> Yes, I mean duplicate store.
-> I check the /Documentation/vm/frontswap.txt, it mentions "duplicate stores",
-> but I am still confused.
->
-> I wrote a zcache varietas which swap out compressed page to swapfile.
-> I did see that case when I test it on andorid smartphone(arm v7),
+On Wed, Sep 25, 2013 at 10:56:17AM +0200, Mike Galbraith wrote:
+> That will make pipe-test go fugly -> pretty, and help very fast/light
+> localhost network, but eat heavier localhost overlap recovery.  We need
+> a working (and cheap) overlap detector scheme, so we can know when there
+> is enough to be worth going after.
 
-Why not test it based on zswap directly?
-My suggestion is do more and more stress testing against current
-zswap, if there is really any bug triggered or unusual performance
-issue then we dig it out and fix it.
+We used to have an overlap detectoring thing.. It went away though.
 
--- 
-Regards,
---Bob
+But see if you can make something like the below work?
+
+You could make it a general overlap thing and try without the sync too I
+suppose.. 
+
+---
+ include/linux/sched.h |  3 +++
+ kernel/sched/fair.c   | 25 +++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index b5344de..5428016 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -974,6 +974,9 @@ struct sched_entity {
+ 	u64			vruntime;
+ 	u64			prev_sum_exec_runtime;
+ 
++	u64			last_sync_wakeup;
++	u64			avg_overlap;
++
+ 	u64			nr_migrations;
+ 
+ #ifdef CONFIG_SCHEDSTATS
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2b89cd2..47b0d0f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2913,6 +2913,17 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	struct sched_entity *se = &p->se;
+ 	int task_sleep = flags & DEQUEUE_SLEEP;
+ 
++	if (se->last_sync_wakeup) {
++		u64 overlap;
++		s64 diff;
++	       
++		overlap = rq->clock - se->last_sync_wakeup;
++		se->last_sync_wakeup = 0;
++
++		diff = overlap - se->avg_overlap;
++		se->avg_overlap += diff >> 8;
++	}
++
+ 	for_each_sched_entity(se) {
+ 		cfs_rq = cfs_rq_of(se);
+ 		dequeue_entity(cfs_rq, se, flags);
+@@ -3429,6 +3440,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 	int want_affine = 0;
+ 	int sync = wake_flags & WF_SYNC;
+ 
++	if (sync)
++		p->se.last_sync_wakeup = sched_clock_cpu(cpu);
++
+ 	if (p->nr_cpus_allowed == 1)
+ 		return prev_cpu;
+ 
+@@ -3461,6 +3475,17 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
+ 			prev_cpu = cpu;
+ 
++		/*
++		 * Don't bother with select_idle_sibling() in the case of a sync wakeup
++		 * where we know the only running task will soon go-away. Going
++		 * through select_idle_sibling will only lead to pointless ping-pong.
++		 */
++		if (sync && prev_cpu == cpu && cpu_rq(cpu)->nr_running == 1 &&
++		    current->se.avg_overlap < 10000) {
++			new_cpu = cpu;
++			goto unlock;
++		}
++
+ 		new_cpu = select_idle_sibling(p, prev_cpu);
+ 		goto unlock;
+ 	}
