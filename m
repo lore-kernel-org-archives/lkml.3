@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab3IZSzu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 14:55:50 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:60170 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028Ab3IZSvW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 14:51:22 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Richard Kuo <rkuo@codeaurora.org>, linux-hexagon@vger.kernel.org
-Subject: [PATCH 07/21] hexagon: remove unnecessary prom.h includes
-Date: Thu, 26 Sep 2013 13:50:42 -0500
-Message-Id: <1380221456-11192-8-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
-References: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
+	id S1754687Ab3IZSz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 14:55:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33054 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754028Ab3IZSzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 14:55:54 -0400
+Date: Thu, 26 Sep 2013 11:55:08 -0700
+From: Zach Brown <zab@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+Message-ID: <20130926185508.GO30372@lenny.home.zabbo.net>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+ <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
+ <20130925183828.GA30372@lenny.home.zabbo.net>
+ <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
+ <20130925190620.GB30372@lenny.home.zabbo.net>
+ <20130925195526.GA18971@fieldses.org>
+ <20130925210742.GG30372@lenny.home.zabbo.net>
+ <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Thu, Sep 26, 2013 at 10:58:05AM +0200, Miklos Szeredi wrote:
+> On Wed, Sep 25, 2013 at 11:07 PM, Zach Brown <zab@redhat.com> wrote:
+> >> A client-side copy will be slower, but I guess it does have the
+> >> advantage that the application can track progress to some degree, and
+> >> abort it fairly quickly without leaving the file in a totally undefined
+> >> state--and both might be useful if the copy's not a simple constant-time
+> >> operation.
+> >
+> > I suppose, but can't the app achieve a nice middle ground by copying the
+> > file in smaller syscalls?  Avoid bulk data motion back to the client,
+> > but still get notification every, I dunno, few hundred meg?
+> 
+> Yes.  And if "cp"  could just be switched from a read+write syscall
+> pair to a single splice syscall using the same buffer size.  And then
+> the user would only notice that things got faster in case of server
+> side copy.  No problems with long blocking times (at least not much
+> worse than it was).
 
-Hexagon does not have a prom.h header, so it is probably broken with
-CONFIG_OF enabled. In any case, remove unnecessary prom.h include in
-preparation to make prom.h optional.
+Hmm, yes, that would be a nice outcome.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-hexagon@vger.kernel.org
----
- arch/hexagon/kernel/setup.c | 3 ---
- 1 file changed, 3 deletions(-)
+> However "cp" doesn't do reflinking by default, it has a switch for
+> that.  If we just want "cp" and the like to use splice without fearing
+> side effects then by default we should try to be as close to
+> read+write behavior as possible.  No?
 
-diff --git a/arch/hexagon/kernel/setup.c b/arch/hexagon/kernel/setup.c
-index 29d1f1b..0e7c1db 100644
---- a/arch/hexagon/kernel/setup.c
-+++ b/arch/hexagon/kernel/setup.c
-@@ -32,9 +32,6 @@
- #include <asm/hexagon_vm.h>
- #include <asm/vm_mmu.h>
- #include <asm/time.h>
--#ifdef CONFIG_OF
--#include <asm/prom.h>
--#endif
- 
- char cmd_line[COMMAND_LINE_SIZE];
- static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
--- 
-1.8.1.2
+I guess?  I don't find requiring --reflink hugely compelling.  But there
+it is.
 
+> That's what I'm really
+> worrying about when you want to wire up splice to reflink by default.
+> I do think there should be a flag for that.  And if on the block level
+> some magic happens, so be it.  It's not the fs deverloper's worry any
+> more ;)
+
+Sure.  So we'd have:
+
+- no flag default that forbids knowingly copying with shared references
+  so that it will be used by default by people who feel strongly about
+  their assumptions about independent write durability.
+
+- a flag that allows shared references for people who would otherwise
+  use the file system shared reference ioctls (ocfs2 reflink, btrfs
+  clone) but would like it to also do server-side read/write copies
+  over nfs without additional intervention.
+
+- a flag that requires shared references for callers who don't want
+  giant copies to take forever if they aren't instant.  (The qemu guys
+  asked for this at Plumbers.)
+
+I think I can live with that.
+
+- z
