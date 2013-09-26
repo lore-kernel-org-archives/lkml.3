@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab3IZU7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 16:59:19 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:12581 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443Ab3IZU7R (ORCPT
+	id S1754236Ab3IZU7b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 16:59:31 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50066 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753443Ab3IZU71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 16:59:17 -0400
-Message-ID: <1380229154.2170.13.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [tip:x86/reboot] x86/reboot: Remove the duplicate C6100 entry
- in the reboot quirks list
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, msharbiani@twitter.com
-Cc: linux-tip-commits@vger.kernel.org
-Date: Thu, 26 Sep 2013 13:59:14 -0700
-In-Reply-To: <tip-b5eafc6f07c95e9f3dd047e72737449cb03c9956@git.kernel.org>
-References: <1380216643-4683-1-git-send-email-masoud.sharbiani@gmail.com>
-	 <tip-b5eafc6f07c95e9f3dd047e72737449cb03c9956@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Thu, 26 Sep 2013 16:59:27 -0400
+Message-ID: <5244A02C.4050700@linaro.org>
+Date: Thu, 26 Sep 2013 13:59:24 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizefan@huawei.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/4] [RFC] seqcount: Add lockdep functionality to seqcount/seqlock
+ structures
+References: <1380220464-28840-1-git-send-email-john.stultz@linaro.org>	<1380220464-28840-3-git-send-email-john.stultz@linaro.org> <20130926164600.5b91227e@gandalf.local.home>
+In-Reply-To: <20130926164600.5b91227e@gandalf.local.home>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-26 at 11:58 -0700, tip-bot for Masoud Sharbiani wrote:
-> Commit-ID:  b5eafc6f07c95e9f3dd047e72737449cb03c9956
-> Gitweb:     http://git.kernel.org/tip/b5eafc6f07c95e9f3dd047e72737449cb03c9956
-> Author:     Masoud Sharbiani <msharbiani@twitter.com>
-> AuthorDate: Thu, 26 Sep 2013 10:30:43 -0700
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Thu, 26 Sep 2013 20:52:37 +0200
-> 
-> x86/reboot: Remove the duplicate C6100 entry in the reboot quirks list
-> 
-> Two entries for the same system type were added, with two different vendor
-> names: 'Dell' and 'Dell, Inc.'.
-> 
-> Since a prefix match is being used by the DMI parsing code, we can eliminate
-> the latter as redundant.
-> 
-> Reported-by: "H. Peter Anvin" <hpa@zytor.com>
-> Signed-off-by: Masoud Sharbiani <msharbiani@twitter.com>
-> Cc: holt@sgi.com
-> Link: http://lkml.kernel.org/r/1380216643-4683-1-git-send-email-masoud.sharbiani@gmail.com
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  arch/x86/kernel/reboot.c | 8 --------
->  1 file changed, 8 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-> index f0783a6..d9333a4 100644
-> --- a/arch/x86/kernel/reboot.c
-> +++ b/arch/x86/kernel/reboot.c
-> @@ -362,14 +362,6 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
->  		.callback = set_pci_reboot,
->  		.ident = "Dell PowerEdge C6100",
->  		.matches = {
-> -			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-> -			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
-> -		},
-> -	},
-> -	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
-> -		.callback = set_pci_reboot,
-> -		.ident = "Dell PowerEdge C6100",
-> -		.matches = {
->  			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
->  			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
->  		},
+On 09/26/2013 01:46 PM, Steven Rostedt wrote:
+> On Thu, 26 Sep 2013 11:34:22 -0700
+> John Stultz <john.stultz@linaro.org> wrote:
+>
+>> @@ -156,10 +214,19 @@ static inline void write_seqcount_begin(seqcount_t *s)
+>>  {
+>>  	s->sequence++;
+>>  	smp_wmb();
+>> +	seqcount_acquire(&s->dep_map, 0, 0, _RET_IP_);
+>> +}
+>> +
+>> +static inline void write_seqcount_begin_nested(seqcount_t *s, int subclass)
+>> +{
+>> +	s->sequence++;
+>> +	smp_wmb();
+>> +	seqcount_acquire(&s->dep_map, subclass, 0, _RET_IP_);
+>>  }
+> For more code reuse, I wonder if we should have:
+>
+> static inline void write_seqcount_begin(seqcount_t *s)
+> {
+> 	write_seqcount_begine_nested(s, 0);
+> }
+>
+> -- Steve
 
-Hmm, I think we should be keeping the 'Dell Inc.' part instead of just
-'Dell' - at least the rest of the entries use the same string:
+Good idea! Done.
 
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-arch/x86/kernel/reboot.c:                       DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-
+Thanks for the review!
+-john
 
