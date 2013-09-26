@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab3IZT0y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 15:26:54 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:40924 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440Ab3IZT0v (ORCPT
+	id S1754608Ab3IZT10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 15:27:26 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:40031 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab3IZT1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 15:26:51 -0400
-Message-ID: <1380223585.3165.205.camel@edumazet-glaptop>
-Subject: Re: [PATCH 1/4] [RFC] net: Explicitly initialize u64_stats_sync
- structures for lockdep
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mirko Lindner <mlindner@marvell.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Roger Luethi <rl@hellgate.ch>, Patrick McHardy <kaber@trash.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
-        Jesse Gross <jesse@nicira.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Date: Thu, 26 Sep 2013 12:26:25 -0700
-In-Reply-To: <1380220464-28840-2-git-send-email-john.stultz@linaro.org>
-References: <1380220464-28840-1-git-send-email-john.stultz@linaro.org>
-	 <1380220464-28840-2-git-send-email-john.stultz@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 26 Sep 2013 15:27:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1380147049.3467.67.camel@schen9-DESK>
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+	<1380147049.3467.67.camel@schen9-DESK>
+Date: Thu, 26 Sep 2013 12:27:23 -0700
+X-Google-Sender-Auth: fyC8XaIm44dkbeG4Fsmyc_kiiQA
+Message-ID: <CAGQ1y=7Ehkr+ot3tDZtHv6FR6RQ9fXBVY0=LOyWjmGH_UjH7xA@mail.gmail.com>
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+From: Jason Low <jason.low2@hp.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-26 at 11:34 -0700, John Stultz wrote:
-> In order to enable lockdep on seqcount/seqlock structures, we
-> must explicitly initialize any locks.
-> 
-
-> diff --git a/include/linux/u64_stats_sync.h b/include/linux/u64_stats_sync.h
-> index 8da8c4e..c450e11 100644
-> --- a/include/linux/u64_stats_sync.h
-> +++ b/include/linux/u64_stats_sync.h
-> @@ -67,6 +67,13 @@ struct u64_stats_sync {
->  #endif
->  };
->  
+On Wed, Sep 25, 2013 at 3:10 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> We will need the MCS lock code for doing optimistic spinning for rwsem.
+> Extracting the MCS code from mutex.c and put into its own file allow us
+> to reuse this code easily for rwsem.
+>
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  include/linux/mcslock.h |   58 +++++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/mutex.c          |   58 +++++-----------------------------------------
+>  2 files changed, 65 insertions(+), 51 deletions(-)
+>  create mode 100644 include/linux/mcslock.h
+>
+> diff --git a/include/linux/mcslock.h b/include/linux/mcslock.h
+> new file mode 100644
+> index 0000000..20fd3f0
+> --- /dev/null
+> +++ b/include/linux/mcslock.h
+> @@ -0,0 +1,58 @@
+> +/*
+> + * MCS lock defines
+> + *
+> + * This file contains the main data structure and API definitions of MCS lock.
+> + */
+> +#ifndef __LINUX_MCSLOCK_H
+> +#define __LINUX_MCSLOCK_H
 > +
-> +#if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
-> +#define u64_stats_init(syncp)	seqcount_init(syncp.seq)
-> +#else
-> +#define u64_stats_init(syncp)
-> +#endif
+> +struct mcs_spin_node {
+> +       struct mcs_spin_node *next;
+> +       int               locked;       /* 1 if lock acquired */
+> +};
 > +
+> +/*
+> + * We don't inline mcs_spin_lock() so that perf can correctly account for the
+> + * time spent in this lock function.
+> + */
+> +static noinline
+> +void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+> +{
+> +       struct mcs_spin_node *prev;
+> +
+> +       /* Init node */
+> +       node->locked = 0;
+> +       node->next   = NULL;
+> +
+> +       prev = xchg(lock, node);
+> +       if (likely(prev == NULL)) {
+> +               /* Lock acquired */
+> +               node->locked = 1;
 
-I would prefer a function.
+If we don't spin on the local node, is it necessary to set this variable?
 
-static inline void u64_stats_init(struct u64_stats_sync *syncp)
-{
-#if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
-	seqcount_init(&syncp->seq);
-#endif
-}
+> +               return;
+> +       }
+> +       ACCESS_ONCE(prev->next) = node;
+> +       smp_wmb();
+> +       /* Wait until the lock holder passes the lock down */
+> +       while (!ACCESS_ONCE(node->locked))
+> +               arch_mutex_cpu_relax();
+> +}
+> +
+> +static void mcs_spin_unlock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+> +{
+> +       struct mcs_spin_node *next = ACCESS_ONCE(node->next);
+> +
+> +       if (likely(!next)) {
+> +               /*
+> +                * Release the lock by setting it to NULL
+> +                */
+> +               if (cmpxchg(lock, node, NULL) == node)
 
-
-
+And can we make this check likely()?
