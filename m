@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab3IZJt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:49:57 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:58696 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557Ab3IZJt4 convert rfc822-to-8bit (ORCPT
+	id S1756284Ab3IZJv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:51:58 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:58663 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab3IZJvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:49:56 -0400
-Message-ID: <52440345.3040204@arm.com>
-Date: Thu, 26 Sep 2013 10:49:57 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Thu, 26 Sep 2013 05:51:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys part and Exynos part
+Date: Thu, 26 Sep 2013 11:51:41 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Pratyush Anand <pratyush.anand@st.com>, Jingoo Han <jg1.han@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        Mohit KUMAR DCG <Mohit.KUMAR@st.com>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v6 RESEND 0/5] ARM/ARM64 architected timer updates
-References: <1379502306-12911-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <5242FC09.2050604@linaro.org> <52431B37.5000901@arm.com> <201309261143.55010.arnd@arndb.de>
-In-Reply-To: <201309261143.55010.arnd@arndb.de>
-X-OriginalArrivalTime: 26 Sep 2013 09:49:51.0971 (UTC) FILETIME=[BF233330:01CEBA9D]
-X-MC-Unique: 113092610495401301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+References: <000701ce8741$fe47deb0$fad79c10$@samsung.com> <201309242323.55323.arnd@arndb.de> <5243C0E5.7020508@ti.com>
+In-Reply-To: <5243C0E5.7020508@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201309261151.42034.arnd@arndb.de>
+X-Provags-ID: V02:K0:ZnICICg6227u/QQ+RSpYW5Fw8tHoKm5OaWOkNFxI2e1
+ PZf4+SEnKh8xM4G8PmlsEbW7wQLR3irTLDowUfr7T7vZcY2yg+
+ 2RwSZu1ZPJvGAHh8ibSHKLGpIe6vCJMMxJX65WgOkGrdZbSMND
+ dix0LkMVFZvobT2rP+OuyFj3W2dqf2dDN5Fj6HKf4bbOZcRRJz
+ rU7h0UMkW32djuwQc9Q+ni66hro4iGwvbXq5BJ80Z7siucm6PF
+ 6+ixD8LBN2fqlFnBL9HFUZ8cfs3OMhXD42Z8KjWvvLLJyIFFkF
+ xmXYb4pXOx2ewaqYSD9XYpgXexbHKJdzSFQ5euu1yGLToBovvg
+ AgVbEb/EW5Epzp9BOSHc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/09/13 10:43, Arnd Bergmann wrote:
-> On Wednesday 25 September 2013, Sudeep KarkadaNagesha wrote:
->> On 25/09/13 16:06, Daniel Lezcano wrote:
->>> On 09/18/2013 01:05 PM, Sudeep KarkadaNagesha wrote:
->>>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->>>>
->>>> Hi Olof/Kevin,
->>>
->>> Added Olof and Kevin in Cc.
->>>
->> Thanks Daniel, sorry I assumed mailing list alias(arm@kernel.org) was preferred way.
->>
+On Thursday 26 September 2013, Kishon Vijay Abraham I wrote:
+> On Wednesday 25 September 2013 02:53 AM, Arnd Bergmann wrote:
+> > On Monday 23 September 2013, Kishon Vijay Abraham I wrote:
+> >> Btw if we hadn't programmed inbound translation table, the address will go
+> >> untranslated (according to the data book). I guess that's how it was working
+> >> for Jingoo Han.
+> >>
+> >> **
+> >> 3.10.4
+> >> Inbound iATU Operation
+> >>
+> >> When there is no match, then the address is untranslated
+> >> **
+> >>
+> > 
+> > Well, that should work just as well, since you have a 1:1 translation anyway.
+> > Do you get the same error without the translation?
 > 
-> The alias is mainly for when you are sending a pull request or a patch to
-> be applied directly. For any review it makes more sense to Cc the ones you
-> want involved directly.
-> 
-Thanks Arnd for clarification. I came across the same info yesterday from one of
-the mails from Olof a while ago. I had a wrong assumption, sorry for that.
+> Yes. I get the same non-fatal error interrupt in RC.
 
-Regards,
-Sudeep
+Ok, then I guess the translation is actually not at fault here but something
+else. I would recommend looking at the IOMMU as the potential culprit. Maybe
+having it disabled means that no DMA is going through, rather than all DMA
+going through untranslated. Another possibility is that the IOMMU is set up
+so that when disabled, it maps DMA address 0 to the start of RAM, rather
+than identity mapping DMA address 0x80000000 there. If that's the case,
+you either have to use the IOMMU, or set up the mapping in the root
+complex to revert it.
 
-
+	Arnd
