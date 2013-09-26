@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab3IZO6w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 10:58:52 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:61850 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298Ab3IZO4A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 10:56:00 -0400
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 19/27] mmc: pxamci: Remove redundant suspend and resume callbacks
-Date: Thu, 26 Sep 2013 16:54:44 +0200
-Message-Id: <1380207292-16968-20-git-send-email-ulf.hansson@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
-References: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
+	id S1752868Ab3IZO7D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 10:59:03 -0400
+Received: from shell.v3.sk ([195.168.3.45]:46068 "EHLO shell.v3.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753298Ab3IZO65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 10:58:57 -0400
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Lubomir Rintel <lkundrak@v3.sk>
+Subject: [PATCH] drm/radeon: Don't limit fb console on 32M cards to 8 bpp
+Date: Thu, 26 Sep 2013 16:58:45 +0200
+Message-Id: <1380207525-13088-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suspend and resume of cards are handled by the protocol layer and
-consequently the mmc_suspend|resume_host APIs are marked as deprecated.
+The comment suggests that intention was to limit 16M cards to save memory while
+code did something a bit different.
 
-While moving away from using the deprecated APIs, there are nothing
-left to be done for the suspend and resume callbacks, so remove them.
+32bpp is a lot more useful with today's apps, such as Weston's fbdev backend
+and 32M cards are probably hardly used in apps where dedicating a bit more to
+pinned console would matter.
 
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
 ---
- drivers/mmc/host/pxamci.c |   32 --------------------------------
- 1 file changed, 32 deletions(-)
+ drivers/gpu/drm/radeon/radeon_fb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mmc/host/pxamci.c b/drivers/mmc/host/pxamci.c
-index 1956a3d..32fe113 100644
---- a/drivers/mmc/host/pxamci.c
-+++ b/drivers/mmc/host/pxamci.c
-@@ -880,35 +880,6 @@ static int pxamci_remove(struct platform_device *pdev)
- 	return 0;
- }
+diff --git a/drivers/gpu/drm/radeon/radeon_fb.c b/drivers/gpu/drm/radeon/radeon_fb.c
+index 665ced3..cef3bc7 100644
+--- a/drivers/gpu/drm/radeon/radeon_fb.c
++++ b/drivers/gpu/drm/radeon/radeon_fb.c
+@@ -344,7 +344,7 @@ int radeon_fbdev_init(struct radeon_device *rdev)
+ 	int ret;
  
--#ifdef CONFIG_PM
--static int pxamci_suspend(struct device *dev)
--{
--	struct mmc_host *mmc = dev_get_drvdata(dev);
--	int ret = 0;
--
--	if (mmc)
--		ret = mmc_suspend_host(mmc);
--
--	return ret;
--}
--
--static int pxamci_resume(struct device *dev)
--{
--	struct mmc_host *mmc = dev_get_drvdata(dev);
--	int ret = 0;
--
--	if (mmc)
--		ret = mmc_resume_host(mmc);
--
--	return ret;
--}
--
--static const struct dev_pm_ops pxamci_pm_ops = {
--	.suspend	= pxamci_suspend,
--	.resume		= pxamci_resume,
--};
--#endif
--
- static struct platform_driver pxamci_driver = {
- 	.probe		= pxamci_probe,
- 	.remove		= pxamci_remove,
-@@ -916,9 +887,6 @@ static struct platform_driver pxamci_driver = {
- 		.name	= DRIVER_NAME,
- 		.owner	= THIS_MODULE,
- 		.of_match_table = of_match_ptr(pxa_mmc_dt_ids),
--#ifdef CONFIG_PM
--		.pm	= &pxamci_pm_ops,
--#endif
- 	},
- };
+ 	/* select 8 bpp console on RN50 or 16MB cards */
+-	if (ASIC_IS_RN50(rdev) || rdev->mc.real_vram_size <= (32*1024*1024))
++	if (ASIC_IS_RN50(rdev) || rdev->mc.real_vram_size <= (16*1024*1024))
+ 		bpp_sel = 8;
  
+ 	rfbdev = kzalloc(sizeof(struct radeon_fbdev), GFP_KERNEL);
 -- 
-1.7.9.5
+1.7.1
 
