@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab3IZOp2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 10:45:28 -0400
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:53945 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab3IZOpX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 10:45:23 -0400
-Date: Thu, 26 Sep 2013 10:45:16 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v5 2/6] memblock: Introduce bottom-up allocation mode
-Message-ID: <20130926144516.GD3482@htj.dyndns.org>
-References: <5241D897.1090905@gmail.com>
- <5241D9A4.4080305@gmail.com>
+	id S1752948Ab3IZOpa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 10:45:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12207 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120Ab3IZOpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 10:45:17 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH 1/4] SunRPC: Use the standard varargs macro method for
+ dfprintk() and co.
+To: bfields@fieldses.org, Trond.Myklebust@netapp.com
+From: David Howells <dhowells@redhat.com>
+Cc: olof@lixom.net, linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 26 Sep 2013 15:45:10 +0100
+Message-ID: <20130926144510.29424.40094.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20130926144502.29424.21633.stgit@warthog.procyon.org.uk>
+References: <20130926144502.29424.21633.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5241D9A4.4080305@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Use the standard varargs macro method rather than the old gcc method for
+dfprintk() and co.
 
-On Wed, Sep 25, 2013 at 02:27:48AM +0800, Zhang Yanfei wrote:
-> +#ifdef CONFIG_MOVABLE_NODE
-> +static inline void memblock_set_bottom_up(bool enable)
-> +{
-> +	memblock.bottom_up = enable;
-> +}
-> +
-> +static inline bool memblock_bottom_up(void)
-> +{
-> +	return memblock.bottom_up;
-> +}
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-Can you please explain what this is for here?
+ include/linux/sunrpc/debug.h |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-> +		/*
-> +		 * we always limit bottom-up allocation above the kernel,
-> +		 * but top-down allocation doesn't have the limit, so
-> +		 * retrying top-down allocation may succeed when bottom-up
-> +		 * allocation failed.
-> +		 *
-> +		 * bottom-up allocation is expected to be fail very rarely,
-> +		 * so we use WARN_ONCE() here to see the stack trace if
-> +		 * fail happens.
-> +		 */
-> +		WARN_ONCE(1, "memblock: Failed to allocate memory in bottom up "
-> +			"direction. Now try top down direction.\n");
-> +	}
+diff --git a/include/linux/sunrpc/debug.h b/include/linux/sunrpc/debug.h
+index 9385bd7..889474b 100644
+--- a/include/linux/sunrpc/debug.h
++++ b/include/linux/sunrpc/debug.h
+@@ -32,33 +32,33 @@ extern unsigned int		nfsd_debug;
+ extern unsigned int		nlm_debug;
+ #endif
+ 
+-#define dprintk(args...)	dfprintk(FACILITY, ## args)
+-#define dprintk_rcu(args...)	dfprintk_rcu(FACILITY, ## args)
++#define dprintk(fmt, ...)	dfprintk(FACILITY, fmt, ## __VA_ARGS__)
++#define dprintk_rcu(fmt, ...)	dfprintk_rcu(FACILITY, fmt, ## __VA_ARGS__)
+ 
+ #undef ifdebug
+ #ifdef RPC_DEBUG			
+ # define ifdebug(fac)		if (unlikely(rpc_debug & RPCDBG_##fac))
+ 
+-# define dfprintk(fac, args...)	\
++# define dfprintk(fac, fmt, ...)		\
+ 	do { \
+ 		ifdebug(fac) \
+-			printk(KERN_DEFAULT args); \
++			printk(KERN_DEFAULT fmt, ##__VA_ARGS__);	\
+ 	} while (0)
+ 
+-# define dfprintk_rcu(fac, args...)	\
++# define dfprintk_rcu(fac, fmt, ...)		\
+ 	do { \
+ 		ifdebug(fac) { \
+ 			rcu_read_lock(); \
+-			printk(KERN_DEFAULT args); \
++			printk(KERN_DEFAULT fmt, ##__VA_ARGS__);	\
+ 			rcu_read_unlock(); \
+ 		} \
+ 	} while (0)
+ 
+ # define RPC_IFDEBUG(x)		x
+ #else
+-# define ifdebug(fac)		if (0)
+-# define dfprintk(fac, args...)	do {} while (0)
+-# define dfprintk_rcu(fac, args...)	do {} while (0)
++# define ifdebug(fac)			if (0)
++# define dfprintk(fac, fmt, ...)	do {} while (0)
++# define dfprintk_rcu(fac, fmt, ...)	do {} while (0)
+ # define RPC_IFDEBUG(x)
+ #endif
+ 
 
-You and I would know what was going on and what the consequence of the
-failure may be but the above warning message is kinda useless to a
-user / admin, right?  It doesn't really say anything meaningful.
-
-Thanks.
-
--- 
-tejun
