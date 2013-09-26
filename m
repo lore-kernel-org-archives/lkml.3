@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3IZS5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 14:57:45 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:45856 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049Ab3IZSvP (ORCPT
+	id S1754208Ab3IZS7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 14:59:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54380 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447Ab3IZS7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 14:51:15 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 02/21] of: remove unnecessary prom.h includes
-Date: Thu, 26 Sep 2013 13:50:37 -0500
-Message-Id: <1380221456-11192-3-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
-References: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
+	Thu, 26 Sep 2013 14:59:09 -0400
+Date: Thu, 26 Sep 2013 11:58:38 -0700
+From: tip-bot for Masoud Sharbiani <tipbot@zytor.com>
+Message-ID: <tip-b5eafc6f07c95e9f3dd047e72737449cb03c9956@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, msharbiani@twitter.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, msharbiani@twitter.com
+In-Reply-To: <1380216643-4683-1-git-send-email-masoud.sharbiani@gmail.com>
+References: <1380216643-4683-1-git-send-email-masoud.sharbiani@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/reboot] x86/reboot:
+  Remove the duplicate C6100 entry in the reboot quirks list
+Git-Commit-ID: b5eafc6f07c95e9f3dd047e72737449cb03c9956
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 26 Sep 2013 11:58:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+Commit-ID:  b5eafc6f07c95e9f3dd047e72737449cb03c9956
+Gitweb:     http://git.kernel.org/tip/b5eafc6f07c95e9f3dd047e72737449cb03c9956
+Author:     Masoud Sharbiani <msharbiani@twitter.com>
+AuthorDate: Thu, 26 Sep 2013 10:30:43 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 26 Sep 2013 20:52:37 +0200
 
-Remove unnecessary prom.h includes in preparation to make prom.h optional.
+x86/reboot: Remove the duplicate C6100 entry in the reboot quirks list
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Two entries for the same system type were added, with two different vendor
+names: 'Dell' and 'Dell, Inc.'.
+
+Since a prefix match is being used by the DMI parsing code, we can eliminate
+the latter as redundant.
+
+Reported-by: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Masoud Sharbiani <msharbiani@twitter.com>
+Cc: holt@sgi.com
+Link: http://lkml.kernel.org/r/1380216643-4683-1-git-send-email-masoud.sharbiani@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/of/of_pci_irq.c | 1 -
- drivers/of/pdt.c        | 1 -
- 2 files changed, 2 deletions(-)
+ arch/x86/kernel/reboot.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/drivers/of/of_pci_irq.c b/drivers/of/of_pci_irq.c
-index 6770538..d860764 100644
---- a/drivers/of/of_pci_irq.c
-+++ b/drivers/of/of_pci_irq.c
-@@ -2,7 +2,6 @@
- #include <linux/of_pci.h>
- #include <linux/of_irq.h>
- #include <linux/export.h>
--#include <asm/prom.h>
- 
- /**
-  * of_irq_map_pci - Resolve the interrupt for a PCI device
-diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
-index 4ec19cb..7b66673 100644
---- a/drivers/of/pdt.c
-+++ b/drivers/of/pdt.c
-@@ -22,7 +22,6 @@
- #include <linux/slab.h>
- #include <linux/of.h>
- #include <linux/of_pdt.h>
--#include <asm/prom.h>
- 
- static struct of_pdt_ops *of_pdt_prom_ops __initdata;
- 
--- 
-1.8.1.2
-
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index f0783a6..d9333a4 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -362,14 +362,6 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 		.callback = set_pci_reboot,
+ 		.ident = "Dell PowerEdge C6100",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
+-		},
+-	},
+-	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
+-		.callback = set_pci_reboot,
+-		.ident = "Dell PowerEdge C6100",
+-		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
+ 		},
