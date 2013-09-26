@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab3IZGRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 02:17:09 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:41565 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab3IZGRH (ORCPT
+	id S1755447Ab3IZGSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 02:18:10 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:35922 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab3IZGSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 02:17:07 -0400
+	Thu, 26 Sep 2013 02:18:09 -0400
+Date: Thu, 26 Sep 2013 08:18:05 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Gabor Juhos <juhosg@openwrt.org>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] avr32: fix compiler warning
+Message-ID: <20130926061805.GA18123@samfundet.no>
+References: <1380138601-29902-1-git-send-email-juhosg@openwrt.org>
 MIME-Version: 1.0
-In-Reply-To: <5243641B.6050604@linaro.org>
-References: <cover.1379779777.git.viresh.kumar@linaro.org>
-	<7e9565e323c1e065eeb2a2a1075967bd21ee6066.1379779777.git.viresh.kumar@linaro.org>
-	<5243641B.6050604@linaro.org>
-Date: Thu, 26 Sep 2013 11:47:05 +0530
-Message-ID: <CAKohpo=3qFQ+gD+3u__NtZEL4xu51FBN+og+_UE7aTR26XvRng@mail.gmail.com>
-Subject: Re: [PATCH 19/21] cpuidle: create list of registered drivers
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380138601-29902-1-git-send-email-juhosg@openwrt.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 September 2013 04:00, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-> If you introduce a list, you will have to introduce a lock to protect
-> it.
+Around Wed 25 Sep 2013 21:50:01 +0200 or thereabout, Gabor Juhos wrote:
 
-I missed it, should have added that :)
+Tuning subject to
 
-> This lock will be in the fast path cpuidle_idle_call with the
-> get_driver function and conforming to the comment: "NOTE: no locks or
-> semaphores should be used here".
->
-> A lock has been introduced in this function already and the system hangs
-> with 1024 cpus.
+avr32: cast syscall_return to silence compiler warning
 
-Hmm... I see.. I didn't knew about this expectation.. What about a rcu
-read/write lock? As far as I know its too lightweight... Can we have that
-in fast path?
+> The patch fixes the following compiler warning:
+>     CC      arch/avr32/kernel/process.o
+>   arch/avr32/kernel/process.c: In function 'copy_thread':
+>   arch/avr32/kernel/process.c:292: warning: assignment makes integer \
+>   from pointer without a cast
+
+Thank you for fixing.
+
+> Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+
+> ---
+> Note: the patch is against v3.12-rc2.
+
+Added to my for-linus branch.
+
+> ---
+>  arch/avr32/kernel/process.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/avr32/kernel/process.c b/arch/avr32/kernel/process.c
+> index c273100..42a53e74 100644
+> --- a/arch/avr32/kernel/process.c
+> +++ b/arch/avr32/kernel/process.c
+> @@ -289,7 +289,7 @@ int copy_thread(unsigned long clone_flags, unsigned long usp,
+>  		memset(childregs, 0, sizeof(struct pt_regs));
+>  		p->thread.cpu_context.r0 = arg;
+>  		p->thread.cpu_context.r1 = usp; /* fn */
+> -		p->thread.cpu_context.r2 = syscall_return;
+> +		p->thread.cpu_context.r2 = (unsigned long)syscall_return;
+>  		p->thread.cpu_context.pc = (unsigned long)ret_from_kernel_thread;
+>  		childregs->sr = MODE_SUPERVISOR;
+>  	} else {
+-- 
+mvh
+Hans-Christian Egtvedt
