@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751102Ab3IZNqa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 09:46:30 -0400
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:55788 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab3IZNq3 (ORCPT
+	id S1751194Ab3IZNqo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 09:46:44 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:60391 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab3IZNqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 09:46:29 -0400
-From: Mischa Jonker <Mischa.Jonker@synopsys.com>
-To: Vineet.Gupta1@synopsys.com, linux-kernel@vger.kernel.org,
-        arc-linux-dev@synopsys.com
-Cc: Mischa Jonker <Mischa.Jonker@synopsys.com>
-Subject: [PATCH] ARC: Fix array-out-of-bounds issue in tlb overlap handler
-Date: Thu, 26 Sep 2013 15:46:22 +0200
-Message-Id: <1380203182-5982-1-git-send-email-mjonker@synopsys.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 26 Sep 2013 09:46:39 -0400
+Message-ID: <52443ABC.8020808@gmail.com>
+Date: Thu, 26 Sep 2013 07:46:36 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain
+ merging (v4)
+References: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even after fixing the issue, GCC 4.8 still complains with a warning,
-but with the fix, I think it's a false positive. Therefore I have
-also added a #pragma to ignore the warning.
+On 9/26/13 2:58 AM, Namhyung Kim wrote:
+> Hello,
+>
+> This is a new version of callchain improvement patchset.  I found and
+> fixed bugs in the previous version.  I verified that it produced
+> exactly same output before and after applying rbtree conversion patch
+> (#1).  However after Frederic's new comm infrastructure patches are
+> applied it'd be little different.
+>
+> The patches are on 'perf/callchain-v4' branch in my tree
+>
+>    git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+>
 
-Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
----
- arch/arc/mm/tlb.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+Given recent breakage, has the patchset been run through any tests on 
+older kernels that do not support sample_id_all? e.g., 2.6.34 (WRL4). 
+What about tests with the other perf commands -- script to dump events, 
+trace on a file with with multiple processes -- to verify no impact on 
+comm output, especially multithreaded processes with named threads. I 
+can certainly do those tests in time, but can't guarantee a timeframe 
+and want to make sure it gets done before merging.
 
-diff --git a/arch/arc/mm/tlb.c b/arch/arc/mm/tlb.c
-index 129af50..5af7c98 100644
---- a/arch/arc/mm/tlb.c
-+++ b/arch/arc/mm/tlb.c
-@@ -635,13 +635,20 @@ void do_tlb_overlap_fault(unsigned long cause, unsigned long address,
- 			continue;
- 
- 		/* Scan the set for duplicate ways: needs a nested loop */
--		for (way = 0; way < mmu->ways; way++) {
-+		for (way = 0; way < (mmu->ways - 1); way++) {
- 			if (!pd0[way])
- 				continue;
- 
- 			for (n = way + 1; n < mmu->ways; n++) {
-+/*
-+ * GCC 4.8 does not understand that way < (mmu->ways - 1), and as such
-+ * n < mmu->ways. So, ignore the warning
-+ */
-+#pragma GCC diagnostic push
-+#pragma GCC diagnostic ignored "-Warray-bounds"
- 				if ((pd0[way] & PAGE_MASK) ==
- 				    (pd0[n] & PAGE_MASK)) {
-+#pragma GCC diagnostic pop
- 
- 					if (dup_pd_verbose) {
- 						pr_info("Duplicate PD's @"
--- 
-1.7.9.5
+Thanks,
+David
 
