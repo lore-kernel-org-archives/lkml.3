@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab3IZCkd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 22:40:33 -0400
-Received: from smtprelay0152.hostedemail.com ([216.40.44.152]:39890 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751283Ab3IZCkc (ORCPT
+	id S1755174Ab3IZCmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 22:42:53 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38766 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab3IZCmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 22:40:32 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2525:2553:2561:2564:2682:2685:2693:2828:2829:2859:2902:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3
-X-HE-Tag: dress90_213f78171ff33
-X-Filterd-Recvd-Size: 2715
-Message-ID: <1380163226.17366.54.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: Add test for #defines of ARCH_HAS_<foo>
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Wed, 25 Sep 2013 19:40:26 -0700
-In-Reply-To: <20130925193250.7747b0e3.akpm@linux-foundation.org>
-References: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
-	 <1380125886-10341-8-git-send-email-fweisbec@gmail.com>
-	 <CA+55aFzPArB0dotWZz8dLTPVM4MMT75NAb5_DVcPrNuvWu4QUA@mail.gmail.com>
-	 <20130925172121.00c23e416398139f4615943c@linux-foundation.org>
-	 <1380156027.17366.39.camel@joe-AO722>
-	 <CA+55aFycQ9XJvEOsiM3txHL5bjUc8CeKWJNR_H+MiicaddB42Q@mail.gmail.com>
-	 <1380160854.17366.49.camel@joe-AO722>
-	 <20130925193250.7747b0e3.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Sep 2013 22:42:52 -0400
+Date: Thu, 26 Sep 2013 03:42:34 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, tixxdz@gmail.com
+Subject: Re: [PATCH 04/12] seq_file: Make seq_file able to access the file's
+ opener cred
+Message-ID: <20130926024234.GE13318@ZenIV.linux.org.uk>
+References: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
+ <1380140085-29712-5-git-send-email-tixxdz@opendz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380140085-29712-5-git-send-email-tixxdz@opendz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-25 at 19:32 -0700, Andrew Morton wrote:
-> On Wed, 25 Sep 2013 19:00:54 -0700 Joe Perches <joe@perches.com> wrote:
+On Wed, Sep 25, 2013 at 09:14:37PM +0100, Djalal Harouni wrote:
+> The f_cred field of the file struct contains the cred of current at
+> open time. This field can be used to get the context of open, and track
+> current's cred changes after.
 > 
-> > +# Use of __ARCH_HAS_<FOO> or ARCH_HAVE_<BAR> is wrong.
-> > +		if ($line =~ /\+\s*#\s*define\s+((?:__)?ARCH_(?:HAS|HAVE)\w*)\b/) {
-> > +			ERROR("DEFINE_ARCH_HAS",
-> > +			      "#define of '$1' is wrong - use Kconfig variables or standard guards instead\n" . $herecurr);
-> > +		}
-> > +
+> The procfs is one of those fs that need to track current cred changes
+> in order to implement proper permission checks on each system call.
 > 
-> Perhaps we can provide people with a bit more help than that. 
-> http://www.kernelhub.org/?msg=334759&p=2 would suit (gad, google
-> updates fast!) or copy-n-paste into Documentation/wherever and refer to
-> that?
+> The procfs make use of seq_file struct and its iterators to step through
+> /proc objects. These iterators and seq_file helpers must be able to
+> access the file->f_cred to perform various permission checks at any
+> time.
 > 
+> Therefor add the f_cred field to the seq_file struct and a helper
+> seq_f_cred() to return it.
 
-Maybe the fancy lkml.kernel.org link:
-
-http://lkml.kernel.org/r/CA+55aFycQ9XJvEOsiM3txHL5bjUc8CeKWJNR_H+MiicaddB42Q@mail.gmail.com
-
-as that might be more long-term stable.
-
-Will kernel.org ever store all the lkml emails so it
-doesn't have to reference outside links?
-
-
+NAK.  This is completely irrelevant for most of seq_file users and it simply
+does not belong in struct seq_file.
