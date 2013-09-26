@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab3IZC7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 22:59:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52488 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab3IZC7p (ORCPT
+	id S1755603Ab3IZDAE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 23:00:04 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:56717 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753927Ab3IZDAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 22:59:45 -0400
-Date: Wed, 25 Sep 2013 19:59:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mgorman@suse.de,
-        dave@sr71.net, hannes@cmpxchg.org, tony.luck@intel.com,
-        matthew.garrett@nebula.com, riel@redhat.com,
-        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
-        gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
-        santosh.shilimkar@ti.com, kosaki.motohiro@gmail.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+	Wed, 25 Sep 2013 23:00:02 -0400
+X-Nat-Received: from [202.181.97.72]:63438 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1380164392.31143
+To: rientjes@google.com
+Cc: akpm@linux-foundation.org, oleg@redhat.com, security@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [Results] [RFC PATCH v4 00/40] mm: Memory Power Management
-Message-Id: <20130925195953.826a9f7d.akpm@linux-foundation.org>
-In-Reply-To: <20130926015016.GM18242@two.firstfloor.org>
-References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com>
-	<52437128.7030402@linux.vnet.ibm.com>
-	<20130925164057.6bbaf23bdc5057c42b2ab010@linux-foundation.org>
-	<20130925234734.GK18242@two.firstfloor.org>
-	<52438AA9.3020809@linux.intel.com>
-	<20130925182129.a7db6a0fd2c7cc3b43fda92d@linux-foundation.org>
-	<20130926015016.GM18242@two.firstfloor.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Subject: Re: [PATCH v3] kthread: Make kthread_create() killable.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20130915163919.GC13344@redhat.com>
+	<201309160953.IGI12418.FOQHOFVJLOMFSt@I-love.SAKURA.ne.jp>
+	<20130923160725.49093c565dcf6df7037dcc6b@linux-foundation.org>
+	<201309250017.HBG57846.VFOStOFFOLQJHM@I-love.SAKURA.ne.jp>
+	<alpine.DEB.2.02.1309251351001.27471@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1309251351001.27471@chino.kir.corp.google.com>
+Message-Id: <201309261159.BHB18780.OHLFQFMOOJSVtF@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 26 Sep 2013 11:59:50 +0900
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 26092013 #11069216, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Sep 2013 03:50:16 +0200 Andi Kleen <andi@firstfloor.org> wrote:
+Thank you for comments, David.
 
-> On Wed, Sep 25, 2013 at 06:21:29PM -0700, Andrew Morton wrote:
-> > On Wed, 25 Sep 2013 18:15:21 -0700 Arjan van de Ven <arjan@linux.intel.com> wrote:
-> > 
-> > > On 9/25/2013 4:47 PM, Andi Kleen wrote:
-> > > >> Also, the changelogs don't appear to discuss one obvious downside: the
-> > > >> latency incurred in bringing a bank out of one of the low-power states
-> > > >> and back into full operation.  Please do discuss and quantify that to
-> > > >> the best of your knowledge.
-> > > >
-> > > > On Sandy Bridge the memry wakeup overhead is really small. It's on by default
-> > > > in most setups today.
-> > > 
-> > > btw note that those kind of memory power savings are content-preserving,
-> > > so likely a whole chunk of these patches is not actually needed on SNB
-> > > (or anything else Intel sells or sold)
-> > 
-> > (head spinning a bit).  Could you please expand on this rather a lot?
-> 
-> As far as I understand there is a range of aggressiveness. You could
-> just group memory a bit better (assuming you can sufficiently predict
-> the future or have some interface to let someone tell you about it).
-> 
-> Or you can actually move memory around later to get as low footprint
-> as possible.
-> 
-> This patchkit seems to do both, with the later parts being on the
-> aggressive side (move things around) 
-> 
-> If you had non content preserving memory saving you would 
-> need to be aggressive as you couldn't afford any mistakes.
-> 
-> If you had very slow wakeup you also couldn't afford mistakes,
-> as those could cost a lot of time.
-> 
-> On SandyBridge is not slow and it's preserving, so some mistakes are ok.
-> 
-> But being aggressive (so move things around) may still help you saving
-> more power -- i guess only benchmarks can tell. It's a trade off between
-> potential gain and potential worse case performance regression.
-> It may also depend on the workload.
-> 
-> At least right now the numbers seem to be positive.
+David Rientjes wrote:
+> Also results in a livelock if you're running in a memcg and have hit its
+> limit.
 
-OK.  But why are "a whole chunk of these patches not actually needed on SNB
-(or anything else Intel sells or sold)"?  What's the difference between
-Intel products and whatever-it-is-this-patchset-was-designed-for?
+> wait_for_completion() is scary if that completion requires memory that 
+> cannot be allocated because the caller is killed but uninterruptible.
 
+I don't think these lines are specific to wait_for_completion() users.
+
+Currently the OOM killer is disabled throughout from "the moment the OOM killer
+chose a process to kill" to "the moment the task_struct of the chosen process
+becomes unreachable". Any blocking functions which wait in TASK_UNINTERRUPTIBLE
+(e.g. mutex_lock()) can disable the OOM killer if the current thread is chosen
+by the OOM killer. Therefore, any users of blocking functions which wait in
+TASK_UNINTERRUPTIBLE are considered scary if they assume that the current
+thread will not be chosen by the OOM killer.
+
+But it seems to me that re-enabling the OOM killer at some point is more
+realizable than purging all such users.
+
+To re-enable the OOM killer at some point, the OOM killer needs to choose more
+processes if the to-be-killed process cannot be terminated within an adequate
+period.
+
+For example, add "unsigned long memdie_stamp;" to "struct task_struct" and do
+"p->memdie_stamp = jiffies + 5 * HZ;" before "set_tsk_thread_flag(p, TIF_MEMDIE);"
+and do
+
+ 	if (test_tsk_thread_flag(task, TIF_MEMDIE)) {
+ 		if (unlikely(frozen(task)))
+ 			__thaw_task(task);
++		/* Choose more processes if the chosen process cannot die. */
++		if (time_after(jiffies, p->memdie_stamp) &&
++		    task->state == TASK_UNINTERRUPTIBLE)
++		        return OOM_SCAN_CONTINUE;
+ 		if (!force_kill)
+ 			return OOM_SCAN_ABORT;
+ 	}
+
+in oom_scan_process_thread().
+
+This idea costs us the increment of the possibility of different side effects
+(e.g. the second-worst process is chosen by the OOM killer when the worst
+process cannot be terminated => memory allocation for writeback fails because
+the second-worst process was in the ext3's writeback path => fs-error action
+(remount read-only or panic) gets triggered by the second-worst process).
+
+
+
+Anyway, this patch is for helping the OOM killer to kill the process smoothly
+when the chosen process is waiting at kthread_create(). I attach updated patch
+description. Did I merge your comments appropriately?
+----------
+[PATCH v3] kthread: Make kthread_create() killable.
+
+Any user process callers of wait_for_completion() except global init process
+might be chosen by the OOM killer while waiting for completion() call by some
+other process which does memory allocation.
+
+When such users are chosen by the OOM killer when they are waiting for
+completion() in TASK_UNINTERRUPTIBLE, the system will be kept stressed
+due to memory starvation because the OOM killer cannot kill such users.
+
+kthread_create() is one of such users and this patch fixes the problem for
+kthreadd by making kthread_create() killable.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
