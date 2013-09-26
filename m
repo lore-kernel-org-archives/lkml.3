@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab3IZITW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:19:22 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:39224 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab3IZITT (ORCPT
+	id S1756040Ab3IZIUS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:20:18 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:38935 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755176Ab3IZIUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:19:19 -0400
-Message-ID: <5243EE02.9020207@linaro.org>
-Date: Thu, 26 Sep 2013 10:19:14 +0200
+	Thu, 26 Sep 2013 04:20:15 -0400
+Message-ID: <5243EE3B.1050600@linaro.org>
+Date: Thu, 26 Sep 2013 10:20:11 +0200
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
@@ -18,36 +18,31 @@ CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
         Patch Tracking <patches@linaro.org>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 19/21] cpuidle: create list of registered drivers
-References: <cover.1379779777.git.viresh.kumar@linaro.org>	<7e9565e323c1e065eeb2a2a1075967bd21ee6066.1379779777.git.viresh.kumar@linaro.org>	<5243641B.6050604@linaro.org> <CAKohpo=3qFQ+gD+3u__NtZEL4xu51FBN+og+_UE7aTR26XvRng@mail.gmail.com>
-In-Reply-To: <CAKohpo=3qFQ+gD+3u__NtZEL4xu51FBN+og+_UE7aTR26XvRng@mail.gmail.com>
+Subject: Re: [PATCH 21/21] cpuidle: change governor from within cpuidle_replace_governor()
+References: <cover.1379779777.git.viresh.kumar@linaro.org>	<5b758e21eeb97f5f68191819c0820673692b6b75.1379779777.git.viresh.kumar@linaro.org>	<524368CF.4030803@linaro.org> <CAKohpom_BTYC4DZLP93VzFqfnCudPb9whugPigh-jO0MpHurtw@mail.gmail.com>
+In-Reply-To: <CAKohpom_BTYC4DZLP93VzFqfnCudPb9whugPigh-jO0MpHurtw@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 08:17 AM, Viresh Kumar wrote:
-> On 26 September 2013 04:00, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
->> If you introduce a list, you will have to introduce a lock to protect
->> it.
->
-> I missed it, should have added that :)
->
->> This lock will be in the fast path cpuidle_idle_call with the
->> get_driver function and conforming to the comment: "NOTE: no locks or
->> semaphores should be used here".
+On 09/26/2013 08:37 AM, Viresh Kumar wrote:
+> On 26 September 2013 04:20, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+>> Actually I am wondering if all this stuff is not over-engineered.
 >>
->> A lock has been introduced in this function already and the system hangs
->> with 1024 cpus.
+>> There are 2 governors, each of them suits for a specific kernel config,
+>> periodic tick or tickless system.
+>>
+>> menu     => tickless system
+>> periodic => periodic tick system
+>>
+>> IMHO, all the code with rating checking and so do not really makes
+>> sense. Wouldn't make sense to remove this code ?
 >
-> Hmm... I see.. I didn't knew about this expectation.. What about a rcu
-> read/write lock? As far as I know its too lightweight... Can we have that
-> in fast path?
+> I am a newbie here, really can't think of all side effects of this :)
 
-Nope, we can't use rcu in the idle path :)
-
-http://lists.infradead.org/pipermail/linux-arm-kernel/2012-February/083054.html
+Rafael is pretty busy ATM but may be he can give his feedback on this later.
 
 
 -- 
