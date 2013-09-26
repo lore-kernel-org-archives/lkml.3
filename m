@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535Ab3IZIcm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:32:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31130 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751886Ab3IZI2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:28:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,983,1371106800"; 
-   d="scan'208";a="401278439"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, eranian@google.com, andi@firstfloor.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [RFC PATCH 0/7] perf, x86: Reduce lbr_sel_map size
-Date: Thu, 26 Sep 2013 16:28:06 +0800
-Message-Id: <1380184093-8838-1-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.8.1.4
+	id S1756551Ab3IZIdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:33:06 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:65222 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099Ab3IZIdE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 04:33:04 -0400
+Message-ID: <5243F13C.7020409@linaro.org>
+Date: Thu, 26 Sep 2013 10:33:00 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 20/21] cpuidle: don't calculate time-diff if entered_state
+ == 0
+References: <cover.1379779777.git.viresh.kumar@linaro.org>	<acd1cc837f969a50582d2b25a73c5e247f40f843.1379779777.git.viresh.kumar@linaro.org>	<524365FA.4090108@linaro.org>	<CAKohpong15qzFg_sZVB77wVm4gu-4Se1E=eqvJOv96fgnyMXDA@mail.gmail.com>	<5243EF7F.4000606@linaro.org> <CAKohpongU4GpoEp5-WQJwxSbVFgAyWWcRDWo2zD+C8CGNhWwYQ@mail.gmail.com>
+In-Reply-To: <CAKohpongU4GpoEp5-WQJwxSbVFgAyWWcRDWo2zD+C8CGNhWwYQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On 09/26/2013 10:28 AM, Viresh Kumar wrote:
+> On 26 September 2013 13:55, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+>> Yes I agree, but why are you saying "If entered_state == 0, we don't need to
+>> ..." ?
+>
+> Ahh.. that's a mistake.. s/==/< :)
 
-Haswell has a new feature that utilizes the existing Last Branch Record
-facility to record call chains. When the feature is enabled, function
-call will be collected as normal, but as return instructions are executed
-the last captured branch record is popped from the on-chip LBR registers.
-The LBR call stack facility can help perf to get call chains of progam 
-without frame pointer. When perf tool requests PERF_SAMPLE_CALLCHAIN +
-PERF_SAMPLE_BRANCH_USER, this feature is dynamically enabled by default.
-This feature can be disabled/enabled through an attribute file in the cpu
-pmu sysfs directory.
+Ah ok.
 
-The main change since previous patch series is:
- Patch 3 introduces PMU context switch callback, and uses the callback to
- unify the flush branch stack codeo.
 
- Patch 4 uses the context switch callback to save/restore the LBR stack.
 
-Regards
-Yan, Zheng
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
