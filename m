@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab3IZLOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 07:14:42 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:55798 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756555Ab3IZLOk (ORCPT
+	id S1756795Ab3IZLQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 07:16:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47498 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755712Ab3IZLQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 07:14:40 -0400
+	Thu, 26 Sep 2013 07:16:27 -0400
+Date: Thu, 26 Sep 2013 13:16:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Turner <pjt@google.com>
+Cc: Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for
+ wake_affine(.sync=true)
+Message-ID: <20130926111618.GU3081@twins.programming.kicks-ass.net>
+References: <20130925075341.GB3081@twins.programming.kicks-ass.net>
+ <1380099377.8523.9.camel@marge.simpson.net>
+ <20130926095812.GR3081@twins.programming.kicks-ass.net>
+ <CAPM31RL9RGX=ohUVag=tD41MbXs47dDgpndGfjBt68QeL-De7g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1379755816-21822-1-git-send-email-valentin.ilie@gmail.com>
-References: <1379755816-21822-1-git-send-email-valentin.ilie@gmail.com>
-Date: Thu, 26 Sep 2013 14:14:39 +0300
-X-Google-Sender-Auth: KqQN4MesVtQS78IB1aQuTf7gQ_4
-Message-ID: <CAHuBVBa-vMT4Bx1oAxVGnMgyh5ZkreRzW052OtemZyaZpL6LWg@mail.gmail.com>
-Subject: Re: [PATCH] usb: gadget: mv_u3d_core: fix memory leaks
-From: Valentin Ilie <valentin.ilie@gmail.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Valentin Ilie <valentin.ilie@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM31RL9RGX=ohUVag=tD41MbXs47dDgpndGfjBt68QeL-De7g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 September 2013 12:30, Valentin Ilie <valentin.ilie@gmail.com> wrote:
-> When trb_hw is NULL, trb should be free'd before return.
->
-> Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
-> ---
->  drivers/usb/gadget/mv_u3d_core.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/usb/gadget/mv_u3d_core.c b/drivers/usb/gadget/mv_u3d_core.c
-> index 561b30e..4d31177 100644
-> --- a/drivers/usb/gadget/mv_u3d_core.c
-> +++ b/drivers/usb/gadget/mv_u3d_core.c
-> @@ -310,6 +310,7 @@ static struct mv_u3d_trb *mv_u3d_build_trb_one(struct mv_u3d_req *req,
->          */
->         trb_hw = dma_pool_alloc(u3d->trb_pool, GFP_ATOMIC, dma);
->         if (!trb_hw) {
-> +               kfree(trb);
->                 dev_err(u3d->dev,
->                         "%s, dma_pool_alloc fail\n", __func__);
->                 return NULL;
-> @@ -454,6 +455,7 @@ static int mv_u3d_req_to_trb(struct mv_u3d_req *req)
->
->                 trb_hw = kcalloc(trb_num, sizeof(*trb_hw), GFP_ATOMIC);
->                 if (!trb_hw) {
-> +                       kfree(trb);
->                         dev_err(u3d->dev,
->                                         "%s, trb_hw alloc fail\n", __func__);
->                         return -ENOMEM;
-> --
-> 1.7.9.5
->
+On Thu, Sep 26, 2013 at 03:55:55AM -0700, Paul Turner wrote:
+> > +               /*
+> > +                * Don't bother with select_idle_sibling() in the case of a sync wakeup
+> > +                * where we know the only running task will soon go-away. Going
+> > +                * through select_idle_sibling will only lead to pointless ping-pong.
+> > +                */
+> > +               if (sync && prev_cpu == cpu && cpu_rq(cpu)->nr_running == 1 &&
+> 
+> I've long thought of trying something like this.
+> 
+> I like the intent but I'd go a step further in that I think we want to
+> also implicitly extract WF_SYNC itself.
 
-Can anyone look into this?
+I have vague memories of actually trying something like that a good
+number of years ago.. sadly that's all I remember about it.
 
-Thank you
+> What we really then care about is predicting the overlap associated
+> with userspace synchronization objects, typically built on top of
+> futexes.  Unfortunately the existence/use of per-thread futexes
+> reduces how much state you could usefully associate with the futex.
+> One approach might be to hash (with some small saturating counter)
+> against rip.  But this gets more complicated quite quickly.
 
--- 
-Valentin Ilie
-+(40) 746 188 558
+Why would you need per object storage? To further granulate the
+predicted overlap? instead of having one per task, you have one per
+object?
+
