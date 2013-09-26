@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3IZSoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 14:44:16 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:45979 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab3IZSoP (ORCPT
+	id S1753532Ab3IZSvR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 14:51:17 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:39862 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752841Ab3IZSvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 14:44:15 -0400
-Date: Thu, 26 Sep 2013 11:44:13 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ming Liu <ming.liu@windriver.com>
-cc: akpm@linux-foundation.org, mhocko@suse.cz, rusty@rustcorp.com.au,
-        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V1] oom: avoid selecting threads sharing mm with init
-In-Reply-To: <1380182957-3231-1-git-send-email-ming.liu@windriver.com>
-Message-ID: <alpine.DEB.2.02.1309261143160.10904@chino.kir.corp.google.com>
-References: <1380182957-3231-1-git-send-email-ming.liu@windriver.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 26 Sep 2013 14:51:13 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 01/21] drivers: remove unnecessary prom.h includes
+Date: Thu, 26 Sep 2013 13:50:36 -0500
+Message-Id: <1380221456-11192-2-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
+References: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Sep 2013, Ming Liu wrote:
+From: Rob Herring <rob.herring@calxeda.com>
 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 314e9d2..7e50a95 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -113,11 +113,22 @@ struct task_struct *find_lock_task_mm(struct task_struct *p)
->  static bool oom_unkillable_task(struct task_struct *p,
->  		const struct mem_cgroup *memcg, const nodemask_t *nodemask)
->  {
-> +	struct task_struct *init_tsk;
-> +
->  	if (is_global_init(p))
->  		return true;
->  	if (p->flags & PF_KTHREAD)
->  		return true;
->  
-> +	/* It won't help free memory if p is sharing mm with init */
-> +	rcu_read_lock();
-> +	init_tsk = find_task_by_pid_ns(1, &init_pid_ns);
-> +	if(p->mm == init_tsk->mm) {
-> +		rcu_read_unlock();
-> +		return true;
-> +	}
-> +	rcu_read_unlock();
-> +
->  	/* When mem_cgroup_out_of_memory() and p is not member of the group */
->  	if (memcg && !task_in_mem_cgroup(p, memcg))
->  		return true;
+Remove unnecessary prom.h includes in preparation to remove implicit
+includes of prom.h.
 
-You're aware of init_mm?
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: linux-can@vger.kernel.org
+Cc: netdev@vger.kernel.org
+---
+ drivers/net/can/grcan.c                       | 3 ---
+ drivers/net/can/sja1000/sja1000_of_platform.c | 1 -
+ 2 files changed, 4 deletions(-)
 
-Can you post the kernel log when one of these "extreme cases" happens?
+diff --git a/drivers/net/can/grcan.c b/drivers/net/can/grcan.c
+index 6aa737a..ab506d6 100644
+--- a/drivers/net/can/grcan.c
++++ b/drivers/net/can/grcan.c
+@@ -34,10 +34,7 @@
+ #include <linux/io.h>
+ #include <linux/can/dev.h>
+ #include <linux/spinlock.h>
+-
+ #include <linux/of_platform.h>
+-#include <asm/prom.h>
+-
+ #include <linux/of_irq.h>
+ 
+ #include <linux/dma-mapping.h>
+diff --git a/drivers/net/can/sja1000/sja1000_of_platform.c b/drivers/net/can/sja1000/sja1000_of_platform.c
+index 31ad339..047accd 100644
+--- a/drivers/net/can/sja1000/sja1000_of_platform.c
++++ b/drivers/net/can/sja1000/sja1000_of_platform.c
+@@ -44,7 +44,6 @@
+ #include <linux/of_platform.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+-#include <asm/prom.h>
+ 
+ #include "sja1000.h"
+ 
+-- 
+1.8.1.2
+
