@@ -1,123 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab3IZJ32 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:29:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21469 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121Ab3IZJ30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:29:26 -0400
-Date: Thu, 26 Sep 2013 11:27:24 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/3] msi: add forgotten pci_dev_put(pdev) to
- populate_msi_sysfs()
-Message-ID: <20130926092724.GA4783@redhat.com>
-References: <1379382464-7920-1-git-send-email-vfalico@redhat.com>
- <1379382464-7920-2-git-send-email-vfalico@redhat.com>
- <CAErSpo6+AQhpO2WvoKCSw7WokDiex_E43oi9xpuka7biPEx=7Q@mail.gmail.com>
- <20130925232300.GA7368@neilslaptop.think-freely.org>
- <CAErSpo6coKuf4f3j3zMwMNp7Uj3btN9UQyHpLPdq84aU-s=5UA@mail.gmail.com>
+	id S1756334Ab3IZJa5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:30:57 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:51149 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755918Ab3IZJa4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 05:30:56 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        linux-sh@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/4] pinctrl: sh-pfc: r8a7790: add pin definitions for the I2C3 interface
+Date: Thu, 26 Sep 2013 11:30:57 +0200
+Message-ID: <1424693.p1P0XFCq6l@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.64.1309261117510.11968@axis700.grange>
+References: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de> <1736434.JorZUzD5Dk@avalon> <Pine.LNX.4.64.1309261117510.11968@axis700.grange>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <CAErSpo6coKuf4f3j3zMwMNp7Uj3btN9UQyHpLPdq84aU-s=5UA@mail.gmail.com>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 05:35:54PM -0600, Bjorn Helgaas wrote:
->On Wed, Sep 25, 2013 at 5:23 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
->> On Wed, Sep 25, 2013 at 03:08:05PM -0600, Bjorn Helgaas wrote:
->>> [+cc Neil (he added this code in da8d1c8ba4), Greg]
->>>
->>> On Mon, Sep 16, 2013 at 7:47 PM, Veaceslav Falico <vfalico@redhat.com> wrote:
->>> > Before trying to kobject_init_and_add(), we add a reference to pdev via
->>> > pci_dev_get(pdev). However, if it fails to init and/or add the kobject, we
->>> > don't return it back - even on out_unroll.
->>> >
->>> > Fix this by adding pci_dev_put(pdev) before going to unrolling section.
->>> >
->>> > CC: Bjorn Helgaas <bhelgaas@google.com>
->>> > CC: linux-pci@vger.kernel.org
->>> > CC: linux-kernel@vger.kernel.org
->>> > Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
->>> > ---
->>> >  drivers/pci/msi.c | 4 +++-
->>> >  1 file changed, 3 insertions(+), 1 deletion(-)
->>> >
->>> > diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
->>> > index d5f90d6..14bf578 100644
->>> > --- a/drivers/pci/msi.c
->>> > +++ b/drivers/pci/msi.c
->>> > @@ -534,8 +534,10 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
->>> >                 pci_dev_get(pdev);
->>> >                 ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
->>> >                                      "%u", entry->irq);
->>> > -               if (ret)
->>> > +               if (ret) {
->>> > +                       pci_dev_put(pdev);
->>> >                         goto out_unroll;
->>> > +               }
->>> >
->>> >                 count++;
->>> >         }
->>>
->>> I don't understand why this code does the pci_dev_get() in the first
->>> place.  The pdev->msi_list of msi_desc structs is private to the
->>> pci_dev, and even without bumping the refcount, there should be no way
->>> for the pci_dev to be freed before the msi_desc.
->>>
->> Its been a few years now, but IIRC I did the pci_dev_get/put here to ensure that
->> people didn't try to remove the device prior to freeing all their interrupts
->> (i.e I didn't want a broken driver to go through its remove routine without
->> freeing all its irqs).  That might have been the wrong thing to do, but thats
->> what bubbles to the front of my head when looking at this.
->
->That sounds plausible, but I think I'd rather deal with that by having
->the PCI core remove logic free all the interrupts.  I *think* that's
->already in place, i.e., pci_free_resources() calls
->msi_remove_pci_irq_vectors().  So I propose that we remove the
->pci_dev_get()/put() unless we come up with a more compelling reason
->for it.
->
->>> I also don't understand this nearby code (the same pattern appears in
->>> free_msi_irqs()):
->>>
->>>     out_unroll:
->>>         list_for_each_entry(entry, &pdev->msi_list, list) {
->>>                 if (!count)
->>>                         break;
->>>                 kobject_del(&entry->kobj);
->>>                 kobject_put(&entry->kobj);
->>>                 count--;
->>>         }
->>>
->>> Why do we call kobject_del() here?  The kobject_put() will call
->>> kobject_del() anyway, so it looks redundant.
->>> Documentation/kobject.txt says kobject_del() must be called explicitly
->>> to break a circular reference, but I don't think we have that here.
->>>
->>  I think thats exactly why I did it, because of the documentation.  I agree
->> however, it does look redundant.  Harmless, but redundant.
->
->OK, thanks.  I think we should remove it on the grounds that it's not
->needed and removing it will make this code look more similar to other
->callers of kobject_init_and_add(), which means bugs will have fewer
->places to hide.
-Hi,
+Hi Guennadi,
 
-Sounds great, I'll add this as new patches and send this in a separate
-patchset with the unregister msi_kset in free_msi_irqs patch, so that it
-won't depend on the fix (both removing kobject_del() and
-pci_dev_get/put()).
+On Thursday 26 September 2013 11:24:26 Guennadi Liakhovetski wrote:
+> On Wed, 25 Sep 2013, Laurent Pinchart wrote:
+> > On Monday 09 September 2013 18:03:53 Guennadi Liakhovetski wrote:
+> > > There are four I2C interfaces on r8a7790, each of them can be connected
+> > > to one of the two respective I2C controllers, e.g. interface #0 can be
+> > > configured to work with I2C0 or with IIC0. Additionally some of those
+> > > interfaces can also use one of several pin sets. Interface #3 is
+> > > special, because it can be used in automatic mode for DVFS. It only has
+> > > one set of pins available and those pins cannot be used for anything
+> > > else, they also lack the GPIO function.
+> > > 
+> > > This patch uses the sh-pfc ability to configure pins, not associated
+> > > with GPIOs and adds support for I2C3 to the r8a7790 PFC set up.
+> > 
+> > Ulrich Hecht sent a patch titled "sh-pfc: r8a7790: Add I2C pin groups and
+> > functions" that added pin groups for I2C1 and I2C2. The patch is available
+> > from
+> > 
+> > 	git://linuxtv.org/pinchartl/fbdev.git pinmux/next
+> > 
+> > If you need to resubmit this patch due to my comments below, could you
+> > please rebase it on top of that branch ?
+> > 
+> > > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+> > > ---
+> > > 
+> > >  drivers/pinctrl/sh-pfc/pfc-r8a7790.c |   28
+> > >  ++++++++++++++++++++++++++++
+> > >  1 files changed, 28 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
+> > > b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c index 64fcc006..c3c4d9b 100644
+> > > --- a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
+> > > +++ b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
+> > > @@ -781,6 +781,8 @@ enum {
+> > >  	ADICS_SAMP_MARK, DU2_CDE_MARK, QPOLB_MARK, SCIFA2_RXD_B_MARK,
+> > >  	USB1_PWEN_MARK, AUDIO_CLKOUT_D_MARK, USB1_OVC_MARK,
+> > >  	TCLK1_B_MARK,
+> > > +
+> > > +	I2C3_SCL_MARK, I2C3_SDA_MARK,
+> > > 
+> > >  	PINMUX_MARK_END,
+> > >  };
+> > > @@ -1719,10 +1721,22 @@ static const u16 pinmux_data[] = {
+> > >  	PINMUX_IPSR_DATA(IP16_6, AUDIO_CLKOUT_D),
+> > >  	PINMUX_IPSR_DATA(IP16_7, USB1_OVC),
+> > >  	PINMUX_IPSR_MODSEL_DATA(IP16_7, TCLK1_B, SEL_TMU1_1),
+> > > +
+> > > +	PINMUX_DATA(I2C3_SCL_MARK, FN_SEL_IICDVFS_1),
+> > > +	PINMUX_DATA(I2C3_SDA_MARK, FN_SEL_IICDVFS_1),
+> > 
+> > You introduce a way to mux the I2C3 function on those two pins, but no way
+> > to select the IICDVFS back. I don't think it's an issue, we can always
+> > add that later when (if) needed. Linus, is that fine with you ?
+> 
+> I did it on purpose, since I didn't have a use case for IICDVFS. I prefer
+> not to add too many things, that cannot be tested.
 
-Thank you!
+Just for the record, I'm fine with that.
 
->
->Thanks, Neil!
->
->Bjorn
+> > >  };
+> > > 
+> > > +/* R8A7790 has 6 banks with 32 GPIOs in each = 192 GPIOs */
+> > > +#define ROW_GROUP_A(r) ('Z' - 'A' + 1 + (r))
+> > > +#define PIN_NUMBER(r, c) (((r) - 'A') * 16 + (c) + 200)
+> > 
+> > The BGA package has 31 columns, shouldn't you multiply the row number by
+> > 31 instead of 16 ?
+> 
+> Oops, you're right - the pin table is continued on the second page...
+
+Could you then submit a v2 based on git://linuxtv.org/pinchartl/fbdev.git 
+pinmux/next ?
+
+> > As we have 192 GPIOs, shouldn't you use an offset of 192 instead of 200 ?
+> > This doesn't matter too much I guess.
+> 
+> On one of Renesas SoCs I've seen an offset of 2000 used. I thought it
+> would be an exaggeration in this case ;) but I followed the pattern of
+> using a round number for the offset, is this ok?
+
+I suppose that's fine, yes.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
