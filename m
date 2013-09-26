@@ -1,114 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab3IZIVH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:21:07 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41573 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab3IZIVE (ORCPT
+	id S1756135Ab3IZIVw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:21:52 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43190 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab3IZIVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:21:04 -0400
-Date: Thu, 26 Sep 2013 10:20:59 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [RFC, PATCH] clocksource: provide timekeeping for efm32 SoCs
-Message-ID: <20130926082059.GI16106@pengutronix.de>
-References: <1379324644-20934-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <5242F434.7060702@linaro.org>
- <20130925153207.GG16106@pengutronix.de>
- <524376A0.7020405@linaro.org>
+	Thu, 26 Sep 2013 04:21:48 -0400
+Date: Thu, 26 Sep 2013 10:21:47 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: joeyli <jlee@suse.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
+        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
+        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH V4 13/15] Hibernate: introduced SNAPSHOT_SIG_HASH
+ config for select hash algorithm
+Message-ID: <20130926082146.GA22286@amd.pavel.ucw.cz>
+References: <1379206621-18639-1-git-send-email-jlee@suse.com>
+ <1379206621-18639-14-git-send-email-jlee@suse.com>
+ <20130918134535.GA3748@amd.pavel.ucw.cz>
+ <1380159819.32302.24.camel@linux-s257.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <524376A0.7020405@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1380159819.32302.24.camel@linux-s257.site>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Daniel,
+Hi!
 
-On Thu, Sep 26, 2013 at 01:49:52AM +0200, Daniel Lezcano wrote:
-> On 09/25/2013 05:32 PM, Uwe Kleine-König wrote:
-> >>> +static void __init efm32_timer_init(struct device_node *np)
-> >>> +{
-> >>> +	static int has_clocksource, has_clockevent;
-> >>> +	int ret;
-> >>> +
-> >>> +	if (!has_clocksource) {
-> >>> +		ret = efm32_clocksource_init(np);
-> >>> +		if (!ret) {
-> >>> +			has_clocksource = 1;
-> >>> +			return;
-> >>> +		}
-> >>> +	}
-> >>> +
-> >>> +	if (!has_clockevent) {
-> >>> +		ret = efm32_clockevent_init(np);
-> >>> +		if (!ret) {
-> >>> +			has_clockevent = 1;
-> >>> +			return;
-> >>> +		}
-> >>> +	}
-> >>> +}
-> >>
-> >> I don't get the purpose of this initialization, can you explain ?
-> > An efm32 SoC has four timer blocks. A single block can only be used for
-> > one of clocksource or clockevent device and having more than one
-> > clocksource or clockevent device doesn't make sense. So this routine
-> > asserts that the first timer is used as clocksource and the second as
-> > clockevent device. The others are unused.
+> > On Sun 2013-09-15 08:56:59, Lee, Chun-Yi wrote:
+> > > This patch introduced SNAPSHOT_SIG_HASH config for user to select which
+> > > hash algorithm will be used during signature generation of snapshot.
+> > 
+> > This series is big enough already... and who is going to test it?
 > 
-> Shouldn't be up to the dt to give the timers you want ?
-The dt looks as follows:
+> The hash config not just for testing, it's relate to the performance and
+> secure between different hash algorithms.
 
-                timer0: timer@40010000 {
-                        compatible = "efm32,timer";
-                        reg = <0x40010000 0x400>;
-                        interrupts = <2>;
-                        clocks = <&cmu clk_HFPERCLKTIMER0>;
-                };
+I'm not saying it is for testing. I'm saying that selection makes
+testing harder.
 
-                timer1: timer@40010400 {
-                        compatible = "efm32,timer";
-                        reg = <0x40010400 0x400>;
-                        interrupts = <12>;
-                        clocks = <&cmu clk_HFPERCLKTIMER1>;
-                };
+> There have person raised in LPC say he don't like SHA algorithm.
 
-                timer2: timer@40010800 {
-                        compatible = "efm32,timer";
-                        reg = <0x40010800 0x400>;
-                        interrupts = <13>;
-                        clocks = <&cmu clk_HFPERCLKTIMER2>;
-                };
+Well, I don't like the config option.
 
-                timer3: timer@40010c00 {
-                        compatible = "efm32,timer";
-                        reg = <0x40010c00 0x400>;
-                        interrupts = <14>;
-                        clocks = <&cmu clk_HFPERCLKTIMER3>;
-                };
+> > There's no need to make hash configurable. Just select one that works.
+> 
+> SHA1 has good performance, and SHA512 has better security, which one you
+> like it?
 
-What is your suggestion now? Add a property that specifies if the block
-should be used as clocksource or clockevent_device? That isn't a
-hardware description and so shouldn't go into the device tree.
-Provide two drivers that match on "efm32,timer", one for clocksource and
-another for clockevent_device? That wouldn't work, too, as the first
-driver to be loaded would grab all four timers and the second would get
-none.
+Use SHA1. It is completely adequate for what you are trying to do.
 
-Best regards
-Uwe
-
+									Pavel
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
