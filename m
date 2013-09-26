@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab3IZNM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 09:12:59 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:60757 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756914Ab3IZNM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 09:12:57 -0400
-Date: Thu, 26 Sep 2013 16:12:55 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: David Miller <davem@davemloft.net>
-cc: sparclinux@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: include/linux/version.h not updated (Was: SILO always tells it loaded
- kernel version 3.6.0)
-In-Reply-To: <alpine.SOC.1.00.1309261347030.11084@math.ut.ee>
-Message-ID: <alpine.SOC.1.00.1309261601050.11084@math.ut.ee>
-References: <alpine.SOC.1.00.1309260234380.22367@math.ut.ee> <20130926.002304.2121420558807412031.davem@davemloft.net> <alpine.SOC.1.00.1309261347030.11084@math.ut.ee>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S932149Ab3IZNNc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 09:13:32 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:45749 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756996Ab3IZNN3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 09:13:29 -0400
+Message-ID: <524431FF.50904@linux.vnet.ibm.com>
+Date: Thu, 26 Sep 2013 18:39:19 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Arjan van de Ven <arjan@linux.intel.com>
+CC: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
+        dave@sr71.net, hannes@cmpxchg.org, tony.luck@intel.com,
+        matthew.garrett@nebula.com, riel@redhat.com,
+        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
+        gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
+        santosh.shilimkar@ti.com, kosaki.motohiro@gmail.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, maxime.coquelin@stericsson.com,
+        loic.pallardy@stericsson.com, thomas.abraham@linaro.org,
+        amit.kachhap@linaro.org
+Subject: Re: [Results] [RFC PATCH v4 00/40] mm: Memory Power Management
+References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <52437128.7030402@linux.vnet.ibm.com> <20130925164057.6bbaf23bdc5057c42b2ab010@linux-foundation.org> <20130925234734.GK18242@two.firstfloor.org> <52438A6B.30202@linux.intel.com>
+In-Reply-To: <52438A6B.30202@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092613-2000-0000-0000-00000DE00AD7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Background: SILO bootloader on sparc64 tells it is loading 3.6.0 when 
-actually it is 3.12.0-rc2.
-
-> On U10:
+On 09/26/2013 06:44 AM, Arjan van de Ven wrote:
+> On 9/25/2013 4:47 PM, Andi Kleen wrote:
+>>> Also, the changelogs don't appear to discuss one obvious downside: the
+>>> latency incurred in bringing a bank out of one of the low-power states
+>>> and back into full operation.  Please do discuss and quantify that to
+>>> the best of your knowledge.
+>>
+>> On Sandy Bridge the memry wakeup overhead is really small. It's on by
+>> default
+>> in most setups today.
 > 
-> ok boot
-> Boot device: scsidisk  File and args: 
-> SILO Version 1.4.14
-> boot: test
-> Allocated 64 Megs of memory at 0x40000000 for kernel
-> Uncompressing image...
-> Loaded kernel version 3.6.0
+> yet grouping is often defeated (in current systems) due to hw level
+> interleaving ;-(
+> sometimes that's a bios setting though.
 > 
-> PROMLIB: Sun IEEE Boot Prom 'OBP 3.31.0 2001/07/25 20:36'
-> PROMLIB: Root node compatible: 
-> Initializing cgroup subsys cpu
-> Linux version 3.11.0-dirty (mroos@u10) (gcc version 4.6.4 (Debian 4.6.4-4) ) #47 Wed Sep 25 16:01:09 EEST 2013
 
-SILO gets the version from struch HdrS in the image.
+True, and I plan to tweak those hardware settings in the prototype powerpc
+platform and evaluate the power vs performance trade-offs of various
+interleaving schemes in conjunction with this patchset.
 
-vmlinux contains HdrS^@^C^F^@, so ver_linux is 00 03 06 0 that is 3.6.0. 
-So it's in our image and silo is correct.
+> in internal experimental bioses we've been able to observe a "swing" of
+> a few watts
+> (not with these patches but with some other tricks)...
 
-It seems to be LINUX_VERSION_CODE in head_64.S - maybe it is nor 
-recompiled? No, head_64.o is from yesterday.
+Great! So, would you have the opportunity to try out this patchset as well
+on those systems that you have? I can modify the patchset to take memory
+region info from whatever source you want me to take it from and then we'll
+have realistic power-savings numbers to evaluate this patchset and its benefits
+on Intel/x86 platforms.
 
-grep -r for LINUX_VERSION_CODE results in different values:
+> I'm curious to see how these patches do for Srivatsa
+> 
 
-./include/generated/uapi/linux/version.h:#define LINUX_VERSION_CODE 199424
-./include/linux/version.h:#define LINUX_VERSION_CODE 198144
+As I mentioned in my other mail, I don't yet have a setup for doing actual
+power-measurements. Hence, so far I was focussing on the algorithmic aspects
+of the patchset and was trying to get an excellent consolidation ratio,
+without hurting performance too much. Going forward, I'll work on getting the
+power-measurements as well on the powerpc platform that I have.
+ 
+Regards,
+Srivatsa S. Bhat
 
--rw-r--r-- 1 mroos mroos 97 Sep 20 21:56 include/generated/uapi/linux/version.h
--rw-r--r-- 1 mroos mroos 97 Aug 10  2012 ./include/linux/version.h
-
-As it happens, 198144 is the value from Aug 10 2012 and it happens to be 
-00030600 hex. Here is the culprit, we are not rebuilding 
-include/linux/version.h.
-
--- 
-Meelis Roos (mroos@linux.ee)
