@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695Ab3IZHlu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:41:50 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:37393 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab3IZHls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:41:48 -0400
+	id S1751259Ab3IZHox (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:44:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49344 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750805Ab3IZHov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 03:44:51 -0400
+Date: Thu, 26 Sep 2013 09:46:46 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Jan Beulich <JBeulich@suse.com>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
+Message-ID: <20130926074646.GA16774@dhcp-26-207.brq.redhat.com>
+References: <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
+ <20130917143022.GA7707@concordia>
+ <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
+ <20130918142231.GA21650@mtj.dyndns.org>
+ <20130918165045.GB2353@dhcp-26-207.brq.redhat.com>
+ <20130920082458.GA10507@dhcp-26-207.brq.redhat.com>
+ <20130920122736.GD7630@mtj.dyndns.org>
+ <20130925180220.GB26273@google.com>
+ <20130925205804.GA21737@dhcp-26-207.brq.redhat.com>
+ <20130925210016.GA8926@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20130918143346.GB3891@infradead.org>
-References: <20130917190606.GB3918@infradead.org> <52398FF1.5020502@redhat.com>
- <20130918143346.GB3891@infradead.org>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Thu, 26 Sep 2013 09:41:27 +0200
-Message-ID: <CAK1hOcNbQm6-tYfnn+hLF=AWn1kwYqhtYJjs_6taM5s-ka529Q@mail.gmail.com>
-Subject: Re: [RFC] Full syscall argument decode in "perf trace"
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, Tom Zanussi <tzanussi@gmail.com>,
-        Steven Rostedt <srostedt@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7ba975cc957ff204e7448057
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130925210016.GA8926@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7ba975cc957ff204e7448057
-Content-Type: text/plain; charset=ISO-8859-1
+On Wed, Sep 25, 2013 at 05:00:16PM -0400, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Sep 25, 2013 at 10:58:05PM +0200, Alexander Gordeev wrote:
+> > Unfortunately, pSeries is a shows-topper here :( It seems we have to
+> > introduce pci_get_msi{,x}_limit() interfaces to honour the quota
+> > thing.  I just hope the hardware set for pSeries is limited and we
+> > won't need to use it for all drivers.
+> 
+> Can you please go into a bit of detail on that?  Why does it matter?
 
-On Wed, Sep 18, 2013 at 4:33 PM, Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
->> > Look at the tmp.perf/trace2 branch in my git repo, tglx and Ingo added a
->> > tracepoint to vfs_getname to use that.
->>
->> I know that this is the way how to fetch syscall args without stopping,
->> yes.
->>
->> The problem: ~100 more tracepoints need to be added merely to get
->> to the point where strace already is, wrt quality of syscall decoding.
->> strace has nearly 300 separate custom syscall formatting functions,
->> some of them quite complex.
->>
->> If we need to add syscall stopping feature (which, as I said above,
->> will be necessary anyway IMO), then syscall decoding can be as good
->> as strace *already*. Then, gradually more tracepoints are added
->> to make it faster.
->>
->> I am thinking about going into this direction.
->>
->> Therefore my question should be restated as:
->>
->> Would perf developers accept the "syscall pausing" feature,
->> or it won't be accepted?
->
-> Do you have some patch for us to try?
+Because otherwise we will re-introduce a problem described by Michael:
+"We have a small number of MSIs available, limited by hardware &
+firmware, if we don't impose a quota then the first device that probes
+will get most/all of the MSIs and other devices miss out."
 
-I have a patch which is a bit strace specific: it sidesteps
-the question of the synchronization between traced process
-and its tracer by using ptrace's existing method of reporting stops.
+> Is it because you're worried you might cause performance regression by
+> forcing prevoius partial multiple allocations to single interrupt
+> operation?
 
-This works for strace, and is very easy to implement.
-Naturally, other tracers (e.g. "perf trace" wouldn't
-want to start using ptrace! Synchronization needs
-to be done in some other way, not as a ptrace stop.
+Well, not really. I think it won't be possible to force people not to use
+partial allocations anyway. Some controllers just do not care how many MSIs
+they are configured with. Some drivers derive the number of MSIs desired
+from the number of CPUs online - in such cases allocating more MSIs (i.e.
+a number the controller advertised) could cause a performance degradation
+even.
 
-For one, the stopping flag needs to be a counter, so that
-more than one tracer can use this feature concurrently.
+So when driver authors will know/measure/believe their hardware performs
+better with partial allocations they will stand for it. What we can do is
+to prevent those try-and-decrease fallbacks.
 
-But anyway, I am attaching it.
-
-It adds a new flag, attr.sysexit_stop, which makes process stop
-at next syscall exit when this tracepoint overflows.
+> Thanks.
+> 
+> -- 
+> tejun
 
 -- 
-vda
-
---047d7ba975cc957ff204e7448057
-Content-Type: application/octet-stream; name="perf_trace_stop_RFC.diff"
-Content-Disposition: attachment; filename="perf_trace_stop_RFC.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hm1oa4u10
-
-ZGlmZiAtdXJwIGxpbnV4LTMuMTAuMTEtMTAwLmZjMTgueDg2XzY0Lk9SRy9pbmNsdWRlL3VhcGkv
-bGludXgvcGVyZl9ldmVudC5oIGxpbnV4LTMuMTAuMTEtMTAwLmZjMTgueDg2XzY0LmNsZWFuMi9p
-bmNsdWRlL3VhcGkvbGludXgvcGVyZl9ldmVudC5oCi0tLSBsaW51eC0zLjEwLjExLTEwMC5mYzE4
-Lng4Nl82NC5PUkcvaW5jbHVkZS91YXBpL2xpbnV4L3BlcmZfZXZlbnQuaAkyMDEzLTA3LTAxIDAw
-OjEzOjI5LjAwMDAwMDAwMCArMDIwMAorKysgbGludXgtMy4xMC4xMS0xMDAuZmMxOC54ODZfNjQu
-Y2xlYW4yL2luY2x1ZGUvdWFwaS9saW51eC9wZXJmX2V2ZW50LmgJMjAxMy0wOS0yNSAyMzo0MToz
-MS4yNjU1NzY4OTcgKzAyMDAKQEAgLTI3Myw3ICsyNzMsOSBAQCBzdHJ1Y3QgcGVyZl9ldmVudF9h
-dHRyIHsKIAkJCQlleGNsdWRlX2NhbGxjaGFpbl9rZXJuZWwgOiAxLCAvKiBleGNsdWRlIGtlcm5l
-bCBjYWxsY2hhaW5zICovCiAJCQkJZXhjbHVkZV9jYWxsY2hhaW5fdXNlciAgIDogMSwgLyogZXhj
-bHVkZSB1c2VyIGNhbGxjaGFpbnMgKi8KIAotCQkJCV9fcmVzZXJ2ZWRfMSAgIDogNDE7CisJCQkJ
-c3lzZXhpdF9zdG9wICAgOiAxLAorCisJCQkJX19yZXNlcnZlZF8xICAgOiA0MDsKIAogCXVuaW9u
-IHsKIAkJX191MzIJCXdha2V1cF9ldmVudHM7CSAgLyogd2FrZXVwIGV2ZXJ5IG4gZXZlbnRzICov
-CmRpZmYgLXVycCBsaW51eC0zLjEwLjExLTEwMC5mYzE4Lng4Nl82NC5PUkcva2VybmVsL2V2ZW50
-cy9jb3JlLmMgbGludXgtMy4xMC4xMS0xMDAuZmMxOC54ODZfNjQuY2xlYW4yL2tlcm5lbC9ldmVu
-dHMvY29yZS5jCi0tLSBsaW51eC0zLjEwLjExLTEwMC5mYzE4Lng4Nl82NC5PUkcva2VybmVsL2V2
-ZW50cy9jb3JlLmMJMjAxMy0wOS0yMyAxMjowMzoyNS43MTkyNTM5MDggKzAyMDAKKysrIGxpbnV4
-LTMuMTAuMTEtMTAwLmZjMTgueDg2XzY0LmNsZWFuMi9rZXJuZWwvZXZlbnRzL2NvcmUuYwkyMDEz
-LTA5LTI1IDIzOjQzOjAwLjM3NjYyMTU4NCArMDIwMApAQCAtNTAyNiw2ICs1MDI2LDEwIEBAIHN0
-YXRpYyBpbnQgX19wZXJmX2V2ZW50X292ZXJmbG93KHN0cnVjdAogCQlpcnFfd29ya19xdWV1ZSgm
-ZXZlbnQtPnBlbmRpbmcpOwogCX0KIAorCWlmICghaW5faW50ZXJydXB0KCkgJiYgZXZlbnQtPmF0
-dHIuc3lzZXhpdF9zdG9wICYmIGN1cnJlbnQtPnB0cmFjZSkgeworCQlzZXRfdHNrX3RocmVhZF9m
-bGFnKGN1cnJlbnQsIFRJRl9TWVNDQUxMX1RSQUNFKTsKKwl9CisKIAlyZXR1cm4gcmV0OwogfQog
-Cg==
---047d7ba975cc957ff204e7448057--
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
