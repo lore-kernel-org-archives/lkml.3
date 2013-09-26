@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab3IZTGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 15:06:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6110 "EHLO mga09.intel.com"
+	id S1754170Ab3IZTGv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 15:06:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6978 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753017Ab3IZTGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 15:06:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,987,1371106800"; 
-   d="scan'208";a="384028523"
-Date: Thu, 26 Sep 2013 12:05:56 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Zach Brown <zab@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 00/22] Transparent huge page cache: phase 1, everything
- but mmap()
-Message-ID: <20130926190556.GJ2018@tassilo.jf.intel.com>
-References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org>
- <20130924234950.GC2018@tassilo.jf.intel.com>
- <20130926183022.GN30372@lenny.home.zabbo.net>
+	id S1754058Ab3IZTGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 15:06:44 -0400
+Date: Thu, 26 Sep 2013 12:06:11 -0700
+From: Zach Brown <zab@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+Message-ID: <20130926190611.GP30372@lenny.home.zabbo.net>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+ <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
+ <20130925183828.GA30372@lenny.home.zabbo.net>
+ <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
+ <20130925190620.GB30372@lenny.home.zabbo.net>
+ <20130925195526.GA18971@fieldses.org>
+ <20130925210742.GG30372@lenny.home.zabbo.net>
+ <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+ <20130926153359.GE704@fieldses.org>
+ <CAJfpegsUchb0eX+Hi3rN5Ypje3Y-dgo=pxgM1Y3BQbHVp=1hSw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130926183022.GN30372@lenny.home.zabbo.net>
+In-Reply-To: <CAJfpegsUchb0eX+Hi3rN5Ypje3Y-dgo=pxgM1Y3BQbHVp=1hSw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 11:30:22AM -0700, Zach Brown wrote:
-> > > Sigh.  A pox on whoever thought up huge pages. 
-> > 
-> > managing 1TB+ of memory in 4K chunks is just insane.
-> > The question of larger pages is not "if", but only "when".
+On Thu, Sep 26, 2013 at 08:06:41PM +0200, Miklos Szeredi wrote:
+> On Thu, Sep 26, 2013 at 5:34 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> > On Thu, Sep 26, 2013 at 10:58:05AM +0200, Miklos Szeredi wrote:
+> >> On Wed, Sep 25, 2013 at 11:07 PM, Zach Brown <zab@redhat.com> wrote:
+> >> >> A client-side copy will be slower, but I guess it does have the
+> >> >> advantage that the application can track progress to some degree, and
+> >> >> abort it fairly quickly without leaving the file in a totally undefined
+> >> >> state--and both might be useful if the copy's not a simple constant-time
+> >> >> operation.
+> >> >
+> >> > I suppose, but can't the app achieve a nice middle ground by copying the
+> >> > file in smaller syscalls?  Avoid bulk data motion back to the client,
+> >> > but still get notification every, I dunno, few hundred meg?
+> >>
+> >> Yes.  And if "cp"  could just be switched from a read+write syscall
+> >> pair to a single splice syscall using the same buffer size.
+> >
+> > Will the various magic fs-specific copy operations become inefficient
+> > when the range copied is too small?
 > 
-> And "how"!
+> We could treat spice-copy operations just like write operations (can
+> be buffered, coalesced, synced).
 > 
-> Sprinking a bunch of magical if (thp) {} else {} throughtout the code
-> looks like a stunningly bad idea to me.  It'd take real work to
-> restructure the code such that the current paths are a degenerate case
-> of the larger thp page case, but that's the work that needs doing in my
-> estimation.
+> But I'm not sure it's worth the effort; 99% of the use of this
+> interface will be copying whole files.  And for that perhaps we need a
+> different API, one which has been discussed some time ago:
+> asynchronous copyfile() returns immediately with a pollable event
+> descriptor indicating copy progress, and some way to cancel the copy.
+> And that can internally rely on ->direct_splice(), with appropriate
+> algorithms for determine the optimal  chunk size.
 
-Sorry, but that is how all of large pages in the Linux VM works
-(both THP and hugetlbfs) 
+And perhaps we don't.  Perhaps we can provide this much simpler
+data-plane interface that works well enough for most everyone and can
+avoid going down the async rat hole, yet again.
 
-Yes it would be nice if small pages and large pages all ran
-in a unified VM. But that's not how Linux is designed today.
-
-Yes having a Pony would be nice too.
-
-Back when huge pages were originally proposed Linus came
-up with the "separate hugetlbfs VM" design and that is what were
-stuck with today.
-
-Asking for a whole scale VM redesign is just not realistic.
-
-VM is always changing in baby steps. And the only 
-known way to do that is to have if (thp) and if (hugetlbfs) .
-
--Andi 
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+- z
