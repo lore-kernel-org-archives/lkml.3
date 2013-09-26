@@ -1,151 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab3IZHI0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:08:26 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:39300 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755574Ab3IZHIY (ORCPT
+	id S1755774Ab3IZHKE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:10:04 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55700 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab3IZHKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:08:24 -0400
-Subject: Re: [PATCH V4 02/15] asymmetric keys: implement
- EMSA_PKCS1-v1_5-ENCODE in rsa
-From: joeyli <jlee@suse.com>
-To: Phil Carmody <phil.carmody@partner.samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
-        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.uc>
-In-Reply-To: <20130923164931.GD6772@samsung.com>
-References: <1379206621-18639-1-git-send-email-jlee@suse.com>
-	 <1379206621-18639-3-git-send-email-jlee@suse.com>
-	 <20130923164931.GD6772@samsung.com>
+	Thu, 26 Sep 2013 03:10:02 -0400
+Message-ID: <1380179397.7525.45.camel@marge.simpson.net>
+Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for
+ wake_affine(.sync=true)
+From: Mike Galbraith <bitbucket@online.de>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 26 Sep 2013 09:09:57 +0200
+In-Reply-To: <5243D4E8.4000707@linux.vnet.ibm.com>
+References: <20130925075341.GB3081@twins.programming.kicks-ass.net>
+	 <1380099377.8523.9.camel@marge.simpson.net>
+	 <5243A0E9.4060802@linux.vnet.ibm.com>
+	 <1380166898.5431.40.camel@marge.simpson.net>
+	 <5243C24F.6070704@linux.vnet.ibm.com>
+	 <1380173688.7525.12.camel@marge.simpson.net>
+	 <5243D4E8.4000707@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Sep 2013 15:08:30 +0800
-Message-ID: <1380179310.32302.58.camel@linux-s257.site>
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:ZfbwOopFBzmkYjKFEjGKWSHCR3RvtwXrfnVjr+1Pn3X
+ gLJq+x3YYQ5aPNkkwPEMWRPXjgVSnjFco3fI3TWXJ+tDKZ7nRP
+ yjj4IUnHePJua/2D07nLwrfwFEre9+dplOhhSjdeohbfdd0MB6
+ YkdgtFyfkbADkZI90rdd7NYlcB6UTtKsBqOQ+mnj/Ijxq2IY4k
+ sDLKMAfZ+O4BGYRMZE4ZFfG8vy5pRDZVEU67GJ03DePbQvFyjz
+ A3q1saJm/jQ5kATPwGtw+dhjtFWqGFfEXrKPaay64sLpIQ20qw
+ 03l452MHveYYs4MY+G+HQyf1/uFTNOspqWwf7y4Misbm5H6801
+ EtXmRbbouWXHUgU7+TwcOJFmCUWVsI1j8nBkiwnpY3yAAZxUIk
+ oNsPO3xqKJ8FQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Phil, 
-
-First! Thanks for your time to review my patch!
-
-於 一，2013-09-23 於 19:49 +0300，Phil Carmody 提到：
-> On Sun, Sep 15, 2013 at 08:56:48AM +0800, Lee, Chun-Yi wrote:
-> > Implement EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2] in rsa.c. It's the
-> > first step of signature generation operation (RSASSA-PKCS1-v1_5-SIGN).
+On Thu, 2013-09-26 at 14:32 +0800, Michael wang wrote: 
+> On 09/26/2013 01:34 PM, Mike Galbraith wrote:
+> > On Thu, 2013-09-26 at 13:12 +0800, Michael wang wrote: 
+> >> On 09/26/2013 11:41 AM, Mike Galbraith wrote:
+> >> [snip]
+> >>>> Like the case when we have:
+> >>>>
+> >>>> 	core0 sg		core1 sg
+> >>>> 	cpu0	cpu1		cpu2	cpu3
+> >>>> 	waker	busy		idle	idle
+> >>>>
+> >>>> If the sync wakeup was on cpu0, we can:
+> >>>>
+> >>>> 1. choose cpu in core1 sg like we did usually
+> >>>>    some overhead but tend to make the load a little balance
+> >>>> 	core0 sg		core1 sg
+> >>>> 	cpu0	cpu1		cpu2	cpu3
+> >>>> 	idle	busy		wakee	idle
+> >>>
+> >>> Reducing latency and increasing throughput when the waker isn't really
+> >>> really going to immediately schedule off as the hint implies.  Nice for
+> >>> bursty loads and ramp.
+> >>>
+> >>> The breakeven point is going up though.  If you don't have nohz
+> >>> throttled, you eat tick start/stop overhead, and the menu governor
+> >>> recently added yet more overhead, so maybe we should say hell with it.
+> >>
+> >> Exactly, more and more factors to be considered, we say things get
+> >> balanced but actually it's not the best choice...
+> >>
+> >>>
+> >>>> 2. choose cpu0 like the patch proposed
+> >>>>    no overhead but tend to make the load a little more unbalance
+> >>>> 	core0 sg		core1 sg
+> >>>> 	cpu0	cpu1		cpu2	cpu3
+> >>>> 	wakee	busy		idle	idle
+> >>>>
+> >>>> May be we should add a higher scope load balance check in wake_affine(),
+> >>>> but that means higher overhead which is just what the patch want to
+> >>>> reduce...
+> >>>
+> >>> Yeah, more overhead is the last thing we need.
+> >>>
+> >>>> What about some discount for sync case inside select_idle_sibling()?
+> >>>> For example we consider sync cpu as idle and prefer it more than the others?
+> >>>
+> >>> That's what the sync hint does.  Problem is, it's a hint.  If it were
+> >>> truth, there would be no point in calling select_idle_sibling().
+> >>
+> >> Just wondering if the hint was wrong in most of the time, then why don't
+> >> we remove it...
 > > 
-> > This patch is temporary set emLen to pks->k, and temporary set EM to
-> > pks->S for debugging. We will replace the above values to real signature
-> > after implement RSASP1.
+> > For very fast/light network ping-pong micro-benchmarks, it is right.
+> > For pipe-test, it's absolutely right, jabbering parties are 100%
+> > synchronous, there is nada/nil/zip/diddly squat overlap reclaimable..
+> > but in the real world, it ain't necessarily so.
 > > 
-> > The naming of EMSA_PKCS1_v1_5_ENCODE and the variables used in this function
-> > accord PKCS#1 spec but not follow kernel naming convention, it useful when look
-> > at them with spec.
+> >> Otherwise I think we can still utilize it to make some decision tends to
+> >> be correct, don't we?
 > > 
-> > Reference: ftp://ftp.rsasecurity.com/pub/pkcs/pkcs-1v2/pkcs1ietffinal.txt
-> > Reference: http://www.emc.com/collateral/white-papers/h11300-pkcs-1v2-2-rsa-cryptography-standard-wp.pdf
-> > 
-> > V2:
+> > Sometimes :)
 > 
-> You're now at V4.
-
-The V4 is for whole patchset, I didn't do any modify in this patch in
-this version.
-The version define maybe confuse between separate and whole patchset, I
-will avoid it.
-
+> Ok, a double-edged sword I see :)
 > 
-> > - Clean up naming of variable: replace _EM by EM, replace EM by EM_tmp.
-> > - Add comment to EMSA_PKCS1-v1_5-ENCODE function.
-> > 
-> > Cc: Pavel Machek <pavel@ucw.cz>
-> > Reviewed-by: Jiri Kosina <jkosina@suse.cz>
-> > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> > ---
-> >  crypto/asymmetric_keys/rsa.c |  163 +++++++++++++++++++++++++++++++++++++++++-
-> >  include/crypto/public_key.h  |    2 +
-> >  2 files changed, 164 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
-> > index 47f3be4..352ba45 100644
-> > --- a/crypto/asymmetric_keys/rsa.c
-> > +++ b/crypto/asymmetric_keys/rsa.c
-> > @@ -13,6 +13,7 @@
-> >  #include <linux/module.h>
-> >  #include <linux/kernel.h>
-> >  #include <linux/slab.h>
-> > +#include <crypto/hash.h>
-> >  #include "public_key.h"
-> >  #include "private_key.h"
-> >  
-> > @@ -152,6 +153,132 @@ static int RSA_I2OSP(MPI x, size_t xLen, u8 **_X)
-> >  }
-> >  
-> >  /*
-> > + * EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2]
-> > + * @M: message to be signed, an octet string
-> > + * @emLen: intended length in octets of the encoded message
-> > + * @hash_algo: hash function (option)
-> > + * @hash: true means hash M, otherwise M is already a digest
-> > + * @EM: encoded message, an octet string of length emLen
-> > + *
-> > + * This function is a implementation of the EMSA-PKCS1-v1_5 encoding operation
-> > + * in RSA PKCS#1 spec. It used by the signautre generation operation of
-> > + * RSASSA-PKCS1-v1_5 to encode message M to encoded message EM.
-> > + *
-> > + * The variables used in this function accord PKCS#1 spec but not follow kernel
-> > + * naming convention, it useful when look at them with spec.
-> > + */
-> > +static int EMSA_PKCS1_v1_5_ENCODE(const u8 *M, size_t emLen,
-> > +		enum pkey_hash_algo hash_algo, const bool hash,
-> > +		u8 **EM, struct public_key_signature *pks)
-> > +{
-> > +	u8 *digest;
-> > +	struct crypto_shash *tfm;
-> > +	struct shash_desc *desc;
-> > +	size_t digest_size, desc_size;
-> > +	size_t tLen;
-> > +	u8 *T, *PS, *EM_tmp;
-> > +	int i, ret;
-> > +
-> > +	pr_info("EMSA_PKCS1_v1_5_ENCODE start\n");
-> > +
-> > +	if (!RSA_ASN1_templates[hash_algo].data)
-> > +		ret = -ENOTSUPP;
+> May be we can wave it carefully here, give the discount to a bigger
+> scope not the sync cpu, for example:
 > 
-> ...
+> 	sg1				sg2
+> 	cpu0	cpu1	cpu2	cpu3	cpu4	cpu5	cpu6	cpu7
+> 	waker	idle	idle	idle	idle	idle	idle	idle
 > 
-> > +	else
-> > +		pks->pkey_hash_algo = hash_algo;
-> > +
-> > +	/* 1) Apply the hash function to the message M to produce a hash value H */
-> > +	tfm = crypto_alloc_shash(pkey_hash_algo[hash_algo], 0, 0);
-> > +	if (IS_ERR(tfm))
-> > +		return (PTR_ERR(tfm) == -ENOENT) ? -ENOPKG : PTR_ERR(tfm);
-> > +
-> > +	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
-> > +	digest_size = crypto_shash_digestsize(tfm);
-> > +
-> > +	ret = -ENOMEM;
+> If it's sync wakeup on cpu0 (only waker), and the sg is wide enough,
+> which means one cpu is not so influencial, then suppose cpu0 to be idle
+> could be more safe, also prefer sg1 than sg2 is more likely to be right.
 > 
-> The earlier "ret = -ENOTSUPP;" is either unused because you return at the IS_ERR,
-> or unused because you overwrite it here. I'm a little disappointed that
-> the compiler didn't recognise that something was assigned to a value that 
-> is never used.
+> And we can still choose idle-cpu at final step, like cpu1 in this case,
+> to avoid the risk that waker don't get off as it said.
 > 
-> Phil
+> The key point is to reduce the influence of sync, trust a little but not
+> totally ;-)
 
-Yes, Dmitry also pointed out this issue, I should not go on the hash
-process if the hash algorithm didn't support.
+What we need is a dirt cheap way to fairly accurately predict overlap
+potential (todo: write omniscience().. patent, buy planet).
 
-I will change fix this problem in next version. 
-
-
-Thanks a lot!
-Joey Lee
+-Mike
 
