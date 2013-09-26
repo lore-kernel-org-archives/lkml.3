@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab3IZJh1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:37:27 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:64805 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab3IZJh0 (ORCPT
+	id S1755864Ab3IZJoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:44:12 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54768 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab3IZJoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:37:26 -0400
-Date: Thu, 26 Sep 2013 11:37:20 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
- locking code into its own file
-Message-ID: <20130926093720.GB24596@gmail.com>
-References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
- <1380147049.3467.67.camel@schen9-DESK>
- <20130926064629.GB19090@gmail.com>
- <20130926084010.GQ3081@twins.programming.kicks-ass.net>
+	Thu, 26 Sep 2013 05:44:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Subject: Re: [PATCH v6 RESEND 0/5] ARM/ARM64 architected timer updates
+Date: Thu, 26 Sep 2013 11:43:54 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>
+References: <1379502306-12911-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <5242FC09.2050604@linaro.org> <52431B37.5000901@arm.com>
+In-Reply-To: <52431B37.5000901@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926084010.GQ3081@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201309261143.55010.arnd@arndb.de>
+X-Provags-ID: V02:K0:xpYIWBBV0C20sahzy/hjuwGOBJKWksxaJiOrR/fATtc
+ amTjeBA5juYFyejkax1TgnpGwWl26flIYjz6clEWWxr0luptjH
+ U4uDIVhk34y8ySfAjjweo2WJ46n8MGDkTH0vMXG3OE6G/dx3G9
+ yamgwgE+M6wLdaZ8OFHLHdq7MCFShVWYKx4n6DHKeU83fAuBAa
+ Zh7cCjyS3c91FgcLbmnrVyTTJuzgyC2XEAujE9wCtd55ZPhdP4
+ g4qCQ13F/1lFD7HEs88ANUk2t3rWFJdQEnlRgq73lcaNf8yE3J
+ dO8+UBsFOB+oXVwHT2ztBk76juOFkxoPWbCKepvw8mXrvkfCwF
+ K9ZLuoXi4CwMfOtSQErQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Thu, Sep 26, 2013 at 08:46:29AM +0200, Ingo Molnar wrote:
-> > > +/*
-> > > + * MCS lock defines
-> > > + *
-> > > + * This file contains the main data structure and API definitions of MCS lock.
+On Wednesday 25 September 2013, Sudeep KarkadaNagesha wrote:
+> On 25/09/13 16:06, Daniel Lezcano wrote:
+> > On 09/18/2013 01:05 PM, Sudeep KarkadaNagesha wrote:
+> >> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> >>
+> >> Hi Olof/Kevin,
 > > 
-> > A (very) short blurb about what an MCS lock is would be nice here.
+> > Added Olof and Kevin in Cc.
+> > 
+> Thanks Daniel, sorry I assumed mailing list alias(arm@kernel.org) was preferred way.
 > 
-> A while back I suggested including a link to something like:
-> 
-> http://www.cise.ufl.edu/tr/DOC/REP-1992-71.pdf
-> 
-> Its a fairly concise write-up of the idea; only 6 pages. The sad part 
-> about linking to the web is that links tend to go dead after a while.
 
-So what I wanted to see was to add just a few sentences summing up the 
-concept - so that people blundering into this file in include/linux/ have 
-an idea what it's all about!
+The alias is mainly for when you are sending a pull request or a patch to
+be applied directly. For any review it makes more sense to Cc the ones you
+want involved directly.
 
-Thanks,
-
-	Ingo
+	Arnd
