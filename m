@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777Ab3IZGQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 02:16:11 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:34060 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab3IZGQH (ORCPT
+	id S1755358Ab3IZGRJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 02:17:09 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:41565 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab3IZGRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 02:16:07 -0400
-Message-ID: <5243D11A.5090808@gmail.com>
-Date: Thu, 26 Sep 2013 08:15:54 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 23/26] ARM: sunxi: remove custom .init_time hook
-References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com> <1379526839-14798-24-git-send-email-sebastian.hesselbarth@gmail.com> <20130925200731.GM2954@lukather>
-In-Reply-To: <20130925200731.GM2954@lukather>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Sep 2013 02:17:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <5243641B.6050604@linaro.org>
+References: <cover.1379779777.git.viresh.kumar@linaro.org>
+	<7e9565e323c1e065eeb2a2a1075967bd21ee6066.1379779777.git.viresh.kumar@linaro.org>
+	<5243641B.6050604@linaro.org>
+Date: Thu, 26 Sep 2013 11:47:05 +0530
+Message-ID: <CAKohpo=3qFQ+gD+3u__NtZEL4xu51FBN+og+_UE7aTR26XvRng@mail.gmail.com>
+Subject: Re: [PATCH 19/21] cpuidle: create list of registered drivers
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2013 10:07 PM, Maxime Ripard wrote:
-> On Wed, Sep 18, 2013 at 07:53:56PM +0200, Sebastian Hesselbarth wrote:
->> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
->> remove custom .init_time hooks.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+On 26 September 2013 04:00, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+> If you introduce a list, you will have to introduce a lock to protect
+> it.
+
+I missed it, should have added that :)
+
+> This lock will be in the fast path cpuidle_idle_call with the
+> get_driver function and conforming to the comment: "NOTE: no locks or
+> semaphores should be used here".
 >
-> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->
-> How do you want us to merge this? Every maintainer takes the patches he
-> handles, or will Kevin and Olof merge the whole thing?
+> A lock has been introduced in this function already and the system hangs
+> with 1024 cpus.
 
-Maxime,
-
-I am still waiting for some ACKs (nomadik, prima2, socfpga, nspire) and
-possibly Mike's on the clock changes.
-
-My current idea is to prepare a branch for Olof to pull in as whole.
-
-Sebastian
-
+Hmm... I see.. I didn't knew about this expectation.. What about a rcu
+read/write lock? As far as I know its too lightweight... Can we have that
+in fast path?
