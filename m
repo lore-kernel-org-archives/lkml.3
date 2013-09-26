@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab3IZQNe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 12:13:34 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54285 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab3IZQNd (ORCPT
+	id S1753288Ab3IZQQu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 12:16:50 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:60303 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab3IZQQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 12:13:33 -0400
-Date: Thu, 26 Sep 2013 18:13:11 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130926161311.GG3657@laptop.programming.kicks-ass.net>
-References: <20130923092955.GV9326@twins.programming.kicks-ass.net>
- <20130923173203.GA20392@redhat.com>
- <20130924202423.GW12926@twins.programming.kicks-ass.net>
- <20130925155515.GA17447@redhat.com>
- <20130925174307.GA3220@laptop.programming.kicks-ass.net>
- <20130925175055.GA25914@redhat.com>
- <20130925184015.GC3657@laptop.programming.kicks-ass.net>
- <20130925212200.GA7959@linux.vnet.ibm.com>
- <20130926111042.GS3081@twins.programming.kicks-ass.net>
- <20130926155321.GA4342@redhat.com>
+	Thu, 26 Sep 2013 12:16:48 -0400
+Message-ID: <52445DEF.1060007@gmail.com>
+Date: Thu, 26 Sep 2013 18:16:47 +0200
+From: Mario Kleiner <mario.kleiner.de@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926155321.GA4342@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Clark Williams <williams@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+Subject: Re: [Intel-gfx] BUG: sleeping function called from invalid context
+ on 3.10.10-rt7
+References: <20130911102809.GA31663@uudg.org> <20130911092623.42efd930@gandalf.local.home> <5230895B.5070400@hurleysoftware.com> <20130911113845.6d56a556@gandalf.local.home> <5230C52E.3050801@hurleysoftware.com> <5238B288.3000704@hurleysoftware.com> <CAKMK7uG9s8W6yebkmuJe0XHGsoru4_9FzGqfmKWtMFyCAfQZqA@mail.gmail.com> <523CC728.4040302@tuebingen.mpg.de> <20130923083841.GT4531@intel.com> <5242674A.8020100@tuebingen.mpg.de> <20130925101301.6cbe5d0f@gandalf.local.home>
+In-Reply-To: <20130925101301.6cbe5d0f@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 05:53:21PM +0200, Oleg Nesterov wrote:
-> On 09/26, Peter Zijlstra wrote:
-> >  void cpu_hotplug_done(void)
-> >  {
-> > -	cpu_hotplug.active_writer = NULL;
-> > -	mutex_unlock(&cpu_hotplug.lock);
-> > +	/* Signal the writer is done, no fast path yet. */
-> > +	__cpuhp_state = readers_slow;
-> > +	wake_up_all(&cpuhp_readers);
-> > +
-> > +	/*
-> > +	 * The wait_event()/wake_up_all() prevents the race where the readers
-> > +	 * are delayed between fetching __cpuhp_state and blocking.
-> > +	 */
-> > +
-> > +	/* See percpu_up_write(); readers will no longer attempt to block. */
-> > +	synchronize_sched();
-> 
-> Shouldn't you move wake_up_all(&cpuhp_readers) down after
-> synchronize_sched() (or add another one) ? To ensure that a reader can't
-> see state = BLOCK after wakeup().
+On 25.09.13 16:13, Steven Rostedt wrote:
+> On Wed, 25 Sep 2013 06:32:10 +0200
+> Mario Kleiner <mario.kleiner@tuebingen.mpg.de> wrote:
+>
+>
+>> But given the new situation, your proposal is great! If we push the
+>> clock readouts into the get_scanoutpos routine, we can make this robust
+>> without causing grief for the rt people and without the need for a new
+>> separate lock for display regs in intel-kms.
+>>
+>> E.g., for intel-kms:
+>>
+>> i915_get_crtc_scanoutpos(..., ktime_t *stime, ktime_t *etime)
+>> {
+>>     ...
+>>     spin_lock_irqsave(...uncore.lock);
+>>     preempt_disable();
+>>     *stime = ktime_get();
+>>     position = __raw_i915_read32(dev_priv, PIPEDSL(pipe));
+>>     *etime = ktime_get();
+>>     preempt_enable();
+>>     spin_unlock_irqrestore(...uncore.lock)
+>>     ...
+>> }
+>>
+>> With your patchset to reduce the amount of register reads needed in that
+>> function, and given that forcewake handling isn't needed for these
+>> registers, this should make it robust again and wouldn't need new locks.
+>>
+>> Unless ktime_get is also a bad thing to do in a preempt disabled section?
+>
+> ktime_get() works fine in preempt_disable sections, although it may add
+> some latencies, but you shouldn't need to worry about it.
+>
+> I like this solution the best too, but if it does go in, I would ask to
+> send us the patch for adding the preempt_disable() and we can add the
+> preempt_disable_rt() to it. Why make mainline have a little more
+> overhead?
+>
+> -- Steve
 
-Well, if they are blocked, the wake_up_all() will do an actual
-try_to_wake_up() which issues a MB as per smp_mb__before_spinlock().
+Good! I will do that. Thanks for clarifying the irq and constraints on 
+raw locks in the other thread.
 
-The woken task will get a MB from passing through the context switch to
-make it actually run. And therefore; like Paul's comment says; it cannot
-observe the previous BLOCK state but must indeed see the just issued
-SLOW state.
+-mario
 
-Right?
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+>
+
