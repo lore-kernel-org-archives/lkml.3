@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab3IZSxt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 14:53:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39179 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754195Ab3IZSxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 14:53:45 -0400
-Date: Thu, 26 Sep 2013 20:53:41 +0200
-From: Jan Kara <jack@suse.cz>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: tytso@mit.edu, linux-ext4@vger.kernel.org, adilger.kernel@dilger.ca,
+	id S1754546Ab3IZSxx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 14:53:53 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:50714 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754471Ab3IZSxs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 14:53:48 -0400
+Date: Thu, 26 Sep 2013 11:53:45 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+cc: akpm@linux-foundation.org, oleg@redhat.com, security@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext4: avoid exposure of stale data in ext4_punch_hole()
-Message-ID: <20130926185341.GA21811@quack.suse.cz>
-References: <20130926173113.23276.77451.stgit@dhcp-10-30-17-2.sw.ru>
+Subject: Re: [PATCH v3] kthread: Make kthread_create() killable.
+In-Reply-To: <201309261159.BHB18780.OHLFQFMOOJSVtF@I-love.SAKURA.ne.jp>
+Message-ID: <alpine.DEB.2.02.1309261149050.10904@chino.kir.corp.google.com>
+References: <20130915163919.GC13344@redhat.com> <201309160953.IGI12418.FOQHOFVJLOMFSt@I-love.SAKURA.ne.jp> <20130923160725.49093c565dcf6df7037dcc6b@linux-foundation.org> <201309250017.HBG57846.VFOStOFFOLQJHM@I-love.SAKURA.ne.jp>
+ <alpine.DEB.2.02.1309251351001.27471@chino.kir.corp.google.com> <201309261159.BHB18780.OHLFQFMOOJSVtF@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926173113.23276.77451.stgit@dhcp-10-30-17-2.sw.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+On Thu, 26 Sep 2013, Tetsuo Handa wrote:
 
-On Thu 26-09-13 21:32:07, Maxim Patlasov wrote:
-> While handling punch-hole fallocate, it's useless to truncate page cache
-> before removing the range from extent tree (or block map in indirect case)
-> because page cache can be re-populated (by read-ahead or read(2) or mmap-ed
-> read) immediately after truncating page cache, but before updating extent
-> tree (or block map). In that case the user will see stale data even after
-> fallocate is completed.
-  Yes, this is a known problem. The trouble is there isn't a reliable fix
-currently possible. If we don't truncate page cache before removing blocks,
-we will have pages in memory being backed by already freed blocks - not
-good as that can lead to data corruption. So you should't really remove the
-truncation from before we remove the blocks.
-
-You are right that if punch hole races with page fault or read, we can
-create again pages with block mapping which will become stale soon and the
-same problem as I wrote above applies. Truncating pagecache after we
-removed blocks only narrows the race window but doesn't really fix the
-problem.
-
-Properly fixing the problem requires significant overhaul in how mmap_sem
-is used in page fault. I'm working on patches to do that but it will take
-some time.
-
-								Honza
- 
-> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-> ---
->  fs/ext4/inode.c |   17 +++++++++--------
->  1 file changed, 9 insertions(+), 8 deletions(-)
+> > wait_for_completion() is scary if that completion requires memory that 
+> > cannot be allocated because the caller is killed but uninterruptible.
 > 
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index 0d424d7..6b71116 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -3564,14 +3564,6 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
->  
+> I don't think these lines are specific to wait_for_completion() users.
+> 
+> Currently the OOM killer is disabled throughout from "the moment the OOM killer
+> chose a process to kill" to "the moment the task_struct of the chosen process
+> becomes unreachable". Any blocking functions which wait in TASK_UNINTERRUPTIBLE
+> (e.g. mutex_lock()) can disable the OOM killer if the current thread is chosen
+> by the OOM killer. Therefore, any users of blocking functions which wait in
+> TASK_UNINTERRUPTIBLE are considered scary if they assume that the current
+> thread will not be chosen by the OOM killer.
+> 
+
+Yeah, that's always been true.
+
+> But it seems to me that re-enabling the OOM killer at some point is more
+> realizable than purging all such users.
+> 
+> To re-enable the OOM killer at some point, the OOM killer needs to choose more
+> processes if the to-be-killed process cannot be terminated within an adequate
+> period.
+> 
+> For example, add "unsigned long memdie_stamp;" to "struct task_struct" and do
+> "p->memdie_stamp = jiffies + 5 * HZ;" before "set_tsk_thread_flag(p, TIF_MEMDIE);"
+> and do
+> 
+>  	if (test_tsk_thread_flag(task, TIF_MEMDIE)) {
+>  		if (unlikely(frozen(task)))
+>  			__thaw_task(task);
+> +		/* Choose more processes if the chosen process cannot die. */
+> +		if (time_after(jiffies, p->memdie_stamp) &&
+> +		    task->state == TASK_UNINTERRUPTIBLE)
+> +		        return OOM_SCAN_CONTINUE;
+>  		if (!force_kill)
+>  			return OOM_SCAN_ABORT;
 >  	}
->  
-> -	first_block_offset = round_up(offset, sb->s_blocksize);
-> -	last_block_offset = round_down((offset + length), sb->s_blocksize) - 1;
-> -
-> -	/* Now release the pages and zero block aligned part of pages*/
-> -	if (last_block_offset > first_block_offset)
-> -		truncate_pagecache_range(inode, first_block_offset,
-> -					 last_block_offset);
-> -
->  	/* Wait all existing dio workers, newcomers will block on i_mutex */
->  	ext4_inode_block_unlocked_dio(inode);
->  	inode_dio_wait(inode);
-> @@ -3621,6 +3613,15 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
->  	up_write(&EXT4_I(inode)->i_data_sem);
->  	if (IS_SYNC(inode))
->  		ext4_handle_sync(handle);
-> +
-> +	first_block_offset = round_up(offset, sb->s_blocksize);
-> +	last_block_offset = round_down((offset + length), sb->s_blocksize) - 1;
-> +
-> +	/* Now release the pages and zero block aligned part of pages */
-> +	if (last_block_offset > first_block_offset)
-> +		truncate_pagecache_range(inode, first_block_offset,
-> +					 last_block_offset);
-> +
->  	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
->  	ext4_mark_inode_dirty(handle, inode);
->  out_stop:
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> in oom_scan_process_thread().
+> 
+
+There may not be any eligible processes left and then the machine panics.  
+These time-based delays also have caused a complete depletion of memory 
+reserves if more than one process is chosen and each consumes an 
+non-neglible amount of memory which would then cause livelock.  We used to 
+have a jiffies-based rekill in 2.6.18 internally and we finally could 
+remove it when mm->mmap_sem issues were fixed (mostly by checking for 
+fatal_signal_pending() and aborting when necessary).
+
+> [PATCH v3] kthread: Make kthread_create() killable.
+> 
+> Any user process callers of wait_for_completion() except global init process
+> might be chosen by the OOM killer while waiting for completion() call by some
+> other process which does memory allocation.
+> 
+> When such users are chosen by the OOM killer when they are waiting for
+> completion() in TASK_UNINTERRUPTIBLE, the system will be kept stressed
+> due to memory starvation because the OOM killer cannot kill such users.
+> 
+> kthread_create() is one of such users and this patch fixes the problem for
+> kthreadd by making kthread_create() killable.
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Acked-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+Absolutely, thanks.
