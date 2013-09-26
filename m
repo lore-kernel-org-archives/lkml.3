@@ -1,243 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab3IZRBh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 13:01:37 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:12352 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab3IZRBf (ORCPT
+	id S1753154Ab3IZRFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 13:05:09 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47470 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab3IZRFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 13:01:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 26 Sep 2013 09:57:54 -0700
-From: Rhyland Klein <rklein@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Mark Brown <broonie@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: <linux-spi@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Simon Glass <sjg@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Rhyland Klein <rklein@nvidia.com>
-Subject: [Patch V2] spi/tegra114: Correct support for cs_change
-Date: Thu, 26 Sep 2013 13:01:43 -0400
-Message-ID: <1380214904-12899-1-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	Thu, 26 Sep 2013 13:05:06 -0400
+Message-ID: <52446841.2030301@linux.vnet.ibm.com>
+Date: Thu, 26 Sep 2013 22:30:49 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Arjan van de Ven <arjan@linux.intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, mgorman@suse.de, dave@sr71.net,
+        hannes@cmpxchg.org, tony.luck@intel.com, matthew.garrett@nebula.com,
+        riel@redhat.com, srinivas.pandruvada@linux.intel.com,
+        willy@linux.intel.com, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
+        rjw@sisk.pl, gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
+        santosh.shilimkar@ti.com, kosaki.motohiro@gmail.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, maxime.coquelin@stericsson.com,
+        loic.pallardy@stericsson.com, thomas.abraham@linaro.org,
+        amit.kachhap@linaro.org
+Subject: Re: [Results] [RFC PATCH v4 00/40] mm: Memory Power Management
+References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <52437128.7030402@linux.vnet.ibm.com> <20130925164057.6bbaf23bdc5057c42b2ab010@linux-foundation.org> <20130925234734.GK18242@two.firstfloor.org> <52438AA9.3020809@linux.intel.com> <20130925182129.a7db6a0fd2c7cc3b43fda92d@linux-foundation.org> <20130926015016.GM18242@two.firstfloor.org> <20130925195953.826a9f7d.akpm@linux-foundation.org> <524439D5.8020306@linux.vnet.ibm.com> <52445993.7050608@linux.intel.com>
+In-Reply-To: <52445993.7050608@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092617-5564-0000-0000-000009E5A49C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tegra114 driver wasn't currently handling the cs_change
-functionality. cs_change is meant to invert the decisions of whether
-or not to deactivate CS after each transfer. Without cs_change, after
-every transfer (other than the last in the message) the normal behavior
-is to leave CS active. For the last transfer, normally CS is
-deactivated when the transfer is complete.
+On 09/26/2013 09:28 PM, Arjan van de Ven wrote:
+> On 9/26/2013 6:42 AM, Srivatsa S. Bhat wrote:
+>> On 09/26/2013 08:29 AM, Andrew Morton wrote:
+>>> On Thu, 26 Sep 2013 03:50:16 +0200 Andi Kleen <andi@firstfloor.org>
+>>> wrote:
+>>>
+>>>> On Wed, Sep 25, 2013 at 06:21:29PM -0700, Andrew Morton wrote:
+>>>>> On Wed, 25 Sep 2013 18:15:21 -0700 Arjan van de Ven
+>>>>> <arjan@linux.intel.com> wrote:
+>>>>>
+>>>>>> On 9/25/2013 4:47 PM, Andi Kleen wrote:
+>>>>>>>> Also, the changelogs don't appear to discuss one obvious
+>>>>>>>> downside: the
+>>>>>>>> latency incurred in bringing a bank out of one of the low-power
+>>>>>>>> states
+>>>>>>>> and back into full operation.  Please do discuss and quantify
+>>>>>>>> that to
+>>>>>>>> the best of your knowledge.
+>>>>>>>
+>>>>>>> On Sandy Bridge the memry wakeup overhead is really small. It's
+>>>>>>> on by default
+>>>>>>> in most setups today.
+>>>>>>
+>>>>>> btw note that those kind of memory power savings are
+>>>>>> content-preserving,
+>>>>>> so likely a whole chunk of these patches is not actually needed on
+>>>>>> SNB
+>>>>>> (or anything else Intel sells or sold)
+>>>>>
+>>>>> (head spinning a bit).  Could you please expand on this rather a lot?
+>>>>
+>>>> As far as I understand there is a range of aggressiveness. You could
+>>>> just group memory a bit better (assuming you can sufficiently predict
+>>>> the future or have some interface to let someone tell you about it).
+>>>>
+>>>> Or you can actually move memory around later to get as low footprint
+>>>> as possible.
+>>>>
+>>>> This patchkit seems to do both, with the later parts being on the
+>>>> aggressive side (move things around)
+>>>>
+>>>> If you had non content preserving memory saving you would
+>>>> need to be aggressive as you couldn't afford any mistakes.
+>>>>
+>>>> If you had very slow wakeup you also couldn't afford mistakes,
+>>>> as those could cost a lot of time.
+>>>>
+>>>> On SandyBridge is not slow and it's preserving, so some mistakes are
+>>>> ok.
+>>>>
+>>>> But being aggressive (so move things around) may still help you saving
+>>>> more power -- i guess only benchmarks can tell. It's a trade off
+>>>> between
+>>>> potential gain and potential worse case performance regression.
+>>>> It may also depend on the workload.
+>>>>
+>>>> At least right now the numbers seem to be positive.
+>>>
+>>> OK.  But why are "a whole chunk of these patches not actually needed
+>>> on SNB
+>>> (or anything else Intel sells or sold)"?  What's the difference between
+>>> Intel products and whatever-it-is-this-patchset-was-designed-for?
+>>>
+>>
+>> Arjan, are you referring to the fact that Intel/SNB systems can exploit
+>> memory self-refresh only when the entire system goes idle? Is that why
+>> this
+>> patchset won't turn out to be that useful on those platforms?
+> 
+> no we can use other things (CKE and co) all the time.
+> 
 
-With cs_change set on a transfer (other than last one) CS would be
-deactivated and the next transfer would need to activate it again. If
-cs_change was set on the last tranfer in a message, then CS would be
-left active when the message compeleted.
+Ah, ok..
 
-Also, this builds in logic so that if a different device tries to start
-a transfer while CS is active from a different device, it will abort the
-previous transfer and start a new one for the new device.
+> just that we found that statistical grouping gave 95%+ of the benefit,
+> without the cost of being aggressive on going to a 100.00% grouping
+> 
 
-This splits tegra_spi_start_transfer_one into 2 functions, the new one
-being tegra_spi_setup_transfer_one. The setup function is safe to call
-on all transfers, sets up for the transfer, and handles the special case
-of the first transfer in a message. In this special case, it needs to
-know whether or not it needs to activate CS.
+And how do you do that statistical grouping? Don't you need patches similar
+to those in this patchset? Or are you saying that the existing vanilla
+kernel itself does statistical grouping somehow?
 
-This work was based on the spi-atmel driver.
+Also, I didn't fully understand how NUMA policy will help in this case..
+If you want to group memory allocations/references into fewer memory regions
+_within_ a node, will NUMA policy really help? For example, in this patchset,
+everything (all the allocation/reference shaping) is done _within_ the
+NUMA boundary, assuming that the memory regions are subsets of a NUMA node.
 
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
-v2:
- - Split start_transfer_one into setup & start, now setup it always safe
-   to call, and we can simplify the checks for a transfer with no length.
- - removed unnecessary whitespace changes
- - I also cleaned up the parameters to tegra_spi_start_transfer_one,
-   removing is_first_of_msg (moved to setup) and is_single_xfer, since it
-   was not used.
-
- drivers/spi/spi-tegra114.c |   85 +++++++++++++++++++++++++++++++++++---------
- 1 file changed, 68 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/spi/spi-tegra114.c b/drivers/spi/spi-tegra114.c
-index 946ff73..95c7caa 100644
---- a/drivers/spi/spi-tegra114.c
-+++ b/drivers/spi/spi-tegra114.c
-@@ -182,6 +182,7 @@ struct tegra_spi_data {
- 	u32					cur_speed;
- 
- 	struct spi_device			*cur_spi;
-+	struct spi_device			*cs_control;
- 	unsigned				cur_pos;
- 	unsigned				cur_len;
- 	unsigned				words_per_32bit;
-@@ -676,15 +677,12 @@ static void tegra_spi_deinit_dma_param(struct tegra_spi_data *tspi,
- 	dma_release_channel(dma_chan);
- }
- 
--static int tegra_spi_start_transfer_one(struct spi_device *spi,
--		struct spi_transfer *t, bool is_first_of_msg,
--		bool is_single_xfer)
-+static unsigned long tegra_spi_setup_transfer_one(struct spi_device *spi,
-+		struct spi_transfer *t, bool is_first_of_msg)
- {
- 	struct tegra_spi_data *tspi = spi_master_get_devdata(spi->master);
- 	u32 speed = t->speed_hz;
- 	u8 bits_per_word = t->bits_per_word;
--	unsigned total_fifo_words;
--	int ret;
- 	unsigned long command1;
- 	int req_mode;
- 
-@@ -698,7 +696,6 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
- 	tspi->cur_rx_pos = 0;
- 	tspi->cur_tx_pos = 0;
- 	tspi->curr_xfer = t;
--	total_fifo_words = tegra_spi_calculate_curr_xfer_param(spi, tspi, t);
- 
- 	if (is_first_of_msg) {
- 		tegra_spi_clear_status(tspi);
-@@ -717,7 +714,12 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
- 		else if (req_mode == SPI_MODE_3)
- 			command1 |= SPI_CONTROL_MODE_3;
- 
--		tegra_spi_writel(tspi, command1, SPI_COMMAND1);
-+		if (tspi->cs_control) {
-+			if (tspi->cs_control != spi)
-+				tegra_spi_writel(tspi, command1, SPI_COMMAND1);
-+			tspi->cs_control = NULL;
-+		} else
-+			tegra_spi_writel(tspi, command1, SPI_COMMAND1);
- 
- 		command1 |= SPI_CS_SW_HW;
- 		if (spi->mode & SPI_CS_HIGH)
-@@ -732,6 +734,18 @@ static int tegra_spi_start_transfer_one(struct spi_device *spi,
- 		command1 |= SPI_BIT_LENGTH(bits_per_word - 1);
- 	}
- 
-+	return command1;
-+}
-+
-+static int tegra_spi_start_transfer_one(struct spi_device *spi,
-+		struct spi_transfer *t, unsigned long command1)
-+{
-+	struct tegra_spi_data *tspi = spi_master_get_devdata(spi->master);
-+	unsigned total_fifo_words;
-+	int ret;
-+
-+	total_fifo_words = tegra_spi_calculate_curr_xfer_param(spi, tspi, t);
-+
- 	if (tspi->is_packed)
- 		command1 |= SPI_PACKED;
- 
-@@ -803,29 +817,50 @@ static int tegra_spi_setup(struct spi_device *spi)
- 	return 0;
- }
- 
-+static void tegra_spi_transfer_delay(int delay)
-+{
-+	if (!delay)
-+		return;
-+
-+	if (delay >= 1000)
-+		mdelay(delay / 1000);
-+
-+	udelay(delay % 1000);
-+}
-+
- static int tegra_spi_transfer_one_message(struct spi_master *master,
- 			struct spi_message *msg)
- {
- 	bool is_first_msg = true;
--	int single_xfer;
- 	struct tegra_spi_data *tspi = spi_master_get_devdata(master);
- 	struct spi_transfer *xfer;
- 	struct spi_device *spi = msg->spi;
- 	int ret;
-+	bool skip = false;
- 
- 	msg->status = 0;
- 	msg->actual_length = 0;
- 
--	single_xfer = list_is_singular(&msg->transfers);
- 	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
-+		unsigned long cmd1;
-+
- 		INIT_COMPLETION(tspi->xfer_completion);
--		ret = tegra_spi_start_transfer_one(spi, xfer,
--					is_first_msg, single_xfer);
-+
-+		cmd1 = tegra_spi_setup_transfer_one(spi, xfer, is_first_msg);
-+
-+		if (!xfer->len) {
-+			ret = 0;
-+			skip = true;
-+			goto complete_xfer;
-+		}
-+
-+		ret = tegra_spi_start_transfer_one(spi, xfer, cmd1);
- 		if (ret < 0) {
- 			dev_err(tspi->dev,
- 				"spi can not start transfer, err %d\n", ret);
--			goto exit;
-+			goto complete_xfer;
- 		}
-+
- 		is_first_msg = false;
- 		ret = wait_for_completion_timeout(&tspi->xfer_completion,
- 						SPI_DMA_TIMEOUT);
-@@ -833,24 +868,40 @@ static int tegra_spi_transfer_one_message(struct spi_master *master,
- 			dev_err(tspi->dev,
- 				"spi trasfer timeout, err %d\n", ret);
- 			ret = -EIO;
--			goto exit;
-+			goto complete_xfer;
- 		}
- 
- 		if (tspi->tx_status ||  tspi->rx_status) {
- 			dev_err(tspi->dev, "Error in Transfer\n");
- 			ret = -EIO;
--			goto exit;
-+			goto complete_xfer;
- 		}
- 		msg->actual_length += xfer->len;
--		if (xfer->cs_change && xfer->delay_usecs) {
-+
-+complete_xfer:
-+		if (ret < 0 || skip) {
- 			tegra_spi_writel(tspi, tspi->def_command1_reg,
- 					SPI_COMMAND1);
--			udelay(xfer->delay_usecs);
-+			tegra_spi_transfer_delay(xfer->delay_usecs);
-+			goto exit;
-+		} else if (msg->transfers.prev == &xfer->transfer_list) {
-+			/* This is the last transfer in message */
-+			if (xfer->cs_change)
-+				tspi->cs_control = spi;
-+			else {
-+				tegra_spi_writel(tspi, tspi->def_command1_reg,
-+						SPI_COMMAND1);
-+				tegra_spi_transfer_delay(xfer->delay_usecs);
-+			}
-+		} else if (xfer->cs_change) {
-+			tegra_spi_writel(tspi, tspi->def_command1_reg,
-+					SPI_COMMAND1);
-+			tegra_spi_transfer_delay(xfer->delay_usecs);
- 		}
-+
- 	}
- 	ret = 0;
- exit:
--	tegra_spi_writel(tspi, tspi->def_command1_reg, SPI_COMMAND1);
- 	msg->status = ret;
- 	spi_finalize_current_message(master);
- 	return ret;
--- 
-1.7.9.5
+Regards,
+Srivatsa S. Bhat
 
