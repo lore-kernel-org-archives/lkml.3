@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab3IZOgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 10:36:46 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:50537 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab3IZOgm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 10:36:42 -0400
+	id S1752261Ab3IZOhO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 10:37:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28994 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752072Ab3IZOhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 10:37:10 -0400
+Date: Thu, 26 Sep 2013 16:39:02 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Jan Beulich <JBeulich@suse.com>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
+Message-ID: <20130926143901.GE16774@dhcp-26-207.brq.redhat.com>
+References: <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
+ <20130918142231.GA21650@mtj.dyndns.org>
+ <20130918165045.GB2353@dhcp-26-207.brq.redhat.com>
+ <20130920082458.GA10507@dhcp-26-207.brq.redhat.com>
+ <20130920122736.GD7630@mtj.dyndns.org>
+ <20130925180220.GB26273@google.com>
+ <20130925205804.GA21737@dhcp-26-207.brq.redhat.com>
+ <20130925210016.GA8926@htj.dyndns.org>
+ <20130926074646.GA16774@dhcp-26-207.brq.redhat.com>
+ <20130926131147.GA31249@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <524443AC.3040409@nod.at>
-References: <1377073172-3662-1-git-send-email-richard@nod.at>
- <1377073172-3662-3-git-send-email-richard@nod.at> <CALkWK0kCrQ9hPABD_XQ9QFG-vByP+xZWZs+RkVK77+cX7Odz7g@mail.gmail.com>
- <52441025.9030308@nod.at> <CALkWK0k5neR50h+AWEF5AgnpbgWMitZUnbv_caVzt6HiUA6mXg@mail.gmail.com>
- <52441407.9010603@nod.at> <CALkWK0=FG4COEjv5+mu1JRiiFQ2k6vop1mhFPmAT4bjtYeK6nA@mail.gmail.com>
- <52442108.1020304@nod.at> <CALkWK0nm=9n7DiV0MaGKVLMs=vxAiiQUx=OFuOg-DinkdMej5A@mail.gmail.com>
- <CALkWK0ndMtyQxE0uK4H-Ly6oy+tRn-SFc=_1WoC2QAp2uy0dtw@mail.gmail.com>
- <CAMuHMdU3LdDhbp_AKjD7b8Wytbqfp29DrPwTdtwQa2hUNdcy3Q@mail.gmail.com> <524443AC.3040409@nod.at>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Thu, 26 Sep 2013 20:06:01 +0530
-Message-ID: <CALkWK0kcd03t9W4O24wiVBQ8SZQ8ZcrbvQaUkcCm+y5n=d1wPw@mail.gmail.com>
-Subject: Re: [PATCH 2/8] um: Do not use SUBARCH
-To: Richard Weinberger <richard@nod.at>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130926131147.GA31249@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger wrote:
->> Sorry for chiming in, but... what about cross compiling?
->> SUBARCH=x86 should give you a 32-bit ia32 kernel, right?
->
-> Correct.
-> Users expect from SUBARCH=x86 a i386 32bit UML kernel.
+On Thu, Sep 26, 2013 at 09:11:47AM -0400, Tejun Heo wrote:
+> > Because otherwise we will re-introduce a problem described by Michael:
+> > "We have a small number of MSIs available, limited by hardware &
+> > firmware, if we don't impose a quota then the first device that probes
+> > will get most/all of the MSIs and other devices miss out."
+> 
+> Still not following.  Why wouldn't just letting the drivers request
+> the optimal number they want and falling back to single interrupt mode
+> work?  ie. why can't we just have an all or nothing interface?
 
-This is an insane expectation. This is kernel convention (it has
-nothing to do with uml):
+I can imagine a scenario where the first device probes in, requests its
+optimal number, acquires that number and exhausts MSIs in pSeries firmware.
+The next few devices possibly end up with single MSI, since no MSIs left
+to satisfy their optimal numbers. If one of those single-MSI'ed devices
+happened to be a high-performance HBA hitting a degraded performance that
+alone would force (IBM) to introduce the quotas. Now, if the same/another
+device happened does not support the legacy interrupt mode and no MSI
+resources have left in the platform firmware at all...
 
-SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
- -e s/sun4u/sparc64/ \
- -e s/arm.*/arm/ -e s/sa110/arm/ \
- -e s/s390x/s390/ -e s/parisc64/parisc/ \
- -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
- -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
+> tejun
 
-config 64BIT
-bool "64-bit kernel" if ARCH = "x86"
-default ARCH != "i386"
----help---
- Say yes to build a 64-bit kernel - formerly known as x86_64
- Say no to build a 32-bit kernel - formerly known as i386
-
-If you want to stand on your head and demand that all these
-conventions be changed against all reason, I have nothing further to
-say.
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
