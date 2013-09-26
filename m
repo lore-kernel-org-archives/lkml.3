@@ -1,138 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab3IZJ7h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:59:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64537 "EHLO mx1.redhat.com"
+	id S1756283Ab3IZKDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 06:03:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36287 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756547Ab3IZJ7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:59:35 -0400
-From: Veaceslav Falico <vfalico@redhat.com>
-To: linux-pci@vger.kernel.org
-Cc: Veaceslav Falico <vfalico@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] msi: free msi_desc entry only after we've released the kobject
-Date: Thu, 26 Sep 2013 11:59:51 +0200
-Message-Id: <1380189591-1368-1-git-send-email-vfalico@redhat.com>
+	id S1751304Ab3IZKD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 06:03:29 -0400
+Message-ID: <5244065A.8010408@ti.com>
+Date: Thu, 26 Sep 2013 13:03:06 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Mike Dunn <mikedunn@newsguy.com>, <thierry.reding@gmail.com>
+CC: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, <linux-pwm@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Robert Jarzmik <robert.jarzmik@free.fr>,
+        Marek Vasut <marex@denx.de>
+Subject: Re: [PATCH v2] pwm-backlight: allow for non-increasing brightness
+ levels
+References: <1379869196-19377-1-git-send-email-mikedunn@newsguy.com>
+In-Reply-To: <1379869196-19377-1-git-send-email-mikedunn@newsguy.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="JqSkcjUv5CLi83pO8sp6jknfCsQTtpieH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we first do kobject_put(&entry->kobj) and the kfree(entry),
-however kobject_put() doesn't guarantee us that it was the last reference
-and that the kobj isn't used currently by someone else, so after we
-kfree(entry) with the struct kobject - other users will begin using the
-freed memory, instead of the actual kobject.
+--JqSkcjUv5CLi83pO8sp6jknfCsQTtpieH
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Fix this by using the kobject->release callback, which is called last when
-the kobject is indeed not used and is cleaned up - it's msi_kobj_release(),
-which can do the kfree(entry) safely (kobject_put/cleanup doesn't use the
-kobj itself after ->release() was called, so we're safe).
+On 22/09/13 19:59, Mike Dunn wrote:
+> Currently the driver assumes that the values specified in the
+> brightness-levels device tree property increase as they are parsed from=
 
-In case we've failed to create the sysfs directories - just kfree()
-it - cause we don't have the kobjects attached.
+> left to right.  But boards that invert the signal between the PWM outpu=
+t
+> and the backlight will need to specify decreasing brightness-levels.
+> This patch removes the assumption that the last element of the array is=
 
-Also, remove the same functionality from populate_msi_sysfs(), cause on
-failure we anyway call free_msi_irqs(), which will take care of all the
-kobjects properly.
+> the maximum value, and instead searches the array for the maximum value=
 
-And add the forgotten pci_dev_put(pdev) in case of failure to register the
-kobject in populate_msi_sysfs().
+> and uses that in the duty cycle calculation.
+>=20
+> Signed-off-by: Mike Dunn <mikedunn@newsguy.com>
+> ---
+> Changelog:
+> v2:=20
+> - commit message reworded; correct line wrap used
+> - 'max_level' variable renamed to 'scale'
+> - loop counter variable type changed to unsigned int
+> - value held in scale changed from array index to actual maximum level
+> - blank lines added around loop for readability
 
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Neil Horman <nhorman@tuxdriver.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-pci@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
----
+As you said in a previous mail, the code is rather confusing. And, at
+least to me, "scale" sounds an odd name there, especially as it's then
+assigned to "max" local var. But if you and Thierry think this version
+is good, I'll take it.
 
-Notes:
-    v1  -> v2:
-    Make it as a standalone patch, which is a bugfix, and add the forgotten
-    pci_dev_put() so that it won't break bisecting. The pci_dev_put() will
-    go away anyway in the following patchset, which cleans removes
-    kobject_del and useless pci_dev_get/put().  Rebased on linux-pci/next.
+ Tomi
 
- drivers/pci/msi.c | 31 ++++++++++++-------------------
- 1 file changed, 12 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index d5f90d6..5d70f49 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -374,19 +374,22 @@ static void free_msi_irqs(struct pci_dev *dev)
- 				iounmap(entry->mask_base);
- 		}
- 
-+		list_del(&entry->list);
-+
- 		/*
- 		 * Its possible that we get into this path
- 		 * When populate_msi_sysfs fails, which means the entries
- 		 * were not registered with sysfs.  In that case don't
--		 * unregister them.
-+		 * unregister them, and just free. Otherwise the
-+		 * kobject->release will take care of freeing the entry via
-+		 * msi_kobj_release().
- 		 */
- 		if (entry->kobj.parent) {
- 			kobject_del(&entry->kobj);
- 			kobject_put(&entry->kobj);
-+		} else {
-+			kfree(entry);
- 		}
--
--		list_del(&entry->list);
--		kfree(entry);
- 	}
- }
- 
-@@ -509,6 +512,7 @@ static void msi_kobj_release(struct kobject *kobj)
- 	struct msi_desc *entry = to_msi_desc(kobj);
- 
- 	pci_dev_put(entry->dev);
-+	kfree(entry);
- }
- 
- static struct kobj_type msi_irq_ktype = {
-@@ -522,7 +526,6 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
- 	struct msi_desc *entry;
- 	struct kobject *kobj;
- 	int ret;
--	int count = 0;
- 
- 	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
- 	if (!pdev->msi_kset)
-@@ -534,23 +537,13 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
- 		pci_dev_get(pdev);
- 		ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
- 				     "%u", entry->irq);
--		if (ret)
--			goto out_unroll;
--
--		count++;
-+		if (ret) {
-+			pci_dev_put(pdev);
-+			return ret;
-+		}
- 	}
- 
- 	return 0;
--
--out_unroll:
--	list_for_each_entry(entry, &pdev->msi_list, list) {
--		if (!count)
--			break;
--		kobject_del(&entry->kobj);
--		kobject_put(&entry->kobj);
--		count--;
--	}
--	return ret;
- }
- 
- /**
--- 
-1.8.4
 
+--JqSkcjUv5CLi83pO8sp6jknfCsQTtpieH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSRAZaAAoJEPo9qoy8lh71H08QAKOqfKF3tAuk7+T0YqErRBXH
+vU+QWetDC/7ZFyBWjIp2GwLgliq66G+vW8l7OLvKMlvIrtjGbBb69eJXrwS/LPkc
+scneOyl1qpNPb8LiJE+ST+kflZFK8DSHLk7TUCeqCIW95RV8Sgf1ydLpGei/Rska
+Vy281SkbeyP0wnF6DjH3yOihpcBLSe95+kBznZJPQZ9AYlwE/VvcLocUIIfE8Ifp
+6X6SDUPyx6ln+K/L8Baw3OFT28j3QwN4qedT5Ld467pf0W2JzIcyu04sbjDXqOin
+sk/1tSsbafy4/oj1LJdD1PTUSlTxT9sBrYeU5omR+MlHuanPN22mHdIw+e5yrlHw
+La3BOwshljs+Gis2/USN3E8l+ZA47EX+4YzAr0mB7n6nsAMIa+i0w58enydXr31G
+5ALMqIzkmPIMxRUl0FY1R+PEMDm3kcXuoE2LTi0UTMsp+xhgsbALYjXlX75YizU2
+gA9LYygHOcvBORRJLNci5owoBHBxXQYmb/pLzlO9WrOEu9ex2ZFGjQ8K7X+Vdu08
+JoWxk8idj2lqm1ibr2AxZo/npDjwzDyukT7Ct1vbYyvdY2KcBli9Kyi0CzYKj0Z7
+k5yN9hvURgTZ3Xl2QLUH6FIflc30pfdIkigzIKdf/ADyvT1nt97K9Ak6cQhQ8H4K
+SgzQ7+4s+mA6kinZL1pG
+=TM7+
+-----END PGP SIGNATURE-----
+
+--JqSkcjUv5CLi83pO8sp6jknfCsQTtpieH--
