@@ -1,126 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab3IZJe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:34:26 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:2336
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932114Ab3IZJeX (ORCPT
+	id S1756559Ab3IZJef (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:34:35 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:60929 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756370Ab3IZJe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:34:23 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
-        <vinod.koul@intel.com>, <djbw@fb.com>
-CC: <devicetree@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH v11 3/3] DMA: Freescale: update driver to support 8-channel DMA engine
-Date: Thu, 26 Sep 2013 17:33:43 +0800
-Message-ID: <1380188023-3936-4-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com>
-References: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com>
+	Thu, 26 Sep 2013 05:34:29 -0400
+Date: Thu, 26 Sep 2013 11:34:26 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain
+ merging (v4)
+Message-ID: <20130926093426.GA24596@gmail.com>
+References: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-This patch adds support to 8-channel DMA engine, thus the driver works for both
-the new 8-channel and the legacy 4-channel DMA engines.
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
----
- drivers/dma/Kconfig  |    9 +++++----
- drivers/dma/fsldma.c |    9 ++++++---
- drivers/dma/fsldma.h |    2 +-
- 3 files changed, 12 insertions(+), 8 deletions(-)
+> Hello,
+> 
+> This is a new version of callchain improvement patchset.  I found and
+> fixed bugs in the previous version.  I verified that it produced
+> exactly same output before and after applying rbtree conversion patch
+> (#1).  However after Frederic's new comm infrastructure patches are
+> applied it'd be little different.
+> 
+> The patches are on 'perf/callchain-v4' branch in my tree
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> 
+> 
+> Please test!
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+> Frederic Weisbecker (4):
+>   perf tools: Use an accessor to read thread comm
+>   perf tools: Add time argument on comm setting
+>   perf tools: Add new comm infrastructure
+>   perf tools: Compare hists comm by addresses
+> 
+> Namhyung Kim (4):
+>   perf callchain: Convert children list to rbtree
+>   perf ui/progress: Add new helper functions for progress bar
+>   perf tools: Show progress on histogram collapsing
+>   perf tools: Get current comm instead of last one
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 6825957..3979c65 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -89,14 +89,15 @@ config AT_HDMAC
- 	  Support the Atmel AHB DMA controller.
- 
- config FSL_DMA
--	tristate "Freescale Elo and Elo Plus DMA support"
-+	tristate "Freescale Elo series DMA support"
- 	depends on FSL_SOC
- 	select DMA_ENGINE
- 	select ASYNC_TX_ENABLE_CHANNEL_SWITCH
- 	---help---
--	  Enable support for the Freescale Elo and Elo Plus DMA controllers.
--	  The Elo is the DMA controller on some 82xx and 83xx parts, and the
--	  Elo Plus is the DMA controller on 85xx and 86xx parts.
-+	  Enable support for the Freescale Elo series DMA controllers.
-+	  The Elo is the DMA controller on some mpc82xx and mpc83xx parts, the
-+	  EloPlus is on mpc85xx and mpc86xx and Pxxx parts, and the Elo3 is on
-+	  some Txxx and Bxxx parts.
- 
- config MPC512X_DMA
- 	tristate "Freescale MPC512x built-in DMA engine support"
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 49e8fbd..16a9a48 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -1261,7 +1261,9 @@ static int fsl_dma_chan_probe(struct fsldma_device *fdev,
- 	WARN_ON(fdev->feature != chan->feature);
- 
- 	chan->dev = fdev->dev;
--	chan->id = ((res.start - 0x100) & 0xfff) >> 7;
-+	chan->id = (res.start & 0xfff) < 0x300 ?
-+		   ((res.start - 0x100) & 0xfff) >> 7 :
-+		   ((res.start - 0x200) & 0xfff) >> 7;
- 	if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
- 		dev_err(fdev->dev, "too many channels for device\n");
- 		err = -EINVAL;
-@@ -1434,6 +1436,7 @@ static int fsldma_of_remove(struct platform_device *op)
- }
- 
- static const struct of_device_id fsldma_of_ids[] = {
-+	{ .compatible = "fsl,elo3-dma", },
- 	{ .compatible = "fsl,eloplus-dma", },
- 	{ .compatible = "fsl,elo-dma", },
- 	{}
-@@ -1455,7 +1458,7 @@ static struct platform_driver fsldma_of_driver = {
- 
- static __init int fsldma_init(void)
- {
--	pr_info("Freescale Elo / Elo Plus DMA driver\n");
-+	pr_info("Freescale Elo series DMA driver\n");
- 	return platform_driver_register(&fsldma_of_driver);
- }
- 
-@@ -1467,5 +1470,5 @@ static void __exit fsldma_exit(void)
- subsys_initcall(fsldma_init);
- module_exit(fsldma_exit);
- 
--MODULE_DESCRIPTION("Freescale Elo / Elo Plus DMA driver");
-+MODULE_DESCRIPTION("Freescale Elo series DMA driver");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
-index f5c3879..1ffc244 100644
---- a/drivers/dma/fsldma.h
-+++ b/drivers/dma/fsldma.h
-@@ -112,7 +112,7 @@ struct fsldma_chan_regs {
- };
- 
- struct fsldma_chan;
--#define FSL_DMA_MAX_CHANS_PER_DEVICE 4
-+#define FSL_DMA_MAX_CHANS_PER_DEVICE 8
- 
- struct fsldma_device {
- 	void __iomem *regs;	/* DGSR register base */
--- 
-1.7.9.5
+>  31 files changed, 504 insertions(+), 177 deletions(-)
 
+I pulled this into a test-branch and resolved the builtin-trace.c conflict 
+with tip:master.
 
+I tried your new code out with Linus's testcase of a parallel kernel 
+build:
 
+   perf record -g -- make -j8 bzImage
+
+The 'perf record' session went mostly fine except for lost events:
+
+  Kernel: arch/x86/boot/bzImage is ready  (#25)
+  [ perf record: Woken up 553 times to write data ]
+  [ perf record: Captured and wrote 196.811 MB perf.data (~8598789 samples) ]
+  Warning:
+  Processed 2631982 events and lost 54 chunks!
+
+  Check IO/CPU overload!
+
+So, for completeness I'll mention that perf fails in two ways here:
+
+  - UI bug: it prints some scary warnings about 'IO/CPU overload' but 
+    does not give any idea what the user could do about it. At minimum it 
+    should print something about increasing --mmap-pages. It should also 
+    print the current value of --mmap-pages so that the user knows to what 
+    value to increase it ...
+
+  - defaults bug: this isn't an extreme workload on an extreme box - it's
+    a relatively bog standard system with 8 cores and 16 CPUs. The kernel
+    build was mild as well, with -j8. So losing events in perf record is
+    absolutely unacceptable. A solution might be to automatically increase 
+    the ring-buffer if -g is used, in expectation of a higher data rate.
+
+Once perf record was done I had the ~200 MB perf.data - and the 'perf 
+report' session went much smoother than ever before: the analysis went 
+very quickly, it finished within 10 seconds and displayed a nice progress 
+bar. So this is entirely usable IMO.
+
+One small 'perf report' annoyance is that during the analysis passes 
+missing symbol printouts flash in the TUI - without the user having a 
+chance to read them. So those messages should either linger, or be 
+displayed at a later stage, for example when the user is confronted with 
+non-resolved symbols like:
+
++  28.63%             cc1  cc1                                [.] 0x00000000006a92cb                                  ◆
+
+that is the point where the message would be useful - but nothing 
+indicates at all that this is an undesirable symbol entry and nothing 
+helps the user what to do about it!
+
+A solution might be to display non-intrusive messages about non-resolved 
+symbols when such a symbol is manipulated (its children are openened, or 
+annotation is attempted).
+
+Here there is a second annoyance: on the detailed screen the 'annotate' 
+entry is simply missing when the symbol has not been resolved. If I hit 
+'a' on the symbol entry itself in the graph view, then sometimes 
+annotation works - sometimes it does not and there's no UI feedback 
+whatsoever why it's not working.
+
+I'm not suggesting to change the keyboard flow - that is very smooth - but 
+display information about failed annotations in the status line at the 
+bottom of the screen would be very useful. Remember: it's _always_ an UI 
+bug if the user hits a key and absolutely nothing happens. At minimum a 
+low-key, non-intrusive 'key X not bound' message should appear in the 
+status line bottom. Deterministic action/reaction sequences are utterly 
+important when interacting with computers.
+
+Anyway, very nice progress with the tree here!
+
+Thanks,
+
+	Ingo
