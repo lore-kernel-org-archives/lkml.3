@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab3IZIWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:22:52 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:50094 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab3IZIWu (ORCPT
+	id S1756164Ab3IZIW6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:22:58 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:35809 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab3IZIWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:22:50 -0400
+	Thu, 26 Sep 2013 04:22:53 -0400
 MIME-Version: 1.0
-X-Originating-IP: [111.240.64.25]
-In-Reply-To: <004101ceba90$50592700$f10b7500$%han@samsung.com>
-References: <003101ceba8c$88d6a840$9a83f8c0$%han@samsung.com>
-	<003c01ceba8d$79872c60$6c958520$%han@samsung.com>
-	<CAFRkauBTZQzSKgaNg781zsTU4u9V4rYATcWzC=BkJQy07sOBqA@mail.gmail.com>
-	<004101ceba90$50592700$f10b7500$%han@samsung.com>
-Date: Thu, 26 Sep 2013 16:22:50 +0800
-Message-ID: <CAFRkauBbwEEaCiP2bnm57jB6KR0fySgsyk4S4oRLwF_=bqwncA@mail.gmail.com>
-Subject: Re: [PATCH V3 12/14] regulator: tps6524x: use devm_regulator_register()
-From: Axel Lin <axel.lin@ingics.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+In-Reply-To: <CAMuHMdVc6N3ThirpsOFOtJ-9EUN77R38TyAyVPMMgH_y1+NOCQ@mail.gmail.com>
+References: <1378532588-6054-1-git-send-email-michael.opdenacker@free-electrons.com>
+	<CAMuHMdVc6N3ThirpsOFOtJ-9EUN77R38TyAyVPMMgH_y1+NOCQ@mail.gmail.com>
+Date: Thu, 26 Sep 2013 10:22:53 +0200
+X-Google-Sender-Auth: IT0m1pIJe7v8rGMv3BjEi-wxgt0
+Message-ID: <CAMuHMdVEAZy5_rrLYyc2FWe1n1WjpKKOczTaPs4XLjKMto5pwQ@mail.gmail.com>
+Subject: Re: [PATCH] m68k: remove deprecated IRQF_DISABLED
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: Sam Creasey <sammy@sammy.net>, Luis Alves <ljalvs@gmail.com>,
+        Greg Ungerer <gerg@uclinux.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Axel,
+On Mon, Sep 9, 2013 at 9:32 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Sat, Sep 7, 2013 at 7:43 AM, Michael Opdenacker
+> <michael.opdenacker@free-electrons.com> wrote:
+>> This patch proposes to remove the IRQF_DISABLED flag from m68k architecture
+>> code. It's a NOOP since 2.6.35 and it will be removed one day.
+>>
+>> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 >
-> I really appreciate your comment.
+> Thanks!
 >
-> Then, you mean the following.
-> If I am wrong, please let me know. :-)
-> Thank you.
+> BTW, 2 years ago Yong Zhang sent 3 big versions of series removing
+> IRQF_DISABLED everywhere.
+> At that time, I had hoped they would all go in through tglx:
+>
+> | > But do you expect the individual
+> | > maintainers to take these patches, or are you just collecting Acks?
+> |
+> | Quoted from Thomas's reply to Ralf (MIPS):
+> | [ We can hold off the "remove the define" patch until 3.2-rc1 and push
+> | it along with everything which hasn't been merged until then.
+>
+> but apparently that never happened... oh well...
+>
+> Anyway, will queue if nothing happens at the global front...
 
-Then you can remove pmic_remove() function,like below diff.
-With these change, you can add Reviewed-by: Axel Lin <axel.lin@ingics.com>
+Queued for 3.13.
 
-diff --git a/drivers/regulator/tps6524x-regulator.c
-b/drivers/regulator/tps6524x-regulator.c
-index 8b9ee39..0c0590d 100644
---- a/drivers/regulator/tps6524x-regulator.c
-+++ b/drivers/regulator/tps6524x-regulator.c
-@@ -577,20 +577,6 @@ static struct regulator_ops regulator_ops = {
-  .get_current_limit = get_current_limit,
- };
+Gr{oetje,eeting}s,
 
--static int pmic_remove(struct spi_device *spi)
--{
-- struct tps6524x *hw = spi_get_drvdata(spi);
-- int i;
--
-- if (!hw)
-- return 0;
-- for (i = 0; i < N_REGULATORS; i++) {
-- regulator_unregister(hw->rdev[i]);
-- hw->rdev[i] = NULL;
-- }
-- return 0;
--}
--
- static int pmic_probe(struct spi_device *spi)
- {
-  struct tps6524x *hw;
-@@ -598,7 +584,7 @@ static int pmic_probe(struct spi_device *spi)
-  const struct supply_info *info = supply_info;
-  struct regulator_init_data *init_data;
-  struct regulator_config config = { };
-- int ret = 0, i;
-+ int i;
+                        Geert
 
-  init_data = dev_get_platdata(dev);
-  if (!init_data) {
-@@ -631,24 +617,17 @@ static int pmic_probe(struct spi_device *spi)
-  config.init_data = init_data;
-  config.driver_data = hw;
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-- hw->rdev[i] = regulator_register(&hw->desc[i], &config);
-- if (IS_ERR(hw->rdev[i])) {
-- ret = PTR_ERR(hw->rdev[i]);
-- hw->rdev[i] = NULL;
-- goto fail;
-- }
-+ hw->rdev[i] = devm_regulator_register(dev, &hw->desc[i],
-+      &config);
-+ if (IS_ERR(hw->rdev[i]))
-+ return PTR_ERR(hw->rdev[i]);
-  }
-
-  return 0;
--
--fail:
-- pmic_remove(spi);
-- return ret;
- }
-
- static struct spi_driver pmic_driver = {
-  .probe = pmic_probe,
-- .remove = pmic_remove,
-  .driver = {
-  .name = "tps6524x",
-  .owner = THIS_MODULE,
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
