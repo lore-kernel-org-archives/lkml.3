@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3IZSDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 14:03:06 -0400
-Received: from smtprelay0190.hostedemail.com ([216.40.44.190]:42494 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752223Ab3IZSDB (ORCPT
+	id S1753976Ab3IZSDx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 14:03:53 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29676 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223Ab3IZSDt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 14:03:01 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3868:3870:3872:3874:4321:5007:7576:7652:10004:10400:10848:10967:11232:11657:11658:11914:12517:12519:12740:13069:13161:13229:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: way22_54220f6b6f74d
-X-Filterd-Recvd-Size: 1717
-Message-ID: <1380218576.17366.76.camel@joe-AO722>
-Subject: Re: [PATCH 00/11 - GIT PULL] drivers: net: Last block of Remove
- extern from function prototypes
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, wimax@linuxwimax.org,
-        ath10k@lists.infradead.org, linux-wireless@vger.kernel.org,
-        ath9k-devel@venema.h4ckr.net, brcm80211-dev-list@broadcom.com
-Date: Thu, 26 Sep 2013 11:02:56 -0700
-In-Reply-To: <20130926.134408.91633054642517467.davem@redhat.com>
-References: <cover.1380137609.git.joe@perches.com>
-	 <20130926.134408.91633054642517467.davem@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Sep 2013 14:03:49 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <524467CC.7040908@citrix.com>
+References: <1378325465-10384-1-git-send-email-zoltan.kiss@citrix.com> <5239CF01.1010001@citrix.com> <20130925175649.GC7253@phenom.dumpdata.com> <524467CC.7040908@citrix.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCHv2] tracing/events: Add bounce tracing to swiotbl
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 26 Sep 2013 14:03:25 -0400
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Message-ID: <ce4d1787-5f83-4710-9f88-9349620eda28@email.android.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-26 at 13:44 -0400, David Miller wrote:
-> From: Joe Perches <joe@perches.com>
-> Date: Wed, 25 Sep 2013 12:37:18 -0700
-[]
-> Pulled, thanks Joe.
-> That should be about it for networking right?
+Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
+>On 25/09/13 18:56, Konrad Rzeszutek Wilk wrote:
+>> On Wed, Sep 18, 2013 at 05:04:17PM +0100, Zoltan Kiss wrote:
+>>> Hi,
+>>>
+>>> I haven't got a reply in the past 2 weeks, so I would like to bump
+>>> the patch, just to make sure it haven't fell off the radar.
+>>
+>> Hey,
+>>
+>> I have this in my queue to put on 3.13 as it is past the merge
+>window.
+>> .. with that in mind:
+>>
+>>
+>> .. snip..
+>>>> +	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
+>>>> +		"size=%zu swiotlb_force=%x",
+>>>> +		__get_str(dev_name),
+>>>> +		__entry->dma_mask,
+>>>> +		(unsigned long long)__entry->dev_addr,
+>>>> +		__entry->size,
+>>>> +		__entry->swiotlb_force)
+>>
+>> Would it make sense to do something like this:
+>>
+>> 		__entry->swiotlb_force ? "swiotlb_force" : "")
+>>
+>
+>I would then rather do:
+>
+>+	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
+>+		"size=%zu swiotlb_force=",
+>+               __entry->swiotlb_force ? " yes" : "no",
+>+		__get_str(dev_name),
+>
+>Or do you mean?:
+>
+>+	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
+>+		"size=%zu",
+>+               __entry->swiotlb_force ? " swiotlb_force" : "",
+>+		__get_str(dev_name),
+>
+>This one doesn't tell you explicitly if swiotlb_force is NOT set, maybe
+>
+>that's not so good? And adds a bit of complexity to your grep regexp?
+>Either way is fine with me, but I think "swiotlb_force=0|1" is also 
+>pretty straightforward to understand, and I guess it makes printk 
+>slightly faster (I assume the conditional operator gives a little bit
+>of 
+>overhead)
+>
+>Regards,
+>
+>Zoli
 
-Yes for drivers/net/...
-
-There are some more files like:
-
-include/linux/etherdevice.h
-include/linux/inetdevice.h
-include/linux/net.h
-include/linux/netdevice.h
-include/linux/skbuff.h
-
-and some netfilter ones:
-
-include/linux/netfilter*.h
-include/linux/netfilter/...
-
-and maybe a few others like:
-
-include/linux/atmdev.h
-include/linux/fddidevice.h
-
-that I was planning on converting then submitting.
-
-Want those in one more pull request or
-maybe individually?
-
+I was thinking it would be good to print the swiotlb-force only when it is enabled. So your second one would be it. 
