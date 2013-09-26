@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab3IZUgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 16:36:13 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:43615 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab3IZUgK (ORCPT
+	id S1753970Ab3IZUkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 16:40:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60700 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078Ab3IZUko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 16:36:10 -0400
+	Thu, 26 Sep 2013 16:40:44 -0400
+Date: Thu, 26 Sep 2013 13:40:43 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: dwc3: add support for Merrifield
+Message-ID: <20130926204043.GA17521@kroah.com>
+References: <1380225704-28923-1-git-send-email-david.a.cohen@linux.intel.com>
+ <20130926201454.GC16369@kroah.com>
+ <52449B68.6060802@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20130909084933.GA20140@gmail.com>
-References: <20130906181532.GA31260@www.outflux.net>
-	<20130909084933.GA20140@gmail.com>
-Date: Thu, 26 Sep 2013 15:36:09 -0500
-X-Google-Sender-Auth: 1zbdv8Ri4gblHSjE3aqID2Jp3iA
-Message-ID: <CAGXu5jL8qzxGq49vBBH9f1+GgCtVUA8MK=ed-qmWMaq=TetPDg@mail.gmail.com>
-Subject: Re: [PATCH] x86, build: move build output statistics away from stderr
-From: Kees Cook <keescook@chromium.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>, Jiri Slaby <jslaby@suse.cz>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52449B68.6060802@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 9, 2013 at 3:49 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Kees Cook <keescook@chromium.org> wrote:
->
->> When building on x86, the final image building step always emits stats
->> to stderr, even though this information is neither a warning nor an error:
->>
->>   BUILD   arch/x86/boot/bzImage
->> Setup is 16188 bytes (padded to 16384 bytes).
->> System is 6368 kB
->> CRC cbe50c61
->>
->> Validating automated builds would be cleaner if stderr did not have to
->> filter out these lines. Instead, change how tools/build is called, and
->> make the zoffset header unconditional, and write to a specified file
->> instead of to stdout, which can then be used for statistics, leaving
->> stderr open for legitimate warnings and errors, like the output from
->> die().
->
-> Nice, that output to stderr was always somewhat annoying.
->
->> +     /* Catch any delayed write failures */
->> +     if (fclose(dest))
->> +             die("Writing image failed");
->> +
->>       close(fd);
->
-> Looks like the new code is not just reporting errors better, but it's more
-> robust by catching and reporting fclose()-time failures as well, avoiding
-> a corrupt kernel image in certain corner cases - the most common being a
-> file system full error I suspect.
+On Thu, Sep 26, 2013 at 01:39:04PM -0700, David Cohen wrote:
+> Hi Greg,
+> 
+> On 09/26/2013 01:14 PM, Greg KH wrote:
+> >On Thu, Sep 26, 2013 at 01:01:44PM -0700, David Cohen wrote:
+> >>Add PCI id for Intel Merrifield
+> >>
+> >>Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> >>---
+> >>  drivers/usb/dwc3/dwc3-pci.c | 2 ++
+> >>  1 file changed, 2 insertions(+)
+> >
+> >Nice, Felipe, mind if I just pick this up now, as I'm applying USB
+> >patches at the moment...
+> >
+> >David, this should go to older kernels as well, right?
+> 
+> This was first tested on kernel 3.10. So I can't ack any older
+> kernel at this moment.
 
-Quick ping on this; can someone pick it up in their tree?
+3.10+ is good enough for me, that's all that really has dwc3 support
+anyway that I care about :)
 
-Thanks!
+thanks,
 
--Kees
-
->
-> Thanks,
->
->         Ingo
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+greg k-h
