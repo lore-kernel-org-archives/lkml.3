@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab3IZWuX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:50:23 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:50621 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab3IZWuV convert rfc822-to-8bit (ORCPT
+	id S1754738Ab3IZWwL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:52:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35549 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab3IZWwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:50:21 -0400
-Date: Thu, 26 Sep 2013 17:50:19 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: new binutils needed for arm in 3.12-rc1
-To: =?iso-8859-1?q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        =?iso-8859-1?q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Andrew Morton <akpm@osdl.org>,
-        Trivial patch monkey <trivial@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
+	Thu, 26 Sep 2013 18:52:08 -0400
+Date: Thu, 26 Sep 2013 15:52:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <yw1x38oswrss.fsf@unicorn.mansr.com> (from mans@mansr.com on
-	Wed Sep 25 15:49:07 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1380235819.1974.94@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v5 4/6] x86/mem-hotplug: Support initialize page tables
+ in bottom-up
+Message-Id: <20130926155205.7f364b64c4a0fae77d4ca15d@linux-foundation.org>
+In-Reply-To: <5241DA5B.8000909@gmail.com>
+References: <5241D897.1090905@gmail.com>
+	<5241DA5B.8000909@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2013 03:49:07 PM, Måns Rullgård wrote:
-> Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
+On Wed, 25 Sep 2013 02:30:51 +0800 Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
+
+> From: Tang Chen <tangchen@cn.fujitsu.com>
 > 
-> > On Wed, Sep 25, 2013 at 10:23:06AM -0500, Rob Landley wrote:
-> >> On 09/24/2013 09:07:57 PM, Nicolas Pitre wrote:
-> >>> It could be as simple as making gas accept an extra argument for
-> >>> instructions like dsb and just ignoring it.
-> >>
-> >> So you prefer I come up with the reversion patches locally and  
-> _not_
-> >> send them upstream?
-> >
-> > This is a silly attitude.  What you're effectively saying is that we
-> > are never allowed to use any future ARM instructions in any Linux
-> > kernel because that might break your precious assembler.
-> >
-> > I've got news for you.  We're *not* going to listen to that  
-> argument.
-> >
-> > END OF DISCUSSION (everything else is just a waste of time.)
+> The Linux kernel cannot migrate pages used by the kernel. As a
+> result, kernel pages cannot be hot-removed. So we cannot allocate
+> hotpluggable memory for the kernel.
+> 
+> In a memory hotplug system, any numa node the kernel resides in
+> should be unhotpluggable. And for a modern server, each node could
+> have at least 16GB memory. So memory around the kernel image is
+> highly likely unhotpluggable.
+> 
+> ACPI SRAT (System Resource Affinity Table) contains the memory
+> hotplug info. But before SRAT is parsed, memblock has already
+> started to allocate memory for the kernel. So we need to prevent
+> memblock from doing this.
+> 
+> So direct memory mapping page tables setup is the case. init_mem_mapping()
+> is called before SRAT is parsed. To prevent page tables being allocated
+> within hotpluggable memory, we will use bottom-up direction to allocate
+> page tables from the end of kernel image to the higher memory.
+> 
+> ...
+>
+> +		kernel_end = __pa_symbol(_end);
 
-Who am I to argue with capital letters?
+__pa_symbol() is implemented only on mips and x86.
 
-> I fully agree.
+I stole the mips implementation like this:
 
-Actually, I thought this was an armv5l regression. (My objection was to  
-requiring a newer toolchain for architectures that built fine under the  
-old one. My attention was attracted by the proposed patch to  
-Documentation/changes with a global updated for required binutils  
-version.)
+--- a/mm/memblock.c~a
++++ a/mm/memblock.c
+@@ -187,8 +187,11 @@ phys_addr_t __init_memblock memblock_fin
+ 	/* avoid allocating the first page */
+ 	start = max_t(phys_addr_t, start, PAGE_SIZE);
+ 	end = max(start, end);
++#ifdef CONFIG_X86
+ 	kernel_end = __pa_symbol(_end);
+-
++#else
++	kernel_end = __pa(RELOC_HIDE((unsigned long)(_end), 0));
++#endif
+ 	/*
+ 	 * try bottom-up allocation only when bottom-up mode
+ 	 * is set and @end is above the kernel image.
 
-I've since had a chance to confirm the armv5 build break I saw was just  
-normal mid-rc1 noise (since fixed) and this set of patches just applies  
-to armv7, which already required a newer binutils, so objection  
-withdrawn.
-
-Rob
+just so I can get a -mm release out the door.
