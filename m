@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab3IZJoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:44:12 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54768 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab3IZJoK (ORCPT
+	id S1756212Ab3IZJoy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:44:54 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34272 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab3IZJox convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:44:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Subject: Re: [PATCH v6 RESEND 0/5] ARM/ARM64 architected timer updates
-Date: Thu, 26 Sep 2013 11:43:54 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "arm@kernel.org" <arm@kernel.org>,
+	Thu, 26 Sep 2013 05:44:53 -0400
+Message-ID: <52440218.9040009@arm.com>
+Date: Thu, 26 Sep 2013 10:44:56 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>
-References: <1379502306-12911-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <5242FC09.2050604@linaro.org> <52431B37.5000901@arm.com>
-In-Reply-To: <52431B37.5000901@arm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201309261143.55010.arnd@arndb.de>
-X-Provags-ID: V02:K0:xpYIWBBV0C20sahzy/hjuwGOBJKWksxaJiOrR/fATtc
- amTjeBA5juYFyejkax1TgnpGwWl26flIYjz6clEWWxr0luptjH
- U4uDIVhk34y8ySfAjjweo2WJ46n8MGDkTH0vMXG3OE6G/dx3G9
- yamgwgE+M6wLdaZ8OFHLHdq7MCFShVWYKx4n6DHKeU83fAuBAa
- Zh7cCjyS3c91FgcLbmnrVyTTJuzgyC2XEAujE9wCtd55ZPhdP4
- g4qCQ13F/1lFD7HEs88ANUk2t3rWFJdQEnlRgq73lcaNf8yE3J
- dO8+UBsFOB+oXVwHT2ztBk76juOFkxoPWbCKepvw8mXrvkfCwF
- K9ZLuoXi4CwMfOtSQErQ=
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Sudeep.KarkadaNagesha@arm.com, Thomas Gleixner <tglx@linutronix.de>
+Subject: [GIT PULL] ARM/ARM64 architected timer updates for v3.13
+X-OriginalArrivalTime: 26 Sep 2013 09:44:50.0413 (UTC) FILETIME=[0B6519D0:01CEBA9D]
+X-MC-Unique: 113092610445105601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 25 September 2013, Sudeep KarkadaNagesha wrote:
-> On 25/09/13 16:06, Daniel Lezcano wrote:
-> > On 09/18/2013 01:05 PM, Sudeep KarkadaNagesha wrote:
-> >> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> >>
-> >> Hi Olof/Kevin,
-> > 
-> > Added Olof and Kevin in Cc.
-> > 
-> Thanks Daniel, sorry I assumed mailing list alias(arm@kernel.org) was preferred way.
-> 
+Hi Daniel,
 
-The alias is mainly for when you are sending a pull request or a patch to
-be applied directly. For any review it makes more sense to Cc the ones you
-want involved directly.
+Please pull the ARM/ARM64 arch timer updates for v3.13.
 
-	Arnd
+Regards,
+Sudeep
+
+-->8--
+
+The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
+
+  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
+
+are available in the git repository at:
+
+  git://linux-arm.org/linux-skn.git timer_evtstrm
+
+for you to fetch changes up to 346e7480f1d4740b3d798da60f83f087ea6488b4:
+
+  drivers: clocksource: add CPU PM notifier for ARM architected timer
+(2013-09-26 09:48:24 +0100)
+
+----------------------------------------------------------------
+Sudeep KarkadaNagesha (4):
+      ARM/ARM64: arch_timer: add macros for bits in control register
+      ARM: arch_timer: add support to configure and enable event stream
+      ARM64: arch_timer: add support to configure and enable event stream
+      drivers: clocksource: add CPU PM notifier for ARM architected timer
+
+Will Deacon (1):
+      drivers: clocksource: add support for ARM architected timer event stream
+
+ arch/arm/include/asm/arch_timer.h    | 36 +++++++++++++++++++++++-----
+ arch/arm/include/uapi/asm/hwcap.h    |  1 +
+ arch/arm/kernel/setup.c              |  1 +
+ arch/arm64/include/asm/arch_timer.h  | 42 +++++++++++++++++++++++++++------
+ arch/arm64/include/asm/hwcap.h       | 11 +++----
+ arch/arm64/include/uapi/asm/hwcap.h  |  1 +
+ arch/arm64/kernel/setup.c            | 11 +++++++
+ drivers/clocksource/Kconfig          | 15 ++++++++++++
+ drivers/clocksource/arm_arch_timer.c | 49 ++++++++++++++++++++++++++++++++++++
+ include/clocksource/arm_arch_timer.h | 10 ++++++++++
+ 10 files changed, 161 insertions(+), 16 deletions(-)
+
