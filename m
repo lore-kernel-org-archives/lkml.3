@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab3IZTek (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 15:34:40 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:64289 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab3IZTeg (ORCPT
+	id S1754063Ab3IZThl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 15:37:41 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:29597 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab3IZThk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 15:34:36 -0400
-Message-ID: <52448C46.2050107@linaro.org>
-Date: Thu, 26 Sep 2013 12:34:30 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 26 Sep 2013 15:37:40 -0400
+From: "Zuckerman, Boris" <borisz@hp.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+CC: Vladislav Bolkhovitin <vst@vlnb.net>,
+        "rob.gittins@linux.intel.com" <rob.gittins@linux.intel.com>,
+        "linux-pmfs@lists.infradead.org" <linux-pmfs@lists.infradead.org>,
+        "linux-fsdevel@veger.org" <linux-fsdevel@veger.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: RFC Block Layer Extensions to Support NV-DIMMs
+Thread-Topic: RFC Block Layer Extensions to Support NV-DIMMs
+Thread-Index: AQHOqblgLk/J+jjSpUS+tHXTE2EoJZm5viyAgBpNQQCAA6zVAIAAfZtwgAA6HgCAABnMQA==
+Date: Thu, 26 Sep 2013 19:36:14 +0000
+Message-ID: <4C30833E5CDF444D84D942543DF65BDA580690B7@G9W0739.americas.hpqcorp.net>
+References: <1378331689.9210.11.camel@Virt-Centos-6.lm.intel.com>
+ <522AB5AD.6070206@vlnb.net>
+ <1379976688.5886.12.camel@Virt-Centos-6.lm.intel.com>
+ <5243DB2A.7090609@vlnb.net>
+ <4C30833E5CDF444D84D942543DF65BDA58066A30@G9W0739.americas.hpqcorp.net>
+ <20130926175624.GA7422@linux.intel.com>
+In-Reply-To: <20130926175624.GA7422@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.14]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mirko Lindner <mlindner@marvell.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Roger Luethi <rl@hellgate.ch>, Patrick McHardy <kaber@trash.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
-        Jesse Gross <jesse@nicira.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH 1/4] [RFC] net: Explicitly initialize u64_stats_sync structures
- for lockdep
-References: <1380220464-28840-1-git-send-email-john.stultz@linaro.org>	 <1380220464-28840-2-git-send-email-john.stultz@linaro.org> <1380223585.3165.205.camel@edumazet-glaptop>
-In-Reply-To: <1380223585.3165.205.camel@edumazet-glaptop>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 12:26 PM, Eric Dumazet wrote:
-> On Thu, 2013-09-26 at 11:34 -0700, John Stultz wrote:
->> In order to enable lockdep on seqcount/seqlock structures, we
->> must explicitly initialize any locks.
->>
->> diff --git a/include/linux/u64_stats_sync.h b/include/linux/u64_stats_sync.h
->> index 8da8c4e..c450e11 100644
->> --- a/include/linux/u64_stats_sync.h
->> +++ b/include/linux/u64_stats_sync.h
->> @@ -67,6 +67,13 @@ struct u64_stats_sync {
->>  #endif
->>  };
->>  
->> +
->> +#if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
->> +#define u64_stats_init(syncp)	seqcount_init(syncp.seq)
->> +#else
->> +#define u64_stats_init(syncp)
->> +#endif
->> +
-> I would prefer a function.
->
-> static inline void u64_stats_init(struct u64_stats_sync *syncp)
-> {
-> #if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
-> 	seqcount_init(&syncp->seq);
-> #endif
-> }
+I assume that we may have both: CPUs that may have ability to support multiple transactions, CPUs that support only one, CPUs that support none (as today), as well as different devices - transaction capable and not.
+So, it seems there is a room for compilers to do their work and for class drivers to do their, right?
 
-No objection, though I worry that will obscure the lockdep key name,
-causing all the u64_stat_sync locks to appear the same.
+boris
 
-I'll give it a quick shot to see if the compiler inlines it well enough
-to preserve the name.
-
-thanks
--john
-
+> -----Original Message-----
+> From: Matthew Wilcox [mailto:willy@linux.intel.com]
+> Sent: Thursday, September 26, 2013 1:56 PM
+> To: Zuckerman, Boris
+> Cc: Vladislav Bolkhovitin; rob.gittins@linux.intel.com; linux-pmfs@lists.infradead.org;
+> linux-fsdevel@veger.org; linux-kernel@vger.kernel.org
+> Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
+> 
+> On Thu, Sep 26, 2013 at 02:56:17PM +0000, Zuckerman, Boris wrote:
+> > To work with persistent memory as efficiently as we can work with RAM we need a
+> bit more than "commit". It's reasonable to expect that we get some additional
+> support from CPUs that goes beyond mfence and mflush. That may include discovery,
+> transactional support, etc. Encapsulating that in a special class sooner than later
+> seams a right thing to do...
+> 
+> If it's something CPU-specific, then we wouldn't handle it as part of the "class", we'd
+> handle it as an architecture abstraction.  It's only operations which are device-specific
+> which would need to be exposed through an operations vector.  For example, suppose
+> you buy one device from IBM and another device from HP, and plug them both into
+> your SPARC system.  The code you compile needs to run on SPARC, doing whatever
+> CPU operations are supported, but if HP and IBM have different ways of handling a
+> "commit" operation, we need that operation to be part of an operations vector.
