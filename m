@@ -1,115 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178Ab3IZF7z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 01:59:55 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:38354 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab3IZF7x (ORCPT
+	id S1751285Ab3IZGFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 02:05:06 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:50194 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab3IZGFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 01:59:53 -0400
-X-Spam-Score: -100.8
-Message-ID: <5243CD18.1060805@asianux.com>
-Date: Thu, 26 Sep 2013 13:58:48 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 26 Sep 2013 02:05:03 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info'
- in all related extern functions
-References: <5212DBFA.8030805@asianux.com> <20130923150625.GB14547@htj.dyndns.org> <52410A40.1000304@asianux.com> <20130924040601.GA31575@mtj.dyndns.org> <524114B8.3070903@asianux.com> <20130924120429.GA2366@htj.dyndns.org> <5242331B.4010309@asianux.com> <20130925005802.GA25777@htj.dyndns.org> <5242372C.4010509@asianux.com> <20130925011404.GB25777@htj.dyndns.org> <52424094.3020504@asianux.com> <524267CD.4030007@asianux.com>
-In-Reply-To: <524267CD.4030007@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <52435FE2.20805@linaro.org>
+References: <cover.1379779777.git.viresh.kumar@linaro.org>
+	<fb67ff6fa01bde06aeab43c4a02da2923615e6ef.1379779777.git.viresh.kumar@linaro.org>
+	<52435FE2.20805@linaro.org>
+Date: Thu, 26 Sep 2013 11:35:01 +0530
+Message-ID: <CAKohpokT12boxnnUJ=5Bd8tRh5VKvidd+kxQ6tF+pp1SLcgb4A@mail.gmail.com>
+Subject: Re: [PATCH 16/21] cpuidle: avoid unnecessary kzalloc/free of struct cpuidle_device_kobj
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2013 12:34 PM, Chen Gang wrote:
-> On 09/25/2013 09:47 AM, Chen Gang wrote:
->> On 09/25/2013 09:14 AM, Tejun Heo wrote:
->>> On Wed, Sep 25, 2013 at 09:06:52AM +0800, Chen Gang wrote:
->>>> OK, I see, the 'root cause' is: "you are not the related maintainer
->>>> either", so it is really necessary for me to spend additional time
->>>> resource on it :-(.
->>>
->>> Yeah, at least partly.  That and the fact that I'm not too willing to
->>> dig into the code without further evidence.  It isn't anything strange
->>> to ask tho and I'm likely to do that even for subsystems that I know
->>> intimately if the subject code has been stable / stale for years and
->>> the analysis doesn't seem immediately convincing.  And, if my
->>> experience is anything to go by, it's not too unlikely that you might
->>> hit something which doesn't agree with your current assumptions while
->>> trying to actually trigger the problem.
->>>
->>> Thanks.
->>>
-
-Oh, not cause issue, the reason is "'groups' exports extern variable
-'init_groups', when start process, default 'cred' will set it to be
-sure of groups always be initialized".
-
-Hmm... but after all, I still think this file need be improved: "remove
-the group_info checking in groups_search()", please help check, thanks.
-
--------------------------------patch begin------------------------------
-
-kernel/groups.c: remove useless "!group_info" checking in groups_search().
-
-  Since groups_free() need not check 'group_info', groups_search() need
-  not, either, and then in_group_p() and in_egroup_p(), either.
-
-
-  'groups' assumes kernel mode callers are sure of 'group_info' valid.
-
-  When process starts, the related kernel mode caller need set default
-  'group_info' firstly (extern variable 'init_group').
-
-  If groups_alloc() fails, the caller must not call any related API again
-  with the related invalid 'group_info'.
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/groups.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/groups.c b/kernel/groups.c
-index 90cf1c3..0a7f81d 100644
---- a/kernel/groups.c
-+++ b/kernel/groups.c
-@@ -136,9 +136,6 @@ int groups_search(const struct group_info *group_info, kgid_t grp)
- {
- 	unsigned int left, right;
- 
--	if (!group_info)
--		return 0;
--
- 	left = 0;
- 	right = group_info->ngroups;
- 	while (left < right) {
--- 
-1.7.7.6
-
--------------------------------patch end--------------------------------
-
+On 26 September 2013 03:42, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+> On 09/22/2013 03:21 AM, Viresh Kumar wrote:
+>> We always need to allocate struct cpuidle_device_kobj for all CPUs and so there
+>> is no real need to have a pointer to it inside struct cpuidle_device.
 >>
-> 
-> Excuse me, I have to do some urgent internal things within my company,
-> so the test and confirmation may be delayed (I will try to finish test
-> within this month: 2013-09-30).
-> 
->> Excuse me, my English is not quite well, I do not quite understand what
->> you said (but it seems what you said is reasonable, and not need reply).
+>> This patch makes a object instance of struct cpuidle_device_kobj inside struct
+>> cpuidle_device instead of a pointer.
 >>
->>
->> Thanks.
->>
-> 
-> 
+>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>
+> nack, it was made in purpose for kobject_init_and_add.
+>
+> see commit 728ce22b696f9f1404a74d7b2279a65933553a1b
 
-Thanks.
--- 
-Chen Gang
+Ahh.. sorry for missing that one :(
+
+Now that I understand why it was introduced, I am thinking if
+we can make hotplug path a bit fast? By not freeing sysfs stuff
+and only hiding it for time being? And so we wouldn't be required
+to do unnecessary initialisations while coming back?
+
+Would that be worth it?
