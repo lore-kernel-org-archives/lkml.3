@@ -1,136 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603Ab3IZTRn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 15:17:43 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33843 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab3IZTRk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 15:17:40 -0400
-Message-ID: <52448852.9050608@codeaurora.org>
-Date: Thu, 26 Sep 2013 12:17:38 -0700
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1754200Ab3IZTVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 15:21:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2486 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752041Ab3IZTVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 15:21:22 -0400
+Date: Thu, 26 Sep 2013 16:20:59 -0300
+From: Eduardo Habkost <ehabkost@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Andre Przywara <andre@andrep.de>,
+        Joerg Roedel <joro@8bytes.org>, X86 ML <x86@kernel.org>,
+        KVM <kvm@vger.kernel.org>, qemu-devel@nongnu.org,
+        libvir-list@redhat.com, Jiri Denemark <jdenemar@redhat.com>
+Subject: Re: [PATCH 1/6] kvm: Add KVM_GET_EMULATED_CPUID
+Message-ID: <20130926192059.GD10924@otherpad.lan.raisama.net>
+References: <1379861095-628-1-git-send-email-bp@alien8.de>
+ <1379861095-628-2-git-send-email-bp@alien8.de>
+ <20130923162856.GC7264@otherpad.lan.raisama.net>
+ <2f5d83d4d90ba9c5930f099d6f73e61b.squirrel@www.skyhub.de>
+ <20130924100414.GE17294@redhat.com>
+ <20130926141915.GV2840@otherpad.lan.raisama.net>
+ <20130926185524.GA10123@pd.tnic>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCHv4 2/3] ARM: msm: Add support for APQ8074 Dragonboard
-References: <1379992406-3541-1-git-send-email-rvaswani@codeaurora.org> <1379992406-3541-2-git-send-email-rvaswani@codeaurora.org> <4E7868D6-56CB-4AF8-8EBF-069966899C23@codeaurora.org> <5243652F.7090408@codeaurora.org> <B0F416B8-042A-49F1-81E9-B217F02AAD1E@codeaurora.org> <52447779.3010908@codeaurora.org>
-In-Reply-To: <52447779.3010908@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130926185524.GA10123@pd.tnic>
+X-Fnord: you can see the fnord
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/26/2013 11:05 AM, Rohit Vaswani wrote:
-> On 9/26/2013 9:37 AM, Kumar Gala wrote:
->> <snip>
->
->> +++ b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
->> @@ -0,0 +1,6 @@
->> +/include/ "qcom-msm8974.dtsi"
->> +
->> +/ {
->> +    model = "Qualcomm APQ8074 Dragonboard";
->> +    compatible = "qcom,apq8074-dragonboard", "qcom,apq8074";
->> +};
->> diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi 
->> b/arch/arm/boot/dts/qcom-msm8974.dtsi
->> new file mode 100644
->> index 0000000..f04b643
->> --- /dev/null
->> +++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
->> @@ -0,0 +1,35 @@
->> +/dts-v1/;
->> +
->> +/include/ "skeleton.dtsi"
->> +
->> +/ {
->> +    model = "Qualcomm MSM8974";
->> +    compatible = "qcom,msm8974";
->> +    interrupt-parent = <&intc>;
->> +
->> +    soc: soc { };
->>>> We should have a unit address here:
->>>>
->>>>       soc: soc@FOOBAR {
->>>>
->>>> also, split out the curly braces so any future patches do have to 
->>>> muck with that.
->>>>
->>>>     };
->>>>
->>> Im not sure I understand the reasoning behind the unit address for 
->>> soc ?
->> Its fairly standard practice and there is a fair amount of discussion 
->> about the lack of a unit address for memory nodes.
->>
-> That still doesn't really answer anything :) - and I couldn't find any 
-> discussions about this either.
-> I don't see anybody in upstream adding an address to soc except sun.
-> What is that address supposed to be for - what does it mean ?
-> The soc is way of encapsulating meaningful blocks  for the particular 
-> SoC.
+On Thu, Sep 26, 2013 at 08:55:24PM +0200, Borislav Petkov wrote:
+> On Thu, Sep 26, 2013 at 11:19:15AM -0300, Eduardo Habkost wrote:
+> > Then we may have a problem: some CPU models already have "movbe"
+> > included (e.g. Haswell), and patch 6/6 will make "-cpu Haswell" get
+> > movbe enabled even if it is being emulated.
+> 
+> Huh? HSW has MOVBE so we won't #UD on it and MOVBE will get executed in
+> hardware when executing the guest. IOW, we'll never get to the emulation
+> path of piggybacking on the #UD.
+> 
+> > So if we really want to avoid enabling emulated features by mistake,
+> > we may need a new CPU flag in addition to "enforce" to tell QEMU that
+> > it is OK to enable emulated features (maybe "-cpu ...,emulate"?).
+> 
+> EMULATED_CPUID are off by default and only if you request them
+> specifically, they get enabled.
 
-I see the mail from Stephen Warren for adding a check stating that
+Please point me to the code that does this, because I don't see it on
+patch 6/6.
 
-"ePAPR 1.1 section 2.2.1.1 "Node Name Requirements" specifies that any
-node that has a reg property must include a unit address in its name
-with value matching the first entry in its reg property. Conversely, if
-a node does not have a reg property, the node name must not include a
-unit address."
+> If you start with "-cpu Haswell", MOVBE
+> will be already set in the host CPUID.
+> 
+> Or am I missing something?
 
-The soc node we have does not have a reg property ?
+In the Haswell example, it is unlikely but possible in theory: you would
+need a CPU that supported all features from Haswell except movbe. But
+what will happen if you are using "-cpu n270,enforce" on a SandyBridge
+host?
 
+Also, we don't know anything about future CPUs or future features that
+will end up on EMULATED_CPUID. The current code doesn't have anything to
+differentiate features that were already included in the CPU definition
+and ones explicitly enabled in the command-line (and I would like to
+keep it that way).
 
->
->>
->>>>> +};
->>>>> +
->>>>> +&soc {
->>>>> +    #address-cells = <1>;
->>>>> +    #size-cells = <1>;
->>>>> +    ranges;
->>>>> +    compatible = "simple-bus";
->>>>> +
->>>>> +    intc: interrupt-controller@f9000000 {
->>>>> +        compatible = "qcom,msm-qgic2";
->>>>> +        interrupt-controller;
->>>>> +        #interrupt-cells = <3>;
->>>>> +        reg = <0xf9000000 0x1000>,
->>>>> +              <0xf9002000 0x1000>;
->>>>> +    };
->>>>> +
->>>>> +    timer {
->>>>> +        compatible = "arm,armv7-timer";
->>>>> +        interrupts = <1 2 0xf08>,
->>>>> +                 <1 3 0xf08>,
->>>>> +                 <1 4 0xf08>,
->>>>> +                 <1 1 0xf08>;
->>>>> +        clock-frequency = <19200000>;
->>>>> +    };
->>>>> +};
->> - k
->>
->
->
-> Thanks,
-> Rohit Vaswani
->
+And just because a feature was explicitly enabled in the command-line,
+that doesn't mean the user believe it is acceptable to get it running in
+emulated mode. That's why I propose a new "emulate" flag, to allow
+features to be enabled in emulated mode.
 
+> 
+> > But my question still stands: suppose we had x2apic emulation
+> > implemented but for some reason it was painfully slow, we wouldn't
+> > want to enable it by mistake. In this case, it would end up on
+> > EMULATED_CPUID and not on SUPPORTED_CPUID, right?
+> 
+> IMHO we want to enable emulation only when explicitly requested...
+> regardless of the emulation performance.
 
-Thanks,
-Rohit Vaswani
+Well, x2apic is emulated by KVM, and it is on SUPPORTED_CPUID. Ditto for
+tsc-deadline. Or are you talking specifically about instruction
+emulation?
 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
-
+Eduardo
