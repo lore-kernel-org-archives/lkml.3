@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab3IZH1W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:27:22 -0400
-Received: from mx3.incra.gov.br ([200.252.80.72]:40403 "EHLO
-	sbsbz107.incra.gov.br" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753561Ab3IZH1U convert rfc822-to-8bit (ORCPT
+	id S1755820Ab3IZHaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:30:16 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:29894 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313Ab3IZHaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:27:20 -0400
-X-Greylist: delayed 2457 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Sep 2013 03:27:20 EDT
-X-Spam-Flag: NO
-X-Spam-Score: 3.228
-Date: Thu, 26 Sep 2013 03:37:06 -0300 (BRT)
-From: Western Union =?utf-8?Q?Office=C2=AE?= 
-	<rogerio.mauro@incra.gov.br>
-Reply-To: Western Union =?utf-8?Q?Office=C2=AE?= 
-	  <westernunionmespn@yeah.net>
-Message-ID: <176385762.1066530.1380177426288.JavaMail.root@incra.gov.br>
-Subject: Dear Beneficiary
+	Thu, 26 Sep 2013 03:30:14 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,7209"; a="76818769"
+Cc: <netdev@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        Jouni Malinen <jouni@qca.qualcomm.com>,
+        "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>,
+        <ath10k@lists.infradead.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        <ath9k-devel@venema.h4ckr.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>
+X-IronPort-AV: E=McAfee;i="5400,1158,7209"; a="517638642"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: Joe Perches <joe@perches.com>
+Subject: Re: [PATCH 04/11] ath: Remove extern from function prototypes
+References: <cover.1380137609.git.joe@perches.com>
+	<a3dabaf02d36dbb4051188b706a3e66e6465c56b.1380137609.git.joe@perches.com>
+Date: Thu, 26 Sep 2013 10:30:00 +0300
+In-Reply-To: <a3dabaf02d36dbb4051188b706a3e66e6465c56b.1380137609.git.joe@perches.com>
+	(Joe Perches's message of "Wed, 25 Sep 2013 12:37:22 -0700")
+Message-ID: <871u4ct4zr.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [192.168.1.111]
-X-Mailer: Zimbra 8.0.3_GA_5664 (zclient/8.0.3_GA_5664)
-Thread-Topic: Dear Beneficiary
-Thread-Index: RS9y+roGzpVVtk4AImCpvHFmCb1alQ==
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Joe Perches <joe@perches.com> writes:
+
+> There are a mix of function prototypes with and without extern
+> in the kernel sources.  Standardize on not using extern for
+> function prototypes.
+>
+> Function prototypes don't need to be written with extern.
+> extern is assumed by the compiler.  Its use is as unnecessary as
+> using auto to declare automatic/local variables in a block.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/net/wireless/ath/ath10k/debug.h  | 8 ++++----
+>  drivers/net/wireless/ath/ath6kl/common.h | 3 +--
+>  drivers/net/wireless/ath/ath6kl/debug.h  | 9 ++++-----
+>  drivers/net/wireless/ath/ath9k/ath9k.h   | 2 +-
+>  4 files changed, 10 insertions(+), 12 deletions(-)
+
+For the ath10k and ath6kl changes:
+
+Acked-by: Kalle Valo <kvalo@qca.qualcomm.com>
 
 -- 
-Dear Beneficiary,
-
-You have been selected as the sole beneficiary of the sum of Three Hundred Thousand Euros (€ 300,000.00 Eur) which has been deposited here in WESTERN UNION OFFICE by the United Nations Organization for you.
-
-Kindly contact us for claims Email: cliamswudept@outlook.com or claims.wu@yahoo.com.hk 
-
-                    
-Customer Service
-Western Union Office®
+Kalle Valo
