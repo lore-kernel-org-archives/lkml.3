@@ -1,36 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab3IZLYY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 07:24:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42410 "EHLO mx1.redhat.com"
+	id S1756710Ab3IZLZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 07:25:43 -0400
+Received: from nucleo.com.es ([46.163.75.183]:36269 "EHLO nucleo.com.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755712Ab3IZLYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 07:24:22 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1380175008-13090-1-git-send-email-olof@lixom.net>
-References: <1380175008-13090-1-git-send-email-olof@lixom.net> <20130920150927.16220.33305.stgit@warthog.procyon.org.uk>
-To: Olof Johansson <olof@lixom.net>
-Cc: dhowells@redhat.com, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Don't use debug-printk-only local variables
-Date: Thu, 26 Sep 2013 12:24:19 +0100
-Message-ID: <1221.1380194659@warthog.procyon.org.uk>
+	id S1756446Ab3IZLZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 07:25:42 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Sep 2013 07:25:42 EDT
+Message-ID: <5243E012.7040200@vonmankowski.de>
+Date: Thu, 26 Sep 2013 09:19:46 +0200
+From: Alejandro von Mankowski <alejandro@vonmankowski.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: PROBLEM intel TX300AC
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof Johansson <olof@lixom.net> wrote:
+Hi,
 
-> Due to commit 996a2493ed5d3a8d5db03b560fcbbf1ca3f10897 (NFS:
-> Use i_writecount to control whether to get an fscache cookie in
-> nfs_open(), in two instances a local variable is only used in debug
-> print statements. Said statements might be compiled out, which results
-> in unused variable warnings:
+since Kernel Version 3.10.0-031000 (including the newest 3.11.1 and
+3.12.0 rc1) my Laptop Screen doesn't work anymore. The backlight is on but
+the screen keeps black. In Version 3.9.11 it still works perfect.
 
-Yeah, Fengguang's magic compile farm has also complained about that.
+My Laptop is a TX300AC. My system is
 
-David
+ubuntu 13.04
+
+/proc/cpuinfo http://pastebin.com/fEUfzpkP
+lspci -vvv http://pastebin.com/BUs3YMJQ
+
+Best regards,
+Alejandro
