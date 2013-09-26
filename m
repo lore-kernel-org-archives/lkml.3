@@ -1,74 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab3IZJ4n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:56:43 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:48583 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab3IZJ4l (ORCPT
+	id S1756619Ab3IZJ44 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:56:56 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:48309 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab3IZJ4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:56:41 -0400
-Message-ID: <524404A9.3030602@ahsoftware.de>
-Date: Thu, 26 Sep 2013 11:55:53 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130712 Thunderbird/17.0.7
+	Thu, 26 Sep 2013 05:56:42 -0400
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, Bjorn Helgaas <bhelgaas@google.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        kernel-janitors@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: checkpatch guide for newbies
-References: <20130923090100.GE6192@mwanda> <CAErSpo5XgvuG=75nExa7yCa7C+Bxhk+1LwruxY8pv2DU+r-_aA@mail.gmail.com> <5241CB44.8080004@ahsoftware.de> <CA+MoWDpnNjeEN+Crzh2kQ7DPJ_DqEOP4z-9n3=EqP7hiPgZRXg@mail.gmail.com> <CAErSpo4X0-PEYtZrY2r4GKmzTJhHK3eKdXrbccJhB7wVkVCYLA@mail.gmail.com> <52420DF1.7060108@ahsoftware.de> <20130926021130.GD13318@ZenIV.linux.org.uk> <5243A165.2060204@ahsoftware.de> <5243A29C.6080009@ahsoftware.de> <20130926030448.GG13318@ZenIV.linux.org.uk> <5243A993.9070108@ahsoftware.de> <alpine.DEB.2.02.1309260749580.1984@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1309260749580.1984@localhost6.localdomain6>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAL1ERfNh5ss2F6X8QuYxhZ7f2g6mcJvn6pJow2ecRk8dT13CGg@mail.gmail.com>
+References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
+	<52118042.30101@oracle.com>
+	<20130819054742.GA28062@bbox>
+	<CAL1ERfN3AUYwWTctGBjVcgb-mwAmc15-FayLz48P1d0GzogncA@mail.gmail.com>
+	<20130821074939.GE3022@bbox>
+	<CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
+	<CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
+	<CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
+	<20130926055802.GA20634@bbox>
+	<CAL1ERfN8PpSZxRmLiwm4i-XZWzRaPJ0A=Af76Dtopcf2xYnBtQ@mail.gmail.com>
+	<20130926075725.GA22339@bbox>
+	<CAL1ERfNh5ss2F6X8QuYxhZ7f2g6mcJvn6pJow2ecRk8dT13CGg@mail.gmail.com>
+Date: Thu, 26 Sep 2013 17:56:40 +0800
+Message-ID: <CAA_GA1cMRo6pOUJxh+gCT7BGv9_TAF0qDffR9X5k4JrpAPsUPg@mail.gmail.com>
+Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
+From: Bob Liu <lliubbo@gmail.com>
+To: Weijie Yang <weijie.yang.kh@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>, Bob Liu <bob.liu@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.09.2013 07:53, schrieb Julia Lawall:
-
->> void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
->>                                 struct timespec *wtom, struct timespec
->> *sleep);
+On Thu, Sep 26, 2013 at 4:48 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
+> On Thu, Sep 26, 2013 at 3:57 PM, Minchan Kim <minchan@kernel.org> wrote:
+>> On Thu, Sep 26, 2013 at 03:26:33PM +0800, Weijie Yang wrote:
+>>> On Thu, Sep 26, 2013 at 1:58 PM, Minchan Kim <minchan@kernel.org> wrote:
+>>> > Hello Weigie,
+>>> >
+>>> > On Wed, Sep 25, 2013 at 05:33:43PM +0800, Weijie Yang wrote:
+>>> >> On Wed, Sep 25, 2013 at 4:31 PM, Bob Liu <lliubbo@gmail.com> wrote:
+>>> >> > On Wed, Sep 25, 2013 at 4:09 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
+>>> >> >> I think I find a new issue, for integrity of this mail thread, I reply
+>>> >> >> to this mail.
+>>> >> >>
+>>> >> >> It is a concurrence issue either, when duplicate store and reclaim
+>>> >> >> concurrentlly.
+>>> >> >>
+>>> >> >> zswap entry x with offset A is already stored in zswap backend.
+>>> >> >> Consider the following scenario:
+>>> >> >>
+>>> >> >> thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
+>>> >> >>
+>>> >> >> thread 1: store new page with the same offset A, alloc a new zswap entry y.
+>>> >> >>   store finished. shrink_page_list() call __remove_mapping(), and now
+>>> >> >> it is not in swap_cache
+>>> >> >>
+>>> >> >
+>>> >> > But I don't think swap layer will call zswap with the same offset A.
+>>> >>
+>>> >> 1. store page of offset A in zswap
+>>> >> 2. some time later, pagefault occur, load page data from zswap.
+>>> >>   But notice that zswap entry x is still in zswap because it is not
+>>> >> frontswap_tmem_exclusive_gets_enabled.
+>>> >
+>>> > frontswap_tmem_exclusive_gets_enabled is just option to see tradeoff
+>>> > between CPU burining by frequent swapout and memory footprint by duplicate
+>>> > copy in swap cache and frontswap backend so it shouldn't affect the stability.
+>>>
+>>> Thanks for explain this.
+>>> I don't mean to say this option affects the stability,  but that zswap
+>>> only realize
+>>> one option. Maybe it's better to realize both options for different workloads.
 >>
->> I like such function names ;) (ok I wouldn't have use those and), but it's
->> hard to press this into 80 characters, especially when the arguments should
->> have some meaning too (e.g. what does wtom stand for?)
+>> "zswap only relize one option"
+>> What does it mena? Sorry. I couldn't parse your intention. :)
+>> You mean zswap should do something special to support frontswap_tmem_exclusive_gets?
+>
+> Yes. But I am not sure whether it is worth.
+>
+>>>
+>>> >>  this page is with PageSwapCache(page) and page_private(page) = entry.val
+>>> >> 3. change this page data, and it become dirty
+>>> >
+>>> > If non-shared swapin page become redirty, it should remove the page from
+>>> > swapcache. If shared swapin page become redirty, it should do CoW so it's a
+>>> > new page so that it doesn't live in swap cache. It means it should have new
+>>> > offset which is different with old's one for swap out.
+>>> >
+>>> > What's wrong with that?
+>>>
+>>> It is really not a right scene for duplicate store. And I can not think out one.
+>>> If duplicate store is impossible, How about delete the handle code in zswap?
+>>> If it does exist, I think there is a potential issue as I described.
 >>
->> If you use that somewhere you get
+>> You mean "zswap_duplicate_entry"?
+>> AFAIR, I already had a question to Seth when zswap was born but AFAIRC,
+>> he said that he didn't know exact reason but he saw that case during
+>> experiement so copy the code peice from zcache.
 >>
->>         get_xtime_and_monotonic_and_sleep_offset(a, b, c)
->>
->> using silly names and that already is a 58 characters long. So only 22 are
->> left to distribute over 3 variable names. And now think what happens if that
->> wouldn't be a void function.
-> 
-> Personally, I prefer to use my screen real estate for multiple 80-column 
-> windows, so I can see different parts of the code at once.  Anything that 
-> goes over 80 columns is very hard to read.
-> 
-> Perhaps it is a bad example, but I don't even find this very long name 
-> very understandable.  Monotonic is an adjective and xtime and sleep are 
-> nouns, so I don't understand how it all fits together.  Maybe cramming a
+>> Do you see the case, too?
+>
+> Yes, I mean duplicate store.
+> I check the /Documentation/vm/frontswap.txt, it mentions "duplicate stores",
+> but I am still confused.
+>
+> I wrote a zcache varietas which swap out compressed page to swapfile.
+> I did see that case when I test it on andorid smartphone(arm v7),
 
-It just was the first long function name I came about. And sometimes a
-bit background information helps a lot. So without knowing anything else
-about that function, I assume the monotonic time is meant and the author
-didn't want to add _time_ to the name because it already is long. In
-case of the wtom I would think it's from a second author and I still
-have no clue what it might be. Maybe I'm missing some backgroud
-information here too and should actually read the description of the
-function, if there is any. ;)
+Why not test it based on zswap directly?
+My suggestion is do more and more stress testing against current
+zswap, if there is really any bug triggered or unusual performance
+issue then we dig it out and fix it.
 
-> lot of information into a variable name is not always so successful... 
-> Actually, I really appreciate comments on functions, that explain the 
-> purpose of the function, and the constraints on its usage.
-
-I didn't want do suggest getting rid of (necessary or helpful) comments.
-
+-- 
 Regards,
-
-Alexander Holler
-
+--Bob
