@@ -1,120 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab3IZHHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:07:52 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:64389 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab3IZHHv (ORCPT
+	id S1755679Ab3IZHI0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:08:26 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:39300 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755574Ab3IZHIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:07:51 -0400
-Date: Thu, 26 Sep 2013 09:07:47 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Magnus Damm <magnus.damm@gmail.com>
-cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 2/4] ARM: shmobile: r8a7790: add I2C support in Device
- Tree mode
-In-Reply-To: <CANqRtoQRqYEL1QV_i08nFZrXggxvTBfi3tDRWhw7GW1ZgOWrZA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1309260902060.11968@axis700.grange>
-References: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de>
- <1378742636-11215-3-git-send-email-g.liakhovetski@gmx.de> <1681594.NCMRR5Vty1@avalon>
- <Pine.LNX.4.64.1309260004450.7439@axis700.grange>
- <CANqRtoQRqYEL1QV_i08nFZrXggxvTBfi3tDRWhw7GW1ZgOWrZA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:XuILuUvKP9dXAiotFBQfzOA7sYZ5NwPxo2IKk25HB8h
- TPYdDbKwrJ84vWY2cnO6IqCwwUgGP/GB6speB0lupT+tItBgEC
- fdW7yhoDAGyyrdOAN19/zmzLL3zPS+igKuCuARN6QBMpSlgPaz
- jQmnfuVVXlgZRU947frq3v8iyI/+0zMGBjg8FJ8sfdb8InGshd
- fBb81KJSeuvEyLxtJpr01m9AiECFc3yOhnucR5I01RfLt6jZ8i
- wu5xHxD9k7gJJPagNfG11CeTJZT9t4un5n0d9+6JljrMYkgXiL
- U49NQQkmop1alaWgo/i0/TbUxCCZ8wB/Wbtz3HGmjGdYWqRZBR
- QNIM4/Dem+ELGT9pyPc5X+X9MdBRirbL4dnE5HAbeGMFAgVCbN
- HgYXEsuyieE6w==
+	Thu, 26 Sep 2013 03:08:24 -0400
+Subject: Re: [PATCH V4 02/15] asymmetric keys: implement
+ EMSA_PKCS1-v1_5-ENCODE in rsa
+From: joeyli <jlee@suse.com>
+To: Phil Carmody <phil.carmody@partner.samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
+        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.uc>
+In-Reply-To: <20130923164931.GD6772@samsung.com>
+References: <1379206621-18639-1-git-send-email-jlee@suse.com>
+	 <1379206621-18639-3-git-send-email-jlee@suse.com>
+	 <20130923164931.GD6772@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Sep 2013 15:08:30 +0800
+Message-ID: <1380179310.32302.58.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus
+Hi Phil, 
 
-On Thu, 26 Sep 2013, Magnus Damm wrote:
+First! Thanks for your time to review my patch!
 
-> Hi Guennadi,
+於 一，2013-09-23 於 19:49 +0300，Phil Carmody 提到：
+> On Sun, Sep 15, 2013 at 08:56:48AM +0800, Lee, Chun-Yi wrote:
+> > Implement EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2] in rsa.c. It's the
+> > first step of signature generation operation (RSASSA-PKCS1-v1_5-SIGN).
+> > 
+> > This patch is temporary set emLen to pks->k, and temporary set EM to
+> > pks->S for debugging. We will replace the above values to real signature
+> > after implement RSASP1.
+> > 
+> > The naming of EMSA_PKCS1_v1_5_ENCODE and the variables used in this function
+> > accord PKCS#1 spec but not follow kernel naming convention, it useful when look
+> > at them with spec.
+> > 
+> > Reference: ftp://ftp.rsasecurity.com/pub/pkcs/pkcs-1v2/pkcs1ietffinal.txt
+> > Reference: http://www.emc.com/collateral/white-papers/h11300-pkcs-1v2-2-rsa-cryptography-standard-wp.pdf
+> > 
+> > V2:
 > 
-> On Thu, Sep 26, 2013 at 7:10 AM, Guennadi Liakhovetski
-> <g.liakhovetski@gmx.de> wrote:
-> > Hi Laurent
-> >
-> > On Wed, 25 Sep 2013, Laurent Pinchart wrote:
-> >
-> >> Hi Guennadi,
-> >>
-> >> Thank you for the patch.
-> >>
-> >> On Monday 09 September 2013 18:03:54 Guennadi Liakhovetski wrote:
-> >> > This patch adds clocks and clock lookup entries for the four I2C
-> >> > controllers on r8a7790 and respective Device Tree nodes.
-> >> >
-> >> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> >> > ---
-> >> >  arch/arm/boot/dts/r8a7790.dtsi         |   36 +++++++++++++++++++++++++++++
-> >> >  arch/arm/mach-shmobile/clock-r8a7790.c |   10 ++++++++
-> >> >  2 files changed, 46 insertions(+), 0 deletions(-)
-> >> >
-> >> > diff --git a/arch/arm/boot/dts/r8a7790.dtsi b/arch/arm/boot/dts/r8a7790.dtsi
-> >> > index 885f9f4..a5021112 100644
-> >> > --- a/arch/arm/boot/dts/r8a7790.dtsi
-> >> > +++ b/arch/arm/boot/dts/r8a7790.dtsi
-> >> > @@ -127,6 +127,42 @@
-> >> >             interrupts = <0 0 4>, <0 1 4>, <0 2 4>, <0 3 4>;
-> >> >     };
-> >> >
-> >> > +   i2c0: i2c@e6508000 {
-> >> > +           #address-cells = <1>;
-> >> > +           #size-cells = <0>;
-> >> > +           compatible = "renesas,i2c-rcar-h2";
-> >> > +           reg = <0 0xe6508000 0 0x40>;
-> >> > +           interrupt-parent = <&gic>;
-> >> > +           interrupts = <0 287 0x4>;
-> >>
-> >> Shouldn't you add state = "disabled" to all I2C controllers in order not to
-> >> enable the unused controllers by default ?
-> >
-> > It would be logical, yes, and I seem to remember having discussed this
-> > earlier with someone (with Magnus, IIRC), and the outcome was, that all
-> > Renesas .dtsi files so far define all I2C directly in enabled mode and
-> > that it's intentional, so, I just followed this pattern here. You can
-> > indeed check in other .dtsi files - all seem to do exactly the same.
+> You're now at V4.
+
+The V4 is for whole patchset, I didn't do any modify in this patch in
+this version.
+The version define maybe confuse between separate and whole patchset, I
+will avoid it.
+
 > 
-> Uhm, I think you mix up platform device use case and DT use case.
+> > - Clean up naming of variable: replace _EM by EM, replace EM by EM_tmp.
+> > - Add comment to EMSA_PKCS1-v1_5-ENCODE function.
+> > 
+> > Cc: Pavel Machek <pavel@ucw.cz>
+> > Reviewed-by: Jiri Kosina <jkosina@suse.cz>
+> > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+> > ---
+> >  crypto/asymmetric_keys/rsa.c |  163 +++++++++++++++++++++++++++++++++++++++++-
+> >  include/crypto/public_key.h  |    2 +
+> >  2 files changed, 164 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
+> > index 47f3be4..352ba45 100644
+> > --- a/crypto/asymmetric_keys/rsa.c
+> > +++ b/crypto/asymmetric_keys/rsa.c
+> > @@ -13,6 +13,7 @@
+> >  #include <linux/module.h>
+> >  #include <linux/kernel.h>
+> >  #include <linux/slab.h>
+> > +#include <crypto/hash.h>
+> >  #include "public_key.h"
+> >  #include "private_key.h"
+> >  
+> > @@ -152,6 +153,132 @@ static int RSA_I2OSP(MPI x, size_t xLen, u8 **_X)
+> >  }
+> >  
+> >  /*
+> > + * EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2]
+> > + * @M: message to be signed, an octet string
+> > + * @emLen: intended length in octets of the encoded message
+> > + * @hash_algo: hash function (option)
+> > + * @hash: true means hash M, otherwise M is already a digest
+> > + * @EM: encoded message, an octet string of length emLen
+> > + *
+> > + * This function is a implementation of the EMSA-PKCS1-v1_5 encoding operation
+> > + * in RSA PKCS#1 spec. It used by the signautre generation operation of
+> > + * RSASSA-PKCS1-v1_5 to encode message M to encoded message EM.
+> > + *
+> > + * The variables used in this function accord PKCS#1 spec but not follow kernel
+> > + * naming convention, it useful when look at them with spec.
+> > + */
+> > +static int EMSA_PKCS1_v1_5_ENCODE(const u8 *M, size_t emLen,
+> > +		enum pkey_hash_algo hash_algo, const bool hash,
+> > +		u8 **EM, struct public_key_signature *pks)
+> > +{
+> > +	u8 *digest;
+> > +	struct crypto_shash *tfm;
+> > +	struct shash_desc *desc;
+> > +	size_t digest_size, desc_size;
+> > +	size_t tLen;
+> > +	u8 *T, *PS, *EM_tmp;
+> > +	int i, ret;
+> > +
+> > +	pr_info("EMSA_PKCS1_v1_5_ENCODE start\n");
+> > +
+> > +	if (!RSA_ASN1_templates[hash_algo].data)
+> > +		ret = -ENOTSUPP;
+> 
+> ...
+> 
+> > +	else
+> > +		pks->pkey_hash_algo = hash_algo;
+> > +
+> > +	/* 1) Apply the hash function to the message M to produce a hash value H */
+> > +	tfm = crypto_alloc_shash(pkey_hash_algo[hash_algo], 0, 0);
+> > +	if (IS_ERR(tfm))
+> > +		return (PTR_ERR(tfm) == -ENOENT) ? -ENOPKG : PTR_ERR(tfm);
+> > +
+> > +	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
+> > +	digest_size = crypto_shash_digestsize(tfm);
+> > +
+> > +	ret = -ENOMEM;
+> 
+> The earlier "ret = -ENOTSUPP;" is either unused because you return at the IS_ERR,
+> or unused because you overwrite it here. I'm a little disappointed that
+> the compiler didn't recognise that something was assigned to a value that 
+> is never used.
+> 
+> Phil
 
-I'm sure I don't.
+Yes, Dmitry also pointed out this issue, I should not go on the hash
+process if the hash algorithm didn't support.
 
-> In
-> the platform device case we define all devices by default, but that's
-> not how it should be for the DT case. In the case of DT then default
-> should most likely be "disabled". Please follow the direction of
-> Laurent.
+I will change fix this problem in next version. 
 
-To put the record straight - originally I suggested to use status 
-"disabled" for mmc devices in .dtsi, before that the status property 
-wasn't used in Renesas .dts(i) files, and that's when all I2C nodes were 
-already present in .dtsi in enabled state.
 
-> Also, I mentioned this 25 times before already so once more cannot
-> hurt: "renesas,i2c-rcar-h2" needs to be replaced with something more
-> standard.
+Thanks a lot!
+Joey Lee
 
-I didn't count, but yes, it has been discussed and that's been fixed in v2 
-of my i2c patches. Now that I've got comments to the ARM patches I can 
-also update them with a correct compatibility string.
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
