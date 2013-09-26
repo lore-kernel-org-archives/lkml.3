@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab3IZB0t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 21:26:49 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:54302 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab3IZB0s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 21:26:48 -0400
+	id S1755427Ab3IZB1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 21:27:07 -0400
+Received: from mx5.zte.com.cn ([63.217.80.70]:39837 "EHLO mx5.zte.com.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755380Ab3IZB1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 21:27:05 -0400
+X-Greylist: delayed 1002 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Sep 2013 21:27:05 EDT
+Subject: [PATCH] futex: Remove the owner check when waking task in
+ handle_futex_death
+X-KeepSent: CEFEC0A7:CD482CBA-48257BF2:000535D1;
+ type=4; name=$KeepSent
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+Message-ID: <OFCEFEC0A7.CD482CBA-ON48257BF2.000535D1-48257BF2.00066AD1@zte.com.cn>
+From: zhang.yi20@zte.com.cn
+Date: Thu, 26 Sep 2013 09:09:54 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-09-26 09:09:58
 MIME-Version: 1.0
-In-Reply-To: <1380156027.17366.39.camel@joe-AO722>
-References: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
-	<1380125886-10341-8-git-send-email-fweisbec@gmail.com>
-	<CA+55aFzPArB0dotWZz8dLTPVM4MMT75NAb5_DVcPrNuvWu4QUA@mail.gmail.com>
-	<20130925172121.00c23e416398139f4615943c@linux-foundation.org>
-	<1380156027.17366.39.camel@joe-AO722>
-Date: Wed, 25 Sep 2013 18:26:47 -0700
-X-Google-Sender-Auth: 06T2vwkRBVbp4MBJMfo07mqX8ps
-Message-ID: <CA+55aFycQ9XJvEOsiM3txHL5bjUc8CeKWJNR_H+MiicaddB42Q@mail.gmail.com>
-Subject: Re: [PATCH 7/7] x86: Tell about irq stack coverage
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+Content-type: text/plain; charset=GB2312
+X-MAIL: mse01.zte.com.cn r8Q1A4NV009320
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8Q1RDnc010529
 
-On Wed, Sep 25, 2013 at 5:40 PM, Joe Perches <joe@perches.com> wrote:
->
-> Huh?  That matches all the ARCH_HAS_<foo> patterns.
 
-Right. And they are all crap. lib/string.c is a prime example of
-something that should never have happened.
+Hi all,
 
-The ARCH_HAS_xyz pattern is totally retarded. It's wrong.
+Task processes all its owned robust futex when it is exiting,
+to ensure the futexes can be taken by other tasks.
 
-For big conceptual features, we should use Kconfig symbols.
+Though this can not work good in sometimes.
+Think about this scene£∫
+1. A robust mutex is shared for two processes, each process has
+   multi threads to lock the mutex.
+2. One of the threads locks the mutex, and the others are waiting
+   and sorted in order of priority.
+3. The process to which the mutex owner thread belongs is dying
+   without unlocking the mutex£¨and handle_futex_death is invoked
+   to wake the first waiter.
+4. If the first waiter belongs to the same process£¨it has no chance
+   to return to the userspace to lock the mutex, and it won't wake
+   the next waiter because it is not the owner of the mutex.
+5. The rest waiters of the other process may block forever.
 
-And for smaller things - like lib/string.c - where we have
-compatibility fallback functions but want architectures able to
-override them with optimized ones one function at a time, we should
-either use weak functions (appropriate for some cases), or the symbol
-that protects them should the the SAME SYMBOL WE USE. Rather than some
-made-up crap-for-brains new ARCH_HAS_xyz symbol. That way it shows up
-in greps, and that way we don't have any question about what random
-symbol pattern we use that particular day.
+This patch remove the owner check when waking task in handle_futex_death.
+If above occured, The dying task can wake the next waiter by processing its list_op_pending.
+The waked task could return to userspace and try to lock the mutex again.
 
-So for *bad* use, see lib/string.c, and the ARCH_AS_xyz horror.
 
-For *good* use, see lib/div64.c or lib/find_next_bit.c.
+Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+Reviewed-by: Xie Baoyou <xie.baoyou@zte.com.cn>
+Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
 
-Notice how div64.c doesn't make up new ARCH_HAS_random_crap names? And
-no, you don't have to define those things as macros, you can define
-them as functions (inline or not), and then just do
 
-    #define find_next_zero_bit find_next_zero_bit
 
-to tell the rest of the world "Look, I have this defined".
-
-The whole "make up a totally unrelated second name for it" means that
-we have things like __HAVE_ARCH_STRLEN but also things like
-ARCH_HAS_PREFETCHW. Ugh.
-
-                       Linus
+--- linux/kernel/futex.c	2013-09-25 09:24:34.639634244 +0000
++++ linux/kernel/futex.c	2013-09-25 10:12:17.619673546 +0000
+@@ -2541,14 +2541,15 @@ retry:
+ 		}
+ 		if (nval != uval)
+ 			goto retry;
+-
+-		/*
+-		 * Wake robust non-PI futexes here. The wakeup of
+-		 * PI futexes happens in exit_pi_state():
+-		 */
+-		if (!pi && (uval & FUTEX_WAITERS))
+-			futex_wake(uaddr, 1, 1, FUTEX_BITSET_MATCH_ANY);
+ 	}
++
++	/*
++	 * Wake robust non-PI futexes here. The wakeup of
++	 * PI futexes happens in exit_pi_state():
++	 */
++	if (!pi)
++		futex_wake(uaddr, 1, 1, FUTEX_BITSET_MATCH_ANY);
++
+ 	return 0;
+ }
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
