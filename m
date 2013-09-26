@@ -1,112 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab3IZKFw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 06:05:52 -0400
-Received: from mx0.eldamar.org.uk ([78.47.157.133]:42212 "EHLO
-	mx0.eldamar.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756412Ab3IZKFt (ORCPT
+	id S1756401Ab3IZKKp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 06:10:45 -0400
+Received: from smtprelay0080.hostedemail.com ([216.40.44.80]:38458 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755885Ab3IZKKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 06:05:49 -0400
-Date: Thu, 26 Sep 2013 11:05:40 +0100
-From: Alexander Frolkin <avf@eldamar.org.uk>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: Simon Horman <horms@verge.net.au>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        lvs-devel@vger.kernel.org, Wensong Zhang <wensong@linux-vs.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipvs: improved SH fallback strategy
-Message-ID: <20130926100540.GB27583@eldamar.org.uk>
-References: <20130923115139.GA15034@eldamar.org.uk>
- <524099BA.5020303@cogentembedded.com>
- <20130924093238.GD18494@eldamar.org.uk>
- <20130925003033.GG26081@verge.net.au>
- <20130925092638.GD19768@eldamar.org.uk>
- <alpine.LFD.2.00.1309260817290.1640@ja.ssi.bg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1309260817290.1640@ja.ssi.bg>
-X-GPG-Key-Fingerprint: 7820 960F C361 C9CE 401F  D07D 993A 2951 D970 4FA4
-X-Operating-System: Linux 3.2.0-41-generic
-X-Editor: Vi
-X-Uptime: 17:43:23 up 136 days,  3:07, 11 users,  load average: 0.40, 0.40,
- 0.47
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 Sep 2013 06:10:43 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3870:3872:3873:4321:5007:7652:10004:10400:10450:10455:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: rule47_232a2b285090d
+X-Filterd-Recvd-Size: 1226
+Message-ID: <1380190240.17366.60.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] framebuffer: arkfb: Fix framebugger typo
+From: Joe Perches <joe@perches.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 26 Sep 2013 03:10:40 -0700
+In-Reply-To: <524402A6.1040709@ti.com>
+References: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>
+	 <524402A6.1040709@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Improve the SH fallback realserver selection strategy.
+On Thu, 2013-09-26 at 12:47 +0300, Tomi Valkeinen wrote:
+> On 20/09/13 04:53, Joe Perches wrote:
+> > s/framebugger/framebuffer/
+[]
+> Thanks, queued for 3.13. Although I have to say I kinda like the sound
+> of framebugger.
 
-With sh and sh-fallback, if a realserver is down, this attempts to
-distribute the traffic that would have gone to that server evenly
-among the remaining servers.
+I wondered if I should even change it
+because it _is_ kind of funny.
 
-Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
+Maybe you should just leave it in.
 
---
-diff --git a/net/netfilter/ipvs/ip_vs_sh.c b/net/netfilter/ipvs/ip_vs_sh.c
-index 3588fae..533ea53 100644
---- a/net/netfilter/ipvs/ip_vs_sh.c
-+++ b/net/netfilter/ipvs/ip_vs_sh.c
-@@ -115,27 +115,49 @@ ip_vs_sh_get(struct ip_vs_service *svc, struct ip_vs_sh_state *s,
- }
- 
- 
--/* As ip_vs_sh_get, but with fallback if selected server is unavailable */
-+/* As ip_vs_sh_get, but with fallback if selected server is unavailable
-+ *
-+ * The fallback strategy loops around the table starting from a "random"
-+ * point (in fact, it is chosen to be the original hash value to make the
-+ * algorithm deterministic) to find a new server.
-+ */
- static inline struct ip_vs_dest *
- ip_vs_sh_get_fallback(struct ip_vs_service *svc, struct ip_vs_sh_state *s,
- 		      const union nf_inet_addr *addr, __be16 port)
- {
--	unsigned int offset;
--	unsigned int hash;
-+	unsigned int offset, roffset;
-+	unsigned int hash, ihash;
- 	struct ip_vs_dest *dest;
- 
-+	/* first try the dest it's supposed to go to */
-+	ihash = ip_vs_sh_hashkey(svc->af, addr, port, 0);
-+	dest = rcu_dereference(s->buckets[ihash].dest);
-+	if (!dest)
-+		return NULL;
-+	if (!is_unavailable(dest))
-+		return dest;
-+
-+	IP_VS_DBG_BUF(6, "SH: selected unavailable server "
-+		"%s:%d, reselecting",
-+		IP_VS_DBG_ADDR(svc->af, &dest->addr),
-+		ntohs(dest->port));
-+
-+	/* if the original dest is unavailable, loop around the table
-+	 * starting from ihash to find a new dest
-+	 */
- 	for (offset = 0; offset < IP_VS_SH_TAB_SIZE; offset++) {
--		hash = ip_vs_sh_hashkey(svc->af, addr, port, offset);
-+		roffset = (offset + ihash) % IP_VS_SH_TAB_SIZE;
-+		hash = ip_vs_sh_hashkey(svc->af, addr, port, roffset);
- 		dest = rcu_dereference(s->buckets[hash].dest);
- 		if (!dest)
- 			break;
--		if (is_unavailable(dest))
--			IP_VS_DBG_BUF(6, "SH: selected unavailable server "
--				      "%s:%d (offset %d)",
--				      IP_VS_DBG_ADDR(svc->af, &dest->addr),
--				      ntohs(dest->port), offset);
--		else
-+		if (!is_unavailable(dest))
- 			return dest;
-+		IP_VS_DBG_BUF(6, "SH: selected unavailable "
-+			"server %s:%d (offset %d), reselecting",
-+			IP_VS_DBG_ADDR(svc->af, &dest->addr),
-+			ntohs(dest->port),
-+			roffset);
- 	}
- 
- 	return NULL;
 
