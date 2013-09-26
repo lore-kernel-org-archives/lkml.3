@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab3IZKOY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 06:14:24 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:47126 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755999Ab3IZKOW (ORCPT
+	id S932106Ab3IZKQM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 06:16:12 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43586 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755712Ab3IZKQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 06:14:22 -0400
-Message-ID: <524408F9.3090702@linaro.org>
-Date: Thu, 26 Sep 2013 12:14:17 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 26 Sep 2013 06:16:10 -0400
+Date: Thu, 26 Sep 2013 11:16:05 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Sachin Kamat'" <sachin.kamat@linaro.org>,
+        "'Liam Girdwood'" <lgirdwood@gmail.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Steve Twiss'" <stwiss.opensource@diasemi.com>,
+        "'David Dajun Chen'" <david.chen@diasemi.com>
+Message-ID: <20130926101605.GC19304@sirena.org.uk>
+References: <000701ceba5c$69459b10$3bd0d130$%han@samsung.com>
+ <000b01ceba5c$e35a8140$aa0f83c0$%han@samsung.com>
+ <CAK9yfHxSFZv-=cdsoLzYBBZhShX9iMgoBBfOCJDLA3_P_dGetg@mail.gmail.com>
+ <002b01ceba81$4413aa10$cc3afe30$%han@samsung.com>
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>
-CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Preeti Murthy <preeti.lkml@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 0/4] arm: zynq: Enable global timer
-References: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com> <5242FF4B.6050901@linaro.org> <62570dec-da98-42a2-93b9-6ab1f8adb30d@CH1EHSMHS037.ehs.local>
-In-Reply-To: <62570dec-da98-42a2-93b9-6ab1f8adb30d@CH1EHSMHS037.ehs.local>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xo44VMWPx7vlQ2+2"
+Content-Disposition: inline
+In-Reply-To: <002b01ceba81$4413aa10$cc3afe30$%han@samsung.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V2 05/18] regulator: fixed: use devm_regulator_register()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 10:16 AM, Michal Simek wrote:
-> Hi Daniel,
->
-> On 09/25/2013 05:20 PM, Daniel Lezcano wrote:
->> On 09/18/2013 08:48 PM, Soren Brinkmann wrote:
->>> Hi all,
->>>
->>> here's a v2. I reused the subject from my v1 submission although the focus of
->>> this series moved a bit towards the timer subsystem.
->>> I replaced Stephen's fix to prevent per cpu devices from becoming
->>> the broadcast device with Thomas' proposal, but I kept the original commit
->>> message. I split the whole approach in small chunks that I found reasonable.
->>>
->>> In 4/4, I picked up Grant's comment regarding the DT node name.
->>>
->>> v2:
->>>   - drop 1/2 of the original series
->>>   - implement preventing per cpu devices from becoming broadcast device according
->>>     to Thomas' proposal
->>>     - introduce new CLOCK_EVT_FEAT_PERCPU flag
->>>     - set the flag for the arm_global_timer
->>>     - filter per cpu devices based on this flag when choosing the broadcast
->>>       device
->>>   - rename DT node to avoid '_'s
->>>
->>>
->>> Soren Brinkmann (4):
->>>    clockchips: Add FEAT_PERCPU clockevent flag
->>>    clocksource/arm_global_timer: Set FEAT_PERCPU flag
->>>    tick: broadcast: Deny per-cpu clockevents from being broadcast sources
->>>    arm: zynq: Enable arm_global_timer
->>>
->>>   arch/arm/boot/dts/zynq-7000.dtsi       | 8 ++++++++
->>>   arch/arm/mach-zynq/Kconfig             | 1 +
->>>   drivers/clocksource/arm_global_timer.c | 3 ++-
->>>   include/linux/clockchips.h             | 1 +
->>>   kernel/time/tick-broadcast.c           | 1 +
->>>   5 files changed, 13 insertions(+), 1 deletion(-)
->>
->> This patches falls under different maintainer's umbrella.
->>
->> I acked-by the patches, so if someone is willing to take the patches I
->> am ok with that. I am ok also to pick them into my tree with the
->> acked-by maintainer. Just let me know ...
->>
->
-> Yes, please add also this zynq specific patch through your tree.
->
-> Here is my ACK for that.
-> Acked-by: Michal Simek <michal.simek@xilinx.com>
 
-Thomas do you mind to ack the patches if you agree with it ?
+--xo44VMWPx7vlQ2+2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks
-   -- Daniel
+On Thu, Sep 26, 2013 at 03:25:59PM +0900, Jingoo Han wrote:
+> On Thursday, September 26, 2013 3:14 PM, Sachin Kamat wrote:
 
+> > > -       regulator_unregister(drvdata->dev);
+> > >         kfree(drvdata->desc.supply_name);
+> > >         kfree(drvdata->desc.name);
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+> > Sorry, couldn't go through all your patches yesterday.
+> > This one looks a bit scary too as some of the driver data is already
+> > freed before unregistering.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+> I looked at regulator_unregister(). I am not sure that this is safe.
+> So, I will remove this patch from next v3 patch series.
+> Thank you for your comment. :-)
 
+Yes, it'd be better to convert the allocations to be managed ones first.
+
+--xo44VMWPx7vlQ2+2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSRAliAAoJELSic+t+oim9MhcQAIi3U0VuSAFuEsG6O0wfBEDL
+mlBeVkBlorduwT6RJ0s8AWp4eYQwdCNwQa/b4Rg+SBMiFfXRZd98rMewGQ3DE1vo
+256zzoC0kBc/ZIpAGucgbHzA1sl3F2vs59HHUAAcRG33o9puIC7dehHBjKcd9OPf
+h0GlzZmOMF4P3yO4BWBrKavXWe6hckJIHnwf6q/+ipFUGhhKIOifawQfaziqHm+E
+x93ES9xTy1vGrX5L2pRO6hDW3mRRxdA6AECbKhH99pgeuaRsyM+OyvNLmHAeferz
+74JUfCNFjgcks7g16ZV4Cu8or7fc/MIs6n67/SwaEquDDapz2Vbd5dDrO08j+u13
+5BR6LQPXZCGPO1bdFdob4K1Be99YSBQbN+tV0qCsBK1jZD9xRu7JZtRCyb/f/y2w
+Kcp1kmTTmcRJ6OoKVkJ8preI8XWyycpcBkmz/x089l7iRZScLT0rp2mckiXvGlyF
+gj/umoPq6hwCCLED0XrDTlAh+QDt+11RP3Q8FEQgknooRCz0NVNik8KNQDGuNAUv
+ERb0dpibGQUQmZcq0Kdu8uDCqpbnU0mrDrTul5omwY9GZbO2z1iMypTr1qzrUHkd
+UspqqAVUy7tcgDFzg0ii0t7f7/2Bb/tbxloL593O2AuG/wumDv2DDRKpw8XIvoFB
++jjwkkPoA/nvpjUNdrNa
+=m0VQ
+-----END PGP SIGNATURE-----
+
+--xo44VMWPx7vlQ2+2--
