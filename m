@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab3IZS7L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 14:59:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54380 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447Ab3IZS7J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 14:59:09 -0400
-Date: Thu, 26 Sep 2013 11:58:38 -0700
-From: tip-bot for Masoud Sharbiani <tipbot@zytor.com>
-Message-ID: <tip-b5eafc6f07c95e9f3dd047e72737449cb03c9956@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, msharbiani@twitter.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, msharbiani@twitter.com
-In-Reply-To: <1380216643-4683-1-git-send-email-masoud.sharbiani@gmail.com>
-References: <1380216643-4683-1-git-send-email-masoud.sharbiani@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/reboot] x86/reboot:
-  Remove the duplicate C6100 entry in the reboot quirks list
-Git-Commit-ID: b5eafc6f07c95e9f3dd047e72737449cb03c9956
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753877Ab3IZTGS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 15:06:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6110 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753017Ab3IZTGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 15:06:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,987,1371106800"; 
+   d="scan'208";a="384028523"
+Date: Thu, 26 Sep 2013 12:05:56 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Zach Brown <zab@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Ning Qu <quning@google.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 00/22] Transparent huge page cache: phase 1, everything
+ but mmap()
+Message-ID: <20130926190556.GJ2018@tassilo.jf.intel.com>
+References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org>
+ <20130924234950.GC2018@tassilo.jf.intel.com>
+ <20130926183022.GN30372@lenny.home.zabbo.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 26 Sep 2013 11:58:51 -0700 (PDT)
+In-Reply-To: <20130926183022.GN30372@lenny.home.zabbo.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b5eafc6f07c95e9f3dd047e72737449cb03c9956
-Gitweb:     http://git.kernel.org/tip/b5eafc6f07c95e9f3dd047e72737449cb03c9956
-Author:     Masoud Sharbiani <msharbiani@twitter.com>
-AuthorDate: Thu, 26 Sep 2013 10:30:43 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 26 Sep 2013 20:52:37 +0200
+On Thu, Sep 26, 2013 at 11:30:22AM -0700, Zach Brown wrote:
+> > > Sigh.  A pox on whoever thought up huge pages. 
+> > 
+> > managing 1TB+ of memory in 4K chunks is just insane.
+> > The question of larger pages is not "if", but only "when".
+> 
+> And "how"!
+> 
+> Sprinking a bunch of magical if (thp) {} else {} throughtout the code
+> looks like a stunningly bad idea to me.  It'd take real work to
+> restructure the code such that the current paths are a degenerate case
+> of the larger thp page case, but that's the work that needs doing in my
+> estimation.
 
-x86/reboot: Remove the duplicate C6100 entry in the reboot quirks list
+Sorry, but that is how all of large pages in the Linux VM works
+(both THP and hugetlbfs) 
 
-Two entries for the same system type were added, with two different vendor
-names: 'Dell' and 'Dell, Inc.'.
+Yes it would be nice if small pages and large pages all ran
+in a unified VM. But that's not how Linux is designed today.
 
-Since a prefix match is being used by the DMI parsing code, we can eliminate
-the latter as redundant.
+Yes having a Pony would be nice too.
 
-Reported-by: "H. Peter Anvin" <hpa@zytor.com>
-Signed-off-by: Masoud Sharbiani <msharbiani@twitter.com>
-Cc: holt@sgi.com
-Link: http://lkml.kernel.org/r/1380216643-4683-1-git-send-email-masoud.sharbiani@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/reboot.c | 8 --------
- 1 file changed, 8 deletions(-)
+Back when huge pages were originally proposed Linus came
+up with the "separate hugetlbfs VM" design and that is what were
+stuck with today.
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index f0783a6..d9333a4 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -362,14 +362,6 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 		.callback = set_pci_reboot,
- 		.ident = "Dell PowerEdge C6100",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
--		},
--	},
--	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
--		.callback = set_pci_reboot,
--		.ident = "Dell PowerEdge C6100",
--		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
- 		},
+Asking for a whole scale VM redesign is just not realistic.
+
+VM is always changing in baby steps. And the only 
+known way to do that is to have if (thp) and if (hugetlbfs) .
+
+-Andi 
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
