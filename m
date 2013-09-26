@@ -1,97 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456Ab3IZXNh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 19:13:37 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:61036 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab3IZXNe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 19:13:34 -0400
+	id S1752835Ab3IZXQD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 19:16:03 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40413 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751588Ab3IZXQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 19:16:00 -0400
+Date: Fri, 27 Sep 2013 01:15:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, huawei.libin@huawei.com,
+        wangyijing@huawei.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        guohanjun@huawei.com, paul.gortmaker@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/smpboot: Fix announce_cpu() to printk() the
+ last "OK" properly
+Message-ID: <20130926231545.GD10123@pd.tnic>
+References: <1378378676-18276-1-git-send-email-huawei.libin@huawei.com>
+ <tip-52239484bf8aec031afa84ae08aa88224d819b93@git.kernel.org>
+ <20130925100722.GB3433@nazgul.tnic>
+ <20130925182936.GD16693@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <1380232546-821-1-git-send-email-joelf@ti.com>
-References: <1380232546-821-1-git-send-email-joelf@ti.com>
-Date: Thu, 26 Sep 2013 16:13:33 -0700
-Message-ID: <CAOesGMgELbnuu8PM7Ah2xKo2H5rzgAN3w0g6wA7aVFsjuds-8g@mail.gmail.com>
-Subject: Re: [PATCH v3] ARM: EDMA: Fix clearing of unused list for DT DMA resources
-From: Olof Johansson <olof@lixom.net>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, Nishanth Menon <nm@ti.com>,
-        Pantel Antoniou <panto@antoniou-consulting.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        "arm@kernel.org" <arm@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130925182936.GD16693@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 2:55 PM, Joel Fernandes <joelf@ti.com> wrote:
-> HWMOD removal for MMC is breaking edma_start as the events are being manually
-> triggered due to unused channel list not being clear.
->
-> The above issue is fixed by reading the "dmas" property from the DT node if it
-> exists and clearing the bits in the unused channel list if the dma controller
-> used by any device is EDMA. For this purpose we use the of_* helpers to parse
-> the arguments in the dmas phandle list.
->
-> Also introduced is a minor clean up of a checkpatch error in old code.
->
-> Reviewed-by: Sekhar Nori <nsekhar@ti.com>
-> Reported-by: Balaji T K <balajitk@ti.com>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Nishanth Menon <nm@ti.com>
-> Cc: Pantel Antoniou <panto@antoniou-consulting.com>
-> Cc: Jason Kridner <jkridner@beagleboard.org>
-> Cc: Koen Kooi <koen@dominion.thruhere.net>
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> ---
-> Just resending this patch after discussing with Sekhar and Olof.
+On Wed, Sep 25, 2013 at 08:29:36PM +0200, Ingo Molnar wrote:
+> Indeed, that should be fixed.
 
-Actually, the patch you talked to me about was v3 of this. It seems
-that you have reposted v6 but labelled it v3. This is very confusing.
+Ok, how does a right alighment look like:
 
-> AM335x is being booted by many users such as the beaglebone community. DT is
-> the only boot method available for all these users.  EDMA is required for the
-> operation for many common peripherals in AM335x SoC such as McASP, MMC and
-> Crypto.
->
-> Although EDMA DT nodes are going in only for 3.13, in reality the kernel has
-> been used for more than a year with EDMA code and out of tree EDMA DTS patches.
-> Hence though the DT nodes are still not in mainline, this patch can be still be
-> considered a critical fix as such and it would be great if it could be included
-> in 3.12-rc release. Thanks.
+[    0.072399] smpboot: Booting Node   0, Processors   #1   #2   #3   #4   #5   #6   #7 OK
+[    0.617005] smpboot: Booting Node   1, Processors   #8   #9  #10  #11  #12  #13  #14  #15 OK
+[    1.230005] smpboot: Booting Node   2, Processors  #16  #17  #18  #19  #20  #21  #22  #23 OK
+[    1.835005] smpboot: Booting Node   3, Processors  #24  #25  #26  #27  #28  #29  #30  #31 OK
+[    2.437005] smpboot: Booting Node   4, Processors  #32  #33  #34  #35  #36  #37  #38  #39 OK
+[    3.053005] smpboot: Booting Node   5, Processors  #40  #41  #42  #43  #44  #45  #46  #47 OK
+[    3.657009] smpboot: Booting Node   6, Processors  #48  #49  #50  #51  #52  #53  #54  #55 OK
+[    4.256005] smpboot: Booting Node   7, Processors  #56  #57  #58  #59  #60  #61  #62  #63 OK
 
-This is really the root of this problem. If you sit on code out of
-tree for a year, and something breaks that we couldn't even have
-detected since we didn't have the out-of-tree pieces. We'll help you
-the first few times (such as now) but we will eventually stop caring.
+?
 
-If I was in a worse mood, then I'd just say that since your users
-already has to have out-of-tree code to even use this functionality,
-they could just add this fix on top of that stack of patches. But I'm
-in a slightly better mood than that and I'll pick it up this time. :)
+With lockdep butting in-between it is still readable:
 
-> More details about why this broke an existing feature folks were using:
-> Previously the DMA resources for platform devices were being populated through
-> HWMOD, however with the recent clean ups with HWMOD, this data has been moved
-> to Device tree. The EDMA code though is not aware of this so it fails to fetch
-> the DMA resources correctly which it needs to prepare the unused channel list
-> (basically doesn't properly clear the channels that are in use, in the unused
-> list).
-
-So that we can learn for next time: What should we (as in us
-maintainers and you TI) have done differently to avoid this?
+[    0.063330] SMP alternatives: lockdep: fixing up alternatives
+[    0.064032] smpboot: Booting Node   0, Processors   #1
+[    0.141231] SMP alternatives: lockdep: fixing up alternatives
+[    0.142007]    #2
+[    0.230210] SMP alternatives: lockdep: fixing up alternatives
+[    0.231007]    #3
+[    0.307237] SMP alternatives: lockdep: fixing up alternatives
+[    0.308007]    #4
+[    0.384231] SMP alternatives: lockdep: fixing up alternatives
+[    0.385006]    #5
+[    0.468237] SMP alternatives: lockdep: fixing up alternatives
+[    0.469007]    #6
+[    0.545230] SMP alternatives: lockdep: fixing up alternatives
+[    0.546006]    #7 OK
+[    0.626323] Brought up 8 CPUs
+[    0.627004] smpboot: Total of 8 processors activated (64217.00 BogoMIPS)
 
 
--Olof
+I admit the digits calculation is a bit clumsy but I didn't want to do
+any log_10 crazy jumps through hoops and besides, it should be faster
+this way:
+
+--
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 6cacab671f9b..1cf5957b1035 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -653,16 +653,22 @@ static void announce_cpu(int cpu, int apicid)
+ {
+ 	static int current_node = -1;
+ 	int node = early_cpu_to_node(cpu);
+-	int max_cpu_present = find_last_bit(cpumask_bits(cpu_present_mask), NR_CPUS);
++	int num_digits;
+ 
+ 	if (system_state == SYSTEM_BOOTING) {
+ 		if (node != current_node) {
+ 			if (current_node > (-1))
+ 				pr_cont(" OK\n");
+ 			current_node = node;
+-			pr_info("Booting Node %3d, Processors ", node);
++			pr_info("Booting Node %3d, Processors", node);
+ 		}
+-		pr_cont(" #%4d%s", cpu, cpu == max_cpu_present ? " OK\n" : "");
++		num_digits = 1 + 1 * (cpu > 9) + 1 * (cpu > 99);
++
++		pr_cont("%*s#%d", 4 - num_digits, " ", cpu);
++
++		if (cpu == num_present_cpus() - 1)
++			pr_cont(" OK\n");
++
+ 		return;
+ 	} else
+ 		pr_info("Booting Node %d Processor %d APIC 0x%x\n",
+--
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
