@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072Ab3IZT5n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 15:57:43 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:39932 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab3IZT5k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 15:57:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <1380223380-22451-1-git-send-email-grundler@chromium.org>
-References: <1380223380-22451-1-git-send-email-grundler@chromium.org>
-Date: Thu, 26 Sep 2013 12:57:39 -0700
-X-Google-Sender-Auth: SKK6Fbh_A-jGhzl226B58Dr3MIg
-Message-ID: <CANEJEGvFFu-MDQX4UNcfr58Jxg6BKkw=gAMqz0Vv6jV9miixfg@mail.gmail.com>
-Subject: Re: [PATCH 0/7] mmc: core: cleanup and locking patches description
-From: Grant Grundler <grundler@chromium.org>
-To: Grant Grundler <grundler@chromium.org>
-Cc: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753307Ab3IZT7S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 15:59:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11780 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751834Ab3IZT7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 15:59:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,988,1371106800"; 
+   d="scan'208";a="401592438"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH] usb: dwc3: add support for Merrifield
+Date: Thu, 26 Sep 2013 13:01:44 -0700
+Message-Id: <1380225704-28923-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Argh...too much wordsmithing...
+Add PCI id for Intel Merrifield
 
-On Thu, Sep 26, 2013 at 12:22 PM, Grant Grundler <grundler@chromium.org> wrote:
-> Following 7 patches are mostly cleanup with one key patch around host->areq
-> locking.  The host->areq locking problem description is here:
->         http://www.spinics.net/lists/linux-mmc/msg21644.html
->
-> I do believe this preposed host->areq locking patch is a complete fix.
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+ drivers/usb/dwc3/dwc3-pci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-... is NOT a complete fix.
+diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
+index 997ebe4..2e252aa 100644
+--- a/drivers/usb/dwc3/dwc3-pci.c
++++ b/drivers/usb/dwc3/dwc3-pci.c
+@@ -29,6 +29,7 @@
+ #define PCI_VENDOR_ID_SYNOPSYS		0x16c3
+ #define PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3	0xabcd
+ #define PCI_DEVICE_ID_INTEL_BYT		0x0f37
++#define PCI_DEVICE_ID_INTEL_MRFLD	0x119e
+ 
+ struct dwc3_pci {
+ 	struct device		*dev;
+@@ -189,6 +190,7 @@ static DEFINE_PCI_DEVICE_TABLE(dwc3_pci_id_table) = {
+ 				PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3),
+ 	},
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BYT), },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRFLD), },
+ 	{  }	/* Terminating Entry */
+ };
+ MODULE_DEVICE_TABLE(pci, dwc3_pci_id_table);
+-- 
+1.8.4.rc3
 
-> But it appears to fix the problem and is better than nothing.
-
-Still true.
-
-cheers,
-grant
-
->
-> This patch sequence applies clean to linus' 3.12-rc2 branch and only compile
-> tested in this form. This is a forward port (and cleanup) of the
-> same patch I've been testing on ChromeOS-3.4 tree using Exynos5250 chipset.
->
-> cheers,
-> grant
->
-> 0000-mmc-core-cleanups-and-locking-description (this email)
-> 0001-mmc-core-rename-data-to-saved_areq.patch
-> 0002-mmc-core-rename-local-var-err-to-saved_err.patch
-> 0003-mmc-core-restructure-error-handling-for-start-req.patch
-> 0004-mmc-core-use-common-code-path-to-return-error.patch
-> 0005-mmc-core-handling-polling-more-gracefully.patch
-> 0006-mmc-core-protect-references-to-host-areq-with-host-l.patch
-> 0007-mmc-core-mmc_start_req-is-a-misnomer-mmc_process_are.patch
->
->
->  drivers/mmc/card/block.c    |   8 ++--
->  drivers/mmc/card/mmc_test.c |   4 +-
->  drivers/mmc/core/core.c     | 103 +++++++++++++++++++++++++-------------------
->  include/linux/mmc/core.h    |   2 +-
->  4 files changed, 66 insertions(+), 51 deletions(-)
