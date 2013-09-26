@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750966Ab3IZN0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 09:26:12 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:63186 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab3IZN0G (ORCPT
+	id S1751405Ab3IZN0l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 09:26:41 -0400
+Received: from dkim1.fusionio.com ([66.114.96.53]:42062 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab3IZN0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 09:26:06 -0400
+	Thu, 26 Sep 2013 09:26:39 -0400
+X-ASG-Debug-ID: 1380201998-03d6a50f617c810001-xx1T2L
+X-Barracuda-Envelope-From: JBacik@fusionio.com
+From: Josef Bacik <jbacik@fusionio.com>
+To: <linux-btrfs@vger.kernel.org>
+CC: <walken@google.com>, <linux-kernel@vger.kernel.org>, <mingo@kernel.org>,
+        <peter@hurleysoftware.com>, <akpm@linux-foundation.org>
+Subject: [PATCH 1/2] rwsem: add rwsem_is_contended V3
+Date: Thu, 26 Sep 2013 09:26:35 -0400
+X-ASG-Orig-Subj: [PATCH 1/2] rwsem: add rwsem_is_contended V3
+Message-ID: <1380201996-17445-1-git-send-email-jbacik@fusionio.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-In-Reply-To: <CALkWK0ndMtyQxE0uK4H-Ly6oy+tRn-SFc=_1WoC2QAp2uy0dtw@mail.gmail.com>
-References: <1377073172-3662-1-git-send-email-richard@nod.at>
-	<1377073172-3662-3-git-send-email-richard@nod.at>
-	<CALkWK0kCrQ9hPABD_XQ9QFG-vByP+xZWZs+RkVK77+cX7Odz7g@mail.gmail.com>
-	<52441025.9030308@nod.at>
-	<CALkWK0k5neR50h+AWEF5AgnpbgWMitZUnbv_caVzt6HiUA6mXg@mail.gmail.com>
-	<52441407.9010603@nod.at>
-	<CALkWK0=FG4COEjv5+mu1JRiiFQ2k6vop1mhFPmAT4bjtYeK6nA@mail.gmail.com>
-	<52442108.1020304@nod.at>
-	<CALkWK0nm=9n7DiV0MaGKVLMs=vxAiiQUx=OFuOg-DinkdMej5A@mail.gmail.com>
-	<CALkWK0ndMtyQxE0uK4H-Ly6oy+tRn-SFc=_1WoC2QAp2uy0dtw@mail.gmail.com>
-Date: Thu, 26 Sep 2013 15:26:06 +0200
-X-Google-Sender-Auth: c9mgEBMiyOZqwSMTEGFW8E0oEMk
-Message-ID: <CAMuHMdU3LdDhbp_AKjD7b8Wytbqfp29DrPwTdtwQa2hUNdcy3Q@mail.gmail.com>
-Subject: Re: [PATCH 2/8] um: Do not use SUBARCH
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        Linux-Arch <linux-arch@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
+X-Barracuda-Start-Time: 1380201998
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_MISMATCH_TO
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140942
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 3:13 PM, Ramkumar Ramachandra
-<artagnon@gmail.com> wrote:
-> Ramkumar Ramachandra wrote:
->> Richard Weinberger wrote:
->>> I told you already that "make defconfig ARCH=um SUBARCH=x86" will spuriously
->>> create a x86_64 config on x86_64.
->>> This breaks existing setups.
->>
->> I'll fix this and resubmit soon.
->
-> Wait a minute. You're now arguing about whether the generic "x86"
-> means i386 or x86_64. Its meaning is already defined in
-> arch/x86/Kconfig and arch/x86/um/Kconfig: see the config 64BIT. Unless
-> i386 is explicitly specified, the default is to build a 64-bit kernel.
-> That is already defined for a normal Linux kernel, and user-mode Linux
-> should not break that convention. So, in the example you pulled out of
-> your hat:
->
->   $ make defconfig ARCH=um SUBARCH=x86
->
-> the user should expect a 64-bit build, and not an i386 build as you
-> say. Both my patches are correct, and the "regression" that you
-> pointed out is a red herring.
+Btrfs needs a simple way to know if it needs to let go of it's read lock on a
+rwsem.  Introduce rwsem_is_contended to check to see if there are any waiters on
+this rwsem currently.  This is just a hueristic, it is meant to be light and not
+100% accurate and called by somebody already holding on to the rwsem in either
+read or write.  Thanks,
 
-Sorry for chiming in, but... what about cross compiling?
-SUBARCH=x86 should give you a 32-bit ia32 kernel, right?
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+---
+V2->V3: fixed the comment and simplified the function as per Peter's
+suggestions.
 
-Gr{oetje,eeting}s,
+V1->V2: took everybodys suggestions and simplified it to just one function in
+rwsem.h so it works for both the spinlock case and non-spinlock case.
 
-                        Geert
+ include/linux/rwsem.h | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 0616ffe..03f3b05 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -75,6 +75,17 @@ do {								\
+ } while (0)
+ 
+ /*
++ * This is the same regardless of which rwsem implementation that is being used.
++ * It is just a heuristic meant to be called by somebody alreadying holding the
++ * rwsem to see if somebody from an incompatible type is wanting access to the
++ * lock.
++ */
++static inline int rwsem_is_contended(struct rw_semaphore *sem)
++{
++	return !list_empty(&sem->wait_list);
++}
++
++/*
+  * lock for reading
+  */
+ extern void down_read(struct rw_semaphore *sem);
+-- 
+1.8.3.1
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
