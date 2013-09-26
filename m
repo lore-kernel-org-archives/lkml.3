@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab3IZNVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 09:21:08 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:48361 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757113Ab3IZNUu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 09:20:50 -0400
-Subject: Re: [RFC V4 PATCH 00/15] Signature verification of hibernate
- snapshot
-From: joeyli <jlee@suse.com>
-To: Vojtech Pavlik <vojtech@suse.cz>
-Cc: Pavel Machek <pavel@ucw.cz>, Alan Stern <stern@rowland.harvard.edu>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-crypto@vger.kernel.org,
-        opensuse-kernel@opensuse.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
-In-Reply-To: <20130926122210.GA30225@suse.cz>
-References: <Pine.LNX.4.44L0.1309251723001.26508-100000@netrider.rowland.org>
-	 <1380161957.32302.42.camel@linux-s257.site>
-	 <1380192218.32302.69.camel@linux-s257.site>
-	 <20130926120621.GA7537@amd.pavel.ucw.cz>  <20130926122210.GA30225@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Sep 2013 21:20:38 +0800
-Message-ID: <1380201638.32302.90.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1750775Ab3IZNZZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 09:25:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47693 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710Ab3IZNZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 09:25:24 -0400
+Date: Thu, 26 Sep 2013 09:25:19 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] apparmor: remove the "task" arg from
+ may_change_ptraced_domain()
+Message-ID: <20130926132519.GY13968@madcap2.tricolour.ca>
+References: <20130916142035.GA26661@redhat.com>
+ <20130923215214.GV13968@madcap2.tricolour.ca>
+ <20130924164442.GB4036@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130924164442.GB4036@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 四，2013-09-26 於 14:22 +0200，Vojtech Pavlik 提到：
-> On Thu, Sep 26, 2013 at 02:06:21PM +0200, Pavel Machek wrote:
+On Tue, Sep 24, 2013 at 06:44:42PM +0200, Oleg Nesterov wrote:
+> On 09/23, Richard Guy Briggs wrote:
+> >
+> > On Mon, Sep 16, 2013 at 04:20:35PM +0200, Oleg Nesterov wrote:
+> > > Unless task == current ptrace_parent(task) is not safe even under
+> > > rcu_read_lock() and most of the current users are not right.
+> >
+> > Could you point to an explanation of this?
 > 
-> > > For the symmetric key solution, I will try HMAC (Hash Message
-> > > Authentication Code). It's already used in networking, hope the
-> > > performance is not too bad to a big image.
-> > 
-> > Kernel already supports crc32 of the hibernation image, you may want
-> > to take a look how that is done.
-> > 
-> > Maybe you want to replace crc32 with cryptographics hash (sha1?) and
-> > then use only hash for more crypto? That way speed of whatever
-> crypto
-> > you do should not be an issue.
-> 
-> Well, yes, one could skip the CRC when the signing is enabled to gain
-> a
-> little speedup. 
+> If this task exits before rcu_read_lock() ->parent can point to the
+> already freed/reused memory.
 
-In current kernel, CRC is for check the integrity of LZO compressed
-image, the purpose is different to check the integrity of snapshot
-image.
-So, CRC will not in non-compress hibernate or userspace hibernate code
-path
+Ok, understood.  So even though the task may have exited, the task
+struct pointer is still valid, but not the contents of the task struct
+to which it points.
 
-On the other hand, attacker can easily change the CRC code in the header
-of LZO hibernate image.
+> (in the long term we should probably clear
+>  ->parent/real_parent/group_leader/more in __unhash_process(), but
+>  lets not discuss this right now ;)
 
-Thanks a lot!
-Joey Lee
+...so that the contents are valid in a task struct of a task that has
+exited.
 
+Thanks for the (more obvious to me now) explanation.
+
+> Oleg.
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer
+Kernel Security
+AMER ENG Base Operating Systems
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635
+Internal: (81) 32635
+Alt: +1.613.693.0684x3545
