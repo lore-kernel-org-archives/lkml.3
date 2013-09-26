@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab3IZUDz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 16:03:55 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:36748 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab3IZUDw (ORCPT
+	id S1753585Ab3IZUGy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 16:06:54 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:35725 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab3IZUGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 16:03:52 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-Cc: sds@tycho.nsa.gov, james.l.morris@oracle.com, eparis@parisplace.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        selinux@tycho.nsa.gov
-Subject: Re: [PATCH] selinux: Use kmemdup instead of kmalloc + memcpy
-Date: Thu, 26 Sep 2013 16:03:47 -0400
-Message-ID: <9522974.jAp9Aa4L2I@sifl>
-User-Agent: KMail/4.11.1 (Linux/3.10.11-gentoo; KDE/4.11.1; x86_64; ; )
-In-Reply-To: <5243A058.2090104@cn.fujitsu.com>
-References: <5243A058.2090104@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 26 Sep 2013 16:06:53 -0400
+Message-ID: <1380226007.2170.2.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Date: Thu, 26 Sep 2013 13:06:47 -0700
+In-Reply-To: <CAGQ1y=7Ehkr+ot3tDZtHv6FR6RQ9fXBVY0=LOyWjmGH_UjH7xA@mail.gmail.com>
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+	 <1380147049.3467.67.camel@schen9-DESK>
+	 <CAGQ1y=7Ehkr+ot3tDZtHv6FR6RQ9fXBVY0=LOyWjmGH_UjH7xA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 26, 2013 10:47:52 AM Duan Jiong wrote:
-> Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-> ---
->  security/selinux/xfrm.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-
-FYI: SELinux patches should be sent to the SELinux mailing list (I added it to 
-the CC list).  You can also CC the LSM list if you like, but they *need* to be 
-sent to the SELinux list in the future.
-
-I did some minor whitespace/alignment fixup and merged your patch; it is 
-queued up for 3.13.
-
- * git://git.infradead.org/users/pcmoore/selinux
-
-> diff --git a/security/selinux/xfrm.c b/security/selinux/xfrm.c
-> index 425b9f9..5c809c1 100644
-> --- a/security/selinux/xfrm.c
-> +++ b/security/selinux/xfrm.c
-> @@ -268,10 +268,10 @@ int selinux_xfrm_policy_clone(struct xfrm_sec_ctx
-> *old_ctx, if (!old_ctx)
->  		return 0;
+On Thu, 2013-09-26 at 12:27 -0700, Jason Low wrote:
+> On Wed, Sep 25, 2013 at 3:10 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > We will need the MCS lock code for doing optimistic spinning for rwsem.
+> > Extracting the MCS code from mutex.c and put into its own file allow us
+> > to reuse this code easily for rwsem.
+> >
+> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > ---
+> >  include/linux/mcslock.h |   58 +++++++++++++++++++++++++++++++++++++++++++++++
+> >  kernel/mutex.c          |   58 +++++-----------------------------------------
+> >  2 files changed, 65 insertions(+), 51 deletions(-)
+> >  create mode 100644 include/linux/mcslock.h
+> >
+> > diff --git a/include/linux/mcslock.h b/include/linux/mcslock.h
+> > new file mode 100644
+> > index 0000000..20fd3f0
+> > --- /dev/null
+> > +++ b/include/linux/mcslock.h
+> > @@ -0,0 +1,58 @@
+> > +/*
+> > + * MCS lock defines
+> > + *
+> > + * This file contains the main data structure and API definitions of MCS lock.
+> > + */
+> > +#ifndef __LINUX_MCSLOCK_H
+> > +#define __LINUX_MCSLOCK_H
+> > +
+> > +struct mcs_spin_node {
+> > +       struct mcs_spin_node *next;
+> > +       int               locked;       /* 1 if lock acquired */
+> > +};
+> > +
+> > +/*
+> > + * We don't inline mcs_spin_lock() so that perf can correctly account for the
+> > + * time spent in this lock function.
+> > + */
+> > +static noinline
+> > +void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+> > +{
+> > +       struct mcs_spin_node *prev;
+> > +
+> > +       /* Init node */
+> > +       node->locked = 0;
+> > +       node->next   = NULL;
+> > +
+> > +       prev = xchg(lock, node);
+> > +       if (likely(prev == NULL)) {
+> > +               /* Lock acquired */
+> > +               node->locked = 1;
 > 
-> -	new_ctx = kmalloc(sizeof(*old_ctx) + old_ctx->ctx_len, GFP_ATOMIC);
-> +	new_ctx = kmemdup(old_ctx, sizeof(*old_ctx) + old_ctx->ctx_len,
-> +			GFP_ATOMIC);
->  	if (!new_ctx)
->  		return -ENOMEM;
-> -	memcpy(new_ctx, old_ctx, sizeof(*old_ctx) + old_ctx->ctx_len);
->  	atomic_inc(&selinux_xfrm_refcount);
->  	*new_ctxp = new_ctx;
+> If we don't spin on the local node, is it necessary to set this variable?
 
--- 
-paul moore
-www.paul-moore.com
+I don't follow, the whole idea is to spin on the local variable.
 
