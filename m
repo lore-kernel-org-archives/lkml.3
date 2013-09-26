@@ -1,119 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab3IZLob (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 07:44:31 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:59047 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350Ab3IZLo2 (ORCPT
+	id S932114Ab3IZLt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 07:49:56 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17427 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756472Ab3IZLty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 07:44:28 -0400
+	Thu, 26 Sep 2013 07:49:54 -0400
+Date: Thu, 26 Sep 2013 14:48:10 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Dominik Paulus <dominik@d-paulus.de>
+Cc: Anthony Foiani <anthony.foiani@gmail.com>, devel@driverdev.osuosl.org,
+        linux-usb@vger.kernel.org, linux-kernel@i4.cs.fau.de,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        usbip-devel@lists.sourceforge.net,
+        Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
+        Tobias Polzer <tobias.polzer@fau.de>,
+        Harvey Yang <harvey.huawei.yang@gmail.com>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Bart Westgeest <bart@elbrys.com>,
+        Dominik Paulus <dominik.paulus@fau.de>,
+        Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Jake Champlin <jake.champlin.27@gmail.com>,
+        Stefan Reif <ke42caxa@cip.cs.fau.de>,
+        Bernard Blackham <b-linuxgit@largestprime.net>
+Subject: Re: [PATCH 5/7] staging: usbip: Add encryption support to kernel
+Message-ID: <20130926114810.GA6414@mwanda>
+References: <20130923105842.GH6192@mwanda>
+ <20130923103504.GG6192@mwanda>
+ <20130923095929.GF6192@mwanda>
+ <20130926101833.GA8677@d-paulus.de>
 MIME-Version: 1.0
-In-Reply-To: <52441407.9010603@nod.at>
-References: <1377073172-3662-1-git-send-email-richard@nod.at>
- <1377073172-3662-3-git-send-email-richard@nod.at> <CALkWK0kCrQ9hPABD_XQ9QFG-vByP+xZWZs+RkVK77+cX7Odz7g@mail.gmail.com>
- <52441025.9030308@nod.at> <CALkWK0k5neR50h+AWEF5AgnpbgWMitZUnbv_caVzt6HiUA6mXg@mail.gmail.com>
- <52441407.9010603@nod.at>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Thu, 26 Sep 2013 17:13:46 +0530
-Message-ID: <CALkWK0=FG4COEjv5+mu1JRiiFQ2k6vop1mhFPmAT4bjtYeK6nA@mail.gmail.com>
-Subject: Re: [PATCH 2/8] um: Do not use SUBARCH
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-arch@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        geert@linux-m68k.org, ralf@linux-mips.org, lethal@linux-sh.org,
-        Jeff Dike <jdike@addtoit.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130926101833.GA8677@d-paulus.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger wrote:
->> Auto-detection of SUBARCH, which can be done with a simple call to
->> uname -m (the 90% case). The second patch I submitted prevented
->> spawning xterms unnecessarily, which we discussed was a good move.
->
-> Covering only 90% of all cases is not enough.
-> We must not break existing setups.
-> That's also why my "Get rid of SUBARCH" series is not upstream.
+On Thu, Sep 26, 2013 at 12:18:34PM +0200, Dominik Paulus wrote:
+> > I think a return of zero should mean total = -EBADMSG;.  In other words
+> > this check should be "if (ret < 0) {" and we hit the next else if.
+> > Same below again.
+> 
+> As we are wrapping kernel_recvmsg here, we wanted to leave the semantics
+> intact as far as possible. The calling code already checks for the correct
+> size.
 
-Mine covers 100% of the cases. My series is about auto-detection of
-SUBARCH, not its removal: you can still set a SUBARCH from the
-command-line; existing setups don't break.
+Hm...  Ok.  Sometimes zero is interpretted as a connection closed and
+sometimes reading less than expected is considered a TCP error.
 
-> Your second patch changed CONFIG_CON_CHAN to pts, which is ok but not
-> a major issue.
+> No, currently, the caller (usbip_sendmsg() / usbip_recvmsg() are the
+> only functions calling usbip_crypt(), which itself is static) ensures
+> this.
+> Admittedly, this isn't great design. We added a check for packetsize <
+> USBIP_AUTHSIZE and an appropiate return here.
+> 
+> > > +	if (encrypt)
+> > > +		ret = crypto_aead_encrypt(req);
+> > > +	else
+> > > +		ret = crypto_aead_decrypt(req);
+> > > +
+> > 
+> > Good on you for figuring out what crypto_aead_en/decrypt() returns.
+> > Where are these functions documented?
+> > 
+> > > +        switch (ret) {
+> > > +        case 0: /* Success */
+> > > +                break;
+> > > +        case -EINPROGRESS:
+> > > +        case -EBUSY:
+> > > +                wait_for_completion(&result.completion);
+> > > +                break;
+> > > +        default:
+> > > +                aead_request_free(req);
+> > > +                return ret;
+> > > +        }
+> > > +
+> 
+> They aren't, actually. Documentation/crypto/api-intro.txt refers to the
+> regression test module, which uses exactly those return-values in
+> crypto/testmgr.c.
 
-"Major" or "minor" is purely your classification: don't impose your
-value judgement on reasonable patches. I am the user, and I demand a
-pleasant build process and ui. Moreover, how do you expect more
-contributions to come in until existing patches make it to upstream?
+Well that sucks.
 
-> The xterms are also not spawning unnecessarily they spawn upon a tty device is opened.
-> With your patch UML create another pts. Thus, the spawning is hidden...
+> We noticed that wait_for_completion might not be the best idea, since it could
+> hang indefinitely, testmgr.c uses wait_for_completion_interruptible. Do we
+> want 'interruptible' or 'killable' here?
 
-It connects to an existing host pts device instead of spawning a new
-xterm and connecting to the console io on that. Why is that not
-desirable?
+I think you want the interruptible one wait_for_completion_interruptible()
 
-> I did not push it upstream because it depended on your first one and as I said, it's not critical.
-> This does not mean that I moved it to /dev/null.
-
-... and you still haven't told me what's wrong with my first patch.
-
-> Again, the plan is to get rid of SUBARCH at all.
-
-You've been harping about this plan for the last N months, and nothing
-has happened so far. It's time to stop planning, and accept good work.
-
->>> make defconfig ARCH=um SUBARCH=x86 (or SUBARCH=i386) will create a defconfig for 32bit.
->>> make defconfig ARCH=um SUBARCH=x86_64 one for 64bit.
->>
->> Yes, that's how I prepared the patch in the first place.
->
-> So, nothing is broken.
-
-So the user is Ugly and Stupid for expecting:
-
-  $ make defconfig ARCH=um
-  $ make -j 8 ARCH=um
-
-to work? Stop denying problems, no matter how "major" or "minor" they are.
-
-> If you want "make defconfig ARCH=um" creating a defconfig for the correct arch you need
-> more than your first patch.
-
-No, you don't. Try it for yourself and see. Set a SUBARCH if you like,
-and it'll still work fine.
-
-> Again, "Get rid of SUBARCH" series has the same goal.
-
-For the last time, getting rid of SUBARCH is Wrong and Undesirable.
-
--- 8< --
-Here's a transcript spoonfeeding you the impact of my first patch:
-
-  $ make defconfig ARCH=um SUBARCH=i386
-  *** Default configuration is based on 'i386_defconfig'
-  #
-  # configuration written to .config
-  #
-  $ make defconfig ARCH=um SUBARCH=x86_64
-  *** Default configuration is based on 'x86_64_defconfig'
-  #
-  # configuration written to .config
-  #
-  $ make defconfig ARCH=um
-  *** Default configuration is based on 'x86_64_defconfig'
-  #
-  # configuration written to .config
-  #
-
-In the last case, notice how defconfig automatically picks up
-x86_64_defconfig correctly: if I were on an i386 machine, it would
-have picked up i386_defconfig like in the first case. Without my
-patch, the last case would have incorrectly picked up an i386
-defconfig, which is Stupid and Wrong.
+regards,
+dan carpenter
