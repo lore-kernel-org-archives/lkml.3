@@ -1,90 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3IZCdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 22:33:09 -0400
-Received: from [207.46.163.25] ([207.46.163.25]:39224 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754528Ab3IZCc6 (ORCPT
+	id S1754910Ab3IZCdI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 22:33:08 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48617 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754262Ab3IZCcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 22:32:58 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275ch1de098h17326ah1de097h186068h8275bh8275dhz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 26 Sep 2013 10:32:32 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Frank Li <lznuaa@gmail.com>, Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Kevin Hilman <khilman@linaro.org>, Stephen Warren <swarren@nvidia.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: PCI host merge strategy and maintainers
-Message-ID: <20130926023230.GB21081@S2101-09.ap.freescale.net>
-References: <CAErSpo7UX6dt0CPZp3kEQrXXbMeArpu1iFfp=-FX46LVgq0iMw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAErSpo7UX6dt0CPZp3kEQrXXbMeArpu1iFfp=-FX46LVgq0iMw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Wed, 25 Sep 2013 22:32:55 -0400
+Message-ID: <1380162771.18835.47.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [RFC V4 PATCH 00/15] Signature verification of hibernate
+ snapshot
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        David Howells <dhowells@redhat.com>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-crypto@vger.kernel.org,
+        opensuse-kernel@opensuse.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
+        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Lee, Chun-Yi" <jlee@suse.com>
+Date: Wed, 25 Sep 2013 19:32:51 -0700
+In-Reply-To: <20130926002730.GA26857@amd.pavel.ucw.cz>
+References: <Pine.LNX.4.44L0.1309251723001.26508-100000@netrider.rowland.org>
+	 <1380147414.18835.36.camel@dabdike.int.hansenpartnership.com>
+	 <20130926002730.GA26857@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+On Thu, 2013-09-26 at 02:27 +0200, Pavel Machek wrote:
+> On Wed 2013-09-25 15:16:54, James Bottomley wrote:
+> > On Wed, 2013-09-25 at 17:25 -0400, Alan Stern wrote:
+> > > On Wed, 25 Sep 2013, David Howells wrote:
+> > > 
+> > > > I have pushed some keyrings patches that will likely affect this to:
+> > > > 
+> > > > 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-devel
+> > > > 
+> > > > I intend to ask James to pull these into his next branch.  If he's happy to do
+> > > > so, I can look at pulling at least your asymmetric keys patch on top of them.
+> > > 
+> > > This suggests a point that I raised at the Linux Plumbers conference:
+> > > 
+> > > Why are asymmetric keys used for verifying the hibernation image?  It
+> > > seems that a symmetric key would work just as well.  And it would be a
+> > > lot quicker to generate, because it wouldn't need any high-precision
+> > > integer computations.
+> > 
+> > The reason is the desire to validate that the previous kernel created
+> > something which it passed on to the current kernel (in this case, the
+> > hibernation image) untampered with.  To do that, something must be
+> > passed to the prior kernel that can be validated but *not* recreated by
+> > the current kernel.
+> 
+> I don't get this. Why is it important that current kernel can't
+> recreate the signature?
 
-On Wed, Sep 25, 2013 at 05:28:28PM -0600, Bjorn Helgaas wrote:
-> There are patches for exynos, imx6, mvebu, and tegra on the PCI list,
-> and I want to sort out how people expect them to be merged.
-> 
-> My current assumption is the following:
-> 
->   drivers/pci/host/pcie-designware.c  via PCI tree since I applied
-> recent changes
->   drivers/pci/host/pci-exynos.c  via PCI tree since I applied recent changes
->   drivers/pci/host/pci-imx6.c  via Shawn Guo per [1]
+The thread model is an attack on the saved information (i.e. the suspend
+image) between it being saved by the old kernel and used by the new one.
+The important point isn't that the new kernel doesn't have access to
+K_{N-1} it's that no-one does: the key is destroyed as soon as the old
+kernel terminates however the verification public part P_{N-1} survives.
 
-A second thought on that.  I would split the patch for better separation
-between driver and arch parts, so that they can go through PCI and
-arm-soc tree separately without worrying about merge conflict later.
+James
 
-I will send you patches that we expect to go via your tree in a few
-minutes.
+> Current kernel is not considered malicious (if it were, you have worse
+> problems).
+> 
+> 								Pavel
+> 
+> PS: And yes, it would be nice to have
+> Documentation/power/swsusp-uefi.txt (or something) explaining the
+> design.
+> 
 
-Shawn
 
->   drivers/pci/host/pci-mvebu.c  ?? unclear; Jason Cooper has merged
-> some, I've merged some
->   drivers/pci/host/pci-tegra.c  via PCI tree per Stephen Warren [2]
-> 
-> Please correct anything that's wrong above, and please give me some
-> guidance on mvebu.  I'm happy to go either way; I just need to know
-> whether to pay attention to them :)
-> 
-> In addition, since I don't have time, expertise, or hardware to really
-> review changes to these drivers, I'd like to have them acked by people
-> who do.  My current assumption is that these are the right people:
-> 
->   designware: Jingoo Han <jg1.han@samsung.com>
->   exynos: Jingoo Han <jg1.han@samsung.com>
->   imx6: Shawn Guo <shawn.guo@linaro.org>
->   mvebu: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn
-> <andrew@lunn.ch>, Gregory Clement <gregory.clement@free-electrons.com>
->   tegra: Thierry Reding <thierry.reding@gmail.com>
-> 
-> Again, please correct anything that's wrong.  My plan is that I won't
-> apply patches to these drivers unless they're acked by the folks
-> above.
-> 
-> Bjorn
-> 
-> 
-> [1] http://lkml.kernel.org/r/20130916091059.GM31147@S2101-09.ap.freescale.net
-> [2] http://lkml.kernel.org/r/521CCF9B.9000004@wwwdotorg.org
 
