@@ -1,198 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab3IZIP2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:15:28 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:57217 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab3IZIPX (ORCPT
+	id S1755658Ab3IZIR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:17:57 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:36385
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751425Ab3IZIRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:15:23 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] m68k/defconfig: Make NFS_V4 modular instead of builtin
-Date: Thu, 26 Sep 2013 10:15:15 +0200
-Message-Id: <1380183315-6704-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 26 Sep 2013 04:17:53 -0400
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzbb2dI98dI9371I1432I4015I14ffIdb82hzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh19b6n1155h192ch)
+Date: Thu, 26 Sep 2013 10:16:45 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Preeti Murthy <preeti.lkml@gmail.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 0/4] arm: zynq: Enable global timer
+References: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com> <5242FF4B.6050901@linaro.org>
+In-Reply-To: <5242FF4B.6050901@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <62570dec-da98-42a2-93b9-6ab1f8adb30d@CH1EHSMHS037.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reduces the kernel image size by ca. 100 KiB, while still allowing
-NFS root.
+Hi Daniel,
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/configs/amiga_defconfig    |    2 +-
- arch/m68k/configs/apollo_defconfig   |    2 +-
- arch/m68k/configs/atari_defconfig    |    2 +-
- arch/m68k/configs/bvme6000_defconfig |    2 +-
- arch/m68k/configs/hp300_defconfig    |    2 +-
- arch/m68k/configs/mac_defconfig      |    2 +-
- arch/m68k/configs/multi_defconfig    |    2 +-
- arch/m68k/configs/mvme147_defconfig  |    2 +-
- arch/m68k/configs/mvme16x_defconfig  |    2 +-
- arch/m68k/configs/q40_defconfig      |    2 +-
- arch/m68k/configs/sun3_defconfig     |    2 +-
- arch/m68k/configs/sun3x_defconfig    |    2 +-
- 12 files changed, 12 insertions(+), 12 deletions(-)
+On 09/25/2013 05:20 PM, Daniel Lezcano wrote:
+> On 09/18/2013 08:48 PM, Soren Brinkmann wrote:
+>> Hi all,
+>>
+>> here's a v2. I reused the subject from my v1 submission although the focus of
+>> this series moved a bit towards the timer subsystem.
+>> I replaced Stephen's fix to prevent per cpu devices from becoming
+>> the broadcast device with Thomas' proposal, but I kept the original commit
+>> message. I split the whole approach in small chunks that I found reasonable.
+>>
+>> In 4/4, I picked up Grant's comment regarding the DT node name.
+>>
+>> v2:
+>>  - drop 1/2 of the original series
+>>  - implement preventing per cpu devices from becoming broadcast device according
+>>    to Thomas' proposal
+>>    - introduce new CLOCK_EVT_FEAT_PERCPU flag
+>>    - set the flag for the arm_global_timer
+>>    - filter per cpu devices based on this flag when choosing the broadcast
+>>      device
+>>  - rename DT node to avoid '_'s
+>>  
+>>
+>> Soren Brinkmann (4):
+>>   clockchips: Add FEAT_PERCPU clockevent flag
+>>   clocksource/arm_global_timer: Set FEAT_PERCPU flag
+>>   tick: broadcast: Deny per-cpu clockevents from being broadcast sources
+>>   arm: zynq: Enable arm_global_timer
+>>
+>>  arch/arm/boot/dts/zynq-7000.dtsi       | 8 ++++++++
+>>  arch/arm/mach-zynq/Kconfig             | 1 +
+>>  drivers/clocksource/arm_global_timer.c | 3 ++-
+>>  include/linux/clockchips.h             | 1 +
+>>  kernel/time/tick-broadcast.c           | 1 +
+>>  5 files changed, 13 insertions(+), 1 deletion(-)
+> 
+> This patches falls under different maintainer's umbrella.
+> 
+> I acked-by the patches, so if someone is willing to take the patches I
+> am ok with that. I am ok also to pick them into my tree with the
+> acked-by maintainer. Just let me know ...
+> 
 
-diff --git a/arch/m68k/configs/amiga_defconfig b/arch/m68k/configs/amiga_defconfig
-index 8eb2251..fc6aa81 100644
---- a/arch/m68k/configs/amiga_defconfig
-+++ b/arch/m68k/configs/amiga_defconfig
-@@ -392,7 +392,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
-diff --git a/arch/m68k/configs/apollo_defconfig b/arch/m68k/configs/apollo_defconfig
-index faf811f..074ed30 100644
---- a/arch/m68k/configs/apollo_defconfig
-+++ b/arch/m68k/configs/apollo_defconfig
-@@ -349,7 +349,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
-diff --git a/arch/m68k/configs/atari_defconfig b/arch/m68k/configs/atari_defconfig
-index f24d9e9..b605928 100644
---- a/arch/m68k/configs/atari_defconfig
-+++ b/arch/m68k/configs/atari_defconfig
-@@ -376,7 +376,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
-diff --git a/arch/m68k/configs/bvme6000_defconfig b/arch/m68k/configs/bvme6000_defconfig
-index 12a53ae..d0f1e8b 100644
---- a/arch/m68k/configs/bvme6000_defconfig
-+++ b/arch/m68k/configs/bvme6000_defconfig
-@@ -341,7 +341,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
-diff --git a/arch/m68k/configs/hp300_defconfig b/arch/m68k/configs/hp300_defconfig
-index ca786df..b552489 100644
---- a/arch/m68k/configs/hp300_defconfig
-+++ b/arch/m68k/configs/hp300_defconfig
-@@ -351,7 +351,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
-diff --git a/arch/m68k/configs/mac_defconfig b/arch/m68k/configs/mac_defconfig
-index afa3832..9c7414b 100644
---- a/arch/m68k/configs/mac_defconfig
-+++ b/arch/m68k/configs/mac_defconfig
-@@ -373,7 +373,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
-diff --git a/arch/m68k/configs/multi_defconfig b/arch/m68k/configs/multi_defconfig
-index ffafda8..434bfa7 100644
---- a/arch/m68k/configs/multi_defconfig
-+++ b/arch/m68k/configs/multi_defconfig
-@@ -453,7 +453,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
-diff --git a/arch/m68k/configs/mvme147_defconfig b/arch/m68k/configs/mvme147_defconfig
-index d0b8e1e..e92c449 100644
---- a/arch/m68k/configs/mvme147_defconfig
-+++ b/arch/m68k/configs/mvme147_defconfig
-@@ -341,7 +341,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
-diff --git a/arch/m68k/configs/mvme16x_defconfig b/arch/m68k/configs/mvme16x_defconfig
-index 10fb00c..b953842 100644
---- a/arch/m68k/configs/mvme16x_defconfig
-+++ b/arch/m68k/configs/mvme16x_defconfig
-@@ -341,7 +341,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
-diff --git a/arch/m68k/configs/q40_defconfig b/arch/m68k/configs/q40_defconfig
-index cecf6d1..9f1ba13 100644
---- a/arch/m68k/configs/q40_defconfig
-+++ b/arch/m68k/configs/q40_defconfig
-@@ -365,7 +365,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
-diff --git a/arch/m68k/configs/sun3_defconfig b/arch/m68k/configs/sun3_defconfig
-index 7f8c8e0..b43006d 100644
---- a/arch/m68k/configs/sun3_defconfig
-+++ b/arch/m68k/configs/sun3_defconfig
-@@ -343,7 +343,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
-diff --git a/arch/m68k/configs/sun3x_defconfig b/arch/m68k/configs/sun3x_defconfig
-index 8f04709..d1343f9 100644
---- a/arch/m68k/configs/sun3x_defconfig
-+++ b/arch/m68k/configs/sun3x_defconfig
-@@ -343,7 +343,7 @@ CONFIG_QNX6FS_FS=m
- CONFIG_SYSV_FS=m
- CONFIG_UFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V4=y
-+CONFIG_NFS_V4=m
- CONFIG_NFS_SWAP=y
- CONFIG_ROOT_NFS=y
- CONFIG_NFSD=m
--- 
-1.7.9.5
+Yes, please add also this zynq specific patch through your tree.
+
+Here is my ACK for that.
+Acked-by: Michal Simek <michal.simek@xilinx.com>
+
+Thanks,
+Michal
+
 
