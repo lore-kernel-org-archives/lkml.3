@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab3IYXzV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 19:55:21 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:54906 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab3IYXzT (ORCPT
+	id S1754635Ab3IZABD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 20:01:03 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35277 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786Ab3IZABA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 19:55:19 -0400
-Message-ID: <524377E3.4050806@linaro.org>
-Date: Wed, 25 Sep 2013 16:55:15 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 25 Sep 2013 20:01:00 -0400
+Date: Thu, 26 Sep 2013 02:00:59 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Javier Martinez Canillas <martinez.javier@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Anton Vorontsov <anton@enomsg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, freemangordon@abv.bg,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH usb 1/2] usb: musb: Add missing
+ ATOMIC_INIT_NOTIFIER_HEAD
+Message-ID: <20130926000059.GA25716@amd.pavel.ucw.cz>
+References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
+ <20130918164816.GN21559@radagast>
+ <201309181903.33243@pali>
+ <201309251017.39014@pali>
+ <20130925203333.GU10746@radagast>
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        =?UTF-8?B?VXdlIEtsZWluZS1L?= =?UTF-8?B?w7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de
-Subject: Re: [RFC, PATCH] clocksource: provide timekeeping for efm32 SoCs
-References: <1379324644-20934-1-git-send-email-u.kleine-koenig@pengutronix.de> <5242F434.7060702@linaro.org> <20130925153207.GG16106@pengutronix.de> <524376A0.7020405@linaro.org>
-In-Reply-To: <524376A0.7020405@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130925203333.GU10746@radagast>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2013 04:49 PM, Daniel Lezcano wrote:
-> On 09/25/2013 05:32 PM, Uwe Kleine-KÃ¶nig wrote:
->> Hello Daniel,
->>
->> On Wed, Sep 25, 2013 at 04:33:24PM +0200, Daniel Lezcano wrote:
->>> On 09/16/2013 11:44 AM, Uwe Kleine-KÃ¶nig wrote:
->>>> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
->>>> index 41c6946..410b152 100644
->>>> --- a/drivers/clocksource/Kconfig
->>>> +++ b/drivers/clocksource/Kconfig
->>>> @@ -70,6 +70,14 @@ config CLKSRC_DBX500_PRCMU_SCHED_CLOCK
->>>>  	help
->>>>  	  Use the always on PRCMU Timer as sched_clock
->>>>  
->>>> +config CLKSRC_EFM32
->>>> +	bool "Clocksource for Energy Micro's EFM32 SoCs" if !ARCH_EFM32
->>>> +	depends on OF && ARM && (ARCH_EFM32 || COMPILE_TEST)
->>>> +	default ARCH_EFM32
->>>> +	help
->>>> +	  Support to use the timers of EFM32 SoCs as clock source and clock
->>>> +	  event device.
->>>> +
->>> No option for the timer. It must be selected by the platform.
->> It is. If ARCH_EFM32=y there is no prompt and the "default ARCH_EFM32"
->> makes it true.
-> ok, with that but if ARCH_EFM32=no, you can enable it manually. AFAIK,
-> we want to prevent this and let the correct arch to enable it.
->
-> John ?
+On Wed 2013-09-25 15:33:33, Felipe Balbi wrote:
+> Hi,
+> 
+> On Wed, Sep 25, 2013 at 10:17:38AM +0200, Pali Rohár wrote:
+> > On Wednesday 18 September 2013 19:03:33 Pali Rohár wrote:
+> > > &twl->phy.notifier is not initalized
+> > > 
+> > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> > > 
+> > > diff --git a/drivers/usb/phy/phy-twl4030-usb.c
+> > > b/drivers/usb/phy/phy-twl4030-usb.c index 8f78d2d..efe6155
+> > > 100644
+> > > --- a/drivers/usb/phy/phy-twl4030-usb.c
+> > > +++ b/drivers/usb/phy/phy-twl4030-usb.c
+> > > @@ -705,6 +705,8 @@ static int twl4030_usb_probe(struct
+> > > platform_device *pdev) if (device_create_file(&pdev->dev,
+> > > &dev_attr_vbus)) dev_warn(&pdev->dev, "could not create sysfs
+> > > file\n");
+> > > 
+> > > +	ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
+> > > +
+> > >  	/* Our job is to use irqs and status from the power module
+> > >  	 * to keep the transceiver disabled when nothing's
+> > > connected. *
+> > 
+> > I sent above patch week ago. Did you already included it?
+> 
+> look at my testing branch.
 
-Right until there's really a compelling reason (which I've still not
-heard), I don't want to introduce independent clocksource options. Any
-such options should be something like a platform or board config option.
+Felipe prefers you to go MAINTAINERS file for
 
-thanks
--john
+git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
 
+entry. After few clicks, you'll find out your two patches in 
+
+https://git.kernel.org/cgit/linux/kernel/git/balbi/usb.git/log/?h=testing
+
+. So yes, it seems that after 10+ flames Felipe was _not_ lazy to
+send, "Thanks for a patch" mail was too much work.
+
+Apparently, we'll need  Documentation/HowToBeGoodMaintainer file...
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
