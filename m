@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab3IZWwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:52:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35549 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab3IZWwI (ORCPT
+	id S1754752Ab3IZWxi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:53:38 -0400
+Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:10265
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754407Ab3IZWxg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:52:08 -0400
-Date: Thu, 26 Sep 2013 15:52:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v5 4/6] x86/mem-hotplug: Support initialize page tables
- in bottom-up
-Message-Id: <20130926155205.7f364b64c4a0fae77d4ca15d@linux-foundation.org>
-In-Reply-To: <5241DA5B.8000909@gmail.com>
-References: <5241D897.1090905@gmail.com>
-	<5241DA5B.8000909@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Sep 2013 18:53:36 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Haiyang Zhang <haiyangz@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 00/13] hv: clean up dev_attr usage
+Thread-Topic: [PATCH 00/13] hv: clean up dev_attr usage
+Thread-Index: AQHOsK+1mcM+7wT8AkG+31wmWIBnRpnKSIeQgA345ICAAG7ioA==
+Date: Thu, 26 Sep 2013 22:36:29 +0000
+Message-ID: <6d9cd58d90574c3682a83d3a35cf5691@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
+ <654a20fac822400798f991f33b699018@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130926155935.GA30834@kroah.com>
+In-Reply-To: <20130926155935.GA30834@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [212.238.76.143]
+x-forefront-prvs: 0981815F2F
+x-forefront-antispam-report: SFV:NSPM;SFS:(377454003)(52604005)(51704005)(13464003)(199002)(189002)(24454002)(49866001)(69226001)(47736001)(81542001)(81816001)(4396001)(33646001)(74316001)(74706001)(46102001)(74876001)(80022001)(81342001)(74366001)(83322001)(65816001)(50986001)(66066001)(19580395003)(19580405001)(76482001)(83072001)(54356001)(79102001)(56776001)(53806001)(47446002)(74502001)(76796001)(77096001)(76786001)(31966008)(81686001)(54316002)(80976001)(47976001)(76576001)(51856001)(59766001)(63696002)(56816003)(77982001)(74662001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:212.238.76.143;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Sep 2013 02:30:51 +0800 Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
+Greg,
 
-> From: Tang Chen <tangchen@cn.fujitsu.com>
-> 
-> The Linux kernel cannot migrate pages used by the kernel. As a
-> result, kernel pages cannot be hot-removed. So we cannot allocate
-> hotpluggable memory for the kernel.
-> 
-> In a memory hotplug system, any numa node the kernel resides in
-> should be unhotpluggable. And for a modern server, each node could
-> have at least 16GB memory. So memory around the kernel image is
-> highly likely unhotpluggable.
-> 
-> ACPI SRAT (System Resource Affinity Table) contains the memory
-> hotplug info. But before SRAT is parsed, memblock has already
-> started to allocate memory for the kernel. So we need to prevent
-> memblock from doing this.
-> 
-> So direct memory mapping page tables setup is the case. init_mem_mapping()
-> is called before SRAT is parsed. To prevent page tables being allocated
-> within hotpluggable memory, we will use bottom-up direction to allocate
-> page tables from the end of kernel image to the higher memory.
-> 
-> ...
->
-> +		kernel_end = __pa_symbol(_end);
+I am currently travelling; when I get back I will take a look.
 
-__pa_symbol() is implemented only on mips and x86.
+K. Y
 
-I stole the mips implementation like this:
-
---- a/mm/memblock.c~a
-+++ a/mm/memblock.c
-@@ -187,8 +187,11 @@ phys_addr_t __init_memblock memblock_fin
- 	/* avoid allocating the first page */
- 	start = max_t(phys_addr_t, start, PAGE_SIZE);
- 	end = max(start, end);
-+#ifdef CONFIG_X86
- 	kernel_end = __pa_symbol(_end);
--
-+#else
-+	kernel_end = __pa(RELOC_HIDE((unsigned long)(_end), 0));
-+#endif
- 	/*
- 	 * try bottom-up allocation only when bottom-up mode
- 	 * is set and @end is above the kernel image.
-
-just so I can get a -mm release out the door.
+> -----Original Message-----
+> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, September 26, 2013 9:00 AM
+> To: KY Srinivasan
+> Cc: Haiyang Zhang; devel@linuxdriverproject.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 00/13] hv: clean up dev_attr usage
+> 
+> On Tue, Sep 17, 2013 at 06:42:30PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Friday, September 13, 2013 11:33 AM
+> > > To: KY Srinivasan; Haiyang Zhang
+> > > Cc: devel@linuxdriverproject.org; linux-kernel@vger.kernel.org
+> > > Subject: [PATCH 00/13] hv: clean up dev_attr usage
+> > >
+> > > Hi,
+> > >
+> > > Here's a set of 13 patches to get rid of the dev_attrs use in the hv bus
+> > > code, as it will be going away soon.  It's _way_ bigger than all other
+> > > conversions I've had to do so far in the kernel, as you were using a
+> > > "multiplexor" function for all of these files.
+> > >
+> > > So, I've broken it up into individual show/store sysfs functions, and
+> > > cleaned up a bunch of debug structures that aren't needed and shouldn't
+> > > be exported to the rest of the kernel.
+> > >
+> > > I've also fixed up some void * usage in the hv core, in patch 07, to
+> > > make things simpler and not so "magic" when dealing with these pages.
+> > > If you could review that one closely to ensure I didn't mess anything
+> > > up, I would appreciate it.
+> > >
+> > > Also, are all of these files really needed for sysfs?  They seem to be
+> > > all debugging stuff, shouldn't they go into debugfs if you really
+> > > need/use them anymore?
+> > >
+> > > KY, could you test these out?  I don't have access to a hv system at the
+> > > moment.  I'll wait for your ack before applying them to any of my trees.
+> >
+> > The patches look good and I tested them. The guest comes up and is functional.
+> > I did notice though that the pending state appears to be a signed entity now
+> which was not the
+> > the case  before - I see a negative sign when I cat the client/server pending
+> state.
+> 
+> Which exact file is that?  I didn't change the % modifiers for any of
+> the data types, or at least I sure shouldn't have, if so, that's a bug
+> on my side.
+> 
+> Thanks for testing, I'll queue these up, and if you can tell me which
+> sysfs file is different, I'll verify the code conversion again, but I
+> just reviewed it and can't seem to find anything.
+> 
+> thanks,
+> 
+> greg k-h
