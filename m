@@ -1,155 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab3IZIsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:48:09 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:33065 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab3IZIsF (ORCPT
+	id S1752858Ab3IZIwe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:52:34 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60570 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab3IZIwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:48:05 -0400
+	Thu, 26 Sep 2013 04:52:32 -0400
+Message-ID: <5243F5CD.6090709@linaro.org>
+Date: Thu, 26 Sep 2013 10:52:29 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20130926075725.GA22339@bbox>
-References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
-	<52118042.30101@oracle.com>
-	<20130819054742.GA28062@bbox>
-	<CAL1ERfN3AUYwWTctGBjVcgb-mwAmc15-FayLz48P1d0GzogncA@mail.gmail.com>
-	<20130821074939.GE3022@bbox>
-	<CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
-	<CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
-	<CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
-	<20130926055802.GA20634@bbox>
-	<CAL1ERfN8PpSZxRmLiwm4i-XZWzRaPJ0A=Af76Dtopcf2xYnBtQ@mail.gmail.com>
-	<20130926075725.GA22339@bbox>
-Date: Thu, 26 Sep 2013 16:48:03 +0800
-Message-ID: <CAL1ERfNh5ss2F6X8QuYxhZ7f2g6mcJvn6pJow2ecRk8dT13CGg@mail.gmail.com>
-Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Bob Liu <lliubbo@gmail.com>, Bob Liu <bob.liu@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [RFC, PATCH] clocksource: provide timekeeping for efm32 SoCs
+References: <1379324644-20934-1-git-send-email-u.kleine-koenig@pengutronix.de> <5242F434.7060702@linaro.org> <20130925153207.GG16106@pengutronix.de> <524376A0.7020405@linaro.org> <20130926082059.GI16106@pengutronix.de>
+In-Reply-To: <20130926082059.GI16106@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 3:57 PM, Minchan Kim <minchan@kernel.org> wrote:
-> On Thu, Sep 26, 2013 at 03:26:33PM +0800, Weijie Yang wrote:
->> On Thu, Sep 26, 2013 at 1:58 PM, Minchan Kim <minchan@kernel.org> wrote:
->> > Hello Weigie,
->> >
->> > On Wed, Sep 25, 2013 at 05:33:43PM +0800, Weijie Yang wrote:
->> >> On Wed, Sep 25, 2013 at 4:31 PM, Bob Liu <lliubbo@gmail.com> wrote:
->> >> > On Wed, Sep 25, 2013 at 4:09 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
->> >> >> I think I find a new issue, for integrity of this mail thread, I reply
->> >> >> to this mail.
->> >> >>
->> >> >> It is a concurrence issue either, when duplicate store and reclaim
->> >> >> concurrentlly.
->> >> >>
->> >> >> zswap entry x with offset A is already stored in zswap backend.
->> >> >> Consider the following scenario:
->> >> >>
->> >> >> thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
->> >> >>
->> >> >> thread 1: store new page with the same offset A, alloc a new zswap entry y.
->> >> >>   store finished. shrink_page_list() call __remove_mapping(), and now
->> >> >> it is not in swap_cache
->> >> >>
->> >> >
->> >> > But I don't think swap layer will call zswap with the same offset A.
->> >>
->> >> 1. store page of offset A in zswap
->> >> 2. some time later, pagefault occur, load page data from zswap.
->> >>   But notice that zswap entry x is still in zswap because it is not
->> >> frontswap_tmem_exclusive_gets_enabled.
->> >
->> > frontswap_tmem_exclusive_gets_enabled is just option to see tradeoff
->> > between CPU burining by frequent swapout and memory footprint by duplicate
->> > copy in swap cache and frontswap backend so it shouldn't affect the stability.
+On 09/26/2013 10:20 AM, Uwe Kleine-König wrote:
+> Hello Daniel,
+>
+> On Thu, Sep 26, 2013 at 01:49:52AM +0200, Daniel Lezcano wrote:
+>> On 09/25/2013 05:32 PM, Uwe Kleine-König wrote:
+>>>>> +static void __init efm32_timer_init(struct device_node *np)
+>>>>> +{
+>>>>> +	static int has_clocksource, has_clockevent;
+>>>>> +	int ret;
+>>>>> +
+>>>>> +	if (!has_clocksource) {
+>>>>> +		ret = efm32_clocksource_init(np);
+>>>>> +		if (!ret) {
+>>>>> +			has_clocksource = 1;
+>>>>> +			return;
+>>>>> +		}
+>>>>> +	}
+>>>>> +
+>>>>> +	if (!has_clockevent) {
+>>>>> +		ret = efm32_clockevent_init(np);
+>>>>> +		if (!ret) {
+>>>>> +			has_clockevent = 1;
+>>>>> +			return;
+>>>>> +		}
+>>>>> +	}
+>>>>> +}
+>>>>
+>>>> I don't get the purpose of this initialization, can you explain ?
+>>> An efm32 SoC has four timer blocks. A single block can only be used for
+>>> one of clocksource or clockevent device and having more than one
+>>> clocksource or clockevent device doesn't make sense. So this routine
+>>> asserts that the first timer is used as clocksource and the second as
+>>> clockevent device. The others are unused.
 >>
->> Thanks for explain this.
->> I don't mean to say this option affects the stability,  but that zswap
->> only realize
->> one option. Maybe it's better to realize both options for different workloads.
+>> Shouldn't be up to the dt to give the timers you want ?
+> The dt looks as follows:
 >
-> "zswap only relize one option"
-> What does it mena? Sorry. I couldn't parse your intention. :)
-> You mean zswap should do something special to support frontswap_tmem_exclusive_gets?
+>                  timer0: timer@40010000 {
+>                          compatible = "efm32,timer";
+>                          reg = <0x40010000 0x400>;
+>                          interrupts = <2>;
+>                          clocks = <&cmu clk_HFPERCLKTIMER0>;
+>                  };
+>
+>                  timer1: timer@40010400 {
+>                          compatible = "efm32,timer";
+>                          reg = <0x40010400 0x400>;
+>                          interrupts = <12>;
+>                          clocks = <&cmu clk_HFPERCLKTIMER1>;
+>                  };
+>
+>                  timer2: timer@40010800 {
+>                          compatible = "efm32,timer";
+>                          reg = <0x40010800 0x400>;
+>                          interrupts = <13>;
+>                          clocks = <&cmu clk_HFPERCLKTIMER2>;
+>                  };
+>
+>                  timer3: timer@40010c00 {
+>                          compatible = "efm32,timer";
+>                          reg = <0x40010c00 0x400>;
+>                          interrupts = <14>;
+>                          clocks = <&cmu clk_HFPERCLKTIMER3>;
+>                  };
+>
+> What is your suggestion now?
+> Add a property that specifies if the block
+> should be used as clocksource or clockevent_device? That isn't a
+> hardware description and so shouldn't go into the device tree.
 
-Yes. But I am not sure whether it is worth.
+At this point, I just asked a question and did not make any suggestion.
 
->>
->> >>  this page is with PageSwapCache(page) and page_private(page) = entry.val
->> >> 3. change this page data, and it become dirty
->> >
->> > If non-shared swapin page become redirty, it should remove the page from
->> > swapcache. If shared swapin page become redirty, it should do CoW so it's a
->> > new page so that it doesn't live in swap cache. It means it should have new
->> > offset which is different with old's one for swap out.
->> >
->> > What's wrong with that?
->>
->> It is really not a right scene for duplicate store. And I can not think out one.
->> If duplicate store is impossible, How about delete the handle code in zswap?
->> If it does exist, I think there is a potential issue as I described.
->
-> You mean "zswap_duplicate_entry"?
-> AFAIR, I already had a question to Seth when zswap was born but AFAIRC,
-> he said that he didn't know exact reason but he saw that case during
-> experiement so copy the code peice from zcache.
->
-> Do you see the case, too?
+> Provide two drivers that match on "efm32,timer", one for clocksource and
+> another for clockevent_device? That wouldn't work, too, as the first
+> driver to be loaded would grab all four timers and the second would get
+> none.
 
-Yes, I mean duplicate store.
-I check the /Documentation/vm/frontswap.txt, it mentions "duplicate stores",
-but I am still confused.
+Thanks, now I understand the purpose of this routine, it is very similar 
+than:
 
-I wrote a zcache varietas which swap out compressed page to swapfile.
-I did see that case when I test it on andorid smartphone(arm v7),
-and it happens rarely and occasionally.
-In one test, only 1 duplicate store occur in about 3157162 times stores.
+http://www.spinics.net/lists/arm-kernel/msg273984.html
 
-> Anyway, we need to dive into that to know what happens and then open
-> our eyes for clear solution before dumping meaningless patch.
->
-> I hope Seth or Bob already know it.
->
->>
->> >> 4. some time later again, swap this page on the same offset A.
->> >>
->> >> so, a duplicate store happens.
->> >>
->> >> what I can think is that use flags and CAS to protect store and reclaim on
->> >> the same offset  happens concurrentlly.
->> >>
->> >> >> thread 0: zswap_get_swap_cache_page called. old page data is added to swap_cache
->> >> >>
->> >> >> Now, swap cache has old data rather than new data for offset A.
->> >> >> error will happen If do_swap_page() get page from swap_cache.
->> >> >>
->> >> >
->> >> > --
->> >> > Regards,
->> >> > --Bob
->> >>
->> >> --
->> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> >> the body to majordomo@kvack.org.  For more info on Linux MM,
->> >> see: http://www.linux-mm.org/ .
->> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->> >
->> > --
->> > Kind regards,
->> > Minchan Kim
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Kind regards,
-> Minchan Kim
+right ?
+
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
