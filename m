@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab3IZIIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:08:13 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:59875 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198Ab3IZIII (ORCPT
+	id S1755720Ab3IZIJj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:09:39 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:46280 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752092Ab3IZIJd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:08:08 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-samsung-soc@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 12/26] ARM: exynos: remove custom .init_time hook
-Date: Thu, 26 Sep 2013 10:08:03 +0200
-Message-ID: <1573378.EKN2gyy8Sh@flatron>
-User-Agent: KMail/4.11.1 (Linux/3.11.1-gentoo; KDE/4.11.1; x86_64; ; )
-In-Reply-To: <5243D267.3010704@gmail.com>
-References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com> <1379526839-14798-13-git-send-email-sebastian.hesselbarth@gmail.com> <5243D267.3010704@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 26 Sep 2013 04:09:33 -0400
+Date: Thu, 26 Sep 2013 10:11:47 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: <linux-arm-kernel@lists.infradead.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: Dove: Add the audio device to the Cubox DT
+Message-ID: <20130926101147.217015e1@armhf>
+In-Reply-To: <140d8d8a23f.2784.107cef0f820c2f5d7b7f41463071c310@gmail.com>
+References: <20130828113521.35c53365@armhf>
+	<521DCD80.9010105@gmail.com>
+	<20130831125128.0e3a23c7@armhf>
+	<140d8d8a23f.2784.107cef0f820c2f5d7b7f41463071c310@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.21; arm-unknown-linux-gnueabihf)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On Sun, 01 Sep 2013 11:26:54 +0200
+Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
 
-On Thursday 26 of September 2013 08:21:27 Sebastian Hesselbarth wrote:
-> On 09/18/2013 07:53 PM, Sebastian Hesselbarth wrote:
-> > With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-> > remove custom .init_time hooks. While at it, also remove some now
-> > redundant includes.
-> > 
-> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> > ---
+> Jean-Francois,
+> Sorry for the messy reply, posting from mobile.
 > 
-> Ping,
+> Can you please try <&si5351 1>, iirc audio ist connected to it. I will also 
+> look it up later.
 
-This patch looks fine to me (as the whole series).
+Sebastian,
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+In the Cubox, I changed the audio DT to:
 
-I don't see any reason why this series could introduce a regression on
-Exynos SoCs, but just in case let me test it on selected Exynos4 and 
-Exynos5 boards.
+&i2s1 {
+	status = "okay";
+	clocks = <&gate_clk 13>, <&si5351 1>;
+	clock-names = "internal", "extclk";
+	pinctrl-0 = <&pmx_audio1_i2s1_spdifo &pmx_gpio_13_audio1>;
+};
 
-Best regards,
-Tomasz
+and the sound does not get out correctly.
 
+There is no sound at all, except when restarting playing which gives
+some shrill sound for half a second at start time.
+
+I lowered the rate in kirkwood-i2s, setting the clock by (* 128)
+instead of (* 256), and, most of the time, this gives continuous shrill
+and chopped sound at various sample rates (22.05, 32 and 44.1 kHz).
+Lowering the clock to (* 64) gives no sound at all.
+
+For more information, I use i2s input in the tda998x with audio rate
+96kHz on HDMI output. The sound is fine with the internal dco (tested
+with 44.1kHz only).
+
+Some idea?
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
