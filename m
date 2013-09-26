@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab3IZBnu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 21:43:50 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:55065 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab3IZBnq (ORCPT
+	id S1753101Ab3IZBqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 21:46:47 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:40140 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab3IZBqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 21:43:46 -0400
-Date: Thu, 26 Sep 2013 09:44:12 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
-        Mike Galbraith <bitbucket@online.de>
-Subject: Re: [PATCH v3 4/4] thinkpad-acpi: fix handle locate for video and
- query of _BCL
-Message-ID: <20130926014411.GA14158@aaronlu.linux.com>
-References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
- <1380016052-15315-5-git-send-email-aaron.lu@intel.com>
- <20130925195839.GB23810@khazad-dum.debian.net>
+	Wed, 25 Sep 2013 21:46:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925195839.GB23810@khazad-dum.debian.net>
+In-Reply-To: <2084875.Px2m8K6oH7@vostro.rjw.lan>
+References: <5917186.DMyAa9ofOj@amdc1032>
+	<7588112.eXrFpITlCh@vostro.rjw.lan>
+	<CAH9JG2X3grVnUbuzksRLnDCT4dMQTyJuPa72qi4QmKTHo2QzEA@mail.gmail.com>
+	<2084875.Px2m8K6oH7@vostro.rjw.lan>
+Date: Wed, 25 Sep 2013 18:46:44 -0700
+X-Google-Sender-Auth: kyS2YkenqNLzDCbK9_KZal1Btnc
+Message-ID: <CAMbhsRT-a-TMr369Poo5OMyw=TMrQxpTfk-1zDFKp0YYWv7xLg@mail.gmail.com>
+Subject: Re: [RFC PATCH] freezer: allow killing of frozen tasks
+From: Colin Cross <ccross@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Kyungmin Park <kmpark@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Pavel Machek <pavel@ucw.cz>, Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 04:58:39PM -0300, Henrique de Moraes Holschuh wrote:
-> On Tue, 24 Sep 2013, Aaron Lu wrote:
-> > locate handle for ACPI video by HID, the problem is, ACPI video node
-> > doesn't really have HID defined(i.e. no _HID control method is defined
-> 
-> ACPI video is supposed to attach a virtual HID node (ACPI_VIDEO_HID) to ACPI
-> video devices so as to keep the non-trivial video device detection logic in
-> just one place instead of reinventing the wheel in every driver (which is
-> always a recipe for disaster).
-> 
-> When did that break?
+On Wed, Sep 25, 2013 at 1:07 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, September 25, 2013 02:52:26 PM Kyungmin Park wrote:
+>> On Tue, Aug 20, 2013 at 9:41 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Tuesday, August 20, 2013 08:27:27 AM Tejun Heo wrote:
+>> >> On Tue, Aug 20, 2013 at 02:34:14PM +0200, Rafael J. Wysocki wrote:
+>> >> > On Tuesday, August 20, 2013 08:22:00 AM Tejun Heo wrote:
+>> >> > > On Tue, Aug 20, 2013 at 02:30:18PM +0200, Rafael J. Wysocki wrote:
+>> >> > > > > So, I don't think we can simply turn TASK_UNITERRUPTIBLE to
+>> >> > > > > TASK_KILLABLE at this point.  We really need to strictly define where
+>> >> > > > > a task can freeze before being able to do anything like this.
+>> >> > > >
+>> >> > > > But we could do that for user space tasks I suppose?
+>> >> > >
+>> >> > > Even for userland tasks, we don't know where the task is stuck at.  I
+>> >> > > think there are enough freeze points in the kernel which are in the
+>> >> > > middle of something which can be used by userland tasks excuting some
+>> >> > > syscall.  We need to collect all those sites into well defined trap
+>> >> > > points before doing this.
+>> >> >
+>> >> > OK, thanks!
+>> >>
+>> >> I scanned through try_to_freeze() users and it seems like we don't
+>> >> have that many which can be hit by userland tasks.  I think it should
+>> >> be doable to audit all the users, remove the ones which can be invoked
+>> >> by userland and make try_to_freeze() whine loudly if it's running off
+>> >> a userland task except from well-defined spots.
+>> >
+>> > Which might be worth doing anyway to be sure we know what's going on.
+>> >
+>> >> Anyways, we need to ensure that userland task doesn't get stuck deep in the
+>> >> kernel before allowing this.
+>> >
+>> > Agreed.
+>>
+>> Are there any update? we need this feature to kill frozen app easily.
+>> Don't need to thaw app to kill.
+>
+> No updates, but the above pretty much describes what needs to be done.
 
-I checked the git log for the commit to use tpacpi_acpi_handle_locate to
-locate video controller's ACPI handle, it's:
+FWIW, the places I added try_to_freeze (which are all accessible from
+userspace tasks) were all audited to make sure they weren't holding
+any shared resources.  I didn't check if they would leak any memory if
+the process was killed there, but they aren't holding any locks.  It's
+pretty easy to audit them, just follow the error paths up each
+function - if the first error path after the freezing function doesn't
+free any resources then that function is safe, and repeat for each
+function that calls it.
 
-commit 122f26726b5e16174bf8a707df14be1d93c49d62
-Author: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Date:   Mon Aug 9 23:48:18 2010 -0300
-
-    thinkpad-acpi: find ACPI video device by synthetic HID
-
-So I checked out that commit and found that it shouldn't work either,
-since it has the same problem of the current code.
-
-The ACPI video controller device is given an id of ACPI_VIDEO_HID, but
-it's only known to Linux ACPI, not ACPICA, so the function provided by
-ACPICA acpi_get_devices will not work in this case, as that function will
-really check the control method of _HID under the handle, which does not
-exist no matter if Linux ACPI has added an id to its device structure or
-not. OTOH, the function provided by Linux ACPI acpi_device_hid will see
-the added id. In a word, the add of the HID will not affect the ASL
-namespace layout of the device node(thus, no _HID control method will
-be added to the device node).
-
-It seems that this problem has been found previously by:
-
-commit ff413195e830541afeae469fc866ecd0319abd7e
-Author: Alex Hung <alex.hung@canonical.com>
-Date:   Tue Apr 24 16:40:52 2012 +0800
-
-    thinkpad-acpi: fix issuing duplicated key events for brightness up/down
-    
-    The tp_features.bright_acpimode will not be set correctly for brightness
-    control because ACPI_VIDEO_HID will not be located in ACPI. As a result,
-    a duplicated key event will always be sent. acpi_video_backlight_support()
-    is sufficient to detect standard ACPI brightness control.
-    
-    Signed-off-by: Alex Hung <alex.hung@canonical.com>
-    Signed-off-by: Matthew Garrett <mjg@redhat.com>
-
-
-Thanks,
-Aaron
+On the other hand, would it be better to send a kill to the process
+and thaw it, and let it exit before returning to userspace?
