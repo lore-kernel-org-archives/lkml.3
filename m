@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab3IZHaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:30:16 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:29894 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab3IZHaO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:30:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,7209"; a="76818769"
-Cc: <netdev@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>,
-        <ath10k@lists.infradead.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        <ath9k-devel@venema.h4ckr.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>
-X-IronPort-AV: E=McAfee;i="5400,1158,7209"; a="517638642"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Joe Perches <joe@perches.com>
-Subject: Re: [PATCH 04/11] ath: Remove extern from function prototypes
-References: <cover.1380137609.git.joe@perches.com>
-	<a3dabaf02d36dbb4051188b706a3e66e6465c56b.1380137609.git.joe@perches.com>
-Date: Thu, 26 Sep 2013 10:30:00 +0300
-In-Reply-To: <a3dabaf02d36dbb4051188b706a3e66e6465c56b.1380137609.git.joe@perches.com>
-	(Joe Perches's message of "Wed, 25 Sep 2013 12:37:22 -0700")
-Message-ID: <871u4ct4zr.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1756009Ab3IZHbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:31:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35369 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755398Ab3IZHbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 03:31:03 -0400
+Date: Thu, 26 Sep 2013 13:00:51 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@dhcp193-39.pnq.redhat.com
+To: Rob Landley <rob@landley.net>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Export initial ramdisk compression config
+In-Reply-To: <1380128199.1974.89@driftwood>
+Message-ID: <alpine.LFD.2.03.1309261240380.10813@erqung.pbz>
+References: <1380128199.1974.89@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [172.30.48.1]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
++-- On Wed, 25 Sep 2013, Rob Landley wrote --+
+| Ah, so it's an out of tree bespoke Red Hat tool. No wonder I couldn't find it.
 
-> There are a mix of function prototypes with and without extern
-> in the kernel sources.  Standardize on not using extern for
-> function prototypes.
->
-> Function prototypes don't need to be written with extern.
-> extern is assumed by the compiler.  Its use is as unnecessary as
-> using auto to declare automatic/local variables in a block.
->
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/net/wireless/ath/ath10k/debug.h  | 8 ++++----
->  drivers/net/wireless/ath/ath6kl/common.h | 3 +--
->  drivers/net/wireless/ath/ath6kl/debug.h  | 9 ++++-----
->  drivers/net/wireless/ath/ath9k/ath9k.h   | 2 +-
->  4 files changed, 10 insertions(+), 12 deletions(-)
+  It is not Red Hat tool.
 
-For the ath10k and ath6kl changes:
+| You're reimplemented the posix "pax" command?
 
-Acked-by: Kalle Valo <kvalo@qca.qualcomm.com>
+  Ummn, not sure. Didn't see anything about 'pax'.
+ 
+| Is this what you're currently doing, or the change you're requesting in the 
+| kernel?
 
--- 
-Kalle Valo
+  Yes, I'm proposing to export $INITRD_COMPRESS variable so that it can be 
+used by dracut(8).
+
+| How does your code get called?
+
+  The patch's commit log explains it.
+
+
+Thank you.
+--
+Prasad J Pandit / Red Hat Security Response Team
+DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
