@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701Ab3IZKmk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 06:42:40 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:37399 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756019Ab3IZKmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 06:42:39 -0400
-Message-ID: <52440EBE.3090304@st.com>
-Date: Thu, 26 Sep 2013 11:38:54 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1756684Ab3IZKn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 06:43:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51773 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755999Ab3IZKnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 06:43:53 -0400
+Date: Thu, 26 Sep 2013 12:45:48 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Tejun Heo <tj@kernel.org>, linux-pci@vger.kernel.org,
+        Joerg Roedel <joro@8bytes.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linuxppc-dev@lists.ozlabs.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
+Message-ID: <20130926104548.GB16774@dhcp-26-207.brq.redhat.com>
+References: <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
+ <20130918142231.GA21650@mtj.dyndns.org>
+ <20130918165045.GB2353@dhcp-26-207.brq.redhat.com>
+ <20130920082458.GA10507@dhcp-26-207.brq.redhat.com>
+ <20130920122736.GD7630@mtj.dyndns.org>
+ <20130925180220.GB26273@google.com>
+ <20130925205804.GA21737@dhcp-26-207.brq.redhat.com>
+ <20130925210016.GA8926@htj.dyndns.org>
+ <20130926074646.GA16774@dhcp-26-207.brq.redhat.com>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B735D@saturn3.aculab.com>
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Preeti Murthy <preeti.lkml@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 2/4] clocksource/arm_global_timer: Set FEAT_PERCPU
- flag
-References: <1379530118-22813-1-git-send-email-soren.brinkmann@xilinx.com> <1379530118-22813-3-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1379530118-22813-3-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B735D@saturn3.aculab.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/09/13 19:48, Soren Brinkmann wrote:
-> The arm_global_timer is a per cpu device. Set the appropriate flag.
-> 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
->  drivers/clocksource/arm_global_timer.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clocksource/arm_global_timer.c b/drivers/clocksource/arm_global_timer.c
-> index b66c1f3..c639b1a 100644
-> --- a/drivers/clocksource/arm_global_timer.c
-> +++ b/drivers/clocksource/arm_global_timer.c
-> @@ -169,7 +169,8 @@ static int gt_clockevents_init(struct clock_event_device *clk)
->  	int cpu = smp_processor_id();
->  
->  	clk->name = "arm_global_timer";
-> -	clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
-> +	clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT |
-> +		CLOCK_EVT_FEAT_PERCPU;
->  	clk->set_mode = gt_clockevent_set_mode;
->  	clk->set_next_event = gt_clockevent_set_next_event;
->  	clk->cpumask = cpumask_of(cpu);
-> 
+On Thu, Sep 26, 2013 at 09:58:53AM +0100, David Laight wrote:
+> Would it be possible to do some kind of 2-stage allocation.
+> In the first pass the driver would pass a minimum and desired
+> number of MSI-X interrupts, but not actually be given any.
 
-Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Repeated calls to msi_enable_msi/msix() is what we are trying to avoid.
 
+> Interrupts could then be allocated after it is known how many
+> are required and how many are available.
+
+Yep, that what we are heading to. So basic pattern I see would be like this:
+
+	int foo_driver_enable_msix(struct pci_dev *pdev, int nvec)
+	{
+		...
+
+		rc = pci_msix_table_size(pdev);
+		if (rc < 0)
+			return rc;
+
+		nvec = min(nvec, rc);
+		if (nvec < FOO_DRIVER_MINIMUM_NVEC)
+			goto single_msi;
+
+		for (i = 0; i < nvec; i++)
+			entries[i].entry = i;
+
+		rc = pci_enable_msix(pdev, entries, nvec);
+		if (rc)
+			goto single_msi;
+
+		return 0;
+
+	single_msi:
+		...
+
+	}
+
+But this will break pSeries and we might end up with something like this:
+
+	int foo_driver_enable_msix(struct pci_dev *pdev, int nvec)
+	{
+		...
+
+		rc = pci_msix_table_size(pdev);
+		if (rc < 0)
+			return rc;
+
+		nvec = min(nvec, rc);
+		if (nvec < FOO_DRIVER_MINIMUM_NVEC)
+			goto single_msi;
+
+		rc = pci_get_msix_limit(pdev, nvec);
+		if (rc < 0)
+			return rc;
+
+		nvec = min(nvec, rc);
+		if (nvec < FOO_DRIVER_MINIMUM_NVEC)
+			goto single_msi;
+
+		for (i = 0; i < nvec; i++)
+			entries[i].entry = i;
+
+		rc = pci_enable_msix(pdev, entries, nvec);
+		if (rc)
+			goto single_msi;
+
+		return 0;
+
+	single_msi:
+		...
+
+	}
+
+> 	David
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
