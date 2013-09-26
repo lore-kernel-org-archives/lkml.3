@@ -1,77 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab3IZRZG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 13:25:06 -0400
-Received: from 87-127-191-49.static.enta.net ([87.127.191.49]:55904 "EHLO
-	mail.linicks.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab3IZRZC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 13:25:02 -0400
-Date: Thu, 26 Sep 2013 18:25:00 +0100
-From: Nick Warne <nick@linicks.net>
-To: linux-kernel@vger.kernel.org, linux-apci@vger.kernel.org
-Subject: Samsung N145 Plus lid state issue on sleep
-Message-ID: <20130926172500.GA7036@sauron>
-References: <20130920195939.GA2353@sauron>
- <20130922104023.GA2332@sauron>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130922104023.GA2332@sauron>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753629Ab3IZR0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 13:26:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20596 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167Ab3IZR0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 13:26:31 -0400
+Date: Thu, 26 Sep 2013 13:26:28 -0400 (EDT)
+Message-Id: <20130926.132628.780580796759839483.davem@redhat.com>
+To: mroos@linux.ee
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: include/linux/version.h not updated
+From: David Miller <davem@redhat.com>
+In-Reply-To: <alpine.SOC.1.00.1309261601050.11084@math.ut.ee>
+References: <20130926.002304.2121420558807412031.davem@davemloft.net>
+	<alpine.SOC.1.00.1309261347030.11084@math.ut.ee>
+	<alpine.SOC.1.00.1309261601050.11084@math.ut.ee>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Meelis Roos <mroos@linux.ee>
+Date: Thu, 26 Sep 2013 16:12:55 +0300 (EEST)
 
-I have a strange problem, which has been on going on for ages, and I finally decided to look at it (as it is a pain in the arse).
+> -rw-r--r-- 1 mroos mroos 97 Sep 20 21:56 include/generated/uapi/linux/version.h
+> -rw-r--r-- 1 mroos mroos 97 Aug 10  2012 ./include/linux/version.h
 
-Brief details:
+It's not the it doesn't get updated.
 
-Samsung N145 Plus running Slack 14 with handbuilt kernel
-Kernel: Linux 3.11.1 #3 SMP Mon Sep 23 19:09:00 BST 2013 i686 Intel(R) Atom(TM) CPU N455   @ 1.66GHz GenuineIntel GNU/Linux
-I have no modules built in (.config on request if it helps).
+It's that the file in your GIT tree is unsync'd.
 
-This issue also happened with 'distro' kernel builds... so either it is BIOS issue or hardware fault.  But just in case:
+You need to "rm include/linux/version.h" and I bet that beforehand a
+"git stat" will show "include/linux/version.h" as a spurious file.
 
-Boot laptop into console - no X - so running pure acpi events.
-
-cat /proc/acpi/button/lid/LID0/state
-state:      open
-
-shut lid
-
-laptop goes to sleep all great.
-
-open lid.  Laptop wakes up, video, wlan0 all comes on line, everything hunky dory - but:
-
-cat /proc/acpi/button/lid/LID0/state
-state:      closed
-
-The lid is open, of course!
-
-OK, shut lid.  LCD backlight goes off (so something knows the lid is shut), but no sleep event.  Open lid after a few seconds (maybe 10), and screen lights up and then laptop goes to sleep!
-
-Shut lid (wait for a few seconds), open lid, laptop wakes up fine again, and now:
-
-cat /proc/acpi/button/lid/LID0/state
-state:      open
-
-!
-
-So it appears that closing lid flags 'closed' state but opening it doesn't flag 'open' state... unless I then close it again and open which then flags 'closed' state when open so goes to sleep.  So no open it again, and 'state now reports 'open' again.  At this point, back to square one (confused?  I am!).
-
-Using Fn [sleep] in any mode above works OK.  The same happens in X using xfce4 PM or similar.
-
-What is confusing me is that something can see the lid flapping as backlight works on lid open/close.
-
-acpi_listen reports the events as described above, but I can't work out how to record the events when a sleep :)
-
-And ideas/help etc. appreciated, and also I am in the position to be able to debug (with help, of course)!
-
-Thanks,
-
-Nick
--- 
-http://linicks.net/
+Because of your situation, the second file is being included first,
+overriding the right file, the first one.
