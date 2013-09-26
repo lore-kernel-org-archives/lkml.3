@@ -1,130 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab3IZRFJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 13:05:09 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47470 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab3IZRFG (ORCPT
+	id S1753458Ab3IZRFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 13:05:31 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:60389 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab3IZRF2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 13:05:06 -0400
-Message-ID: <52446841.2030301@linux.vnet.ibm.com>
-Date: Thu, 26 Sep 2013 22:30:49 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 26 Sep 2013 13:05:28 -0400
+Date: Thu, 26 Sep 2013 19:05:20 +0200
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Cc: mmarek@suse.cz, bpoirier@suse.de, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] kconfig/menu.c: fix uninitialized variable warning
+Message-ID: <20130926170520.GB3418@free.fr>
+References: <1379869557-23116-1-git-send-email-maddy@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, mgorman@suse.de, dave@sr71.net,
-        hannes@cmpxchg.org, tony.luck@intel.com, matthew.garrett@nebula.com,
-        riel@redhat.com, srinivas.pandruvada@linux.intel.com,
-        willy@linux.intel.com, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
-        rjw@sisk.pl, gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
-        santosh.shilimkar@ti.com, kosaki.motohiro@gmail.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, maxime.coquelin@stericsson.com,
-        loic.pallardy@stericsson.com, thomas.abraham@linaro.org,
-        amit.kachhap@linaro.org
-Subject: Re: [Results] [RFC PATCH v4 00/40] mm: Memory Power Management
-References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <52437128.7030402@linux.vnet.ibm.com> <20130925164057.6bbaf23bdc5057c42b2ab010@linux-foundation.org> <20130925234734.GK18242@two.firstfloor.org> <52438AA9.3020809@linux.intel.com> <20130925182129.a7db6a0fd2c7cc3b43fda92d@linux-foundation.org> <20130926015016.GM18242@two.firstfloor.org> <20130925195953.826a9f7d.akpm@linux-foundation.org> <524439D5.8020306@linux.vnet.ibm.com> <52445993.7050608@linux.intel.com>
-In-Reply-To: <52445993.7050608@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092617-5564-0000-0000-000009E5A49C
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1379869557-23116-1-git-send-email-maddy@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 09:28 PM, Arjan van de Ven wrote:
-> On 9/26/2013 6:42 AM, Srivatsa S. Bhat wrote:
->> On 09/26/2013 08:29 AM, Andrew Morton wrote:
->>> On Thu, 26 Sep 2013 03:50:16 +0200 Andi Kleen <andi@firstfloor.org>
->>> wrote:
->>>
->>>> On Wed, Sep 25, 2013 at 06:21:29PM -0700, Andrew Morton wrote:
->>>>> On Wed, 25 Sep 2013 18:15:21 -0700 Arjan van de Ven
->>>>> <arjan@linux.intel.com> wrote:
->>>>>
->>>>>> On 9/25/2013 4:47 PM, Andi Kleen wrote:
->>>>>>>> Also, the changelogs don't appear to discuss one obvious
->>>>>>>> downside: the
->>>>>>>> latency incurred in bringing a bank out of one of the low-power
->>>>>>>> states
->>>>>>>> and back into full operation.  Please do discuss and quantify
->>>>>>>> that to
->>>>>>>> the best of your knowledge.
->>>>>>>
->>>>>>> On Sandy Bridge the memry wakeup overhead is really small. It's
->>>>>>> on by default
->>>>>>> in most setups today.
->>>>>>
->>>>>> btw note that those kind of memory power savings are
->>>>>> content-preserving,
->>>>>> so likely a whole chunk of these patches is not actually needed on
->>>>>> SNB
->>>>>> (or anything else Intel sells or sold)
->>>>>
->>>>> (head spinning a bit).  Could you please expand on this rather a lot?
->>>>
->>>> As far as I understand there is a range of aggressiveness. You could
->>>> just group memory a bit better (assuming you can sufficiently predict
->>>> the future or have some interface to let someone tell you about it).
->>>>
->>>> Or you can actually move memory around later to get as low footprint
->>>> as possible.
->>>>
->>>> This patchkit seems to do both, with the later parts being on the
->>>> aggressive side (move things around)
->>>>
->>>> If you had non content preserving memory saving you would
->>>> need to be aggressive as you couldn't afford any mistakes.
->>>>
->>>> If you had very slow wakeup you also couldn't afford mistakes,
->>>> as those could cost a lot of time.
->>>>
->>>> On SandyBridge is not slow and it's preserving, so some mistakes are
->>>> ok.
->>>>
->>>> But being aggressive (so move things around) may still help you saving
->>>> more power -- i guess only benchmarks can tell. It's a trade off
->>>> between
->>>> potential gain and potential worse case performance regression.
->>>> It may also depend on the workload.
->>>>
->>>> At least right now the numbers seem to be positive.
->>>
->>> OK.  But why are "a whole chunk of these patches not actually needed
->>> on SNB
->>> (or anything else Intel sells or sold)"?  What's the difference between
->>> Intel products and whatever-it-is-this-patchset-was-designed-for?
->>>
->>
->> Arjan, are you referring to the fact that Intel/SNB systems can exploit
->> memory self-refresh only when the entire system goes idle? Is that why
->> this
->> patchset won't turn out to be that useful on those platforms?
+Madhavan, All,
+
+On 2013-09-22 22:35 +0530, Madhavan Srinivasan spake thusly:
+> In file included from scripts/kconfig/zconf.tab.c:2537:0:
+> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
+> scripts/kconfig/menu.c:586:18: warning: ‘jump’ may be used uninitialized in
+> this function [-Wmaybe-uninitialized]
+>      jump->offset = r->len - 1;
+>                   ^
+> scripts/kconfig/menu.c:547:19: note: ‘jump’ was declared here
+>   struct jump_key *jump;
+>                    ^
+> Change V2:
 > 
-> no we can use other things (CKE and co) all the time.
-> 
+> 1)Added comment as suggested.
 
-Ah, ok..
+Maybe I'm mislead, but I think Benjamin and I suggested a comment that
+explained the warning was just spurious, and there would be no code
+change. Something like:
 
-> just that we found that statistical grouping gave 95%+ of the benefit,
-> without the cost of being aggressive on going to a 100.00% grouping
-> 
+    /* gcc 4.8.0 on (your distro and version) warns about 'jump may be
+     * used uninitialized', which is wrong. The warning does not appear
+     * with gcc != 4.8.0 */
+    struct jump_key *jump;
 
-And how do you do that statistical grouping? Don't you need patches similar
-to those in this patchset? Or are you saying that the existing vanilla
-kernel itself does statistical grouping somehow?
+This is so, if sometime in the future the code changes, and the variable
+is indeeded used uninitialised, we have a proper warning by gcc in this
+case.
 
-Also, I didn't fully understand how NUMA policy will help in this case..
-If you want to group memory allocations/references into fewer memory regions
-_within_ a node, will NUMA policy really help? For example, in this patchset,
-everything (all the allocation/reference shaping) is done _within_ the
-NUMA boundary, assuming that the memory regions are subsets of a NUMA node.
+Care to resend, please?
 
 Regards,
-Srivatsa S. Bhat
+Yann E. MORIN.
 
+> Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+> ---
+>  scripts/kconfig/menu.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+> index c1d5320..32ee2d5 100644
+> --- a/scripts/kconfig/menu.c
+> +++ b/scripts/kconfig/menu.c
+> @@ -544,7 +544,8 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
+>  {
+>  	int i, j;
+>  	struct menu *submenu[8], *menu, *location = NULL;
+> -	struct jump_key *jump;
+> +	/* Initializing to avoid a spurious warning observed in gcc 4.8.0 */
+> +	struct jump_key *jump = NULL;
+>  
+>  	str_printf(r, _("Prompt: %s\n"), _(prop->text));
+>  	menu = prop->menu->parent;
+> -- 
+> 1.7.10.4
+> 
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
