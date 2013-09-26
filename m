@@ -1,96 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759Ab3IZGgH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 02:36:07 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:39849 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab3IZGgE (ORCPT
+	id S1753449Ab3IZGgF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 02:36:05 -0400
+Received: from pindarots.xs4all.nl ([80.101.128.228]:55531 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab3IZGgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 02:36:04 -0400
-X-AuditID: cbfee68d-b7fe86d0000077a5-d2-5243d5d24cb6
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Heiko Stuebner'" <heiko@sntech.de>,
-        "'Axel Lin'" <axel.lin@ingics.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000701ceba5c$69459b10$3bd0d130$%han@samsung.com>
- <000d01ceba5d$2bb4b0f0$831e12d0$%han@samsung.com>
-In-reply-to: <000d01ceba5d$2bb4b0f0$831e12d0$%han@samsung.com>
-Subject: Re: [PATCH V2 07/18] regulator: lp3971: use devm_regulator_register()
-Date: Thu, 26 Sep 2013 15:36:02 +0900
-Message-id: <002d01ceba82$ab88ff00$029afd00$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac66XGktrYXfQ+q4TvOtJpq/iZ1T4wAAJkkAAAlHlPA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t8zI91LV52DDP4fNLc4Mucrs8XUh0/Y
-	LP4/es1qcXnhJVaLb1c6mCwu75rDZnHyTy+jA7vHzll32T3afpZ5bFrVyeZx59oeNo++LasY
-	PbZfm8fs8XmTXAB7FJdNSmpOZllqkb5dAlfGjh9zWQousVXM+neBrYFxFWsXIyeHhICJRPPh
-	xewQtpjEhXvr2boYuTiEBJYxStw/2csEU7Ro+zN2iMR0RomWhiNsIAkhgV+MEr/WmYLYbAJq
-	El++HAabJCLgL7H77hNWkAZmga2MElOX/GKCaCiU+PZrBwuIzSlgJ7H8/l6gOAeHsICfxLor
-	oiBhFgFVieUH+sHm8ArYSiw8uYEFwhaU+DH5HpjNLKAlsX7ncSYIW15i85q3zCBjJATUJR79
-	1YU4wUpi/4yVjBAlIhL7XrxjBDlHQuAvu8TVradZIXYJSHybfIgFoldWYtMBZoh/JSUOrrjB
-	MoFRYhaSzbOQbJ6FZPMsJCsWMLKsYhRNLUguKE5KLzLUK07MLS7NS9dLzs/dxAiJ594djLcP
-	WB9iTAZaP5FZSjQ5H5gO8kriDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8sSc1OTS1ILYov
-	Ks1JLT7EyMTBKdXAOOe24625DekHGm5Nbnp6MkXOSvuQxe5cgbLKGrX2+bpfY1+/buGJEWjP
-	rZ8ovCO8wn1+S+b7e/2sicd/S7t83eBikfi4prnTsO4hy8am5HmsWlM21HX98Wzewno+2zTA
-	4ENIaswFx43HjnCFiPkILXztsuBsdcis0NvBXwXkLvgL1zq9V3yoxFKckWioxVxUnAgAkbhD
-	Pv0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jQd1LV52DDD5uMrY4Mucrs8XUh0/Y
-	LP4/es1qcXnhJVaLb1c6mCwu75rDZnHyTy+jA7vHzll32T3afpZ5bFrVyeZx59oeNo++LasY
-	PbZfm8fs8XmTXAB7VAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqt
-	kotPgK5bZg7QQUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjB0/5rIU
-	XGKrmPXvAlsD4yrWLkZODgkBE4lF25+xQ9hiEhfurWfrYuTiEBKYzijR0nCEDSQhJPCLUeLX
-	OlMQm01ATeLLl8NgDSIC/hK77z5hBWlgFtjKKDF1yS8miIZCiW+/drCA2JwCdhLL7+8FinNw
-	CAv4Say7IgoSZhFQlVh+oB9sDq+ArcTCkxtYIGxBiR+T74HZzAJaEut3HmeCsOUlNq95ywwy
-	RkJAXeLRX12IE6wk9s9YyQhRIiKx78U7xgmMQrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgp
-	PddQrzgxt7g0L10vOT93EyM4WTyT2sG4ssHiEKMAB6MSD+8FZucgIdbEsuLK3EOMEhzMSiK8
-	34yAQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTGR5JfGGxiZmRpZGZhZGJubmpAkrifMe
-	aLUOFBJITyxJzU5NLUgtgtnCxMEp1cDo8088auI2FrvLJ8y8Ly0I1zq2eN6Enxu8m/7PaH9p
-	dc/qmeaLi4kCvyftX/4l/8lE3uqbfa4FZRNZbpYsf+Cc+rX55YLHuxZo6860jbr8wSBX8FX4
-	5Vfqe7ysOlM3vE+u+5DZPn/mCr/mQ08n9/Jc9J3Ypf3YcYWIVEH6taXX3fYdmR5Wv+jKQiWW
-	4oxEQy3mouJEAPkexUBaAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 26 Sep 2013 02:36:03 -0400
+Message-ID: <5243D5CE.2030302@xs4all.nl>
+Date: Thu, 26 Sep 2013 08:35:58 +0200
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: BUG with kernel 3.11.1
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 26, 2013 11:08 AM, Jingoo Han wrote:
-> 
-> Use devm_regulator_register() to make cleanup paths simpler.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/regulator/lp3971.c |   11 +++--------
->  1 file changed, 3 insertions(+), 8 deletions(-)
->
+Hello,
 
-[....]
- 
-> @@ -463,10 +462,6 @@ static int lp3971_i2c_probe(struct i2c_client *i2c,
->  static int lp3971_i2c_remove(struct i2c_client *i2c)
->  {
->  	struct lp3971 *lp3971 = i2c_get_clientdata(i2c);
-> -	int i;
-> -
-> -	for (i = 0; i < lp3971->num_regulators; i++)
-> -		regulator_unregister(lp3971->rdev[i]);
-> 
->  	kfree(lp3971->rdev);
+I found this in /var/log/messages:
 
-CC'ed Sachin Kamat,
+Sep 26 03:37:36 recorder kernel: BUG: unable to handle kernel NULL
+pointer dereference at 0000000000000008
+Sep 26 03:37:36 recorder kernel: IP: [<ffffffff8122e393>]
+__rb_insert_augmented+0x23/0x200
+Sep 26 03:37:36 recorder kernel: PGD cf8d5067 PUD caf6a067 PMD 0
+Sep 26 03:37:36 recorder kernel: Oops: 0000 [#1] PREEMPT SMP
+Sep 26 03:37:36 recorder kernel: Modules linked in: f71882fg hid_generic
+usbhid cp210x hid usbserial tda1004x budget_av saa7146_vv
+videobuf_dma_sg videobuf_core v4l2_common videodev budget_core
+ttpci_eeprom saa7146 snd_hda_codec_hdmi dvb_core snd_hda_codec_realtek
+snd_hda_intel radeon snd_hda_codec fbcon snd_seq snd_seq_device bitblit
+snd_pcm softcursor microcode font snd_page_alloc k10temp cfbfillrect
+snd_timer evdev cfbimgblt cfbcopyarea backlight snd drm_kms_helper ttm
+acpi_cpufreq i2c_piix4 ohci_pci ohci_hcd mperf processor button nfsd
+auth_rpcgss oid_registry exportfs nfs_acl lockd sunrpc autofs4
+ata_generic ehci_pci ehci_hcd sr_mod cdrom
+Sep 26 03:37:36 recorder kernel: CPU: 0 PID: 10571 Comm: ld-linux-x86-64
+Not tainted 3.11.1 #1
+Sep 26 03:37:36 recorder kernel: Hardware name: To Be Filled By O.E.M.
+To Be Filled By O.E.M./To be filled by O.E.M., BIOS 080015  05/04/2010
+Sep 26 03:37:36 recorder kernel: task: ffff8800cc44d950 ti:
+ffff8800cf98c000 task.ti: ffff8800cf98c000
+Sep 26 03:37:36 recorder kernel: RIP: 0010:[<ffffffff8122e393>]
+[<ffffffff8122e393>] __rb_insert_augmented+0x23/0x200
+Sep 26 03:37:36 recorder kernel: RSP: 0018:ffff8800cf98dde8  EFLAGS:
+00010246
+Sep 26 03:37:36 recorder kernel: RAX: ffff880108f90090 RBX:
+0000000000000000 RCX: ffff880108f90090
+Sep 26 03:37:36 recorder kernel: RDX: ffffffff810e20c0 RSI:
+ffff88010fa18a38 RDI: ffff880107164240
+Sep 26 03:37:36 recorder kernel: RBP: ffff8801071211e8 R08:
+0000000000000222 R09: 0000000000000020
+Sep 26 03:37:36 recorder kernel: R10: ffff8801071641e8 R11:
+ffff8800cf98df48 R12: ffff88010fa18a38
+Sep 26 03:37:36 recorder kernel: R13: 000000394ac20000 R14:
+0000000000000000 R15: ffff880107233500
+Sep 26 03:37:36 recorder kernel: FS:  00007fa4bcd83700(0000)
+GS:ffff88011fc00000(0000) knlGS:0000000000000000
+Sep 26 03:37:36 recorder kernel: CS:  0010 DS: 0000 ES: 0000 CR0:
+000000008005003b
+Sep 26 03:37:36 recorder kernel: CR2: 0000000000000008 CR3:
+00000000caf9d000 CR4: 00000000000007f0
+Sep 26 03:37:36 recorder kernel: Stack:
+Sep 26 03:37:36 recorder kernel: ffffffff810e20c0 ffff8801071641e8
+ffff8801071211e8 0000000000000000
+Sep 26 03:37:36 recorder kernel: ffffffff810eb78b ffff88010fa18a38
+000000394ae23000 ffff880107233540
+Sep 26 03:37:36 recorder kernel: ffff88010c560ef8 ffff88010fa18a18
+ffff880108e99180 0000000000000000
+Sep 26 03:37:36 recorder kernel: Call Trace:
+Sep 26 03:37:36 recorder kernel: [<ffffffff810e20c0>] ?
+balloon_page_enqueue+0x90/0x90
+Sep 26 03:37:36 recorder kernel: [<ffffffff810eb78b>] ?
+vma_adjust+0x23b/0x670
+Sep 26 03:37:36 recorder kernel: [<ffffffff810ebcdf>] ?
+__split_vma.isra.35+0x11f/0x1d0
+Sep 26 03:37:36 recorder kernel: [<ffffffff810eebb1>] ?
+mprotect_fixup+0x1c1/0x270
+Sep 26 03:37:36 recorder kernel: [<ffffffff810eedb3>] ?
+SyS_mprotect+0x153/0x250
+Sep 26 03:37:36 recorder kernel: [<ffffffff8141f952>] ?
+system_call_fastpath+0x16/0x1b
+Sep 26 03:37:36 recorder kernel: Code: 0f 1f 84 00 00 00 00 00 48 8b 07
+48 85 c0 0f 84 ec 01 00 00 41 54 49 89 f4 55 53 48 83 ec 08 48 8b 18 f6
+c3 01 0f 85 8c 01 00 00 <48> 8b 4b 08 49 89 d8 48 39 c8 74 4d 48 85 c9
+0f 84 a8 00 00 00
+Sep 26 03:37:36 recorder kernel: RIP  [<ffffffff8122e393>]
+__rb_insert_augmented+0x23/0x200
+Sep 26 03:37:36 recorder kernel: RSP <ffff8800cf98dde8>
+Sep 26 03:37:36 recorder kernel: CR2: 0000000000000008
+Sep 26 03:37:36 recorder kernel: ---[ end trace 7983ef4438c44a1f ]---
 
-Calling regulator_unregister(lp3971->rdev) after kfree(lp3971->rdev)
-would make the problem.
-I will remove this patch from next v3 patch series.
+If you need more info, please let me know.
 
-Best regards,
-Jingoo Han
-
-
+Kind regards,
+Udo
