@@ -1,109 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756972Ab3IZMIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 08:08:48 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51141 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756810Ab3IZMIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 08:08:41 -0400
-Message-ID: <524423B6.4070609@ti.com>
-Date: Thu, 26 Sep 2013 15:08:22 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756999Ab3IZMJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 08:09:04 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:52511 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756831Ab3IZMJA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 08:09:00 -0400
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Jingoo Han <jg1.han@samsung.com>
-CC: Mike Dunn <mikedunn@newsguy.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, <linux-pwm@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Robert Jarzmik <robert.jarzmik@free.fr>,
-        Marek Vasut <marex@denx.de>
-Subject: Re: [PATCH v2] pwm-backlight: allow for non-increasing brightness
- levels
-References: <1379869196-19377-1-git-send-email-mikedunn@newsguy.com> <5244065A.8010408@ti.com> <20130926115108.GA1680@ulmo>
-In-Reply-To: <20130926115108.GA1680@ulmo>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="iV7PU31v0Ga2vTXmWE2MHTIkHDRcCpi1d"
+In-Reply-To: <1380041605-15736-2-git-send-email-m.krawczuk@partner.samsung.com>
+References: <1380041605-15736-1-git-send-email-m.krawczuk@partner.samsung.com>
+	<1380041605-15736-2-git-send-email-m.krawczuk@partner.samsung.com>
+Date: Thu, 26 Sep 2013 17:38:58 +0530
+Message-ID: <CAKew6eUgpnqvZUCsWGpqwDXtp6ARmhd-Nw-BXiod8=MK-k0fUA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] clk: samsung: Add clock driver for s5pc100
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        Yadwinder Singh <yadi.brar@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>, rob@landley.net,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, ijc+devicetree@hellion.org.uk,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, ben-linux@fluff.org,
+        s.nawrocki@samsung.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---iV7PU31v0Ga2vTXmWE2MHTIkHDRcCpi1d
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 26/09/13 14:51, Thierry Reding wrote:
-> On Thu, Sep 26, 2013 at 01:03:06PM +0300, Tomi Valkeinen wrote:
-> [...]
->> But if you and Thierry think this version is good, I'll take it.
->=20
-> That sounds like you want to take it through the fbdev tree. Jingoo is
-> listed (along with Richard, but he hasn't been responsive to email for
-> years) as maintainer for the backlight subsystem. Furthermore back at
-
-Ah, so they are. I just thought it falls under fbdev, as it's under
-drivers/video/ =3D).
-
-I don't have any particular "want" to take it through fbdev tree. But I
-can take it.
-
-> the time when I began working on the PWM subsystem, the backlight sub-
-> system was pretty much orphaned, and pwm-backlight was by far the
-> biggest user of the PWM subsystem. I adopted the driver at the time
-> because it needed to be updated for PWM subsystem changes.
->=20
-> What's the plan going forward? Given the coupling between the PWM
-> subsystem and the pwm-backlight driver it might be useful to keep
-> maintaining it as part of the PWM subsystem. On the other hand, there's=
-
-> some coupling between the driver and the backlight subsystem too.
-
-And backlight is coupled with fbdev... Which is something I don't like.
-
-> I have a couple of patches queued up for 3.13 that rework parts of the
-> driver, so it'd be good to know how you guys want to handle this.
-
-Well. I'm happy if somebody wants to maintain the backlight side. In
-fact, I'd be happy if somebody would start restructuring it totally,
-it's rather messy. The link with fbdev should be removed, and some
-backlight drivers are actually panel drivers. However, perhaps Common
-Display Framework is required until it can be fully cleaned.
-
-So... For the time being, I'm fine with merging pwm-backlight via any
-tree that works best. I'm presuming here that backlight framework and
-fbdev (for the parts that are relevant for backlight) are not really
-being changed, so there shouldn't be conflicts.
-
- Tomi
+Hi Mateusz,
 
 
+After a quick view, just few things regarding coding styles.
 
---iV7PU31v0Ga2vTXmWE2MHTIkHDRcCpi1d
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+[...]
+> +#define        GENERAL_STATUS          0x0104
+> +#define        CAM_MUX_SEL             0x0300
+> +#define        MIXER_OUT_SEL           0x0304
+> +#define        LPMP3_MODE_SEL          0x0308
+> +#define MIPI_PHY_CON0          0x0400
+> +#define MIPI_PHY_CON1          0x0414
+> +#define HDMI_PHY_CON0          0x0420
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+How about aligning all above with same no. of tabs?
 
-iQIcBAEBAgAGBQJSRCO2AAoJEPo9qoy8lh71F3oP/24fwYFPvO1wkWx5aM34isYm
-UBbb9YQ9dIKCClvnI9m3CoNGu0DbCE+E2lYX07K3aJje3DYtAYIo9moUhRbweZfp
-bye7Qrpl48foz1sqTDO3mDyB+etc6j+0mAJmFxCFa8RYOmhISNVywqXJ7mOCleN6
-QRrIsXk9SI2l/ePmuAuvinzgZBWIQHkPxPEDD4afxvQVDf8nYNfjeMaPgztDgDK+
-MMN55m7YYkJkHsbXRSinZWzLw0VceoPxwKkJGNaZy8D9/w/fb3FOWeqR962Dhrqv
-Q4kAR0Vmn1neOHL6B3LZ1CSWf+hlv5hBvsLI7hXBdNq1JT2Z8r84tEgkR2j94w8k
-5HN39lyRxZ5vU+sM7/EFW9TJSZ4IeYDqNqQyVejFRQrkrWSpzyN8fJd/u8R0EGEv
-TelYAVtr83VzVPALsb9DvFJ9WYqgUI46Zczqk0do1mw1aFBCh3+BDCut3vJLP4Tx
-lqHccOKp0ldSk2JaTFc6wRqJBKQs7ekCwrZEieKrfR/uzj7G69pMxF1sAj441fVo
-l90HmoF4g9lX4NpHkCk9e8OPhqAZc3VHXOdAxEO4fPnMzM3r9rlzmJAx9wCOq1ES
-D36aVy3BzWjD4KdlsHJlqy7Lv98KJjgW50p9YZGkjIt8OW1fRkQRpeu/ha5c1oV8
-cvlZuk+Yqwz6SdtJVfJP
-=seaJ
------END PGP SIGNATURE-----
+> +
+> +/* Helper macros to define clock arrays. */
+> +#define FIXED_RATE_CLOCKS(name)        \
+> +               static struct samsung_fixed_rate_clock name[]
+> +#define MUX_CLOCKS(name)       \
+> +               static struct samsung_mux_clock name[]
+> +#define DIV_CLOCKS(name)       \
+> +               static struct samsung_div_clock name[]
+> +#define GATE_CLOCKS(name)      \
+> +               static struct samsung_gate_clock name[]
+> +
 
---iV7PU31v0Ga2vTXmWE2MHTIkHDRcCpi1d--
+These macros seems little bit odd in our common practice,
+perhaps these are making code harder to read below.
+
+> +/* Helper macros for gate types present on S5PC100. */
+> +#define GATE_BUS(_id, cname, pname, o, b) \
+> +               GATE(_id, cname, pname, o, b, 0, 0)
+> +#define GATE_SCLK(_id, cname, pname, o, b) \
+> +               GATE(_id, cname, pname, o, b, CLK_SET_RATE_PARENT, 0)
+> +#define GATE_ON(_id, cname, pname, o, b) \
+> +               GATE(_id, cname, pname, o, b, CLK_IGNORE_UNUSED, 0)
+> +
+[...]
+> +PNAME(mout_hclk_2_p) = {
+> +       "fout_epll",
+> +       "i2scdclk0"
+> +};
+> +
+> +PNAME(mout_i2s_2_p) = {
+> +       "fout_epll",
+> +       "i2scdclk0",
+> +       "dout_audio0",
+> +       "none"
+> +};
+> +
+
+Using one line per parent isn't increasing length of file unnecessarily?
+
+[ ... ]
+> +
+> +/* list of all parent clock list */
+> +static struct samsung_clock_alias s5pc100_clock_aliases[] = {
+> +       ALIAS(FIMC0, "s5pc100-fimc.0", "fimc"),
+> +       ALIAS(FIMC1, "s5pc100-fimc.1", "fimc"),
+> +       ALIAS(FIMC2, "s5pc100-fimc.2", "fimc"),
+> +       ALIAS(MOUT_FIMC2, NULL, "mout_fimc2"),
+> +       ALIAS(MOUT_FIMC1, NULL, "mout_fimc1"),
+> +       ALIAS(MOUT_FIMC0, NULL, "mout_fimc0"),
+> +       ALIAS(SCLK_FIMC0, "s5pc100-fimc.0", "sclk_fimc"),
+> +       ALIAS(SCLK_FIMC1, "s5pc100-fimc.1", "sclk_fimc"),
+> +       ALIAS(SCLK_FIMC2, "s5pc100-fimc.2", "sclk_fimc"),
+> +
+> +       ALIAS(MOUT_APLL, NULL, "mout_apll"),
+> +       ALIAS(MOUT_MPLL, NULL, "mout_mpll"),
+> +       ALIAS(MOUT_EPLL, NULL, "mout_epll"),
+> +       ALIAS(MOUT_HPLL, NULL, "mout_hpll"),
+> +       ALIAS(MOUT_HPLL, NULL, "sclk_hpll"),
+> +       ALIAS(UART0, "s3c6400-uart.0", "uart"),
+> +       ALIAS(UART1, "s3c6400-uart.1", "uart"),
+> +       ALIAS(UART2, "s3c6400-uart.2", "uart"),
+> +       ALIAS(UART3, "s3c6400-uart.3", "uart"),
+> +       ALIAS(UART0, "s3c6400-uart.0", "clk_uart_baud0"),
+> +       ALIAS(UART1, "s3c6400-uart.1", "clk_uart_baud0"),
+> +       ALIAS(UART2, "s3c6400-uart.2", "clk_uart_baud0"),
+> +       ALIAS(UART3, "s3c6400-uart.3", "clk_uart_baud0"),
+> +       ALIAS(UART0, "s3c6400-uart.0", "clk_uart_baud2"),
+> +       ALIAS(UART1, "s3c6400-uart.1", "clk_uart_baud2"),
+> +       ALIAS(UART2, "s3c6400-uart.2", "clk_uart_baud2"),
+> +       ALIAS(UART3, "s3c6400-uart.3", "clk_uart_baud2"),
+> +       ALIAS(SCLK_UART, "s3c6400-uart.0", "clk_uart_baud3"),
+> +       ALIAS(SCLK_UART, "s3c6400-uart.1", "clk_uart_baud3"),
+> +       ALIAS(SCLK_UART, "s3c6400-uart.2", "clk_uart_baud3"),
+> +       ALIAS(SCLK_UART, "s3c6400-uart.3", "clk_uart_baud3"),
+> +
+> +       ALIAS(HSMMC0, "s3c-sdhci.0", "hsmmc"),
+> +       ALIAS(HSMMC1, "s3c-sdhci.1", "hsmmc"),
+> +       ALIAS(HSMMC2, "s3c-sdhci.2", "hsmmc"),
+> +       ALIAS(HSMMC0, "s3c-sdhci.0", "mmc_busclk.0"),
+> +       ALIAS(HSMMC1, "s3c-sdhci.1", "mmc_busclk.0"),
+> +       ALIAS(HSMMC2, "s3c-sdhci.2", "mmc_busclk.0"),
+> +       ALIAS(SCLK_MMC0, "s3c-sdhci.0", "mmc_busclk.2"),
+> +       ALIAS(SCLK_MMC1, "s3c-sdhci.1", "mmc_busclk.2"),
+> +       ALIAS(SCLK_MMC2, "s3c-sdhci.2", "mmc_busclk.2"),
+> +       ALIAS(SCLK_MMC0_48, "s3c-sdhci.0", "mmc_busclk.3"),
+> +       ALIAS(SCLK_MMC1_48, "s3c-sdhci.1", "mmc_busclk.3"),
+> +       ALIAS(SCLK_MMC2_48, "s3c-sdhci.2", "mmc_busclk.3"),
+> +
+> +       ALIAS(SPI0, "s5pc100-spi.0", "spi"),
+> +       ALIAS(SPI1, "s5pc100-spi.1", "spi"),
+> +       ALIAS(SPI2, "s5pc100-spi.2", "spi"),
+> +       ALIAS(SPI0, "s5pc100-spi.0", "spi_busclk0"),
+> +       ALIAS(SPI1, "s5pc100-spi.1", "spi_busclk0"),
+> +       ALIAS(SPI2, "s5pc100-spi.2", "spi_busclk0"),
+> +       ALIAS(SCLK_SPI0_48, "s5pc100-spi.0", "spi_busclk1"),
+> +       ALIAS(SCLK_SPI1_48, "s5pc100-spi.1", "spi_busclk1"),
+> +       ALIAS(SCLK_SPI2_48, "s5pc100-spi.2", "spi_busclk1"),
+> +       ALIAS(SCLK_SPI0, "s5pc100-spi.0", "spi_busclk2"),
+> +       ALIAS(SCLK_SPI1, "s5pc100-spi.1", "spi_busclk2"),
+> +       ALIAS(SCLK_SPI2, "s5pc100-spi.2", "spi_busclk2"),
+> +       ALIAS(PDMA0, "dma-pl330.0", "apb_pclk"),
+> +       ALIAS(PDMA1, "dma-pl330.1", "apb_pclk"),
+> +       ALIAS(PWM, NULL, "timers"),
+> +
+> +       ALIAS(JPEG, NULL, "jpeg"),
+> +       ALIAS(MFC, "s5p-mfc", "mfc"),
+> +       ALIAS(TV, "s5p-sdo", "dac"),
+> +       ALIAS(MIXER, "s5p-mixer", "mixer"),
+> +       ALIAS(VP, "s5p-mixer", "vp"),
+> +       ALIAS(HDMI, "s5p-hdmi", "hdmi"),
+> +       ALIAS(SCLK_HDMI, "s5p-hdmi", "hdmiphy"),
+> +
+> +       ALIAS(USB_OTG, NULL, "otg"),
+> +       ALIAS(USB_HOST, NULL, "usb-host"),
+> +       ALIAS(USB_HOST, NULL, "usbhost"),
+> +       ALIAS(LCDCON, "s5pc100-fb", "lcd"),
+> +       ALIAS(CFCON, NULL, "cfcon"),
+> +       ALIAS(SYSTIMER, NULL, "systimer"),
+> +       ALIAS(WDT, NULL, "watchdog"),
+> +       ALIAS(RTC, NULL, "rtc"),
+> +       ALIAS(I2C, "s3c2440-i2c.0", "i2c"),
+> +       ALIAS(CCAN0, NULL, "ccan"),
+> +       ALIAS(CCAN1, NULL, "ccan"),
+> +       ALIAS(I2C_HDMI, "s3c2440-i2c.1", "i2c"),
+> +       ALIAS(HSITX, NULL, "hsitx"),
+> +       ALIAS(HSIRX, NULL, "hsirx"),
+> +       ALIAS(TSADC, NULL, "adc"),
+> +       ALIAS(KEYIF, "s5pc100-keypad", "keypad"),
+> +       ALIAS(I2S0, "samsung-i2s.0", "iis"),
+> +       ALIAS(I2S1, "samsung-i2s.1", "iis"),
+> +       ALIAS(I2S2, "samsung-i2s.2", "iis"),
+> +       ALIAS(SPDIF, NULL, "spdif"),
+> +       ALIAS(ROTATOR, NULL, "rot"),
+> +       ALIAS(DOUT_ARM, NULL, "armclk"),
+> +       ALIAS(SCLK_AUDIO0, "soc-audio.0", "sclk_audio"),
+> +       ALIAS(SCLK_AUDIO1, "soc-audio.1", "sclk_audio"),
+> +       ALIAS(SCLK_AUDIO2, "soc-audio.2", "sclk_audio"),
+> +       ALIAS(KEYIF, NULL, "keypad"),
+> +
+> +       ALIAS(MFC, "s5p-mfc", "sclk_mfc"),
+> +       ALIAS(G2D, "s5p-g2d", "fimg2d"),
+> +
+> +};
+> +
+
+Any reason/hidden advantage for using a separate of ALIAS,
+instead of using MUX_A/GATE_A ?
+
+[ ... ]
+> +       s5pc100_clk_register_finpll(xom);
+> +
+> +       /* Register PLLs. */
+
+Why this special comment/treatment for PLLs :) ?
+Others below doesn't get such treatment.
+
+> +       samsung_clk_register_pll(s5pc100_pll_clks,
+> +                               ARRAY_SIZE(s5pc100_pll_clks), reg_base);
+> +
+> +       samsung_clk_register_fixed_rate(s5pc100_fixed_rate_clks,
+> +                       ARRAY_SIZE(s5pc100_fixed_rate_clks));
+> +
+>
+
+
+Regards,
+Yadwinder
