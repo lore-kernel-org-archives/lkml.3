@@ -1,52 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab3IZTdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 15:33:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56357 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349Ab3IZTdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 15:33:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,987,1371106800"; 
-   d="scan'208";a="384039528"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: LKML <linux-kernel@vger.kernel.org>, Linux PM <linux-pm@vger.kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Cc: Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH] thermal/intel_powerclamp: Add newer CPU models
-Date: Thu, 26 Sep 2013 04:33:25 -0700
-Message-Id: <1380195205-32646-1-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754325Ab3IZTeE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 15:34:04 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35125 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753939Ab3IZTd4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 15:33:56 -0400
+Subject: Re: [PATCHv4 2/3] ARM: msm: Add support for APQ8074 Dragonboard
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <52448852.9050608@codeaurora.org>
+Date: Thu, 26 Sep 2013 14:33:53 -0500
+Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <50877C70-6066-4E87-9DEA-9F29D098525B@codeaurora.org>
+References: <1379992406-3541-1-git-send-email-rvaswani@codeaurora.org> <1379992406-3541-2-git-send-email-rvaswani@codeaurora.org> <4E7868D6-56CB-4AF8-8EBF-069966899C23@codeaurora.org> <5243652F.7090408@codeaurora.org> <B0F416B8-042A-49F1-81E9-B217F02AAD1E@codeaurora.org> <52447779.3010908@codeaurora.org> <52448852.9050608@codeaurora.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will enable intel_powerclamp driver on newer Intel CPUs
-including some Ivy Bridge and Haswell processors.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- drivers/thermal/intel_powerclamp.c |    5 +++++
- 1 file changed, 5 insertions(+)
+On Sep 26, 2013, at 2:17 PM, Rohit Vaswani wrote:
 
-diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
-index b40b37c..6e3b061 100644
---- a/drivers/thermal/intel_powerclamp.c
-+++ b/drivers/thermal/intel_powerclamp.c
-@@ -675,6 +675,11 @@ static const struct x86_cpu_id intel_powerclamp_ids[] = {
- 	{ X86_VENDOR_INTEL, 6, 0x2e},
- 	{ X86_VENDOR_INTEL, 6, 0x2f},
- 	{ X86_VENDOR_INTEL, 6, 0x3a},
-+	{ X86_VENDOR_INTEL, 6, 0x3c},
-+	{ X86_VENDOR_INTEL, 6, 0x3e},
-+	{ X86_VENDOR_INTEL, 6, 0x3f},
-+	{ X86_VENDOR_INTEL, 6, 0x45},
-+	{ X86_VENDOR_INTEL, 6, 0x46},
- 	{}
- };
- MODULE_DEVICE_TABLE(x86cpu, intel_powerclamp_ids);
+> On 9/26/2013 11:05 AM, Rohit Vaswani wrote:
+>> On 9/26/2013 9:37 AM, Kumar Gala wrote:
+>>> <snip>
+>> 
+>>> +++ b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+>>> @@ -0,0 +1,6 @@
+>>> +/include/ "qcom-msm8974.dtsi"
+>>> +
+>>> +/ {
+>>> +    model = "Qualcomm APQ8074 Dragonboard";
+>>> +    compatible = "qcom,apq8074-dragonboard", "qcom,apq8074";
+>>> +};
+>>> diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
+>>> new file mode 100644
+>>> index 0000000..f04b643
+>>> --- /dev/null
+>>> +++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
+>>> @@ -0,0 +1,35 @@
+>>> +/dts-v1/;
+>>> +
+>>> +/include/ "skeleton.dtsi"
+>>> +
+>>> +/ {
+>>> +    model = "Qualcomm MSM8974";
+>>> +    compatible = "qcom,msm8974";
+>>> +    interrupt-parent = <&intc>;
+>>> +
+>>> +    soc: soc { };
+>>>>> We should have a unit address here:
+>>>>> 
+>>>>>      soc: soc@FOOBAR {
+>>>>> 
+>>>>> also, split out the curly braces so any future patches do have to muck with that.
+>>>>> 
+>>>>>    };
+>>>>> 
+>>>> Im not sure I understand the reasoning behind the unit address for soc ?
+>>> Its fairly standard practice and there is a fair amount of discussion about the lack of a unit address for memory nodes.
+>>> 
+>> That still doesn't really answer anything :) - and I couldn't find any discussions about this either.
+>> I don't see anybody in upstream adding an address to soc except sun.
+>> What is that address supposed to be for - what does it mean ?
+>> The soc is way of encapsulating meaningful blocks  for the particular SoC.
+> 
+> I see the mail from Stephen Warren for adding a check stating that
+> 
+> "ePAPR 1.1 section 2.2.1.1 "Node Name Requirements" specifies that any
+> node that has a reg property must include a unit address in its name
+> with value matching the first entry in its reg property. Conversely, if
+> a node does not have a reg property, the node name must not include a
+> unit address."
+> 
+> The soc node we have does not have a reg property ?
+
+Not 100% sure what people will decide on this.  There are a number of examples on the PPC side (arch/powerpc/boot/dts) that are soc@ADDR, but they don't typically have "reg" properties at the soc level.
+
+Let's go ahead w/o the unit address (as you have it) for now.
+
+- k
+
 -- 
-1.7.9.5
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
