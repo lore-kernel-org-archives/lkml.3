@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab3IZR0f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 13:26:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20596 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751167Ab3IZR0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 13:26:31 -0400
-Date: Thu, 26 Sep 2013 13:26:28 -0400 (EDT)
-Message-Id: <20130926.132628.780580796759839483.davem@redhat.com>
-To: mroos@linux.ee
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: include/linux/version.h not updated
-From: David Miller <davem@redhat.com>
-In-Reply-To: <alpine.SOC.1.00.1309261601050.11084@math.ut.ee>
-References: <20130926.002304.2121420558807412031.davem@davemloft.net>
-	<alpine.SOC.1.00.1309261347030.11084@math.ut.ee>
-	<alpine.SOC.1.00.1309261601050.11084@math.ut.ee>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1753211Ab3IZRaz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 13:30:55 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:39938 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab3IZRay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 13:30:54 -0400
+From: Masoud Sharbiani <masoud.sharbiani@gmail.com>
+To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com
+Cc: x86@kernel.org, akpm@linux-foundation.org, holt@sgi.com,
+        msharbiani@twitter.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] Patch x86: Remove the duplicate C6100 entry in quirky motherboard boot list.
+Date: Thu, 26 Sep 2013 10:30:43 -0700
+Message-Id: <1380216643-4683-1-git-send-email-masoud.sharbiani@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Meelis Roos <mroos@linux.ee>
-Date: Thu, 26 Sep 2013 16:12:55 +0300 (EEST)
+From: Masoud Sharbiani <msharbiani@twitter.com>
 
-> -rw-r--r-- 1 mroos mroos 97 Sep 20 21:56 include/generated/uapi/linux/version.h
-> -rw-r--r-- 1 mroos mroos 97 Aug 10  2012 ./include/linux/version.h
+Two entries for the same system type were added, with two different vendor names: 'Dell' and 'Dell, Inc.'. Since a prefix match is being used, we can eliminate the latter.
 
-It's not the it doesn't get updated.
+Signed-off-by: Masoud Sharbiani <msharbiani@twitter.com>
+---
+ arch/x86/kernel/reboot.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
-It's that the file in your GIT tree is unsync'd.
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index f0783a6..d9333a4 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -362,14 +362,6 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 		.callback = set_pci_reboot,
+ 		.ident = "Dell PowerEdge C6100",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
+-		},
+-	},
+-	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
+-		.callback = set_pci_reboot,
+-		.ident = "Dell PowerEdge C6100",
+-		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
+ 		},
+-- 
+1.7.9.5
 
-You need to "rm include/linux/version.h" and I bet that beforehand a
-"git stat" will show "include/linux/version.h" as a spurious file.
-
-Because of your situation, the second file is being included first,
-overriding the right file, the first one.
