@@ -1,91 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab3IZWUz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:20:55 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:29888
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754049Ab3IZWUv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:20:51 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VS2(zz98dI9371I936eI542I1432Id725ozz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-Message-ID: <1380234044.24959.339.camel@snotra.buserror.net>
-Subject: Re: [PATCH 5/7] iommu: supress loff_t compilation error on powerpc
-From: Scott Wood <scottwood@freescale.com>
-To: Bhushan Bharat-R65777 <R65777@freescale.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Date: Thu, 26 Sep 2013 17:20:44 -0500
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D07183CA4@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1379575763-2091-6-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1380127227.3030.316.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D07183CA4@039-SN2MPN1-011.039d.mgd.msft.net>
+	id S1754779Ab3IZWVE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:21:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:6338 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754142Ab3IZWVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 18:21:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,988,1371106800"; 
+   d="scan'208";a="384113099"
+Subject: [PATCH v7 0/6] rwsem: performance optimizations
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+References: <cover.1380231690.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-MIME-Version: 1.0
+Date: Thu, 26 Sep 2013 15:20:56 -0700
+Message-ID: <1380234056.3467.86.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-25 at 22:53 -0500, Bhushan Bharat-R65777 wrote:
-> 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Wednesday, September 25, 2013 10:10 PM
-> > To: Bhushan Bharat-R65777
-> > Cc: joro@8bytes.org; benh@kernel.crashing.org; galak@kernel.crashing.org; linux-
-> > kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
-> > pci@vger.kernel.org; agraf@suse.de; Wood Scott-B07421; iommu@lists.linux-
-> > foundation.org; Bhushan Bharat-R65777
-> > Subject: Re: [PATCH 5/7] iommu: supress loff_t compilation error on powerpc
-> > 
-> > On Thu, 2013-09-19 at 12:59 +0530, Bharat Bhushan wrote:
-> > > Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
-> > > ---
-> > >  drivers/vfio/pci/vfio_pci_rdwr.c |    3 ++-
-> > >  1 files changed, 2 insertions(+), 1 deletions(-)
-> > >
-> > > diff --git a/drivers/vfio/pci/vfio_pci_rdwr.c
-> > > b/drivers/vfio/pci/vfio_pci_rdwr.c
-> > > index 210db24..8a8156a 100644
-> > > --- a/drivers/vfio/pci/vfio_pci_rdwr.c
-> > > +++ b/drivers/vfio/pci/vfio_pci_rdwr.c
-> > > @@ -181,7 +181,8 @@ ssize_t vfio_pci_vga_rw(struct vfio_pci_device *vdev, char
-> > __user *buf,
-> > >  			       size_t count, loff_t *ppos, bool iswrite)  {
-> > >  	int ret;
-> > > -	loff_t off, pos = *ppos & VFIO_PCI_OFFSET_MASK;
-> > > +	loff_t off;
-> > > +	u64 pos = (u64 )(*ppos & VFIO_PCI_OFFSET_MASK);
-> > >  	void __iomem *iomem = NULL;
-> > >  	unsigned int rsrc;
-> > >  	bool is_ioport;
-> > 
-> > What's the compile error that this fixes?
-> 
-> I was getting below error; and after some googling I came to know that this is how it is fixed by other guys.
-> 
-> /home/r65777/linux-vfio/drivers/vfio/pci/vfio_pci_rdwr.c:193: undefined reference to `__cmpdi2'
-> /home/r65777/linux-vfio/drivers/vfio/pci/vfio_pci_rdwr.c:193: undefined reference to `__cmpdi2'
+We fixed various style issues for version 7 of this patchset 
+and added brief explanations of the MCS lock code that we put
+in a separate file. We will like to have it merged if
+there are no objections.
 
-It looks like PPC Linux implements __ucmpdi2, but not the signed
-version.  That should be fixed, rather than hacking up random code to
-avoid it.
+In this patchset, we introduce two categories of optimizations to read
+write semaphore.  The first four patches from Alex Shi reduce cache
+bouncing of the sem->count field by doing a pre-read of the sem->count
+and avoid cmpxchg if possible.
 
--Scott
+The last two patches introduce similar optimistic spinning logic as the
+mutex code for the writer lock acquisition of rwsem. This addresses the
+general 'mutexes out perform writer-rwsems' situations that has been
+seen in more than one case.  Users now need not worry about performance
+issues when choosing between these two locking mechanisms.
 
+Without these optimizations, Davidlohr Bueso saw a -8% regression to
+aim7's shared and high_systime workloads when he switched i_mmap_mutex
+to rwsem.  Tests were on 8 socket 80 cores system.  With the patchset,
+he got significant improvements to the aim7 suite instead of regressions:
+
+alltests (+16.3%), custom (+20%), disk (+19.5%), high_systime (+7%),
+shared (+18.4%) and short (+6.3%).
+
+Tim Chen also got a +5% improvements to exim mail server workload on a
+40 core system.
+
+Thanks to Ingo Molnar, Peter Hurley and Peter Zijlstra for reviewing
+this patchset.
+
+Regards,
+Tim Chen
+
+Changelog:
+
+v7:
+1. Rename mcslock.h to mcs_spinlock.h and also rename mcs related fields
+with mcs prefix.
+2. Properly define type of *mcs_lock field instead of leaving it as *void.
+3. Added breif explanation of mcs lock.
+
+v6:
+1. Fix missing mcslock.h file.
+2. Fix various code style issues.
+
+v5:
+1. Try optimistic spinning before we put the writer on the wait queue
+to avoid bottlenecking at wait queue.  This provides 5% boost to exim workload
+and between 2% to 8% boost to aim7. 
+2. Put MCS locking code into its own mcslock.h file for better reuse
+between mutex.c and rwsem.c
+3. Remove the configuration RWSEM_SPIN_ON_WRITE_OWNER and make the 
+operations default per Ingo's suggestions.
+
+v4:
+1. Fixed a bug in task_struct definition in rwsem_can_spin_on_owner
+2. Fix another typo for RWSEM_SPIN_ON_WRITE_OWNER config option
+
+v3:
+1. Added ACCESS_ONCE to sem->count access in rwsem_can_spin_on_owner.
+2. Fix typo bug for RWSEM_SPIN_ON_WRITE_OWNER option in init/Kconfig
+
+v2:
+1. Reorganize changes to down_write_trylock and do_wake into 4 patches and fixed
+   a bug referencing &sem->count when sem->count is intended.
+2. Fix unsafe sem->owner de-reference in rwsem_can_spin_on_owner.
+the option to be on for more seasoning but can be turned off should it be detrimental.
+3. Various patch comments update
+
+Alex Shi (4):
+  rwsem: check the lock before cpmxchg in down_write_trylock
+  rwsem: remove 'out' label in do_wake
+  rwsem: remove try_reader_grant label do_wake
+  rwsem/wake: check lock before do atomic update
+
+Tim Chen (2):
+  MCS Lock: Restructure the MCS lock defines and locking code into its
+    own file
+  rwsem: do optimistic spinning for writer lock acquisition
+
+ include/asm-generic/rwsem.h  |    8 +-
+ include/linux/mcs_spinlock.h |   64 ++++++++++++
+ include/linux/mutex.h        |    5 +-
+ include/linux/rwsem.h        |    7 +-
+ kernel/mutex.c               |   60 ++----------
+ kernel/rwsem.c               |   19 ++++-
+ lib/rwsem.c                  |  226 ++++++++++++++++++++++++++++++++++++-----
+ 7 files changed, 300 insertions(+), 89 deletions(-)
+ create mode 100644 include/linux/mcs_spinlock.h
+
+-- 
+1.7.4.4
 
 
