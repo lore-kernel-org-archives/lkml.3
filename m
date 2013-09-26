@@ -1,109 +1,633 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab3IZD4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 23:56:41 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:64713 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab3IZD4j (ORCPT
+	id S1755315Ab3IZD5p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 23:57:45 -0400
+Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:6080
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754972Ab3IZD5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 23:56:39 -0400
-X-AuditID: cbfee68e-b7f756d000004512-67-5243b0758bc4
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'Mateusz Krawczuk'" <m.krawczuk@partner.samsung.com>
-Cc: ben-linux@fluff.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        m.szyprowski@samsung.com,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-References: <1379931289-29384-1-git-send-email-m.krawczuk@partner.samsung.com>
- <2025079.MVbFYJdokX@amdc1227>
-In-reply-to: <2025079.MVbFYJdokX@amdc1227>
-Subject: RE: [PATCH] DT: if dt is available don't use s3c_arch_init
-Date: Thu, 26 Sep 2013 12:56:37 +0900
-Message-id: <029601ceba6c$661bdf20$32539d60$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac64Wa3u7cZmBXNqTFSTb6DPtV6xtwCEmO7Q
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t8zQ93SDc5BBmc+ylhMWneAyeJs0xt2
-	i02Pr7FaXN41h81ixvl9TBa3L/NanF5zitli7ZG77BbrZ7xmceD0aGnuYfP4u+oFs8fmJfUe
-	B9/tYfLo27KK0ePzJrkAtigum5TUnMyy1CJ9uwSujFPr1jEXvOOuWLCmmbWBcR9nFyMnh4SA
-	icSm92+YIGwxiQv31rN1MXJxCAksY5T4c+o7excjB1jR6XXmEPFFjBLzX69kh3D+Mkqsvr6b
-	HaSbTUBD4vD7Z2C2iECsxMM9V5hAipgFHjNK3Fq2GCwhJJAn0bvlOtg6TgEtiW1HnoLFhQWc
-	JZ587GQFsVkEVCXe/O0Eq+EVsJXo6f7JDGELSvyYfI8FxGYG6l2/8zgThC0vsXnNW2aIS9Ul
-	Hv3VhbjBSOLzp+lsECUiEvtevGMEuUdCoJFDYvqPHYwQuwQkvk0+xALRKyux6QAzJCQkJQ6u
-	uMEygVFiFpLNs5BsnoVk8ywkKxYwsqxiFE0tSC4oTkovMtIrTswtLs1L10vOz93ECInsvh2M
-	Nw9YH2JMBlo/kVlKNDkfmBjySuINjc2MLExNTI2NzC3NSBNWEudVa7EOFBJITyxJzU5NLUgt
-	ii8qzUktPsTIxMEp1cDo7zm5P0Xo/6M9WtOK9hdcMVuaJHSCpfyY4JXTomseizMfCv/98eeS
-	TVb1flUHU7OPVIupb+FieTyjneeu9nzVSP7lmzUu/2Fr7vOKepitr5T0fYWMDtuhquan87Te
-	LNjbKn/G3HnXqksf2PwFzm3trbHSa/PxfLbil1vr5Q0Be9cvnMt+zLJXiaU4I9FQi7moOBEA
-	1fBOSgIDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDKsWRmVeSWpSXmKPExsVy+t9jAd3SDc5BBn9aJSwmrTvAZHG26Q27
-	xabH11gtLu+aw2Yx4/w+Jovbl3ktTq85xWyx9shddov1M16zOHB6tDT3sHn8XfWC2WPzknqP
-	g+/2MHn0bVnF6PF5k1wAW1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJe
-	Ym6qrZKLT4CuW2YO0FFKCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMI6xoxT
-	69YxF7zjrliwppm1gXEfZxcjB4eEgInE6XXmXYycQKaYxIV769m6GLk4hAQWMUrMf72SHcL5
-	yyix+vpudpAqNgENicPvn4HZIgKxEg/3XGECKWIWeMwocWvZYrCEkECeRO+W60wgNqeAlsS2
-	I0/B4sICzhJPPnaygtgsAqoSb/52gtXwCthK9HT/ZIawBSV+TL7HAmIzA/Wu33mcCcKWl9i8
-	5i0zxNXqEo/+6kLcYCTx+dN0NogSEYl9L94xTmAUmoVk0iwkk2YhmTQLScsCRpZVjKKpBckF
-	xUnpuUZ6xYm5xaV56XrJ+bmbGMFp45n0DsZVDRaHGAU4GJV4eC8wOwcJsSaWFVfmHmKU4GBW
-	EuH9ZgQU4k1JrKxKLcqPLyrNSS0+xJgM9OhEZinR5HxgSssriTc0NjEzsjQyszAyMTcnTVhJ
-	nPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBsb2rD2ikZ9uWTR7mH2auXuOoLTChvLZ7U0iR5YL
-	/46d5CB/STpFv/Tg0q1fr/yRUJdlttrYFhQ+f1vT7dBD+u+8r4o217bx9lgkufxaOnvHfrX1
-	ExgbXIsZC6z+Wq5aaTP53ZyKq9a3vh7dG9p8cfrjU0m5734ItYTXL5nWfNf9pNjvfRqix34p
-	sRRnJBpqMRcVJwIA+xUb6l8DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 25 Sep 2013 23:57:43 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zz98dI9371I936eI146fI542I1432Ic8kzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de097h186068h8275bh8275dha509lz2dh2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
+From: Bhushan Bharat-R65777 <R65777@freescale.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: "joro@8bytes.org" <joro@8bytes.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
+Subject: RE: [PATCH 6/7] vfio: moving some functions in common file
+Thread-Topic: [PATCH 6/7] vfio: moving some functions in common file
+Thread-Index: AQHOtQsXtNprVVCu6UeeaER7c6RjspnWuAYAgAC1+oA=
+Date: Thu, 26 Sep 2013 03:57:36 +0000
+Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D07183CBB@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
+	 <1379575763-2091-7-git-send-email-Bharat.Bhushan@freescale.com>
+ <1380128566.3030.327.camel@ul30vt.home>
+In-Reply-To: <1380128566.3030.327.camel@ul30vt.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.14.2]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8Q3vouk011520
 
-Tomasz Figa wrote:
+
+
+> -----Original Message-----
+> From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-owner@vger.kernel.org]
+> On Behalf Of Alex Williamson
+> Sent: Wednesday, September 25, 2013 10:33 PM
+> To: Bhushan Bharat-R65777
+> Cc: joro@8bytes.org; benh@kernel.crashing.org; galak@kernel.crashing.org; linux-
+> kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
+> pci@vger.kernel.org; agraf@suse.de; Wood Scott-B07421; iommu@lists.linux-
+> foundation.org; Bhushan Bharat-R65777
+> Subject: Re: [PATCH 6/7] vfio: moving some functions in common file
 > 
-> Hi Mateusz,
-> 
-> On Monday 23 of September 2013 12:14:49 Mateusz Krawczuk wrote:
-> > It prevents from executing platform code, when booting from device tree.
+> On Thu, 2013-09-19 at 12:59 +0530, Bharat Bhushan wrote:
+> > Some function defined in vfio_iommu_type1.c were common and we want to
+> > use these for FSL IOMMU (PAMU) and iommu-none driver.
+> > So some of them are moved to vfio_iommu_common.c
 > >
-> > Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > I think we can do more of that but we will take this step by step.
+> >
+> > Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
 > > ---
-> >  arch/arm/plat-samsung/init.c | 3 +++
-> >  1 file changed, 3 insertions(+)
+> >  drivers/vfio/Makefile            |    4 +-
+> >  drivers/vfio/vfio_iommu_common.c |  235
+> ++++++++++++++++++++++++++++++++++++++
+> >  drivers/vfio/vfio_iommu_common.h |   30 +++++
+> >  drivers/vfio/vfio_iommu_type1.c  |  206
+> > +---------------------------------
+> >  4 files changed, 268 insertions(+), 207 deletions(-)  create mode
+> > 100644 drivers/vfio/vfio_iommu_common.c  create mode 100644
+> > drivers/vfio/vfio_iommu_common.h
 > >
-> > diff --git a/arch/arm/plat-samsung/init.c b/arch/arm/plat-samsung/init.c
-> > index aa9511b..0ace02d 100644
-> > --- a/arch/arm/plat-samsung/init.c
-> > +++ b/arch/arm/plat-samsung/init.c
-> > @@ -20,6 +20,7 @@
-> >  #include <linux/module.h>
-> >  #include <linux/interrupt.h>
-> >  #include <linux/ioport.h>
-> > +#include <linux/of.h>
-> >  #include <linux/serial_core.h>
-> >  #include <linux/platform_device.h>
-> >  #include <linux/of.h>
-> > @@ -152,6 +153,8 @@ static int __init s3c_arch_init(void)
-> >  {
-> >  	int ret;
-> >
-> > +	if (of_have_populated_dt())
+> > diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile index
+> > 72bfabc..c5792ec 100644
+> > --- a/drivers/vfio/Makefile
+> > +++ b/drivers/vfio/Makefile
+> > @@ -1,4 +1,4 @@
+> >  obj-$(CONFIG_VFIO) += vfio.o
+> > -obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
+> > -obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_spapr_tce.o
+> > +obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_common.o
+> > +vfio_iommu_type1.o
+> > +obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_common.o
+> > +vfio_iommu_spapr_tce.o
+> >  obj-$(CONFIG_VFIO_PCI) += pci/
+> > diff --git a/drivers/vfio/vfio_iommu_common.c
+> > b/drivers/vfio/vfio_iommu_common.c
+> > new file mode 100644
+> > index 0000000..8bdc0ea
+> > --- /dev/null
+> > +++ b/drivers/vfio/vfio_iommu_common.c
+> > @@ -0,0 +1,235 @@
+> > +/*
+> > + * VFIO: Common code for vfio IOMMU support
+> > + *
+> > + * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
+> > + *     Author: Alex Williamson <alex.williamson@redhat.com>
+> > + *     Author: Bharat Bhushan <bharat.bhushan@freescale.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > +modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + *
+> > + * Derived from original vfio:
+> > + * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
+> > + * Author: Tom Lyon, pugs@cisco.com
+> > + */
+> > +
+> > +#include <linux/compat.h>
+> > +#include <linux/device.h>
+> > +#include <linux/fs.h>
+> > +#include <linux/iommu.h>
+> > +#include <linux/module.h>
+> > +#include <linux/mm.h>
+> > +#include <linux/pci.h>		/* pci_bus_type */
+> > +#include <linux/rbtree.h>
+> > +#include <linux/sched.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/uaccess.h>
+> > +#include <linux/vfio.h>
+> > +#include <linux/workqueue.h>
+> 
+> Please cleanup includes on both the source and target files.  You obviously
+> don't need linux/pci.h here for one.
+
+Will do.
+
+> 
+> > +
+> > +static bool disable_hugepages;
+> > +module_param_named(disable_hugepages,
+> > +		   disable_hugepages, bool, S_IRUGO | S_IWUSR);
+> > +MODULE_PARM_DESC(disable_hugepages,
+> > +		 "Disable VFIO IOMMU support for IOMMU hugepages.");
+> > +
+> > +struct vwork {
+> > +	struct mm_struct	*mm;
+> > +	long			npage;
+> > +	struct work_struct	work;
+> > +};
+> > +
+> > +/* delayed decrement/increment for locked_vm */ void
+> > +vfio_lock_acct_bg(struct work_struct *work) {
+> > +	struct vwork *vwork = container_of(work, struct vwork, work);
+> > +	struct mm_struct *mm;
+> > +
+> > +	mm = vwork->mm;
+> > +	down_write(&mm->mmap_sem);
+> > +	mm->locked_vm += vwork->npage;
+> > +	up_write(&mm->mmap_sem);
+> > +	mmput(mm);
+> > +	kfree(vwork);
+> > +}
+> > +
+> > +void vfio_lock_acct(long npage)
+> > +{
+> > +	struct vwork *vwork;
+> > +	struct mm_struct *mm;
+> > +
+> > +	if (!current->mm || !npage)
+> > +		return; /* process exited or nothing to do */
+> > +
+> > +	if (down_write_trylock(&current->mm->mmap_sem)) {
+> > +		current->mm->locked_vm += npage;
+> > +		up_write(&current->mm->mmap_sem);
+> > +		return;
+> > +	}
+> > +
+> > +	/*
+> > +	 * Couldn't get mmap_sem lock, so must setup to update
+> > +	 * mm->locked_vm later. If locked_vm were atomic, we
+> > +	 * wouldn't need this silliness
+> > +	 */
+> > +	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
+> > +	if (!vwork)
+> > +		return;
+> > +	mm = get_task_mm(current);
+> > +	if (!mm) {
+> > +		kfree(vwork);
+> > +		return;
+> > +	}
+> > +	INIT_WORK(&vwork->work, vfio_lock_acct_bg);
+> > +	vwork->mm = mm;
+> > +	vwork->npage = npage;
+> > +	schedule_work(&vwork->work);
+> > +}
+> > +
+> > +/*
+> > + * Some mappings aren't backed by a struct page, for example an
+> > +mmap'd
+> > + * MMIO range for our own or another device.  These use a different
+> > + * pfn conversion and shouldn't be tracked as locked pages.
+> > + */
+> > +bool is_invalid_reserved_pfn(unsigned long pfn) {
+> > +	if (pfn_valid(pfn)) {
+> > +		bool reserved;
+> > +		struct page *tail = pfn_to_page(pfn);
+> > +		struct page *head = compound_trans_head(tail);
+> > +		reserved = !!(PageReserved(head));
+> > +		if (head != tail) {
+> > +			/*
+> > +			 * "head" is not a dangling pointer
+> > +			 * (compound_trans_head takes care of that)
+> > +			 * but the hugepage may have been split
+> > +			 * from under us (and we may not hold a
+> > +			 * reference count on the head page so it can
+> > +			 * be reused before we run PageReferenced), so
+> > +			 * we've to check PageTail before returning
+> > +			 * what we just read.
+> > +			 */
+> > +			smp_rmb();
+> > +			if (PageTail(tail))
+> > +				return reserved;
+> > +		}
+> > +		return PageReserved(tail);
+> > +	}
+> > +
+> > +	return true;
+> > +}
+> > +
+> > +int put_pfn(unsigned long pfn, int prot) {
+> > +	if (!is_invalid_reserved_pfn(pfn)) {
+> > +		struct page *page = pfn_to_page(pfn);
+> > +		if (prot & IOMMU_WRITE)
+> > +			SetPageDirty(page);
+> > +		put_page(page);
+> > +		return 1;
+> > +	}
+> > +	return 0;
+> > +}
+> > +
+> > +static int vaddr_get_pfn(unsigned long vaddr, int prot, unsigned long
+> > +*pfn) {
+> > +	struct page *page[1];
+> > +	struct vm_area_struct *vma;
+> > +	int ret = -EFAULT;
+> > +
+> > +	if (get_user_pages_fast(vaddr, 1, !!(prot & IOMMU_WRITE), page) == 1) {
+> > +		*pfn = page_to_pfn(page[0]);
 > > +		return 0;
+> > +	}
+> > +
+> > +	printk("via vma\n");
+> > +	down_read(&current->mm->mmap_sem);
+> > +
+> > +	vma = find_vma_intersection(current->mm, vaddr, vaddr + 1);
+> > +
+> > +	if (vma && vma->vm_flags & VM_PFNMAP) {
+> > +		*pfn = ((vaddr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
+> > +		if (is_invalid_reserved_pfn(*pfn))
+> > +			ret = 0;
+> > +	}
+> > +
+> > +	up_read(&current->mm->mmap_sem);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +/*
+> > + * Attempt to pin pages.  We really don't want to track all the pfns
+> > +and
+> > + * the iommu can only map chunks of consecutive pfns anyway, so get
+> > +the
+> > + * first page and all consecutive pages with the same locking.
+> > + */
+> > +long vfio_pin_pages(unsigned long vaddr, long npage,
+> > +			   int prot, unsigned long *pfn_base) {
+> > +	unsigned long limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
+> > +	bool lock_cap = capable(CAP_IPC_LOCK);
+> > +	long ret, i;
+> > +
+> > +	if (!current->mm)
+> > +		return -ENODEV;
+> > +
+> > +	ret = vaddr_get_pfn(vaddr, prot, pfn_base);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	if (is_invalid_reserved_pfn(*pfn_base))
+> > +		return 1;
+> > +
+> > +	if (!lock_cap && current->mm->locked_vm + 1 > limit) {
+> > +		put_pfn(*pfn_base, prot);
+> > +		pr_warn("%s: RLIMIT_MEMLOCK (%ld) exceeded\n", __func__,
+> > +			limit << PAGE_SHIFT);
+> > +		return -ENOMEM;
+> > +	}
+> > +
+> > +	if (unlikely(disable_hugepages)) {
+> > +		vfio_lock_acct(1);
+> > +		return 1;
+> > +	}
+> > +
+> > +	/* Lock all the consecutive pages from pfn_base */
+> > +	for (i = 1, vaddr += PAGE_SIZE; i < npage; i++, vaddr += PAGE_SIZE) {
+> > +		unsigned long pfn = 0;
+> > +
+> > +		ret = vaddr_get_pfn(vaddr, prot, &pfn);
+> > +		if (ret)
+> > +			break;
+> > +
+> > +		if (pfn != *pfn_base + i || is_invalid_reserved_pfn(pfn)) {
+> > +			put_pfn(pfn, prot);
+> > +			break;
+> > +		}
+> > +
+> > +		if (!lock_cap && current->mm->locked_vm + i + 1 > limit) {
+> > +			put_pfn(pfn, prot);
+> > +			pr_warn("%s: RLIMIT_MEMLOCK (%ld) exceeded\n",
+> > +				__func__, limit << PAGE_SHIFT);
+> > +			break;
+> > +		}
+> > +	}
+> > +
+> > +	vfio_lock_acct(i);
+> > +
+> > +	return i;
+> > +}
+> > +
+> > +long vfio_unpin_pages(unsigned long pfn, long npage,
+> > +			     int prot, bool do_accounting) {
+> > +	unsigned long unlocked = 0;
+> > +	long i;
+> > +
+> > +	for (i = 0; i < npage; i++)
+> > +		unlocked += put_pfn(pfn++, prot);
+> > +
+> > +	if (do_accounting)
+> > +		vfio_lock_acct(-unlocked);
+> > +
+> > +	return unlocked;
+> > +}
+> > diff --git a/drivers/vfio/vfio_iommu_common.h
+> > b/drivers/vfio/vfio_iommu_common.h
+> > new file mode 100644
+> > index 0000000..4738391
+> > --- /dev/null
+> > +++ b/drivers/vfio/vfio_iommu_common.h
+> > @@ -0,0 +1,30 @@
+> > +/*
+> > + * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
+> > + * Copyright (C) 2013 Freescale Semiconductor, Inc.
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > +modify it
+> > + * under the terms of the GNU General Public License version 2 as
+> > +published
+> > + * by the Free Software Foundation.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License
+> > + * along with this program; if not, write to the Free Software
+> > + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+> > +02111-1307 USA  */
+> > +
+> > +#ifndef _VFIO_IOMMU_COMMON_H
+> > +#define _VFIO_IOMMU_COMMON_H
+> > +
+> > +void vfio_lock_acct_bg(struct work_struct *work);
 > 
-> I'm not sure if this is the correct thing to do here (note platforms that
-> still want this initialization to be handled, even when booting with DT).
-> 
-> The DT case is already handled several lines below in if (cpu == NULL)
-> check and if your platform requires this initialization not to happen you
-> should assure it has cpu == NULL.
-> 
-Yeah, I agree and I think this is not needed at this moment we could cleanup
-the init functions later for Samsung SoCs though.
+> Does this need to be exposed?
 
-Thanks,
-Kukjin
+No, will make this and other which does not need to be exposed as static to this file
 
+Thanks
+-Bharat
+> 
+> > +void vfio_lock_acct(long npage);
+> > +bool is_invalid_reserved_pfn(unsigned long pfn); int put_pfn(unsigned
+> > +long pfn, int prot);
+> 
+> Why are these exposed, they only seem to be used by functions in the new common
+> file.
+> 
+> > +long vfio_pin_pages(unsigned long vaddr, long npage, int prot,
+> > +		    unsigned long *pfn_base);
+> > +long vfio_unpin_pages(unsigned long pfn, long npage,
+> > +		      int prot, bool do_accounting);
+> 
+> Can we get by with just these two and vfio_lock_acct()?
+> 
+> > +#endif
+> > diff --git a/drivers/vfio/vfio_iommu_type1.c
+> > b/drivers/vfio/vfio_iommu_type1.c index a9807de..e9a58fa 100644
+> > --- a/drivers/vfio/vfio_iommu_type1.c
+> > +++ b/drivers/vfio/vfio_iommu_type1.c
+> > @@ -37,6 +37,7 @@
+> >  #include <linux/uaccess.h>
+> >  #include <linux/vfio.h>
+> >  #include <linux/workqueue.h>
+> > +#include "vfio_iommu_common.h"
+> >
+> >  #define DRIVER_VERSION  "0.2"
+> >  #define DRIVER_AUTHOR   "Alex Williamson <alex.williamson@redhat.com>"
+> > @@ -48,12 +49,6 @@ module_param_named(allow_unsafe_interrupts,
+> >  MODULE_PARM_DESC(allow_unsafe_interrupts,
+> >  		 "Enable VFIO IOMMU support for on platforms without interrupt
+> > remapping support.");
+> >
+> > -static bool disable_hugepages;
+> > -module_param_named(disable_hugepages,
+> > -		   disable_hugepages, bool, S_IRUGO | S_IWUSR);
+> > -MODULE_PARM_DESC(disable_hugepages,
+> > -		 "Disable VFIO IOMMU support for IOMMU hugepages.");
+> > -
+> >  struct vfio_iommu {
+> >  	struct iommu_domain	*domain;
+> >  	struct mutex		lock;
+> > @@ -123,205 +118,6 @@ static void vfio_remove_dma(struct vfio_iommu *iommu,
+> struct vfio_dma *old)
+> >  	rb_erase(&old->node, &iommu->dma_list);  }
+> >
+> > -struct vwork {
+> > -	struct mm_struct	*mm;
+> > -	long			npage;
+> > -	struct work_struct	work;
+> > -};
+> > -
+> > -/* delayed decrement/increment for locked_vm */ -static void
+> > vfio_lock_acct_bg(struct work_struct *work) -{
+> > -	struct vwork *vwork = container_of(work, struct vwork, work);
+> > -	struct mm_struct *mm;
+> > -
+> > -	mm = vwork->mm;
+> > -	down_write(&mm->mmap_sem);
+> > -	mm->locked_vm += vwork->npage;
+> > -	up_write(&mm->mmap_sem);
+> > -	mmput(mm);
+> > -	kfree(vwork);
+> > -}
+> > -
+> > -static void vfio_lock_acct(long npage) -{
+> > -	struct vwork *vwork;
+> > -	struct mm_struct *mm;
+> > -
+> > -	if (!current->mm || !npage)
+> > -		return; /* process exited or nothing to do */
+> > -
+> > -	if (down_write_trylock(&current->mm->mmap_sem)) {
+> > -		current->mm->locked_vm += npage;
+> > -		up_write(&current->mm->mmap_sem);
+> > -		return;
+> > -	}
+> > -
+> > -	/*
+> > -	 * Couldn't get mmap_sem lock, so must setup to update
+> > -	 * mm->locked_vm later. If locked_vm were atomic, we
+> > -	 * wouldn't need this silliness
+> > -	 */
+> > -	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
+> > -	if (!vwork)
+> > -		return;
+> > -	mm = get_task_mm(current);
+> > -	if (!mm) {
+> > -		kfree(vwork);
+> > -		return;
+> > -	}
+> > -	INIT_WORK(&vwork->work, vfio_lock_acct_bg);
+> > -	vwork->mm = mm;
+> > -	vwork->npage = npage;
+> > -	schedule_work(&vwork->work);
+> > -}
+> > -
+> > -/*
+> > - * Some mappings aren't backed by a struct page, for example an
+> > mmap'd
+> > - * MMIO range for our own or another device.  These use a different
+> > - * pfn conversion and shouldn't be tracked as locked pages.
+> > - */
+> > -static bool is_invalid_reserved_pfn(unsigned long pfn) -{
+> > -	if (pfn_valid(pfn)) {
+> > -		bool reserved;
+> > -		struct page *tail = pfn_to_page(pfn);
+> > -		struct page *head = compound_trans_head(tail);
+> > -		reserved = !!(PageReserved(head));
+> > -		if (head != tail) {
+> > -			/*
+> > -			 * "head" is not a dangling pointer
+> > -			 * (compound_trans_head takes care of that)
+> > -			 * but the hugepage may have been split
+> > -			 * from under us (and we may not hold a
+> > -			 * reference count on the head page so it can
+> > -			 * be reused before we run PageReferenced), so
+> > -			 * we've to check PageTail before returning
+> > -			 * what we just read.
+> > -			 */
+> > -			smp_rmb();
+> > -			if (PageTail(tail))
+> > -				return reserved;
+> > -		}
+> > -		return PageReserved(tail);
+> > -	}
+> > -
+> > -	return true;
+> > -}
+> > -
+> > -static int put_pfn(unsigned long pfn, int prot) -{
+> > -	if (!is_invalid_reserved_pfn(pfn)) {
+> > -		struct page *page = pfn_to_page(pfn);
+> > -		if (prot & IOMMU_WRITE)
+> > -			SetPageDirty(page);
+> > -		put_page(page);
+> > -		return 1;
+> > -	}
+> > -	return 0;
+> > -}
+> > -
+> > -static int vaddr_get_pfn(unsigned long vaddr, int prot, unsigned long
+> > *pfn) -{
+> > -	struct page *page[1];
+> > -	struct vm_area_struct *vma;
+> > -	int ret = -EFAULT;
+> > -
+> > -	if (get_user_pages_fast(vaddr, 1, !!(prot & IOMMU_WRITE), page) == 1) {
+> > -		*pfn = page_to_pfn(page[0]);
+> > -		return 0;
+> > -	}
+> > -
+> > -	down_read(&current->mm->mmap_sem);
+> > -
+> > -	vma = find_vma_intersection(current->mm, vaddr, vaddr + 1);
+> > -
+> > -	if (vma && vma->vm_flags & VM_PFNMAP) {
+> > -		*pfn = ((vaddr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
+> > -		if (is_invalid_reserved_pfn(*pfn))
+> > -			ret = 0;
+> > -	}
+> > -
+> > -	up_read(&current->mm->mmap_sem);
+> > -
+> > -	return ret;
+> > -}
+> > -
+> > -/*
+> > - * Attempt to pin pages.  We really don't want to track all the pfns
+> > and
+> > - * the iommu can only map chunks of consecutive pfns anyway, so get
+> > the
+> > - * first page and all consecutive pages with the same locking.
+> > - */
+> > -static long vfio_pin_pages(unsigned long vaddr, long npage,
+> > -			   int prot, unsigned long *pfn_base)
+> > -{
+> > -	unsigned long limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
+> > -	bool lock_cap = capable(CAP_IPC_LOCK);
+> > -	long ret, i;
+> > -
+> > -	if (!current->mm)
+> > -		return -ENODEV;
+> > -
+> > -	ret = vaddr_get_pfn(vaddr, prot, pfn_base);
+> > -	if (ret)
+> > -		return ret;
+> > -
+> > -	if (is_invalid_reserved_pfn(*pfn_base))
+> > -		return 1;
+> > -
+> > -	if (!lock_cap && current->mm->locked_vm + 1 > limit) {
+> > -		put_pfn(*pfn_base, prot);
+> > -		pr_warn("%s: RLIMIT_MEMLOCK (%ld) exceeded\n", __func__,
+> > -			limit << PAGE_SHIFT);
+> > -		return -ENOMEM;
+> > -	}
+> > -
+> > -	if (unlikely(disable_hugepages)) {
+> > -		vfio_lock_acct(1);
+> > -		return 1;
+> > -	}
+> > -
+> > -	/* Lock all the consecutive pages from pfn_base */
+> > -	for (i = 1, vaddr += PAGE_SIZE; i < npage; i++, vaddr += PAGE_SIZE) {
+> > -		unsigned long pfn = 0;
+> > -
+> > -		ret = vaddr_get_pfn(vaddr, prot, &pfn);
+> > -		if (ret)
+> > -			break;
+> > -
+> > -		if (pfn != *pfn_base + i || is_invalid_reserved_pfn(pfn)) {
+> > -			put_pfn(pfn, prot);
+> > -			break;
+> > -		}
+> > -
+> > -		if (!lock_cap && current->mm->locked_vm + i + 1 > limit) {
+> > -			put_pfn(pfn, prot);
+> > -			pr_warn("%s: RLIMIT_MEMLOCK (%ld) exceeded\n",
+> > -				__func__, limit << PAGE_SHIFT);
+> > -			break;
+> > -		}
+> > -	}
+> > -
+> > -	vfio_lock_acct(i);
+> > -
+> > -	return i;
+> > -}
+> > -
+> > -static long vfio_unpin_pages(unsigned long pfn, long npage,
+> > -			     int prot, bool do_accounting)
+> > -{
+> > -	unsigned long unlocked = 0;
+> > -	long i;
+> > -
+> > -	for (i = 0; i < npage; i++)
+> > -		unlocked += put_pfn(pfn++, prot);
+> > -
+> > -	if (do_accounting)
+> > -		vfio_lock_acct(-unlocked);
+> > -
+> > -	return unlocked;
+> > -}
+> > -
+> >  static int vfio_unmap_unpin(struct vfio_iommu *iommu, struct vfio_dma *dma,
+> >  			    dma_addr_t iova, size_t *size)  {
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in the body
+> of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
