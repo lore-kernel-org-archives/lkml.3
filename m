@@ -1,80 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab3IZTRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 15:17:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31643 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752424Ab3IZTRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 15:17:04 -0400
-Date: Thu, 26 Sep 2013 21:10:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        codonell <codonell@redhat.com>, Eduard Benes <ebenes@redhat.com>,
-        Karel Srot <ksrot@redhat.com>, Matt Newsome <mnewsome@redhat.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] tty: Fix SIGTTOU not sent with tcflush()
-Message-ID: <20130926191034.GA26591@redhat.com>
-References: <52437AA2.5040907@hurleysoftware.com> <1380154395-4232-1-git-send-email-peter@hurleysoftware.com> <20130926163633.GA22849@redhat.com>
+	id S1753603Ab3IZTRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 15:17:43 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33843 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089Ab3IZTRk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 15:17:40 -0400
+Message-ID: <52448852.9050608@codeaurora.org>
+Date: Thu, 26 Sep 2013 12:17:38 -0700
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926163633.GA22849@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Kumar Gala <galak@codeaurora.org>
+CC: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCHv4 2/3] ARM: msm: Add support for APQ8074 Dragonboard
+References: <1379992406-3541-1-git-send-email-rvaswani@codeaurora.org> <1379992406-3541-2-git-send-email-rvaswani@codeaurora.org> <4E7868D6-56CB-4AF8-8EBF-069966899C23@codeaurora.org> <5243652F.7090408@codeaurora.org> <B0F416B8-042A-49F1-81E9-B217F02AAD1E@codeaurora.org> <52447779.3010908@codeaurora.org>
+In-Reply-To: <52447779.3010908@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26, Oleg Nesterov wrote:
+On 9/26/2013 11:05 AM, Rohit Vaswani wrote:
+> On 9/26/2013 9:37 AM, Kumar Gala wrote:
+>> <snip>
 >
-> Thanks Peter.
+>> +++ b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+>> @@ -0,0 +1,6 @@
+>> +/include/ "qcom-msm8974.dtsi"
+>> +
+>> +/ {
+>> +    model = "Qualcomm APQ8074 Dragonboard";
+>> +    compatible = "qcom,apq8074-dragonboard", "qcom,apq8074";
+>> +};
+>> diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi 
+>> b/arch/arm/boot/dts/qcom-msm8974.dtsi
+>> new file mode 100644
+>> index 0000000..f04b643
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
+>> @@ -0,0 +1,35 @@
+>> +/dts-v1/;
+>> +
+>> +/include/ "skeleton.dtsi"
+>> +
+>> +/ {
+>> +    model = "Qualcomm MSM8974";
+>> +    compatible = "qcom,msm8974";
+>> +    interrupt-parent = <&intc>;
+>> +
+>> +    soc: soc { };
+>>>> We should have a unit address here:
+>>>>
+>>>>       soc: soc@FOOBAR {
+>>>>
+>>>> also, split out the curly braces so any future patches do have to 
+>>>> muck with that.
+>>>>
+>>>>     };
+>>>>
+>>> Im not sure I understand the reasoning behind the unit address for 
+>>> soc ?
+>> Its fairly standard practice and there is a fair amount of discussion 
+>> about the lack of a unit address for memory nodes.
+>>
+> That still doesn't really answer anything :) - and I couldn't find any 
+> discussions about this either.
+> I don't see anybody in upstream adding an address to soc except sun.
+> What is that address supposed to be for - what does it mean ?
+> The soc is way of encapsulating meaningful blocks  for the particular 
+> SoC.
+
+I see the mail from Stephen Warren for adding a check stating that
+
+"ePAPR 1.1 section 2.2.1.1 "Node Name Requirements" specifies that any
+node that has a reg property must include a unit address in its name
+with value matching the first entry in its reg property. Conversely, if
+a node does not have a reg property, the node name must not include a
+unit address."
+
+The soc node we have does not have a reg property ?
+
+
 >
-> Well. I'am afraid my testing was wrong, because Karel reports
-> it fixes the problem...
+>>
+>>>>> +};
+>>>>> +
+>>>>> +&soc {
+>>>>> +    #address-cells = <1>;
+>>>>> +    #size-cells = <1>;
+>>>>> +    ranges;
+>>>>> +    compatible = "simple-bus";
+>>>>> +
+>>>>> +    intc: interrupt-controller@f9000000 {
+>>>>> +        compatible = "qcom,msm-qgic2";
+>>>>> +        interrupt-controller;
+>>>>> +        #interrupt-cells = <3>;
+>>>>> +        reg = <0xf9000000 0x1000>,
+>>>>> +              <0xf9002000 0x1000>;
+>>>>> +    };
+>>>>> +
+>>>>> +    timer {
+>>>>> +        compatible = "arm,armv7-timer";
+>>>>> +        interrupts = <1 2 0xf08>,
+>>>>> +                 <1 3 0xf08>,
+>>>>> +                 <1 4 0xf08>,
+>>>>> +                 <1 1 0xf08>;
+>>>>> +        clock-frequency = <19200000>;
+>>>>> +    };
+>>>>> +};
+>> - k
+>>
 >
-> But. I applied this patch to my 3.11 tree (last commit is bff157b3a)
-> which also has the additional patch (03e12617 "tty: disassociate_ctty()
-> sends the extra SIGCONT"), and
 >
-> 	TET_CONFIG=CFG TET_ROOT=.  ./T.tcflush 4
+> Thanks,
+> Rohit Vaswani
 >
-> still fails... T.tcflush was compiled on another (Karel's) machine,
-> perhaps there is something in libc, I do not know.
->
-> So let me ask just in case, I assume the fix below doesn't depend on
-> other changes I could miss?
->
-> I'll retest after git-pull and report...
-
-Still fails under the Linus's tree + this patch.
-
-However!!!
-
-Tested-by: Oleg Nesterov <oleg@redhat.com>
 
 
+Thanks,
+Rohit Vaswani
 
-
-It turns out, T.tcflush doesn't expect it can start as a process group
-leader. In this case setsid() fails, then tty_open() doesn't set
-signal->tty, and thus this patch makes no difference: tty_check_change()
-fails because tty doesn't match signal->tty.
-
-And indeed, this test passes if you run it under strace, or simply do
-
-	$ TET_CONFIG=CFG TET_ROOT=. perl -e "system './T.tcflush 4'"
-
-And damn, the fact it doesn't fail under strace doesn't allow you to
-see that setsid() fails ;)
-
-This is probably explains why Karel reported success, perhaps he
-didn't run this test individually.
-
-Thanks again Peter. Perhaps my analysis was wrong (and I do not see
-setsid() in the sources), I do not really care. but perhaps tcflush.c
-should be updated.
-
-Oleg.
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
 
