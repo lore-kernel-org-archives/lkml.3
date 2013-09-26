@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab3IZSDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 14:03:53 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29676 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223Ab3IZSDt convert rfc822-to-8bit (ORCPT
+	id S1753812Ab3IZSFl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 14:05:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59701 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab3IZSFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 14:03:49 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <524467CC.7040908@citrix.com>
-References: <1378325465-10384-1-git-send-email-zoltan.kiss@citrix.com> <5239CF01.1010001@citrix.com> <20130925175649.GC7253@phenom.dumpdata.com> <524467CC.7040908@citrix.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCHv2] tracing/events: Add bounce tracing to swiotbl
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Thu, 26 Sep 2013 14:03:25 -0400
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Message-ID: <ce4d1787-5f83-4710-9f88-9349620eda28@email.android.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 26 Sep 2013 14:05:40 -0400
+Date: Thu, 26 Sep 2013 11:05:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: increased vmap_area_lock contentions on
+ "n_tty: Move buffers into n_tty_data"
+Message-Id: <20130926110551.52ad8156.akpm@linux-foundation.org>
+In-Reply-To: <52447064.5030902@hurleysoftware.com>
+References: <20130913005133.GA32479@localhost>
+	<20130913010936.GA1291@localhost>
+	<5238767D.1080606@hurleysoftware.com>
+	<20130917232214.GA11390@localhost>
+	<5238F252.5070905@hurleysoftware.com>
+	<20130926003315.2e81bc84.akpm@linux-foundation.org>
+	<52441B23.7050704@hurleysoftware.com>
+	<20130926150421.GA25545@kroah.com>
+	<52447064.5030902@hurleysoftware.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
->On 25/09/13 18:56, Konrad Rzeszutek Wilk wrote:
->> On Wed, Sep 18, 2013 at 05:04:17PM +0100, Zoltan Kiss wrote:
->>> Hi,
->>>
->>> I haven't got a reply in the past 2 weeks, so I would like to bump
->>> the patch, just to make sure it haven't fell off the radar.
->>
->> Hey,
->>
->> I have this in my queue to put on 3.13 as it is past the merge
->window.
->> .. with that in mind:
->>
->>
->> .. snip..
->>>> +	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
->>>> +		"size=%zu swiotlb_force=%x",
->>>> +		__get_str(dev_name),
->>>> +		__entry->dma_mask,
->>>> +		(unsigned long long)__entry->dev_addr,
->>>> +		__entry->size,
->>>> +		__entry->swiotlb_force)
->>
->> Would it make sense to do something like this:
->>
->> 		__entry->swiotlb_force ? "swiotlb_force" : "")
->>
->
->I would then rather do:
->
->+	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
->+		"size=%zu swiotlb_force=",
->+               __entry->swiotlb_force ? " yes" : "no",
->+		__get_str(dev_name),
->
->Or do you mean?:
->
->+	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
->+		"size=%zu",
->+               __entry->swiotlb_force ? " swiotlb_force" : "",
->+		__get_str(dev_name),
->
->This one doesn't tell you explicitly if swiotlb_force is NOT set, maybe
->
->that's not so good? And adds a bit of complexity to your grep regexp?
->Either way is fine with me, but I think "swiotlb_force=0|1" is also 
->pretty straightforward to understand, and I guess it makes printk 
->slightly faster (I assume the conditional operator gives a little bit
->of 
->overhead)
->
->Regards,
->
->Zoli
+On Thu, 26 Sep 2013 13:35:32 -0400 Peter Hurley <peter@hurleysoftware.com> wrote:
 
-I was thinking it would be good to print the swiotlb-force only when it is enabled. So your second one would be it. 
+> The issue with a single large kmalloc is that it may fail where
+> 3 separate, page-or-less kmallocs would not have.
+
+Or vmalloc fails first, because of internal fragmentation of the vmap
+arena.  This problem plus vmalloc's slowness are the reasons why
+vmalloc should be avoided.
+
+A tremendous number of places in the kernel perform higher-order
+allocations nowadays.  The page allocator works damn hard to service
+them and I expect that switching to kmalloc here will be OK.
