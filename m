@@ -1,106 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab3IZF5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 01:57:30 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45578 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab3IZF52 (ORCPT
+	id S1752178Ab3IZF7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 01:59:55 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:38354 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab3IZF7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 01:57:28 -0400
-X-AuditID: 9c930179-b7c8bae000006c65-cb-5243ccc77d12
-Date: Thu, 26 Sep 2013 14:58:02 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Bob Liu <lliubbo@gmail.com>, Bob Liu <bob.liu@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
-Message-ID: <20130926055802.GA20634@bbox>
-References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
- <52118042.30101@oracle.com>
- <20130819054742.GA28062@bbox>
- <CAL1ERfN3AUYwWTctGBjVcgb-mwAmc15-FayLz48P1d0GzogncA@mail.gmail.com>
- <20130821074939.GE3022@bbox>
- <CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
- <CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
- <CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
+	Thu, 26 Sep 2013 01:59:53 -0400
+X-Spam-Score: -100.8
+Message-ID: <5243CD18.1060805@asianux.com>
+Date: Thu, 26 Sep 2013 13:58:48 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info'
+ in all related extern functions
+References: <5212DBFA.8030805@asianux.com> <20130923150625.GB14547@htj.dyndns.org> <52410A40.1000304@asianux.com> <20130924040601.GA31575@mtj.dyndns.org> <524114B8.3070903@asianux.com> <20130924120429.GA2366@htj.dyndns.org> <5242331B.4010309@asianux.com> <20130925005802.GA25777@htj.dyndns.org> <5242372C.4010509@asianux.com> <20130925011404.GB25777@htj.dyndns.org> <52424094.3020504@asianux.com> <524267CD.4030007@asianux.com>
+In-Reply-To: <524267CD.4030007@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Weigie,
+On 09/25/2013 12:34 PM, Chen Gang wrote:
+> On 09/25/2013 09:47 AM, Chen Gang wrote:
+>> On 09/25/2013 09:14 AM, Tejun Heo wrote:
+>>> On Wed, Sep 25, 2013 at 09:06:52AM +0800, Chen Gang wrote:
+>>>> OK, I see, the 'root cause' is: "you are not the related maintainer
+>>>> either", so it is really necessary for me to spend additional time
+>>>> resource on it :-(.
+>>>
+>>> Yeah, at least partly.  That and the fact that I'm not too willing to
+>>> dig into the code without further evidence.  It isn't anything strange
+>>> to ask tho and I'm likely to do that even for subsystems that I know
+>>> intimately if the subject code has been stable / stale for years and
+>>> the analysis doesn't seem immediately convincing.  And, if my
+>>> experience is anything to go by, it's not too unlikely that you might
+>>> hit something which doesn't agree with your current assumptions while
+>>> trying to actually trigger the problem.
+>>>
+>>> Thanks.
+>>>
 
-On Wed, Sep 25, 2013 at 05:33:43PM +0800, Weijie Yang wrote:
-> On Wed, Sep 25, 2013 at 4:31 PM, Bob Liu <lliubbo@gmail.com> wrote:
-> > On Wed, Sep 25, 2013 at 4:09 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
-> >> I think I find a new issue, for integrity of this mail thread, I reply
-> >> to this mail.
-> >>
-> >> It is a concurrence issue either, when duplicate store and reclaim
-> >> concurrentlly.
-> >>
-> >> zswap entry x with offset A is already stored in zswap backend.
-> >> Consider the following scenario:
-> >>
-> >> thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
-> >>
-> >> thread 1: store new page with the same offset A, alloc a new zswap entry y.
-> >>   store finished. shrink_page_list() call __remove_mapping(), and now
-> >> it is not in swap_cache
-> >>
-> >
-> > But I don't think swap layer will call zswap with the same offset A.
-> 
-> 1. store page of offset A in zswap
-> 2. some time later, pagefault occur, load page data from zswap.
->   But notice that zswap entry x is still in zswap because it is not
-> frontswap_tmem_exclusive_gets_enabled.
+Oh, not cause issue, the reason is "'groups' exports extern variable
+'init_groups', when start process, default 'cred' will set it to be
+sure of groups always be initialized".
 
-frontswap_tmem_exclusive_gets_enabled is just option to see tradeoff
-between CPU burining by frequent swapout and memory footprint by duplicate
-copy in swap cache and frontswap backend so it shouldn't affect the stability.
+Hmm... but after all, I still think this file need be improved: "remove
+the group_info checking in groups_search()", please help check, thanks.
 
->  this page is with PageSwapCache(page) and page_private(page) = entry.val
-> 3. change this page data, and it become dirty
+-------------------------------patch begin------------------------------
 
-If non-shared swapin page become redirty, it should remove the page from
-swapcache. If shared swapin page become redirty, it should do CoW so it's a
-new page so that it doesn't live in swap cache. It means it should have new
-offset which is different with old's one for swap out.
+kernel/groups.c: remove useless "!group_info" checking in groups_search().
 
-What's wrong with that?
+  Since groups_free() need not check 'group_info', groups_search() need
+  not, either, and then in_group_p() and in_egroup_p(), either.
 
 
-> 4. some time later again, swap this page on the same offset A.
-> 
-> so, a duplicate store happens.
-> 
-> what I can think is that use flags and CAS to protect store and reclaim on
-> the same offset  happens concurrentlly.
-> 
-> >> thread 0: zswap_get_swap_cache_page called. old page data is added to swap_cache
-> >>
-> >> Now, swap cache has old data rather than new data for offset A.
-> >> error will happen If do_swap_page() get page from swap_cache.
-> >>
-> >
-> > --
-> > Regards,
-> > --Bob
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+  'groups' assumes kernel mode callers are sure of 'group_info' valid.
 
+  When process starts, the related kernel mode caller need set default
+  'group_info' firstly (extern variable 'init_group').
+
+  If groups_alloc() fails, the caller must not call any related API again
+  with the related invalid 'group_info'.
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ kernel/groups.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 90cf1c3..0a7f81d 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -136,9 +136,6 @@ int groups_search(const struct group_info *group_info, kgid_t grp)
+ {
+ 	unsigned int left, right;
+ 
+-	if (!group_info)
+-		return 0;
+-
+ 	left = 0;
+ 	right = group_info->ngroups;
+ 	while (left < right) {
 -- 
-Kind regards,
-Minchan Kim
+1.7.7.6
+
+-------------------------------patch end--------------------------------
+
+>>
+> 
+> Excuse me, I have to do some urgent internal things within my company,
+> so the test and confirmation may be delayed (I will try to finish test
+> within this month: 2013-09-30).
+> 
+>> Excuse me, my English is not quite well, I do not quite understand what
+>> you said (but it seems what you said is reasonable, and not need reply).
+>>
+>>
+>> Thanks.
+>>
+> 
+> 
+
+Thanks.
+-- 
+Chen Gang
