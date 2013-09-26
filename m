@@ -1,48 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab3IZO7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 10:59:03 -0400
-Received: from shell.v3.sk ([195.168.3.45]:46068 "EHLO shell.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753298Ab3IZO65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 10:58:57 -0400
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Lubomir Rintel <lkundrak@v3.sk>
-Subject: [PATCH] drm/radeon: Don't limit fb console on 32M cards to 8 bpp
-Date: Thu, 26 Sep 2013 16:58:45 +0200
-Message-Id: <1380207525-13088-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
+	id S1753499Ab3IZO6t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 10:58:49 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:62787 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab3IZO4C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 10:56:02 -0400
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, Pierre Ossman <pierre@ossman.eu>
+Subject: [PATCH 20/27] mmc: wbsd: Move away from using deprecated APIs
+Date: Thu, 26 Sep 2013 16:54:45 +0200
+Message-Id: <1380207292-16968-21-git-send-email-ulf.hansson@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
+References: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment suggests that intention was to limit 16M cards to save memory while
-code did something a bit different.
+Suspend and resume of cards are being handled from the protocol layer
+and consequently the mmc_suspend|resume_host APIs are deprecated.
 
-32bpp is a lot more useful with today's apps, such as Weston's fbdev backend
-and 32M cards are probably hardly used in apps where dedicating a bit more to
-pinned console would matter.
+This means we can simplify the suspend|resume callbacks by removing the
+use of the deprecated APIs.
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+Cc: Pierre Ossman <pierre@ossman.eu>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 ---
- drivers/gpu/drm/radeon/radeon_fb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mmc/host/wbsd.c |   33 +++++----------------------------
+ 1 file changed, 5 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_fb.c b/drivers/gpu/drm/radeon/radeon_fb.c
-index 665ced3..cef3bc7 100644
---- a/drivers/gpu/drm/radeon/radeon_fb.c
-+++ b/drivers/gpu/drm/radeon/radeon_fb.c
-@@ -344,7 +344,7 @@ int radeon_fbdev_init(struct radeon_device *rdev)
- 	int ret;
+diff --git a/drivers/mmc/host/wbsd.c b/drivers/mmc/host/wbsd.c
+index e954b77..024c824 100644
+--- a/drivers/mmc/host/wbsd.c
++++ b/drivers/mmc/host/wbsd.c
+@@ -1814,28 +1814,11 @@ static void wbsd_pnp_remove(struct pnp_dev *dev)
  
- 	/* select 8 bpp console on RN50 or 16MB cards */
--	if (ASIC_IS_RN50(rdev) || rdev->mc.real_vram_size <= (32*1024*1024))
-+	if (ASIC_IS_RN50(rdev) || rdev->mc.real_vram_size <= (16*1024*1024))
- 		bpp_sel = 8;
+ #ifdef CONFIG_PM
  
- 	rfbdev = kzalloc(sizeof(struct radeon_fbdev), GFP_KERNEL);
+-static int wbsd_suspend(struct wbsd_host *host, pm_message_t state)
+-{
+-	BUG_ON(host == NULL);
+-
+-	return mmc_suspend_host(host->mmc);
+-}
+-
+-static int wbsd_resume(struct wbsd_host *host)
+-{
+-	BUG_ON(host == NULL);
+-
+-	wbsd_init_device(host);
+-
+-	return mmc_resume_host(host->mmc);
+-}
+-
+ static int wbsd_platform_suspend(struct platform_device *dev,
+ 				 pm_message_t state)
+ {
+ 	struct mmc_host *mmc = platform_get_drvdata(dev);
+ 	struct wbsd_host *host;
+-	int ret;
+ 
+ 	if (mmc == NULL)
+ 		return 0;
+@@ -1844,12 +1827,7 @@ static int wbsd_platform_suspend(struct platform_device *dev,
+ 
+ 	host = mmc_priv(mmc);
+ 
+-	ret = wbsd_suspend(host, state);
+-	if (ret)
+-		return ret;
+-
+ 	wbsd_chip_poweroff(host);
+-
+ 	return 0;
+ }
+ 
+@@ -1872,7 +1850,8 @@ static int wbsd_platform_resume(struct platform_device *dev)
+ 	 */
+ 	mdelay(5);
+ 
+-	return wbsd_resume(host);
++	wbsd_init_device(host);
++	return 0;
+ }
+ 
+ #ifdef CONFIG_PNP
+@@ -1886,10 +1865,7 @@ static int wbsd_pnp_suspend(struct pnp_dev *pnp_dev, pm_message_t state)
+ 		return 0;
+ 
+ 	DBGF("Suspending...\n");
+-
+-	host = mmc_priv(mmc);
+-
+-	return wbsd_suspend(host, state);
++	return 0;
+ }
+ 
+ static int wbsd_pnp_resume(struct pnp_dev *pnp_dev)
+@@ -1922,7 +1898,8 @@ static int wbsd_pnp_resume(struct pnp_dev *pnp_dev)
+ 	 */
+ 	mdelay(5);
+ 
+-	return wbsd_resume(host);
++	wbsd_init_device(host);
++	return 0;
+ }
+ 
+ #endif /* CONFIG_PNP */
 -- 
-1.7.1
+1.7.9.5
 
