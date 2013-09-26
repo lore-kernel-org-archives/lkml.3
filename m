@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab3IZNMB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 09:12:01 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:59973 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756695Ab3IZNL6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 09:11:58 -0400
-Date: Thu, 26 Sep 2013 09:11:47 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20130926131147.GA31249@mtj.dyndns.org>
-References: <20130917143022.GA7707@concordia>
- <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
- <20130918142231.GA21650@mtj.dyndns.org>
- <20130918165045.GB2353@dhcp-26-207.brq.redhat.com>
- <20130920082458.GA10507@dhcp-26-207.brq.redhat.com>
- <20130920122736.GD7630@mtj.dyndns.org>
- <20130925180220.GB26273@google.com>
- <20130925205804.GA21737@dhcp-26-207.brq.redhat.com>
- <20130925210016.GA8926@htj.dyndns.org>
- <20130926074646.GA16774@dhcp-26-207.brq.redhat.com>
+	id S1757332Ab3IZNM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 09:12:59 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:60757 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756914Ab3IZNM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 09:12:57 -0400
+Date: Thu, 26 Sep 2013 16:12:55 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: David Miller <davem@davemloft.net>
+cc: sparclinux@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: include/linux/version.h not updated (Was: SILO always tells it loaded
+ kernel version 3.6.0)
+In-Reply-To: <alpine.SOC.1.00.1309261347030.11084@math.ut.ee>
+Message-ID: <alpine.SOC.1.00.1309261601050.11084@math.ut.ee>
+References: <alpine.SOC.1.00.1309260234380.22367@math.ut.ee> <20130926.002304.2121420558807412031.davem@davemloft.net> <alpine.SOC.1.00.1309261347030.11084@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926074646.GA16774@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Background: SILO bootloader on sparc64 tells it is loading 3.6.0 when 
+actually it is 3.12.0-rc2.
 
-On Thu, Sep 26, 2013 at 09:46:46AM +0200, Alexander Gordeev wrote:
-> > Can you please go into a bit of detail on that?  Why does it matter?
+> On U10:
 > 
-> Because otherwise we will re-introduce a problem described by Michael:
-> "We have a small number of MSIs available, limited by hardware &
-> firmware, if we don't impose a quota then the first device that probes
-> will get most/all of the MSIs and other devices miss out."
-
-Still not following.  Why wouldn't just letting the drivers request
-the optimal number they want and falling back to single interrupt mode
-work?  ie. why can't we just have an all or nothing interface?
-
-> > Is it because you're worried you might cause performance regression by
-> > forcing prevoius partial multiple allocations to single interrupt
-> > operation?
+> ok boot
+> Boot device: scsidisk  File and args: 
+> SILO Version 1.4.14
+> boot: test
+> Allocated 64 Megs of memory at 0x40000000 for kernel
+> Uncompressing image...
+> Loaded kernel version 3.6.0
 > 
-> Well, not really. I think it won't be possible to force people not to use
-> partial allocations anyway. Some controllers just do not care how many MSIs
-> they are configured with. Some drivers derive the number of MSIs desired
-> from the number of CPUs online - in such cases allocating more MSIs (i.e.
-> a number the controller advertised) could cause a performance degradation
-> even.
+> PROMLIB: Sun IEEE Boot Prom 'OBP 3.31.0 2001/07/25 20:36'
+> PROMLIB: Root node compatible: 
+> Initializing cgroup subsys cpu
+> Linux version 3.11.0-dirty (mroos@u10) (gcc version 4.6.4 (Debian 4.6.4-4) ) #47 Wed Sep 25 16:01:09 EEST 2013
 
-Yeah, sure thing but just let the *driver* decide that number without
-worrying about how many they can actually get.  Ultimately, what we
-want is removing this extra variable which can arbitrarily affect the
-number of allocated interrupts so that we only have to worry about
-either proper multiple MSI mode or single interrupt mode, not
-something random inbetween.  It is possible that there exists a driver
-which absolutely requires partial allocation on certain archs, but
-that should be a very special case and the interface should look
-accordingly ugly / special.  But do we actually have those?
+SILO gets the version from struch HdrS in the image.
 
-Thanks.
+vmlinux contains HdrS^@^C^F^@, so ver_linux is 00 03 06 0 that is 3.6.0. 
+So it's in our image and silo is correct.
+
+It seems to be LINUX_VERSION_CODE in head_64.S - maybe it is nor 
+recompiled? No, head_64.o is from yesterday.
+
+grep -r for LINUX_VERSION_CODE results in different values:
+
+./include/generated/uapi/linux/version.h:#define LINUX_VERSION_CODE 199424
+./include/linux/version.h:#define LINUX_VERSION_CODE 198144
+
+-rw-r--r-- 1 mroos mroos 97 Sep 20 21:56 include/generated/uapi/linux/version.h
+-rw-r--r-- 1 mroos mroos 97 Aug 10  2012 ./include/linux/version.h
+
+As it happens, 198144 is the value from Aug 10 2012 and it happens to be 
+00030600 hex. Here is the culprit, we are not rebuilding 
+include/linux/version.h.
 
 -- 
-tejun
+Meelis Roos (mroos@linux.ee)
