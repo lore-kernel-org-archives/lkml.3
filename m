@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab3IZHYg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:24:36 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752894Ab3IZHYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:24:35 -0400
-Message-ID: <5243E130.3040200@nod.at>
-Date: Thu, 26 Sep 2013 09:24:32 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1755816Ab3IZH0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:26:35 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:61024 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754775Ab3IZH0e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 03:26:34 -0400
 MIME-Version: 1.0
-To: Richard Genoud <richard.genoud@gmail.com>
-CC: dedekind1@gmail.com, dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] UBI: Fix error path in scan_pool()
-References: <1380141125-11063-1-git-send-email-richard@nod.at> <5243E033.7010403@gmail.com>
-In-Reply-To: <5243E033.7010403@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130926055802.GA20634@bbox>
+References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
+	<52118042.30101@oracle.com>
+	<20130819054742.GA28062@bbox>
+	<CAL1ERfN3AUYwWTctGBjVcgb-mwAmc15-FayLz48P1d0GzogncA@mail.gmail.com>
+	<20130821074939.GE3022@bbox>
+	<CAL1ERfP70oz=tbVEAfDhgNzgLsvnpbWeOCPOMBpmKTUn0v_Lfg@mail.gmail.com>
+	<CAA_GA1ffZVEkbifGfV6zZTTOcityHwYuQotJHBG4L9CJF7LXcA@mail.gmail.com>
+	<CAL1ERfOqoo+tPNYQn+e=pqP761gk+bAd7AyeXfoxogfNy0N6Lg@mail.gmail.com>
+	<20130926055802.GA20634@bbox>
+Date: Thu, 26 Sep 2013 15:26:33 +0800
+Message-ID: <CAL1ERfN8PpSZxRmLiwm4i-XZWzRaPJ0A=Af76Dtopcf2xYnBtQ@mail.gmail.com>
+Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Bob Liu <lliubbo@gmail.com>, Bob Liu <bob.liu@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.09.2013 09:20, schrieb Richard Genoud:
-> On 25/09/2013 22:32, Richard Weinberger wrote:
->> We have to set "ret", not "err" in case of an error.
+On Thu, Sep 26, 2013 at 1:58 PM, Minchan Kim <minchan@kernel.org> wrote:
+> Hello Weigie,
+>
+> On Wed, Sep 25, 2013 at 05:33:43PM +0800, Weijie Yang wrote:
+>> On Wed, Sep 25, 2013 at 4:31 PM, Bob Liu <lliubbo@gmail.com> wrote:
+>> > On Wed, Sep 25, 2013 at 4:09 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
+>> >> I think I find a new issue, for integrity of this mail thread, I reply
+>> >> to this mail.
+>> >>
+>> >> It is a concurrence issue either, when duplicate store and reclaim
+>> >> concurrentlly.
+>> >>
+>> >> zswap entry x with offset A is already stored in zswap backend.
+>> >> Consider the following scenario:
+>> >>
+>> >> thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
+>> >>
+>> >> thread 1: store new page with the same offset A, alloc a new zswap entry y.
+>> >>   store finished. shrink_page_list() call __remove_mapping(), and now
+>> >> it is not in swap_cache
+>> >>
+>> >
+>> > But I don't think swap layer will call zswap with the same offset A.
 >>
->> Reported-by: Richard Genoud <richard.genoud@gmail.com>
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->>  drivers/mtd/ubi/fastmap.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> 1. store page of offset A in zswap
+>> 2. some time later, pagefault occur, load page data from zswap.
+>>   But notice that zswap entry x is still in zswap because it is not
+>> frontswap_tmem_exclusive_gets_enabled.
+>
+> frontswap_tmem_exclusive_gets_enabled is just option to see tradeoff
+> between CPU burining by frequent swapout and memory footprint by duplicate
+> copy in swap cache and frontswap backend so it shouldn't affect the stability.
+
+Thanks for explain this.
+I don't mean to say this option affects the stability,  but that zswap
+only realize
+one option. Maybe it's better to realize both options for different workloads.
+
+>>  this page is with PageSwapCache(page) and page_private(page) = entry.val
+>> 3. change this page data, and it become dirty
+>
+> If non-shared swapin page become redirty, it should remove the page from
+> swapcache. If shared swapin page become redirty, it should do CoW so it's a
+> new page so that it doesn't live in swap cache. It means it should have new
+> offset which is different with old's one for swap out.
+>
+> What's wrong with that?
+
+It is really not a right scene for duplicate store. And I can not think out one.
+If duplicate store is impossible, How about delete the handle code in zswap?
+If it does exist, I think there is a potential issue as I described.
+
+>> 4. some time later again, swap this page on the same offset A.
 >>
->> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
->> index f5aa4b0..9b42add 100644
->> --- a/drivers/mtd/ubi/fastmap.c
->> +++ b/drivers/mtd/ubi/fastmap.c
->> @@ -428,7 +428,7 @@ static int scan_pool(struct ubi_device *ubi, struct ubi_attach_info *ai,
->>  		if (be32_to_cpu(ech->image_seq) != ubi->image_seq) {
->>  			ubi_err("bad image seq: 0x%x, expected: 0x%x",
->>  				be32_to_cpu(ech->image_seq), ubi->image_seq);
->> -			err = UBI_BAD_FASTMAP;
->> +			ret = UBI_BAD_FASTMAP;
->>  			goto out;
->>  		}
->>  
+>> so, a duplicate store happens.
 >>
-> 
-> Tested-by: Richard Genoud <richard.genoud@gmail.com>
-> 
-> It reveals another bug though.
-> 
-> [    0.812500] UBI: default fastmap pool size: 95
-> [    0.820312] UBI: default fastmap WL pool size: 25
-> [    0.820312] UBI: attaching mtd2 to ubi0
-> [    0.914062] UBI error: scan_pool: bad image seq: 0x0, expected: 0x352a9728
-
-This worries me more...
-The fastmap is corrupted, now we have to find out why.
-Broken driver? Powercut? IO errors?
-
-> [    0.921875] UBI error: ubi_scan_fastmap: Attach by fastmap failed, doing a full scan!
-> [    0.929687] kmem_cache_destroy ubi_ainf_peb_slab: Slab cache still has objects
-
-I see.
-
-Thanks,
-//richard
+>> what I can think is that use flags and CAS to protect store and reclaim on
+>> the same offset  happens concurrentlly.
+>>
+>> >> thread 0: zswap_get_swap_cache_page called. old page data is added to swap_cache
+>> >>
+>> >> Now, swap cache has old data rather than new data for offset A.
+>> >> error will happen If do_swap_page() get page from swap_cache.
+>> >>
+>> >
+>> > --
+>> > Regards,
+>> > --Bob
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+> --
+> Kind regards,
+> Minchan Kim
