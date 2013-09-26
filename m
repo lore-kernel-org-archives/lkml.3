@@ -1,172 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab3IZCii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 22:38:38 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:43841 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754374Ab3IZCig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 22:38:36 -0400
-X-IronPort-AV: E=Sophos;i="4.90,982,1371052800"; 
-   d="scan'208";a="8624516"
-Message-ID: <52439CFE.4030501@cn.fujitsu.com>
-Date: Thu, 26 Sep 2013 10:33:34 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [Bug report] Warning when hot-add an ACPI0004 device.
-References: <52314A89.2060809@cn.fujitsu.com>  <1378998712.12538.18.camel@misato.fc.hp.com>  <5242BB6D.3060504@cn.fujitsu.com> <1380147885.14046.40.camel@misato.fc.hp.com>
-In-Reply-To: <1380147885.14046.40.camel@misato.fc.hp.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/26 10:36:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/26 10:36:50,
-	Serialize complete at 2013/09/26 10:36:50
+	id S1755469Ab3IZCkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 22:40:33 -0400
+Received: from smtprelay0152.hostedemail.com ([216.40.44.152]:39890 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751283Ab3IZCkc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 22:40:32 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2525:2553:2561:2564:2682:2685:2693:2828:2829:2859:2902:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3
+X-HE-Tag: dress90_213f78171ff33
+X-Filterd-Recvd-Size: 2715
+Message-ID: <1380163226.17366.54.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Add test for #defines of ARCH_HAS_<foo>
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 25 Sep 2013 19:40:26 -0700
+In-Reply-To: <20130925193250.7747b0e3.akpm@linux-foundation.org>
+References: <1380125886-10341-1-git-send-email-fweisbec@gmail.com>
+	 <1380125886-10341-8-git-send-email-fweisbec@gmail.com>
+	 <CA+55aFzPArB0dotWZz8dLTPVM4MMT75NAb5_DVcPrNuvWu4QUA@mail.gmail.com>
+	 <20130925172121.00c23e416398139f4615943c@linux-foundation.org>
+	 <1380156027.17366.39.camel@joe-AO722>
+	 <CA+55aFycQ9XJvEOsiM3txHL5bjUc8CeKWJNR_H+MiicaddB42Q@mail.gmail.com>
+	 <1380160854.17366.49.camel@joe-AO722>
+	 <20130925193250.7747b0e3.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
-
-On 09/26/2013 06:24 AM, Toshi Kani wrote:
-
-> On Wed, 2013-09-25 at 10:31 +0000, Gu Zheng wrote:
->> Hi Toshi,
->>
->> On 09/12/2013 11:11 PM, Toshi Kani wrote:
->>
->>> On Thu, 2013-09-12 at 13:00 +0800, Tang Chen wrote:
->>>> Hi Rafael, Toshi,
->>>>
->>>> When we hot-add an ACPI0004 device, we got the following warning:
->>>>
->>>> 	acpi ACPI0004:01: Attempt to re-insert
->>>>
->>>> The ACPI0004 device is a System Board in Fujitsu server, which has two
->>>> numa nodes (processors and memory).
->>>>
->>>> It seems that we reserved the ACPI_NOTIFY_DEVICE_CHECK event twice in
->>>> acpi_hotplug_notify_cb().
->>>>
->>>>
->>>> According to bisect, this happens after the following commit:
->>>>
->>>>  From 68a67f6c78b80525d9b3c6672e7782de95e56a83 Mon Sep 17 00:00:00 2001
->>>> From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
->>>> Date: Sun, 3 Mar 2013 23:05:55 +0100
->>>> Subject: [PATCH 1/1] ACPI / container: Use common hotplug code
->>>>
->>>> Switch the ACPI container driver to using common device hotplug code
->>>> introduced previously.  This reduces the driver down to a trivial
->>>> definition and registration of a struct acpi_scan_handler object.
->>>>
->>>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>> Acked-by: Toshi Kani <toshi.kani@hp.com>
->>>> Tested-by: Toshi Kani <toshi.kani@hp.com>
->>>> ---
->>>>   drivers/acpi/container.c | 146 
->>>> ++++-------------------------------------------
->>>>   1 file changed, 10 insertions(+), 136 deletions(-)
->>>>
->>>>
->>>> I'm now investigating this problem. If you have any idea about why this
->>>> happens, please let me know.
->>>
->>> With the above change, container devices use the common notify handler,
->>> which logs the warning message in question when it receives device check
->>> twice on a same device.  Before the change, the container-specific
->>> notify handler did not log this message in the same case (but considered
->>> it as an eject request).
->>>
->>> So, I suspect that you are getting device check twice regardless of the
->>> kernel change.  Can you check KERN_DEBUG messages to see if that is the
->>> case?  The notify handler logs all events with KERN_DEBUG.
->>
->> Follow your suggestion, we confirm that it really received ACPI_NOTIFY_
->> DEVICE_CHECK event*twice*, but the original ACPI container driver only
->> received once, does the common device hotplug code introduce another device
->> check? any idea?
->>
->> Container uses common device hotplug code:
->> [  142.937724] IPv6: ADDRCONF(NETDEV_CHANGE): eth8: link becomes ready
->> [  674.975575] ACPI: \_SB_.LSB1: ACPI_NOTIFY_DEVICE_CHECK event          <<<<
+On Wed, 2013-09-25 at 19:32 -0700, Andrew Morton wrote:
+> On Wed, 25 Sep 2013 19:00:54 -0700 Joe Perches <joe@perches.com> wrote:
 > 
-> acpi_hotplug_notify_cb() calls acpi_os_hotplug_execute() to schedule to
-> run acpi_scan_device_check() asynchronously and returns immediately.
-> This leads acpi_ev_asynch_enable_gpe() to run next, which clears this
-> GPE (if level triggered) and re-enable GPE.
-
-Thanks for your explanation, it's really the routine you mentioned above.
-
+> > +# Use of __ARCH_HAS_<FOO> or ARCH_HAVE_<BAR> is wrong.
+> > +		if ($line =~ /\+\s*#\s*define\s+((?:__)?ARCH_(?:HAS|HAVE)\w*)\b/) {
+> > +			ERROR("DEFINE_ARCH_HAS",
+> > +			      "#define of '$1' is wrong - use Kconfig variables or standard guards instead\n" . $herecurr);
+> > +		}
+> > +
 > 
->> [  674.991604] ACPI: \_SB_.LSB1: ACPI_NOTIFY_DEVICE_CHECK event		 <<<<	
+> Perhaps we can provide people with a bit more help than that. 
+> http://www.kernelhub.org/?msg=334759&p=2 would suit (gad, google
+> updates fast!) or copy-n-paste into Documentation/wherever and refer to
+> that?
 > 
-> It appears that re-enabling GPE caused this GPE to show up again as a
-> spurious interrupt.
 
-Yes, it is.
+Maybe the fancy lkml.kernel.org link:
 
-> 
->> [  675.613990] ACPI: PCI Root Bridge [UNC2] (domain 0000 [bus fd])
->> [  675.684970] acpi PNP0A03:01: ACPI _OSC support notification failed, disabling PCIe ASPM
->> [  675.780957] acpi PNP0A03:01: Unable to request _OSC control (_OSC support mask: 0x08)
->> [  675.874806] ACPI _OSC control for PCIe not granted, disabling ASPM
->> [  675.949005] pci_bus 0000:fd: Allocating resources
->> [  675.960145] ACPI: PCI Root Bridge [UNC3] (domain 0000 [bus fc])
->> [  676.031176] acpi PNP0A03:02: ACPI _OSC support notification failed, disabling PCIe ASPM
->> [  676.127129] acpi PNP0A03:02: Unable to request _OSC control (_OSC support mask: 0x08)
->> [  676.220943] ACPI _OSC control for PCIe not granted, disabling ASPM
->> [  676.295019] pci_bus 0000:fc: Allocating resources
->>
->> Original ACPI container driver:
->> [ 1526.122933] Container driver received ACPI_NOTIFY_DEVICE_CHECK event <<<<
-> 
-> In the original code, container_notify_cb() proceeds the device check
-> handling and then calls _OST on the same thread.  It then re-enable GPE.
+http://lkml.kernel.org/r/CA+55aFycQ9XJvEOsiM3txHL5bjUc8CeKWJNR_H+MiicaddB42Q@mail.gmail.com
 
-According to our debug, the whole routine was executed on the same thread.
+as that might be more long-term stable.
 
-> This ordering seems to avoid the spurious interrupt on your platform.
-
-It seems that, but it is very strange.
-
-> 
->> [ 1526.800646] ACPI: PCI Root Bridge [UNC2] (domain 0000 [bus fd])
->> [ 1526.871682] acpi PNP0A03:01: ACPI _OSC support notification failed, disabling PCIe ASPM
->> [ 1526.967878] acpi PNP0A03:01: Unable to request _OSC control (_OSC support mask: 0x08)
->> [ 1527.061891] ACPI _OSC control for PCIe not granted, disabling ASPM
->> [ 1527.136036] pci_bus 0000:fd: Allocating resources
->> [ 1527.150747] ACPI: PCI Root Bridge [UNC3] (domain 0000 [bus fc])
->> [ 1527.221821] acpi PNP0A03:02: ACPI _OSC support notification failed, disabling PCIe ASPM
->> [ 1527.317738] acpi PNP0A03:02: Unable to request _OSC control (_OSC support mask: 0x08)
->> [ 1527.411795] ACPI _OSC control for PCIe not granted, disabling ASPM
->> [ 1527.485917] pci_bus 0000:fc: Allocating resources
-> 
-> The GPE handler code in ACPICA is the same.  So, the issue could be due
-> to either;
->  - The firmware expects _OST before re-enabling GPE, or
->  - The timing of re-enabling GPE was too soon on your platform.
-
-Thanks for your directions.
-
-> 
-> Can you check with your firmware team to see if this might be the case?
-
-I'll confirm this.
-
-Best regards,
-Gu
-
-> 
-> Thanks,
-> -Toshi
-> 
-> 
+Will kernel.org ever store all the lkml emails so it
+doesn't have to reference outside links?
 
 
