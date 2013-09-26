@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab3IZGQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 02:16:05 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59417 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab3IZGQE (ORCPT
+	id S1755127Ab3IZGQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 02:16:15 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56180 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751430Ab3IZGQM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 02:16:04 -0400
-Message-ID: <1380176119.7525.27.camel@marge.simpson.net>
-Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for
- wake_affine(.sync=true)
-From: Mike Galbraith <bitbucket@online.de>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 26 Sep 2013 08:15:19 +0200
-In-Reply-To: <1380173688.7525.12.camel@marge.simpson.net>
-References: <20130925075341.GB3081@twins.programming.kicks-ass.net>
-	 <1380099377.8523.9.camel@marge.simpson.net>
-	 <5243A0E9.4060802@linux.vnet.ibm.com>
-	 <1380166898.5431.40.camel@marge.simpson.net>
-	 <5243C24F.6070704@linux.vnet.ibm.com>
-	 <1380173688.7525.12.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:Su6VRGZrDpQKARCxNO9Je3AKZRHQJt7LMWg/zDPLzEj
- 15+2EZ952x4GsGWxqfUxjIRNEX5te/0WykIGefWAYuRLstkjCT
- aqM1bmvBSIfxnlKRVzakwriEuh0wO9Z/uD6psAo//62hpn/F5V
- JpdcrwQMhSv/4yBlkaInj3+4c4QRNAtJz2xhH60ISsRz5Ly/FB
- uWuGYkfwb3Rk4fqmrgGeNzsSsfRz2bx75d/ydtZX46EhZvEbC/
- 1ZrIOBjzFcjuKC/6CCDJODYw5KNp35RwdqO4fFqcLfAEyzCXrJ
- 117QDE7PeOqC2Jbxab8pCo+7V8nPKnXj5zGlgJdkybVPumw+7f
- WWP3w3IoQna9MzgEW7ed1/XywvfO720N8AejXdkOHFJWJHxeOV
- PmwkOjxHJUcug==
+	Thu, 26 Sep 2013 02:16:12 -0400
+From: "Gupta, Pekon" <pekon@ti.com>
+To: Brian Norris <computersforpeace@gmail.com>,
+        "olof@lixom.net" <olof@lixom.net>
+CC: "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "avinashphilipk@gmail.com" <avinashphilipk@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: RE: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various
+ ECC schemes
+Thread-Topic: [PATCH v6 1/4] ARM: OMAP2+: cleaned-up DT support of various
+ ECC schemes
+Thread-Index: AQHOr65J/YAMcn2UDkuZTZSW+mOACZnVQHoggADFRoCAAEWcgIAAihnw//+aR4CAAS7NcA==
+Date: Thu, 26 Sep 2013 06:15:17 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EA16B22@DBDE04.ent.ti.com>
+References: <1378986619-26765-1-git-send-email-pekon@ti.com>
+ <1378986619-26765-2-git-send-email-pekon@ti.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EA15ED7@DBDE04.ent.ti.com>
+ <20130925134619.GG10746@radagast>
+ <20130925175527.GA23337@ld-irv-0074.broadcom.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EA16884@DBDE04.ent.ti.com>
+ <20130925200539.GH23337@ld-irv-0074.broadcom.com>
+In-Reply-To: <20130925200539.GH23337@ld-irv-0074.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-26 at 07:34 +0200, Mike Galbraith wrote: 
-> On Thu, 2013-09-26 at 13:12 +0800, Michael wang wrote: 
-> > On 09/26/2013 11:41 AM, Mike Galbraith wrote:
-> > [snip]
-> > >> Like the case when we have:
-> > >>
-> > >> 	core0 sg		core1 sg
-> > >> 	cpu0	cpu1		cpu2	cpu3
-> > >> 	waker	busy		idle	idle
-> > >>
-> > >> If the sync wakeup was on cpu0, we can:
-> > >>
-> > >> 1. choose cpu in core1 sg like we did usually
-> > >>    some overhead but tend to make the load a little balance
-> > >> 	core0 sg		core1 sg
-> > >> 	cpu0	cpu1		cpu2	cpu3
-> > >> 	idle	busy		wakee	idle
-> > > 
-> > > Reducing latency and increasing throughput when the waker isn't really
-> > > really going to immediately schedule off as the hint implies.  Nice for
-> > > bursty loads and ramp.
-> > > 
-> > > The breakeven point is going up though.  If you don't have nohz
-> > > throttled, you eat tick start/stop overhead, and the menu governor
-> > > recently added yet more overhead, so maybe we should say hell with it.
-> > 
-> > Exactly, more and more factors to be considered, we say things get
-> > balanced but actually it's not the best choice...
-> > 
-> > > 
-> > >> 2. choose cpu0 like the patch proposed
-> > >>    no overhead but tend to make the load a little more unbalance
-> > >> 	core0 sg		core1 sg
-> > >> 	cpu0	cpu1		cpu2	cpu3
-> > >> 	wakee	busy		idle	idle
-> > >>
-> > >> May be we should add a higher scope load balance check in wake_affine(),
-> > >> but that means higher overhead which is just what the patch want to
-> > >> reduce...
-> > > 
-> > > Yeah, more overhead is the last thing we need.
-> > > 
-> > >> What about some discount for sync case inside select_idle_sibling()?
-> > >> For example we consider sync cpu as idle and prefer it more than the others?
-> > > 
-> > > That's what the sync hint does.  Problem is, it's a hint.  If it were
-> > > truth, there would be no point in calling select_idle_sibling().
-> > 
-> > Just wondering if the hint was wrong in most of the time, then why don't
-> > we remove it...
-> 
-> For very fast/light network ping-pong micro-benchmarks, it is right.
-> For pipe-test, it's absolutely right, jabbering parties are 100%
-> synchronous, there is nada/nil/zip/diddly squat overlap reclaimable..
-> but in the real world, it ain't necessarily so.
-> 
-> > Otherwise I think we can still utilize it to make some decision tends to
-> > be correct, don't we?
-> 
-> Sometimes :)
 
-P.S.  while we're slapping select_idle_sibling()'s _evil_ face, let's
-give it a pat on the head too.  It showed regressions in bright red.
-Put pipe-test on one core, you only see scheduler weight.. but entering
-and exiting idle is part of the fast path, whether you're exercising it
-by doing something silly or not.
+> 
+> Anyway, at this point I think your patch series should be nearly
+> complete. I made a few comments on your patches, and I'd imagine you
+> only should need one more revision (v7) before I can accept it to the
+> l2-mtd.git tree.
+> 
+Yes surely I will send next version (v7), but it might take few days.
+As some more feedbacks on [PATCH 1] are pending for final conclusion
+and this needs to be properly re-tested.
 
--Mike
+And thanks much to you and Olof for the feedbacks.
+I agree some of Olof's feedbacks on DT bindings gave me new view to
+look at things, And further simplified the NAND driver code.
 
+with regards, pekon
