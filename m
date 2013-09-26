@@ -1,237 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab3IZJqZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:46:25 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46812 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752054Ab3IZJqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:46:22 -0400
-Date: Thu, 26 Sep 2013 10:46:19 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "idos@codeaurora.org" <idos@codeaurora.org>,
-        "mgautam@codeaurora.org" <mgautam@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v4 1/3] usb: dwc3: msm: Add device tree binding
- information
-Message-ID: <20130926094618.GD2411@e106331-lin.cambridge.arm.com>
-References: <1376992565-22292-1-git-send-email-iivanov@mm-sol.com>
- <1376992565-22292-2-git-send-email-iivanov@mm-sol.com>
- <20130923193148.GN30811@radagast>
+	id S1756221Ab3IZJrY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:47:24 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35434 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755429Ab3IZJrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 05:47:23 -0400
+Message-ID: <524402A6.1040709@ti.com>
+Date: Thu, 26 Sep 2013 12:47:18 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130923193148.GN30811@radagast>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Joe Perches <joe@perches.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] framebuffer: arkfb: Fix framebugger typo
+References: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>
+In-Reply-To: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="vV43fXx6PTKCKokkRKUdtmodHrBJMxDFj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 08:31:48PM +0100, Felipe Balbi wrote:
-> Hi,
-> 
-> On Tue, Aug 20, 2013 at 12:56:03PM +0300, Ivan T. Ivanov wrote:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > 
-> > MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
-> > (SNPS) and HS, SS PHY's control and configuration registers.
-> > 
-> > It could operate in device mode (SS, HS, FS) and host
-> > mode (SS, HS, FS, LS).
-> > 
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> 
-> Any acks for the DT part ? This patch has been pending forever.
+--vV43fXx6PTKCKokkRKUdtmodHrBJMxDFj
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Apologies for the delay. I have a couple of comments that would be nice
-to fix up now.
+On 20/09/13 04:53, Joe Perches wrote:
+> s/framebugger/framebuffer/
+>=20
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/video/arkfb.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/video/arkfb.c b/drivers/video/arkfb.c
+> index ee0f1a1..b13f3f2 100644
+> --- a/drivers/video/arkfb.c
+> +++ b/drivers/video/arkfb.c
+> @@ -1048,7 +1048,7 @@ static int ark_pci_probe(struct pci_dev *dev, con=
+st struct pci_device_id *id)
+> =20
+>  	rc =3D register_framebuffer(info);
+>  	if (rc < 0) {
+> -		dev_err(info->device, "cannot register framebugger\n");
+> +		dev_err(info->device, "cannot register framebuffer\n");
+>  		goto err_reg_fb;
+>  	}
+> =20
+>=20
 
-> 
-> > ---
-> >  .../devicetree/bindings/usb/msm-ssusb.txt          |  104 ++++++++++++++++++++
-> >  1 file changed, 104 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/usb/msm-ssusb.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-> > new file mode 100644
-> > index 0000000..cacbd3b
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-> > @@ -0,0 +1,104 @@
-> > +MSM SuperSpeed DWC3 USB SoC controller
-> > +
-> > +
-> > +DWC3 Highspeed USB PHY
-> > +======================
-> > +Required properities :
-> > +- compatible : sould be "qcom,dwc3-hsphy";
+Thanks, queued for 3.13. Although I have to say I kinda like the sound
+of framebugger.
 
-s/sould/should/
-
-In general, compatible properties are "should contain" rather than
-"should be", as we might have backwards compatible hardware in future.
-
-> > +- reg : offset and length of the register set in the memory map
-> > +- clocks : phandles to clock instances of the device tree nodes
-
-Clocks are referred to be phandle + clock-specifier pairs rather than
-phandles, it would be nice to fix the terminology here
-
-> > +- clock-names :
-> > +	"xo" : External reference clock 19 MHz
-> > +	"sleep_a" : Sleep clock, used when USB3 core goes into low
-> > +	power mode (U3).
-
-I think it would be nicer to say:
-- clocks : A list of phandle + clock-specifier pairs for the clocks
-           listed in clock-names
-- clock-names: Should contain the following:
-               "xo"      - External reference clock (19MHz)
-	       "sleep_a" - Sleep clock used when USB3 core goes into low
-	                   power mode (U3).
-
-I'm not sure we need to describe the frequency of the xo clock -- either
-it's a requriement of the IP and thus doesn't need to be a part of the
-binding, or it's configurable by the driver and thus doesn't need to be
-documented.
-
-> > +<supply-name>-supply : phandle to the regulator device tree node
-> > +Required "supply-name" are:
-> > +	"v1p8" : 1.8v supply for HSPHY
-> > +	"v3p3" : 3.3v supply for HSPHY
-> > +	"vbus" : vbus supply for host mode
-> > +	"vddcx" : vdd supply for HS-PHY digital circuit operation
-
-Any reason for the HSPHY/HS-PHY difference?
-
-I'd list these separately with their full names:
-
-- v1p8-supply: phandle to the regulator for the 1.8v supply to HSPHY.
-- v3p3-supply: phandle to the regulator for the 3.3v supply to HSPHY.
-- vbus-supply: phandle to the regulator for the vbus supply for host
-               mode.
-- vddcx-supply: phandle to the regulator for the vdd supply for HSPHY
-  digital circuit operation.
-
-> > +
-> > +DWC3 Superspeed USB PHY
-> > +=======================
-> > +Required properities :
-> > +- compatible : sould be "qcom,dwc3-ssphy";
-> > +- reg : offset and length of the register set in the memory map
-> > +- clocks : phandles to clock instances of the device tree nodes
-> > +- clock-names :
-> > +	"xo" : External reference clock 19 MHz
-> > +	"ref" : Reference clock - used in host mode.
-> > +<supply-name>-supply : phandle to the regulator device tree node
-> > +Required "supply-name" are:
-> > +	"v1p8" : 1.8v supply for SS-PHY
-> > +	"vddcx" : vdd supply for SS-PHY digital circuit operation
-
-The commments on compatible, clocks, clock-names and the regulators
-apply here.
-
-> > +
-> > +DWC3 controller wrapper
-> > +=======================
-> > +Required properties :
-> > +- compatible : should be "qcom,dwc3"
-> > +- reg : offset and length of the register set in the memory map
-> > +	offset and length of the TCSR register for routing USB
-> > +	signals to either picoPHY0 or picoPHY1.
-> > +- clocks : phandles to clock instances of the device tree nodes
-> > +- clock-names :
-> > +	"core" : Master/Core clock, have to be >= 125 MHz for SS
-> > +	operation and >= 60MHz for HS operation
-> > +	"iface" : System bus AXI clock
-> > +	"sleep" : Sleep clock, used when USB3 core goes into low
-> > +	power mode (U3).
-> > +	"utmi" : Generated by HS-PHY. Used to clock the low power
-> > +	parts of thr HS Link layer.
-> > +Optional properties :
-> > +- gdsc-supply : phandle to the globally distributed switch controller
-> > +  regulator node to the USB controller.
-
-The commments on compatible, clocks, and clock-names apply here too. I
-see the regulator is defined individually :)
-
-I'm fine with the binding itself, I'd just like the documentation fixed
-up.
-
-Cheers,
-Mark.
-
-> > +Required child node:
-> > +A child node must exist to represent the core DWC3 IP block. The name of
-> > +the node is not important. The content of the node is defined in dwc3.txt.
-> > +
-> > +Example device nodes:
-> > +
-> > +	dwc3_hsphy: phy@f92f8800 {
-> > +		compatible = "qcom,dwc3-hsphy";
-> > +		reg = <0xf92f8800 0x30>;
-> > +
-> > +		clocks = <&cxo>, <&usb2a_phy_sleep_cxc>;
-> > +		clock-names = "xo", "sleep_a";
-> > +
-> > +		vbus-supply = <&supply>;
-> > +		vddcx-supply = <&supply>;
-> > +		v1p8-supply = <&supply>;
-> > +		v3p3-supply = <&supply>;
-> > +	};
-> > +
-> > +	dwc3_ssphy: phy@f92f8830 {
-> > +		compatible = "qcom,dwc3-ssphy";
-> > +		reg = <0xf92f8830 0x30>;
-> > +
-> > +		clocks = <&cxo>, <&usb30_mock_utmi_cxc>;
-> > +		clock-names = "xo", "ref";
-> > +
-> > +		vddcx-supply = <&supply>;
-> > +		v1p8-supply = <&supply>;
-> > +	};
-> > +
-> > +	usb@fd4ab000 {
-> > +		compatible = "qcom,dwc3";
-> > +		#address-cells = <1>;
-> > +		#size-cells = <1>;
-> > +		reg = <0xfd4ab000 0x4>;
-> > +
-> > +		clocks = <&usb30_master_cxc>, <&sys_noc_usb3_axi_cxc>,
-> > +				<&usb30_sleep_cxc>, <&usb30_mock_utmi_cxc>;
-> > +		clock-names = "core", "iface", "sleep", "utmi";
-> > +
-> > +		gdsc-supply = <&supply>;
-> > +
-> > +		ranges;
-> > +		dwc3@f9200000 {
-> > +			compatible = "snps,dwc3";
-> > +			reg = <0xf9200000 0xcd00>;
-> > +			interrupts = <0 131 0>;
-> > +			usb-phy = <&dwc3_hsphy>, <&dwc3_ssphy>;
-> > +			tx-fifo-resize;
-> > +		};
-> > +	};
-> > -- 
-> > 1.7.9.5
-> > 
-> 
-> -- 
-> balbi
+ Tom
 
 
+
+--vV43fXx6PTKCKokkRKUdtmodHrBJMxDFj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSRAKmAAoJEPo9qoy8lh71BnwQAIg40rlQKmSBnMn2UtL2+YRx
+t+tqE3jtfsd9ae1aWeJe18x5TIaoBnrIVbW38zGNrx7eQrBw1R0GxGRpiyR9rDOz
+TOgBr6jLpb4Js7wi/eAbbS414KhiEBI96MVR13YFok4CLE3OqZdclb5pbC0xWUBV
+kOw78+E++5F+iS+RneWeGPhYjwXjIwKtZMAW9i5hiPf9RUOmC1PuDnARkq9WRLtF
+6VTtXB1oxnZbcOQHpTXeIYuM1VjmP57M7vPMCyuEF1AC+I509n85yfBdslT2REkX
+tlc0MHj5sO9NrV8dL2veLdfKXLyhZ4AaFYIotdJCUV19grIktHcHq/X0TZEElI8i
+2yMKV+lLhVzboNABmWyoktZugP4Em2grncjWZe/UyOAArGA0T/CIReu7C0sG5KNc
+gs0zmuZyt52rAvIkdOePl6mpdv1jR9MucCbiSp0jGYlo1Kff9phte6hI02jOKa1g
+Om8okBh/X1vJPqCYdiNDRKIw0Amwrov0/BO85aiPV7+bzZ9NtHkJkYbCM1vQ7Scj
+pwShdeBZnfd+2so3tErPERXQtsQIYo0w1dLS9ErhV+RfBWwa4Qzb0AmBWjVQUKol
+XxtB9CZ+m+tMzhJ2V0UTEamt6jlO2NVEI8arAiD6JEYQmerfg6h0pzOTFoFOeZBm
+A20Q+s1LmcK6cGuY+kFP
+=QGYk
+-----END PGP SIGNATURE-----
+
+--vV43fXx6PTKCKokkRKUdtmodHrBJMxDFj--
