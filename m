@@ -1,98 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab3IZVzl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 17:55:41 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:60957 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754212Ab3IZVzW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 17:55:22 -0400
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        David Airlie <airlied@linux.ie>
-Subject: [PATCH] gma500: define do_gma_backlight_set only when used
-Date: Thu, 26 Sep 2013 23:46:56 +0200
-Message-Id: <1380232016-25368-1-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 1.8.4.rc3
+	id S1754482Ab3IZV4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 17:56:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55742 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754427Ab3IZV4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 17:56:35 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Sekhar Nori <nsekhar@ti.com>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, Olof Johansson <olof@lixom.net>,
+        Nishanth Menon <nm@ti.com>,
+        Pantel Antoniou <panto@antoniou-consulting.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Joel Fernandes <joelf@ti.com>
+Subject: [PATCH v3] ARM: EDMA: Fix clearing of unused list for DT DMA resources
+Date: Thu, 26 Sep 2013 16:55:46 -0500
+Message-ID: <1380232546-821-1-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure static function do_gma_backlight_set() is only defined when
-CONFIG_BACKLIGHT_CLASS_DEVICE is defined, as it is never called otherwise.
+HWMOD removal for MMC is breaking edma_start as the events are being manually
+triggered due to unused channel list not being clear.
 
-This fixes the following warning:
+The above issue is fixed by reading the "dmas" property from the DT node if it
+exists and clearing the bits in the unused channel list if the dma controller
+used by any device is EDMA. For this purpose we use the of_* helpers to parse
+the arguments in the dmas phandle list.
 
-  drivers/gpu/drm/gma500/backlight.c:29:13: warning: ‘do_gma_backlight_set’ defined but not used [-Wunused-function]
+Also introduced is a minor clean up of a checkpatch error in old code.
 
-While at it, remove some end of line spaces.
-
-Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
-Cc: David Airlie <airlied@linux.ie>
+Reviewed-by: Sekhar Nori <nsekhar@ti.com>
+Reported-by: Balaji T K <balajitk@ti.com>
+Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Nishanth Menon <nm@ti.com>
+Cc: Pantel Antoniou <panto@antoniou-consulting.com>
+Cc: Jason Kridner <jkridner@beagleboard.org>
+Cc: Koen Kooi <koen@dominion.thruhere.net>
+Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
+Just resending this patch after discussing with Sekhar and Olof.
 
-Hi,
+AM335x is being booted by many users such as the beaglebone community. DT is
+the only boot method available for all these users.  EDMA is required for the
+operation for many common peripherals in AM335x SoC such as McASP, MMC and
+Crypto.
 
-This can be seen with mainline or linux-next with e.g. allmodconfig on x86.
+Although EDMA DT nodes are going in only for 3.13, in reality the kernel has
+been used for more than a year with EDMA code and out of tree EDMA DTS patches.
+Hence though the DT nodes are still not in mainline, this patch can be still be
+considered a critical fix as such and it would be great if it could be included
+in 3.12-rc release. Thanks.
 
-Best regards,
+More details about why this broke an existing feature folks were using:
+Previously the DMA resources for platform devices were being populated through
+HWMOD, however with the recent clean ups with HWMOD, this data has been moved
+to Device tree. The EDMA code though is not aware of this so it fails to fetch
+the DMA resources correctly which it needs to prepare the unused channel list
+(basically doesn't properly clear the channels that are in use, in the unused
+list).
 
-V.
+ arch/arm/common/edma.c | 38 +++++++++++++++++++++++++++++++-------
+ 1 file changed, 31 insertions(+), 7 deletions(-)
 
- drivers/gpu/drm/gma500/backlight.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/gpu/drm/gma500/backlight.c b/drivers/gpu/drm/gma500/backlight.c
-index 143eba3..399731e 100644
---- a/drivers/gpu/drm/gma500/backlight.c
-+++ b/drivers/gpu/drm/gma500/backlight.c
-@@ -26,13 +26,13 @@
- #include "intel_bios.h"
- #include "power.h"
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index 117f955..8e1a024 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -269,6 +269,11 @@ static const struct edmacc_param dummy_paramset = {
+ 	.ccnt = 1,
+ };
  
-+#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
- static void do_gma_backlight_set(struct drm_device *dev)
++static const struct of_device_id edma_of_ids[] = {
++	{ .compatible = "ti,edma3", },
++	{}
++};
++
+ /*****************************************************************************/
+ 
+ static void map_dmach_queue(unsigned ctlr, unsigned ch_no,
+@@ -560,14 +565,38 @@ static int reserve_contiguous_slots(int ctlr, unsigned int id,
+ static int prepare_unused_channel_list(struct device *dev, void *data)
  {
--#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
- 	struct drm_psb_private *dev_priv = dev->dev_private;
- 	backlight_update_status(dev_priv->backlight_device);
--#endif	
- }
-+#endif
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	int i, ctlr;
++	int i, count, ctlr;
++	struct of_phandle_args  dma_spec;
  
- void gma_backlight_enable(struct drm_device *dev)
- {
-@@ -43,7 +43,7 @@ void gma_backlight_enable(struct drm_device *dev)
- 		dev_priv->backlight_device->props.brightness = dev_priv->backlight_level;
- 		do_gma_backlight_set(dev);
++	if (dev->of_node) {
++		count = of_property_count_strings(dev->of_node, "dma-names");
++		if (count < 0)
++			return 0;
++		for (i = 0; i < count; i++) {
++			if (of_parse_phandle_with_args(dev->of_node, "dmas",
++						       "#dma-cells", i,
++						       &dma_spec))
++				continue;
++
++			if (!of_match_node(edma_of_ids, dma_spec.np)) {
++				of_node_put(dma_spec.np);
++				continue;
++			}
++
++			clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]),
++				  edma_cc[0]->edma_unused);
++			of_node_put(dma_spec.np);
++		}
++		return 0;
++	}
++
++	/* For non-OF case */
+ 	for (i = 0; i < pdev->num_resources; i++) {
+ 		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
+ 				(int)pdev->resource[i].start >= 0) {
+ 			ctlr = EDMA_CTLR(pdev->resource[i].start);
+ 			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
+-					edma_cc[ctlr]->edma_unused);
++				  edma_cc[ctlr]->edma_unused);
+ 		}
  	}
--#endif	
-+#endif
+ 
+@@ -1762,11 +1791,6 @@ static int edma_probe(struct platform_device *pdev)
+ 	return 0;
  }
  
- void gma_backlight_disable(struct drm_device *dev)
-@@ -55,7 +55,7 @@ void gma_backlight_disable(struct drm_device *dev)
- 		dev_priv->backlight_device->props.brightness = 0;
- 		do_gma_backlight_set(dev);
- 	}
--#endif	
-+#endif
- }
- 
- void gma_backlight_set(struct drm_device *dev, int v)
-@@ -67,7 +67,7 @@ void gma_backlight_set(struct drm_device *dev, int v)
- 		dev_priv->backlight_device->props.brightness = v;
- 		do_gma_backlight_set(dev);
- 	}
--#endif	
-+#endif
- }
- 
- int gma_backlight_init(struct drm_device *dev)
+-static const struct of_device_id edma_of_ids[] = {
+-	{ .compatible = "ti,edma3", },
+-	{}
+-};
+-
+ static struct platform_driver edma_driver = {
+ 	.driver = {
+ 		.name	= "edma",
 -- 
-1.8.4.rc3
+1.8.1.2
 
