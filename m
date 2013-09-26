@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3IZWWU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:22:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6676 "EHLO mga02.intel.com"
+	id S1754661Ab3IZWYP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:24:15 -0400
+Received: from unicorn.mansr.com ([81.2.72.234]:40936 "EHLO unicorn.mansr.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754827Ab3IZWVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:21:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,988,1371106800"; 
-   d="scan'208";a="410078720"
-Subject: [PATCH v7 4/6] rwsem/wake: check lock before do atomic update
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <cover.1380231690.git.tim.c.chen@linux.intel.com>
-References: <cover.1380231690.git.tim.c.chen@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Sep 2013 15:21:13 -0700
-Message-ID: <1380234073.3467.90.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1754164Ab3IZWYL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 18:24:11 -0400
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Rob Landley <rob@landley.net>
+Cc: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@osdl.org>,
+        Trivial patch monkey <trivial@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: new binutils needed for arm in 3.12-rc1
+References: <1380154255.1974.92@driftwood>
+Date: Thu, 26 Sep 2013 23:24:07 +0100
+In-Reply-To: <1380154255.1974.92@driftwood> (Rob Landley's message of "Wed, 25
+	Sep 2013 19:10:55 -0500")
+Message-ID: <yw1xy56jusqg.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Atomic update lock and roll back will cause cache bouncing in large
-machine. A lock status pre-read can relieve this problem
+Rob Landley <rob@landley.net> writes:
 
-Suggested-by: Davidlohr bueso <davidlohr.bueso@hp.com>
-Suggested-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- lib/rwsem.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+> On 09/25/2013 10:52:44 AM, Måns Rullgård wrote:
+>> Rob Landley <rob@landley.net> writes:
+>> 
+>> > On 09/24/2013 09:07:57 PM, Nicolas Pitre wrote:
+>> >> I'd strongly suggest you make your binutils compatible with newer
+>> >> instruction syntax instead of making the kernel more complex.
+>> >
+>> > Meaning I play whack-a-mole as this becomes permission to depend on
+>> > endless new gnuisms just because they're there and nobody else is
+>> > regression testing against them, not because they actually add  
+>> > anything.
+>> 
+>> Since when is assembling the instructions correctly, as specified in
+>> the arch ref, and not in some other random way a gnuism?
+>
+> If you require current gnome and drop support for older versions (and  
+> implicitly all other desktops), people start writing stuff that depends  
+> on systemd. It doesn't matter if the feature you abandoned support for  
+> the past 10 years of everthing else for wasn't itself provided by  
+> systemd.
 
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index a8055cf..1d6e6e8 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -64,7 +64,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
- 	struct rwsem_waiter *waiter;
- 	struct task_struct *tsk;
- 	struct list_head *next;
--	long oldcount, woken, loop, adjustment;
-+	long woken, loop, adjustment;
- 
- 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
- 	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
-@@ -86,6 +86,12 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
- 	if (wake_type != RWSEM_WAKE_READ_OWNED) {
- 		adjustment = RWSEM_ACTIVE_READ_BIAS;
- 		while (1) {
-+			long oldcount;
-+
-+			/* A writer stole the lock. */
-+			if (unlikely(sem->count < RWSEM_WAITING_BIAS))
-+				return sem;
-+
- 			oldcount = rwsem_atomic_update(adjustment, sem)
- 								- adjustment;
- 			if (likely(oldcount >= RWSEM_WAITING_BIAS))
+Are you saying current binutils depends on gnome and/or systemd?
+
 -- 
-1.7.4.4
-
-
-
+Måns Rullgård
+mans@mansr.com
