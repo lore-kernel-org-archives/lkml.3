@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab3IZML2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 08:11:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9439 "EHLO mx1.redhat.com"
+	id S1756907Ab3IZMMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 08:12:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17080 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755712Ab3IZML0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 08:11:26 -0400
-Date: Thu, 26 Sep 2013 14:13:25 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Tejun Heo <tj@kernel.org>, linux-pci@vger.kernel.org,
-        Joerg Roedel <joro@8bytes.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20130926121325.GC16774@dhcp-26-207.brq.redhat.com>
-References: <20130918165045.GB2353@dhcp-26-207.brq.redhat.com>
- <20130920082458.GA10507@dhcp-26-207.brq.redhat.com>
- <20130920122736.GD7630@mtj.dyndns.org>
- <20130925180220.GB26273@google.com>
- <20130925205804.GA21737@dhcp-26-207.brq.redhat.com>
- <20130925210016.GA8926@htj.dyndns.org>
- <20130926074646.GA16774@dhcp-26-207.brq.redhat.com>
- <AE90C24D6B3A694183C094C60CF0A2F6026B735D@saturn3.aculab.com>
- <20130926104548.GB16774@dhcp-26-207.brq.redhat.com>
- <AE90C24D6B3A694183C094C60CF0A2F6026B7360@saturn3.aculab.com>
+	id S1755712Ab3IZMMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 08:12:20 -0400
+Date: Thu, 26 Sep 2013 14:11:55 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Don Zickus <dzickus@redhat.com>, Andi Kleen <ak@linux.jf.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 00/21] perf tools: Add toggling events support
+Message-ID: <20130926121154.GA1067@krava.brq.redhat.com>
+References: <1380113447-17144-1-git-send-email-jolsa@redhat.com>
+ <20130925191216.GE2018@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7360@saturn3.aculab.com>
+In-Reply-To: <20130925191216.GE2018@tassilo.jf.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 12:34:36PM +0100, David Laight wrote:
-> I was thinking that the first call would be done during driver probe
-> (assuming such a time exists) so that the subsystem could determine
-> how many interrupts all the drivers would like, so it can then
-> hand out a smaller number to some of the early drivers in order
-> to have some left to satisfy the minimum requirement of later
-> ones.
+On Wed, Sep 25, 2013 at 12:12:16PM -0700, Andi Kleen wrote:
+> On Wed, Sep 25, 2013 at 02:50:26PM +0200, Jiri Olsa wrote:
+> > hi,
+> > sending *RFC* for toggling events support.
+> > 
+> > Adding perf interface that allows to create toggle events, which can
+> > enable or disable another event. Whenever the toggle event is triggered
+> > (has overflow), it toggles another event state and either starts or
+> > stops it.
+> > 
+> > The goal is to be able to create toggling tracepoint events to enable and
+> > disable HW counters, but the interface is generic enough to be used for
+> > any kind of event. 
 > 
-> So all it would do is sum the requirements of all the drivers.
+> Haven't read the patches, but frequent full event switch in/out seems
+> very expensive.  If someone puts that switch on a common
+> function it would likely disturb things quite a bit.
 
-It is already implemented - please see commit 448e2ca ("powerpc/pseries:
-Implement a quota system for MSIs")
+We dont do full sched in/out.. the toggled event
+is scheduled in 'paused' state which means that
+it's not started. Once the trigger is hit, pmu 
+start/stop is executed.
 
-All other archs do not have MSI vector space limitations.
+> 
+> It would be better to keep counting and just do RDPMC on 
+> the switch points, and then subtract for counting.
+> For sampling could need a MSR write to enable/disable.
+> Still somewhat expensive, but nowhere near as bad as a full switch.
 
-> 	David
+I'll check on that
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+> 
+> Another problem is that it may be very inexact, as
+> the counting will often happen in the background
+> and not be very synchronized with the switches.
+> Not fully sure how big a problem that would be.
+
+the toggling overflow function does following
+(perf_event_toggle_overflow)
+
+ - disable pmu of the toggled event
+ - start/stop the toggle event
+ - store sample for the trigger function
+ - enable pmu of the toggled event
+
+so the overhead (extra count) is:
+ - the return code from pmu enable and return from the overflow processing
+ - trigger event overflow processing till pmu disable code
+
+and no overhead for user space events ;-)
+
+thanks,
+jirka
