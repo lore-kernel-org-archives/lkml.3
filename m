@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527Ab3IZKMr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 06:12:47 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:33684 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab3IZKMo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756474Ab3IZKMq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 06:12:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45399 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754851Ab3IZKMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Sep 2013 06:12:44 -0400
-Message-ID: <52440899.90102@linaro.org>
-Date: Thu, 26 Sep 2013 12:12:41 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+Message-ID: <5244088B.20807@ti.com>
+Date: Thu, 26 Sep 2013 15:42:27 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] ARM/ARM64 architected timer updates for v3.13
-References: <52440218.9040009@arm.com>
-In-Reply-To: <52440218.9040009@arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Pratyush Anand <pratyush.anand@st.com>, Jingoo Han <jg1.han@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        Mohit KUMAR DCG <Mohit.KUMAR@st.com>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys
+ part and Exynos part
+References: <000701ce8741$fe47deb0$fad79c10$@samsung.com> <201309242323.55323.arnd@arndb.de> <5243C0E5.7020508@ti.com> <201309261151.42034.arnd@arndb.de>
+In-Reply-To: <201309261151.42034.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 11:44 AM, Sudeep KarkadaNagesha wrote:
-> Hi Daniel,
->
-> Please pull the ARM/ARM64 arch timer updates for v3.13.
+Hi Arnd,
 
-Applied to my tree for 3.13.
+On Thursday 26 September 2013 03:21 PM, Arnd Bergmann wrote:
+> On Thursday 26 September 2013, Kishon Vijay Abraham I wrote:
+>> On Wednesday 25 September 2013 02:53 AM, Arnd Bergmann wrote:
+>>> On Monday 23 September 2013, Kishon Vijay Abraham I wrote:
+>>>> Btw if we hadn't programmed inbound translation table, the address will go
+>>>> untranslated (according to the data book). I guess that's how it was working
+>>>> for Jingoo Han.
+>>>>
+>>>> **
+>>>> 3.10.4
+>>>> Inbound iATU Operation
+>>>>
+>>>> When there is no match, then the address is untranslated
+>>>> **
+>>>>
+>>>
+>>> Well, that should work just as well, since you have a 1:1 translation anyway.
+>>> Do you get the same error without the translation?
+>>
+>> Yes. I get the same non-fatal error interrupt in RC.
+> 
+> Ok, then I guess the translation is actually not at fault here but something
+> else. I would recommend looking at the IOMMU as the potential culprit. Maybe
+> having it disabled means that no DMA is going through, rather than all DMA
+> going through untranslated. Another possibility is that the IOMMU is set up
+> so that when disabled, it maps DMA address 0 to the start of RAM, rather
+> than identity mapping DMA address 0x80000000 there. If that's the case,
+> you either have to use the IOMMU, or set up the mapping in the root
+> complex to revert it.
+
+Thanks for your inputs. I'll check if that's the problem.
 
 Thanks
-   -- Daniel
-
->
-> Regards,
-> Sudeep
->
-> -->8--
->
-> The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
->
->    Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
->
-> are available in the git repository at:
->
->    git://linux-arm.org/linux-skn.git timer_evtstrm
->
-> for you to fetch changes up to 346e7480f1d4740b3d798da60f83f087ea6488b4:
->
->    drivers: clocksource: add CPU PM notifier for ARM architected timer
-> (2013-09-26 09:48:24 +0100)
->
-> ----------------------------------------------------------------
-> Sudeep KarkadaNagesha (4):
->        ARM/ARM64: arch_timer: add macros for bits in control register
->        ARM: arch_timer: add support to configure and enable event stream
->        ARM64: arch_timer: add support to configure and enable event stream
->        drivers: clocksource: add CPU PM notifier for ARM architected timer
->
-> Will Deacon (1):
->        drivers: clocksource: add support for ARM architected timer event stream
->
->   arch/arm/include/asm/arch_timer.h    | 36 +++++++++++++++++++++++-----
->   arch/arm/include/uapi/asm/hwcap.h    |  1 +
->   arch/arm/kernel/setup.c              |  1 +
->   arch/arm64/include/asm/arch_timer.h  | 42 +++++++++++++++++++++++++++------
->   arch/arm64/include/asm/hwcap.h       | 11 +++----
->   arch/arm64/include/uapi/asm/hwcap.h  |  1 +
->   arch/arm64/kernel/setup.c            | 11 +++++++
->   drivers/clocksource/Kconfig          | 15 ++++++++++++
->   drivers/clocksource/arm_arch_timer.c | 49 ++++++++++++++++++++++++++++++++++++
->   include/clocksource/arm_arch_timer.h | 10 ++++++++++
->   10 files changed, 161 insertions(+), 16 deletions(-)
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Kishon
