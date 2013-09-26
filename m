@@ -1,48 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab3IZP3o (ORCPT <rfc822;w@1wt.eu>);
+	id S1752897Ab3IZP3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:29:49 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43059 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752797Ab3IZP3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Sep 2013 11:29:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46619 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750805Ab3IZP3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:29:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,986,1371106800"; 
-   d="scan'208";a="401430956"
-Message-ID: <524452E3.6050200@linux.intel.com>
-Date: Thu, 26 Sep 2013 08:29:39 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+Date: Thu, 26 Sep 2013 16:29:41 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: devicetree@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mfd: arizona: Update device tree regulator bindings
+Message-ID: <20130926152941.GQ3635@opensource.wolfsonmicro.com>
+References: <1380131272-16982-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20130925183201.GT3226@sirena.org.uk>
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de, dave@sr71.net,
-        hannes@cmpxchg.org, tony.luck@intel.com, matthew.garrett@nebula.com,
-        riel@redhat.com, srinivas.pandruvada@linux.intel.com,
-        willy@linux.intel.com, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
-        rjw@sisk.pl, gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
-        amit.kachhap@linaro.org, thomas.abraham@linaro.org
-Subject: Re: [Results] [RFC PATCH v4 00/40] mm: Memory Power Management
-References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <52437128.7030402@linux.vnet.ibm.com> <20130925164057.6bbaf23bdc5057c42b2ab010@linux-foundation.org> <52442F6F.5020703@linux.vnet.ibm.com>
-In-Reply-To: <52442F6F.5020703@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130925183201.GT3226@sirena.org.uk>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/26/2013 5:58 AM, Srivatsa S. Bhat wrote:
-> Let me explain the challenge I am facing. A prototype powerpc platform that
-> I work with has the capability to transition memory banks to content-preserving
-> low-power states at a per-socket granularity. What that means is that we can
-> get memory power savings*without*  needing to go to full-system-idle, unlike
-> Intel platforms such as Sandybridge.
+Mark,
 
-btw this is not a correct statement
-even Sandybridge can put memory in low power states (just not self refresh) even if the system is not idle
-(depending on bios settings to enable this)
+What are your thoughts on this approach? I basically add a way to
+specify in the DAPM regulator supply widget that the supply lives
+on the parent rather than the current device. If you like it I
+will send it in as a proper patch.
+
+I had considered adding something like a recursive regulator get
+that works it's way up the tree but this felt rather invasive and
+most places the user code does the regulator get rather than a
+framework so the issue is only really likely to crop up with
+regards to ASoC.
+
+Thanks,
+Charles
+---
+ include/sound/soc-dapm.h  |    2 ++
+ sound/soc/codecs/wm5102.c |   13 +++++++------
+ sound/soc/soc-dapm.c      |    7 ++++++-
+ 3 files changed, 15 insertions(+), 7 deletions(-)
+
+diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
+index 27a72d5..f21b261 100644
+--- a/include/sound/soc-dapm.h
++++ b/include/sound/soc-dapm.h
+@@ -360,6 +360,8 @@ struct device;
+ 
+ /* regulator widget flags */
+ #define SND_SOC_DAPM_REGULATOR_BYPASS     0x1     /* bypass when disabled */
++/* use codec parent device for regulator get */
++#define SND_SOC_DAPM_REGULATOR_USE_PARENT 0x2
+ 
+ struct snd_soc_dapm_widget;
+ enum snd_soc_dapm_type;
+diff --git a/sound/soc/codecs/wm5102.c b/sound/soc/codecs/wm5102.c
+index 8bbddc1..ee31f15 100644
+--- a/sound/soc/codecs/wm5102.c
++++ b/sound/soc/codecs/wm5102.c
+@@ -980,12 +980,13 @@ SND_SOC_DAPM_SUPPLY("OPCLK", ARIZONA_OUTPUT_SYSTEM_CLOCK,
+ SND_SOC_DAPM_SUPPLY("ASYNCOPCLK", ARIZONA_OUTPUT_ASYNC_CLOCK,
+ 		    ARIZONA_OPCLK_ASYNC_ENA_SHIFT, 0, NULL, 0),
+ 
+-SND_SOC_DAPM_REGULATOR_SUPPLY("DBVDD2", 0, 0),
+-SND_SOC_DAPM_REGULATOR_SUPPLY("DBVDD3", 0, 0),
+-SND_SOC_DAPM_REGULATOR_SUPPLY("CPVDD", 20, 0),
+-SND_SOC_DAPM_REGULATOR_SUPPLY("MICVDD", 0, SND_SOC_DAPM_REGULATOR_BYPASS),
+-SND_SOC_DAPM_REGULATOR_SUPPLY("SPKVDDL", 0, 0),
+-SND_SOC_DAPM_REGULATOR_SUPPLY("SPKVDDR", 0, 0),
++SND_SOC_DAPM_REGULATOR_SUPPLY("DBVDD2", 0, SND_SOC_DAPM_REGULATOR_USE_PARENT),
++SND_SOC_DAPM_REGULATOR_SUPPLY("DBVDD3", 0, SND_SOC_DAPM_REGULATOR_USE_PARENT),
++SND_SOC_DAPM_REGULATOR_SUPPLY("CPVDD", 20, SND_SOC_DAPM_REGULATOR_USE_PARENT),
++SND_SOC_DAPM_REGULATOR_SUPPLY("MICVDD", 0, SND_SOC_DAPM_REGULATOR_BYPASS |
++					   SND_SOC_DAPM_REGULATOR_USE_PARENT),
++SND_SOC_DAPM_REGULATOR_SUPPLY("SPKVDDL", 0, SND_SOC_DAPM_REGULATOR_USE_PARENT),
++SND_SOC_DAPM_REGULATOR_SUPPLY("SPKVDDR", 0, SND_SOC_DAPM_REGULATOR_USE_PARENT),
+ 
+ SND_SOC_DAPM_SIGGEN("TONE"),
+ SND_SOC_DAPM_SIGGEN("NOISE"),
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index c17c14c..899bd2e 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -3181,7 +3181,12 @@ snd_soc_dapm_new_control(struct snd_soc_dapm_context *dapm,
+ 
+ 	switch (w->id) {
+ 	case snd_soc_dapm_regulator_supply:
+-		w->regulator = devm_regulator_get(dapm->dev, w->name);
++		if (w->on_val & SND_SOC_DAPM_REGULATOR_USE_PARENT)
++			w->regulator = devm_regulator_get(dapm->dev->parent,
++							  w->name);
++		else
++			w->regulator = devm_regulator_get(dapm->dev, w->name);
++
+ 		if (IS_ERR(w->regulator)) {
+ 			ret = PTR_ERR(w->regulator);
+ 			dev_err(dapm->dev, "ASoC: Failed to request %s: %d\n",
+-- 
+1.7.2.5
 
