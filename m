@@ -1,84 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab3IZLeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 07:34:11 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:59151 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756142Ab3IZLeI (ORCPT
+	id S1756733Ab3IZLeK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 07:34:10 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:45658 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755712Ab3IZLeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 07:34:08 -0400
-X-Greylist: delayed 309 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Sep 2013 07:34:07 EDT
-From: Josh Wu <josh.wu@atmel.com>
-To: <cooloney@gmail.com>
-CC: <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Josh Wu <josh.wu@atmel.com>
-Subject: [PATCH][resend] leds-gpio: of: led should not be created if its status is disabled
-Date: Thu, 26 Sep 2013 19:27:56 +0800
-Message-ID: <1380194876-25821-1-git-send-email-josh.wu@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 26 Sep 2013 07:34:07 -0400
+Date: Thu, 26 Sep 2013 12:34:00 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Linn Crosetto <linn@hp.com>
+Cc: matt.fleming@intel.com, hpa@zytor.com, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, yinghai@kernel.org,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3] x86: EFI stub support for large memory maps
+Message-ID: <20130926113400.GM21381@console-pimps.org>
+References: <1378487056-9857-1-git-send-email-linn@hp.com>
+ <1379901548-70954-1-git-send-email-linn@hp.com>
+ <20130925125840.GK21381@console-pimps.org>
+ <20130925224541.GT13098@oranje.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130925224541.GT13098@oranje.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-now the leds-gpio driver will create every child led node without
-checking the status is disabled or not.
-
-for example, if we have a led node like d3, and its status is disabled:
-	leds {
-		d3 {
-			label = "d3";
-			gpios = <&pioE 24 0>;
-			status = "disabled";
-		};
-	};
-
-we except the d3 should not be created. And the gpios should not be
-request as well.
-
-But current driver will create d3 and request its gpio.
-
-This patch fix this by using for_each_available_child_of_node() and
-of_get_available_child_count() to enumerate all child nodes. So the
-disabled node will be inavailable.
-
-Signed-off-by: Josh Wu <josh.wu@atmel.com>
----
-resend this patch based on the patch:
- - http://www.spinics.net/lists/devicetree/msg05903.html
-
- drivers/leds/leds-gpio.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
-index e8b01e5..62bfc3a 100644
---- a/drivers/leds/leds-gpio.c
-+++ b/drivers/leds/leds-gpio.c
-@@ -170,11 +170,11 @@ static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
- 	int count, ret;
+On Wed, 25 Sep, at 04:45:41PM, Linn Crosetto wrote:
+> On Wed, Sep 25, 2013 at 01:58:40PM +0100, Matt Fleming wrote:
+> > On Sun, 22 Sep, at 07:59:08PM, Linn Crosetto wrote:
+> > > This patch fixes a problem with EFI memory maps larger than 128 entries
+> > > when booting using the EFI stub, which results in overflowing e820_map
+> > > in boot_params and an eventual halt when checking the map size in
+> > > sanitize_e820_map().
+> > > 
+> > > If the number of map entries is greater than what can fit in e820_map,
+> > > add the extra entries to the setup_data list using type SETUP_E820_EXT.
+> > > These extra entries are then picked up when the setup_data list is
+> > > parsed in parse_e820_ext().
+> > > 
+> > > Signed-off-by: Linn Crosetto <linn@hp.com>
+> > > ---
+> > > Changes from v2:
+> > >  * Removed unnecessary optimization in alloc_e820ext() (Matt Fleming)
+> > >  * Fixed a bug where an incorrect buffer size may be passed to
+> > >    get_memory_map when jumping to get_map
+> > > 
+> > >  arch/x86/boot/compressed/eboot.c | 239 +++++++++++++++++++++++++++------------
+> > >  1 file changed, 167 insertions(+), 72 deletions(-)
+> > 
+> > Thanks Linn. I applied this to the 'next' branch at,
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
+> > 
+> > but it required a bit of massaging to apply on top of the changes
+> > already there. Could you confirm that my changes are OK? I've included
+> > the modified commit below.
+> 
+> I have tested the 'next' branch on a system with a large number of entries in
+> the memory map and the merge appears to be functionally correct. 
  
- 	/* count LEDs in this device, so we know how much to allocate */
--	count = of_get_child_count(np);
-+	count = of_get_available_child_count(np);
- 	if (!count)
- 		return ERR_PTR(-ENODEV);
+Excellent, thank you for verifying.
+
+> With the change in commit ae8e9060, I noticed the memory map is no longer placed
+> in memory allocated with low_alloc(). I have not looked into what effect it
+> could have, if any.
  
--	for_each_child_of_node(np, child)
-+	for_each_available_child_of_node(np, child)
- 		if (of_get_gpio(child, 0) == -EPROBE_DEFER)
- 			return ERR_PTR(-EPROBE_DEFER);
+Correct. I haven't run into any problems on my test machines.
+
+> > +	/* Historic? */
+> > +	boot_params->alt_mem_k = 32 * 1024;
+> > +
+> > +	status = setup_e820(boot_params, e820ext, e820ext_size);
+> >  
+> >  	return EFI_SUCCESS;
+> 
+> I might add the following to your merge for semantic reasons:
+> 
+> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+> index 04b228d..a7677ba 100644
+> --- a/arch/x86/boot/compressed/eboot.c
+> +++ b/arch/x86/boot/compressed/eboot.c
+> @@ -730,6 +730,8 @@ get_map:
+>         boot_params->alt_mem_k = 32 * 1024;
+>  
+>         status = setup_e820(boot_params, e820ext, e820ext_size);
+> +       if (status != EFI_SUCCESS)
+> +               return status;
+>  
+>         return EFI_SUCCESS;
+
+Aha, nice catch! Though if setup_e820() fails we should be jumping to
+the 'free_mem_map' label so we don't leak the memory map, like so,
+
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 04b228d..602950b 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -730,8 +730,8 @@ get_map:
+ 	boot_params->alt_mem_k = 32 * 1024;
  
-@@ -183,7 +183,7 @@ static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
- 	if (!priv)
- 		return ERR_PTR(-ENOMEM);
+ 	status = setup_e820(boot_params, e820ext, e820ext_size);
+-
+-	return EFI_SUCCESS;
++	if (status == EFI_SUCCESS)
++		return status;
  
--	for_each_child_of_node(np, child) {
-+	for_each_available_child_of_node(np, child) {
- 		struct gpio_led led = {};
- 		enum of_gpio_flags flags;
- 		const char *state;
+ free_mem_map:
+ 	efi_call_phys1(sys_table->boottime->free_pool, mem_map);
+
+
+I've fixed this up and pushed out a new patch.
+
 -- 
-1.7.9.5
-
+Matt Fleming, Intel Open Source Technology Center
