@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab3IZAWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 20:22:54 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:46835 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab3IZAWw (ORCPT
+	id S1754874Ab3IZAXw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 20:23:52 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35653 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827Ab3IZAXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 20:22:52 -0400
+	Wed, 25 Sep 2013 20:23:51 -0400
+Date: Thu, 26 Sep 2013 02:23:49 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, will.deacon@arm.com,
+        catalin.marinas@arm.com
+Subject: Re: 3.12-rc1: no longer compiles for Nokia n900 (omap based),
+ display no longer works
+Message-ID: <20130926002349.GA26599@amd.pavel.ucw.cz>
+References: <20130919093002.GA23806@amd.pavel.ucw.cz>
+ <20130919094402.GA27253@amd.pavel.ucw.cz>
+ <20130919184703.GE30568@blackmetal.musicnaut.iki.fi>
 MIME-Version: 1.0
-In-Reply-To: <1380140085-29712-5-git-send-email-tixxdz@opendz.org>
-References: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
-	<1380140085-29712-5-git-send-email-tixxdz@opendz.org>
-Date: Wed, 25 Sep 2013 17:22:51 -0700
-X-Google-Sender-Auth: oJAMNQT-s7PxHK-Tz8Pogz-JlNk
-Message-ID: <CA+55aFwhb8rFbd8xT0==+r_QV-m8ANm+0sFEqUfk9Qg4rYpm-w@mail.gmail.com>
-Subject: Re: [PATCH 04/12] seq_file: Make seq_file able to access the file's
- opener cred
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        tixxdz@gmail.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130919184703.GE30568@blackmetal.musicnaut.iki.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 1:14 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
->
-> Therefor add the f_cred field to the seq_file struct and a helper
-> seq_f_cred() to return it.
+Hi!
 
-I hate how you've split up this patch from the next one that actually
-_initializes_ the new field.
+> On Thu, Sep 19, 2013 at 11:44:02AM +0200, Pavel Machek wrote:
+> > something in 3.12-rc1 broke display :-(. (dmesg diff attached at the
+> > end, maybe someone knows...)
+> 
+> 3.12-rc1 for N900 compiles and works (also display) here with binutils
+> 2.23.2.
 
-The two patches should have been one.
+I updated to eldk-5.4, and now it compiles, but still no display on 
 
-I think the patch should also remove the 'user_ns' member, since it's
-now available as f_cred->user_ns.
+> > + omapfb omapfb: no displays
+> 
+> [...]
+> 
+> > - acx565akm spi1.2: omapfb: acx565akm rev 12 LCD detected
+> 
+> I think this is because the panel driver has changed, and the old one
+> was deleted. You need to change your kernel configuration with something
+> like below:
+> 
+> -CONFIG_PANEL_ACX565AKM=y
+> +CONFIG_DISPLAY_PANEL_SONY_ACX565AKM=y
 
-I also suspect that it would be better to just make the the new
-seq_file member point to the 'struct file' instead. Sure, it's an
-extra level of indirection, but the lifetime of f_cred is not as clear
-otherwise. You don't increment the reference count, which is correct
-*only* because 'seq_file' has the same lifetime as 'struct file', and
-thus the reference count from struct file for the f_cred is
-sufficient.
+Thanks for the hint.. but apparently it was not enough. Still no
+display on qemu :-(.
 
-[ Time passes, I look over the other patches ]
+Anyway, "make oldconfig" is expected to produce working kernel, which
+is clearly not case here. Perhaps this should be added to fix that?
 
-Oh, and I note that you remove user_ns in patch 12. Again, I think
-that's just splitting things up too much. It actually gets harder to
-see what happens when you do this.
+[Who can take the patch?]
+   	       	    	  	       	      	       	      Pavel
 
-               Linus
+PS: whoever named directory in kernel sources "displays-new" should...
+think again.
+
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+
+index 6c90885..d3eabd2 100644
+--- a/drivers/video/omap2/displays-new/Kconfig
++++ b/drivers/video/omap2/displays-new/Kconfig
+@@ -40,6 +40,7 @@ config DISPLAY_PANEL_DSI_CM
+ 
+ config DISPLAY_PANEL_SONY_ACX565AKM
+ 	tristate "ACX565AKM Panel"
++	default PANEL_ACX565AKM
+ 	depends on SPI && BACKLIGHT_CLASS_DEVICE
+ 	help
+ 	  This is the LCD panel used on Nokia N900
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
