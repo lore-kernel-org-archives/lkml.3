@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab3IZIJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:09:56 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:41655 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755771Ab3IZIJu (ORCPT
+	id S1755971Ab3IZIKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:10:22 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:37806 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755808Ab3IZIKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:09:50 -0400
-From: Ming Liu <ming.liu@windriver.com>
-To: <akpm@linux-foundation.org>, <rientjes@google.com>, <mhocko@suse.cz>,
-        <rusty@rustcorp.com.au>, <hannes@cmpxchg.org>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH V1] oom: avoid selecting threads sharing mm with init
-Date: Thu, 26 Sep 2013 16:09:17 +0800
-Message-ID: <1380182957-3231-1-git-send-email-ming.liu@windriver.com>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 26 Sep 2013 04:10:08 -0400
+Date: Thu, 26 Sep 2013 13:09:57 +0500
+From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 1/3] iio: ti_am335x_adc: fix static in function header
+Message-ID: <20130926080955.GA3985@gmail.com>
+References: <1379838005-15158-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1379838005-15158-2-git-send-email-zubair.lutfullah@gmail.com>
+ <523F3109.8000600@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <523F3109.8000600@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It won't help free memory for killing tasks sharing mm with init, we should
-skip them in oom_unkillable_task(), or we may risk init process getting
-killed because after selecting a task to kill, the oom killer iterates all
-processes and kills all other user threads that share the same mm_struct
-in different thread groups.
+On Sun, Sep 22, 2013 at 07:03:53PM +0100, Jonathan Cameron wrote:
+> On 09/22/13 09:20, Zubair Lutfullah wrote:
+> > Static is missing in function header. Corrected.
+> > 
+> > Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+> Applied to the togreg branch of iio.git
+> 
+> As you've probably gathered, a run of sparse on your code before posting is a
+> great way to pick up on little things like this.  Also, coccinelle and
+> smatch if you want to do a thorough job - each gets a slightly different
+> set of common bugs.  I tend to run some combination of those, but wasn't
+> set up to build this driver so didn't pick up on this.
 
-In some extreme cases, the selected task happens to be a vfork child of
-init process sharing the same mm_struct with it, which causes kernel
-panic on init getting killed. This panic is observed in a busybox shell that
-busybox itself is init, with a kthread keeps consuming memories.
+Thank-you. I'll look into it. Are these scripts within the scripts/ directory?
+Zubair
 
-Signed-off-by: Ming Liu <ming.liu@windriver.com>
----
- mm/oom_kill.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> Another one clocked up to the autobuilders.  Note it is normal to give
+> a reported-by line to give them some credit. I've added one.
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 314e9d2..7e50a95 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -113,11 +113,22 @@ struct task_struct *find_lock_task_mm(struct task_struct *p)
- static bool oom_unkillable_task(struct task_struct *p,
- 		const struct mem_cgroup *memcg, const nodemask_t *nodemask)
- {
-+	struct task_struct *init_tsk;
-+
- 	if (is_global_init(p))
- 		return true;
- 	if (p->flags & PF_KTHREAD)
- 		return true;
+Noted
  
-+	/* It won't help free memory if p is sharing mm with init */
-+	rcu_read_lock();
-+	init_tsk = find_task_by_pid_ns(1, &init_pid_ns);
-+	if(p->mm == init_tsk->mm) {
-+		rcu_read_unlock();
-+		return true;
-+	}
-+	rcu_read_unlock();
-+
- 	/* When mem_cgroup_out_of_memory() and p is not member of the group */
- 	if (memcg && !task_in_mem_cgroup(p, memcg))
- 		return true;
--- 
-1.7.0.4
-
+> Jonathan
+> > ---
+> >  drivers/iio/adc/ti_am335x_adc.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+> > index 5287bff..91dce1f 100644
+> > --- a/drivers/iio/adc/ti_am335x_adc.c
+> > +++ b/drivers/iio/adc/ti_am335x_adc.c
+> > @@ -226,7 +226,7 @@ static const struct iio_buffer_setup_ops tiadc_buffer_setup_ops = {
+> >  	.postdisable = &tiadc_buffer_postdisable,
+> >  };
+> >  
+> > -int tiadc_iio_buffered_hardware_setup(struct iio_dev *indio_dev,
+> > +static int tiadc_iio_buffered_hardware_setup(struct iio_dev *indio_dev,
+> >  	irqreturn_t (*pollfunc_bh)(int irq, void *p),
+> >  	irqreturn_t (*pollfunc_th)(int irq, void *p),
+> >  	int irq,
+> > 
