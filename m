@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab3IZJv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:51:58 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:58663 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3IZJvz (ORCPT
+	id S1756477Ab3IZJwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:52:05 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:40839 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750933Ab3IZJwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:51:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys part and Exynos part
-Date: Thu, 26 Sep 2013 11:51:41 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Pratyush Anand <pratyush.anand@st.com>, Jingoo Han <jg1.han@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        Mohit KUMAR DCG <Mohit.KUMAR@st.com>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-References: <000701ce8741$fe47deb0$fad79c10$@samsung.com> <201309242323.55323.arnd@arndb.de> <5243C0E5.7020508@ti.com>
-In-Reply-To: <5243C0E5.7020508@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201309261151.42034.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZnICICg6227u/QQ+RSpYW5Fw8tHoKm5OaWOkNFxI2e1
- PZf4+SEnKh8xM4G8PmlsEbW7wQLR3irTLDowUfr7T7vZcY2yg+
- 2RwSZu1ZPJvGAHh8ibSHKLGpIe6vCJMMxJX65WgOkGrdZbSMND
- dix0LkMVFZvobT2rP+OuyFj3W2dqf2dDN5Fj6HKf4bbOZcRRJz
- rU7h0UMkW32djuwQc9Q+ni66hro4iGwvbXq5BJ80Z7siucm6PF
- 6+ixD8LBN2fqlFnBL9HFUZ8cfs3OMhXD42Z8KjWvvLLJyIFFkF
- xmXYb4pXOx2ewaqYSD9XYpgXexbHKJdzSFQ5euu1yGLToBovvg
- AgVbEb/EW5Epzp9BOSHc=
+	Thu, 26 Sep 2013 05:52:02 -0400
+From: Alexandre TORGUE <alexandre.torgue@st.com>
+To: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
+Cc: stephen.gallimore@st.com, stuart.menefy@st.com,
+        Lee Jones <lee.jones@linaro.org>, gabriel.fernandez@st.com,
+        kernel@stlinux.com, Maxime Coquelin <maxime.coquelin@st.com>
+Subject: [PATCH v2 0/4] Add I2C support to ST SoCs
+Date: Thu, 26 Sep 2013 11:51:12 +0200
+Message-Id: <1380189072-5551-1-git-send-email-maxime.coquelin@st.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 26 September 2013, Kishon Vijay Abraham I wrote:
-> On Wednesday 25 September 2013 02:53 AM, Arnd Bergmann wrote:
-> > On Monday 23 September 2013, Kishon Vijay Abraham I wrote:
-> >> Btw if we hadn't programmed inbound translation table, the address will go
-> >> untranslated (according to the data book). I guess that's how it was working
-> >> for Jingoo Han.
-> >>
-> >> **
-> >> 3.10.4
-> >> Inbound iATU Operation
-> >>
-> >> When there is no match, then the address is untranslated
-> >> **
-> >>
-> > 
-> > Well, that should work just as well, since you have a 1:1 translation anyway.
-> > Do you get the same error without the translation?
-> 
-> Yes. I get the same non-fatal error interrupt in RC.
+The goal of this series is to add I2C support to ST SoCs.
+The DT definition is added for STiH415 and STiH416 SoCs on
+B2000 and B2020 boards.
 
-Ok, then I guess the translation is actually not at fault here but something
-else. I would recommend looking at the IOMMU as the potential culprit. Maybe
-having it disabled means that no DMA is going through, rather than all DMA
-going through untranslated. Another possibility is that the IOMMU is set up
-so that when disabled, it maps DMA address 0 to the start of RAM, rather
-than identity mapping DMA address 0x80000000 there. If that's the case,
-you either have to use the IOMMU, or set up the mapping in the root
-complex to revert it.
+The series has been tested working on STiH416-B2020 board.
+It applies on top of v3.12-rc1.
 
-	Arnd
+Changes since v1:
+  - Anti-glitch filtering simplified (Only HW Anti-glitch is kept)
+  - Update I2C timings to comply with I2C specification
+  - Handle spurious interrupts properly
+  - DT binding updates taking into account Stephen's comments
+  - Use "clock-names" property to comply with GCF
+  - DT cosmetic changes reported by Lee and Gabriel 
+
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+
+Maxime Coquelin (4):
+  i2c: busses: i2c-st: Add ST I2C controller
+  ARM: STi: Supply I2C configuration to STiH416 SoC
+  ARM: STi: Supply I2C configuration to STiH415 SoC
+  ARM: STi: Add I2C config to B2000 and B2020 boards
+
+ Documentation/devicetree/bindings/i2c/i2c-st.txt |   37 ++
+ arch/arm/boot/dts/stih415-pinctrl.dtsi           |   36 ++
+ arch/arm/boot/dts/stih415.dtsi                   |   65 ++
+ arch/arm/boot/dts/stih416-pinctrl.dtsi           |   35 ++
+ arch/arm/boot/dts/stih416.dtsi                   |   65 ++
+ arch/arm/boot/dts/stih41x-b2000.dtsi             |    7 +
+ arch/arm/boot/dts/stih41x-b2020.dtsi             |   20 +
+ drivers/i2c/busses/Kconfig                       |   10 +
+ drivers/i2c/busses/Makefile                      |    1 +
+ drivers/i2c/busses/i2c-st.c                      |  691 ++++++++++++++++++++++
+ drivers/i2c/busses/i2c-st.h                      |  208 +++++++
+ 11 files changed, 1175 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-st.txt
+ create mode 100644 drivers/i2c/busses/i2c-st.c
+ create mode 100644 drivers/i2c/busses/i2c-st.h
+
+-- 
+1.7.9.5
+
