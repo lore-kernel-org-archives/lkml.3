@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab3IZSz7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 14:55:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33054 "EHLO mx1.redhat.com"
+	id S1754647Ab3IZSzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 14:55:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47784 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754028Ab3IZSzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 14:55:54 -0400
-Date: Thu, 26 Sep 2013 11:55:08 -0700
-From: Zach Brown <zab@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-Message-ID: <20130926185508.GO30372@lenny.home.zabbo.net>
-References: <1378919210-10372-1-git-send-email-zab@redhat.com>
- <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
- <20130925183828.GA30372@lenny.home.zabbo.net>
- <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
- <20130925190620.GB30372@lenny.home.zabbo.net>
- <20130925195526.GA18971@fieldses.org>
- <20130925210742.GG30372@lenny.home.zabbo.net>
- <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+	id S1752841Ab3IZSzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 14:55:39 -0400
+Date: Thu, 26 Sep 2013 20:55:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Eduardo Habkost <ehabkost@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Andre Przywara <andre@andrep.de>,
+        Joerg Roedel <joro@8bytes.org>, X86 ML <x86@kernel.org>,
+        KVM <kvm@vger.kernel.org>, qemu-devel@nongnu.org,
+        libvir-list@redhat.com, Jiri Denemark <jdenemar@redhat.com>
+Subject: Re: [PATCH 1/6] kvm: Add KVM_GET_EMULATED_CPUID
+Message-ID: <20130926185524.GA10123@pd.tnic>
+References: <1379861095-628-1-git-send-email-bp@alien8.de>
+ <1379861095-628-2-git-send-email-bp@alien8.de>
+ <20130923162856.GC7264@otherpad.lan.raisama.net>
+ <2f5d83d4d90ba9c5930f099d6f73e61b.squirrel@www.skyhub.de>
+ <20130924100414.GE17294@redhat.com>
+ <20130926141915.GV2840@otherpad.lan.raisama.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+In-Reply-To: <20130926141915.GV2840@otherpad.lan.raisama.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 10:58:05AM +0200, Miklos Szeredi wrote:
-> On Wed, Sep 25, 2013 at 11:07 PM, Zach Brown <zab@redhat.com> wrote:
-> >> A client-side copy will be slower, but I guess it does have the
-> >> advantage that the application can track progress to some degree, and
-> >> abort it fairly quickly without leaving the file in a totally undefined
-> >> state--and both might be useful if the copy's not a simple constant-time
-> >> operation.
-> >
-> > I suppose, but can't the app achieve a nice middle ground by copying the
-> > file in smaller syscalls?  Avoid bulk data motion back to the client,
-> > but still get notification every, I dunno, few hundred meg?
-> 
-> Yes.  And if "cp"  could just be switched from a read+write syscall
-> pair to a single splice syscall using the same buffer size.  And then
-> the user would only notice that things got faster in case of server
-> side copy.  No problems with long blocking times (at least not much
-> worse than it was).
+On Thu, Sep 26, 2013 at 11:19:15AM -0300, Eduardo Habkost wrote:
+> Then we may have a problem: some CPU models already have "movbe"
+> included (e.g. Haswell), and patch 6/6 will make "-cpu Haswell" get
+> movbe enabled even if it is being emulated.
 
-Hmm, yes, that would be a nice outcome.
+Huh? HSW has MOVBE so we won't #UD on it and MOVBE will get executed in
+hardware when executing the guest. IOW, we'll never get to the emulation
+path of piggybacking on the #UD.
 
-> However "cp" doesn't do reflinking by default, it has a switch for
-> that.  If we just want "cp" and the like to use splice without fearing
-> side effects then by default we should try to be as close to
-> read+write behavior as possible.  No?
+> So if we really want to avoid enabling emulated features by mistake,
+> we may need a new CPU flag in addition to "enforce" to tell QEMU that
+> it is OK to enable emulated features (maybe "-cpu ...,emulate"?).
 
-I guess?  I don't find requiring --reflink hugely compelling.  But there
-it is.
+EMULATED_CPUID are off by default and only if you request them
+specifically, they get enabled. If you start with "-cpu Haswell", MOVBE
+will be already set in the host CPUID.
 
-> That's what I'm really
-> worrying about when you want to wire up splice to reflink by default.
-> I do think there should be a flag for that.  And if on the block level
-> some magic happens, so be it.  It's not the fs deverloper's worry any
-> more ;)
+Or am I missing something?
 
-Sure.  So we'd have:
+> But my question still stands: suppose we had x2apic emulation
+> implemented but for some reason it was painfully slow, we wouldn't
+> want to enable it by mistake. In this case, it would end up on
+> EMULATED_CPUID and not on SUPPORTED_CPUID, right?
 
-- no flag default that forbids knowingly copying with shared references
-  so that it will be used by default by people who feel strongly about
-  their assumptions about independent write durability.
+IMHO we want to enable emulation only when explicitly requested...
+regardless of the emulation performance.
 
-- a flag that allows shared references for people who would otherwise
-  use the file system shared reference ioctls (ocfs2 reflink, btrfs
-  clone) but would like it to also do server-side read/write copies
-  over nfs without additional intervention.
+Thanks.
 
-- a flag that requires shared references for callers who don't want
-  giant copies to take forever if they aren't instant.  (The qemu guys
-  asked for this at Plumbers.)
+-- 
+Regards/Gruss,
+    Boris.
 
-I think I can live with that.
-
-- z
+Sent from a fat crate under my desk. Formatting is fine.
+--
