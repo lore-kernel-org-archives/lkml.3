@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313Ab3IZS4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 14:56:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29259 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753440Ab3IZS4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 14:56:32 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf tools: Add missing -ldl for gtk build
-Date: Thu, 26 Sep 2013 20:55:54 +0200
-Message-Id: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
+	id S1754693Ab3IZS5F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 14:57:05 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:46988 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636Ab3IZSvT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 14:51:19 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Jonas Bonn <jonas@southpole.se>,
+        linux@openrisc.net
+Subject: [PATCH 05/21] openrisc: remove unnecessary prom.h include
+Date: Thu, 26 Sep 2013 13:50:40 -0500
+Message-Id: <1380221456-11192-6-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
+References: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we build perf with NO_LIBPYTHON=1 NO_LIBPERL=1 the '-ldl'
-is not added to libs build fails if we have gtk2 code in,
-because it depends on it.
+From: Rob Herring <rob.herring@calxeda.com>
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Remove unnecessary prom.h include in preparation to make prom.h optional.
+
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Jonas Bonn <jonas@southpole.se>
+Cc: linux@lists.openrisc.net
 ---
- tools/perf/config/Makefile | 1 +
- 1 file changed, 1 insertion(+)
+ arch/openrisc/kernel/prom.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 6850529..8b49a00 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -272,6 +272,7 @@ ifndef NO_GTK2
-     CFLAGS += -DGTK2_SUPPORT
-     GTK_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
-     GTK_LIBS := $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
-+    EXTLIBS += -ldl
-   endif
- endif
+diff --git a/arch/openrisc/kernel/prom.c b/arch/openrisc/kernel/prom.c
+index a63e768..a915dc7 100644
+--- a/arch/openrisc/kernel/prom.c
++++ b/arch/openrisc/kernel/prom.c
+@@ -37,7 +37,6 @@
+ #include <linux/memblock.h>
+ #include <linux/of_fdt.h>
  
+-#include <asm/prom.h>
+ #include <asm/page.h>
+ #include <asm/processor.h>
+ #include <asm/irq.h>
 -- 
-1.7.11.7
+1.8.1.2
 
