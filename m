@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab3IZTav (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 15:30:51 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:37648 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049Ab3IZTau (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 15:30:50 -0400
-Message-ID: <1380223848.3165.207.camel@edumazet-glaptop>
-Subject: Re: [PATCH 4/4] [RFC] ipv6: Fix for possible ipv6 seqlock deadlock
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Date: Thu, 26 Sep 2013 12:30:48 -0700
-In-Reply-To: <1380220464-28840-5-git-send-email-john.stultz@linaro.org>
-References: <1380220464-28840-1-git-send-email-john.stultz@linaro.org>
-	 <1380220464-28840-5-git-send-email-john.stultz@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1754274Ab3IZTbz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 15:31:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64394 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753316Ab3IZTbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 15:31:52 -0400
+Date: Thu, 26 Sep 2013 15:31:15 -0400 (EDT)
+Message-Id: <20130926.153115.309256404462759214.davem@redhat.com>
+To: joe@perches.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, wimax@linuxwimax.org,
+        ath10k@lists.infradead.org, linux-wireless@vger.kernel.org,
+        ath9k-devel@venema.h4ckr.net, brcm80211-dev-list@broadcom.com
+Subject: Re: [PATCH 00/11 - GIT PULL] drivers: net: Last block of Remove
+ extern from function prototypes
+From: David Miller <davem@redhat.com>
+In-Reply-To: <1380218576.17366.76.camel@joe-AO722>
+References: <cover.1380137609.git.joe@perches.com>
+	<20130926.134408.91633054642517467.davem@redhat.com>
+	<1380218576.17366.76.camel@joe-AO722>
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-26 at 11:34 -0700, John Stultz wrote:
-> While enabling lockdep on seqlocks, I ran accross the warning below
-> caused by the ipv6 stats being updated in both irq and non-irq context.
-> 
-> This is a novice attempt to correct the issue, and with this patch
-> the warning goes away. Any better solutions would be appreciated!
+From: Joe Perches <joe@perches.com>
+Date: Thu, 26 Sep 2013 11:02:56 -0700
 
-...
+> Want those in one more pull request or
+> maybe individually?
 
->  
->  out_err_release:
-> -	if (err == -ENETUNREACH)
-> +	if (err == -ENETUNREACH) {
-> +		unsigned long flags;
-> +		/* some of the stats are locked in irq context */
-> +		local_irq_save(flags);
->  		IP6_INC_STATS_BH(net, NULL, IPSTATS_MIB_OUTNOROUTES);
-> +		local_irq_restore(flags);
-> +	}
->  	dst_release(*dst);
->  	*dst = NULL;
->  	return err;
+Try to keep the chunks less than a dozen or so patches at a ti me.
 
-You better change IP6_INC_STATS_BH() to IP6_INC_STATS()
-
-On x86 for example, no extra code will be generated (no need to disable
-hard or soft irqs)
-
-
-
+Thanks.
