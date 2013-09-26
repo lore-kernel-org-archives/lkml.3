@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab3IZV15 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 17:27:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1966 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753886Ab3IZV1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 17:27:52 -0400
-Message-ID: <5244A68F.906@redhat.com>
-Date: Thu, 26 Sep 2013 17:26:39 -0400
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Zach Brown <zab@redhat.com>
-CC: Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-References: <1378919210-10372-1-git-send-email-zab@redhat.com> <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com> <20130925183828.GA30372@lenny.home.zabbo.net> <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com> <20130925190620.GB30372@lenny.home.zabbo.net> <20130925195526.GA18971@fieldses.org> <20130925210742.GG30372@lenny.home.zabbo.net> <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com> <20130926185508.GO30372@lenny.home.zabbo.net>
-In-Reply-To: <20130926185508.GO30372@lenny.home.zabbo.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754333Ab3IZVdY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 17:33:24 -0400
+Received: from smtprelay0021.hostedemail.com ([216.40.44.21]:43402 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753875Ab3IZVdV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 17:33:21 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714
+X-HE-Tag: wish42_1cb608d6ce41a
+X-Filterd-Recvd-Size: 1951
+Message-ID: <1380231195.17366.82.camel@joe-AO722>
+Subject: Re: [PATCH RESEND v3 0/7] Enable Drivers for Intel MIC X100
+ Coprocessors.
+From: Joe Perches <joe@perches.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sudeep Dutt <sudeep.dutt@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
+        Asias He <asias@redhat.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Date: Thu, 26 Sep 2013 14:33:15 -0700
+In-Reply-To: <20130926205424.GB19455@kroah.com>
+References: <cover.1378423596.git.sudeep.dutt@intel.com>
+	 <1378431368.19204.3.camel@joe-AO722> <20130926205424.GB19455@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 02:55 PM, Zach Brown wrote:
-> On Thu, Sep 26, 2013 at 10:58:05AM +0200, Miklos Szeredi wrote:
->> On Wed, Sep 25, 2013 at 11:07 PM, Zach Brown <zab@redhat.com> wrote:
->>>> A client-side copy will be slower, but I guess it does have the
->>>> advantage that the application can track progress to some degree, and
->>>> abort it fairly quickly without leaving the file in a totally undefined
->>>> state--and both might be useful if the copy's not a simple constant-time
->>>> operation.
->>> I suppose, but can't the app achieve a nice middle ground by copying the
->>> file in smaller syscalls?  Avoid bulk data motion back to the client,
->>> but still get notification every, I dunno, few hundred meg?
->> Yes.  And if "cp"  could just be switched from a read+write syscall
->> pair to a single splice syscall using the same buffer size.  And then
->> the user would only notice that things got faster in case of server
->> side copy.  No problems with long blocking times (at least not much
->> worse than it was).
-> Hmm, yes, that would be a nice outcome.
->
->> However "cp" doesn't do reflinking by default, it has a switch for
->> that.  If we just want "cp" and the like to use splice without fearing
->> side effects then by default we should try to be as close to
->> read+write behavior as possible.  No?
-> I guess?  I don't find requiring --reflink hugely compelling.  But there
-> it is.
->
->> That's what I'm really
->> worrying about when you want to wire up splice to reflink by default.
->> I do think there should be a flag for that.  And if on the block level
->> some magic happens, so be it.  It's not the fs deverloper's worry any
->> more ;)
-> Sure.  So we'd have:
->
-> - no flag default that forbids knowingly copying with shared references
->    so that it will be used by default by people who feel strongly about
->    their assumptions about independent write durability.
->
-> - a flag that allows shared references for people who would otherwise
->    use the file system shared reference ioctls (ocfs2 reflink, btrfs
->    clone) but would like it to also do server-side read/write copies
->    over nfs without additional intervention.
->
-> - a flag that requires shared references for callers who don't want
->    giant copies to take forever if they aren't instant.  (The qemu guys
->    asked for this at Plumbers.)
->
-> I think I can live with that.
->
-> - z
+On Thu, 2013-09-26 at 13:54 -0700, Greg Kroah-Hartman wrote:
+> On Thu, Sep 05, 2013 at 06:36:08PM -0700, Joe Perches wrote:
+> > Whitespace neatening...
+> > 
+> > Multiline statement argument alignment.
+> > Argument wrapping.
+> > Use kmalloc_array instead of kmalloc.
+> > 
+> > ---
+> 
+> -ENOSIGNEDOFFBY :(
 
-This last flag should not prevent a remote target device (NFS or SCSI array) 
-copy from working though since they often do reflink like operations inside of 
-the remote target device....
+These were just suggestions for Sudeep.
 
-ric
+Sudeep said he'd incorporate and resend the series.
 
+Sudeep?  Were you ever going to do that?
 
