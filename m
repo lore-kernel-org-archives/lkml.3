@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab3IZPe3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:34:29 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:16516 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab3IZPe0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:34:26 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 26 Sep 2013 08:34:26 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] clk: tegra: PLLE spread spectrum control
-Date: Thu, 26 Sep 2013 18:34:05 +0300
-Message-ID: <1380209654-25458-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753202Ab3IZPfz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:35:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26140 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750805Ab3IZPfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 11:35:53 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1380209415.17366.66.camel@joe-AO722>
+References: <1380209415.17366.66.camel@joe-AO722> <20130926144502.29424.21633.stgit@warthog.procyon.org.uk> <20130926144525.29424.11130.stgit@warthog.procyon.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: dhowells@redhat.com, bfields@fieldses.org, Trond.Myklebust@netapp.com,
+        olof@lixom.net, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] SunRPC: Use no_printk() for the null dprintk() and dfprintk()
+Date: Thu, 26 Sep 2013 16:35:43 +0100
+Message-ID: <30597.1380209743@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add spread spectrum control for PLLE in Tegra114.
+Joe Perches <joe@perches.com> wrote:
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/clk-pll.c |   30 +++++++++++++++++++++++++++++-
- 1 files changed, 29 insertions(+), 1 deletions(-)
+> no_printk doesn't prevent any argument side-effects
+> from being optimized away by the compiler.
+> 
+> ie:
+> 	dprintk("%d", func())
+> func is now always called when before it wasn't.
 
-diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
-index 87f0533..f0577e3 100644
---- a/drivers/clk/tegra/clk-pll.c
-+++ b/drivers/clk/tegra/clk-pll.c
-@@ -77,7 +77,23 @@
- #define PLLE_MISC_SETUP_VALUE (7 << PLLE_MISC_SETUP_BASE_SHIFT)
- 
- #define PLLE_SS_CTRL 0x68
--#define PLLE_SS_DISABLE (7 << 10)
-+#define PLLE_SS_CNTL_BYPASS_SS BIT(10)
-+#define PLLE_SS_CNTL_INTERP_RESET BIT(11)
-+#define PLLE_SS_CNTL_SSC_BYP BIT(12)
-+#define PLLE_SS_CNTL_CENTER BIT(14)
-+#define PLLE_SS_CNTL_INVERT BIT(15)
-+#define PLLE_SS_DISABLE (PLLE_SS_CNTL_BYPASS_SS | PLLE_SS_CNTL_INTERP_RESET |\
-+				PLLE_SS_CNTL_SSC_BYP)
-+#define PLLE_SS_MAX_MASK 0x1ff
-+#define PLLE_SS_MAX_VAL 0x25
-+#define PLLE_SS_INC_MASK (0xff << 16)
-+#define PLLE_SS_INC_VAL (0x1 << 16)
-+#define PLLE_SS_INCINTRV_MASK (0x3f << 24)
-+#define PLLE_SS_INCINTRV_VAL (0x20 << 24)
-+#define PLLE_SS_COEFFICIENTS_MASK \
-+	(PLLE_SS_MAX_MASK | PLLE_SS_INC_MASK | PLLE_SS_INCINTRV_MASK)
-+#define PLLE_SS_COEFFICIENTS_VAL \
-+	(PLLE_SS_MAX_VAL | PLLE_SS_INC_VAL | PLLE_SS_INCINTRV_VAL)
- 
- #define PLLE_AUX_PLLP_SEL	BIT(2)
- #define PLLE_AUX_ENABLE_SWCTL	BIT(4)
-@@ -1286,6 +1302,18 @@ static int clk_plle_tegra114_enable(struct clk_hw *hw)
- 	if (ret < 0)
- 		goto out;
- 
-+	val = pll_readl(PLLE_SS_CTRL, pll);
-+	val &= ~(PLLE_SS_CNTL_CENTER | PLLE_SS_CNTL_INVERT);
-+	val &= ~PLLE_SS_COEFFICIENTS_MASK;
-+	val |= PLLE_SS_COEFFICIENTS_VAL;
-+	pll_writel(val, PLLE_SS_CTRL, pll);
-+	val &= ~(PLLE_SS_CNTL_SSC_BYP | PLLE_SS_CNTL_BYPASS_SS);
-+	pll_writel(val, PLLE_SS_CTRL, pll);
-+	udelay(1);
-+	val &= ~PLLE_SS_CNTL_INTERP_RESET;
-+	pll_writel(val, PLLE_SS_CTRL, pll);
-+	udelay(1);
-+
- 	/* TODO: enable hw control of xusb brick pll */
- 
- out:
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+Yes, I know.  There are half a dozen places where this is the case.  Those
+I've wrapped in ifdebug(FACILITY) { ... } in the code.  It's not the nicest,
+but at least the compiler always gets to see everything, rather than bits of
+it getting hidden by the preprocessor - which means the call points will be
+less likely to bit rot over time.
 
+David
