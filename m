@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab3IZPcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:32:12 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:52354 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab3IZPcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:32:11 -0400
-Date: Thu, 26 Sep 2013 17:32:08 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Lin Ming <minggr@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: increased vmap_area_lock contentions on "n_tty: Move buffers
- into n_tty_data"
-Message-ID: <20130926153208.GN18242@two.firstfloor.org>
-References: <20130913005133.GA32479@localhost>
- <20130913010936.GA1291@localhost>
- <5238767D.1080606@hurleysoftware.com>
- <20130917232214.GA11390@localhost>
- <5238F252.5070905@hurleysoftware.com>
- <CAF1ivSbYg296oHhO0_UXwkos8Ui_1C93pUnXPzow4qLWyAa2kg@mail.gmail.com>
- <5242C960.7050506@hurleysoftware.com>
- <1380124944.27676.1.camel@monkey32>
- <87r4cc8e0q.fsf@tassilo.jf.intel.com>
- <52441FF7.1030405@hurleysoftware.com>
+	id S1753021Ab3IZPeH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:34:07 -0400
+Received: from fieldses.org ([174.143.236.118]:44258 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751134Ab3IZPeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 11:34:03 -0400
+Date: Thu, 26 Sep 2013 11:34:00 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+Message-ID: <20130926153359.GE704@fieldses.org>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+ <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
+ <20130925183828.GA30372@lenny.home.zabbo.net>
+ <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
+ <20130925190620.GB30372@lenny.home.zabbo.net>
+ <20130925195526.GA18971@fieldses.org>
+ <20130925210742.GG30372@lenny.home.zabbo.net>
+ <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52441FF7.1030405@hurleysoftware.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 07:52:23AM -0400, Peter Hurley wrote:
-> On 09/25/2013 11:20 PM, Andi Kleen wrote:
-> >Lin Ming <minggr@gmail.com> writes:
-> >>
-> >>Would you like below patch?
+On Thu, Sep 26, 2013 at 10:58:05AM +0200, Miklos Szeredi wrote:
+> On Wed, Sep 25, 2013 at 11:07 PM, Zach Brown <zab@redhat.com> wrote:
+> >> A client-side copy will be slower, but I guess it does have the
+> >> advantage that the application can track progress to some degree, and
+> >> abort it fairly quickly without leaving the file in a totally undefined
+> >> state--and both might be useful if the copy's not a simple constant-time
+> >> operation.
 > >
-> >The loop body keeps rather complex state. It could easily
-> >get confused by parallel RCU changes.
-> >
-> >So if the list changes in parallel you may suddenly
-> >report very bogus values, as the va_start - prev_end
-> >computation may be bogus.
-> >
-> >Perhaps it's ok (may report bogus gaps), but it seems a bit risky.
+> > I suppose, but can't the app achieve a nice middle ground by copying the
+> > file in smaller syscalls?  Avoid bulk data motion back to the client,
+> > but still get notification every, I dunno, few hundred meg?
 > 
-> I don't understand how the computed gap would be bogus; there
-> _was_ a list state in which that particular gap existed. The fact
+> Yes.  And if "cp"  could just be switched from a read+write syscall
+> pair to a single splice syscall using the same buffer size.
 
-It could change any time as you don't have an atomic view
-of vm_end / vm_start. It is valid to change the fields
-with the lock held.
+Will the various magic fs-specific copy operations become inefficient
+when the range copied is too small?
 
--Andi
+(Totally naive question, as I have no idea how they really work.)
+
+--b.
+
+> And then
+> the user would only notice that things got faster in case of server
+> side copy.  No problems with long blocking times (at least not much
+> worse than it was).
+> 
+> However "cp" doesn't do reflinking by default, it has a switch for
+> that.  If we just want "cp" and the like to use splice without fearing
+> side effects then by default we should try to be as close to
+> read+write behavior as possible.  No?   That's what I'm really
+> worrying about when you want to wire up splice to reflink by default.
+> I do think there should be a flag for that.  And if on the block level
+> some magic happens, so be it.  It's not the fs deverloper's worry any
+> more ;)
+> 
+> Thanks,
+> Miklos
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
