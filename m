@@ -1,116 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab3IZGd6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 02:33:58 -0400
-Received: from smtprelay-b31.telenor.se ([213.150.131.20]:43587 "EHLO
-	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425Ab3IZGd4 (ORCPT
+	id S1755759Ab3IZGgH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 02:36:07 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:39849 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab3IZGgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 02:33:56 -0400
-X-SENDER-IP: [85.230.168.69]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtE/ADzUQ1JV5qhFPGdsb2JhbABbgwfBX4EfFwMBAQEBODWCJQEBBAEnExwTAQ8FCwgDDgMDAQIKJQ8FJQoMDhOIAAq8ehaNcIFLB4MdgQEDl3uGRo5YOoEs
-X-IronPort-AV: E=Sophos;i="4.90,982,1371074400"; 
-   d="scan'208";a="400957054"
-Date: Thu, 26 Sep 2013 08:34:53 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        bugzilla@colorremedies.com
-Subject: Re: applesmc oops in 3.10/3.11
-Message-ID: <20130926063453.GA526@polaris.bitmath.org>
-References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com>
- <20130925195628.GA1532@roeck-us.net>
- <20130925214807.GA3234@polaris.bitmath.org>
- <20130925220838.GB4184@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925220838.GB4184@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 Sep 2013 02:36:04 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-d2-5243d5d24cb6
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Mark Brown'" <broonie@kernel.org>,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Heiko Stuebner'" <heiko@sntech.de>,
+        "'Axel Lin'" <axel.lin@ingics.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <000701ceba5c$69459b10$3bd0d130$%han@samsung.com>
+ <000d01ceba5d$2bb4b0f0$831e12d0$%han@samsung.com>
+In-reply-to: <000d01ceba5d$2bb4b0f0$831e12d0$%han@samsung.com>
+Subject: Re: [PATCH V2 07/18] regulator: lp3971: use devm_regulator_register()
+Date: Thu, 26 Sep 2013 15:36:02 +0900
+Message-id: <002d01ceba82$ab88ff00$029afd00$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac66XGktrYXfQ+q4TvOtJpq/iZ1T4wAAJkkAAAlHlPA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t8zI91LV52DDP4fNLc4Mucrs8XUh0/Y
+	LP4/es1qcXnhJVaLb1c6mCwu75rDZnHyTy+jA7vHzll32T3afpZ5bFrVyeZx59oeNo++LasY
+	PbZfm8fs8XmTXAB7FJdNSmpOZllqkb5dAlfGjh9zWQousVXM+neBrYFxFWsXIyeHhICJRPPh
+	xewQtpjEhXvr2boYuTiEBJYxStw/2csEU7Ro+zN2iMR0RomWhiNsIAkhgV+MEr/WmYLYbAJq
+	El++HAabJCLgL7H77hNWkAZmga2MElOX/GKCaCiU+PZrBwuIzSlgJ7H8/l6gOAeHsICfxLor
+	oiBhFgFVieUH+sHm8ArYSiw8uYEFwhaU+DH5HpjNLKAlsX7ncSYIW15i85q3zCBjJATUJR79
+	1YU4wUpi/4yVjBAlIhL7XrxjBDlHQuAvu8TVradZIXYJSHybfIgFoldWYtMBZoh/JSUOrrjB
+	MoFRYhaSzbOQbJ6FZPMsJCsWMLKsYhRNLUguKE5KLzLUK07MLS7NS9dLzs/dxAiJ594djLcP
+	WB9iTAZaP5FZSjQ5H5gO8kriDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8sSc1OTS1ILYov
+	Ks1JLT7EyMTBKdXAOOe24625DekHGm5Nbnp6MkXOSvuQxe5cgbLKGrX2+bpfY1+/buGJEWjP
+	rZ8ovCO8wn1+S+b7e/2sicd/S7t83eBikfi4prnTsO4hy8am5HmsWlM21HX98Wzewno+2zTA
+	4ENIaswFx43HjnCFiPkILXztsuBsdcis0NvBXwXkLvgL1zq9V3yoxFKckWioxVxUnAgAkbhD
+	Pv0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jQd1LV52DDD5uMrY4Mucrs8XUh0/Y
+	LP4/es1qcXnhJVaLb1c6mCwu75rDZnHyTy+jA7vHzll32T3afpZ5bFrVyeZx59oeNo++LasY
+	PbZfm8fs8XmTXAB7VAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqt
+	kotPgK5bZg7QQUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjB0/5rIU
+	XGKrmPXvAlsD4yrWLkZODgkBE4lF25+xQ9hiEhfurWfrYuTiEBKYzijR0nCEDSQhJPCLUeLX
+	OlMQm01ATeLLl8NgDSIC/hK77z5hBWlgFtjKKDF1yS8miIZCiW+/drCA2JwCdhLL7+8FinNw
+	CAv4Say7IgoSZhFQlVh+oB9sDq+ArcTCkxtYIGxBiR+T74HZzAJaEut3HmeCsOUlNq95ywwy
+	RkJAXeLRX12IE6wk9s9YyQhRIiKx78U7xgmMQrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgp
+	PddQrzgxt7g0L10vOT93EyM4WTyT2sG4ssHiEKMAB6MSD+8FZucgIdbEsuLK3EOMEhzMSiK8
+	34yAQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTGR5JfGGxiZmRpZGZhZGJubmpAkrifMe
+	aLUOFBJITyxJzU5NLUgtgtnCxMEp1cDo8088auI2FrvLJ8y8Ly0I1zq2eN6Enxu8m/7PaH9p
+	dc/qmeaLi4kCvyftX/4l/8lE3uqbfa4FZRNZbpYsf+Cc+rX55YLHuxZo6860jbr8wSBX8FX4
+	5Vfqe7ysOlM3vE+u+5DZPn/mCr/mQ08n9/Jc9J3Ypf3YcYWIVEH6taXX3fYdmR5Wv+jKQiWW
+	4oxEQy3mouJEAPkexUBaAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > This suggests that initialization may be attempted more than once. The key cache
-> > > is allocated only once, but the number of keys is read for each attempt.
-> > > 
-> > > No idea if that can happen, but if the number of keys can increase after
-> > > the first initialization attempt you would have an explanation for the crash.
-> > 
-> > Good idea, and easy enough to test with the patch below.
-> > 
-> Should we apply this patch even though it may not solve the specific problem ?
+On Thursday, September 26, 2013 11:08 AM, Jingoo Han wrote:
+> 
+> Use devm_regulator_register() to make cleanup paths simpler.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/regulator/lp3971.c |   11 +++--------
+>  1 file changed, 3 insertions(+), 8 deletions(-)
+>
 
-Yes, why not - it certainly won't hurt. I am running it right now, so
-it is at least run-tested.
-
-> Again, not sure if the key count can change, but the current code is at the very
-> least inconsistent, as it keeps reading the key count without updating or
-> verifying the cache size.
-
-Yes - I agree that the error state is far-fetched, but it is hard to
-see any other logical explanation. There is of course always the
-possibility that the problem is somewhere else completely.
-
-Proper patch attached.
-
-Thanks,
-Henrik
-
----
-
->From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
-From: Henrik Rydberg <rydberg@euromail.se>
-Date: Thu, 26 Sep 2013 08:33:16 +0200
-Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
-
-After reports from Chris and Josh Boyer of a rare crash in applesmc,
-Guenter pointed at the initialization problem fixed below. The patch
-has not been verified to fix the crash, but should be applied
-regardless.
-
-Reported-by: <jwboyer@fedoraproject.org>
-Suggested-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/hwmon/applesmc.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-index 62c2e32..98814d1 100644
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -525,16 +525,25 @@ static int applesmc_init_smcreg_try(void)
- {
- 	struct applesmc_registers *s = &smcreg;
- 	bool left_light_sensor, right_light_sensor;
-+	unsigned int count;
- 	u8 tmp[1];
- 	int ret;
+[....]
  
- 	if (s->init_complete)
- 		return 0;
- 
--	ret = read_register_count(&s->key_count);
-+	ret = read_register_count(&count);
- 	if (ret)
- 		return ret;
- 
-+	if (s->cache && s->key_count != count) {
-+		pr_warn("key count changed from %d to %d\n",
-+			s->key_count, count);
-+		kfree(s->cache);
-+		s->cache = NULL;
-+	}
-+	s->key_count = count;
-+
- 	if (!s->cache)
- 		s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
- 	if (!s->cache)
--- 
-1.8.3.4
+> @@ -463,10 +462,6 @@ static int lp3971_i2c_probe(struct i2c_client *i2c,
+>  static int lp3971_i2c_remove(struct i2c_client *i2c)
+>  {
+>  	struct lp3971 *lp3971 = i2c_get_clientdata(i2c);
+> -	int i;
+> -
+> -	for (i = 0; i < lp3971->num_regulators; i++)
+> -		regulator_unregister(lp3971->rdev[i]);
+> 
+>  	kfree(lp3971->rdev);
+
+CC'ed Sachin Kamat,
+
+Calling regulator_unregister(lp3971->rdev) after kfree(lp3971->rdev)
+would make the problem.
+I will remove this patch from next v3 patch series.
+
+Best regards,
+Jingoo Han
+
 
