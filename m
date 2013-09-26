@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab3IZPOD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:14:03 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53943 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752423Ab3IZPN6 (ORCPT
+	id S1753065Ab3IZPOd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:14:33 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:60925 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab3IZPOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:13:58 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: tony.luck@intel.com, torvalds@linux-foundation.org,
-        linux-arch@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        <x86@kernel.org>
-Subject: [RFC PATCH 2/4] x86: cmpxchg: implement dummy cmpxchg64_relaxed operation
-Date: Thu, 26 Sep 2013 16:13:29 +0100
-Message-Id: <1380208411-31403-2-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1380208411-31403-1-git-send-email-will.deacon@arm.com>
-References: <1380208411-31403-1-git-send-email-will.deacon@arm.com>
+	Thu, 26 Sep 2013 11:14:30 -0400
+Message-ID: <52444F53.504@gmail.com>
+Date: Thu, 26 Sep 2013 09:14:27 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] tools/perf: remove non-existent entries in MANIFEST
+References: <1380205304-32224-1-git-send-email-artagnon@gmail.com>
+In-Reply-To: <1380205304-32224-1-git-send-email-artagnon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cmpxchg64_relaxed can be used to provide barrier-less semantics for a
-64-bit cmpxchg operation in cases where the strong memory ordering is
-not required. A useful use-case for this is in the recently merged
-lockless lockref code.
+On 9/26/13 8:21 AM, Ramkumar Ramachandra wrote:
+> The MANIFEST file is used in the following Makefile targets:
+>
+>    $ make tar{,gz,bz2,xz}-src-pkg
+>
+> to generate an archive that can be used outside the kernel tree. It
+> contains entries that are used for pathspec filtering 'git archive',
+> which ultimately generates the archive. Remove the stale
+> entries (non-existent paths) by running:
+>
+>    $ while read l; do file $l; done <tools/perf/MANIFEST | grep ERROR
+>
+> in the toplevel kernel tree.
 
-This patch implements a dummy implementation for x86, since the memory
-ordering issues aren't a concern for this architecture.
+Did you create a tarfile after this change, unpack it somewhere out of 
+three and then verify perf builds?
 
-Cc: <x86@kernel.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- arch/x86/include/asm/cmpxchg.h | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
-index d47786a..aacb99a0 100644
---- a/arch/x86/include/asm/cmpxchg.h
-+++ b/arch/x86/include/asm/cmpxchg.h
-@@ -152,6 +152,9 @@ extern void __add_wrong_size(void)
- 
- #define cmpxchg_local(ptr, old, new)					\
- 	__cmpxchg_local(ptr, old, new, sizeof(*(ptr)))
-+
-+#define cmpxchg64_relaxed(ptr, old, new)				\
-+	cmpxchg64(ptr, old, new)
- #endif
- 
- /*
--- 
-1.8.2.2
+David
 
