@@ -1,84 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab3IZO4m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 10:56:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56529 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753416Ab3IZO4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 10:56:35 -0400
-Date: Thu, 26 Sep 2013 16:56:33 +0200
-From: Vojtech Pavlik <vojtech@suse.cz>
-To: Jiri Kosina <jiri.kosina@suse.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Alan Stern <stern@rowland.harvard.edu>,
-        David Howells <dhowells@redhat.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-crypto@vger.kernel.org,
-        opensuse-kernel@opensuse.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Lee, Chun-Yi" <jlee@suse.com>
-Subject: Re: [RFC V4 PATCH 00/15] Signature verification of hibernate snapshot
-Message-ID: <20130926145633.GA572@suse.cz>
-References: <Pine.LNX.4.44L0.1309251723001.26508-100000@netrider.rowland.org>
- <1380147414.18835.36.camel@dabdike.int.hansenpartnership.com>
- <20130926002730.GA26857@amd.pavel.ucw.cz>
- <1380162771.18835.47.camel@dabdike.int.hansenpartnership.com>
- <alpine.LNX.2.00.1309260819490.18703@pobox.suse.cz>
- <1380206654.18835.56.camel@dabdike.int.hansenpartnership.com>
- <alpine.LNX.2.00.1309261646150.18703@pobox.suse.cz>
+	id S1753150Ab3IZO5E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 10:57:04 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:7105 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab3IZO5B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 10:57:01 -0400
+From: "Zuckerman, Boris" <borisz@hp.com>
+To: Vladislav Bolkhovitin <vst@vlnb.net>,
+        "rob.gittins@linux.intel.com" <rob.gittins@linux.intel.com>
+CC: "linux-pmfs@lists.infradead.org" <linux-pmfs@lists.infradead.org>,
+        "linux-fsdevel@veger.org" <linux-fsdevel@veger.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: RFC Block Layer Extensions to Support NV-DIMMs
+Thread-Topic: RFC Block Layer Extensions to Support NV-DIMMs
+Thread-Index: AQHOqblgLk/J+jjSpUS+tHXTE2EoJZm5viyAgBpNQQCAA6zVAIAAfZtw
+Date: Thu, 26 Sep 2013 14:56:17 +0000
+Message-ID: <4C30833E5CDF444D84D942543DF65BDA58066A30@G9W0739.americas.hpqcorp.net>
+References: <1378331689.9210.11.camel@Virt-Centos-6.lm.intel.com>
+	 <522AB5AD.6070206@vlnb.net>
+ <1379976688.5886.12.camel@Virt-Centos-6.lm.intel.com>
+ <5243DB2A.7090609@vlnb.net>
+In-Reply-To: <5243DB2A.7090609@vlnb.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.14]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1309261646150.18703@pobox.suse.cz>
-X-Bounce-Cookie: It's a lemon tree, dear Watson!
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8QEvA9I015731
 
-On Thu, Sep 26, 2013 at 04:48:00PM +0200, Jiri Kosina wrote:
+In support to what was said by Vlad:
 
-> > The only two problems I see are
-> > 
-> >      1. The key isn't generational (any compromise obtains it).  This
-> >         can be fixed by using a set of keys generated on each boot and
-> >         passing in both K_{N-1} and K_N
+To work with persistent memory as efficiently as we can work with RAM we need a bit more than "commit". It's reasonable to expect that we get some additional support from CPUs that goes beyond mfence and mflush. That may include discovery, transactional support, etc. Encapsulating that in a special class sooner than later seams a right thing to do...
+
+Boris 
+
+> -----Original Message-----
+> From: Linux-pmfs [mailto:linux-pmfs-bounces@lists.infradead.org] On Behalf Of
+> Vladislav Bolkhovitin
+> Sent: Thursday, September 26, 2013 2:59 AM
+> To: rob.gittins@linux.intel.com
+> Cc: linux-pmfs@lists.infradead.org; linux-fsdevel@veger.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
 > 
-> I think this could be easily made optional, leaving the user with choice 
-> of faster or "safer" boot.
-
-Ideally, the key should be regenerated on each true reboot and kept the
-same if it is just a resume. Unfortunately, I don't see a way to
-distinguish those before we call ExitBootServices().
-
-The reasoning behind that is that in the case of a kernel compromise, a
-suspended-and-resumed kernel will still be compromised, so there is no
-value in passing it a new key. A freshly booted kernel, though, should
-get a new key, exactly because the attacker could have obtained a key
-from the previous, compromised one.
-
-This speeds up the ususal suspend-and-resume cycle, but provides full
-security once the user performs a full reboot.
-
-The question that remains is how to tell in advance.
-
-> >      2. No external agency other than the next kernel can do the
-> >         validation since the validating key has to be secret
+> Hi Rob,
 > 
-> This is true, but as you said, the relevance of this seems to be rather 
-> questionable.
-
-Indeed, it's hard to imagine a scenario that is also valid within the
-secure boot threat model.
-
--- 
-Vojtech Pavlik
-Director SUSE Labs
+> Rob Gittins, on 09/23/2013 03:51 PM wrote:
+> > On Fri, 2013-09-06 at 22:12 -0700, Vladislav Bolkhovitin wrote:
+> >> Rob Gittins, on 09/04/2013 02:54 PM wrote:
+> >>> Non-volatile DIMMs have started to become available.  A NVDIMMs is a
+> >>> DIMM that does not lose data across power interruptions.  Some of
+> >>> the NVDIMMs act like memory, while others are more like a block
+> >>> device on the memory bus. Application uses vary from being used to
+> >>> cache critical data, to being a boot device.
+> >>>
+> >>> There are two access classes of NVDIMMs,  block mode and
+> >>> â€œload/storeâ€ mode DIMMs which are referred to as Direct Memory
+> >>> Mappable.
+> >>>
+> >>> The block mode is where the DIMM provides IO ports for read or write
+> >>> of data.  These DIMMs reside on the memory bus but do not appear in
+> >>> the application address space.  Block mode DIMMs do not require any
+> >>> changes to the current infrastructure, since they provide IO type of interface.
+> >>>
+> >>> Direct Memory Mappable DIMMs (DMMD) appear in the system address
+> >>> space and are accessed via load and store instructions.  These
+> >>> NVDIMMs are part of the system physical address space (SPA) as
+> >>> memory with the attribute that data survives a power interruption.
+> >>> As such this memory is managed by the kernel which can  assign
+> >>> virtual addresses and mapped into applicationâ€™s address space as
+> >>> well as being accessible by the kernel.  The area mapped into the
+> >>> system address space is being referred to as persistent memory (PMEM).
+> >>>
+> >>> PMEM introduces the need for new operations in the
+> >>> block_device_operations to support the specific characteristics of
+> >>> the media.
+> >>>
+> >>> First data may not propagate all the way through the memory pipeline
+> >>> when store instructions are executed.  Data may stay in the CPU
+> >>> cache or in other buffers in the processor and memory complex.  In
+> >>> order to ensure the durability of data there needs to be a driver
+> >>> entry point to force a byte range out to media.  The methods of
+> >>> doing this are specific to the PMEM technology and need to be
+> >>> handled by the driver that is supporting the DMMDs.  To provide a
+> >>> way to ensure that data is durable adding a commit function to the
+> block_device_operations vector.
+> >>>
+> >>>    void (*commitpmem)(struct block_device *bdev, void *addr);
+> >>
+> >> Why to glue to the block concept for apparently not block class of
+> >> devices? By pushing NVDIMMs into the block model you both limiting
+> >> them to block devices capabilities as well as have to expand block
+> >> devices by alien to them properties
+> > Hi Vlad,
+> >
+> > We chose to extent the block operations for a couple of reasons.  The
+> > majority of NVDIMM usage is by emulating block mode.  We figure that
+> > over time usages will appear that use them directly and then we can
+> > design interfaces to enable direct use.
+> >
+> > Since a range of NVDIMM needs a name, security and other attributes
+> > mmap is a really good model to build on.  This quickly takes us into
+> > the realm of a file systems, which are easiest to build on the
+> > existing block infrastructure.
+> >
+> > Another reason to extend block is that all of the existing
+> > administrative interfaces and tools such as mkfs still work and we
+> > have not added some new management tools and requirements that may
+> > inhibit the adoption of the technology.  Basically if it works today
+> > for block the same cli commands will work for NVDIMMs.
+> >
+> > The extensions are so minimal that they don't negatively impact the
+> > existing interfaces.
+> 
+> Well, they will negatively impact them, because those NVDIMM additions are
+> conceptually alien for the block devices concept.
+> 
+> You didn't answer, why not create a new class of devices for NVDIMM devices, and
+> implement one-fit-all block driver for them? Simple, clean and elegant solution, which
+> will fit your need to have block device from NVDIMM device pretty well with minimal
+> effort.
+> 
+> Vlad
+> 
+> _______________________________________________
+> Linux-pmfs mailing list
+> Linux-pmfs@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-pmfs
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
