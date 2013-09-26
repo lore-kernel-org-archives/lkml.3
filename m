@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751Ab3IZK52 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 06:57:28 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:55594 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756469Ab3IZK50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 06:57:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130924182820.GA9911@mithrandir>
-References: <1379320326-13241-1-git-send-email-treding@nvidia.com>
-	<1379320326-13241-3-git-send-email-treding@nvidia.com>
-	<CACRpkdYo8knzZ+Z-tc7fyEGwX5bt4RvMU3TR3k3UrOj0KRJocw@mail.gmail.com>
-	<20130923202935.GA5216@ulmo>
-	<CACRpkdZMM9RUkRCWG0mYbF9PL-fOdDncpY05xG3F5BF55hn5ug@mail.gmail.com>
-	<20130924182820.GA9911@mithrandir>
-Date: Thu, 26 Sep 2013 12:57:25 +0200
-Message-ID: <CACRpkdYzcb1F1-YK5ivxGpskZyVxN3qfUGn8sqq9RnfOU-EzEQ@mail.gmail.com>
-Subject: Re: [PATCH 2/9] irqdomain: Introduce __irq_create_mapping()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756418Ab3IZK6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 06:58:25 -0400
+Received: from mga14.intel.com ([143.182.124.37]:46031 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756306Ab3IZK6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 06:58:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,984,1371106800"; 
+   d="scan'208";a="365834004"
+From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] i2c-designware: 10-bit addressing mode enabling if I2C_DYNAMIC_TAR_UPDATE is set.
+Date: Fri, 27 Sep 2013 02:57:35 +0800
+Message-Id: <1380221855-14150-1-git-send-email-chiau.ee.chew@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 8:28 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
+According to Designware I2C spec, if I2C_DYNAMIC_TAR_UPDATE is set to 1,
+the 10-bit addressing mode is controlled by IC_10BITADDR_MASTER bit of
+IC_TAR register instead of IC_CON register. The IC_10BITADDR_MASTER
+in IC_CON register becomes read-only copy. Since I2C_DYNAMIC_TAR_UPDATE
+value can't be detected from hardware register, so we will always set the
+IC_10BITADDR_MASTER bit in both IC_CON and IC_TAR register whenever 10-bit
+addresing mode is requested by user application.
 
-> Given that linux-next might not be with us for much longer before the
-> 3.12 release, I'm thinking of deferring the series until then. Or at
-> least trying to get it merged. Otherwise we'll probably have to deal
-> with a lot of fall out during the merge window.
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/i2c/busses/i2c-designware-core.c |   26 ++++++++++++++++++++------
+ 1 files changed, 20 insertions(+), 6 deletions(-)
 
-Hm, how unfortunate. Typically this is the kind of topic branch
-that should go in separately to linux-next.
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index dbecf08..5888fee 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -98,6 +98,8 @@
+ 
+ #define DW_IC_ERR_TX_ABRT	0x1
+ 
++#define DW_IC_TAR_10BITADDR_MASTER BIT(12)
++
+ /*
+  * status codes
+  */
+@@ -388,22 +390,34 @@ static int i2c_dw_wait_bus_not_busy(struct dw_i2c_dev *dev)
+ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
+ {
+ 	struct i2c_msg *msgs = dev->msgs;
+-	u32 ic_con;
++	u32 ic_con, ic_tar = 0;
+ 
+ 	/* Disable the adapter */
+ 	__i2c_dw_enable(dev, false);
+ 
+-	/* set the slave (target) address */
+-	dw_writel(dev, msgs[dev->msg_write_idx].addr, DW_IC_TAR);
+-
+ 	/* if the slave address is ten bit address, enable 10BITADDR */
+ 	ic_con = dw_readl(dev, DW_IC_CON);
+-	if (msgs[dev->msg_write_idx].flags & I2C_M_TEN)
++	if (msgs[dev->msg_write_idx].flags & I2C_M_TEN) {
+ 		ic_con |= DW_IC_CON_10BITADDR_MASTER;
+-	else
++		/*
++		 * If I2C_DYNAMIC_TAR_UPDATE is set, the 10-bit addressing
++		 * mode has to be enabled via bit 12 of IC_TAR register.
++		 * We set it always as I2C_DYNAMIC_TAR_UPDATE can't be
++		 * detected from registers.
++		 */
++		ic_tar = DW_IC_TAR_10BITADDR_MASTER;
++	} else {
+ 		ic_con &= ~DW_IC_CON_10BITADDR_MASTER;
++	}
++
+ 	dw_writel(dev, ic_con, DW_IC_CON);
+ 
++	/*
++	 * Set the slave (target) address and enable 10-bit addressing mode
++	 * if applicable.
++	 */
++	dw_writel(dev, msgs[dev->msg_write_idx].addr | ic_tar, DW_IC_TAR);
++
+ 	/* Enable the adapter */
+ 	__i2c_dw_enable(dev, true);
+ 
+-- 
+1.7.4.4
 
-> In any case, it'd be nice to get some feedback on the general idea of
-> the patch series from other people involved. I'd hate to do all the
-> conversions just to have it NAKed at the last minute.
-
-With the direction we've discussed here atleast I won't be
-doing any NACKing if it's of any help...
-
-Yours,
-Linus Walleij
