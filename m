@@ -1,126 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab3IZKfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 06:35:25 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755398Ab3IZKfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 06:35:24 -0400
-Message-ID: <52440DE0.1030807@nod.at>
-Date: Thu, 26 Sep 2013 12:35:12 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1756664Ab3IZKgK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 06:36:10 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52361 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755999Ab3IZKgJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 06:36:09 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <52440E15.7060002@roeck-us.net>
+Date: Thu, 26 Sep 2013 03:36:05 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-CC: linux-arch@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        geert@linux-m68k.org, ralf@linux-mips.org, lethal@linux-sh.org,
-        Jeff Dike <jdike@addtoit.com>, gxt@mprc.pku.edu.cn,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-Subject: Re: [PATCH 1/8] um: Create defconfigs for i386 and x86_64
-References: <1377073172-3662-1-git-send-email-richard@nod.at> <1377073172-3662-2-git-send-email-richard@nod.at> <CALkWK0=W38JpZoGVkPYD4qd=+Pt1G7oYPEK_R=c8TAW6W=wxyg@mail.gmail.com>
-In-Reply-To: <CALkWK0=W38JpZoGVkPYD4qd=+Pt1G7oYPEK_R=c8TAW6W=wxyg@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        bugzilla@colorremedies.com
+Subject: Re: applesmc oops in 3.10/3.11
+References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com> <20130925195628.GA1532@roeck-us.net> <20130925214807.GA3234@polaris.bitmath.org> <20130925220838.GB4184@roeck-us.net> <20130926063453.GA526@polaris.bitmath.org>
+In-Reply-To: <20130926063453.GA526@polaris.bitmath.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.09.2013 12:20, schrieb Ramkumar Ramachandra:
-> Richard Weinberger wrote:
->> This patch is based on: https://lkml.org/lkml/2013/7/4/396
->>
->> Cc: Ramkumar Ramachandra <artagnon@gmail.com>
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->>  arch/um/configs/i386_defconfig   | 954 +++++++++++++++++++++++++++++++++++++++
->>  arch/um/configs/x86_64_defconfig | 943 ++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 1897 insertions(+)
->>  create mode 100644 arch/um/configs/i386_defconfig
->>  create mode 100644 arch/um/configs/x86_64_defconfig
-> 
-> First, I'm pissed that the upstream tree doesn't build and run out of
-> the box months after I submitted a fix in July (and it's September
-> now). Fact that you dropped my sane patches aside and decided to write
-> a much larger series aside, user-mode Linux in upstream is broken.
-> This means that any user who does:
-> 
-> $ ARCH=um make defconfig
-> $ ARCH=um make
-> 
-> will end up with a *broken* Linux _today_. Unless the user is living
-> in the Stone Age with a 32-bit computer, this is what she will see
-> when she attempts to boot up Linux:
-
-Not here.
-
-> $ file linux
-> linux: ELF 32-bit LSB  executable, Intel 80386, version 1 (SYSV),
-> dynamically linked (uses shared libs), for GNU/Linux 2.6.32, not
-> stripped
-> $ ./linux ubd0=busybox-rootfs
-> [...]
-> Kernel panic - not syncing: No init found.  Try passing init= option
-> to kernel. See Linux Documentation/init.txt for guidance.
-
-I don't know that rootfs but it looks like there is no init.
-
-> CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-rc2-00083-g4b97280 #1
-> 0b869fbc 08272f87 0b869fdc 0820c5cd 00000001 00000000 00000000 00000000
->        0b869fe8 0820c126 08252593 0b869ff8 08059317 00000000 00000001 00000000
->        00000000 0b869f94:  [<0805a11c>] show_stack+0x54/0x8c
-> 0b869fb4:  [<0820e3c8>] dump_stack+0x16/0x1b
-> 0b869fc8:  [<0820c5cd>] panic+0x67/0x149
-> 0b869fe0:  [<0820c126>] kernel_init+0xab/0xaf
-> 0b869fec:  [<08059317>] new_thread_handler+0x63/0x7c
-> 0b869ffc:  [<00000000>] 0x0
-> 
-> 
-> EIP: 0023:[<f7717430>] CPU: 0 Not tainted ESP: 002b:ffc386dc EFLAGS: 00000296
->     Not tainted
-> EAX: 00000000 EBX: 000063ba ECX: 00000013 EDX: 000063ba
-> ESI: 000063b6 EDI: 00000002 EBP: ffc38708 DS: 002b ES: 002b
-> 0b869f44:  [<0806aff4>] show_regs+0xb4/0xbc
-> 0b869f70:  [<0805b23b>] panic_exit+0x20/0x36
-> 0b869f84:  [<0808521b>] notifier_call_chain+0x28/0x4b
-> 0b869fac:  [<0808526c>] atomic_notifier_call_chain+0x15/0x17
-> 0b869fbc:  [<0820c5de>] panic+0x78/0x149
-> 0b869fe0:  [<0820c126>] kernel_init+0xab/0xaf
-> 0b869fec:  [<08059317>] new_thread_handler+0x63/0x7c
-> 0b869ffc:  [<00000000>] 0x0
-> 
-> [1]    25526 abort (core dumped)  linux ubd0=busybox-rootfs
->                                                            %
-> 
-> Rubbish.
-
-UML core dumps at panic() by design.
-
-> When I rebase my original patches (exactly 2 small independent
-> patches) onto the new upstream, stuff works as usual. If you're not
-> convinced, try the um-build branch from
-> https://github.com/artagnon/linux for yourself.
-
-> Are you against accepting good patches and stalling work? What is your
-> plan exactly?
-
-Sure, my great plan is to destroy Linux. I work for Microsoft. ;-)
-
-Seriously, my plan is to get rid of SUBARCH, that's why I did not push your patches
-upstream and I've send the rid of SUBARCH patch series.
-It turned out that other archs depend on SUBARCH too therefore some more thinking is needed.
-Time passed, merge window closed, $dayjob needed some attention...
-
-That said, your "arch/um: make it work with defconfig and x86_64" patch is also not perfect.
-"make defconfig ARCH=um SUBARCH=x86" will create x86_64 defconfig, which is wrong and breaks existing
-setups.
-Secondly, what stops you from running "make defconfig ARCH=um SUBARCH=x86_64" to run your x86_64 bit
-userspace?
+On 09/25/2013 11:34 PM, Henrik Rydberg wrote:
+>>>> This suggests that initialization may be attempted more than once. The key cache
+>>>> is allocated only once, but the number of keys is read for each attempt.
+>>>>
+>>>> No idea if that can happen, but if the number of keys can increase after
+>>>> the first initialization attempt you would have an explanation for the crash.
+>>>
+>>> Good idea, and easy enough to test with the patch below.
+>>>
+>> Should we apply this patch even though it may not solve the specific problem ?
+>
+> Yes, why not - it certainly won't hurt. I am running it right now, so
+> it is at least run-tested.
+>
+>> Again, not sure if the key count can change, but the current code is at the very
+>> least inconsistent, as it keeps reading the key count without updating or
+>> verifying the cache size.
+>
+> Yes - I agree that the error state is far-fetched, but it is hard to
+> see any other logical explanation. There is of course always the
+> possibility that the problem is somewhere else completely.
+>
+There are also ACPI conflicts in each of the bug reports I looked at.
+Can this play a role, or is that "normal" on apple systems ?
 
 Thanks,
-//richard
+Guenter
+
+> Proper patch attached.
+>
+> Thanks,
+> Henrik
+>
+> ---
+>
+>>From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
+> From: Henrik Rydberg <rydberg@euromail.se>
+> Date: Thu, 26 Sep 2013 08:33:16 +0200
+> Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
+>
+> After reports from Chris and Josh Boyer of a rare crash in applesmc,
+> Guenter pointed at the initialization problem fixed below. The patch
+> has not been verified to fix the crash, but should be applied
+> regardless.
+>
+> Reported-by: <jwboyer@fedoraproject.org>
+> Suggested-by: Guenter Roeck <linux@roeck-us.net>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>   drivers/hwmon/applesmc.c | 11 ++++++++++-
+>   1 file changed, 10 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+> index 62c2e32..98814d1 100644
+> --- a/drivers/hwmon/applesmc.c
+> +++ b/drivers/hwmon/applesmc.c
+> @@ -525,16 +525,25 @@ static int applesmc_init_smcreg_try(void)
+>   {
+>   	struct applesmc_registers *s = &smcreg;
+>   	bool left_light_sensor, right_light_sensor;
+> +	unsigned int count;
+>   	u8 tmp[1];
+>   	int ret;
+>
+>   	if (s->init_complete)
+>   		return 0;
+>
+> -	ret = read_register_count(&s->key_count);
+> +	ret = read_register_count(&count);
+>   	if (ret)
+>   		return ret;
+>
+> +	if (s->cache && s->key_count != count) {
+> +		pr_warn("key count changed from %d to %d\n",
+> +			s->key_count, count);
+> +		kfree(s->cache);
+> +		s->cache = NULL;
+> +	}
+> +	s->key_count = count;
+> +
+>   	if (!s->cache)
+>   		s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
+>   	if (!s->cache)
+>
+
