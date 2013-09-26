@@ -1,47 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab3IZCV4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Sep 2013 22:21:56 -0400
-Received: from void.printf.net ([89.145.121.20]:54373 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384Ab3IZCVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Sep 2013 22:21:55 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Grant Grundler <grundler@chromium.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: core: remove issue_fn indirect function call
-References: <1379611214-1089-1-git-send-email-grundler@chromium.org>
-	<CAPDyKFr0h=uTz4xOAULLc0Ff23xB-xVuuk+XnBz_Uq5YMryHbA@mail.gmail.com>
-Date: Wed, 25 Sep 2013 22:21:38 -0400
-In-Reply-To: <CAPDyKFr0h=uTz4xOAULLc0Ff23xB-xVuuk+XnBz_Uq5YMryHbA@mail.gmail.com> (Ulf
-	Hansson's message of "Fri, 20 Sep 2013 09:33:06 +0200")
-Message-ID: <87fvss2uh9.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755463Ab3IZCWk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Sep 2013 22:22:40 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:32375 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755345Ab3IZCWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Sep 2013 22:22:38 -0400
+X-AuditID: cbfec37b-b7fa96d00000716e-08-52439a6c13cc
+Message-id: <52439A60.3080501@samsung.com>
+Date: Wed, 25 Sep 2013 20:22:24 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/28] 3.0.97-stable review
+References: <20130925000648.404447782@linuxfoundation.org>
+In-reply-to: <20130925000648.404447782@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9hP92cWc5BBrsmKlnMWb+GzaJ58Xo2
+	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
+	pG+XwJXxfJFDwVOeis2bVrE1ME7l6mLk5JAQMJH4fnczG4QtJnHh3nogm4tDSGAZo8SWrxMY
+	IZxeJolL5/YwQzibGCUO354LlOHg4BXQkrg42R2km0VAVWLH6VUsIDabgLrE59c72EFsIQE5
+	iaYlq5lBbFGBCImVSx6wgti8AoISPybfA6sXETCW6D87C6yeWeAYo8TCZhMQWxho/ON/TSwQ
+	c6wk5jT9BruUU8Ba4uPxnUwQ9dYSKydtY4Sw5SU2r3nLDFGvLPHn8ikmkDMlBBQltq+2msAo
+	MgvJ5llIumch6V7AyLyKUay0OLmgOCk9tcJIrzgxt7g0L10vOT93EyMkXqp3MN79anOIUYCD
+	UYmHV+G/U5AQa2JZcWXuIUYJDmYlEd5vRs5BQrwpiZVVqUX58UWlOanFhxiZODilGhhnVO3Y
+	Idfk3cxZeyZ3rXqYz96zvFO67yuc9WmY8ndZxyK9AH5V63LrxS93/f54qW4z79pVk+TMHigl
+	31jqIbZwYvpD0+xnJ+8v7La9IbW6Wc9G5b/yuSvFXgl5HlxMxt+Pyib2vAmvTzxQU9izSELg
+	XKvVk4Q53FrqF08ICKc8ed65Tfaa1kslluKMREMt5qLiRACF8uSidQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fri, Sep 20 2013, Ulf Hansson wrote:
-> On 19 September 2013 19:20, Grant Grundler <grundler@chromium.org> wrote:
->> struct mmc_queue defines issue_fn as an indirect function call.
->> issue_fn field only gets set to mmc_blk_issue_rq and only gets
->> invoked immediately after calling blk_fetch_request().
->> Don't bother with indirect function call - it's pointless and just
->> obfuscates the code.
->>
->> Signed-off-by: Grant Grundler <grundler@chromium.org>
+On 09/24/2013 06:07 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.0.97 release.
+> There are 28 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
-> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+> Responses should be made by Fri Sep 27 00:05:34 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.97-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-Thanks, pushed to mmc-next for 3.13.
+3.0.97-rc1 applied with the following warning from line 103 to 3.0.96
 
-- Chris.
+patch-3.0.97-rc1:103: space before tab in indent.
+                         return -1;
+warning: 1 line adds whitespace errors.
+
+Compiled and booted on the following systems:
+
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+
+dmesgs look good. No regressions compared to the previous dmesgs for 
+this release. dmesg emerg, crit, alert, err are clean. No regressions in 
+warn.
+
+Cross-compile testing: HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+
+Cross-compile tests results:
+
+alpha: defconfig passed
+arm: defconfig passed
+arm64: not applicable
+blackfin: defconfig passed
+c6x: not applicable
+mips: defconfig passed
+mipsel: defconfig passed
+powerpc: wii_defconfig passed
+sh: defconfig passed
+sparc: defconfig passed
+tile: tilegx_defconfig passed
+
+-- Shuah
+
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
