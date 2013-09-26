@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab3IZJeU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:34:20 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:35602
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932114Ab3IZJeQ (ORCPT
+	id S1756531Ab3IZJea (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:34:30 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:5886 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932140Ab3IZJe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:34:16 -0400
+	Thu, 26 Sep 2013 05:34:26 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
 From: <hongbo.zhang@freescale.com>
 To: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
@@ -17,9 +17,9 @@ To: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
 CC: <devicetree@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
         <linux-kernel@vger.kernel.org>,
         Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH v11 1/3] DMA: Freescale: revise device tree binding document
-Date: Thu, 26 Sep 2013 17:33:41 +0800
-Message-ID: <1380188023-3936-2-git-send-email-hongbo.zhang@freescale.com>
+Subject: [PATCH v11 2/3] DMA: Freescale: Add new 8-channel DMA engine device tree nodes
+Date: Thu, 26 Sep 2013 17:33:42 +0800
+Message-ID: <1380188023-3936-3-git-send-email-hongbo.zhang@freescale.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com>
 References: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com>
@@ -33,116 +33,312 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-This patch updates the discription of each type of DMA controller and its
-channels, it is preparation for adding another new DMA controller binding, it
-also fixes some defects of indent for text alignment at the same time.
+Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch adds
+the device tree nodes for them.
 
 Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
 ---
- .../devicetree/bindings/powerpc/fsl/dma.txt        |   68 +++++++++-----------
- 1 file changed, 31 insertions(+), 37 deletions(-)
+ .../devicetree/bindings/powerpc/fsl/dma.txt        |   70 +++++++++++++++++
+ arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+ arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   82 ++++++++++++++++++++
+ arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   82 ++++++++++++++++++++
+ arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+ 5 files changed, 238 insertions(+), 4 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
 
 diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
-index 2a4b4bc..0584168 100644
+index 0584168..7fc1b01 100644
 --- a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
 +++ b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
-@@ -1,33 +1,30 @@
--* Freescale 83xx DMA Controller
-+* Freescale DMA Controllers
- 
--Freescale PowerPC 83xx have on chip general purpose DMA controllers.
-+** Freescale Elo DMA Controller
-+   This is a little-endian 4-channel DMA controller, used in Freescale mpc83xx
-+   series chips such as mpc8315, mpc8349, mpc8379 etc.
- 
- Required properties:
- 
--- compatible        : compatible list, contains 2 entries, first is
--		 "fsl,CHIP-dma", where CHIP is the processor
--		 (mpc8349, mpc8360, etc.) and the second is
--		 "fsl,elo-dma"
--- reg               : <registers mapping for DMA general status reg>
--- ranges		: Should be defined as specified in 1) to describe the
--		  DMA controller channels.
-+- compatible        : must include "fsl,elo-dma"
-+- reg               : DMA General Status Register, i.e. DGSR which contains
-+                      status for all the 4 DMA channels
-+- ranges            : describes the mapping between the address space of the
-+                      DMA channels and the address space of the DMA controller
- - cell-index        : controller index.  0 for controller @ 0x8100
--- interrupts        : <interrupt mapping for DMA IRQ>
-+- interrupts        : interrupt specifier for DMA IRQ
- - interrupt-parent  : optional, if needed for interrupt mapping
- 
--
- - DMA channel nodes:
--        - compatible        : compatible list, contains 2 entries, first is
--			 "fsl,CHIP-dma-channel", where CHIP is the processor
--			 (mpc8349, mpc8350, etc.) and the second is
--			 "fsl,elo-dma-channel". However, see note below.
--        - reg               : <registers mapping for channel>
--        - cell-index        : dma channel index starts at 0.
-+        - compatible        : must include "fsl,elo-dma-channel"
-+                              However, see note below.
-+        - reg               : DMA channel specific registers
-+        - cell-index        : DMA channel index starts at 0.
- 
- Optional properties:
--        - interrupts        : <interrupt mapping for DMA channel IRQ>
--			  (on 83xx this is expected to be identical to
--			   the interrupts property of the parent node)
-+        - interrupts        : interrupt specifier for DMA channel IRQ
-+                              (on 83xx this is expected to be identical to
-+                              the interrupts property of the parent node)
-         - interrupt-parent  : optional, if needed for interrupt mapping
- 
- Example:
-@@ -70,30 +67,27 @@ Example:
+@@ -128,6 +128,76 @@ Example:
  		};
  	};
  
--* Freescale 85xx/86xx DMA Controller
--
--Freescale PowerPC 85xx/86xx have on chip general purpose DMA controllers.
-+** Freescale EloPlus DMA Controller
-+   This is a 4-channel DMA controller with extended addresses and chaining,
-+   mainly used in Freescale mpc85xx/86xx, Pxxx and BSC series chips, such as
-+   mpc8540, mpc8641 p4080, bsc9131 etc.
- 
- Required properties:
- 
--- compatible        : compatible list, contains 2 entries, first is
--		 "fsl,CHIP-dma", where CHIP is the processor
--		 (mpc8540, mpc8540, etc.) and the second is
--		 "fsl,eloplus-dma"
--- reg               : <registers mapping for DMA general status reg>
-+- compatible        : must include "fsl,eloplus-dma"
-+- reg               : DMA General Status Register, i.e. DGSR which contains
-+                      status for all the 4 DMA channels
- - cell-index        : controller index.  0 for controller @ 0x21000,
-                                          1 for controller @ 0xc000
--- ranges		: Should be defined as specified in 1) to describe the
--		  DMA controller channels.
++** Freescale Elo3 DMA Controller
++   DMA controller which has same function as EloPlus except that Elo3 has 8
++   channels while EloPlus has only 4, it is used in Freescale Txxx and Bxxx
++   series chips, such as t1040, t4240, b4860.
++
++Required properties:
++
++- compatible        : must include "fsl,elo3-dma"
++- reg               : contains two entries for DMA General Status Registers,
++                      i.e. DGSR0 which includes status for channel 1~4, and
++                      DGSR1 for channel 5~8
 +- ranges            : describes the mapping between the address space of the
 +                      DMA channels and the address space of the DMA controller
- 
- - DMA channel nodes:
--        - compatible        : compatible list, contains 2 entries, first is
--			 "fsl,CHIP-dma-channel", where CHIP is the processor
--			 (mpc8540, mpc8560, etc.) and the second is
--			 "fsl,eloplus-dma-channel". However, see note below.
--        - cell-index        : dma channel index starts at 0.
--        - reg               : <registers mapping for channel>
--        - interrupts        : <interrupt mapping for DMA channel IRQ>
++
++- DMA channel nodes:
 +        - compatible        : must include "fsl,eloplus-dma-channel"
-+                              However, see note below.
-+        - cell-index        : DMA channel index starts at 0.
 +        - reg               : DMA channel specific registers
 +        - interrupts        : interrupt specifier for DMA channel IRQ
-         - interrupt-parent  : optional, if needed for interrupt mapping
++        - interrupt-parent  : optional, if needed for interrupt mapping
++
++Example:
++dma@100300 {
++	#address-cells = <1>;
++	#size-cells = <1>;
++	compatible = "fsl,elo3-dma";
++	reg = <0x100300 0x4>,
++	      <0x100600 0x4>;
++	ranges = <0x0 0x100100 0x500>;
++	dma-channel@0 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x0 0x80>;
++		interrupts = <28 2 0 0>;
++	};
++	dma-channel@80 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x80 0x80>;
++		interrupts = <29 2 0 0>;
++	};
++	dma-channel@100 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x100 0x80>;
++		interrupts = <30 2 0 0>;
++	};
++	dma-channel@180 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x180 0x80>;
++		interrupts = <31 2 0 0>;
++	};
++	dma-channel@300 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x300 0x80>;
++		interrupts = <76 2 0 0>;
++	};
++	dma-channel@380 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x380 0x80>;
++		interrupts = <77 2 0 0>;
++	};
++	dma-channel@400 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x400 0x80>;
++		interrupts = <78 2 0 0>;
++	};
++	dma-channel@480 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x480 0x80>;
++		interrupts = <79 2 0 0>;
++	};
++};
++
+ Note on DMA channel compatible properties: The compatible property must say
+ "fsl,elo-dma-channel" or "fsl,eloplus-dma-channel" to be used by the Elo DMA
+ driver (fsldma).  Any DMA channel used by fsldma cannot be used by another
+diff --git a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+index 7399154..ea53ea1 100644
+--- a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
++++ b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+@@ -223,13 +223,13 @@
+ 		reg = <0xe2000 0x1000>;
+ 	};
  
- Example:
+-/include/ "qoriq-dma-0.dtsi"
++/include/ "elo3-dma-0.dtsi"
+ 	dma@100300 {
+ 		fsl,iommu-parent = <&pamu0>;
+ 		fsl,liodn-reg = <&guts 0x580>; /* DMA1LIODNR */
+ 	};
+ 
+-/include/ "qoriq-dma-1.dtsi"
++/include/ "elo3-dma-1.dtsi"
+ 	dma@101300 {
+ 		fsl,iommu-parent = <&pamu0>;
+ 		fsl,liodn-reg = <&guts 0x584>; /* DMA2LIODNR */
+diff --git a/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi b/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+new file mode 100644
+index 0000000..3c210e0
+--- /dev/null
++++ b/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+@@ -0,0 +1,82 @@
++/*
++ * QorIQ Elo3 DMA device tree stub [ controller @ offset 0x100000 ]
++ *
++ * Copyright 2013 Freescale Semiconductor Inc.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of Freescale Semiconductor nor the
++ *       names of its contributors may be used to endorse or promote products
++ *       derived from this software without specific prior written permission.
++ *
++ *
++ * ALTERNATIVELY, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") as published by the Free Software
++ * Foundation, either version 2 of that License or (at your option) any
++ * later version.
++ *
++ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
++ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
++ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
++ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
++ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
++ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
++ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
++ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++dma0: dma@100300 {
++	#address-cells = <1>;
++	#size-cells = <1>;
++	compatible = "fsl,elo3-dma";
++	reg = <0x100300 0x4>,
++	      <0x100600 0x4>;
++	ranges = <0x0 0x100100 0x500>;
++	dma-channel@0 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x0 0x80>;
++		interrupts = <28 2 0 0>;
++	};
++	dma-channel@80 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x80 0x80>;
++		interrupts = <29 2 0 0>;
++	};
++	dma-channel@100 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x100 0x80>;
++		interrupts = <30 2 0 0>;
++	};
++	dma-channel@180 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x180 0x80>;
++		interrupts = <31 2 0 0>;
++	};
++	dma-channel@300 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x300 0x80>;
++		interrupts = <76 2 0 0>;
++	};
++	dma-channel@380 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x380 0x80>;
++		interrupts = <77 2 0 0>;
++	};
++	dma-channel@400 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x400 0x80>;
++		interrupts = <78 2 0 0>;
++	};
++	dma-channel@480 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x480 0x80>;
++		interrupts = <79 2 0 0>;
++	};
++};
+diff --git a/arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi b/arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+new file mode 100644
+index 0000000..cccf3bb
+--- /dev/null
++++ b/arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+@@ -0,0 +1,82 @@
++/*
++ * QorIQ Elo3 DMA device tree stub [ controller @ offset 0x101000 ]
++ *
++ * Copyright 2013 Freescale Semiconductor Inc.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of Freescale Semiconductor nor the
++ *       names of its contributors may be used to endorse or promote products
++ *       derived from this software without specific prior written permission.
++ *
++ *
++ * ALTERNATIVELY, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") as published by the Free Software
++ * Foundation, either version 2 of that License or (at your option) any
++ * later version.
++ *
++ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
++ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
++ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
++ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
++ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
++ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
++ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
++ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++dma1: dma@101300 {
++	#address-cells = <1>;
++	#size-cells = <1>;
++	compatible = "fsl,elo3-dma";
++	reg = <0x101300 0x4>,
++	      <0x101600 0x4>;
++	ranges = <0x0 0x101100 0x500>;
++	dma-channel@0 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x0 0x80>;
++		interrupts = <32 2 0 0>;
++	};
++	dma-channel@80 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x80 0x80>;
++		interrupts = <33 2 0 0>;
++	};
++	dma-channel@100 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x100 0x80>;
++		interrupts = <34 2 0 0>;
++	};
++	dma-channel@180 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x180 0x80>;
++		interrupts = <35 2 0 0>;
++	};
++	dma-channel@300 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x300 0x80>;
++		interrupts = <80 2 0 0>;
++	};
++	dma-channel@380 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x380 0x80>;
++		interrupts = <81 2 0 0>;
++	};
++	dma-channel@400 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x400 0x80>;
++		interrupts = <82 2 0 0>;
++	};
++	dma-channel@480 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x480 0x80>;
++		interrupts = <83 2 0 0>;
++	};
++};
+diff --git a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
+index bd611a9..ec95c60 100644
+--- a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
++++ b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
+@@ -387,8 +387,8 @@
+ 		reg	   = <0xea000 0x4000>;
+ 	};
+ 
+-/include/ "qoriq-dma-0.dtsi"
+-/include/ "qoriq-dma-1.dtsi"
++/include/ "elo3-dma-0.dtsi"
++/include/ "elo3-dma-1.dtsi"
+ 
+ /include/ "qoriq-espi-0.dtsi"
+ 	spi@110000 {
 -- 
 1.7.9.5
 
