@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab3IZPk1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:40:27 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:47355 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab3IZPkW (ORCPT
+	id S1753397Ab3IZPk6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:40:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57856 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087Ab3IZPk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:40:22 -0400
-Date: Thu, 26 Sep 2013 11:40:19 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH 09/27] mmc: mvsdio: Remove redundant suspend and resume
- callbacks
-In-Reply-To: <1380207292-16968-10-git-send-email-ulf.hansson@linaro.org>
-Message-ID: <alpine.LFD.2.03.1309261136010.312@syhkavp.arg>
-References: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org> <1380207292-16968-10-git-send-email-ulf.hansson@linaro.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Thu, 26 Sep 2013 11:40:57 -0400
+Date: Thu, 26 Sep 2013 08:40:56 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: Re: [char-misc-next 1/7] mei: fix function names in debug prints
+Message-ID: <20130926154056.GA15788@kroah.com>
+References: <1379364288-16374-1-git-send-email-tomas.winkler@intel.com>
+ <1379364288-16374-2-git-send-email-tomas.winkler@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379364288-16374-2-git-send-email-tomas.winkler@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Sep 2013, Ulf Hansson wrote:
+On Mon, Sep 16, 2013 at 11:44:42PM +0300, Tomas Winkler wrote:
+> From: Alexander Usyskin <alexander.usyskin@intel.com>
+> 
+> Fix calling function names in debug prints.
+> 
+> Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> ---
+>  drivers/misc/mei/interrupt.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+> index d27804e..be42c70 100644
+> --- a/drivers/misc/mei/interrupt.c
+> +++ b/drivers/misc/mei/interrupt.c
+> @@ -343,14 +343,14 @@ int mei_irq_read_handler(struct mei_device *dev,
+>  
+>  	/* decide where to read the message too */
+>  	if (!mei_hdr->host_addr) {
+> -		dev_dbg(&dev->pdev->dev, "call mei_irq_thread_read_bus_message.\n");
+> +		dev_dbg(&dev->pdev->dev, "call mei_hbm_dispatch.\n");
+>  		mei_hbm_dispatch(dev, mei_hdr);
+> -		dev_dbg(&dev->pdev->dev, "end mei_irq_thread_read_bus_message.\n");
+> +		dev_dbg(&dev->pdev->dev, "end mei_hbm_dispatch.\n");
 
-> Suspend and resume of cards are handled by the protocol layer and
-> consequently the mmc_suspend|resume_host APIs are marked as deprecated.
+Stuff like this can just be deleted, use the in-kernel tracing
+functionality if you really care about this type of thing.
 
-Having the protocol layer take care of card suspend is perfectly sound.
+I'll take this for now, but in the future, just remove these lines
+please.
 
-However, what about host controllers?  Shouldn't they suspend themselves 
-as well?  There is certainly potential for power saving by gating clocks 
-to the host IP block or the like.
+thanks,
 
-
-Nicolas
+greg k-h
