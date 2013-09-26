@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab3IZViP (ORCPT <rfc822;w@1wt.eu>);
+	id S1754439Ab3IZViV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 17:38:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18725 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754302Ab3IZViP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Sep 2013 17:38:15 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:35655 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754025Ab3IZViM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 17:38:12 -0400
-MIME-Version: 1.0
-Date: Thu, 26 Sep 2013 17:38:11 -0400
-Message-ID: <CANsc=4X_KrPEYVPuqPBgATNsY3a3M4Penur+9S1JSJ_MUvfxGg@mail.gmail.com>
-Subject: Scheduling new work during a context switch
-From: =?UTF-8?Q?Adrien_Verg=C3=A9?= <adrienverge@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,988,1371106800"; 
+   d="scan'208";a="401636501"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <20130926211935.GJ2940@sgi.com>
+References: <1379330740-5602-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130919171727.GC6802@sgi.com>
+ <20130920123137.BE2F7E0090@blue.fi.intel.com>
+ <20130924164443.GB2940@sgi.com>
+ <20130926105052.0205AE0090@blue.fi.intel.com>
+ <20130926211935.GJ2940@sgi.com>
+Subject: Re: [PATCHv2 0/9] split page table lock for PMD tables
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130926213807.1D82AE0090@blue.fi.intel.com>
+Date: Fri, 27 Sep 2013 00:38:07 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Alex Thorlton wrote:
+> > Let me guess: you have HUGETLBFS enabled in your config, right? ;)
+> > 
+> > HUGETLBFS hasn't converted to new locking and we disable split pmd lock if
+> > HUGETLBFS is enabled.
+> 
+> Ahhhhh, that's got it!  I double checked my config a million times to
+> make sure that I wasn't going crazy, but I must've missed that. With
+> that fixed, it's performing exactly how I thought it should.  Looking
+> great to me!
 
-I am modifying the perf internals to avoid the overhead due to a
-second copy, when using Intel's BTS (execution tracing). Mainly, I
-have a buffer that fills during the execution of the traced process,
-and I sometimes need to save its contents.
+Can I use your Reviewed-by?
 
-When my buffer should be emptied, I schedule a task to copy the buffer
-contents to disk later. This action should be performed:
-- Whenether the buffer is full (in a IRQ handler).
-- Whenether the traced task is scheduled out. This is when it blocks.
-
-The problem is, deferring work in a work queue with schedule_work()
-during a context switch (in schedule()) leads to a deadlock, because
-both want to hold the same lock (&(&pool->lock)->rlock).
-I also tried to pre-schedule the task, make it
-wait_event_interruptible(), and wake_up() it during the context
-switch, but there is also a deadlock due to already-held &p->pi_lock
-in try_to_wake_up().
-
-I am certainly doing something not the way it should be done. Is there
-a correct way to defer work during a context switch?
-
-Thanks!
-
-Adrien
+-- 
+ Kirill A. Shutemov
