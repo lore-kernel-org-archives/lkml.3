@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab3IZPOd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:14:33 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:60925 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730Ab3IZPOa (ORCPT
+	id S1751083Ab3IZPQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:16:58 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:33600 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab3IZPQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:14:30 -0400
-Message-ID: <52444F53.504@gmail.com>
-Date: Thu, 26 Sep 2013 09:14:27 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 26 Sep 2013 11:16:57 -0400
+Date: Thu, 26 Sep 2013 11:16:49 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Veaceslav Falico <vfalico@redhat.com>
+Cc: linux-pci@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] pci: remove redundant pci_dev_get/put() on
+ kobject (un)register
+Message-ID: <20130926151649.GD12301@hmsreliant.think-freely.org>
+References: <1380204675-18238-1-git-send-email-vfalico@redhat.com>
 MIME-Version: 1.0
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] tools/perf: remove non-existent entries in MANIFEST
-References: <1380205304-32224-1-git-send-email-artagnon@gmail.com>
-In-Reply-To: <1380205304-32224-1-git-send-email-artagnon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380204675-18238-1-git-send-email-vfalico@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/26/13 8:21 AM, Ramkumar Ramachandra wrote:
-> The MANIFEST file is used in the following Makefile targets:
->
->    $ make tar{,gz,bz2,xz}-src-pkg
->
-> to generate an archive that can be used outside the kernel tree. It
-> contains entries that are used for pathspec filtering 'git archive',
-> which ultimately generates the archive. Remove the stale
-> entries (non-existent paths) by running:
->
->    $ while read l; do file $l; done <tools/perf/MANIFEST | grep ERROR
->
-> in the toplevel kernel tree.
-
-Did you create a tarfile after this change, unpack it somewhere out of 
-three and then verify perf builds?
-
-David
+On Thu, Sep 26, 2013 at 04:11:13PM +0200, Veaceslav Falico wrote:
+> Currently we're pci_dev_get/put()-ing pci device on every kobject
+> creation/removal. It's useless per se - the kobject is part of the device
+> itself, so it should be removed when there are no users of the pdev, and is
+> not a user of it.
+> 
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Neil Horman <nhorman@tuxdriver.com>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> CC: linux-pci@vger.kernel.org
+> CC: linux-kernel@vger.kernel.org
+> Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
