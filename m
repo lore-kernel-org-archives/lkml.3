@@ -1,82 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082Ab3IZHdY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 03:33:24 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:44961 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901Ab3IZHdX (ORCPT
+	id S1756110Ab3IZHd2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 03:33:28 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:12053 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755901Ab3IZHd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 03:33:23 -0400
+	Thu, 26 Sep 2013 03:33:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 26 Sep 2013 00:33:26 -0700
+Message-ID: <5243E341.2070109@nvidia.com>
+Date: Thu, 26 Sep 2013 13:03:21 +0530
+From: Vishal Annapurve <vannapurve@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <5243E130.3040200@nod.at>
-References: <1380141125-11063-1-git-send-email-richard@nod.at>
- <5243E033.7010403@gmail.com> <5243E130.3040200@nod.at>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Thu, 26 Sep 2013 09:33:01 +0200
-Message-ID: <CACQ1gAgqfHXwLjxhy9RrzFWe93Vmnc0chOg6uRKyqb6sVVQKxw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] UBI: Fix error path in scan_pool()
-To: Richard Weinberger <richard@nod.at>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mmc: Reducing cache operations in the host driver
+Content-Type: multipart/mixed;
+	boundary="------------000509020609050902040907"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/9/26 Richard Weinberger <richard@nod.at>:
-> Am 26.09.2013 09:20, schrieb Richard Genoud:
->> On 25/09/2013 22:32, Richard Weinberger wrote:
->>> We have to set "ret", not "err" in case of an error.
->>>
->>> Reported-by: Richard Genoud <richard.genoud@gmail.com>
->>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>> ---
->>>  drivers/mtd/ubi/fastmap.c | 2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
->>> index f5aa4b0..9b42add 100644
->>> --- a/drivers/mtd/ubi/fastmap.c
->>> +++ b/drivers/mtd/ubi/fastmap.c
->>> @@ -428,7 +428,7 @@ static int scan_pool(struct ubi_device *ubi, struct ubi_attach_info *ai,
->>>              if (be32_to_cpu(ech->image_seq) != ubi->image_seq) {
->>>                      ubi_err("bad image seq: 0x%x, expected: 0x%x",
->>>                              be32_to_cpu(ech->image_seq), ubi->image_seq);
->>> -                    err = UBI_BAD_FASTMAP;
->>> +                    ret = UBI_BAD_FASTMAP;
->>>                      goto out;
->>>              }
->>>
->>>
->>
->> Tested-by: Richard Genoud <richard.genoud@gmail.com>
->>
->> It reveals another bug though.
->>
->> [    0.812500] UBI: default fastmap pool size: 95
->> [    0.820312] UBI: default fastmap WL pool size: 25
->> [    0.820312] UBI: attaching mtd2 to ubi0
->> [    0.914062] UBI error: scan_pool: bad image seq: 0x0, expected: 0x352a9728
->
-> This worries me more...
-> The fastmap is corrupted, now we have to find out why.
-> Broken driver? Powercut? IO errors?
-I guess this is caused by u-boot when it deletes the UBI fastmap
-internal volume.
-I'm replaying the whole scenario with debug to see when it happens.
+--------------000509020609050902040907
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
->
->> [    0.921875] UBI error: ubi_scan_fastmap: Attach by fastmap failed, doing a full scan!
->> [    0.929687] kmem_cache_destroy ubi_ainf_peb_slab: Slab cache still has objects
->
-> I see.
->
-> Thanks,
-> //richard
+Hi,
+
+I am attaching a patch which attempts to reduce the cache operations 
+while doing
+MMC transactions. I have tested it only on arm and the tests performed 
+with benchmarks
+like iozone/bonnie showed that the data integrity is maintained while 
+I/O bandwidth is increased.
+I have tested it with K3.1 and I believe it can apply to 3.12 also.
+
+My understanding from the important API's dealing with DMA memory is as 
+follows:
+1) dma_map_sg/ dma_sync_sg_for_device -> make sure that cache is flushed 
+after CPU is done
+updating the memory allocated for DMA and is called before giving 
+control of DMA memory to
+the device.
+2) dma_unmap_sg/dma_sync_sg_for_cpu -> Make sure that cache is 
+invalidated before
+reading from the DMA area which was used by the device to write the data.
+
+About the patch:
+Changes in sdhci_adma_table_pre make sure that we only flush if we have 
+updated DMA
+area after the call to dma_map_sg.
+
+Changes in sdhci_adma_table_post take care of following:
+1) Remove invalidation of cache for memory locations which are going to 
+be updated by CPU,
+as they are not being read.
+2) Perform the unmap of sg before CPU accesses DMA area as the changes 
+we did for unaligned
+cases might get lost due to invalidation afterwards. I was not able to 
+induce unaligned buffer
+accesses using normal filesystem/raw device operations. Maybe that's why 
+this issue was not
+discovered so far.
+3) Only drawback is sg->dma_address gets used after the call to 
+dma_unmap_sg.
+
+I would like to understand if this patch can cause any regressions for 
+any of the architectures
+or with the MMC functionality.
+
+Thanks & Regards,
+Vishal Annapurve
 
 
 
--- 
-for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
+--------------000509020609050902040907
+Content-Type: text/x-patch; name="arm_mmc_reduce_cache_ops.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="arm_mmc_reduce_cache_ops.patch"
+
+Author: Vishal Annapurve <vannapurve@nvidia.com>
+
+    MMC: Remove unnecessary cache operations
+    
+    1) This change removes unnecessary cache operations happening
+    after and before DMA setup in MMC host driver.
+    
+    Signed-off-by: Vishal Annapurve <vannapurve@nvidia.com>
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 6e43c84..d5cd0ae 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -434,6 +434,7 @@ static int sdhci_adma_table_pre(struct sdhci_host *host,
+ 	dma_addr_t addr;
+ 	dma_addr_t align_addr;
+ 	int len, offset;
++	int align_buf_modified_len = 0;
+ 
+ 	struct scatterlist *sg;
+ 	int i;
+@@ -498,6 +499,7 @@ static int sdhci_adma_table_pre(struct sdhci_host *host,
+ 
+ 			align += 4;
+ 			align_addr += 4;
++			align_buf_modified_len += 4;
+ 
+ 			desc += 8;
+ 
+@@ -538,9 +540,10 @@ static int sdhci_adma_table_pre(struct sdhci_host *host,
+ 	/*
+ 	 * Resync align buffer as we might have changed it.
+ 	 */
+-	if (data->flags & MMC_DATA_WRITE) {
++	if ((data->flags & MMC_DATA_WRITE) &&
++			align_buf_modified_len) {
+ 		dma_sync_single_for_device(mmc_dev(host->mmc),
+-			host->align_addr, 128 * 4, direction);
++			host->align_addr, align_buf_modified_len, direction);
+ 	}
+ 
+ 	host->adma_addr = dma_map_single(mmc_dev(host->mmc),
+@@ -583,9 +586,10 @@ static void sdhci_adma_table_post(struct sdhci_host *host,
+ 	dma_unmap_single(mmc_dev(host->mmc), host->align_addr,
+ 		128 * 4, direction);
+ 
++	dma_unmap_sg(mmc_dev(host->mmc), data->sg,
++		data->sg_len, direction);
++
+ 	if (data->flags & MMC_DATA_READ) {
+-		dma_sync_sg_for_cpu(mmc_dev(host->mmc), data->sg,
+-			data->sg_len, direction);
+ 
+ 		align = host->align_buffer;
+ 
+@@ -602,9 +606,6 @@ static void sdhci_adma_table_post(struct sdhci_host *host,
+ 			}
+ 		}
+ 	}
+-
+-	dma_unmap_sg(mmc_dev(host->mmc), data->sg,
+-		data->sg_len, direction);
+ }
+ 
+ static u8 sdhci_calc_timeout(struct sdhci_host *host, struct mmc_command *cmd)
+
+--------------000509020609050902040907--
