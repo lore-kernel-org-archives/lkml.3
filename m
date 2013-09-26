@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab3IZWYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 18:24:15 -0400
-Received: from unicorn.mansr.com ([81.2.72.234]:40936 "EHLO unicorn.mansr.com"
+	id S1754526Ab3IZW3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 18:29:49 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:44831 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754164Ab3IZWYL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 18:24:11 -0400
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Rob Landley <rob@landley.net>
-Cc: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@osdl.org>,
-        Trivial patch monkey <trivial@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: new binutils needed for arm in 3.12-rc1
-References: <1380154255.1974.92@driftwood>
-Date: Thu, 26 Sep 2013 23:24:07 +0100
-In-Reply-To: <1380154255.1974.92@driftwood> (Rob Landley's message of "Wed, 25
-	Sep 2013 19:10:55 -0500")
-Message-ID: <yw1xy56jusqg.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754332Ab3IZW3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 18:29:47 -0400
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH] i2c-designware: define i2c_dw_pci_runtime_idle only with runtime pm
+Date: Fri, 27 Sep 2013 00:24:03 +0200
+Message-Id: <1380234243-23787-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 1.8.4.rc3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob Landley <rob@landley.net> writes:
+Make sure i2c_dw_pci_runtime_idle() is defined only when actually used, when
+CONFIG_PM_RUNTIME is defined.
 
-> On 09/25/2013 10:52:44 AM, Måns Rullgård wrote:
->> Rob Landley <rob@landley.net> writes:
->> 
->> > On 09/24/2013 09:07:57 PM, Nicolas Pitre wrote:
->> >> I'd strongly suggest you make your binutils compatible with newer
->> >> instruction syntax instead of making the kernel more complex.
->> >
->> > Meaning I play whack-a-mole as this becomes permission to depend on
->> > endless new gnuisms just because they're there and nobody else is
->> > regression testing against them, not because they actually add  
->> > anything.
->> 
->> Since when is assembling the instructions correctly, as specified in
->> the arch ref, and not in some other random way a gnuism?
->
-> If you require current gnome and drop support for older versions (and  
-> implicitly all other desktops), people start writing stuff that depends  
-> on systemd. It doesn't matter if the feature you abandoned support for  
-> the past 10 years of everthing else for wasn't itself provided by  
-> systemd.
+This fixes the following compilation warning:
 
-Are you saying current binutils depends on gnome and/or systemd?
+ drivers/i2c/busses/i2c-designware-pcidrv.c:188:12: warning: â€˜i2c_dw_pci_runtime_idleâ€™ defined but not used [-Wunused-function]
 
+Signed-off-by: Vincent StehlÃ© <vincent.stehle@laposte.net>
+Cc: Wolfram Sang <wsa@the-dreams.de>
+---
+ drivers/i2c/busses/i2c-designware-pcidrv.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
+index f6ed06c..2b5d3a6 100644
+--- a/drivers/i2c/busses/i2c-designware-pcidrv.c
++++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
+@@ -185,6 +185,7 @@ static int i2c_dw_pci_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_RUNTIME
+ static int i2c_dw_pci_runtime_idle(struct device *dev)
+ {
+ 	int err = pm_schedule_suspend(dev, 500);
+@@ -194,6 +195,7 @@ static int i2c_dw_pci_runtime_idle(struct device *dev)
+ 		return 0;
+ 	return -EBUSY;
+ }
++#endif
+ 
+ static const struct dev_pm_ops i2c_dw_pm_ops = {
+ 	.resume         = i2c_dw_pci_resume,
 -- 
-Måns Rullgård
-mans@mansr.com
+1.8.4.rc3
+
