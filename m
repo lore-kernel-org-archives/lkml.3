@@ -1,38 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757061Ab3IZMjS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 08:39:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756938Ab3IZMjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 08:39:06 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1380175008-13090-1-git-send-email-olof@lixom.net>
-References: <1380175008-13090-1-git-send-email-olof@lixom.net> <20130920150927.16220.33305.stgit@warthog.procyon.org.uk>
-To: Olof Johansson <olof@lixom.net>
-Cc: dhowells@redhat.com, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Don't use debug-printk-only local variables
-Date: Thu, 26 Sep 2013 13:39:03 +0100
-Message-ID: <3222.1380199143@warthog.procyon.org.uk>
+	id S1757143Ab3IZMkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 08:40:43 -0400
+Received: from dkim1.fusionio.com ([66.114.96.53]:41765 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756691Ab3IZMkl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 08:40:41 -0400
+X-ASG-Debug-ID: 1380199240-0421b50f4e3cba0001-xx1T2L
+X-Barracuda-Envelope-From: JBacik@fusionio.com
+Date: Thu, 26 Sep 2013 08:40:39 -0400
+From: Josef Bacik <jbacik@fusionio.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Josef Bacik <jbacik@fusionio.com>, <linux-btrfs@vger.kernel.org>,
+        <walken@google.com>, <linux-kernel@vger.kernel.org>, <mingo@elte.hu>,
+        <peter@hurleysoftware.com>, <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] Btrfs: stop caching thread if extetn_commit_sem is
+ contended
+Message-ID: <20130926124039.GG18681@localhost.localdomain>
+X-ASG-Orig-Subj: Re: [PATCH 2/2] Btrfs: stop caching thread if extetn_commit_sem is
+ contended
+References: <1379605688-987-1-git-send-email-jbacik@fusionio.com>
+ <1379605688-987-2-git-send-email-jbacik@fusionio.com>
+ <20130920051247.GC1486@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130920051247.GC1486@gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
+X-Barracuda-Start-Time: 1380199240
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140941
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof Johansson <olof@lixom.net> wrote:
+On Fri, Sep 20, 2013 at 07:12:47AM +0200, Ingo Molnar wrote:
+> 
+> * Josef Bacik <jbacik@fusionio.com> wrote:
+> 
+> > We can starve out the transaction commit with a bunch of caching threads 
+> > all running at the same time.  This is because we will only drop the 
+> > extent_commit_sem if we need_resched(), which isn't likely to happen 
+> > since we will be reading a lot from the disk so have already 
+> > schedule()'ed plenty.  Alex observed that he could starve out a 
+> > transaction commit for up to a minute with 32 caching threads all 
+> > running at once.  This will allow us to drop the extent_commit_sem to 
+> > allow the transaction commit to swap the commit_root out and then all 
+> > the cachers will start back up.  Thanks,
+> > 
+> > Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+> > ---
+> >  fs/btrfs/extent-tree.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+> > index cfb3cf7..cc074c34 100644
+> > --- a/fs/btrfs/extent-tree.c
+> > +++ b/fs/btrfs/extent-tree.c
+> > @@ -442,7 +442,8 @@ next:
+> >  			if (ret)
+> >  				break;
+> >  
+> > -			if (need_resched()) {
+> > +			if (need_resched() ||
+> > +			    rwsem_is_contended(&fs_info->extent_commit_sem)) {
+> >  				caching_ctl->progress = last;
+> >  				btrfs_release_path(path);
+> >  				up_read(&fs_info->extent_commit_sem);
+> 
+> So, just to fill in what happens in this loop:
+> 
+> 				mutex_unlock(&caching_ctl->mutex);
+> 				cond_resched();
+> 				goto again;
+> 
+> where 'again:' takes caching_ctl->mutex and fs_info->extent_commit_sem 
+> again:
+> 
+> 	again:
+> 	        mutex_lock(&caching_ctl->mutex);
+> 		/* need to make sure the commit_root doesn't disappear */
+> 		down_read(&fs_info->extent_commit_sem);
+> 
+> So, if I'm reading the code correct, there can be a fair amount of 
+> concurrency here: there may be multiple 'caching kthreads' per filesystem 
+> active, while there's one fs_info->extent_commit_sem per filesystem 
+> AFAICS.
+> 
+> So, what happens if there are a lot of CPUs all busy holding the 
+> ->extent_commit_sem rwsem read-locked and a writer arrives? They'd all 
+> rush to try to release the fs_info->extent_commit_sem, and they'd block in 
+> the down_read() because there's a writer waiting.
+> 
+> So there's a guarantee of forward progress. This should answer akpm's 
+> concern I think.
+> 
+> If this analysis is correct then:
+> 
+>   Acked-by: Ingo Molnar <mingo@kernel.org>
+> 
 
-> -		struct nfs_inode *nfsi = NFS_I(page->mapping->host);
->  		struct fscache_cookie *cookie = nfs_i_fscache(page->mapping->host);
->  
->  		BUG_ON(!cookie);
->  		dfprintk(FSCACHE, "NFS: fscache releasepage (0x%p/0x%p/0x%p)\n",
-> -			 cookie, page, nfsi);
-> +			 cookie, page, NFS_I(page->mapping->host));
+Yup this is correct, thank you, I'll add your ack'ed by to the next iteration.
 
-This is really the wrong fix.  The null dfprintk() should use no_printk().
-
-David
+Josef
