@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab3IZGuZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 02:50:25 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:56119 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab3IZGuX (ORCPT
+	id S1754779Ab3IZGxs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 02:53:48 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:44801 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab3IZGxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 02:50:23 -0400
+	Thu, 26 Sep 2013 02:53:47 -0400
+Date: Thu, 26 Sep 2013 08:53:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v6 6/6] rwsem: do optimistic spinning for writer lock
+ acquisition
+Message-ID: <20130926065335.GC19090@gmail.com>
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+ <1380147051.3467.68.camel@schen9-DESK>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpokmdk2xJ6OFz68Oen4YRqC5MptSn7tGmH+nZrn9hoLmbA@mail.gmail.com>
-References: <cover.1379779777.git.viresh.kumar@linaro.org>
-	<564c8b1f073dc396b54866a2220b09b7869289f4.1379779777.git.viresh.kumar@linaro.org>
-	<CAMbhsRQRGGpShFiTBP7OZ8txhKG_i-1_s=AAGPQx+JzTkW=0Lg@mail.gmail.com>
-	<CAKohpokmdk2xJ6OFz68Oen4YRqC5MptSn7tGmH+nZrn9hoLmbA@mail.gmail.com>
-Date: Thu, 26 Sep 2013 01:50:22 -0500
-Message-ID: <CAMbhsRS4DWK3L_Ao8iAO51fFhpMr1QPGkBRsgpmUL3DY04R=vg@mail.gmail.com>
-Subject: Re: [PATCH 14/21] cpuidle: coupled: don't compare cpu masks unnecessarily
-From: Colin Cross <ccross@google.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380147051.3467.68.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 1:36 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 26 September 2013 05:55, Colin Cross <ccross@google.com> wrote:
->> I don't agree with this.  This patch is a tiny optimization in code
->> that is rarely called, and it moves a final sanity check somewhere
->> that it might get missed if the code were later refactored.
->
-> This is what we are doing for the first cpu of coupled-cpus:
-> if (WARN_ON(!cpumask_equal(&dev->coupled_cpus, &dev->coupled_cpus)))
->     coupled->prevent++;
->
-> i.e. comparing a variable to itself :)
->
-> And I believe my patch puts the sanity check at the right place (where
-> we are using coupled from existing CPUs.. And that is where it should
-> have been since the beginning)..
->
-> If people miss this during code re-factoring, then it would be even more
-> stupid on the part of Author and Reviewer.. And if it still gets missed
-> then this is not the only place where we need to worry about such stuff..
->
-> This is present everywhere in our code.. You can't really some part of
-> code to some place and leave the other as-is.. The change is supposed
-> to be more logical and so funny mistakes must be caught during reviews.
 
-It's fine where it is.  Once dev and coupled are both known,
-regardless of how they were found, it performs a final sanity check
-that nothing went wrong.  Moving into a specific branch of the finding
-code defeats the purpose.  Yes, it performs a useless check on the
-first cpu, but it keeps the code readable and maintainable, so it
-stays where it is.  NAK.
+* Tim Chen <tim.c.chen@linux.intel.com> wrote:
+
+> We want to add optimistic spinning to rwsems because
+> the writer rwsem does not perform as well as mutexes. Tim noticed that
+> for exim (mail server) workloads, when reverting commit 4fc3f1d6 and
+> Davidlohr noticed it when converting the i_mmap_mutex to a rwsem in some
+> aim7 workloads. We've noticed that the biggest difference
+> is when we fail to acquire a mutex in the fastpath, optimistic spinning
+> comes in to play and we can avoid a large amount of unnecessary sleeping
+> and overhead of moving tasks in and out of wait queue.
+> 
+> Allowing optimistic spinning before putting the writer on the wait queue
+> reduces wait queue contention and provided greater chance for the rwsem
+> to get acquired. With these changes, rwsem is on par with mutex.
+> 
+> Reviewed-by: Ingo Molnar <mingo@elte.hu>
+> Reviewed-by: Peter Zijlstra <peterz@infradead.org>
+> Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  include/linux/rwsem.h |    6 +-
+>  kernel/rwsem.c        |   19 +++++-
+>  lib/rwsem.c           |  203 ++++++++++++++++++++++++++++++++++++++++++++-----
+>  3 files changed, 207 insertions(+), 21 deletions(-)
+> 
+> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+> index 0616ffe..ef5a83a 100644
+> --- a/include/linux/rwsem.h
+> +++ b/include/linux/rwsem.h
+> @@ -26,6 +26,8 @@ struct rw_semaphore {
+>  	long			count;
+>  	raw_spinlock_t		wait_lock;
+>  	struct list_head	wait_list;
+> +	struct task_struct	*owner; /* write owner */
+> +	void			*spin_mlock;
+
+> +#define MLOCK(rwsem)    ((struct mcs_spin_node **)&((rwsem)->spin_mlock))
+
+> +		mcs_spin_lock(MLOCK(sem), &node);
+
+> +			mcs_spin_unlock(MLOCK(sem), &node);
+
+> +			mcs_spin_unlock(MLOCK(sem), &node);
+
+> +		mcs_spin_unlock(MLOCK(sem), &node);
+
+That forced type casting is ugly and fragile.
+
+To avoid having to include mcslock.h into rwsem.h just add a forward 
+struct declaration, before the struct rw_semaphore definition:
+
+struct mcs_spin_node;
+
+Then define spin_mlock with the right type:
+
+	struct mcs_spin_node		*spin_mlock;
+
+I'd also suggest renaming 'spin_mlock', to reduce unnecessary variants. If 
+the lock type name is 'struct mcs_spin_node' then 'mcs_lock' would be a 
+perfect field name, right?
+
+While at it, renaming mcs_spin_node to mcs_spinlock might be wise as well, 
+and the include file would be named mcs_spinlock.h.
+
+Thanks,
+
+	Ingo
