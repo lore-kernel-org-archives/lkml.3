@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab3IZOhO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 10:37:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28994 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752072Ab3IZOhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 10:37:10 -0400
-Date: Thu, 26 Sep 2013 16:39:02 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	id S1752393Ab3IZOj4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 10:39:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44260 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750803Ab3IZOjz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 10:39:55 -0400
+Date: Thu, 26 Sep 2013 16:39:42 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Olof Johansson <olof@lixom.net>, Kevin Hilman <khilman@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20130926143901.GE16774@dhcp-26-207.brq.redhat.com>
-References: <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
- <20130918142231.GA21650@mtj.dyndns.org>
- <20130918165045.GB2353@dhcp-26-207.brq.redhat.com>
- <20130920082458.GA10507@dhcp-26-207.brq.redhat.com>
- <20130920122736.GD7630@mtj.dyndns.org>
- <20130925180220.GB26273@google.com>
- <20130925205804.GA21737@dhcp-26-207.brq.redhat.com>
- <20130925210016.GA8926@htj.dyndns.org>
- <20130926074646.GA16774@dhcp-26-207.brq.redhat.com>
- <20130926131147.GA31249@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926131147.GA31249@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/5] Allwinner SoCs High Speed Timer support
+Message-ID: <20130926163942.675266e5@skate>
+In-Reply-To: <20130925195012.GI2954@lukather>
+References: <1380117790-19390-1-git-send-email-maxime.ripard@free-electrons.com>
+	<87zjr04vnh.fsf@linaro.org>
+	<CAOesGMhTZS1MdHW9cL4s_X8jUXHS3VkNZupCfX4ZGroL6k4gEw@mail.gmail.com>
+	<20130925195012.GI2954@lukather>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 09:11:47AM -0400, Tejun Heo wrote:
-> > Because otherwise we will re-introduce a problem described by Michael:
-> > "We have a small number of MSIs available, limited by hardware &
-> > firmware, if we don't impose a quota then the first device that probes
-> > will get most/all of the MSIs and other devices miss out."
-> 
-> Still not following.  Why wouldn't just letting the drivers request
-> the optimal number they want and falling back to single interrupt mode
-> work?  ie. why can't we just have an all or nothing interface?
+Dear Maxime Ripard,
 
-I can imagine a scenario where the first device probes in, requests its
-optimal number, acquires that number and exhausts MSIs in pSeries firmware.
-The next few devices possibly end up with single MSI, since no MSIs left
-to satisfy their optimal numbers. If one of those single-MSI'ed devices
-happened to be a high-performance HBA hitting a degraded performance that
-alone would force (IBM) to introduce the quotas. Now, if the same/another
-device happened does not support the legacy interrupt mode and no MSI
-resources have left in the platform firmware at all...
+On Wed, 25 Sep 2013 22:50:12 +0300, Maxime Ripard wrote:
 
-> tejun
+> For all we know, so far, allwinner has released, by family:
+>   - sun3i (ARM926)
+>     * F20 (not supported)
+>   - sun4i (Cortex A8)
+>     * A10
+>   - sun5i (Cortex A8)
+>     * A10s
+>     * A13
+>   - sun6i (4 * Cortex A7)
+>     * A31
+>     * A31s (not supported)
+>   - sun7i (2 * Cortex A7)
+>     * A20
+>     * A23? (that was just announced)
 
+A small update to Documentation/arm/sunxi/README would be nice :)
+
+Thomas
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Thomas Petazzoni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
