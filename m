@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab3IZVZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 17:25:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50335 "EHLO mx1.redhat.com"
+	id S1754410Ab3IZV15 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 17:27:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1966 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab3IZVZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 17:25:09 -0400
-Message-ID: <5244A5E7.90808@redhat.com>
-Date: Thu, 26 Sep 2013 17:23:51 -0400
+	id S1753886Ab3IZV1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 17:27:52 -0400
+Message-ID: <5244A68F.906@redhat.com>
+Date: Thu, 26 Sep 2013 17:26:39 -0400
 From: Ric Wheeler <rwheeler@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: Zach Brown <zab@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>,
+To: Zach Brown <zab@redhat.com>
+CC: Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
         Anna Schumaker <schumaker.anna@gmail.com>,
         Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
@@ -23,41 +24,67 @@ CC: Zach Brown <zab@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>,
         Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
         Eric Wong <normalperson@yhbt.net>
 Subject: Re: [RFC] extending splice for copy offloading
-References: <1378919210-10372-1-git-send-email-zab@redhat.com> <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com> <20130925183828.GA30372@lenny.home.zabbo.net> <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com> <20130925190620.GB30372@lenny.home.zabbo.net> <20130925195526.GA18971@fieldses.org> <20130925210742.GG30372@lenny.home.zabbo.net> <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com> <20130926153359.GE704@fieldses.org> <CAJfpegsUchb0eX+Hi3rN5Ypje3Y-dgo=pxgM1Y3BQbHVp=1hSw@mail.gmail.com> <20130926190611.GP30372@lenny.home.zabbo.net> <CAJfpegvvWhs+jv2J9kOQrB31PEO3kyn_sLm_e2w9YKp=y6EDhA@mail.gmail.com>
-In-Reply-To: <CAJfpegvvWhs+jv2J9kOQrB31PEO3kyn_sLm_e2w9YKp=y6EDhA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+References: <1378919210-10372-1-git-send-email-zab@redhat.com> <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com> <20130925183828.GA30372@lenny.home.zabbo.net> <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com> <20130925190620.GB30372@lenny.home.zabbo.net> <20130925195526.GA18971@fieldses.org> <20130925210742.GG30372@lenny.home.zabbo.net> <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com> <20130926185508.GO30372@lenny.home.zabbo.net>
+In-Reply-To: <20130926185508.GO30372@lenny.home.zabbo.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 03:53 PM, Miklos Szeredi wrote:
-> On Thu, Sep 26, 2013 at 9:06 PM, Zach Brown <zab@redhat.com> wrote:
+On 09/26/2013 02:55 PM, Zach Brown wrote:
+> On Thu, Sep 26, 2013 at 10:58:05AM +0200, Miklos Szeredi wrote:
+>> On Wed, Sep 25, 2013 at 11:07 PM, Zach Brown <zab@redhat.com> wrote:
+>>>> A client-side copy will be slower, but I guess it does have the
+>>>> advantage that the application can track progress to some degree, and
+>>>> abort it fairly quickly without leaving the file in a totally undefined
+>>>> state--and both might be useful if the copy's not a simple constant-time
+>>>> operation.
+>>> I suppose, but can't the app achieve a nice middle ground by copying the
+>>> file in smaller syscalls?  Avoid bulk data motion back to the client,
+>>> but still get notification every, I dunno, few hundred meg?
+>> Yes.  And if "cp"  could just be switched from a read+write syscall
+>> pair to a single splice syscall using the same buffer size.  And then
+>> the user would only notice that things got faster in case of server
+>> side copy.  No problems with long blocking times (at least not much
+>> worse than it was).
+> Hmm, yes, that would be a nice outcome.
 >
->>> But I'm not sure it's worth the effort; 99% of the use of this
->>> interface will be copying whole files.  And for that perhaps we need a
->>> different API, one which has been discussed some time ago:
->>> asynchronous copyfile() returns immediately with a pollable event
->>> descriptor indicating copy progress, and some way to cancel the copy.
->>> And that can internally rely on ->direct_splice(), with appropriate
->>> algorithms for determine the optimal  chunk size.
->> And perhaps we don't.  Perhaps we can provide this much simpler
->> data-plane interface that works well enough for most everyone and can
->> avoid going down the async rat hole, yet again.
-> I think either buffering or async is needed to get good perforrmace
-> without too much complexity in the app (which is not good).  Buffering
-> works quite well for regular I/O, so maybe its the way to go here as
-> well.
+>> However "cp" doesn't do reflinking by default, it has a switch for
+>> that.  If we just want "cp" and the like to use splice without fearing
+>> side effects then by default we should try to be as close to
+>> read+write behavior as possible.  No?
+> I guess?  I don't find requiring --reflink hugely compelling.  But there
+> it is.
 >
-> Thanks,
-> Miklos
+>> That's what I'm really
+>> worrying about when you want to wire up splice to reflink by default.
+>> I do think there should be a flag for that.  And if on the block level
+>> some magic happens, so be it.  It's not the fs deverloper's worry any
+>> more ;)
+> Sure.  So we'd have:
 >
+> - no flag default that forbids knowingly copying with shared references
+>    so that it will be used by default by people who feel strongly about
+>    their assumptions about independent write durability.
+>
+> - a flag that allows shared references for people who would otherwise
+>    use the file system shared reference ioctls (ocfs2 reflink, btrfs
+>    clone) but would like it to also do server-side read/write copies
+>    over nfs without additional intervention.
+>
+> - a flag that requires shared references for callers who don't want
+>    giant copies to take forever if they aren't instant.  (The qemu guys
+>    asked for this at Plumbers.)
+>
+> I think I can live with that.
+>
+> - z
 
-Buffering  misses the whole point of the copy offload - the idea is *not* to 
-read or write the actual data in the most interesting cases which offload the 
-operation to a smart target device or file system.
+This last flag should not prevent a remote target device (NFS or SCSI array) 
+copy from working though since they often do reflink like operations inside of 
+the remote target device....
 
-Regards,
+ric
 
-Ric
 
