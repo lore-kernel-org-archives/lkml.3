@@ -1,59 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab3IZEbu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 00:31:50 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:54475 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751425Ab3IZEbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 00:31:49 -0400
-Message-ID: <5243B89A.6060802@interlog.com>
-Date: Thu, 26 Sep 2013 00:31:22 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: vaughan <vaughan.cao@oracle.com>, Vegard Nossum <vegard.nossum@oracle.com>
-CC: James Bottomley <JBottomley@Parallels.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] sg: fix memory leak
-References: <1380119219-13486-1-git-send-email-vegard.nossum@oracle.com> <5243967C.2010203@oracle.com>
-In-Reply-To: <5243967C.2010203@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752102Ab3IZEcX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 00:32:23 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:47533 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab3IZEcU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 00:32:20 -0400
+X-AuditID: cbfee68f-b7f1e6d000004e8d-89-5243b8d39f27
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Bjorn Helgaas'" <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <001a01ceaace$013ec980$03bc5c80$%han@samsung.com>
+In-reply-to: <001a01ceaace$013ec980$03bc5c80$%han@samsung.com>
+Subject: Re: [PATCH V3] PCI: exynos: add support for MSI
+Date: Thu, 26 Sep 2013 13:32:18 +0900
+Message-id: <001b01ceba71$62ca02c0$285e0840$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6qzgD9S8HY2ygfQryi1L0um5BFGQPot8ww
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t8zQ93LO5yDDDr3KFj8nXSM3WJJU4bF
+	y0OaFvOPnGO1uLzwEqtF74KrbBYXnvawWVzeNYfN4uy842wWM87vY7LYOPUXo0X7JWWLFU1b
+	GS1+7prHYvH0QROTRePRB6wWrU8eMDoIevz+NYnR48mmi4weO2fdZfdYsKnU4/vC+ewefVtW
+	MXo8/bGX2eP4je1MHp83yQVwRnHZpKTmZJalFunbJXBl/P2/m7Ggl7uiZ/cFtgbGVs4uRk4O
+	CQETie5b61khbDGJC/fWs3UxcnEICSxjlLje+psRpujR2xZ2EFtIYDqjxO1J8hBFvxglzp57
+	wwySYBNQk/jy5TBYkYiApsTsFVuYQIqYBe6xSPQfXsAK0W0rceL4BbAiTgE7iVM/J7GA2MIC
+	FhKtc78zgdgsAqoSEy4/BBvKC1T/oHM7K4QtKPFj8j2wemYBLYn1O48zQdjyEpvXvAWq5wC6
+	VF3i0V9diBuMJN6s38oMUSIise/FO0aQeyQEznBIbJ+4lw1il4DEt8mHWCB6ZSU2HWCGeFhS
+	4uCKGywTGCVmIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQiY73ixNzi0rx0veT83E2MkBTS
+	v4Px7gHrQ4zJQOsnMkuJJucDU1BeSbyhsZmRhamJqbGRuaUZacJK4rxqLdaBQgLpiSWp2amp
+	BalF8UWlOanFhxiZODilGhhTXbfJcnv2OLvtcdQKcwr/9ejP9iqx02f/PXVf7rewfH3p05oS
+	+4l3bCcv/rJSN2reBPuvWSdiLzhVRIQU5D7akcdZvGlmJ/ul8wnHfD2PCXO5lGW/CUzrk4yx
+	3HGme/l/i4b6iaKfNmnu0pB39RPNNm+pnOf05U5zYfCUh292Gl+cvdBuVagSS3FGoqEWc1Fx
+	IgCPjD5MNwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e+xoO7lHc5BBsv2Sln8nXSM3WJJU4bF
+	y0OaFvOPnGO1uLzwEqtF74KrbBYXnvawWVzeNYfN4uy842wWM87vY7LYOPUXo0X7JWWLFU1b
+	GS1+7prHYvH0QROTRePRB6wWrU8eMDoIevz+NYnR48mmi4weO2fdZfdYsKnU4/vC+ewefVtW
+	MXo8/bGX2eP4je1MHp83yQVwRjUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgr
+	KeQl5qbaKrn4BOi6ZeYAfaKkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxj
+	zPj7fzdjQS93Rc/uC2wNjK2cXYycHBICJhKP3rawQ9hiEhfurWcDsYUEpjNK3J4k38XIBWT/
+	YpQ4e+4NM0iCTUBN4suXw2ANIgKaErNXbGECKWIWuMci0X94AStEt63EieMXwIo4BewkTv2c
+	xAJiCwtYSLTO/c4EYrMIqEpMuPwQbCgvUP2Dzu2sELagxI/J98DqmQW0JNbvPM4EYctLbF7z
+	FqieA+hSdYlHf3UhbjCSeLN+KzNEiYjEvhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR1ILk
+	guKk9FxDveLE3OLSvHS95PzcTYzgBPVMagfjygaLQ4wCHIxKPLwXmJ2DhFgTy4orcw8xSnAw
+	K4nwfjMCCvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+MHnmlcQbGpuYGVkamVkYmZibkyas
+	JM57oNU6UEggPbEkNTs1tSC1CGYLEwenVAOjwtmji5zZIm7nOH55x+RSXmR3Ki+5bd0bga06
+	B+5O4lp/NmbLhROSFXP4Wp9P0zyeLBVW4PVPX8NRUZChZOu1Ry6PJev6FW4J55lsUnC6obZ0
+	kUvluw1zbmToX8xTTyu/e4pLL+lC7X/uvXIvfVM3pIj/XWxV5ZxY5xFye/+npjlyCmoz4uqV
+	WIozEg21mIuKEwF8ZdpMlAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-09-25 10:05 PM, vaughan wrote:
-> On 09/25/2013 10:26 PM, Vegard Nossum wrote:
->> Commit e32c9e6300e3af659cbfe45e90a1e7dcd3572ada introduced a memory
->> leak. Fix it.
->>
->> Cc: stable@vger.kernel.org
->> Cc: Vaughan Cao <vaughan.cao@oracle.com>
->> Cc: Douglas Gilbert <dgilbert@interlog.com>
->> Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
->> ---
->>   drivers/scsi/sg.c |    1 +
->>   1 file changed, 1 insertion(+)
->>
->> diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
->> index 5cbc4bb..a97143f 100644
->> --- a/drivers/scsi/sg.c
->> +++ b/drivers/scsi/sg.c
->> @@ -2060,6 +2060,7 @@ sg_add_sfp(Sg_device * sdp, int dev)
->>   	spin_lock_irqsave(&sdp->sfd_lock, iflags);
->>   	if (sdp->detached) {
->>   		spin_unlock_irqrestore(&sdp->sfd_lock, iflags);
->> +		kfree(sfp);
->>   		return ERR_PTR(-ENODEV);
->>   	}
->>   	list_add_tail(&sfp->sfd_siblings, &sdp->sfds);
-> You're right. It's a memory leak.
+On Friday, September 06, 2013 3:55 PM, Jingoo Han wrote:
+> 
+> This patch adds support for Message Signaled Interrupt in the
+> Exynos PCIe diver using Synopsys designware PCIe core IP.
+> 
+> Signed-off-by: Siva Reddy Kallam <siva.kallam@samsung.com>
+> Signed-off-by: Srikanth T Shivanand <ts.srikanth@samsung.com>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> Cc: Pratyush Anand <pratyush.anand@st.com>
+> Cc: Mohit KUMAR <Mohit.KUMAR@st.com>
 
-Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
+Hi Bjorn Helgaas,
 
+There is no comment for last 3 weeks.
+Would you merge this patch to your tree?
+Thank you.
 
-There also a memory leak at the second 'return NULL;'
-in dev_seq_start() .
+Best regards,
+Jingoo Han
+
+> ---
+> Changes since v2:
+> - fixed MAX_MSI_CTRLS because MAX_MSI_IRQS is 32 only
+> - used __get_free_pages() to allocate msi_data
+> - used one msi_data and msi_irq_in_use per one RC
+> - used irq_domain to represent the MSI controller
+> - removed msi-base irq number from device tree because this is not
+>   a hardware property.
+> 
+> Changes since v1:
+> - removed unnecessary exynos_pcie_clear_irq_level()
+> - updated the bindings documentation
+> - used new msi_chip infrastructure
+> - removed ARCH_SUPPORTS_MSI
+> - replaced #ifdef guards with IS_ENABLED(CONFIG_PCI_MSI)
+> 
+>  drivers/pci/host/pci-exynos.c      |   44 +++++++
+>  drivers/pci/host/pcie-designware.c |  240 ++++++++++++++++++++++++++++++++++++
+>  drivers/pci/host/pcie-designware.h |   14 +++
+>  3 files changed, 298 insertions(+)
 
