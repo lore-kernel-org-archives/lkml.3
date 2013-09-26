@@ -1,128 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab3IZMEb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 08:04:31 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:47547 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755712Ab3IZME2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 08:04:28 -0400
-Date: Thu, 26 Sep 2013 14:02:49 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Mike Dunn <mikedunn@newsguy.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-pwm@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>,
-        Marek Vasut <marex@denx.de>
-Subject: Re: [PATCH] pwm-backlight: add support for device tree gpio control
-Message-ID: <20130926120248.GB1680@ulmo>
-References: <1378236372-15711-1-git-send-email-mikedunn@newsguy.com>
- <20130910172130.GC22111@ulmo>
- <523056A6.5060000@newsguy.com>
- <524408BE.40402@ti.com>
+	id S1756912Ab3IZMFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 08:05:00 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1664 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756818Ab3IZME5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 08:04:57 -0400
+Message-ID: <524422E5.9080203@nod.at>
+Date: Thu, 26 Sep 2013 14:04:53 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tsOsTdHNUZQcU9Ye"
-Content-Disposition: inline
-In-Reply-To: <524408BE.40402@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: linux-arch@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        geert@linux-m68k.org, ralf@linux-mips.org, lethal@linux-sh.org,
+        Jeff Dike <jdike@addtoit.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+Subject: Re: [PATCH 1/8] um: Create defconfigs for i386 and x86_64
+References: <1377073172-3662-1-git-send-email-richard@nod.at> <1377073172-3662-2-git-send-email-richard@nod.at> <CALkWK0=W38JpZoGVkPYD4qd=+Pt1G7oYPEK_R=c8TAW6W=wxyg@mail.gmail.com> <52440DE0.1030807@nod.at> <CALkWK0nEy90VrWawTpYsLNJcnyRSizgArCa-qnzpuJQkyK6zHA@mail.gmail.com>
+In-Reply-To: <CALkWK0nEy90VrWawTpYsLNJcnyRSizgArCa-qnzpuJQkyK6zHA@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 26.09.2013 13:57, schrieb Ramkumar Ramachandra:
+> Richard Weinberger wrote:
+>>> $ file linux
+>>> linux: ELF 32-bit LSB  executable, Intel 80386, version 1 (SYSV),
+>>> dynamically linked (uses shared libs), for GNU/Linux 2.6.32, not
+>>> stripped
+>>> $ ./linux ubd0=busybox-rootfs
+>>> [...]
+>>> Kernel panic - not syncing: No init found.  Try passing init= option
+>>> to kernel. See Linux Documentation/init.txt for guidance.
+>>
+>> I don't know that rootfs but it looks like there is no init.
+> 
+> Ofcourse there's an init on the busybox-rootfs, and I'm able to boot
+> it with an x86_64 Linux. The reason for panic is incorrect: I think
+> (although not sure) a 32-bit rootfs userland will work.
 
---tsOsTdHNUZQcU9Ye
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+A 32Bit UML kernel can run 32Bit users, a 64Bit UML kernel can only
+run 64Bit userland. We have no 32Bit compat layer on x86_64.
+Patches are welcome.
 
-On Thu, Sep 26, 2013 at 01:13:18PM +0300, Tomi Valkeinen wrote:
-> On 11/09/13 14:40, Mike Dunn wrote:
-> > On 09/10/2013 10:21 AM, Thierry Reding wrote:
->=20
-> >> Do you have a real setup that actually needs multiple GPIOs? Usually
-> >> such a setup requires some kind of timing or other additional constrai=
-nt
-> >> which can't be represented by this simple binding.
-> >>
-> >> Looking at the Palm Treo code it seems like the reason why multiple
-> >> GPIOs are needed is because one is to enable the backlight, while the
-> >> other is in fact used to enable the LCD panel.=20
-> >=20
-> >=20
-> > There are actually four GPIOs involved!  (There is an embarrasingly hor=
-rible
-> > hack in arch/arm/mach-pxa/palmtreo.c that handles the others.)  One is =
-almost
-> > certainly simply backlight power.  The other three are probably LCD rel=
-ated.
->=20
-> When you say "power", do you mean the gpio enables a regulator to feed
-> power to the backlight? If so, wouldn't that be a regulator, not gpio,
-> from the bl driver's point of view?
->=20
-> Generally speaking, this same problem appears in many places, but for
-> some reason especially in display. I'm a bit hesitant in adding "free
-> form" gpio/regulator support for drivers, as, as Thierry pointed out,
-> there are often timing requirements, or sometimes the gpios are
-> inverted, or sometimes the gpio is, in fact, a reset gpio, where you'll
-> assert the gpio for a short moment only.
+>>> [1]    25526 abort (core dumped)  linux ubd0=busybox-rootfs
+>>>                                                            %
+>>>
+>>> Rubbish.
+>>
+>> UML core dumps at panic() by design.
+> 
+> On a related note, why does it screw up my terminal? I have to `reset`
+> to get a nice working terminal.
 
-I sent out another series a few days ago that somewhat obsoletes this
-patch. What it does is basically add a single enable GPIO that can be
-used to turn the backlight on and off. In a separate patch, support is
-added for a power regulator. The combination of both should be able to
-cover the majority of use-cases.
+I really don't know. That is not by design.
 
-That series doesn't handle any timing requirements, but again, for the
-majority of the setups supported by a power supply and enable GPIO the
-timing doesn't matter.
+>> Seriously, my plan is to get rid of SUBARCH, that's why I did not push your patches
+>> upstream and I've send the rid of SUBARCH patch series.
+>> It turned out that other archs depend on SUBARCH too therefore some more thinking is needed.
+>> Time passed, merge window closed, $dayjob needed some attention...
+> 
+> Don't let some grand plan stall reasonable patches that fix immediate problems.
+> 
+>> That said, your "arch/um: make it work with defconfig and x86_64" patch is also not perfect.
+>> "make defconfig ARCH=um SUBARCH=x86" will create x86_64 defconfig, which is wrong and breaks existing
+>> setups.
+> 
+> Wrong.
+> 
+>   $ make defconfig ARCH=um SUBARCH=i386
+>   *** Default configuration is based on 'i386_defconfig'
+>   #
+>   # configuration written to .config
+>   #
 
-> I haven't seen new versions for the power sequences framework (without
-> DT support), I think it could help us here a bit by simplifying how we
-> present the sequences inside the driver. But we still need multiple
-> drivers or the same driver supporting multiple devices.
+I wrote "SUBARCH=x86" *not* SUBARCH=i386.
 
-I'm not sure if power sequences will be very helpful here. There was an
-attempt to get those merged, but the patches were NAKed in the end. I'm
-not aware of any work currently being done on them.
+Again, if SUBARCH=x86 works too I'll happily merge it.
+But as of now it breaks existing setups.
 
-But as I said above, the combination of an enable GPIO and power supply
-should be enough to get a lot of use-cases supported.
-
-> And I also think that the model where we have just one driver for, say,
-> backlight may not be enough. There may be multiple hardware components,
-> that used together will generate the backlight. And each component
-> requires specific management.
-
-I'm not sure what other components you are talking about here. Can you
-elaborate?
-
-Thierry
-
---tsOsTdHNUZQcU9Ye
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSRCJoAAoJEN0jrNd/PrOhn90P/A/xij0rquswxJW82s/KNwss
-JntXJtI77Jwt6CXMBA8mBnDiJAySNurn81Kts71r6wxdyMtKu39LVNJ3QMGjV0VX
-xVqaYCR37J4S78qu6e9CfWLc4PJ+pmxowfWFq0yPg9+Ug9itCjaQ98FMDJWm9QVw
-e/0IdBatWv4ZWA7wihYczwMGBIFtJKf5iaDA1i2S2+CYvz5aaj4LYDEHGZSOijD5
-0c7IF5PY+Bi0/bbidsINIaBRwKj4bjDkYKW1Gi6bhQJ5SGhOIYjUvUvZahXqT2bk
-lw5PVgne7jB5FVtE3wZzeQV4yDs0E2b1V36jpARWtOSCPnf2TurGpMMJ7qROPReG
-Uu+CPr97Cd6inKswyjU7vGATLmBqabeBBjvJFyONFDQCLkt4CzNS/Gjge40y7Hw1
-Vc4hWLtCLNgvXX5lOfadsPEp7sn0Cx1AWTsfOUvO7qRPvW+tbp8cLmBj9RcRO7sx
-8fY35+ddvnB5rCkK7MmyfOYTgKGANrqZReL8yzU53zNLTkkkNsDYupdiumftykFD
-V3qX8FiA8W7oL/W0Hh5Sl9hV6HbhNDow6nfICY5jtIOrs3AbCMyuxlWrSrKNW/Vb
-vCqdrGiz1OFqyRBgA6x8PoFP6CMrBZAFbsOEB7lrNGS+/ITgww7bXAcDnYTSukSH
-6VroKRzGyaUcav0+DAOk
-=qidt
------END PGP SIGNATURE-----
-
---tsOsTdHNUZQcU9Ye--
+Thanks,
+//richard
