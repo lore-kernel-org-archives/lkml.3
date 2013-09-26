@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab3IZJrY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 05:47:24 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35434 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755429Ab3IZJrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 05:47:23 -0400
-Message-ID: <524402A6.1040709@ti.com>
-Date: Thu, 26 Sep 2013 12:47:18 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+	id S1756349Ab3IZJt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 05:49:57 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58696 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557Ab3IZJt4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 05:49:56 -0400
+Message-ID: <52440345.3040204@arm.com>
+Date: Thu, 26 Sep 2013 10:49:57 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] framebuffer: arkfb: Fix framebugger typo
-References: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>
-In-Reply-To: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="vV43fXx6PTKCKokkRKUdtmodHrBJMxDFj"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v6 RESEND 0/5] ARM/ARM64 architected timer updates
+References: <1379502306-12911-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <5242FC09.2050604@linaro.org> <52431B37.5000901@arm.com> <201309261143.55010.arnd@arndb.de>
+In-Reply-To: <201309261143.55010.arnd@arndb.de>
+X-OriginalArrivalTime: 26 Sep 2013 09:49:51.0971 (UTC) FILETIME=[BF233330:01CEBA9D]
+X-MC-Unique: 113092610495401301
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---vV43fXx6PTKCKokkRKUdtmodHrBJMxDFj
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 26/09/13 10:43, Arnd Bergmann wrote:
+> On Wednesday 25 September 2013, Sudeep KarkadaNagesha wrote:
+>> On 25/09/13 16:06, Daniel Lezcano wrote:
+>>> On 09/18/2013 01:05 PM, Sudeep KarkadaNagesha wrote:
+>>>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+>>>>
+>>>> Hi Olof/Kevin,
+>>>
+>>> Added Olof and Kevin in Cc.
+>>>
+>> Thanks Daniel, sorry I assumed mailing list alias(arm@kernel.org) was preferred way.
+>>
+> 
+> The alias is mainly for when you are sending a pull request or a patch to
+> be applied directly. For any review it makes more sense to Cc the ones you
+> want involved directly.
+> 
+Thanks Arnd for clarification. I came across the same info yesterday from one of
+the mails from Olof a while ago. I had a wrong assumption, sorry for that.
 
-On 20/09/13 04:53, Joe Perches wrote:
-> s/framebugger/framebuffer/
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/video/arkfb.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/video/arkfb.c b/drivers/video/arkfb.c
-> index ee0f1a1..b13f3f2 100644
-> --- a/drivers/video/arkfb.c
-> +++ b/drivers/video/arkfb.c
-> @@ -1048,7 +1048,7 @@ static int ark_pci_probe(struct pci_dev *dev, con=
-st struct pci_device_id *id)
-> =20
->  	rc =3D register_framebuffer(info);
->  	if (rc < 0) {
-> -		dev_err(info->device, "cannot register framebugger\n");
-> +		dev_err(info->device, "cannot register framebuffer\n");
->  		goto err_reg_fb;
->  	}
-> =20
->=20
-
-Thanks, queued for 3.13. Although I have to say I kinda like the sound
-of framebugger.
-
- Tom
+Regards,
+Sudeep
 
 
-
---vV43fXx6PTKCKokkRKUdtmodHrBJMxDFj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSRAKmAAoJEPo9qoy8lh71BnwQAIg40rlQKmSBnMn2UtL2+YRx
-t+tqE3jtfsd9ae1aWeJe18x5TIaoBnrIVbW38zGNrx7eQrBw1R0GxGRpiyR9rDOz
-TOgBr6jLpb4Js7wi/eAbbS414KhiEBI96MVR13YFok4CLE3OqZdclb5pbC0xWUBV
-kOw78+E++5F+iS+RneWeGPhYjwXjIwKtZMAW9i5hiPf9RUOmC1PuDnARkq9WRLtF
-6VTtXB1oxnZbcOQHpTXeIYuM1VjmP57M7vPMCyuEF1AC+I509n85yfBdslT2REkX
-tlc0MHj5sO9NrV8dL2veLdfKXLyhZ4AaFYIotdJCUV19grIktHcHq/X0TZEElI8i
-2yMKV+lLhVzboNABmWyoktZugP4Em2grncjWZe/UyOAArGA0T/CIReu7C0sG5KNc
-gs0zmuZyt52rAvIkdOePl6mpdv1jR9MucCbiSp0jGYlo1Kff9phte6hI02jOKa1g
-Om8okBh/X1vJPqCYdiNDRKIw0Amwrov0/BO85aiPV7+bzZ9NtHkJkYbCM1vQ7Scj
-pwShdeBZnfd+2so3tErPERXQtsQIYo0w1dLS9ErhV+RfBWwa4Qzb0AmBWjVQUKol
-XxtB9CZ+m+tMzhJ2V0UTEamt6jlO2NVEI8arAiD6JEYQmerfg6h0pzOTFoFOeZBm
-A20Q+s1LmcK6cGuY+kFP
-=QGYk
------END PGP SIGNATURE-----
-
---vV43fXx6PTKCKokkRKUdtmodHrBJMxDFj--
