@@ -1,74 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab3IZINa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 04:13:30 -0400
-Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:42326 "EHLO
-	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab3IZIN1 convert rfc822-to-8bit (ORCPT
+	id S1756105Ab3IZINs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 04:13:48 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:51066 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab3IZINo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 04:13:27 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: [PATCH] add exFAT driver
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
-Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-In-Reply-To: <524363AF.1040502@ahsoftware.de>
-Date: Thu, 26 Sep 2013 08:54:02 +0100
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D6D1A293-C56E-4C98-82D1-3EBF95062B6B@cam.ac.uk>
-References: <20130830124622.5f81b7d4@rechenknecht2k7> <20130830154205.GA1411@kroah.com> <20130925183632.08a0d073@rechenknecht2k7> <20130925172704.GB5258@kroah.com> <20130925183235.GA9659@srcf.ucam.org> <20130925184539.GA4208@kroah.com> <52433978.9050302@ahsoftware.de> <20130925202151.GA6149@kroah.com> <57387214-F138-4471-996E-3FB1ED28346C@cam.ac.uk> <20130925221006.GB32312@kroah.com> <524363AF.1040502@ahsoftware.de>
-To: Alexander Holler <holler@ahsoftware.de>
-X-Mailer: Apple Mail (2.1510)
+	Thu, 26 Sep 2013 04:13:44 -0400
+X-AuditID: cbfee68e-b7f756d000004512-bf-5243ecb66967
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Axel Lin'" <axel.lin@ingics.com>
+Cc: "'Mark Brown'" <broonie@kernel.org>,
+        "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>
+References: <003101ceba8c$88d6a840$9a83f8c0$%han@samsung.com>
+ <003c01ceba8d$79872c60$6c958520$%han@samsung.com>
+ <CAFRkauBTZQzSKgaNg781zsTU4u9V4rYATcWzC=BkJQy07sOBqA@mail.gmail.com>
+In-reply-to: <CAFRkauBTZQzSKgaNg781zsTU4u9V4rYATcWzC=BkJQy07sOBqA@mail.gmail.com>
+Subject: Re: [PATCH V3 12/14] regulator: tps6524x: use devm_regulator_register()
+Date: Thu, 26 Sep 2013 17:13:42 +0900
+Message-id: <004101ceba90$50592700$f10b7500$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac66j0RXU/Aj0chjTUeD+OaErYQDygAAIfMA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t8zfd1tb5yDDF5st7E4Mucrs8XUh0/Y
+	LC4vvMRq8e1KB5PF5V1z2CxO/ulldGDz2DnrLrtH288yj02rOtk87lzbw+bRt2UVo8fnTXIB
+	bFFcNimpOZllqUX6dglcGW+fnWAsWCVcsabhAVMDYxtvFyMnh4SAiUT37AWsELaYxIV769m6
+	GLk4hASWMUr0zzjHDFPU/PYKI0RiOqPE2S23wDqEBH4xSnTdBpvEJqAm8eXLYXYQW0RAReJN
+	/ysmkAZmgT2MEntmLmSG6N7BKPF87lqWLkYODk6BYIkfsxlBGoQFAiQuLZ4A1swioCrxZn8b
+	WAmvgK3EvD3pIGFeAUGJH5PvsYDYzAJaEut3HmeCsOUlNq95ywxSLiGgLvHory7ECUYS3w/t
+	Z4coEZHY9+Id2P0SAh/ZJTpnvWaFWCUg8W3yIRaIXlmJTQeg/pWUOLjiBssERolZSDbPQrJ5
+	FpLNs5CsWMDIsopRNLUguaA4Kb3ISK84Mbe4NC9dLzk/dxMjJHb7djDePGB9iDEZaP1EZinR
+	5Hxg7OeVxBsamxlZmJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1Oq
+	gbE1+sNbo52FjzPP559Jz9bd68r2VKtM5FTMCYfjs0Qi/eZL316RybiF/WN52bpJX/6wqGZM
+	m30hyjah+ViK9232N4qLVpulbUhY4f+kSI1rq2Kvl7z/B8mN2k7ek3Le131Or78+IfjdzqWu
+	7FfmyE44f2rTXpcotz+bVPM048TMQuon5PBse6/EUpyRaKjFXFScCAA8r/gl8wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLKsWRmVeSWpSXmKPExsVy+t9jQd1tb5yDDI52WFgcmfOV2WLqwyds
+	FpcXXmK1+Halg8ni8q45bBYn//QyOrB57Jx1l92j7WeZx6ZVnWwed67tYfPo27KK0ePzJrkA
+	tqgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoDOU
+	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBlvn51gLFglXLGm4QFTA2Mb
+	bxcjJ4eEgIlE89srjBC2mMSFe+vZuhi5OIQEpjNKnN1yixUkISTwi1Gi6zZYA5uAmsSXL4fZ
+	QWwRARWJN/2vmEAamAX2MErsmbmQGaJ7B6PE87lrWboYOTg4BYIlfswG2yAsECBxafEEsGYW
+	AVWJN/vbwEp4BWwl5u1JBwnzCghK/Jh8jwXEZhbQkli/8zgThC0vsXnNW2aQcgkBdYlHf3Uh
+	TjCS+H5oPztEiYjEvhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLS
+	vHS95PzcTYzgxPBMegfjqgaLQ4wCHIxKPLwXmJ2DhFgTy4orcw8xSnAwK4nw/ngFFOJNSays
+	Si3Kjy8qzUktPsSYDPTnRGYp0eR8YNLKK4k3NDYxM7I0MrMwMjE3J01YSZz3YKt1oJBAemJJ
+	anZqakFqEcwWJg5OqQbGfp247z5cXHbrPnt6ana+MOBn/v7HdL8S1wde7xQpf8FdDrk9b869
+	mX3TWPWzJ1+086euew/urn3qLngv34nVWm255KmZEyQsn1/O5Xk94fWbHkXv9U/NbqxfX7zv
+	wwRhgxe+yirZfE9FNihOerGuKuWO+FNO752GppLF0dFPHO7+Eq/6eH+/EktxRqKhFnNRcSIA
+	wHYIalADAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 25 Sep 2013, at 23:29, Alexander Holler <holler@ahsoftware.de> wrote:
-> Am 26.09.2013 00:10, schrieb Greg Kroah-Hartman:
->> Please stick to technical discussions about the code on the kernel
->> mailing lists.  Legal discussions can be left up to the lawyers, of
->> which we are not.
+On Thursday, September 26, 2013 5:06 PM, Axel Lin wrote:
+> 2013/9/26 Jingoo Han <jg1.han@samsung.com>:
+> > Use devm_regulator_register() to make cleanup paths simpler.
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > ---
+> >  drivers/regulator/tps6524x-regulator.c |    7 +++----
+> >  1 file changed, 3 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/drivers/regulator/tps6524x-regulator.c b/drivers/regulator/tps6524x-regulator.c
+> > index 8b9ee39..8fe67fb 100644
+> > --- a/drivers/regulator/tps6524x-regulator.c
+> > +++ b/drivers/regulator/tps6524x-regulator.c
+> > @@ -584,10 +584,8 @@ static int pmic_remove(struct spi_device *spi)
+> >
+> >         if (!hw)
+> >                 return 0;
+> > -       for (i = 0; i < N_REGULATORS; i++) {
+> > -               regulator_unregister(hw->rdev[i]);
+> > +       for (i = 0; i < N_REGULATORS; i++)
+> >                 hw->rdev[i] = NULL;
+> > -       }
+> >         return 0;
+> >  }
+> >
+> > @@ -631,7 +629,8 @@ static int pmic_probe(struct spi_device *spi)
+> >                 config.init_data = init_data;
+> >                 config.driver_data = hw;
+> >
+> > -               hw->rdev[i] = regulator_register(&hw->desc[i], &config);
+> > +               hw->rdev[i] = devm_regulator_register(dev, &hw->desc[i],
+> > +                                                     &config);
+> >                 if (IS_ERR(hw->rdev[i])) {
+> >                         ret = PTR_ERR(hw->rdev[i]);
+> >                         hw->rdev[i] = NULL;
 > 
-> Hmm, but I would like to know if someone has to fear getting owned by
-> Microsoft if he would use that driver.
+> I think you can simply return PTR_ERR(hw->rdev[i]) if devm_regulator_register()
+> fails.
+> You are using devm_regulator_register now, so don't need to call
+> pmic_remove() in probe() error path.
+> Then pmic_remove() and .remove = pmic_remove() can be removed as well.
 > 
-> Giving the rumours about Linux companies having to pay Microsoft and
-> giving the fact that all of those licencees seem to don't have to speak
-> about what Microsoft claims patents for and for what they have to pay, I
-> obviously think adding that driver to Linux and thus making exFAT more
-> general accepted is a very bad idea.
-> 
-> Of course, I'm not a lawyer too, but as a responsible Linux developer, I
-> should at least be able to warn other parities when they approach me and
-> want to use exFAT. Doing such without the maybe necessary license might
-> drive small companies into the ground because most of them are unable to
-> even think about having the money needed to talk with Microsoft lawyers
-> in front of a court.
 
+CC'ed Sachin Kamat,
 
-Exactly.  That is all I was trying to do.  Warn people/companies not to use the driver because they may get sued for using it.  As the below Microsoft exFAT licensing page says at the bottom:
+Hi Axel,
 
-<quote>
-Please note that open source or other publicly available implementations of exFAT do not include an IP license from Microsoft. For licensing information, please contact IPlicreq@microsoft.com.
-</quote>
+I really appreciate your comment.
 
-Above is from bottom of:
+Then, you mean the following.
+If I am wrong, please let me know. :-)
+Thank you.
 
-	http://www.microsoft.com/en-us/legal/intellectualproperty/IPLicensing/Programs/exFATFileSystem.aspx
+static int pmic_probe(struct spi_device *spi)
+{
+	......
+
+		hw->rdev[i] = devm_regulator_register(dev, &hw->desc[i],
+                                                      &config);
+		if (IS_ERR(hw->rdev[i]))
+			return PTR_ERR(hw->rdev[i]);
+	}
+
+        return 0;
+}
+
+static struct spi_driver pmic_driver = {
+        .probe          = pmic_probe,
+        .driver         = {
+                .name   = "tps6524x",
+                .owner  = THIS_MODULE,
+        },
+};
 
 Best regards,
-
-	Anton
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge
-J.J. Thomson Avenue, Cambridge, CB3 0RB, UK
+Jingoo Han
 
