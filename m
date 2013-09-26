@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353Ab3IZPXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 11:23:47 -0400
-Received: from mx11.netapp.com ([216.240.18.76]:26961 "EHLO mx11.netapp.com"
+	id S1752754Ab3IZPX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 11:23:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58874 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab3IZPXq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 11:23:46 -0400
+	id S1752449Ab3IZPXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 11:23:55 -0400
+X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,986,1371106800"; 
-   d="scan'208";a="53561587"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>,
-        David Howells <dhowells@redhat.com>
-CC: "olof@lixom.net" <olof@lixom.net>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC][PATCH 0/4] SunRPC/NFS: Use no_printk() in
-Thread-Topic: [RFC][PATCH 0/4] SunRPC/NFS: Use no_printk() in
-Thread-Index: AQHOuswXLcLQi0hNs0m4vvJDyI+VYpnYIvAg
-Date: Thu, 26 Sep 2013 15:23:45 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9467EB040@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20130926144502.29424.21633.stgit@warthog.procyon.org.uk>
- <20130926152125.GD704@fieldses.org>
-In-Reply-To: <20130926152125.GD704@fieldses.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="401428623"
+Message-ID: <52445174.70409@linux.intel.com>
+Date: Thu, 26 Sep 2013 08:23:32 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Andi Kleen <andi@firstfloor.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mgorman@suse.de,
+        dave@sr71.net, hannes@cmpxchg.org, tony.luck@intel.com,
+        matthew.garrett@nebula.com, riel@redhat.com,
+        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
+        gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
+        santosh.shilimkar@ti.com, kosaki.motohiro@gmail.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Results] [RFC PATCH v4 00/40] mm: Memory Power Management
+References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <52437128.7030402@linux.vnet.ibm.com> <20130925164057.6bbaf23bdc5057c42b2ab010@linux-foundation.org> <20130925234734.GK18242@two.firstfloor.org> <52438AA9.3020809@linux.intel.com> <20130925182129.a7db6a0fd2c7cc3b43fda92d@linux-foundation.org>
+In-Reply-To: <20130925182129.a7db6a0fd2c7cc3b43fda92d@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: J. Bruce Fields [mailto:bfields@fieldses.org]
-> Sent: Thursday, September 26, 2013 10:21 AM
-> To: David Howells
-> Cc: Myklebust, Trond; olof@lixom.net; linux-nfs@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [RFC][PATCH 0/4] SunRPC/NFS: Use no_printk() in
-> 
-> On Thu, Sep 26, 2013 at 03:45:02PM +0100, David Howells wrote:
-> >
-> >
-> > Here's a series of patches to make SunRPC/NFS use no_printk() to
-> > implement its null dfprintk() macro (ie. when RPC_DEBUG is disabled).
-> > This prevents 'unused variable' errors from occurring when a variable
-> > is set only for use in debugging statements and renders RPC/NFS_IFDEBUG
-> unnecessary.
-> 
-> Does this patch series fix any actual warnings?  Or does it just change the way
-> that we prevent the warnings?
-> 
+On 9/25/2013 6:21 PM, Andrew Morton wrote:
+> On Wed, 25 Sep 2013 18:15:21 -0700 Arjan van de Ven <arjan@linux.intel.com> wrote:
+>
+>> On 9/25/2013 4:47 PM, Andi Kleen wrote:
+>>>> Also, the changelogs don't appear to discuss one obvious downside: the
+>>>> latency incurred in bringing a bank out of one of the low-power states
+>>>> and back into full operation.  Please do discuss and quantify that to
+>>>> the best of your knowledge.
+>>>
+>>> On Sandy Bridge the memry wakeup overhead is really small. It's on by default
+>>> in most setups today.
+>>
+>> btw note that those kind of memory power savings are content-preserving,
+>> so likely a whole chunk of these patches is not actually needed on SNB
+>> (or anything else Intel sells or sold)
+>
+> (head spinning a bit).  Could you please expand on this rather a lot?
 
-Right. If this is just code churn, then let's drop it. Otherwise, please explain why it is a good idea.
+so there is two general ways to save power on memory
 
-Cheers,
-  Trond
+one way keeps the content of the memory there
+
+the other way loses the content of the memory.
+
+in the first type, there are degrees of power savings (each with their own costs), and the mechanism to enter/exit
+tends to be fully automatic, e.g. OS invisible. (and generally very very fast.. measured in low numbers of nanoseconds)
+
+in the later case the OS by nature has to get involved and actively free the content of the memory prior to
+setting the power level lower (and thus lose the content).
+
+
+on the machines Srivatsa has been measuring, only the first type exists... e.g. content is preserved.
+at which point, I am skeptical that it is worth spending a lot of CPU time (and thus power!) to move stuff around
+or free memory (e.g. reduce disk cache efficiency -> loses power as well).
+
+the patches posted seem to go to great lengths doing these kind of things.
+
+
+to get the power savings, my deep suspicion (based on some rudimentary experiments done internally to Intel
+earlier this year) is that it is more than enough to have "statistical" level of "binding", to get 95%+ of
+the max theoretical power savings.... basically what todays NUMA policy would do.
+
+
+
+>
 
