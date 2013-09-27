@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3I0QuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:50:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:21374 "EHLO mga11.intel.com"
+	id S1754008Ab3I0QuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:50:18 -0400
+Received: from mga14.intel.com ([143.182.124.37]:31639 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753910Ab3I0QuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:50:00 -0400
+	id S1753910Ab3I0QuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 12:50:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,994,1371106800"; 
-   d="scan'208";a="408168186"
+   d="scan'208";a="300200099"
 From: Sudeep Dutt <sudeep.dutt@intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Arnd Bergmann <arnd@arndb.de>, Joe Perches <joe@perches.com>,
@@ -23,9 +23,9 @@ Cc: Nikhil Rao <nikhil.rao@intel.com>,
         "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
         Sudeep Dutt <sudeep.dutt@intel.com>
-Subject: [PATCH char-misc-next 1/5] misc: mic: host driver sysfs cleanups.
-Date: Fri, 27 Sep 2013 09:49:31 -0700
-Message-Id: <33755f06da9d8f3f32c5be9fdcb2ee43958e54fc.1380289102.git.sudeep.dutt@intel.com>
+Subject: [PATCH char-misc-next 2/5] misc: mic: header file cleanups.
+Date: Fri, 27 Sep 2013 09:49:42 -0700
+Message-Id: <ac3062cba537458b0f317c9f9f4d0b8cf535c85d.1380289102.git.sudeep.dutt@intel.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1380289102.git.sudeep.dutt@intel.com>
 References: <cover.1380289102.git.sudeep.dutt@intel.com>
@@ -33,11 +33,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Use DEVICE_ATTR_RO/RW instead of DEVICE_ATTR
-+ Use ATTRIBUTE_GROUPS
+Dont use same name for header files in different folders.
 
 These changes were suggested by Greg Kroah-Hartman during the
-code review @ https://lkml.org/lkml/2013/9/6/13
+code review @ https://lkml.org/lkml/2013/9/6/18
 
 Reported-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
@@ -46,236 +45,210 @@ Signed-off-by: Nikhil Rao <nikhil.rao@intel.com>
 Signed-off-by: Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>
 Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
 ---
- drivers/misc/mic/host/mic_sysfs.c | 72 ++++++++++++++++-----------------------
- 1 file changed, 29 insertions(+), 43 deletions(-)
+ drivers/misc/mic/card/mic_debugfs.c                 | 2 +-
+ drivers/misc/mic/card/mic_device.c                  | 2 +-
+ drivers/misc/mic/card/mic_virtio.c                  | 2 +-
+ drivers/misc/mic/card/mic_x100.c                    | 2 +-
+ drivers/misc/mic/common/{mic_device.h => mic_dev.h} | 4 ++--
+ drivers/misc/mic/host/mic_boot.c                    | 2 +-
+ drivers/misc/mic/host/mic_debugfs.c                 | 2 +-
+ drivers/misc/mic/host/mic_fops.c                    | 2 +-
+ drivers/misc/mic/host/mic_intr.c                    | 2 +-
+ drivers/misc/mic/host/mic_main.c                    | 2 +-
+ drivers/misc/mic/host/mic_smpt.c                    | 2 +-
+ drivers/misc/mic/host/mic_sysfs.c                   | 2 +-
+ drivers/misc/mic/host/mic_virtio.c                  | 2 +-
+ drivers/misc/mic/host/mic_x100.c                    | 2 +-
+ 14 files changed, 15 insertions(+), 15 deletions(-)
+ rename drivers/misc/mic/common/{mic_device.h => mic_dev.h} (95%)
 
+diff --git a/drivers/misc/mic/card/mic_debugfs.c b/drivers/misc/mic/card/mic_debugfs.c
+index 95cf186..421b3d7 100644
+--- a/drivers/misc/mic/card/mic_debugfs.c
++++ b/drivers/misc/mic/card/mic_debugfs.c
+@@ -30,7 +30,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/device.h>
+ 
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
+ 
+ /* Debugfs parent dir */
+diff --git a/drivers/misc/mic/card/mic_device.c b/drivers/misc/mic/card/mic_device.c
+index 4125217..175d114 100644
+--- a/drivers/misc/mic/card/mic_device.c
++++ b/drivers/misc/mic/card/mic_device.c
+@@ -30,7 +30,7 @@
+ #include <linux/reboot.h>
+ 
+ #include <linux/mic_common.h>
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
+ #include "mic_virtio.h"
+ 
+diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
+index 38275c1..7420c33 100644
+--- a/drivers/misc/mic/card/mic_virtio.c
++++ b/drivers/misc/mic/card/mic_virtio.c
+@@ -40,7 +40,7 @@
+ #include <linux/slab.h>
+ #include <linux/virtio_config.h>
+ 
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_virtio.h"
+ 
+ #define VIRTIO_SUBCODE_64 0x0D00
+diff --git a/drivers/misc/mic/card/mic_x100.c b/drivers/misc/mic/card/mic_x100.c
+index 7cb3469..f491c91 100644
+--- a/drivers/misc/mic/card/mic_x100.c
++++ b/drivers/misc/mic/card/mic_x100.c
+@@ -28,7 +28,7 @@
+ #include <linux/pci.h>
+ #include <linux/platform_device.h>
+ 
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
+ #include "mic_x100.h"
+ 
+diff --git a/drivers/misc/mic/common/mic_device.h b/drivers/misc/mic/common/mic_dev.h
+similarity index 95%
+rename from drivers/misc/mic/common/mic_device.h
+rename to drivers/misc/mic/common/mic_dev.h
+index 01eb74f..92999c2 100644
+--- a/drivers/misc/mic/common/mic_device.h
++++ b/drivers/misc/mic/common/mic_dev.h
+@@ -18,8 +18,8 @@
+  * Intel MIC driver.
+  *
+  */
+-#ifndef __MIC_COMMON_DEVICE_H_
+-#define __MIC_COMMON_DEVICE_H_
++#ifndef __MIC_DEV_H__
++#define __MIC_DEV_H__
+ 
+ /**
+  * struct mic_mw - MIC memory window
+diff --git a/drivers/misc/mic/host/mic_boot.c b/drivers/misc/mic/host/mic_boot.c
+index fd9ff6d..60c54d5 100644
+--- a/drivers/misc/mic/host/mic_boot.c
++++ b/drivers/misc/mic/host/mic_boot.c
+@@ -22,7 +22,7 @@
+ #include <linux/firmware.h>
+ 
+ #include <linux/mic_common.h>
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
+ #include "mic_smpt.h"
+ #include "mic_virtio.h"
+diff --git a/drivers/misc/mic/host/mic_debugfs.c b/drivers/misc/mic/host/mic_debugfs.c
+index e22fb7b..98a61b4 100644
+--- a/drivers/misc/mic/host/mic_debugfs.c
++++ b/drivers/misc/mic/host/mic_debugfs.c
+@@ -23,7 +23,7 @@
+ #include <linux/seq_file.h>
+ 
+ #include <linux/mic_common.h>
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
+ #include "mic_smpt.h"
+ #include "mic_virtio.h"
+diff --git a/drivers/misc/mic/host/mic_fops.c b/drivers/misc/mic/host/mic_fops.c
+index 661469a..e699c80 100644
+--- a/drivers/misc/mic/host/mic_fops.c
++++ b/drivers/misc/mic/host/mic_fops.c
+@@ -21,7 +21,7 @@
+ #include <linux/poll.h>
+ 
+ #include <linux/mic_common.h>
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
+ #include "mic_fops.h"
+ #include "mic_virtio.h"
+diff --git a/drivers/misc/mic/host/mic_intr.c b/drivers/misc/mic/host/mic_intr.c
+index cdae314..71a7521 100644
+--- a/drivers/misc/mic/host/mic_intr.c
++++ b/drivers/misc/mic/host/mic_intr.c
+@@ -21,7 +21,7 @@
+ #include <linux/pci.h>
+ #include <linux/interrupt.h>
+ 
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
+ 
+ /*
+diff --git a/drivers/misc/mic/host/mic_main.c b/drivers/misc/mic/host/mic_main.c
+index a8965d4..ca06aa9 100644
+--- a/drivers/misc/mic/host/mic_main.c
++++ b/drivers/misc/mic/host/mic_main.c
+@@ -28,7 +28,7 @@
+ #include <linux/poll.h>
+ 
+ #include <linux/mic_common.h>
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
+ #include "mic_x100.h"
+ #include "mic_smpt.h"
+diff --git a/drivers/misc/mic/host/mic_smpt.c b/drivers/misc/mic/host/mic_smpt.c
+index a346207..003d02b 100644
+--- a/drivers/misc/mic/host/mic_smpt.c
++++ b/drivers/misc/mic/host/mic_smpt.c
+@@ -20,7 +20,7 @@
+  */
+ #include <linux/pci.h>
+ 
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
+ #include "mic_smpt.h"
+ 
 diff --git a/drivers/misc/mic/host/mic_sysfs.c b/drivers/misc/mic/host/mic_sysfs.c
-index aaf8499..bebbae2 100644
+index bebbae2..029a4f3 100644
 --- a/drivers/misc/mic/host/mic_sysfs.c
 +++ b/drivers/misc/mic/host/mic_sysfs.c
-@@ -65,7 +65,7 @@ void mic_set_state(struct mic_device *mdev, u8 state)
- }
+@@ -21,7 +21,7 @@
+ #include <linux/pci.h>
  
- static ssize_t
--mic_show_family(struct device *dev, struct device_attribute *attr, char *buf)
-+family_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
- 	static const char x100[] = "x100";
- 	static const char unknown[] = "Unknown";
-@@ -85,10 +85,10 @@ mic_show_family(struct device *dev, struct device_attribute *attr, char *buf)
- 	}
- 	return scnprintf(buf, PAGE_SIZE, "%s\n", card);
- }
--static DEVICE_ATTR(family, S_IRUGO, mic_show_family, NULL);
-+static DEVICE_ATTR_RO(family);
+ #include <linux/mic_common.h>
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
  
- static ssize_t
--mic_show_stepping(struct device *dev, struct device_attribute *attr, char *buf)
-+stepping_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
- 	char *string = "??";
-@@ -114,10 +114,10 @@ mic_show_stepping(struct device *dev, struct device_attribute *attr, char *buf)
- 	}
- 	return scnprintf(buf, PAGE_SIZE, "%s\n", string);
- }
--static DEVICE_ATTR(stepping, S_IRUGO, mic_show_stepping, NULL);
-+static DEVICE_ATTR_RO(stepping);
+ /*
+diff --git a/drivers/misc/mic/host/mic_virtio.c b/drivers/misc/mic/host/mic_virtio.c
+index be2a1f0..9e0456f 100644
+--- a/drivers/misc/mic/host/mic_virtio.c
++++ b/drivers/misc/mic/host/mic_virtio.c
+@@ -23,7 +23,7 @@
+ #include <linux/uaccess.h>
  
- static ssize_t
--mic_show_state(struct device *dev, struct device_attribute *attr, char *buf)
-+state_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
+ #include <linux/mic_common.h>
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
+ #include "mic_smpt.h"
+ #include "mic_virtio.h"
+diff --git a/drivers/misc/mic/host/mic_x100.c b/drivers/misc/mic/host/mic_x100.c
+index a12ae5c..3a0d660 100644
+--- a/drivers/misc/mic/host/mic_x100.c
++++ b/drivers/misc/mic/host/mic_x100.c
+@@ -24,7 +24,7 @@
+ #include <linux/firmware.h>
+ #include <linux/delay.h>
  
-@@ -129,7 +129,7 @@ mic_show_state(struct device *dev, struct device_attribute *attr, char *buf)
- }
- 
- static ssize_t
--mic_store_state(struct device *dev, struct device_attribute *attr,
-+state_store(struct device *dev, struct device_attribute *attr,
- 	const char *buf, size_t count)
- {
- 	int rc = 0;
-@@ -160,9 +160,9 @@ mic_store_state(struct device *dev, struct device_attribute *attr,
- done:
- 	return count;
- }
--static DEVICE_ATTR(state, S_IRUGO|S_IWUSR, mic_show_state, mic_store_state);
-+static DEVICE_ATTR_RW(state);
- 
--static ssize_t mic_show_shutdown_status(struct device *dev,
-+static ssize_t shutdown_status_show(struct device *dev,
- 	struct device_attribute *attr, char *buf)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
-@@ -173,11 +173,10 @@ static ssize_t mic_show_shutdown_status(struct device *dev,
- 	return scnprintf(buf, PAGE_SIZE, "%s\n",
- 		mic_shutdown_status_string[mdev->shutdown_status]);
- }
--static DEVICE_ATTR(shutdown_status, S_IRUGO|S_IWUSR,
--	mic_show_shutdown_status, NULL);
-+static DEVICE_ATTR_RO(shutdown_status);
- 
- static ssize_t
--mic_show_cmdline(struct device *dev, struct device_attribute *attr, char *buf)
-+cmdline_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
- 	char *cmdline;
-@@ -193,7 +192,7 @@ mic_show_cmdline(struct device *dev, struct device_attribute *attr, char *buf)
- }
- 
- static ssize_t
--mic_store_cmdline(struct device *dev, struct device_attribute *attr,
-+cmdline_store(struct device *dev, struct device_attribute *attr,
- 	const char *buf, size_t count)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
-@@ -220,11 +219,10 @@ unlock:
- 	mutex_unlock(&mdev->mic_mutex);
- 	return count;
- }
--static DEVICE_ATTR(cmdline, S_IRUGO | S_IWUSR,
--	mic_show_cmdline, mic_store_cmdline);
-+static DEVICE_ATTR_RW(cmdline);
- 
- static ssize_t
--mic_show_firmware(struct device *dev, struct device_attribute *attr, char *buf)
-+firmware_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
- 	char *firmware;
-@@ -240,7 +238,7 @@ mic_show_firmware(struct device *dev, struct device_attribute *attr, char *buf)
- }
- 
- static ssize_t
--mic_store_firmware(struct device *dev, struct device_attribute *attr,
-+firmware_store(struct device *dev, struct device_attribute *attr,
- 	const char *buf, size_t count)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
-@@ -266,11 +264,10 @@ unlock:
- 	mutex_unlock(&mdev->mic_mutex);
- 	return count;
- }
--static DEVICE_ATTR(firmware, S_IRUGO | S_IWUSR,
--	mic_show_firmware, mic_store_firmware);
-+static DEVICE_ATTR_RW(firmware);
- 
- static ssize_t
--mic_show_ramdisk(struct device *dev, struct device_attribute *attr, char *buf)
-+ramdisk_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
- 	char *ramdisk;
-@@ -286,7 +283,7 @@ mic_show_ramdisk(struct device *dev, struct device_attribute *attr, char *buf)
- }
- 
- static ssize_t
--mic_store_ramdisk(struct device *dev, struct device_attribute *attr,
-+ramdisk_store(struct device *dev, struct device_attribute *attr,
- 	const char *buf, size_t count)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
-@@ -313,11 +310,10 @@ unlock:
- 	mutex_unlock(&mdev->mic_mutex);
- 	return count;
- }
--static DEVICE_ATTR(ramdisk, S_IRUGO | S_IWUSR,
--	mic_show_ramdisk, mic_store_ramdisk);
-+static DEVICE_ATTR_RW(ramdisk);
- 
- static ssize_t
--mic_show_bootmode(struct device *dev, struct device_attribute *attr, char *buf)
-+bootmode_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
- 	char *bootmode;
-@@ -333,7 +329,7 @@ mic_show_bootmode(struct device *dev, struct device_attribute *attr, char *buf)
- }
- 
- static ssize_t
--mic_store_bootmode(struct device *dev, struct device_attribute *attr,
-+bootmode_store(struct device *dev, struct device_attribute *attr,
- 	const char *buf, size_t count)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
-@@ -363,11 +359,10 @@ unlock:
- 	mutex_unlock(&mdev->mic_mutex);
- 	return count;
- }
--static DEVICE_ATTR(bootmode, S_IRUGO | S_IWUSR,
--	mic_show_bootmode, mic_store_bootmode);
-+static DEVICE_ATTR_RW(bootmode);
- 
- static ssize_t
--mic_show_log_buf_addr(struct device *dev, struct device_attribute *attr,
-+log_buf_addr_show(struct device *dev, struct device_attribute *attr,
- 	char *buf)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
-@@ -379,7 +374,7 @@ mic_show_log_buf_addr(struct device *dev, struct device_attribute *attr,
- }
- 
- static ssize_t
--mic_store_log_buf_addr(struct device *dev, struct device_attribute *attr,
-+log_buf_addr_store(struct device *dev, struct device_attribute *attr,
- 	const char *buf, size_t count)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
-@@ -398,11 +393,10 @@ mic_store_log_buf_addr(struct device *dev, struct device_attribute *attr,
- exit:
- 	return ret;
- }
--static DEVICE_ATTR(log_buf_addr, S_IRUGO | S_IWUSR,
--	mic_show_log_buf_addr, mic_store_log_buf_addr);
-+static DEVICE_ATTR_RW(log_buf_addr);
- 
- static ssize_t
--mic_show_log_buf_len(struct device *dev, struct device_attribute *attr,
-+log_buf_len_show(struct device *dev, struct device_attribute *attr,
- 	char *buf)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
-@@ -414,7 +408,7 @@ mic_show_log_buf_len(struct device *dev, struct device_attribute *attr,
- }
- 
- static ssize_t
--mic_store_log_buf_len(struct device *dev, struct device_attribute *attr,
-+log_buf_len_store(struct device *dev, struct device_attribute *attr,
- 	const char *buf, size_t count)
- {
- 	struct mic_device *mdev = dev_get_drvdata(dev->parent);
-@@ -433,8 +427,7 @@ mic_store_log_buf_len(struct device *dev, struct device_attribute *attr,
- exit:
- 	return ret;
- }
--static DEVICE_ATTR(log_buf_len, S_IRUGO | S_IWUSR,
--	mic_show_log_buf_len, mic_store_log_buf_len);
-+static DEVICE_ATTR_RW(log_buf_len);
- 
- static struct attribute *mic_default_attrs[] = {
- 	&dev_attr_family.attr,
-@@ -451,16 +444,9 @@ static struct attribute *mic_default_attrs[] = {
- 	NULL
- };
- 
--static struct attribute_group mic_attr_group = {
--	.attrs = mic_default_attrs,
--};
--
--static const struct attribute_group *__mic_attr_group[] = {
--	&mic_attr_group,
--	NULL
--};
-+ATTRIBUTE_GROUPS(mic_default);
- 
- void mic_sysfs_init(struct mic_device *mdev)
- {
--	mdev->attr_group = __mic_attr_group;
-+	mdev->attr_group = mic_default_groups;
- }
+-#include "../common/mic_device.h"
++#include "../common/mic_dev.h"
+ #include "mic_device.h"
+ #include "mic_x100.h"
+ #include "mic_smpt.h"
 -- 
 1.8.2.1
 
