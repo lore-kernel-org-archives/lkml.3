@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab3I0QTQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:19:16 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52354 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752485Ab3I0QTM (ORCPT
+	id S1753609Ab3I0QVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:21:08 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:36951 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab3I0QVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:19:12 -0400
-Date: Fri, 27 Sep 2013 17:16:22 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Will Deacon <Will.Deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFT PATCH v1 0/7] enable FPSIMD lazy save and restore for
- arm64
-Message-ID: <20130927161622.GH26069@arm.com>
-References: <1380269087-8520-1-git-send-email-liuj97@gmail.com>
- <20130927105045.GA11063@MacBook-Pro.local>
- <20130927112332.GD9520@mudshark.cambridge.arm.com>
- <5245A22F.7020305@gmail.com>
+	Fri, 27 Sep 2013 12:21:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5245A22F.7020305@gmail.com>
-Thread-Topic: [RFT PATCH v1 0/7] enable FPSIMD lazy save and restore for
- arm64
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130926063453.GA526@polaris.bitmath.org>
+References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com>
+	<20130925195628.GA1532@roeck-us.net>
+	<20130925214807.GA3234@polaris.bitmath.org>
+	<20130925220838.GB4184@roeck-us.net>
+	<20130926063453.GA526@polaris.bitmath.org>
+Date: Fri, 27 Sep 2013 12:21:04 -0400
+X-Google-Sender-Auth: 1Xqe6ZKOF68gx6WgDKi6lMCGI4c
+Message-ID: <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com>
+Subject: Re: applesmc oops in 3.10/3.11
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Guenter Roeck <linux@roeck-us.net>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        bugzilla@colorremedies.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 04:20:15PM +0100, Jiang Liu wrote:
-> 	The patchset actually includes three optimizations.
-> 
-> The first one uses PF_USED_MATH to track whether the thread has
-> accessed FPSIMD registers since it has been created. If the thread
-> hasn't accessed FPSIMD registers since it's birth, we don't need to
-> save and restore FPSIMD context on thread context switching.
+On Thu, Sep 26, 2013 at 2:34 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> > > This suggests that initialization may be attempted more than once. The key cache
+>> > > is allocated only once, but the number of keys is read for each attempt.
+>> > >
+>> > > No idea if that can happen, but if the number of keys can increase after
+>> > > the first initialization attempt you would have an explanation for the crash.
+>> >
+>> > Good idea, and easy enough to test with the patch below.
+>> >
+>> Should we apply this patch even though it may not solve the specific problem ?
+>
+> Yes, why not - it certainly won't hurt. I am running it right now, so
+> it is at least run-tested.
+>
+>> Again, not sure if the key count can change, but the current code is at the very
+>> least inconsistent, as it keeps reading the key count without updating or
+>> verifying the cache size.
+>
+> Yes - I agree that the error state is far-fetched, but it is hard to
+> see any other logical explanation. There is of course always the
+> possibility that the problem is somewhere else completely.
+>
+> Proper patch attached.
+>
+> Thanks,
+> Henrik
+>
+> ---
+>
+> From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
+> From: Henrik Rydberg <rydberg@euromail.se>
+> Date: Thu, 26 Sep 2013 08:33:16 +0200
+> Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
+>
+> After reports from Chris and Josh Boyer of a rare crash in applesmc,
+> Guenter pointed at the initialization problem fixed below. The patch
+> has not been verified to fix the crash, but should be applied
+> regardless.
+>
+> Reported-by: <jwboyer@fedoraproject.org>
+> Suggested-by: Guenter Roeck <linux@roeck-us.net>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>  drivers/hwmon/applesmc.c | 11 ++++++++++-
+>  1 file changed, 10 insertions(+), 1 deletion(-)
 
-But for detecting whether a thread used the FP/SIMD registers, you need
-to disable the FP at context switch and trap the initial access. That's
-one of the main issues with lazy saving/restoring and sometimes it could
-be less efficient.
+Thanks for the quick reply.  I'll get this rolled into our kernels soon.
 
-> The second one uses a percpu variable to track the owner of the
-> FPSIMD hardware. When switching a thread, if it's the owner of
-> the FPSIMD hardware, we don't need to load FPSIMD registers again.
-> This is useful when context switching between user thread and
-> kernel(idle) threads.
-
-fpsimd_thread_switch() checks whether it switches to/from kernel thread.
-I think we could do a bit better and avoid restoring if returning to the
-same user thread but without the need for disabling the FP on thread
-switch. I'm happy to take this part if factored out of the lazy patches
-(for the rest I'd like to see benchmarks).
-
-> The third one disable access to FPSIMD registers when switching a
-> thread. When the thread tries to access FPSIMD registers the first
-> time since it has been switched in, an exception is raised and then
-> we will load FPSIMD context onto hardware.
-> 
-> The overhead (penalty) of the first and second optimizations is
-> relatively small, so we could always enable them.
-
-How do you detect that a thread used fpsimd?
-
--- 
-Catalin
+josh
