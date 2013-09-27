@@ -1,664 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab3I0Nev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:34:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35093 "EHLO mx1.redhat.com"
+	id S1754257Ab3I0Ne0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:34:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55883 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753551Ab3I0Nes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:34:48 -0400
-Message-ID: <5245896A.70705@redhat.com>
-Date: Fri, 27 Sep 2013 15:34:34 +0200
-From: Zdenek Kabelac <zkabelac@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: linux.nics@intel.com, e1000-devel@lists.sourceforge.net
-Subject: kobject_add_internal failed for msi_irqs with -EEXIST
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753549Ab3I0N2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:38 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 49/63] sched: numa: use group fault statistics in numa placement
+Date: Fri, 27 Sep 2013 14:27:34 +0100
+Message-Id: <1380288468-5551-50-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
+References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+This patch uses the fraction of faults on a particular node for both task
+and group, to figure out the best node to place a task.  If the task and
+group statistics disagree on what the preferred node should be then a full
+rescan will select the node with the best combined weight.
 
-With recent build of 3.12-rc2 I'm getting this warning report from kernel:
-(hw Lenovo T61, C2D, 4GB Ram)
-(repost since linux-kernel@ rejected my gmail email....)
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/sched.h |   1 +
+ kernel/sched/fair.c   | 124 +++++++++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 108 insertions(+), 17 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4f51ceb..46fb36a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1347,6 +1347,7 @@ struct task_struct {
+ 	 * The values remain static for the duration of a PTE scan
+ 	 */
+ 	unsigned long *numa_faults;
++	unsigned long total_numa_faults;
+ 
+ 	/*
+ 	 * numa_faults_buffer records faults per node during the current
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 896cf87..801fc74 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -897,6 +897,7 @@ struct numa_group {
+ 	struct list_head task_list;
+ 
+ 	struct rcu_head rcu;
++	atomic_long_t total_faults;
+ 	atomic_long_t faults[0];
+ };
+ 
+@@ -919,6 +920,51 @@ static inline unsigned long task_faults(struct task_struct *p, int nid)
+ 		p->numa_faults[task_faults_idx(nid, 1)];
+ }
+ 
++static inline unsigned long group_faults(struct task_struct *p, int nid)
++{
++	if (!p->numa_group)
++		return 0;
++
++	return atomic_long_read(&p->numa_group->faults[2*nid]) +
++	       atomic_long_read(&p->numa_group->faults[2*nid+1]);
++}
++
++/*
++ * These return the fraction of accesses done by a particular task, or
++ * task group, on a particular numa node.  The group weight is given a
++ * larger multiplier, in order to group tasks together that are almost
++ * evenly spread out between numa nodes.
++ */
++static inline unsigned long task_weight(struct task_struct *p, int nid)
++{
++	unsigned long total_faults;
++
++	if (!p->numa_faults)
++		return 0;
++
++	total_faults = p->total_numa_faults;
++
++	if (!total_faults)
++		return 0;
++
++	return 1000 * task_faults(p, nid) / total_faults;
++}
++
++static inline unsigned long group_weight(struct task_struct *p, int nid)
++{
++	unsigned long total_faults;
++
++	if (!p->numa_group)
++		return 0;
++
++	total_faults = atomic_long_read(&p->numa_group->total_faults);
++
++	if (!total_faults)
++		return 0;
++
++	return 1200 * group_faults(p, nid) / total_faults;
++}
++
+ static unsigned long weighted_cpuload(const int cpu);
+ static unsigned long source_load(int cpu, int type);
+ static unsigned long target_load(int cpu, int type);
+@@ -1018,8 +1064,10 @@ static void task_numa_compare(struct task_numa_env *env, long imp)
+ 		if (!cpumask_test_cpu(env->src_cpu, tsk_cpus_allowed(cur)))
+ 			goto unlock;
+ 
+-		imp += task_faults(cur, env->src_nid) -
+-		       task_faults(cur, env->dst_nid);
++		imp += task_weight(cur, env->src_nid) +
++		       group_weight(cur, env->src_nid) -
++		       task_weight(cur, env->dst_nid) -
++		       group_weight(cur, env->dst_nid);
+ 	}
+ 
+ 	if (imp < env->best_imp)
+@@ -1098,7 +1146,7 @@ static int task_numa_migrate(struct task_struct *p)
+ 		.best_cpu = -1
+ 	};
+ 	struct sched_domain *sd;
+-	unsigned long faults;
++	unsigned long weight;
+ 	int nid, ret;
+ 	long imp;
+ 
+@@ -1115,10 +1163,10 @@ static int task_numa_migrate(struct task_struct *p)
+ 	env.imbalance_pct = 100 + (sd->imbalance_pct - 100) / 2;
+ 	rcu_read_unlock();
+ 
+-	faults = task_faults(p, env.src_nid);
++	weight = task_weight(p, env.src_nid) + group_weight(p, env.src_nid);
+ 	update_numa_stats(&env.src_stats, env.src_nid);
+ 	env.dst_nid = p->numa_preferred_nid;
+-	imp = task_faults(env.p, env.dst_nid) - faults;
++	imp = task_weight(p, env.dst_nid) + group_weight(p, env.dst_nid) - weight;
+ 	update_numa_stats(&env.dst_stats, env.dst_nid);
+ 
+ 	/* If the preferred nid has capacity, try to use it. */
+@@ -1131,8 +1179,8 @@ static int task_numa_migrate(struct task_struct *p)
+ 			if (nid == env.src_nid || nid == p->numa_preferred_nid)
+ 				continue;
+ 
+-			/* Only consider nodes that recorded more faults */
+-			imp = task_faults(env.p, nid) - faults;
++			/* Only consider nodes where both task and groups benefit */
++			imp = task_weight(p, nid) + group_weight(p, nid) - weight;
+ 			if (imp < 0)
+ 				continue;
+ 
+@@ -1183,8 +1231,8 @@ static void numa_migrate_preferred(struct task_struct *p)
+ 
+ static void task_numa_placement(struct task_struct *p)
+ {
+-	int seq, nid, max_nid = -1;
+-	unsigned long max_faults = 0;
++	int seq, nid, max_nid = -1, max_group_nid = -1;
++	unsigned long max_faults = 0, max_group_faults = 0;
+ 
+ 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+ 	if (p->numa_scan_seq == seq)
+@@ -1195,7 +1243,7 @@ static void task_numa_placement(struct task_struct *p)
+ 
+ 	/* Find the node with the highest number of faults */
+ 	for_each_online_node(nid) {
+-		unsigned long faults = 0;
++		unsigned long faults = 0, group_faults = 0;
+ 		int priv, i;
+ 
+ 		for (priv = 0; priv < 2; priv++) {
+@@ -1211,9 +1259,12 @@ static void task_numa_placement(struct task_struct *p)
+ 
+ 			faults += p->numa_faults[i];
+ 			diff += p->numa_faults[i];
++			p->total_numa_faults += diff;
+ 			if (p->numa_group) {
+ 				/* safe because we can only change our own group */
+ 				atomic_long_add(diff, &p->numa_group->faults[i]);
++				atomic_long_add(diff, &p->numa_group->total_faults);
++				group_faults += atomic_long_read(&p->numa_group->faults[i]);
+ 			}
+ 		}
+ 
+@@ -1221,6 +1272,27 @@ static void task_numa_placement(struct task_struct *p)
+ 			max_faults = faults;
+ 			max_nid = nid;
+ 		}
++
++		if (group_faults > max_group_faults) {
++			max_group_faults = group_faults;
++			max_group_nid = nid;
++		}
++	}
++
++	/*
++	 * If the preferred task and group nids are different,
++	 * iterate over the nodes again to find the best place.
++	 */
++	if (p->numa_group && max_nid != max_group_nid) {
++		unsigned long weight, max_weight = 0;
++
++		for_each_online_node(nid) {
++			weight = task_weight(p, nid) + group_weight(p, nid);
++			if (weight > max_weight) {
++				max_weight = weight;
++				max_nid = nid;
++			}
++		}
+ 	}
+ 
+ 	/* Preferred node as the node with the most faults */
+@@ -1276,6 +1348,8 @@ static void task_numa_group(struct task_struct *p, int cpupid)
+ 		for (i = 0; i < 2*nr_node_ids; i++)
+ 			atomic_long_set(&grp->faults[i], p->numa_faults[i]);
+ 
++		atomic_long_set(&grp->total_faults, p->total_numa_faults);
++
+ 		list_add(&p->numa_entry, &grp->task_list);
+ 		grp->nr_tasks++;
+ 		rcu_assign_pointer(p->numa_group, grp);
+@@ -1323,6 +1397,8 @@ unlock:
+ 		atomic_long_sub(p->numa_faults[i], &my_grp->faults[i]);
+ 		atomic_long_add(p->numa_faults[i], &grp->faults[i]);
+ 	}
++	atomic_long_sub(p->total_numa_faults, &my_grp->total_faults);
++	atomic_long_add(p->total_numa_faults, &grp->total_faults);
+ 
+ 	double_lock(&my_grp->lock, &grp->lock);
+ 
+@@ -1347,6 +1423,8 @@ void task_numa_free(struct task_struct *p)
+ 		for (i = 0; i < 2*nr_node_ids; i++)
+ 			atomic_long_sub(p->numa_faults[i], &grp->faults[i]);
+ 
++		atomic_long_sub(p->total_numa_faults, &grp->total_faults);
++
+ 		spin_lock(&grp->lock);
+ 		list_del(&p->numa_entry);
+ 		grp->nr_tasks--;
+@@ -1385,6 +1463,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+ 
+ 		BUG_ON(p->numa_faults_buffer);
+ 		p->numa_faults_buffer = p->numa_faults + (2 * nr_node_ids);
++		p->total_numa_faults = 0;
+ 	}
+ 
+ 	/*
+@@ -4525,12 +4604,17 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+ 	src_nid = cpu_to_node(env->src_cpu);
+ 	dst_nid = cpu_to_node(env->dst_cpu);
+ 
+-	if (src_nid == dst_nid ||
+-	    p->numa_migrate_seq >= sysctl_numa_balancing_settle_count)
++	if (src_nid == dst_nid)
+ 		return false;
+ 
+-	if (dst_nid == p->numa_preferred_nid ||
+-	    task_faults(p, dst_nid) > task_faults(p, src_nid))
++	/* Always encourage migration to the preferred node. */
++	if (dst_nid == p->numa_preferred_nid)
++		return true;
++
++	/* After the task has settled, check if the new node is better. */
++	if (p->numa_migrate_seq >= sysctl_numa_balancing_settle_count &&
++			task_weight(p, dst_nid) + group_weight(p, dst_nid) >
++			task_weight(p, src_nid) + group_weight(p, src_nid))
+ 		return true;
+ 
+ 	return false;
+@@ -4550,11 +4634,17 @@ static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
+ 	src_nid = cpu_to_node(env->src_cpu);
+ 	dst_nid = cpu_to_node(env->dst_cpu);
+ 
+-	if (src_nid == dst_nid ||
+-	    p->numa_migrate_seq >= sysctl_numa_balancing_settle_count)
++	if (src_nid == dst_nid)
+ 		return false;
+ 
+-	if (task_faults(p, dst_nid) < task_faults(p, src_nid))
++	/* Migrating away from the preferred node is always bad. */
++	if (src_nid == p->numa_preferred_nid)
++		return true;
++
++	/* After the task has settled, check if the new node is worse. */
++	if (p->numa_migrate_seq >= sysctl_numa_balancing_settle_count &&
++			task_weight(p, dst_nid) + group_weight(p, dst_nid) <
++			task_weight(p, src_nid) + group_weight(p, src_nid))
+ 		return true;
+ 
+ 	return false;
+-- 
+1.8.1.4
 
-e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 301 at fs/sysfs/dir.c:526 sysfs_add_one+0xa5/0xd0()
-sysfs: cannot create duplicate filename 
-'/devices/pci0000:00/0000:00:19.0/msi_irqs'
-Modules linked in: bnep btusb bluetooth iTCO_wdt iTCO_vendor_support 
-snd_hda_codec_analog hid_generic coretemp kvm_intel kvm arc4 microcode psmouse 
-serio_raw i2c_i801 i2c_core iwl3945 iwlegacy sdhci_pci usbhid mac80211 hid 
-r852 sm_common nand nand_ecc r592 sdhci lpc_ich nand_ids mfd_core mmc_core mtd 
-memstick cfg80211 snd_hda_intel snd_hda_codec snd_seq snd_seq_device wmi 
-thinkpad_acpi snd_pcm nvram e1000e snd_page_alloc snd_timer snd evdev ptp 
-soundcore pps_core nfsd auth_rpcgss oid_registry exportfs nfs_acl loop lockd 
-binfmt_misc sunrpc pcmcia sr_mod cdrom yenta_socket ehci_pci ehci_hcd uhci_hcd 
-usbcore usb_common video backlight autofs4
-CPU: 0 PID: 301 Comm: NetworkManager Not tainted 3.12.0-rc2-00088-gfcbfc0d #163
-Hardware name: LENOVO 6464CTO/6464CTO, BIOS 7LETC9WW (2.29 ) 03/18/2011
-  0000000000000009 ffff8800b85fb558 ffffffff81595d57 ffff8800b85fb5a0
-  ffff8800b85fb590 ffffffff810491ad 00000000ffffffef ffff8800b79a8c80
-  ffff8800b85fb638 ffff8800b87df000 0000000000000000 ffff8800b85fb5f0
-Call Trace:
-  [<ffffffff81595d57>] dump_stack+0x4e/0x82
-  [<ffffffff810491ad>] warn_slowpath_common+0x7d/0xa0
-  [<ffffffff8104921c>] warn_slowpath_fmt+0x4c/0x50
-  [<ffffffff812258c5>] sysfs_add_one+0xa5/0xd0
-  [<ffffffff81225a44>] create_dir+0x74/0xd0
-  [<ffffffff81225db9>] sysfs_create_dir+0x89/0xe0
-  [<ffffffff8132fba8>] kobject_add_internal+0xc8/0x320
-  [<ffffffff8134320d>] ? __raw_spin_lock_init+0x2d/0x50
-  [<ffffffff813302d0>] kset_register+0x20/0x50
-  [<ffffffff81330371>] kset_create_and_add+0x71/0xb0
-  [<ffffffff8136ce0a>] populate_msi_sysfs+0x2a/0x120
-  [<ffffffff8136d598>] pci_enable_msi_block+0x1b8/0x2c0
-  [<ffffffffa03493c5>] e1000_open+0x225/0x5b0 [e1000e]
-  [<ffffffff814db50f>] __dev_open+0xbf/0x140
-  [<ffffffff814db7d2>] __dev_change_flags+0x92/0x170
-  [<ffffffff814db95d>] dev_change_flags+0x1d/0x60
-  [<ffffffff814e9ff2>] do_setlink+0x342/0xa00
-  [<ffffffff8100ac94>] ? native_sched_clock+0x24/0x80
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff8134dfb2>] ? nla_parse+0x32/0xe0
-  [<ffffffff814eb2df>] rtnl_newlink+0x38f/0x5d0
-  [<ffffffff8100ac94>] ? native_sched_clock+0x24/0x80
-  [<ffffffff810bf70f>] ? trace_hardirqs_off_caller+0x1f/0xc0
-  [<ffffffff814e814c>] rtnetlink_rcv_msg+0x9c/0x260
-  [<ffffffff81598447>] ? mutex_lock_nested+0x2f7/0x440
-  [<ffffffff814e808b>] ? rtnetlink_rcv+0x1b/0x40
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff814e808b>] ? rtnetlink_rcv+0x1b/0x40
-  [<ffffffff814e80b0>] ? rtnetlink_rcv+0x40/0x40
-  [<ffffffff81500279>] netlink_rcv_skb+0xa9/0xc0
-  [<ffffffff814e809a>] rtnetlink_rcv+0x2a/0x40
-  [<ffffffff814ff8bd>] netlink_unicast+0xdd/0x190
-  [<ffffffff814ffc99>] netlink_sendmsg+0x329/0x750
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff814bc5d8>] sock_sendmsg+0xa8/0x180
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff81169e90>] ? might_fault+0xa0/0xb0
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff814ca736>] ? verify_iovec+0x56/0xd0
-  [<ffffffff814bd05e>] ___sys_sendmsg+0x35e/0x370
-  [<ffffffff810c039d>] ? lock_release_holdtime.part.29+0x9d/0x160
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff811c9bc2>] ? fget_light+0xd2/0x4f0
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff815a2141>] ? sub_preempt_count+0x71/0x100
-  [<ffffffff810bfefe>] ? put_lock_stats.isra.28+0xe/0x40
-  [<ffffffff811c9bdf>] ? fget_light+0xef/0x4f0
-  [<ffffffff811c9b2c>] ? fget_light+0x3c/0x4f0
-  [<ffffffff814bd762>] __sys_sendmsg+0x42/0x80
-  [<ffffffff814bd7b2>] SyS_sendmsg+0x12/0x20
-  [<ffffffff815a6556>] system_call_fastpath+0x1a/0x1f
----[ end trace 881f4293213af6b4 ]---
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 301 at lib/kobject.c:196 kobject_add_internal+0x204/0x320()
-kobject_add_internal failed for msi_irqs with -EEXIST, don't try to register 
-things with the same name in the same directory.
-Modules linked in: bnep btusb bluetooth iTCO_wdt iTCO_vendor_support 
-snd_hda_codec_analog hid_generic coretemp kvm_intel kvm arc4 microcode psmouse 
-serio_raw i2c_i801 i2c_core iwl3945 iwlegacy sdhci_pci usbhid mac80211 hid 
-r852 sm_common nand nand_ecc r592 sdhci lpc_ich nand_ids mfd_core mmc_core mtd 
-memstick cfg80211 snd_hda_intel snd_hda_codec snd_seq snd_seq_device wmi 
-thinkpad_acpi snd_pcm nvram e1000e snd_page_alloc snd_timer snd evdev ptp 
-soundcore pps_core nfsd auth_rpcgss oid_registry exportfs nfs_acl loop lockd 
-binfmt_misc sunrpc pcmcia sr_mod cdrom yenta_socket ehci_pci ehci_hcd uhci_hcd 
-usbcore usb_common video backlight autofs4
-CPU: 0 PID: 301 Comm: NetworkManager Tainted: G        W 
-3.12.0-rc2-00088-gfcbfc0d #163
-Hardware name: LENOVO 6464CTO/6464CTO, BIOS 7LETC9WW (2.29 ) 03/18/2011
-  0000000000000009 ffff8800b85fb608 ffffffff81595d57 ffff8800b85fb650
-  ffff8800b85fb640 ffffffff810491ad ffff880036e7c258 00000000ffffffef
-  ffff880135b6c0a8 ffff880135b6c0a8 ffff8800ba074000 ffff8800b85fb6a0
-Call Trace:
-  [<ffffffff81595d57>] dump_stack+0x4e/0x82
-  [<ffffffff810491ad>] warn_slowpath_common+0x7d/0xa0
-  [<ffffffff8104921c>] warn_slowpath_fmt+0x4c/0x50
-  [<ffffffff81225db9>] ? sysfs_create_dir+0x89/0xe0
-  [<ffffffff8132fce4>] kobject_add_internal+0x204/0x320
-  [<ffffffff8134320d>] ? __raw_spin_lock_init+0x2d/0x50
-  [<ffffffff813302d0>] kset_register+0x20/0x50
-  [<ffffffff81330371>] kset_create_and_add+0x71/0xb0
-  [<ffffffff8136ce0a>] populate_msi_sysfs+0x2a/0x120
-  [<ffffffff8136d598>] pci_enable_msi_block+0x1b8/0x2c0
-  [<ffffffffa03493c5>] e1000_open+0x225/0x5b0 [e1000e]
-  [<ffffffff814db50f>] __dev_open+0xbf/0x140
-  [<ffffffff814db7d2>] __dev_change_flags+0x92/0x170
-  [<ffffffff814db95d>] dev_change_flags+0x1d/0x60
-  [<ffffffff814e9ff2>] do_setlink+0x342/0xa00
-  [<ffffffff8100ac94>] ? native_sched_clock+0x24/0x80
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff8134dfb2>] ? nla_parse+0x32/0xe0
-  [<ffffffff814eb2df>] rtnl_newlink+0x38f/0x5d0
-  [<ffffffff8100ac94>] ? native_sched_clock+0x24/0x80
-  [<ffffffff810bf70f>] ? trace_hardirqs_off_caller+0x1f/0xc0
-  [<ffffffff814e814c>] rtnetlink_rcv_msg+0x9c/0x260
-  [<ffffffff81598447>] ? mutex_lock_nested+0x2f7/0x440
-  [<ffffffff814e808b>] ? rtnetlink_rcv+0x1b/0x40
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff814e808b>] ? rtnetlink_rcv+0x1b/0x40
-  [<ffffffff814e80b0>] ? rtnetlink_rcv+0x40/0x40
-  [<ffffffff81500279>] netlink_rcv_skb+0xa9/0xc0
-  [<ffffffff814e809a>] rtnetlink_rcv+0x2a/0x40
-  [<ffffffff814ff8bd>] netlink_unicast+0xdd/0x190
-  [<ffffffff814ffc99>] netlink_sendmsg+0x329/0x750
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff814bc5d8>] sock_sendmsg+0xa8/0x180
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff81169e90>] ? might_fault+0xa0/0xb0
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff814ca736>] ? verify_iovec+0x56/0xd0
-  [<ffffffff814bd05e>] ___sys_sendmsg+0x35e/0x370
-  [<ffffffff810c039d>] ? lock_release_holdtime.part.29+0x9d/0x160
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff811c9bc2>] ? fget_light+0xd2/0x4f0
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff815a2141>] ? sub_preempt_count+0x71/0x100
-  [<ffffffff810bfefe>] ? put_lock_stats.isra.28+0xe/0x40
-  [<ffffffff811c9bdf>] ? fget_light+0xef/0x4f0
-  [<ffffffff811c9b2c>] ? fget_light+0x3c/0x4f0
-  [<ffffffff814bd762>] __sys_sendmsg+0x42/0x80
-  [<ffffffff814bd7b2>] SyS_sendmsg+0x12/0x20
-  [<ffffffff815a6556>] system_call_fastpath+0x1a/0x1f
----[ end trace 881f4293213af6b5 ]---
-e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 301 at fs/sysfs/dir.c:526 sysfs_add_one+0xa5/0xd0()
-sysfs: cannot create duplicate filename 
-'/devices/pci0000:00/0000:00:19.0/msi_irqs'
-Modules linked in: bnep btusb bluetooth iTCO_wdt iTCO_vendor_support 
-snd_hda_codec_analog hid_generic coretemp kvm_intel kvm arc4 microcode psmouse 
-serio_raw i2c_i801 i2c_core iwl3945 iwlegacy sdhci_pci usbhid mac80211 hid 
-r852 sm_common nand nand_ecc r592 sdhci lpc_ich nand_ids mfd_core mmc_core mtd 
-memstick cfg80211 snd_hda_intel snd_hda_codec snd_seq snd_seq_device wmi 
-thinkpad_acpi snd_pcm nvram e1000e snd_page_alloc snd_timer snd evdev ptp 
-soundcore pps_core nfsd auth_rpcgss oid_registry exportfs nfs_acl loop lockd 
-binfmt_misc sunrpc pcmcia sr_mod cdrom yenta_socket ehci_pci ehci_hcd uhci_hcd 
-usbcore usb_common video backlight autofs4
-CPU: 0 PID: 301 Comm: NetworkManager Tainted: G        W 
-3.12.0-rc2-00088-gfcbfc0d #163
-Hardware name: LENOVO 6464CTO/6464CTO, BIOS 7LETC9WW (2.29 ) 03/18/2011
-  0000000000000009 ffff8800b85fb540 ffffffff81595d57 ffff8800b85fb588
-  ffff8800b85fb578 ffffffff810491ad 00000000ffffffef ffff8800b79a8c80
-  ffff8800b85fb620 ffff8800b87dc000 0000000000000000 ffff8800b85fb5d8
-Call Trace:
-  [<ffffffff81595d57>] dump_stack+0x4e/0x82
-  [<ffffffff810491ad>] warn_slowpath_common+0x7d/0xa0
-  [<ffffffff8104921c>] warn_slowpath_fmt+0x4c/0x50
-  [<ffffffff812258c5>] sysfs_add_one+0xa5/0xd0
-  [<ffffffff81225a44>] create_dir+0x74/0xd0
-  [<ffffffff81225db9>] sysfs_create_dir+0x89/0xe0
-  [<ffffffff8132fba8>] kobject_add_internal+0xc8/0x320
-  [<ffffffff8134320d>] ? __raw_spin_lock_init+0x2d/0x50
-  [<ffffffff813302d0>] kset_register+0x20/0x50
-  [<ffffffff81330371>] kset_create_and_add+0x71/0xb0
-  [<ffffffff8136ce0a>] populate_msi_sysfs+0x2a/0x120
-  [<ffffffff8136d598>] pci_enable_msi_block+0x1b8/0x2c0
-  [<ffffffffa0343e41>] e1000e_set_interrupt_capability+0x41/0x120 [e1000e]
-  [<ffffffffa03493d5>] e1000_open+0x235/0x5b0 [e1000e]
-  [<ffffffff814db50f>] __dev_open+0xbf/0x140
-  [<ffffffff814db7d2>] __dev_change_flags+0x92/0x170
-  [<ffffffff814db95d>] dev_change_flags+0x1d/0x60
-  [<ffffffff814e9ff2>] do_setlink+0x342/0xa00
-  [<ffffffff8100ac94>] ? native_sched_clock+0x24/0x80
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff8134dfb2>] ? nla_parse+0x32/0xe0
-  [<ffffffff814eb2df>] rtnl_newlink+0x38f/0x5d0
-  [<ffffffff8100ac94>] ? native_sched_clock+0x24/0x80
-  [<ffffffff810bf70f>] ? trace_hardirqs_off_caller+0x1f/0xc0
-  [<ffffffff814e814c>] rtnetlink_rcv_msg+0x9c/0x260
-  [<ffffffff81598447>] ? mutex_lock_nested+0x2f7/0x440
-  [<ffffffff814e808b>] ? rtnetlink_rcv+0x1b/0x40
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff814e808b>] ? rtnetlink_rcv+0x1b/0x40
-  [<ffffffff814e80b0>] ? rtnetlink_rcv+0x40/0x40
-  [<ffffffff81500279>] netlink_rcv_skb+0xa9/0xc0
-  [<ffffffff814e809a>] rtnetlink_rcv+0x2a/0x40
-  [<ffffffff814ff8bd>] netlink_unicast+0xdd/0x190
-  [<ffffffff814ffc99>] netlink_sendmsg+0x329/0x750
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff814bc5d8>] sock_sendmsg+0xa8/0x180
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff81169e90>] ? might_fault+0xa0/0xb0
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff814ca736>] ? verify_iovec+0x56/0xd0
-  [<ffffffff814bd05e>] ___sys_sendmsg+0x35e/0x370
-  [<ffffffff810c039d>] ? lock_release_holdtime.part.29+0x9d/0x160
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff811c9bc2>] ? fget_light+0xd2/0x4f0
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff815a2141>] ? sub_preempt_count+0x71/0x100
-  [<ffffffff810bfefe>] ? put_lock_stats.isra.28+0xe/0x40
-  [<ffffffff811c9bdf>] ? fget_light+0xef/0x4f0
-  [<ffffffff811c9b2c>] ? fget_light+0x3c/0x4f0
-  [<ffffffff814bd762>] __sys_sendmsg+0x42/0x80
-  [<ffffffff814bd7b2>] SyS_sendmsg+0x12/0x20
-  [<ffffffff815a6556>] system_call_fastpath+0x1a/0x1f
----[ end trace 881f4293213af6b6 ]---
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 301 at lib/kobject.c:196 kobject_add_internal+0x204/0x320()
-kobject_add_internal failed for msi_irqs with -EEXIST, don't try to register 
-things with the same name in the same directory.
-Modules linked in: bnep btusb bluetooth iTCO_wdt iTCO_vendor_support 
-snd_hda_codec_analog hid_generic coretemp kvm_intel kvm arc4 microcode psmouse 
-serio_raw i2c_i801 i2c_core iwl3945 iwlegacy sdhci_pci usbhid mac80211 hid 
-r852 sm_common nand nand_ecc r592 sdhci lpc_ich nand_ids mfd_core mmc_core mtd 
-memstick cfg80211 snd_hda_intel snd_hda_codec snd_seq snd_seq_device wmi 
-thinkpad_acpi snd_pcm nvram e1000e snd_page_alloc snd_timer snd evdev ptp 
-soundcore pps_core nfsd auth_rpcgss oid_registry exportfs nfs_acl loop lockd 
-binfmt_misc sunrpc pcmcia sr_mod cdrom yenta_socket ehci_pci ehci_hcd uhci_hcd 
-usbcore usb_common video backlight autofs4
-CPU: 1 PID: 301 Comm: NetworkManager Tainted: G        W 
-3.12.0-rc2-00088-gfcbfc0d #163
-Hardware name: LENOVO 6464CTO/6464CTO, BIOS 7LETC9WW (2.29 ) 03/18/2011
-  0000000000000009 ffff8800b85fb5f0 ffffffff81595d57 ffff8800b85fb638
-  ffff8800b85fb628 ffffffff810491ad ffff880036e7c258 00000000ffffffef
-  ffff880135b6c0a8 ffff880135b6c0a8 ffff8800ba074000 ffff8800b85fb688
-Call Trace:
-  [<ffffffff81595d57>] dump_stack+0x4e/0x82
-  [<ffffffff810491ad>] warn_slowpath_common+0x7d/0xa0
-  [<ffffffff8104921c>] warn_slowpath_fmt+0x4c/0x50
-  [<ffffffff81225db9>] ? sysfs_create_dir+0x89/0xe0
-  [<ffffffff8132fce4>] kobject_add_internal+0x204/0x320
-  [<ffffffff8134320d>] ? __raw_spin_lock_init+0x2d/0x50
-  [<ffffffff813302d0>] kset_register+0x20/0x50
-  [<ffffffff81330371>] kset_create_and_add+0x71/0xb0
-  [<ffffffff8136ce0a>] populate_msi_sysfs+0x2a/0x120
-  [<ffffffff8136d598>] pci_enable_msi_block+0x1b8/0x2c0
-  [<ffffffffa0343e41>] e1000e_set_interrupt_capability+0x41/0x120 [e1000e]
-  [<ffffffffa03493d5>] e1000_open+0x235/0x5b0 [e1000e]
-  [<ffffffff814db50f>] __dev_open+0xbf/0x140
-  [<ffffffff814db7d2>] __dev_change_flags+0x92/0x170
-  [<ffffffff814db95d>] dev_change_flags+0x1d/0x60
-  [<ffffffff814e9ff2>] do_setlink+0x342/0xa00
-  [<ffffffff8100ac94>] ? native_sched_clock+0x24/0x80
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff8134dfb2>] ? nla_parse+0x32/0xe0
-  [<ffffffff814eb2df>] rtnl_newlink+0x38f/0x5d0
-  [<ffffffff8100ac94>] ? native_sched_clock+0x24/0x80
-  [<ffffffff810bf70f>] ? trace_hardirqs_off_caller+0x1f/0xc0
-  [<ffffffff814e814c>] rtnetlink_rcv_msg+0x9c/0x260
-  [<ffffffff81598447>] ? mutex_lock_nested+0x2f7/0x440
-  [<ffffffff814e808b>] ? rtnetlink_rcv+0x1b/0x40
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff814e808b>] ? rtnetlink_rcv+0x1b/0x40
-  [<ffffffff814e80b0>] ? rtnetlink_rcv+0x40/0x40
-  [<ffffffff81500279>] netlink_rcv_skb+0xa9/0xc0
-  [<ffffffff814e809a>] rtnetlink_rcv+0x2a/0x40
-  [<ffffffff814ff8bd>] netlink_unicast+0xdd/0x190
-  [<ffffffff814ffc99>] netlink_sendmsg+0x329/0x750
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff814bc5d8>] sock_sendmsg+0xa8/0x180
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff81169e90>] ? might_fault+0xa0/0xb0
-  [<ffffffff81169e47>] ? might_fault+0x57/0xb0
-  [<ffffffff814ca736>] ? verify_iovec+0x56/0xd0
-  [<ffffffff814bd05e>] ___sys_sendmsg+0x35e/0x370
-  [<ffffffff810c039d>] ? lock_release_holdtime.part.29+0x9d/0x160
-  [<ffffffff8108c01f>] ? local_clock+0x3f/0x50
-  [<ffffffff811c9bc2>] ? fget_light+0xd2/0x4f0
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff8108624d>] ? get_parent_ip+0xd/0x50
-  [<ffffffff815a2141>] ? sub_preempt_count+0x71/0x100
-  [<ffffffff810bfefe>] ? put_lock_stats.isra.28+0xe/0x40
-  [<ffffffff811c9bdf>] ? fget_light+0xef/0x4f0
-  [<ffffffff811c9b2c>] ? fget_light+0x3c/0x4f0
-  [<ffffffff814bd762>] __sys_sendmsg+0x42/0x80
-  [<ffffffff814bd7b2>] SyS_sendmsg+0x12/0x20
-  [<ffffffff815a6556>] system_call_fastpath+0x1a/0x1f
----[ end trace 881f4293213af6b7 ]---
-e1000e 0000:00:19.0 eth0: Failed to initialize MSI interrupts.  Falling back 
-to legacy interrupts.
-iwl3945 0000:03:00.0: loaded firmware version 15.32.2.9
-systemd[1]: Started /etc/rc.d/rc.local Compatibility.
-
-
-
-
-# lspci
-00:00.0 Host bridge: Intel Corporation Mobile PM965/GM965/GL960 Memory 
-Controller Hub (rev 0c)
-00:02.0 VGA compatible controller: Intel Corporation Mobile GM965/GL960 
-Integrated Graphics Controller (primary) (rev 0c)
-00:02.1 Display controller: Intel Corporation Mobile GM965/GL960 Integrated 
-Graphics Controller (secondary) (rev 0c)
-00:19.0 Ethernet controller: Intel Corporation 82566MM Gigabit Network 
-Connection (rev 03)
-00:1a.0 USB controller: Intel Corporation 82801H (ICH8 Family) USB UHCI 
-Controller #4 (rev 03)
-00:1a.1 USB controller: Intel Corporation 82801H (ICH8 Family) USB UHCI 
-Controller #5 (rev 03)
-00:1a.7 USB controller: Intel Corporation 82801H (ICH8 Family) USB2 EHCI 
-Controller #2 (rev 03)
-00:1b.0 Audio device: Intel Corporation 82801H (ICH8 Family) HD Audio 
-Controller (rev 03)
-00:1c.0 PCI bridge: Intel Corporation 82801H (ICH8 Family) PCI Express Port 1 
-(rev 03)
-00:1c.1 PCI bridge: Intel Corporation 82801H (ICH8 Family) PCI Express Port 2 
-(rev 03)
-00:1c.2 PCI bridge: Intel Corporation 82801H (ICH8 Family) PCI Express Port 3 
-(rev 03)
-00:1c.3 PCI bridge: Intel Corporation 82801H (ICH8 Family) PCI Express Port 4 
-(rev 03)
-00:1c.4 PCI bridge: Intel Corporation 82801H (ICH8 Family) PCI Express Port 5 
-(rev 03)
-00:1d.0 USB controller: Intel Corporation 82801H (ICH8 Family) USB UHCI 
-Controller #1 (rev 03)
-00:1d.1 USB controller: Intel Corporation 82801H (ICH8 Family) USB UHCI 
-Controller #2 (rev 03)
-00:1d.2 USB controller: Intel Corporation 82801H (ICH8 Family) USB UHCI 
-Controller #3 (rev 03)
-00:1d.7 USB controller: Intel Corporation 82801H (ICH8 Family) USB2 EHCI 
-Controller #1 (rev 03)
-00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev f3)
-00:1f.0 ISA bridge: Intel Corporation 82801HEM (ICH8M-E) LPC Interface 
-Controller (rev 03)
-00:1f.1 IDE interface: Intel Corporation 82801HM/HEM (ICH8M/ICH8M-E) IDE 
-Controller (rev 03)
-00:1f.2 SATA controller: Intel Corporation 82801HM/HEM (ICH8M/ICH8M-E) SATA 
-Controller [AHCI mode] (rev 03)
-00:1f.3 SMBus: Intel Corporation 82801H (ICH8 Family) SMBus Controller (rev 03)
-03:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG [Golan] 
-Network Connection (rev 02)
-15:00.0 CardBus bridge: Ricoh Co Ltd RL5c476 II (rev ba)
-15:00.2 SD Host controller: Ricoh Co Ltd R5C822 SD/SDIO/MMC/MS/MSPro Host 
-Adapter (rev 21)
-15:00.4 System peripheral: Ricoh Co Ltd R5C592 Memory Stick Bus Host Adapter 
-(rev 11)
-15:00.5 System peripheral: Ricoh Co Ltd xD-Picture Card Controller (rev 11)
-
-# lspci -v
-00:00.0 Host bridge: Intel Corporation Mobile PM965/GM965/GL960 Memory 
-Controller Hub (rev 0c)
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, fast devsel, latency 0
-     Capabilities: [e0] Vendor Specific Information: Len=0a <?>
-     Kernel driver in use: agpgart-intel
-
-00:02.0 VGA compatible controller: Intel Corporation Mobile GM965/GL960 
-Integrated Graphics Controller (primary) (rev 0c) (prog-if 00 [VGA controller])
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, fast devsel, latency 0, IRQ 49
-     Memory at f8100000 (64-bit, non-prefetchable) [size=1M]
-     Memory at e0000000 (64-bit, prefetchable) [size=256M]
-     I/O ports at 1800 [size=8]
-     Expansion ROM at <unassigned> [disabled]
-     Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-     Capabilities: [d0] Power Management version 3
-     Kernel driver in use: i915
-
-00:02.1 Display controller: Intel Corporation Mobile GM965/GL960 Integrated 
-Graphics Controller (secondary) (rev 0c)
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, fast devsel, latency 0
-     Memory at f8200000 (64-bit, non-prefetchable) [size=1M]
-     Capabilities: [d0] Power Management version 3
-
-00:19.0 Ethernet controller: Intel Corporation 82566MM Gigabit Network 
-Connection (rev 03)
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, fast devsel, latency 0, IRQ 46
-     Memory at fe000000 (32-bit, non-prefetchable) [size=128K]
-     Memory at fe025000 (32-bit, non-prefetchable) [size=4K]
-     I/O ports at 1840 [size=32]
-     Capabilities: [c8] Power Management version 2
-     Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-     Kernel driver in use: e1000e
-
-00:1a.0 USB controller: Intel Corporation 82801H (ICH8 Family) USB UHCI 
-Controller #4 (rev 03) (prog-if 00 [UHCI])
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, medium devsel, latency 0, IRQ 20
-     I/O ports at 1860 [size=32]
-     Kernel driver in use: uhci_hcd
-
-00:1a.1 USB controller: Intel Corporation 82801H (ICH8 Family) USB UHCI 
-Controller #5 (rev 03) (prog-if 00 [UHCI])
-     Subsystem: Lenovo Thinkpad T61/R61
-     Flags: bus master, medium devsel, latency 0, IRQ 21
-     I/O ports at 1880 [size=32]
-     Kernel driver in use: uhci_hcd
-
-00:1a.7 USB controller: Intel Corporation 82801H (ICH8 Family) USB2 EHCI 
-Controller #2 (rev 03) (prog-if 20 [EHCI])
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, medium devsel, latency 0, IRQ 22
-     Memory at fe226c00 (32-bit, non-prefetchable) [size=1K]
-     Capabilities: [50] Power Management version 2
-     Kernel driver in use: ehci-pci
-
-00:1b.0 Audio device: Intel Corporation 82801H (ICH8 Family) HD Audio 
-Controller (rev 03)
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, fast devsel, latency 0, IRQ 47
-     Memory at fe020000 (64-bit, non-prefetchable) [size=16K]
-     Capabilities: [50] Power Management version 2
-     Capabilities: [60] MSI: Enable+ Count=1/1 Maskable- 64bit+
-     Capabilities: [70] Express Root Complex Integrated Endpoint, MSI 00
-     Capabilities: [100] Virtual Channel
-     Capabilities: [130] Root Complex Link
-     Kernel driver in use: snd_hda_intel
-
-00:1c.0 PCI bridge: Intel Corporation 82801H (ICH8 Family) PCI Express Port 1 
-(rev 03) (prog-if 00 [Normal decode])
-     Flags: bus master, fast devsel, latency 0
-     Bus: primary=00, secondary=02, subordinate=02, sec-latency=0
-     I/O behind bridge: 00002000-00002fff
-     Memory behind bridge: fc000000-fdffffff
-     Prefetchable memory behind bridge: 00000000f8000000-00000000f80fffff
-     Capabilities: [40] Express Root Port (Slot+), MSI 00
-     Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
-     Capabilities: [90] Subsystem: Lenovo ThinkPad T61/R61
-     Capabilities: [a0] Power Management version 2
-     Capabilities: [100] Virtual Channel
-     Capabilities: [180] Root Complex Link
-     Kernel driver in use: pcieport
-
-00:1c.1 PCI bridge: Intel Corporation 82801H (ICH8 Family) PCI Express Port 2 
-(rev 03) (prog-if 00 [Normal decode])
-     Flags: bus master, fast devsel, latency 0
-     Bus: primary=00, secondary=03, subordinate=03, sec-latency=0
-     I/O behind bridge: 00003000-00003fff
-     Memory behind bridge: dc000000-df3fffff
-     Prefetchable memory behind bridge: 00000000dfe00000-00000000dfefffff
-     Capabilities: [40] Express Root Port (Slot+), MSI 00
-     Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
-     Capabilities: [90] Subsystem: Lenovo ThinkPad T61/R61
-     Capabilities: [a0] Power Management version 2
-     Capabilities: [100] Virtual Channel
-     Capabilities: [180] Root Complex Link
-     Kernel driver in use: pcieport
-
-00:1c.2 PCI bridge: Intel Corporation 82801H (ICH8 Family) PCI Express Port 3 
-(rev 03) (prog-if 00 [Normal decode])
-     Flags: bus master, fast devsel, latency 0
-     Bus: primary=00, secondary=04, subordinate=04, sec-latency=0
-     I/O behind bridge: 00004000-00004fff
-     Memory behind bridge: d8000000-d9ffffff
-     Prefetchable memory behind bridge: 00000000dfb00000-00000000dfbfffff
-     Capabilities: [40] Express Root Port (Slot+), MSI 00
-     Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
-     Capabilities: [90] Subsystem: Lenovo ThinkPad T61/R61
-     Capabilities: [a0] Power Management version 2
-     Capabilities: [100] Virtual Channel
-     Capabilities: [180] Root Complex Link
-     Kernel driver in use: pcieport
-
-00:1c.3 PCI bridge: Intel Corporation 82801H (ICH8 Family) PCI Express Port 4 
-(rev 03) (prog-if 00 [Normal decode])
-     Flags: bus master, fast devsel, latency 0
-     Bus: primary=00, secondary=05, subordinate=0c, sec-latency=0
-     I/O behind bridge: 00005000-00005fff
-     Memory behind bridge: d4000000-d5ffffff
-     Prefetchable memory behind bridge: 00000000df800000-00000000df8fffff
-     Capabilities: [40] Express Root Port (Slot+), MSI 00
-     Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
-     Capabilities: [90] Subsystem: Lenovo ThinkPad T61/R61
-     Capabilities: [a0] Power Management version 2
-     Capabilities: [100] Virtual Channel
-     Capabilities: [180] Root Complex Link
-     Kernel driver in use: pcieport
-
-00:1c.4 PCI bridge: Intel Corporation 82801H (ICH8 Family) PCI Express Port 5 
-(rev 03) (prog-if 00 [Normal decode])
-     Flags: bus master, fast devsel, latency 0
-     Bus: primary=00, secondary=0d, subordinate=14, sec-latency=0
-     I/O behind bridge: 00006000-00006fff
-     Memory behind bridge: d0000000-d1ffffff
-     Prefetchable memory behind bridge: 00000000df500000-00000000df5fffff
-     Capabilities: [40] Express Root Port (Slot+), MSI 00
-     Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
-     Capabilities: [90] Subsystem: Lenovo ThinkPad T61/R61
-     Capabilities: [a0] Power Management version 2
-     Capabilities: [100] Virtual Channel
-     Capabilities: [180] Root Complex Link
-     Kernel driver in use: pcieport
-
-00:1d.0 USB controller: Intel Corporation 82801H (ICH8 Family) USB UHCI 
-Controller #1 (rev 03) (prog-if 00 [UHCI])
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, medium devsel, latency 0, IRQ 16
-     I/O ports at 18a0 [size=32]
-     Kernel driver in use: uhci_hcd
-
-00:1d.1 USB controller: Intel Corporation 82801H (ICH8 Family) USB UHCI 
-Controller #2 (rev 03) (prog-if 00 [UHCI])
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, medium devsel, latency 0, IRQ 17
-     I/O ports at 18c0 [size=32]
-     Kernel driver in use: uhci_hcd
-
-00:1d.2 USB controller: Intel Corporation 82801H (ICH8 Family) USB UHCI 
-Controller #3 (rev 03) (prog-if 00 [UHCI])
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, medium devsel, latency 0, IRQ 18
-     I/O ports at 18e0 [size=32]
-     Kernel driver in use: uhci_hcd
-
-00:1d.7 USB controller: Intel Corporation 82801H (ICH8 Family) USB2 EHCI 
-Controller #1 (rev 03) (prog-if 20 [EHCI])
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, medium devsel, latency 0, IRQ 19
-     Memory at fe227000 (32-bit, non-prefetchable) [size=1K]
-     Capabilities: [50] Power Management version 2
-     Capabilities: [58] Debug port: BAR=1 offset=00a0
-     Kernel driver in use: ehci-pci
-
-00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev f3) 
-(prog-if 01 [Subtractive decode])
-     Flags: bus master, fast devsel, latency 0
-     Bus: primary=00, secondary=15, subordinate=18, sec-latency=32
-     I/O behind bridge: 00007000-0000afff
-     Memory behind bridge: f8300000-fbffffff
-     Prefetchable memory behind bridge: 00000000f4000000-00000000f7ffffff
-     Capabilities: [50] Subsystem: Lenovo ThinkPad T61/R61
-
-00:1f.0 ISA bridge: Intel Corporation 82801HEM (ICH8M-E) LPC Interface 
-Controller (rev 03)
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, medium devsel, latency 0
-     Capabilities: [e0] Vendor Specific Information: Len=0c <?>
-     Kernel driver in use: lpc_ich
-
-00:1f.1 IDE interface: Intel Corporation 82801HM/HEM (ICH8M/ICH8M-E) IDE 
-Controller (rev 03) (prog-if 8a [Master SecP PriP])
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, medium devsel, latency 0, IRQ 16
-     I/O ports at 01f0 [size=8]
-     I/O ports at 03f4
-     I/O ports at 0170 [size=8]
-     I/O ports at 0374
-     I/O ports at 1c00 [size=16]
-     Kernel driver in use: ata_piix
-
-00:1f.2 SATA controller: Intel Corporation 82801HM/HEM (ICH8M/ICH8M-E) SATA 
-Controller [AHCI mode] (rev 03) (prog-if 01 [AHCI 1.0])
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 45
-     I/O ports at 1c50 [size=8]
-     I/O ports at 1c44 [size=4]
-     I/O ports at 1c48 [size=8]
-     I/O ports at 1c40 [size=4]
-     I/O ports at 1c20 [size=32]
-     Memory at fe226000 (32-bit, non-prefetchable) [size=2K]
-     Capabilities: [80] MSI: Enable+ Count=1/4 Maskable- 64bit-
-     Capabilities: [70] Power Management version 3
-     Capabilities: [a8] SATA HBA v1.0
-     Kernel driver in use: ahci
-
-00:1f.3 SMBus: Intel Corporation 82801H (ICH8 Family) SMBus Controller (rev 03)
-     Subsystem: Lenovo ThinkPad T61/R61
-     Flags: medium devsel, IRQ 23
-     Memory at fe227400 (32-bit, non-prefetchable) [size=256]
-     I/O ports at 1c60 [size=32]
-     Kernel driver in use: i801_smbus
-
-03:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG [Golan] 
-Network Connection (rev 02)
-     Subsystem: Intel Corporation ThinkPad R60e/X60s
-     Flags: bus master, fast devsel, latency 0, IRQ 48
-     Memory at df3ff000 (32-bit, non-prefetchable) [size=4K]
-     Capabilities: [c8] Power Management version 2
-     Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-     Capabilities: [e0] Express Legacy Endpoint, MSI 00
-     Capabilities: [100] Advanced Error Reporting
-     Capabilities: [140] Device Serial Number 00-1c-bf-ff-ff-03-02-87
-     Kernel driver in use: iwl3945
-
-15:00.0 CardBus bridge: Ricoh Co Ltd RL5c476 II (rev ba)
-     Subsystem: Lenovo ThinkPad R61
-     Physical Slot: 1
-     Flags: bus master, medium devsel, latency 168, IRQ 16
-     Memory at f8300000 (32-bit, non-prefetchable) [size=4K]
-     Bus: primary=15, secondary=16, subordinate=17, sec-latency=176
-     Memory window 0: f4000000-f7ffffff (prefetchable)
-     Memory window 1: c0000000-c3ffffff
-     I/O window 0: 00007000-000070ff
-     I/O window 1: 00007400-000074ff
-     16-bit legacy interface ports at 0001
-     Kernel driver in use: yenta_cardbus
-
-15:00.2 SD Host controller: Ricoh Co Ltd R5C822 SD/SDIO/MMC/MS/MSPro Host 
-Adapter (rev 21)
-     Subsystem: Lenovo ThinkPad W500
-     Physical Slot: 1
-     Flags: bus master, medium devsel, latency 64, IRQ 18
-     Memory at f8301000 (32-bit, non-prefetchable) [size=256]
-     Capabilities: [80] Power Management version 2
-     Kernel driver in use: sdhci-pci
-
-15:00.4 System peripheral: Ricoh Co Ltd R5C592 Memory Stick Bus Host Adapter 
-(rev 11)
-     Subsystem: Lenovo ThinkPad T61
-     Physical Slot: 1
-     Flags: bus master, medium devsel, latency 64, IRQ 18
-     Memory at f8301800 (32-bit, non-prefetchable) [size=256]
-     Capabilities: [80] Power Management version 2
-     Kernel driver in use: r592
-
-15:00.5 System peripheral: Ricoh Co Ltd xD-Picture Card Controller (rev 11)
-     Subsystem: Lenovo Device 20cb
-     Physical Slot: 1
-     Flags: bus master, medium devsel, latency 64, IRQ 18
-     Memory at f8301c00 (32-bit, non-prefetchable) [size=256]
-     Capabilities: [80] Power Management version 2
-     Kernel driver in use: r852
-
-
-Zdenek
