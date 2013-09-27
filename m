@@ -1,133 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab3I0PQP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 11:16:15 -0400
-Received: from relay.parallels.com ([195.214.232.42]:45062 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab3I0PQN (ORCPT
+	id S1753558Ab3I0PRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:17:07 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55107 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751638Ab3I0PRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 11:16:13 -0400
-Message-ID: <5245A13A.1070207@parallels.com>
-Date: Fri, 27 Sep 2013 19:16:10 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Fri, 27 Sep 2013 11:17:04 -0400
+X-Sasl-enc: j/VOj1dMwNVO4fWHXQF47yYE90r4R5XJrLdTSC+/+q3H 1380295022
+Date: Fri, 27 Sep 2013 12:16:59 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>
+Subject: Re: [PATCH v3 4/4] thinkpad-acpi: fix handle locate for video and
+ query of _BCL
+Message-ID: <20130927151659.GA4140@khazad-dum.debian.net>
+References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
+ <1380016052-15315-5-git-send-email-aaron.lu@intel.com>
+ <20130925195839.GB23810@khazad-dum.debian.net>
+ <20130926014411.GA14158@aaronlu.linux.com>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: <tytso@mit.edu>, <linux-ext4@vger.kernel.org>, <adilger.kernel@dilger.ca>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ext4: avoid exposure of stale data in ext4_punch_hole()
-References: <20130926173113.23276.77451.stgit@dhcp-10-30-17-2.sw.ru> <20130926185341.GA21811@quack.suse.cz> <5245828E.3060501@parallels.com> <20130927144304.GA3873@quack.suse.cz>
-In-Reply-To: <20130927144304.GA3873@quack.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130926014411.GA14158@aaronlu.linux.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 26 Sep 2013, Aaron Lu wrote:
+> I checked the git log for the commit to use tpacpi_acpi_handle_locate to
+> locate video controller's ACPI handle, it's:
+> 
+> commit 122f26726b5e16174bf8a707df14be1d93c49d62
+> Author: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> Date:   Mon Aug 9 23:48:18 2010 -0300
 
-On 09/27/2013 06:43 PM, Jan Kara wrote:
-> On Fri 27-09-13 17:05:18, Maxim Patlasov wrote:
->> On 09/26/2013 10:53 PM, Jan Kara wrote:
->>>    Hello,
->>>
->>> On Thu 26-09-13 21:32:07, Maxim Patlasov wrote:
->>>> While handling punch-hole fallocate, it's useless to truncate page cache
->>>> before removing the range from extent tree (or block map in indirect case)
->>>> because page cache can be re-populated (by read-ahead or read(2) or mmap-ed
->>>> read) immediately after truncating page cache, but before updating extent
->>>> tree (or block map). In that case the user will see stale data even after
->>>> fallocate is completed.
->>>    Yes, this is a known problem. The trouble is there isn't a reliable fix
->>> currently possible. If we don't truncate page cache before removing blocks,
->>> we will have pages in memory being backed by already freed blocks - not
->>> good as that can lead to data corruption. So you should't really remove the
->>> truncation from before we remove the blocks.
->> I'd like to understand the problem better. Could you please provide
->> any details about that data corruption? And if it was already
->> discussed somewhere, please point me to there.
->    It was discussed at linux-ext4 / linux-fsdevel sometime in spring but I'm
-> not sure to which extent we covered details of the races. Anyway if you
-> have blocks in pagecache which point to already freed blocks (lets say they
-> belong to file foo), the following
-> can happen:
->    1) Someone reallocates freed blocks for another file bar. And writes new
->       data to them. Writeback flushes the data to disk.
->    2) Someone dirties pages with stale mapping data in file foo.
->    3) Writeback writes dirty pages of foo, overwriting data in bar.
+Yeah...
 
-That's clear now. Thanks a lot for the explanation.
+> So I checked out that commit and found that it shouldn't work either,
+> since it has the same problem of the current code.
+> 
+> The ACPI video controller device is given an id of ACPI_VIDEO_HID, but
+> it's only known to Linux ACPI, not ACPICA, so the function provided by
+> ACPICA acpi_get_devices will not work in this case, as that function will
+> really check the control method of _HID under the handle, which does not
+> exist no matter if Linux ACPI has added an id to its device structure or
+> not. OTOH, the function provided by Linux ACPI acpi_device_hid will see
+> the added id. In a word, the add of the HID will not affect the ASL
+> namespace layout of the device node(thus, no _HID control method will
+> be added to the device node).
 
->>> You are right that if punch hole races with page fault or read, we can
->>> create again pages with block mapping which will become stale soon and the
->>> same problem as I wrote above applies. Truncating pagecache after we
->>> removed blocks only narrows the race window but doesn't really fix the
->>> problem.
->> There seems to be two different problems: 1) pages backed by already
->> freed blocks; 2) keeping page-cache populated by pages with stale
->> data after fallocate completes. Your concerns refer to the first
->> problem. My patch was intended to resolve the second. It seems to me
->> that my patch really fixes the second problem and it doesn't make
->> things worse w.r.t. the fisrt problem. Do I miss something?
->    IMHO these are different aspects of the same problem but that's not
-> important. Your patch actually makes things worse because currently if the
-> file isn't written to via mmap while punch_hole is running, everything is
-> fine. After your patch writeback of old data could race with punch hole
-> freeing blocks resulting in data corruption I have described above. The
-> 'no-harm' solution would be to add another truncation of pagecache after
-> punch hole is done. I think that would be a good way to reduce the race
-> window before the problem gets fixed properly.
+Erk.  It went broken for a long time, and the users didn't notice(!)...
 
-Yes, I agree. I also think there is another reason making 'no-harm' 
-patch worthwhile. Because currently, even users who write nothing suffer 
-(any read may re-populate PC in the window). I'll resend corrected patch 
-just in case somebody else is interested.
+> commit ff413195e830541afeae469fc866ecd0319abd7e
+> Author: Alex Hung <alex.hung@canonical.com>
+> Date:   Tue Apr 24 16:40:52 2012 +0800
+> 
+>     thinkpad-acpi: fix issuing duplicated key events for brightness up/down
+>     
+>     The tp_features.bright_acpimode will not be set correctly for brightness
+>     control because ACPI_VIDEO_HID will not be located in ACPI. As a result,
+>     a duplicated key event will always be sent. acpi_video_backlight_support()
+>     is sufficient to detect standard ACPI brightness control.
+>     
+>     Signed-off-by: Alex Hung <alex.hung@canonical.com>
+>     Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
-Thanks,
-Maxim
+Until that.  And unfortunately I did not connect the dots at the time.
 
->>>> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
->>>> ---
->>>>   fs/ext4/inode.c |   17 +++++++++--------
->>>>   1 file changed, 9 insertions(+), 8 deletions(-)
->>>>
->>>> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
->>>> index 0d424d7..6b71116 100644
->>>> --- a/fs/ext4/inode.c
->>>> +++ b/fs/ext4/inode.c
->>>> @@ -3564,14 +3564,6 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
->>>>   	}
->>>> -	first_block_offset = round_up(offset, sb->s_blocksize);
->>>> -	last_block_offset = round_down((offset + length), sb->s_blocksize) - 1;
->>>> -
->>>> -	/* Now release the pages and zero block aligned part of pages*/
->>>> -	if (last_block_offset > first_block_offset)
->>>> -		truncate_pagecache_range(inode, first_block_offset,
->>>> -					 last_block_offset);
->>>> -
->>>>   	/* Wait all existing dio workers, newcomers will block on i_mutex */
->>>>   	ext4_inode_block_unlocked_dio(inode);
->>>>   	inode_dio_wait(inode);
->>>> @@ -3621,6 +3613,15 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
->>>>   	up_write(&EXT4_I(inode)->i_data_sem);
->>>>   	if (IS_SYNC(inode))
->>>>   		ext4_handle_sync(handle);
->>>> +
->>>> +	first_block_offset = round_up(offset, sb->s_blocksize);
->>>> +	last_block_offset = round_down((offset + length), sb->s_blocksize) - 1;
->>>> +
->>>> +	/* Now release the pages and zero block aligned part of pages */
->>>> +	if (last_block_offset > first_block_offset)
->>>> +		truncate_pagecache_range(inode, first_block_offset,
->>>> +					 last_block_offset);
->>>> +
->>>>   	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
->>>>   	ext4_mark_inode_dirty(handle, inode);
->>>>   out_stop:
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks for explaining the issue properly.
 
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
