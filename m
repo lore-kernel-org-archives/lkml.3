@@ -1,86 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab3I0QE0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:04:26 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:38474 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266Ab3I0QEU (ORCPT
+	id S1753975Ab3I0QE2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:04:28 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49981 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753012Ab3I0QEU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Sep 2013 12:04:20 -0400
-Date: Fri, 27 Sep 2013 09:04:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Joe Perches <joe@perches.com>, Ingo Molnar <mingo@kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Jason Low <jason.low2@hp.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, tony.luck@intel.com,
-        fenghua.yu@intel.com, linux-ia64@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: Make the memory barrier test noisier
-Message-ID: <20130927160406.GY9093@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130927060213.GA6673@gmail.com>
- <20130927112323.GJ3657@laptop.programming.kicks-ass.net>
- <1380289495.17366.91.camel@joe-AO722>
- <20130927134802.GA15690@laptop.programming.kicks-ass.net>
- <1380291257.17366.103.camel@joe-AO722>
- <20130927142605.GC15690@laptop.programming.kicks-ass.net>
- <1380292495.17366.106.camel@joe-AO722>
- <20130927145007.GD15690@laptop.programming.kicks-ass.net>
- <20130927151749.GA2149@linux.vnet.ibm.com>
- <20130927153434.GG15690@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
+Subject: Re: [PATCHv2 1/9] hwspinlock/core: add common dt bindings and OF helpers
+Mime-Version: 1.0 (Apple Message framework v1283)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130927153434.GG15690@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092716-1542-0000-0000-000001CE3397
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <4df03ac30dcc79132e3acc2e586d0ca99b431258.1379445653.git.s-anna@ti.com>
+Date: Fri, 27 Sep 2013 11:04:22 -0500
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <14DB8294-1148-446A-A6D3-34E66BA8732C@codeaurora.org>
+References: <cover.1379445653.git.s-anna@ti.com> <4df03ac30dcc79132e3acc2e586d0ca99b431258.1379445653.git.s-anna@ti.com>
+To: Suman Anna <s-anna@ti.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 05:34:34PM +0200, Peter Zijlstra wrote:
-> On Fri, Sep 27, 2013 at 08:17:50AM -0700, Paul E. McKenney wrote:
-> > > Barriers are fundamentally about order; and order only makes sense if
-> > > there's more than 1 party to the game.
-> > 
-> > Oddly enough, there is one exception that proves the rule...  On Itanium,
-> > suppose we have the following code, with x initially equal to zero:
-> > 
-> > CPU 1: ACCESS_ONCE(x) = 1;
-> > 
-> > CPU 2: r1 = ACCESS_ONCE(x); r2 = ACCESS_ONCE(x);
-> > 
-> > Itanium architects have told me that it really is possible for CPU 2 to
-> > see r1==1 and r2==0.  Placing a memory barrier between CPU 2's pair of
-> > fetches prevents this, but without any other memory barrier to pair with.
+
+On Sep 17, 2013, at 2:30 PM, Suman Anna wrote:
+
+> All the platform-specific hwlock driver implementations need the
+> number of locks and the associated base id for registering the
+> locks present within a hwspinlock device with the driver core.
+> These two variables are represented by 'hwlock-num-locks' and
+> 'hwlock-base-id' properties. The documentation and OF helpers to
+> retrieve these common properties have been added to the driver core.
 > 
-> Oh man.. its really past time to sink that itanic already.
+> Signed-off-by: Suman Anna <s-anna@ti.com>
+> ---
+> .../devicetree/bindings/hwlock/hwlock.txt          | 26 +++++++++
+> drivers/hwspinlock/hwspinlock_core.c               | 61 +++++++++++++++++++++-
+> include/linux/hwspinlock.h                         | 11 ++--
+> 3 files changed, 93 insertions(+), 5 deletions(-)
+> create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
 > 
-> I suppose it allows the cpu to reorder the reads in its pipeline and the
-> memory barrier disallows this. Curious.. does our memory-barriers.txt
-> file mention this 'fun' fact?
+> diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+> new file mode 100644
+> index 0000000..789930e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+> @@ -0,0 +1,26 @@
+> +Generic hwlock bindings
+> +=======================
+> +
+> +Generic bindings that are common to all the hwlock platform specific driver
+> +implementations, the retrieved values are used for registering the device
+> +specific parameters with the hwspinlock core.
+> +
+> +The validity and need of these common properties may vary from one driver
+> +implementation to another. Look through the individual hwlock driver
+> +binding documentations for identifying which are mandatory and which are
+> +optional for that specific driver.
+> +
+> +Common properties:
+> +- hwlock-base-id:	Base Id for the locks for a particular hwlock device.
+> +			This property is used for representing a set of locks
+> +			present in a hwlock device with a unique base id in
+> +			the driver core. This property is mandatory ONLY if a
+> +			SoC has several hwlock devices.
+> +
+> +			See documentation on struct hwspinlock_pdata in
+> +			linux/hwspinlock.h for more details.
+> +
+> +- hwlock-num-locks:	Number of locks present in a hwlock device. This
+> +			property is needed on hwlock devices, where the number
+> +			of supported locks within a hwlock device cannot be
+> +			read from a register.
+> diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
+> index 461a0d7..aec32e7 100644
+> --- a/drivers/hwspinlock/hwspinlock_core.c
+> +++ b/drivers/hwspinlock/hwspinlock_core.c
+> @@ -1,7 +1,7 @@
+> /*
+>  * Hardware spinlock framework
+>  *
+> - * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
+> + * Copyright (C) 2010-2013 Texas Instruments Incorporated - http://www.ti.com
+>  *
+>  * Contact: Ohad Ben-Cohen <ohad@wizery.com>
+>  *
+> @@ -27,6 +27,7 @@
+> #include <linux/hwspinlock.h>
+> #include <linux/pm_runtime.h>
+> #include <linux/mutex.h>
+> +#include <linux/of.h>
+> 
+> #include "hwspinlock_internal.h"
+> 
+> @@ -308,6 +309,64 @@ out:
+> }
+> 
+> /**
+> + * of_hwspin_lock_get_base_id() - OF helper to retrieve base id
+> + * @dn: device node pointer
+> + *
+> + * This is an OF helper function that can be called by the underlying
+> + * platform-specific implementations, to retrieve the base id for the
+> + * set of locks present within a hwspinlock device instance.
+> + *
+> + * Returns the base id value on success, -ENODEV on generic failure or
+> + * an appropriate error code as returned by the OF layer
+> + */
+> +int of_hwspin_lock_get_base_id(struct device_node *dn)
+> +{
+> +	unsigned int val;
+> +	int ret = -ENODEV;
+> +
+> +#ifdef CONFIG_OF
+> +	if (!dn)
+> +		return -ENODEV;
 
-Probably not.  I was recently reminded of it by some people on the C++
-standards committee.  I had first heard of it about 5 years ago, but
-hadn't heard definitively until quite recently.
+Checking !dn is done in of_property_read_u32, so you don't need to duplicate
 
-I defer to the Itanium maintainers to actually make the required changes,
-should they choose to do so.  I suppose that one way to handle it in the
-Linux kernel would be to make ACCESS_ONCE() be architecture specific,
-with Itanium placing a memory barrier either before or after --- either
-would work.  But since Itanium seems to run Linux reliably, I am guessing
-that the probability of misordering is quite low.  But again, the ball
-is firmly in the Itanium maintainers' courts, and I have added them on CC.
+> +
+> +	ret = of_property_read_u32(dn, "hwlock-base-id", &val);
+> +	if (!ret)
+> +		ret = val;
+> +#endif
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(of_hwspin_lock_get_base_id);
+> +
+> +/**
+> + * of_hwspin_lock_get_num_locks() - OF helper to retrieve number of locks
+> + * @dn: device node pointer
+> + *
+> + * This is an OF helper function that can be called by the underlying
+> + * platform-specific implementations, to retrieve the number of locks
+> + * present within a hwspinlock device instance.
+> + *
+> + * Returns a positive number of locks on success, -ENODEV on generic
+> + * failure or an appropriate error code as returned by the OF layer
+> + */
+> +int of_hwspin_lock_get_num_locks(struct device_node *dn)
+> +{
+> +	unsigned int val;
+> +	int ret = -ENODEV;
+> +
+> +#ifdef CONFIG_OF
+> +	if (!dn)
+> +		return -ENODEV;
 
-							Thanx, Paul
+Checking !dn is done in of_property_read_u32, so you don't need to duplicate
+
+> +
+> +	ret = of_property_read_u32(dn, "hwlock-num-locks", &val);
+> +	if (!ret)
+> +		ret = val ? val : -ENODEV;
+> +#endif
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(of_hwspin_lock_get_num_locks);
+> +
+> +/**
+>  * hwspin_lock_register() - register a new hw spinlock device
+>  * @bank: the hwspinlock device, which usually provides numerous hw locks
+>  * @dev: the backing device
+> diff --git a/include/linux/hwspinlock.h b/include/linux/hwspinlock.h
+> index 3343298..1f6a5b8 100644
+> --- a/include/linux/hwspinlock.h
+> +++ b/include/linux/hwspinlock.h
+> @@ -1,7 +1,7 @@
+> /*
+>  * Hardware spinlock public header
+>  *
+> - * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
+> + * Copyright (C) 2010-2013 Texas Instruments Incorporated - http://www.ti.com
+>  *
+>  * Contact: Ohad Ben-Cohen <ohad@wizery.com>
+>  *
+> @@ -26,6 +26,7 @@
+> #define HWLOCK_IRQ	0x02	/* Disable interrupts, don't save state */
+> 
+> struct device;
+> +struct device_node;
+> struct hwspinlock;
+> struct hwspinlock_device;
+> struct hwspinlock_ops;
+> @@ -60,6 +61,8 @@ struct hwspinlock_pdata {
+> 
+> #if defined(CONFIG_HWSPINLOCK) || defined(CONFIG_HWSPINLOCK_MODULE)
+> 
+> +int of_hwspin_lock_get_base_id(struct device_node *dn);
+> +int of_hwspin_lock_get_num_locks(struct device_node *dn);
+> int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
+> 		const struct hwspinlock_ops *ops, int base_id, int num_locks);
+> int hwspin_lock_unregister(struct hwspinlock_device *bank);
+> @@ -80,9 +83,9 @@ void __hwspin_unlock(struct hwspinlock *, int, unsigned long *);
+>  * code path get compiled away. This way, if CONFIG_HWSPINLOCK is not
+>  * required on a given setup, users will still work.
+>  *
+> - * The only exception is hwspin_lock_register/hwspin_lock_unregister, with which
+> - * we _do_ want users to fail (no point in registering hwspinlock instances if
+> - * the framework is not available).
+> + * The only exception is hwspin_lock_register/hwspin_lock_unregister and
+> + * associated OF helpers, with which we _do_ want users to fail (no point
+> + * in registering hwspinlock instances if the framework is not available).
+>  *
+>  * Note: ERR_PTR(-ENODEV) will still be considered a success for NULL-checking
+>  * users. Others, which care, can still check this with IS_ERR.
+> -- 
+> 1.8.3.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
