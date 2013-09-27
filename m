@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab3I0Oui (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:50:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55314 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab3I0Oue (ORCPT
+	id S1753511Ab3I0OyE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:54:04 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:43175 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab3I0OyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:50:34 -0400
-Date: Fri, 27 Sep 2013 16:50:07 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Joe Perches <joe@perches.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Jason Low <jason.low2@hp.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH] checkpatch: Make the memory barrier test noisier
-Message-ID: <20130927145007.GD15690@laptop.programming.kicks-ass.net>
-References: <1380231702.3467.85.camel@schen9-DESK>
- <1380235333.3229.39.camel@j-VirtualBox>
- <1380236265.3467.103.camel@schen9-DESK>
- <20130927060213.GA6673@gmail.com>
- <20130927112323.GJ3657@laptop.programming.kicks-ass.net>
- <1380289495.17366.91.camel@joe-AO722>
- <20130927134802.GA15690@laptop.programming.kicks-ass.net>
- <1380291257.17366.103.camel@joe-AO722>
- <20130927142605.GC15690@laptop.programming.kicks-ass.net>
- <1380292495.17366.106.camel@joe-AO722>
+	Fri, 27 Sep 2013 10:54:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380292495.17366.106.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+From: Marc Meledandri <m.meledandri@gmail.com>
+Date: Fri, 27 Sep 2013 10:53:31 -0400
+Message-ID: <CACFbnrz4kgzRw38uLzJ6y8mAZJQnCKg+3HLzW84Vm6ovqi7Bbg@mail.gmail.com>
+Subject: Re: Issues with a rather unusual configured NFS server
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 07:34:55AM -0700, Joe Perches wrote:
-> That would make it seem as if all barriers are SMP no?
+A kernel oops (below) is triggered on shutdown with the 3.10.x kernels.
+I was referred to this thread by linux-ext4 folks as the related regression/fix.
+Is it planned to port the aforementioned patch to the stable kernels? Thanks!
 
-I would think any memory barrier is ordering against someone else; if
-not smp then a device/hardware -- like for instance the hardware page
-table walker.
-
-Barriers are fundamentally about order; and order only makes sense if
-there's more than 1 party to the game.
-
-> Maybe just refer to Documentation/memory-barriers.txt
-> and/or say something like "please document appropriately"
-
-Documentation/memory-barriers.txt is always good; appropriately doesn't
-seem to quantify anything much at all. Someone might think:
-
-/*  */
-smp_mb();
-
-appropriate... 
-
+[183727.974779] EXT4-fs (dm-0): sb orphan head is 47193630
+[183727.974864] sb_info orphan list:
+[183727.974932]   inode dm-0:47193630 at ffff8802b98950f0: mode
+100644, nlink 0, next 0
+[183727.975039] ------------[ cut here ]------------
+[183727.975108] kernel BUG at fs/ext4/super.c:804!
+[183727.975177] invalid opcode: 0000 [#1] SMP
+[183727.975341] Modules linked in: btrfs zlib_deflate ufs qnx4 hfsplus
+hfs minix ntfs vfat msdos fat jfs xfs libcrc32c reiserfs ext3 jbd ext2
+efivars cpuid fuse ecb pci_stub parport_pc ppdev lp parport
+cpufreq_userspace cpufreq_stats cpufreq_conservative cpufreq_powersave
+binfmt_misc nfsd auth_rpcgss oid_registry nfs_acl nfs lockd fscache
+sunrpc usblp hid_microsoft dm_crypt dm_mod loop ecryptfs joydev
+nvidia(PO) snd_hda_codec_realtek snd_hda_intel iTCO_wdt
+iTCO_vendor_support snd_hda_codec mxm_wmi evdev snd_hwdep snd_pcm
+snd_page_alloc coretemp snd_seq snd_timer snd_seq_device psmouse wmi
+serio_raw snd i2c_i801 lpc_ich soundcore mfd_core i2c_core ehci_pci
+ehci_hcd acpi_cpufreq mperf processor button thermal_sys ext4 crc16
+jbd2 mbcache raid456 async_raid6_recov async_memcpy async_pq async_xor
+async_tx xor raid6_pq md_mod sg sr_mod cdrom sd_mod crc_t10dif
+hid_generic usbhid hid crc32c_intel ghash_clmulni_intel ahci libahci
+libata scsi_mod aesni_intel xhci_hcd aes_x86_64 ablk_helper cryptd lrw
+gf128mul glue_helper microcode usbcore usb_common e1000e ptp pps_core
+[last unloaded: vboxdrv]
+[183727.981527] CPU: 2 PID: 24609 Comm: umount Tainted: P           O
+3.10.10+mfm #1
+[183727.981614] Hardware name:                  /DZ68BC, BIOS
+BCZ6810H.86A.0027.2011.1013.
+1636 10/13/2011
+[183727.981703] task: ffff8803e7b06810 ti: ffff8803fffe0000 task.ti:
+ffff8803fffe0000
+[183727.981790] RIP: 0010:[<ffffffffa0209b62>]  [<ffffffffa0209b62>]
+ext4_put_super+0x256/0x310 [ext4]
+[183727.981933] RSP: 0018:ffff8803fffe1e78  EFLAGS: 00010287
+[183727.982003] RAX: 0000000000000047 RBX: ffff88040de47000 RCX:
+00000000d2a7d2a7
+[183727.982088] RDX: 000000000000508c RSI: 0000000000000046 RDI:
+ffffffff817a94a4
+[183727.982174] RBP: ffff88040beb0800 R08: 0000000000000000 R09:
+0000000000000100
+[183727.982260] R10: 0000000000000100 R11: 0000000000000100 R12:
+ffff88040de47200
+[183727.982345] R13: ffff88040de47200 R14: ffff88040de47190 R15:
+ffff8803fffe1f38
+[183727.982432] FS:  00007fb64bfc17e0(0000) GS:ffff88041f500000(0000)
+knlGS:0000000000000000
+[183727.982519] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[183727.982590] CR2: 00007f3fd0af4f80 CR3: 00000002e46b5000 CR4:
+00000000000407e0
+[183727.982676] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[183727.982762] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[183727.982847] Stack:
+[183727.982911]  ffff880300000000 ffff8803fffe1e78 ffff88040beb0800
+ffff88040beb08a0
+[183727.983190]  ffffffffa0228fb0 ffff88040ea052a0 ffff88040ea05280
+ffffffff810f9415
+[183727.983468]  ffff88041e59dbc0 0000000000000083 ffff88040ea05280
+ffffffff810f94ab
+[183727.983745] Call Trace:
+[183727.983813]  [<ffffffff810f9415>] ? generic_shutdown_super+0x4d/0xc5
+[183727.983885]  [<ffffffff810f94ab>] ? kill_block_super+0x1e/0x5f
+[183727.983958]  [<ffffffff810f97b2>] ? deactivate_locked_super+0x1b/0x46
+[183727.984030]  [<ffffffff8110e8b0>] ? SyS_umount+0x2d0/0x2f1
+[183727.984102]  [<ffffffff8136b912>] ? system_call_fastpath+0x16/0x1b
+[183727.984173] Code: c7 c7 04 1b 23 a0 49 8b 54 24 78 48 81 c6 20 03
+00 00 89 04 24 31 c0 e8 de 72 15 e1 4d 8b 24 24 4d 39 ec 0f 84 6e ff
+ff ff eb b7 <0f> 0b 48 8b bd 20 01 00 00 e8 b5 65 f1 e0 48 8b bb 50 02
+00 00
+[183727.987403] RIP  [<ffffffffa0209b62>] ext4_put_super+0x256/0x310 [ext4]
+[183727.987525]  RSP <ffff8803fffe1e78>
+[183727.987597] ---[ end trace eb19380900af1108 ]---
+[183728.094179] EXT4-fs (sda2): re-mounted. Opts: (null)
+[184000.112039] SysRq : Keyboard mode set to system default
+[184001.631989] SysRq : Terminate All Tasks
