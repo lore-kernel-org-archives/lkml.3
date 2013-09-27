@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab3I0IFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 04:05:16 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:64727 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab3I0IFA (ORCPT
+	id S1753254Ab3I0IGK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 04:06:10 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:60414 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab3I0IGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 04:05:00 -0400
-Date: Fri, 27 Sep 2013 09:04:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org, swarren@nvidia.com
-Subject: Re: [PATCH 2/4] mfd: palmas: add MODULE_DEVICE_TABLE for of_device
- table
-Message-ID: <20130927080453.GE5100@lee--X1>
-References: <1380202431-4868-1-git-send-email-ldewangan@nvidia.com>
- <1380202431-4868-3-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1380202431-4868-3-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Sep 2013 04:06:01 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFT PATCH v1 0/7] enable FPSIMD lazy save and restore for arm64
+Date: Fri, 27 Sep 2013 16:04:40 +0800
+Message-Id: <1380269087-8520-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Sep 2013, Laxman Dewangan wrote:
+From: Jiang Liu <jiang.liu@huawei.com>
 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/mfd/palmas.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+This patchset enables FPSIMD lazy save and restore for ARM64, you could
+apply it against v3.12-rc2.
 
-Applied, thanks.
+We have done basic functional tests on ARM fast model, but still lack
+of detail performance benchmark on real hardware platforms. We would
+appreciate if you could help to test it on really hardware platforms!
+
+The first two patches are bugfixes for current FPSIMD implementations.
+The other five patches implements FPSIMD lazy save and restore.
+
+Jiang Liu (7):
+  arm64: fix possible invalid FPSIMD initialization state
+  arm64: restore FPSIMD to default state for kernel and signal contexts
+  arm64: implement basic lazy save and restore for FPSIMD registers
+  arm64: provide boot option "eagerfpu" to control FPSIMD restore policy
+  arm64: reuse FPSIMD hardware context if possible
+  amd64: avoid saving and restoring FPSIMD registers until threads
+    access them
+  arm64: disable lazy load if FPSIMD registers are frequently used
+
+ Documentation/kernel-parameters.txt |   5 +-
+ arch/arm64/include/asm/fpsimd.h     |  12 +-
+ arch/arm64/kernel/fpsimd.c          | 217 ++++++++++++++++++++++++++++++++++--
+ arch/arm64/kernel/process.c         |   4 +-
+ arch/arm64/kernel/signal.c          |  12 +-
+ arch/arm64/kernel/signal32.c        |  12 +-
+ arch/arm64/kernel/smp.c             |   1 +
+ 7 files changed, 238 insertions(+), 25 deletions(-)
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.1.2
+
