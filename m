@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab3I0QVz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:21:55 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51824 "EHLO comal.ext.ti.com"
+	id S1753789Ab3I0QWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:22:20 -0400
+Received: from sauhun.de ([89.238.76.85]:58597 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751719Ab3I0QVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:21:54 -0400
-Message-ID: <5245B076.1090008@ti.com>
-Date: Fri, 27 Sep 2013 11:21:10 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753718Ab3I0QWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 12:22:15 -0400
+Date: Fri, 27 Sep 2013 18:22:12 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: i2c-dev: Create 'name' attribute automatically
+Message-ID: <20130927162212.GA3094@katana>
+References: <1380249371-32430-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCHv2 2/9] hwspinlock/omap: add support for dt nodes
-References: <cover.1379445653.git.s-anna@ti.com> <0fd6a11880894260d627a50b1e35f363625e9b1d.1379445653.git.s-anna@ti.com> <AE597DCC-83D7-4BCD-8990-3D63540F32EA@codeaurora.org>
-In-Reply-To: <AE597DCC-83D7-4BCD-8990-3D63540F32EA@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
+Content-Disposition: inline
+In-Reply-To: <1380249371-32430-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 11:06 AM, Kumar Gala wrote:
-> 
-> On Sep 17, 2013, at 2:30 PM, Suman Anna wrote:
-> 
->> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
->> which are all device-tree boot only. This patch adds the
->> base support for parsing the DT nodes, and removes the code
->> dealing with the traditional platform device instantiation.
->>
->> Signed-off-by: Suman Anna <s-anna@ti.com>
->> ---
->> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 31 +++++++++++
->> arch/arm/mach-omap2/Makefile                       |  3 --
->> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
->> drivers/hwspinlock/omap_hwspinlock.c               | 23 +++++++--
->> 4 files changed, 50 insertions(+), 67 deletions(-)
->> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
->>
->> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->> new file mode 100644
->> index 0000000..235b7c5
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->> @@ -0,0 +1,31 @@
->> +OMAP4+ HwSpinlock Driver
->> +========================
->> +
->> +Required properties:
->> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
->> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
->> +- reg:			Contains the hwspinlock register address range (base
->> +			address and length)
->> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
->> +
->> +Common hwlock properties:
->> +The following describes the usage of the common hwlock properties (defined in
->> +Documentation/devicetree/bindings/hwlock/hwlock.txt) on OMAP.
->> +
->> +- hwlock-base-id:	There are currently no OMAP SoCs with multiple
->> +			hwspinlock devices. The OMAP driver uses a default
->> +			base id value of 0 for the locks present within the
->> +			single hwspinlock device on all SoCs.
->> +- hwlock-num-locks:	This property is not required on OMAP SoCs, since the
->> +			number of locks present within a device can be deduced
->> +			from the SPINLOCK_SYSSTATUS device register.
-> 
-> If you are going to be explicit about this properties, you should probably be a bit more clear about them NOT being in the OMAP dts because of the reasons you specify.
 
-You mean on the hwlock-base-id? I wanted to document how these
-properties (do not) apply for OMAP, I will revise the text to be a bit
-more explicit. Thanks for the review.
+--Nq2Wo0NMKNjxTN9z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-regards
-Suman
+On Thu, Sep 26, 2013 at 07:36:11PM -0700, Guenter Roeck wrote:
+> The 'name' attribute is needed for all i2c-dev class devices, meaning
+> it can be created automatically by pointing to it in the class data
+> structure. This simplifies the code and reduces the probability for race
+> conditions (the name attribute should exist by the time the device is
+> announced to user space).
+>=20
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+
+Applied to for-next, thanks!
+
+
+--Nq2Wo0NMKNjxTN9z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSRbC0AAoJEBQN5MwUoCm2vy4QAJx7ILRZ8udDN7DE3IzilGTJ
+4PdDFojjBYh+2uwv2Eih3YKQZ+x5zQ8OrP3y8PznAmdOR5TABI5lubOk3e1QAATB
+6hMXLryYe27q4WPRjiCw1PWHbxx0cD29XOfVEQu6q3Lz92QKiiKUXdikpii6+eXs
+fC5ThyXxdUdwmjm4CNWGu5usDGRrYi0eO4jklM1O1jkKHJAnkXxDfRSBt+ZHMAnL
+CBTPsRgcA9WBKllGRYLoVNejzp00vE0Nt+LpkTXTe0oBujiBxf0ElKRYJi3pdrbe
+SoupflZcmv2//E5FTyPNWygyNTTD95W8e9Q44oVt6NA1djehp9r+FMYmL5CzCNnP
+8gaQWcUby0LaY+Wj+GnwU75hUbazrBUBAn8+u6x+JCHGWeUXFHs3ioZBigsI/iCO
+N6OQic8+RP+P1wm6MKsS+gaswgg1dNKQtS3ou3HJXcWXsaTZwYap/CxyXdp63138
+8J/w4+dezRmUjl39GVl+3V1aEgMqd+IraOr1Vn3YBup1l9vP4N8/qNWELebktyp5
+nIHqxM+6l80Qb0CCwORO71mn6Lv8+UHMbZfNhMmoEcla76UvxeIYkO9QHA35i2Fb
+bQm0GvaHD9SGCAo+T8yxUz2n5TBdobzcfB01itzoZCNkzhsbJd95pykZpO+W1wTl
+Pn2rndRX+XQxOfgDctsK
+=EEFQ
+-----END PGP SIGNATURE-----
+
+--Nq2Wo0NMKNjxTN9z--
