@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab3I0XQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 19:16:28 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:32983 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab3I0XQ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 19:16:26 -0400
-Message-ID: <1380323662.14046.51.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v5 5/6] x86, acpi, crash, kdump: Do
- reserve_crashkernel() after SRAT is parsed
-From: Toshi Kani <toshi.kani@hp.com>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Date: Fri, 27 Sep 2013 17:14:22 -0600
-In-Reply-To: <5241DB3A.6090002@gmail.com>
-References: <5241D897.1090905@gmail.com> <5241DB3A.6090002@gmail.com>
+	id S1753956Ab3I0XTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 19:19:39 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46142 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753269Ab3I0XTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 19:19:37 -0400
+Message-ID: <1380323960.27811.67.camel@pasglop>
+Subject: Re: Please revert 928bea964827d7824b548c1f8e06eccbbc4d0d7d
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Sat, 28 Sep 2013 09:19:20 +1000
+In-Reply-To: <CAE9FiQWm7ALPO5k_2nV+fuZw4oNNiw+_PEx8EWkb52ymN+EYUg@mail.gmail.com>
+References: <1380270519.27811.10.camel@pasglop>
+	 <CAE9FiQVkW7d7vFx_kPJG-FEvO71SZjZmpR+dnwVm61wkYK=0YA@mail.gmail.com>
+	 <CA+55aFyDfMdAeaniQwkoeW6F-xd3JxrzGYwtFb6N9+NA6aRCMg@mail.gmail.com>
+	 <1380318405.27811.37.camel@pasglop>
+	 <CAE9FiQXXvkfTak6oEpUog_RYs_Gwpdji7N5UJ=R11Q61==N97A@mail.gmail.com>
+	 <1380321480.27811.53.camel@pasglop>
+	 <CAE9FiQWm7ALPO5k_2nV+fuZw4oNNiw+_PEx8EWkb52ymN+EYUg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-25 at 02:34 +0800, Zhang Yanfei wrote:
-> From: Tang Chen <tangchen@cn.fujitsu.com>
-> 
-> Memory reserved for crashkernel could be large. So we should not allocate
-> this memory bottom up from the end of kernel image.
-> 
-> When SRAT is parsed, we will be able to know whihc memory is hotpluggable,
-> and we can avoid allocating this memory for the kernel. So reorder
-> reserve_crashkernel() after SRAT is parsed.
-> 
-> Acked-by: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  arch/x86/kernel/setup.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index f0de629..36cfce3 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -1120,8 +1120,6 @@ void __init setup_arch(char **cmdline_p)
->  	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
->  #endif
->  
-> -	reserve_crashkernel();
-> -
->  	vsmp_init();
->  
->  	io_delay_init();
-> @@ -1136,6 +1134,12 @@ void __init setup_arch(char **cmdline_p)
->  	initmem_init();
->  	memblock_find_dma_reserve();
->  
-> +	/*
-> +	 * Reserve memory for crash kernel after SRAT is parsed so that it
-> +	 * won't consume hotpluggable memory.
-> +	 */
-> +	reserve_crashkernel();
+On Fri, 2013-09-27 at 15:56 -0700, Yinghai Lu wrote:
 
-Out of curiosity, is there any particular reason why it is moved after
-memblock_find_dma_reserve(), not initmem_init()?
+> ok, please if you are ok attached one instead. It will print some warning about
+> driver skipping pci_set_master, so we can catch more problem with drivers.
 
-Thanks,
--Toshi
+Except that the message is pretty cryptic :-) Especially since the
+driver causing the message to be printed is not the one that did
+the mistake in the first place, it's the next one coming up that
+trips the warning.
+
+In any case, the root cause is indeed the PCIe port driver:
+
+We don't have ACPI, so pcie_port_platform_notify() isn't implemented,
+and pcie_ports_auto is true, so we end up with capabilities set to 0.
+
+Thus the port driver bails out before calling pci_set_master(). The fix
+is to call pci_set_master() unconditionally. However that lead me to
+find to a few interesting oddities in that port driver code:
+
+ - If capabilities is 0, it returns after enabling the device and
+doesn't disable it. But if it fails for any other reason later on (such
+as failing to enable interrupts), it *will* disable the device. This is
+inconsistent. In fact, if it had disabled the device as a result of the
+0 capabilities, the problem would also not have happened (the subsequent
+enable_bridge done by the e1000e driver would have done the right
+thing). I've tested "fixing" that instead of moving the set_master call
+and it fixes my problem as well.
+
+ - In get_port_device_capability(), all capabilities are gated by a
+combination of the bit in cap_mask and a corresponding HW check of
+the presence of the relevant PCIe capability or similar... except
+for the VC one, which is solely read from the HW capability. That means
+that the platform pcie_port_platform_notify() has no ability to prevent
+the VC capability (so if I have a broken bridge that advertises it but
+my platform wants to block it, it can't).
+
+ - I am quite nervous with the PCIe port driver disabling bridges. I
+understand the intent but what if that bridge has some system device
+behind it ? Something you don't even know about (used by ACPI, behind an
+ISA bridge for example ?).
+
+I think disabling bridges is a VERY risky proposition at all times
+(including during PM) and I don't think the port driver should do it.
+
+Maybe a more robust approach would be to detect one way or another that
+the bridge was already enabled and only disable it if it wasn't or
+something along those lines (ie ,restore it in the state it was)...
+
+This is not my problem right now of course (in my case the bridge was
+disabled to begin with) but I have a long experience with system stuff
+hiding behind bridges and the code as it is written makes me a bit
+nervous.
+
+Cheers,
+Ben.
 
