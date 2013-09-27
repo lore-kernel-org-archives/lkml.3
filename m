@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806Ab3I0K66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 06:58:58 -0400
-Received: from kiruna.synopsys.com ([198.182.44.80]:52099 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab3I0K6y (ORCPT
+	id S1752925Ab3I0K7B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 06:59:01 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:54870 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab3I0K66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 06:58:54 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-CC: <arc-linux-dev@synopsys.com>, <u.kleine-koenig@pengutronix.de>,
-        Noam Camus <noamc@ezchip.com>, Gilad Ben-Yossef <gilad@benyossef.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH 0/4] ARC fixes for 3.12-rc3
-Date: Fri, 27 Sep 2013 16:27:33 +0530
-Message-ID: <1380279457-14299-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.8.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.12.197.111]
+	Fri, 27 Sep 2013 06:58:58 -0400
+Date: Fri, 27 Sep 2013 12:58:56 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Oussama Ghorbel <oghorbell@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] IPv6: Allow the MTU of ipip6 tunnel to be set below 1280
+Message-ID: <20130927105856.GF28287@order.stressinduktion.org>
+Mail-Followup-To: Oussama Ghorbel <oghorbell@gmail.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+	James Morris <jmorris@namei.org>,
+	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1380207108-20030-1-git-send-email-oghorbell@gmail.com> <20130927083730.GC28287@order.stressinduktion.org> <CA+ev270=P9txSvo7AZN0YcsopwhCYtJCgcZCPsdofEJ+BX+EUQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+ev270=P9txSvo7AZN0YcsopwhCYtJCgcZCPsdofEJ+BX+EUQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARC fixes for 3.12-rc3.
+On Fri, Sep 27, 2013 at 11:45:48AM +0100, Oussama Ghorbel wrote:
+> The ip6_tunnel.c module would be then dependent on ip_tunnel.c and may
+> be it would not be good thing?
 
-Thx,
--Vineet
+It could just be a static inline in some shared header. So there would
+be no compile-time dependency.
 
-Mischa Jonker (1):
-  ARC: Handle zero-overhead-loop in unaligned access handler
+> As I have check in v3.10 there is no call from ip6_tunnel to ip_tunnel...
+> 
+> For information, there is no check for the maximum MTU for ipv4 in the
+> patch as this is not done for ipv6.
 
-Uwe Kleine-König (1):
-  ARC: Use clockevents_config_and_register over
-    clockevents_register_device
+I understand, but it would be better to limit the MTU here. There is a
+(non-jumo) IPV6_MAXPLEN constant.
 
-Vineet Gupta (2):
-  ARC: Fix 32-bit wrap around in access_ok()
-  ARC: Workaround spinlock livelock in SMP SystemC simulation
+Looking through the source it seems grev6 does actually check this,
+so it would not hurt adding them here, too.
 
- arch/arc/include/asm/spinlock.h | 9 ++++++++-
- arch/arc/include/asm/uaccess.h  | 4 ++--
- arch/arc/kernel/time.c          | 7 ++-----
- arch/arc/kernel/unaligned.c     | 6 ++++++
- 4 files changed, 18 insertions(+), 8 deletions(-)
+Otherwise, I think your patch is fine.
 
--- 
-1.8.1.2
+Greetings,
+
+  Hannes
 
