@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab3I0NmS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:42:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55615 "EHLO mx2.suse.de"
+	id S1754147Ab3I0NnE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:43:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55590 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753632Ab3I0N2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:28:07 -0400
+	id S1753611Ab3I0N2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:04 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 15/63] Revert "mm: sched: numa: Delay PTE scanning until a task is scheduled on a new node"
-Date: Fri, 27 Sep 2013 14:27:00 +0100
-Message-Id: <1380288468-5551-16-git-send-email-mgorman@suse.de>
+Subject: [PATCH 12/63] mm: numa: Do not migrate or account for hinting faults on the zero page
+Date: Fri, 27 Sep 2013 14:26:57 +0100
+Message-Id: <1380288468-5551-13-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
@@ -22,107 +22,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PTE scanning and NUMA hinting fault handling is expensive so commit
-5bca2303 ("mm: sched: numa: Delay PTE scanning until a task is scheduled
-on a new node") deferred the PTE scan until a task had been scheduled on
-another node. The problem is that in the purely shared memory case that
-this may never happen and no NUMA hinting fault information will be
-captured. We are not ruling out the possibility that something better
-can be done here but for now, this patch needs to be reverted and depend
-entirely on the scan_delay to avoid punishing short-lived processes.
+The zero page is not replicated between nodes and is often shared between
+processes. The data is read-only and likely to be cached in local CPUs
+if heavily accessed meaning that the remote memory access cost is less
+of a concern. This patch prevents trapping faults on the zero pages. For
+tasks using the zero page this will reduce the number of PTE updates,
+TLB flushes and hinting faults.
 
+[peterz@infradead.org: Correct use of is_huge_zero_page]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/mm_types.h | 10 ----------
- kernel/fork.c            |  3 ---
- kernel/sched/fair.c      | 18 ------------------
- kernel/sched/features.h  |  4 +---
- 4 files changed, 1 insertion(+), 34 deletions(-)
+ mm/huge_memory.c | 10 +++++++++-
+ mm/memory.c      |  1 +
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index faf4b7c..4f12073 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -427,20 +427,10 @@ struct mm_struct {
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index ac5af18..dd94f4e 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1303,6 +1303,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		goto out_unlock;
  
- 	/* numa_scan_seq prevents two threads setting pte_numa */
- 	int numa_scan_seq;
--
--	/*
--	 * The first node a task was scheduled on. If a task runs on
--	 * a different node than Make PTE Scan Go Now.
--	 */
--	int first_nid;
- #endif
- 	struct uprobes_state uprobes_state;
- };
+ 	page = pmd_page(pmd);
++	BUG_ON(is_huge_zero_page(page));
+ 	page_nid = page_to_nid(page);
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+ 	if (page_nid == this_nid)
+@@ -1493,8 +1494,15 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ 		} else {
+ 			struct page *page = pmd_page(*pmd);
  
--/* first nid will either be a valid NID or one of these values */
--#define NUMA_PTE_SCAN_INIT	-1
--#define NUMA_PTE_SCAN_ACTIVE	-2
--
- static inline void mm_init_cpumask(struct mm_struct *mm)
- {
- #ifdef CONFIG_CPUMASK_OFFSTACK
-diff --git a/kernel/fork.c b/kernel/fork.c
-index bf46287..3b1f6af 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -820,9 +820,6 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 	mm->pmd_huge_pte = NULL;
- #endif
--#ifdef CONFIG_NUMA_BALANCING
--	mm->first_nid = NUMA_PTE_SCAN_INIT;
--#endif
- 	if (!mm_init(mm, tsk))
- 		goto fail_nomem;
+-			/* only check non-shared pages */
++			/*
++			 * Only check non-shared pages. Do not trap faults
++			 * against the zero page. The read-only data is likely
++			 * to be read-cached on the local CPU cache and it is
++			 * less useful to know about local vs remote hits on
++			 * the zero page.
++			 */
+ 			if (page_mapcount(page) == 1 &&
++			    !is_huge_zero_page(page) &&
+ 			    !pmd_numa(*pmd)) {
+ 				entry = pmdp_get_and_clear(mm, addr, pmd);
+ 				entry = pmd_mknuma(entry);
+diff --git a/mm/memory.c b/mm/memory.c
+index c20f872..86c3caf 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3575,6 +3575,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		pte_unmap_unlock(ptep, ptl);
+ 		return 0;
+ 	}
++	BUG_ON(is_zero_pfn(page_to_pfn(page)));
  
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index f2580ce..8510633 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -901,24 +901,6 @@ void task_numa_work(struct callback_head *work)
- 		return;
- 
- 	/*
--	 * We do not care about task placement until a task runs on a node
--	 * other than the first one used by the address space. This is
--	 * largely because migrations are driven by what CPU the task
--	 * is running on. If it's never scheduled on another node, it'll
--	 * not migrate so why bother trapping the fault.
--	 */
--	if (mm->first_nid == NUMA_PTE_SCAN_INIT)
--		mm->first_nid = numa_node_id();
--	if (mm->first_nid != NUMA_PTE_SCAN_ACTIVE) {
--		/* Are we running on a new node yet? */
--		if (numa_node_id() == mm->first_nid &&
--		    !sched_feat_numa(NUMA_FORCE))
--			return;
--
--		mm->first_nid = NUMA_PTE_SCAN_ACTIVE;
--	}
--
--	/*
- 	 * Reset the scan period if enough time has gone by. Objective is that
- 	 * scanning will be reduced if pages are properly placed. As tasks
- 	 * can enter different phases this needs to be re-examined. Lacking
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index 99399f8..cba5c61 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -63,10 +63,8 @@ SCHED_FEAT(LB_MIN, false)
- /*
-  * Apply the automatic NUMA scheduling policy. Enabled automatically
-  * at runtime if running on a NUMA machine. Can be controlled via
-- * numa_balancing=. Allow PTE scanning to be forced on UMA machines
-- * for debugging the core machinery.
-+ * numa_balancing=
-  */
- #ifdef CONFIG_NUMA_BALANCING
- SCHED_FEAT(NUMA,	false)
--SCHED_FEAT(NUMA_FORCE,	false)
- #endif
+ 	page_nid = page_to_nid(page);
+ 	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
 -- 
 1.8.1.4
 
