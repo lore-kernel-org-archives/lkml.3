@@ -1,69 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab3I0Qaa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:30:30 -0400
-Received: from mailrelay.sea-ab.se ([91.223.232.53]:42258 "EHLO
-	mailrelay.sea-ab.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab3I0Qa1 (ORCPT
+	id S1753578Ab3I0Qai (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:30:38 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:34493 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab3I0Qae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:30:27 -0400
-From: Martin Berglund <martin@rogsta.net>
-To: teddy.wang@siliconmotion.com.cn
-Cc: gregkh@linuxfoundation.org, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, martin@rogsta.net
-Subject: [PATCH v2] Staging: sm7xxfb: fixed line break coding style issues
-Date: Fri, 27 Sep 2013 18:32:26 +0200
-Message-Id: <1380299546-24352-1-git-send-email-martin@rogsta.net>
-X-Mailer: git-send-email 1.8.4
+	Fri, 27 Sep 2013 12:30:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <524437BE.8040106@gmail.com>
+References: <524437BE.8040106@gmail.com>
+Date: Fri, 27 Sep 2013 09:30:33 -0700
+X-Google-Sender-Auth: OrzVmU5a9xF3dUpOpZNoAKgKz2s
+Message-ID: <CA+55aFzXz9o52TKst6zpEmh7vrR1CwM=u+Wt_EP5+F7kuhf-_Q@mail.gmail.com>
+Subject: Re: [git pull] Score: Fix compiling error and updatr thee information
+ of maintainers
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Lennox Wu <lennox.wu@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style issues.
+On Thu, Sep 26, 2013 at 6:33 AM, Lennox Wu <lennox.wu@gmail.com> wrote:
+> are available in the git repository at:
+>
+> https://github.com/sctscore/official-linux.git release-up-to-date
 
-Signed-off-by: Martin Berglund <martin@rogsta.net>
----
-v2: minor style change as suggested by Dan.
- drivers/staging/sm7xxfb/sm7xxfb.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+Please, I *really* want signed tags from github. You've done it before..
 
-diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
-index 8add64b..8ba0097 100644
---- a/drivers/staging/sm7xxfb/sm7xxfb.c
-+++ b/drivers/staging/sm7xxfb/sm7xxfb.c
-@@ -259,8 +259,7 @@ static int smtc_setcolreg(unsigned regno, unsigned red, unsigned green,
- 			if (sfb->fb.var.bits_per_pixel == 16) {
- 				u32 *pal = sfb->fb.pseudo_palette;
- 				val = chan_to_field(red, &sfb->fb.var.red);
--				val |= chan_to_field(green, \
--						&sfb->fb.var.green);
-+				val |= chan_to_field(green, &sfb->fb.var.green);
- 				val |= chan_to_field(blue, &sfb->fb.var.blue);
- #ifdef __BIG_ENDIAN
- 				pal[regno] =
-@@ -274,8 +273,7 @@ static int smtc_setcolreg(unsigned regno, unsigned red, unsigned green,
- 			} else {
- 				u32 *pal = sfb->fb.pseudo_palette;
- 				val = chan_to_field(red, &sfb->fb.var.red);
--				val |= chan_to_field(green, \
--						&sfb->fb.var.green);
-+				val |= chan_to_field(green, &sfb->fb.var.green);
- 				val |= chan_to_field(blue, &sfb->fb.var.blue);
- #ifdef __BIG_ENDIAN
- 				val =
-@@ -508,9 +506,9 @@ static void sm7xx_set_timing(struct smtcfb_info *sfb)
- 
- 			/* init SEQ register SR30 - SR75 */
- 			for (i = 0; i < SIZE_SR30_SR75; i++)
--				if (((i + 0x30) != 0x62) \
--					&& ((i + 0x30) != 0x6a) \
--					&& ((i + 0x30) != 0x6b))
-+				if ((i + 0x30) != 0x62 &&
-+				    (i + 0x30) != 0x6a &&
-+				    (i + 0x30) != 0x6b)
- 					smtc_seqw(i + 0x30,
- 						VGAMode[j].Init_SR30_SR75[i]);
- 
--- 
-1.8.4
+Also, please use the "git://" protocol instead of "https://". If for
+no other reason than consistency.
 
+             Linus
