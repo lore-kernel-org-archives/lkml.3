@@ -1,137 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3I0Sy7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 14:54:59 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:49157 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754203Ab3I0Sy6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 14:54:58 -0400
-Date: Fri, 27 Sep 2013 15:54:50 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [BUG/RFC 3/3] perf tools: Add missing GTK2_SUPPORT ifdefs
-Message-ID: <20130927185450.GB3943@infradead.org>
-References: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
- <1380292332-6518-1-git-send-email-jolsa@redhat.com>
- <1380292332-6518-3-git-send-email-jolsa@redhat.com>
+	id S1754667Ab3I0S4Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 14:56:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36955 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754636Ab3I0S4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 14:56:20 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jeff Mahoney <jeffm@suse.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] blktrace: fix race with open trace files and directory removal
+References: <52425444.204@suse.com>
+	<x49k3i2ds1a.fsf@segfault.boston.devel.redhat.com>
+	<5245D414.1020002@suse.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 27 Sep 2013 14:56:12 -0400
+In-Reply-To: <5245D414.1020002@suse.com> (Jeff Mahoney's message of "Fri, 27
+	Sep 2013 14:53:08 -0400")
+Message-ID: <x49eh8adrg3.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380292332-6518-3-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Sep 27, 2013 at 04:32:12PM +0200, Jiri Olsa escreveu:
-> When building minimal perf via:
->   NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1 NO_DEMANGLE=1
->   NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1 NO_LIBNUMA=1 NO_LIBAUDIT=1
->   NO_LIBBIONIC=1
-> 
-> We dont link -ldl and that's causing error for gtk2 related code,
-> which is disabled on command line (NO_GTK2), but not in the code
-> (GTK2_SUPPORT).
-> 
-> We probably need some global fix/change for this browser
-> enabled/disable code.
+Jeff Mahoney <jeffm@suse.com> writes:
 
-But for now what you did is enough, since the only module that uses
-the dl mechanism is the GTK+ one, so I'm applying it.
+> On 9/27/13 2:43 PM, Jeff Moyer wrote:
+>> Jeff Mahoney <jeffm@suse.com> writes:
+>> 
+>>> There's a bug in the blktrace client where it will stop and tear down
+>>> all of the tracing instances for devices it's opened whether it
+>>> successfully completed the setup or not.
+>>>
+>>> By starting multiple blktrace processes on the same device, it's possible
+>>> to permanently disable blktrace on that device. The cause is that when
+>>> the first blktrace process to exit tears down the directory structure,
+>>> the trace files are still held open. Debugfs removes the dentries for the
+>>> open files just fine but the relay implementation doesn't remove the
+>>> dentries until all of the references to the file are dropped. This means
+>>> that if there are open files when debugfs_remove is called for the device
+>>> directory, the directory is not empty and can't be removed. Since the
+>>> shutdown of the blktrace structure xchg's the structure out, there's no
+>>> way to clean up the directory and any new blktrace processes will fail
+>>> to start because it can't create the directory.
+>>>
+>>> This patch adds a kref to blk_trace so that we can release it after the
+>>> initial reference as well as all of the references accumulated by the
+>>> relay files are dropped.
+>> 
+>> Can't we just do proper unwinding of errors in the do_blktrace_setup
+>> function?  In other words, don't just blindly call blk_trace_free, but
+>> instead just undo anything we've done.
+>
+> No. It's not the setup that's causing the problem. It's one process
+> holding the trace files open while another process calls BLKTRACETEARDOWN.
 
-I should have detected this before pushing out perf/core with the
-changes that introduced this problem, that is what:
+Ah, right.  So, in that case I'd rather restrict the ioctl to just the
+process that setup the trace.  Jens, Tejun, any opinions?
 
-  make -C tools/perf -f tests/make
-
-was made to catch, my bad, Namhyung, please use those tests next time
-too :-)
-
-> Tested just by building it corretly.
-
-Yeah, now tests/make completes without problems.
-
-Thanks,
-
-- Arnaldo
- 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> ---
->  tools/perf/builtin-annotate.c | 6 ++++++
->  tools/perf/builtin-report.c   | 2 ++
->  2 files changed, 8 insertions(+)
-> 
-> diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-> index 577c3a1..ddde407 100644
-> --- a/tools/perf/builtin-annotate.c
-> +++ b/tools/perf/builtin-annotate.c
-> @@ -142,6 +142,7 @@ find_next:
->  		}
->  
->  		if (use_browser == 2) {
-> +#ifdef GTK2_SUPPORT
->  			int ret;
->  			int (*annotate)(struct hist_entry *he,
->  					struct perf_evsel *evsel,
-> @@ -161,6 +162,9 @@ find_next:
->  			/* skip missing symbols */
->  			nd = rb_next(nd);
->  		} else if (use_browser == 1) {
-> +#else
-> +			use_browser = 1;
-> +#endif
->  			key = hist_entry__tui_annotate(he, evsel, NULL);
->  			switch (key) {
->  			case -1:
-> @@ -258,6 +262,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
->  		goto out_delete;
->  	}
->  
-> +#ifdef GTK2_SUPPORT
->  	if (use_browser == 2) {
->  		void (*show_annotations)(void);
->  
-> @@ -269,6 +274,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
->  		}
->  		show_annotations();
->  	}
-> +#endif
->  
->  out_delete:
->  	/*
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index 295025e..c902229 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -591,6 +591,7 @@ static int __cmd_report(struct perf_report *rep)
->  				ret = 0;
->  
->  		} else if (use_browser == 2) {
-> +#ifdef GTK2_SUPPORT
->  			int (*hist_browser)(struct perf_evlist *,
->  					    const char *,
->  					    struct hist_browser_timer *,
-> @@ -604,6 +605,7 @@ static int __cmd_report(struct perf_report *rep)
->  			}
->  			hist_browser(session->evlist, help, NULL,
->  				     rep->min_percent);
-> +#endif
->  		}
->  	} else
->  		perf_evlist__tty_browse_hists(session->evlist, rep, help);
-> -- 
-> 1.7.11.7
+Cheers,
+Jeff
