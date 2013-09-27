@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab3I0OiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:38:07 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51306 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753443Ab3I0OiF (ORCPT
+	id S1754070Ab3I0OjV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:39:21 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:42742 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734Ab3I0OjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:38:05 -0400
-Date: Fri, 27 Sep 2013 15:37:21 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Vineet Gupta <vgupta@synopsys.com>, Will Deacon <Will.Deacon@arm.com>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>,
-        James Hogan <james.hogan@imgtec.com>, Jonas Bonn <jonas@southpole.se>,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>
-Subject: Re: [PATCH 21/21] of: remove empty arch prom.h headers
-Message-ID: <20130927143721.GD26069@arm.com>
-References: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
- <1380221456-11192-22-git-send-email-robherring2@gmail.com>
+	Fri, 27 Sep 2013 10:39:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380221456-11192-22-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <52458F79.8040801@redhat.com>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+	<CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
+	<20130925183828.GA30372@lenny.home.zabbo.net>
+	<CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
+	<20130925190620.GB30372@lenny.home.zabbo.net>
+	<20130925195526.GA18971@fieldses.org>
+	<20130925210742.GG30372@lenny.home.zabbo.net>
+	<CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+	<20130926153359.GE704@fieldses.org>
+	<CAJfpegsUchb0eX+Hi3rN5Ypje3Y-dgo=pxgM1Y3BQbHVp=1hSw@mail.gmail.com>
+	<20130926190611.GP30372@lenny.home.zabbo.net>
+	<CAJfpegvvWhs+jv2J9kOQrB31PEO3kyn_sLm_e2w9YKp=y6EDhA@mail.gmail.com>
+	<5244A5E7.90808@redhat.com>
+	<CAJfpegufnsU0LLvvZDmKpvRn8AaJ7NvKeegg-4YJ5AK9mBDBYQ@mail.gmail.com>
+	<52458F79.8040801@redhat.com>
+Date: Fri, 27 Sep 2013 16:39:15 +0200
+Message-ID: <CAJfpegseipg6DAseBTG4Z6024noQa7owv48rOJznCPiXK+hezw@mail.gmail.com>
+Subject: Re: [RFC] extending splice for copy offloading
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: Zach Brown <zab@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>,
+        Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 07:50:56PM +0100, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> Now that prom.h is optional, all the empty prom.h headers can be removed.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Mark Salter <msalter@redhat.com>
-> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
-> Cc: James Hogan <james.hogan@imgtec.com>
-> Cc: Jonas Bonn <jonas@southpole.se>
-> Cc: Chris Zankel <chris@zankel.net>
-> Cc: Max Filippov <jcmvbkbc@gmail.com>
+On Fri, Sep 27, 2013 at 4:00 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> I think that you are an order of magnitude off here in thinking about the
+> scale of the operations.
+>
+> An enabled, synchronize copy offload to an array (or one that turns into a
+> reflink locally) is effectively the cost of the call itself. Let's say no
+> slower than one IO to a S-ATA disk (10ms?) as a pessimistic guess.
+> Realistically, that call is much faster than that worst case number.
+>
+> Copying any substantial amount of data - like the target workload of VM
+> images or media files - would be hundreds of MB's per copy and that would
+> take seconds or minutes.
+
+Will a single splice-copy operation be interruptible/restartable?  If
+not, how should apps size one request so that it doesn't take too much
+time?  Even for slow devices (usb stick)?  If it will be restartable,
+how?   Can remote copy be done with this?  Over a high latency
+network?
+
+Those are the questions I'm worried about.
+
+>
+> We should really work on getting the basic mechanism working and robust
+> without any complications, then we can look at real, measured performance
+> and see if there is any justification for adding complexity.
+
+Go for that.  But don't forget that at the end of the day actual apps
+will need to be converted like file managers and "dd" and "cp" and we
+definitely don't wont a userspace library to be able to figure out how
+the copy is done most efficiently; it's something for the kernel to
+figure out.
+
+Thanks,
+Miklos
