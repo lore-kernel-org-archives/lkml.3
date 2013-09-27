@@ -1,725 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751077Ab3I0KNs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 06:13:48 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:13292 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750805Ab3I0KNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 06:13:44 -0400
-X-IronPort-AV: E=Sophos;i="4.90,991,1371052800"; 
-   d="scan'208";a="8640270"
-Message-ID: <5245591E.8070807@cn.fujitsu.com>
-Date: Fri, 27 Sep 2013 18:08:30 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Kim <jaegeuk.kim@samsung.com>
-CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jin Xu <jinuxstyle@gmail.com>
-Subject: [f2fs-dev][PATCH V2] f2fs: use rw_sem instead of fs_lock(locks mutex)
-References: <524400F5.80402@cn.fujitsu.com>
-In-Reply-To: <524400F5.80402@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/27 18:11:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/27 18:11:55,
-	Serialize complete at 2013/09/27 18:11:55
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751329Ab3I0KQo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 06:16:44 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:13700 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab3I0KQl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 06:16:41 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-24-52455b088df7
+Message-id: <52455B05.1010603@samsung.com>
+Date: Fri, 27 Sep 2013 12:16:37 +0200
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Bob Liu <bob.liu@oracle.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v2 0/5] mm: migrate zbud pages
+References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
+ <5237FDCC.5010109@oracle.com> <20130923220757.GC16191@variantweb.net>
+ <524318DE.7070106@samsung.com> <20130925215744.GA25852@variantweb.net>
+In-reply-to: <20130925215744.GA25852@variantweb.net>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsVy+t/xq7oc0a5BBo+vCFjMWb+GzWLjjPWs
+	Fl2nprJYfHr5gNHi9QtDi7NNb9gtLu+aw2Zxb81/Vou1R+6yW0x+94zRYtnX9+wWh/atYnfg
+	8Vi85yWTx6ZVnWwemz5NYvc4MeM3i8eDQ5tZPD4+vcXi0bdlFaPH5tPVHp83yQVwRnHZpKTm
+	ZJalFunbJXBlvPnbyl6wSrti/pt2xgbGOUpdjJwcEgImEru62lghbDGJC/fWs3UxcnEICSxl
+	lFjd9JkZwvnMKPFr7lomkCpeAS2JMytfgHWwCKhKPHt+gwXEZgOadGzJZ0YQW1QgQuLP6X2s
+	EPWCEj8m3wOr4QOqmbi7lxnEFhHQl+ievQJsAbPAWmaJD/Ovs4MkhAWMJO7uPswOsfkGo8T/
+	GyfZQBKcQN2PGv+AbWAW0JHY3zqNDcKWl9i85i3zBEbBWUgWzkJSNgtJ2QJG5lWMoqmlyQXF
+	Sem5hnrFibnFpXnpesn5uZsYIZH1ZQfj4mNWhxgFOBiVeHgzslyChFgTy4orcw8xSnAwK4nw
+	LvB0DRLiTUmsrEotyo8vKs1JLT7EyMTBKdXAmHiaY0lzxdz5PdMFu+0P+E/9y38k3l5m5/st
+	/PYzN3I9dJ+kH9Bi7dJ9Y5mb+fO+TzLBVSav9OIN3k7vfe5sPnVe3Q3d0rzvc/paAneoVReJ
+	tl05Pkm8bMUi035b7yY2fc7+fY+SL6hPuFTF4ps+52/lgSZF05cl33ht9G/pMmjZXzcuazuh
+	xFKckWioxVxUnAgAHVNN7YoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fs_locks is used to block other ops(ex, recovery) when doing checkpoint.
-And each other operate routine(besides checkpoint) needs to acquire a fs_lock,
-there is a terrible problem here, if these are too many concurrency threads acquiring
-fs_lock, so that they will block each other and may lead to some performance problem,
-but this is not the phenomenon we want to see.
-Though there are some optimization patches introduced to enhance the usage of fs_lock,
-but the thorough solution is using a *rw_sem* to replace the fs_lock.
-Checkpoint routine takes write_sem, and other ops take read_sem, so that we can block
-other ops(ex, recovery) when doing checkpoint, and other ops will not disturb each other,
-this can avoid the problem described above completely.
-Because of the weakness of rw_sem, the above change may introduce a potential problem
-that the checkpoint thread might get starved if other threads are intensively locking
-the read semaphore for I/O.(Pointed out by Xu Jin)
-In order to avoid this, a wait_list is introduced, the appending read semaphore ops
-will be dropped into the wait_list if checkpoint thread is waiting for write semaphore,
-and will be waked up when checkpoint thread gives up write semaphore.
-Thanks to Kim's previous review and test, and will be very glad to see other guys'
-performance tests about this patch.
+On 09/25/2013 11:57 PM, Seth Jennings wrote:
+> On Wed, Sep 25, 2013 at 07:09:50PM +0200, Tomasz Stanislawski wrote:
+>>> I just had an idea this afternoon to potentially kill both these birds with one
+>>> stone: Replace the rbtree in zswap with an address_space.
+>>>
+>>> Each swap type would have its own page_tree to organize the compressed objects
+>>> by type and offset (radix tree is more suited for this anyway) and a_ops that
+>>> could be called by shrink_page_list() (writepage) or the migration code
+>>> (migratepage).
+>>>
+>>> Then zbud pages could be put on the normal LRU list, maybe at the beginning of
+>>> the inactive LRU so they would live for another cycle through the list, then be
+>>> reclaimed in the normal way with the mapping->a_ops->writepage() pointing to a
+>>> zswap_writepage() function that would decompress the pages and call
+>>> __swap_writepage() on them.
+>>>
+>>> This might actually do away with the explicit pool size too as the compressed
+>>> pool pages wouldn't be outside the control of the MM anymore.
+>>>
+>>> I'm just starting to explore this but I think it has promise.
+>>>
+>>> Seth
+>>>
+>>
+>> Hi Seth,
+>> There is a problem with the proposed idea.
+>> The radix tree used 'struct address_space' is a part of
+>> a bigger data structure.
+>> The radix tree is used to translate an offset to a page.
+>> That is ok for zswap. But struct page has a field named 'index'.
+>> The MM assumes that this index is an offset in radix tree
+>> where one can find the page. A lot is done by MM to sustain
+>> this consistency.
+> 
+> Yes, this is how it is for page cache pages.  However, the MM is able to
+> work differently with anonymous pages.  In the case of an anonymous
+> page, the mapping field points to an anon_vma struct, or, if ksm in
+> enabled and dedup'ing the page, a private ksm tracking structure.  If
+> the anonymous page is fully unmapped and resides only in the swap cache,
+> the page mapping is NULL.  So there is precedent for the fields to mean
+> other things.
 
-V2:
-  -fix the potential starvation problem.
-  -use more suitable func name suggested by Xu Jin.
+Hi Seth,
+You are right that page->mapping is NULL for pages in swap_cache but
+page_mapping() is not NULL in such a case. The mapping is taken from
+struct address_space swapper_spaces[]. It is still an address space,
+and it should preserve constraints for struct address_space.
+The same happen for page->index and page_index().
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/f2fs/checkpoint.c |    7 ++---
- fs/f2fs/data.c       |   11 ++++----
- fs/f2fs/f2fs.h       |   65 ++++++++++++++++---------------------------------
- fs/f2fs/file.c       |   37 +++++++++++++---------------
- fs/f2fs/inode.c      |   11 ++++----
- fs/f2fs/namei.c      |   50 ++++++++++++++++++--------------------
- fs/f2fs/recovery.c   |    7 ++---
- fs/f2fs/super.c      |    5 +--
- fs/f2fs/xattr.c      |    7 +----
- 9 files changed, 82 insertions(+), 118 deletions(-)
+> 
+> The question is how to mark and identify zbud pages among the other page
+> types that will be on the LRU.  There are many ways.  The question is
+> what is the best and most acceptable way.
+> 
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index ca39442..d808827 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -619,11 +619,10 @@ static void block_operations(struct f2fs_sb_info *sbi)
- 	blk_start_plug(&plug);
- 
- retry_flush_dents:
--	mutex_lock_all(sbi);
--
-+	f2fs_lock_all(sbi);
- 	/* write all the dirty dentry pages */
- 	if (get_pages(sbi, F2FS_DIRTY_DENTS)) {
--		mutex_unlock_all(sbi);
-+		f2fs_unlock_all(sbi);
- 		sync_dirty_dir_inodes(sbi);
- 		goto retry_flush_dents;
- 	}
-@@ -646,7 +645,7 @@ retry_flush_nodes:
- static void unblock_operations(struct f2fs_sb_info *sbi)
- {
- 	mutex_unlock(&sbi->node_write);
--	mutex_unlock_all(sbi);
-+	f2fs_unlock_all(sbi);
- }
- 
- static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 941f9b9..2535d3b 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -560,9 +560,9 @@ write:
- 		inode_dec_dirty_dents(inode);
- 		err = do_write_data_page(page);
- 	} else {
--		int ilock = mutex_lock_op(sbi);
-+		f2fs_lock_op(sbi);
- 		err = do_write_data_page(page);
--		mutex_unlock_op(sbi, ilock);
-+		f2fs_unlock_op(sbi);
- 		need_balance_fs = true;
- 	}
- 	if (err == -ENOENT)
-@@ -641,7 +641,6 @@ static int f2fs_write_begin(struct file *file, struct address_space *mapping,
- 	pgoff_t index = ((unsigned long long) pos) >> PAGE_CACHE_SHIFT;
- 	struct dnode_of_data dn;
- 	int err = 0;
--	int ilock;
- 
- 	f2fs_balance_fs(sbi);
- repeat:
-@@ -650,7 +649,7 @@ repeat:
- 		return -ENOMEM;
- 	*pagep = page;
- 
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 
- 	set_new_dnode(&dn, inode, NULL, NULL, 0);
- 	err = get_dnode_of_data(&dn, index, ALLOC_NODE);
-@@ -664,7 +663,7 @@ repeat:
- 	if (err)
- 		goto err;
- 
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 
- 	if ((len == PAGE_CACHE_SIZE) || PageUptodate(page))
- 		return 0;
-@@ -700,7 +699,7 @@ out:
- 	return 0;
- 
- err:
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 	f2fs_put_page(page, 1);
- 	return err;
- }
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 7fd99d8..fd8add7 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -18,7 +18,8 @@
- #include <linux/crc32.h>
- #include <linux/magic.h>
- #include <linux/kobject.h>
--
-+#include <linux/wait.h>
-+#include <linux/sched.h>
- /*
-  * For mount options
-  */
-@@ -318,14 +319,6 @@ enum count_type {
- };
- 
- /*
-- * Uses as sbi->fs_lock[NR_GLOBAL_LOCKS].
-- * The checkpoint procedure blocks all the locks in this fs_lock array.
-- * Some FS operations grab free locks, and if there is no free lock,
-- * then wait to grab a lock in a round-robin manner.
-- */
--#define NR_GLOBAL_LOCKS	8
--
--/*
-  * The below are the page types of bios used in submti_bio().
-  * The available types are:
-  * DATA			User data pages. It operates as async mode.
-@@ -365,10 +358,10 @@ struct f2fs_sb_info {
- 	struct f2fs_checkpoint *ckpt;		/* raw checkpoint pointer */
- 	struct inode *meta_inode;		/* cache meta blocks */
- 	struct mutex cp_mutex;			/* checkpoint procedure lock */
--	struct mutex fs_lock[NR_GLOBAL_LOCKS];	/* blocking FS operations */
-+	struct rw_semaphore cp_rwsem;		/* blocking FS operations */
-+	wait_queue_head_t cp_wait;		/* checkpoint wait queue */
- 	struct mutex node_write;		/* locking node writes */
- 	struct mutex writepages;		/* mutex for writepages() */
--	unsigned char next_lock_num;		/* round-robin global locks */
- 	int por_doing;				/* recovery is doing or not */
- 	int on_build_free_nids;			/* build_free_nids is doing */
- 
-@@ -520,50 +513,34 @@ static inline void clear_ckpt_flags(struct f2fs_checkpoint *cp, unsigned int f)
- 	cp->ckpt_flags = cpu_to_le32(ckpt_flags);
- }
- 
--static inline void mutex_lock_all(struct f2fs_sb_info *sbi)
-+static inline void f2fs_lock_op(struct f2fs_sb_info *sbi)
- {
--	int i;
--
--	for (i = 0; i < NR_GLOBAL_LOCKS; i++) {
--		/*
--		 * This is the only time we take multiple fs_lock[]
--		 * instances; the order is immaterial since we
--		 * always hold cp_mutex, which serializes multiple
--		 * such operations.
--		 */
--		mutex_lock_nest_lock(&sbi->fs_lock[i], &sbi->cp_mutex);
--	}
-+	/* If the checkpoint thread is waiting for cp_rwsem, add cuurent task
-+	 * into wait list to avoid the checkpoint thread starvation
-+	 */
-+	while (!list_empty(&sbi->cp_rwsem.wait_list))
-+		wait_event_interruptible(sbi->cp_wait,
-+				list_empty(&sbi->cp_rwsem.wait_list));
-+	down_read(&sbi->cp_rwsem);
- }
- 
--static inline void mutex_unlock_all(struct f2fs_sb_info *sbi)
-+static inline void f2fs_unlock_op(struct f2fs_sb_info *sbi)
- {
--	int i = 0;
--	for (; i < NR_GLOBAL_LOCKS; i++)
--		mutex_unlock(&sbi->fs_lock[i]);
-+	up_read(&sbi->cp_rwsem);
- }
- 
--static inline int mutex_lock_op(struct f2fs_sb_info *sbi)
-+static inline void f2fs_lock_all(struct f2fs_sb_info *sbi)
- {
--	unsigned char next_lock;
--	int i = 0;
--
--	for (; i < NR_GLOBAL_LOCKS; i++)
--		if (mutex_trylock(&sbi->fs_lock[i]))
--			return i;
--
--	next_lock = sbi->next_lock_num++ % NR_GLOBAL_LOCKS;
--	mutex_lock(&sbi->fs_lock[next_lock]);
--	return next_lock;
-+	down_write_nest_lock(&sbi->cp_rwsem, &sbi->cp_mutex);
- }
- 
--static inline void mutex_unlock_op(struct f2fs_sb_info *sbi, int ilock)
-+static inline void f2fs_unlock_all(struct f2fs_sb_info *sbi)
- {
--	if (ilock < 0)
--		return;
--	BUG_ON(ilock >= NR_GLOBAL_LOCKS);
--	mutex_unlock(&sbi->fs_lock[ilock]);
--}
-+	up_write(&sbi->cp_rwsem);
- 
-+	/* wake up all tasks blocked by checkpoint */
-+	wake_up_all(&sbi->cp_wait);
-+}
- /*
-  * Check whether the given nid is within node id range.
-  */
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 02c9069..c80faa2 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -35,18 +35,18 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct *vma,
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
- 	block_t old_blk_addr;
- 	struct dnode_of_data dn;
--	int err, ilock;
-+	int err;
- 
- 	f2fs_balance_fs(sbi);
- 
- 	sb_start_pagefault(inode->i_sb);
- 
- 	/* block allocation */
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	set_new_dnode(&dn, inode, NULL, NULL, 0);
- 	err = get_dnode_of_data(&dn, page->index, ALLOC_NODE);
- 	if (err) {
--		mutex_unlock_op(sbi, ilock);
-+		f2fs_unlock_op(sbi);
- 		goto out;
- 	}
- 
-@@ -56,12 +56,12 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct *vma,
- 		err = reserve_new_block(&dn);
- 		if (err) {
- 			f2fs_put_dnode(&dn);
--			mutex_unlock_op(sbi, ilock);
-+			f2fs_unlock_op(sbi);
- 			goto out;
- 		}
- 	}
- 	f2fs_put_dnode(&dn);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 
- 	file_update_time(vma->vm_file);
- 	lock_page(page);
-@@ -270,7 +270,7 @@ static int truncate_blocks(struct inode *inode, u64 from)
- 	unsigned int blocksize = inode->i_sb->s_blocksize;
- 	struct dnode_of_data dn;
- 	pgoff_t free_from;
--	int count = 0, ilock = -1;
-+	int count = 0;
- 	int err;
- 
- 	trace_f2fs_truncate_blocks_enter(inode, from);
-@@ -278,13 +278,13 @@ static int truncate_blocks(struct inode *inode, u64 from)
- 	free_from = (pgoff_t)
- 			((from + blocksize - 1) >> (sbi->log_blocksize));
- 
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	set_new_dnode(&dn, inode, NULL, NULL, 0);
- 	err = get_dnode_of_data(&dn, free_from, LOOKUP_NODE);
- 	if (err) {
- 		if (err == -ENOENT)
- 			goto free_next;
--		mutex_unlock_op(sbi, ilock);
-+		f2fs_unlock_op(sbi);
- 		trace_f2fs_truncate_blocks_exit(inode, err);
- 		return err;
- 	}
-@@ -305,7 +305,7 @@ static int truncate_blocks(struct inode *inode, u64 from)
- 	f2fs_put_dnode(&dn);
- free_next:
- 	err = truncate_inode_blocks(inode, free_from);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 
- 	/* lastly zero out the first data page */
- 	truncate_partial_data_page(inode, from);
-@@ -416,16 +416,15 @@ static void fill_zero(struct inode *inode, pgoff_t index,
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
- 	struct page *page;
--	int ilock;
- 
- 	if (!len)
- 		return;
- 
- 	f2fs_balance_fs(sbi);
- 
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	page = get_new_data_page(inode, NULL, index, false);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 
- 	if (!IS_ERR(page)) {
- 		wait_on_page_writeback(page);
-@@ -484,7 +483,6 @@ static int punch_hole(struct inode *inode, loff_t offset, loff_t len, int mode)
- 			struct address_space *mapping = inode->i_mapping;
- 			loff_t blk_start, blk_end;
- 			struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
--			int ilock;
- 
- 			f2fs_balance_fs(sbi);
- 
-@@ -493,9 +491,9 @@ static int punch_hole(struct inode *inode, loff_t offset, loff_t len, int mode)
- 			truncate_inode_pages_range(mapping, blk_start,
- 					blk_end - 1);
- 
--			ilock = mutex_lock_op(sbi);
-+			f2fs_lock_op(sbi);
- 			ret = truncate_hole(inode, pg_start, pg_end);
--			mutex_unlock_op(sbi, ilock);
-+			f2fs_unlock_op(sbi);
- 		}
- 	}
- 
-@@ -529,13 +527,12 @@ static int expand_inode_data(struct inode *inode, loff_t offset,
- 
- 	for (index = pg_start; index <= pg_end; index++) {
- 		struct dnode_of_data dn;
--		int ilock;
- 
--		ilock = mutex_lock_op(sbi);
-+		f2fs_lock_op(sbi);
- 		set_new_dnode(&dn, inode, NULL, NULL, 0);
- 		ret = get_dnode_of_data(&dn, index, ALLOC_NODE);
- 		if (ret) {
--			mutex_unlock_op(sbi, ilock);
-+			f2fs_unlock_op(sbi);
- 			break;
- 		}
- 
-@@ -543,12 +540,12 @@ static int expand_inode_data(struct inode *inode, loff_t offset,
- 			ret = reserve_new_block(&dn);
- 			if (ret) {
- 				f2fs_put_dnode(&dn);
--				mutex_unlock_op(sbi, ilock);
-+				f2fs_unlock_op(sbi);
- 				break;
- 			}
- 		}
- 		f2fs_put_dnode(&dn);
--		mutex_unlock_op(sbi, ilock);
-+		f2fs_unlock_op(sbi);
- 
- 		if (pg_start == pg_end)
- 			new_size = offset + len;
-diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
-index 9339cd2..c8c0580 100644
---- a/fs/f2fs/inode.c
-+++ b/fs/f2fs/inode.c
-@@ -214,7 +214,7 @@ int update_inode_page(struct inode *inode)
- int f2fs_write_inode(struct inode *inode, struct writeback_control *wbc)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
--	int ret, ilock;
-+	int ret;
- 
- 	if (inode->i_ino == F2FS_NODE_INO(sbi) ||
- 			inode->i_ino == F2FS_META_INO(sbi))
-@@ -227,9 +227,9 @@ int f2fs_write_inode(struct inode *inode, struct writeback_control *wbc)
- 	 * We need to lock here to prevent from producing dirty node pages
- 	 * during the urgent cleaning time when runing out of free sections.
- 	 */
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	ret = update_inode_page(inode);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 
- 	if (wbc)
- 		f2fs_balance_fs(sbi);
-@@ -243,7 +243,6 @@ int f2fs_write_inode(struct inode *inode, struct writeback_control *wbc)
- void f2fs_evict_inode(struct inode *inode)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
--	int ilock;
- 
- 	trace_f2fs_evict_inode(inode);
- 	truncate_inode_pages(&inode->i_data, 0);
-@@ -265,9 +264,9 @@ void f2fs_evict_inode(struct inode *inode)
- 	if (F2FS_HAS_BLOCKS(inode))
- 		f2fs_truncate(inode);
- 
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	remove_inode_page(inode);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 
- 	sb_end_intwrite(inode->i_sb);
- no_delete:
-diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-index 2a5359c..29f73fd 100644
---- a/fs/f2fs/namei.c
-+++ b/fs/f2fs/namei.c
-@@ -27,19 +27,19 @@ static struct inode *f2fs_new_inode(struct inode *dir, umode_t mode)
- 	nid_t ino;
- 	struct inode *inode;
- 	bool nid_free = false;
--	int err, ilock;
-+	int err;
- 
- 	inode = new_inode(sb);
- 	if (!inode)
- 		return ERR_PTR(-ENOMEM);
- 
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	if (!alloc_nid(sbi, &ino)) {
--		mutex_unlock_op(sbi, ilock);
-+		f2fs_unlock_op(sbi);
- 		err = -ENOSPC;
- 		goto fail;
- 	}
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 
- 	inode->i_uid = current_fsuid();
- 
-@@ -115,7 +115,7 @@ static int f2fs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
- 	struct f2fs_sb_info *sbi = F2FS_SB(sb);
- 	struct inode *inode;
- 	nid_t ino = 0;
--	int err, ilock;
-+	int err;
- 
- 	f2fs_balance_fs(sbi);
- 
-@@ -131,9 +131,9 @@ static int f2fs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
- 	inode->i_mapping->a_ops = &f2fs_dblock_aops;
- 	ino = inode->i_ino;
- 
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	err = f2fs_add_link(dentry, inode);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 	if (err)
- 		goto out;
- 
-@@ -157,7 +157,7 @@ static int f2fs_link(struct dentry *old_dentry, struct inode *dir,
- 	struct inode *inode = old_dentry->d_inode;
- 	struct super_block *sb = dir->i_sb;
- 	struct f2fs_sb_info *sbi = F2FS_SB(sb);
--	int err, ilock;
-+	int err;
- 
- 	f2fs_balance_fs(sbi);
- 
-@@ -165,9 +165,9 @@ static int f2fs_link(struct dentry *old_dentry, struct inode *dir,
- 	ihold(inode);
- 
- 	set_inode_flag(F2FS_I(inode), FI_INC_LINK);
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	err = f2fs_add_link(dentry, inode);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 	if (err)
- 		goto out;
- 
-@@ -220,7 +220,6 @@ static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
- 	struct f2fs_dir_entry *de;
- 	struct page *page;
- 	int err = -ENOENT;
--	int ilock;
- 
- 	trace_f2fs_unlink_enter(dir, dentry);
- 	f2fs_balance_fs(sbi);
-@@ -236,9 +235,9 @@ static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
- 		goto fail;
- 	}
- 
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	f2fs_delete_entry(de, page, inode);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 
- 	/* In order to evict this inode,  we set it dirty */
- 	mark_inode_dirty(inode);
-@@ -254,7 +253,7 @@ static int f2fs_symlink(struct inode *dir, struct dentry *dentry,
- 	struct f2fs_sb_info *sbi = F2FS_SB(sb);
- 	struct inode *inode;
- 	size_t symlen = strlen(symname) + 1;
--	int err, ilock;
-+	int err;
- 
- 	f2fs_balance_fs(sbi);
- 
-@@ -265,9 +264,9 @@ static int f2fs_symlink(struct inode *dir, struct dentry *dentry,
- 	inode->i_op = &f2fs_symlink_inode_operations;
- 	inode->i_mapping->a_ops = &f2fs_dblock_aops;
- 
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	err = f2fs_add_link(dentry, inode);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 	if (err)
- 		goto out;
- 
-@@ -290,7 +289,7 @@ static int f2fs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
- 	struct inode *inode;
--	int err, ilock;
-+	int err;
- 
- 	f2fs_balance_fs(sbi);
- 
-@@ -304,9 +303,9 @@ static int f2fs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
- 	mapping_set_gfp_mask(inode->i_mapping, GFP_F2FS_ZERO);
- 
- 	set_inode_flag(F2FS_I(inode), FI_INC_LINK);
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	err = f2fs_add_link(dentry, inode);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 	if (err)
- 		goto out_fail;
- 
-@@ -342,7 +341,6 @@ static int f2fs_mknod(struct inode *dir, struct dentry *dentry,
- 	struct f2fs_sb_info *sbi = F2FS_SB(sb);
- 	struct inode *inode;
- 	int err = 0;
--	int ilock;
- 
- 	if (!new_valid_dev(rdev))
- 		return -EINVAL;
-@@ -356,9 +354,9 @@ static int f2fs_mknod(struct inode *dir, struct dentry *dentry,
- 	init_special_inode(inode, inode->i_mode, rdev);
- 	inode->i_op = &f2fs_special_inode_operations;
- 
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	err = f2fs_add_link(dentry, inode);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 	if (err)
- 		goto out;
- 
-@@ -387,7 +385,7 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	struct f2fs_dir_entry *old_dir_entry = NULL;
- 	struct f2fs_dir_entry *old_entry;
- 	struct f2fs_dir_entry *new_entry;
--	int err = -ENOENT, ilock = -1;
-+	int err = -ENOENT;
- 
- 	f2fs_balance_fs(sbi);
- 
-@@ -402,7 +400,7 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 			goto out_old;
- 	}
- 
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 
- 	if (new_inode) {
- 
-@@ -467,7 +465,7 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		update_inode_page(old_dir);
- 	}
- 
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 	return 0;
- 
- put_out_dir:
-@@ -477,7 +475,7 @@ out_dir:
- 		kunmap(old_dir_page);
- 		f2fs_put_page(old_dir_page, 0);
- 	}
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- out_old:
- 	kunmap(old_page);
- 	f2fs_put_page(old_page, 0);
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index a15d122..353cf4f 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -292,7 +292,6 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
- 	struct f2fs_summary sum;
- 	struct node_info ni;
- 	int err = 0, recovered = 0;
--	int ilock;
- 
- 	start = start_bidx_of_node(ofs_of_node(page), fi);
- 	if (IS_INODE(page))
-@@ -300,12 +299,12 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
- 	else
- 		end = start + ADDRS_PER_BLOCK;
- 
--	ilock = mutex_lock_op(sbi);
-+	f2fs_lock_op(sbi);
- 	set_new_dnode(&dn, inode, NULL, NULL, 0);
- 
- 	err = get_dnode_of_data(&dn, start, ALLOC_NODE);
- 	if (err) {
--		mutex_unlock_op(sbi, ilock);
-+		f2fs_unlock_op(sbi);
- 		return err;
- 	}
- 
-@@ -356,7 +355,7 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
- 	recover_node_page(sbi, dn.node_page, &sum, &ni, blkaddr);
- err:
- 	f2fs_put_dnode(&dn);
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 
- 	f2fs_msg(sbi->sb, KERN_NOTICE, "recover_data: ino = %lx, "
- 			"recovered_data = %d blocks, err = %d",
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 13d0a0f..347d700 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -760,7 +760,6 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 	struct buffer_head *raw_super_buf;
- 	struct inode *root;
- 	long err = -EINVAL;
--	int i;
- 
- 	/* allocate memory for f2fs-specific super block info */
- 	sbi = kzalloc(sizeof(struct f2fs_sb_info), GFP_KERNEL);
-@@ -818,12 +817,12 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 	mutex_init(&sbi->gc_mutex);
- 	mutex_init(&sbi->writepages);
- 	mutex_init(&sbi->cp_mutex);
--	for (i = 0; i < NR_GLOBAL_LOCKS; i++)
--		mutex_init(&sbi->fs_lock[i]);
- 	mutex_init(&sbi->node_write);
- 	sbi->por_doing = 0;
- 	spin_lock_init(&sbi->stat_lock);
- 	init_rwsem(&sbi->bio_sem);
-+	init_rwsem(&sbi->cp_rwsem);
-+	init_waitqueue_head(&sbi->cp_wait);
- 	init_sb_info(sbi);
- 
- 	/* get an inode for meta space */
-diff --git a/fs/f2fs/xattr.c b/fs/f2fs/xattr.c
-index 3d900ea..f685138 100644
---- a/fs/f2fs/xattr.c
-+++ b/fs/f2fs/xattr.c
-@@ -584,16 +584,13 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
- 			const void *value, size_t value_len, struct page *ipage)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
--	int ilock;
- 	int err;
- 
- 	f2fs_balance_fs(sbi);
- 
--	ilock = mutex_lock_op(sbi);
--
-+	f2fs_lock_op(sbi);
- 	err = __f2fs_setxattr(inode, name_index, name, value, value_len, ipage);
--
--	mutex_unlock_op(sbi, ilock);
-+	f2fs_unlock_op(sbi);
- 
- 	return err;
- }
--- 
-1.7.7
+If you consider hacking I have some idea how address_space could utilized for ZBUD.
+One solution whould be using tags in a radix tree. Every entry in a radix tree
+can have a few bits assigned to it. Currently 3 bits are supported:
+
+>From include/linux/fs.h
+#define PAGECACHE_TAG_DIRTY  0
+#define PAGECACHE_TAG_WRITEBACK      1
+#define PAGECACHE_TAG_TOWRITE        2
+
+You could add a new bit or utilize one of existing ones.
+
+The other idea is use a trick from a RB trees and scatter-gather lists.
+I mean using the last bits of pointers to keep some metadata.
+Values of 'struct page *' variables are aligned to a pointer alignment which is
+4 for 32-bit CPUs and 8 for 64-bit ones (not sure). This means that one could
+could use the last bit of page pointer in a radix tree to track if a swap entry
+refers to a lower or a higher part of a ZBUD page.
+I think it is a serious hacking/obfuscation but it may work with the minimal
+amount of changes to MM. Adding only (x&~3) while extracting page pointer is
+probably enough.
+
+What do you think about this idea?
+
+>>
+>> In case of zbud, there are two swap offset pointing to
+>> the same page. There might be more if zsmalloc is used.
+>> What is worse it is possible that one swap entry could
+>> point to data that cross a page boundary.
+> 
+> We just won't set page->index since it doesn't have a good meaning in
+> our case.  Swap cache pages also don't use index, although is seems to
+> me that they could since there is a 1:1 mapping of a swap cache page to
+> a swap offset and the index field isn't being used for anything else.
+> But I digress...
+
+OK.
+
+> 
+>>
+>> Of course, one could try to modify MM to support
+>> multiple mapping of a page in the radix tree.
+>> But I think that MM guys will consider this as a hack
+>> and they will not accept it.
+> 
+> Yes, it will require some changes to the MM to handle zbud pages on the
+> LRU.  I'm thinking that it won't be too intrusive, depending on how we
+> choose to mark zbud pages.
+> 
+
+Anyway, I think that zswap should use two index engines.
+I mean index in Data Base meaning.
+One index is used to translate swap_entry to compressed page.
+And another one to be used by reclaim and migration by MM,
+probably address_space is a best choice.
+Zbud would responsible for keeping consistency
+between mentioned indexes.
+
+Regards,
+Tomasz Stanislawski
+
+> Seth
+> 
+>>
+>> Regards,
+>> Tomasz Stanislawski
+>>
+>>
+>>> --
+>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>> see: http://www.linux-mm.org/ .
+>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>>
+>>
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
