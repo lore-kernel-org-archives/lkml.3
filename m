@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab3I0ORA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:17:00 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:58100 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab3I0OQ6 (ORCPT
+	id S1753392Ab3I0ORw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:17:52 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:52862 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab3I0ORu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:16:58 -0400
-Message-ID: <52459311.4010104@linux.vnet.ibm.com>
-Date: Fri, 27 Sep 2013 19:45:45 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 27 Sep 2013 10:17:50 -0400
 MIME-Version: 1.0
-To: Michael Ellerman <michael@ellerman.id.au>
-CC: linux-kernel@vger.kernel.org, tytso@mit.edu, herbert@gondor.hengli.com.au,
-        gleb@redhat.com, agraf@suse.de, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, Paul Mackerras <paulus@samba.org>,
-        kvm@vger.kernel.org, mpm@selenic.com, pbonzini@redhat.com
-Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
- some powernv systems
-References: <1380177066-3835-1-git-send-email-michael@ellerman.id.au> <1380177066-3835-3-git-send-email-michael@ellerman.id.au>
-In-Reply-To: <1380177066-3835-3-git-send-email-michael@ellerman.id.au>
+In-Reply-To: <1378889173-7437-1-git-send-email-jose.goncalves@inov.pt>
+References: <1378889173-7437-1-git-send-email-jose.goncalves@inov.pt>
+Date: Fri, 27 Sep 2013 16:17:49 +0200
+Message-ID: <CACRpkdYbCzOJ9k8AyriM9quafx=dseK6w1DYjyrJ9F53ka8TEw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: S3C24XX: Fix configuration of gpio port sizes on S3C24XX.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Jos=E9_Miguel_Gon=E7alves?= <jose.goncalves@inov.pt>,
+        Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092714-2000-0000-0000-00000DE403E4
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 12:01 PM, Michael Ellerman wrote:
-> +int powernv_hwrng_present(void)
-> +{
-> +	return __raw_get_cpu_var(powernv_rng) != NULL;
-> +}
-> +
->  static unsigned long rng_whiten(struct powernv_rng *rng, unsigned long val)
->  {
->  	unsigned long parity;
-> @@ -42,6 +48,17 @@ static unsigned long rng_whiten(struct powernv_rng *rng, unsigned long val)
->  	return val;
->  }
-> 
-> +int powernv_get_random_real_mode(unsigned long *v)
-> +{
-> +	struct powernv_rng *rng;
-> +
-> +	rng = __raw_get_cpu_var(powernv_rng);
-> +
-> +	*v = rng_whiten(rng, in_rm64(rng->regs_real));
-> +
+On Wed, Sep 11, 2013 at 10:46 AM, José Miguel Gonçalves
+<jose.goncalves@inov.pt> wrote:
 
-Will it be in_be64() instead of in_rm64() ? Its failing the build here. Except this
-all individual patches build correctly.
+> Some GPIO line limits are incorrectly set which, for instance,
+> does not allow nRTS1 (GPH11) configuration on a S3C2416 chip.
+>
+> Signed-off-by: José Miguel Gonçalves <jose.goncalves@inov.pt>
+> ---
+>  arch/arm/mach-s3c24xx/include/mach/gpio.h |   10 +++++-----
 
-Regards
-Anshuman
+OK but grrrr!
 
+What needs to happen to the s3c24xx is to get rid of this file.
+
+- Define ARCH_NR_GPIOS in arch/arm/Kconfig entry
+  ARCH_NR_GPIO like everyone else
+
+- Get rid of the config symbol NEED_MACH_GPIO_H
+
+-  Move this file down into arch/arm/mach-s3c24xx/s3c24xx-gpio.h
+  or whatever and make it local...
+
+I will try to do this myself if noone else helps out, so I'd like to
+carry this patch in the GPIO tree provided I can get an ACK from
+the S3C24xx maintainer. Tomasz, is that you or Kukjin?
+
+(BTW the above maybe goes for S3c64xx as well .. and S5P
+oh well I will get to it.)
+
+Yours,
+Linus Walleij
