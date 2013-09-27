@@ -1,77 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab3I0RCb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 13:02:31 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51109 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752377Ab3I0RC3 (ORCPT
+	id S1753918Ab3I0RDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 13:03:50 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:55614 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004Ab3I0RDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 13:02:29 -0400
-Date: Fri, 27 Sep 2013 20:02:27 +0300
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 23/26] ARM: sunxi: remove custom .init_time hook
-Message-ID: <20130927170227.GW2954@lukather>
-References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1379526839-14798-24-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130925200731.GM2954@lukather>
- <5243D11A.5090808@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pzbqGaOtRNiVr7w4"
+	Fri, 27 Sep 2013 13:03:48 -0400
+Date: Fri, 27 Sep 2013 19:03:45 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Oussama Ghorbel <oghorbell@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] IPv6: Allow the MTU of ipip6 tunnel to be set below 1280
+Message-ID: <20130927170345.GC10343@order.stressinduktion.org>
+Mail-Followup-To: Oussama Ghorbel <oghorbell@gmail.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+	James Morris <jmorris@namei.org>,
+	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1380207108-20030-1-git-send-email-oghorbell@gmail.com> <20130927083730.GC28287@order.stressinduktion.org> <CA+ev270=P9txSvo7AZN0YcsopwhCYtJCgcZCPsdofEJ+BX+EUQ@mail.gmail.com> <20130927105856.GF28287@order.stressinduktion.org> <CA+ev272+Gp6Kt7S8P-wXxPBh0D8Di9WVH9NDi41HpNakLKC4Dw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5243D11A.5090808@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+ev272+Gp6Kt7S8P-wXxPBh0D8Di9WVH9NDi41HpNakLKC4Dw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 27, 2013 at 05:36:45PM +0100, Oussama Ghorbel wrote:
+> Please see my comments below
+> 
+> Regards,
+> Oussama
+> 
+> On Fri, Sep 27, 2013 at 11:58 AM, Hannes Frederic Sowa
+> <hannes@stressinduktion.org> wrote:
+> > On Fri, Sep 27, 2013 at 11:45:48AM +0100, Oussama Ghorbel wrote:
+> >> The ip6_tunnel.c module would be then dependent on ip_tunnel.c and may
+> >> be it would not be good thing?
+> >
+> > It could just be a static inline in some shared header. So there would
+> > be no compile-time dependency.
+> >
+> 
+> The higher limit of mtu in ip_tunnel_change_mtu() is a calculated value.
+> This high limit is calculated using the netdev priv struct ip_tunnel
+> (field hlen).
+> This netdev priv struct is different in ipv6, it's a ip6_tnl struct.
+> Therefore implementing a beautiful function like
+> ip_tunnel_valid_mtu(struct net_device *dev, int mtu) won't be
+> feasible, unless we implement it in macro or something like like
+> ip_tunnel_valid_mtu(struct net_device *dev, int hlen, int mtu) which
+> seems not very nice ...
+> What do yo think?
 
---pzbqGaOtRNiVr7w4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, let's go with one function per protocol type. Seems easier.
 
-Hi Sebastian,
+It seems to get more hairy, because it depends on the tunnel driver if the
+prepended ip header is accounted in hard_header_len. :/
 
-On Thu, Sep 26, 2013 at 08:15:54AM +0200, Sebastian Hesselbarth wrote:
-> I am still waiting for some ACKs (nomadik, prima2, socfpga, nspire) and
-> possibly Mike's on the clock changes.
->=20
-> My current idea is to prepare a branch for Olof to pull in as whole.
+I don't know if it works out cleanly. Otherwise I would be ok if the checks
+just get repeated in ip6_tunnel and leave the rest as-is.
 
-Ok. That works for me. Tell me if the plan changes.
+> 
+> >> As I have check in v3.10 there is no call from ip6_tunnel to ip_tunnel...
+> >>
+> >> For information, there is no check for the maximum MTU for ipv4 in the
+> >> patch as this is not done for ipv6.
+> >
+> > I understand, but it would be better to limit the MTU here. There is a
+> > (non-jumo) IPV6_MAXPLEN constant.
+> >
+> > Looking through the source it seems grev6 does actually check this,
+> > so it would not hurt adding them here, too.
+> 
+> what if jumbograms is used, in that case, we can't use IPV6_MAXPLEN.
+> the limit would be the the full unsigned int.
+> However checking the higher limit for ipv4 would be useful.
 
-Maxime
+Linux currently cannot create "jumbograms" (only the receiving side
+is supported).
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+> Please also note in case the tunnel mode is any (ipv4 or ipv6 means
+> ip6_tnl.parms.proto = 0), then we will be required to take the most
+> restrict limit from both ipv4 and ipv6 which means the lower limit
+> will be 1280 and the higher limit will be about 65535
+> Do you agree on this?
 
---pzbqGaOtRNiVr7w4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Agreed, this would be needed for e.g. the sit driver, which now can
+handle both protocols.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJSRbojAAoJEBx+YmzsjxAgockQAKL+HdxebREJW8eLDWhO/PNU
-2nrSj8VN8HJl7onuXxsYEqXhZAyIY24+XY4EojJgE1YFpSSntnBFd2WHDTFCmYuX
-Ste9u16fHwHSnfmQ8NpDa9ML/Z3/F9VgEBJ9o7B5E3m3SGIUTstEesyC81GUEff1
-m6KISrNIlS5KA5QRCGNzJkNMi01xZmZbB7a0AlPpM9WWNIz85BaPdpNmYfh75q8B
-XVELTiCIbV1KpqfmUrJjyw8wUcB/K1RD2mEx1F2yv6MUjuzJLpsYcoGgicLfYDSu
-yLwEvBFewn3Fz0IFB61t9j9XcbWocY/UTPW6c4AEBAXLKCFIK/KV/1rAj+XlTffN
-rmuV4wiaj3wyNiBunOlsmUC9dHpSi7JQy1AoiUr32w5uvwGBBLrsf+E6tSkeUSTW
-WWRa1AuJbvSB47fQFVfx8zWh9uLwbDyqvElUkBgiPnOBIawS4MrhK8vmpaxP3kJt
-Luwm+2T8jeFjjt+aI+1gPnIdz4JU3VrZZ3FsryKv7e6NwwXitHRvIt6H1b/qMqNF
-awEbhmvzXKPWkE2P7zfD3z7YPaf/842PddHtdfNJaZhZbGPI62xLqmy/W3btBBZz
-1nvqfwmjZiM0sIpn4DmZlvNDjPuJfk84nHwneXaAh7BQmK/KEnnEZBTqG7VsOZ+T
-BBVYhK5QKuRaB+8I9V2n
-=9l51
------END PGP SIGNATURE-----
+  Hannes
 
---pzbqGaOtRNiVr7w4--
