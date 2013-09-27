@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab3I0PjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 11:39:10 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48245 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab3I0PjH convert rfc822-to-8bit (ORCPT
+	id S1753817Ab3I0Pk4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:40:56 -0400
+Received: from smtprelay0217.hostedemail.com ([216.40.44.217]:53101 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752155Ab3I0Pky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 11:39:07 -0400
-Subject: Re: [dtc PATCH V2] Warn on node name unit-address presence/absence mismatch
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1380245438.28561.86.camel@pasglop>
-Date: Fri, 27 Sep 2013 10:39:08 -0500
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Jon Loeliger <jdl@jdl.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Olof Johansson <olof@lixom.net>, frowand.list@gmail.com,
-        Tomasz Figa <tomasz.figa@gmail.com>, devicetree@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <23CCE8D1-AEB2-42C8-B8C6-0B782117C4C2@codeaurora.org>
-References: <1379613263-32080-1-git-send-email-swarren@wwwdotorg.org> <3D2FE31C-A6BB-4F70-9B3B-C55012CB56B3@codeaurora.org> <5244BF7A.4000100@wwwdotorg.org> <1380245438.28561.86.camel@pasglop>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-X-Mailer: Apple Mail (2.1283)
+	Fri, 27 Sep 2013 11:40:54 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3870:3871:3874:4321:5007:6119:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12663:12740:13069:13095:13160:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: steel00_41ca83f83f611
+X-Filterd-Recvd-Size: 2430
+Message-ID: <1380296451.17366.116.camel@joe-AO722>
+Subject: Re: [PATCH] RFC: Introduce FW_INFO* functions
+From: Joe Perches <joe@perches.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        akpm@linux-foundation.org
+Date: Fri, 27 Sep 2013 08:40:51 -0700
+In-Reply-To: <1380288157-25248-1-git-send-email-prarit@redhat.com>
+References: <1380288157-25248-1-git-send-email-prarit@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-09-27 at 09:22 -0400, Prarit Bhargava wrote:
+> I'm proposing with this patch to do something similar to the WARN()
+> mechanism that is currently implemented in the kernel.  This
+> patchset introduces FW_INFO() and FW_INFO_DEV() which logs output
 
-On Sep 26, 2013, at 8:30 PM, Benjamin Herrenschmidt wrote:
+My first thought was "how ugly".
+There must be a better way than scraping dmesg output.
 
-> On Thu, 2013-09-26 at 17:12 -0600, Stephen Warren wrote:
->> Well, ePAPR seems pretty specific that unit address and reg are
->> related,
->> but says nothing about ranges in the section on node naming, nor about
->> node naming in the section about ranges.
->> 
->> I'd claim that the existing PPC trees are nonconforming, and should be
->> fixed too:-)
-> 
-> This is tricky, we should probably fix ePAPR here.
+> diff --git a/kernel/panic.c b/kernel/panic.c
+[]
+> @@ -445,6 +446,29 @@ void warn_slowpath_fmt_taint(const char *file, int line,
+>  }
+>  EXPORT_SYMBOL(warn_slowpath_fmt_taint);
+>  
+> +void warn_slowpath_fmt_dev(const char *file, int line,
+> +			   struct device *dev, const char *fmt, ...)
+> +{
+> +	struct slowpath_args args;
+> +
+> +	pr_info("[Firmware Info]: ");
+> +	if (dev)
+> +		pr_cont("%s %s: ",
+> +			dev_driver_string(dev), dev_name(dev));
+> +	pr_cont("at %s:%d ", file, line);
+> +
+> +	args.fmt = fmt;
+> +	va_start(args.args, fmt);
+> +	vprintk(args.fmt, args.args);
+> +	va_end(args.args);
+> +	if (dump_hardware_arch_desc())
+> +		pr_info("[Firmware Info]: %s\n", dump_hardware_arch_desc());
+> +	else
+> +		pr_info("[Firmware Info]: Hardware Unidentified\n");
+> +}
+> +EXPORT_SYMBOL(warn_slowpath_fmt_dev);
 
-I'll poke Stuart to see what's going w/updating ePAPR.
+This bit should just use %pV and a single printk to
+avoid any possible message interleaving.
 
-> If you have a "soc" bus covering a given range of addresses which it
-> forwards to its children devices but doesn't have per-se its own
-> registers in that area, then it wouldn't have a "reg" property. I would
-> thus argue that in the absence of a "reg" property, if a "ranges" one is
-> present, the "parent address" entry in there is an acceptable substitute
-> for the "reg" property as far as unit addresses are concerned.
+{
+	struct va_format vaf;
+	va_list args;
 
-Either we update the section in general about 'ranges' or at least update the simple-bus binding to state that rules about the node name.
+	va_start(args, fmt)
 
-> Also don't forget that in real OFW land, the unit address is something
-> that's somewhat bus specific ... for example, PCI uses "dev,fn" rather
-> than the full 96-bit number of the "reg" entry :-)
-> 
-> Another option which would more strictly conform to ePAPR and in fact to
-> of1275 would be to require such bus nodes to have a "reg" property with
-> the address value set to the beginning of the range and the size value
-> set to 0 :-)
+	vaf.fmt = fmt;
+	vaf.va = &args;
 
-- k
+	if (dev)
+		pr_info("[Firmware Info]: %s %s at %s:%d %pV",
+			dev_driver_string(dev), dev_name(dev),
+			file, line, &vaf);
+	else
+		pr_info("[Firmware Info]: at %s:%d %pV",
+			file, line, &vaf);
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+	etc...
+
 
