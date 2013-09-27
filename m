@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab3I0H37 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 03:29:59 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:60281 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab3I0H35 (ORCPT
+	id S1752797Ab3I0Hbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 03:31:49 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:59296 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab3I0Hbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 03:29:57 -0400
-Date: Fri, 27 Sep 2013 08:29:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] max77693: remove device wakeup from driver
-Message-ID: <20130927072949.GB5100@lee--X1>
-References: <1377104014-21910-1-git-send-email-a.hajda@samsung.com>
- <1377104014-21910-2-git-send-email-a.hajda@samsung.com>
+	Fri, 27 Sep 2013 03:31:47 -0400
+Date: Fri, 27 Sep 2013 09:31:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL 3.12-rc2 fixes] clocksource: Several fixes for 3.12-rc2
+Message-ID: <20130927073143.GA7443@gmail.com>
+References: <524381D2.7050604@linaro.org>
+ <20130927054957.GC6597@gmail.com>
+ <52452B47.80205@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1377104014-21910-2-git-send-email-a.hajda@samsung.com>
+In-Reply-To: <52452B47.80205@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The patch removes wakeup related code from
-> the driver and plaftorm data - it is already
-> handled by i2c core using I2C_CLIENT_WAKE flag
-> from struct i2c_board_info. As a result MFD
-> itself do not requires platform data.
 
-I have expanded this to use more than 46 chars of the line
-buffer. Please also do this for future submissions.
+* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
 
-> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/mfd/max77693.c               | 10 ----------
->  include/linux/mfd/max77693-private.h |  1 -
->  include/linux/mfd/max77693.h         |  2 --
->  3 files changed, 13 deletions(-)
+> On 09/27/2013 07:49 AM, Ingo Molnar wrote:
+> >
+> >* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+> >
+> >>Hi Thomas,
+> >>
+> >>this pull request contains several fixes for the clocksource/clockevent
+> >>drivers:
+> >>
+> >>  - Jean Pihet fixed a missing Kconfig option preventing the Armada370/XP
+> >>to boot up.
+> >>
+> >>  - Magnus Damm fixed the cpumask on the em_sti driver to have the
+> >>broadcast timer working on a SMP system
+> >>
+> >>  - Sebastian Hesselbarth skipped the initialization of a timer for
+> >>uninitialized DT nodes
+> >>
+> >>  - Tomasz Figa fixed the irq affinity failing on non online cpus
+> >>
+> >>Thanks
+> >>   -- Daniel
+> >>
+> >>-----------------------------------------------------------------------------
+> >>
+> >>The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
+> >>
+> >>   Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
+> >>
+> >>are available in the git repository at:
+> >>
+> >>
+> >>ssh://daniel.lezcano@git.linaro.org//srv/git.linaro.org/git/people/dlezcano/linux.git
+> >>clockevents/3.12-rc2-fixes
+> >
+> >If you want me to pull this you'll need to send along your SSH password as
+> >well!
+> 
+> Oops ! :)
+> 
+> Here is the right one:
+> 
+> git://git.linaro.org/people/dlezcano/linux.git clockevents/3.12-rc2-fixes
 
-Applied, thanks.
+Pulled, thanks Daniel!
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+	Ingo
