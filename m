@@ -1,80 +1,1146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab3I0Ror (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 13:44:47 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:41757 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab3I0Roq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 13:44:46 -0400
+	id S1754217Ab3I0RvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 13:51:15 -0400
+Received: from sauhun.de ([89.238.76.85]:42302 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752384Ab3I0RvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 13:51:11 -0400
+Date: Fri, 27 Sep 2013 19:50:49 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: srinivas.kandagatla@st.com, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
+        stephen.gallimore@st.com, stuart.menefy@st.com,
+        Lee Jones <lee.jones@linaro.org>, gabriel.fernandez@st.com,
+        kernel@stlinux.com
+Subject: Re: [PATCH v2 1/4] i2c: busses: i2c-st: Add ST I2C controller
+Message-ID: <20130927175048.GG3094@katana>
+References: <1380189238-5755-1-git-send-email-maxime.coquelin@st.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVkW7d7vFx_kPJG-FEvO71SZjZmpR+dnwVm61wkYK=0YA@mail.gmail.com>
-References: <1380270519.27811.10.camel@pasglop>
-	<CAE9FiQVkW7d7vFx_kPJG-FEvO71SZjZmpR+dnwVm61wkYK=0YA@mail.gmail.com>
-Date: Fri, 27 Sep 2013 10:44:44 -0700
-X-Google-Sender-Auth: MqV09WHVy70B-VdSlTDV_slWSVs
-Message-ID: <CAE9FiQW+b7OtN4hJc6uygzbqzaCOkn3WcLDgSg5isHAJfdgmwg@mail.gmail.com>
-Subject: Re: Please revert 928bea964827d7824b548c1f8e06eccbbc4d0d7d
-From: Yinghai Lu <yinghai@kernel.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="t4apE7yKrX2dGgJC"
+Content-Disposition: inline
+In-Reply-To: <1380189238-5755-1-git-send-email-maxime.coquelin@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 9:01 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Sep 27, 2013 at 1:28 AM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
->> Hi Linus, Yinghai !
->>
->> Please consider reverting:
->>
->> 928bea964827d7824b548c1f8e06eccbbc4d0d7d
->> PCI: Delay enabling bridges until they're needed
->>
->> (I'd suggest to revert now and maybe merge a better patch later)
->>
->> This breaks PCI on the PowerPC "powernv" platform (which is booted via
->> kexec) and probably x86 as well under similar circumstances. It will
->> basically break PCIe if the bus master bit of the bridge isn't set at
->> boot (by the firmware for example, or because kexec'ing cleared it).
->>
->> The reason is that the PCIe port driver will call pci_enable_device() on
->> the bridge (on everything under the sun actually), which will marked the
->> device enabled (but will not do a set_master).
->>
->> Because of that, pci_enable_bridge() later on (called as a result of the
->> child device driver doing pci_enable_device) will see the bridge as
->> already enabled and will not call pci_set_master() on it.
 
-Ben,
+--t4apE7yKrX2dGgJC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-looks like PCIe port driver does call pci_enable_device AND pci_set_master()
+Hi,
 
-| int pcie_port_device_register(struct pci_dev *dev)
-| {
-|        int status, capabilities, i, nr_service;
-|        int irqs[PCIE_PORT_DEVICE_MAXSERVICES];
-|
-|        /* Enable PCI Express port device */
-|        status = pci_enable_device(dev);
-|        if (status)
-|                return status;
-|
-|        /* Get and check PCI Express port services */
-|        capabilities = get_port_device_capability(dev);
-|        if (!capabilities)
-|                return 0;
-|
-|        pci_set_master(dev);
+Please make one mail thread out of a patch series. That helps reviewing.
 
-so how come that pci_set_master is not called for powerpc?
+On Thu, Sep 26, 2013 at 11:53:58AM +0200, Maxime COQUELIN wrote:
+> This patch adds support to SSC (Synchronous Serial Controller)
+> I2C driver. This IP also supports SPI protocol, but this is not
+> the aim of this driver.
+>=20
+> This IP is embedded in all ST SoCs for Set-top box platorms, and
+> supports I2C Standard and Fast modes.
+>=20
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> ---
+>  Documentation/devicetree/bindings/i2c/i2c-st.txt |   37 ++
+>  drivers/i2c/busses/Kconfig                       |   10 +
+>  drivers/i2c/busses/Makefile                      |    1 +
+>  drivers/i2c/busses/i2c-st.c                      |  691 ++++++++++++++++=
+++++++
+>  drivers/i2c/busses/i2c-st.h                      |  208 +++++++
+>  5 files changed, 947 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-st.txt
+>  create mode 100644 drivers/i2c/busses/i2c-st.c
+>  create mode 100644 drivers/i2c/busses/i2c-st.h
+>=20
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-st.txt b/Documenta=
+tion/devicetree/bindings/i2c/i2c-st.txt
+> new file mode 100644
+> index 0000000..d1e55c0
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-st.txt
+> @@ -0,0 +1,37 @@
+> +ST SSC binding, for I2C mode operation
+> +
+> +Required properties :
+> +- compatible : Must be "st,comms-i2c"
+> +- reg : Offset and length of the register set for the device
+> +- interrupts : the interrupt specifier
+> +- clocks : phandle to the I2C clock source
+> +- clock-names : from common clock binding: Shall be "ssc"
+> +
+> +Recommended properties :
+> +- clock-frequency : Desired I2C bus clock frequency in Hz. Otherwise
+> +  the default 100 kHz frequency will be used. As only Normal and Fast mo=
+des
+> +  are supported, possible values are 100000 and 400000.
+> +
+> +Optional properties :
+> +- st,needs-antiglitch-filter : The board design needs glitch suppression
+> +  enabled to operate reliably.
+> +- st,min-scl-pulse-width : The minimum valid SCL pulse width that is all=
+owed
+> +  through the deglitch circuit. In units of us.
+> +- st,min-sda-pulse-width : The minimum valid SDA pulse width that is all=
+owed
+> +  through the deglitch circuit. In units of us.
 
-Can you send out lspci -vvxxx with current linus-tree and v3.11?
+I could imagine generic properties here, like
+	i2c-min-scl-pulse-width-us
+	i2c-min-sda-pulse-width-us
 
-Yinghai
+So, if those are used, you can deduce that the glitch filter is wanted.
+@DT maintainers: Sounds OK?
+
+> +
+> +Examples :
+> +
+> +i2c0: i2c@fed40000 {
+> +	compatible	=3D "st,comms-ssc-i2c";
+> +	reg		=3D <0xfed40000 0x110>;
+> +	interrupts	=3D  <GIC_SPI 187 IRQ_TYPE_EDGE_RISING>;
+> +	clocks		=3D <&CLK_S_ICN_REG_0>;
+> +	clock-names	=3D "ssc";
+> +	clock-frequency =3D <400000>;
+> +	pinctrl-names	=3D "default";
+> +	pinctrl-0	=3D <&pinctrl_i2c0_default>;
+> +	st,needs-antiglitch-filter;
+> +	st,min-scl-pulse-width =3D 0;
+> +	st,min-sda-pulse-width =3D 5;
+> +};
+> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+> index cdcbd83..18ff129 100644
+> --- a/drivers/i2c/busses/Kconfig
+> +++ b/drivers/i2c/busses/Kconfig
+> @@ -776,6 +776,16 @@ config I2C_RCAR
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called i2c-rcar.
+> =20
+> +config I2C_ST
+> +	tristate "STMicroelectronics SSC I2C support"
+> +	depends on ARCH_STI
+> +	help
+> +	  Enable this option to add support for STMicroelectronics SoCs
+> +	  hardware SSC (Synchronous Serial Controller) as an I2C controller.
+> +
+> +	  This driver can also be built as module. If so, the module
+> +	  will be called i2c-st.
+> +
+>  comment "External I2C/SMBus adapter drivers"
+> =20
+>  config I2C_DIOLAN_U2C
+> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+> index d00997f..9ea5d422 100644
+> --- a/drivers/i2c/busses/Makefile
+> +++ b/drivers/i2c/busses/Makefile
+> @@ -92,5 +92,6 @@ obj-$(CONFIG_I2C_PCA_ISA)	+=3D i2c-pca-isa.o
+>  obj-$(CONFIG_I2C_SIBYTE)	+=3D i2c-sibyte.o
+>  obj-$(CONFIG_SCx200_ACB)	+=3D scx200_acb.o
+>  obj-$(CONFIG_SCx200_I2C)	+=3D scx200_i2c.o
+> +obj-$(CONFIG_I2C_ST)		+=3D i2c-st.o
+
+Please keep it sorted.
+
+> =20
+>  ccflags-$(CONFIG_I2C_DEBUG_BUS) :=3D -DDEBUG
+> diff --git a/drivers/i2c/busses/i2c-st.c b/drivers/i2c/busses/i2c-st.c
+> new file mode 100644
+> index 0000000..7eb3be4
+> --- /dev/null
+> +++ b/drivers/i2c/busses/i2c-st.c
+> @@ -0,0 +1,691 @@
+> +/*
+> + * Copyright (C) 2013 STMicroelectronics
+> + *
+> + * I2C master mode controller driver, used in STMicroelectronics devices.
+> + *
+> + * Author: Maxime Coquelin <maxime.coquelin@st.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2, as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/i2c.h>
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/delay.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/err.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +#include "i2c-st.h"
+> +
+> +#define DRIVER_NAME "st-i2c"
+
+Nit: use the string directly
+
+> +
+> +/* From I2C Specifications v0.5 */
+> +static struct st_i2c_timings i2c_timings[] =3D {
+> +	[I2C_MODE_STANDARD] =3D {
+> +		.rate			=3D 100000,
+> +		.rep_start_hold		=3D 4000,
+> +		.rep_start_setup	=3D 4700,
+> +		.start_hold		=3D 4000,
+> +		.data_setup_time	=3D 250,
+> +		.stop_setup_time	=3D 4000,
+> +		.bus_free_time		=3D 4700,
+> +	},
+> +	[I2C_MODE_FAST] =3D {
+> +		.rate			=3D 400000,
+> +		.rep_start_hold		=3D 600,
+> +		.rep_start_setup	=3D 600,
+> +		.start_hold		=3D 600,
+> +		.data_setup_time	=3D 100,
+> +		.stop_setup_time	=3D 600,
+> +		.bus_free_time		=3D 1300,
+> +	},
+> +};
+
+I assume there is no formula to calc these values?
+
+> +
+> +static void st_i2c_flush_rx_fifo(struct st_i2c_dev *i2c_dev)
+> +{
+> +	int count, i;
+> +
+> +	/*
+> +	 * Counter only counts up to 7 but fifo size is 8...
+> +	 * When fifo is full, counter is 0 and RIR bit of status register is
+> +	 * set
+> +	 */
+> +	if (readl(i2c_dev->base + SSC_STA) & SSC_STA_RIR)
+> +		count =3D SSC_RXFIFO_SIZE;
+> +	else
+> +		count =3D readl(i2c_dev->base + SSC_RX_FSTAT) &
+> +			SSC_RX_FSTAT_STATUS;
+> +
+> +	for (i =3D 0; i < count; i++)
+> +		readl(i2c_dev->base + SSC_RBUF);
+> +}
+> +
+> +static void st_i2c_soft_reset(struct st_i2c_dev *i2c_dev)
+> +{
+> +	/*
+> +	 * FIFO needs to be emptied before reseting the IP,
+> +	 * else the controller raises a BUSY error.
+> +	 */
+> +	st_i2c_flush_rx_fifo(i2c_dev);
+> +
+> +	st_i2c_set_bits(i2c_dev->base + SSC_CTL, SSC_CTL_SR);
+> +	st_i2c_clr_bits(i2c_dev->base + SSC_CTL, SSC_CTL_SR);
+> +}
+> +
+> +/**
+> + * st_i2c_hw_config() - Prepare SSC block, calculate and apply tuning ti=
+mings
+> + * @i2c_dev: Controller's private data
+> + */
+> +static void st_i2c_hw_config(struct st_i2c_dev *i2c_dev)
+> +{
+> +	unsigned long rate;
+> +	u32 val, ns_per_clk;
+> +	struct st_i2c_timings *t =3D &i2c_timings[i2c_dev->mode];
+> +
+> +	st_i2c_soft_reset(i2c_dev);
+> +
+> +	val =3D SSC_CLR_REPSTRT | SSC_CLR_NACK | SSC_CLR_SSCARBL |
+> +		SSC_CLR_SSCAAS | SSC_CLR_SSCSTOP;
+> +	writel(val, i2c_dev->base + SSC_CLR);
+> +
+> +	/* SSC Control register setup */
+> +	val =3D SSC_CTL_PO | SSC_CTL_PH | SSC_CTL_HB | SSC_CTL_DATA_WIDTH_9;
+> +	writel(val, i2c_dev->base + SSC_CTL);
+> +
+> +	rate =3D clk_get_rate(i2c_dev->clk);
+> +	ns_per_clk =3D 1000000000 / rate;
+> +
+> +	/* Baudrate */
+> +	val =3D rate / (2 * t->rate);
+> +	writel(val, i2c_dev->base + SSC_BRG);
+> +
+> +	/* Pre-scaler baudrate */
+> +	writel(1, i2c_dev->base + SSC_PRE_SCALER_BRG);
+> +
+> +	/* Enable I2C mode */
+> +	writel(SSC_I2C_I2CM, i2c_dev->base + SSC_I2C);
+> +
+> +	/* Repeated start hold time */
+> +	val =3D t->rep_start_hold / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_REP_START_HOLD);
+> +
+> +	/* Repeated start set up time */
+> +	val =3D t->rep_start_setup / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_REP_START_SETUP);
+> +
+> +	/* Start hold time */
+> +	val =3D t->start_hold / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_START_HOLD);
+> +
+> +	/* Data set up time */
+> +	val =3D t->data_setup_time / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_DATA_SETUP);
+> +
+> +	/* Stop set up time */
+> +	val =3D t->stop_setup_time / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_STOP_SETUP);
+> +
+> +	/* Bus free time */
+> +	val =3D t->bus_free_time / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_BUS_FREE);
+> +
+> +	/* Prescalers set up */
+> +	val =3D rate / 10000000;
+> +	writel(val, i2c_dev->base + SSC_PRSCALER);
+> +	writel(val, i2c_dev->base + SSC_PRSCALER_DATAOUT);
+> +
+> +	/* Noise suppression witdh */
+> +	val =3D i2c_dev->deglitch.scl_min_width_us * rate / 100000000;
+> +	writel(val, i2c_dev->base + SSC_NOISE_SUPP_WIDTH);
+> +
+> +	/* Noise suppression max output data delay width */
+> +	val =3D i2c_dev->deglitch.sda_min_width_us * rate / 100000000;
+> +	writel(val, i2c_dev->base + SSC_NOISE_SUPP_WIDTH_DATAOUT);
+> +
+> +	return;
+
+return can be skipped.
+
+> +}
+> +
+> +static int st_i2c_wait_free_bus(struct st_i2c_dev *i2c_dev)
+> +{
+> +	u32 sta;
+> +	int i;
+> +
+> +	for (i =3D 0; i < 10; i++) {
+> +		sta =3D readl(i2c_dev->base + SSC_STA);
+> +		if (!(sta & SSC_STA_BUSY))
+> +			return 0;
+> +
+> +		usleep_range(2000, 4000);
+> +	}
+> +
+> +	dev_err(i2c_dev->dev, "bus not free (status =3D 0x%08x)\n", sta);
+> +
+> +	return -EBUSY;
+> +}
+> +
+> +/**
+> + * st_i2c_write_tx_fifo() - Write a byte in the Tx FIFO
+> + * @i2c_dev: Controller's private data
+> + * @byte: Data to write in the Tx FIFO
+> + */
+> +static inline void st_i2c_write_tx_fifo(struct st_i2c_dev *i2c_dev, u8 b=
+yte)
+> +{
+> +	u16 tbuf =3D byte << 1;
+> +
+> +	writel(tbuf | 1, i2c_dev->base + SSC_TBUF);
+> +}
+> +
+> +/**
+> + * st_i2c_wr_fill_tx_fifo() - Fill the Tx FIFO in write mode
+> + * @i2c_dev: Controller's private data
+> + *
+> + * This functions fills the Tx FIFO with I2C transfert buffer when
+> + * in write mode.
+> + */
+> +static void st_i2c_wr_fill_tx_fifo(struct st_i2c_dev *i2c_dev)
+> +{
+> +	struct st_i2c_client *c =3D &i2c_dev->client;
+> +	u32 tx_fstat, sta;
+> +	int i;
+> +
+> +	sta =3D readl(i2c_dev->base + SSC_STA);
+> +	if (sta & SSC_STA_TX_FIFO_FULL)
+> +		return;
+> +
+> +	tx_fstat =3D readl(i2c_dev->base + SSC_TX_FSTAT) & SSC_TX_FSTAT_STATUS;
+> +
+> +	if (c->count < (SSC_TXFIFO_SIZE - tx_fstat))
+> +		i =3D c->count;
+> +	else
+> +		i =3D SSC_TXFIFO_SIZE - tx_fstat;
+> +
+> +	for (; i > 0; i--, c->count--, c->buf++)
+> +		st_i2c_write_tx_fifo(i2c_dev, *c->buf);
+> +}
+> +
+> +/**
+> + * st_i2c_rd_fill_tx_fifo() - Fill the Tx FIFO in read mode
+> + * @i2c_dev: Controller's private data
+> + *
+> + * This functions fills the Tx FIFO with fixed pattern when
+> + * in read mode to trigger clock.
+> + */
+> +static void st_i2c_rd_fill_tx_fifo(struct st_i2c_dev *i2c_dev, int max)
+> +{
+> +	struct st_i2c_client *c =3D &i2c_dev->client;
+> +	u32 tx_fstat, sta;
+> +	int i;
+> +
+> +	sta =3D readl(i2c_dev->base + SSC_STA);
+> +	if (sta & SSC_STA_TX_FIFO_FULL)
+> +		return;
+> +
+> +	tx_fstat =3D readl(i2c_dev->base + SSC_TX_FSTAT) & SSC_TX_FSTAT_STATUS;
+> +
+> +	if (max < (SSC_TXFIFO_SIZE - tx_fstat))
+> +		i =3D max;
+> +	else
+> +		i =3D SSC_TXFIFO_SIZE - tx_fstat;
+> +
+> +	for (; i > 0; i--, c->xfered++)
+> +		st_i2c_write_tx_fifo(i2c_dev, 0xff);
+> +}
+> +
+> +static void st_i2c_read_rx_fifo(struct st_i2c_dev *i2c_dev)
+> +{
+> +	struct st_i2c_client *c =3D &i2c_dev->client;
+> +	u32 i, sta;
+> +	u16 rbuf;
+> +
+> +	sta =3D readl(i2c_dev->base + SSC_STA);
+> +	if (sta & SSC_STA_RIR) {
+> +		i =3D SSC_RXFIFO_SIZE;
+> +	} else {
+> +		i =3D readl(i2c_dev->base + SSC_RX_FSTAT);
+> +		i &=3D SSC_RX_FSTAT_STATUS;
+> +	}
+> +
+> +	for (; (i > 0) && (c->count > 0); i--, c->count--) {
+> +		rbuf =3D readl(i2c_dev->base + SSC_RBUF) >> 1;
+> +		*c->buf++ =3D (u8)rbuf & 0xff;
+> +	}
+> +
+> +	if (i) {
+> +		dev_err(i2c_dev->dev, "Unexpected %d bytes in rx fifo\n", i);
+> +		st_i2c_flush_rx_fifo(i2c_dev);
+> +	}
+> +}
+> +
+> +/**
+> + * st_i2c_terminate_xfer() - Send either STOP or REPSTART condition
+> + * @i2c_dev: Controller's private data
+> + */
+> +static void st_i2c_terminate_xfer(struct st_i2c_dev *i2c_dev)
+> +{
+> +	struct st_i2c_client *c =3D &i2c_dev->client;
+> +
+> +	st_i2c_clr_bits(i2c_dev->base + SSC_IEN, SSC_IEN_TEEN);
+> +	st_i2c_clr_bits(i2c_dev->base + SSC_I2C, SSC_I2C_STRTG);
+> +
+> +	if (c->stop) {
+> +		st_i2c_set_bits(i2c_dev->base + SSC_IEN, SSC_IEN_STOPEN);
+> +		st_i2c_set_bits(i2c_dev->base + SSC_I2C, SSC_I2C_STOPG);
+> +	} else {
+> +		st_i2c_set_bits(i2c_dev->base + SSC_IEN, SSC_IEN_REPSTRTEN);
+> +		st_i2c_set_bits(i2c_dev->base + SSC_I2C, SSC_I2C_REPSTRTG);
+> +	}
+> +}
+> +
+> +/**
+> + * st_i2c_handle_write() - Handle FIFO empty interrupt in case of write
+> + * @i2c_dev: Controller's private data
+> + */
+> +static void st_i2c_handle_write(struct st_i2c_dev *i2c_dev)
+> +{
+> +	struct st_i2c_client *c =3D &i2c_dev->client;
+> +
+> +	st_i2c_flush_rx_fifo(i2c_dev);
+> +
+> +	if (!c->count)
+> +		/* End of xfer, send stop or repstart */
+> +		st_i2c_terminate_xfer(i2c_dev);
+> +	else
+> +		st_i2c_wr_fill_tx_fifo(i2c_dev);
+> +}
+> +
+> +/**
+> + * st_i2c_handle_write() - Handle FIFO enmpty interrupt in case of read
+> + * @i2c_dev: Controller's private data
+> + */
+> +static void st_i2c_handle_read(struct st_i2c_dev *i2c_dev)
+> +{
+> +	struct st_i2c_client *c =3D &i2c_dev->client;
+> +	u32 ien;
+> +
+> +	/* Trash the address read back */
+> +	if (!c->xfered) {
+> +		readl(i2c_dev->base + SSC_RBUF);
+> +		st_i2c_clr_bits(i2c_dev->base + SSC_I2C, SSC_I2C_TXENB);
+> +	} else
+> +		st_i2c_read_rx_fifo(i2c_dev);
+> +
+> +	if (!c->count) {
+> +		/* End of xfer, send stop or repstart */
+> +		st_i2c_terminate_xfer(i2c_dev);
+> +	} else if (c->count =3D=3D 1) {
+> +		/* Penultimate byte to xfer, disable ACK gen. */
+> +		st_i2c_clr_bits(i2c_dev->base + SSC_I2C, SSC_I2C_ACKG);
+> +
+> +		/* Last received byte is to be handled by NACK interrupt */
+> +		ien =3D SSC_IEN_NACKEN | SSC_IEN_ARBLEN;
+> +		writel(ien, i2c_dev->base + SSC_IEN);
+> +
+> +		st_i2c_rd_fill_tx_fifo(i2c_dev, c->count);
+> +	} else
+> +		st_i2c_rd_fill_tx_fifo(i2c_dev, c->count - 1);
+> +}
+> +
+> +/**
+> + * st_i2c_isr() - Interrupt routine
+> + * @irq: interrupt number
+> + * @data: Controller's private data
+> + */
+> +static irqreturn_t st_i2c_isr(int irq, void *data)
+> +{
+> +	struct st_i2c_dev *i2c_dev =3D data;
+> +	struct st_i2c_client *c =3D &i2c_dev->client;
+> +	u32 sta, ien;
+> +	int it;
+> +
+> +	ien =3D readl(i2c_dev->base + SSC_IEN);
+> +	sta =3D readl(i2c_dev->base + SSC_STA);
+> +
+> +	/* Use __fls() to check error bits first */
+> +	it =3D __fls(sta & ien);
+> +	if (it < 0) {
+> +		dev_dbg(i2c_dev->dev, "spurious it (sta=3D0x%04x, ien=3D0x%04x)\n",
+> +				sta, ien);
+> +		return IRQ_HANDLED;
+
+IRQ_HANDLED? IRQ_NONE I'd think.
+
+> +	}
+> +
+> +	switch (1 << it) {
+> +	case SSC_STA_TE:
+> +		if (c->addr & I2C_M_RD)
+> +			st_i2c_handle_read(i2c_dev);
+> +		else
+> +			st_i2c_handle_write(i2c_dev);
+> +		break;
+> +
+> +	case SSC_STA_STOP:
+> +	case SSC_STA_REPSTRT:
+> +		writel(0, i2c_dev->base + SSC_IEN);
+> +		complete(&i2c_dev->complete);
+> +		break;
+> +
+> +	case SSC_STA_NACK:
+> +		writel(SSC_CLR_NACK, i2c_dev->base + SSC_CLR);
+> +
+> +		/* Last received byte handled by NACK interrupt */
+> +		if ((c->addr & I2C_M_RD) && (c->count =3D=3D 1) && (c->xfered)) {
+> +			st_i2c_handle_read(i2c_dev);
+> +			break;
+> +		}
+> +
+> +		it =3D SSC_IEN_STOPEN | SSC_IEN_ARBLEN;
+> +		writel(it, i2c_dev->base + SSC_IEN);
+> +
+> +		st_i2c_set_bits(i2c_dev->base + SSC_I2C, SSC_I2C_STOPG);
+> +		c->result =3D -EIO;
+> +		break;
+> +
+> +	case SSC_STA_ARBL:
+> +		writel(SSC_CLR_SSCARBL, i2c_dev->base + SSC_CLR);
+> +
+> +		it =3D SSC_IEN_STOPEN | SSC_IEN_ARBLEN;
+> +		writel(it, i2c_dev->base + SSC_IEN);
+> +
+> +		st_i2c_set_bits(i2c_dev->base + SSC_I2C, SSC_I2C_STOPG);
+> +		c->result =3D -EIO;
+> +		break;
+> +
+> +	default:
+> +		dev_err(i2c_dev->dev,
+> +				"it %d unhandled (sta=3D0x%04x)\n", it, sta);
+> +	}
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +/**
+> + * st_i2c_xfer_msg() - Transfer a single I2C message
+> + * @i2c_dev: Controller's private data
+> + * @msg: I2C message to transfer
+> + * @is_first: first message of the sequence
+> + * @is_last: last message of the sequence
+> + */
+> +static int st_i2c_xfer_msg(struct st_i2c_dev *i2c_dev, struct i2c_msg *m=
+sg,
+> +			    bool is_first, bool is_last)
+> +{
+> +	struct st_i2c_client *c =3D &i2c_dev->client;
+> +	u32 ctl, i2c, it;
+> +	unsigned long timeout;
+> +	int ret;
+> +
+> +	c->addr		=3D (u8)(msg->addr << 1);
+> +	c->addr		|=3D (msg->flags & I2C_M_RD);
+> +	c->buf		=3D msg->buf;
+> +	c->count	=3D msg->len;
+> +	c->xfered	=3D 0;
+> +	c->result	=3D 0;
+> +	c->stop		=3D is_last;
+> +
+> +	init_completion(&i2c_dev->complete);
+
+INIT_COMPLETION here, and init_completion in probe.
+
+> +
+> +	ctl =3D SSC_CTL_EN | SSC_CTL_MS |	SSC_CTL_EN_RX_FIFO | SSC_CTL_EN_TX_FI=
+FO;
+> +	st_i2c_set_bits(i2c_dev->base + SSC_CTL, ctl);
+> +
+> +	i2c =3D SSC_I2C_TXENB;
+> +	if (c->addr & I2C_M_RD)
+> +		i2c |=3D SSC_I2C_ACKG;
+> +	st_i2c_set_bits(i2c_dev->base + SSC_I2C, i2c);
+> +
+> +	/* Write slave address */
+> +	st_i2c_write_tx_fifo(i2c_dev, c->addr);
+> +
+> +	/* Pre-fill Tx fifo with data in case of write */
+> +	if (!(c->addr & I2C_M_RD))
+> +		st_i2c_wr_fill_tx_fifo(i2c_dev);
+> +
+> +	it =3D SSC_IEN_NACKEN | SSC_IEN_TEEN | SSC_IEN_ARBLEN;
+> +	writel(it, i2c_dev->base + SSC_IEN);
+> +
+> +	if (is_first) {
+> +		ret =3D st_i2c_wait_free_bus(i2c_dev);
+> +		if (ret)
+> +			return ret;
+> +
+> +		st_i2c_set_bits(i2c_dev->base + SSC_I2C, SSC_I2C_STRTG);
+> +	}
+> +
+> +	timeout =3D wait_for_completion_timeout(&i2c_dev->complete,
+> +			i2c_dev->adap.timeout);
+> +	ret =3D c->result;
+> +
+> +	if (!timeout) {
+> +		dev_err(i2c_dev->dev, "Write to slave 0x%x timed out\n",
+> +				c->addr);
+> +		ret =3D -ETIMEDOUT;
+> +	}
+> +
+> +	i2c =3D SSC_I2C_STOPG | SSC_I2C_REPSTRTG;
+> +	st_i2c_clr_bits(i2c_dev->base + SSC_I2C, i2c);
+> +
+> +	writel(SSC_CLR_SSCSTOP | SSC_CLR_REPSTRT, i2c_dev->base + SSC_CLR);
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+> + * st_i2c_xfer() - Transfer a single I2C message
+> + * @i2c_adap: Adapter pointer to the controller
+> + * @msgs: Pointer to data to be written.
+> + * @num: Number of messages to be executed
+> + */
+> +static int st_i2c_xfer(struct i2c_adapter *i2c_adap,
+> +			struct i2c_msg msgs[], int num)
+> +{
+> +	struct st_i2c_dev *i2c_dev =3D i2c_get_adapdata(i2c_adap);
+> +	bool last, first;
+> +	int ret, i;
+> +
+> +	i2c_dev->busy =3D true;
+> +
+> +	ret =3D clk_prepare_enable(i2c_dev->clk);
+> +	if (ret) {
+> +		dev_err(i2c_dev->dev, "Failed to prepare_enable clock\n");
+> +		return ret;
+> +	}
+> +
+> +	pinctrl_pm_select_default_state(i2c_dev->dev);
+> +
+> +	st_i2c_hw_config(i2c_dev);
+> +
+> +	first =3D true;
+> +
+> +	for (i =3D 0; i < num; i++) {
+> +		last =3D (i < num - 1) ? false : true;
+> +
+> +		ret =3D st_i2c_xfer_msg(i2c_dev, &msgs[i], first, last);
+
+Simplify to:
+ret =3D st_i2c_xfer_msg(i2c_dev, &msgs[i], i =3D=3D 0, i =3D=3D num - 1) ?
+
+> +		if (ret)
+> +			break;
+> +
+> +		first =3D false;
+> +	}
+> +
+> +	pinctrl_pm_select_idle_state(i2c_dev->dev);
+> +
+> +	clk_disable_unprepare(i2c_dev->clk);
+> +
+> +	i2c_dev->busy =3D false;
+> +
+> +	return (ret < 0) ? ret : i;
+> +}
+> +
+> +#ifdef CONFIG_PM
+
+CONFIG_PM_SLEEP
+
+> +static int st_i2c_suspend(struct device *dev)
+> +{
+> +	struct platform_device *pdev =3D
+> +		container_of(dev, struct platform_device, dev);
+> +	struct st_i2c_dev *i2c_dev =3D platform_get_drvdata(pdev);
+> +
+> +	if (i2c_dev->busy)
+> +		return -EBUSY;
+> +
+> +	pinctrl_pm_select_sleep_state(dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int st_i2c_resume(struct device *dev)
+> +{
+> +	pinctrl_pm_select_default_state(dev);
+> +	/* Go in idle state if available */
+> +	pinctrl_pm_select_idle_state(dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static SIMPLE_DEV_PM_OPS(st_i2c_pm, st_i2c_suspend, st_i2c_resume);
+> +#define ST_I2C_PM	(&st_i2c_pm)
+> +#else
+> +#define ST_I2C_PM	NULL
+> +#endif
+> +
+> +static u32 st_i2c_func(struct i2c_adapter *adap)
+> +{
+> +	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+> +}
+
+Have you verified that SMBUS_QUICK works? You can use i2cdetect to check
+that in case you haven't already.
+
+> +
+> +static struct i2c_algorithm st_i2c_algo =3D {
+> +	.master_xfer =3D st_i2c_xfer,
+> +	.functionality =3D st_i2c_func,
+> +};
+> +
+> +static int st_i2c_of_get_deglitch(struct device_node *np,
+> +		struct st_i2c_dev *i2c_dev)
+> +{
+> +	int ret;
+> +
+> +	if (!of_property_read_bool(np, "st,needs-antiglitch-filter"))
+> +		return 0;
+> +
+> +	ret =3D of_property_read_u32(np, "st,min-scl-pulse-width",
+> +			&i2c_dev->deglitch.scl_min_width_us);
+> +	if (ret) {
+> +		dev_err(i2c_dev->dev, "st,min-scl-pulse-width not found\n");
+> +		return ret;
+> +	}
+> +
+> +	ret =3D of_property_read_u32(np, "st,min-sda-pulse-width",
+> +			&i2c_dev->deglitch.sda_min_width_us);
+> +	if (ret) {
+> +		dev_err(i2c_dev->dev, "st,min-sda-pulse-width not found\n");
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int st_i2c_probe(struct platform_device *pdev)
+> +{
+> +	struct device_node *np =3D pdev->dev.of_node;
+> +	struct st_i2c_dev *i2c_dev;
+> +	struct resource *res;
+> +	u32 clk_rate;
+> +	struct i2c_adapter *adap;
+> +	int ret;
+> +
+> +	i2c_dev =3D devm_kzalloc(&pdev->dev, sizeof(*i2c_dev), GFP_KERNEL);
+> +	if (!i2c_dev)
+> +		return -ENOMEM;
+> +
+> +	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	i2c_dev->base =3D devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(i2c_dev->base))
+> +		return PTR_ERR(i2c_dev->base);
+> +
+> +	i2c_dev->irq =3D irq_of_parse_and_map(np, 0);
+> +	if (!i2c_dev->irq) {
+> +		dev_err(&pdev->dev, "IRQ missing or invalid\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	i2c_dev->clk =3D of_clk_get_by_name(np, "ssc");
+> +	if (IS_ERR(i2c_dev->clk)) {
+> +		dev_err(&pdev->dev, "Unable to request clock\n");
+> +		return PTR_ERR(i2c_dev->clk);
+> +	}
+> +
+> +	i2c_dev->mode =3D I2C_MODE_STANDARD;
+> +	ret =3D of_property_read_u32(np, "clock-frequency", &clk_rate);
+> +	if ((!ret) && (clk_rate =3D=3D 400000))
+> +		i2c_dev->mode =3D I2C_MODE_FAST;
+> +
+> +	i2c_dev->dev =3D &pdev->dev;
+> +
+> +	ret =3D devm_request_irq(&pdev->dev, i2c_dev->irq, st_i2c_isr, 0,
+> +			pdev->name, i2c_dev);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to request irq %i\n", i2c_dev->irq);
+> +		return ret;
+> +	}
+> +
+> +	pinctrl_pm_select_default_state(i2c_dev->dev);
+> +	/* In case idle state available, select it */
+> +	pinctrl_pm_select_idle_state(i2c_dev->dev);
+> +
+> +	ret =3D st_i2c_of_get_deglitch(np, i2c_dev);
+> +	if (ret)
+> +		return ret;
+> +
+> +	adap =3D &i2c_dev->adap;
+> +	i2c_set_adapdata(adap, i2c_dev);
+> +	snprintf(adap->name, sizeof(adap->name), "ST I2C(0x%08x)", res->start);
+> +	adap->owner =3D THIS_MODULE;
+> +	adap->timeout =3D 2 * HZ;
+> +	adap->retries =3D 0;
+> +	adap->class =3D I2C_CLASS_HWMON | I2C_CLASS_DDC | I2C_CLASS_SPD;
+
+Why do you need class based instantiation. It will most likely cost
+boot-time and you have devicetree means for doing instantiation.
+
+> +	adap->algo =3D &st_i2c_algo;
+> +	adap->dev.parent =3D &pdev->dev;
+> +	adap->dev.of_node =3D pdev->dev.of_node;
+> +
+> +	ret =3D i2c_add_adapter(adap);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to add adapter\n");
+> +		return ret;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, i2c_dev);
+> +
+> +	dev_info(i2c_dev->dev, "%s initialized\n", adap->name);
+> +
+> +	return 0;
+> +}
+> +
+> +static int st_i2c_remove(struct platform_device *pdev)
+> +{
+> +	struct st_i2c_dev *i2c_dev =3D platform_get_drvdata(pdev);
+> +
+> +	i2c_del_adapter(&i2c_dev->adap);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct of_device_id st_i2c_match[] =3D {
+> +	{ .compatible =3D "st,comms-ssc-i2c", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, st_i2c_match);
+> +
+> +static struct platform_driver st_i2c_driver =3D {
+> +	.driver =3D {
+> +		.name =3D DRIVER_NAME,
+> +		.owner =3D THIS_MODULE,
+> +		.of_match_table =3D st_i2c_match,
+> +		.pm =3D &st_i2c_pm,
+
+You probably wanted ST_I2C_PM here?
+
+> +	},
+> +	.probe =3D st_i2c_probe,
+> +	.remove =3D st_i2c_remove,
+> +};
+> +
+> +module_platform_driver(st_i2c_driver);
+> +
+> +MODULE_AUTHOR("STMicroelectronics");
+
+I'd prefer your name, but at least, we need an email address.
+
+> +MODULE_DESCRIPTION("STMicroelectronics I2C driver");
+> +MODULE_LICENSE("GPL");
+
+Header says GPL v2.
+
+> diff --git a/drivers/i2c/busses/i2c-st.h b/drivers/i2c/busses/i2c-st.h
+> new file mode 100644
+> index 0000000..e8ba3dc
+> --- /dev/null
+> +++ b/drivers/i2c/busses/i2c-st.h
+> @@ -0,0 +1,208 @@
+
+Since this is not shared, please include into the c-file.
+
+> +/*
+> + * Copyright (C) 2013 STMicroelectronics
+> + *
+> + * I2C master mode controller driver, used in STMicroelectronics devices.
+> + *
+> + * Author: Maxime Coquelin <maxime.coquelin@st.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2, as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef __I2C_ST_H_
+> +#define __I2C_ST_H_
+> +
+> +/* SSC registers */
+> +#define SSC_BRG				0x000
+> +#define SSC_TBUF			0x004
+> +#define SSC_RBUF			0x008
+> +#define SSC_CTL				0x00C
+> +#define SSC_IEN				0x010
+> +#define SSC_STA				0x014
+> +#define SSC_I2C				0x018
+> +#define SSC_SLAD			0x01C
+> +#define SSC_REP_START_HOLD		0x020
+> +#define SSC_START_HOLD			0x024
+> +#define SSC_REP_START_SETUP		0x028
+> +#define SSC_DATA_SETUP			0x02C
+> +#define SSC_STOP_SETUP			0x030
+> +#define SSC_BUS_FREE			0x034
+> +#define SSC_TX_FSTAT			0x038
+> +#define SSC_RX_FSTAT			0x03C
+> +#define SSC_PRE_SCALER_BRG		0x040
+> +#define SSC_CLR				0x080
+> +#define SSC_NOISE_SUPP_WIDTH		0x100
+> +#define SSC_PRSCALER			0x104
+> +#define SSC_NOISE_SUPP_WIDTH_DATAOUT	0x108
+> +#define SSC_PRSCALER_DATAOUT		0x10c
+> +
+> +/* SSC Control */
+> +#define SSC_CTL_DATA_WIDTH_9		0x8
+> +#define SSC_CTL_DATA_WIDTH_MSK		0xf
+> +#define SSC_CTL_BM			0xf
+> +#define SSC_CTL_HB			BIT(4)
+> +#define SSC_CTL_PH			BIT(5)
+> +#define SSC_CTL_PO			BIT(6)
+> +#define SSC_CTL_SR			BIT(7)
+> +#define SSC_CTL_MS			BIT(8)
+> +#define SSC_CTL_EN			BIT(9)
+> +#define SSC_CTL_LPB			BIT(10)
+> +#define SSC_CTL_EN_TX_FIFO		BIT(11)
+> +#define SSC_CTL_EN_RX_FIFO		BIT(12)
+> +#define SSC_CTL_EN_CLST_RX		BIT(13)
+> +
+> +/* SSC Interrupt Enable */
+> +#define SSC_IEN_RIEN			BIT(0)
+> +#define SSC_IEN_TIEN			BIT(1)
+> +#define SSC_IEN_TEEN			BIT(2)
+> +#define SSC_IEN_REEN			BIT(3)
+> +#define SSC_IEN_PEEN			BIT(4)
+> +#define SSC_IEN_AASEN			BIT(6)
+> +#define SSC_IEN_STOPEN			BIT(7)
+> +#define SSC_IEN_ARBLEN			BIT(8)
+> +#define SSC_IEN_NACKEN			BIT(10)
+> +#define SSC_IEN_REPSTRTEN		BIT(11)
+> +#define SSC_IEN_TX_FIFO_HALF		BIT(12)
+> +#define SSC_IEN_RX_FIFO_HALF_FULL	BIT(14)
+> +
+> +/* SSC Status */
+> +#define SSC_STA_RIR			BIT(0)
+> +#define SSC_STA_TIR			BIT(1)
+> +#define SSC_STA_TE			BIT(2)
+> +#define SSC_STA_RE			BIT(3)
+> +#define SSC_STA_PE			BIT(4)
+> +#define SSC_STA_CLST			BIT(5)
+> +#define SSC_STA_AAS			BIT(6)
+> +#define SSC_STA_STOP			BIT(7)
+> +#define SSC_STA_ARBL			BIT(8)
+> +#define SSC_STA_BUSY			BIT(9)
+> +#define SSC_STA_NACK			BIT(10)
+> +#define SSC_STA_REPSTRT			BIT(11)
+> +#define SSC_STA_TX_FIFO_HALF		BIT(12)
+> +#define SSC_STA_TX_FIFO_FULL		BIT(13)
+> +#define SSC_STA_RX_FIFO_HALF		BIT(14)
+> +
+> +/* SSC I2C Control */
+> +#define SSC_I2C_I2CM			BIT(0)
+> +#define SSC_I2C_STRTG			BIT(1)
+> +#define SSC_I2C_STOPG			BIT(2)
+> +#define SSC_I2C_ACKG			BIT(3)
+> +#define SSC_I2C_AD10			BIT(4)
+> +#define SSC_I2C_TXENB			BIT(5)
+> +#define SSC_I2C_REPSTRTG		BIT(11)
+> +#define SSC_I2C_SLAVE_DISABLE		BIT(12)
+> +
+> +/* SSC Tx FIFO Status */
+> +#define SSC_TX_FSTAT_STATUS		0x07
+> +
+> +/* SSC Rx FIFO Status */
+> +#define SSC_RX_FSTAT_STATUS		0x07
+> +
+> +/* SSC Clear bit operation */
+> +#define SSC_CLR_SSCAAS			BIT(6)
+> +#define SSC_CLR_SSCSTOP			BIT(7)
+> +#define SSC_CLR_SSCARBL			BIT(8)
+> +#define SSC_CLR_NACK			BIT(10)
+> +#define SSC_CLR_REPSTRT			BIT(11)
+> +
+> +/* SSC Clock Prescaler */
+> +#define SSC_PRSC_VALUE			0x0f
+> +
+> +
+> +#define SSC_TXFIFO_SIZE			0x8
+> +#define SSC_RXFIFO_SIZE			0x8
+> +
+> +enum st_i2c_mode {
+> +	I2C_MODE_STANDARD,
+> +	I2C_MODE_FAST,
+> +	I2C_MODE_END,
+> +};
+> +
+> +/**
+> + * struct st_i2c_timings - per-Mode tuning parameters
+> + * @rate: I2C bus rate
+> + * @rep_start_hold: I2C repeated start hold time requirement
+> + * @rep_start_setup: I2C repeated start set up time requirement
+> + * @start_hold: I2C start hold time requirement
+> + * @data_setup_time: I2C data set up time requirement
+> + * @stop_setup_time: I2C stop set up time requirement
+> + * @bus_free_time: I2C bus free time requirement
+> + * @sda_pulse_min_limit: I2C SDA pulse mini width limit
+> + */
+> +struct st_i2c_timings {
+> +	u32 rate;
+> +	u32 rep_start_hold;
+> +	u32 rep_start_setup;
+> +	u32 start_hold;
+> +	u32 data_setup_time;
+> +	u32 stop_setup_time;
+> +	u32 bus_free_time;
+> +	u32 sda_pulse_min_limit;
+> +};
+> +
+> +/**
+> + * struct st_i2c_deglitch - Anti-glitch filter configuration
+> + * @scl_min_width_us: SCL line minimum pulse width in ns
+> + * @sda_min_width_us: SDA line minimum pulse width in ns
+> + */
+> +struct st_i2c_deglitch {
+> +	u32	scl_min_width_us;
+> +	u32	sda_min_width_us;
+> +};
+> +
+> +/**
+> + * struct st_i2c_client - client specific data
+> + * @addr: 8-bit slave addr, including r/w bit
+> + * @count: number of bytes to be transfered
+> + * @xfered: number of bytes already transferred
+> + * @buf: data buffer
+> + * @result: result of the transfer
+> + * @stop: last I2C msg to be sent, i.e. STOP to be generated
+> + */
+> +struct st_i2c_client {
+> +	u8	addr;
+> +	u32	count;
+> +	u32	xfered;
+> +	u8	*buf;
+> +	int	result;
+> +	bool	stop;
+> +};
+> +
+> +/**
+> + * struct st_i2c_dev - private data of the controller
+> + * @adap: I2C adapter for this controller
+> + * @dev: device for this controller
+> + * @base: virtual memory area
+> + * @complete: completion of I2C message
+> + * @irq: interrupt line for th controller
+> + * @clk: hw ssc block clock
+> + * @mode: I2C mode of the controller. Standard or Fast only supported
+> + * @deglitch: Anti-glitch filters parameters
+> + * @client: I2C transfert information
+> + * @busy: I2C transfer on-going
+> + */
+> +struct st_i2c_dev {
+> +	struct i2c_adapter	adap;
+> +	struct device		*dev;
+> +	void __iomem		*base;
+> +	struct completion	complete;
+> +	int			irq;
+> +	struct clk		*clk;
+> +	int			mode;
+> +	struct st_i2c_deglitch	deglitch;
+> +	struct st_i2c_client	client;
+> +	bool			busy;
+> +};
+> +
+> +static inline void st_i2c_set_bits(void __iomem *reg, u32 mask)
+> +{
+> +	writel(readl(reg) | mask, reg);
+> +}
+> +
+> +static inline void st_i2c_clr_bits(void __iomem *reg, u32 mask)
+> +{
+> +	writel(readl(reg) & ~mask, reg);
+> +}
+> +
+> +#endif /* __I2C_ST_H_ */
+> --=20
+> 1.7.9.5
+>=20
+
+Thanks,
+
+   Wolfram
+
+
+--t4apE7yKrX2dGgJC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSRcV4AAoJEBQN5MwUoCm2wxEP/jvDRWqlJQ6sXBAf5CX2zl6y
+xODcOn5kj7kncyNsWUVC+6vkyUpPQdHTELSru5EWF+9LL9ON9vK9TQXNdgutjBtj
+0x58RLOoCZ5tHzL+9wXVY2FElat7NE+0e0UDEFGDl8AFwXFJv4TkifhOC6mq5d5i
+qgNuB4WPC4VudSXR3mYplmuMHhhkoVK3TjZSdxQ+rgzeY9i8nQshy4ot7LSCVz6J
+qcNnbK2enXJESvFQbrpICpMhLlohPK0ir19GL75VBFmmeYhgutPRKC5CyFD5RRVp
+KBfJl69PQqOO9hIvXxTmdClaNvhlwmPH2L78oZUiky7Meta/MNXu1SSpi7laa575
+Trioc+KgfmNxd6OBOEQMCmXVqpq75GMgCSHdgPR7YTX7iEyMWnPf4X0dsOTFLcnp
+cx/I1GIPY7T0tdo5cxRq6eoKMxjSxjfyYu9xHFGV6pdW3999AiOnL9cbvmkUxxKh
+sTdcY1NF1jxKnlOt9jRPknayMuXBNHrHZYW3EK1bA/TAHWu7Z1l/d//Xd7rNyU4g
+2/mSAwTazy2v7MQEZSkf2lR2f1YxteEwUt8jHsTVOjYcBtqeaLcA8dndRkUN1mTH
+lyyRVNfiJZVCMHKrvkeCVSXlVQ1Gi8Ffoq0XZQOhcTa5oIgtWvIcmAt4Q8PjELjc
+aD/QtG3AexE7RJrinqAU
+=d7PH
+-----END PGP SIGNATURE-----
+
+--t4apE7yKrX2dGgJC--
