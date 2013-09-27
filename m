@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab3I0JtS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 05:49:18 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38267 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab3I0JtQ (ORCPT
+	id S1751883Ab3I0KGp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 06:06:45 -0400
+Received: from mx0.eldamar.org.uk ([78.47.157.133]:59398 "EHLO
+	mx0.eldamar.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907Ab3I0KGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 05:49:16 -0400
-Date: Fri, 27 Sep 2013 10:48:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        sachin.kamat@linaro.org, wfp5p@virginia.edu,
-        yongjun_wei@trendmicro.com.cn, patches@opensource.wolfsonmicro.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20130927094838.GX19304@sirena.org.uk>
-References: <CAPgLHd8rbL2mmN+hFb-Jqvy+tu7wyTj702Z0fKNG_KOCW1kd1Q@mail.gmail.com>
+	Fri, 27 Sep 2013 06:06:41 -0400
+Date: Fri, 27 Sep 2013 11:06:23 +0100
+From: Alexander Frolkin <avf@eldamar.org.uk>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: Simon Horman <horms@verge.net.au>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        lvs-devel@vger.kernel.org, Wensong Zhang <wensong@linux-vs.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] ipvs: improved SH fallback strategy
+Message-ID: <20130927100622.GC28974@eldamar.org.uk>
+References: <20130923115139.GA15034@eldamar.org.uk>
+ <524099BA.5020303@cogentembedded.com>
+ <20130924093238.GD18494@eldamar.org.uk>
+ <20130925003033.GG26081@verge.net.au>
+ <20130925092638.GD19768@eldamar.org.uk>
+ <alpine.LFD.2.00.1309260817290.1640@ja.ssi.bg>
+ <20130926100540.GB27583@eldamar.org.uk>
+ <alpine.LFD.2.00.1309262255400.1949@ja.ssi.bg>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0btr6/5+bhBdui6J"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPgLHd8rbL2mmN+hFb-Jqvy+tu7wyTj702Z0fKNG_KOCW1kd1Q@mail.gmail.com>
-X-Cookie: Don't read everything you believe.
+In-Reply-To: <alpine.LFD.2.00.1309262255400.1949@ja.ssi.bg>
+X-GPG-Key-Fingerprint: 7820 960F C361 C9CE 401F  D07D 993A 2951 D970 4FA4
+X-Operating-System: Linux 3.2.0-41-generic
+X-Editor: Vi
+X-Uptime: 11:05:46 up 136 days, 20:30, 11 users,  load average: 0.39, 0.38,
+ 0.41
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: wm8993: drop regulator_bulk_free of devm_
- allocated data
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Improve the SH fallback realserver selection strategy.
 
---0btr6/5+bhBdui6J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+With sh and sh-fallback, if a realserver is down, this attempts to
+distribute the traffic that would have gone to that server evenly
+among the remaining servers.
 
-On Fri, Sep 27, 2013 at 04:15:54PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->=20
-> It's not necessary to free regulator consumers allocated with
-> devm_regulator_bulk_get.
+Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
 
-Applied, thanks.
+--
+diff --git a/net/netfilter/ipvs/ip_vs_sh.c b/net/netfilter/ipvs/ip_vs_sh.c
+index 3588fae..cc65b2f 100644
+--- a/net/netfilter/ipvs/ip_vs_sh.c
++++ b/net/netfilter/ipvs/ip_vs_sh.c
+@@ -115,27 +115,46 @@ ip_vs_sh_get(struct ip_vs_service *svc, struct ip_vs_sh_state *s,
+ }
+ 
+ 
+-/* As ip_vs_sh_get, but with fallback if selected server is unavailable */
++/* As ip_vs_sh_get, but with fallback if selected server is unavailable
++ *
++ * The fallback strategy loops around the table starting from a "random"
++ * point (in fact, it is chosen to be the original hash value to make the
++ * algorithm deterministic) to find a new server.
++ */
+ static inline struct ip_vs_dest *
+ ip_vs_sh_get_fallback(struct ip_vs_service *svc, struct ip_vs_sh_state *s,
+ 		      const union nf_inet_addr *addr, __be16 port)
+ {
+-	unsigned int offset;
+-	unsigned int hash;
++	unsigned int offset, roffset;
++	unsigned int hash, ihash;
+ 	struct ip_vs_dest *dest;
+ 
++	/* first try the dest it's supposed to go to */
++	ihash = ip_vs_sh_hashkey(svc->af, addr, port, 0);
++	dest = rcu_dereference(s->buckets[ihash].dest);
++	if (!dest)
++		return NULL;
++	if (!is_unavailable(dest))
++		return dest;
++
++	IP_VS_DBG_BUF(6, "SH: selected unavailable server %s:%d, reselecting",
++		      IP_VS_DBG_ADDR(svc->af, &dest->addr), ntohs(dest->port));
++
++	/* if the original dest is unavailable, loop around the table
++	 * starting from ihash to find a new dest
++	 */
+ 	for (offset = 0; offset < IP_VS_SH_TAB_SIZE; offset++) {
+-		hash = ip_vs_sh_hashkey(svc->af, addr, port, offset);
++		roffset = (offset + ihash) % IP_VS_SH_TAB_SIZE;
++		hash = ip_vs_sh_hashkey(svc->af, addr, port, roffset);
+ 		dest = rcu_dereference(s->buckets[hash].dest);
+ 		if (!dest)
+ 			break;
+-		if (is_unavailable(dest))
+-			IP_VS_DBG_BUF(6, "SH: selected unavailable server "
+-				      "%s:%d (offset %d)",
+-				      IP_VS_DBG_ADDR(svc->af, &dest->addr),
+-				      ntohs(dest->port), offset);
+-		else
++		if (!is_unavailable(dest))
+ 			return dest;
++		IP_VS_DBG_BUF(6, "SH: selected unavailable "
++			      "server %s:%d (offset %d), reselecting",
++			      IP_VS_DBG_ADDR(svc->af, &dest->addr),
++			      ntohs(dest->port), roffset);
+ 	}
+ 
+ 	return NULL;
 
---0btr6/5+bhBdui6J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSRVRzAAoJELSic+t+oim9fc0P/joFYFyoak9xJ+dblctMZRTo
-gABE4l2BrFFRQNJRlyAnXdpdrsocjM1uFXvT0yMNb2iHYSJILBIxZA5pw9wHNl8m
-vP+1yJuoR2hs1HoREPq89+b7VnEaI5jF2++9M85RxR0H1b5HlYErc646codrEuJJ
-+2Ce9RZOIGXrpHiQK5EB+yq+LqQ5d6YtAw57UyZDfVXTFWWm2msr5ChlmYqhCsvx
-NaGjFeu5h+mJ4EcCHIgJj6ffS8ZjExFuKxxsdycTUp0MINa1MKtEKNdTcsBRFZeV
-WFZmZct//zT8fILfwWahvvBi0Lk7pOmXVw67W8w6aaWSnhRD6EueL3sIJvJQvMxE
-DNJGjs0BGTs+FX0CXSrWQf5WlKiQsfSb4KkPsXCaQ675P4rNWnIBVOZw3CEfWXJB
-sRFw6viFiM/9OdLBYKbGrF73dHGrEuSxfVtqWBTPNjuL/bncOjGEqzkVobrCW73m
-Gy2JnM0bKipWdOuADcfBIK28zIJYB5+T1Uu/WSz4wdukBe8Ag8eTo4uYjclgcxRM
-0iuLUp5sbe3X2nIv1aD1E9wjRsLlcMe7jvfuifzjWDYeNMqYrehcmZmo1IH/k6cR
-rZmEZNc2ZRuySK3rmiZurcAlx2V/ilh3v8qn2ZLKuL2fx0WURRCIGLId10Zxczfo
-vlZeZyYz42fybHx6Q7MT
-=qBF0
------END PGP SIGNATURE-----
-
---0btr6/5+bhBdui6J--
