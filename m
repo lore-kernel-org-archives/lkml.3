@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab3I0NsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:48:22 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:49049 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab3I0NsQ (ORCPT
+	id S1754015Ab3I0Nse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:48:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53514 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab3I0Nsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:48:16 -0400
+	Fri, 27 Sep 2013 09:48:33 -0400
+Date: Fri, 27 Sep 2013 15:48:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Joe Perches <joe@perches.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Jason Low <jason.low2@hp.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+Message-ID: <20130927134802.GA15690@laptop.programming.kicks-ass.net>
+References: <1380226007.2170.2.camel@buesod1.americas.hpqcorp.net>
+ <1380226997.2602.11.camel@j-VirtualBox>
+ <1380228059.2170.10.camel@buesod1.americas.hpqcorp.net>
+ <1380229794.2602.36.camel@j-VirtualBox>
+ <1380231702.3467.85.camel@schen9-DESK>
+ <1380235333.3229.39.camel@j-VirtualBox>
+ <1380236265.3467.103.camel@schen9-DESK>
+ <20130927060213.GA6673@gmail.com>
+ <20130927112323.GJ3657@laptop.programming.kicks-ass.net>
+ <1380289495.17366.91.camel@joe-AO722>
 MIME-Version: 1.0
-In-Reply-To: <52458631.7030401@nvidia.com>
-References: <1380044845-7734-1-git-send-email-ldewangan@nvidia.com>
-	<CACRpkdZc2SGhUJUjVqen3tX5sqfm=PthK42ustAmoWwBsWzHPQ@mail.gmail.com>
-	<52458631.7030401@nvidia.com>
-Date: Fri, 27 Sep 2013 15:48:15 +0200
-Message-ID: <CACRpkdY5DeXSJ+RTyPtfDJG=x=M7KsybsBT3e=D_YLksi0DSEw@mail.gmail.com>
-Subject: Re: [rtc-linux] Re: [PATCH V4 2/3] pincntrl: add support for AMS
- AS3722 pin control driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Rob Landley <rob@landley.net>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380289495.17366.91.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 3:20 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> On Friday 27 September 2013 06:10 PM, Linus Walleij wrote:
->>
->> On Tue, Sep 24, 2013 at 7:47 PM, Laxman Dewangan <ldewangan@nvidia.com>
->> wrote:
->>
->>> function which just return not supported.
->>> - Nit cleanups.
->>
->> This is getting a lot better quickly.
->>
->> I'd like someone from devicetree@vger.kernel.org to say
->> something about the DT bindings, can you convince one of
->> the DT custodians to ACK this?
->
-> I will request Stephen to review this.
+On Fri, Sep 27, 2013 at 06:44:55AM -0700, Joe Perches wrote:
+> It's a CHK test, so it's only tested with --strict
+> 
+> $ scripts/checkpatch.pl -f --strict kernel/mutex.c 2>&1 | grep memory
+> CHECK: memory barrier without comment
+> CHECK: memory barrier without comment
+> 
+> It could be changed to WARN so it's always on.
 
-OK I buy the rest of your explantions and I'm ready to merge
-this if the device tree people give green light.
-
-Yours,
-Linus Walleij
+Yes please, we can't be too careful with memory barriers.
