@@ -1,90 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3I0XTj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 19:19:39 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46142 "EHLO gate.crashing.org"
+	id S1754157Ab3I0XTt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 19:19:49 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:42879 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753269Ab3I0XTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 19:19:37 -0400
-Message-ID: <1380323960.27811.67.camel@pasglop>
-Subject: Re: Please revert 928bea964827d7824b548c1f8e06eccbbc4d0d7d
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Sat, 28 Sep 2013 09:19:20 +1000
-In-Reply-To: <CAE9FiQWm7ALPO5k_2nV+fuZw4oNNiw+_PEx8EWkb52ymN+EYUg@mail.gmail.com>
-References: <1380270519.27811.10.camel@pasglop>
-	 <CAE9FiQVkW7d7vFx_kPJG-FEvO71SZjZmpR+dnwVm61wkYK=0YA@mail.gmail.com>
-	 <CA+55aFyDfMdAeaniQwkoeW6F-xd3JxrzGYwtFb6N9+NA6aRCMg@mail.gmail.com>
-	 <1380318405.27811.37.camel@pasglop>
-	 <CAE9FiQXXvkfTak6oEpUog_RYs_Gwpdji7N5UJ=R11Q61==N97A@mail.gmail.com>
-	 <1380321480.27811.53.camel@pasglop>
-	 <CAE9FiQWm7ALPO5k_2nV+fuZw4oNNiw+_PEx8EWkb52ymN+EYUg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753970Ab3I0XTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 19:19:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: [GIT PULL] ACPI and power management fixes for v3.12-rc3
+Date: Sat, 28 Sep 2013 01:31:08 +0200
+Message-ID: <1720906.nJEUKiKuDL@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-27 at 15:56 -0700, Yinghai Lu wrote:
+Hi Linus,
 
-> ok, please if you are ok attached one instead. It will print some warning about
-> driver skipping pci_set_master, so we can catch more problem with drivers.
+Please pull from the git repository at
 
-Except that the message is pretty cryptic :-) Especially since the
-driver causing the message to be printed is not the one that did
-the mistake in the first place, it's the next one coming up that
-trips the warning.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.12-rc3
 
-In any case, the root cause is indeed the PCIe port driver:
+to receive ACPI and power management fixes for v3.12-rc3 with
+top-most commit dcc7bc3f3d91bbd5c15409a92317c2c24449a285
 
-We don't have ACPI, so pcie_port_platform_notify() isn't implemented,
-and pcie_ports_auto is true, so we end up with capabilities set to 0.
+  Merge branch 'pm-cpufreq-fixes'
 
-Thus the port driver bails out before calling pci_set_master(). The fix
-is to call pci_set_master() unconditionally. However that lead me to
-find to a few interesting oddities in that port driver code:
+on top of commit 4a10c2ac2f368583138b774ca41fac4207911983
 
- - If capabilities is 0, it returns after enabling the device and
-doesn't disable it. But if it fails for any other reason later on (such
-as failing to enable interrupts), it *will* disable the device. This is
-inconsistent. In fact, if it had disabled the device as a result of the
-0 capabilities, the problem would also not have happened (the subsequent
-enable_bridge done by the e1000e driver would have done the right
-thing). I've tested "fixing" that instead of moving the set_master call
-and it fixes my problem as well.
+  Linux 3.12-rc2
 
- - In get_port_device_capability(), all capabilities are gated by a
-combination of the bit in cap_mask and a corresponding HW check of
-the presence of the relevant PCIe capability or similar... except
-for the VC one, which is solely read from the HW capability. That means
-that the platform pcie_port_platform_notify() has no ability to prevent
-the VC capability (so if I have a broken bridge that advertises it but
-my platform wants to block it, it can't).
+These fix one recent cpufreq regression, a few older bugs that may
+harm users and a kerneldoc typo.
 
- - I am quite nervous with the PCIe port driver disabling bridges. I
-understand the intent but what if that bridge has some system device
-behind it ? Something you don't even know about (used by ACPI, behind an
-ISA bridge for example ?).
+Specifics:
 
-I think disabling bridges is a VERY risky proposition at all times
-(including during PM) and I don't think the port driver should do it.
+ 1) After recent locking changes in the cpufreq core it is possible
+    to trigger BUG_ON(!policy) in lock_policy_rwsem_read() if
+    cpufreq_get() is called before registering a cpufreq driver.
+    Fix from Viresh Kumar.
 
-Maybe a more robust approach would be to detect one way or another that
-the bridge was already enabled and only disable it if it wasn't or
-something along those lines (ie ,restore it in the state it was)...
+ 2) If intel_pstate has been loaded already, it doesn't make sense
+    to do anything in acpi_cpufreq_init() and moreover doing something
+    in there in that case may be harmful, so make that function return
+    immediately if another cpufreq driver is already present.  From
+    Yinghai Lu.
 
-This is not my problem right now of course (in my case the bridge was
-disabled to begin with) but I have a long experience with system stuff
-hiding behind bridges and the code as it is written makes me a bit
-nervous.
+ 3) The ACPI IPMI driver sometimes attempts to acquire a mutex from
+    interrupt context, which can be avoided by replacing that mutex
+    with a spinlock.  From Lv Zheng.
 
-Cheers,
-Ben.
+ 4) A NULL pointer may be dereferenced by the exynos5440 cpufreq
+    driver if a memory allocation made by it fails.  Fix from
+    Sachin Kamat.
+
+ 5) Hanjun Guo's commit fixes a typo in the kerneldoc comment
+    documenting acpi_bus_unregister_driver().
+
+Thanks!
+
+
+---------------
+
+Hanjun Guo (1):
+      ACPI / scan: fix typo in comments of acpi_bus_unregister_driver()
+
+Lv Zheng (1):
+      ACPI / IPMI: Fix atomic context requirement of ipmi_msg_handler()
+
+Sachin Kamat (1):
+      cpufreq: exynos5440: Fix potential NULL pointer dereference
+
+Viresh Kumar (1):
+      cpufreq: check cpufreq driver is valid and cpufreq isn't disabled in cpufreq_get()
+
+Yinghai Lu (1):
+      acpi-cpufreq: skip loading acpi_cpufreq after intel_pstate
+
+---------------
+
+ drivers/acpi/acpi_ipmi.c             |   24 ++++++++++++++----------
+ drivers/acpi/scan.c                  |    2 +-
+ drivers/cpufreq/acpi-cpufreq.c       |    4 ++++
+ drivers/cpufreq/cpufreq.c            |    3 +++
+ drivers/cpufreq/exynos5440-cpufreq.c |    2 +-
+ 5 files changed, 23 insertions(+), 12 deletions(-)
 
