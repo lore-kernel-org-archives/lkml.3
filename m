@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750956Ab3I0CBY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 22:01:24 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51349 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab3I0CBW (ORCPT
+	id S1751263Ab3I0CCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 22:02:48 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:56884 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab3I0CCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 22:01:22 -0400
-Date: Fri, 27 Sep 2013 12:01:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fan Du <fan.du@windriver.com>, Joe Perches <joe@perches.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: Re: linux-next: manual merge of the ipsec-next tree with the
- net-next tree
-Message-Id: <20130927120107.99925373bcc260b50e0b3ed8@canb.auug.org.au>
-In-Reply-To: <20130925052923.GU7660@secunet.com>
-References: <20130924121629.f818475ddf308b0494cfce2a@canb.auug.org.au>
-	<20130924102505.GS7660@secunet.com>
-	<20130925095919.143635403832766c1b190202@canb.auug.org.au>
-	<20130925052923.GU7660@secunet.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__27_Sep_2013_12_01_07_+1000_Bpt5QyrZT9zDdR=2"
+	Thu, 26 Sep 2013 22:02:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130926161127.GF26159@ghostprotocols.net>
+References: <1380205304-32224-1-git-send-email-artagnon@gmail.com>
+ <52444F53.504@gmail.com> <CALkWK0k=c9ov-FWaR8ocD-XjUOEQWCLhv-4OjWFkJYmfMRV=QQ@mail.gmail.com>
+ <20130926161127.GF26159@ghostprotocols.net>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Fri, 27 Sep 2013 07:32:06 +0530
+Message-ID: <CALkWK0kVZ9mN5Zn+8eNHTAg3pVmuf-WcbC+XUsKFnytFffpKHw@mail.gmail.com>
+Subject: Re: [PATCH] tools/perf: remove non-existent entries in MANIFEST
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__27_Sep_2013_12_01_07_+1000_Bpt5QyrZT9zDdR=2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Steffen,
-
-On Wed, 25 Sep 2013 07:29:23 +0200 Steffen Klassert <steffen.klassert@secun=
-et.com> wrote:
+Arnaldo Carvalho de Melo wrote:
+> Could you please describe how it is broken?
 >
-> On Wed, Sep 25, 2013 at 09:59:19AM +1000, Stephen Rothwell wrote:
-> >=20
-> > On Tue, 24 Sep 2013 12:25:05 +0200 Steffen Klassert <steffen.klassert@s=
-ecunet.com> wrote:
-> > >
-> > > On Tue, Sep 24, 2013 at 12:16:29PM +1000, Stephen Rothwell wrote:
-> > > >=20
-> > > > Today's linux-next merge of the ipsec-next tree got a conflict in
-> > > > include/net/xfrm.h between commit d511337a1eda ("xfrm.h: Remove ext=
-ern
-> > > > from function prototypes") from the net-next tree and commit aba826=
-958830
-> > > > ("{ipv4,xfrm}: Introduce xfrm_tunnel_notifier for xfrm tunnel mode
-> > > > callback") from the ipsec-next tree.
-> > >=20
-> > > Thanks for the information, I'll do a rebase of the ipsec-next
-> > > tree tomorrow.
-> >=20
-> > Did you miss the end of the next paragraph:  "no action is required"?
-> > Dave can fix this up (like I did) when he merges your tree into his.
->=20
-> I applied this patch shortly before the merge window opened, it is a left
-> over from the last develpoment cycle. I already rebased my tree onto
-> net-next in the past if that happened, even if there were no merge
-> conflicts. I did that just to see if everything still works. But I
-> could also do a test merge to see if everything still works and ask
-> to pull without a rebase then if this is the prefered way. Would make
-> my life easier :)
+> [acme@zoo linux]$ git branch | grep '*'
+> * perf/urgent
+> [acme@zoo linux]$ git describe
+> v3.12-rc1-51-gc1bf214
 
-That would be up to Dave ...
+Oh, I meant the torvalds/linux.git master.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+  $ git describe
+  v3.12-rc2-83-g4b97280
+  $ make perf-tarbz2-src-pkg
+    TAR
+  $ tar tf perf-3.12.0-rc2.tar.bz2 | grep tools
+  perf-3.12.0-rc2/tools/
 
---Signature=_Fri__27_Sep_2013_12_01_07_+1000_Bpt5QyrZT9zDdR=2
-Content-Type: application/pgp-signature
+As you can see, the tools/perf directory is completely missing. With
+my patch applied, the archive is totally fine (and perf builds and
+runs fine). I suspect the issue has to do with non-existent paths
+given as the pathspec filtering argument to 'git archive'. Note that
+I'm running the latest git HEAD.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSROboAAoJEMDTa8Ir7ZwVoRQQAIJQotoVoy91whcLvi1VEeTP
-MKKLBQ+IKIF0s/qQHVEXmRindn4gjl7IDNLstpu+xXlRhXuBjzO/7HdfnsQk4KDx
-VH0M9bfdY/NRT/XpjnPadqdItNw6f+KBt5dFndoEgVgMmmtcosjbeNT1I2bgdGZD
-1hRMlPmN/GQjbXO8xW8WItsLHnwWccSsZDbNs6nZpxIdGAaFdL9sozIRpweHnEbr
-BDjGdEunaVfL1kYdGA1hYWIEEhQgYAivJsGdHEHilRImvQuS1BYeyj8Fq2JQE7Cz
-iMw3cx6IheynatCmH4ClczzTUuMnyGd/6iR2TQVJd7X8BMup12GNZD037RZZwrqh
-K3/dwHSCU6nxk1ltHQ0jrzB7niSHmLq6j9susp5bNWbw6Qm96zOg+TCLhj6ajkbw
-DOiCR24yqwr5DSa8DGnziDkjggBfKPOGC1CRzF0Mt3dedbx2VxqcReGxcALGB7O7
-uJCDftBNiyFG21OBurFaud8FJ+dtpOBDdCFmrAkuVRmJxZdHhLXcNNtA1gpRy3mH
-L78OKTUOfesoeLFjWAPjWs/1cVZOExEFgIfYmBIvv48sitnizjgOPbLqZuiJvofz
-6EXQiKGcbMkfuft82tFHY5ubj5Gxj50uCbpu01iKYAFcNmOACXJdLP89INz+CER2
-lMPUxFazuc65cccTG6YE
-=SwBO
------END PGP SIGNATURE-----
-
---Signature=_Fri__27_Sep_2013_12_01_07_+1000_Bpt5QyrZT9zDdR=2--
+Thanks.
