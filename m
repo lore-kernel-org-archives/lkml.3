@@ -1,82 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab3I0SIv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 14:08:51 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:46635 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab3I0SIt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 14:08:49 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Jon Hunter <jgchunter@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, r.sricharan@ti.com, holler@ahsoftware.de
-Subject: Re: [PATCH 1/2] gpio/omap: maintain GPIO and IRQ usage separately
-References: <1380069414-2922-1-git-send-email-javier.martinez@collabora.co.uk>
-Date: Fri, 27 Sep 2013 11:08:43 -0700
-In-Reply-To: <1380069414-2922-1-git-send-email-javier.martinez@collabora.co.uk>
-	(Javier Martinez Canillas's message of "Wed, 25 Sep 2013 02:36:52
-	+0200")
-Message-ID: <87r4cajfx0.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754452Ab3I0SJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 14:09:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7814 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754098Ab3I0SJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 14:09:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,994,1371106800"; 
+   d="scan'208";a="410528296"
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: paulmck@linux.vnet.ibm.com, Waiman Long <Waiman.Long@hp.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20130927152953.GA4464@linux.vnet.ibm.com>
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+	 <1380147049.3467.67.camel@schen9-DESK>
+	 <20130927152953.GA4464@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 Sep 2013 11:09:08 -0700
+Message-ID: <1380305348.3467.109.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Javier Martinez Canillas <javier.martinez@collabora.co.uk> writes:
+On Fri, 2013-09-27 at 08:29 -0700, Paul E. McKenney wrote:
+> On Wed, Sep 25, 2013 at 03:10:49PM -0700, Tim Chen wrote:
+> > We will need the MCS lock code for doing optimistic spinning for rwsem.
+> > Extracting the MCS code from mutex.c and put into its own file allow us
+> > to reuse this code easily for rwsem.
+> > 
+> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > ---
+> >  include/linux/mcslock.h |   58 +++++++++++++++++++++++++++++++++++++++++++++++
+> >  kernel/mutex.c          |   58 +++++-----------------------------------------
+> >  2 files changed, 65 insertions(+), 51 deletions(-)
+> >  create mode 100644 include/linux/mcslock.h
+> > 
+> > diff --git a/include/linux/mcslock.h b/include/linux/mcslock.h
+> > new file mode 100644
+> > index 0000000..20fd3f0
+> > --- /dev/null
+> > +++ b/include/linux/mcslock.h
+> > @@ -0,0 +1,58 @@
+> > +/*
+> > + * MCS lock defines
+> > + *
+> > + * This file contains the main data structure and API definitions of MCS lock.
+> > + */
+> > +#ifndef __LINUX_MCSLOCK_H
+> > +#define __LINUX_MCSLOCK_H
+> > +
+> > +struct mcs_spin_node {
+> > +	struct mcs_spin_node *next;
+> > +	int		  locked;	/* 1 if lock acquired */
+> > +};
+> > +
+> > +/*
+> > + * We don't inline mcs_spin_lock() so that perf can correctly account for the
+> > + * time spent in this lock function.
+> > + */
+> > +static noinline
+> > +void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+> > +{
+> > +	struct mcs_spin_node *prev;
+> > +
+> > +	/* Init node */
+> > +	node->locked = 0;
+> > +	node->next   = NULL;
+> > +
+> > +	prev = xchg(lock, node);
+> > +	if (likely(prev == NULL)) {
+> > +		/* Lock acquired */
+> > +		node->locked = 1;
+> > +		return;
+> > +	}
+> > +	ACCESS_ONCE(prev->next) = node;
+> > +	smp_wmb();
+> > +	/* Wait until the lock holder passes the lock down */
+> > +	while (!ACCESS_ONCE(node->locked))
+> > +		arch_mutex_cpu_relax();
+> > +}
+> > +
+> > +static void mcs_spin_unlock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+> > +{
+> > +	struct mcs_spin_node *next = ACCESS_ONCE(node->next);
+> > +
+> > +	if (likely(!next)) {
+> > +		/*
+> > +		 * Release the lock by setting it to NULL
+> > +		 */
+> > +		if (cmpxchg(lock, node, NULL) == node)
+> > +			return;
+> > +		/* Wait until the next pointer is set */
+> > +		while (!(next = ACCESS_ONCE(node->next)))
+> > +			arch_mutex_cpu_relax();
+> > +	}
+> > +	ACCESS_ONCE(next->locked) = 1;
+> > +	smp_wmb();
+> 
+> Shouldn't the memory barrier precede the "ACCESS_ONCE(next->locked) = 1;"?
+> Maybe in an "else" clause of the prior "if" statement, given that the
+> cmpxchg() does it otherwise.
+> 
+> Otherwise, in the case where the "if" conditionn is false, the critical
+> section could bleed out past the unlock.
 
-> The GPIO OMAP controller pins can be used as IRQ and GPIO
-> independently so is necessary to keep track GPIO pins and
-> IRQ lines usage separately to make sure that the bank will
-> always be enabled while being used.
->
-> Also move gpio_is_input() definition in preparation for the
-> next patch that setups the controller's irq_chip driver when
-> a caller requests an interrupt line.
->
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Yes, I agree with you that the smp_wmb should be moved before
+ACCESS_ONCE to prevent critical section from bleeding.  Copying Waiman
+who is the original author of the mcs code to see if he has any comments
+on things we may have missed.
 
-I'm fine with this appproach.  For both patches:
+Tim
 
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
-
-Also, I gave it a spin across a handful of OMAP boards using v3.12-rc2 +
-these 2 patches.
-
-Boot tested successfully with DT boot:
-
-omap3530/beagle
-omap3730/beagle-xm
-omap3530/overo (Tobi w/GPIO IRQ networking)
-omap3730/overo STORM (w/GPIO IRQ for networking)
-am335x/beaglebone
-am335x/beaglebone black
-omap4430/panda
-omap4460/panda-es
-omap5912/OSK (omap1)
-
-I also verified non-DT boot on the OMAP3 platforms that still support
-legacy boot.
-
-So feel free to also add
-
-Tested-by: Kevin Hilman <khilman@linaro.org>
-
-Thanks for your persistence in getting a fix for this upstream.
-
-Kevin
