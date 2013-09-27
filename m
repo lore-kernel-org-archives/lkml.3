@@ -1,219 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab3I0N3H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:29:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55977 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab3I0N2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:28:50 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 61/63] sched: numa: skip some page migrations after a shared fault
-Date: Fri, 27 Sep 2013 14:27:46 +0100
-Message-Id: <1380288468-5551-62-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
-References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
+	id S1754089Ab3I0N3W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:29:22 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:52107 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753495Ab3I0N3R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:29:17 -0400
+Message-ID: <52458774.1060909@st.com>
+Date: Fri, 27 Sep 2013 14:26:12 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] media: rc: OF: Add Generic bindings for remote-control
+References: <1380274391-26577-1-git-send-email-srinivas.kandagatla@st.com> <20130927113458.GB18672@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130927113458.GB18672@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+On 27/09/13 12:34, Mark Rutland wrote:
 
-Shared faults can lead to lots of unnecessary page migrations,
-slowing down the system, and causing private faults to hit the
-per-pgdat migration ratelimit.
+>> > +	- rx-mode: Can be "infrared" or "uhf". rx-mode should be present iff
+>> > +	  the rx pins are wired up.
+> I'm unsure on this. What if the device has multiple receivers that can
+> be independently configured? What if it supports something other than
+> "infrared" or "uhf"? What if a device can only be wired up as
+> "infrared"? 
+> 
+> I'm not sure how generic these are, though we should certainly encourage
+> bindings that can be described this way to be described in the same way.
+> 
+>> > +	- tx-mode: Can be "infrared" or "uhf". tx-mode should be present iff
+>> > +	  the tx pins are wired up.
+> I have similar concerns here to those for the rx-mode property.
+> 
+Initially rx-mode and tx-mode sounded like more generic properties
+that's the reason I ended up in this route. But after this discussion it
+looks like its not really generic enough to cater all the use cases.
 
-This patch adds sysctl numa_balancing_migrate_deferred, which specifies
-how many shared page migrations to skip unconditionally, after each page
-migration that is skipped because it is a shared fault.
+It make sense for me to perfix "st," for these properties in the st-rc
+driver rather than considering them as generic properties.
 
-This reduces the number of page migrations back and forth in
-shared fault situations. It also gives a strong preference to
-the tasks that are already running where most of the memory is,
-and to moving the other tasks to near the memory.
+> I think what we actually need to document is the process of creating a
+> binding in such a way as to encourage uniformity. Something like the
+> following steps:
+I agree, It will help.. :-)
+> 
+> 1. Look to see if a binding already exists. If so, use it.
+> 
+> 2. Is there a binding for a compatible device? If so, use/extend it.
+> 
+> 3. Is there a binding for a similar (but incompatible) device? Use it as
+>    a template, possibly factor out portions into a class binding if
+>    those portions are truly general.
+> 
+> 4. Is there a binding for the class of device? If so, build around that,
+>    possibly extending it.
+> 
+> 5. If there's nothing relevant, create a binding aiming for as much
+>    commonality as possible with other devices of that class that may
+>    have bindings later.
 
-Testing this with a much higher scan rate than the default
-still seems to result in fewer page migrations than before.
+Thanks for this little guide...
 
-Memory seems to be somewhat better consolidated than previously,
-with multi-instance specjbb runs on a 4 node system.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- Documentation/sysctl/kernel.txt | 10 ++++++++-
- include/linux/sched.h           |  5 ++++-
- kernel/sched/fair.c             |  8 +++++++
- kernel/sysctl.c                 |  7 ++++++
- mm/mempolicy.c                  | 48 ++++++++++++++++++++++++++++++++++++++++-
- 5 files changed, 75 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 0d503df..a767ef2 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -374,7 +374,8 @@ feature should be disabled. Otherwise, if the system overhead from the
- feature is too high then the rate the kernel samples for NUMA hinting
- faults may be controlled by the numa_balancing_scan_period_min_ms,
- numa_balancing_scan_delay_ms, numa_balancing_scan_period_max_ms,
--numa_balancing_scan_size_mb and numa_balancing_settle_count sysctls.
-+numa_balancing_scan_size_mb, numa_balancing_settle_count sysctls and
-+numa_balancing_migrate_deferred.
- 
- ==============================================================
- 
-@@ -420,6 +421,13 @@ the schedule balancer stops pushing the task towards a preferred node. This
- gives the scheduler a chance to place the task on an alternative node if the
- preferred node is overloaded.
- 
-+numa_balancing_migrate_deferred is how many page migrations get skipped
-+unconditionally, after a page migration is skipped because a page is shared
-+with other tasks. This reduces page migration overhead, and determines
-+how much stronger the "move task near its memory" policy scheduler becomes,
-+versus the "move memory near its task" memory management policy, for workloads
-+with shared memory.
-+
- ==============================================================
- 
- osrelease, ostype & version:
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 33c53d6..48c4947 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1333,6 +1333,8 @@ struct task_struct {
- 	int numa_scan_seq;
- 	unsigned int numa_scan_period;
- 	unsigned int numa_scan_period_max;
-+	int numa_preferred_nid;
-+	int numa_migrate_deferred;
- 	unsigned long numa_migrate_retry;
- 	u64 node_stamp;			/* migration stamp  */
- 	struct callback_head numa_work;
-@@ -1363,7 +1365,6 @@ struct task_struct {
- 	 */
- 	unsigned long numa_faults_locality[2];
- 
--	int numa_preferred_nid;
- 	unsigned long numa_pages_migrated;
- #endif /* CONFIG_NUMA_BALANCING */
- 
-@@ -1453,6 +1454,8 @@ extern void task_numa_fault(int last_node, int node, int pages, int flags);
- extern pid_t task_numa_group_id(struct task_struct *p);
- extern void set_numabalancing_state(bool enabled);
- extern void task_numa_free(struct task_struct *p);
-+
-+extern unsigned int sysctl_numa_balancing_migrate_deferred;
- #else
- static inline void task_numa_fault(int last_node, int node, int pages,
- 				   int flags)
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9bca073..c00611c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -833,6 +833,14 @@ unsigned int sysctl_numa_balancing_scan_size = 256;
- /* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
- unsigned int sysctl_numa_balancing_scan_delay = 1000;
- 
-+/*
-+ * After skipping a page migration on a shared page, skip N more numa page
-+ * migrations unconditionally. This reduces the number of NUMA migrations
-+ * in shared memory workloads, and has the effect of pulling tasks towards
-+ * where their memory lives, over pulling the memory towards the task.
-+ */
-+unsigned int sysctl_numa_balancing_migrate_deferred = 16;
-+
- static unsigned int task_nr_scan_windows(struct task_struct *p)
- {
- 	unsigned long rss = 0;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4e080fe..92bb38a 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -391,6 +391,13 @@ static struct ctl_table kern_table[] = {
- 		.mode           = 0644,
- 		.proc_handler   = proc_dointvec,
- 	},
-+	{
-+		.procname       = "numa_balancing_migrate_deferred",
-+		.data           = &sysctl_numa_balancing_migrate_deferred,
-+		.maxlen         = sizeof(unsigned int),
-+		.mode           = 0644,
-+		.proc_handler   = proc_dointvec,
-+	},
- #endif /* CONFIG_NUMA_BALANCING */
- #endif /* CONFIG_SCHED_DEBUG */
- 	{
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index e554587..853f6d4 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2245,6 +2245,35 @@ static void sp_free(struct sp_node *n)
- 	kmem_cache_free(sn_cache, n);
- }
- 
-+#ifdef CONFIG_NUMA_BALANCING
-+static bool numa_migrate_deferred(struct task_struct *p, int last_cpupid)
-+{
-+	/* Never defer a private fault */
-+	if (cpupid_match_pid(p, last_cpupid))
-+		return false;
-+
-+	if (p->numa_migrate_deferred) {
-+		p->numa_migrate_deferred--;
-+		return true;
-+	}
-+	return false;
-+}
-+
-+static inline void defer_numa_migrate(struct task_struct *p)
-+{
-+	p->numa_migrate_deferred = sysctl_numa_balancing_migrate_deferred;
-+}
-+#else
-+static inline bool numa_migrate_deferred(struct task_struct *p, int last_cpupid)
-+{
-+	return false;
-+}
-+
-+static inline void defer_numa_migrate(struct task_struct *p)
-+{
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
-+
- /**
-  * mpol_misplaced - check whether current page node is valid in policy
-  *
-@@ -2346,7 +2375,24 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 		 * relation.
- 		 */
- 		last_cpupid = page_cpupid_xchg_last(page, this_cpupid);
--		if (!cpupid_pid_unset(last_cpupid) && cpupid_to_nid(last_cpupid) != thisnid)
-+		if (!cpupid_pid_unset(last_cpupid) && cpupid_to_nid(last_cpupid) != thisnid) {
-+
-+			/* See sysctl_numa_balancing_migrate_deferred comment */
-+			if (!cpupid_match_pid(current, last_cpupid))
-+				defer_numa_migrate(current);
-+
-+			goto out;
-+		}
-+
-+		/*
-+		 * The quadratic filter above reduces extraneous migration
-+		 * of shared pages somewhat. This code reduces it even more,
-+		 * reducing the overhead of page migrations of shared pages.
-+		 * This makes workloads with shared pages rely more on
-+		 * "move task near its memory", and less on "move memory
-+		 * towards its task", which is exactly what we want.
-+		 */
-+		if (numa_migrate_deferred(current, last_cpupid))
- 			goto out;
- 	}
- 
--- 
-1.8.1.4
-
+--srini
