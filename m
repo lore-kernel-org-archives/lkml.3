@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab3I0VEc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 17:04:32 -0400
-Received: from sauhun.de ([89.238.76.85]:52336 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754722Ab3I0VE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 17:04:27 -0400
-Date: Fri, 27 Sep 2013 23:04:24 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com
-Subject: Re: [PATCH v2] misc: (at24) move header to linux/platform_data/
-Message-ID: <20130927210424.GA17407@katana>
-References: <1380308788-15730-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	id S1754765Ab3I0VFW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 17:05:22 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40252 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753316Ab3I0VFU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 17:05:20 -0400
+Date: Fri, 27 Sep 2013 22:05:05 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Zdenek Kabelac <zkabelac@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Crash of 3.12-rc2 BUG: unable to handle kernel NULL pointer
+	dereference
+Message-ID: <20130927210505.GM12758@n2100.arm.linux.org.uk>
+References: <524572BF.5060407@redhat.com> <5245845F.5090100@redhat.com> <CAErSpo74E-EKJN16A44UEGraZ9NE09a5q2_zQrkMuOANtQx0rQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380308788-15730-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo74E-EKJN16A44UEGraZ9NE09a5q2_zQrkMuOANtQx0rQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 27, 2013 at 10:04:44AM -0600, Bjorn Helgaas wrote:
+> [+cc Thomas, Russell]
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Someone is doing something quite bad in the kernel, and as yet I've not
+figured out a way to track it down.
 
-On Fri, Sep 27, 2013 at 03:06:28PM -0400, Vivien Didelot wrote:
-> This patch moves the at24.h header from include/linux/i2c to
-> include/linux/platform_data and updates existing support accordingly.
->=20
-> It also fixes the following checkpatch warning:
->=20
->     WARNING: please, no space before tabs
->     #436: FILE: include/linux/platform_data/at24.h:31:
->     + * ^Iu8 *mac_addr =3D ethernet_pdata->mac_addr;$
->=20
-> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+The issue is this: someone is kfree'ing a kobject before its release
+function has been called, and the memory is being re-used.  The problem
+is that when the last reference has been dropped with the debug enabled,
+the kobject is linked into the timer lists for the delayed work.  When
+the timer lists get run, they're found to be corrupted.
 
-Applied to for-next, thanks!
+The obvious solution to this is to move the delayed work out of the
+kobject into a separately allocated structure.  That would work if
+x86 didn't register kobjects very early in boot, before the memory
+allocators were up and running.
 
+Frankly, I've no idea how to solve this.  So I regard x86 as just being
+difficult and broken.  :)
 
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSRfLXAAoJEBQN5MwUoCm2m2wQAKqGWFi0D0CBEMItBtsqsqg4
-aOJ8stsKwBPpTILvHedGu7DxRlGK2dWXOEBrcUrUCfmpSqTPfm02VNtySaPTy4zH
-MYU3hFElV9bQJX+HNrJ5pht81KUyTJpVLYe86wSwb6WLIPJHlfJG4VzklxkxXIRe
-JqsU/Lzhgy2ir9mhaRFzMQtsSMHOJO1BUj/1CNocfa8F6GPbLSCuimgmX+FGEZvo
-TFA02JSJvqFE9yorTGsEZlVHkwQS6Jh8x7/mXl61ZLRB/pa9lsTc5bUNH8YGGvYb
-NzDlR01ZPpyajB86drjcYFQdSDx+KsDxJr4dzQriZwlwT8Kx/GZtvuGXTPdVPXne
-Y4RVZsbyAjZ0KIBVvvsbUx4zdausdhhR28cbamFT9dlIO4AOTXJfMsHwzeksH/N5
-eD6ClTQp/wNHqk+bEna5V8yurSTqlXQmSiaZuheNTwl9qFGRfG27lz3ghHjgIv1y
-jTrR/NZ2s/EwLmn6Vy2kT+lw9lcwjUwiNUlSubPKvw4V3i6KEJuWlhuz5podXE1z
-xe5P8mHzcJnOyGgBv6GwKncY/eAxxzxYMdZGK7/zAnO2pXnHKeV1p4IK3D6eqy2/
-IzE56iiVleMnj2uPt/5Y0pWjIa3GmfKmbvOpAy1m0FLHFun4rc1/ezMApx+thO9S
-kvA/bugwlxGnZymCipeh
-=/MFE
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
+If anyone has any ideas, then I'm all ears.
+http://www.annhuey.com/ed-pix/fa_i-pix/I%27m-All-Ears.jpg
