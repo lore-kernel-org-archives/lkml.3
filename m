@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab3I0UNT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 16:13:19 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:60011 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753141Ab3I0UNS (ORCPT
+	id S1753902Ab3I0UNY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 16:13:24 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37129 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753141Ab3I0UNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 16:13:18 -0400
-Message-ID: <5245E6DB.4000401@tilera.com>
-Date: Fri, 27 Sep 2013 16:13:15 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] tile: use a more conservative __my_cpu_offset in CONFIG_PREEMPT
-References: <201309261738.r8QHcGZX007708@farm-0012.internal.tilera.com> <20130926175754.GD7146@mudshark.cambridge.arm.com>
-In-Reply-To: <20130926175754.GD7146@mudshark.cambridge.arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Sep 2013 16:13:20 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH] clocksource: arm_arch_timer: Use clocksource for suspend timekeeping
+Date: Fri, 27 Sep 2013 13:13:12 -0700
+Message-Id: <1380312792-7275-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/26/2013 1:57 PM, Will Deacon wrote:
-> Hi Chris,
->
-> On Thu, Sep 26, 2013 at 06:24:53PM +0100, Chris Metcalf wrote:
->> [...]
->> +static inline unsigned long __my_cpu_offset(void)
->> +{
->> +	unsigned long tp;
->> +	register unsigned long *sp asm("sp");
->> +	asm("move %0, tp" : "=r" (tp) : "m" (*sp));
->> +	return tp;
->> +}
-> Hehe, nice to see this hack working out for you too. One thing to check is
-> whether you have any funky addressing modes (things like writeback or
-> post-increment), since the "m" constraint can bite you if you don't actually
-> use it in the asm.
+The ARM architected timers keep counting during suspend so we can
+mark this clocksource with the CLOCK_SOURCE_SUSPEND_NONSTOP flag.
+This flag will indicate that this clocksource can be used for
+calculating suspend time and injecting sleep time into the
+timekeeping core. This should be more accurate than using an
+external RTC or architecture specific persistent clock.
 
-Well, we do have post increments, though I don't see why this is a problem here.
-We define a target specific constraint "U" that excludes post-increments, but
-again I don't see why "m" would cause trouble here.  What was your experience?
+Cc: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clocksource/arm_arch_timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index fbd9ccd..ce98d5e 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -389,7 +389,7 @@ static struct clocksource clocksource_counter = {
+ 	.rating	= 400,
+ 	.read	= arch_counter_read,
+ 	.mask	= CLOCKSOURCE_MASK(56),
+-	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
++	.flags	= CLOCK_SOURCE_IS_CONTINUOUS | CLOCK_SOURCE_SUSPEND_NONSTOP,
+ };
+ 
+ static struct cyclecounter cyclecounter = {
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
