@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab3I0MOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 08:14:06 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:64450 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab3I0MOD (ORCPT
+	id S1751832Ab3I0MRU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 08:17:20 -0400
+Received: from mailrelay.sea-ab.se ([91.223.232.53]:39705 "EHLO
+	mailrelay.sea-ab.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab3I0MRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 08:14:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <52454608.6040504@linaro.org>
-References: <1380248694-13388-1-git-send-email-robherring2@gmail.com>
-	<1380248694-13388-4-git-send-email-robherring2@gmail.com>
-	<52454608.6040504@linaro.org>
-Date: Fri, 27 Sep 2013 07:14:02 -0500
-Message-ID: <CAL_JsqL=L8rZ_2qExR0rWV2Z_OQM-w0vHJhx-Xtid-ozAqghUA@mail.gmail.com>
-Subject: Re: [PATCH 3/6] cpuidle: calxeda: add ecx-2000 support
-From: Rob Herring <robherring2@gmail.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 27 Sep 2013 08:17:19 -0400
+X-Greylist: delayed 634 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Sep 2013 08:17:18 EDT
+From: Martin Berglund <martin@rogsta.net>
+To: teddy.wang@siliconmotion.com.cn
+Cc: gregkh@linuxfoundation.org, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Martin Berglund <martin@rogsta.net>
+Subject: [PATCH] Staging: sm7xxfb: fixed line break coding style issues
+Date: Fri, 27 Sep 2013 14:08:07 +0200
+Message-Id: <1380283687-21524-1-git-send-email-martin@rogsta.net>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 3:47 AM, Daniel Lezcano
-<daniel.lezcano@linaro.org> wrote:
-> On 09/27/2013 04:24 AM, Rob Herring wrote:
->>
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> Add cpuidle support for Calxeda ecx-2000 SoC.
->>
->> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
->> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
->> Cc: linux-pm@vger.kernel.org
->
->
-> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Fixed coding style issues.
 
-Thanks.
+Signed-off-by: Martin Berglund <martin@rogsta.net>
+---
+ drivers/staging/sm7xxfb/sm7xxfb.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-> Shall I pick these three patches in my tree ?
+diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
+index 8add64b..57d8145 100644
+--- a/drivers/staging/sm7xxfb/sm7xxfb.c
++++ b/drivers/staging/sm7xxfb/sm7xxfb.c
+@@ -259,8 +259,7 @@ static int smtc_setcolreg(unsigned regno, unsigned red, unsigned green,
+ 			if (sfb->fb.var.bits_per_pixel == 16) {
+ 				u32 *pal = sfb->fb.pseudo_palette;
+ 				val = chan_to_field(red, &sfb->fb.var.red);
+-				val |= chan_to_field(green, \
+-						&sfb->fb.var.green);
++				val |= chan_to_field(green, &sfb->fb.var.green);
+ 				val |= chan_to_field(blue, &sfb->fb.var.blue);
+ #ifdef __BIG_ENDIAN
+ 				pal[regno] =
+@@ -274,8 +273,7 @@ static int smtc_setcolreg(unsigned regno, unsigned red, unsigned green,
+ 			} else {
+ 				u32 *pal = sfb->fb.pseudo_palette;
+ 				val = chan_to_field(red, &sfb->fb.var.red);
+-				val |= chan_to_field(green, \
+-						&sfb->fb.var.green);
++				val |= chan_to_field(green, &sfb->fb.var.green);
+ 				val |= chan_to_field(blue, &sfb->fb.var.blue);
+ #ifdef __BIG_ENDIAN
+ 				val =
+@@ -508,9 +506,8 @@ static void sm7xx_set_timing(struct smtcfb_info *sfb)
+ 
+ 			/* init SEQ register SR30 - SR75 */
+ 			for (i = 0; i < SIZE_SR30_SR75; i++)
+-				if (((i + 0x30) != 0x62) \
+-					&& ((i + 0x30) != 0x6a) \
+-					&& ((i + 0x30) != 0x6b))
++				if (((i + 0x30) != 0x62) && ((i + 0x30) != 0x6a)
++							&& ((i + 0x30) != 0x6b))
+ 					smtc_seqw(i + 0x30,
+ 						VGAMode[j].Init_SR30_SR75[i]);
+ 
+-- 
+1.8.4
 
-No, the highbank changes are dependent on this to go in first.
-
-Rob
