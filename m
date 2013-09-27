@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab3I0O6j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:58:39 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:56164 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab3I0O6h (ORCPT
+	id S1753669Ab3I0PCT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:02:19 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51287 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752318Ab3I0PCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:58:37 -0400
-Date: Fri, 27 Sep 2013 18:58:33 +0400
-From: Sergey Dyasly <dserrg@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
-        Sha Zhengju <handai.szj@taobao.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] OOM killer: wait for tasks with pending SIGKILL to exit
-Message-Id: <20130927185833.6c72b77ab105d70d4996ebef@gmail.com>
-In-Reply-To: <alpine.DEB.2.02.1309251328130.24412@chino.kir.corp.google.com>
-References: <1378740624-2456-1-git-send-email-dserrg@gmail.com>
-	<alpine.DEB.2.02.1309091303010.12523@chino.kir.corp.google.com>
-	<20130911190605.5528ee4563272dbea1ed56a6@gmail.com>
-	<alpine.DEB.2.02.1309251328130.24412@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Sep 2013 11:02:17 -0400
+Date: Fri, 27 Sep 2013 16:01:57 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [QUERY] Building and testing Aarch64
+Message-ID: <20130927150156.GE26069@arm.com>
+References: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
+ <CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
+ <CALkWK0=YdxF43RQ-Fddp4Rzmx3aU3QdOPrjR=X+s6Wt9_RAYUg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALkWK0=YdxF43RQ-Fddp4Rzmx3aU3QdOPrjR=X+s6Wt9_RAYUg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Sep 2013 13:31:32 -0700 (PDT)
-David Rientjes <rientjes@google.com> wrote:
-
-> On Wed, 11 Sep 2013, Sergey Dyasly wrote:
+On Fri, Sep 27, 2013 at 03:43:21PM +0100, Ramkumar Ramachandra wrote:
+> Catalin Marinas wrote:
+> > ARM provides an emulator, ARMv8 Foundation Model (free as in free beer
+> > but you need to register to be able to download, just like the
+> > architecture documentation):
+> >
+> > http://www.arm.com/products/tools/models/fast-models/foundation-model.php
 > 
-> > > >  		/*
-> > > >  		 * If this task is not being ptraced on exit, then wait for it
-> > > >  		 * to finish before killing some other task unnecessarily.
-> > > >  		 */
-> > > > -		if (!(task->group_leader->ptrace & PT_TRACE_EXIT))
-> > > > +		if (!(task->group_leader->ptrace & PT_TRACE_EXIT)) {
-> > > > +			set_tsk_thread_flag(task, TIF_MEMDIE);
-> > > 
-> > > This does not, we do not give access to memory reserves unless the process 
-> > > needs it to allocate memory.  The task here, which is not current, can 
-> > > call into the oom killer and be granted memory reserves if necessary.
-> > 
-> > True. However, why TIF_MEMDIE is set for PF_EXITING task in oom_kill_process()
-> > then?
+> I downloaded the foundation model and ran:
 > 
-> If current needs access to memory reserves while PF_EXITING, it should 
-> call the page allocator, find that it is out of memory, and call the oom 
-> killer to silently be granted memory reserves.
-
-I understand this and you are repeating yourself :)
-What you are saying contradicts current OOMk code the way I read it. Comment in
-oom_kill_process() says:
-
-"If the task is already exiting ... set TIF_MEMDIE so it can die quickly"
-
-I just want to know the right solution.
-
-> > > > @@ -412,16 +415,6 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
-> > > >  	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
-> > > >  					      DEFAULT_RATELIMIT_BURST);
-> > > >  
-> > > > -	/*
-> > > > -	 * If the task is already exiting, don't alarm the sysadmin or kill
-> > > > -	 * its children or threads, just set TIF_MEMDIE so it can die quickly
-> > > > -	 */
-> > > > -	if (p->flags & PF_EXITING) {
-> > > > -		set_tsk_thread_flag(p, TIF_MEMDIE);
-> > > > -		put_task_struct(p);
-> > > > -		return;
-> > > > -	}
-> > > 
-> > > I think you misunderstood the point of this; if a selected process is 
-> > > already in the exit path then this is simply avoiding dumping oom kill 
-> > > lines to the kernel log.  We want to keep doing that.
-> > 
-> > This happens in oom_kill_process() after victim has been selected by
-> > select_bad_process(). But there is already PF_EXITING check in
-> > oom_scan_process_thread() and in this case OOM code won't call oom_kill_process.
+>   $ ./Foundation_v8 --image linux-system-foundation.axf --block-device
+> debian-arm-rootfs
 > 
-> select_bad_process() is one of three callers to oom_kill_process().
+> as described in the Debian page [1]. However, I didn't understand how
+> to boot it up with the kernel I just built with my toolchain
+> (arch/arm64/boot/Image.gz). What is this linux-system-foundation.axf?
 
-You are mistaken, oom_kill_process() is only called from out_of_memory()
-and mem_cgroup_out_of_memory().
+The .axf file is something traditionally called ARM eXecutable Format,
+which these days it's just an ELF format that the model can load
+directly. The above code contains the pre-Linux boot initialisation, the
+kernel Image (uncompressed, doesn't have a decompressor) and possibly a
+filesystem, unless you use the --block-device model option. To get the
+boot wrapper, just clone this:
 
-> > The only difference is in force_kill flag, and the only case where it's set
-> > is SysRq. And I think in this case OOM killer messages are a good thing to have
-> > even when victim is already exiting, instead of just silence.
-> > 
-> 
-> Read the comment about why we don't emit anything to the kernel log in 
-> this case; the process is already exiting, there's no need to kill it or 
-> make anyone believe that it was killed.
+git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/boot-wrapper-aarch64.git
 
-Yes, but there is already the PF_EXITING check in oom_scan_process_thread(),
-and in this case oom_kill_process() won't be even called. That's why it's
-redundant.
+The README and Makefile should be enough to get you started.
 
---
-Sergey Dyasly <dserrg@gmail.com>
+> Also, what is libarmctmodel.so?
+
+I think that's the library that contains the actual software model.
+
+-- 
+Catalin
